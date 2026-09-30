@@ -7,7 +7,7 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 **Stage 2: Design system and component sourcing** (`stages/02-design-system-component-sourcing.md`), with the Stage 1 spikes that need Abu or mainnet still open.
 
 ## Next action
-1. **Stage 3, core platform**: the api is live; next the app client (`packages/api-client`, sign-in with the Turnkey stamp, wallet registration, setup and allowance screens on Koe), i18n with RTL, settings hub, web deploy.
+1. **UI revamp plan (D34, 2026-09-30).** Abu did not like the colours and design intention of what was built; Codex's reference study of Solflare, Phantom and Fomo is in `docs/design/reference-study-2026-09-30/`. Next: plan mode, study everything, plan the revamp (real logos and artwork, motion, complete journeys), send the plan to Codex for review, then rebuild the screens. The api, the wallet flow and the i18n stay.
 2. Stage 2 leftovers: Android run of the gallery; app icon and splash image.
 3. Stage 3 (core platform) can start in parallel: schema, api skeleton, wallet setup flow on the new design.
 4. Still open from Stage 1: #5 voice (Abu's phone), #12 x402 and the mainnet halves of #2 (what remains of it), #4/#15, #13 (wait for Circle's mainnet approval).
@@ -16,7 +16,7 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 - [ ] 0 Bootstrap: resume protocol ✅ · monorepo scaffold ✅ · Coolify project + Postgres ✅ · private repo Blockchain-Oracle/kawase ✅ · kickoff transcript ✅ · first commit pushed ✅ · Coolify deploy key ✅ (GitHub App optional later)
 - [ ] 1 Day-1 spikes: #3 ✅ testnet (re-run with the new wallet in #16) · #4 ✅ testnet (caveats carry over; account setup replaced by #15) · #6 ✅ · #7 ✅ · #8 ✅ (iOS + web; Android not run) · #9 ✅ iOS (Android via EAS pending) · #10 ✅ (iOS + web) · #11 ✅ partial · #13 ✅ Circle testnet · #14 ✅ · **#15 ✅ testnet (7702 limits)** · **#16 ✅ iOS simulator + testnet (Turnkey wallet, 9/9; passkey half waits for the domain)** · #1 closed and #2 superseded (D33) · #5 ☐ (real phone) · #12 ☐ (mainnet)
 - [x] 2 Design system and component sourcing: **direction chosen: C, Koe** ✅ (Abu, 2026-09-30) · `DESIGN.md` ✅ · `packages/ui-tokens` ✅ · 11 components in `ui-web` ✅ · fonts ✅ · `packages/ui-native` with 13 twins ✅ · gallery on iOS + web ✅ · `21st review` clean ✅ · Android ☐
-- [ ] 3 Core platform: networks ✅ money ✅ config ✅ env ✅ log ✅ db ✅ api ✅ (live on Coolify, `https://kawase-api.84.46.247.92.sslip.io`) · app client ☐ · i18n + RTL ☐ · onboarding/sign-in screens ☐ · settings hub ☐ · web deploy ☐
+- [ ] 3 Core platform: networks ✅ money ✅ config ✅ env ✅ log ✅ db ✅ api ✅ (live, `https://kawase-api.84.46.247.92.sslip.io`) · app client ✅ · i18n + RTL ✅ (10 catalogs) · welcome/sign-in/wallet/settings ✅ (verified on the simulator end to end) · web ✅ (live, `https://kawase.84.46.247.92.sslip.io`) · executor/chain-watcher shells ☐ · faucet ☐ · audit writer ☐
 - [ ] 4 Agent brain, resolve and resume, chat
 - [ ] 5 Money movement, contacts, business basics
 - [ ] 6 Trading, tokens, bridge, yield

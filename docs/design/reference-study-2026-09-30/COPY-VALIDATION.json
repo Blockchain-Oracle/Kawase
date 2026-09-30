@@ -10,5 +10,16 @@
   "motion_duration_checks": "passed",
   "unchanged_copied_files_verified": 200,
   "evidence_and_ledger_consistency": "passed",
-  "scope": "Documentation/media/copy validation; no product runtime, production-logo authentication or original-source hash claim"
+  "scope": "Documentation/media/copy validation; no product runtime, production-logo authentication or original-source hash claim",
+  "browser_checks": {
+    "gallery_index": "115 items; reuse handoff and context notice present",
+    "M06_local_video": {
+      "duration_seconds": 1.5,
+      "width": 402,
+      "height": 874,
+      "ready_state": 4,
+      "error": null
+    },
+    "scope": "Copied gallery opening and clip loading; full controls previously verified in original study"
+  }
 }
