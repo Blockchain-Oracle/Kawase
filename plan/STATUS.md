@@ -1,17 +1,17 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10 done; repo pushed; deploy key set up)
+Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; repo pushed; deploy key set up)
 
 ## Current stage
 **Stage 1: Day-1 spikes** (`stages/01-day-1-spikes.md`). Stage 0 still has two open items: a git source for Coolify, and the first commit + push.
 
 ## Next action
-Remaining Stage 1 spikes: #1 Circle RN SDK on the dev build (Abu enters the PIN on the simulator), #5 voice (real phone), #12 x402 (mainnet), #13 webhooks (deploy a small api to Coolify with the deploy key first). Mainnet runs (#2 LIVE, #4 $1, #12) start as soon as the LIVE key stops returning 403 (see Blockers). Then Stage 2 (Abu picks the design direction).
+Remaining Stage 1 spikes: #1 Circle RN SDK on the dev build (Abu enters the PIN on the simulator), #5 voice (real phone), #12 x402 (mainnet). Mainnet runs (#2 LIVE, #4 $1, #12, #13 LIVE) start as soon as the LIVE key stops returning 403 (see Blockers). Then Stage 2 (Abu picks the design direction).
 
 ## Stage checklist
 - [ ] 0 Bootstrap: resume protocol ✅ · monorepo scaffold ✅ · Coolify project + Postgres ✅ · private repo Blockchain-Oracle/kawase ✅ · kickoff transcript ✅ · first commit pushed ✅ · Coolify deploy key ✅ (GitHub App optional later)
-- [ ] 1 Day-1 spikes (14): #2 ✅ testnet (LIVE pending) · #3 ✅ testnet (swap + bridge; EOA via own SigningStrategy) · #7 ✅ (local, iOS, and SSE through Coolify Traefik + HTTPS + gzip) · #8 ✅ (iOS + web; Android not run) · #10 ✅ (iOS + web; native passkey open) · #4 ✅ testnet + real UCW owner (mainnet pending) · #6 ✅ · #14 ✅ (TS 6.0.3 per the Expo 57 template) · #9 ✅ iOS (Android via EAS pending) · #11 ✅ partial (PluralRules/RelativeTimeFormat need polyfills; parser fixed)
+- [ ] 1 Day-1 spikes (14): #2 ✅ testnet (LIVE pending) · #3 ✅ testnet (swap + bridge; EOA via own SigningStrategy) · #7 ✅ (local, iOS, and SSE through Coolify Traefik + HTTPS + gzip) · #8 ✅ (iOS + web; Android not run) · #10 ✅ (iOS + web; native passkey open) · #13 ✅ Circle testnet (LIVE pending; Telegram needs a bot token) · #4 ✅ testnet + real UCW owner (mainnet pending) · #6 ✅ · #14 ✅ (TS 6.0.3 per the Expo 57 template) · #9 ✅ iOS (Android via EAS pending) · #11 ✅ partial (PluralRules/RelativeTimeFormat need polyfills; parser fixed)
 - [ ] 2 Design system and component sourcing (Abu picks a direction)
 - [ ] 3 Core platform: networks ✅ money ✅ config ✅ (pure packages started early)
 - [ ] 4 Agent brain, resolve and resume, chat
@@ -29,6 +29,7 @@ Remaining Stage 1 spikes: #1 Circle RN SDK on the dev build (Abu enters the PIN 
 - [ ] 16 Production hardening and submission (deadline **2026-10-10 11:59 PM ET**)
 
 ## Spike results
+- #13 Webhooks: **PASS for Circle on testnet**, through a real Coolify deploy (deploy key, Dockerfile, port + `https://` sslip.io domain at creation). Signed `transactions.outbound` (DCW) and `transactions.inbound` (UCW) arrive on ARC-TESTNET; Circle retries a failed delivery in 1–3 s with the same `notificationId`; dedupe held (2 deliveries, 1 side effect); order is not guaranteed. **Services on alpine must listen on `::`** (Coolify's health check uses `localhost` → `::1`). Open: LIVE, and a real Telegram delivery (no bot token in `.env`) — `spikes/13-webhooks.md`
 - #10 Better Auth: **PASS** (headless 18/18, web passkey 4/4, iOS guest → email OTP upgrade with data kept, session restored after restart). **`onLinkAccount` must move every user-owned table and passkeys in one transaction** (the guest row is deleted afterwards and our FKs cascade); a failed migration loses nothing and a retry completes it; BA 1.7 refuses cookie POSTs without an `Origin`; the CLI is now `npx auth@latest generate`; **native passkeys are open** (browser-only client; needs a native module + an associated domain on the deployed api) so native uses email OTP for now — `spikes/10-better-auth.md`
 - #8 UI stack: **PASS** on iOS + web. One card spec → RNR/Uniwind card on native and a 21st.dev DOM card on web (`.web.tsx` twin), one token file, 4 themes (light, dark, testnet, testnet-dark) + RTL; production export under `web.output:"server"` works. **`react-native-web` pinned to 0.21.2** (Uniwind 1.12.0 bug, uni-stack/uniwind#695); web installs live in `packages/ui-web` with `@kawase/ui-web/*` aliases; wrap third-party components with `withUniwind`; SDK 57 "server" output = prerender + API routes, so themes must be CSS-only — `spikes/08-ui-stack.md`
 - #7 Streaming chat: **PASS**. useChat + expo/fetch streams; approval round trip via `toolApproval` + `addToolApprovalResponse` + `sendAutomaticallyWhen`; `experimental_toolApprovalSecret` rejects forged approvals; **no polyfills needed on RN 0.86.3**. **SSE streams through Coolify's Traefik (HTTPS, gzip on), incl. expo/fetch on iOS**. Coolify gotchas in `deploy/coolify.md` — `spikes/07-streaming-chat.md`
@@ -45,6 +46,7 @@ Remaining Stage 1 spikes: #1 Circle RN SDK on the dev build (Abu enters the PIN 
 - **Repo pushed:** first commit `be83488` on `main` (2026-09-30). `.env` is git-ignored and the commit was scanned for secrets first.
 - Circle **TEST: ready** ✅ (API key, App ID fetched, entity secret recovered from `_archive/arc-treasury-intelligence/.env` and proven by creating the `kawase-testnet` wallet set). Circle **LIVE: Abu says mainnet is approved (2026-09-30), but the LIVE key in `.env` still returns 403 Forbidden** on `/v1/w3s/config/entity`, `/wallets`, `/walletSets` and `/config/entity/publicKey` (last check 2026-09-30; TEST returns 200). 403 means the key is recognised but not allowed. Claude's guess, unverified: the key was created before approval and a new LIVE API key is needed from the Circle console. Also still missing: the LIVE entity secret (`CIRCLE_LIVE_ENTITY_SECRET` is empty) and the LIVE App ID. Waiting behind it: #2 LIVE, the #4 mainnet $1 run, #12. (Circle bills MAW, first 1,000 wallets free; Gas Station charges gas + 5%.) OpenAI ✅ (same key in agari/keeperhubv2/stocklana; default gpt-5.6-luna tool-calls correctly).
 - Security note 2026-09-29: the Circle TEST entity secret was accidentally printed in the session transcript (a broken macOS sed mask). Low risk (testnet); Abu may rotate via the Circle console using the recovery file from arc-treasury-intelligence. ✅ Received and verified 2026-09-29: API_KEY_21ST, LiveKit Cloud (URL/key/secret), ElevenLabs (TTS + STT work; its voices-list permission is off, which is fine).
+- **Telegram bot token missing:** `TELEGRAM_BOT_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` are empty in `.env`. Abu creates a bot with @BotFather and adds the token; Claude generates the webhook secret.
 - Repo is private for now; flip to public before submission (Oct 10).
 
 ## Plan audit (2026-09-30)

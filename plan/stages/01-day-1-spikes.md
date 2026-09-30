@@ -1,7 +1,7 @@
 # Stage 1: Day-1 spikes
 
 Purpose: a stage of the Kawase build. Source of truth for scope is `plan/MASTER-PLAN.md`; decisions are in `context/08-product-research/DECISIONS-FROM-ABU.md`.
-Status: in progress (#2, #3, #4, #6, #7, #8, #9, #10, #11, #14 done; see STATUS.md)
+Status: in progress (#2, #3, #4, #6, #7, #8, #9, #10, #11, #13 testnet, #14 done; see STATUS.md)
 
 ## Scope (from the master plan)
 Each spike is recorded in `plan/spikes/`, with evidence and a decision.
@@ -28,7 +28,8 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 ## Docs to read first (Context7 / official docs)
 - #8: Uniwind setup + theming (uni-stack/uniwind `skills/uniwind/references/`), RNR `minimal-uniwind` template + CLI, Expo SDK 57 `router/web/server-rendering` and `api-routes`, the 21st CLI skill.
 - #10: Better Auth `plugins/{anonymous,email-otp,passkey}`, `integrations/{expo,hono}`, `adapters/drizzle`, `concepts/database`.
-- Remaining spikes: list the docs in the spike write-up before starting (#1 Circle RN SDK, #5 LiveKit RN + agents, #12 x402, #13 Circle + Telegram webhooks).
+- #13: Circle "Webhooks" + "Verify webhook signatures" + the subscriptions API; Telegram `setWebhook`; the Coolify skill.
+- Remaining spikes: list the docs in the spike write-up before starting (#1 Circle RN SDK, #5 LiveKit RN + agents, #12 x402).
 
 ## 21st.dev sourcing (surfaces, queries, picks: component · author · URL · why)
 - (fill in when the stage touches UI)
@@ -41,3 +42,4 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 - 2026-09-30 · #10 PASS: Better Auth 1.7.6 guest → email OTP upgrade keeps data (headless 18/18, Chrome passkey 4/4, iOS simulator incl. session restore after restart). Native passkey left open. `spikes/10-better-auth.md`.
 - 2026-09-30 · #8 PASS: one card spec → RNR/Uniwind on iOS and a 21st.dev card on Expo web, one token file, 4 themes + RTL, `web.output:"server"` export. `react-native-web` pinned to 0.21.2. `spikes/08-ui-stack.md`.
 - Earlier results without a log line here (#4, #6, #9, #11, #14) are in `plan/STATUS.md` and `plan/spikes/`.
+- 2026-09-30 · #13 PASS on testnet: Circle v2 webhooks for DCW + UCW on ARC-TESTNET through a Coolify-deployed receiver; txs [`0x13e0…56e1`](https://testnet.arcscan.app/tx/0x13e0ab9b04c4645f65f2f8c6dfed9e5a3053c21bedfbe1e10348bc423d1c56e1) and [`0xf459…8c66`](https://testnet.arcscan.app/tx/0xf4597a132945e93e265e83571d79357062b5893d4ebc7d1cef658b1d254b8c66); retry + dedupe verified. LIVE and a real Telegram delivery are open. `spikes/13-webhooks.md`.

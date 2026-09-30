@@ -137,6 +137,10 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - **Circle webhooks:** deduplicated by `notificationId` in `provider_webhook_events`.
 - **Concurrent spending:** a per-(user, network) advisory lock plus `spend_ledger` reservations (`reserved → committed | released`). Window sums count reserved and committed rows together.
 
+**Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
+- `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
+- Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.
+
 ## 6. Outbox
 
 1. `db/tx.ts withOutbox(tx, events)` writes the event in the same transaction as the change. In the executor this is a DBOS `DrizzleDataSource` transaction step.
