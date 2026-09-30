@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "source_project": "Senryo / Metropolis",
+  "source_study": "/Users/abu/dev/hackathon/metropolis/docs/design/reference-study-2026-09-30",
+  "target_project": "Kawase (Tamion)",
+  "reuse_scope": "Recorded app evidence and analysis are reusable. Senryo-specific design recommendations, feature-fit labels and financial/authentication decisions remain historical example context.",
+  "destination_authority": "Read the destination current design, product decisions and repository guidance; no source-example product rule supersedes them.",
+  "snapshots": [
+    {
+      "original_source": "/Users/abu/dev/hackathon/metropolis/docs/plan/stage-01-brand-design.md",
+      "snapshot": "source-context/senryo-design-plan.txt",
+      "sha256": "d9a147b34f0f99ba9e0f4c85a7735f0929cda06f515bb1027c6fa41ae2d83cdf",
+      "role": "Historical Senryo context; not destination authority"
+    },
+    {
+      "original_source": "/Users/abu/dev/hackathon/metropolis/docs/plan/00-plan.md",
+      "snapshot": "source-context/senryo-product-plan.txt",
+      "sha256": "cf26888b6ec38912a2a181b71c6d6359a03908d56abf9c464954c00ddb8da7ad",
+      "role": "Historical Senryo context; not destination authority"
+    },
+    {
+      "original_source": "/Users/abu/dev/hackathon/metropolis/packages/tokens/src/marks.ts",
+      "snapshot": "source-context/senryo-identity-colors.ts.txt",
+      "sha256": "9465df5b280d75c72d0d4799d13c5f937601aeb9d2e36b9aafe9f3a2f74376f5",
+      "role": "Historical Senryo context; not destination authority"
+    },
+    {
+      "original_source": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/features/markets/MarketRow.tsx",
+      "snapshot": "source-context/senryo-market-row.tsx.txt",
+      "sha256": "8339bfc5f34e33dbc883ab34379aa1ad17c01530b3fe0fb1b03486bb96077e67",
+      "role": "Historical Senryo context; not destination authority"
+    }
+  ],
+  "original_recordings_required": "Only for regeneration/source hash checks; evidence viewing is self-contained.",
+  "portable_changes": [
+    "Added conspicuous historical-context banners and reuse handoff",
+    "Replaced cross-repository links with frozen source-context snapshots",
+    "Included the journey-template excerpt locally",
+    "Fixed legacy extract.py completion message referencing removed overview variable",
+    "Updated legacy build.py to carry reuse context into the ledger and gallery"
+  ],
+  "original_evidence_integrity": "All evidence files copied without changes",
+  "target_design_authority": "Kawase Direction C, Koe — DESIGN.md and current user decisions",
+  "target_design_file": "../../../DESIGN.md",
+  "target_decisions_file": "../../../context/08-product-research/DECISIONS-FROM-ABU.md",
+  "target_handoff": "PROJECT-HANDOFF.md"
+}

@@ -1,0 +1,1691 @@
+{
+  "schema_version": 1,
+  "purpose": "Feature-level coverage of all supplied recordings, including visible-only and missing branches",
+  "source_authority": "Screen IDs resolve to source recording/time in screen-index.json",
+  "senryo_status": "Existing-plan labels are specification references, not implementation or live acceptance proof",
+  "features": [
+    {
+      "id": "FT001",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Six-panel benefit story",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "M01"
+      ],
+      "observed_behavior": "Progress segments, changing yellow/lavender/lime/pink/orange/gray scenes, moving layered art and fixed Get started/Import controls.",
+      "unverified_boundary": "Autoplay/swipe/pause rules not established.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT002",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Create-wallet method selection",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S08"
+      ],
+      "observed_behavior": "New wallet and Shield creation plus Apple/Google alternatives in a compact sheet.",
+      "unverified_boundary": "Shield/social creation not entered; account internals unknown.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT003",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Import existing wallet methods",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S07"
+      ],
+      "observed_behavior": "Recovery phrase, Shield recovery, hardware wallet and social alternatives, with OR divider.",
+      "unverified_boundary": "No recovery phrase, hardware or imported wallet completion.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT004",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Set six-digit passcode",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S09"
+      ],
+      "observed_behavior": "Six masked dots and circular custom digit keys; completion advances.",
+      "unverified_boundary": "Not a password or passkey; cancel/reset not shown.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT005",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Confirm passcode",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S10"
+      ],
+      "observed_behavior": "Separate masked confirmation state proceeds on matching input.",
+      "unverified_boundary": "Mismatch/retry/forgotten-passcode branches not recorded.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT006",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Biometric education and choice",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S11",
+        "S12"
+      ],
+      "observed_behavior": "Animated lock, Enable biometrics/Not now, native Face ID permission and scan feedback.",
+      "unverified_boundary": "Denied permission and later unlock recovery unrecorded.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT007",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Completion and consent",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S13",
+        "M18"
+      ],
+      "observed_behavior": "Reflective moving silver flag, completion copy, terms footnote and I agree.",
+      "unverified_boundary": "Target consent wording must follow product policy.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT008",
+      "app": "Solflare",
+      "group": "Onboarding and security",
+      "feature": "Notification primer",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S14"
+      ],
+      "observed_behavior": "Bell illustration and enable/skip choices before home.",
+      "unverified_boundary": "Native prompt/result not clearly retained for this app.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT009",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Empty portfolio and wallet identity",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S15"
+      ],
+      "observed_behavior": "Main Wallet/$0 textured balance card, empty-state funding choices.",
+      "unverified_boundary": "Funded portfolio/other account states not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT010",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Wallet copy and ellipsis utilities",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S15"
+      ],
+      "observed_behavior": "Copy affordance and ellipsis with yellow attention dot.",
+      "unverified_boundary": "Opened real account/settings menu and copy feedback unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT011",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Receive page and animated QR",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S21",
+        "M04"
+      ],
+      "observed_behavior": "Rightward page push; particles resolve to dotted QR with centered chain badge.",
+      "unverified_boundary": "No actual external scan/credit shown; use target-generated code.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT012",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Receive address identity, Copy and Share",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S21"
+      ],
+      "observed_behavior": "Wallet label/truncated address, separate copy/share actions.",
+      "unverified_boundary": "Clipboard feedback and share-sheet result unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT013",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Solana-only receive warning",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S21"
+      ],
+      "observed_behavior": "Explicit network warning below identity.",
+      "unverified_boundary": "Allowed target deposit families come from target configuration.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT014",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Bridge first-use education",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S22"
+      ],
+      "observed_behavior": "White bridge art, four explanation rows and route into configuration.",
+      "unverified_boundary": "Claims/limits not target facts.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT015",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Bridge source/destination configuration",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S23"
+      ],
+      "observed_behavior": "Ethereum source, supported-assets entry, SOL destination, direction cue, warnings and asynchronous fee/time/QR areas.",
+      "unverified_boundary": "Fee/time result and a valid bridge order not reached.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT016",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Bridge chain selection",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S24"
+      ],
+      "observed_behavior": "Ethereum checked; Bitcoin, BNB Chain, Arbitrum, Base, Polygon, Tron rows have recognizable marks.",
+      "unverified_boundary": "Selecting another source and resulting quote not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT017",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Bridge supported-assets disclosure",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S26"
+      ],
+      "observed_behavior": "Separate supported-assets list with amber warning.",
+      "unverified_boundary": "Whole supported set and eligibility not independently verified.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT018",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Bridge order failure and retry",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S25"
+      ],
+      "observed_behavior": "Red Could not create order state, explanatory recovery text and Try again.",
+      "unverified_boundary": "Successful retry not recorded.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT019",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Receive-asset chooser with search/Paste",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S27"
+      ],
+      "observed_behavior": "Selected SOL and token alternatives; name/address search and Paste. Some image discs unresolved.",
+      "unverified_boundary": "No search/paste result or asset selection outcome.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT020",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Buy-crypto education and provider handoff",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S28"
+      ],
+      "observed_behavior": "Large yellow type, metallic dollar coin, rate-comparison explanation, named Onramper handoff.",
+      "unverified_boundary": "No fiat on-ramp in current Senryo launch plan.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT021",
+      "app": "Solflare",
+      "group": "Wallet and funding",
+      "feature": "Fiat quote pending to loaded",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S29",
+        "S30"
+      ],
+      "observed_behavior": "NGN spend quote, loading best-price state and disabled action resolve to SOL rate/provider and enabled Buy SOL.",
+      "unverified_boundary": "No payment authorization, purchase, decline or credited funds.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT022",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "First-use Cards tutorial",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S16",
+        "M03"
+      ],
+      "observed_behavior": "Black branded payment-card art and Next.",
+      "unverified_boundary": "No issued card or real card interaction here.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT023",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Settings-location teaching panel",
+      "capture_status": "Advertised or illustrated",
+      "evidence_ids": [
+        "S17"
+      ],
+      "observed_behavior": "Illustrated ellipsis/settings menu and Got it.",
+      "unverified_boundary": "Illustration is not actual settings navigation.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT024",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Coming-soon card landing",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S18"
+      ],
+      "observed_behavior": "Moving card/consumer imagery with explicit coming-soon status.",
+      "unverified_boundary": "Card issuance/spend and target availability separate.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT025",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Travel, USDC borrowing, virtual-account benefits",
+      "capture_status": "Advertised or illustrated",
+      "evidence_ids": [
+        "S18"
+      ],
+      "observed_behavior": "Travel for less, Borrow USDC and Virtual accounts tiles.",
+      "unverified_boundary": "Benefits advertised; none used or opened to completed flow.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT026",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Yield/staking benefit",
+      "capture_status": "Advertised or illustrated",
+      "evidence_ids": [
+        "S04"
+      ],
+      "observed_behavior": "Staking/rewards mockup, piggy bank and rate claim in onboarding.",
+      "unverified_boundary": "No staking action, yield product or verified rate.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT027",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Collectibles and ownership benefit",
+      "capture_status": "Advertised or illustrated",
+      "evidence_ids": [
+        "S06"
+      ],
+      "observed_behavior": "Pixel-art collectible and asset rows inside hero.",
+      "unverified_boundary": "NFT detail/transfer/management not opened.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT028",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "In-app web discovery",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_behavior": "Search/type URL, browser tab count and more menu.",
+      "unverified_boundary": "No dApp browser session or connection completed.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT029",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Rewards campaign banner",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_behavior": "Branded banner with pagination dots and dismissal control.",
+      "unverified_boundary": "Campaign destination/reward eligibility unverified.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT030",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Merchant cashback benefit",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_behavior": "NordVPN branded image, cashback text/chip and benefits section.",
+      "unverified_boundary": "No purchase/redemption; numbers are recorded marketing copy.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT031",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Organization/news feed",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_behavior": "Distinct source avatars, handles, date context and text snippets.",
+      "unverified_boundary": "Post open/follow/reply behavior unrecorded.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT032",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Stock tickers and competition card",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "S20"
+      ],
+      "observed_behavior": "Company marks, quoted changes, xStocks competition and not-joined wallet status.",
+      "unverified_boundary": "No competition entry; underlying versus tokenized instrument must stay clear.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT033",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Empty watchlist and trending assets",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S20"
+      ],
+      "observed_behavior": "Star guidance, actual token artwork and price/change/market-cap/volume hierarchy.",
+      "unverified_boundary": "Adding/removing favorite and later saved state not shown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT034",
+      "app": "Solflare",
+      "group": "Cards and discovery",
+      "feature": "Four-tab navigation",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "S15",
+        "S18",
+        "S19",
+        "S20"
+      ],
+      "observed_behavior": "Portfolio/Market/Explore/Cards with label and thin yellow active indicator.",
+      "unverified_boundary": "Target destinations stay defined by Senryo.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT035",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Living cartoon welcome",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P01",
+        "M05"
+      ],
+      "observed_behavior": "Blinking/expression-changing ghost, real crypto badges and moving chart/chat/sports layers behind auth.",
+      "unverified_boundary": "Animation assets, rigs and source format unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT036",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Alternative wallet setup",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "P02"
+      ],
+      "observed_behavior": "Create/import recovery phrase, private-key import and Ledger connection on separate pushed page.",
+      "unverified_boundary": "None completed.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT037",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Google sign-in and return",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P03",
+        "P04"
+      ],
+      "observed_behavior": "Provider browser consent, return loader and pending Logging in button; hero keeps moving.",
+      "unverified_boundary": "Provider cancellation/error and backend architecture unverified.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT038",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Username identity form",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P05"
+      ],
+      "observed_behavior": "Cartoon avatar, @ input, clear button, back/help, step indicator and keyboard-aware Continue.",
+      "unverified_boundary": "Help dialog and back recovery not captured.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT039",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Username availability and length validation",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P07",
+        "P08"
+      ],
+      "observed_behavior": "Checking spinner, red unavailable/2–20 length error, green available, Continue pending.",
+      "unverified_boundary": "Debounce, permitted characters, uniqueness races unknown; target rules not chosen.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT040",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Import username from X",
+      "capture_status": "Started; outcome incomplete",
+      "evidence_ids": [
+        "P06"
+      ],
+      "observed_behavior": "External page requires X login; user returns.",
+      "unverified_boundary": "Authorization/import completion not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT041",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Optional referral",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P09"
+      ],
+      "observed_behavior": "Gift artwork, code/terms and Skip; empty Continue disabled, skipped.",
+      "unverified_boundary": "Redeemed code/reward/error not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT042",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Face ID primer and native permission",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P10"
+      ],
+      "observed_behavior": "Sculpted purple lock; enable/skip; native scan/check.",
+      "unverified_boundary": "No passkey ceremony or denied-permission recovery.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT043",
+      "app": "Phantom",
+      "group": "Authentication and identity",
+      "feature": "Native notification choice",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P11"
+      ],
+      "observed_behavior": "Allow/Do not allow prompt.",
+      "unverified_boundary": "Notification delivery/settings not shown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT044",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Testnet/Devnet context",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P12",
+        "P21"
+      ],
+      "observed_behavior": "Testnet Mode home banner and Solana Devnet receive label.",
+      "unverified_boundary": "Balances/addresses cannot become mainnet fixtures.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT045",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Token fetching failure with retry",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P12"
+      ],
+      "observed_behavior": "Balance placeholders and token error/Retry alongside other content.",
+      "unverified_boundary": "Retry success not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT046",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Perps and watchlist on home",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "P12"
+      ],
+      "observed_behavior": "Perps introduction/cards and watchlist/support affordances.",
+      "unverified_boundary": "No completed perps or support interaction in this app recording.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT047",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Hot-market cards with presence",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P13"
+      ],
+      "observed_behavior": "Asset art, market cap, percent badge, green activity dot, chat count and overlapping avatars.",
+      "unverified_boundary": "Joining chat and participant identity results not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT048",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Favorites, market categories and row skeletons",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P13"
+      ],
+      "observed_behavior": "Favorite heart, category pills and asynchronously loaded market rows.",
+      "unverified_boundary": "Favorite persistence/filter result completeness unrecorded.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT049",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Sports prediction discovery",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P14"
+      ],
+      "observed_behavior": "Upcoming events and soccer/football outcome probabilities.",
+      "unverified_boundary": "No sports wager, settlement or supported-market authority.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT050",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Five-minute Up/Down market grid",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P14"
+      ],
+      "observed_behavior": "BTC Up or Down preview and two-by-two short-duration market cards.",
+      "unverified_boundary": "Expiry/settlement/user receipt not captured.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT051",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "BTC prediction detail chart",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P15",
+        "M08"
+      ],
+      "observed_behavior": "Tall sheet, price/target/countdown, blank-to-loaded chart, red live endpoint and period chips.",
+      "unverified_boundary": "Data source/latency/expiry transitions unknown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT052",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Prediction chat, About and sticky outcomes",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P16"
+      ],
+      "observed_behavior": "Scroll reveals chat/about while Up/Down purchase actions remain anchored.",
+      "unverified_boundary": "Posting chat and share/favorite outcome unknown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT053",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Insider attestation gate",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P17"
+      ],
+      "observed_behavior": "Nested shield/legal sheet with I agree leads to ticket.",
+      "unverified_boundary": "Competitor wording is not Senryo policy.",
+      "senryo_treatment": "Reference-specific rule or claim",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT054",
+      "app": "Phantom",
+      "group": "Discovery and predictions",
+      "feature": "Buy Up amount ticket",
+      "capture_status": "Started; outcome incomplete",
+      "evidence_ids": [
+        "P18"
+      ],
+      "observed_behavior": "Zero amount, inactive percentages, keypad and asset/balance loaders.",
+      "unverified_boundary": "No entered amount, successful buy or position.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT055",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Blurred quick-action fan",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P19",
+        "M06"
+      ],
+      "observed_behavior": "Plus transforms to close; live blur/dim; staggered rise/scale into Send/Receive/Add Cash/Trade right-side column.",
+      "unverified_boundary": "Dismiss thresholds/easing and literal radial layout not established.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT056",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Swap/Trade numeric ticket",
+      "capture_status": "Started; outcome incomplete",
+      "evidence_ids": [
+        "P20",
+        "M07"
+      ],
+      "observed_behavior": "You Pay/You Receive, amount percentages, token/loading rows, custom keypad/settings and close.",
+      "unverified_boundary": "No asset selection, quote, slippage change or swap success.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT057",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Receive compact QR sheet",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P21"
+      ],
+      "observed_behavior": "Dotted QR with center mark, Devnet identity dropdown and Copy Address/Share.",
+      "unverified_boundary": "Network dropdown, clipboard/share outcome and incoming transfer unrecorded.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT058",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Send recipient empty state",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P22"
+      ],
+      "observed_behavior": "Recipient skeletons resolve to No recent sends with plane/money illustration.",
+      "unverified_boundary": "Recipient results, review, send and receipt absent.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT059",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Username/address search, scan, add contact",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "P22"
+      ],
+      "observed_behavior": "Bottom-anchored recipient search, scan and add-contact controls.",
+      "unverified_boundary": "No query, scanner or contact form opened.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT060",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Add Cash shortcut",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "P19"
+      ],
+      "observed_behavior": "Named action in quick menu.",
+      "unverified_boundary": "Route not entered; cannot infer full fiat flow.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT061",
+      "app": "Phantom",
+      "group": "Actions and transfers",
+      "feature": "Restore discovery context after dismissal",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "P14",
+        "P19",
+        "P22"
+      ],
+      "observed_behavior": "Prediction list restored after sheets/menu instead of resetting account journey.",
+      "unverified_boundary": "Exact scroll-offset guarantees not established.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT062",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Glass-logo and figure welcome",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F01",
+        "M17"
+      ],
+      "observed_behavior": "Violet glow, beveled logo tile, two inward-facing 3D-looking figures and Apple/Google controls.",
+      "unverified_boundary": "Original models/rendering runtime unavailable.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT063",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Tracking and notification prompts",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F01"
+      ],
+      "observed_behavior": "Native tracking briefly visible and notification prompt follows.",
+      "unverified_boundary": "Tracking choice unclear; no resulting preference/delivery state.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT064",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Google/Privy browser sign-in",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F02",
+        "F03"
+      ],
+      "observed_behavior": "Visible privy.io destination, consent, welcome pending spinner and dark loading stage.",
+      "unverified_boundary": "Does not establish complete architecture; other providers unentered.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT065",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Generated and editable username",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F04",
+        "F05"
+      ],
+      "observed_behavior": "Generated handle, clear/edit, Skip, min-four-character error, pending accepted candidate.",
+      "unverified_boundary": "Skip outcome and uniqueness algorithm not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT066",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Select top traders during onboarding",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F06"
+      ],
+      "observed_behavior": "Rank/avatar/handle/P&L/follower rows; first three checked, Show more and Continue.",
+      "unverified_boundary": "Show-more expansion and deselection result not captured.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT067",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Referral Paste and no-code completion",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F07"
+      ],
+      "observed_behavior": "Code field, Paste, I do not have one and Finish setup; proceeds without code.",
+      "unverified_boundary": "Valid/invalid referral and incentive behavior unknown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT068",
+      "app": "Fomo",
+      "group": "Onboarding and social identity",
+      "feature": "Terms checkbox gate",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F08"
+      ],
+      "observed_behavior": "Home dimmed behind sheet; terms/privacy links, disabled Continue until check, then loading home.",
+      "unverified_boundary": "Target legal text must follow product requirements.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT069",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Balance, 24h and Deposit entry",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F09"
+      ],
+      "observed_behavior": "Zero balance/24h context, large deposit button and top featured content.",
+      "unverified_boundary": "Funded balance/change states unrecorded.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT070",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Weekly Top Trades/Hall of Fame",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F09",
+        "F13"
+      ],
+      "observed_behavior": "Horizontal human-identity cards with actual asset art and green P&L; opens position detail.",
+      "unverified_boundary": "Rank computation/period correctness not proven.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT071",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Token categories and market rows",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F10"
+      ],
+      "observed_behavior": "Watchlist/Tokens/Perps tabs, category scrolling, filter, text loading then asset artwork/price/MC/change rows.",
+      "unverified_boundary": "Filter configuration/search results not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT072",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Perps categories and education",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F11"
+      ],
+      "observed_behavior": "All/Crypto/Stocks/Commodities/Indices; dismissible long/short intro, leverage and volume rows.",
+      "unverified_boundary": "All instruments/support not verified by category labels.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT073",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Collapsing header and floating glass dock",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F12",
+        "M09",
+        "M10"
+      ],
+      "observed_behavior": "Scroll leaves compact logo/balance, tabs stay accessible; five-item translucent dock and moving active emphasis.",
+      "unverified_boundary": "Original material API unknown; overlap with Deposit is an observed defect.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT074",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Shared position identity and follow",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F13"
+      ],
+      "observed_behavior": "Trader identity/Follow and token/Open status in tall sheet.",
+      "unverified_boundary": "Follow effect and exact status lifecycle not recorded.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT075",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Position chart, P&L and trade history",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F13",
+        "F14"
+      ],
+      "observed_behavior": "Loading-to-line chart with buy markers, P&L card, invested/entry stats and transaction count.",
+      "unverified_boundary": "Full transaction drilldown/share result not captured.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT076",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Trade thesis and engagement",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F14"
+      ],
+      "observed_behavior": "Thesis text, like/reply/share/transaction controls and Deposit to Buy shortcut.",
+      "unverified_boundary": "Engagement and purchase completion not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT077",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Global/Friends feed and activity notice",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F15",
+        "F31"
+      ],
+      "observed_behavior": "Pinned recap, trade/thesis posts, verbs, asset links, thread connectors and New activity pill.",
+      "unverified_boundary": "Feed filter details, refresh result and posting unrecorded.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT078",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Profile, bio and portfolio periods",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F16",
+        "F19"
+      ],
+      "observed_behavior": "Avatar/handle, following/followers, hold time/trades/joined date, portfolio periods and empty positions.",
+      "unverified_boundary": "Stale identity appears briefly; preserve loading without wrong-identity flash.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT079",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Edit username, display name, bio and art",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F17",
+        "F18",
+        "M11"
+      ],
+      "observed_behavior": "Pushed edit page, banner/avatar pencils, username/name, Bio 0/160 and disabled Save.",
+      "unverified_boundary": "No image picker, edit, validation or successful save.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT080",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Connected Google, Link X and address disclosure",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F18"
+      ],
+      "observed_behavior": "Connected account row, Link X and eight-address disclosure.",
+      "unverified_boundary": "Unlink/link, expanded addresses or ownership checks unrecorded.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT081",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Export keys",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F18"
+      ],
+      "observed_behavior": "Red Export keys utility on profile edit.",
+      "unverified_boundary": "No key revealed or security flow; Senryo export belongs under protected Advanced.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT082",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Rewards, history and settings profile utilities",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F16"
+      ],
+      "observed_behavior": "Rewards button and circular utility controls.",
+      "unverified_boundary": "Destinations and reward programs not opened.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT083",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Leaderboard and Your rank",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F29"
+      ],
+      "observed_behavior": "Medals/ranks, avatars, P&L and asset clusters; All/24h/7d/30d context and Your rank summary.",
+      "unverified_boundary": "Rank/performance formulas and period updates unproven.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT084",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Clans discovery",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F29"
+      ],
+      "observed_behavior": "Clans New cards with group identity/member counts/P&L.",
+      "unverified_boundary": "Joining, creating or viewing clan detail not shown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT085",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Friends and follow recommendations",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F30"
+      ],
+      "observed_behavior": "Friends 3 context, self/followed traders and recommendation Follow buttons.",
+      "unverified_boundary": "Following/unfollowing later behavior not captured.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT086",
+      "app": "Fomo",
+      "group": "Home and social discovery",
+      "feature": "Global typed search categories",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F31"
+      ],
+      "observed_behavior": "All/Tokens/Perps/Traders/Clans, empty Recents, logo watermark and bottom search/Paste.",
+      "unverified_boundary": "No typed query, result selection or recent-query persistence.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT087",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Deposit method hub",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F20",
+        "M12"
+      ],
+      "observed_behavior": "Compact dimmed sheet with Crypto, Apple Pay New, Debit, Exchanges/apps rich rows.",
+      "unverified_boundary": "Each method needs its own completion/failure flow; not interchangeable.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT088",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Crypto network child selector",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F21",
+        "M16"
+      ],
+      "observed_behavior": "Explicit back, branded network rows: Solana/Base/BNB/Monad/Robinhood/Arc/Hyperliquid/Ethereum.",
+      "unverified_boundary": "No network chosen, QR/address generated or credited funds.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT089",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Apple Pay searchable token picker",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F22"
+      ],
+      "observed_behavior": "Tall search sheet, actual token art, blue check badges, price/MC/change and promotional gift copy.",
+      "unverified_boundary": "No Apple Pay authorization or purchased token; badges not chain logos.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT090",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Cash amount keypad and presets",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F23",
+        "F25"
+      ],
+      "observed_behavior": "Large amount, decimal/backspace keypad, $20/$100/$250/$500 shortcuts and pending Continue.",
+      "unverified_boundary": "Target has no launch fiat ramp; preset amounts are competitor content.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT091",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Minimum-cash validation",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F24"
+      ],
+      "observed_behavior": "Two-dollar input changes action to five-dollar minimum.",
+      "unverified_boundary": "Exact minimum belongs to this recorded route; do not copy to Senryo.",
+      "senryo_treatment": "Reference-specific rule or claim",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT092",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Identity-verification handoff",
+      "capture_status": "Started; outcome incomplete",
+      "evidence_ids": [
+        "F26"
+      ],
+      "observed_behavior": "Verify identity header, dark spinner then white embedded loader.",
+      "unverified_boundary": "Provider completion, decline/retry and account eligibility not seen.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT093",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Retain cash amount and expose fee/payment method",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F27"
+      ],
+      "observed_behavior": "Back restores $20, Verify identity, fee line and Apple Pay method selector.",
+      "unverified_boundary": "No paid transaction; actual fee schedule unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT094",
+      "app": "Fomo",
+      "group": "Funding",
+      "feature": "Exchange/app funding selector",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F28"
+      ],
+      "observed_behavior": "Cash App/Coinbase/Binance with actual colored marks.",
+      "unverified_boundary": "External destination/trigger uncertain; no completed exchange funding.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT095",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Asset, venue badge, leverage cap and open interest",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F32"
+      ],
+      "observed_behavior": "ZEC mark plus mint Hyperliquid context, 10x chip, price/red change and open interest.",
+      "unverified_boundary": "Source data model, limits for other markets and target venues unverified.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT096",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Candles, price line, pan and time ranges",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F32",
+        "F35"
+      ],
+      "observed_behavior": "Candlestick chart, current-price line/label, 15min control, period chips and reframing.",
+      "unverified_boundary": "Chart vendor and complete interval alternatives not identified.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT097",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Market history, favorite and share",
+      "capture_status": "Visible affordance",
+      "evidence_ids": [
+        "F32"
+      ],
+      "observed_behavior": "Separate history/star/share utilities near market identity.",
+      "unverified_boundary": "Opened results and persistence not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT098",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Holders and Friends filter",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F32",
+        "F33"
+      ],
+      "observed_behavior": "Rows include avatars, leverage/Long badges, average entry, leveraged size and green/red P&L; Friends toggle.",
+      "unverified_boundary": "Toggle result, ranking rules and actual position verification unknown.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT099",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Market Feed and About",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F34",
+        "F35"
+      ],
+      "observed_behavior": "Distinct tabs under chart for contextual social/instrument content.",
+      "unverified_boundary": "Publishing and all external links not exercised.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT100",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Persistent Short and Long actions",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F32",
+        "F35"
+      ],
+      "observed_behavior": "Red Short/green Long pair remains at bottom while detail is inspected.",
+      "unverified_boundary": "Direction of subsequently recorded ticket cannot be determined confidently.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT101",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Eligibility checkbox and pending gate",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F36",
+        "M13"
+      ],
+      "observed_behavior": "Outside-US copy, checkbox/terms, disabled-to-blue Continue then spinner.",
+      "unverified_boundary": "Target jurisdiction policy must follow target requirements.",
+      "senryo_treatment": "Reference-specific rule or claim",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT102",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Margin separate from leveraged size",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F41",
+        "F42"
+      ],
+      "observed_behavior": "Ten-dollar margin persists while 1x→2x changes size ten→twenty dollars.",
+      "unverified_boundary": "Not proof of risk/fee/liquidation formulas.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT103",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Graduated leverage ruler",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F38",
+        "M14"
+      ],
+      "observed_behavior": "Centered blue selected multiple, faded edges, move through low values to 10x and back.",
+      "unverified_boundary": "Snapping/spring physics and leverage caps for other assets unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT104",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Order amount presets and custom keypad",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F37",
+        "F41"
+      ],
+      "observed_behavior": "10/50/100/300 dollar chips; numeric decimal/backspace entry.",
+      "unverified_boundary": "Max-amount calculation/preset press outcomes beyond shown entry unknown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT105",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Numeric/chart entry modes",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F39"
+      ],
+      "observed_behavior": "Chart replaces keypad inside same ticket, keeping order context recognizable.",
+      "unverified_boundary": "Cross-mode retained values and every chart interaction not established.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT106",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Embedded candle-style settings",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F40"
+      ],
+      "observed_behavior": "Body/border toggles, up/down color choices, previous-close option and Cancel/OK.",
+      "unverified_boundary": "Saved customization persistence and vendor not verified.",
+      "senryo_treatment": "Candidate product addition",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT107",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Available funds and token quantity",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F41",
+        "F42"
+      ],
+      "observed_behavior": "Available $0, quantity and estimated liquidation update alongside margin/leverage.",
+      "unverified_boundary": "Pricing formula and funded-account behavior not proven.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT108",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Zero-amount and insufficient-funds commit states",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F37",
+        "F41",
+        "F42"
+      ],
+      "observed_behavior": "Slide-shaped bottom control reads Enter an amount then Insufficient funds.",
+      "unverified_boundary": "Enabled slide gesture, threshold, confirmation and receipt never shown.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT109",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Liquidation education",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F43"
+      ],
+      "observed_behavior": "Small info sheet explains automatic close/loss and moving liquidation price, with Close.",
+      "unverified_boundary": "No liquidation event or independently verified financial model.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT110",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Stop loss / take profit child sheet",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F44"
+      ],
+      "observed_behavior": "Separate price/percent groups, potential result text, clear and disabled Save.",
+      "unverified_boundary": "Invalid/valid input, saved triggers and subsequent edits not captured.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT111",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Risk keyboard lift and suggestions",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F45",
+        "M15"
+      ],
+      "observed_behavior": "Native keyboard lifts child; stop-loss percent suggestions sit above it; child/keyboard dismissal restores ticket.",
+      "unverified_boundary": "No confirmed values or saved order; cannot assume TP suggestions match SL.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT112",
+      "app": "Fomo",
+      "group": "Market and leveraged orders",
+      "feature": "Nested order dismissal restores market",
+      "capture_status": "Observed behavior",
+      "evidence_ids": [
+        "F35",
+        "F44",
+        "M15"
+      ],
+      "observed_behavior": "Risk returns to ticket; final dismissal returns to ZEC market About/chart.",
+      "unverified_boundary": "Post-order position/receipt not shown because no order completed.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT113",
+      "app": "Across recordings",
+      "group": "Requested topics and gaps",
+      "feature": "Text password setup/reset",
+      "capture_status": "Not captured",
+      "evidence_ids": [
+        "S09",
+        "S10"
+      ],
+      "observed_behavior": "Recordings show numeric passcode, not a text-password form.",
+      "unverified_boundary": "Creation, confirmation, reset and forgotten-password recovery require another recording.",
+      "senryo_treatment": "Product decision required",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT114",
+      "app": "Across recordings",
+      "group": "Requested topics and gaps",
+      "feature": "Passkey creation and returning sign-in",
+      "capture_status": "Not captured",
+      "evidence_ids": [
+        "S12",
+        "P10"
+      ],
+      "observed_behavior": "Face ID appears, but no passkey creation or discoverable sign-in ceremony.",
+      "unverified_boundary": "Senryo already plans passkeys; these videos cannot supply exact ceremony fidelity.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT115",
+      "app": "Across recordings",
+      "group": "Requested topics and gaps",
+      "feature": "Completed deposit/trade/card lifecycle",
+      "capture_status": "Not captured",
+      "evidence_ids": [
+        "S30",
+        "P18",
+        "F26",
+        "F42",
+        "S18"
+      ],
+      "observed_behavior": "Quotes, loaders, disabled tickets and coming-soon cards stop short of completion.",
+      "unverified_boundary": "Credit, settlement, failure reconciliation, position close and real spend need independent proof.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    },
+    {
+      "id": "FT116",
+      "app": "Across recordings",
+      "group": "Requested topics and gaps",
+      "feature": "Sound, haptics and accessibility behavior",
+      "capture_status": "Not captured",
+      "evidence_ids": [
+        "M01",
+        "M06",
+        "M14"
+      ],
+      "observed_behavior": "Visible motion is retained; audio provides no reliable sound/haptic evidence.",
+      "unverified_boundary": "Reduced motion, screen reader, focus and tactile behavior are proposed acceptance work.",
+      "senryo_treatment": "Existing-plan journey: adapt presentation",
+      "implementation_status": "Not audited or implemented by this study"
+    }
+  ]
+}

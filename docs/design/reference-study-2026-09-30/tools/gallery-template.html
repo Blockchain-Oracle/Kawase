@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Three-app fidelity study · evidence browser</title>
+<style>
+:root{color-scheme:dark;--bg:#101116;--surface:#191b23;--line:#30333e;--text:#f3f4f7;--muted:#b2b6c4;--accent:#cbd7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}button,input,select{font:inherit}a{color:var(--accent)}button{cursor:pointer;border:1px solid var(--line);border-radius:9px;background:#252833;color:var(--text);padding:9px 13px}button:hover{background:#353a49}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button[aria-pressed=true]{background:var(--accent);color:#101523;border-color:var(--accent)}header{padding:32px 28px 20px;max-width:1500px;margin:auto}h1{font-size:clamp(25px,3vw,38px);line-height:1.2;margin:8px 0 12px;font-weight:680;letter-spacing:-.03em}p{margin:8px 0}.eyebrow{color:var(--muted);font-size:12px;letter-spacing:.1em;text-transform:uppercase}.intro{max-width:900px;color:var(--muted)}nav{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px;font-size:13px}.controls{position:sticky;top:0;z-index:2;background:#101116f5;border-block:1px solid var(--line);padding:14px 28px;backdrop-filter:blur(16px)}.control-inner{max-width:1444px;margin:auto;display:flex;gap:12px;flex-wrap:wrap;align-items:center}.group{display:flex;gap:6px;flex-wrap:wrap}input[type=search]{flex:1;min-width:220px;color:white;background:#1c1f29;border:1px solid var(--line);padding:10px 13px;border-radius:9px}#count{color:var(--muted);font-size:13px;margin:14px 28px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:16px;padding:0 28px 35px;max-width:1500px;margin:auto}.card{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;text-align:left;overflow:hidden}.card:hover{border-color:#737b92}.thumb{width:100%;height:300px;object-fit:contain;background:#090a0f;border-radius:8px}.card .id{font:12px ui-monospace,monospace;color:var(--accent)}.card strong{line-height:1.25;font-weight:620}.card small{color:var(--muted);font-size:12px}.card .tags{margin-top:auto;color:#8c95ab;font-size:11px}.empty{grid-column:1/-1;padding:45px;color:var(--muted)}footer{color:var(--muted);max-width:1444px;margin:0 auto;padding:0 28px 30px;font-size:12px}dialog{width:min(1000px,95vw);max-height:94vh;padding:0;background:#151721;color:white;border:1px solid #555c70;border-radius:16px}dialog::backdrop{background:#000c;backdrop-filter:blur(8px)}.viewer-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);gap:10px}.viewer-top h2{font-size:17px;margin:0}.viewer-body{padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:22px}.media{display:flex;justify-content:center;align-items:flex-start;min-height:200px;background:#08090d;border-radius:10px;overflow:hidden}.media img,.media video{max-width:100%;max-height:70vh;object-fit:contain}.details{font-size:13px;color:var(--muted)}.details .time{color:white;font:13px ui-monospace,monospace;line-height:1.8;white-space:pre-line}.playback{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.playback label{display:flex;gap:6px;align-items:center}.playback select{background:#222735;color:white;border:1px solid var(--line);border-radius:7px;padding:7px}.viewer-links{display:flex;flex-direction:column;gap:10px;margin:18px 0}.pager{display:flex;gap:8px;margin-top:22px}.hidden{display:none!important}.tag-pills{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0}.tag-pills span{font-size:11px;background:#272b38;padding:3px 7px;border-radius:12px}@media(max-width:680px){header{padding:22px 16px 16px}.controls{padding:12px 16px}.grid{padding-inline:16px;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.thumb{height:240px}.card{padding:8px}.viewer-body{grid-template-columns:1fr}.media img,.media video{max-height:60vh}.details{padding-bottom:14px}#count{margin-inline:16px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="eyebrow">Local reference evidence · 30 September 2026</div>
+ <h1>Solflare, Phantom & Fomo</h1>
+ <p class="intro">97 screen captures and 18 motion clips from the three supplied recordings. Inspect onboarding, blur, drawers, cards, 3D artwork, keyboard behavior and trade states. Every item carries its original recording time. Original Senryo target labels are historical; read the project reuse handoff.</p>
+ <nav aria-label="Study documents"><a href="PROJECT-HANDOFF.md">Project reuse handoff</a><a href="README.md">Study guide</a><a href="01-solflare.md">Solflare flows</a><a href="02-phantom.md">Phantom flows</a><a href="03-fomo.md">Fomo flows</a><a href="04-motion-and-assets.md">Motion & assets</a><a href="08-logos-and-identity.md">Logos & identity</a><a href="09-feature-inventory.md">All features</a><a href="10-redesign-opportunities.md">Redesign ideas</a><a href="05-components-and-agent-handoff.md">Agent handoff</a><a href="reference-ledger.json">Machine ledger</a></nav>
+</header>
+<section class="controls" aria-label="Filter evidence"><div class="control-inner">
+ <div class="group" id="apps" aria-label="Application"><button data-app="all" aria-pressed="true">All apps</button><button data-app="R1" aria-pressed="false">Solflare</button><button data-app="R2" aria-pressed="false">Phantom</button><button data-app="R3" aria-pressed="false">Fomo</button></div>
+ <div class="group" id="types" aria-label="Evidence type"><button data-type="all" aria-pressed="true">All</button><button data-type="screen" aria-pressed="false">Screens</button><button data-type="motion" aria-pressed="false">Motion</button></div>
+ <input type="search" id="search" placeholder="Search: USDC, leverage, LG04, FT041, C40, M06…" aria-label="Search evidence">
+</div></section>
+<p id="count" role="status" aria-live="polite"></p><main id="grid" class="grid"></main>
+<footer>Source-relative times are approximate; source recordings are variable frame rate. Motion clips are resized and silent. Personal accounts are obscured. Original libraries, fonts, sound and haptics are unknown. See the guides for observed behavior versus capture gaps.</footer>
+<dialog id="viewer" aria-labelledby="viewer-title">
+ <div class="viewer-top"><h2 id="viewer-title"></h2><button id="close" aria-label="Close evidence viewer">Close ×</button></div>
+ <div class="viewer-body"><div class="media"><img id="photo" alt=""><video id="movie" controls playsinline preload="metadata"></video></div>
+ <aside class="details"><p class="time" id="time"></p><p id="note"></p><div id="tags" class="tag-pills"></div>
+ <div id="playback" class="playback"><button id="play">Play</button><label for="speed">Speed</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select><label><input type="checkbox" id="loop" checked> Loop</label><button id="frame-back">Frame −</button><button id="frame-next">Frame +</button></div>
+ <p id="frame-note" class="hidden">Stepping uses decoded excerpt frame timestamps. The displayed source time is approximate; browser seeking can round to a nearby decoded frame.</p>
+ <div class="viewer-links"><a id="original" target="_blank" rel="noopener">Open full evidence</a><a id="strip" target="_blank" rel="noopener">Open timestamped strip</a><a id="guide">Read detailed guide</a></div><div class="pager"><button id="prev">← Previous</button><button id="next">Next →</button></div>
+ </aside></div>
+</dialog>
+<script id="evidence-data" type="application/json">__EVIDENCE_DATA__</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('evidence-data').textContent);
+const items=[...data.screens.map(s=>({...s,type:'screen',start_seconds:s.time_seconds})),...data.motions.map(m=>({...m,type:'motion'}))];
+let app='all',type='all',filtered=[],current=null;
+const $=id=>document.getElementById(id),video=$('movie');
+const stamp=t=>`${Math.floor(t/60).toString().padStart(2,'0')}:${(t%60).toFixed(2).padStart(5,'0')}`;
+function associated(item){return [
+ ...data.components.filter(c=>c.evidence_ids.includes(item.id)).map(c=>`${c.id} ${c.name}`),
+ ...data.identities.filter(c=>c.evidence_ids.includes(item.id)).map(c=>`${c.id} ${c.name} ${c.identity_kind}`),
+ ...data.features.filter(c=>c.evidence_ids.includes(item.id)).map(c=>`${c.id} ${c.feature}`)
+].join(' ')}
+function render(){
+ const words=$('search').value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+ filtered=items.filter(i=>(app==='all'||i.recording===app)&&(type==='all'||i.type===type)&&words.every(w=>`${i.id} ${i.title} ${i.app} ${i.tags.join(' ')} ${associated(i)}`.toLowerCase().includes(w)));
+ $('grid').replaceChildren();
+ for(const item of filtered){
+  const card=document.createElement('button');card.className='card';card.setAttribute('aria-label',`Inspect ${item.id}: ${item.title}`);
+  const im=document.createElement('img');im.className='thumb';im.loading='lazy';im.src=item.image||item.poster;im.alt='';
+  const id=document.createElement('span');id.className='id';id.textContent=`${item.id} · ${item.app} · ${item.type==='motion'?'▶ Motion':'Screen'}`;
+  const title=document.createElement('strong');title.textContent=item.title;
+  const time=document.createElement('small');time.textContent=`${item.recording} ${stamp(item.start_seconds)}${item.type==='motion'?`–${stamp(item.start_seconds+item.duration_seconds)}`:''}${item.redacted?' · account details obscured':''}`;
+  const tags=document.createElement('span');tags.className='tags';tags.textContent=item.tags.join(' · ');
+  card.append(im,id,title,time,tags);card.addEventListener('click',()=>openItem(item));$('grid').append(card);
+ }
+ if(!filtered.length){const p=document.createElement('p');p.className='empty';p.textContent='No matching evidence. Try a screen ID, component ID, or a shorter search.';$('grid').append(p)}
+ $('count').textContent=`${filtered.length} items · ${filtered.filter(i=>i.type==='screen').length} screens · ${filtered.filter(i=>i.type==='motion').length} motion clips`;
+}
+function updateTime(){if(!current)return;$('time').textContent=`${current.id} · ${current.recording} · ${current.app}\nSource ${stamp(current.start_seconds+(current.type==='motion'?video.currentTime:0))}${current.type==='motion'?`\nExcerpt ${video.currentTime.toFixed(3)} s / ${current.duration_seconds.toFixed(2)} s`:''}`}
+function openItem(item){
+ video.pause();current=item;const motion=item.type==='motion';
+ $('viewer-title').textContent=`${item.id} · ${item.title}`;
+ $('photo').classList.toggle('hidden',motion);video.classList.toggle('hidden',!motion);$('playback').classList.toggle('hidden',!motion);$('frame-note').classList.toggle('hidden',!motion);$('strip').classList.toggle('hidden',!motion);
+ if(motion){video.src=item.video;video.poster=item.poster;video.loop=$('loop').checked;video.playbackRate=Number($('speed').value)}else{$('photo').src=item.image;$('photo').alt=item.title}
+ $('note').textContent=item.note||'Replay the transition, then read the motion guide. Excerpt length includes still states and data waits; it is not automatically an animation duration.';
+ $('tags').replaceChildren();for(const t of item.tags){const span=document.createElement('span');span.textContent=t;$('tags').append(span)}
+ $('original').href=item.video||item.image;$('strip').href=item.strip||'#';$('guide').href=item.guide;
+ updateTime();if(!$('viewer').open)$('viewer').showModal();
+}
+function closeViewer(){video.pause();$('viewer').close()}
+$('close').addEventListener('click',closeViewer);$('viewer').addEventListener('cancel',()=>video.pause());
+$('viewer').addEventListener('click',e=>{if(e.target===$('viewer')){const b=$('viewer').getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)closeViewer()}});
+for(const button of $('apps').querySelectorAll('button'))button.addEventListener('click',()=>{app=button.dataset.app;for(const b of $('apps').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button));render()});
+for(const button of $('types').querySelectorAll('button'))button.addEventListener('click',()=>{type=button.dataset.type;for(const b of $('types').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b===button));render()});
+$('search').addEventListener('input',render);$('speed').addEventListener('change',()=>video.playbackRate=Number($('speed').value));$('loop').addEventListener('change',()=>video.loop=$('loop').checked);
+video.addEventListener('timeupdate',updateTime);video.addEventListener('seeked',updateTime);video.addEventListener('loadedmetadata',updateTime);
+$('play').addEventListener('click',()=>{if(video.paused)video.play();else video.pause()});video.addEventListener('play',()=>$('play').textContent='Pause');video.addEventListener('pause',()=>$('play').textContent='Play');
+function step(direction){if(!current||current.type!=='motion')return;video.pause();const times=current.frame_times;const now=video.currentTime;let target;
+ if(direction>0)target=times.find(t=>t>now+0.004)??times[times.length-1];else target=[...times].reverse().find(t=>t<now-0.004)??0;
+ video.currentTime=target+0.001;updateTime();
+}
+$('frame-back').addEventListener('click',()=>step(-1));$('frame-next').addEventListener('click',()=>step(1));
+function navigate(direction){const i=filtered.findIndex(x=>x.id===current?.id);if(i<0||!filtered.length)return;openItem(filtered[(i+direction+filtered.length)%filtered.length])}
+$('prev').addEventListener('click',()=>navigate(-1));$('next').addEventListener('click',()=>navigate(1));
+render();
+</script>
+</body></html>

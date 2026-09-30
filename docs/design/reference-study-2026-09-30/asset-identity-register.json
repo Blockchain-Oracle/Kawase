@@ -1,0 +1,839 @@
+{
+  "schema_version": 1,
+  "purpose": "Evidence-backed identity/artwork register, not a production logo pack",
+  "reference_coordinate_system": "804 x 1748 retained screens; crops are inspection evidence only",
+  "required_rule": "Known assets/chains/providers use actual identity marks or artwork. Generic utility glyphs cannot replace them.",
+  "entries": [
+    {
+      "id": "LG01",
+      "name": "Bitcoin / BTC",
+      "identity_kind": "asset and network",
+      "evidence_ids": [
+        "S03",
+        "S24",
+        "P01",
+        "P15"
+      ],
+      "observed_rendering": "Orange disc, white Bitcoin mark; hero badge and network row",
+      "semantic_role": "Crypto asset versus deposit network depends on context",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          607,
+          247,
+          720,
+          359
+        ]
+      }
+    },
+    {
+      "id": "LG02",
+      "name": "Ethereum / ETH",
+      "identity_kind": "asset and network",
+      "evidence_ids": [
+        "S24",
+        "F21",
+        "P01"
+      ],
+      "observed_rendering": "Faceted diamond in pale disc on Solflare; white small diamond on Fomo",
+      "semantic_role": "Distinct identity with surface-dependent treatment",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          371,
+          126,
+          462
+        ]
+      }
+    },
+    {
+      "id": "LG03",
+      "name": "Solana / SOL",
+      "identity_kind": "asset and network",
+      "evidence_ids": [
+        "S03",
+        "S27",
+        "F21",
+        "P21"
+      ],
+      "observed_rendering": "Gradient stripes in asset discs; solid white stripes in Fomo selector",
+      "semantic_role": "Keep chain context and Devnet/Testnet wording separate",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          158,
+          337,
+          228,
+          407
+        ]
+      }
+    },
+    {
+      "id": "LG04",
+      "name": "USDC",
+      "identity_kind": "asset",
+      "evidence_ids": [
+        "S27",
+        "S20"
+      ],
+      "observed_rendering": "Circle/dollar mark with surrounding arcs; pale-blue/gray in this frame",
+      "semantic_role": "Stablecoin identity, not a generic dollar currency icon",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S27",
+        "box_804px": [
+          35,
+          924,
+          125,
+          1014
+        ]
+      }
+    },
+    {
+      "id": "LG05",
+      "name": "USDT / Tether",
+      "identity_kind": "asset",
+      "evidence_ids": [
+        "S03",
+        "S27"
+      ],
+      "observed_rendering": "Recognizable Tether symbol; green disc/diamond context",
+      "semantic_role": "Different asset from USDC despite dollar denomination",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          158,
+          575,
+          230,
+          647
+        ]
+      }
+    },
+    {
+      "id": "LG06",
+      "name": "Zcash / ZEC",
+      "identity_kind": "asset",
+      "evidence_ids": [
+        "F32",
+        "F37"
+      ],
+      "observed_rendering": "Gold circle with black distinctive Z; Hyperliquid mark overlaps lower right",
+      "semantic_role": "Primary market asset, not venue",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F32",
+        "box_804px": [
+          96,
+          125,
+          201,
+          232
+        ]
+      }
+    },
+    {
+      "id": "LG07",
+      "name": "Hyperliquid contextual badge",
+      "identity_kind": "venue or network context",
+      "evidence_ids": [
+        "F32",
+        "F21"
+      ],
+      "observed_rendering": "Mint/white small mark on ZEC; solid white in network selector",
+      "semantic_role": "Contextual badge identity visible; exact data model not supplied",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F32",
+        "box_804px": [
+          156,
+          193,
+          202,
+          236
+        ]
+      }
+    },
+    {
+      "id": "LG08",
+      "name": "BNB Chain",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "S24",
+        "F21"
+      ],
+      "observed_rendering": "Yellow cube-style mark on dark disc; white cube on Fomo",
+      "semantic_role": "Deposit network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          664,
+          126,
+          755
+        ]
+      }
+    },
+    {
+      "id": "LG09",
+      "name": "Arbitrum",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "S24"
+      ],
+      "observed_rendering": "Hexagonal shield-style mark with diagonal blue/gray forms",
+      "semantic_role": "Deposit source network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          809,
+          126,
+          900
+        ]
+      }
+    },
+    {
+      "id": "LG10",
+      "name": "Base",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "S24",
+        "F21"
+      ],
+      "observed_rendering": "Square within pale circular field on Solflare; white square on Fomo",
+      "semantic_role": "Recorded square variant; do not replace by remembered older shape",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          954,
+          126,
+          1045
+        ]
+      }
+    },
+    {
+      "id": "LG11",
+      "name": "Polygon",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "S24"
+      ],
+      "observed_rendering": "Purple linked forms on pale disc",
+      "semantic_role": "Deposit source network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          1100,
+          126,
+          1191
+        ]
+      }
+    },
+    {
+      "id": "LG12",
+      "name": "Tron",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "S24"
+      ],
+      "observed_rendering": "White angular triangular line mark on pink/red disc",
+      "semantic_role": "Deposit source network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S24",
+        "box_804px": [
+          35,
+          1246,
+          126,
+          1337
+        ]
+      }
+    },
+    {
+      "id": "LG13",
+      "name": "Monad",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "F21"
+      ],
+      "observed_rendering": "White tilted hollow rounded diamond",
+      "semantic_role": "Deposit network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F21",
+        "box_804px": [
+          667,
+          976,
+          736,
+          1046
+        ]
+      }
+    },
+    {
+      "id": "LG14",
+      "name": "Robinhood Chain",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "F21"
+      ],
+      "observed_rendering": "White feather silhouette",
+      "semantic_role": "Row identifies a chain; do not infer a brokerage integration",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F21",
+        "box_804px": [
+          667,
+          1115,
+          736,
+          1185
+        ]
+      }
+    },
+    {
+      "id": "LG15",
+      "name": "Arc",
+      "identity_kind": "network",
+      "evidence_ids": [
+        "F21"
+      ],
+      "observed_rendering": "White stylized A/arch",
+      "semantic_role": "Deposit network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F21",
+        "box_804px": [
+          667,
+          1254,
+          736,
+          1324
+        ]
+      }
+    },
+    {
+      "id": "LG16",
+      "name": "Apple / AAPLx",
+      "identity_kind": "underlying company artwork",
+      "evidence_ids": [
+        "S03",
+        "S20"
+      ],
+      "observed_rendering": "White Apple silhouette on gray segmented disc in AAPLx tutorial",
+      "semantic_role": "Asset association does not mean ownership of Apple stock",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          157,
+          455,
+          232,
+          530
+        ]
+      }
+    },
+    {
+      "id": "LG17",
+      "name": "Google / GOOGLX and GOOGL",
+      "identity_kind": "underlying company artwork",
+      "evidence_ids": [
+        "S03",
+        "S20"
+      ],
+      "observed_rendering": "White G on blue tutorial disc; multicolor G in market tile",
+      "semantic_role": "Underlying/company mark distinct from authentication provider role",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          157,
+          695,
+          233,
+          770
+        ]
+      }
+    },
+    {
+      "id": "LG18",
+      "name": "Tesla / TSLA",
+      "identity_kind": "underlying company artwork",
+      "evidence_ids": [
+        "S20"
+      ],
+      "observed_rendering": "White Tesla silhouette on red circular field",
+      "semantic_role": "Underlying/company identity; instrument type still needs a label",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S20",
+        "box_804px": [
+          487,
+          264,
+          530,
+          308
+        ]
+      }
+    },
+    {
+      "id": "LG19",
+      "name": "Tether Gold",
+      "identity_kind": "asset",
+      "evidence_ids": [
+        "S03"
+      ],
+      "observed_rendering": "White Tether-like gold mark on ochre disc",
+      "semantic_role": "Issued gold token is different from generic XAU commodity exposure",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S03",
+        "box_804px": [
+          157,
+          815,
+          232,
+          890
+        ]
+      }
+    },
+    {
+      "id": "LG20",
+      "name": "Meme-token artwork",
+      "identity_kind": "asset artwork",
+      "evidence_ids": [
+        "F22",
+        "F10",
+        "S20",
+        "P13"
+      ],
+      "observed_rendering": "PENGU penguin, PEPE frog, WIF dog, TRUMP/MELANIA portraits and other distinct imagery",
+      "semantic_role": "Each token retains actual artwork; never give all the same coin glyph",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F22",
+        "box_804px": [
+          28,
+          408,
+          136,
+          515
+        ]
+      }
+    },
+    {
+      "id": "LG21",
+      "name": "Token check badge",
+      "identity_kind": "status badge",
+      "evidence_ids": [
+        "F22",
+        "F10"
+      ],
+      "observed_rendering": "Blue scalloped disc with check overlapping lower right",
+      "semantic_role": "Check shape observed; status policy/verification authority unverified",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F22",
+        "box_804px": [
+          97,
+          473,
+          137,
+          513
+        ]
+      }
+    },
+    {
+      "id": "LG22",
+      "name": "Cash App",
+      "identity_kind": "funding provider",
+      "evidence_ids": [
+        "F28"
+      ],
+      "observed_rendering": "Bright green square with white dollar-style Cash App mark",
+      "semantic_role": "Provider identity; logo is more specific than a generic cash icon",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F28",
+        "box_804px": [
+          675,
+          1188,
+          731,
+          1244
+        ]
+      }
+    },
+    {
+      "id": "LG23",
+      "name": "Coinbase",
+      "identity_kind": "funding provider",
+      "evidence_ids": [
+        "F28"
+      ],
+      "observed_rendering": "Blue square containing white C mark",
+      "semantic_role": "Provider identity; selector shown, completed integration unknown",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F28",
+        "box_804px": [
+          675,
+          1358,
+          731,
+          1414
+        ]
+      }
+    },
+    {
+      "id": "LG24",
+      "name": "Binance",
+      "identity_kind": "funding provider",
+      "evidence_ids": [
+        "F28"
+      ],
+      "observed_rendering": "Yellow multi-diamond mark on dark field",
+      "semantic_role": "Exchange/provider identity",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "F28",
+        "box_804px": [
+          675,
+          1526,
+          731,
+          1582
+        ]
+      }
+    },
+    {
+      "id": "LG25",
+      "name": "Apple authentication",
+      "identity_kind": "authentication provider",
+      "evidence_ids": [
+        "P01",
+        "S07",
+        "S08",
+        "F01"
+      ],
+      "observed_rendering": "Black Apple silhouette on Phantom lavender button; contrasting variant on other surfaces",
+      "semantic_role": "Sign-in choice, distinct from stock row and Apple Pay wordmark",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG26",
+      "name": "Google authentication",
+      "identity_kind": "authentication provider",
+      "evidence_ids": [
+        "S07",
+        "S08",
+        "P01",
+        "F01"
+      ],
+      "observed_rendering": "Multicolor G on Solflare social button; monochrome black G on Phantom lavender button",
+      "semantic_role": "Preserve approved variant and contrast; no forced recoloring to app accent",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG27",
+      "name": "Apple Pay",
+      "identity_kind": "payment provider",
+      "evidence_ids": [
+        "F22",
+        "F27",
+        "F19"
+      ],
+      "observed_rendering": "Apple plus Pay wordmark/copy in payment context",
+      "semantic_role": "Payment route is distinct from Apple account authentication",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG28",
+      "name": "Mastercard",
+      "identity_kind": "card network",
+      "evidence_ids": [
+        "S05",
+        "S16"
+      ],
+      "observed_rendering": "Overlapping red and yellow circles on black card artwork",
+      "semantic_role": "Reference card artwork; not proof Senryo has this card network",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S05",
+        "box_804px": [
+          449,
+          858,
+          558,
+          935
+        ]
+      }
+    },
+    {
+      "id": "LG29",
+      "name": "Solflare mark / wordmark",
+      "identity_kind": "reference app brand",
+      "evidence_ids": [
+        "S01",
+        "S02",
+        "S05",
+        "S13"
+      ],
+      "observed_rendering": "Yellow/black wordmark, embossed shield, reflective flag mark",
+      "semantic_role": "Brand appears integrated into sculpture and materials",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG30",
+      "name": "Phantom mark / ghost",
+      "identity_kind": "reference app brand and character",
+      "evidence_ids": [
+        "P01",
+        "P05",
+        "P10"
+      ],
+      "observed_rendering": "Purple expressive ghost, cartoon avatar and sculpted lock",
+      "semantic_role": "Character is authored artwork; do not replace with a generic ghost emoji",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG31",
+      "name": "Fomo mark",
+      "identity_kind": "reference app brand",
+      "evidence_ids": [
+        "F01",
+        "F09",
+        "F16",
+        "F31"
+      ],
+      "observed_rendering": "Beveled glass tile, white header mark, avatar disc, faded search watermark",
+      "semantic_role": "Coherent brand repeats at different scales/materials",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG32",
+      "name": "Trader avatars and asset clusters",
+      "identity_kind": "person or group identity",
+      "evidence_ids": [
+        "F06",
+        "F09",
+        "F13",
+        "F29",
+        "F30",
+        "P13"
+      ],
+      "observed_rendering": "Individual photos/cartoon avatars, overlap clusters, ranks and small asset imagery",
+      "semantic_role": "People, assets and rank medals are separate identity/status roles",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG33",
+      "name": "NordVPN benefit artwork",
+      "identity_kind": "merchant/provider artwork",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_rendering": "Branded mountain image and NordVPN mark with cashback row",
+      "semantic_role": "Benefit provider identity, not a generic merchant/shop icon",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S19",
+        "box_804px": [
+          38,
+          624,
+          203,
+          789
+        ]
+      }
+    },
+    {
+      "id": "LG34",
+      "name": "Solana and Solana Developers feed identities",
+      "identity_kind": "organization avatar",
+      "evidence_ids": [
+        "S19"
+      ],
+      "observed_rendering": "Solana gradient logo; developer variant carries small Developers text",
+      "semantic_role": "Organization avatar distinct from network destination",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S19",
+        "box_804px": [
+          34,
+          1170,
+          134,
+          1267
+        ]
+      }
+    },
+    {
+      "id": "LG35",
+      "name": "Onramper provider handoff",
+      "identity_kind": "provider identity in copy",
+      "evidence_ids": [
+        "S28",
+        "S29",
+        "S30"
+      ],
+      "observed_rendering": "Provider named in introduction; web quote has its own surface",
+      "semantic_role": "Visible provider attribution; logo file/variant not established by this register",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG36",
+      "name": "Blank token image discs",
+      "identity_kind": "unresolved image state",
+      "evidence_ids": [
+        "S27"
+      ],
+      "observed_rendering": "sUSDC, USD1, WIF, BOME, PENGU rows have empty white discs in retained frame",
+      "semantic_role": "Do not claim logos loaded; exact cause (loading/failure/missing asset) unknown",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo",
+      "evidence_crop": {
+        "screen_id": "S27",
+        "box_804px": [
+          35,
+          628,
+          126,
+          720
+        ]
+      }
+    },
+    {
+      "id": "LG37",
+      "name": "Utility control symbols",
+      "identity_kind": "functional iconography",
+      "evidence_ids": [
+        "P19",
+        "F32",
+        "F44",
+        "S20"
+      ],
+      "observed_rendering": "Search, back, share, star, close, sliders, info, keypad/chart controls",
+      "semantic_role": "Generic icons are appropriate for actions; they do not identify a token or chain",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    },
+    {
+      "id": "LG38",
+      "name": "Gold / silver / FX target artwork",
+      "identity_kind": "target identity design gap",
+      "evidence_ids": [
+        "S03"
+      ],
+      "observed_rendering": "Reference has issued Tether Gold; no target XAU/XAG/FX artwork supplied",
+      "semantic_role": "Create consistent original commodity/FX artwork; no single universal issuer logo; this is an adaptation, not an observed Senryo asset",
+      "production_asset_status": "Not acquired or authenticated by this study",
+      "source_asset_format": "Unknown",
+      "target_support": "Do not infer supported assets, networks or integrations from the recording",
+      "fallback_policy": "Keep identity text; skeleton while loading, explicitly unidentified fallback after failure; never silently substitute another logo"
+    }
+  ]
+}
