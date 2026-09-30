@@ -38,7 +38,7 @@ Read from the live server. Kawase follows the same pattern; nothing here is spec
 
 | App | Domain | Health | Notes |
 |---|---|---|---|
-| api | `https://kawase-api.84.46.247.92.sslip.io` | `/health` | runs migrations as a pre-deploy command |
+| api | `https://kawase-api.84.46.247.92.sslip.io` | `/health` | **live since 2026-09-30**, app UUID `sx1jzpkgchqbhltagb0qquig`; Dockerfile `/apps/api/Dockerfile`; migrations run in the container's start command; database `kawase` inside `kawase-postgres` (internal host `diktlvlq6c0mdltviajx05hq:5432`) |
 | web (Expo web export) | `https://kawase.84.46.247.92.sslip.io` | `/` | |
 | executor | none | `/healthz` | DBOS; stop grace 300 s |
 | chain-watcher | none | `/healthz` | |
@@ -73,10 +73,14 @@ coolify app create deploy-key \
 - With a deploy key there are no Watch Paths and no push auto-deploy unless a webhook is added by hand (`abu-server-inspection.md` line 28). Deploy with `coolify deploy uuid <app-uuid>` after a push.
 - **GitHub App (optional, D27's original choice):** none exists (`coolify github list` shows only "Public GitHub"). It is a browser flow in the Coolify dashboard (Sources → + Add → GitHub App → register → install on the repo). Switch to it if per-app auto-deploy is wanted.
 
+## Reaching the instance
+The CLI context `agari-new` talks to `http://localhost:8001`, an SSH tunnel to the server's Coolify (port 8000 is not open to the internet): `ssh -f -N -L 8001:localhost:8000 agari-box`. The api token comes from `~/.config/coolify/config.json`; for endpoints the CLI does not cover (`dockerfile_location`, the database's `internal_db_url`), `curl -H "Authorization: Bearer <token>" http://localhost:8001/api/v1/...`.
+
 ## Notes
 
 - **SSE works through Coolify's Traefik with the default gzip middleware on** (spike 07: events arrive one by one, including to `expo/fetch` on iOS over HTTPS). The chat stream needs no proxy changes.
 - **Pass the port and the domain at creation.** `PATCH`ing `ports_exposes` alone later does not rewrite the Traefik labels; the API regenerates them only when the domains, noindex domains or basic-auth fields change (source line 3465). If a port ever has to change, re-send `domains` in the same call and check `loadbalancer.server.port` in the labels.
+- **"running:unhealthy" in the CLI can lag behind Docker.** The api's container reports `healthy` (Coolify's check falls back to `wget` because `node:alpine` has no `curl`); `coolify app get` showed `running:unhealthy` for a while after the first deploy.
 - **A domain left empty is auto-generated as `http://<uuid>.<ip>.sslip.io`** (plain HTTP, because the server has no Wildcard Domain set). So always pass `--domains https://…`.
 - **Listen on `::`, not `0.0.0.0`, in `node:*-alpine` images.** The health check calls `http://localhost:<port><path>` inside the container and busybox `wget` resolves `localhost` to `::1`; an IPv4-only server fails every check and the deploy rolls back (spike 13). Setting the health-check host to `127.0.0.1` also works.
 - The Let's Encrypt certificate for a new domain takes a few seconds after the first deploy; until then HTTPS requests fail verification. Wait for `https://…/health` before registering webhooks.
