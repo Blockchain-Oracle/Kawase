@@ -1,0 +1,213 @@
+{
+ "endpoint": "https://kawase-spike13.84.46.247.92.sslip.io/webhooks/circle",
+ "circleSubscriptionId": "449ca941-e00b-4bf9-b71d-1566403d1522",
+ "failFirst": false,
+ "events": [
+  {
+   "source": "circle",
+   "event_id": "00000000-0000-0000-0000-000000000000",
+   "type": "webhooks.test",
+   "summary": {},
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:01:48.982Z",
+   "last_seen": "2026-09-30T10:01:48.982Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "948cb600-45e9-4619-ae3f-5418447d99b4",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "8020aa70-faa5-5840-926a-8f52f43371ce",
+    "state": "QUEUED",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:06.986Z",
+   "last_seen": "2026-09-30T10:02:06.986Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "c8697838-2834-418d-930a-7b745fdc434f",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "8020aa70-faa5-5840-926a-8f52f43371ce",
+    "state": "SENT",
+    "txHash": "0x13e0ab9b04c4645f65f2f8c6dfed9e5a3053c21bedfbe1e10348bc423d1c56e1",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:07.396Z",
+   "last_seen": "2026-09-30T10:02:07.396Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "7ad70d90-c142-4417-a32b-0f2e4c44d239",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "8020aa70-faa5-5840-926a-8f52f43371ce",
+    "state": "CLEARED",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:08.025Z",
+   "last_seen": "2026-09-30T10:02:08.025Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "2dbcaf0b-c125-4bf6-bb40-d9b1e46698b6",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "8020aa70-faa5-5840-926a-8f52f43371ce",
+    "state": "COMPLETE",
+    "txHash": "0x13e0ab9b04c4645f65f2f8c6dfed9e5a3053c21bedfbe1e10348bc423d1c56e1",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:23.990Z",
+   "last_seen": "2026-09-30T10:02:23.990Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "e433ab02-eef1-4dbb-8172-c09a29dc98f5",
+   "type": "transactions.inbound",
+   "summary": {
+    "id": "a733f56c-1357-5d2a-ab2b-09ef071ed59d",
+    "state": "COMPLETE",
+    "txHash": "0x13e0ab9b04c4645f65f2f8c6dfed9e5a3053c21bedfbe1e10348bc423d1c56e1",
+    "walletId": "8776b207-eb60-5770-90d1-f48be5e91a3d",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "INBOUND"
+   },
+   "deliveries": 1,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:24.671Z",
+   "last_seen": "2026-09-30T10:02:24.671Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "e71b7cbc-86b3-472a-afe4-2ad63b2da298",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "45d07d1c-51c0-511e-bc97-fb1b117f1745",
+    "state": "CLEARED",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:49.478Z",
+   "last_seen": "2026-09-30T10:02:50.917Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "a31f26cc-684d-436c-896e-9d087d1fb3a1",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "45d07d1c-51c0-511e-bc97-fb1b117f1745",
+    "state": "QUEUED",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:49.804Z",
+   "last_seen": "2026-09-30T10:02:51.229Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "b1113e42-53d5-4be2-98ce-56523b9da5cf",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "45d07d1c-51c0-511e-bc97-fb1b117f1745",
+    "state": "SENT",
+    "txHash": "0xf4597a132945e93e265e83571d79357062b5893d4ebc7d1cef658b1d254b8c66",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:50.520Z",
+   "last_seen": "2026-09-30T10:02:53.339Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "919c64f6-1708-4faa-880d-2d0bebcc71b5",
+   "type": "transactions.outbound",
+   "summary": {
+    "id": "45d07d1c-51c0-511e-bc97-fb1b117f1745",
+    "state": "COMPLETE",
+    "txHash": "0xf4597a132945e93e265e83571d79357062b5893d4ebc7d1cef658b1d254b8c66",
+    "walletId": "3940c2b5-3dce-5a0f-8f35-bdda63a98c85",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "OUTBOUND"
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:51.701Z",
+   "last_seen": "2026-09-30T10:02:53.597Z"
+  },
+  {
+   "source": "circle",
+   "event_id": "9e00cb7c-e362-4a1b-b6ed-38cd6802bdd2",
+   "type": "transactions.inbound",
+   "summary": {
+    "id": "c09fc728-9f91-5371-aa97-52442ff16159",
+    "state": "COMPLETE",
+    "txHash": "0xf4597a132945e93e265e83571d79357062b5893d4ebc7d1cef658b1d254b8c66",
+    "walletId": "8776b207-eb60-5770-90d1-f48be5e91a3d",
+    "blockchain": "ARC-TESTNET",
+    "transactionType": "INBOUND"
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:02:52.879Z",
+   "last_seen": "2026-09-30T10:02:54.412Z"
+  },
+  {
+   "source": "telegram",
+   "event_id": "9001",
+   "type": "message",
+   "summary": {
+    "text": "/start linktoken",
+    "chatId": 42
+   },
+   "deliveries": 2,
+   "side_effects": 1,
+   "first_seen": "2026-09-30T10:03:26.519Z",
+   "last_seen": "2026-09-30T10:03:27.081Z"
+  }
+ ],
+ "rejected": [
+  {
+   "source": "circle",
+   "reason": "missing signature headers",
+   "count": 1
+  },
+  {
+   "source": "circle",
+   "reason": "bad signature",
+   "count": 1
+  },
+  {
+   "source": "telegram",
+   "reason": "bad secret token",
+   "count": 1
+  }
+ ]
+}

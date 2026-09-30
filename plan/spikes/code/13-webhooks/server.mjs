@@ -111,6 +111,13 @@ app.post('/__spike/fail-first', async (c) => {
   return c.json(state)
 })
 
+// Remove the spike's tables when the spike is over (run once, before deleting the app).
+app.post('/__spike/drop', async (c) => {
+  if (!guarded(c)) return c.json({ error: 'forbidden' }, 401)
+  await pool.query('drop schema if exists spike13 cascade')
+  return c.json({ dropped: true })
+})
+
 // '::' = IPv4 + IPv6. Coolify's health check runs busybox wget against localhost, which resolves to ::1 on alpine.
 serve({ fetch: app.fetch, port: PORT, hostname: '::' }, () => console.log(`spike-13 listening on :${PORT}`))
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => pool.end().finally(() => process.exit(0)))
