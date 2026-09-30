@@ -1,13 +1,15 @@
 // Turnkey behind the WalletSigner interface.
 // This file does not import Turnkey's SDK: the app passes in the two functions it gets from
 // `useTurnkey()` (native kit) or the web kit, so the same adapter serves both and stays testable.
-// Payload encodings follow @turnkey/viem 0.14.43 (signAuthorization, signTypedData).
+// Payload encodings follow @turnkey/viem 0.14.43 for messages and authorizations. Typed data is hashed here
+// with viem and signed as a raw digest: signing it through Turnkey's own EIP-712 encoding produced a
+// signature that did not verify against viem's hash for the delegation typed data (spike 16, 2026-09-30).
 import {
   hashMessage,
+  hashTypedData,
   parseSignature,
   serializeSignature,
   serializeTransaction,
-  serializeTypedData,
   type Address,
   type Hex,
   type SignableMessage,
@@ -65,7 +67,7 @@ export function turnkeySigner(deps: TurnkeySignerDeps): WalletSigner {
     },
     async signTypedData(typedData) {
       return serializeSignature(
-        await sign(serializeTypedData(typedData as TypedDataDefinition), "PAYLOAD_ENCODING_EIP712"),
+        await sign(hashTypedData(typedData as TypedDataDefinition), "PAYLOAD_ENCODING_HEXADECIMAL"),
       );
     },
     async signTransaction(transaction) {

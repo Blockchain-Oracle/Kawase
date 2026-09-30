@@ -5,7 +5,7 @@ Status: started early (pure packages done while Stage 1 spikes run)
 
 ## Scope (from the master plan)
 - `packages/{config,env,networks,money,i18n,db,log}`; Drizzle schema + migrations; the api skeleton (Hono, problem+json, idempotency, rate limits).
-- Better Auth: email OTP, passkey, guest.
+- Sign-in: Turnkey session proof → Kawase session; guests; guest-to-account move (spike #10's function, on Kawase tables). Better Auth was dropped by spike #16.
 - Wallet creation at sign-up (Turnkey, one EOA for both networks), the relayed 7702 setup per network, and the default allowance grant with one Face ID. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
 - Capability registry + runtime overlay + the public availability page.
 - i18n for 10 locales with RTL reload.

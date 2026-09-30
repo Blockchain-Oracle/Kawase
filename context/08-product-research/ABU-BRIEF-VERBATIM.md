@@ -168,3 +168,15 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > ID WANT YOU TO HMM TO WRITE A PROMPT TO CODEX I THINK I DO HAVE SKILLS TOO FOR PROMPT TO CODEX TELL HIM TO SETUP EVERYTHING UP AND THE KEYS IN THE ENVS app.turnkey.com: ON MY BROWSER WHICH IS CURRENTLY LOGGED IN PHEW ON ZEN WRITE THE PROMPTS SO I CAN JUST GO GIVE HIM FOR THE TURKEY THANKS HED NEED WED NEED TO ENABLE ADD THE DOMAINS I THINK WE HAVE HMM APPLE GOOGLE YOU KNOW EVERYTHING THOUGH JUST WRITE THE PROMPTS
 
 (Claude's reading: Abu wants ready-to-paste prompts for Codex, which will drive his Zen browser (already logged in to app.turnkey.com) to set up Turnkey and put the keys into the env files, including the domain settings and Apple/Google sign-in. Claude writes the prompts only; Abu hands them to Codex. Written to `plan/prompts/codex-turnkey-setup.md`.)
+
+## Build message, 2026-09-30: Abu pasted Codex's report after running the two Turnkey prompts
+
+> Saved Google and Apple configuration, and verified both env files. Google and Apple toggles: ON, confirmed by Turnkey API. […] Organization ID: bb8f314c-…; Auth Proxy Config ID: d91c023a-…; Sessions: 30 days; email OTP: 6-digit numeric. API key `kawase-server` created: yes. Private key stored only in root `.env`; downloaded copies deleted. Google remains in Testing. Actual sign-in on a device still needs testing.
+
+(Claude's reading: the Turnkey side is done, including Google and Apple; Claude can run spike 16. The ids are public; the API key stays in the git-ignored root `.env`.)
+
+## Build message, 2026-09-30: after the spike-16 run and the Stage 2 commit
+
+> contininue building
+
+(Claude's reading: keep going without waiting: Stage 3 next.)

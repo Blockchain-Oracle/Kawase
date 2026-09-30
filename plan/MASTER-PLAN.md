@@ -64,7 +64,7 @@ Architecture assumptions Abu can override:
 | App | Expo SDK 57 (expo 57.0.26, expo-router 57.0.24, **RN 0.86.3, React 19.2.3** as pinned by Expo; spike 09), dev builds (not Expo Go), `web.output:"server"` via expo-server |
 | Chat / agent | AI SDK 7 (`ai` 7.0.122, `@ai-sdk/react` 4.0.125, `@ai-sdk/anthropic` 4.0.68). `useChat` with the `expo/fetch` transport. Server: `streamText` → `toUIMessageStream` → `createUIMessageStreamResponse`. Approvals via `addToolApprovalResponse`; client tools via `addToolOutput`; persistence in `onEnd`. **Provider-agnostic (D29):** AI SDK `createProviderRegistry`; roles in `packages/config/src/models.ts` default to `openai:gpt-5.6-luna` for every role (Abu: cheap GPT-5; upgrade via env, e.g. `openai:gpt-6-sol`), overridable per role via `KAWASE_MODEL_*` (e.g. `anthropic:claude-sonnet-5-5`) |
 | API | Hono 4.13.11 + `@hono/node-server` 2.1.3, `hc<AppType>` RPC client; tsdown bundling |
-| Auth | Better Auth 1.7.6 (email OTP, `@better-auth/passkey`, anonymous for guests, `@better-auth/expo`), separate from Circle wallet auth |
+| Auth | Turnkey Auth Proxy (email code, Apple, Google, passkey) is the sign-in; the api verifies a proof of the Turnkey session and issues Kawase's own device sessions (spike #16). Better Auth was dropped on 2026-09-30 |
 | Data | Drizzle 0.45.3 + drizzle-kit 0.31.11 on `pg` 8.23; Postgres 17 |
 | Automations | DBOS **5.2.11** (+ drizzle-datasource 5.2.11; spike 06) (`registerWorkflow`, `runStep`, `startWorkflow({workflowID})`, `registerQueue` after launch, `createSchedule`, `DrizzleDataSource`) |
 | Chain | viem 2.57.0 (`arc`/`arcTestnet` built in; no wagmi). User wallet: Turnkey (`@turnkey/react-native-wallet-kit` 2.3.7 on native, `@turnkey/react-wallet-kit` 2.5.1 on web). `@circle-fin/app-kit` 1.15.3 through the viem adapter with our own signing strategy. Agent wallets: `@circle-fin/developer-controlled-wallets` 10.8.1. `@metamask/smart-accounts-kit` 2.0.0 (the renamed delegation toolkit; mainnet addresses passed manually) |
@@ -186,7 +186,7 @@ kawase/
 
 ### Data model (Drizzle)
 
-Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Better Auth owns user, session, account, verification and passkey.
+Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Kawase owns `user`, `sessions` and `sign_in_nonces`; Turnkey owns the credentials.
 
 | Area | Tables |
 |---|---|
@@ -211,7 +211,7 @@ Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Better Auth
 - **Marketplace:** `search_marketplace`, `inspect_service` (reads the 402 requirements without paying), `buy_service` (X within budget), `set_marketplace_budget`
 - **Automations:** `draft_automation` (read-back + next 3 runs + max exposure), `list_automations`, `get_automation_runs`, `simulate_automation`, `pause_automation`, `skip_next_run`, `pause_all`, `resume_automation`, `edit_automation`, `cancel_automation`
 - **Contacts:** `search_contacts`, `get_contact`, `resolve_name`, `request_contact_address` (C), `propose_contact_address_change`
-- **Channels:** `get_channel_status`, `create_alert_rule`, `set_notification_prefs` (adding an email goes through the AddEmail card and Better Auth's email code)
+- **Channels:** `get_channel_status`, `create_alert_rule`, `set_notification_prefs` (adding an email goes through the AddEmail card and a Turnkey email code)
 - **Settings / limits / memory:** `set_language`, `set_voice_prefs`, `request_permission` (C), `remember_fact`, `forget_fact`, `set_risk_mode`, `get_limits`, `propose_limit_change`, `propose_allowlist_change`, `propose_token_rule_change`, `revoke_grant`, `accept_consent` (C)
 - **History / knowledge / status:** `search_history`, `export_history`, `get_weekly_report`, `get_decision_log`, `arc_knowledge`, `get_status`, `feasibility_check`
 
@@ -332,7 +332,7 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 | 13 | Circle webhooks for Circle wallets on Arc (both environments). (The Telegram webhook was dropped with D31.) | events arrive and are deduped | Reconcile polling only |
 | 14 | TypeScript 5.9 vs 6.x across Expo, Drizzle, Hono and DBOS | typecheck green | Pin the lowest common version |
 | 15 | **EIP-7702 limits** (added 2026-09-30): an ordinary EOA delegates to `EIP7702StatelessDeleGator`; the ops DCW spends inside an on-chain period cap from the user's own account; relayed setup for an empty wallet | every negative test refused on testnet; mainnet when funded | The HybridDeleGator account from #4 |
-| 16 | **Turnkey wallet in the app** (added 2026-09-30): `@turnkey/react-native-wallet-kit` on the Expo 57 dev build and the web kit on Expo web; email-code sign-up; sign a 7702 authorization, an EIP-712 delegation and a transaction on Arc testnet; passkey-required policy; one sign-in with Better Auth; App Kit swap with the new signer | the spike-15 flow runs end to end from the app | Privy with the same signer interface |
+| 16 | **Turnkey wallet in the app** (added 2026-09-30): `@turnkey/react-native-wallet-kit` on the Expo 57 dev build and the web kit on Expo web; email-code sign-up; sign a 7702 authorization, an EIP-712 delegation and a transaction on Arc testnet; passkey-required policy; one sign-in with Better Auth; App Kit swap with the new signer | the spike-15 flow runs end to end from the app | Privy with the same signer interface | ✅ 2026-09-30 (`plan/spikes/16-turnkey-wallet.md`)
 
 The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4, #15), the wallet signing flow (#16), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
 
@@ -344,7 +344,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 
 ### Stage 3: Core platform
 - `packages/{config,env,networks,money,i18n,db,log}`; Drizzle schema + migrations; the api skeleton (Hono, problem+json, idempotency, rate limits).
-- Better Auth: email OTP, passkey, guest.
+- Sign-in: Turnkey session proof → Kawase session; guests; guest-to-account move (spike #10's function, on Kawase tables).
 - Wallet creation at sign-up (Turnkey, one EOA for both networks), the relayed 7702 setup per network, and the default allowance grant with one Face ID. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
 - Capability registry + runtime overlay + the public availability page.
 - i18n for 10 locales with RTL reload.

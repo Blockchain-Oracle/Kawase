@@ -3,6 +3,7 @@
 // email code → wallet → relayed 7702 setup → signed allowance → the agent spends with no prompt →
 // the wallet signs a larger send → revoke. Every result is posted to the spike server.
 import { OtpType, useTurnkey } from "@turnkey/react-native-wallet-kit";
+import { useLocalSearchParams } from "expo-router";
 import { fetch as expoFetch } from "expo/fetch";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -54,7 +55,9 @@ function Step({ title, onPress, disabled }: { title: string; onPress: () => void
 function ConfiguredWalletScreen() {
   const { initOtp, completeOtp, createWallet, refreshWallets, wallets, session, logout } = useTurnkey();
   const signer = useWalletSigner("session");
-  const [email, setEmail] = useState("");
+  // The address can be passed by link (kawase://spike-wallet?email=…) for scripted runs.
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(params.email ?? "");
   const [code, setCode] = useState("");
   const [otp, setOtp] = useState<{ otpId: string; otpEncryptionTargetBundle: string } | null>(null);
   const [lines, setLines] = useState<string[]>([]);
@@ -108,6 +111,10 @@ function ConfiguredWalletScreen() {
               onChangeText={setEmail}
               placeholder="Your email"
               autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="email"
+              textContentType="emailAddress"
               keyboardType="email-address"
               style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12 }}
             />

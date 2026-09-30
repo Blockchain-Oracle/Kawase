@@ -7,17 +7,15 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 **Stage 2: Design system and component sourcing** (`stages/02-design-system-component-sourcing.md`), with the Stage 1 spikes that need Abu or mainnet still open.
 
 ## Next action
-1. **Spike #16: Turnkey wallet in the app.** Everything except the Turnkey half is built and tested. Waiting for the two Turnkey ids in `.env` and `apps/mobile/.env` (`EXPO_PUBLIC_TURNKEY_ORGANIZATION_ID`, `EXPO_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID`); Abu hands `plan/prompts/codex-turnkey-setup.md` (Prompt 1) to Codex to create them. Then: start the spike server (`pnpm --filter @kawase/integrations-delegation spike16`, port 3022), open the app's temporary **Wallet** tab (`apps/mobile/src/spike/wallet-screen.native.tsx`), and tap steps 1 to 11.
-   - Done: spike server + a local-key client that runs the same flow (8/8 on Arc testnet, `test/spike16-local-client.ts`); the app's wallet provider, signer hook and test screen (typecheck passes; not yet run against Turnkey).
-   - To decide in this spike: how one sign-in covers both Better Auth and Turnkey.
-2. Stage 2 continues on Koe: fonts, native twins (orb, caption, confirm sheet), gallery.
+1. **Stage 3, core platform**, on the spike-16 decision (Turnkey sign-in is the app's sign-in; Better Auth is dropped): schema, api skeleton, "sign in with Turnkey" proof, wallet setup flow, then the real home screen on Koe.
+2. Stage 2 leftovers: Android run of the gallery; app icon and splash image.
 3. Stage 3 (core platform) can start in parallel: schema, api skeleton, wallet setup flow on the new design.
 4. Still open from Stage 1: #5 voice (Abu's phone), #12 x402 and the mainnet halves of #2 (what remains of it), #4/#15, #13 (wait for Circle's mainnet approval).
 
 ## Stage checklist
 - [ ] 0 Bootstrap: resume protocol ✅ · monorepo scaffold ✅ · Coolify project + Postgres ✅ · private repo Blockchain-Oracle/kawase ✅ · kickoff transcript ✅ · first commit pushed ✅ · Coolify deploy key ✅ (GitHub App optional later)
-- [ ] 1 Day-1 spikes: #3 ✅ testnet (re-run with the new wallet in #16) · #4 ✅ testnet (caveats carry over; account setup replaced by #15) · #6 ✅ · #7 ✅ · #8 ✅ (iOS + web; Android not run) · #9 ✅ iOS (Android via EAS pending) · #10 ✅ (iOS + web) · #11 ✅ partial · #13 ✅ Circle testnet · #14 ✅ · **#15 ✅ testnet (7702 limits)** · #16 ☐ (Turnkey wallet in the app; needs Abu's Turnkey IDs) · #1 closed and #2 superseded (D33) · #5 ☐ (real phone) · #12 ☐ (mainnet)
-- [ ] 2 Design system and component sourcing: **direction chosen: C, Koe** ✅ (Abu, 2026-09-30) · `DESIGN.md` ✅ · `packages/ui-tokens` (tokens.json → native.css, web.css, tokens.ts) ✅ · 10 components in `ui-web` ✅ · fonts ☐ · native twins ☐ · gallery ☐
+- [ ] 1 Day-1 spikes: #3 ✅ testnet (re-run with the new wallet in #16) · #4 ✅ testnet (caveats carry over; account setup replaced by #15) · #6 ✅ · #7 ✅ · #8 ✅ (iOS + web; Android not run) · #9 ✅ iOS (Android via EAS pending) · #10 ✅ (iOS + web) · #11 ✅ partial · #13 ✅ Circle testnet · #14 ✅ · **#15 ✅ testnet (7702 limits)** · **#16 ✅ iOS simulator + testnet (Turnkey wallet, 9/9; passkey half waits for the domain)** · #1 closed and #2 superseded (D33) · #5 ☐ (real phone) · #12 ☐ (mainnet)
+- [x] 2 Design system and component sourcing: **direction chosen: C, Koe** ✅ (Abu, 2026-09-30) · `DESIGN.md` ✅ · `packages/ui-tokens` ✅ · 11 components in `ui-web` ✅ · fonts ✅ · `packages/ui-native` with 13 twins ✅ · gallery on iOS + web ✅ · `21st review` clean ✅ · Android ☐
 - [ ] 3 Core platform: networks ✅ money ✅ config ✅ (pure packages started early)
 - [ ] 4 Agent brain, resolve and resume, chat
 - [ ] 5 Money movement, contacts, business basics
@@ -49,7 +47,7 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 - #6 DBOS exactly-once: **PASS** (use DBOS 5.2.11 + drizzle-datasource 5.2.11) — `spikes/06-dbos-exactly-once.md`
 
 ## Blockers / waiting on Abu
-- **Turnkey account** (for spike #16): create an organization at app.turnkey.com, enable the Auth Proxy with email codes, add a card (25 free signatures a month, then $0.10 each), and put the organization ID and the auth-proxy config ID in `.env`.
+- **Turnkey**: set up by Codex on 2026-09-30 (ids in `.env`, API key in the root `.env`). Still open: a card on file (25 free signatures a month, 4 used by spike 16), and the passkey domain (`EXPO_PUBLIC_PASSKEY_RP_ID` + association files).
 - **A real domain for passkeys** (a passkey is tied to its domain for life). Email-code sign-up works without it.
 - **Git source for Coolify: done with a deploy key** (Abu, 2026-09-30: "lets continue lol why wait for me"). Coolify key `kawase-deploy-key` (`qfzygvoehtclwstqsjcviqwm`), added read-only to `Blockchain-Oracle/kawase`. A GitHub App can replace it later if Abu wants push auto-deploy and Watch Paths without a webhook.
 - **Repo pushed:** first commit `be83488` on `main` (2026-09-30). `.env` is git-ignored and the commit was scanned for secrets first.
