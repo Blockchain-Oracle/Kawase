@@ -1,0 +1,1 @@
+{"name":"spike-13-webhooks","private":true,"type":"module","scripts":{"start":"node server.mjs"},"dependencies":{"hono":"4.13.11","@hono/node-server":"2.1.3","pg":"8.16.3"}}
