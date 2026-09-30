@@ -122,3 +122,9 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > mainnet is approved just so you know
 
 (Claude's reading: Circle mainnet access is approved on Circle's side. The LIVE key in `.env` still returned 403 when checked right after, so a new LIVE key or a console step may be needed.)
+
+## Build message, 2026-09-30: after the spike #8/#10/#13 report (Claude had asked for a new LIVE key)
+
+> its wasnt very yet i was mistaken lol
+
+(Claude's reading: mainnet is not approved yet; the earlier "approved" message was a mistake. The 403 is expected, and no new key is needed. Keep waiting for Circle.)
