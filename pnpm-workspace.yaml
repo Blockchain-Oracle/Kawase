@@ -1,0 +1,44 @@
+packages:
+  - apps/*
+  - packages/*
+  - packages/integrations/*
+
+# One place for every shared dependency version (D21). Packages reference these with "catalog:".
+catalog:
+  "@eslint/js": 10.0.1
+  eslint: 10.11.0
+  prettier: 3.9.9
+  turbo: 2.11.5
+  typescript: 6.0.3 # matches Expo SDK 57's template (spike 14)
+  typescript-eslint: 8.71.0
+  zod: 4.6.5
+  viem: 2.57.0
+  # DBOS SDK and drizzle-datasource must match (spike 06)
+  "@dbos-inc/dbos-sdk": 5.2.11
+  "@dbos-inc/drizzle-datasource": 5.2.11
+  # AI SDK 7 (spike 07)
+  ai: 7.0.122
+  "@ai-sdk/react": 4.0.125
+
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.71.0'
+  - '@typescript-eslint/parser@8.71.0'
+  - '@typescript-eslint/project-service@8.71.0'
+  - '@typescript-eslint/scope-manager@8.71.0'
+  - '@typescript-eslint/tsconfig-utils@8.71.0'
+  - '@typescript-eslint/type-utils@8.71.0'
+  - '@typescript-eslint/types@8.71.0'
+  - '@typescript-eslint/typescript-estree@8.71.0'
+  - '@typescript-eslint/utils@8.71.0'
+  - '@typescript-eslint/visitor-keys@8.71.0'
+  - typescript-eslint@8.71.0
+  - '@expo/ui@57.0.21'
+  - expo-constants@57.0.20
+  - expo-modules-core@57.0.20
+  - expo-router@57.0.24
+  - expo@57.0.26
+  - viem@2.57.0
+
+# Expo native builds allow one version per native module (expo-doctor, spike 09)
+overrides:
+  expo-constants: 57.0.20

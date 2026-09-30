@@ -1,0 +1,18 @@
+relay: open http://localhost:5199/ in a browser to answer challenges
+user { pinStatus: 'ENABLED', securityQuestionStatus: 'ENABLED' }
+PASS  UCW EOA exists on ARC-TESTNET (expected pass)  0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca (8776b207-eb60-5770-90d1-f48be5e91a3d, state LIVE)
+  → challenge 9ce2f60a-c336-506d-ad98-1d1d713cf715: Kawase: raise your daily limit from 20 to 50 USDC (enter the PIN in the browser)
+  · in-sheet error on 9ce2f60a-c336-506d-ad98-1d1d713cf715: {"code":155112,"message":"The user has inputted the incorrect pin."}
+PASS  UCW signs KawaseAuthorization; viem verifyTypedData (expected pass)  recovered 0xb7eddCC7b3b8C8fd4c1f99D5e336023fEec8efCA
+PASS  tampered subjectAfter does not verify (expected fail)  
+PASS  same signature under the mainnet chainId does not verify (expected fail)  
+PASS  server reads challenge status COMPLETE (signature only comes from the device) (expected pass)  {"id":"9ce2f60a-c336-506d-ad98-1d1d713cf715","type":"SIGN_TYPEDDATA","status":"COMPLETE"}
+  → challenge 7d0fd293-f913-51e1-b5bb-9cbad6e10947: CANCEL THIS ONE: close the PIN window (enter the PIN in the browser)
+  · in-sheet error on 7d0fd293-f913-51e1-b5bb-9cbad6e10947: {"code":155701,"message":"User canceled"}
+PASS  user closes the PIN sheet (no SDK callback; detected by the page) (expected error)  {"code":"closed","message":"user closed the sheet"}
+PASS  ops DCW deploys the UCW-owned HybridDeleGator (expected pass) https://explorer.testnet.arc.io/tx/0x1ced13964f66cf47c5f5e5da3bcaa6c622b39d6596c6379d905f38f63e475022 
+funded DeleGator 0xb9ac99d459da6c250d8c132305b885f4c4da5490e6ab64d141d058109bf2dc8d
+  → challenge 3ea1758e-2b25-5456-a3d6-c5360a7baa45: Kawase: sign Delegation (enter the PIN in the browser)
+  · in-sheet error on 3ea1758e-2b25-5456-a3d6-c5360a7baa45: {"code":156026,"message":"error: there is extra data provided in the message (5 < 6) with external msg: Failed during the validation for typed data"}
+  · in-sheet error on 3ea1758e-2b25-5456-a3d6-c5360a7baa45: {"code":3,"message":"Forbidden"}
+  · in-sheet error on 3ea1758e-2b25-5456-a3d6-c5360a7baa45: {"code":3,"message":"Forbidden"}

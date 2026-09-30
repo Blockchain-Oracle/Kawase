@@ -1,0 +1,41 @@
+# Decisions from Abu (product owner)
+
+Purpose: binding product decisions stated directly by Abu. These override research recommendations where they conflict.
+Sources: Abu's messages in the planning session, 2026-09-29
+Verified: 2026-09-29
+
+| # | Decision | Notes |
+|---|---|---|
+| D1 | **Product = an AI agent for the whole Arc ecosystem**, covering everything Arc can do: transfers, swaps/trades, bridging (compare aggregators, pick the cheapest), yield, the marketplace (x402), tokens and meme coins, wallets, and limits | Plus add-ons: automations, voice, multilingual, contacts, notifications, generative UI, and conversation history. Plus whatever good UX implies ("bring out everything that's supposed to exist") |
+| D2 | **Runs on both Arc mainnet and Arc testnet** | Both are first-class. The network must be explicit and switchable, never ambiguous |
+| D3 | **Platforms: iOS + Android (required) and desktop** (Abu's words). **Web** was added by Claude; it is required in practice because of D10 (the only way iPhone users and judges can reach a wallet app) | User experience and user flows are the top priority |
+| D4 | **Languages: English, French, Spanish, and the most widely spoken world languages.** No need for Pidgin, Yoruba, or other low-resource languages | Applies to the **whole app**: UI text, agent chat replies, and voice. The user can switch the app language |
+| D5 | **Voice is a first-class, two-way conversation** (the user talks, the agent talks back, asks clarifying questions, and a UI pop-up appears when needed) | "User voice is very important to me" |
+| D6 | **Tools and APIs from other ecosystems are allowed** (e.g., LI.FI for bridge/swap routing) | Choose on merit and verified Arc support |
+| D7 | **Reference projects are not templates.** arc-agent (Arc Copilot) failed, with the "wrong architecture"; keeperhub-copilot-v2 "might be done wrong" | Use them as feature checklists and a source of lessons only. Architecture, stack, and libraries come from fresh research |
+| D8 | **Research before planning; do not rush; do not invent** | Every claim needs a source. Plan mode comes after the research is complete |
+| D10 | **Apple Developer account: individual** (not organization) | Per Apple guideline 3.1.5(i), wallet apps must come from developers "enrolled as an organization" (`06-mobile-desktop-platform/distribution-and-store-policy.md`). So the App Store and TestFlight external distribution are blocked for a wallet app on this account. Organization enrollment needs a D-U-N-S number and a legal entity (same file). iOS reach must come from the web app/PWA unless that changes |
+| D11 | **Both consumer and business use cases.** Build what Abu wants; don't narrow it to one audience | Business use (freelancers, small businesses) supports hackathon scoring; consumer use stays fully in scope |
+| D12 | **Meme coins / token access is governed by the user's own settings** | The agent follows the user's token rules and explains when a rule blocks something. Shape and defaults are proposed in `SMART-PRECONDITIONS.md` and decided in plan mode |
+| D13 | **The agent must be "very, very smart" about missing setup ("resolve and resume"; "just-in-time setup" was Claude's first, unsourced label)** | When something isn't configured or allowed (unknown contact, Telegram not connected, over the limit, token rule…), the agent explains, pops up the fix inline, and resumes the original request. A core UX principle across the whole app; see `SMART-PRECONDITIONS.md`. Abu approved the drafted design, including ambiguity handling (currency/schedule/chain), hold-and-resume, and inline fix pop-ups, and wants it research-backed |
+| D14 | **Marketplace = the agent can discover and pay for tools and services in the x402 / agent marketplace on its own when a task needs it** ("let me go look up the agent marketplace… if it exists, pay for the tools") | Sources on Arc: Circle's x402 Discovery catalog (687 mainnet listings, 0 on testnet), Arc Portal's agent marketplace (`01-arc-ecosystem-census/apps-and-protocols.md`), and possibly the ERC-8004 agent registry (~332 agents, "agent listing"). Purchases stay inside the U3 execution boundary (per-call and session caps, allowlist, untrusted responses) and the user's marketplace budget (a policy check) |
+| D15 | **Mainnet ↔ testnet is a one-tap toggle, "like dark mode / light mode"**, switchable back and forth instantly. The agent must be **smart about per-network availability**: some things exist only on mainnet, some only on testnet, and it should explain that clearly rather than just fail | Abu is unsure of the right behavior (e.g. whether offering "switch network?" is good or bad), so it's being researched in `12-network-toggle/`. Libraries and implementation are to be researched too |
+| D16 | **Everything is MVP. Plan and build all of it together, start to finish; nothing is left behind.** No "core first, then waves" | Abu, Messages 11–12. Resolves the scope-sequencing question. Sequencing inside the build is an engineering order, not a scope cut |
+| D17 | **The deadline is never a reason for mediocre decisions.** Architect for quality and performance; take the time needed | "Deadline's not an issue… I will not take anything mediocre from you" |
+| D18 | **Deployment: Abu's own Coolify server** (custom server; Coolify provides HTTPS on his domain). Coolify skill + CLI are installed | Researched in `13-deployment-coolify/` |
+| D19 | **UI: use 21st.dev (skills + CLI)**, i.e. curated best-in-class components, not hand-made custom components. "Don't settle for mediocre design" | Researched in `14-ui-and-docs/`. "24 Dev" = 21st.dev |
+| D20 | **Documentation site + showcase UI** are deliverables alongside the app | Researched in `14-ui-and-docs/` |
+| D21 | **Engineering rules:** best practices; constants, never magic numbers; reusable code; a clean folder structure; read each tool's docs (Context7) and use tools the way the docs say; architect for performance | Standing rules for plan mode and the build |
+| D22 | **Tests are not a deliverable.** No UI tests, no verbose test suites. Integration tests only where Claude is unsure how an integration behaves | Standing rule |
+| D23 | **The plan is staged so it survives cleared sessions**: stage files and to-dos, and resume state written to disk | Standing rule for plan mode |
+| D24 | **Product name: Japanese preferred**; check domain and npm availability | Researched in `16-naming/` |
+| D25 | **Deliverables: the iOS app, the Android app, the desktop app, the web app, the docs site, and the showcase/landing page** | Abu, Message 14: "WHAT ABOUT THE WEB APP?" The web app was always in scope (D3/D10) |
+| D26 | **No selling of services to other agents.** The agent only *uses* the marketplace (D14) | Abu, Message 14 |
+| D27 | **Deploy on the Coolify-provided domain for now** (HTTPS included); **use the GitHub App** for deploys; **don't worry about backups** for now | Abu, Message 14 |
+| D28 | **21st.dev is for finding and using already-made, curated components, not AI generation** ("go check the prompt I gave you earlier") | Abu, Message 14. Matches D19; the AI plan is not needed |
+| D29 | **The AI model is provider-agnostic.** Bring your own key; the default is OpenAI **gpt-5.6-luna** (Abu: "a GPT-5 model that is sufficient and very cheap"), and Anthropic or others are swappable by config | Implemented with the AI SDK provider registry (`createProviderRegistry` + `customProvider`), roles in `packages/config/src/models.ts`, env overrides `KAWASE_MODEL_*`. Vercel AI Gateway was considered: its BYOK is a paid tier and still needs a Gateway key, so it's unnecessary when self-hosting on Coolify |
+| D9 | **Codex reviews the research and plan independently** (a prompt is to be written by Claude) | Claude and Codex should critique, not rubber-stamp, each other |
+
+## Open questions for Abu (not yet decided)
+
+- **Product name**: Kawase / Kanegura / other (`16-naming/names.md`)

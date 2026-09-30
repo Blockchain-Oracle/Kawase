@@ -1,0 +1,137 @@
+{
+  "ranAt": "2026-09-30T02:35:50.794Z",
+  "deleGator": "0x2264d7B00460f82aD0aB812cdCf0f497588e4B6b",
+  "owner": "0x16bd81d4c1E1C6A86D1a77Fb9582E370aB3EEDDb",
+  "ops": "0x2d9b5452178316e064d10e1424e8acf65a71b6b9",
+  "deployTx": "0xe6a44fdfbc6bed5305065d4425eb0dad89ae6e4ca910b09a076d5e64fe6a5dd3",
+  "results": [
+    {
+      "name": "ops: 0.2 USDC to pinned recipient",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0x1e2e2d8caaf0a527af192fd89fc470d6e4bcc160feae79fb2de3922daccf7658"
+    },
+    {
+      "name": "ops: 0.3 USDC more (period total 0.5 = cap)",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0x181fc8a67c4c7eef29e85ce0cbdb7094d1405a84c1989eac738fa7098eda8a75"
+    },
+    {
+      "name": "ops: 0.01 over the period cap",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "ops: wrong recipient",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "worker: 0.1 USDC to recipient",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0x8ae8994549a34b6319f8f49ac5cff770a9d16ffc24b185b62a65aa90d1fe9aa3"
+    },
+    {
+      "name": "worker: wrong recipient",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0x8a81144a6b1a5dfb154c2de33c8aa1298ab9f96addbfa0f75f9548f19f2e581c",
+      "reason": "Execution reverted with reason: AllowedCalldataEnforcer:invalid-calldata. "
+    },
+    {
+      "name": "worker: wrong token (EURC)",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0x0a98d1eeec9d26b6e33ac2dee6c9f704b4393d99a562e81e3ae56d2a67211cd8",
+      "reason": "Execution reverted with reason: ERC20PeriodTransferEnforcer:invalid-contract. "
+    },
+    {
+      "name": "worker: wrong method (approve)",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0xbb588ba910e6ff523549717b973d6753e6b8df90e740f6283d6269f37eab337d",
+      "reason": "Execution reverted with reason: ERC20PeriodTransferEnforcer:invalid-method. "
+    },
+    {
+      "name": "worker: native value 0.1 USDC (18dp) to recipient",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0xe8ec9b3e5be7d662d852262414666db26cf795b23d5e9e65157855a22725c36c",
+      "reason": "Execution reverted with reason: ValueLteEnforcer:value-too-high. "
+    },
+    {
+      "name": "worker: native value on the USDC transfer call",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0x5605135a87c8271f8ea8d80545da4185f5432f4b19160d8c70352038b6b702cc",
+      "reason": "Execution reverted with reason: ValueLteEnforcer:value-too-high. "
+    },
+    {
+      "name": "worker: expired delegation",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0xdf66941b01a665a551a54e5ad0c6a3364653872b6a31aaa0e53f7f0d9f9bd576",
+      "reason": "Execution reverted with reason: TimestampEnforcer:expired-delegation. "
+    },
+    {
+      "name": "worker: leaked key drains full balance to attacker",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0x3321c4ba7896eaaae02bbb3c25a12de10a58b1a4809bd7573b1ed0156c6b0ab1",
+      "reason": "Execution reverted with reason: ERC20PeriodTransferEnforcer:transfer-amount-exceeded. "
+    },
+    {
+      "name": "worker: leaked key: over period cap to pinned recipient",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0xb359ef536d56fc085e2435f559c4e81b2bd39e725169b3a134b37873ade3d413",
+      "reason": "Execution reverted with reason: ERC20PeriodTransferEnforcer:transfer-amount-exceeded. "
+    },
+    {
+      "name": "attacker redeems ops delegation (not the delegate)",
+      "expected": "fail",
+      "ok": true,
+      "status": "reverted",
+      "tx": "0xcba9cc854a605b4e9b1f8d3572a4374f5bace026bea9d61c3f602aa9003fd75c",
+      "reason": "Execution reverted for an unknown reason. "
+    },
+    {
+      "name": "ops: next period, 0.5 USDC again",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0x623e7c46f6ccb8a799cced65ac500e52cb9e91fdfc281e20febc3ec2adeecfac"
+    },
+    {
+      "name": "owner UserOp disableDelegation (self-bundled handleOps)",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xbdc79de0013041e1cb0f8d7f12ae0da9b3b7d6c38bf736a5cf1cadc171d29de0",
+      "reason": "disabled=true"
+    },
+    {
+      "name": "ops: redeem after disableDelegation",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    }
+  ]
+}

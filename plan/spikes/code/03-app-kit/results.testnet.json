@@ -1,0 +1,144 @@
+{
+  "ranAt": "2026-09-30T04:03:03.385Z",
+  "vault": "0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca",
+  "results": [
+    {
+      "name": "estimateSwap (no challenge)",
+      "expected": "quote",
+      "ok": true,
+      "reason": "{\"tokenIn\":\"USDC\",\"tokenOut\":\"EURC\",\"amountIn\":\"0.5\",\"chainIn\":\"Arc_Testnet\",\"chainOut\":\"Arc_Testnet\",\"chain\":\"Arc_Testnet\",\"fromAddress\":\"0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca\",\"toAddress\":\"0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca\",\"stopLimit\":{\"amount\":\"0.408092\",\"token\":\"EURC\"},\"estimatedOutput\":{\"amount\":\"0.412214\",\"token\":\"EURC\"},\"fees\":[{\"token\":\"USDC\",\"amount\":\"0.0001\",\"type\":\"provid"
+    },
+    {
+      "name": "swap 0.5 USDC -> EURC signed by the UCW EOA",
+      "expected": "pass",
+      "ok": true,
+      "reason": "+0.412003 EURC; 2 challenge(s)",
+      "challenges": [
+        {
+          "challengeId": "a4e02355-af19-539a-b37c-2d5c0965ea3d",
+          "intent": {
+            "action": "token.increaseAllowance"
+          },
+          "at": "2026-09-30T04:01:41.440Z"
+        },
+        {
+          "challengeId": "6fe847af-98bd-5c14-837d-eeabfc6f17cd",
+          "intent": {
+            "action": "swap.execute"
+          },
+          "at": "2026-09-30T04:02:08.408Z"
+        }
+      ],
+      "out": {
+        "tokenIn": "USDC",
+        "tokenOut": "EURC",
+        "chainIn": "Arc_Testnet",
+        "chainOut": "Arc_Testnet",
+        "chain": "Arc_Testnet",
+        "amountIn": "0.5",
+        "fromAddress": "0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca",
+        "toAddress": "0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca",
+        "txHash": "0xc111f18687dad46e1ba5eb4a7994c84dec49da1c316fbfabd5edf02bd37724ff",
+        "explorerUrl": "https://testnet.arcscan.app/tx/0xc111f18687dad46e1ba5eb4a7994c84dec49da1c316fbfabd5edf02bd37724ff",
+        "fees": [
+          {
+            "token": "USDC",
+            "amount": "0.0001",
+            "type": "provider"
+          }
+        ],
+        "config": {
+          "slippageBps": 100
+        },
+        "progress": {
+          "status": "DONE",
+          "substatus": "COMPLETED",
+          "substatusMessage": "The transfer is complete."
+        },
+        "amountOut": "0.412003"
+      }
+    },
+    {
+      "name": "estimateBridge (no challenge)",
+      "expected": "quote",
+      "ok": true,
+      "reason": "[{\"type\":\"forwarder\",\"token\":\"USDC\",\"amount\":\"0.054585\"}]"
+    },
+    {
+      "name": "bridge 2 USDC Arc Testnet -> Base Sepolia (forwarder)",
+      "expected": "pass",
+      "ok": true,
+      "reason": "state=success; minted +1.945415 on Base Sepolia (may lag); 2 challenge(s)",
+      "challenges": [
+        {
+          "challengeId": "ddd191c9-51b8-50f0-9d8f-801e87d618ac",
+          "intent": {
+            "action": "token.increaseAllowance"
+          },
+          "at": "2026-09-30T04:02:23.368Z"
+        },
+        {
+          "challengeId": "81e7bb39-bade-52e3-8cc6-c64ce97c1e7f",
+          "intent": {
+            "action": "cctp.v2.customBurnWithHook"
+          },
+          "at": "2026-09-30T04:02:34.343Z"
+        }
+      ],
+      "steps": [
+        {
+          "name": "approve",
+          "state": "success",
+          "txHash": "0x23f8b6969797688e8a6f95b62aa82681d478f0767671d2086e5bd5495b7b890e",
+          "explorerUrl": "https://testnet.arcscan.app/tx/0x23f8b6969797688e8a6f95b62aa82681d478f0767671d2086e5bd5495b7b890e"
+        },
+        {
+          "name": "burn",
+          "state": "success",
+          "txHash": "0x5b1d375c6d2333b105e91d762a6745bf9bf499b8303248a424f02cfa1a84edf9",
+          "explorerUrl": "https://testnet.arcscan.app/tx/0x5b1d375c6d2333b105e91d762a6745bf9bf499b8303248a424f02cfa1a84edf9"
+        },
+        {
+          "name": "fetchAttestation",
+          "state": "success"
+        },
+        {
+          "name": "mint",
+          "state": "success",
+          "txHash": "0x02bd639b8e4c93054d5dec8a842ec149b4f69d42a672c33403be9f98a043f00f",
+          "explorerUrl": "https://sepolia.basescan.org/tx/0x02bd639b8e4c93054d5dec8a842ec149b4f69d42a672c33403be9f98a043f00f"
+        }
+      ]
+    }
+  ],
+  "challenges": [
+    {
+      "challengeId": "a4e02355-af19-539a-b37c-2d5c0965ea3d",
+      "intent": {
+        "action": "token.increaseAllowance"
+      },
+      "at": "2026-09-30T04:01:41.440Z"
+    },
+    {
+      "challengeId": "6fe847af-98bd-5c14-837d-eeabfc6f17cd",
+      "intent": {
+        "action": "swap.execute"
+      },
+      "at": "2026-09-30T04:02:08.408Z"
+    },
+    {
+      "challengeId": "ddd191c9-51b8-50f0-9d8f-801e87d618ac",
+      "intent": {
+        "action": "token.increaseAllowance"
+      },
+      "at": "2026-09-30T04:02:23.368Z"
+    },
+    {
+      "challengeId": "81e7bb39-bade-52e3-8cc6-c64ce97c1e7f",
+      "intent": {
+        "action": "cctp.v2.customBurnWithHook"
+      },
+      "at": "2026-09-30T04:02:34.343Z"
+    }
+  ]
+}

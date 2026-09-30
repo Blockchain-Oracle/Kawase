@@ -1,0 +1,17 @@
+{
+  "name": "@kawase/agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The single brain: agentTurn, prompts, tools. Server-only.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

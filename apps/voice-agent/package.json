@@ -1,0 +1,14 @@
+{
+  "name": "@kawase/voice-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LiveKit Agents worker; llmNode relays to the api's agentTurn.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

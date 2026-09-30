@@ -1,0 +1,20 @@
+{
+  "name": "@kawase/networks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The two Arc NetworkContexts, contract addresses, providers, capability registry.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "viem": "catalog:"
+  }
+}

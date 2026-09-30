@@ -1,0 +1,1 @@
+{"name":"spike-03-app-kit","private":true,"type":"module","dependencies":{"@circle-fin/app-kit":"1.15.3","@circle-fin/adapter-circle-wallets":"1.8.0","dotenv":"18.0.4","viem":"2.57.1"}}

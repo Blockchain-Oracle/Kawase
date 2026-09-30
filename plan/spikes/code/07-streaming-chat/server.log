@@ -1,0 +1,85 @@
+05:27:50.472 spike-07 server on :8787 model=gpt-5.6-luna
+05:28:04.079 [turn 1] POST /api/chat messages=1 last=user tools=[]
+05:28:06.801 [turn 1] executed get_balance -> {"callId":"call-QrhB18r2mGf3kJYV3IRTyDXl","toolCall":{"type":"tool-call","toolCallId":"call_ZIK18U1yJVKWNndSQPLQNonb","toolName":"get_balance","input":{},"provi
+05:28:08.509 [turn 1] END outcome={"status":"completed"} finish=stop chunks=23 parts=["step-start:","tool-get_balance:output-available","step-start:","text:\"Your balance is 42.50 USDC.\""]
+05:28:08.846 [turn 2] POST /api/chat messages=1 last=user tools=[]
+05:28:10.272 [turn 2] END outcome={"status":"completed"} finish=tool-calls chunks=20 parts=["step-start:","tool-propose_send:approval-requested"]
+05:28:10.313 [turn 3] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=false)"]
+05:28:11.815 [turn 3] END outcome={"status":"completed"} finish=stop chunks=11 parts=["step-start:","tool-propose_send:output-denied","step-start:","text:\"Payment request declined.\""]
+05:28:11.868 [turn 4] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:11.960 [turn 4] ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-oGxtMGnFvV2xOcuvssK1E1Ca" (tool call "call_9WtpIFTCQFZJTFNdctgqfyIE"): invalid signature
+05:28:11.962 [turn 4] STREAM ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-oGxtMGnFvV2xOcuvssK1E1Ca" (tool call "call_9WtpIFTCQFZJTFNdctgqfyIE"): invalid signature
+05:28:11.964 [turn 4] STREAM ERROR Error: AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-oGxtMGnFvV2xOcuvssK1E1Ca" (tool call "call_9WtpIFTCQFZJTFNdctgqfyIE"): invalid signature
+05:28:11.967 [turn 4] END outcome={"status":"failed","error":{"name":"AI_InvalidToolApprovalSignatureError","approvalId":"aitxt-oGxtMGnFvV2xOcuvssK1E1Ca","toolCallId":"call_9WtpIFTCQFZJTFNdctgqfyIE"}} finish=undefined chunks=2 parts=["step-start:","tool-propose_send:approval-responded"]
+05:28:12.132 [turn 5] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:12.212 [turn 5] executed propose_send -> {"callId":"call-Qeus6Xj9VNRfiXErqyMxPujO","toolCall":{"type":"tool-call","toolCallId":"call_9WtpIFTCQFZJTFNdctgqfyIE","toolName":"propose_send","input":{"contac
+05:28:12.229 [turn 5] END outcome={"status":"unknown"} finish=undefined chunks=2 parts=["step-start:","tool-propose_send:output-available"]
+05:28:24.949 [turn 6] POST /api/chat messages=1 last=user tools=[]
+05:28:26.388 [turn 6] executed get_balance -> {"callId":"call-bhTf47ZK8lQjoA2s8ocxgPXl","toolCall":{"type":"tool-call","toolCallId":"call_8HNmQczbsoDDoEm67wCrAk9n","toolName":"get_balance","input":{},"provi
+05:28:27.852 [turn 6] END outcome={"status":"completed"} finish=stop chunks=26 parts=["step-start:","tool-get_balance:output-available","step-start:","text:\"Your USDC balance is 42.50 on testnet.\""]
+05:28:28.030 [turn 7] POST /api/chat messages=1 last=user tools=[]
+05:28:29.357 [turn 7] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+05:28:29.402 [turn 8] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=false)"]
+05:28:30.377 [turn 8] END outcome={"status":"completed"} finish=stop chunks=12 parts=["step-start:","reasoning:done","tool-propose_send:output-denied","step-start:","text:\"The transfer was declined.\""]
+05:28:30.410 [turn 9] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:30.461 [turn 9] ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-6wL5I6DdqtQ70YnV2PTP9XJe" (tool call "call_HHZr1l17oXq0vFcZOqP42BP4"): invalid signature
+05:28:30.462 [turn 9] STREAM ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-6wL5I6DdqtQ70YnV2PTP9XJe" (tool call "call_HHZr1l17oXq0vFcZOqP42BP4"): invalid signature
+05:28:30.463 [turn 9] STREAM ERROR Error: AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-6wL5I6DdqtQ70YnV2PTP9XJe" (tool call "call_HHZr1l17oXq0vFcZOqP42BP4"): invalid signature
+05:28:30.463 [turn 9] END outcome={"status":"failed","error":{"name":"AI_InvalidToolApprovalSignatureError","approvalId":"aitxt-6wL5I6DdqtQ70YnV2PTP9XJe","toolCallId":"call_HHZr1l17oXq0vFcZOqP42BP4"}} finish=undefined chunks=2 parts=["step-start:","reasoning:done","tool-propose_send:approval-responded"]
+05:28:30.502 [turn 10] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:30.509 [turn 10] executed propose_send -> {"callId":"call-0YieX2YkML98d1kOo8ZiwtGZ","toolCall":{"type":"tool-call","toolCallId":"call_HHZr1l17oXq0vFcZOqP42BP4","toolName":"propose_send","input":{"contac
+05:28:30.546 [turn 10] END outcome={"status":"unknown"} finish=undefined chunks=2 parts=["step-start:","reasoning:done","tool-propose_send:output-available"]
+05:28:41.837 [turn 11] POST /api/chat messages=1 last=user tools=[]
+05:28:43.217 [turn 11] executed get_balance -> {"callId":"call-yOb5RnJOT4WocXQCbJBDm3uJ","toolCall":{"type":"tool-call","toolCallId":"call_g77VXQIFPXbraMbxjBPpZVB3","toolName":"get_balance","input":{},"provi
+05:28:44.344 [turn 11] END outcome={"status":"completed"} finish=stop chunks=23 parts=["step-start:","tool-get_balance:output-available","step-start:","text:\"Your balance is 42.50 USDC.\""]
+05:28:44.350 [turn 12] POST /api/chat messages=1 last=user tools=[]
+05:28:45.525 [turn 12] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+05:28:45.528 [turn 13] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=false)"]
+05:28:46.540 [turn 13] END outcome={"status":"completed"} finish=stop chunks=18 parts=["step-start:","reasoning:done","tool-propose_send:output-denied","step-start:","text:\"Payment of 5 USDC to Alex was declined.\""]
+05:28:46.542 [turn 14] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:46.545 [turn 14] ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-TK80GI47GZwCKdnSDn4d1S4f" (tool call "call_GdTlADSPt78W4LtlNxkFVny6"): invalid signature
+05:28:46.545 [turn 14] STREAM ERROR AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-TK80GI47GZwCKdnSDn4d1S4f" (tool call "call_GdTlADSPt78W4LtlNxkFVny6"): invalid signature
+05:28:46.545 [turn 14] STREAM ERROR Error: AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-TK80GI47GZwCKdnSDn4d1S4f" (tool call "call_GdTlADSPt78W4LtlNxkFVny6"): invalid signature
+05:28:46.546 [turn 14] END outcome={"status":"failed","error":{"name":"AI_InvalidToolApprovalSignatureError","approvalId":"aitxt-TK80GI47GZwCKdnSDn4d1S4f","toolCallId":"call_GdTlADSPt78W4LtlNxkFVny6"}} finish=undefined chunks=2 parts=["step-start:","reasoning:done","tool-propose_send:approval-responded"]
+05:28:46.548 [turn 15] POST /api/chat messages=2 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:28:46.550 [turn 15] executed propose_send -> {"callId":"call-uB7oc0e5IrYF7zXwuDEzpaih","toolCall":{"type":"tool-call","toolCallId":"call_GdTlADSPt78W4LtlNxkFVny6","toolName":"propose_send","input":{"contac
+05:28:48.338 [turn 15] END outcome={"status":"completed"} finish=stop chunks=21 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the wallet signature to send 5 USDC to Alex.\""]
+05:28:48.454 [turn 16] POST /api/chat messages=1 last=user tools=[]
+05:28:49.814 [turn 16] END outcome={"status":"completed"} finish=tool-calls chunks=14 parts=["step-start:","tool-add_contact_form:input-available"]
+05:28:49.818 [turn 17] POST /api/chat messages=2 last=assistant tools=["tool-add_contact_form:output-available"]
+05:28:51.646 [turn 17] END outcome={"status":"completed"} finish=stop chunks=14 parts=["step-start:","tool-add_contact_form:output-available","step-start:","text:\"Bob has been added as a contact.\""]
+05:37:03.679 [turn 18] POST /api/chat messages=1 last=user tools=[]
+05:37:07.740 [turn 18] END outcome={"status":"completed"} finish=stop chunks=26 parts=["step-start:","reasoning:done","text:\"USDC is a digital currency designed to maintain a value of o\""]
+05:37:07.829 [turn 19] POST /api/chat messages=3 last=user tools=[]
+05:37:10.560 [turn 19] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+05:37:10.636 [turn 20] POST /api/chat messages=4 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+05:37:10.712 [turn 20] executed propose_send -> {"callId":"call-bI9jLDCHNPpjb6KnlbRWeT7t","toolCall":{"type":"tool-call","toolCallId":"call_XdYoK1EgoUKf0ng5Uc6flgbu","toolName":"propose_send","input":{"contac
+05:37:12.296 [turn 20] END outcome={"status":"completed"} finish=stop chunks=21 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the wallet signature to send 5 USDC to Alex.\""]
+07:09:00.397 [turn 21] POST /api/chat messages=1 last=user tools=[]
+07:09:04.994 [turn 21] END outcome={"status":"completed"} finish=stop chunks=25 parts=["step-start:","reasoning:done","text:\"USDC is a digital dollar designed to maintain a value of abo\""]
+07:09:05.040 [turn 22] POST /api/chat messages=3 last=user tools=[]
+07:09:08.818 [turn 22] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+07:09:08.832 [turn 23] POST /api/chat messages=4 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+07:09:08.840 [turn 23] executed propose_send -> {"callId":"call-mPQyscgOntfKhDCN5FnZQEgQ","toolCall":{"type":"tool-call","toolCallId":"call_sTKZTvGnoUUboQjL2Uzfxy1S","toolName":"propose_send","input":{"contac
+07:09:10.225 [turn 23] END outcome={"status":"completed"} finish=stop chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the proposed 5 USDC payment to Alex in your w\""]
+07:11:21.258 [turn 24] POST /api/chat messages=1 last=user tools=[]
+07:11:25.781 [turn 24] END outcome={"status":"completed"} finish=stop chunks=24 parts=["step-start:","reasoning:done","text:\"USDC is a digital dollar designed to maintain a value of one\""]
+07:11:25.834 [turn 25] POST /api/chat messages=3 last=user tools=[]
+07:11:29.013 [turn 25] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+07:11:29.081 [turn 26] POST /api/chat messages=4 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+07:11:29.092 [turn 26] executed propose_send -> {"callId":"call-kMwAAX4TOCGmAjAteqpwGUww","toolCall":{"type":"tool-call","toolCallId":"call_0t5IvKyeIOxVUi61SHXR0C0D","toolName":"propose_send","input":{"contac
+07:11:32.604 [turn 26] END outcome={"status":"completed"} finish=stop chunks=21 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the 5 USDC payment to Alex in your wallet.\""]
+07:13:59.703 [turn 27] POST /api/chat messages=1 last=user tools=[]
+07:14:04.498 [turn 27] END outcome={"status":"completed"} finish=stop chunks=26 parts=["step-start:","reasoning:done","text:\"USDC is a digital currency designed to maintain a value of o\""]
+07:14:04.591 [turn 28] POST /api/chat messages=3 last=user tools=[]
+07:14:06.375 [turn 28] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+07:14:06.402 [turn 29] POST /api/chat messages=4 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+07:14:06.430 [turn 29] executed propose_send -> {"callId":"call-uxE99LcHtz42EM1FHbQniiiA","toolCall":{"type":"tool-call","toolCallId":"call_uXyo6As6kaTCQVHdC1SHvIYw","toolName":"propose_send","input":{"contac
+07:14:08.423 [turn 29] END outcome={"status":"completed"} finish=stop chunks=19 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the proposed 5 USDC payment to Alex.\""]
+07:17:14.180 [turn 30] POST /api/chat messages=1 last=user tools=[]
+07:17:16.944 [turn 30] END outcome={"status":"completed"} finish=stop chunks=24 parts=["step-start:","reasoning:done","text:\"USDC is a digital dollar designed to maintain a value of one\""]
+07:17:16.998 [turn 31] POST /api/chat messages=3 last=user tools=[]
+07:17:19.069 [turn 31] END outcome={"status":"completed"} finish=tool-calls chunks=22 parts=["step-start:","reasoning:done","tool-propose_send:approval-requested"]
+07:17:19.097 [turn 32] POST /api/chat messages=4 last=assistant tools=["tool-propose_send:approval-responded(approved=true)"]
+07:17:19.111 [turn 32] executed propose_send -> {"callId":"call-gShW1334vrP74DMXZ2nJqKtp","toolCall":{"type":"tool-call","toolCallId":"call_XivZgkEHIdYWAiLf2LOKp6oM","toolName":"propose_send","input":{"contac
+07:17:22.119 [turn 32] END outcome={"status":"completed"} finish=stop chunks=20 parts=["step-start:","reasoning:done","tool-propose_send:output-available","step-start:","text:\"Please approve the proposed transfer of 5 USDC to Alex.\""]

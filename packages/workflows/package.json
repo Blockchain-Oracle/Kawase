@@ -1,0 +1,17 @@
+{
+  "name": "@kawase/workflows",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DBOS workflow names, typed enqueue client, definitions (registered only in executor). Server-only.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

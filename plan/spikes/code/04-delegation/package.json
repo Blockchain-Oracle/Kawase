@@ -1,0 +1,1 @@
+{"name":"spike-04-delegation","private":true,"type":"module","dependencies":{"@circle-fin/developer-controlled-wallets":"10.8.1","@metamask/smart-accounts-kit":"2.0.0","dotenv":"18.0.4","viem":"2.57.1"}}

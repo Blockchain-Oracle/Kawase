@@ -1,0 +1,58 @@
+{
+  "ranAt": "2026-09-30T03:51:56.958Z",
+  "circleUserId": "a3ca8196-6a64-4b65-beb6-014ddc85ae2e",
+  "vault": "0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca",
+  "deleGator": "0xb99b5132c169322A31E451240c3b4d12F56ABd85",
+  "ops": "0x2d9b5452178316e064d10e1424e8acf65a71b6b9",
+  "results": [
+    {
+      "name": "UCW EOA exists on ARC-TESTNET",
+      "expected": "pass",
+      "ok": true,
+      "reason": "0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca (8776b207-eb60-5770-90d1-f48be5e91a3d, state LIVE)"
+    },
+    {
+      "name": "UCW-signed delegation valid via ERC-1271 on the DeleGator",
+      "expected": "pass",
+      "ok": false,
+      "reason": "isValidSignature -> 0xffffffff"
+    },
+    {
+      "name": "ops redeems 0.2 USDC to the pinned recipient",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0x4adaeafcf18ee4b2c04b340178dbf2c99003dc20dc1b9f22dda3abd089fed3ef"
+    },
+    {
+      "name": "ops redeems 0.4 more (0.6 > 0.5 period cap)",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "ops redeems to a different recipient",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "UCW-signed UserOp disableDelegation, handleOps sent by ops DCW",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0xea4818884a985d05689627822eb1155ba40bf8f98493c5e68708de33f85f4985",
+      "reason": "disabled=true; DeleGator paid 0.01624 USDC gas "
+    },
+    {
+      "name": "ops redeems after revoke",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    }
+  ],
+  "inSheetErrors": []
+}

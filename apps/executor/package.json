@@ -1,0 +1,14 @@
+{
+  "name": "@kawase/executor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DBOS worker: automations, intent tracking, notifications, reconciliation.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

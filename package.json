@@ -1,0 +1,24 @@
+{
+  "name": "kawase",
+  "private": true,
+  "description": "Kawase (為替) — a voice-first, multilingual AI agent for the whole Arc ecosystem.",
+  "packageManager": "pnpm@11.28.2",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "db:generate": "turbo run db:generate --filter=@kawase/db",
+    "db:migrate": "turbo run db:migrate --filter=@kawase/db"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}

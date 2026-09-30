@@ -1,0 +1,17 @@
+{
+  "name": "@kawase/intents",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Intent state machine (A2A), immutable draft versions, EIP-712 typed data, read-back templates.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@kawase/policy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure policy engine: evaluate(input) -> PolicyResult[] (clarification | precondition | policy | warning | error).",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

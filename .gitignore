@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.expo/
+.turbo/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.21st/credentials*
+.DS_Store
+# research caches (large, regenerable)
+.firecrawl/
+refs/*/
+# spike state (testnet keys)
+.spike-state*.json

@@ -1,0 +1,12 @@
+# Local development database only. Production Postgres runs on Coolify.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: kawase
+      POSTGRES_PASSWORD: kawase
+      POSTGRES_DB: kawase
+    ports: ["5433:5432"] # 5433: a native Postgres already uses 5432 on this Mac
+    volumes: [kawase-pg:/var/lib/postgresql/data]
+volumes:
+  kawase-pg:

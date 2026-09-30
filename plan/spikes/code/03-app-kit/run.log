@@ -1,0 +1,28 @@
+relay: open http://localhost:5199/ in a browser to answer challenges
+PASS  estimateSwap (no challenge) (expected quote) {"tokenIn":"USDC","tokenOut":"EURC","amountIn":"0.5","chainIn":"Arc_Testnet","chainOut":"Arc_Testnet","chain":"Arc_Testnet","fromAddress":"0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca","toAddress":"0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca","stopLimit":{"amount":"0.408092","token":"EURC"},"estimatedOutput":{"amount":"0.412214","token":"EURC"},"fees":[{"token":"USDC","amount":"0.0001","type":"provid
+  → challenge a4e02355-af19-539a-b37c-2d5c0965ea3d: App Kit: {"action":"token.increaseAllowance"} (enter the PIN in the browser)
+  · challenge PENDING 
+  · challenge COMPLETE 
+  · transaction SENT 0xb9ee627e8bb5a4b7335ac513590f406962b83dbb69864cd5c0a7f661aa814cd1
+  → challenge 6fe847af-98bd-5c14-837d-eeabfc6f17cd: App Kit: {"action":"swap.execute"} (enter the PIN in the browser)
+  · challenge PENDING 
+  · challenge COMPLETE 
+  · transaction SENT 0xc111f18687dad46e1ba5eb4a7994c84dec49da1c316fbfabd5edf02bd37724ff
+PASS  swap 0.5 USDC -> EURC signed by the UCW EOA (expected pass) +0.412003 EURC; 2 challenge(s)
+{"level":50,"time":1790740940403,"pid":8285,"hostname":"Abubakrs-MacBook-Pro.local","context":{"tags":{"traceId":"9635fecaa046aa87a7eb3082293b4fd1","name":"estimate","chain":"Arc Testnet","chainId":5042002,"address":"0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca","layer":"adapter","adapter":"viem","adapterVersion":"2.0.0"},"durationMs":599,"error":{"name":"ONCHAIN_SIMULATION_FAILED","message":"Simulation failed on Arc Testnet: Execution reverted with reason: ERC20: transfer amount exceeds allowance.","code":5002,"type":"ONCHAIN"}},"msg":"estimate failed"}
+PASS  estimateBridge (no challenge) (expected quote) [{"type":"forwarder","token":"USDC","amount":"0.054585"}]
+  → challenge ddd191c9-51b8-50f0-9d8f-801e87d618ac: App Kit: {"action":"token.increaseAllowance"} (enter the PIN in the browser)
+  · challenge PENDING 
+  · challenge COMPLETE 
+  · transaction COMPLETE 0x23f8b6969797688e8a6f95b62aa82681d478f0767671d2086e5bd5495b7b890e
+  ⇢ kit event approve 0x23f8b6969797688e8a6f95b62aa82681d478f0767671d2086e5bd5495b7b890e
+  → challenge 81e7bb39-bade-52e3-8cc6-c64ce97c1e7f: App Kit: {"action":"cctp.v2.customBurnWithHook"} (enter the PIN in the browser)
+  · challenge PENDING 
+  · challenge COMPLETE 
+  · transaction SENT 0x5b1d375c6d2333b105e91d762a6745bf9bf499b8303248a424f02cfa1a84edf9
+  ⇢ kit event burn 0x5b1d375c6d2333b105e91d762a6745bf9bf499b8303248a424f02cfa1a84edf9
+  ⇢ kit event fetchAttestation 
+  ⇢ kit event mint 0x02bd639b8e4c93054d5dec8a842ec149b4f69d42a672c33403be9f98a043f00f
+PASS  bridge 2 USDC Arc Testnet -> Base Sepolia (forwarder) (expected pass) state=success; minted +1.945415 on Base Sepolia (may lag); 2 challenge(s)
+
+4/4 as expected; 4 challenge(s) total

@@ -1,0 +1,41 @@
+{
+  "ranAt": "2026-09-30T05:28:51.654Z",
+  "api": "http://localhost:8787/api/chat",
+  "results": [
+    {
+      "name": "auto tool (get_balance) runs server-side and streams",
+      "ok": true,
+      "detail": "first chunk 1240 ms, total 2571 ms: \"Your balance is 42.50 USDC.\""
+    },
+    {
+      "name": "propose_send pauses at approval-requested",
+      "ok": true,
+      "detail": "input={\"contactName\":\"Alex\",\"amountUsdc\":\"5\"} approval={\"id\":\"aitxt-TK80GI47GZwCKdnSDn4d1S4f\",\"signature\":\"LzvrhzT15L-FSOVOQu2SXoKjwa0gnahaAYg9C56EhG8\"}"
+    },
+    {
+      "name": "deny -> output-denied, not executed",
+      "ok": true,
+      "detail": "\"Payment of 5 USDC to Alex was declined.\""
+    },
+    {
+      "name": "forged approval (amount changed after approval) is rejected",
+      "ok": true,
+      "detail": "state=approval-responded error=Error: AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval \"aitxt-TK80GI47GZwCKdnSDn4d1S4f\" (tool call \"call_GdTlADSP"
+    },
+    {
+      "name": "approve -> executed, output-available, model continues",
+      "ok": true,
+      "detail": "output={\"status\":\"draft_ready_for_wallet_signature\",\"contactName\":\"Alex\",\"amountUsdc\":\"5\",\"intentId\":\"4daf9249-5960-42f8-a937-0240f9ee2486\"} \"Please approve the wallet signature to send 5 USDC to Alex.\""
+    },
+    {
+      "name": "client tool (add_contact_form) arrives as input-available",
+      "ok": true,
+      "detail": "input={\"suggestedName\":\"Bob\"}"
+    },
+    {
+      "name": "addToolOutput -> model continues with the result",
+      "ok": true,
+      "detail": "\"Bob has been added as a contact.\""
+    }
+  ]
+}

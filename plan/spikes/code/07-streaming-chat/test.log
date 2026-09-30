@@ -1,0 +1,9 @@
+PASS  auto tool (get_balance) runs server-side and streams  first chunk 1240 ms, total 2571 ms: "Your balance is 42.50 USDC."
+PASS  propose_send pauses at approval-requested  input={"contactName":"Alex","amountUsdc":"5"} approval={"id":"aitxt-TK80GI47GZwCKdnSDn4d1S4f","signature":"LzvrhzT15L-FSOVOQu2SXoKjwa0gnahaAYg9C56EhG8"}
+PASS  deny -> output-denied, not executed  "Payment of 5 USDC to Alex was declined."
+PASS  forged approval (amount changed after approval) is rejected  state=approval-responded error=Error: AI_InvalidToolApprovalSignatureError: Tool approval signature verification failed for approval "aitxt-TK80GI47GZwCKdnSDn4d1S4f" (tool call "call_GdTlADSP
+PASS  approve -> executed, output-available, model continues  output={"status":"draft_ready_for_wallet_signature","contactName":"Alex","amountUsdc":"5","intentId":"4daf9249-5960-42f8-a937-0240f9ee2486"} "Please approve the wallet signature to send 5 USDC to Alex."
+PASS  client tool (add_contact_form) arrives as input-available  input={"suggestedName":"Bob"}
+PASS  addToolOutput -> model continues with the result  "Bob has been added as a contact."
+
+7/7 passed

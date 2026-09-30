@@ -1,0 +1,275 @@
+# Kawase architecture (detailed)
+
+Purpose: the detailed architecture from the planning session (2026-09-29), kept current as the build changes. It extends §Architecture in `MASTER-PLAN.md`. If this file and the code disagree, update this file.
+Sources: the Plan-agent design of 2026-09-29; `context/08-product-research/*` (see citations inline); doc checks of the verified stack (MASTER-PLAN §Verified stack).
+Last updated: 2026-09-30
+
+## 1. Key decisions (K1–K6)
+
+- **K1 One brain.** `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), Telegram and Discord, and read-only automation commands. Money automations never pass through the LLM: they use the deterministic draft builders in `packages/intents` and the same `policy.evaluate()`.
+- **K2 The model proposes; code resolves, checks and executes.** No model tool takes a `network`, `address` or `approve` parameter. Approval happens only through an authenticated HTTP endpoint followed by a wallet signature.
+- **K3 Custody.**
+  - The vault is a Circle UCW **EOA** (PIN flow, keyed by our user id), with one Circle identity per network (TEST and LIVE keys).
+  - Unattended authority comes from a MetaMask HybridDeleGator allowance account owned by the UCW EOA, plus ERC-7710 delegations whose caveats are built in code. A Kawase **ops-redeemer DCW** redeems the delegations.
+  - x402 spending goes through a per-user, per-network **DCW EOA marketplace wallet**; its balance is the hard cap.
+  - **Fallback (architecture A):** a DCW allowance wallet with limits enforced by the app, labelled as such.
+  - **Why EOA:** the DeleGator needs an ECDSA owner, and Memo and Multicall3From only accept EOA callers (`context/01-arc/gotchas.md` #27).
+- **K4 Automations run on DBOS** inside `apps/executor`. Each occurrence or intent is one short workflow; nothing sleeps for weeks.
+- **K5 Postgres is the only message bus.** Changes go through an outbox → `pg_notify` → api SSE fan-out, plus DBOS queues for external channels. No Redis.
+- **K6 The network is server-authoritative session state.** MMKV caches it on the device. Every write carries `expectedNetwork`, and a mismatch is a hard stop.
+
+## 2. `agentTurn` contract
+
+```ts
+agentTurn({
+  userId, threadId, net: NetworkContext,            // resolved server-side from the session, never from the model
+  locale, surface: 'chat'|'voice'|'telegram'|'discord'|'automation',
+  surfaceCaps: { forms: boolean; cards: boolean; speech: boolean },
+  trigger: { type:'user_message', message }
+         | { type:'client_tool_result' }             // AddContactForm etc. via addToolOutput
+         | { type:'resume', intentId, event }         // fix applied elsewhere (Telegram linked, contact saved, network switched)
+         | { type:'scheduled_command', automationId } // read-only agent-command automations
+}) → { stream: UIMessageStream; done: Promise<TurnResult> }
+```
+
+**Turn steps**
+1. `loadTurnContext` runs in parallel: the capability summary for `net` (including unavailable capabilities and the reason), balances, the contacts index (names only), limit usage, channel links, and pending intents.
+2. The system prompt has a stable, cached prefix (persona, safety, tools). The dynamic tail adds the active network, "Respond in {language}", and a summary of pending intents.
+3. `streamText` runs with strict tools. Tools receive `{net, userId, intentId?}` through the execution context. Approval policy is central: `toolApproval: { tool: 'user-approval' | fn }`, which overrides tool-level `needsApproval`, plus `experimental_toolApprovalSecret` (an HMAC over the tool input, so a client can't forge or edit an approval). This is a UX gate only; money still needs the wallet signature (§4). Client: `addToolApprovalResponse` + `sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses`. No RN polyfills are needed on Expo 57 (spike #7).
+4. `toModelOutput` compacts tool results for the model; the full card spec stays in the UI part.
+5. `onEnd` persists messages.
+
+**Surface adapters**
+- **Chat:** `createUIMessageStreamResponse`, consumed by `useChat` with `expo/fetch`.
+- **Voice:** text deltas go to TTS. Card parts go to `performRpc('ui.show')`, and also to the thread SSE, which is canonical (cards are idempotent by `cardId`).
+- **Telegram / Discord:** plain text and inline keyboards. Anything that needs a form or a signature becomes a deep link: `/i/{intentId}?t={resumeToken}`.
+- **Automation:** collected output, read-only tools only.
+
+`policy.evaluate()` runs at three points: when drafting (propose tools), at approval (api, with a fresh snapshot plus a limit reservation), and at execution (executor).
+
+## 3. Intents and "resolve and resume"
+
+- `intent_id` is a UUIDv7. `draft_version` increases on every material change. Each version is an immutable `intent_drafts` row holding `draft_hash = hashStruct(Draft)` (EIP-712).
+- **States (A2A):**
+  - `submitted → working → input_required | auth_required → ready_for_approval → approved → executing → completed`
+  - Terminal states: `failed`, `rejected`, `canceled`, `expired`, `unknown_outcome`.
+- **Blocker precedence:** error > policy > precondition > clarification. Warnings attach to the confirm card instead of blocking. When several things block at once, the screen shows them all together and voice walks through them one at a time.
+- Each fix has its own endpoint, and each fix writes an outbox event `precondition.cleared{reason,userId,network}`.
+- The `resume-intents` workflow calls `agentTurn(trigger:'resume')`, which re-runs every check. The same event clears the prompt on the user's other devices.
+- **Policy refusal is terminal.** The only options offered are: edit the amount (a new version with fresh authorization), open the rule (step-up plus a signed setting change), or cancel. Never offer to split the payment or "send the rest later".
+- **Network-unavailable capability:** show a `NetworkSwitchCard`. After a switch to testnet, auto-resume. After a switch to mainnet, read-only requests resume, but money requests start over as a new intent marked REAL MONEY.
+- Re-asking is capped by `RESUME_MAX_REASKS`.
+- A voice correction that arrives against a stale version is rejected, because approval requires `draft_version == current` and the draft not voided.
+
+## 4. Approval binding
+
+| What is being approved | What the wallet signs |
+|---|---|
+| A money move from the vault | The Circle UCW transfer or contract-execution **challenge** derived from `intent_drafts[v]` (`intents/derive/circle-ucw.ts`), with `idempotencyKey = tx_attempts.idempotency_key` and `refId = "{intentId}:v{n}"`. The device runs `WalletSdk.execute`. A post-verification webhook compares destination, amount, token and blockchain (or decoded callData) with the draft; a mismatch raises a `security.draft_mismatch` alert and freezes the intent. |
+| A settings or authority change | An EIP-712 `KawaseAuthorization` via a UCW `signTypedData` challenge (spike #2), checked with viem `verifyTypedData` against the UCW EOA. Tightening a setting needs only a tap. |
+| A delegation grant | The MetaMask `Delegation` struct (domain: DelegationManager, chainId, per-network contract) via UCW `signTypedData`, validated through ERC-1271 → the ECDSA owner. |
+
+**UCW signing rules (spike #2, `plan/spikes/02-ucw-typed-data.md`)**
+- Circle never returns a `signTypedData` signature to the server (`getUserChallenge` only gives `{id, type, status}`). The device POSTs `result.data.signature`, and the api accepts it only after viem `verifyTypedData` against the vault address, plus a check that the challenge is `COMPLETE`.
+- The signer adapter is a viem `toAccount({ address: vault, signTypedData })`, where each call is one UCW challenge. The MetaMask kit uses it unchanged for delegations and revoke UserOps.
+- Before calling Circle, **project the message onto `types`** (an extra field → 156026 and a dead challenge), add `EIP712Domain` to `types`, and send bigints as decimal strings.
+- The device SDK callback is a stream. `155704` (bad PIN format) and `155112` (wrong PIN) are in-sheet and not terminal. `155701` (user canceled) is terminal. Only `onComplete` is success.
+- The PIN sheet shows **no** payload (not even `memo`), so the confirm card must render the exact decoded draft or caveat receipt right before opening it.
+- The Circle 10.x SDKs throw `{ message, code, status }`; match on `code`.
+- ERC-1271 checks on the DeleGator use the full EIP-712 digest (`hashTypedData`), not `hashDelegation()`.
+
+**Delegation caveats (built in code)**
+- `AllowedTargets` = USDC `0x3600…`
+- `AllowedMethods` = `transfer`
+- `ERC20PeriodTransferEnforcer`
+- `AllowedCalldata` pinning the recipient
+- `Timestamp`
+- `Redeemer` = the ops redeemer
+- `NativeTokenPeriodTransferEnforcer` = 0 (native value is not covered by ERC-20 allowances)
+
+The "can / can-never" receipt is **decoded from the signed caveat bytes**, not from the draft. Revoking is `disableDelegation`, which only the DeleGator itself can call: the UCW signs an EntryPoint v0.7 **UserOp** (typed data) and the ops DCW submits `handleOps` as a self-bundler (spike #4, `plan/spikes/04-delegation.md`). The DeleGator pays that UserOp's gas in USDC, so keep a small gas float.
+
+```ts
+domain = { name: 'Kawase', version: '1', chainId: net.chainId }
+KawaseAuthorization { bytes32 intentId; uint32 draftVersion; bytes32 draftHash; string action;
+                      bytes32 subjectBefore; bytes32 subjectAfter; uint64 expiresAt; bytes32 nonce }
+SendDraft { uint256 chainId; address from; address to; address asset; uint256 amount; bytes32 memoHash; uint256 maxFee }
+```
+
+**Approval endpoint sequence**
+1. Lock the intent.
+2. Check version, expiry and network.
+3. Run a fresh `evaluate()`.
+4. Reserve spend in `spend_ledger`.
+5. Re-quote. If the quote changed, create a new version with a `ReQuoteCard` and abort.
+6. Insert `tx_attempts(prepared)`.
+7. Create the challenge.
+8. Return `{challengeId, userToken, encryptionKey}`.
+
+**Better Auth passkeys** are for sign-in and step-up freshness (`STEP_UP_MAX_AGE_S`) only, never for authorization.
+
+**App Kit multi-step operations (decided by spike #3, `plan/spikes/03-app-kit.md`)**
+- `createCircleUserWalletAdapter` is **SCA-only**, so the vault (an EOA) uses `createViemAdapter` (`@circle-fin/adapter-viem-v2/next`) with **our own `SigningStrategy`** and `atomicBatch: false`. Each prepared call is one UCW `contractExecution` challenge: 2 PINs per swap and 2 per bridge (approve + action).
+- For each `evm-calls` payload, the Kawase strategy:
+  1. runs `policy.evaluate()` on the decoded call against the draft;
+  2. inserts `tx_attempts(prepared)` with our v4 idempotency key and `refId={intentId}:v{n}:s{step}`;
+  3. creates the challenge;
+  4. writes an outbox `challenge.required` (→ SSE → device);
+  5. polls the challenge, then the transaction, and returns the `txHash`.
+- `kit.swap` / `kit.bridge` run inside an **executor DBOS workflow**, because the call must stay alive across several owner approvals. Persist kit `steps` / progress as they arrive; resume a bridge with `kit.retryBridge`.
+- Default for leaving Arc: CCTP with `useForwarder: true` (Circle mints on the destination; the fee comes out of the amount).
+
+## 5. Idempotency and reconciliation
+
+- **API:** an `Idempotency-Key` header, stored in `api_idempotency`.
+- **Occurrences:** both `UNIQUE(automation_id, automation_version, scheduled_for)` and `UNIQUE(automation_id, scheduled_for)`, so an edit can never pay the same slot twice.
+- **Side effects:** a UUIDv4 key is persisted **before** calling Circle (Circle requires v4 and rejects a reused key with a different body). Raw transactions persist `(network, from, nonce)` and `tx_hash` before broadcasting. Delegation redeems go through DCW, which also takes a Circle key. x402 uses `payment-identifier`.
+- **Mark paid only on a witness:** a receipt with `status==1`, or Circle `COMPLETE` (on Arc the flow goes SENT → COMPLETE with no CONFIRMED step).
+- **Ambiguous outcome:** mark `unknown_outcome` and never auto-retry. A reconcile workflow runs every `RECONCILE_INTERVAL_MS`, with a Coolify scheduled task as backup. It sweeps `tx_attempts` stuck in `challenge_pending|submitted|unknown` and looks them up via Circle (idempotency key or `refId`) and the chain (hash). An expired, never-executed challenge becomes `not_sent`.
+- **On app open:** show what happened to each pending write.
+- **Chain events:** `UNIQUE(chain_id, tx_hash, log_index)`. Payments are projected from the system emitter `0xffff…FFFE` only, because it emits a double log. `workflowID = "{chainId}:{tx}:{log}"`.
+- **Circle webhooks:** deduplicated by `notificationId` in `provider_webhook_events`.
+- **Concurrent spending:** a per-(user, network) advisory lock plus `spend_ledger` reservations (`reserved → committed | released`). Window sums count reserved and committed rows together.
+
+## 6. Outbox
+
+1. `db/tx.ts withOutbox(tx, events)` writes the event in the same transaction as the change. In the executor this is a DBOS `DrizzleDataSource` transaction step.
+2. After commit, `pg_notify('kawase_events', id)`.
+3. The api LISTENs and pushes to per-user SSE streams (app, web, voice worker).
+4. The executor's notify queue drains undispatched rows into `deliveries UNIQUE(outbox_id, channel, target_ref)`. It applies prefs, quiet hours and network prefixes. Security events are never muted, and a delivered message is never re-sent.
+5. Every user-facing event is also written to `inbox_items`, which is the source of truth.
+
+## 7. Drizzle schema
+
+**Conventions**
+- IDs are UUIDv7 generated by the app. Circle idempotency keys are separate v4 columns.
+- Money is `numeric(78,0)` base units, handled as bigint in TypeScript.
+- `network` is a pg enum `('mainnet','testnet')`. On-chain rows also store `chain_id`.
+- Better Auth owns `user`, `session`, `account`, `verification` and `passkey`, generated by its CLI into `schema/auth.ts`.
+
+| Table | Key columns | Unique / index |
+|---|---|---|
+| user (+fields) | locale, reply_language, display_currency, timezone, theme, active_network (default testnet), risk_mode, practice_mode, is_anonymous, paused_all_at | email (BA) |
+| devices | user_id, platform, expo_push_token, app_version, locale, biometric_enrolled, last_seen_at, revoked_at | UNIQUE(expo_push_token) |
+| user_networks | user_id, network, circle_user_id, circle_status, enabled_at | PK(user_id, network); UNIQUE(network, circle_user_id) |
+| wallets | user_id?, network, role (vault/allowance/marketplace/external/ops_redeemer/faucet_drip), custody, account_type, address, circle_wallet_id, owner_wallet_id, deployed_at, status | UNIQUE(network, address); partial UNIQUE(user_id, network, role) for vault/allowance/marketplace |
+| contacts | user_id, display_name, aliases[], phonetic, notes (untrusted), deleted_at | UNIQUE(user_id, lower(display_name)) live |
+| contact_addresses | contact_id, user_id, chain_key, address, version, is_preferred, source, source_detail, status (pending_cooldown/active/retired/blocked), supersedes_id, activates_at, approval_id | UNIQUE(contact_id, chain_key, address); partial UNIQUE preferred |
+| contact_address_trust | contact_address_id, network, first_paid_at, last_paid_at, payment_count, verified_at, verified_method, cooldown_ends_at, allowlisted, allowlist_approval_id, change_hold | PK(contact_address_id, network) |
+| contact_address_events | contact_id, old/new_address_id, requested_by, approved_by, cooldown_ends_at, reason (append-only) | idx(contact_id, created_at) |
+| threads | user_id, title, origin_surface, channel_link_id, rolling_summary, summary_upto_seq, last_message_at, archived_at | idx(user_id, last_message_at) |
+| messages | id (UIMessage id), thread_id, seq, role, parts jsonb, metadata jsonb, search tsvector | UNIQUE(thread_id, seq); GIN(search) |
+| intents | user_id, thread_id, network, kind, origin_surface, a2a_state, current_draft_version, blockers jsonb, policy_version, practice, expires_at, parent_intent_id, occurrence_id, resume_token_hash, completed_at | idx(user_id, a2a_state); UNIQUE(resume_token_hash) |
+| intent_drafts | intent_id, version, payload jsonb, draft_hash, quote_ref, quote_expires_at, created_by, policy_report, voided_at, void_reason | PK(intent_id, version) |
+| approvals | intent_id, draft_version, draft_hash, user_id, network, tier, method, circle_challenge_ids[], signature, signer_address, device_id, status, decided_via_surface, expires_at | partial UNIQUE(intent_id, draft_version) live |
+| grants | user_id, network, kind (erc7710/dcw_allowance), scope, automation_id, delegator_wallet_id, delegate_address, delegation jsonb, delegation_hash, receipt jsonb, period_amount, period_seconds, recipient_address, expires_at, status, revoke_tx_attempt_id, approval_id | UNIQUE(network, delegation_hash) |
+| automations | user_id, network, kind, version, status, authority_mode (attended/delegated/practice), rule jsonb, timezone, recipient_contact_address_id, asset, amount, per_run_cap, period_cap, ends_at, missed_run_policy, next_run_at, grant_id, paused_reason | idx(status, next_run_at) |
+| automation_versions | automation_id, version, snapshot, changed_by, approval_id | UNIQUE(automation_id, version) |
+| occurrences | automation_id, automation_version, network, scheduled_for, trigger_evidence, status, reason_code, intent_id, workflow_id | UNIQUE(a_id, a_version, scheduled_for) + UNIQUE(a_id, scheduled_for) |
+| tx_attempts | intent_id, occurrence_id, network, chain_id, attempt_no, kind, provider, idempotency_key uuid, provider_ref, circle_challenge_id, from/to, nonce, tx_hash, status (prepared/challenge_pending/submitted/pending_chain/confirmed/reverted/dropped/not_sent/unknown), receipt, error_code, last_reconciled_at | UNIQUE(idempotency_key); UNIQUE(intent_id, attempt_no); partial UNIQUE(chain_id, tx_hash); partial UNIQUE(network, from, nonce) |
+| spend_ledger | user_id, network, intent_id, category, amount_usd_base, state, window_at | UNIQUE(intent_id, category) |
+| chain_events | network, chain_id, block, block_hash, tx_hash, log_index, emitter, kind, from, to, asset, amount, decimals, matched_user_id, matched_wallet_id, workflow_id, processed_at | UNIQUE(chain_id, tx_hash, log_index) |
+| indexer_cursors | network, stream, last_block | PK(network, stream) |
+| provider_webhook_events | provider, external_id, payload, received_at, processed_at | UNIQUE(provider, external_id) |
+| outbox | aggregate_type, aggregate_id, user_id, network, event_type, payload, dedupe_key, dispatched_at, attempts | UNIQUE(dedupe_key); partial idx undispatched |
+| deliveries | outbox_id, user_id, channel, target_ref, status, attempts, last_error, provider_message_id | UNIQUE(outbox_id, channel, target_ref) |
+| inbox_items | user_id, network, category, severity, title_key, params, intent_id, read_at, acted_at, expires_at | idx(user_id, read_at) |
+| channel_links | user_id, channel, external_user_id, external_chat_id, display_handle, status (pending_confirm/active/unlinked), confirmed_in_app_at, webhook_url_enc | partial UNIQUEs on active |
+| channel_link_tokens | token_hash, user_id, channel, session_id, expires_at, consumed_at, observed_external_user_id | PK(token_hash) |
+| notification_prefs | user_id, scope (mainnet/testnet/any), category, channel, enabled, min_amount, quiet_start, quiet_end | PK(user_id, scope, category, channel); CHECK security never disabled |
+| token_rules | user_id, access_level, unverified_per_trade_cap, unverified_daily_budget, max_price_impact_bps, max_slippage_bps, approval_id | PK(user_id) |
+| token_rule_entries | user_id, network, token_address, action (allow/block), reason, approval_id | UNIQUE(user_id, network, token_address) |
+| limits | user_id, network, kind (per_tx/daily/weekly/approval_threshold/new_recipient_cooldown_s/new_recipient_cap/gas_float), value, temp_value, temp_until, approval_id | PK(user_id, network, kind) |
+| marketplace_budgets | user_id, network, per_call_max, session_max, daily_max, auto_approve_under, enabled, marketplace_wallet_id, approval_id | PK(user_id, network) |
+| marketplace_purchases | user_id, network, intent_id, thread_id, listing_id, service_host, service_url, price, pay_to, payment_identifier, tx_attempt_id, status, response_digest, response_bytes | UNIQUE(payment_identifier) |
+| audit_log | user_id, actor, actor_ref, action, subject_type, subject_id, network, intent_id, policy_version, checks, decision, reason_code, model_id, tool_call_id, device_id, prev_hash, hash (append-only; UPDATE/DELETE revoked) | idx(user_id, created_at) |
+| faucet_claims | user_id, wallet_address, amount, claim_day, status, tx_attempt_id, ip_hash | per-day partial UNIQUEs; CHECK testnet |
+| consents | user_id, kind (terms/mainnet_real_money/meme_risk/marketplace_risk/voice_retention), version, locale, accepted_at | PK(user_id, kind, version) |
+| payment_requests | user_id, network, amount, asset, memo_id, token_hash, status, paid_chain_event_id | UNIQUE(token_hash) |
+| memory_facts | user_id, text, source_message_id, deleted_at | — |
+| voice_sessions | user_id, thread_id, room, pipeline, language, stt, tts, started_at, ended_at | UNIQUE(room) |
+| api_idempotency | user_id, key, request_hash, response | UNIQUE(user_id, key) |
+
+## 8. Tool → policy checks
+
+- **resolve_recipient**
+  - Emits `CLARIFY_RECIPIENT_UNKNOWN`, `CLARIFY_RECIPIENT_AMBIGUOUS` or `CLARIFY_RECIPIENT_FUZZY`, `POLICY_ADDRESS_CHANGED_HOLD`, `STOP_LOOKALIKE`.
+  - Addresses may only come from contacts or appear verbatim in the user's own message.
+- **propose_send** checks:
+  - capability, network, consent, wallet-ready
+  - recipient trust: cooldown, allowlist, change-hold, first-payment warning, mismatch with the last paid address
+  - limits (per_tx, daily, weekly), counting reservations
+  - balance + `gas_float`
+  - `PRECOND_FEE_RESERVE`: offers an editable new draft
+  - `CLARIFY_ASSET`, pause-all, practice mode, and a PII warning on the memo
+- **propose_swap**
+  - `POLICY_TOKEN_RULE`: access level, per-trade cap, unverified daily budget.
+  - Blocks GoPlus high-risk tokens.
+  - `POLICY_PRICE_IMPACT` / slippage: a warning below the user's max, a refusal above it.
+  - Also checks limits and balance, and applies the brake (S17).
+- **compare_bridge_routes** checks per-provider capability on the network and minimum amounts, then ranks routes by net amount received (`02-defi-bridge-trade/cheapest-route-design.md`).
+- **buy_service**
+  - Checks the budget (per-call, session, daily), consent, and that `payTo`/asset/network/amount match the payment requirements.
+  - The listing must come from Discovery.
+  - Not allowed in a tainted turn; capped at `MAX_PURCHASES_PER_TURN`.
+- **draft_automation** checks:
+  - `CLARIFY_SCHEDULE`, `CLARIFY_TZ`, `CLARIFY_ASSET`
+  - the recipient is *verified* before any unattended use
+  - `PRECOND_GRANT_REQUIRED`
+  - `PRECOND_CHANNEL_NOT_LINKED` when the automation is attended
+  - read-back plus a dry run showing the next three dates
+- **Settings tools**
+  - Loosening a setting needs `step_up_wallet_sign`; tightening needs only a tap.
+  - `propose_contact_address_change` puts the new address on cooldown plus hold. If the change was suggested by external content, it is flagged.
+- **Channels:** `connect_channel` shows a `ConnectChannelCard` with an async wait state. Security notifications cannot be muted.
+
+## 9. Constants (`packages/config`, `packages/networks`)
+
+**`config`** holds `as const` values with units in the names (`_MS`, `_S`, `_BPS`, `_BASE_UNITS`); money values are bigint.
+
+| File | Contents |
+|---|---|
+| `limits.ts` | `DEFAULT_LIMITS` per network (24 h new-recipient cooldown, slippage 50/300 bps) |
+| `timeouts.ts` | `INTENT_TTL_S`, `QUOTE_TTL_S`, `APPROVAL_TTL_S`, `PROVIDER_QUOTE_TIMEOUT_MS=3000`, `STEP_UP_MAX_AGE_S`, `CHANNEL_LINK_TOKEN_TTL_S` |
+| `fees.ts` | `MIN_MAX_FEE_PER_GAS_GWEI=20n`, `GAS_FLOAT_USDC` |
+| `cache.ts` | `QUOTE_CACHE_TTL_MS=15_000` |
+| `automation.ts` | `AUTOMATION_TICK_MS`, `LATE_GRACE_S`, `AUTOMATION_APPROVAL_TIMEOUT_S`, `DCA_MIN_INTERVAL_S`, `ALERT_HYSTERESIS_BPS`, `RECONCILE_INTERVAL_MS` |
+| `models.ts` | `agentChat`/`agentVoice` = `claude-sonnet-5-5`, `utility` = `claude-haiku-4-5` plus a fallback constant (Haiku retires no earlier than 2026-10-15) |
+| `voice.ts` | per-locale STT/TTS vendor and pipeline |
+| `locales.ts` | `SUPPORTED_LOCALES=[en,zh,hi,es,fr,ar,bn,pt,ru,ur]`, `RTL_LOCALES` |
+| `queues.ts`, `events.ts` | DBOS queue/workflow names, the outbox event enum |
+| `marketplace.ts`, `faucet.ts` | marketplace and faucet constants |
+
+**`networks`**
+- `addresses.ts`, with a source comment on every entry:
+  - USDC `0x3600000000000000000000000000000000000000`
+  - EURC
+  - system emitter `0xffff…FFFE`
+  - Memo, Multicall3From, Multicall3 `0xcA11bde05977b3631167028862bE2a173976CA11`
+  - DelegationManager `0xdb9B1e94B5b69Df7e401DDbedE43491141047dB3`
+  - HybridDeleGator `0x48dBe696A4D990079e039489bA2053B36E8FFEC4`
+  - SimpleFactory `0x69Aa2f9fe1572F1B640E1bbc512f5c3a734fc77c`
+  - ERC20PeriodTransfer `0x474e3Ae7E169e940607cC624Da8A15Eb120139aB`
+  - ERC20TransferAmount `0xf100b0819427117EcF76Ed94B358B1A5b5C6D2Fc`
+  - AllowedTargets `0x7F20f61b1f09b08D970938F6fa563634d65c4EeB`
+  - AllowedMethods `0x2c21fD0Cb9DC8445CB3fb0DC5E7Bb0Aca01842B5`
+  - AllowedCalldata `0xc2b0d624c1c4319760C96503BA27C347F3260f55`
+  - Redeemer `0xE144b0b2618071B4E56f746313528a669c7E65c5`
+  - Timestamp `0x1046bb45C8d673d4ea75321280DB34899413c069`
+  - LimitedCalls `0x04658B29F6b82ed55274221a06Fc97D318E25416`
+  - ValueLte `0x92Bf12322527cAA612fd31a0e810472BBB106A8F`
+  - NativeTokenPeriodTransfer `0x9BC0FAf4Aca5AE429F4c06aEEaC517520CB16BD9`
+  - EntryPoint v0.7 `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
+  - P256 precompile `0x100`
+  - These are identical on both networks; source: `context/08-product-research/03-wallets-custody-limits/delegation-session-keys-limits.md` §2a.
+- `providers.ts`
+- `contexts.ts`
+  - Mainnet: RPC `https://rpc.mainnet.arc.io`, Circle `ARC`, App Kit `Arc`.
+  - Testnet: RPC `https://rpc.testnet.arc.io` / `.arc.network`, Circle `ARC-TESTNET`, App Kit `Arc_Testnet`.
+  - `circleKeyRef` gives the key name only.
+
+**`env`** is the only reader of `process.env`, with a zod schema per app. User limits, rules and budgets live in the database; `config` only supplies defaults.
+
+## 10. Security, performance and spikes
+
+See MASTER-PLAN §Security, §Performance and Stage 1. Results go to `plan/spikes/`.

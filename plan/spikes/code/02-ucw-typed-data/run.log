@@ -1,0 +1,13 @@
+relay: open http://localhost:5199/ in a browser to answer challenges
+user { pinStatus: 'ENABLED', securityQuestionStatus: 'ENABLED' }
+PASS  UCW EOA exists on ARC-TESTNET (expected pass)  0xb7eddcc7b3b8c8fd4c1f99d5e336023feec8efca (8776b207-eb60-5770-90d1-f48be5e91a3d, state LIVE)
+  → challenge ecee069b-6d2a-584d-a049-4ca1935f728a: Kawase: sign Delegation (enter the PIN in the browser)
+FAIL  UCW-signed delegation valid via ERC-1271 on the DeleGator (expected pass)  isValidSignature -> 0xffffffff
+PASS  ops redeems 0.2 USDC to the pinned recipient (expected pass) https://explorer.testnet.arc.io/tx/0x4adaeafcf18ee4b2c04b340178dbf2c99003dc20dc1b9f22dda3abd089fed3ef 
+PASS  ops redeems 0.4 more (0.6 > 0.5 period cap) (expected fail)  ESTIMATION_ERROR
+PASS  ops redeems to a different recipient (expected fail)  ESTIMATION_ERROR
+  → challenge 7700514c-a17d-5e12-b881-325173602c04: Kawase: sign PackedUserOperation (enter the PIN in the browser)
+PASS  UCW-signed UserOp disableDelegation, handleOps sent by ops DCW (expected pass) https://explorer.testnet.arc.io/tx/0xea4818884a985d05689627822eb1155ba40bf8f98493c5e68708de33f85f4985 disabled=true; DeleGator paid 0.01624 USDC gas 
+PASS  ops redeems after revoke (expected fail)  ESTIMATION_ERROR
+
+6/7 as expected
