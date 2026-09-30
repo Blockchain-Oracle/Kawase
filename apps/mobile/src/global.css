@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'uniwind';
 @import 'tw-animate-css';
+/* Design tokens (direction: Koe). Generated from packages/ui-tokens/tokens.json; do not edit the values here. */
+@import '../../../packages/ui-tokens/native.css';
 
 /* Tailwind only scans this folder by default; shared UI packages are listed here. */
 @source '../../../packages/ui-web/src';
@@ -15,8 +17,7 @@
   --font-serif: Georgia, 'Times New Roman', serif;
 }
 
-/* ---- spike 08: Uniwind + tokens ---- */
-/* shadcn convention: a bare `border` class uses the border token (21st components rely on it). */
+/* shadcn convention: a bare `border` class uses the border token (installed 21st components rely on it). */
 @layer base {
   *,
   ::after,
@@ -26,114 +27,5 @@
 }
 
 @theme {
-  --radius: 10px;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --spacing-hairline: hairlineWidth();
-}
-
-@layer theme {
-  :root {
-    @variant light {
-      --color-background: oklch(1 0 0);
-      --color-foreground: oklch(0.145 0 0);
-      --color-card: oklch(1 0 0);
-      --color-card-foreground: oklch(0.145 0 0);
-      --color-popover: oklch(1 0 0);
-      --color-popover-foreground: oklch(0.145 0 0);
-      --color-primary: oklch(0.205 0 0);
-      --color-primary-foreground: oklch(0.985 0 0);
-      --color-secondary: oklch(0.97 0 0);
-      --color-secondary-foreground: oklch(0.205 0 0);
-      --color-muted: oklch(0.97 0 0);
-      --color-muted-foreground: oklch(0.556 0 0);
-      --color-accent: oklch(0.97 0 0);
-      --color-accent-foreground: oklch(0.205 0 0);
-      --color-destructive: oklch(0.577 0.245 27.325);
-      --color-success: oklch(0.52 0.13 155);
-      --color-border: oklch(0.922 0 0);
-      --color-input: oklch(0.922 0 0);
-      --color-ring: oklch(0.708 0 0);
-      --color-network: oklch(0.205 0 0);
-      --color-network-foreground: oklch(0.985 0 0);
-      --color-network-surface: oklch(0.97 0 0);
-    }
-
-    @variant dark {
-      --color-background: oklch(0.145 0 0);
-      --color-foreground: oklch(0.985 0 0);
-      --color-card: oklch(0.205 0 0);
-      --color-card-foreground: oklch(0.985 0 0);
-      --color-popover: oklch(0.205 0 0);
-      --color-popover-foreground: oklch(0.985 0 0);
-      --color-primary: oklch(0.922 0 0);
-      --color-primary-foreground: oklch(0.205 0 0);
-      --color-secondary: oklch(0.269 0 0);
-      --color-secondary-foreground: oklch(0.985 0 0);
-      --color-muted: oklch(0.269 0 0);
-      --color-muted-foreground: oklch(0.708 0 0);
-      --color-accent: oklch(0.269 0 0);
-      --color-accent-foreground: oklch(0.985 0 0);
-      --color-destructive: oklch(0.704 0.191 22.216);
-      --color-success: oklch(0.75 0.15 155);
-      --color-border: oklch(1 0 0 / 10%);
-      --color-input: oklch(1 0 0 / 15%);
-      --color-ring: oklch(0.556 0 0);
-      --color-network: oklch(0.922 0 0);
-      --color-network-foreground: oklch(0.205 0 0);
-      --color-network-surface: oklch(0.269 0 0);
-    }
-
-    @variant testnet {
-      --color-background: oklch(1 0 0);
-      --color-foreground: oklch(0.145 0 0);
-      --color-card: oklch(1 0 0);
-      --color-card-foreground: oklch(0.145 0 0);
-      --color-popover: oklch(1 0 0);
-      --color-popover-foreground: oklch(0.145 0 0);
-      --color-primary: oklch(0.205 0 0);
-      --color-primary-foreground: oklch(0.985 0 0);
-      --color-secondary: oklch(0.97 0 0);
-      --color-secondary-foreground: oklch(0.205 0 0);
-      --color-muted: oklch(0.97 0 0);
-      --color-muted-foreground: oklch(0.556 0 0);
-      --color-accent: oklch(0.97 0 0);
-      --color-accent-foreground: oklch(0.205 0 0);
-      --color-destructive: oklch(0.577 0.245 27.325);
-      --color-success: oklch(0.52 0.13 155);
-      --color-border: oklch(0.922 0 0);
-      --color-input: oklch(0.922 0 0);
-      --color-ring: oklch(0.55 0.2 295);
-      --color-network: oklch(0.55 0.2 295);
-      --color-network-foreground: oklch(0.985 0 0);
-      --color-network-surface: oklch(0.95 0.04 295);
-    }
-
-    @variant testnet-dark {
-      --color-background: oklch(0.145 0 0);
-      --color-foreground: oklch(0.985 0 0);
-      --color-card: oklch(0.205 0 0);
-      --color-card-foreground: oklch(0.985 0 0);
-      --color-popover: oklch(0.205 0 0);
-      --color-popover-foreground: oklch(0.985 0 0);
-      --color-primary: oklch(0.922 0 0);
-      --color-primary-foreground: oklch(0.205 0 0);
-      --color-secondary: oklch(0.269 0 0);
-      --color-secondary-foreground: oklch(0.985 0 0);
-      --color-muted: oklch(0.269 0 0);
-      --color-muted-foreground: oklch(0.708 0 0);
-      --color-accent: oklch(0.269 0 0);
-      --color-accent-foreground: oklch(0.985 0 0);
-      --color-destructive: oklch(0.704 0.191 22.216);
-      --color-success: oklch(0.75 0.15 155);
-      --color-border: oklch(1 0 0 / 10%);
-      --color-input: oklch(1 0 0 / 15%);
-      --color-ring: oklch(0.72 0.17 295);
-      --color-network: oklch(0.72 0.17 295);
-      --color-network-foreground: oklch(0.145 0 0);
-      --color-network-surface: oklch(0.3 0.08 295);
-    }
-  }
 }

@@ -128,3 +128,17 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > its wasnt very yet i was mistaken lol
 
 (Claude's reading: mainnet is not approved yet; the earlier "approved" message was a mistake. The 403 is expected, and no new key is needed. Keep waiting for Circle.)
+
+## Build message, 2026-09-30: after the three design directions were presented (Abu quoted parts of Claude's report)
+
+> DIRECTION C
+> Koe 声, "voice" thanks 3. Ten minutes for spike #1 (you enter the Circle PIN on the simulator). okay lets run this 3. Ten minutes for spike #1 (you enter the Circle PIN on the simulator).
+> 4. A real phone for the voice spike (#5). im doen lol My recommendation: A as the base, with C's orb as its voice mode (tapping the microphone opens i like the C color though just so you know thanks
+
+(Claude's reading: Abu chooses Direction C, Koe, and specifically likes its colours. He is ready to run spike #1 now and enter the PIN, and is willing to do the voice spike #5 on a real phone ("im doen" = "I'm down"). Where he quotes Claude's recommendation of A as the base, he is saying he prefers C's look over it.)
+
+## Build message, 2026-09-30: sent while spike #1 was building (dictated)
+
+> Um, there's something I want to say. There's something I want to say is that the Telegram bot doesn't make sense, since we're building this as a mobile application too. If you think about it, then why? Why do you want to do Telegram? I would say, I don't know, man. I don't know. The only thing that would make sense, maybe Gmail now. Like if you want to get notified on Gmail whenever you send something, or what do you think? Let me hear your opinion. This is a mobile application. So, although we do have a web, we do have a web too. It's a web app too, but I want to hear your opinion on this first before we continue, because you're asking me to send Telegram bots to you, and I don't think, in my opinion. Let me know what you think first before we continue. And besides, you know this connection is by what's it called? It's by Passkey and everything though. But let me hear— no, sorry, it's not by Passkey. That one is another project. Passkey stuff is another project. But never mind, let's continue. I just have... I want to talk about some stuff, like, yeah.
+
+(Claude's reading: Abu no longer wants Telegram, since Kawase is a mobile app; email notifications make more sense to him, and he asked for Claude's opinion. Claude agreed: notifications are the in-app inbox, push, and email; Telegram and Discord leave the scope. The passkey remark was about another project and does not apply. Telegram had come from Abu's own early examples in Messages 3 and 8.)

@@ -2,9 +2,15 @@
   "name": "@kawase/ui-tokens",
   "version": "0.0.0",
   "private": true,
-  "description": "Design tokens. Stage 2 draft: three candidate directions; the chosen one becomes tokens.json.",
+  "description": "Design tokens (direction: Koe). tokens.json is the source; native.css, web.css and tokens.ts are generated.",
   "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
   "exports": {
-    "./directions.json": "./directions.json"
+    ".": "./tokens.ts",
+    "./tokens.json": "./tokens.json",
+    "./native.css": "./native.css",
+    "./web.css": "./web.css"
   }
 }

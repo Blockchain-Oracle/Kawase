@@ -1,0 +1,132 @@
+// GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild.
+// For code that cannot use class names: the orb shader, charts, the status bar.
+export const tokens = {
+  "name": "Koe",
+  "defaultMode": "dark",
+  "radius": 20,
+  "fonts": {
+    "display": "Bricolage Grotesque",
+    "body": "Manrope",
+    "mono": "JetBrains Mono",
+    "scripts": [
+      "Noto Sans Arabic",
+      "Noto Nastaliq Urdu",
+      "Noto Sans Devanagari",
+      "Noto Sans Bengali",
+      "Noto Sans SC"
+    ]
+  },
+  "orb": {
+    "mainnet": [
+      "#FFB224",
+      "#FFE2A8",
+      "#B54A00"
+    ],
+    "testnet": [
+      "#4CC2FF",
+      "#C7ECFF",
+      "#0A4A7A"
+    ]
+  },
+  "themes": {
+    "light": {
+      "background": "#FAF8F3",
+      "foreground": "#141312",
+      "card": "#FFFFFF",
+      "card-foreground": "#141312",
+      "popover": "#FFFFFF",
+      "popover-foreground": "#141312",
+      "primary": "#141312",
+      "primary-foreground": "#FAF8F3",
+      "secondary": "#EFECE4",
+      "secondary-foreground": "#141312",
+      "muted": "#EFECE4",
+      "muted-foreground": "#625E56",
+      "accent": "#965A00",
+      "accent-foreground": "#FFFFFF",
+      "destructive": "#C4262E",
+      "success": "#1A7F56",
+      "border": "#DEDACF",
+      "input": "#DEDACF",
+      "ring": "#965A00",
+      "network": "#141312",
+      "network-foreground": "#FAF8F3",
+      "network-surface": "#EFECE4"
+    },
+    "dark": {
+      "background": "#0A0A0B",
+      "foreground": "#F5F1E8",
+      "card": "#151517",
+      "card-foreground": "#F5F1E8",
+      "popover": "#151517",
+      "popover-foreground": "#F5F1E8",
+      "primary": "#FFB224",
+      "primary-foreground": "#1A1200",
+      "secondary": "#1D1D20",
+      "secondary-foreground": "#F5F1E8",
+      "muted": "#1D1D20",
+      "muted-foreground": "#9A968C",
+      "accent": "#FFB224",
+      "accent-foreground": "#1A1200",
+      "destructive": "#FF6369",
+      "success": "#4CC38A",
+      "border": "#29292D",
+      "input": "#29292D",
+      "ring": "#FFB224",
+      "network": "#FFB224",
+      "network-foreground": "#1A1200",
+      "network-surface": "#2E2208"
+    },
+    "testnet": {
+      "background": "#FAF8F3",
+      "foreground": "#141312",
+      "card": "#FFFFFF",
+      "card-foreground": "#141312",
+      "popover": "#FFFFFF",
+      "popover-foreground": "#141312",
+      "primary": "#141312",
+      "primary-foreground": "#FAF8F3",
+      "secondary": "#EFECE4",
+      "secondary-foreground": "#141312",
+      "muted": "#EFECE4",
+      "muted-foreground": "#625E56",
+      "accent": "#965A00",
+      "accent-foreground": "#FFFFFF",
+      "destructive": "#C4262E",
+      "success": "#1A7F56",
+      "border": "#DEDACF",
+      "input": "#DEDACF",
+      "ring": "#0A6AAB",
+      "network": "#0A6AAB",
+      "network-foreground": "#FFFFFF",
+      "network-surface": "#DDF0FB"
+    },
+    "testnet-dark": {
+      "background": "#0A0A0B",
+      "foreground": "#F5F1E8",
+      "card": "#151517",
+      "card-foreground": "#F5F1E8",
+      "popover": "#151517",
+      "popover-foreground": "#F5F1E8",
+      "primary": "#FFB224",
+      "primary-foreground": "#1A1200",
+      "secondary": "#1D1D20",
+      "secondary-foreground": "#F5F1E8",
+      "muted": "#1D1D20",
+      "muted-foreground": "#9A968C",
+      "accent": "#FFB224",
+      "accent-foreground": "#1A1200",
+      "destructive": "#FF6369",
+      "success": "#4CC38A",
+      "border": "#29292D",
+      "input": "#29292D",
+      "ring": "#4CC2FF",
+      "network": "#4CC2FF",
+      "network-foreground": "#04131C",
+      "network-surface": "#0D2A3A"
+    }
+  }
+} as const;
+
+export type ThemeName = keyof typeof tokens.themes;
+export type TokenName = keyof typeof tokens.themes.light;

@@ -1,0 +1,2 @@
+spike-01 server on :3021
+RESULT {"kind":"callback","step":"init","sdkVersion":{"native":"1.4.3 (15)","rn":"2.2.5"}}

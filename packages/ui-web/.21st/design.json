@@ -2,29 +2,40 @@
   "version": 1,
   "project": {
     "name": "@kawase/ui-web",
-    "productType": null,
+    "productType": "mobile-first AI money agent (web + native)",
     "stack": [
       "shadcn",
       "tailwind-v4"
     ]
   },
   "sources": {
-    "tokens": [],
+    "tokens": [
+      "../ui-tokens/tokens.json"
+    ],
     "components": [
       "src/components/ui"
     ],
     "assets": [],
-    "instructions": []
+    "instructions": [
+      "../../DESIGN.md"
+    ]
   },
   "design": {
-    "colorMode": "unknown",
+    "colorMode": "dark-default, light supported",
     "colors": {},
-    "typography": {},
+    "typography": {
+      "display": "Bricolage Grotesque",
+      "body": "Manrope",
+      "mono": "JetBrains Mono"
+    },
     "spacing": {},
-    "radius": {},
+    "radius": {
+      "card": "20px",
+      "pill": "full"
+    },
     "shadows": {},
     "motion": {},
-    "density": "unknown"
+    "density": "very low"
   },
   "components": {
     "installed": [
@@ -37,10 +48,26 @@
     "patterns": []
   },
   "constraints": {
-    "must": [],
-    "avoid": []
+    "must": [
+      "resolve every colour to a token from ui-tokens",
+      "one primary (amber) action per screen",
+      "show \"Testnet \u00b7 no real money\" whenever testnet is on",
+      "every voice action has a tap equivalent"
+    ],
+    "avoid": [
+      "AI-generated components",
+      "purple or pink gradients",
+      "Inter as the brand font",
+      "amber outside the primary action and state label"
+    ]
   },
-  "decisions": [],
+  "decisions": [
+    {
+      "date": "2026-09-30",
+      "decision": "Direction C, Koe (voice-first stage), chosen by Abu from three built directions",
+      "evidence": "plan/design/DIRECTIONS.md"
+    }
+  ],
   "evidence": [
     {
       "fact": "components.installed",

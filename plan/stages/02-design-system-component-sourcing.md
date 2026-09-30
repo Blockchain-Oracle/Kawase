@@ -1,7 +1,7 @@
 # Stage 2: Design system + component sourcing
 
 Purpose: a stage of the Kawase build. Source of truth for scope is `plan/MASTER-PLAN.md`; decisions are in `context/08-product-research/DECISIONS-FROM-ABU.md`.
-Status: in progress (three directions ready; waiting for Abu's choice)
+Status: in progress (direction chosen: Koe; tokens package done; fonts, native twins and gallery open)
 
 ## Scope (from the master plan)
 - `DESIGN.md` and the 3 directions → **Abu picks one**.
@@ -38,3 +38,4 @@ Install notes:
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
 - 2026-09-30: `DESIGN.md` drafted with three candidate token sets (`packages/ui-tokens/directions.json`; every text pair ≥ 4.5:1 in all four themes, checked by script). Ten 21st.dev components installed and reskinned to tokens. Three directions built as real previews at `/dev/directions` (web) with screenshots in `plan/design/directions/`; write-up and recommendation in `plan/design/DIRECTIONS.md`. **Waiting for Abu to choose.** Typecheck 18/18; iOS bundle compiles.
+- 2026-09-30: **Abu chose Direction C, Koe**, and likes its colours. `packages/ui-tokens/tokens.json` is now the single source (22 tokens × 4 themes, all text pairs ≥ 4.5:1); `build.mjs` generates `native.css`, `web.css` and `tokens.ts`; `apps/mobile/src/global.css` imports `native.css`. `DESIGN.md` finalised for Koe. The temporary `/dev/directions` route and tab are removed; the preview source is kept at `plan/design/reference/directions-preview.web.tsx`.

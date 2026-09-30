@@ -5,6 +5,7 @@
   "dependencies": {
     "@ai-sdk/react": "catalog:",
     "@better-auth/expo": "1.7.6",
+    "@circle-fin/w3s-pw-react-native-sdk": "^2.2.5",
     "@expo/ui": "~57.0.21",
     "@kawase/ui-tokens": "workspace:*",
     "@kawase/ui-web": "workspace:*",
@@ -21,6 +22,7 @@
     "expo-glass-effect": "~57.0.4",
     "expo-image": "~57.0.5",
     "expo-linking": "~57.0.11",
+    "expo-modules-core": "~57.0.20",
     "expo-network": "~57.0.2",
     "expo-router": "~57.0.24",
     "expo-secure-store": "~57.0.4",

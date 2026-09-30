@@ -1,0 +1,98 @@
+/* GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild. */
+:root {
+  --background: #FAF8F3;
+  --foreground: #141312;
+  --card: #FFFFFF;
+  --card-foreground: #141312;
+  --popover: #FFFFFF;
+  --popover-foreground: #141312;
+  --primary: #141312;
+  --primary-foreground: #FAF8F3;
+  --secondary: #EFECE4;
+  --secondary-foreground: #141312;
+  --muted: #EFECE4;
+  --muted-foreground: #625E56;
+  --accent: #965A00;
+  --accent-foreground: #FFFFFF;
+  --destructive: #C4262E;
+  --success: #1A7F56;
+  --border: #DEDACF;
+  --input: #DEDACF;
+  --ring: #965A00;
+  --network: #141312;
+  --network-foreground: #FAF8F3;
+  --network-surface: #EFECE4;
+  --radius: 20px;
+}
+
+.dark {
+  --background: #0A0A0B;
+  --foreground: #F5F1E8;
+  --card: #151517;
+  --card-foreground: #F5F1E8;
+  --popover: #151517;
+  --popover-foreground: #F5F1E8;
+  --primary: #FFB224;
+  --primary-foreground: #1A1200;
+  --secondary: #1D1D20;
+  --secondary-foreground: #F5F1E8;
+  --muted: #1D1D20;
+  --muted-foreground: #9A968C;
+  --accent: #FFB224;
+  --accent-foreground: #1A1200;
+  --destructive: #FF6369;
+  --success: #4CC38A;
+  --border: #29292D;
+  --input: #29292D;
+  --ring: #FFB224;
+  --network: #FFB224;
+  --network-foreground: #1A1200;
+  --network-surface: #2E2208;
+}
+
+[data-network='testnet'] {
+  --network: #0A6AAB;
+  --network-foreground: #FFFFFF;
+  --network-surface: #DDF0FB;
+  --ring: #0A6AAB;
+}
+
+.dark [data-network='testnet'],
+.dark[data-network='testnet'] {
+  --network: #4CC2FF;
+  --network-foreground: #04131C;
+  --network-surface: #0D2A3A;
+  --ring: #4CC2FF;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-network: var(--network);
+  --color-network-foreground: var(--network-foreground);
+  --color-network-surface: var(--network-surface);
+  --radius-sm: 16px;
+  --radius-md: 18px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --font-sans: "Manrope", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}

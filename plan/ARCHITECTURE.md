@@ -6,7 +6,7 @@ Last updated: 2026-09-30
 
 ## 1. Key decisions (K1–K6)
 
-- **K1 One brain.** `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), Telegram and Discord, and read-only automation commands. Money automations never pass through the LLM: they use the deterministic draft builders in `packages/intents` and the same `policy.evaluate()`.
+- **K1 One brain.** `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), and read-only automation commands. Money automations never pass through the LLM: they use the deterministic draft builders in `packages/intents` and the same `policy.evaluate()`.
 - **K2 The model proposes; code resolves, checks and executes.** No model tool takes a `network`, `address` or `approve` parameter. Approval happens only through an authenticated HTTP endpoint followed by a wallet signature.
 - **K3 Custody.**
   - The vault is a Circle UCW **EOA** (PIN flow, keyed by our user id), with one Circle identity per network (TEST and LIVE keys).
@@ -23,17 +23,17 @@ Last updated: 2026-09-30
 ```ts
 agentTurn({
   userId, threadId, net: NetworkContext,            // resolved server-side from the session, never from the model
-  locale, surface: 'chat'|'voice'|'telegram'|'discord'|'automation',
+  locale, surface: 'chat'|'voice'|'automation',
   surfaceCaps: { forms: boolean; cards: boolean; speech: boolean },
   trigger: { type:'user_message', message }
          | { type:'client_tool_result' }             // AddContactForm etc. via addToolOutput
-         | { type:'resume', intentId, event }         // fix applied elsewhere (Telegram linked, contact saved, network switched)
+         | { type:'resume', intentId, event }         // fix applied elsewhere (email added, contact saved, network switched)
          | { type:'scheduled_command', automationId } // read-only agent-command automations
 }) → { stream: UIMessageStream; done: Promise<TurnResult> }
 ```
 
 **Turn steps**
-1. `loadTurnContext` runs in parallel: the capability summary for `net` (including unavailable capabilities and the reason), balances, the contacts index (names only), limit usage, channel links, and pending intents.
+1. `loadTurnContext` runs in parallel: the capability summary for `net` (including unavailable capabilities and the reason), balances, the contacts index (names only), limit usage, notification channels (push permission, verified email), and pending intents.
 2. The system prompt has a stable, cached prefix (persona, safety, tools). The dynamic tail adds the active network, "Respond in {language}", and a summary of pending intents.
 3. `streamText` runs with strict tools. Tools receive `{net, userId, intentId?}` through the execution context. Approval policy is central: `toolApproval: { tool: 'user-approval' | fn }`, which overrides tool-level `needsApproval`, plus `experimental_toolApprovalSecret` (an HMAC over the tool input, so a client can't forge or edit an approval). This is a UX gate only; money still needs the wallet signature (§4). Client: `addToolApprovalResponse` + `sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses`. No RN polyfills are needed on Expo 57 (spike #7).
 4. `toModelOutput` compacts tool results for the model; the full card spec stays in the UI part.
@@ -42,7 +42,7 @@ agentTurn({
 **Surface adapters**
 - **Chat:** `createUIMessageStreamResponse`, consumed by `useChat` with `expo/fetch`.
 - **Voice:** text deltas go to TTS. Card parts go to `performRpc('ui.show')`, and also to the thread SSE, which is canonical (cards are idempotent by `cardId`).
-- **Telegram / Discord:** plain text and inline keyboards. Anything that needs a form or a signature becomes a deep link: `/i/{intentId}?t={resumeToken}`.
+- **Email and push (D31; Telegram and Discord were removed on 2026-09-30):** plain text. Anything that needs a form or a signature is a link into the app: `/i/{intentId}?t={resumeToken}`.
 - **Automation:** collected output, read-only tools only.
 
 `policy.evaluate()` runs at three points: when drafting (propose tools), at approval (api, with a fresh snapshot plus a limit reservation), and at execution (executor).
@@ -167,7 +167,7 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 | contact_addresses | contact_id, user_id, chain_key, address, version, is_preferred, source, source_detail, status (pending_cooldown/active/retired/blocked), supersedes_id, activates_at, approval_id | UNIQUE(contact_id, chain_key, address); partial UNIQUE preferred |
 | contact_address_trust | contact_address_id, network, first_paid_at, last_paid_at, payment_count, verified_at, verified_method, cooldown_ends_at, allowlisted, allowlist_approval_id, change_hold | PK(contact_address_id, network) |
 | contact_address_events | contact_id, old/new_address_id, requested_by, approved_by, cooldown_ends_at, reason (append-only) | idx(contact_id, created_at) |
-| threads | user_id, title, origin_surface, channel_link_id, rolling_summary, summary_upto_seq, last_message_at, archived_at | idx(user_id, last_message_at) |
+| threads | user_id, title, origin_surface, rolling_summary, summary_upto_seq, last_message_at, archived_at | idx(user_id, last_message_at) |
 | messages | id (UIMessage id), thread_id, seq, role, parts jsonb, metadata jsonb, search tsvector | UNIQUE(thread_id, seq); GIN(search) |
 | intents | user_id, thread_id, network, kind, origin_surface, a2a_state, current_draft_version, blockers jsonb, policy_version, practice, expires_at, parent_intent_id, occurrence_id, resume_token_hash, completed_at | idx(user_id, a2a_state); UNIQUE(resume_token_hash) |
 | intent_drafts | intent_id, version, payload jsonb, draft_hash, quote_ref, quote_expires_at, created_by, policy_report, voided_at, void_reason | PK(intent_id, version) |
@@ -184,8 +184,6 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 | outbox | aggregate_type, aggregate_id, user_id, network, event_type, payload, dedupe_key, dispatched_at, attempts | UNIQUE(dedupe_key); partial idx undispatched |
 | deliveries | outbox_id, user_id, channel, target_ref, status, attempts, last_error, provider_message_id | UNIQUE(outbox_id, channel, target_ref) |
 | inbox_items | user_id, network, category, severity, title_key, params, intent_id, read_at, acted_at, expires_at | idx(user_id, read_at) |
-| channel_links | user_id, channel, external_user_id, external_chat_id, display_handle, status (pending_confirm/active/unlinked), confirmed_in_app_at, webhook_url_enc | partial UNIQUEs on active |
-| channel_link_tokens | token_hash, user_id, channel, session_id, expires_at, consumed_at, observed_external_user_id | PK(token_hash) |
 | notification_prefs | user_id, scope (mainnet/testnet/any), category, channel, enabled, min_amount, quiet_start, quiet_end | PK(user_id, scope, category, channel); CHECK security never disabled |
 | token_rules | user_id, access_level, unverified_per_trade_cap, unverified_daily_budget, max_price_impact_bps, max_slippage_bps, approval_id | PK(user_id) |
 | token_rule_entries | user_id, network, token_address, action (allow/block), reason, approval_id | UNIQUE(user_id, network, token_address) |

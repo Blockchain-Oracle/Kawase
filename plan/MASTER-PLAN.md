@@ -2,7 +2,7 @@
 
 ## Context
 
-Abu is building **Kawase**, a voice-first, multilingual AI agent that can do **everything on the Arc ecosystem** (Circle's stablecoin L1: mainnet 5042, testnet 5042002) for consumers and small businesses. It covers send, swap, bridge with a cheapest-route pick, yield, the x402 agent marketplace, tokens and meme coins, wallets, limits, automations ("every Tuesday send $10 to Alex"), two-way voice, the whole app in 10 languages, contacts, Telegram/Discord notifications, generative-UI cards, history, and a mainnet ↔ testnet toggle that works "like dark mode". It is for the Tameion Agents Hackathon (Canteen × Circle × Arc; deadline 2026-10-10 11:59 PM ET; judged 30% agentic / 30% traction / 20% Circle tools / 20% innovation).
+Abu is building **Kawase**, a voice-first, multilingual AI agent that can do **everything on the Arc ecosystem** (Circle's stablecoin L1: mainnet 5042, testnet 5042002) for consumers and small businesses. It covers send, swap, bridge with a cheapest-route pick, yield, the x402 agent marketplace, tokens and meme coins, wallets, limits, automations ("every Tuesday send $10 to Alex"), two-way voice, the whole app in 10 languages, contacts, push and email notifications, generative-UI cards, history, and a mainnet ↔ testnet toggle that works "like dark mode". It is for the Tameion Agents Hackathon (Canteen × Circle × Arc; deadline 2026-10-10 11:59 PM ET; judged 30% agentic / 30% traction / 20% Circle tools / 20% innovation).
 
 The research phase is complete. It lives in `context/` (the hackathon library, 01–07) and `context/08-product-research/` (streams 01–16, plus synthesis, feature inventory, flows, "resolve and resume", Codex review and reconciliation). **Binding decisions are D1–D28 in `context/08-product-research/DECISIONS-FROM-ABU.md`.** Abu's own words are in `ABU-BRIEF-VERBATIM.md`.
 
@@ -44,7 +44,7 @@ Architecture assumptions Abu can override:
 - landing as its own app, separate from docs
 
 ### Key decisions
-- **K1 One brain.** A single `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), Telegram and Discord, and read-only automation commands. **Money automations never go through the LLM.** They use the same deterministic draft builders and the same policy engine.
+- **K1 One brain.** A single `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), and read-only automation commands. **Money automations never go through the LLM.** They use the same deterministic draft builders and the same policy engine.
 - **K2 The model proposes; code resolves, checks and executes.** No model tool has a `network`, `address` or "approve" parameter. Approval is only an authenticated endpoint plus a **wallet signature over the exact payload**. A local Face ID prompt is never the binding (Codex #1).
 - **K3 Custody (hybrid).**
   - The user **vault** is a Circle user-controlled wallet: **EOA** account type, PIN flow keyed by our user id, one Circle identity per network (TEST/LIVE keys).
@@ -110,9 +110,9 @@ kawase/
 │  │     ├─ auth
 │  │     ├─ middleware/{session,network-context,idempotency-key,rate-limit,problem-json}
 │  │     ├─ routes/*
-│  │     ├─ webhooks/{circle,telegram,discord,livekit}
+│  │     ├─ webhooks/{circle,livekit}
 │  │     ├─ internal/{agent-turn,thread-events,voice-session}
-│  │     ├─ surfaces/{chat,telegram,discord}
+│  │     ├─ surfaces/{chat}
 │  │     └─ realtime/bus
 │  ├─ executor/        # DBOS worker: tick, run-occurrence, track-intent, notify, reconcile, faucet-drip, grant-lifecycle, x402-purchase
 │  ├─ chain-watcher/   # viem log polling per network (USDC system emitter 0xffff…FFFE, ERC-20, DelegationManager, Memo), Postgres cursor
@@ -138,7 +138,7 @@ kawase/
    ├─ log
    └─ integrations/    # circle (keys, ucw, dcw, webhooks, gateway, discovery, faucet), appkit, delegation,
                        # routing/{lifi,relay,across,debridge,socket}, goplus, prices, names, earn, x402,
-                       # telegram, discord, email, push, livekit, speech
+                       # email, push, livekit, speech
 ```
 
 **Boundaries.**
@@ -156,7 +156,7 @@ kawase/
   3. Cards go to both the thread SSE and `performRpc('ui.show')`; the SSE copy is canonical.
   4. Money read-backs are fixed template copy in the user's language.
   5. There is no approve tool, so a spoken "yes" cannot authorize.
-- **Telegram:** webhook (secret token) → `channel_links` → `agentTurn(forms:false)`. Voice notes go through batch STT. Buttons can only deny, pause, or open the app via `/i/{intentId}`.
+- **Email (D31; Telegram and Discord removed 2026-09-30):** sent by the executor's notify queue through Resend. Links open the app at `/i/{intentId}`; an email never approves or signs anything.
 - **Automations:**
   1. DBOS tick → `SELECT … FOR UPDATE SKIP LOCKED` → `INSERT occurrence ON CONFLICT DO NOTHING` → `runOccurrence`.
   2. Re-check → deterministic draft → `evaluate` → one of: attended (outbox approval + `recv` with a timeout), delegated (redeem via the ops DCW with a persisted idempotency key), or practice ("would have…").
@@ -195,7 +195,7 @@ Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Better Auth
 | Authority | `grants` (the full signed delegation + decoded receipt), `limits` (per network, temp raise), `token_rules`, `token_rule_entries`, `marketplace_budgets`, `spend_ledger` |
 | Automations | `automations` (rule jsonb/rrule, tz, authority_mode, missed_run_policy, next_run_at), `automation_versions`, `occurrences` (the two uniques above) |
 | Execution | `tx_attempts` (idempotency_key v4 UNIQUE, nonce, tx_hash, status incl. unknown), `chain_events` UNIQUE(chain_id, tx_hash, log_index), `indexer_cursors`, `provider_webhook_events` UNIQUE(provider, external_id) |
-| Channels | `outbox`, `deliveries`, `inbox_items`, `channel_links`, `channel_link_tokens`, `notification_prefs` |
+| Channels | `outbox`, `deliveries`, `inbox_items`, `notification_prefs` |
 | Other | `marketplace_purchases` UNIQUE(payment_identifier), `payment_requests`, `faucet_claims` (per day, testnet-only CHECK), `audit_log` (append-only, hash-chained, insert-only role) |
 
 ### Agent tools (grouped; R = read, P = propose with a card, X = executes within pre-signed or funded authority, C = client form)
@@ -208,7 +208,7 @@ Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Better Auth
 - **Marketplace:** `search_marketplace`, `inspect_service` (reads the 402 requirements without paying), `buy_service` (X within budget), `set_marketplace_budget`
 - **Automations:** `draft_automation` (read-back + next 3 runs + max exposure), `list_automations`, `get_automation_runs`, `simulate_automation`, `pause_automation`, `skip_next_run`, `pause_all`, `resume_automation`, `edit_automation`, `cancel_automation`
 - **Contacts:** `search_contacts`, `get_contact`, `resolve_name`, `request_contact_address` (C), `propose_contact_address_change`
-- **Channels:** `get_channel_status`, `connect_channel` (C, async wait), `create_alert_rule`, `set_notification_prefs`
+- **Channels:** `get_channel_status`, `create_alert_rule`, `set_notification_prefs` (adding an email goes through the AddEmail card and Better Auth's email code)
 - **Settings / limits / memory:** `set_language`, `set_voice_prefs`, `request_permission` (C), `remember_fact`, `forget_fact`, `set_risk_mode`, `get_limits`, `propose_limit_change`, `propose_allowlist_change`, `propose_token_rule_change`, `revoke_grant`, `accept_consent` (C)
 - **History / knowledge / status:** `search_history`, `export_history`, `get_weekly_report`, `get_decision_log`, `arc_knowledge`, `get_status`, `feasibility_check`
 
@@ -217,7 +217,7 @@ Tightening a setting is a tap; loosening it requires step-up plus a wallet signa
 ### Card catalog (`packages/cards`; web + native twins)
 - **Money / state:** Portfolio, Balance, ActivityList, Receipt, TxStatus (the money-ending taxonomy), Chart, LimitUsage, FeeReserve, WeeklyReport, DecisionCard ("why")
 - **Proposals:** ConfirmationSheet (always native on mobile), SwapQuote, BridgeRouteComparison, VaultCard, TokenSafety, MarketplaceService, PurchaseReceipt, AutomationPreview, GrantReceipt (can / can-never + worst case), SettingsDiff (Now → After), PaymentRequest, ShareCard, PracticeResult
-- **Resolve and resume:** AddContactForm, ContactPicker, ChoiceChips, ConnectChannel, PermissionPrimer, NetworkSwitch, MainnetFirstSheet, Consent, Fund/Faucet, PolicyRefusal, ReQuote, ErrorCard, StatusCard
+- **Resolve and resume:** AddContactForm, ContactPicker, ChoiceChips, AddEmail, PermissionPrimer, NetworkSwitch, MainnetFirstSheet, Consent, Fund/Faucet, PolicyRefusal, ReQuote, ErrorCard, StatusCard
 
 ### Security
 - **No raw private keys in our environment.** Circle UCW (MPC plus PIN) and DCW hold the keys; the allowance account is capped by its caveats.
@@ -228,7 +228,7 @@ Tightening a setting is a tap; loosening it requires step-up plus a wallet signa
   - App DB role vs migrator role; `audit_log` is insert-only.
 - **Prompt injection:** only the authenticated user's own words can create an intent. Free text is wrapped in an `<untrusted>` quarantine block: notes, token names, memos, ENS text records, x402 bodies, forwarded messages. A tainted turn disables autonomous purchases, and addresses may only come from contacts or verbatim user text.
 - **x402:** only listings from the Discovery catalog. Before paying, check `scheme=exact`, the USDC `0x3600…` asset, the chainId, `amount ≤ per_call_max`, and that `payTo` is unchanged. The payment identifier makes purchases idempotent. Responses are size- and type-capped and never chain further payments.
-- **Channels:** single-use, session-bound Telegram tokens plus in-app show-and-confirm; Discord webhook URLs are encrypted. Taps never sign.
+- **Channels:** email and push only. An email address is verified with a code before it receives anything. Links and notification taps open the app and never approve or sign.
 - **21st:** the `API_KEY_21ST` lives only on dev machines. Installs are copied source, reviewed like supply-chain changes, with fetch calls and placeholder copy stripped.
 
 ### Performance
@@ -326,7 +326,7 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 | 10 | Better Auth 1.7.6: email OTP + passkey + anonymous + expo on RN 0.87; guest → account data migration | a guest upgrades without losing data | — |
 | 11 | Hermes Intl for the 10 locales; RTL reload | ar/ur render RTL correctly | formatjs polyfills |
 | 12 | x402: one real mainnet Discovery purchase from a DCW EOA via EIP-3009; Facilitator status | the purchase settles and a receipt is stored | Read-only marketplace + our own testnet seller |
-| 13 | Circle webhooks for UCW/DCW on Arc (both environments); Telegram webhook through Coolify | events arrive and are deduped | Reconcile polling only |
+| 13 | Circle webhooks for UCW/DCW on Arc (both environments). (The Telegram webhook was dropped with D31.) | events arrive and are deduped | Reconcile polling only |
 | 14 | TypeScript 5.9 vs 6.x across Expo, Drizzle, Hono and DBOS | typecheck green | Pin the lowest common version |
 
 The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4), the challenge flow (#1–3), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
@@ -395,15 +395,10 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 
 ### Stage 9: Notifications + channels
 - The outbox notify queue → push (Expo), inbox, email (Resend).
-- **Telegram:**
-  - Connect: deep-link token, then in-app show-and-confirm.
-  - Two-way chat with the same brain.
-  - Voice notes via batch STT.
-  - Buttons: deny, pause, open-app only.
-  - Quiet pinned status digest.
-- **Discord:** OAuth webhook, with a bot DM where possible.
+- **Channels are the in-app inbox, push, and email only (D31).** Telegram and Discord were removed on 2026-09-30: Kawase is a mobile app, so push covers what Telegram would, and email reaches iPhone users on the web app.
+- **Email:** receipts, incoming payments, approvals waiting, automation results. A guest has no email, so asking for email notifications shows an "add your email" card (the same resolve-and-resume pattern) and then finishes the request. Email links only open the app (`/i/{intentId}`); nothing is ever approved from an email.
 - Preferences per event, channel and network; quiet hours; hygiene rules; missing-channel nudges; Live Activity / widget for in-flight transfers (S12).
-- **Exit:** "notify me on Telegram when I get paid" with no link → ConnectChannel card → waiting → linked → rule created → a real incoming payment pings Telegram within seconds, prefixed with the network.
+- **Exit:** a guest says "email me when I get paid" → AddEmail card → code verified → rule created → a real incoming payment sends a push and an email within seconds, prefixed with the network.
 
 ### Stage 10: Voice
 - `apps/voice-agent` (the LiveKit worker, `llmNode` → api, cascade pipeline with per-locale STT/TTS from `config/voice.ts`, `gpt-live-1` delegation where it passed the spike).
@@ -425,7 +420,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 - Activity feed (all kinds, per network) → the decision page ("why": checks, rule, cost, model id); the weekly report with outcome grading.
 - CSV + beancount export (balance assertions); share cards + public read-only receipts; payment-request links.
 - The drawdown/loss stop for trading automations; automation templates.
-- Transcript/audio retention controls, delete/export, channel unlink.
+- Transcript/audio retention controls, delete/export, email removal.
 - **Exit:** every action taken in Stages 5–10 appears with a correct "why", and the export round-trips into beancount with balance assertions passing.
 
 ### Stage 13: Desktop
@@ -448,7 +443,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 
 ### Stage 16: Production hardening + submission
 - A full both-network end-to-end pass of flows F1–F50 on iOS dev build, Android APK (EAS internal link), web, and desktop.
-- Security review of the approval binding, injection taint, and channel links; performance pass (bundle size, cold start, voice latency).
+- Security review of the approval binding, injection taint, and notification links; performance pass (bundle size, cold start, voice latency).
 - The public GitHub repo README, including the **delta disclosure** of prior work (arc-agent) per the hackathon rules.
 - A demo video under 3 minutes (the hyperframes / failure-first-demo-video skills).
 - Traction evidence (real businesses/users onboarded, value moved, tx hashes) and the submission form (https://forms.gle/BBWrdfuircrKiG2i6) before **Oct 10, 11:59 PM ET**. It can be resubmitted as progress continues.

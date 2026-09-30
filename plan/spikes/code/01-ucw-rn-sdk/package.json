@@ -1,0 +1,1 @@
+{"name":"spike-01-ucw-rn-sdk","private":true,"type":"module","dependencies":{"@circle-fin/user-controlled-wallets":"10.8.1","dotenv":"18.0.4","viem":"2.57.1"}}

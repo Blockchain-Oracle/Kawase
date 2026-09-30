@@ -1,56 +1,78 @@
-# Kawase design system (DRAFT: waiting for Abu to choose one of three directions)
+# Kawase design system: Koe (声, "voice")
 
-Purpose: the single source for every visual decision. Every colour, font, radius and motion value in the apps must resolve to a token defined here. The token values live in `packages/ui-tokens/directions.json` (three candidate sets) until Abu chooses; then the chosen set becomes `tokens.json` and the other two are deleted.
+Purpose: the single source for every visual decision. Every colour, font, radius and motion value in the apps resolves to a token defined here. The values live in `packages/ui-tokens/tokens.json`; `node packages/ui-tokens/build.mjs` generates `native.css` (Uniwind), `web.css` (docs and landing) and `tokens.ts` from it.
 Last updated: 2026-09-30
-Sources: `plan/MASTER-PLAN.md` §21st.dev sourcing workflow; `context/08-product-research/14-ui-and-docs/recommendation.md`; the premium-ui skill (`design-md-template.md`, `blocklist.md`); 21st.dev themes used as palette seeds (named per direction); Google Fonts subset lists (checked 2026-09-30).
+Decision: Abu chose Direction C, Koe, on 2026-09-30 and said he likes its colours (`context/08-product-research/ABU-BRIEF-VERBATIM.md`). The two other candidates are described in `plan/design/DIRECTIONS.md`.
+Sources: `plan/MASTER-PLAN.md` §21st.dev sourcing workflow; `context/08-product-research/14-ui-and-docs/recommendation.md`; the premium-ui skill (`design-md-template.md`, `blocklist.md`); 21st.dev theme "Amber Mono" (@serafimcloud) as the palette seed; Google Fonts subset lists (checked 2026-09-30).
 
-## Fixed for every direction (not up for choice)
-- **Product:** Kawase (為替, "money order / exchange"), a voice-first, multilingual AI agent for money on Arc, for consumers and small businesses.
-- **Token names:** shadcn's contract (`background`, `foreground`, `card`, `primary`, `secondary`, `muted`, `accent`, `destructive`, `border`, `input`, `ring`) plus `success` and three network tokens (`network`, `network-foreground`, `network-surface`).
-- **Themes:** light, dark, and a testnet layer over each (four Uniwind themes). Testnet changes only the three network tokens and `ring`; it never uses the error colour. Testnet is never signalled by colour alone: the words "Testnet · no real money" are always shown.
-- **Contrast:** every text pair in `directions.json` is at least 4.5:1 (WCAG AA), checked by script for all four themes of all three directions.
-- **Languages:** en, zh, hi, es, fr, ar, bn, pt, ru, ur. The brand fonts cover Latin (and Cyrillic for body text). Other scripts use Noto: Noto Sans SC, Noto Sans Devanagari, Noto Sans Bengali, Noto Sans Arabic, Noto Nastaliq Urdu. Numbers, amounts and addresses stay left-to-right and use the mono font with tabular figures.
-- **Layout:** logical spacing only (`ps-`/`pe-`/`ms-`/`me-`, `text-start`), so Arabic and Urdu mirror without per-screen work.
-- **Spacing:** 4px base; scale 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64.
-- **Type scale (px):** 12 / 14 / 16 / 20 / 24 / 32 / 48.
-- **States:** every interactive component has hover, visible focus ring (`ring`), active, disabled, loading, empty and error states.
-- **Motion:** 150ms ease-out for presses and hovers; 250ms for sheets and cards entering; money-moving confirmations never auto-dismiss; all motion respects reduced-motion.
-- **Components:** web from 21st.dev and the premium registries (installed, never generated); native twins from React Native Reusables on Uniwind.
+## Direction
+- One line: a voice-first money agent on a dark stage. The orb is the home screen; you talk, captions show what was heard, and cards rise from the bottom to be confirmed.
+- Anchor: the Koe home screen in `plan/design/directions/koe-dark-mainnet.png` (composition in `plan/design/reference/directions-preview.web.tsx`).
+- Typing is always available (the keyboard button opens the conversation), so nothing depends on a microphone.
 
-## Direction A: Tegami (手紙, "letter"). Conversation-first, calm paper
-- One line: the home screen is the conversation; money appears inside it as receipts, like letters kept in a drawer.
-- Palette seed: 21st themes "Vintage Paper" and "Vermilion Clay" (@serafimcloud), finalised by hand. Default mode: light.
-- Light: background `#F5F0E6`, card `#FFFCF5`, text `#1E1A15`, secondary text `#6A6153`, border `#DDD3BF`, primary (ink) `#1E1A15`, accent (pine) `#2C6650` for confirm actions and success only, destructive `#B3261E`.
-- Dark: background `#171411`, card `#201C17`, text `#F2EBDD`, secondary text `#A79C88`, border `#352F26`, primary `#F2EBDD`, accent `#6FBF9F`, destructive `#F2867D`.
-- Testnet layer: violet `#5B3FC0` (light) / `#B3A0F7` (dark).
-- Fonts: Newsreader (display, headings and amounts), Golos Text (body, Latin + Cyrillic), IBM Plex Mono (addresses).
-- Shape: 14px cards, 10px inputs, full pills; hairline borders, almost no shadow.
-- Density: low. One column, generous line height.
+## Palette
+Default mode: **dark**. Light is a full second theme, not an afterthought.
 
-## Direction B: Chōba (帳場, "the counter where the ledger is kept"). Wallet-first, dense
-- One line: the home screen is your money (balance, actions, activity); the agent is a command bar that is always one tap away.
-- Palette seed: 21st themes "Indigo Mono" and "Graphite Mono" (@serafimcloud), finalised by hand. Default mode: dark.
-- Dark: background `#0D1014`, card `#141920`, text `#E7EBF0`, secondary text `#8C97A6`, border `#242D38`, primary (indigo) `#8290FF`, destructive `#FF6B5E`, success `#3DD68C`.
-- Light: background `#F3F5F8`, card `#FFFFFF`, text `#10151C`, secondary text `#566171`, border `#D6DCE4`, primary `#3B47D6`, destructive `#C62F22`, success `#0F7A57`.
-- Testnet layer: amber `#F5B038` (dark) / `#8A5200` (light).
-- Fonts: IBM Plex Sans (display and body, Latin + Cyrillic), IBM Plex Mono (all numbers).
-- Shape: 8px cards and inputs; 1px borders, no shadow.
-- Density: high. Tables, tabular numbers, more per screen.
+| Token | Dark | Light | Used for |
+|---|---|---|---|
+| background | `#0A0A0B` | `#FAF8F3` | the stage |
+| card / popover | `#151517` | `#FFFFFF` | sheets and cards |
+| foreground | `#F5F1E8` | `#141312` | primary text |
+| muted-foreground | `#9A968C` | `#625E56` | secondary text |
+| secondary / muted | `#1D1D20` | `#EFECE4` | quiet buttons, chips |
+| border / input | `#29292D` | `#DEDACF` | hairlines |
+| primary | `#FFB224` (lantern amber) | `#141312` (ink) | the one main action per screen |
+| primary-foreground | `#1A1200` | `#FAF8F3` | text on primary |
+| accent | `#FFB224` | `#965A00` | the state label, active nav |
+| destructive | `#FF6369` | `#C4262E` | errors and irreversible actions only |
+| success | `#4CC38A` | `#1A7F56` | confirmed and received |
+| network | `#FFB224` | `#141312` | the network chip and the confirm button |
+| network-surface | `#2E2208` | `#EFECE4` | the chip's background |
 
-## Direction C: Koe (声, "voice"). Voice-first stage
-- One line: the home screen is the orb; you talk, captions show what was heard, and cards rise from the bottom to be confirmed.
-- Palette seed: 21st theme "Amber Mono" (@serafimcloud) on a near-black base, finalised by hand. Default mode: dark.
-- Dark: background `#0A0A0B`, card `#151517`, text `#F5F1E8`, secondary text `#9A968C`, border `#29292D`, primary (lantern amber) `#FFB224`, destructive `#FF6369`, success `#4CC38A`.
-- Light: background `#FAF8F3`, card `#FFFFFF`, text `#141312`, secondary text `#625E56`, border `#DEDACF`, primary (ink) `#141312`, accent `#965A00`, destructive `#C4262E`, success `#1A7F56`.
-- Testnet layer: sky `#4CC2FF` (dark) / `#0A6AAB` (light).
-- Fonts: Bricolage Grotesque (display), Manrope (body, Latin + Cyrillic), JetBrains Mono (numbers).
-- Shape: 20px cards and sheets, full pills; soft glow only around the orb.
-- Density: very low. One thing on screen at a time, large type.
+**Testnet layer** (changes only `network`, `network-foreground`, `network-surface` and `ring`): sky `#4CC2FF` on `#0D2A3A` in dark, `#0A6AAB` on `#DDF0FB` in light. It is never the error colour, and the words "Testnet · no real money" are always shown with it.
+
+**The orb** takes three colours from `tokens.json`: amber `#FFB224`, `#FFE2A8`, `#B54A00` on mainnet; sky `#4CC2FF`, `#C7ECFF`, `#0A4A7A` on testnet. So the orb itself tells you which network you are on.
+
+Contrast: every text pair is at least 4.5:1 (WCAG AA) in all four themes, checked by script.
+
+## Typography
+- Display: **Bricolage Grotesque** (500–700). The agent's spoken line, screen titles.
+- Body: **Manrope** (400–700, Latin + Cyrillic). Everything else.
+- Mono: **JetBrains Mono** (400–600). Amounts, addresses, anything numeric; tabular figures; always left-to-right.
+- Other scripts fall back to Noto: Noto Sans Arabic, Noto Nastaliq Urdu, Noto Sans Devanagari, Noto Sans Bengali, Noto Sans SC.
+- Scale (px): 12 / 14 / 16 / 20 / 26 / 32 / 48. The agent's line is 26 on the stage.
+
+## Spacing and shape
+- Base unit 4px; scale 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64.
+- Radius: 20px cards and sheets (28px on the top corners of a bottom sheet), full pills for buttons and chips.
+- Shadow: none. Depth comes from the card colour and hairline borders. The only glow is the orb.
+- Density: very low. One thing on screen at a time.
+- Logical spacing only (`ps-`/`pe-`/`ms-`/`me-`, `text-start`), so Arabic and Urdu mirror without per-screen work.
+
+## Motion
+- Presses and hovers: 150ms ease-out.
+- Sheets and cards rising: 250ms.
+- The orb reacts to voice level; with reduced motion it becomes a still ring and the state is carried by the label ("Listening", "Thinking", "Speaking").
+- Captions fade in by word.
+- Money-moving confirmations never auto-dismiss.
+
+## Interaction states
+Every interactive component has hover, a visible focus ring (`ring`), active, disabled, loading, empty and error states.
+
+## Rules specific to this direction
+These are Claude's proposals that follow from the direction; Abu has not reviewed them one by one and can change any of them.
+- **One primary action per screen.** Amber is for that action and the current state label, nothing else.
+- **Voice is never the only way.** Every voice action has a tap equivalent, and the keyboard button is always visible.
+- **What was heard is always shown** before anything is confirmed, and the confirm card shows the exact amount, asset and recipient.
+- **Hold or say to confirm.** A money-moving confirm needs a deliberate hold (or the spoken word plus the wallet PIN); a single tap never sends.
+
+## Components
+Web: 21st.dev and the premium registries, installed into `packages/ui-web` and reskinned to these tokens (picks listed in `plan/stages/02-design-system-component-sourcing.md`). Native: React Native Reusables on Uniwind, built to match. Never AI-generated (D28).
 
 ## Banned (on top of the premium-ui blocklist)
 - Inter, Roboto, Arial or the system font as the brand font.
 - Purple or blue-to-pink gradients; gradient text.
-- The same red for brand accent and for errors.
-- Placeholder people, amounts or copy from installed components ("John Doe", "$1,234.56", "Lorem ipsum").
+- Amber for anything that is not the primary action or the current state.
+- The same colour for brand accent and for errors.
+- Placeholder people, amounts or copy from installed components.
 - Colour as the only signal for network, success or error.
-- AI-generated components (D28).

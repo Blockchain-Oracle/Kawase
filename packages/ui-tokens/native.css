@@ -1,0 +1,112 @@
+/* GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild. */
+@theme {
+  --radius: 20px;
+  --radius-sm: 16px;
+  --radius-md: 18px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #FAF8F3;
+      --color-foreground: #141312;
+      --color-card: #FFFFFF;
+      --color-card-foreground: #141312;
+      --color-popover: #FFFFFF;
+      --color-popover-foreground: #141312;
+      --color-primary: #141312;
+      --color-primary-foreground: #FAF8F3;
+      --color-secondary: #EFECE4;
+      --color-secondary-foreground: #141312;
+      --color-muted: #EFECE4;
+      --color-muted-foreground: #625E56;
+      --color-accent: #965A00;
+      --color-accent-foreground: #FFFFFF;
+      --color-destructive: #C4262E;
+      --color-success: #1A7F56;
+      --color-border: #DEDACF;
+      --color-input: #DEDACF;
+      --color-ring: #965A00;
+      --color-network: #141312;
+      --color-network-foreground: #FAF8F3;
+      --color-network-surface: #EFECE4;
+    }
+
+    @variant dark {
+      --color-background: #0A0A0B;
+      --color-foreground: #F5F1E8;
+      --color-card: #151517;
+      --color-card-foreground: #F5F1E8;
+      --color-popover: #151517;
+      --color-popover-foreground: #F5F1E8;
+      --color-primary: #FFB224;
+      --color-primary-foreground: #1A1200;
+      --color-secondary: #1D1D20;
+      --color-secondary-foreground: #F5F1E8;
+      --color-muted: #1D1D20;
+      --color-muted-foreground: #9A968C;
+      --color-accent: #FFB224;
+      --color-accent-foreground: #1A1200;
+      --color-destructive: #FF6369;
+      --color-success: #4CC38A;
+      --color-border: #29292D;
+      --color-input: #29292D;
+      --color-ring: #FFB224;
+      --color-network: #FFB224;
+      --color-network-foreground: #1A1200;
+      --color-network-surface: #2E2208;
+    }
+
+    @variant testnet {
+      --color-background: #FAF8F3;
+      --color-foreground: #141312;
+      --color-card: #FFFFFF;
+      --color-card-foreground: #141312;
+      --color-popover: #FFFFFF;
+      --color-popover-foreground: #141312;
+      --color-primary: #141312;
+      --color-primary-foreground: #FAF8F3;
+      --color-secondary: #EFECE4;
+      --color-secondary-foreground: #141312;
+      --color-muted: #EFECE4;
+      --color-muted-foreground: #625E56;
+      --color-accent: #965A00;
+      --color-accent-foreground: #FFFFFF;
+      --color-destructive: #C4262E;
+      --color-success: #1A7F56;
+      --color-border: #DEDACF;
+      --color-input: #DEDACF;
+      --color-ring: #0A6AAB;
+      --color-network: #0A6AAB;
+      --color-network-foreground: #FFFFFF;
+      --color-network-surface: #DDF0FB;
+    }
+
+    @variant testnet-dark {
+      --color-background: #0A0A0B;
+      --color-foreground: #F5F1E8;
+      --color-card: #151517;
+      --color-card-foreground: #F5F1E8;
+      --color-popover: #151517;
+      --color-popover-foreground: #F5F1E8;
+      --color-primary: #FFB224;
+      --color-primary-foreground: #1A1200;
+      --color-secondary: #1D1D20;
+      --color-secondary-foreground: #F5F1E8;
+      --color-muted: #1D1D20;
+      --color-muted-foreground: #9A968C;
+      --color-accent: #FFB224;
+      --color-accent-foreground: #1A1200;
+      --color-destructive: #FF6369;
+      --color-success: #4CC38A;
+      --color-border: #29292D;
+      --color-input: #29292D;
+      --color-ring: #4CC2FF;
+      --color-network: #4CC2FF;
+      --color-network-foreground: #04131C;
+      --color-network-surface: #0D2A3A;
+    }
+  }
+}
