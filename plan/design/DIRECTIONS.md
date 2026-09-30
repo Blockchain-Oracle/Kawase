@@ -1,5 +1,7 @@
 # Stage 2: three home-screen directions
 
+**Superseded (2026-09-30, D34/D35):** after building Koe, Abu did not like the colours and design intention; the UI is being revamped as "Lime on Ink" from the reference study (`plan/design/REVAMP-PLAN.md`). This file and `directions/` stay as history.
+
 **Decision (2026-09-30): Abu chose C, Koe, and said he likes its colours.** Claude's recommendation below (A as the base) was not taken. `DESIGN.md` and `packages/ui-tokens/tokens.json` now hold Koe only.
 
 Purpose: the three design directions Abu chooses from, with what each one is, what differs, the risks, and Claude's recommendation.

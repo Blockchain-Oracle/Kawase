@@ -1,6 +1,7 @@
 // Native twin of ui-web's voice-powered-orb (21st.dev isaiahbjork/voice-powered-orb).
-// The same fragment shader, ported from WebGL to Skia's shader language. The voice level comes from a prop
-// (the app owns the microphone), and with reduced motion the orb is a still ring.
+// The same fragment shader, ported from WebGL to Skia's shader language: since the revamp (Lime on Ink, D35) a glass
+// sphere with a core that breathes with the voice level. The level comes from a prop (the app owns the microphone),
+// and with reduced motion the orb is a still frame.
 import { tokens } from "@kawase/ui-tokens";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { Canvas, Fill, Shader, Skia, type SkSize } from "@shopify/react-native-skia";
@@ -23,9 +24,6 @@ uniform float hoverIntensity;
 uniform float3 baseColor1;
 uniform float3 baseColor2;
 uniform float3 baseColor3;
-
-const float innerRadius = 0.6;
-const float noiseScale = 0.65;
 
 float3 hash33(float3 p3) {
   p3 = fract(p3 * float3(0.1031, 0.11369, 0.13787));
@@ -54,59 +52,48 @@ float snoise3(float3 p) {
   return dot(float4(31.316), n);
 }
 
-float4 extractAlpha(float3 colorIn) {
-  float a = max(max(colorIn.r, colorIn.g), colorIn.b);
-  return float4(colorIn.rgb / (a + 1e-5), a);
-}
-
-float light1(float intensity, float attenuation, float dist) {
-  return intensity / (1.0 + dist * attenuation);
-}
-
-float light2(float intensity, float attenuation, float dist) {
-  return intensity / (1.0 + dist * dist * attenuation);
-}
+// Kawase (Lime on Ink): a glass sphere lit from the top-start, with a lime core that breathes with the voice
+// level. baseColor1 = the core, baseColor2 = the rim light, baseColor3 = the glass body.
+const float sphereRadius = 0.86;
+const float edgeSoftness = 0.012;
 
 float4 draw(float2 uv) {
-  float ang = atan(uv.y, uv.x);
+  float3 color1 = baseColor1;
+  float3 color2 = baseColor2;
+  float3 color3 = baseColor3;
+
   float len = length(uv);
-  float invLen = len > 0.0 ? 1.0 / len : 0.0;
+  float inside = 1.0 - smoothstep(sphereRadius - edgeSoftness, sphereRadius + edgeSoftness, len);
+  if (inside <= 0.0) return float4(0.0);
+  float z = sqrt(max(0.0, 1.0 - (len * len) / (sphereRadius * sphereRadius)));
+  float3 n = normalize(float3(uv / sphereRadius, z));
+  float3 lightDir = normalize(float3(-0.45, -0.6, 0.65));
+  float diff = max(dot(n, lightDir), 0.0);
+  float fresnel = pow(1.0 - z, 3.0);
 
-  float n0 = snoise3(float3(uv * noiseScale, iTime * 0.5)) * 0.5 + 0.5;
-  float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0);
-  float d0 = distance(uv, (r0 * invLen) * uv);
-  float v0 = light1(1.0, 10.0, d0);
-  v0 *= smoothstep(r0 * 1.05, r0, len);
-  float cl = cos(ang + iTime * 2.0) * 0.5 + 0.5;
+  float n0 = snoise3(float3(uv * 1.4, iTime * 0.3 + rot)) * 0.5 + 0.5;
+  float coreR = 0.22 + hover * 0.30 + n0 * 0.04;
+  float core = smoothstep(coreR, 0.0, len);
+  float halo = smoothstep(coreR + 0.35, coreR * 0.6, len) * (0.30 + hover * 0.30);
+  float n1 = snoise3(float3(uv * 3.0 + 7.0, iTime * 0.15)) * 0.5 + 0.5;
+  float edge = smoothstep(sphereRadius - 0.07, sphereRadius - 0.006, len);
 
-  float a = iTime * -1.0;
-  float2 pos = float2(cos(a), sin(a)) * r0;
-  float d = distance(uv, pos);
-  float v1 = light2(1.5, 5.0, d);
-  v1 *= light1(1.0, 50.0, d0);
+  float2 hp = float2(-0.34, -0.42);
+  float2 hd = (uv - hp) * float2(6.0, 9.0);
+  float spec = exp(-dot(hd, hd));
 
-  float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
-  float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len);
-
-  float3 col = mix(baseColor1, baseColor2, cl);
-  col = mix(baseColor3, col, v0);
-  col = (col + v1) * v2 * v3;
-  col = clamp(col, 0.0, 1.0);
-
-  return extractAlpha(col);
+  float3 col = color3 * (0.10 + 0.10 * diff) + color3 * n1 * 0.06;
+  col += color1 * (core * (0.9 + hover * 0.3) + halo);
+  col += color2 * (fresnel * 0.6 + edge * 0.5) * (1.0 + hover * 0.3);
+  col += float3(1.0) * (spec * 0.85 + edge * 0.15);
+  float alpha = inside * (0.30 + 0.70 * max(max(fresnel * 1.4, edge * 0.8), core) + spec);
+  return float4(clamp(col, 0.0, 1.0), clamp(alpha, 0.0, 1.0));
 }
 
 half4 main(float2 fragCoord) {
   float2 center = iResolution * 0.5;
   float size = min(iResolution.x, iResolution.y);
   float2 uv = (fragCoord - center) / size * 2.0;
-
-  float s = sin(rot);
-  float c = cos(rot);
-  uv = float2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
-
-  uv.x += hover * hoverIntensity * 0.1 * sin(uv.y * 10.0 + iTime);
-  uv.y += hover * hoverIntensity * 0.1 * sin(uv.x * 10.0 + iTime);
 
   float4 col = draw(uv);
   return half4(col.rgb * col.a, col.a);

@@ -21,16 +21,24 @@
     ]
   },
   "design": {
-    "colorMode": "dark-default, light supported",
-    "colors": {},
+    "colorMode": "dark-default (ink), light supported (paper)",
+    "colors": {
+      "ink": "#0B0C10",
+      "lime": "#D4FF3A",
+      "mint (success)": "#35D39B",
+      "sky (testnet)": "#4CC2FF",
+      "error": "#FF5C5C",
+      "paper (light)": "#F7F8F4",
+      "olive (light accent)": "#3F6600"
+    },
     "typography": {
-      "display": "Bricolage Grotesque",
+      "display": "Space Grotesk",
       "body": "Manrope",
       "mono": "JetBrains Mono"
     },
     "spacing": {},
     "radius": {
-      "card": "20px",
+      "card": "24px",
       "pill": "full"
     },
     "shadows": {},
@@ -50,15 +58,18 @@
   "constraints": {
     "must": [
       "resolve every colour to a token from ui-tokens",
-      "one primary (amber) action per screen",
-      "show \"Testnet \u00b7 no real money\" whenever testnet is on",
-      "every voice action has a tap equivalent"
+      "one primary (lime) action per screen; lime never carries an error",
+      "show \"Testnet · no real money\" whenever testnet is on; REAL MONEY eyebrow on mainnet money cards",
+      "every voice action has a tap equivalent",
+      "real entity marks from @kawase/identity; never generic coin icons, never tinted logos",
+      "a disabled primary button names the first fixable reason"
     ],
     "avoid": [
       "AI-generated components",
-      "purple or pink gradients",
-      "Inter as the brand font",
-      "amber outside the primary action and state label"
+      "purple or pink gradients, gradient text",
+      "Inter, Roboto or the system font as the brand font",
+      "amber accents (the previous direction)",
+      "lime outside the primary action, the active dock item and live state"
     ]
   },
   "decisions": [
@@ -66,6 +77,11 @@
       "date": "2026-09-30",
       "decision": "Direction C, Koe (voice-first stage), chosen by Abu from three built directions",
       "evidence": "plan/design/DIRECTIONS.md"
+    },
+    {
+      "date": "2026-09-30",
+      "decision": "Direction revamped to \"Lime on Ink\" (D34/D35) from the Solflare/Phantom/Fomo reference study; Koe superseded",
+      "evidence": "plan/design/REVAMP-PLAN.md"
     }
   ],
   "evidence": [

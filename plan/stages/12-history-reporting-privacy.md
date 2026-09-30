@@ -18,3 +18,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp designs the Activity tab (filter chips, rows with identity and status chips, receipt sheet with a "why" slot), the share-card frame and Settings → Data & privacy; this stage fills them (decision page, weekly report, export, retention).

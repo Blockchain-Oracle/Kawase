@@ -1,0 +1,33 @@
+{
+  "name": "@kawase/identity",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Real entity marks (tokens, chains, providers) keyed by chain id, token address or provider slug, with provenance. SVG sources in svg/, generated React components for native and web.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./native": "./src/generated/native/index.ts",
+    "./web": "./src/generated/web/index.ts"
+  },
+  "dependencies": {
+    "@kawase/networks": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
+    "@types/react": "~19.2.2",
+    "react": "19.2.3",
+    "react-native-svg": "15.15.4",
+    "typescript": "catalog:"
+  }
+}

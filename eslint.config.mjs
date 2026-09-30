@@ -17,8 +17,8 @@ export default tseslint.config(
     },
   },
   {
-    // Constant modules are where numbers are allowed to live.
-    files: ["packages/config/**", "packages/networks/src/addresses.ts", "packages/networks/src/contexts.ts", "**/*.config.*"],
+    // Constant modules are where numbers are allowed to live; the art objects' geometry is their content.
+    files: ["packages/config/**", "packages/networks/src/addresses.ts", "packages/networks/src/contexts.ts", "**/*.config.*", "packages/ui-native/src/components/art/**"],
     rules: { "@typescript-eslint/no-magic-numbers": "off" },
   },
   {

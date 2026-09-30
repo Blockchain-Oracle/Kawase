@@ -18,3 +18,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp designs the inbox (bell + count in the header, rows, empty state), the notification primer sheet and Settings → Notifications (push, email via the code flow, in-app; per-event preferences, quiet hours) as shells; this stage wires them.

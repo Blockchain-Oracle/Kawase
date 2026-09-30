@@ -86,8 +86,8 @@ const googleFontsHref = `https://fonts.googleapis.com/css2?${Object.entries(toke
 const { googleFontsAxes: _axes, ...fonts } = tokens.fonts
 
 const ts = `// GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild.
-// For code that cannot use class names: the orb shader, charts, the status bar.
-export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: { ...fonts, googleFontsHref }, orb: tokens.orb, themes }, null, 2)} as const;
+// For code that cannot use class names: the orb shader, charts, the status bar, the story colour fields.
+export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: { ...fonts, googleFontsHref }, orb: tokens.orb, story: { ink: tokens.story.ink, fields: tokens.story.fields }, themes }, null, 2)} as const;
 
 export type ThemeName = keyof typeof tokens.themes;
 export type TokenName = keyof typeof tokens.themes.light;

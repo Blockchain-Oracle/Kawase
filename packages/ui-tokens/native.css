@@ -1,12 +1,12 @@
 /* GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild. */
 @theme {
-  --radius: 20px;
-  --radius-sm: 16px;
-  --radius-md: 18px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
+  --radius: 24px;
+  --radius-sm: 20px;
+  --radius-md: 22px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
   --font-sans: 'Manrope';
-  --font-display: 'Bricolage Grotesque';
+  --font-display: 'Space Grotesk';
   --font-mono: 'JetBrains Mono';
 }
 
@@ -14,112 +14,136 @@
   :root {
     @variant web {
       --font-sans: "Manrope", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
-      --font-display: "Bricolage Grotesque", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
+      --font-display: "Space Grotesk", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, monospace;
     }
 
     @variant light {
-      --color-background: #FAF8F3;
-      --color-foreground: #141312;
+      --color-background: #F7F8F4;
+      --color-foreground: #101210;
       --color-card: #FFFFFF;
-      --color-card-foreground: #141312;
+      --color-card-foreground: #101210;
       --color-popover: #FFFFFF;
-      --color-popover-foreground: #141312;
-      --color-primary: #141312;
-      --color-primary-foreground: #FAF8F3;
-      --color-secondary: #EFECE4;
-      --color-secondary-foreground: #141312;
-      --color-muted: #EFECE4;
-      --color-muted-foreground: #625E56;
-      --color-accent: #965A00;
+      --color-popover-foreground: #101210;
+      --color-primary: #101210;
+      --color-primary-foreground: #D4FF3A;
+      --color-secondary: #ECEEE7;
+      --color-secondary-foreground: #101210;
+      --color-muted: #ECEEE7;
+      --color-muted-foreground: #5C6158;
+      --color-accent: #3F6600;
       --color-accent-foreground: #FFFFFF;
       --color-destructive: #C4262E;
       --color-destructive-foreground: #FFFFFF;
       --color-success: #1A7F56;
-      --color-border: #DEDACF;
-      --color-input: #DEDACF;
-      --color-ring: #965A00;
-      --color-network: #141312;
-      --color-network-foreground: #FAF8F3;
-      --color-network-surface: #EFECE4;
+      --color-border: #D9DCD2;
+      --color-input: #D9DCD2;
+      --color-ring: #3F6600;
+      --color-network: #101210;
+      --color-network-foreground: #D4FF3A;
+      --color-network-surface: #E6F5C2;
+      --color-glass: #FFFFFFB8;
+      --color-glass-border: #00000014;
+      --color-scrim: #0B0C1099;
+      --color-texture: #0000000F;
+      --color-silver: #9AA0A8;
+      --color-silver-deep: #5B6067;
     }
 
     @variant dark {
-      --color-background: #0A0A0B;
-      --color-foreground: #F5F1E8;
-      --color-card: #151517;
-      --color-card-foreground: #F5F1E8;
-      --color-popover: #151517;
-      --color-popover-foreground: #F5F1E8;
-      --color-primary: #FFB224;
-      --color-primary-foreground: #1A1200;
-      --color-secondary: #1D1D20;
-      --color-secondary-foreground: #F5F1E8;
-      --color-muted: #1D1D20;
-      --color-muted-foreground: #9A968C;
-      --color-accent: #FFB224;
-      --color-accent-foreground: #1A1200;
-      --color-destructive: #FF6369;
-      --color-destructive-foreground: #2A0507;
-      --color-success: #4CC38A;
-      --color-border: #29292D;
-      --color-input: #29292D;
-      --color-ring: #FFB224;
-      --color-network: #FFB224;
-      --color-network-foreground: #1A1200;
-      --color-network-surface: #2E2208;
+      --color-background: #0B0C10;
+      --color-foreground: #F4F5F7;
+      --color-card: #14161C;
+      --color-card-foreground: #F4F5F7;
+      --color-popover: #171A21;
+      --color-popover-foreground: #F4F5F7;
+      --color-primary: #D4FF3A;
+      --color-primary-foreground: #0B0C10;
+      --color-secondary: #1C1F27;
+      --color-secondary-foreground: #F4F5F7;
+      --color-muted: #1C1F27;
+      --color-muted-foreground: #A0A6B4;
+      --color-accent: #D4FF3A;
+      --color-accent-foreground: #0B0C10;
+      --color-destructive: #FF5C5C;
+      --color-destructive-foreground: #2A0505;
+      --color-success: #35D39B;
+      --color-border: #262A34;
+      --color-input: #262A34;
+      --color-ring: #D4FF3A;
+      --color-network: #D4FF3A;
+      --color-network-foreground: #0B0C10;
+      --color-network-surface: #1E2A0A;
+      --color-glass: #14161CA6;
+      --color-glass-border: #FFFFFF1F;
+      --color-scrim: #000000A6;
+      --color-texture: #FFFFFF14;
+      --color-silver: #C9CDD3;
+      --color-silver-deep: #6E7279;
     }
 
     @variant testnet {
-      --color-background: #FAF8F3;
-      --color-foreground: #141312;
+      --color-background: #F7F8F4;
+      --color-foreground: #101210;
       --color-card: #FFFFFF;
-      --color-card-foreground: #141312;
+      --color-card-foreground: #101210;
       --color-popover: #FFFFFF;
-      --color-popover-foreground: #141312;
-      --color-primary: #141312;
-      --color-primary-foreground: #FAF8F3;
-      --color-secondary: #EFECE4;
-      --color-secondary-foreground: #141312;
-      --color-muted: #EFECE4;
-      --color-muted-foreground: #625E56;
-      --color-accent: #965A00;
+      --color-popover-foreground: #101210;
+      --color-primary: #101210;
+      --color-primary-foreground: #D4FF3A;
+      --color-secondary: #ECEEE7;
+      --color-secondary-foreground: #101210;
+      --color-muted: #ECEEE7;
+      --color-muted-foreground: #5C6158;
+      --color-accent: #3F6600;
       --color-accent-foreground: #FFFFFF;
       --color-destructive: #C4262E;
       --color-destructive-foreground: #FFFFFF;
       --color-success: #1A7F56;
-      --color-border: #DEDACF;
-      --color-input: #DEDACF;
+      --color-border: #D9DCD2;
+      --color-input: #D9DCD2;
       --color-ring: #0A6AAB;
       --color-network: #0A6AAB;
       --color-network-foreground: #FFFFFF;
       --color-network-surface: #DDF0FB;
+      --color-glass: #FFFFFFB8;
+      --color-glass-border: #00000014;
+      --color-scrim: #0B0C1099;
+      --color-texture: #0000000F;
+      --color-silver: #9AA0A8;
+      --color-silver-deep: #5B6067;
     }
 
     @variant testnet-dark {
-      --color-background: #0A0A0B;
-      --color-foreground: #F5F1E8;
-      --color-card: #151517;
-      --color-card-foreground: #F5F1E8;
-      --color-popover: #151517;
-      --color-popover-foreground: #F5F1E8;
-      --color-primary: #FFB224;
-      --color-primary-foreground: #1A1200;
-      --color-secondary: #1D1D20;
-      --color-secondary-foreground: #F5F1E8;
-      --color-muted: #1D1D20;
-      --color-muted-foreground: #9A968C;
-      --color-accent: #FFB224;
-      --color-accent-foreground: #1A1200;
-      --color-destructive: #FF6369;
-      --color-destructive-foreground: #2A0507;
-      --color-success: #4CC38A;
-      --color-border: #29292D;
-      --color-input: #29292D;
+      --color-background: #0B0C10;
+      --color-foreground: #F4F5F7;
+      --color-card: #14161C;
+      --color-card-foreground: #F4F5F7;
+      --color-popover: #171A21;
+      --color-popover-foreground: #F4F5F7;
+      --color-primary: #D4FF3A;
+      --color-primary-foreground: #0B0C10;
+      --color-secondary: #1C1F27;
+      --color-secondary-foreground: #F4F5F7;
+      --color-muted: #1C1F27;
+      --color-muted-foreground: #A0A6B4;
+      --color-accent: #D4FF3A;
+      --color-accent-foreground: #0B0C10;
+      --color-destructive: #FF5C5C;
+      --color-destructive-foreground: #2A0505;
+      --color-success: #35D39B;
+      --color-border: #262A34;
+      --color-input: #262A34;
       --color-ring: #4CC2FF;
       --color-network: #4CC2FF;
       --color-network-foreground: #04131C;
       --color-network-surface: #0D2A3A;
+      --color-glass: #14161CA6;
+      --color-glass-border: #FFFFFF1F;
+      --color-scrim: #000000A6;
+      --color-texture: #FFFFFF14;
+      --color-silver: #C9CDD3;
+      --color-silver-deep: #6E7279;
     }
   }
 }

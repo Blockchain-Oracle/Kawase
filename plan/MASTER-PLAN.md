@@ -337,6 +337,7 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4, #15), the wallet signing flow (#16), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
 
 ### Stage 2: Design system + component sourcing
+- **Revamp (2026-09-30, D34/D35):** Abu chose Koe, then rejected its colours and design intention after seeing it built; the system is being redone as "Lime on Ink" from the reference study — see `plan/design/REVAMP-PLAN.md` (Phases A–E: foundation → shell → onboarding → money surfaces and the rest of the map → web parity). It adds `packages/identity` (real marks with provenance), the art objects and the brand assets, and pre-designs the surfaces of Stages 4–12 so those stages connect data to finished screens.
 - `DESIGN.md` and the 3 directions → **Abu picks one**.
 - `packages/ui-tokens`: tokens.json → web and native CSS + TS; light, dark, and the testnet layer; RTL-safe logical spacing.
 - For every surface in the shortlist: search, pick, install into `ui-web`, then build the native twin in `ui-native`. Record every pick (component · author · URL · why) in `plan/stages/02-*.md`.
@@ -348,7 +349,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 - Wallet creation at sign-up (Turnkey, one EOA for both networks), the relayed 7702 setup per network, and the default allowance grant with one Face ID. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
 - Capability registry + runtime overlay + the public availability page.
 - i18n for 10 locales with RTL reload.
-- Settings hub skeleton. Expo app shell (tabs/drawer, routes), web output, PWA manifest.
+- Settings hub skeleton. Expo app shell (tabs/drawer, routes), web output, PWA manifest. **Revamp note:** the shell is the glass dock (Home · Chat · orb · Activity · Profile) with the network pill as the toggle in the header and the language pill on every onboarding screen; the optional `@handle` (api + screen) and the setup stepper/completion are part of the revamp's Phase C.
 - Deploy `api` + `web` to Coolify.
 - **Exit:** sign up as a guest → pick a language (including ar) → sign up with an email code and get a wallet with no PIN → accept the default allowance with one Face ID → toggle to mainnet (one-time sheet, mainnet setup relayed) and back instantly, same address; balances are separated per network; running on the Coolify domain.
 
@@ -367,7 +368,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
   - Every result renders on native and web.
 
 ### Stage 5: Money movement + contacts + business basics
-- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send; the approval endpoint (lock, fresh evaluate, spend reservation, then the allowance redeem or a wallet signature); post-verification against the draft; `tx_attempts` + reconciliation; the money-ending taxonomy.
+- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send (screens designed in the revamp, Phase D); the approval endpoint (lock, fresh evaluate, spend reservation, then the allowance redeem or a wallet signature); post-verification against the draft; `tx_attempts` + reconciliation; the money-ending taxonomy.
 - `apps/chain-watcher` (system emitter + ERC-20 + Memo, with cursors) → incoming-payment matching + inbox.
 - Contacts: versioned addresses, per-network trust, verification method, 24 h change cooldown + hold, first-time and lookalike warnings, ENS/Basenames/ArcNS ("unofficial"), QR scan, save-from-received.
 - Limits (per-tx, daily, weekly, allowlist, new-recipient cooldown, temporary raise with auto-restore, pause-all).
@@ -414,7 +415,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 
 ### Stage 11: Onboarding and trust layer
 - Guest look-around with deferred sign-up; a one-tap test USDC faucet with every state (the drip DCW + Circle faucet fallback); an optional sponsored ~$1 on mainnet.
-- A first-run tour + first-steps checklist + starter chips per state.
+- A first-run tour + first-steps checklist + starter chips per state. **Revamp note:** story onboarding, the handle, the completion scene with the authority receipt, the first-steps checklist, the faucet states and the Wallet & limits page are designed in the revamp; this stage wires them.
 - Fee reserve "~N actions left"; the feasibility pre-check with one-tap fixes.
 - Pending-write reconciliation on app open; the status page + "right now" card; the authority "can / can-never" receipt everywhere.
 - The exit kit: pause all → revoke the agent → sweep back. The trust page. In-app help. Versioned consent.

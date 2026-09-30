@@ -20,3 +20,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp (`plan/design/REVAMP-PLAN.md`) delivers story onboarding, the optional handle, the completion scene with the authority receipt, the first-steps checklist and starter chips (replacing the first-run tour), the faucet's seven states in the fund hub, the fee-reserve chip, the reconciliation and degraded banners, Wallet & limits (pause all, risk dial, practice, exit kit rows) and Settings → Help & trust as designed surfaces. This stage wires the faucet drip, fee reserve, reconciliation, status, the trust page content and versioned consent to them.

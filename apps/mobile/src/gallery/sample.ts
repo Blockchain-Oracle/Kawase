@@ -96,3 +96,99 @@ export const SAMPLE = {
 } as const;
 
 export const SAMPLE_ADDRESS = "0x92Bf…c1A4";
+
+/** Sample copy for the direction board (Lime on Ink). Product copy comes from the catalogs once the screens are real. */
+export const BOARD = {
+  en: {
+    language: "English",
+    start: "Start",
+    haveAccount: "I already have an account",
+    tryFirst: "Try it first, sign in later",
+    panelOf: (n: number, total: number) => `Panel ${n} of ${total}`,
+    panels: [
+      { title: "Say it, it's sent.", body: "Tell Kawase what to do with your money. It shows what it heard, then does it on Arc." },
+      { title: "Your money, your limits.", body: "One Face ID sets a daily allowance. Kawase can never go past it." },
+      { title: "Real money or practice.", body: "Switch between Arc and Arc Testnet with one tap. Test money is for trying things." },
+      { title: "In your language.", body: "Ten languages, spoken and written. Change it any time — even now." },
+      { title: "Runs on its own.", body: "Rent every 1st, sends to @amina, the tools the agent buys — all inside your limits." },
+    ],
+    receiptTitle: "Sent 25 USDC to Amina",
+    allowanceTitle: "Daily allowance",
+    allowanceValue: "5,000 USDC",
+    faceId: "Face ID",
+    languages: ["English", "中文", "العربية", "हिन्दी", "Español", "Français", "Português", "বাংলা", "Русский", "اردو"],
+    home: {
+      balanceLabel: "Balance",
+      feeReserve: "~40 actions left",
+      fund: "Fund",
+      request: "Request",
+      firstSteps: "First steps",
+      steps: ["Create your account", "Set up your wallet", "Approve your daily allowance", "Get funded"],
+      stepDone: "Done",
+      chips: ["What can you do?", "Send 10 USDC to @amina", "Get test USDC"],
+      recent: "Recent",
+      dock: { home: "Home", chat: "Chat", voice: "Talk to Kawase", activity: "Activity", profile: "Profile" },
+      more: "More actions",
+      inbox: "Inbox",
+      settings: "Settings",
+    },
+    receive: {
+      title: "Receive",
+      warning: "Receives USDC and EURC on Arc only. Use Fund → Bridge for other chains.",
+      copy: "Copy address",
+      share: "Share",
+      name: "@abu",
+    },
+    voice: {
+      close: "Close",
+      listening: "Listening",
+    },
+  },
+  ar: {
+    language: "العربية",
+    start: "ابدأ",
+    haveAccount: "لديّ حساب بالفعل",
+    tryFirst: "جرّبه أولاً، وسجّل الدخول لاحقاً",
+    panelOf: (n: number, total: number) => `اللوحة ${n} من ${total}`,
+    panels: [
+      { title: "قلها، فتُرسَل.", body: "أخبر كاواسي بما تريد فعله بأموالك. يعرض ما سمعه، ثم ينفّذه على Arc." },
+      { title: "أموالك، حدودك.", body: "بصمة وجه واحدة تحدّد حدّاً يومياً. لا يمكن لكاواسي تجاوزه أبداً." },
+      { title: "أموال حقيقية أو تدريب.", body: "بدّل بين Arc وشبكة Arc التجريبية بلمسة واحدة. أموال التجربة للتجربة فقط." },
+      { title: "بلغتك.", body: "عشر لغات، نطقاً وكتابة. غيّرها في أي وقت — حتى الآن." },
+      { title: "يعمل من تلقاء نفسه.", body: "الإيجار في أول كل شهر، تحويلات إلى @amina، والأدوات التي يشتريها الوكيل — كلها ضمن حدودك." },
+    ],
+    receiptTitle: "أُرسل 25 USDC إلى أمينة",
+    allowanceTitle: "الحد اليومي",
+    allowanceValue: "5,000 USDC",
+    faceId: "بصمة الوجه",
+    languages: ["العربية", "English", "中文", "हिन्दी", "Español", "Français", "Português", "বাংলা", "Русский", "اردو"],
+    home: {
+      balanceLabel: "الرصيد",
+      feeReserve: "نحو 40 عملية متبقية",
+      fund: "تمويل",
+      request: "طلب",
+      firstSteps: "الخطوات الأولى",
+      steps: ["أنشئ حسابك", "جهّز محفظتك", "وافق على حدّك اليومي", "احصل على التمويل"],
+      stepDone: "تم",
+      chips: ["ماذا يمكنك أن تفعل؟", "أرسل 10 USDC إلى @amina", "احصل على USDC تجريبية"],
+      recent: "الأخيرة",
+      dock: { home: "الرئيسية", chat: "الدردشة", voice: "تحدّث إلى كاواسي", activity: "النشاط", profile: "الملف" },
+      more: "إجراءات أخرى",
+      inbox: "الوارد",
+      settings: "الإعدادات",
+    },
+    receive: {
+      title: "استلام",
+      warning: "يستقبل USDC وEURC على Arc فقط. استخدم تمويل ← جسر للشبكات الأخرى.",
+      copy: "نسخ العنوان",
+      share: "مشاركة",
+      name: "@abu",
+    },
+    voice: {
+      close: "إغلاق",
+      listening: "أستمع",
+    },
+  },
+} as const;
+
+export const SAMPLE_FULL_ADDRESS = "0x92Bf1d3a9C0e4B7f2A6d8E5c1F0a9B8c7D6e5c1A4";

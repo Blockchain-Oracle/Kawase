@@ -16,3 +16,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp's glass dock takes an `orientation` prop and the web shell reserves a max content width at ≥ 900 px, so the desktop layout can stand the dock up as a left rail; the identity package and brand assets serve the PWA manifest.

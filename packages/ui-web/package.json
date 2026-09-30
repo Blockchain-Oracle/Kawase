@@ -18,6 +18,7 @@
     "@hugeicons/core-free-icons": "^4.3.5",
     "@hugeicons/react": "^1.1.10",
     "@kawase/i18n": "workspace:*",
+    "@kawase/identity": "workspace:*",
     "@kawase/ui-tokens": "workspace:*",
     "@radix-ui/react-slot": "^1.3.3",
     "@radix-ui/react-tooltip": "^1.2.16",

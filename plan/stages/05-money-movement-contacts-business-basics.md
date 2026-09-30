@@ -20,3 +20,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp (`plan/design/REVAMP-PLAN.md`) designs this stage's screens early — send (recipient search, amount ticket, memo, review with trust/first-time/lookalike rows, receipt), request + share card, contacts (list, row with per-network trust, add-contact sheet), the `@handle` as a recipient — so this stage connects `contacts.search`, `resolve_name`, `payment_requests` and execution to finished screens.

@@ -5,8 +5,8 @@ import { Renderer, Program, Mesh, Triangle, Vec3, type OGLRenderingContext } fro
 import { tokens } from "@kawase/ui-tokens";
 
 // Source: 21st.dev isaiahbjork/voice-powered-orb. Changes for Kawase: type fixes (the published source does not
-// compile under current TypeScript DOM types), ring colours and the voice level as props, and a still ring
-// when the visitor prefers reduced motion.
+// compile under current TypeScript DOM types), the voice level and colours as props, a still frame when the visitor
+// prefers reduced motion, and (Lime on Ink, D35) the ring shader replaced by a glass sphere with a breathing core.
 type OrbGL = OGLRenderingContext & { canvas: HTMLCanvasElement };
 const DEFAULT_ORB_COLORS: readonly [string, string, string] = tokens.orb.mainnet;
 const hexToVec3 = (hex: string) => {
@@ -145,62 +145,48 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     uniform vec3 baseColor1;
     uniform vec3 baseColor2;
     uniform vec3 baseColor3;
-    const float innerRadius = 0.6;
-    const float noiseScale = 0.65;
-
-    float light1(float intensity, float attenuation, float dist) {
-      return intensity / (1.0 + dist * attenuation);
-    }
-
-    float light2(float intensity, float attenuation, float dist) {
-      return intensity / (1.0 + dist * dist * attenuation);
-    }
+    // Kawase (Lime on Ink): a glass sphere lit from the top-start, with a lime core that breathes with the voice
+    // level. baseColor1 = the core, baseColor2 = the rim light, baseColor3 = the glass body.
+    const float sphereRadius = 0.86;
+    const float edgeSoftness = 0.012;
 
     vec4 draw(vec2 uv) {
       vec3 color1 = adjustHue(baseColor1, hue);
       vec3 color2 = adjustHue(baseColor2, hue);
       vec3 color3 = adjustHue(baseColor3, hue);
 
-      float ang = atan(uv.y, uv.x);
       float len = length(uv);
-      float invLen = len > 0.0 ? 1.0 / len : 0.0;
+      float inside = 1.0 - smoothstep(sphereRadius - edgeSoftness, sphereRadius + edgeSoftness, len);
+      if (inside <= 0.0) return vec4(0.0);
+      float z = sqrt(max(0.0, 1.0 - (len * len) / (sphereRadius * sphereRadius)));
+      vec3 n = normalize(vec3(uv / sphereRadius, z));
+      vec3 lightDir = normalize(vec3(-0.45, -0.6, 0.65));
+      float diff = max(dot(n, lightDir), 0.0);
+      float fresnel = pow(1.0 - z, 3.0);
 
-      float n0 = snoise3(vec3(uv * noiseScale, iTime * 0.5)) * 0.5 + 0.5;
-      float r0 = mix(mix(innerRadius, 1.0, 0.4), mix(innerRadius, 1.0, 0.6), n0);
-      float d0 = distance(uv, (r0 * invLen) * uv);
-      float v0 = light1(1.0, 10.0, d0);
-      v0 *= smoothstep(r0 * 1.05, r0, len);
-      float cl = cos(ang + iTime * 2.0) * 0.5 + 0.5;
+      float n0 = snoise3(vec3(uv * 1.4, iTime * 0.3 + rot)) * 0.5 + 0.5;
+      float coreR = 0.22 + hover * 0.30 + n0 * 0.04;
+      float core = smoothstep(coreR, 0.0, len);
+      float halo = smoothstep(coreR + 0.35, coreR * 0.6, len) * (0.30 + hover * 0.30);
+      float n1 = snoise3(vec3(uv * 3.0 + 7.0, iTime * 0.15)) * 0.5 + 0.5;
+      float edge = smoothstep(sphereRadius - 0.07, sphereRadius - 0.006, len);
 
-      float a = iTime * -1.0;
-      vec2 pos = vec2(cos(a), sin(a)) * r0;
-      float d = distance(uv, pos);
-      float v1 = light2(1.5, 5.0, d);
-      v1 *= light1(1.0, 50.0, d0);
+      vec2 hp = vec2(-0.34, -0.42);
+      vec2 hd = (uv - hp) * vec2(6.0, 9.0);
+      float spec = exp(-dot(hd, hd));
 
-      float v2 = smoothstep(1.0, mix(innerRadius, 1.0, n0 * 0.5), len);
-      float v3 = smoothstep(innerRadius, mix(innerRadius, 1.0, 0.5), len);
-
-      vec3 col = mix(color1, color2, cl);
-      col = mix(color3, col, v0);
-      col = (col + v1) * v2 * v3;
-      col = clamp(col, 0.0, 1.0);
-
-      return extractAlpha(col);
+      vec3 col = color3 * (0.10 + 0.10 * diff) + color3 * n1 * 0.06;
+      col += color1 * (core * (0.9 + hover * 0.3) + halo);
+      col += color2 * (fresnel * 0.6 + edge * 0.5) * (1.0 + hover * 0.3);
+      col += vec3(1.0) * (spec * 0.85 + edge * 0.15);
+      float alpha = inside * (0.30 + 0.70 * max(max(fresnel * 1.4, edge * 0.8), core) + spec);
+      return vec4(clamp(col, 0.0, 1.0), clamp(alpha, 0.0, 1.0));
     }
 
     vec4 mainImage(vec2 fragCoord) {
       vec2 center = iResolution.xy * 0.5;
       float size = min(iResolution.x, iResolution.y);
       vec2 uv = (fragCoord - center) / size * 2.0;
-
-      float angle = rot;
-      float s = sin(angle);
-      float c = cos(angle);
-      uv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
-
-      uv.x += hover * hoverIntensity * 0.1 * sin(uv.y * 10.0 + iTime);
-      uv.y += hover * hoverIntensity * 0.1 * sin(uv.x * 10.0 + iTime);
 
       return draw(uv);
     }

@@ -5,7 +5,8 @@
   "description": "Design tokens (direction: Koe). tokens.json is the source; native.css, web.css and tokens.ts are generated.",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs && node check-contrast.mjs",
+    "check": "node check-contrast.mjs"
   },
   "exports": {
     ".": "./tokens.ts",

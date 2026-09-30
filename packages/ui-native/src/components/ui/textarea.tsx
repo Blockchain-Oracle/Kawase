@@ -10,7 +10,7 @@ function Textarea({
   return (
     <TextInput
       className={cn(
-        "text-foreground border-input flex min-h-16 w-full flex-row rounded-lg border bg-transparent px-3 py-2 font-sans text-base md:text-sm",
+        "text-foreground border-input flex min-h-16 w-full flex-row rounded-2xl border border-transparent bg-muted px-4 py-3 font-sans text-base md:text-sm",
         Platform.select({
           web: "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive field-sizing-content resize-y outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed",
         }),

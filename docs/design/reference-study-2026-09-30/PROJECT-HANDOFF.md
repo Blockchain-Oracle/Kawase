@@ -6,7 +6,7 @@ This is a complete local reference library derived from three user-supplied Solf
 
 ## Authority for this project
 
-The destination is `/Users/abu/dev/hackathon/tamion`, whose product is **Kawase**. The approved direction is **C, Koe (声)**. Read [DESIGN.md](../../../DESIGN.md), [Abu's decisions](../../../context/08-product-research/DECISIONS-FROM-ABU.md), [the master plan](../../../plan/MASTER-PLAN.md) and [component sourcing](../../../plan/stages/02-design-system-component-sourcing.md) before translating a reference into UI work.
+The destination is `/Users/abu/dev/hackathon/tamion`, whose product is **Kawase**. The approved direction was **C, Koe (声)** until 2026-09-30; it is now **"Lime on Ink" (D34/D35)**, planned from this study in `plan/design/REVAMP-PLAN.md`, which carries the per-ID fidelity ledger. The Koe paragraphs below are kept as the record of what this handoff was written against. Read [DESIGN.md](../../../DESIGN.md), [Abu's decisions](../../../context/08-product-research/DECISIONS-FROM-ABU.md), [the master plan](../../../plan/MASTER-PLAN.md) and [component sourcing](../../../plan/stages/02-design-system-component-sourcing.md) before translating a reference into UI work.
 
 This copy adds a reference resource. It does not change those files, the selected direction, components, tokens, application behavior or existing developer work. References to Senryo/D2 and `senryo_treatment` in the preserved study are historical assessments of another product.
 

@@ -18,3 +18,4 @@ Status: not started
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-09-30: The revamp adds the brand mark/wordmark, `packages/identity` (real marks with provenance) and the Lime on Ink web components; the landing and `/demo` reuse them.

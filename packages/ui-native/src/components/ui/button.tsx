@@ -1,4 +1,5 @@
-// Reskinned for Kawase (Koe): pill radius, no shadows, and quiet states use `muted` (amber is kept for the primary action).
+// Reskinned for Kawase (Lime on Ink): pill radius, no shadows, tall touch targets like the references' CTAs, and quiet
+// states use `muted` (lime is kept for the primary action).
 import { TextClassContext } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -32,10 +33,10 @@ const buttonVariants = cva(
         link: "",
       },
       size: {
-        default: cn("h-10 px-4 py-2 sm:h-9", Platform.select({ web: "has-[>svg]:px-3" })),
-        sm: cn("h-9 gap-1.5 px-3 sm:h-8", Platform.select({ web: "has-[>svg]:px-2.5" })),
-        lg: cn("h-11 px-6 sm:h-10", Platform.select({ web: "has-[>svg]:px-4" })),
-        icon: "h-10 w-10 sm:h-9 sm:w-9",
+        default: cn("h-12 px-5 py-2", Platform.select({ web: "has-[>svg]:px-4" })),
+        sm: cn("h-9 gap-1.5 px-3.5", Platform.select({ web: "has-[>svg]:px-2.5" })),
+        lg: cn("h-14 px-7", Platform.select({ web: "has-[>svg]:px-5" })),
+        icon: "h-12 w-12",
       },
     },
     defaultVariants: {
@@ -46,7 +47,7 @@ const buttonVariants = cva(
 );
 
 const buttonTextVariants = cva(
-  cn("text-foreground text-sm font-medium", Platform.select({ web: "pointer-events-none transition-colors" })),
+  cn("text-foreground text-base font-semibold", Platform.select({ web: "pointer-events-none transition-colors" })),
   {
     variants: {
       variant: {
@@ -62,8 +63,8 @@ const buttonTextVariants = cva(
       },
       size: {
         default: "",
-        sm: "",
-        lg: "",
+        sm: "text-sm",
+        lg: "text-lg",
         icon: "",
       },
     },

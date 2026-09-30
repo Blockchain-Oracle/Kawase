@@ -5,7 +5,8 @@ function Input({ className, ...props }: React.ComponentProps<typeof TextInput> &
   return (
     <TextInput
       className={cn(
-        " border-input bg-background text-foreground flex h-10 w-full min-w-0 flex-row items-center rounded-lg border px-3 py-1 font-sans text-base leading-5 sm:h-9",
+        // A filled field (the references' inputs sit on a raised fill, not a hairline); the ring appears on focus.
+        "border-input bg-muted text-foreground flex h-14 w-full min-w-0 flex-row items-center rounded-2xl border border-transparent px-4 py-1 font-sans text-base leading-5",
         props.editable === false && cn("opacity-50", Platform.select({ web: "disabled:cursor-not-allowed" })),
         Platform.select({
           web: cn(
