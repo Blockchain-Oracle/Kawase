@@ -7,7 +7,9 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 **Stage 2: Design system and component sourcing** (`stages/02-design-system-component-sourcing.md`), with the Stage 1 spikes that need Abu or mainnet still open.
 
 ## Next action
-1. **Spike #16: Turnkey wallet in the app.** Needs Abu's Turnkey organization ID and auth-proxy config ID (`EXPO_PUBLIC_TURNKEY_ORGANIZATION_ID`, `EXPO_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID` in `.env`). Then: email-code sign-up, sign a 7702 authorization, an allowance grant and a transaction from the app on Arc testnet, and let the agent spend inside the limit. The kit is installed and the iOS app builds with it; `packages/wallet` has the Turnkey signer adapter (untested against Turnkey) and `packages/integrations/delegation` is tested on testnet (12/12).
+1. **Spike #16: Turnkey wallet in the app.** Everything except the Turnkey half is built and tested. Waiting for the two Turnkey ids in `.env` and `apps/mobile/.env` (`EXPO_PUBLIC_TURNKEY_ORGANIZATION_ID`, `EXPO_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID`); Abu hands `plan/prompts/codex-turnkey-setup.md` (Prompt 1) to Codex to create them. Then: start the spike server (`pnpm --filter @kawase/integrations-delegation spike16`, port 3022), open the app's temporary **Wallet** tab (`apps/mobile/src/spike/wallet-screen.native.tsx`), and tap steps 1 to 11.
+   - Done: spike server + a local-key client that runs the same flow (8/8 on Arc testnet, `test/spike16-local-client.ts`); the app's wallet provider, signer hook and test screen (typecheck passes; not yet run against Turnkey).
+   - To decide in this spike: how one sign-in covers both Better Auth and Turnkey.
 2. Stage 2 continues on Koe: fonts, native twins (orb, caption, confirm sheet), gallery.
 3. Stage 3 (core platform) can start in parallel: schema, api skeleton, wallet setup flow on the new design.
 4. Still open from Stage 1: #5 voice (Abu's phone), #12 x402 and the mainnet halves of #2 (what remains of it), #4/#15, #13 (wait for Circle's mainnet approval).

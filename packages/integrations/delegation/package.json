@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "test:arc-testnet": "tsx test/arc-testnet.integration.ts"
+    "test:arc-testnet": "tsx test/arc-testnet.integration.ts",
+    "spike16": "tsx test/spike16-server.ts"
   },
   "dependencies": {
     "@kawase/networks": "workspace:*",

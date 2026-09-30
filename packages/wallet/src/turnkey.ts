@@ -28,7 +28,10 @@ export type TurnkeyRawSignature = { r: string; s: string; v: string };
 
 export type TurnkeySignerDeps = {
   address: Address;
-  /** Wraps the kit's `signMessage` with `hashFunction: HASH_FUNCTION_NO_OP` and `addEthereumPrefix: false`. */
+  /**
+   * Wraps `httpClient.signRawPayload({ signWith: address, payload, encoding, hashFunction: "HASH_FUNCTION_NO_OP" })`.
+   * Do not use the kit's `signMessage` here: for hexadecimal payloads it hex-encodes the string a second time.
+   */
   signRawPayload: (request: {
     payload: string;
     encoding: TurnkeyPayloadEncoding;

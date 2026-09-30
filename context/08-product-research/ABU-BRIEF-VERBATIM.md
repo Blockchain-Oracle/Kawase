@@ -160,3 +160,11 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > ITS DOSENT COST US ANYTHING DONE BE LAZY DEADLINE IS NOT AN USSYE SO UPDAT AS NECCESS I LIKE WHAT I SEEING ON THIS [the five steps: sign up with an email code or Apple/Google, no PIN; one Face ID to accept a daily allowance; no prompt inside the allowance; Face ID above it or to raise the limit; automations approved once] LOL THANKS MAKE SURE TO CLEAN UP THE OLD THING SO WE STAY CONSISTENT THE OLD CIRCLE THING OR SOMETHING
 
 (Claude's reading: Abu approves the new wallet experience and the recommendation behind it (Turnkey-held key + on-chain limits). Cost and the deadline are not reasons to cut corners. Update everything that needs updating, and remove the old Circle PIN wallet from the plan and the app so the project is consistent.)
+
+## Build message, 2026-09-30: "continue building", then a request sent while Claude was building spike 16
+
+> continue building
+
+> ID WANT YOU TO HMM TO WRITE A PROMPT TO CODEX I THINK I DO HAVE SKILLS TOO FOR PROMPT TO CODEX TELL HIM TO SETUP EVERYTHING UP AND THE KEYS IN THE ENVS app.turnkey.com: ON MY BROWSER WHICH IS CURRENTLY LOGGED IN PHEW ON ZEN WRITE THE PROMPTS SO I CAN JUST GO GIVE HIM FOR THE TURKEY THANKS HED NEED WED NEED TO ENABLE ADD THE DOMAINS I THINK WE HAVE HMM APPLE GOOGLE YOU KNOW EVERYTHING THOUGH JUST WRITE THE PROMPTS
+
+(Claude's reading: Abu wants ready-to-paste prompts for Codex, which will drive his Zen browser (already logged in to app.turnkey.com) to set up Turnkey and put the keys into the env files, including the domain settings and Apple/Google sign-in. Claude writes the prompts only; Abu hands them to Codex. Written to `plan/prompts/codex-turnkey-setup.md`.)
