@@ -1,0 +1,102 @@
+// Errors leave the api as RFC 9457 problem details (application/problem+json), with a stable `type` code the
+// app can translate, never a stack trace.
+import type { Context } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
+
+export const HTTP = {
+  ok: 200,
+  created: 201,
+  noContent: 204,
+  badRequest: 400,
+  unauthorized: 401,
+  forbidden: 403,
+  notFound: 404,
+  conflict: 409,
+  gone: 410,
+  unprocessable: 422,
+  tooManyRequests: 429,
+  internal: 500,
+  badGateway: 502,
+} as const;
+
+export type ProblemCode =
+  | "validation"
+  | "unauthenticated"
+  | "forbidden"
+  | "not_found"
+  | "conflict"
+  | "nonce_invalid"
+  | "proof_invalid"
+  | "session_key_unknown"
+  | "wallet_not_registered"
+  | "wallet_not_set_up"
+  | "grant_not_pending"
+  | "signature_mismatch"
+  | "transaction_mismatch"
+  | "network_unavailable"
+  | "consent_required"
+  | "idempotency_mismatch"
+  | "rate_limited"
+  | "upstream"
+  | "internal";
+
+export class ProblemError extends Error {
+  readonly status: ContentfulStatusCode;
+  readonly code: ProblemCode;
+  readonly detail: string | undefined;
+  readonly extra: Record<string, unknown> | undefined;
+
+  constructor(status: ContentfulStatusCode, code: ProblemCode, detail?: string, extra?: Record<string, unknown>) {
+    super(detail ?? code);
+    this.name = "ProblemError";
+    this.status = status;
+    this.code = code;
+    this.detail = detail;
+    this.extra = extra;
+  }
+}
+
+export const problem = (
+  status: ContentfulStatusCode,
+  code: ProblemCode,
+  detail?: string,
+  extra?: Record<string, unknown>,
+) => new ProblemError(status, code, detail, extra);
+
+const TITLES: Record<ProblemCode, string> = {
+  validation: "The request is not valid",
+  unauthenticated: "Sign in first",
+  forbidden: "Not allowed",
+  not_found: "Not found",
+  conflict: "Already exists",
+  nonce_invalid: "The sign-in challenge is unknown, used or expired",
+  proof_invalid: "The sign-in proof does not verify",
+  session_key_unknown: "The session key is not registered on this user",
+  wallet_not_registered: "No wallet is registered for this account",
+  wallet_not_set_up: "The wallet is not set up on this network",
+  grant_not_pending: "There is no allowance waiting for a signature",
+  signature_mismatch: "The signature does not match the wallet",
+  transaction_mismatch: "The signed transaction differs from the request",
+  network_unavailable: "This network is not available",
+  consent_required: "A consent is required first",
+  idempotency_mismatch: "The same Idempotency-Key was used for a different request",
+  rate_limited: "Too many requests",
+  upstream: "A provider did not answer",
+  internal: "Something went wrong",
+};
+
+export function problemResponse(c: Context, error: ProblemError, requestId: string) {
+  return c.json(
+    {
+      type: `https://kawase.xyz/problems/${error.code}`,
+      title: TITLES[error.code],
+      status: error.status,
+      detail: error.detail,
+      instance: c.req.path,
+      requestId,
+      ...error.extra,
+    },
+    error.status,
+    { "content-type": "application/problem+json" },
+  );
+}

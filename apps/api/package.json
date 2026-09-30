@@ -6,9 +6,33 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "tsx --test test/*.test.ts"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "catalog:",
+    "@hono/node-server": "catalog:",
+    "@kawase/config": "workspace:*",
+    "@kawase/db": "workspace:*",
+    "@kawase/env": "workspace:*",
+    "@kawase/integrations-delegation": "workspace:*",
+    "@kawase/log": "workspace:*",
+    "@kawase/money": "workspace:*",
+    "@kawase/networks": "workspace:*",
+    "@metamask/smart-accounts-kit": "catalog:",
+    "@turnkey/api-key-stamper": "catalog:",
+    "@turnkey/http": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "tsx": "catalog:",
+    "viem": "catalog:",
+    "zod": "catalog:"
   }
 }

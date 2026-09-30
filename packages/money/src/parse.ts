@@ -2,7 +2,10 @@ import type { AssetId } from "./assets";
 import { amount, decimalsOf, type Amount } from "./amount";
 
 export class AmountParseError extends Error {
-  constructor(readonly input: string, readonly reason: "empty" | "invalid" | "too_many_decimals" | "negative") {
+  constructor(
+    readonly input: string,
+    readonly reason: "empty" | "invalid" | "too_many_decimals" | "negative",
+  ) {
     super(`Cannot read "${input}" as an amount (${reason}).`);
     this.name = "AmountParseError";
   }
@@ -68,7 +71,11 @@ export function parseAmount<A extends AssetId>(input: string, asset: A, locale: 
   if (trimmed === "") throw new AmountParseError(input, "empty");
   if (trimmed.startsWith("-")) throw new AmountParseError(input, "negative");
   const { decimal, group } = separatorsFor(locale);
-  const withLocaleMarks = trimmed.split(ARABIC_GROUP_SEPARATOR).join(group).split(ARABIC_DECIMAL_SEPARATOR).join(decimal);
+  const withLocaleMarks = trimmed
+    .split(ARABIC_GROUP_SEPARATOR)
+    .join(group)
+    .split(ARABIC_DECIMAL_SEPARATOR)
+    .join(decimal);
   const normalized = withLocaleMarks.split(group).join("").replace(DIGIT_GROUP_SEPARATORS, "").split(decimal).join(".");
   if (!/^\d+(\.\d+)?$/.test(normalized)) throw new AmountParseError(input, "invalid");
   const [whole = "0", fraction = ""] = normalized.split(".");

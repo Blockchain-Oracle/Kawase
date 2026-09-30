@@ -25,6 +25,18 @@ catalog:
   "@types/node": 24.19.0
   tsx: 4.23.15
   dotenv: 18.0.4
+  # API and data (Stage 3)
+  hono: 4.13.12
+  "@hono/node-server": 2.1.3
+  drizzle-orm: 0.45.3
+  drizzle-kit: 0.31.11
+  pg: 8.23.1
+  "@types/pg": 8.23.1
+  pino: 10.3.1
+  uuidv7: 1.2.1
+  # Turnkey, server side (the same versions the app's kit already uses)
+  "@turnkey/http": 6.6.0
+  "@turnkey/api-key-stamper": 0.6.17
 
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.71.0'
@@ -44,6 +56,11 @@ minimumReleaseAgeExclude:
   - expo-router@57.0.24
   - expo@57.0.26
   - viem@2.57.0
+  - hono@4.13.12
+  - pg-cloudflare@1.4.1
+  - pg-connection-string@2.14.1
+  - pg-protocol@1.16.1
+  - pg@8.23.1
 
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:

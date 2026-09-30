@@ -6,12 +6,26 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate.ts",
+    "test": "tsx --test test/*.test.ts"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@kawase/networks": "workspace:*",
+    "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
+    "tsx": "catalog:",
+    "uuidv7": "catalog:"
   }
 }

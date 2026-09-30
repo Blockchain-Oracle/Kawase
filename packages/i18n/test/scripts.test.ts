@@ -4,7 +4,8 @@ import { test } from "node:test";
 import { hasUncasedScript } from "../src/index";
 
 test("Latin, Cyrillic and Greek text can be letter-spaced", () => {
-  for (const text of ["Listening", "Слушаю", "Ακούω", "Écoute…", "25 USDC"]) assert.equal(hasUncasedScript(text), false, text);
+  for (const text of ["Listening", "Слушаю", "Ακούω", "Écoute…", "25 USDC"])
+    assert.equal(hasUncasedScript(text), false, text);
 });
 
 test("Arabic, Urdu, Hindi, Bengali, Chinese and Japanese text is never letter-spaced", () => {

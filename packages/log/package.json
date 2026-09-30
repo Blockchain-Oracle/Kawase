@@ -9,9 +9,13 @@
     "lint": "eslint src"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "pino": "catalog:"
   }
 }

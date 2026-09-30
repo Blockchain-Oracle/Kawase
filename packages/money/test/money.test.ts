@@ -2,7 +2,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { AmountParseError, add, amount, canonicalAmount, compare, formatAmount, parseAmount, rescale, subtract } from "../src/index";
+import {
+  AmountParseError,
+  add,
+  amount,
+  canonicalAmount,
+  compare,
+  formatAmount,
+  parseAmount,
+  rescale,
+  subtract,
+} from "../src/index";
 
 const usdc = (baseUnits: bigint) => amount("USDC", baseUnits);
 

@@ -1,0 +1,94 @@
+import { Hono } from "hono";
+import { z } from "zod";
+
+import type { Db } from "@kawase/db";
+
+import { FIELD } from "../http/fields";
+import { HTTP, problem } from "../http/problem";
+import type { AppEnv } from "../types";
+import { bearerToken, findSession, revokeSession } from "./session";
+import type { AuthService } from "./service";
+
+const deviceSchema = z.object({
+  platform: z.enum(["ios", "android", "web", "desktop"]),
+  installationId: z.string().min(FIELD.installationIdMin).max(FIELD.installationIdMax),
+  appVersion: z.string().max(FIELD.appVersionMax).optional(),
+  locale: z.string().max(FIELD.localeMax).optional(),
+});
+
+const guestSchema = z.object({ device: deviceSchema, locale: z.string().max(FIELD.localeMax).optional() });
+
+const turnkeySchema = z.object({
+  proof: z.object({ body: z.string().min(1), stamp: z.string().min(1) }),
+  turnkeyUserId: z.uuid(),
+  device: deviceSchema,
+});
+
+async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
+  return parsed.data;
+}
+
+export function authRoutes(db: Db, auth: AuthService) {
+  const app = new Hono<AppEnv>();
+
+  app.post("/nonce", async (c) => c.json(await auth.issueNonce()));
+
+  app.post("/guest", async (c) => {
+    const input = await parse(guestSchema, await c.req.json());
+    const { token, user } = await auth.signInAsGuest(input);
+    return c.json({ token, user: publicUser(user) }, HTTP.created);
+  });
+
+  app.post("/turnkey", async (c) => {
+    const input = await parse(turnkeySchema, await c.req.json());
+    // A guest session in the Authorization header means "upgrade this guest".
+    const guestToken = bearerToken(c.req.raw.headers);
+    const guest = guestToken ? await findSession(db, guestToken) : undefined;
+    const guestUserId = guest?.user.isAnonymous ? guest.user.id : undefined;
+    const { token, user } = await auth.signInWithTurnkey({ ...input, guestUserId });
+    if (guest) await revokeSession(db, guest.session.id);
+    return c.json({ token, user: publicUser(user) }, HTTP.created);
+  });
+
+  app.post("/sign-out", async (c) => {
+    const token = bearerToken(c.req.raw.headers);
+    const current = token ? await findSession(db, token) : undefined;
+    if (current) await revokeSession(db, current.session.id);
+    return c.body(null, HTTP.noContent);
+  });
+
+  return app;
+}
+
+/** The user as the app sees it: never the Turnkey ids of other users, never internal flags. */
+export function publicUser(user: {
+  id: string;
+  email: string | null;
+  isAnonymous: boolean;
+  locale: string;
+  replyLanguage: string | null;
+  displayCurrency: string;
+  timezone: string;
+  theme: string;
+  activeNetwork: string;
+  riskMode: string;
+  practiceMode: boolean;
+  turnkeySubOrganizationId: string | null;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    isGuest: user.isAnonymous,
+    locale: user.locale,
+    replyLanguage: user.replyLanguage,
+    displayCurrency: user.displayCurrency,
+    timezone: user.timezone,
+    theme: user.theme,
+    activeNetwork: user.activeNetwork,
+    riskMode: user.riskMode,
+    practiceMode: user.practiceMode,
+    turnkeySubOrganizationId: user.turnkeySubOrganizationId,
+  };
+}

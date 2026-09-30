@@ -5,3 +5,4 @@ export * from "./fees";
 export * from "./cache";
 export * from "./locales";
 export * from "./models";
+export * from "./capabilities";

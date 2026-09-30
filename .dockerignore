@@ -1,0 +1,20 @@
+# Build context for the service images (root of the workspace). Keep it small.
+**/node_modules
+**/.expo
+**/ios
+**/android
+**/dist
+.git
+.firecrawl
+refs
+context
+plan
+deploy
+apps/mobile
+apps/docs
+apps/landing
+**/*.png
+**/*.md
+.env
+.env.*
+!.env.example
