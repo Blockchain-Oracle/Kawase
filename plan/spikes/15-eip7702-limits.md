@@ -3,7 +3,7 @@
 Purpose: test whether an ordinary wallet key on Arc can carry on-chain spending limits for the agent without a second smart account, so that the wallet provider (Circle, Privy, Turnkey, a passkey-derived key) becomes a free choice. Added on 2026-09-30 after Abu rejected a PIN for every action.
 Code: `plan/spikes/code/04-delegation/run-7702.mjs` (`node run-7702.mjs`); results in `results.7702.testnet.json`.
 Date: 2026-09-30
-**Result: PASS on Arc testnet, 13/13.** Not run on mainnet (no funded mainnet key); the same contracts have identical bytecode sizes on mainnet (`.firecrawl/product/17/getcode-7702-stack-2026-09-30.tsv`).
+**Result: PASS on Arc testnet, 13/13, plus a relayed setup for an empty wallet.** Not run on mainnet (no funded mainnet key); the same contracts have identical bytecode sizes on mainnet (`.firecrawl/product/17/getcode-7702-stack-2026-09-30.tsv`).
 
 ## What was tested
 A fresh local key (standing in for any embedded-wallet key), funded with 1.5 testnet USDC. Test account `0x9c8cDa2778b6B735A10b12EF4fE34AADF9CB7411`.
@@ -24,6 +24,9 @@ A fresh local key (standing in for any embedded-wallet key), funded with 1.5 tes
 | 12 | The agent tries again after the revoke, in a new period | fail | ✅ refused |
 | 13 | The user removes the 7702 code (back to a codeless EOA) | pass | ✅ |
 
+## Relayed setup for a brand-new wallet (`run-7702-relayed.mjs`)
+A never-funded key signed only the 7702 authorization; a relayer key of ours sent the type-4 transaction and paid the gas (46,055 gas). The empty wallet got its code with a balance of 0: [`0xecea…57b2`](https://explorer.testnet.arc.io/tx/0xecea06c349ff3444f910000f222bd71e508bc934c88c125ba2093798137457b2). So a new user needs no USDC to be set up. The relayer must be a plain key on our server: Circle's developer-controlled wallet API has no field for an authorization list.
+
 ## What this means
 - **The user's wallet can be any ordinary key.** The limits live in the MetaMask delegation (an EIP-712 signature with caveats: token, method, amount per period, expiry), not in the wallet vendor.
 - **Inside the limit, nothing is asked.** The agent's server wallet redeems the delegation; the chain refuses anything over the cap, another method, or native value. This is the hackathon's own guidance: "put the limit somewhere the agent cannot reach".
@@ -33,5 +36,5 @@ A fresh local key (standing in for any embedded-wallet key), funded with 1.5 tes
 
 ## Not covered
 - Mainnet (bytecode present, flow not run).
-- Gas for the user's own transactions (Arc gas is native USDC, so a funded wallet pays its own; an empty new wallet needs a sponsor for the first 7702 transaction, or the agent relays it).
+- Gas for the user's own later transactions (Arc gas is native USDC, so a funded wallet pays its own).
 - A daily cap needs `periodDuration: 86400`; only a 120-second period was exercised.

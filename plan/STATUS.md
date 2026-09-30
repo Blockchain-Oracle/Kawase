@@ -7,9 +7,10 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 **Stage 2: Design system and component sourcing** (`stages/02-design-system-component-sourcing.md`), with the Stage 1 spikes that need Abu or mainnet still open.
 
 ## Next action
-1. **Spike #1 (Circle RN SDK) is running with Abu** (2026-09-30): app rebuilt with the SDK, Abu enters the PIN on the simulator. Then #5 voice on Abu's phone (he is willing).
-2. **Stage 2 continues on Koe** (Abu's choice): install the fonts (Bricolage Grotesque, Manrope, JetBrains Mono + Noto), source the remaining surfaces, build the native twins (orb, caption, confirm sheet first), then the `/dev/gallery` route.
-3. Still open from Stage 1: #12 x402 and the mainnet halves of #2, #4, #13 (wait for Circle's mainnet approval).
+1. **Wallet decision (Abu).** Abu rejected a PIN for every action (2026-09-30). Research is done: `context/08-product-research/17-wallet-ux/README.md`. Claude recommends Turnkey for the user's key + EIP-7702 on-chain limits (spike 15, PASS on testnet) + Circle for everything else. If accepted: Abu creates a Turnkey account (organization ID, auth-proxy config ID, card on file), then a half-day spike in `apps/mobile`.
+2. Spike #1 (Circle RN SDK) is paused: the SDK builds and initialises, the PIN steps were not run, and they are only needed if the Circle PIN wallet stays.
+3. Stage 2 continues on Koe: fonts, native twins (orb, caption, confirm sheet), gallery.
+4. Still open from Stage 1: #5 voice (Abu's phone), #12 x402 and the mainnet halves of #2, #4, #13 (wait for Circle's mainnet approval).
 
 ## Stage checklist
 - [ ] 0 Bootstrap: resume protocol ✅ · monorepo scaffold ✅ · Coolify project + Postgres ✅ · private repo Blockchain-Oracle/kawase ✅ · kickoff transcript ✅ · first commit pushed ✅ · Coolify deploy key ✅ (GitHub App optional later)
@@ -31,6 +32,7 @@ Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directio
 - [ ] 16 Production hardening and submission (deadline **2026-10-10 11:59 PM ET**)
 
 ## Spike results
+- #15 EIP-7702 limits (added 2026-09-30): **testnet PASS 13/13**. An ordinary EOA delegates to MetaMask's `EIP7702StatelessDeleGator`; the agent's ops wallet then spends from the user's own account inside an on-chain period cap with no user prompt; over-cap, other methods, native value and post-revoke all fail; revoke is one direct transaction; an empty wallet can be set up through a relayer. The wallet vendor becomes a free choice — `spikes/15-eip7702-limits.md`
 - #13 Webhooks: **PASS for Circle on testnet**, through a real Coolify deploy (deploy key, Dockerfile, port + `https://` sslip.io domain at creation). Signed `transactions.outbound` (DCW) and `transactions.inbound` (UCW) arrive on ARC-TESTNET; Circle retries a failed delivery in 1–3 s with the same `notificationId`; dedupe held (2 deliveries, 1 side effect); order is not guaranteed. **Services on alpine must listen on `::`** (Coolify's health check uses `localhost` → `::1`). Open: LIVE. (Telegram was dropped with D31) — `spikes/13-webhooks.md`
 - #10 Better Auth: **PASS** (headless 18/18, web passkey 4/4, iOS guest → email OTP upgrade with data kept, session restored after restart). **`onLinkAccount` must move every user-owned table and passkeys in one transaction** (the guest row is deleted afterwards and our FKs cascade); a failed migration loses nothing and a retry completes it; BA 1.7 refuses cookie POSTs without an `Origin`; the CLI is now `npx auth@latest generate`; **native passkeys are open** (browser-only client; needs a native module + an associated domain on the deployed api) so native uses email OTP for now — `spikes/10-better-auth.md`
 - #8 UI stack: **PASS** on iOS + web. One card spec → RNR/Uniwind card on native and a 21st.dev DOM card on web (`.web.tsx` twin), one token file, 4 themes (light, dark, testnet, testnet-dark) + RTL; production export under `web.output:"server"` works. **`react-native-web` pinned to 0.21.2** (Uniwind 1.12.0 bug, uni-stack/uniwind#695); web installs live in `packages/ui-web` with `@kawase/ui-web/*` aliases; wrap third-party components with `withUniwind`; SDK 57 "server" output = prerender + API routes, so themes must be CSS-only — `spikes/08-ui-stack.md`
