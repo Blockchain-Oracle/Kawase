@@ -1,13 +1,14 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-09-30 (revamp plan approved — D35; Phase A of the revamp starts)
+Last updated: 2026-10-01 (revamp Phase A delivered and on the board; Phase B next)
 
 ## Current stage
 **UI revamp "Lime on Ink" (D34/D35)** — the plan is `design/REVAMP-PLAN.md`; it re-does Stage 2's design system and every Stage 3 screen and pre-designs the surfaces of Stages 4–12. Phases A–E; progress is logged at the end of `stages/02-design-system-component-sourcing.md` (system, components, identity) and `stages/03-core-platform.md` (screens, handle api). The Stage 1 spikes that need Abu or mainnet stay open.
 
 ## Next action
-1. **Revamp Phase A (foundation).** Tokens for Lime on Ink + a committed contrast script + `DESIGN.md` rewrite → one native rebuild with `expo-blur`, `expo-clipboard`, `react-native-keyboard-controller`, Space Grotesk (+ gorhom sheets, `sonner-native`, `qrcode`) → `packages/identity` (registry, `Mark` twins; Codex collects the brand SVGs: `prompts/codex-brand-kits.txt`) → base parts and the art objects, each with a gallery section → the direction board `/dev/board` → Abu signs off the colours; Codex's review (`prompts/codex-revamp-review.txt`) folded in before Phase B. Tag `koe-v0` holds the old UI.
+1. **Revamp Phase A is delivered** (`616c28a`; log in `stages/02-*.md`). Waiting on Abu's colour sign-off from the board (https://claude.ai/artifact/49VM4bmCZr7E1qxPmkDa9s) and on Codex: the plan review (`prompts/codex-revamp-review.txt`) and the brand-kit collection (`prompts/codex-brand-kits.txt`, then `node packages/identity/build.mjs`). Token changes from the sign-off are one file (`packages/ui-tokens/tokens.json`).
+1b. **Revamp Phase B (shell)** proceeds meanwhile: `app/(app)/_layout.tsx` with the glass dock as the tab bar, the overlay provider (voice + fan) as a portal, the collapsing header, the language sheet, the real home on `useWalletStatus`, the network pill toggle with the consent sheet; then the Stage 3 exit criteria re-run on the simulator.
 2. Then Phases B–E per `design/REVAMP-PLAN.md`: shell (dock, header, fan, overlay, home) → onboarding (story, sign-in sheet, handle api, stepper, completion) → money surfaces and the rest of the map (receive, fund, send, request, contacts, wallet & limits, settings hub, chat shell, inbox) → web parity, review, deploy.
 3. Stage 2 leftovers folded into the revamp: Android run of the gallery; app icon and splash (brand deliverables in Phase A).
 4. Still open from Stage 1: #5 voice (Abu's phone), #12 x402 and the mainnet halves of #2 (what remains of it), #4/#15, #13 (wait for Circle's mainnet approval).
