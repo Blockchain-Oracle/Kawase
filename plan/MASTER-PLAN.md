@@ -36,7 +36,7 @@ The research phase is complete. It lives in `context/` (the hackathon library, 0
 ## Architecture (becomes `plan/ARCHITECTURE.md` in Stage 0 and is kept current as built)
 
 Architecture assumptions Abu can override:
-- a UCW **EOA**, not SCA (K3)
+- the user's wallet is an ordinary EOA held by Turnkey, with EIP-7702 on-chain limits (K3; chosen by Abu on 2026-09-30, D33)
 - one shared contact book with per-network trust
 - mainnet available to every user behind a one-time sheet
 - Expo `web.output:"server"`
@@ -45,13 +45,14 @@ Architecture assumptions Abu can override:
 
 ### Key decisions
 - **K1 One brain.** A single `agentTurn()` in `packages/agent` serves chat, voice (the LiveKit `llmNode` override), and read-only automation commands. **Money automations never go through the LLM.** They use the same deterministic draft builders and the same policy engine.
-- **K2 The model proposes; code resolves, checks and executes.** No model tool has a `network`, `address` or "approve" parameter. Approval is only an authenticated endpoint plus a **wallet signature over the exact payload**. A local Face ID prompt is never the binding (Codex #1).
-- **K3 Custody (hybrid).**
-  - The user **vault** is a Circle user-controlled wallet: **EOA** account type, PIN flow keyed by our user id, one Circle identity per network (TEST/LIVE keys).
-  - **Unattended authority** is a MetaMask **HybridDeleGator** allowance account owned by the vault EOA, plus ERC-7710 delegations with **caveats built by code** (period cap, pinned recipient, USDC `transfer` only, expiry, redeemer, native value 0). A Kawase ops-redeemer DCW redeems them.
+- **K2 The model proposes; code resolves, checks and executes.** No model tool has a `network`, `address` or "approve" parameter. A payment is authorized in one of two ways: **inside the user's allowance**, by the user's signed on-chain delegation (no prompt; the chain enforces the cap); or **above it**, by a fresh **wallet signature over the exact payload**, approved with the user's passkey (Face ID). A local Face ID check in our own app is never the binding by itself (Codex #1).
+- **K3 Custody (D33; replaces the Circle PIN wallet).**
+  - The user's **wallet** is an ordinary **EOA held by Turnkey** in the user's own sub-organization. Sign-up is an email code, a passkey, or Apple / Google. No PIN, no security questions. One address on both networks.
+  - **Agent authority** sits on that same account: EIP-7702 upgrades it in place to MetaMask's `EIP7702StatelessDeleGator`, and ERC-7710 delegations with **caveats built by code** set an everyday allowance (USDC `transfer` only, an amount per period, an expiry) and one grant per automation (plus a pinned recipient). A Kawase ops-redeemer DCW redeems them. Proven on Arc testnet (spike #15).
+  - Setup is free for the user: a Kawase relayer sends the one-time 7702 transaction.
   - The **marketplace wallet** is a per-user, per-network DCW EOA; its balance is the hard cap.
-  - **If the spike fails:** a DCW allowance wallet with app-enforced limits, labelled that way.
-  - EOA and not SCA, because the DeleGator needs an ECDSA owner and Memo/Multicall3From only accept EOA callers (`context/01-arc/gotchas.md`).
+  - **Fallbacks:** Privy for the key; or Circle email sign-in with the separate HybridDeleGator account from spike #4.
+  - An EOA, because 7702 and the delegation framework need an ECDSA key and Memo/Multicall3From only accept EOA callers (`context/01-arc/gotchas.md`).
 - **K4 Automations = DBOS** (`@dbos-inc/dbos-sdk` 5.1.10) in `apps/executor` on the Coolify Postgres. One short workflow per occurrence or intent; a cron tick every minute; `workflowID = occurrence.id`.
 - **K5 Postgres is the only bus.** A transactional outbox → `pg_notify` → api SSE and DBOS notify queues. No Redis.
 - **K6 The network is server-authoritative session state**, cached in MMKV for instant startup. Every write carries `expectedNetwork`. `intent == session == wallet env == eth_chainId`, or it is a hard stop.
@@ -66,7 +67,7 @@ Architecture assumptions Abu can override:
 | Auth | Better Auth 1.7.6 (email OTP, `@better-auth/passkey`, anonymous for guests, `@better-auth/expo`), separate from Circle wallet auth |
 | Data | Drizzle 0.45.3 + drizzle-kit 0.31.11 on `pg` 8.23; Postgres 17 |
 | Automations | DBOS **5.2.11** (+ drizzle-datasource 5.2.11; spike 06) (`registerWorkflow`, `runStep`, `startWorkflow({workflowID})`, `registerQueue` after launch, `createSchedule`, `DrizzleDataSource`) |
-| Chain | viem 2.57.0 (`arc`/`arcTestnet` built in; no wagmi). Circle UCW RN SDK `@circle-fin/w3s-pw-react-native-sdk` 2.2.5 plus the web SDK. `@circle-fin/app-kit` 1.15.3 with `createCircleUserWalletAdapter` (challenges approved on device). `@circle-fin/developer-controlled-wallets` 10.8.1. `@metamask/smart-accounts-kit` 2.0.0 (the renamed delegation toolkit; mainnet addresses passed manually) |
+| Chain | viem 2.57.0 (`arc`/`arcTestnet` built in; no wagmi). User wallet: Turnkey (`@turnkey/react-native-wallet-kit` 2.3.7 on native, `@turnkey/react-wallet-kit` 2.5.1 on web). `@circle-fin/app-kit` 1.15.3 through the viem adapter with our own signing strategy. Agent wallets: `@circle-fin/developer-controlled-wallets` 10.8.1. `@metamask/smart-accounts-kit` 2.0.0 (the renamed delegation toolkit; mainnet addresses passed manually) |
 | Voice | LiveKit Cloud SFU. `@livekit/agents` 1.9.1 Node worker: cascade pipeline STT → **our `agentTurn` via an `llmNode` override** → TTS, with `gpt-live-1` delegation as a per-language upgrade. `@livekit/react-native` 3.0.0 + Expo plugin 1.0.3. RPC `ui.show` delivers cards |
 | UI | Web: 21st.dev and the premium registries (shadcn CLI). Native: React Native Reusables (CLI 0.7.1) on Uniwind 1.12 + Tailwind 4.3, `@gorhom/bottom-sheet` 5.2.14, `sonner-native` 0.27, Reanimated 4.7, victory-native, FlashList, Skia. One token file drives both |
 | i18n | i18next 26 + react-i18next 17 + expo-localization; 10 locales: en, zh, hi, es, fr, ar, bn, pt, ru, ur; RTL via `I18nManager` + `Updates.reloadAsync`; formatjs polyfills |
@@ -126,7 +127,7 @@ kawase/
    ├─ networks         # 2 NetworkContext literals, addresses, providers, capabilities/{registry, preconditions, runtime-overlay}, assert-network
    ├─ money            # branded bigint base units, assets, locale parse, format (no Intl currency for USDC)
    ├─ policy           # pure evaluate(input) → PolicyResult[]: 5 kinds (clarification|precondition|policy|warning|error), reason enum, tiers
-   ├─ intents          # A2A state machine, drafts/*, EIP-712 typed data, draft hash, derive/{circle-ucw,appkit,delegation}, readback templates
+   ├─ intents          # A2A state machine, drafts/*, EIP-712 typed data, draft hash, derive/{wallet-tx,appkit,delegation}, readback templates
    ├─ agent            # agentTurn, prompts, tools/*, untrusted-content quarantine + taint
    ├─ workflows        # DBOS workflow names + typed enqueue client; definitions (registered only in executor)
    ├─ db               # drizzle schema/*, repos, withOutbox tx, committed migrations
@@ -136,7 +137,7 @@ kawase/
    ├─ ui-native        # RNR/Uniwind rebuilds + native card twins
    ├─ i18n             # locales/<lng>/{common,cards,policy,notifications,voice,legal}.json, typed keys, rtl
    ├─ log
-   └─ integrations/    # circle (keys, ucw, dcw, webhooks, gateway, discovery, faucet), appkit, delegation,
+   └─ integrations/    # wallet (Turnkey signer + a local-key signer for tests), circle (keys, dcw, webhooks, gateway, discovery, faucet), appkit, delegation,
                        # routing/{lifi,relay,across,debridge,socket}, goplus, prices, names, earn, x402,
                        # email, push, livekit, speech
 ```
@@ -145,7 +146,7 @@ kawase/
 - Client-safe packages never import server SDKs; lint enforces the import rules.
 - `policy` is pure. The agent (drafting), the api (approval) and the executor (execution) all call the same `evaluate()`.
 - `intents` is shared by the agent, api, executor and voice read-back.
-- `delegation` is isolated, so it can be deleted if the spike fails.
+- `wallet` hides the key provider behind one signer interface (`signAuthorization`, `signTypedData`, `signTransaction`), so the provider can be swapped without touching the rest.
 - Everything is a JIT package except `ui-tokens` and `i18n` types, which are generated.
 
 ### Runtime flows
@@ -159,7 +160,7 @@ kawase/
 - **Email (D31; Telegram and Discord removed 2026-09-30):** sent by the executor's notify queue through Resend. Links open the app at `/i/{intentId}`; an email never approves or signs anything.
 - **Automations:**
   1. DBOS tick → `SELECT … FOR UPDATE SKIP LOCKED` → `INSERT occurrence ON CONFLICT DO NOTHING` → `runOccurrence`.
-  2. Re-check → deterministic draft → `evaluate` → one of: attended (outbox approval + `recv` with a timeout), delegated (redeem via the ops DCW with a persisted idempotency key), or practice ("would have…").
+  2. Re-check → deterministic draft → `evaluate` → one of: attended (outbox approval + `recv` with a timeout), delegated (redeem the automation's grant via the ops DCW with a persisted idempotency key), or practice ("would have…").
   3. Confirm (receipt `status==1` or Circle `COMPLETE`) → outbox.
 - **Resolve and resume:**
   1. The policy report's first blocking kind decides what happens: error > policy > precondition > clarification. Warnings go on the confirm card.
@@ -169,14 +170,16 @@ kawase/
   5. There is no split or "rest later".
   6. Network switch: switching to testnet auto-resumes. Switching to mainnet resumes reads only; money requests are re-drafted as a REAL MONEY intent.
 - **Approval binding:**
-  - **Money moves:** the api derives a Circle UCW transfer or contract-execution challenge from `intent_drafts[v]`, with `idempotencyKey` and `refId={intentId}:v{n}`. The device runs `WalletSdk.execute`. The webhook post-verifies the destination, amount and token against the draft; a mismatch freezes the intent and raises an alert.
-  - **Settings or authority changes:** a UCW `signTypedData` challenge of an EIP-712 `KawaseAuthorization`.
-  - **Delegation grants:** the UCW signs the MetaMask `Delegation` struct. The "can / can-never" receipt is **decoded from the signed caveats**.
-  - **Revoke:** `disableDelegation`.
+  - **Inside the allowance:** no user signature. The api re-runs `evaluate`, reserves spend, and the ops DCW redeems the user's allowance delegation; the transfer leaves the user's own account. The chain enforces token, method, amount per period and expiry.
+  - **Above the allowance, and swap/bridge steps:** the api builds the unsigned transaction from `intent_drafts[v]`; the device signs it with the wallet after a passkey prompt; the api checks the signed bytes against the draft, then broadcasts. A mismatch freezes the intent and raises an alert.
+  - **Settings or authority changes:** the wallet signs an EIP-712 `KawaseAuthorization` (passkey).
+  - **Grants (the allowance, an automation):** the wallet signs the MetaMask `Delegation` struct (passkey). The "can / can-never" receipt is **decoded from the signed caveats**.
+  - **Setup:** one EIP-7702 authorization signed by the wallet, sent by the relayer.
+  - **Revoke:** `disableDelegation`, one ordinary transaction from the wallet.
 - **Idempotency:**
   - An `Idempotency-Key` header on every mutating POST.
   - Occurrences are `UNIQUE(automation_id, automation_version, scheduled_for)` **and** `UNIQUE(automation_id, scheduled_for)`, so editing an automation can't pay the same Tuesday twice.
-  - The UUIDv4 key is persisted **before** the Circle call. Raw transactions store `(network, from, nonce)` and `tx_hash` before broadcast. x402 uses `payment-identifier`.
+  - The UUIDv4 key is persisted **before** any Circle call (ops-wallet redeems). Wallet-signed transactions store `(network, from, nonce)` and `tx_hash` before broadcast. x402 uses `payment-identifier`.
   - An ambiguous outcome becomes `unknown_outcome` and is never auto-retried. A reconcile workflow runs every few minutes, with a Coolify scheduled task as backup.
   - A `spend_ledger` reservation plus an advisory lock per (user, network) prevents concurrent limit bypass.
 - **Outbox:** `withOutbox(tx, events)` → `pg_notify` → api SSE (app, web, voice worker) and the executor's notify queue → `deliveries UNIQUE(outbox_id, channel, target_ref)`. Quiet hours and preferences apply; security events can't be muted; `inbox_items` is the in-app source of truth.
@@ -187,12 +190,12 @@ Conventions: UUIDv7 ids, money as `numeric(78,0)`, a `network` enum. Better Auth
 
 | Area | Tables |
 |---|---|
-| Users | `user`+ (locale, reply_language, display_currency, tz, theme, active_network default testnet, risk_mode, practice_mode, is_anonymous, paused_all_at), `devices`, `user_networks` (circle_user_id per network), `consents` |
-| Wallets | `wallets` (role: vault / allowance / marketplace / external / ops_redeemer / faucet_drip; custody; address; UNIQUE(network, address)) |
+| Users | `user`+ (locale, reply_language, display_currency, tz, theme, active_network default testnet, risk_mode, practice_mode, is_anonymous, paused_all_at), `devices`, `user_wallet_setup` (per network: 7702 setup, allowance grant), `consents` |
+| Wallets | `wallets` (role: user / marketplace / external / ops_redeemer / relayer / faucet_drip; custody: turnkey / circle_dcw / external; address; the user wallet is one address on both networks) |
 | Contacts | `contacts`, `contact_addresses` (versioned; source; status pending_cooldown / active / retired / blocked), `contact_address_trust` (per network: first/last paid, verified_method, cooldown, allowlisted, change_hold), `contact_address_events` (append-only) |
 | Conversation | `threads` (rolling_summary), `messages` (UIMessage parts jsonb, seq, tsvector), `memory_facts`, `voice_sessions` |
-| Intents | `intents` (A2A state, blockers, resume_token_hash, parent_intent_id, practice), `intent_drafts` (immutable versions + draft_hash + quote expiry), `approvals` (tier, method, challenge ids, signature, status), `api_idempotency` |
-| Authority | `grants` (the full signed delegation + decoded receipt), `limits` (per network, temp raise), `token_rules`, `token_rule_entries`, `marketplace_budgets`, `spend_ledger` |
+| Intents | `intents` (A2A state, blockers, resume_token_hash, parent_intent_id, practice), `intent_drafts` (immutable versions + draft_hash + quote expiry), `approvals` (tier, route: allowance / wallet_signature, signed payload, signature, status), `api_idempotency` |
+| Authority | `grants` (kind: allowance / automation; the full signed delegation + decoded receipt), `limits` (per network, temp raise), `token_rules`, `token_rule_entries`, `marketplace_budgets`, `spend_ledger` |
 | Automations | `automations` (rule jsonb/rrule, tz, authority_mode, missed_run_policy, next_run_at), `automation_versions`, `occurrences` (the two uniques above) |
 | Execution | `tx_attempts` (idempotency_key v4 UNIQUE, nonce, tx_hash, status incl. unknown), `chain_events` UNIQUE(chain_id, tx_hash, log_index), `indexer_cursors`, `provider_webhook_events` UNIQUE(provider, external_id) |
 | Channels | `outbox`, `deliveries`, `inbox_items`, `notification_prefs` |
@@ -220,9 +223,9 @@ Tightening a setting is a tap; loosening it requires step-up plus a wallet signa
 - **Resolve and resume:** AddContactForm, ContactPicker, ChoiceChips, AddEmail, PermissionPrimer, NetworkSwitch, MainnetFirstSheet, Consent, Fund/Faucet, PolicyRefusal, ReQuote, ErrorCard, StatusCard
 
 ### Security
-- **No raw private keys in our environment.** Circle UCW (MPC plus PIN) and DCW hold the keys; the allowance account is capped by its caveats.
+- **No user keys in our environment.** Turnkey holds each user's key in the user's own sub-organization (secure enclave); once a passkey exists, a Turnkey policy requires it for wallet signatures. Circle DCW holds the agent's keys. The agent's reach into a user's account is capped on-chain by the caveats. The relayer holds only a small gas float.
 - **Env:**
-  - Both Circle keys (TEST/LIVE) and entity secrets live in env.
+  - Both Circle keys (TEST/LIVE), the entity secrets and the Turnkey organization credentials live in env.
   - `MAINNET_ENABLED` and the LIVE keys exist only in the production environment; missing keys fail closed to testnet.
   - Previews get TEST keys only.
   - App DB role vs migrator role; `audit_log` is insert-only.
@@ -314,10 +317,10 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 
 | # | Spike | Pass | Fallback |
 |---|---|---|---|
-| 1 | Circle UCW RN SDK 2.2.5 on an RN 0.87 / Expo 57 dev build (iOS + Android; Android Maven PAT) | PIN user created, challenge executed | Circle web SDK in a DOM component for challenges |
-| 2 | UCW PIN user keyed by our id under the TEST and LIVE keys; EOA on ARC/ARC-TESTNET; **`signTypedData` challenge**; DCW entity secret per environment | typed-data signature verifies with viem | Webhook-verified tx-less challenge |
+| 1 | ~~Circle UCW RN SDK 2.2.5 on the dev build~~ **Superseded by #16 (D33).** The SDK built and initialised; the PIN steps were not run | — | — |
+| 2 | ~~UCW PIN user; `signTypedData` challenge~~ **Passed on testnet, then superseded by #16 (D33).** Still valid from it: the `KawaseAuthorization` typed data and its verification; the DCW entity secret per environment | — | — |
 | 3 | App Kit `createCircleUserWalletAdapter` `onChallenge` for swap, bridge and earn: challenge count, idempotency keys, whether calldata can be prepared | a swap + bridge completes on testnet | Executor-run App Kit op with signal wait + `refId` reconcile |
-| 4 | **Delegation** (the kickoff's "limits the agent can't exceed"): HybridDeleGator owned by the UCW EOA; delegation signed by the UCW; redeemed by the DCW. Tests: pass, pass, period-exceeded fail, wrong recipient fail, wrong token/method/native-value fail, expiry fail, `disableDelegation`, leaked-worker-key worst case. Testnet first, then **$1 on mainnet**; tx hashes recorded; verify the deployed source and audit scope | every negative test reverts on both networks | Architecture A (DCW allowance + app limits, labelled as such) |
+| 4 | **Delegation** (the kickoff's "limits the agent can't exceed"): passed on testnet with a HybridDeleGator account; the account setup is replaced by #15 (7702 on the user's own EOA), the caveat logic carries over. Original scope: delegation signed by the owner; redeemed by the DCW. Tests: pass, pass, period-exceeded fail, wrong recipient fail, wrong token/method/native-value fail, expiry fail, `disableDelegation`, leaked-worker-key worst case. Testnet first, then **$1 on mainnet**; tx hashes recorded; verify the deployed source and audit scope | every negative test reverts on both networks | Architecture A (DCW allowance + app limits, labelled as such) |
 | 5 | LiveKit RN 3.0.0 on RN 0.87; `llmNode` override streaming from the api; RPC round trip; p50 end-of-speech → first audio ≤ 1.5 s; barge-in ≤ 300 ms; en/fr/es/ar/zh test; 20-minute session with reconnect | all met on a real phone | GPT-Live direct → ElevenLabs Agents with a custom LLM → push-to-talk |
 | 6 | DBOS 5.1.10: `DrizzleDataSource` on shared PG, `registerQueue` after launch, `createSchedule`, `DBOSClient.enqueue` from the api, app version across a Coolify rolling deploy | exactly-once occurrence under a crash | pg-boss + a hand-written state machine |
 | 7 | AI SDK 7 `useChat` + `expo/fetch` → Hono via Traefik SSE; the current approval API name | a streamed tool approval round trip | Adapt to the docs |
@@ -326,10 +329,12 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 | 10 | Better Auth 1.7.6: email OTP + passkey + anonymous + expo on RN 0.87; guest → account data migration | a guest upgrades without losing data | — |
 | 11 | Hermes Intl for the 10 locales; RTL reload | ar/ur render RTL correctly | formatjs polyfills |
 | 12 | x402: one real mainnet Discovery purchase from a DCW EOA via EIP-3009; Facilitator status | the purchase settles and a receipt is stored | Read-only marketplace + our own testnet seller |
-| 13 | Circle webhooks for UCW/DCW on Arc (both environments). (The Telegram webhook was dropped with D31.) | events arrive and are deduped | Reconcile polling only |
+| 13 | Circle webhooks for Circle wallets on Arc (both environments). (The Telegram webhook was dropped with D31.) | events arrive and are deduped | Reconcile polling only |
 | 14 | TypeScript 5.9 vs 6.x across Expo, Drizzle, Hono and DBOS | typecheck green | Pin the lowest common version |
+| 15 | **EIP-7702 limits** (added 2026-09-30): an ordinary EOA delegates to `EIP7702StatelessDeleGator`; the ops DCW spends inside an on-chain period cap from the user's own account; relayed setup for an empty wallet | every negative test refused on testnet; mainnet when funded | The HybridDeleGator account from #4 |
+| 16 | **Turnkey wallet in the app** (added 2026-09-30): `@turnkey/react-native-wallet-kit` on the Expo 57 dev build and the web kit on Expo web; email-code sign-up; sign a 7702 authorization, an EIP-712 delegation and a transaction on Arc testnet; passkey-required policy; one sign-in with Better Auth; App Kit swap with the new signer | the spike-15 flow runs end to end from the app | Privy with the same signer interface |
 
-The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4), the challenge flow (#1–3), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
+The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4, #15), the wallet signing flow (#16), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
 
 ### Stage 2: Design system + component sourcing
 - `DESIGN.md` and the 3 directions → **Abu picks one**.
@@ -340,12 +345,12 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 ### Stage 3: Core platform
 - `packages/{config,env,networks,money,i18n,db,log}`; Drizzle schema + migrations; the api skeleton (Hono, problem+json, idempotency, rate limits).
 - Better Auth: email OTP, passkey, guest.
-- Per-network Circle identity + PIN wallet setup. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
+- Wallet creation at sign-up (Turnkey, one EOA for both networks), the relayed 7702 setup per network, and the default allowance grant with one Face ID. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
 - Capability registry + runtime overlay + the public availability page.
 - i18n for 10 locales with RTL reload.
 - Settings hub skeleton. Expo app shell (tabs/drawer, routes), web output, PWA manifest.
 - Deploy `api` + `web` to Coolify.
-- **Exit:** sign up as a guest → pick a language (including ar) → create a testnet wallet → toggle to mainnet (one-time sheet, LIVE identity created) and back instantly; balances are separated per network; running on the Coolify domain.
+- **Exit:** sign up as a guest → pick a language (including ar) → sign up with an email code and get a wallet with no PIN → accept the default allowance with one Face ID → toggle to mainnet (one-time sheet, mainnet setup relayed) and back instantly, same address; balances are separated per network; running on the Coolify domain.
 
 ### Stage 4: Agent brain + resolve and resume + chat
 - `packages/{policy,intents,agent,cards}`: `evaluate()` with the 5 kinds and the reason enum; the A2A intent state machine + draft versions + EIP-712 hashing + read-back templates.
@@ -362,7 +367,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
   - Every result renders on native and web.
 
 ### Stage 5: Money movement + contacts + business basics
-- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send; the approval endpoint (lock, fresh evaluate, spend reservation, UCW challenge); Circle webhook post-verification; `tx_attempts` + reconciliation; the money-ending taxonomy.
+- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send; the approval endpoint (lock, fresh evaluate, spend reservation, then the allowance redeem or a wallet signature); post-verification against the draft; `tx_attempts` + reconciliation; the money-ending taxonomy.
 - `apps/chain-watcher` (system emitter + ERC-20 + Memo, with cursors) → incoming-payment matching + inbox.
 - Contacts: versioned addresses, per-network trust, verification method, 24 h change cooldown + hold, first-time and lookalike warnings, ENS/Basenames/ArcNS ("unofficial"), QR scan, save-from-received.
 - Limits (per-tx, daily, weekly, allowlist, new-recipient cooldown, temporary raise with auto-restore, pause-all).
@@ -386,11 +391,11 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 
 ### Stage 8: Automations + delegated authority
 - `apps/executor` DBOS workflows: tick, run-occurrence, grant-lifecycle.
-- `draft_automation` with clarifications (day, time zone, asset), the read-back + dry run + next 3 runs + max exposure, the **delegation grant signed by the vault** (caveats built by code, receipt decoded from the caveats).
+- `draft_automation` with clarifications (day, time zone, asset), the read-back + dry run + next 3 runs + max exposure, the **delegation grant signed by the user's wallet** (one Face ID) (caveats built by code, receipt decoded from the caveats).
 - Scheduled, price-triggered (on the executable quote) and event-triggered (salary received, balance below X) automations; DCA, round-ups, yield sweep, payroll templates (R).
 - Lifecycle: pause, resume, edit (narrowing is immediate; widening needs a new grant), skip next, cancel (`disableDelegation`), a 24 h reminder, "skipped because…", underfunded state, missed-run policy.
 - Practice mode + the go-live gate. The "Needs you" queue with expiry + re-quote at execution.
-- The attended fallback when the spike fails.
+- Attended mode (ask every time) for users who prefer it.
 - **Exit:** "every Tuesday send $1 to Alex" runs unattended on testnet and mainnet within its caveat; over-cap and wrong-recipient attempts revert on chain; editing never double-pays; practice produces "would have" records.
 
 ### Stage 9: Notifications + channels
@@ -414,7 +419,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 - Pending-write reconciliation on app open; the status page + "right now" card; the authority "can / can-never" receipt everywhere.
 - The exit kit: pause all → revoke the agent → sweep back. The trust page. In-app help. Versioned consent.
 - Region hold: a placeholder flag, off by default (it needs legal input).
-- **Exit:** a new user goes from install → try on testnet → funded → first send in under 2 minutes; the exit kit leaves zero remaining authority, verified on chain.
+- **Exit:** a new user goes from install → email code → wallet → funded on testnet → first send with no prompt inside the allowance, in under 2 minutes; the exit kit leaves zero remaining authority, verified on chain.
 
 ### Stage 12: History, reporting, privacy
 - Activity feed (all kinds, per network) → the decision page ("why": checks, rule, cost, model id); the weekly report with outcome grading.
@@ -453,7 +458,7 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 ## Verification (end to end)
 
 - **Per stage:** the exit criteria above, observed on real devices and on the Coolify deployment, with tx hashes recorded in the stage file.
-- **Integration tests only where uncertain** (D22): delegation caveats (pass and revert matrix), UCW challenge + webhook post-verification, DBOS exactly-once occurrence under a crash + rolling deploy, the network-mismatch hard stop, LiveKit RPC card delivery, the x402 purchase idempotency.
+- **Integration tests only where uncertain** (D22): delegation caveats (pass and revert matrix), wallet signature + post-verification, DBOS exactly-once occurrence under a crash + rolling deploy, the network-mismatch hard stop, LiveKit RPC card delivery, the x402 purchase idempotency.
 - **Final:** every flow F1–F50 walked on both networks, in en/fr/es and ar (RTL), by chat and by voice. Every feature ID in `FEATURE-INVENTORY.md` ticked in `plan/STATUS.md`. `21st review` is clean on web surfaces. `turbo typecheck lint` is green. All 7 Coolify services are healthy.
 
 ## Critical files to read while executing

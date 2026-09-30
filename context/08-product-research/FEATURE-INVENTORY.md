@@ -14,7 +14,7 @@ Verified: 2026-09-29
 
 | # | Feature | Origin | Main | Test | Notes / evidence |
 |---|---|---|---|---|---|
-| A1 | Sign up / sign in (passkey, email OTP, social) | A (wallets) | ✅ | ✅ | Circle UCW has an RN SDK (social/email/PIN). The Circle passkey (modular) SDK is **not** RN (`06/…README` #7). Passkeys verify on Arc via the P256 precompile (`03/README` #3) |
+| A1 | Sign up / sign in (passkey, email OTP, social) | A (wallets) | ✅ | ✅ | **Updated 2026-09-30 (D33):** the wallet is a Turnkey-held EOA (email code, passkey, Apple/Google; no PIN), with EIP-7702 on-chain limits; see `17-wallet-ux/README.md`. Earlier note: Circle UCW has an RN SDK (social/email/PIN); the Circle passkey (modular) SDK is not RN |
 | A2 | Wallet created automatically; user never handles a seed | R | ✅ | ✅ | Architecture A/B/C in `03/recommended-architectures.md` |
 | A3 | **Mainnet ↔ testnet toggle "like dark mode"** (D15): a network pill in the top bar that is itself the toggle; one tap, instant both ways (both networks cached); ≥2 redundant indicators (a coloured testnet bar + pill + TESTNET / REAL MONEY eyebrows on every money card); the network named in every card, spoken read-back and signed `chainId`; a one-time "real money" sheet on the first mainnet switch; new users default to testnet | A (D2, D15) | ✅ | ✅ | `12-network-toggle/recommendation.md` §1. Testnet is thin: most bridges, oracles and risk APIs are mainnet-only (`02/README` #5) |
 | A3b | **Per-network data separation**: balances, history, wallets (two Circle identities: TEST and LIVE keys) and drafts are per network; preferences are shared; contacts are a shared book with **per-network trust** (proposed) | A (D15) | ✅ | ✅ | `12-network-toggle/recommendation.md` §2 |

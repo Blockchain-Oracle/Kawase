@@ -10,7 +10,7 @@ Status: not started
 - Pending-write reconciliation on app open; the status page + "right now" card; the authority "can / can-never" receipt everywhere.
 - The exit kit: pause all → revoke the agent → sweep back. The trust page. In-app help. Versioned consent.
 - Region hold: a placeholder flag, off by default (it needs legal input).
-- **Exit:** a new user goes from install → try on testnet → funded → first send in under 2 minutes; the exit kit leaves zero remaining authority, verified on chain.
+- **Exit:** a new user goes from install → email code → wallet → funded on testnet → first send with no prompt inside the allowance, in under 2 minutes; the exit kit leaves zero remaining authority, verified on chain.
 
 ## Docs to read first (Context7 / official docs)
 - (fill in before starting: every library touched in this stage)

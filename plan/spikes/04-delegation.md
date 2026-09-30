@@ -1,5 +1,7 @@
 # Spike 4: on-chain spending limits (ERC-7710 delegation on Arc)
 
+> **Partly superseded on 2026-09-30 (D33): the separate HybridDeleGator account and the UserOp revoke are replaced by EIP-7702 on the user's own EOA (`15-eip7702-limits.md`). The caveat tests and their results here still hold and carry over. This design remains the fallback if the wallet cannot sign a 7702 authorization.**
+
 Purpose: prove the kickoff's "limits the agent can't exceed" with the MetaMask Delegation Framework v1.3.0 on Arc. A HybridDeleGator is owned by an ECDSA EOA, the delegation's caveats are built in code, and the Kawase ops DCW redeems it.
 Code: `plan/spikes/code/04-delegation/` (`node setup.mjs`, `node fund.mjs`, `node run.mjs`). Raw results: `results.testnet.json`. Keys (testnet only) live in the gitignored `.spike-state.testnet.json`.
 Date: 2026-09-30

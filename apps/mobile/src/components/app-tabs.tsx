@@ -28,15 +28,6 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      {/* SPIKE-TEMP */}
-      <NativeTabs.Trigger name="spike-circle">
-        <NativeTabs.Trigger.Label>Circle</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-      {/* /SPIKE-TEMP */}
     </NativeTabs>
   );
 }

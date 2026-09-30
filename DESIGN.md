@@ -64,7 +64,7 @@ These are Claude's proposals that follow from the direction; Abu has not reviewe
 - **One primary action per screen.** Amber is for that action and the current state label, nothing else.
 - **Voice is never the only way.** Every voice action has a tap equivalent, and the keyboard button is always visible.
 - **What was heard is always shown** before anything is confirmed, and the confirm card shows the exact amount, asset and recipient.
-- **Hold or say to confirm.** A money-moving confirm needs a deliberate hold (or the spoken word plus the wallet PIN); a single tap never sends.
+- **No prompt inside the allowance; Face ID above it.** Inside the user's allowance the agent just sends and says so. Above it, the confirm card shows the exact amount, asset and recipient, and one Face ID (the wallet's passkey) approves. A spoken "yes" alone never approves a payment above the allowance.
 
 ## Components
 Web: 21st.dev and the premium registries, installed into `packages/ui-web` and reskinned to these tokens (picks listed in `plan/stages/02-design-system-component-sourcing.md`). Native: React Native Reusables on Uniwind, built to match. Never AI-generated (D28).

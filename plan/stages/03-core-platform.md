@@ -6,12 +6,12 @@ Status: started early (pure packages done while Stage 1 spikes run)
 ## Scope (from the master plan)
 - `packages/{config,env,networks,money,i18n,db,log}`; Drizzle schema + migrations; the api skeleton (Hono, problem+json, idempotency, rate limits).
 - Better Auth: email OTP, passkey, guest.
-- Per-network Circle identity + PIN wallet setup. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
+- Wallet creation at sign-up (Turnkey, one EOA for both networks), the relayed 7702 setup per network, and the default allowance grant with one Face ID. The first-mainnet sheet + consent; the network pill toggle + testnet bar + REAL MONEY eyebrows; server-authoritative network + MMKV cache.
 - Capability registry + runtime overlay + the public availability page.
 - i18n for 10 locales with RTL reload.
 - Settings hub skeleton. Expo app shell (tabs/drawer, routes), web output, PWA manifest.
 - Deploy `api` + `web` to Coolify.
-- **Exit:** sign up as a guest → pick a language (including ar) → create a testnet wallet → toggle to mainnet (one-time sheet, LIVE identity created) and back instantly; balances are separated per network; running on the Coolify domain.
+- **Exit:** sign up as a guest → pick a language (including ar) → sign up with an email code and get a wallet with no PIN → accept the default allowance with one Face ID → toggle to mainnet (one-time sheet, mainnet setup relayed) and back instantly, same address; balances are separated per network; running on the Coolify domain.
 
 ## Docs to read first (Context7 / official docs)
 - (fill in before starting: every library touched in this stage)

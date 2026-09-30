@@ -1,5 +1,7 @@
 # Spike 2: the user's wallet signs the exact payload (Circle UCW `signTypedData`)
 
+> **Superseded on 2026-09-30 (D33): the user's wallet is no longer a Circle PIN wallet. Still used from this spike: the `KawaseAuthorization` typed data and its viem verification, and the rule that the api verifies every signature itself. The PIN sheet, challenge and relay details below no longer apply. See `15-eip7702-limits.md` and `plan/ARCHITECTURE.md` §4.**
+
 Purpose: prove that a Circle user-controlled wallet (the vault), a PIN user keyed by **our** user id with an **EOA** on ARC-TESTNET, can sign EIP-712 typed data that the server verifies with viem. This is the approval binding for settings and authority changes (ARCHITECTURE §4). Spike #4's production path is then rerun with this real UCW as the DeleGator owner.
 Code: `plan/spikes/code/02-ucw-typed-data/` (`node run.mjs [--cancel-test] [--delegation-only]`, then open `http://localhost:5199/` and enter the PIN for each challenge; `node check1271.mjs`). Raw results: `results.testnet.json`, `run.part1.log`, `run.log`. State (testnet only) lives in the gitignored `.spike-state.testnet.json`.
 Date: 2026-09-30

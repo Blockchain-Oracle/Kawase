@@ -1,0 +1,76 @@
+{
+  "at": "2026-09-30T16:25:42.345Z",
+  "user": "0xE6444A8f25dbaad024d2e87C5319A62265B2f683",
+  "results": [
+    {
+      "name": "relayed EIP-7702 setup of an empty wallet",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0x96134ec5c4219d14affa4f1e19318036047b3ed2dab644529261c458ba9deca6"
+    },
+    {
+      "name": "receipt decoded from the signed allowance matches its terms",
+      "expected": "pass",
+      "ok": true,
+      "detail": "{\"wallet\":\"0xE6444A8f25dbaad024d2e87C5319A62265B2f683\",\"redeemer\":\"0x2d9b5452178316e064d10e1424e8acf65a71b6b9\",\"token\":\"0x3600000000000000000000000000000000000000\",\"amountPerPeriod\":\"500000\",\"periodSeconds\":120,\"startsAt\":1790785389,\"expiresAt\":1790788994,\"targets\":[\"0x3600000000000000000000000000000000000000\"],\"methods\":[\"0xa9059cbb\"],\"maxNativeValue\":\"0\",\"redeemers\":[\"0x2d9b5452178316e064d10e1424e8acf65a71b6b9\"],\"unknownCaveats\":[]}"
+    },
+    {
+      "name": "agent sends 0.2 USDC to A inside the allowance",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xd23f037443eebef6b07361a057118deb36b8a4210f92dc0e97b0f5ad7fa3017b"
+    },
+    {
+      "name": "agent sends 0.3 USDC to B (reaches the cap)",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0x9e8716c96a2da6d8302a86246799eb6dbd7288e9c7f0d0c7c8e118f973e8219c"
+    },
+    {
+      "name": "agent sends 0.01 USDC over the cap",
+      "expected": "fail",
+      "ok": true,
+      "detail": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "the wallet's balance fell by exactly the cap",
+      "expected": "pass",
+      "ok": true
+    },
+    {
+      "name": "receipt of the automation grant shows the pinned recipient",
+      "expected": "pass",
+      "ok": true
+    },
+    {
+      "name": "automation pays its pinned recipient",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0x3d1955cdfe60475fe8e30079c03adf455f03dd1e1c7a57de44ad2ed1b3242ad3"
+    },
+    {
+      "name": "automation grant used for another recipient",
+      "expected": "fail",
+      "ok": true,
+      "detail": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "grant edited after signing (cap raised to 50)",
+      "expected": "fail",
+      "ok": true,
+      "detail": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "user revokes the allowance with one transaction",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0x6a11d0ad0433dac2016a4e455393560ca9c3c1d54c8b623d9d7fb24c68d906a8"
+    },
+    {
+      "name": "agent uses the revoked allowance in a new period",
+      "expected": "fail",
+      "ok": true,
+      "detail": "ESTIMATION_ERROR"
+    }
+  ]
+}

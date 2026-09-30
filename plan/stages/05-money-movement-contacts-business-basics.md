@@ -4,7 +4,7 @@ Purpose: a stage of the Kawase build. Source of truth for scope is `plan/MASTER-
 Status: not started
 
 ## Scope (from the master plan)
-- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send; the approval endpoint (lock, fresh evaluate, spend reservation, UCW challenge); Circle webhook post-verification; `tx_attempts` + reconciliation; the money-ending taxonomy.
+- Send, receive (QR, share link), request money and split bills (C3), batch payouts (Multicall3From), memo, crosschain send; the approval endpoint (lock, fresh evaluate, spend reservation, then the allowance redeem or a wallet signature); post-verification against the draft; `tx_attempts` + reconciliation; the money-ending taxonomy.
 - `apps/chain-watcher` (system emitter + ERC-20 + Memo, with cursors) → incoming-payment matching + inbox.
 - Contacts: versioned addresses, per-network trust, verification method, 24 h change cooldown + hold, first-time and lookalike warnings, ENS/Basenames/ArcNS ("unofficial"), QR scan, save-from-received.
 - Limits (per-tx, daily, weekly, allowlist, new-recipient cooldown, temporary raise with auto-restore, pause-all).
