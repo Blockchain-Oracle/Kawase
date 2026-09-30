@@ -24,7 +24,7 @@ Read from the live server. Kawase follows the same pattern; nothing here is spec
 
 | Field | agari-web | our-journal | Kawase |
 |---|---|---|---|
-| Git source | deploy key | deploy key | GitHub App (D27). A deploy key is the proven fallback |
+| Git source | deploy key | deploy key | deploy key (`kawase-deploy-key`); GitHub App optional later |
 | Build pack | `dockerfile` | `dockerfile` | `dockerfile` |
 | Base directory | `/` | `/` | `/` (pnpm workspace, root build context) |
 | Dockerfile location | `/web/Dockerfile` | default | `/apps/<svc>/Dockerfile` |
@@ -51,26 +51,27 @@ The host names are Claude's proposal (same shape as `our-journal`); Abu can rena
 ## Create an app
 
 ```bash
-coolify app create github \
+coolify app create deploy-key \
   --server-uuid 7otp4kskhbwzkzybsug3uqgx --project-uuid m7tksyqasdrevs7ogfxn5ppd --environment-name production \
-  --github-app-uuid <from `coolify github list`> --git-repository Blockchain-Oracle/kawase --git-branch main \
+  --private-key-uuid qfzygvoehtclwstqsjcviqwm --git-repository git@github.com:Blockchain-Oracle/kawase.git --git-branch main \
   --name kawase-api --build-pack dockerfile --base-directory / \
   --ports-exposes <listen port> --domains https://kawase-api.84.46.247.92.sslip.io \
   --health-check-enabled --health-check-path /health
 ```
 
-- CLI 1.8.0 has no flags for `dockerfile_location`, `watch_paths` or `pre_deployment_command`. Set them with `PATCH /api/v1/applications/<uuid>` (all three are in the API's allowed fields), or create the app with `POST /api/v1/applications/private-github-app`, which takes every field in one call.
-- Deploy-key variant: `coolify app create deploy-key --private-key-uuid <uuid> --git-repository git@github.com:Blockchain-Oracle/kawase.git …` with the same remaining flags.
+- CLI 1.8.0 has no flags for `dockerfile_location`, `watch_paths` or `pre_deployment_command`. Set them with `PATCH /api/v1/applications/<uuid>` (all three are in the API's allowed fields), or create the app with `POST /api/v1/applications/private-deploy-key`, which takes every field in one call.
+- GitHub App variant (if one is added later): `coolify app create github --github-app-uuid <uuid> --git-repository Blockchain-Oracle/kawase …` with the same remaining flags.
 - Env vars: `coolify app env sync <uuid> --file <file>` (non-destructive). Secrets are runtime-only, never build variables.
 
 ## Deploy
 
-GitHub App auto-deploy (D27) with per-app watch paths. Manual: `coolify deploy uuid <app-uuid>`; logs: `coolify app deployments logs <deployment-uuid>`. Builds run one at a time on this server.
+`coolify deploy uuid <app-uuid>` after pushing to `main`; logs: `coolify app deployments logs <deployment-uuid>`. Builds run one at a time on this server.
 
-## Open items
+## Git source
 
-- **No GitHub App source exists yet** (`coolify github list` shows only "Public GitHub"). Creating one is a browser flow in the Coolify dashboard (Sources → + Add → GitHub App → register → install on `Blockchain-Oracle/kawase`). All six of Abu's other projects use a deploy key instead (`coolify private-key add` + `gh repo deploy-key add`), which needs no browser. The cost of a deploy key: no Watch Paths and no push auto-deploy without a manual webhook (`abu-server-inspection.md` line 28).
-- **The GitHub repo is empty** (no commits locally or on `Blockchain-Oracle/kawase` as of 2026-09-30). Coolify builds from GitHub, so nothing can deploy before the first push.
+- **Deploy key (in place, 2026-09-30):** Coolify private key `kawase-deploy-key`, UUID `qfzygvoehtclwstqsjcviqwm`; its public half is a read-only deploy key on `Blockchain-Oracle/kawase`. Create apps with `coolify app create deploy-key --private-key-uuid qfzygvoehtclwstqsjcviqwm --git-repository git@github.com:Blockchain-Oracle/kawase.git --git-branch main …`. This is the same setup as Abu's six other projects.
+- With a deploy key there are no Watch Paths and no push auto-deploy unless a webhook is added by hand (`abu-server-inspection.md` line 28). Deploy with `coolify deploy uuid <app-uuid>` after a push.
+- **GitHub App (optional, D27's original choice):** none exists (`coolify github list` shows only "Public GitHub"). It is a browser flow in the Coolify dashboard (Sources → + Add → GitHub App → register → install on the repo). Switch to it if per-app auto-deploy is wanted.
 
 ## Notes
 

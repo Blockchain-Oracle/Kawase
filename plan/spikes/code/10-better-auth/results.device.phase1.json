@@ -1,0 +1,36 @@
+{
+  "file": "device",
+  "phase": "1",
+  "platform": "ios",
+  "at": "2026-09-30T09:49:45.765Z",
+  "guest": {
+    "id": "01a0f1b8-5a80-739f-84b9-78aba144c5bf"
+  },
+  "guestSession": {
+    "isAnonymous": true
+  },
+  "cookieStored": true,
+  "guestContacts": {
+    "userId": "01a0f1b8-5a80-739f-84b9-78aba144c5bf",
+    "isAnonymous": true,
+    "contacts": [
+      "Device-guest-contact"
+    ]
+  },
+  "otpSent": true,
+  "upgrade": {
+    "id": "01a0f1b8-5b6a-76ce-90c9-9a979ac29239"
+  },
+  "accountSession": {
+    "id": "01a0f1b8-5b6a-76ce-90c9-9a979ac29239",
+    "isAnonymous": false,
+    "email": "device+1790761786180@example.com"
+  },
+  "accountContacts": {
+    "userId": "01a0f1b8-5b6a-76ce-90c9-9a979ac29239",
+    "isAnonymous": false,
+    "contacts": [
+      "Device-guest-contact"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+PASS  1 guest sign-in creates an anonymous user + session  {"id":"01a0f1b9-69fa-749a-b759-22d663625acb","email":"temp-figxiq3pnxaigtqaibkopf0fsn3td9ca@guest.kawase.invalid"}
+PASS  1b ids are UUIDv7 from our generateId  "01a0f1b9-69fa-749a-b759-22d663625acb"
+PASS  2 guest data is stored under the guest id  {"userId":"01a0f1b9-69fa-749a-b759-22d663625acb","isAnonymous":true,"contacts":["Amina","Kenji"]}
+PASS  3 a guest cannot create a second guest  {"status":400,"code":"ANONYMOUS_USERS_CANNOT_SIGN_IN_AGAIN_ANONYMOUSLY"}
+PASS  4 OTP sign-in succeeds and the session is a real account  {"status":200,"userA":"01a0f1b9-6b7a-7668-bfb5-4cd488cb96db","emailVerified":true}
+PASS  4b onLinkAccount fired once and moved both rows  [{"anonymousUserId":"01a0f1b9-69fa-749a-b759-22d663625acb","newUserId":"01a0f1b9-6b7a-7668-bfb5-4cd488cb96db","moved":2}]
+PASS  4c the upgraded account sees the guest data  {"userId":"01a0f1b9-6b7a-7668-bfb5-4cd488cb96db","isAnonymous":false,"contacts":["Amina","Kenji"]}
+PASS  4d the guest user row was deleted
+PASS  5 wrong OTPs are refused and the real code is dead after 3 attempts  {"tries":["INVALID_OTP","INVALID_OTP","INVALID_OTP","TOO_MANY_ATTEMPTS"],"afterLockout":"INVALID_OTP"}
+PASS  6 a guest signing in to an existing account merges into it  {"userId":"01a0f1b9-6b7a-7668-bfb5-4cd488cb96db","isAnonymous":false,"contacts":["Amina","Kenji","Fatima"]}
+PASS  7 a fresh device signs in to the same account (no link callback)  {"contacts":["Amina","Kenji","Fatima"],"linkEvents":2}
+PASS  8 when the migration throws, the guest data is NOT lost  {"signInStatus":500,"guestStillThere":true,"dataStillThere":true,"sessionNow":{"id":"01a0f1b9-6e58-77a8-b6ce-95980abcb96f","isAnonymous":true},"newUserCreated":true}
+PASS  8b retrying the upgrade after a failed migration completes it  {"status":200,"contacts":["Must-not-be-lost"]}
+PASS  9 kawase:// (expo-origin) is accepted; an untrusted origin with cookies is refused  {"expoOk":200,"evilNoCookie":200,"evilWithCookie":403,"code":"INVALID_ORIGIN"}
+PASS  10 sign-out ends the session  {"status":200}
+PASS  11 delete-anonymous-user removes the guest and its rows  {"status":200}
+PASS  12 passkey: register options need a session; authenticate options are public  {"noSession":401,"guest":200,"rpId":"localhost","authOptions":200}
+PASS  13 a cookie-bearing POST with no Origin header is refused  {"status":403,"code":"MISSING_OR_NULL_ORIGIN"}
+
+18/18 passed

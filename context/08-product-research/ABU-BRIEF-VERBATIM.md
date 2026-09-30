@@ -110,3 +110,15 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > Wait. I wanna ask questions first, like wait. What model is this? Let me change this model to Fable 541 and the effort first, because it seems like you're just being dumb. Wait, but why the hell are you doing this? Like Qualify, the CLI ignore the port I set. Like why are you trying to set port or something? Why are you trying to set port? I don't fucking understand you. Why are you trying to set port? Don't you understand how Qualify works? Use the Qualify skill for fuck's sake. Use the fucking Qualify skill for fuck's sake. Yes, and you can get HTTPS domain from Qualify. How do you think other domains got it, like Hangari? It's a way you could get it. Like understand everything. You'll be able to get HTTPS domain. You don't even understand the documentation of Qualify and everything. What the fuck is wrong with you? And I've actually applied for the Circle this thing. I'm awaiting verification. I'm awaiting verification, and this can take a while. I don't know what the fuck is wrong with you, man. The Circle maintenance stuff, but you can try maybe to come and go through. What you've done and stuff they need. I'm actually changing it to Fable 541 because you are fucking getting everything wrong. Have you even followed about our plan? I don't even know what to say at this point. I'm gonna clear this section first. Don't even piss me off, because now is not really the fucking time. It's not really the fucking time to be doing this.
 
 (Claude's reading: stop and answer before building more. Use the Coolify skill and learn how Coolify is already used on the server; HTTPS domains come from Coolify, as with Agari. Circle mainnet: Abu has applied and is awaiting verification, so it is no longer an action on him. Go through what was done against the plan. Outcome: `deploy/coolify.md` rewritten, `plan/STATUS.md` audit added.)
+
+## Build message, 2026-09-30: after Claude asked two questions (commit and push now? deploy key or GitHub App?)
+
+> lets continue lol why wait for me lol
+
+(Claude's reading: go ahead with both recommendations without waiting: commit and push, and use a deploy key. More generally, act on a stated recommendation instead of stopping to ask.)
+
+## Build message, 2026-09-30: sent while spikes #8 and #10 were running
+
+> mainnet is approved just so you know
+
+(Claude's reading: Circle mainnet access is approved on Circle's side. The LIVE key in `.env` still returned 403 when checked right after, so a new LIVE key or a console step may be needed.)

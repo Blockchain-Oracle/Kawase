@@ -1,7 +1,7 @@
 # Stage 1: Day-1 spikes
 
 Purpose: a stage of the Kawase build. Source of truth for scope is `plan/MASTER-PLAN.md`; decisions are in `context/08-product-research/DECISIONS-FROM-ABU.md`.
-Status: in progress (#2, #3, #4, #6, #7, #9, #11, #14 done; see STATUS.md)
+Status: in progress (#2, #3, #4, #6, #7, #8, #9, #10, #11, #14 done; see STATUS.md)
 
 ## Scope (from the master plan)
 Each spike is recorded in `plan/spikes/`, with evidence and a decision.
@@ -26,7 +26,9 @@ Each spike is recorded in `plan/spikes/`, with evidence and a decision.
 The **integration tests we keep** (D22) come from these spikes: the delegation caveats (#4), the challenge flow (#1–3), DBOS exactly-once (#6), the network-mismatch hard stop, and LiveKit RPC (#5).
 
 ## Docs to read first (Context7 / official docs)
-- (fill in before starting: every library touched in this stage)
+- #8: Uniwind setup + theming (uni-stack/uniwind `skills/uniwind/references/`), RNR `minimal-uniwind` template + CLI, Expo SDK 57 `router/web/server-rendering` and `api-routes`, the 21st CLI skill.
+- #10: Better Auth `plugins/{anonymous,email-otp,passkey}`, `integrations/{expo,hono}`, `adapters/drizzle`, `concepts/database`.
+- Remaining spikes: list the docs in the spike write-up before starting (#1 Circle RN SDK, #5 LiveKit RN + agents, #12 x402, #13 Circle + Telegram webhooks).
 
 ## 21st.dev sourcing (surfaces, queries, picks: component · author · URL · why)
 - (fill in when the stage touches UI)
@@ -36,3 +38,6 @@ The **integration tests we keep** (D22) come from these spikes: the delegation c
 - 2026-09-30 · #2 PASS on testnet (13/13). UCW user `a3ca8196-…` keyed by our id; vault EOA `0xb7ed…efca`; UCW-owned DeleGator `0xb99b…Bd85`; revoke tx [`0xea48…4985`](https://explorer.testnet.arc.io/tx/0xea4818884a985d05689627822eb1155ba40bf8f98493c5e68708de33f85f4985). Abu entered the PIN via a local Web SDK relay page. Signer adapter rules added to ARCHITECTURE §4. LIVE untested (403).
 - 2026-09-30 · #3 PASS on testnet (4/4). Swap [`0xc111…24ff`](https://testnet.arcscan.app/tx/0xc111f18687dad46e1ba5eb4a7994c84dec49da1c316fbfabd5edf02bd37724ff); bridge burn [`0x5b1d…edf9`](https://testnet.arcscan.app/tx/0x5b1d375c6d2333b105e91d762a6745bf9bf499b8303248a424f02cfa1a84edf9) → mint on Base Sepolia [`0x02bd…f00f`](https://sepolia.basescan.org/tx/0x02bd639b8e4c93054d5dec8a842ec149b4f69d42a672c33403be9f98a043f00f). UCW adapter is SCA-only → own SigningStrategy (ARCHITECTURE §4 updated).
 - 2026-09-30 · #7 PASS: Node 7/7, iOS sim approval round trip (useChat + expo/fetch), and SSE through Coolify Traefik over HTTPS with gzip (throwaway app created, measured, deleted). No RN polyfills needed on 0.86.3.
+- 2026-09-30 · #10 PASS: Better Auth 1.7.6 guest → email OTP upgrade keeps data (headless 18/18, Chrome passkey 4/4, iOS simulator incl. session restore after restart). Native passkey left open. `spikes/10-better-auth.md`.
+- 2026-09-30 · #8 PASS: one card spec → RNR/Uniwind on iOS and a 21st.dev card on Expo web, one token file, 4 themes + RTL, `web.output:"server"` export. `react-native-web` pinned to 0.21.2. `spikes/08-ui-stack.md`.
+- Earlier results without a log line here (#4, #6, #9, #11, #14) are in `plan/STATUS.md` and `plan/spikes/`.

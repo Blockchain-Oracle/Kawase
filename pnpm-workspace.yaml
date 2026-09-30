@@ -42,3 +42,6 @@ minimumReleaseAgeExclude:
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:
   expo-constants: 57.0.20
+  # uniwind 1.12.0's web build breaks on react-native-web 0.21.3 (uni-stack/uniwind#695; fixed on main by #697,
+  # not released yet). Remove this pin when a uniwind release after 1.12.0 is installed (spike 08).
+  react-native-web: 0.21.2

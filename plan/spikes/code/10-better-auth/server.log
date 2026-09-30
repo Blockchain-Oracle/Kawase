@@ -1,0 +1,24 @@
+spike-10 listening on :3010
+[2m2026-09-30T09:50:56.755Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error Error: spike: simulated migration failure
+    at Object.onLinkAccount (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/auth.ts:38:35)
+    at file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/plugins/anonymous/index.mjs:190:48
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.internalHandler [as handler] (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/middleware.mjs:15:21)
+    at async runAfterHooks (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/api/dispatch.mjs:114:18)
+    at async file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/api/dispatch.mjs:245:17
+    at async processRequest (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/router.mjs:82:11)
+    at async handler (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/router.mjs:105:16)
+    at async file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/@better-auth/core/dist/context/transaction.mjs:37:13
+    at async dispatch (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/hono/dist/compose.js:35:11)
+# SERVER_ERROR:  Error: spike: simulated migration failure
+    at Object.onLinkAccount (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/auth.ts:38:35)
+    at file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/plugins/anonymous/index.mjs:190:48
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.internalHandler [as handler] (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/middleware.mjs:15:21)
+    at async runAfterHooks (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/api/dispatch.mjs:114:18)
+    at async file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-auth/dist/api/dispatch.mjs:245:17
+    at async processRequest (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/router.mjs:82:11)
+    at async handler (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/better-call/dist/router.mjs:105:16)
+    at async file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/@better-auth/core/dist/context/transaction.mjs:37:13
+    at async dispatch (file:///Users/abu/dev/hackathon/tamion/plan/spikes/code/10-better-auth/node_modules/hono/dist/compose.js:35:11)
+[2m2026-09-30T09:50:57.052Z[0m [31mERROR[0m [1m[Better Auth]:[0m Invalid origin: https://evil.example

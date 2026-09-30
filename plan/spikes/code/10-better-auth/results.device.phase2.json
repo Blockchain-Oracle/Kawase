@@ -1,0 +1,17 @@
+{
+  "file": "device",
+  "phase": "2",
+  "platform": "ios",
+  "at": "2026-09-30T09:50:33.645Z",
+  "restoredSession": {
+    "id": "01a0f1b8-9f54-7146-b41e-116eb22981d6",
+    "isAnonymous": false
+  },
+  "contacts": {
+    "userId": "01a0f1b8-9f54-7146-b41e-116eb22981d6",
+    "isAnonymous": false,
+    "contacts": [
+      "Device-guest-contact"
+    ]
+  }
+}

@@ -1,0 +1,2 @@
+/* Entry for web-only apps (docs, landing). The Expo app uses apps/mobile/src/global.css instead. */
+@import 'tailwindcss';

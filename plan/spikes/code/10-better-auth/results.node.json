@@ -1,0 +1,180 @@
+{
+  "at": "2026-09-30T09:50:57.432Z",
+  "passed": 18,
+  "total": 18,
+  "results": [
+    {
+      "name": "1 guest sign-in creates an anonymous user + session",
+      "pass": true,
+      "detail": {
+        "id": "01a0f1b9-69fa-749a-b759-22d663625acb",
+        "email": "temp-figxiq3pnxaigtqaibkopf0fsn3td9ca@guest.kawase.invalid"
+      }
+    },
+    {
+      "name": "1b ids are UUIDv7 from our generateId",
+      "pass": true,
+      "detail": "01a0f1b9-69fa-749a-b759-22d663625acb"
+    },
+    {
+      "name": "2 guest data is stored under the guest id",
+      "pass": true,
+      "detail": {
+        "userId": "01a0f1b9-69fa-749a-b759-22d663625acb",
+        "isAnonymous": true,
+        "contacts": [
+          "Amina",
+          "Kenji"
+        ]
+      }
+    },
+    {
+      "name": "3 a guest cannot create a second guest",
+      "pass": true,
+      "detail": {
+        "status": 400,
+        "code": "ANONYMOUS_USERS_CANNOT_SIGN_IN_AGAIN_ANONYMOUSLY"
+      }
+    },
+    {
+      "name": "4 OTP sign-in succeeds and the session is a real account",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "userA": "01a0f1b9-6b7a-7668-bfb5-4cd488cb96db",
+        "emailVerified": true
+      }
+    },
+    {
+      "name": "4b onLinkAccount fired once and moved both rows",
+      "pass": true,
+      "detail": [
+        {
+          "anonymousUserId": "01a0f1b9-69fa-749a-b759-22d663625acb",
+          "newUserId": "01a0f1b9-6b7a-7668-bfb5-4cd488cb96db",
+          "moved": 2
+        }
+      ]
+    },
+    {
+      "name": "4c the upgraded account sees the guest data",
+      "pass": true,
+      "detail": {
+        "userId": "01a0f1b9-6b7a-7668-bfb5-4cd488cb96db",
+        "isAnonymous": false,
+        "contacts": [
+          "Amina",
+          "Kenji"
+        ]
+      }
+    },
+    {
+      "name": "4d the guest user row was deleted",
+      "pass": true
+    },
+    {
+      "name": "5 wrong OTPs are refused and the real code is dead after 3 attempts",
+      "pass": true,
+      "detail": {
+        "tries": [
+          "INVALID_OTP",
+          "INVALID_OTP",
+          "INVALID_OTP",
+          "TOO_MANY_ATTEMPTS"
+        ],
+        "afterLockout": "INVALID_OTP"
+      }
+    },
+    {
+      "name": "6 a guest signing in to an existing account merges into it",
+      "pass": true,
+      "detail": {
+        "userId": "01a0f1b9-6b7a-7668-bfb5-4cd488cb96db",
+        "isAnonymous": false,
+        "contacts": [
+          "Amina",
+          "Kenji",
+          "Fatima"
+        ]
+      }
+    },
+    {
+      "name": "7 a fresh device signs in to the same account (no link callback)",
+      "pass": true,
+      "detail": {
+        "contacts": [
+          "Amina",
+          "Kenji",
+          "Fatima"
+        ],
+        "linkEvents": 2
+      }
+    },
+    {
+      "name": "8 when the migration throws, the guest data is NOT lost",
+      "pass": true,
+      "detail": {
+        "signInStatus": 500,
+        "guestStillThere": true,
+        "dataStillThere": true,
+        "sessionNow": {
+          "id": "01a0f1b9-6e58-77a8-b6ce-95980abcb96f",
+          "isAnonymous": true
+        },
+        "newUserCreated": true
+      }
+    },
+    {
+      "name": "8b retrying the upgrade after a failed migration completes it",
+      "pass": true,
+      "detail": {
+        "status": 200,
+        "contacts": [
+          "Must-not-be-lost"
+        ]
+      }
+    },
+    {
+      "name": "9 kawase:// (expo-origin) is accepted; an untrusted origin with cookies is refused",
+      "pass": true,
+      "detail": {
+        "expoOk": 200,
+        "evilNoCookie": 200,
+        "evilWithCookie": 403,
+        "code": "INVALID_ORIGIN"
+      }
+    },
+    {
+      "name": "10 sign-out ends the session",
+      "pass": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "11 delete-anonymous-user removes the guest and its rows",
+      "pass": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "12 passkey: register options need a session; authenticate options are public",
+      "pass": true,
+      "detail": {
+        "noSession": 401,
+        "guest": 200,
+        "rpId": "localhost",
+        "authOptions": 200
+      }
+    },
+    {
+      "name": "13 a cookie-bearing POST with no Origin header is refused",
+      "pass": true,
+      "detail": {
+        "status": 403,
+        "code": "MISSING_OR_NULL_ORIGIN"
+      }
+    }
+  ]
+}

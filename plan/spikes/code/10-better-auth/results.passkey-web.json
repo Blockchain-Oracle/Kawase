@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-30T09:51:05.655Z",
+  "checks": {
+    "guest upgrade keeps data (web client)": true,
+    "the same authenticator cannot be registered twice": true,
+    "passkey sign-in returns the same user and data": true,
+    "a passkey added while a guest survives the upgrade": true
+  },
+  "out": {
+    "guest": {
+      "ok": true
+    },
+    "guestAddPasskey": {
+      "ok": true
+    },
+    "afterGuestPasskey": true,
+    "upgrade": {
+      "ok": true
+    },
+    "account": {
+      "id": "01a0f1b9-87ea-755c-98df-9775f1293b2a",
+      "isAnonymous": false
+    },
+    "contactsAfterUpgrade": [
+      "Web-guest-contact"
+    ],
+    "addPasskey": {
+      "error": "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED"
+    },
+    "passkeys": [
+      {
+        "name": "guest-key",
+        "deviceType": "singleDevice"
+      }
+    ],
+    "signedOut": true,
+    "passkeySignIn": {
+      "ok": true
+    },
+    "sameUser": true,
+    "contactsAfterPasskey": [
+      "Web-guest-contact"
+    ]
+  }
+}
