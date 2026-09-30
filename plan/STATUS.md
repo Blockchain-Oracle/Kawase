@@ -1,18 +1,20 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; repo pushed; deploy key set up)
+Last updated: 2026-09-30 (spikes #2, #3, #7, #8, #10, #13 done; Stage 2 directions ready for Abu's choice)
 
 ## Current stage
-**Stage 1: Day-1 spikes** (`stages/01-day-1-spikes.md`). Stage 0 still has two open items: a git source for Coolify, and the first commit + push.
+**Stage 2: Design system and component sourcing** (`stages/02-design-system-component-sourcing.md`), with the Stage 1 spikes that need Abu or mainnet still open.
 
 ## Next action
-Remaining Stage 1 spikes: #1 Circle RN SDK on the dev build (Abu enters the PIN on the simulator), #5 voice (real phone), #12 x402 (mainnet). Mainnet runs (#2 LIVE, #4 $1, #12, #13 LIVE) wait for Circle's mainnet approval (see Blockers). Then Stage 2 (Abu picks the design direction).
+1. **Abu chooses a design direction** (A Tegami, B Chōba, C Koe, or a mix). Comparison page: https://claude.ai/artifact/DRnNKsKaDFB97jY9TfCfAZ (private to Abu); same content in `plan/design/DIRECTIONS.md`; live at `/dev/directions` in the web build. Claude recommends A with C's orb as the voice mode.
+2. After the choice: `packages/ui-tokens/tokens.json` from the chosen set, delete the other two and `apps/mobile/src/dev/`, remove the temporary "Directions" tab, finish `DESIGN.md`, then source the remaining surfaces and build the native twins.
+3. Open Stage 1 spikes: #1 Circle RN SDK (Abu enters the PIN on the simulator), #5 voice (real phone), #12 x402 and the mainnet halves of #2, #4, #13 (wait for Circle's mainnet approval), a real Telegram delivery (needs a bot token).
 
 ## Stage checklist
 - [ ] 0 Bootstrap: resume protocol ✅ · monorepo scaffold ✅ · Coolify project + Postgres ✅ · private repo Blockchain-Oracle/kawase ✅ · kickoff transcript ✅ · first commit pushed ✅ · Coolify deploy key ✅ (GitHub App optional later)
 - [ ] 1 Day-1 spikes (14): #2 ✅ testnet (LIVE pending) · #3 ✅ testnet (swap + bridge; EOA via own SigningStrategy) · #7 ✅ (local, iOS, and SSE through Coolify Traefik + HTTPS + gzip) · #8 ✅ (iOS + web; Android not run) · #10 ✅ (iOS + web; native passkey open) · #13 ✅ Circle testnet (LIVE pending; Telegram needs a bot token) · #4 ✅ testnet + real UCW owner (mainnet pending) · #6 ✅ · #14 ✅ (TS 6.0.3 per the Expo 57 template) · #9 ✅ iOS (Android via EAS pending) · #11 ✅ partial (PluralRules/RelativeTimeFormat need polyfills; parser fixed)
-- [ ] 2 Design system and component sourcing (Abu picks a direction)
+- [ ] 2 Design system and component sourcing: `DESIGN.md` draft ✅ · 3 directions built ✅ · 10 components installed in `ui-web` ✅ · **Abu's choice ☐** · tokens package ☐ · native twins ☐ · gallery ☐
 - [ ] 3 Core platform: networks ✅ money ✅ config ✅ (pure packages started early)
 - [ ] 4 Agent brain, resolve and resume, chat
 - [ ] 5 Money movement, contacts, business basics

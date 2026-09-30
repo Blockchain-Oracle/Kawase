@@ -12,7 +12,7 @@
   "aliases": {
     "components": "@kawase/ui-web/components",
     "utils": "@kawase/ui-web/lib/utils",
-    "ui": "@kawase/ui-web/components",
+    "ui": "@kawase/ui-web/components/ui",
     "lib": "@kawase/ui-web/lib",
     "hooks": "@kawase/ui-web/hooks"
   },

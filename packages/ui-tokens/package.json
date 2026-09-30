@@ -1,0 +1,10 @@
+{
+  "name": "@kawase/ui-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens. Stage 2 draft: three candidate directions; the chosen one becomes tokens.json.",
+  "type": "module",
+  "exports": {
+    "./directions.json": "./directions.json"
+  }
+}

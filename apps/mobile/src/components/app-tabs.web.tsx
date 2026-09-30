@@ -27,6 +27,11 @@ export default function AppTabs() {
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
           </TabTrigger>
+          {/* STAGE2-TEMP: internal design-directions preview; remove with src/dev once a direction is chosen */}
+          <TabTrigger name="directions" href="/dev/directions" asChild>
+            <TabButton>Directions</TabButton>
+          </TabTrigger>
+          {/* /STAGE2-TEMP */}
         </CustomTabList>
       </TabList>
     </Tabs>

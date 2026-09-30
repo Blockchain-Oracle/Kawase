@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "project": {
+    "name": "@kawase/ui-web",
+    "productType": null,
+    "stack": [
+      "shadcn",
+      "tailwind-v4"
+    ]
+  },
+  "sources": {
+    "tokens": [],
+    "components": [
+      "src/components/ui"
+    ],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "unknown",
+    "colors": {},
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [
+      "button",
+      "order-confirmation-card"
+    ],
+    "preferredPrimitives": [
+      "radix-ui"
+    ],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "src/components/ui"
+    },
+    {
+      "fact": "project.stack:shadcn",
+      "source": "components.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-30T10:14:39.489Z"
+}

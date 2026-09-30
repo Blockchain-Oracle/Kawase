@@ -3,6 +3,10 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
+    // Installed community components are not written for these three strict flags; the rest of the repo keeps them.
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false,
     "paths": {
       "@kawase/ui-web/*": ["./src/*"]
     }
