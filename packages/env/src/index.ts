@@ -21,6 +21,8 @@ export const apiEnvSchema = z.object({
   DATABASE_URL: z.url(),
   /** The api's own public address, for links in emails and the web app's cookies. */
   KAWASE_PUBLIC_URL: z.url().optional(),
+  /** Browser origins allowed to call the api (the web app), comma-separated. Localhost is added in development. */
+  KAWASE_WEB_ORIGINS: z.string().default(""),
   /** Turnkey: the parent organization and its server API key (read access to every user's sub-organization). */
   TURNKEY_ORGANIZATION_ID: z.uuid(),
   TURNKEY_API_PUBLIC_KEY: compressedPublicKey,

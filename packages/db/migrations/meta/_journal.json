@@ -8,6 +8,13 @@
       "when": 1790796093029,
       "tag": "0000_identity-wallets-system",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790799142950,
+      "tag": "0001_theme-default-dark",
+      "breakpoints": true
     }
   ]
 }

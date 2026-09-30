@@ -1,6 +1,7 @@
 // The api, assembled from its parts so tests can build it with fakes (a Turnkey reader that answers from
 // memory, a local chain) and main.ts with the real ones.
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
 import type { Db } from "@kawase/db";
@@ -29,6 +30,8 @@ export type AppDeps = {
   rateLimitPerMinute?: number;
   /** Sign-in attempts per minute per client. */
   signInLimitPerMinute?: number;
+  /** Browser origins allowed to call the api. */
+  webOrigins?: string[];
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -49,6 +52,15 @@ export function createApp(deps: AppDeps) {
   });
 
   app.use("*", requestId());
+  app.use(
+    "*",
+    cors({
+      origin: (origin) => (deps.webOrigins?.includes(origin) ? origin : null),
+      allowHeaders: ["authorization", "content-type", "idempotency-key"],
+      exposeHeaders: ["x-request-id", "idempotent-replayed"],
+      credentials: true,
+    }),
+  );
   app.use("*", async (c, next) => {
     c.set("log", requestLogger(deps.log, c.get("requestId")));
     const startedAt = Date.now();
@@ -65,7 +77,10 @@ export function createApp(deps: AppDeps) {
 
   app.onError((error, c) => {
     const id = c.get("requestId");
-    if (error instanceof ProblemError) return problemResponse(c, error, id);
+    if (error instanceof ProblemError) {
+      c.get("log").info({ code: error.code, status: error.status, detail: error.detail }, "problem");
+      return problemResponse(c, error, id);
+    }
     c.get("log").error({ err: error }, "unhandled");
     return problemResponse(c, problem(HTTP.internal, "internal"), id);
   });

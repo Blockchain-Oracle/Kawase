@@ -8,11 +8,13 @@ import { devices, moveUserData, signInNonces, users, type Db } from "@kawase/db"
 import { HTTP, problem } from "../http/problem";
 import { createSession } from "./session";
 import { parseStamp, proofClaims, verifyStamp, type StampedProof } from "./turnkey-proof";
-import type { TurnkeyReader } from "./turnkey";
+import type { TurnkeyReader, TurnkeyUser } from "./turnkey";
 
 const NONCE_BYTES = 32;
 const MS_PER_SECOND = 1000;
 const NONCE_TTL_SECONDS = 300;
+const KEY_LOOKUP_ATTEMPTS = 3;
+const KEY_LOOKUP_DELAY_MS = 1500;
 
 export type DeviceInput = {
   platform: "ios" | "android" | "web" | "desktop";
@@ -94,7 +96,14 @@ export class AuthService {
     }
     if (!verifyStamp(input.proof.body, stamp)) throw problem(HTTP.unauthorized, "proof_invalid");
 
-    const turnkeyUser = await this.turnkey.getUser(claims.organizationId, input.turnkeyUserId);
+    // Right after a sign-in the new session key can take a moment to show up on the user, so the read is
+    // repeated a few times before the proof is refused.
+    let turnkeyUser: TurnkeyUser | undefined;
+    for (let attempt = 0; attempt < KEY_LOOKUP_ATTEMPTS; attempt++) {
+      turnkeyUser = await this.turnkey.getUser(claims.organizationId, input.turnkeyUserId);
+      if (turnkeyUser?.sessionPublicKeys.includes(stamp.publicKey)) break;
+      if (attempt < KEY_LOOKUP_ATTEMPTS - 1) await new Promise((resolve) => setTimeout(resolve, KEY_LOOKUP_DELAY_MS));
+    }
     if (!turnkeyUser) throw problem(HTTP.unauthorized, "session_key_unknown", "no such user in this organization");
     if (!turnkeyUser.sessionPublicKeys.includes(stamp.publicKey))
       throw problem(HTTP.unauthorized, "session_key_unknown");

@@ -24,6 +24,12 @@ const app = createApp({
     apiPrivateKey: env.TURNKEY_API_PRIVATE_KEY,
   }),
   chains: createChains(env),
+  webOrigins: [
+    ...env.KAWASE_WEB_ORIGINS.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+    ...(env.NODE_ENV === "development" ? ["http://localhost:8081"] : []),
+  ],
 });
 
 const server = serve({ fetch: app.fetch, port: env.PORT, hostname: "::" }, (info) => {
