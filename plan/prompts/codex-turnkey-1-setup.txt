@@ -1,0 +1,60 @@
+<task>
+Set up Turnkey for the Kawase app, using the Zen browser on this Mac, where Abu is already logged in to https://app.turnkey.com. Then write the resulting ids into the project's env files.
+
+Project: /Users/abu/dev/hackathon/tamion (an Expo / React Native app; the wallet provider reads two public ids from env).
+
+Do these steps in the Turnkey dashboard:
+1. Find the organization ID of the logged-in (parent) organization.
+2. Go to Embedded Wallets → Configuration (https://app.turnkey.com/dashboard/walletKit). Turn the Auth Proxy ON.
+3. In that configuration:
+   - Email OTP: ON. SMS OTP: OFF.
+   - OTP: 6 digits, numeric.
+   - Passkeys: ON.
+   - Email customization: application name "Kawase". Leave the logo empty.
+   - Session expiration: 2592000 seconds (30 days). If the field rejects it, use the largest value it accepts and report that value.
+   - Allowed origins: leave the default "*" for now. Do not restrict it yet (the native app's requests have not been tested against a restricted list).
+   - Leave Google, Apple, X, Discord and external wallets OFF in this run.
+4. Save, then copy the Auth Proxy Config ID.
+5. Create one API key for the parent organization named "kawase-server" (the dashboard generates the key pair in the browser). Capture the public key and the private key. If the dashboard only offers a download, read the values from the downloaded file and delete the file afterwards.
+
+Then write the values into BOTH env files (create apps/mobile/.env if it does not exist; keep every existing line in both files unchanged; replace a key's line if the key already exists):
+- /Users/abu/dev/hackathon/tamion/.env
+    EXPO_PUBLIC_TURNKEY_ORGANIZATION_ID=<organization id>
+    EXPO_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID=<auth proxy config id>
+    TURNKEY_API_PUBLIC_KEY=<public key>
+    TURNKEY_API_PRIVATE_KEY=<private key>
+- /Users/abu/dev/hackathon/tamion/apps/mobile/.env
+    EXPO_PUBLIC_TURNKEY_ORGANIZATION_ID=<organization id>
+    EXPO_PUBLIC_TURNKEY_AUTH_PROXY_CONFIG_ID=<auth proxy config id>
+</task>
+
+<action_safety>
+- Work only in the Turnkey dashboard and in the two env files named above. Do not edit any other project file.
+- Use the existing Zen session. Do not log out, do not switch accounts, do not open a private window.
+- Never print, log, screenshot or paste TURNKEY_API_PRIVATE_KEY anywhere except the root .env file. Do not put it in apps/mobile/.env.
+- Do not enter payment details, accept paid plans, or change billing. If the dashboard requires a card or a plan change to continue, stop and report exactly what it asked for.
+- Do not delete or change existing API keys, users, policies or wallets in the organization.
+- Do not commit anything to git. Both env files are git-ignored; confirm that with `git check-ignore` and stop if either is not ignored.
+</action_safety>
+
+<default_follow_through_policy>
+Keep going without asking for routine choices (naming, which menu an option lives in). Stop and report instead of guessing only when: a step needs a 2FA or email code from Abu, a payment, or a setting named above does not exist in the dashboard.
+</default_follow_through_policy>
+
+<verification_loop>
+Before you finish:
+1. Run: curl -s -X POST https://authproxy.turnkey.com/v1/wallet_kit_config -H "Content-Type: application/json" -H "X-Auth-Proxy-Config-Id: <auth proxy config id>" -d '{}'
+   It must return JSON that shows email OTP enabled. If it errors, re-check the config id and that the Auth Proxy is ON.
+2. Confirm both env files contain the two EXPO_PUBLIC_ lines with non-empty values, and the root .env contains both TURNKEY_API_ lines.
+3. Re-open the configuration page and confirm the settings from step 3 were saved.
+</verification_loop>
+
+<compact_output_contract>
+Reply with a short list:
+- organization id (it is public, print it)
+- auth proxy config id (public, print it)
+- session expiration actually set
+- "API key kawase-server created: yes/no" (never the key itself)
+- the result of the curl check in one line
+- anything you could not do, and what Abu must do for it
+</compact_output_contract>

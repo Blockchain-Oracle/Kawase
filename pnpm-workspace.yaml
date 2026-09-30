@@ -57,3 +57,5 @@ allowBuilds:
   react-native-inappbrowser-reborn: false
   # esbuild (through tsx, used to run TypeScript test scripts) verifies its platform binary.
   esbuild: true
+  # Skia's install script only copies its prebuilt frameworks from sibling packages into place (no network).
+  '@shopify/react-native-skia': true

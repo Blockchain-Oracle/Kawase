@@ -14,7 +14,8 @@ export const tokens = {
       "Noto Sans Devanagari",
       "Noto Sans Bengali",
       "Noto Sans SC"
-    ]
+    ],
+    "googleFontsHref": "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=Manrope:wght@400..700&family=JetBrains+Mono:wght@400..600&family=Noto+Sans+Arabic:wght@400..700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Noto+Sans+Devanagari:wght@400..700&family=Noto+Sans+Bengali:wght@400..700&family=Noto+Sans+SC:wght@400..700&display=swap"
   },
   "orb": {
     "mainnet": [
@@ -45,6 +46,7 @@ export const tokens = {
       "accent": "#965A00",
       "accent-foreground": "#FFFFFF",
       "destructive": "#C4262E",
+      "destructive-foreground": "#FFFFFF",
       "success": "#1A7F56",
       "border": "#DEDACF",
       "input": "#DEDACF",
@@ -69,6 +71,7 @@ export const tokens = {
       "accent": "#FFB224",
       "accent-foreground": "#1A1200",
       "destructive": "#FF6369",
+      "destructive-foreground": "#2A0507",
       "success": "#4CC38A",
       "border": "#29292D",
       "input": "#29292D",
@@ -93,6 +96,7 @@ export const tokens = {
       "accent": "#965A00",
       "accent-foreground": "#FFFFFF",
       "destructive": "#C4262E",
+      "destructive-foreground": "#FFFFFF",
       "success": "#1A7F56",
       "border": "#DEDACF",
       "input": "#DEDACF",
@@ -117,6 +121,7 @@ export const tokens = {
       "accent": "#FFB224",
       "accent-foreground": "#1A1200",
       "destructive": "#FF6369",
+      "destructive-foreground": "#2A0507",
       "success": "#4CC38A",
       "border": "#29292D",
       "input": "#29292D",

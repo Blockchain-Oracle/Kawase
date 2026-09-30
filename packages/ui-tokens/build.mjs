@@ -23,21 +23,34 @@ const radius = tokens.radius
 const radii = { sm: radius - RADIUS_STEP, md: radius - RADIUS_STEP / 2, lg: radius, xl: radius + RADIUS_STEP }
 const lines = (values, indent, prefix) => Object.entries(values).map(([k, v]) => `${indent}--${prefix}${k}: ${v};`).join('\n')
 
+// Fonts. React Native takes exactly one family per style (no fallback list), and picks the weight from the
+// family's embedded faces. The browser gets the full stack, with the Noto families for other scripts.
+const stack = (font) => `"${font}", ${tokens.fonts.scripts.map((s) => `"${s}"`).join(', ')}, system-ui, sans-serif`
+const monoStack = `"${tokens.fonts.mono}", ui-monospace, monospace`
+
 // Native (Uniwind): four flat themes, each defining every variable.
 const native = `${HEADER}@theme {
   --radius: ${radius}px;
 ${Object.entries(radii).map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
+  --font-sans: '${tokens.fonts.body}';
+  --font-display: '${tokens.fonts.display}';
+  --font-mono: '${tokens.fonts.mono}';
 }
 
 @layer theme {
   :root {
+    @variant web {
+      --font-sans: ${stack(tokens.fonts.body)};
+      --font-display: ${stack(tokens.fonts.display)};
+      --font-mono: ${monoStack};
+    }
+
 ${Object.entries(themes).map(([theme, values]) => `    @variant ${theme} {\n${lines(values, '      ', 'color-')}\n    }`).join('\n\n')}
   }
 }
 `
 
 // Web (docs, landing): shadcn's :root/.dark contract, with testnet as a data attribute on top.
-const stack = (font) => `"${font}", ${tokens.fonts.scripts.map((s) => `"${s}"`).join(', ')}, system-ui, sans-serif`
 const web = `${HEADER}:root {
 ${lines(themes.light, '  ', '')}
   --radius: ${radius}px;
@@ -61,13 +74,20 @@ ${names.map((name) => `  --color-${name}: var(--${name});`).join('\n')}
 ${Object.entries(radii).map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
   --font-sans: ${stack(tokens.fonts.body)};
   --font-display: ${stack(tokens.fonts.display)};
-  --font-mono: "${tokens.fonts.mono}", ui-monospace, monospace;
+  --font-mono: ${monoStack};
 }
 `
 
+// The browser loads the fonts from Google Fonts; the native apps embed the brand fonts and use the system's
+// fonts for other scripts.
+const googleFontsHref = `https://fonts.googleapis.com/css2?${Object.entries(tokens.fonts.googleFontsAxes)
+  .map(([family, axes]) => `family=${family.replaceAll(' ', '+')}:${axes}`)
+  .join('&')}&display=swap`
+const { googleFontsAxes: _axes, ...fonts } = tokens.fonts
+
 const ts = `// GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild.
 // For code that cannot use class names: the orb shader, charts, the status bar.
-export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: tokens.fonts, orb: tokens.orb, themes }, null, 2)} as const;
+export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: { ...fonts, googleFontsHref }, orb: tokens.orb, themes }, null, 2)} as const;
 
 export type ThemeName = keyof typeof tokens.themes;
 export type TokenName = keyof typeof tokens.themes.light;

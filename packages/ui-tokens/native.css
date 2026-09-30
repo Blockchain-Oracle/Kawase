@@ -5,10 +5,19 @@
   --radius-md: 18px;
   --radius-lg: 20px;
   --radius-xl: 24px;
+  --font-sans: 'Manrope';
+  --font-display: 'Bricolage Grotesque';
+  --font-mono: 'JetBrains Mono';
 }
 
 @layer theme {
   :root {
+    @variant web {
+      --font-sans: "Manrope", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
+      --font-display: "Bricolage Grotesque", "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
     @variant light {
       --color-background: #FAF8F3;
       --color-foreground: #141312;
@@ -25,6 +34,7 @@
       --color-accent: #965A00;
       --color-accent-foreground: #FFFFFF;
       --color-destructive: #C4262E;
+      --color-destructive-foreground: #FFFFFF;
       --color-success: #1A7F56;
       --color-border: #DEDACF;
       --color-input: #DEDACF;
@@ -50,6 +60,7 @@
       --color-accent: #FFB224;
       --color-accent-foreground: #1A1200;
       --color-destructive: #FF6369;
+      --color-destructive-foreground: #2A0507;
       --color-success: #4CC38A;
       --color-border: #29292D;
       --color-input: #29292D;
@@ -75,6 +86,7 @@
       --color-accent: #965A00;
       --color-accent-foreground: #FFFFFF;
       --color-destructive: #C4262E;
+      --color-destructive-foreground: #FFFFFF;
       --color-success: #1A7F56;
       --color-border: #DEDACF;
       --color-input: #DEDACF;
@@ -100,6 +112,7 @@
       --color-accent: #FFB224;
       --color-accent-foreground: #1A1200;
       --color-destructive: #FF6369;
+      --color-destructive-foreground: #2A0507;
       --color-success: #4CC38A;
       --color-border: #29292D;
       --color-input: #29292D;

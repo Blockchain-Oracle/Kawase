@@ -55,7 +55,7 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
         animate="visible"
         aria-live="polite"
         className={cn(
-          "w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground shadow-lg",
+          "w-full max-w-sm rounded-xl border border-border bg-card text-card-foreground",
           compact ? "p-4" : "p-6 sm:p-8",
           className
         )}
@@ -99,7 +99,8 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
                 )}
               >
                 <span>{item.label}</span>
-                <span className={cn({ "text-lg": item.isBold })}>{item.value}</span>
+                {/* dir="auto": an amount stays left-to-right inside a right-to-left card, a name follows its own script. */}
+                <span dir="auto" className={cn({ "text-lg": item.isBold })}>{item.value}</span>
               </div>
             ))}
           </motion.div>

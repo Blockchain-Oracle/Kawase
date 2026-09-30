@@ -52,8 +52,9 @@ export function WalletCard({ label, amount, subAmount, badge, actions, accounts 
           </div>
         </div>
         <div className="space-y-1">
-          <div dir="ltr" className="font-mono text-3xl font-semibold tabular-nums tracking-tight">{amount}</div>
-          {subAmount ? <div dir="ltr" className="font-mono text-sm tabular-nums text-muted-foreground">{subAmount}</div> : null}
+          {/* The figures read left-to-right, but the line sits on the side where reading starts. */}
+          <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight"><bdi dir="ltr">{amount}</bdi></div>
+          {subAmount ? <div className="font-mono text-sm tabular-nums text-muted-foreground"><bdi dir="ltr">{subAmount}</bdi></div> : null}
         </div>
       </div>
 

@@ -22,6 +22,18 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-magic-numbers": "off" },
   },
   {
+    // Installed registry components (21st.dev, shadcn, React Native Reusables) keep their authors' code style:
+    // layout numbers, shader constants and loose types are not rewritten. Code written for Kawase next to
+    // them (one folder up) follows the full rule set.
+    files: ["packages/ui-web/src/components/ui/**", "packages/ui-native/src/components/ui/**"],
+    rules: {
+      "@typescript-eslint/no-magic-numbers": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
     // Client apps must never import server-only packages (Circle keys, DB, agent).
     files: ["apps/mobile/**", "apps/docs/**", "apps/landing/**"],
     rules: { "no-restricted-imports": ["error", { patterns: SERVER_ONLY_PACKAGES.map((group) => ({ group: [group], message: "Server-only package: not allowed in client apps." })) }] },

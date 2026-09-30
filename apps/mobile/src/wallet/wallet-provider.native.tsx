@@ -1,10 +1,16 @@
 // The polyfill must load before anything that needs random bytes (Turnkey's session keys).
-import 'react-native-get-random-values';
+import "react-native-get-random-values";
 
-import { TurnkeyProvider, type TurnkeyCallbacks, type TurnkeyProviderConfig } from '@turnkey/react-native-wallet-kit';
-import type { ReactNode } from 'react';
+import { TurnkeyProvider, type TurnkeyCallbacks, type TurnkeyProviderConfig } from "@turnkey/react-native-wallet-kit";
+import type { ReactNode } from "react";
 
-import { APP_SCHEME, PASSKEY_RP_ID, TURNKEY_AUTH_PROXY_CONFIG_ID, TURNKEY_ORGANIZATION_ID, isWalletConfigured } from './config';
+import {
+  APP_SCHEME,
+  PASSKEY_RP_ID,
+  TURNKEY_AUTH_PROXY_CONFIG_ID,
+  TURNKEY_ORGANIZATION_ID,
+  isWalletConfigured,
+} from "./config";
 
 const config: TurnkeyProviderConfig = {
   organizationId: TURNKEY_ORGANIZATION_ID,
@@ -12,14 +18,14 @@ const config: TurnkeyProviderConfig = {
   ...(PASSKEY_RP_ID ? { passkeyConfig: { rpId: PASSKEY_RP_ID } } : {}),
   auth: {
     otp: { email: true, sms: false },
-    passkey: PASSKEY_RP_ID !== '',
+    passkey: PASSKEY_RP_ID !== "",
     oauth: { appScheme: APP_SCHEME },
     autoRefreshSession: true,
   },
 };
 
 const callbacks: TurnkeyCallbacks = {
-  onError: (error) => console.warn('[wallet]', error),
+  onError: (error) => console.warn("[wallet]", error),
 };
 
 export function WalletProvider({ children }: { children: ReactNode }) {

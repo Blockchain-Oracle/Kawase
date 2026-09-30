@@ -8,7 +8,8 @@ export class AmountParseError extends Error {
   }
 }
 
-const DIGIT_GROUP_SEPARATORS = /[\s  '’_]/g;
+/** Marks people use to group digits: spaces (including no-break and narrow no-break), apostrophes and underscores. */
+const DIGIT_GROUP_SEPARATORS = /[\s\u00a0\u202f'\u2019_]/g;
 
 /** Arabic decimal (U+066B) and thousands (U+066C) marks, which people type even when Intl reports Latin separators. */
 const ARABIC_DECIMAL_SEPARATOR = "٫";
@@ -40,7 +41,11 @@ function separatorsFor(locale: string): { decimal: string; group: string } {
  * Code point of the digit ZERO in each non-Latin numbering system used by Kawase's locales
  * (ar: Arabic-Indic, ur/fa: Extended Arabic-Indic, hi: Devanagari, bn: Bengali).
  */
-const NON_LATIN_DIGIT_ZEROS = [0x0660, 0x06f0, 0x0966, 0x09e6] as const;
+const ARABIC_INDIC_ZERO = 0x0660;
+const EXTENDED_ARABIC_INDIC_ZERO = 0x06f0;
+const DEVANAGARI_ZERO = 0x0966;
+const BENGALI_ZERO = 0x09e6;
+const NON_LATIN_DIGIT_ZEROS = [ARABIC_INDIC_ZERO, EXTENDED_ARABIC_INDIC_ZERO, DEVANAGARI_ZERO, BENGALI_ZERO] as const;
 const DIGITS_PER_SYSTEM = 10;
 
 /** Convert locale-native digits to ASCII 0–9 so typed amounts in any supported locale parse exactly. */

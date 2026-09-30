@@ -1,0 +1,38 @@
+<task>
+Enable "Continue with Google" and "Continue with Apple" for the Kawase app's Turnkey wallet, using the Zen browser on this Mac where Abu is logged in to Turnkey, Google Cloud and Apple Developer.
+
+Facts you need:
+- App: Kawase. iOS bundle id and Android package: xyz.kawase.app. App URL scheme: kawase.
+- Turnkey dashboard: Embedded Wallets → Configuration (https://app.turnkey.com/dashboard/walletKit). It shows an "OAuth redirect URL". Use that exact value wherever a provider asks for a redirect or return URL. (Turnkey's default is https://oauth-redirect.turnkey.com with the app scheme as a query parameter.)
+- Project env files: /Users/abu/dev/hackathon/tamion/.env and /Users/abu/dev/hackathon/tamion/apps/mobile/.env.
+
+Steps:
+1. Google (https://console.cloud.google.com/apis/credentials): first look for an existing project and OAuth client that is clearly meant for Kawase. If none exists, create a project named "Kawase", configure the OAuth consent screen (external, app name "Kawase", Abu's account as support and developer contact, no extra scopes beyond email/profile/openid), and create an OAuth client of type "Web application" named "Kawase wallet" with the Turnkey OAuth redirect URL as an authorized redirect URI. Copy the client id.
+2. Apple (https://developer.apple.com/account/resources/identifiers/list): make sure an App ID exists for xyz.kawase.app with the "Sign In with Apple" capability enabled (create or edit it). Create a Services ID "xyz.kawase.app.signin" (description "Kawase sign-in"), enable Sign In with Apple on it with xyz.kawase.app as the primary App ID, and add the Turnkey OAuth redirect URL's host as the domain and the full URL as the return URL. Note the Team ID shown in the account.
+3. Turnkey dashboard: in the OAuth / social logins section, turn Google and Apple ON and enter the Google web client id and the Apple Services ID where the dashboard asks for client ids. Save.
+4. Add these lines to BOTH env files (keep all other lines unchanged; replace a key's line if it exists):
+    EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=<google web client id>
+    EXPO_PUBLIC_APPLE_SERVICES_ID=xyz.kawase.app.signin
+    EXPO_PUBLIC_APPLE_IOS_BUNDLE_ID=xyz.kawase.app
+    APPLE_TEAM_ID=<team id>
+</task>
+
+<action_safety>
+- Touch only: the Google Cloud project for Kawase, the Apple identifiers named above, the Turnkey OAuth settings, and the two env files.
+- Do not change or delete OAuth clients, identifiers, certificates or profiles that belong to other apps.
+- Do not enter payment details or accept paid programs. Do not publish the Google consent screen for verification; leave it in testing.
+- No client secret is needed for this setup. If you create one by accident, do not print it and do not store it.
+- Use the existing Zen sessions. Do not log out or switch accounts. Do not commit to git.
+</action_safety>
+
+<default_follow_through_policy>
+Keep going on routine choices. Stop and report when a step needs a 2FA code, a legal agreement only Abu can accept, a payment, or when an existing resource looks like it belongs to another app and you would have to change it.
+</default_follow_through_policy>
+
+<verification_loop>
+Before you finish: re-open each of the three consoles and confirm the client, the identifiers and the Turnkey toggles are saved; confirm the four env lines exist in both files; run the curl from Prompt 1's verification and confirm the response now shows Google and Apple enabled.
+</verification_loop>
+
+<compact_output_contract>
+Reply with: the Google web client id, the Apple Services ID, the Apple Team ID, the Turnkey OAuth redirect URL you used, whether each provider toggle is ON, and anything left for Abu.
+</compact_output_contract>

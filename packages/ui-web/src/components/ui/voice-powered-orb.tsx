@@ -2,10 +2,13 @@
 
 import React, { useEffect, useRef, type FC } from "react";
 import { Renderer, Program, Mesh, Triangle, Vec3, type OGLRenderingContext } from "ogl";
+import { tokens } from "@kawase/ui-tokens";
 
-// Kawase: type fixes only (the published source does not compile under current TypeScript DOM types).
+// Source: 21st.dev isaiahbjork/voice-powered-orb. Changes for Kawase: type fixes (the published source does not
+// compile under current TypeScript DOM types), ring colours and the voice level as props, and a still ring
+// when the visitor prefers reduced motion.
 type OrbGL = OGLRenderingContext & { canvas: HTMLCanvasElement };
-const DEFAULT_ORB_COLORS: [string, string, string] = ["#9C43FE", "#4CC2E9", "#101499"];
+const DEFAULT_ORB_COLORS: readonly [string, string, string] = tokens.orb.mainnet;
 const hexToVec3 = (hex: string) => {
   const n = Number.parseInt(hex.replace("#", ""), 16);
   return new Vec3(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
@@ -15,8 +18,10 @@ import { cn } from "@kawase/ui-web/lib/utils";
 interface VoicePoweredOrbProps {
   className?: string;
   hue?: number;
-  /** Kawase: the three ring colours as hex, so the orb follows the tokens (default: the author's purple/cyan/blue). */
-  colors?: [string, string, string];
+  /** Kawase: the three ring colours as hex, so the orb follows the tokens (default: the mainnet orb colours). */
+  colors?: readonly [string, string, string];
+  /** Kawase: a voice level from 0 to 1 supplied by the app. When set, the orb does not open the microphone itself. */
+  level?: number;
   enableVoiceControl?: boolean;
   voiceSensitivity?: number;
   maxRotationSpeed?: number;
@@ -28,6 +33,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
   className,
   hue = 0,
   colors = DEFAULT_ORB_COLORS,
+  level,
   enableVoiceControl = true,
   voiceSensitivity = 1.5,
   maxRotationSpeed = 1.2,
@@ -41,6 +47,11 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const levelRef = useRef(level);
+  levelRef.current = level;
+  const colorsRef = useRef(colors);
+  colorsRef.current = colors;
+  const ownsMicrophone = enableVoiceControl && level === undefined;
 
   const vert = /* glsl */ `
     precision highp float;
@@ -250,7 +261,6 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       }
 
       dataArrayRef.current = null;
-      console.log('Microphone stopped and cleaned up');
     } catch (error) {
       console.warn('Error stopping microphone:', error);
     }
@@ -293,7 +303,6 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       microphoneRef.current.connect(analyserRef.current);
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
 
-      console.log('Microphone initialized successfully');
       return true;
     } catch (error) {
       console.warn("Microphone access denied or not available:", error);
@@ -313,7 +322,9 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     try {
       rendererInstance = new Renderer({
         alpha: true,
-        premultipliedAlpha: false,
+        // Kawase: the shader outputs premultiplied colour; blending it as straight alpha darkened the glow's
+        // edge, which showed as a grey halo on light backgrounds.
+        premultipliedAlpha: true,
         antialias: true,
         dpr: window.devicePixelRatio || 1
       });
@@ -322,7 +333,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       glContext.clearColor(0, 0, 0, 0);
       // Enable alpha blending for proper transparency
       glContext.enable(glContext.BLEND);
-      glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
+      glContext.blendFunc(glContext.ONE, glContext.ONE_MINUS_SRC_ALPHA);
 
       // Clear any existing canvas
       while (container.firstChild) {
@@ -384,8 +395,10 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       const baseRotationSpeed = 0.3;
       let isMicrophoneInitialized = false;
 
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
       // Initialize or stop microphone based on voice control setting
-      if (enableVoiceControl) {
+      if (ownsMicrophone) {
         initMicrophone().then((success) => {
           isMicrophoneInitialized = success;
         });
@@ -401,12 +414,21 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
 
         const dt = (t - lastTime) * 0.001;
         lastTime = t;
-        program.uniforms.iTime.value = t * 0.001;
+        program.uniforms.iTime.value = reducedMotion ? 2.4 : t * 0.001;
         program.uniforms.hue.value = hue;
+        const [c1, c2, c3] = colorsRef.current;
+        program.uniforms.baseColor1.value = hexToVec3(c1);
+        program.uniforms.baseColor2.value = hexToVec3(c2);
+        program.uniforms.baseColor3.value = hexToVec3(c3);
 
-        // Handle voice input
-        if (enableVoiceControl && isMicrophoneInitialized) {
-          voiceLevel = analyzeAudio();
+        // Handle voice input: the app's level when given, otherwise the orb's own microphone.
+        const external = levelRef.current;
+        const hasLevel = !reducedMotion && (external !== undefined || (ownsMicrophone && isMicrophoneInitialized));
+        if (hasLevel) {
+          voiceLevel =
+            external !== undefined
+              ? voiceLevel + (Math.min(Math.max(external, 0), 1) - voiceLevel) * Math.min(1, dt * 8)
+              : analyzeAudio();
 
           // Notify parent component about voice detection
           if (onVoiceDetected) {
@@ -478,7 +500,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     }
   }, [
     hue,
-    enableVoiceControl,
+    ownsMicrophone,
     voiceSensitivity,
     maxRotationSpeed,
     maxHoverIntensity,
@@ -491,7 +513,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     let isMounted = true;
 
     const handleMicrophoneState = async () => {
-      if (enableVoiceControl) {
+      if (ownsMicrophone) {
         const success = await initMicrophone();
         if (!isMounted) return;
         // Update the microphone state in the WebGL context if needed
@@ -506,7 +528,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       isMounted = false;
       // Don't stop microphone here as it will be handled by the main cleanup
     };
-  }, [enableVoiceControl]);
+  }, [ownsMicrophone]);
 
   return (
     <div

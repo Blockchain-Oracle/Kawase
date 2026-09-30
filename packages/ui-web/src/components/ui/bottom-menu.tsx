@@ -41,7 +41,7 @@ const BottomMenu = ({ nav, active, onSelect, className }: BottomMenuProps) => {
   }, []);
 
   const sharedHover =
-    "group flex items-center gap-2 transition-all duration-75 px-3 py-2 text-[15px] text-muted-foreground w-full text-start rounded-[12px] hover:bg-muted/80 hover:text-foreground";
+    "group flex items-center gap-2 transition-colors duration-75 px-3 py-2 text-[15px] text-muted-foreground w-full text-start rounded-[12px] hover:bg-muted/80 hover:text-foreground";
 
   const content = useMemo(() => {
     const entry = nav.find((item) => item.name === view);
@@ -160,7 +160,7 @@ const BottomMenu = ({ nav, active, onSelect, className }: BottomMenuProps) => {
               type="button"
               aria-label={item.label}
               aria-current={active === item.name ? "page" : undefined}
-              className={cn("p-3 rounded-[16px] transition-all", selected ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted")}
+              className={cn("p-3 rounded-[16px] transition-colors", selected ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-muted")}
               onClick={() => {
                 if (item.items?.length) setView(view === item.name ? "default" : item.name);
                 else { setView("default"); onSelect?.(item.name); }

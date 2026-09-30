@@ -1,0 +1,176 @@
+{
+  "at": "2026-09-30T17:22:08.019Z",
+  "base": "http://localhost:8081",
+  "results": [
+    {
+      "route": "dev/gallery",
+      "mode": "dark",
+      "network": "mainnet",
+      "lang": "en",
+      "file": "web-gallery-dark-mainnet-en.png",
+      "rootClass": "dark",
+      "background": "rgb(10, 10, 11)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope",
+        "Noto Sans Arabic",
+        "Noto Sans Bengali",
+        "Noto Sans Devanagari",
+        "Noto Sans SC"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/gallery",
+      "mode": "light",
+      "network": "mainnet",
+      "lang": "en",
+      "file": "web-gallery-light-mainnet-en.png",
+      "rootClass": "light",
+      "background": "rgb(250, 248, 243)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope",
+        "Noto Sans Arabic",
+        "Noto Sans Bengali",
+        "Noto Sans Devanagari",
+        "Noto Sans SC"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/gallery",
+      "mode": "dark",
+      "network": "testnet",
+      "lang": "en",
+      "file": "web-gallery-dark-testnet-en.png",
+      "rootClass": "testnet-dark",
+      "background": "rgb(10, 10, 11)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope",
+        "Noto Sans Arabic",
+        "Noto Sans Bengali",
+        "Noto Sans Devanagari",
+        "Noto Sans SC"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/gallery",
+      "mode": "light",
+      "network": "testnet",
+      "lang": "ar",
+      "file": "web-gallery-light-testnet-ar.png",
+      "rootClass": "testnet",
+      "background": "rgb(250, 248, 243)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope",
+        "Noto Sans Arabic",
+        "Noto Sans Bengali",
+        "Noto Sans Devanagari",
+        "Noto Sans SC"
+      ],
+      "overflowX": 0,
+      "direction": "rtl"
+    },
+    {
+      "route": "dev/home-sample",
+      "mode": "dark",
+      "network": "mainnet",
+      "lang": "en",
+      "file": "web-home-dark-mainnet-en.png",
+      "rootClass": "dark",
+      "background": "rgb(10, 10, 11)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/home-sample",
+      "mode": "light",
+      "network": "mainnet",
+      "lang": "en",
+      "file": "web-home-light-mainnet-en.png",
+      "rootClass": "light",
+      "background": "rgb(250, 248, 243)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/home-sample",
+      "mode": "dark",
+      "network": "testnet",
+      "lang": "en",
+      "file": "web-home-dark-testnet-en.png",
+      "rootClass": "testnet-dark",
+      "background": "rgb(10, 10, 11)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "overflowX": 0,
+      "direction": "ltr"
+    },
+    {
+      "route": "dev/home-sample",
+      "mode": "light",
+      "network": "testnet",
+      "lang": "ar",
+      "file": "web-home-light-testnet-ar.png",
+      "rootClass": "testnet",
+      "background": "rgb(250, 248, 243)",
+      "bodyFont": "Manrope",
+      "displayFont": "\"Bricolage Grotesque\"",
+      "monoFont": "\"JetBrains Mono\"",
+      "fontsLoaded": [
+        "Bricolage Grotesque",
+        "JetBrains Mono",
+        "Manrope",
+        "Noto Sans Arabic"
+      ],
+      "overflowX": 0,
+      "direction": "rtl"
+    }
+  ],
+  "errors": []
+}

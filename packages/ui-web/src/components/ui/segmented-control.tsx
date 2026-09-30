@@ -1,6 +1,7 @@
 "use client";
 
-// Source: 21st.dev ddoemonn/segmented-control. Reskinned for Kawase: the fixed stone/blue colours now resolve to tokens.;
+// Source: 21st.dev ddoemonn/segmented-control. Changes for Kawase: the fixed stone/blue colours now resolve to
+// tokens, and the thumb and arrow keys follow the reading direction (the published thumb always moved from the left).
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -63,8 +64,14 @@ export function SegmentedControl({
 
   const reduced = useReducedMotion();
   const pos = useMotionValue(index);
-  const thumbX = useTransform(pos, (v) => `${v * 100}%`);
-  const maskX = useTransform(pos, (v) => `${v * -100}%`);
+  const root = useRef<HTMLDivElement>(null);
+  const [rtl, setRtl] = useState(false);
+  useEffect(() => {
+    if (root.current) setRtl(getComputedStyle(root.current).direction === "rtl");
+  });
+  const sign = rtl ? -1 : 1;
+  const thumbX = useTransform(pos, (v) => `${v * 100 * sign}%`);
+  const maskX = useTransform(pos, (v) => `${v * -100 * sign}%`);
 
   useEffect(() => {
     if (reduced) {
@@ -106,10 +113,12 @@ export function SegmentedControl({
   );
 
   const onKeyDown = (e: React.KeyboardEvent, i: number) => {
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    const forward = rtl ? "ArrowLeft" : "ArrowRight";
+    const back = rtl ? "ArrowRight" : "ArrowLeft";
+    if (e.key === forward || e.key === "ArrowDown") {
       e.preventDefault();
       go(seek(i, 1));
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    } else if (e.key === back || e.key === "ArrowUp") {
       e.preventDefault();
       go(seek(i, -1));
     } else if (e.key === "Home") {
@@ -123,6 +132,7 @@ export function SegmentedControl({
 
   return (
     <div
+      ref={root}
       role="radiogroup"
       aria-label={label}
       className={`relative inline-block select-none rounded-lg border border-border bg-muted p-[3px] ${className}`}
@@ -149,7 +159,7 @@ export function SegmentedControl({
 
         <motion.div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 overflow-hidden rounded-md bg-foreground"
+          className="pointer-events-none absolute inset-y-0 start-0 overflow-hidden rounded-md bg-foreground"
           style={{ width: `${100 / count}%`, x: thumbX }}
           initial={false}
         >
@@ -159,7 +169,7 @@ export function SegmentedControl({
             initial={false}
           >
             <div
-              className="absolute inset-y-0 left-0 grid"
+              className="absolute inset-y-0 start-0 grid"
               style={{
                 width: `${count * 100}%`,
                 gridTemplateColumns: template,

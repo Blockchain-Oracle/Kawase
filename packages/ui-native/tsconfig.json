@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "jsx": "react-jsx",
+    // React Native Reusables components are not written for these three strict flags; the rest of the repo keeps them.
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "verbatimModuleSyntax": false,
+    "paths": {
+      "@kawase/ui-native/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

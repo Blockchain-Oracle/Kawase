@@ -3,6 +3,7 @@ import { ASSETS } from "./assets";
 import { decimalsOf, type Amount } from "./amount";
 
 const TEN = 10n;
+const ZERO = 0n;
 const DEFAULT_DISPLAY_FRACTION_DIGITS = 2;
 
 export type FormatOptions = {
@@ -20,7 +21,7 @@ export type FormatOptions = {
 export function formatAmount(value: Amount, locale: string, options: FormatOptions = {}): string {
   const decimals = decimalsOf(value.asset);
   const fractionDigits = Math.min(options.fractionDigits ?? DEFAULT_DISPLAY_FRACTION_DIGITS, decimals);
-  const negative = value.baseUnits < 0n;
+  const negative = value.baseUnits < ZERO;
   const abs = negative ? -value.baseUnits : value.baseUnits;
   const divisor = TEN ** BigInt(decimals);
   const whole = abs / divisor;
@@ -40,9 +41,11 @@ export function formatAmount(value: Amount, locale: string, options: FormatOptio
 export function canonicalAmount(value: Amount): string {
   const decimals = decimalsOf(value.asset);
   const divisor = TEN ** BigInt(decimals);
-  const whole = value.baseUnits / divisor;
-  const fraction = (value.baseUnits % divisor).toString().padStart(decimals, "0").replace(/0+$/, "");
-  return `${whole}${fraction ? `.${fraction}` : ""} ${ASSETS[value.asset].symbol}`;
+  const negative = value.baseUnits < ZERO;
+  const abs = negative ? -value.baseUnits : value.baseUnits;
+  const whole = abs / divisor;
+  const fraction = (abs % divisor).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole}${fraction ? `.${fraction}` : ""} ${ASSETS[value.asset].symbol}`;
 }
 
 export function assetSymbol(asset: AssetId): string {
