@@ -1,0 +1,99 @@
+{
+  "at": "2026-09-30T12:20:11.008Z",
+  "user": "0x9c8cDa2778b6B735A10b12EF4fE34AADF9CB7411",
+  "implementation": "0x63c0c19a282a1B52b07dD5a65b58948A07DAE32B",
+  "results": [
+    {
+      "name": "plain EOA calls Memo (transfer with a memo)",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0xb3c694c33931b65d1041820de188ca20e3de902af7264c18a928456ab405dd4b"
+    },
+    {
+      "name": "type-4 (set-code) transaction accepted on Arc testnet",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0xde4d12ab2e5c6644435219cb2d1c13d1eb6bc97f8efdd7ef59aaf339639046aa",
+      "reason": "code before=0x after=0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b"
+    },
+    {
+      "name": "delegated EOA still sends a normal transfer",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0x2e5f75ea2db12d3cc8bc1ec73ba5aaaa212a7ef0ba60eab9dcea8221c3224486"
+    },
+    {
+      "name": "delegated EOA calls Memo (does Arc still treat it as an EOA?)",
+      "expected": "observe",
+      "ok": true,
+      "status": "success",
+      "tx": "0x8b8be60b19c4fcbca9874dfeb9454ffacadaba0a204d27f2229983a2da5c7fc0"
+    },
+    {
+      "name": "agent sends 0.2 USDC to A from the user's own account, no user prompt",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0x49d9e7750bb92dd5fe8075c607626840dc3342e77313578256ef67e4f1f46e70"
+    },
+    {
+      "name": "agent sends 0.3 USDC to B (any recipient; total = cap 0.5)",
+      "expected": "pass",
+      "ok": true,
+      "state": "COMPLETE",
+      "tx": "0xf0caf87b2d2a546ccd5fe8f2f3c9c9c6ef6634b73e00aa24cb742e2706544ca3"
+    },
+    {
+      "name": "agent sends 0.01 more (over the period cap)",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "agent tries approve() instead of transfer()",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "agent tries a native-value send",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "user balance dropped by exactly 0.5 USDC",
+      "expected": "pass",
+      "ok": true,
+      "reason": "delta 500000"
+    },
+    {
+      "name": "user revokes with one direct transaction",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0x4764f8d4a1d7eb0311a10bc7a5143a2a639e984921f64e35b9bbcf1320492475"
+    },
+    {
+      "name": "agent redeems after the revoke (new period)",
+      "expected": "fail",
+      "ok": true,
+      "state": "FAILED",
+      "reason": "ESTIMATION_ERROR"
+    },
+    {
+      "name": "user removes the 7702 code again",
+      "expected": "pass",
+      "ok": true,
+      "status": "success",
+      "tx": "0x4e932398e247d8ba924ca305e1c9f75dcb3ed28e30c800cef239930719a245fe",
+      "reason": "code=0x"
+    }
+  ]
+}

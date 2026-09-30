@@ -1,2 +1,8 @@
 spike-01 server on :3021
 RESULT {"kind":"callback","step":"init","sdkVersion":{"native":"1.4.3 (15)","rn":"2.2.5"}}
+RESULT {"kind":"callback","step":"new-user","challengeId":"f96b49af-7a62-50fd-b10f-b574aae269cf","started":true}
+RESULT {"kind":"callback","step":"new-user","challengeId":"8035a304-ca94-5909-a4a6-8c67dcae4cdb","started":true}
+RESULT {"kind":"callback","step":"new-user","challengeId":"f96b49af-7a62-50fd-b10f-b574aae269cf","error":{"errorString":"Last challenge is still executing.","code":"155702"}}
+RESULT {"kind":"callback","step":"new-user","challengeId":"8035a304-ca94-5909-a4a6-8c67dcae4cdb","error":{"errorString":"Last challenge is still executing.","code":"155702"}}
+RESULT {"kind":"callback","step":"new-user","challengeId":"ceca42e5-a503-5597-8158-e26813e0c087","started":true}
+RESULT {"kind":"callback","step":"new-user","challengeId":"ceca42e5-a503-5597-8158-e26813e0c087","error":{"errorString":"Last challenge is still executing.","code":"155702"}}

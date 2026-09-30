@@ -7,5 +7,56 @@
       "native": "1.4.3 (15)",
       "rn": "2.2.5"
     }
+  },
+  {
+    "at": "2026-09-30T11:54:35.876Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "f96b49af-7a62-50fd-b10f-b574aae269cf",
+    "started": true
+  },
+  {
+    "at": "2026-09-30T11:54:36.549Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "8035a304-ca94-5909-a4a6-8c67dcae4cdb",
+    "started": true
+  },
+  {
+    "at": "2026-09-30T11:54:36.605Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "f96b49af-7a62-50fd-b10f-b574aae269cf",
+    "error": {
+      "errorString": "Last challenge is still executing.",
+      "code": "155702"
+    }
+  },
+  {
+    "at": "2026-09-30T11:54:36.606Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "8035a304-ca94-5909-a4a6-8c67dcae4cdb",
+    "error": {
+      "errorString": "Last challenge is still executing.",
+      "code": "155702"
+    }
+  },
+  {
+    "at": "2026-09-30T11:54:37.715Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "ceca42e5-a503-5597-8158-e26813e0c087",
+    "started": true
+  },
+  {
+    "at": "2026-09-30T11:54:38.975Z",
+    "kind": "callback",
+    "step": "new-user",
+    "challengeId": "ceca42e5-a503-5597-8158-e26813e0c087",
+    "error": {
+      "errorString": "Last challenge is still executing.",
+      "code": "155702"
+    }
   }
 ]
