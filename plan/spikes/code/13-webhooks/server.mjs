@@ -111,5 +111,6 @@ app.post('/__spike/fail-first', async (c) => {
   return c.json(state)
 })
 
-serve({ fetch: app.fetch, port: PORT, hostname: '0.0.0.0' }, () => console.log(`spike-13 listening on :${PORT}`))
+// '::' = IPv4 + IPv6. Coolify's health check runs busybox wget against localhost, which resolves to ::1 on alpine.
+serve({ fetch: app.fetch, port: PORT, hostname: '::' }, () => console.log(`spike-13 listening on :${PORT}`))
 for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => pool.end().finally(() => process.exit(0)))
