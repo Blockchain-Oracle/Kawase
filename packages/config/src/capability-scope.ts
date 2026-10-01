@@ -40,13 +40,13 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "scheduled sends of a fixed amount of USDC or EURC to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
       "Auto-save: keep an amount ready in the wallet and move the rest into the person's own vault savings, topping the wallet up when it drops below; checked daily and whenever money arrives, bounded on chain to the wallet and its own savings",
+      "rules: when the balance goes above or drops below an amount, or when money arrives (optionally from someone, or at least an amount) — bridge USDC to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (route fee bounded on chain), save it into their own vault, or alert them; amounts: what is above a line, a share of the money that arrived, or a fixed amount; balance rules fire once per crossing",
       "listing, pausing, resuming, skipping the next run and cancelling (with a revoke on chain)",
     ],
     notYet: [
-      "rules on a balance threshold (for example: when the balance reaches an amount, bridge the excess to Base)",
-      "a share of money received (for example: save 20% of every salary payment)",
-      "price-triggered swaps, DCA and payroll",
-      "alerts (balance below an amount) and practice mode",
+      "rules that send to someone else, swap, or act on a price (price-triggered swaps, DCA)",
+      "payroll and multi-step rules",
+      "practice mode (what a rule would have done)",
       "editing an automation in place (cancel and set it up again for now)",
     ],
   },

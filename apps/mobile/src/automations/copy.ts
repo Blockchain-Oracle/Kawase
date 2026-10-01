@@ -3,7 +3,7 @@
 // named after the device's real check.
 import * as React from "react";
 
-import type { AutomationRunView, AutomationSchedule, AutomationView } from "@kawase/api-client";
+import type { AutomationRunView, AutomationSchedule, AutomationView, RuleView } from "@kawase/api-client";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
@@ -49,7 +49,45 @@ export function useBoundText() {
   return (automation: AutomationView) => {
     const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt));
     if (automation.save) return t("automation.saveBound", { vault: vaultTitle(automation.save.vaultName), date });
+    const step = automation.rule?.step;
+    if (step?.type === "bridge") return t("automation.ruleBoundBridge", { chain: step.destinationName, date });
+    if (step?.type === "save") return t("automation.ruleBoundSave", { vault: vaultTitle(step.vaultName), date });
+    if (step?.type === "notify") return t("automation.ruleBoundNotify");
     return t("automation.bound", { amount: money(automation.action?.asset ?? "USDC", automation.maxPerPeriod), per: t(PER[automation.schedule.every]), date });
+  };
+}
+
+/** A rule in words: when it fires, what it does and how much, and where it stands now. */
+export function useRuleText() {
+  const { t } = useT();
+  const money = useMoney();
+  return {
+    when: (rule: RuleView) => {
+      const trigger = rule.trigger;
+      if (trigger.type !== "money_in") return t(trigger.type === "balance_above" ? "automation.ruleAbove" : "automation.ruleBelow", { amount: money("USDC", trigger.threshold) });
+      const name = trigger.fromName ?? trigger.from ?? "";
+      if (name && trigger.minAmount) return t("automation.ruleMoneyInFromMin", { name, amount: money("USDC", trigger.minAmount) });
+      if (name) return t("automation.ruleMoneyInFrom", { name });
+      if (trigger.minAmount) return t("automation.ruleMoneyInMin", { amount: money("USDC", trigger.minAmount) });
+      return t("automation.ruleMoneyIn");
+    },
+    what: (rule: RuleView) => {
+      const amount = rule.amount;
+      const how =
+        amount.mode === "fixed"
+          ? money("USDC", amount.amount)
+          : amount.mode === "percent"
+            ? t("automation.ruleHowPercent", { percent: `${amount.percent}%` })
+            : t("automation.ruleHowExcess", { amount: money("USDC", amount.reserve) });
+      const step = rule.step;
+      if (step.type === "bridge") return t("automation.ruleBridge", { how, chain: step.destinationName });
+      if (step.type === "save") return t("automation.ruleSave", { how, vault: vaultTitle(step.vaultName) });
+      return t("automation.ruleNotify");
+    },
+    cadence: (rule: RuleView) => t(rule.trigger.type === "money_in" ? "automation.ruleChecksMoneyIn" : "automation.ruleChecksBalance"),
+    state: (rule: RuleView) => (rule.trigger.type === "money_in" ? null : t(rule.armed ? "automation.ruleArmed" : "automation.ruleDisarmed")),
+    now: (rule: RuleView) =>
+      rule.now ? (rule.now.amount ? t("automation.ruleNowMove", { amount: money("USDC", rule.now.amount) }) : t("automation.ruleNowAlert")) : t("automation.ruleNowNone"),
   };
 }
 
@@ -61,6 +99,14 @@ export function useRunLabel() {
   return (run: AutomationRunView, automation: AutomationView) => {
     if (run.status === "skipped") return `${t("automation.runSkipped")} · ${reasonText(run.reason, run.reasonParams, automation.network)}`;
     if (run.status === "failed") return t("automation.runFailed");
+    if (automation.rule) {
+      if (run.status === "executing" || run.status === "pending") return t("automation.runMoving");
+      const step = automation.rule.step;
+      const decided = run.trigger?.amount;
+      if (step.type === "notify") return t("automation.runAlerted", { amount: money("USDC", run.trigger?.balance ?? "0") });
+      if (step.type === "bridge") return t("automation.runBridged", { amount: money("USDC", decided ?? "0"), chain: step.destinationName });
+      return t("automation.runSaved", { amount: money("USDC", decided ?? "0") });
+    }
     if (automation.kind === "auto_save") {
       if (run.status === "executing" || !run.move) return t("automation.runMoving");
       return t(run.move.direction === "in" ? "automation.runSaved" : "automation.runToppedUp", { amount: money("USDC", run.move.amount) });

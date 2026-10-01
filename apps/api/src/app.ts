@@ -100,9 +100,9 @@ export function createApp(deps: AppDeps) {
   const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log, requests, inbox);
   if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
-  const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log);
+  const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
-  const automations = new AutomationService(deps.db, deps.chains, wallets, recipients, sends, earn, inbox, deps.log);
+  const automations = new AutomationService(deps.db, deps.chains, wallets, recipients, sends, earn, bridges, inbox, deps.log);
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);

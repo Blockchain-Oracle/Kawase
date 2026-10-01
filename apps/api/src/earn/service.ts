@@ -60,6 +60,7 @@ import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
 import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
+import { OpsAttempts } from "../intents/ops-attempts";
 import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
@@ -118,7 +119,11 @@ export class EarnService {
     private readonly engine: EarnEngine,
     private readonly log: Logger,
     private readonly ops?: OpsExecutor | undefined,
-  ) {}
+  ) {
+    this.opsAttempts = ops ? new OpsAttempts(db, chains, ops, log, (intentId, attemptId, error) => this.settleFailed(intentId, attemptId, "not_sent", error)) : undefined;
+  }
+
+  private readonly opsAttempts: OpsAttempts | undefined;
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -659,46 +664,10 @@ export class EarnService {
       return { intentId, attemptId: attempt!.id };
     });
     if (!prepared) return { status: "executing", intentId: input.intentId, resumed: true };
-    await this.submitToOps(prepared.intentId);
+    const attempt = await this.latestAttempt(prepared.intentId);
+    if (attempt) await this.opsAttempts?.submit(prepared.intentId, attempt);
     void this.follow(prepared.intentId);
     return { status: "executing", intentId: prepared.intentId, resumed: false };
-  }
-
-  /** Hands a prepared ops attempt to Circle once; Circle de-duplicates on the attempt's idempotency key. */
-  private async submitToOps(intentId: string) {
-    const attempt = await this.latestAttempt(intentId);
-    if (!this.ops || !attempt || attempt.provider !== "circle_dcw" || attempt.providerRef) return;
-    const prepared = (attempt.receipt as { prepared?: { to: Address; data: Hex } } | null)?.prepared;
-    if (!prepared) return;
-    const { ops } = this.clients(attempt.network);
-    try {
-      const sent = await this.ops.execute({ network: attempt.network, walletId: ops.walletId, contract: prepared.to, callData: prepared.data, idempotencyKey: attempt.idempotencyKey, refId: `${intentId}:v1` });
-      await this.db.update(txAttempts).set({ providerRef: sent.id, status: "submitted" }).where(eq(txAttempts.id, attempt.id));
-    } catch (error) {
-      const e = error as { status?: number; code?: number; message?: string };
-      const definitive = typeof e.status === "number" && e.status >= HTTP.badRequest && e.status < HTTP.internal && e.status !== HTTP.tooManyRequests;
-      this.log.warn({ intentId, status: e.status, code: e.code, message: e.message }, "ops execute failed");
-      if (definitive) await this.settleFailed(intentId, attempt.id, "not_sent", `circle ${e.code ?? e.status}`);
-      else await this.db.update(txAttempts).set({ errorCode: "ops_unclear" }).where(eq(txAttempts.id, attempt.id));
-    }
-  }
-
-  /** An ops attempt's hash, once Circle has one; settles it as not sent if Circle gave up before sending. */
-  private async opsHash(intent: IntentRow, attempt: AttemptRow): Promise<Hex | undefined> {
-    if (attempt.txHash) return attempt.txHash as Hex;
-    if (!this.ops) return undefined;
-    if (!attempt.providerRef) {
-      await this.submitToOps(intent.id);
-      return undefined;
-    }
-    const transaction = await this.ops.get(intent.network, attempt.providerRef);
-    if (transaction.txHash) {
-      const hash = transaction.txHash.toLowerCase() as Hex;
-      await this.db.update(txAttempts).set({ txHash: hash, status: "pending_chain" }).where(eq(txAttempts.id, attempt.id));
-      return hash;
-    }
-    if (transaction.state === "failed") await this.settleFailed(intent.id, attempt.id, "not_sent", transaction.error ?? "failed");
-    return undefined;
   }
 
   // ── Tracking ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -722,7 +691,7 @@ export class EarnService {
       if (!intent || (intent.state !== "executing" && intent.state !== "unknown_outcome")) return true;
       const latest = await this.latestAttempt(intentId);
       if (!latest) return false;
-      const hash = latest.provider === "circle_dcw" ? await this.opsHash(intent, latest) : (latest.txHash as Hex | null);
+      const hash = latest.provider === "circle_dcw" ? await this.opsAttempts?.hash(intent.id, intent.network, latest) : (latest.txHash as Hex | null);
       if (!hash) return latest.provider === "circle_dcw" && (await this.latestAttempt(intentId))?.status === "not_sent";
       const attempt = { ...latest, txHash: hash };
       await this.db.update(txAttempts).set({ lastReconciledAt: new Date() }).where(eq(txAttempts.id, attempt.id));

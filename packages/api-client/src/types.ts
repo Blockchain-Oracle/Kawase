@@ -480,12 +480,14 @@ export type AutomationSchedule = {
 export type AutomationRunView = {
   id: string;
   scheduledFor: string;
-  status: "executing" | "succeeded" | "skipped" | "failed";
+  status: "pending" | "executing" | "succeeded" | "skipped" | "failed";
   /** Why it was skipped or failed (a policy reason code) and its display values. */
   reason: string | null;
   reasonParams: Record<string, string> | null;
   /** Auto-save: what the run moved, into savings ("in") or back to the wallet ("out"), in USDC base units. */
   move: { direction: "in" | "out"; amount: string } | null;
+  /** A rule's run: what triggered it and what it decided (USDC base units as strings). */
+  trigger: Record<string, string> | null;
   tx: { hash: string; explorerUrl: string } | null;
 };
 
@@ -507,14 +509,34 @@ export type AutoSaveView = {
   now: { direction: "in" | "out"; amount: string } | null;
 };
 
+/** A rule (review A1): a trigger, an amount rule and one supported step, each shown to the person in words. */
+export type RuleView = {
+  trigger:
+    | { type: "balance_above" | "balance_below"; threshold: string }
+    | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null };
+  amount: { mode: "fixed"; amount: string } | { mode: "excess"; reserve: string } | { mode: "percent"; percent: number };
+  step:
+    | { type: "bridge"; destination: string; destinationName: string; chainId: number }
+    | { type: "save"; vault: string; vaultName: string; protocol: string; apy: number }
+    | { type: "notify" };
+  /** Balance triggers: whether the next crossing fires. */
+  armed: boolean;
+  /** The wallet's USDC now (base units). */
+  balance: string;
+  /** What a check right now would do (balance triggers), or null. */
+  now: { amount: string | null } | null;
+};
+
 export type AutomationView = {
   id: string;
   network: NetworkId;
   status: "draft" | "active" | "paused" | "canceled" | "ended";
-  kind: "scheduled_send" | "auto_save";
+  kind: "scheduled_send" | "auto_save" | "rule";
   schedule: AutomationSchedule;
   /** Auto-save only. */
   save: AutoSaveView | null;
+  /** A rule only. */
+  rule: RuleView | null;
   /** A scheduled send only. */
   action: {
     recipientWords: string;
@@ -566,6 +588,26 @@ export type AutoSaveInput = {
   timezone?: string | undefined;
 };
 
+/** A rule as asked (the model passes the person's words; Kawase resolves and checks them). */
+export type RuleInput = {
+  trigger: "balance_above" | "balance_below" | "money_in";
+  /** Decimal USDC: the balance line, for balance triggers. */
+  threshold?: string | undefined;
+  /** Money in: only from this contact, @handle or typed address; and/or at least this much (decimal USDC). */
+  from?: string | undefined;
+  minAmount?: string | undefined;
+  action: "bridge" | "save" | "notify";
+  /** Bridge: the chain to bridge to (to the person's own address there). */
+  destination?: "base" | "ethereum" | "arbitrum" | "optimism" | "polygon" | "avalanche" | undefined;
+  /** Save: a vault from the earn overview; the one they use, else the best, when not said. */
+  vault?: string | undefined;
+  /** How much each time: a fixed amount, what is above a reserve (balance above), or a share of the money in. */
+  amountMode?: "fixed" | "excess" | "percent" | undefined;
+  amount?: string | undefined;
+  reserve?: string | undefined;
+  percent?: number | undefined;
+};
+
 /** The grants that turn an automation on: one for a scheduled send, three for Auto-save; one Face ID signs them all. */
 export type AutomationGrantRequest = { grants: { grantId: string; typedData: unknown }[]; receipts: unknown[] };
 
@@ -608,7 +650,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert";
 
 export type InboxItem = {
   id: string;

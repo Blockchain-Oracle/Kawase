@@ -66,6 +66,11 @@ export function useAutomation(initial: AutomationView | undefined) {
         return;
       }
       const request = await api.automations.grant(automation.id);
+      // An alert holds no grant and moves no money: the tap is the yes.
+      if (request.grants.length === 0) {
+        setAutomation((await api.automations.activate(automation.id, [])).automation);
+        return;
+      }
       const check = await confirmWithBiometrics(prompt, t("common.cancel"));
       if (check !== "approved") {
         toast(check === "unavailable" ? t("send.approvalUnavailable") : check === "failed" ? t("send.approvalFailed") : t("send.faceIdCancelled"));

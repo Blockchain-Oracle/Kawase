@@ -70,11 +70,34 @@ function describe(result: PolicyResultView): string {
       return "The vault has little liquidity right now; topping up may come in smaller amounts.";
     case "VAULT_RISK_WARNING":
       return `The vault carries warnings: ${p.warnings}.`;
+    case "RULE_INCOMPLETE":
+      return p.missing === "threshold" ? "What balance should it act at?" : p.missing === "percent" ? "What share of the money (1–100%)?" : "How much each time?";
+    case "DESTINATION_MISSING":
+      return "Which chain should it bridge to?";
+    case "BRIDGE_FEE_HIGH":
+      return "The bridge route's fee is too high right now for a rule; it tries again next time.";
     case "FIRST_RUN_UNDERFUNDED":
       return `They hold ${money(p.asset ?? "USDC", p.balance ?? "0")} now, less than one run; runs are skipped until they add money.`;
     default:
       return result.code;
   }
+}
+
+function ruleReadBack(automation: AutomationView) {
+  const rule = automation.rule!;
+  const t = rule.trigger;
+  const when =
+    t.type === "money_in"
+      ? `When money arrives${t.fromName ? ` from ${t.fromName}` : ""}${t.minAmount ? ` (at least ${money("USDC", t.minAmount)})` : ""}`
+      : `When the balance ${t.type === "balance_above" ? "goes above" : "drops below"} ${money("USDC", t.threshold)}`;
+  const how =
+    rule.amount.mode === "fixed" ? money("USDC", rule.amount.amount) : rule.amount.mode === "percent" ? `${rule.amount.percent}% of it` : `what is above ${money("USDC", rule.amount.reserve)}`;
+  const step = rule.step;
+  const what =
+    step.type === "bridge" ? `bridge ${how} to their own address on ${step.destinationName}` : step.type === "save" ? `save ${how} into their own savings in ${step.vaultName}` : "tell them (an alert)";
+  const now = rule.now ? (rule.now.amount ? ` Right now it would move ${money("USDC", rule.now.amount)}.` : " Right now it would alert them.") : " Right now nothing would happen.";
+  const cadence = t.type === "money_in" ? " It runs once for each matching payment." : " It fires once each time the line is crossed, checking every 10 minutes and whenever money arrives.";
+  return `${when}: ${what}.${cadence}${now}`;
 }
 
 function saveReadBack(automation: AutomationView) {
@@ -113,12 +136,21 @@ export function summarizeAutomation(automation: AutomationView): AutomationSumma
                     : "not_possible";
   const per = PERIOD_WORDS[automation.schedule.every] ?? "per period";
   const ends = automation.endsAt.slice(0, DATE_CHARS);
-  const readBack = save
+  const rule = automation.rule;
+  const readBack = rule
+    ? ruleReadBack(automation)
+    : save
     ? saveReadBack(automation)
     : a && a.amount !== "0"
       ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${a.recipientName ?? a.recipientWords}${a.note ? ` ("${a.note}")` : ""}`
       : null;
-  const bound = save
+  const bound = rule
+    ? rule.step.type === "bridge"
+      ? `Kawase can only move USDC from their wallet to their own address on ${rule.step.destinationName}, through Circle CCTP; the route's fee can never exceed 16.77 USDC. Enforced on Arc by the two grants they sign with one Face ID; it ends on ${ends}.`
+      : rule.step.type === "save"
+        ? `Kawase can only move USDC into their own savings in ${rule.step.vaultName}, never to anyone else; enforced on Arc by the grants they sign with one Face ID; it ends on ${ends}.`
+        : "An alert moves no money; turning it on needs only a tap."
+    : save
     ? `Kawase can only move USDC between their wallet and their own savings in ${save.vaultName}, never to anyone else, enforced on Arc by the three grants they sign with one Face ID; it ends on ${ends}.`
     : a && a.amount !== "0"
       ? `At most ${money(a.asset, a.amount)} ${per} can ever go, and only to this address, enforced on Arc by the grant they sign; it ends on ${ends}.`

@@ -28,6 +28,8 @@ import type {
   AutomationInput,
   AutomationRunView,
   AutomationView,
+  RuleInput,
+  RuleView,
   TransactionRequestResponse,
 } from "@kawase/api-client";
 import {
@@ -39,18 +41,24 @@ import {
   users,
   type AutoSaveAction,
   type AutomationAction,
+  type RuleAction,
   type AutomationMove,
   type AutomationSchedule,
   type Db,
 } from "@kawase/db";
+import { getChainIdentity } from "@kawase/identity";
+import { bridgeContract, bridgeDestinations } from "@kawase/integrations-app-kit";
 import {
+  BRIDGE_PURPOSES,
   SAVE_PURPOSES,
   buildAutomationGrant,
+  buildBridgeGrants,
   buildSaveGrants,
   describeGrant,
   grantTypedData,
   isWalletSetUp,
   withSignature,
+  type BridgeGrants,
   type SaveGrants,
   type SavePurpose,
 } from "@kawase/integrations-delegation";
@@ -58,12 +66,14 @@ import { isValidTimeZone, nextRuns, schedulePeriodSeconds } from "@kawase/intent
 import type { Logger } from "@kawase/log";
 import type { AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
-import { evaluateAutoSave, evaluateAutomation, type PolicyResult } from "@kawase/policy";
+import { evaluateAutoSave, evaluateAutomation, evaluateRule, type PolicyResult } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
+import type { BridgeService } from "../bridge/service";
 import { usdcUnits, type EarnService } from "../earn/service";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
+import { planRule } from "./rules";
 import { jsonSafe } from "../intents/chain";
 import { parseRequestAmount, userLimits } from "../send/facts";
 import type { Recipients } from "../send/recipients";
@@ -97,6 +107,10 @@ const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const NOTHING_TO_MOVE = "NOTHING_TO_MOVE";
 /** Reasons a run stops without telling the person (they chose it, or there was nothing to do). */
 const QUIET_REASONS = new Set([NOTHING_TO_MOVE, "PAUSED_ALL"]);
+/** A balance rule is looked at this often (and at once when money arrives). */
+const RULE_CHECK_MS = 600_000;
+/** The steps of a rule that need grants, and which. */
+const RULE_PURPOSES = { bridge: BRIDGE_PURPOSES, save: ["approve", "deposit"], notify: [] } as const;
 /** A claimed run whose work has not created its money intent after this long is driven again. */
 const RUN_LEASE_MS = 120_000;
 const USDC_DECIMALS = 6;
@@ -128,6 +142,7 @@ export class AutomationService {
     private readonly recipients: Recipients,
     private readonly sends: SendService,
     private readonly earn: EarnService,
+    private readonly bridges: BridgeService,
     private readonly inbox: InboxService,
     private readonly log: Logger,
   ) {}
@@ -300,9 +315,122 @@ export class AutomationService {
     const drafted =
       row.kind === "auto_save"
         ? await this.draftSave(user, row.network, row.request as AutoSaveInput, row.id)
-        : await this.draftSend(user, row.network, row.request as AutomationInput);
+        : row.kind === "rule"
+          ? await this.draftRule(user, row.network, row.request as unknown as RuleInput)
+          : await this.draftSend(user, row.network, row.request as AutomationInput);
     const [updated] = await this.db.update(automations).set(drafted).where(eq(automations.id, row.id)).returning();
     return this.view(updated!);
+  }
+
+  /**
+   * A rule's draft, from the person's words (review A1): the trigger and its number, a sender if they named one (the
+   * send rules resolve it), the step (the chain for a bridge — always the person's own address there; the vault for
+   * saving, inferred like Auto-save), and the amount rule. Inferred, never asked: a bridge or save when the balance
+   * goes above a line moves what is above that line unless they said to keep something else.
+   */
+  private async draftRule(user: SessionUser, network: NetworkId, input: RuleInput) {
+    const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
+    const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
+    const view = await capabilityView(this.db, this.chains.available);
+    const { client, network: context } = this.clients(network);
+    const setUp = wallet ? isWalletSetUp(await client.getCode({ address: wallet })) : false;
+    const usdcAmount = (words: string | undefined) => (words?.trim() ? parseRequestAmount(words, "USDC") : null);
+    const threshold = usdcAmount(input.threshold);
+    const minAmount = usdcAmount(input.minAmount);
+    const from = input.from?.trim() ? await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, input.from) : null;
+
+    let step: RuleAction["step"] = { type: "notify" };
+    let stepFacts: Parameters<typeof evaluateRule>[0]["step"] = { type: "notify" };
+    if (input.action === "bridge") {
+      const destination = bridgeDestinations(context).find((entry) => entry.id === input.destination);
+      step = destination
+        ? { type: "bridge", destination: destination.id, destinationName: getChainIdentity(destination.chainId)?.name ?? destination.kitChain, domain: destination.domain }
+        : { type: "bridge", destination: "", destinationName: "", domain: 0 };
+      stepFacts = { type: "bridge", destination: Boolean(destination) };
+    } else if (input.action === "save") {
+      const { vaults, positions } = await this.earn.holdingsOn(network, wallet);
+      const named = input.vault ? vaults.find((entry) => same(entry.address, input.vault!)) : undefined;
+      const held = [...positions].sort((a, b) => (b.assets > a.assets ? 1 : b.assets < a.assets ? -1 : 0))[0]?.vault;
+      const vault = named ?? held ?? vaults.find((entry) => entry.status === "active");
+      step = { type: "save", vault: vault ? getAddress(vault.address) : "", vaultName: vault?.name ?? "" };
+      stepFacts = { type: "save", vault: vault ? { status: "found", active: vault.status !== "paused" && vault.status !== "deprecated", warnings: vault.warnings } : { status: "missing" } };
+    }
+
+    const mode = input.amountMode ?? (input.percent !== undefined ? "percent" : input.amount ? "fixed" : input.trigger === "balance_above" ? "excess" : undefined);
+    const fixed = usdcAmount(input.amount);
+    const reserve = usdcAmount(input.reserve);
+    const amountRule: RuleAction["amount"] | null =
+      mode === "fixed" && fixed?.status === "ok"
+        ? { mode: "fixed", amount: fixed.baseUnits.toString() }
+        : mode === "percent" && input.percent !== undefined
+          ? { mode: "percent", percent: input.percent }
+          : mode === "excess"
+            ? { mode: "excess", reserve: (reserve?.status === "ok" ? reserve.baseUnits : threshold?.status === "ok" ? threshold.baseUnits : ZERO).toString() }
+            : null;
+
+    const evaluation = evaluateRule({
+      network,
+      capability: { here: view.automations[network].state, other: view.automations[other].state },
+      stepCapability: input.action === "bridge" ? view.bridge[network].state : input.action === "save" ? view.yield[network].state : null,
+      signedIn: !user.isAnonymous,
+      wallet: { registered: Boolean(wallet), setUp },
+      trigger: { type: input.trigger, threshold, from: from?.facts ?? null, minAmount },
+      step: stepFacts,
+      amount: mode ? { mode, value: mode === "fixed" ? fixed : mode === "excess" ? reserve : null, percent: input.percent ?? null } : null,
+    });
+    const resolvedFrom = from?.facts.status === "resolved" ? from.facts : undefined;
+    const trigger: RuleAction["trigger"] =
+      input.trigger === "money_in"
+        ? { type: "money_in", minAmount: minAmount?.status === "ok" ? minAmount.baseUnits.toString() : null, from: resolvedFrom ? getAddress(resolvedFrom.address) : null, fromName: resolvedFrom?.name ?? (from?.view?.handle ? `@${from.view.handle}` : (input.from ?? null)) }
+        : { type: input.trigger, threshold: threshold?.status === "ok" ? threshold.baseUnits.toString() : "0" };
+    const action: RuleAction = { trigger, amount: amountRule ?? { mode: "fixed", amount: "0" }, step, armed: true };
+    const schedule: AutomationSchedule = { every: "day", time: DEFAULT_TIME, timezone: isValidTimeZone(user.timezone) ? user.timezone : "UTC" };
+    return { schedule, action, report: { results: evaluation.results, blocking: evaluation.blocking ?? null } };
+  }
+
+  async createRule(user: SessionUser, input: RuleInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
+    const network = user.activeNetwork;
+    const drafted = await this.draftRule(user, network, input);
+    const [row] = await this.db
+      .insert(automations)
+      .values({
+        userId: user.id,
+        network,
+        kind: "rule",
+        status: "draft",
+        threadId: origin.threadId ?? null,
+        ...drafted,
+        request: { ...input },
+        endsAt: new Date(Date.now() + LIFETIME_DAYS * SECONDS_PER_DAY * MS_PER_SECOND),
+      })
+      .returning();
+    return this.view(row!);
+  }
+
+  /** What a rule's step does to the wallet's USDC right now, for its view. */
+  private async ruleView(row: AutomationRow): Promise<RuleView> {
+    const action = row.action as RuleAction;
+    const wallet = (await this.wallets.userWallet(row.userId))?.address as Address | undefined;
+    const { client, network: context } = this.clients(row.network);
+    const balance = wallet ? await client.readContract({ address: context.addresses.usdc, abi: ERC20_BALANCE, functionName: "balanceOf", args: [wallet] }).catch(() => ZERO) : ZERO;
+    const live = row.status === "draft" || row.status === "active";
+    const plan = live && action.trigger.type !== "money_in" ? planRule(action, { balance }) : undefined;
+    const destination = action.step.type === "bridge" ? bridgeDestinations(context).find((entry) => entry.id === (action.step as { destination: string }).destination) : undefined;
+    let stepView: RuleView["step"] = { type: "notify" };
+    if (action.step.type === "bridge") stepView = { type: "bridge", destination: action.step.destination, destinationName: action.step.destinationName, chainId: destination?.chainId ?? 0 };
+    if (action.step.type === "save") {
+      const { vaults } = await this.earn.holdingsOn(row.network, undefined);
+      const vault = vaults.find((entry) => same(entry.address, (action.step as { vault: string }).vault));
+      stepView = { type: "save", vault: action.step.vault, vaultName: vault?.name ?? action.step.vaultName, protocol: vault?.protocol ?? "morpho", apy: vault?.apy ?? 0 };
+    }
+    return {
+      trigger: action.trigger,
+      amount: action.amount,
+      step: stepView,
+      armed: action.armed,
+      balance: balance.toString(),
+      now: plan?.kind === "fire" ? { amount: plan.amount?.toString() ?? null } : null,
+    };
   }
 
   /**
@@ -347,7 +475,7 @@ export class AutomationService {
       .limit(RUNS_SHOWN);
     const report = row.report as StoredDraft | null;
     const live = row.status === "draft" || row.status === "active";
-    const upcoming = live ? (row.status === "active" && row.nextRunAt ? [row.nextRunAt, ...nextRuns(row.schedule, row.nextRunAt, NEXT_RUNS_SHOWN - 1)] : nextRuns(row.schedule, new Date(), NEXT_RUNS_SHOWN)) : [];
+    const upcoming = live && row.kind !== "rule" ? (row.status === "active" && row.nextRunAt ? [row.nextRunAt, ...nextRuns(row.schedule, row.nextRunAt, NEXT_RUNS_SHOWN - 1)] : nextRuns(row.schedule, new Date(), NEXT_RUNS_SHOWN)) : [];
     const send = row.kind === "scheduled_send" ? (row.action as AutomationAction) : null;
     return {
       id: row.id,
@@ -356,6 +484,7 @@ export class AutomationService {
       kind: row.kind,
       schedule: row.schedule,
       save: row.kind === "auto_save" ? await this.saveView(row) : null,
+      rule: row.kind === "rule" ? await this.ruleView(row) : null,
       action: send
         ? {
             recipientWords: send.recipientWords,
@@ -378,6 +507,7 @@ export class AutomationService {
         reason: run.reason,
         reasonParams: run.reasonParams ?? null,
         move: run.move ?? null,
+        trigger: run.trigger ?? null,
         tx: txHash && explorer ? { hash: txHash, explorerUrl: `${explorer}/tx/${txHash}` } : null,
       })),
       results: report?.results ?? [],
@@ -447,6 +577,29 @@ export class AutomationService {
       expiresAt: new Date(expiresAt * MS_PER_SECOND),
       status: "pending" as const,
     };
+
+    if (row.kind === "rule") {
+      const action = row.action as RuleAction;
+      const out: AutomationGrantRequest = { grants: [], receipts: [] };
+      const store = async (purpose: string, delegation: ReturnType<typeof buildSaveGrants>["approve"]) => {
+        const typedData = grantTypedData(context, delegation);
+        const receipt = { purpose, ...describeGrant(context, delegation) };
+        const [inserted] = await this.db
+          .insert(grants)
+          .values({ ...base, delegation: jsonSafe(delegation), delegationHash: hashTypedData(typedData), receipt: jsonSafe(receipt), periodAmount: ZERO, periodSeconds: 0, recipientAddress: wallet.address })
+          .returning({ id: grants.id });
+        out.grants.push({ grantId: inserted!.id, typedData: jsonSafe(typedData) });
+        out.receipts.push(jsonSafe(receipt));
+      };
+      if (action.step.type === "bridge") {
+        const built = buildBridgeGrants({ network: context, wallet: wallet.address as Address, redeemer: ops.address, usdc: context.addresses.usdc, bridge: bridgeContract(context), domain: action.step.domain, expiresAt, salts: { allowance: salt(), burn: salt() } });
+        for (const purpose of BRIDGE_PURPOSES) await store(purpose, built[purpose]);
+      } else if (action.step.type === "save") {
+        const built = buildSaveGrants({ network: context, wallet: wallet.address as Address, redeemer: ops.address, usdc: context.addresses.usdc, vault: action.step.vault as Address, expiresAt, salts: { approve: salt(), deposit: salt(), withdraw: salt() } });
+        for (const purpose of RULE_PURPOSES.save) await store(purpose, built[purpose]);
+      }
+      return out;
+    }
 
     if (row.kind === "auto_save") {
       const action = row.action as AutoSaveAction;
@@ -519,9 +672,9 @@ export class AutomationService {
           .from(grants)
           .where(and(inArray(grants.id, ids), eq(grants.userId, user.id), eq(grants.automationId, id), eq(grants.status, "pending")))
       : [];
-    const needed = row.kind === "auto_save" ? SAVE_PURPOSES.length : 1;
+    const needed = row.kind === "auto_save" ? SAVE_PURPOSES.length : row.kind === "rule" ? RULE_PURPOSES[(row.action as RuleAction).step.type].length : 1;
     const purposes = new Set(pending.map((grant) => (grant.receipt as { purpose?: string }).purpose));
-    if (pending.length !== needed || new Set(ids).size !== needed || (row.kind === "auto_save" && purposes.size !== needed)) throw problem(HTTP.unprocessable, "grant_not_pending");
+    if (pending.length !== needed || new Set(ids).size !== needed || (row.kind !== "scheduled_send" && purposes.size !== needed)) throw problem(HTTP.unprocessable, "grant_not_pending");
     const wallet = await this.wallets.userWallet(user.id);
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
     const { network: context } = this.clients(row.network);
@@ -534,11 +687,17 @@ export class AutomationService {
       if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
       signed.push({ grant, delegation });
     }
-    const primary = row.kind === "auto_save" ? signed.find((entry) => (entry.grant.receipt as { purpose?: string }).purpose === "deposit")! : signed[0]!;
-    const first = row.kind === "auto_save" ? new Date() : nextRuns(row.schedule, new Date(), 1)[0];
+    const primary = row.kind === "auto_save" ? signed.find((entry) => (entry.grant.receipt as { purpose?: string }).purpose === "deposit") : signed[0];
+    // Auto-save and balance rules look at once; a money-in rule waits for money; a scheduled send for its time.
+    const first =
+      row.kind === "auto_save" || (row.kind === "rule" && (row.action as RuleAction).trigger.type !== "money_in")
+        ? new Date()
+        : row.kind === "rule"
+          ? null
+          : nextRuns(row.schedule, new Date(), 1)[0];
     await this.db.transaction(async (tx) => {
       for (const entry of signed) await tx.update(grants).set({ status: "active", delegation: jsonSafe(entry.delegation) }).where(eq(grants.id, entry.grant.id));
-      await tx.update(automations).set({ status: "active", grantId: primary.grant.id, nextRunAt: first ?? null }).where(eq(automations.id, id));
+      await tx.update(automations).set({ status: "active", grantId: primary?.grant.id ?? null, nextRunAt: first ?? null }).where(eq(automations.id, id));
     });
     return this.get(user.id, id);
   }
@@ -598,6 +757,7 @@ export class AutomationService {
   /** One pass: settle or recover runs in flight, then claim and run every due occurrence once. */
   async tick() {
     await this.reconcileRuns();
+    await this.claimPendingRuns();
     const due = await this.db
       .select()
       .from(automations)
@@ -617,7 +777,7 @@ export class AutomationService {
       if (open) return;
     }
     const scheduledFor = row.nextRunAt!;
-    const [next] = nextRuns(row.schedule, scheduledFor, 1);
+    const [next] = row.kind === "rule" ? [new Date(Math.max(scheduledFor.getTime(), Date.now()) + RULE_CHECK_MS)] : nextRuns(row.schedule, scheduledFor, 1);
     const nextRunAt = next && next.getTime() <= row.endsAt.getTime() ? next : null;
     // The claim and the schedule's advance commit together. The unique (automation, time) row means a second
     // runner, or a retry, finds the occurrence taken; the advance only moves a schedule still on this occurrence.
@@ -639,6 +799,7 @@ export class AutomationService {
   /** Does one claimed run's work. Safe to call again for the same run: the money intent's id is the run's. */
   private async drive(row: AutomationRow, run: RunRow): Promise<void> {
     if (row.kind === "auto_save") return this.driveSave(row, run);
+    if (row.kind === "rule") return this.driveRule(row, run);
     // Missed (the runner was down for longer than a period): not made up later, said plainly.
     if (run.scheduledFor.getTime() < Date.now() - schedulePeriodSeconds(row.schedule) * MS_PER_SECOND) return this.skipRun(row, run.id, "MISSED_RUN");
     const [grant] = row.grantId ? await this.db.select().from(grants).where(eq(grants.id, row.grantId)) : [];
@@ -697,11 +858,112 @@ export class AutomationService {
     await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
   }
 
+  /** Runs that money arriving queued (one per matching receipt): taken once each, then driven. */
+  private async claimPendingRuns() {
+    const taken = await this.db.update(automationRuns).set({ status: "executing", updatedAt: new Date() }).where(eq(automationRuns.status, "pending")).returning();
+    for (const run of taken) {
+      const [row] = await this.db.select().from(automations).where(eq(automations.id, run.automationId));
+      if (!row) continue;
+      if (row.status !== "active") await this.skipRun(row, run.id, "RUN_INTERRUPTED");
+      else await this.drive(row, run).catch((error: unknown) => this.log.warn({ err: error, runId: run.id }, "automation run failed"));
+    }
+  }
+
+  /**
+   * One rule check. The decision (fire, and how much) is recorded on the run together with disarming a balance
+   * trigger, before any money moves; a run driven again carries out that recorded decision rather than deciding again.
+   */
+  private async driveRule(row: AutomationRow, run: RunRow): Promise<void> {
+    const action = row.action as RuleAction;
+    const [made] = await this.db.select({ id: intents.id }).from(intents).where(eq(intents.id, run.intentId!));
+    if (made) return;
+    const [owner] = await this.db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, row.userId));
+    if (owner?.pausedAllAt) return this.skipRun(row, run.id, "PAUSED_ALL");
+    const wallet = (await this.wallets.userWallet(row.userId))?.address as Address | undefined;
+    if (!wallet) return this.skipRun(row, run.id, "WALLET_NOT_READY");
+    const evidence = run.trigger ?? {};
+
+    let amount: bigint | null;
+    if (evidence.decided === "fire") {
+      amount = evidence.amount ? BigInt(evidence.amount) : null;
+    } else {
+      const { client, network: context } = this.clients(row.network);
+      const balance = await client.readContract({ address: context.addresses.usdc, abi: ERC20_BALANCE, functionName: "balanceOf", args: [wallet] });
+      const receipt = evidence.receipt ? BigInt(evidence.receipt) : undefined;
+      if (receipt !== undefined && action.trigger.type === "money_in" && action.trigger.minAmount && receipt < BigInt(action.trigger.minAmount)) return this.skipRun(row, run.id, NOTHING_TO_MOVE);
+      const plan = planRule(action, { balance, receipt });
+      if (plan.kind === "wait") {
+        if (plan.rearm) await this.db.update(automations).set({ action: { ...action, armed: true } }).where(eq(automations.id, row.id));
+        return this.skipRun(row, run.id, NOTHING_TO_MOVE);
+      }
+      amount = plan.amount;
+      const decision = { ...evidence, balance: balance.toString(), decided: "fire", ...(amount !== null ? { amount: amount.toString() } : {}) };
+      await this.db.transaction(async (tx) => {
+        await tx.update(automationRuns).set({ trigger: decision, updatedAt: new Date() }).where(eq(automationRuns.id, run.id));
+        if (action.trigger.type !== "money_in") await tx.update(automations).set({ action: { ...action, armed: false } }).where(eq(automations.id, row.id));
+      });
+    }
+
+    const step = action.step;
+    if (step.type === "notify") {
+      await this.inbox.add(this.db, {
+        userId: row.userId,
+        network: row.network,
+        kind: "rule_alert",
+        params: { trigger: action.trigger.type, threshold: "threshold" in action.trigger ? action.trigger.threshold : "0", balance: run.trigger?.balance ?? "", asset: "USDC", ...(evidence.receipt ? { amount: evidence.receipt } : {}) },
+        dedupeKey: `rule_alert:${run.id}`,
+      });
+      await this.db.update(automationRuns).set({ status: "succeeded" }).where(eq(automationRuns.id, run.id));
+      await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
+      return;
+    }
+    const held = await this.db
+      .select()
+      .from(grants)
+      .where(and(eq(grants.automationId, row.id), eq(grants.status, "active")));
+    const byPurpose = new Map(held.map((grant) => [(grant.receipt as { purpose?: string }).purpose, grant.delegation]));
+    const rearm = async () => {
+      if (action.trigger.type !== "money_in") await this.db.update(automations).set({ action: { ...action, armed: true } }).where(eq(automations.id, row.id));
+    };
+    if (!RULE_PURPOSES[step.type].every((purpose) => byPurpose.has(purpose))) {
+      await rearm();
+      return this.skipRun(row, run.id, "GRANT_INACTIVE");
+    }
+    const outcome =
+      step.type === "bridge"
+        ? await this.bridges.runBridge({
+            userId: row.userId,
+            network: row.network,
+            intentId: run.intentId!,
+            grants: Object.fromEntries(BRIDGE_PURPOSES.map((purpose) => [purpose, byPurpose.get(purpose)])) as unknown as BridgeGrants,
+            destination: step.destination as Parameters<BridgeService["runBridge"]>[0]["destination"],
+            amount: amount!,
+          })
+        : await this.earn.runSave({
+            userId: row.userId,
+            network: row.network,
+            intentId: run.intentId!,
+            grants: Object.fromEntries(SAVE_PURPOSES.map((purpose) => [purpose, byPurpose.get(purpose)])) as unknown as SaveGrants,
+            vault: step.vault as Address,
+            direction: "in",
+            amount: amount!,
+          });
+    if (outcome.status === "skipped") {
+      // The step could not go now (no quote, a fee too high): the trigger stays armed so the next check tries again.
+      await rearm();
+      return this.skipRun(row, run.id, outcome.reason, "params" in outcome ? (outcome.params as Record<string, string> | undefined) : undefined);
+    }
+    if (!outcome.resumed) await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
+  }
+
   private async skipRun(row: AutomationRow, runId: string, reason: string, params?: Record<string, string>, move?: AutomationMove) {
     await this.db.update(automationRuns).set({ status: "skipped", reason, reasonParams: params ?? null, move: move ?? null }).where(eq(automationRuns.id, runId));
-    if (row.kind === "auto_save" && QUIET_REASONS.has(reason)) return;
+    if (row.kind !== "scheduled_send" && QUIET_REASONS.has(reason)) return;
+    const ruleStep = row.kind === "rule" ? (row.action as RuleAction).step : undefined;
     const shown =
-      row.kind === "auto_save"
+      ruleStep
+        ? { amount: move?.amount ?? "0", asset: "USDC", to: "", name: ruleStep.type === "bridge" ? ruleStep.destinationName : ruleStep.type === "save" ? ruleStep.vaultName : "" }
+        : row.kind === "auto_save"
         ? { amount: move?.amount ?? "0", asset: "USDC", to: (row.action as AutoSaveAction).vault, name: (row.action as AutoSaveAction).vaultName }
         : (() => {
             const action = row.action as AutomationAction;

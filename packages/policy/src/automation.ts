@@ -110,3 +110,65 @@ export function evaluateAutoSave(facts: AutoSaveFacts): AutomationEvaluation {
   if (facts.vault.warnings.length > 0) results.push(result("VAULT_RISK_WARNING", { warnings: facts.vault.warnings.join(", ") }));
   return done(results);
 }
+
+export type RuleFacts = {
+  network: NetworkId;
+  capability: { here: CapabilityState; other: CapabilityState };
+  /** The step's own capability (bridge, yield); notify needs none. */
+  stepCapability: CapabilityState | null;
+  signedIn: boolean;
+  wallet: { registered: boolean; setUp: boolean };
+  trigger: { type: "balance_above" | "balance_below" | "money_in"; threshold: AmountFacts | null; from: RecipientFacts | null; minAmount: AmountFacts | null };
+  step: { type: "bridge"; destination: boolean } | { type: "save"; vault: { status: "found"; active: boolean; warnings: string[] } | { status: "missing" } } | { type: "notify" };
+  amount: { mode: "fixed" | "excess" | "percent"; value: AmountFacts | null; percent: number | null } | null;
+};
+
+const MAX_PERCENT = 100;
+const positive = (facts: AmountFacts | null) => facts?.status === "ok" && facts.baseUnits > ZERO;
+
+/**
+ * Turning a rule on: the trigger has its number (and a known sender, if one was named), the step can run here (its
+ * capability, the chain or the vault), the amount rule is complete, and the wallet is set up (its grants live there;
+ * an alert needs no grant but still reads the wallet). Each run checks again on fresh facts.
+ */
+export function evaluateRule(facts: RuleFacts): AutomationEvaluation {
+  const results: PolicyResult[] = [];
+  if (!facts.signedIn) return done([result("SIGN_IN_REQUIRED")]);
+  if (facts.capability.here !== "available") {
+    const elsewhere = facts.capability.other === "available";
+    return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "automations" })]);
+  }
+  if (facts.stepCapability !== null && facts.stepCapability !== "available") return done([result("NOT_AVAILABLE_YET", { capability: facts.step.type === "bridge" ? "bridge" : "yield" })]);
+  if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
+  if (!facts.wallet.setUp && facts.step.type !== "notify") results.push(result("WALLET_NOT_SET_UP"));
+
+  const trigger = facts.trigger;
+  if (trigger.type !== "money_in" && !positive(trigger.threshold)) results.push(result("RULE_INCOMPLETE", { missing: "threshold" }));
+  if (trigger.type === "money_in" && trigger.minAmount && trigger.minAmount.status === "invalid") results.push(result("AMOUNT_INVALID"));
+  const from = trigger.from;
+  if (from && from.status !== "resolved") {
+    if (from.status === "unknown") results.push(result("RECIPIENT_UNKNOWN", { query: from.query }));
+    else if (from.status === "ambiguous") results.push(result("RECIPIENT_AMBIGUOUS", { query: from.query, count: String(from.count) }));
+    else if (from.status === "invalid") results.push(result("RECIPIENT_INVALID", { query: from.query }));
+  }
+
+  const step = facts.step;
+  if (step.type === "bridge" && !step.destination) results.push(result("DESTINATION_MISSING"));
+  if (step.type === "save") {
+    if (step.vault.status === "missing" || !step.vault.active) results.push(result("VAULT_UNAVAILABLE"));
+    else if (step.vault.warnings.length > 0) results.push(result("VAULT_RISK_WARNING", { warnings: step.vault.warnings.join(", ") }));
+  }
+
+  if (step.type !== "notify") {
+    const amount = facts.amount;
+    if (!amount) results.push(result("RULE_INCOMPLETE", { missing: "amount" }));
+    else if (amount.mode === "percent") {
+      if (trigger.type !== "money_in") results.push(result("RULE_INCOMPLETE", { missing: "amount" }));
+      else if (amount.percent === null || amount.percent <= 0 || amount.percent > MAX_PERCENT) results.push(result("RULE_INCOMPLETE", { missing: "percent" }));
+    } else if (amount.mode === "excess") {
+      if (trigger.type !== "balance_above") results.push(result("RULE_INCOMPLETE", { missing: "amount" }));
+      else if (amount.value && amount.value.status === "invalid") results.push(result("AMOUNT_INVALID"));
+    } else if (!positive(amount.value)) results.push(result(amount.value?.status === "invalid" ? "AMOUNT_INVALID" : "RULE_INCOMPLETE", { missing: "amount" }));
+  }
+  return done(results);
+}

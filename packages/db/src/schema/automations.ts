@@ -9,8 +9,9 @@ import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
 
 export const automationStatusEnum = pgEnum("automation_status", ["draft", "active", "paused", "canceled", "ended"]);
-export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save"]);
-export const automationRunStatusEnum = pgEnum("automation_run_status", ["executing", "succeeded", "skipped", "failed"]);
+export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save", "rule"]);
+/** "pending": an event (money in) has triggered a run that the runner has not taken yet. */
+export const automationRunStatusEnum = pgEnum("automation_run_status", ["executing", "succeeded", "skipped", "failed", "pending"]);
 
 /** When it runs: every day, week (on a weekday) or month (on a day of the month), at a local time in a time zone. */
 export type AutomationSchedule = {
@@ -44,6 +45,30 @@ export type AutoSaveAction = {
   topUp: boolean;
 };
 
+/**
+ * A rule: when something happens, do one supported thing (review A1: triggers, conditions and amounts independent of
+ * the action). Balance triggers fire on crossing the threshold and re-arm once the balance is back on the other side;
+ * money in fires once per matching receipt. Amounts are fixed, a share of the matched receipt, or what is above a
+ * reserve. The step runs under its own grants (bridge: only to the wallet's own address on one chain; save: only into
+ * the wallet's own vault position) or needs none (notify).
+ */
+export type RuleTrigger =
+  | { type: "balance_above"; threshold: string }
+  | { type: "balance_below"; threshold: string }
+  | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null };
+export type RuleAmount = { mode: "fixed"; amount: string } | { mode: "excess"; reserve: string } | { mode: "percent"; percent: number };
+export type RuleStep =
+  | { type: "bridge"; destination: string; destinationName: string; domain: number }
+  | { type: "save"; vault: string; vaultName: string }
+  | { type: "notify" };
+export type RuleAction = {
+  trigger: RuleTrigger;
+  amount: RuleAmount;
+  step: RuleStep;
+  /** Balance triggers: whether the next crossing fires (false after firing, until the balance is back below/above). */
+  armed: boolean;
+};
+
 /** What one Auto-save run moved: into savings or back to the wallet, in USDC base units. */
 export type AutomationMove = { direction: "in" | "out"; amount: string };
 
@@ -61,7 +86,7 @@ export const automations = pgTable(
     threadId: uuid(),
     schedule: jsonb().$type<AutomationSchedule>().notNull(),
     /** A scheduled send's `AutomationAction`, or Auto-save's `AutoSaveAction` (by `kind`). */
-    action: jsonb().$type<AutomationAction | AutoSaveAction>().notNull(),
+    action: jsonb().$type<AutomationAction | AutoSaveAction | RuleAction>().notNull(),
     /** The grant that bounds it on chain (set when it is turned on). */
     grantId: uuid(),
     /** The request as it was asked, so a draft can be checked again after a fix without asking again. */
@@ -99,12 +124,19 @@ export const automationRuns = pgTable(
     reasonParams: jsonb().$type<Record<string, string>>(),
     /** Auto-save: what this run moved. */
     move: jsonb().$type<AutomationMove>(),
+    /** A rule run's evidence: what triggered it (the receipt, or the balance seen) and what it did. */
+    trigger: jsonb().$type<Record<string, string>>(),
+    /** For event-triggered runs, the event's identity (chain, tx, log): one run per event. */
+    triggerRef: text(),
     intentId: uuid(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
     uniqueIndex("automation_runs_once_idx").on(table.automationId, table.scheduledFor),
+    uniqueIndex("automation_runs_event_idx")
+      .on(table.automationId, table.triggerRef)
+      .where(sql`${table.triggerRef} is not null`),
     index("automation_runs_open_idx")
       .on(table.status)
       .where(sql`${table.status} = 'executing'`),

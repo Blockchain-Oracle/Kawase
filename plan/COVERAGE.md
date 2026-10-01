@@ -1,0 +1,40 @@
+# Coverage ledger
+
+Purpose: one current row per promised area, so nothing in the agreed product disappears between sessions (J10's review, 2026-10-01: "Use separate states for planned, blocked, implemented, accepted and deployed. A later stage is an order of work, not an exclusion."). Update the row in the same commit that changes what runs. Sources: `context/08-product-research/DECISIONS-FROM-ABU.md` (D1–D35), `plan/MASTER-PLAN.md`, `context/08-product-research/FEATURE-INVENTORY.md` (A–U). Exclusions only with an owner decision: Telegram/Discord (D31), the Circle PIN wallet (D33), the old colour direction (D34/D35).
+
+States:
+- **implemented**: runs in code, with recorded evidence on the network named.
+- **accepted**: also checked on the supported platforms against the acceptance criteria.
+- **deployed**: live on Coolify.
+- **planned**: still required; it has a stage.
+- **blocked**: waits on something named.
+
+Evidence is the revision or the transaction that proves *that branch* — never the whole area.
+
+Last updated: 2026-10-01 (after Stage 8b rules).
+
+| Area (inventory) | Source | What runs today (network) | Recovery / truth | Evidence | Remaining (owner: Claude unless named) | State |
+|---|---|---|---|---|---|---|
+| A Onboarding, account, wallet | D2, D13, D33–D35 | Guest → email/Turnkey sign-in, Turnkey EOA with EIP-7702 setup via relayer, language from the first screen, network pill, optional @handle (testnet; web sign-in) | Guest data moves into the account on sign-in | Stage 3–5 logs; auth tests | Apple/Google sign-in on a device (needs Abu's Apple ID / a Google login), Android, devices & sessions screen, external-wallet funding | implemented (iOS sim, web) · deployed |
+| B Balances, portfolio | D1, D12 | USDC/EURC balances, earn positions on Home (testnet) | Read from chain each view | Stage 5–6 | Unified cross-chain balance, other tokens, display currency, charts, spam/dust | partial · planned (Stage 6/12) |
+| C Money movement | D1, D11, D33 | Send USDC/EURC (allowance at once; above it Face ID), receive/QR, request links with incoming matching, receipts (testnet) | Unknown outcome kept as "checking", sweeper reconciles; Circle idempotency | `sends-testnet`, `requests-testnet` tests | Split, batch, QR scan to pay, memos/reference matching, cross-chain send to someone else | implemented (slice) · planned (5c) |
+| D Trading, tokens | D1, D12 | USDC ↔ EURC swap via App Kit, one Face ID, minimum checked against calldata (testnet) | Re-quote on drift; `quote_unavailable` retry | `swap-testnet`; Circle testnet swap service intermittently "No route available" | Other tokens, safety (GoPlus), user token rules, limit/DCA, charts | implemented (slice) · planned (Stage 6) |
+| E Bridging | D1 | Arc → own address on 6 chains via CCTP forwarder, one Face ID; LI.FI/Relay/deBridge quoted for comparison only (testnet) | Burn → attestation → mint witnessed; forward FAILED → unknown_outcome | `bridge-testnet`; `bridge-grants.integration` 11/11 | Executing other providers' routes, bridging into Arc, sending to someone else cross-chain, stuck-transfer recovery | implemented (slice) · planned (Stage 6) |
+| F Yield | D1 | Morpho vaults via App Kit Earn: deposit/withdraw, positions; readable titles (testnet mock vaults) | Witness by Transfer logs; vault list cached with fallback | `earn-testnet`; K06 on simulator | Mainnet run, rewards, cross-chain deposits | implemented (testnet) |
+| G Marketplace (x402) | D1, D14 | — (coming) | — | — | Discovery, budgeted purchase, receipts/refunds, untrusted-result handling | planned (Stage 7) |
+| H Automations | D1, D5, D33 | Scheduled sends (pinned recipient, period cap); Auto-save (own-savings bound, wakes on money in); rules: balance above/below or money in (from someone, minimum) → bridge to own address (fee bounded on chain) / save / alert, amounts fixed · % of receipt · excess over a line; list/pause/resume/skip/cancel+revoke by app and chat (testnet) | Runs carry their intent id from the claim (K01); reconciler re-drives orphans; one run per receipt; balance rules fire once per crossing | `automation-testnet`, `auto-save-testnet`, `automation-recovery-testnet`, `automation-continuation-testnet`, `rules-testnet`; `auto-save.integration` 11/11, `bridge-grants.integration` 11/11; simulator runs | Rules that send to others / swap / price triggers / DCA / payroll (need attended "Needs you" — Stage 9 push), practice mode, edit in place, 24 h reminder, DBOS executor, mainnet | implemented (testnet) · planned (8c) |
+| I Contacts | D13 | Names/@handles/addresses, versioned addresses with a hold on change, lookalike check, payment history (testnet) | — | Stage 5 | Names on other chains, QR/import, save-from-received, verification | implemented (slice) · planned (5c) |
+| J Notifications | D13, D31 | In-app inbox (payments, requests, completed sends, skipped runs, rule alerts) | Deduped inbox items | Stage 5b/8 | Push and email, preferences, quiet hours, actionable deep links | planned (Stage 9) |
+| K Voice and languages | D4, D5 | 10 languages for UI and agent replies; voice overlay says "coming" | — | i18n tests 5/5 | Two-way voice (LiveKit, our agent as the LLM), barge-in, captions, cards while talking | planned (Stage 10) |
+| L Generative UI | D1 | Tool-result cards for every implemented action, incl. automations/rules | Cards re-read their intent/automation | — | Declarative catalog, chart/decision/editor cards | partial · planned (Stage 4) |
+| M Agent intelligence | D1 | One agent turn (chat), real tools, truthful send status (K02), precise capability scope (K04) | The model answers from tool status and `CAPABILITY_SCOPE` | K02 verified on simulator | Memory, rolling summary, thread search, risk behaviour, proactive suggestions | partial · planned (Stage 4/12) |
+| N Safety and limits | D33 | On-chain allowance + automation grants, policy engine, receipt witnesses, address hold, lookalikes, pause-all | Every money path re-checks on fresh facts | Spikes 4/15; tests | Editable limits UI, temporary raises, allowlists, risk modes, exit kit | partial · planned (5c/11) |
+| O History and reporting | D1 | Activity with receipts for every implemented action | — | — | Why-pages, export, weekly report, audit writer | planned (Stage 12) |
+| P Settings | D35 | Hub with language/theme/network, limits, automations | Coming rows are labelled | — | Currency, notifications, voice, memory, devices, privacy | partial · planned |
+| Q Platforms | D25 | iOS (simulator) and web | — | Simulator runs; web deploy | Android, desktop, physical-device checks | partial · planned (13/16) |
+| R Business | D11 | Payment requests usable by a business | — | — | Business profile, invoices with references, vendor payouts, payroll | planned (5c/8) |
+| S Friction, trust | D13 | Guest flow, faucet, authority receipts, money status | — | — | Practice mode, fee reserve banners, status page, Needs-you queue, reminders | planned (8c/11) |
+| T Resolve and resume | D13 | Sends re-check the same intent after sign-in/fixes; automation drafts too (K03) | Same intent / same draft id | `automation-continuation-testnet` | `/i/[intentId]` links, uniform continuation for every action, cleared-precondition events | partial · planned (Stage 4) |
+| U Accessibility, privacy, x402 boundary | — | Labels in words (never colour alone), RTL | — | — | Assistive-tech proof, retention/delete/export, marketplace boundary | planned (7/12/16) |
+| Docs, landing, judge kit | D25 | — | — | — | Docs site, showcase, judge journeys | planned (14–15) |
+| Production hardening, submission | — | api + web on Coolify | — | Deploys | Mainnet runs per area, security review, performance, submission by 2026-10-10 | planned (16) |

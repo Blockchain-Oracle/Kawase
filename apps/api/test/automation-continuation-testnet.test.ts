@@ -17,6 +17,8 @@ import { createLogger } from "@kawase/log";
 import { eq } from "drizzle-orm";
 
 import { AutomationService } from "../src/automations/service";
+import { noBridges } from "../src/bridge/engine";
+import { BridgeService } from "../src/bridge/service";
 import { ContactService } from "../src/contacts/service";
 import { appKitEarn } from "../src/earn/engine";
 import { EarnService } from "../src/earn/service";
@@ -55,7 +57,8 @@ test("automation drafts carry on through sign-in, a new contact and wallet setup
   const requests = new RequestService(db, chains, wallets, inbox, "http://localhost:8081");
   const sends = new SendService(db, chains, wallets, contacts, recipients, noOps, log, requests, inbox);
   const earn = new EarnService(db, chains, wallets, appKitEarn(env), log, noOps);
-  const service = new AutomationService(db, chains, wallets, recipients, sends, earn, inbox, log);
+  const bridges = new BridgeService(db, chains, wallets, noBridges, log, noOps);
+  const service = new AutomationService(db, chains, wallets, recipients, sends, earn, bridges, inbox, log);
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);

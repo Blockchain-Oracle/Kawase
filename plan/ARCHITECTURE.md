@@ -181,6 +181,11 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - Grants: three per Auto-save (`buildSaveGrants`): approve (spender = vault), deposit (receiver = wallet), withdraw (receiver = owner = wallet), each `FunctionCall` + timestamp + redeemer. Stored as three `grants` rows (kind automation, `receipt.purpose`); revoked together in one self-batch.
 - Run: `planSave` on fresh balance / position / liquidity → `EarnService.runSave` (an `earn` intent, origin automation, ops attempt via Circle; tracking resolves the hash from Circle and settles by the earn witness). The incoming watcher wakes active Auto-saves (`nextRunAt = now`) on USDC in, and ignores transfers from the person's own Auto-save vault.
 
+**As built for rules (Stage 8b, 2026-10-01)**
+- `automations.kind = rule`, action `{trigger, amount, step, armed}`; runs carry `trigger` (evidence and the recorded decision) and, for money-in, `trigger_ref` (unique per automation: one run per receipt); run status `pending` for runs the watcher queued.
+- Balance rules: `nextRunAt` every 10 minutes and set to now on USDC in; `planRule` decides; the decision and the disarm commit before the step. Money-in rules: the watcher inserts a pending run per matching receipt; the runner claims pending runs each tick.
+- Steps: bridge → `BridgeService.runBridge` (App Kit's captured calls, `checkBridgeCalls`, redeemed under `buildBridgeGrants`); save → `EarnService.runSave`; notify → an inbox `rule_alert`. Ops attempts (submit once by idempotency key, hash from Circle) are shared in `apps/api/src/intents/ops-attempts.ts`.
+
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
 - Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.

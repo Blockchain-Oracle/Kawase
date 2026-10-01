@@ -504,6 +504,7 @@ const LOADING_LABELS: Record<string, string> = {
   propose_earn: "chat.loadingEarn",
   draft_automation: "chat.loadingAutomation",
   draft_auto_save: "chat.loadingAutoSave",
+  draft_rule: "chat.loadingRule",
   list_automations: "chat.loadingAutomations",
   change_automation: "chat.loadingAutomationChange",
   find_contacts: "chat.loadingContacts",
@@ -562,6 +563,7 @@ export function ToolCard({
       return <EarnCard output={part.output as ProposeEarnOutput} />;
     case "draft_automation":
     case "draft_auto_save":
+    case "draft_rule":
     case "change_automation":
       return <AutomationCard output={part.output as ProposeAutomationOutput} />;
     case "list_automations": {

@@ -161,6 +161,11 @@ export function buildAgentContext(input: {
       return { automation, summary: summarizeAutomation(automation) };
     },
 
+    async draftRule(request) {
+      const automation = await automations.createRule(user, request, { threadId });
+      return { automation, summary: summarizeAutomation(automation) };
+    },
+
     async listAutomations() {
       if (user.isAnonymous) return { network, automations: [] };
       const list = (await automations.list(user)).filter((entry) => entry.status !== "draft");

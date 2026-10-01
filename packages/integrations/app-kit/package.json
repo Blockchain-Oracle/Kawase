@@ -10,7 +10,8 @@
     "test:arc-testnet": "tsx test/swap.integration.ts",
     "test:bridge": "tsx test/bridge.integration.ts",
     "test:earn": "tsx test/earn.integration.ts",
-    "test:auto-save": "tsx test/auto-save.integration.ts"
+    "test:auto-save": "tsx test/auto-save.integration.ts",
+    "test:bridge-grants": "tsx test/bridge-grants.integration.ts"
   },
   "dependencies": {
     "@circle-fin/adapter-viem-v2": "1.18.0",

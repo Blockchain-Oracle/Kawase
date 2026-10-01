@@ -16,7 +16,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AutomationSummary } from "@/automations/automation-summary";
-import { useScheduleText, useTurnOnLabel } from "@/automations/copy";
+import { useRuleText, useScheduleText, useTurnOnLabel } from "@/automations/copy";
 import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useT } from "@/i18n";
@@ -41,7 +41,10 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
   const eyebrow = `${t("automation.title")} · ${automation.network === "mainnet" ? t("network.realMoney") : networkName}`;
   const blocking = automation.blocking;
   const a = automation.action;
-  const prompt = automation.save
+  const ruleText = useRuleText();
+  const prompt = automation.rule
+    ? `${ruleText.when(automation.rule)}: ${ruleText.what(automation.rule)}`
+    : automation.save
     ? t("automation.saveSignPrompt", { amount: money("USDC", automation.save.keep) })
     : a
       ? t("automation.signPrompt", { readBack: `${scheduleText(automation.schedule)}: ${t("automation.sendTo", { amount: money(a.asset, a.amount), name: a.recipientName ?? nameFromWords(a.recipientWords) })}` })
@@ -85,8 +88,8 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
         </View>
       ) : automation.status === "draft" ? (
         <Button size="lg" disabled={controller.busy || !automation.id} onPress={() => void controller.turnOn(prompt)}>
-          <Icon as={ScanFace} className="text-primary-foreground size-5" />
-          <Text>{controller.busy ? t("automation.turningOn") : turnOnLabel}</Text>
+          {automation.rule?.step.type === "notify" ? null : <Icon as={ScanFace} className="text-primary-foreground size-5" />}
+          <Text>{controller.busy ? t("automation.turningOn") : automation.rule?.step.type === "notify" ? t("automation.turnOnTap") : turnOnLabel}</Text>
         </Button>
       ) : revokePending ? (
         <Button size="lg" variant="secondary" disabled={controller.busy} onPress={() => void controller.cancel(t("automation.revokePrompt"))}>

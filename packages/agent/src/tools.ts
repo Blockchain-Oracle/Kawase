@@ -14,6 +14,7 @@ const NOTE_MAX = 140;
 const LAST_WEEKDAY = 6;
 const LAST_MONTHDAY = 28;
 const TIMEZONE_MAX = 64;
+const MAX_PERCENT = 100;
 
 export function buildTools(context: AgentContext) {
   return {
@@ -158,6 +159,31 @@ export function buildTools(context: AgentContext) {
         topUp: z.boolean().optional().describe("false only if they said not to refill the wallet from savings"),
       }),
       execute: async (input) => context.draftAutoSave(input),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    draft_rule: tool({
+      description:
+        "Draft a rule that acts by itself when something happens: when the balance goes above or drops below an amount, or when money arrives (optionally only from someone, or only at least an amount). The step: bridge USDC to the person's own address on base, ethereum, arbitrum, optimism, polygon or avalanche; save it into their own vault; or just tell them (an alert). How much: what is above the line (the default for 'balance above'), a share of the money that arrived (percent), or a fixed amount; pass reserve only if they said to keep something other than the line. Kawase checks it and shows a card with the read-back, what would happen right now and the bound the chain enforces; they turn it on on the card (Face ID; an alert needs only a tap). Nothing happens from this call. Use draft_automation for sends on a schedule and draft_auto_save for keep-an-amount-ready saving.",
+      inputSchema: z.object({
+        trigger: z.enum(["balance_above", "balance_below", "money_in"]),
+        threshold: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, for balance triggers"),
+        from: z.string().max(RECIPIENT_MAX).optional().describe("Money in: only from this sender, as the person said it (a contact, @handle or an address they typed)"),
+        minAmount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Money in: only payments of at least this much"),
+        action: z.enum(["bridge", "save", "notify"]),
+        destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("Bridge: the chain"),
+        vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Save: only a vault address from get_earn the person chose"),
+        amountMode: z.enum(["fixed", "excess", "percent"]).optional(),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Fixed amount, USDC"),
+        reserve: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Excess: keep this much instead of the line"),
+        percent: z.number().positive().max(MAX_PERCENT).optional().describe("A share of the money that arrived, 1–100"),
+      }),
+      execute: async (input) => {
+        // K2: an address can only come from the person's own words.
+        if (input.from && /^0x/i.test(input.from.trim()) && !context.lastUserText.toLowerCase().includes(input.from.trim().toLowerCase())) {
+          throw new Error("An address must be typed by the person; ask them for it.");
+        }
+        return context.draftRule(input);
+      },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     list_automations: tool({

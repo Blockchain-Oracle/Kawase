@@ -25,6 +25,7 @@ const inputSchema = z.object({
   note: z.string().max(NOTE_MAX).nullable().optional(),
 });
 const MAX_GRANTS = 3;
+const MAX_PERCENT = 100;
 const autoSaveSchema = z.object({
   keep: z.string().max(AMOUNT_MAX).optional(),
   vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
@@ -33,10 +34,23 @@ const autoSaveSchema = z.object({
   time: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
   timezone: z.string().max(ZONE_MAX).optional(),
 });
+const ruleSchema = z.object({
+  trigger: z.enum(["balance_above", "balance_below", "money_in"]),
+  threshold: z.string().max(AMOUNT_MAX).optional(),
+  from: z.string().max(RECIPIENT_MAX).optional(),
+  minAmount: z.string().max(AMOUNT_MAX).optional(),
+  action: z.enum(["bridge", "save", "notify"]),
+  destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional(),
+  vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
+  amountMode: z.enum(["fixed", "excess", "percent"]).optional(),
+  amount: z.string().max(AMOUNT_MAX).optional(),
+  reserve: z.string().max(AMOUNT_MAX).optional(),
+  percent: z.number().positive().max(MAX_PERCENT).optional(),
+});
 const activateSchema = z.object({
   signatures: z
+    // An alert rule needs no grant (it moves no money); the service checks the exact grants each kind needs.
     .array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) }))
-    .min(1)
     .max(MAX_GRANTS),
 });
 
@@ -59,6 +73,10 @@ export function automationRoutes(automations: AutomationService) {
   app.post("/auto-save", async (c) => {
     const input = await parse(autoSaveSchema, await c.req.json());
     return c.json({ automation: await automations.createAutoSave(c.get("user")!, input) }, HTTP.created);
+  });
+  app.post("/rule", async (c) => {
+    const input = await parse(ruleSchema, await c.req.json());
+    return c.json({ automation: await automations.createRule(c.get("user")!, input) }, HTTP.created);
   });
   app.get("/:id", async (c) => c.json({ automation: await automations.get(c.get("userId")!, c.req.param("id")) }));
   app.post("/:id/recheck", async (c) => c.json({ automation: await automations.recheck(c.get("user")!, c.req.param("id")) }));

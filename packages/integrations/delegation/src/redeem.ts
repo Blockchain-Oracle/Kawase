@@ -35,6 +35,17 @@ export function encodeRedeem(network: NetworkContext, grant: Delegation, call: {
   return { to: environment.DelegationManager, data };
 }
 
+/** Several calls, each under its own grant, redeemed in order in one transaction (all or nothing). */
+export function encodeRedeemMany(network: NetworkContext, steps: readonly { grant: Delegation; target: Address; callData: Hex }[]): ContractCall {
+  const environment = delegationEnvironment(network);
+  const data = DelegationManager.encode.redeemDelegations({
+    delegations: steps.map((step) => [step.grant]),
+    modes: steps.map(() => ExecutionMode.SingleDefault),
+    executions: steps.map((step) => [createExecution({ target: step.target, callData: step.callData })]),
+  });
+  return { to: environment.DelegationManager, data };
+}
+
 /** The user revokes a grant. With EIP-7702 the wallet is the delegator, so it sends this itself. */
 export function encodeRevoke(network: NetworkContext, grant: Delegation): ContractCall {
   const environment = delegationEnvironment(network);

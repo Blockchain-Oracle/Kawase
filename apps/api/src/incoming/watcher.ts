@@ -15,7 +15,8 @@ import {
   WATCH_HEAD_LAG_BLOCKS,
   WATCH_MAX_BLOCKS,
 } from "@kawase/config";
-import { automations, chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, type AutoSaveAction, type Db } from "@kawase/db";
+import { randomUUID } from "node:crypto";
+import { automationRuns, automations, chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, type AutoSaveAction, type Db, type RuleAction } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS, USDC_NATIVE_DECIMALS, rescale } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
@@ -137,6 +138,12 @@ export class IncomingWatcher {
         .from(automations)
         .where(and(eq(automations.userId, userId), eq(automations.network, network), eq(automations.kind, "auto_save")));
       if (saves.some((save) => (save.action as AutoSaveAction).vault.toLowerCase() === from.toLowerCase())) return;
+      const rules = await tx
+        .select({ id: automations.id, action: automations.action })
+        .from(automations)
+        .where(and(eq(automations.userId, userId), eq(automations.network, network), eq(automations.kind, "rule"), eq(automations.status, "active")));
+      // Money coming back from a vault a saving rule fills is the person's own, not money received.
+      if (rules.some((rule) => { const step = (rule.action as RuleAction).step; return step.type === "save" && step.vault.toLowerCase() === from.toLowerCase(); })) return;
       const name = await this.senderName(tx, userId, from);
       await this.inbox.add(tx, {
         userId,
@@ -150,6 +157,29 @@ export class IncomingWatcher {
       if (paid) await tx.update(chainEvents).set({ matchedRequestId: paid.id }).where(eq(chainEvents.id, inserted.id));
       const awake = saves.filter((save) => save.status === "active").map((save) => save.id);
       if (asset === "USDC" && awake.length > 0) await tx.update(automations).set({ nextRunAt: new Date() }).where(inArray(automations.id, awake));
+      if (asset === "USDC") {
+        // Balance rules look again now; each money-in rule this receipt matches gets one run, keyed by the receipt.
+        const balanceRules = rules.filter((rule) => (rule.action as RuleAction).trigger.type !== "money_in").map((rule) => rule.id);
+        if (balanceRules.length > 0) await tx.update(automations).set({ nextRunAt: new Date() }).where(inArray(automations.id, balanceRules));
+        for (const rule of rules) {
+          const trigger = (rule.action as RuleAction).trigger;
+          if (trigger.type !== "money_in") continue;
+          if (trigger.from && trigger.from.toLowerCase() !== from.toLowerCase()) continue;
+          if (trigger.minAmount && amount < BigInt(trigger.minAmount)) continue;
+          await tx
+            .insert(automationRuns)
+            .values({
+              automationId: rule.id,
+              userId,
+              scheduledFor: new Date(),
+              status: "pending",
+              intentId: randomUUID(),
+              triggerRef: `${chainId}:${entry.transactionHash}:${entry.logIndex}`,
+              trigger: { receipt: amount.toString(), from: getAddress(from), txHash: entry.transactionHash! },
+            })
+            .onConflictDoNothing();
+        }
+      }
     });
   }
 

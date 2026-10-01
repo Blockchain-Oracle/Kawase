@@ -3,7 +3,7 @@
 // runs in its own time zone, and the bound the chain enforces — never colour alone. Auto-save says what it keeps
 // ready, where the rest goes and what it earns, when it checks, what a check would move now, and its bound (only
 // between the wallet and the person's own savings). The screen adds recent runs, each with what happened and why.
-import { ArrowDownUp, CircleCheck, CircleMinus, CircleX, Clock, ShieldCheck, Sparkles } from "lucide-react-native";
+import { ArrowDownUp, Bell, CircleCheck, CircleMinus, CircleX, Clock, Radar, ShieldCheck, Sparkles } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, View } from "react-native";
 
@@ -21,7 +21,9 @@ import { protocolEntity } from "@/earn/vault-row";
 import { useT } from "@/i18n";
 import { nameFromWords, shortAddress, useMoney } from "@/send/copy";
 
-import { useBoundText, useRunLabel, useRunWhen, useScheduleText } from "./copy";
+import { arcIdentity, chainKey } from "@kawase/identity";
+
+import { useBoundText, useRuleText, useRunLabel, useRunWhen, useScheduleText } from "./copy";
 import { vaultTitle } from "@/earn/vault-title";
 
 const AVATAR = 44;
@@ -119,12 +121,54 @@ function SaveSummary({ automation, compact, showRuns }: { automation: Automation
   );
 }
 
+function RuleSummary({ automation, compact, showRuns }: { automation: AutomationView; compact?: boolean | undefined; showRuns?: boolean | undefined }) {
+  const { t } = useT();
+  const text = useRuleText();
+  const rule = automation.rule!;
+  const step = rule.step;
+  const live = automation.status === "draft" || automation.status === "active";
+  const ids = arcIdentity(automation.network);
+  const state = text.state(rule);
+  const mark =
+    step.type === "bridge" ? (
+      <Mark entity={ids.usdc} chainBadge={chainKey(step.chainId)} size={AVATAR} />
+    ) : step.type === "save" ? (
+      <Mark entity={protocolEntity(step.protocol)} size={AVATAR} />
+    ) : (
+      <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+        <Icon as={Bell} className="text-foreground size-5" />
+      </View>
+    );
+  return (
+    <View className="gap-3">
+      <View className="flex-row items-center gap-3">
+        {mark}
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text numberOfLines={3} className={cn("font-display text-foreground font-bold", compact ? "text-lg" : "text-xl", TEXT_START)}>
+            {text.when(rule)}
+          </Text>
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{text.what(rule)}</Text>
+        </View>
+        <StateLabel>{t(STATUS_KEY[automation.status])}</StateLabel>
+      </View>
+      <View className="gap-1">
+        <Line icon={Radar}>{text.cadence(rule)}</Line>
+        {live && state ? <Line icon={Clock}>{state}</Line> : null}
+        {live && rule.trigger.type !== "money_in" ? <Line icon={Sparkles}>{text.now(rule)}</Line> : null}
+      </View>
+      {automation.status !== "canceled" && automation.status !== "ended" ? <Bound automation={automation} /> : null}
+      {showRuns ? <Runs automation={automation} /> : null}
+    </View>
+  );
+}
+
 export function AutomationSummary({ automation, compact, showRuns }: { automation: AutomationView; compact?: boolean; showRuns?: boolean }) {
   const { t } = useT();
   const money = useMoney();
   const scheduleText = useScheduleText();
   const runWhen = useRunWhen();
   if (automation.kind === "auto_save" && automation.save) return <SaveSummary automation={automation} compact={compact} showRuns={showRuns} />;
+  if (automation.kind === "rule" && automation.rule) return <RuleSummary automation={automation} compact={compact} showRuns={showRuns} />;
   const a = automation.action;
   if (!a) return null;
   const name = a.recipientName ?? (a.recipientAddress ? shortAddress(a.recipientAddress) : nameFromWords(a.recipientWords));

@@ -38,6 +38,8 @@ export const REASONS = {
   VAULT_LIQUIDITY_SHORT: "precondition",
   /** Auto-save is already on here: one at a time (turn the old one off first). */
   AUTO_SAVE_EXISTS: "precondition",
+  /** The bridge route's fee right now is above what a rule's grants allow (16.77 USDC). */
+  BRIDGE_FEE_HIGH: "precondition",
   // Clarifications: one question.
   RECIPIENT_MISSING: "clarification",
   RECIPIENT_UNKNOWN: "clarification",
@@ -52,6 +54,8 @@ export const REASONS = {
   DESTINATION_MISSING: "clarification",
   /** A schedule Kawase cannot keep (an unknown time zone, a day out of range). */
   SCHEDULE_INVALID: "clarification",
+  /** A rule without the number it needs: the balance line, the share, or the amount. */
+  RULE_INCOMPLETE: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
   LOOKALIKE_ADDRESS: "warning",

@@ -34,6 +34,7 @@ import type {
   AutomationGrantRequest,
   AutomationInput,
   AutoSaveInput,
+  RuleInput,
   AutomationView,
   EarnApproveResponse,
   EarnIntent,
@@ -249,6 +250,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       create: (input: AutomationInput) => call<{ automation: AutomationView }>("POST", "/automations", input),
       /** Auto-save's draft: what it keeps ready, the vault, and what a check right now would move. */
       autoSave: (input: AutoSaveInput) => call<{ automation: AutomationView }>("POST", "/automations/auto-save", input),
+      /** A rule's draft: "when my balance goes above 100, bridge the rest to Base", "save 20% of money from Acme". */
+      rule: (input: RuleInput) => call<{ automation: AutomationView }>("POST", "/automations/rule", input),
       /** The same draft checked again on fresh facts after a fix (sign-in, setup, a contact added); nothing turns on. */
       recheck: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/recheck`),
       /** The grants to sign (typed data) that turn it on; one Face ID, then `activate` with every signature. */

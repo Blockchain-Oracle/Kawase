@@ -99,6 +99,13 @@
       "when": 1790864526638,
       "tag": "0013_automation_request",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790867205771,
+      "tag": "0014_automation_rules",
+      "breakpoints": true
     }
   ]
 }

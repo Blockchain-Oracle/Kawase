@@ -50,16 +50,26 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
   const amount = money(p.asset, p.amount);
   const skipped = item.kind === "automation_skipped";
-  const incoming = item.kind !== "send_completed" && !skipped;
+  const alert = item.kind === "rule_alert";
+  const incoming = item.kind !== "send_completed" && !skipped && !alert;
   const title =
-    item.kind === "payment_received"
+    alert
+      ? p.trigger === "money_in"
+        ? t("automation.ruleAlertMoneyIn", { amount })
+        : t(p.trigger === "balance_above" ? "automation.ruleAlertAbove" : "automation.ruleAlertBelow", { amount: money("USDC", p.threshold) })
+      : item.kind === "payment_received"
       ? t("inbox.receivedFrom", { name })
       : item.kind === "request_paid"
         ? t("inbox.requestPaid")
         : skipped
           ? t("automation.inboxSkipped", { reason: reasonText(p.reason ?? null, p, item.network) })
           : t("inbox.sentTo", { name });
-  const subtitle = item.kind === "request_paid" ? t("inbox.requestPaidBy", { amount, name }) : dates.moment(item.createdAt);
+  const subtitle =
+    item.kind === "request_paid"
+      ? t("inbox.requestPaidBy", { amount, name })
+      : alert && p.balance
+        ? `${t("automation.ruleAlertBalance", { amount: money("USDC", p.balance) })} · ${dates.moment(item.createdAt)}`
+        : dates.moment(item.createdAt);
   const unread = !item.readAt;
   return (
     <Pressable
@@ -87,7 +97,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           {subtitle}
         </Text>
       </View>
-      {p.amount ? (
+      {p.amount && !alert ? (
         <Amount className={cn("text-base", incoming ? "text-success" : skipped ? "text-muted-foreground" : "text-foreground")}>
           {skipped ? amount : `${incoming ? "+" : "−"}${amount}`}
         </Amount>
@@ -107,7 +117,7 @@ export function InboxScreen() {
 
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
-    if (item.kind === "automation_skipped") router.push("/automations");
+    if (item.kind === "automation_skipped" || item.kind === "rule_alert") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
     else if (item.explorerUrl) void Linking.openURL(item.explorerUrl);
   };

@@ -5,3 +5,4 @@ export * from "./redeem";
 export * from "./available";
 export * from "./batch";
 export * from "./save";
+export * from "./bridge-grants";

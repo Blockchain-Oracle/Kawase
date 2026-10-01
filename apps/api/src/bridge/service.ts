@@ -46,7 +46,7 @@ import type {
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import { getChainIdentity } from "@kawase/identity";
 import { checkBridgeCalls, forwardDelivered, type BridgeDestination, type SwapCall } from "@kawase/integrations-app-kit";
-import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
+import { BRIDGE_GRANT_MAX_FEE, encodeRedeemMany, encodeSelfBatch, isWalletSetUp, type BridgeGrants } from "@kawase/integrations-delegation";
 import {
   DRAFTABLE_STATES,
   bridgeDraftHash,
@@ -63,7 +63,9 @@ import { evaluateBridge, type BridgeEvaluation, type PolicyResult } from "@kawas
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
-import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
+import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
+import { OpsAttempts } from "../intents/ops-attempts";
+import type { OpsExecutor } from "../send/ops";
 import { parseRequestAmount } from "../send/facts";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
@@ -85,6 +87,8 @@ const DESTINATION_IDS: readonly BridgeDestinationId[] = ["base", "ethereum", "ar
 const ZERO = 0n;
 const ONE = 1n;
 const PERCENT = 100n;
+/** App Kit's bridge: an allowance, then the burn. */
+const ALLOWANCE_AND_BURN = 2;
 const TRACK_POLL_MS = 3_000;
 const TRACK_POLL_ATTEMPTS = 120;
 const ERROR_MAX = 140;
@@ -116,7 +120,12 @@ export class BridgeService {
     private readonly wallets: WalletService,
     private readonly engine: BridgeEngine,
     private readonly log: Logger,
-  ) {}
+    ops?: OpsExecutor | undefined,
+  ) {
+    this.opsAttempts = ops ? new OpsAttempts(db, chains, ops, log, (intentId, attemptId, error) => this.settleFailed(intentId, attemptId, "not_sent", error)) : undefined;
+  }
+
+  private readonly opsAttempts: OpsAttempts | undefined;
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -544,6 +553,111 @@ export class BridgeService {
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }
 
+  // ── Bridge rules (Stage 8b) ─────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * One bridge a rule makes: USDC from Arc to the person's own address on the rule's chain, sent by the ops wallet
+   * under the person's bridge grants (which pin that recipient, chain, token and hook, and bound the route's fee).
+   * App Kit builds the calls; they are checked like any bridge (`checkBridgeCalls`, the fee within the quote and the
+   * grant's bound); the intent is created under the run's own id, so a retry resumes; the burn and the forwarder's
+   * mint are witnessed by the same tracking as a bridge the person signs.
+   */
+  async runBridge(input: {
+    userId: string;
+    network: NetworkId;
+    intentId: string;
+    grants: BridgeGrants;
+    destination: BridgeDestinationId;
+    amount: bigint;
+  }): Promise<{ status: "executing"; intentId: string; resumed: boolean } | { status: "skipped"; reason: string; params?: Record<string, string> }> {
+    if (await intentExists(this.db, input.intentId)) return { status: "executing", intentId: input.intentId, resumed: true };
+    if (!this.opsAttempts) return { status: "skipped", reason: "NOT_AVAILABLE_YET" };
+    const { client, network, ops } = this.clients(input.network);
+    const wallet = (await this.wallets.userWallet(input.userId))?.address as Address | undefined;
+    if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
+    const destination = this.destination(network, input.destination);
+    if (!destination) return { status: "skipped", reason: "DESTINATION_MISSING" };
+    const decimal = formatUnits(input.amount, USDC_DECIMALS);
+    const estimate = await this.engine.estimate({ network, client, from: wallet, destination, recipient: wallet, amount: decimal }).catch(() => undefined);
+    if (!estimate) return { status: "skipped", reason: "QUOTE_UNAVAILABLE" };
+    const maxRouteFee = (estimate.maxFee * BRIDGE_FEE_HEADROOM_PERCENT) / PERCENT;
+    if (maxRouteFee > BRIDGE_GRANT_MAX_FEE) return { status: "skipped", reason: "BRIDGE_FEE_HIGH", params: { fee: estimate.maxFee.toString(), asset: "USDC" } };
+    if (maxRouteFee >= input.amount) return { status: "skipped", reason: "AMOUNT_BELOW_FEE", params: { fee: estimate.maxFee.toString(), asset: "USDC" } };
+    const calls = await this.engine.prepare({ network, client, from: wallet, destination, recipient: wallet, amount: decimal }).catch(() => undefined);
+    if (!calls) return { status: "skipped", reason: "QUOTE_UNAVAILABLE" };
+    const check = checkBridgeCalls(network, calls, { usdc: network.addresses.usdc, amount: input.amount, recipient: wallet, domain: destination.domain, maxFee: maxRouteFee });
+    if (!check.ok || calls.length !== ALLOWANCE_AND_BURN) {
+      this.log.error({ intentId: input.intentId, reason: check.ok ? "calls" : check.reason }, "security.bridge_calls_refused");
+      return { status: "skipped", reason: "QUOTE_UNAVAILABLE" };
+    }
+    const [allowance, burn] = calls as [SwapCall, SwapCall];
+    const call = encodeRedeemMany(network, [
+      { grant: input.grants.allowance, target: allowance.to, callData: allowance.data },
+      { grant: input.grants.burn, target: burn.to, callData: burn.data },
+    ]);
+    const draft: BridgeDraft = {
+      chainId: network.chainId,
+      from: wallet,
+      token: network.addresses.usdc,
+      amount: input.amount,
+      destinationDomain: destination.domain,
+      recipient: wallet,
+      maxRouteFee,
+      // The ops wallet pays the gas; the person pays nothing on Arc.
+      maxFee: ZERO,
+    };
+    const minReceived = input.amount - maxRouteFee;
+    const view: BridgeDraftView = {
+      destination: destination.id,
+      chainId: destination.chainId,
+      amount: input.amount.toString(),
+      maxRouteFee: maxRouteFee.toString(),
+      minReceived: minReceived.toString(),
+      networkFee: "0",
+      recipient: wallet,
+      provider: BRIDGE_PROVIDER_LABEL,
+      routes: [{ provider: BRIDGE_PROVIDER_LABEL, status: "chosen", received: minReceived.toString(), reason: null }],
+      quotedAt: new Date().toISOString(),
+    };
+    const draftHash = bridgeDraftHash(draft);
+    const request: StoredBridgeRequest = { destination: destination.id, amount: decimal };
+    const created = await this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${input.userId}:${input.network}`}, 0))`);
+      if (await intentExists(tx, input.intentId)) return false;
+      await tx.insert(intents).values({ id: input.intentId, userId: input.userId, network: input.network, kind: "bridge", originSurface: "automation", state: "executing", request, currentDraftVersion: 1, expiresAt: later(INTENT_TTL_S) });
+      await tx.insert(intentDrafts).values({
+        intentId: input.intentId,
+        version: 1,
+        payload: { draft: storeBridgeDraft(draft), view, destination: destination.id } as unknown as Record<string, unknown>,
+        draftHash,
+        policyReport: { results: [], blocking: null },
+        route: "automation",
+        createdBy: "system",
+      });
+      await tx.insert(approvals).values({ intentId: input.intentId, draftVersion: 1, draftHash, userId: input.userId, network: input.network, route: "automation", signerAddress: wallet, status: "approved", decidedViaSurface: "automation", expiresAt: later(APPROVAL_TTL_S) });
+      await tx.insert(txAttempts).values({
+        userId: input.userId,
+        intentId: input.intentId,
+        network: input.network,
+        chainId: network.chainId,
+        attemptNo: 1,
+        kind: "bridge_burn",
+        provider: "circle_dcw",
+        idempotencyKey: randomUUID(),
+        fromAddress: ops.address,
+        toAddress: call.to,
+        status: "prepared",
+        receipt: { prepared: { to: call.to, data: call.data } },
+      });
+      return true;
+    });
+    if (!created) return { status: "executing", intentId: input.intentId, resumed: true };
+    const attempt = await this.latestAttempt(input.intentId);
+    if (attempt) await this.opsAttempts.submit(input.intentId, attempt);
+    void this.follow(input.intentId);
+    return { status: "executing", intentId: input.intentId, resumed: false };
+  }
+
   // ── Tracking: the burn on Arc, Circle's attestation, the forwarder's mint ───────────────────────────────────
 
   private async follow(intentId: string) {
@@ -563,8 +677,12 @@ export class BridgeService {
     try {
       const [intent] = await this.db.select().from(intents).where(eq(intents.id, intentId));
       if (!intent || (intent.state !== "executing" && intent.state !== "unknown_outcome")) return true;
-      const attempt = await this.latestAttempt(intentId);
-      if (!attempt?.txHash) return false;
+      const latest = await this.latestAttempt(intentId);
+      if (!latest) return false;
+      // An attempt the ops wallet sends (a bridge rule) gets its hash from Circle.
+      const hash = latest.provider === "circle_dcw" ? await this.opsAttempts?.hash(intentId, intent.network, latest) : (latest.txHash as Hex | null);
+      if (!hash) return false;
+      const attempt = { ...latest, txHash: hash };
       const stored = ((await this.currentDraft(intent))?.payload as DraftPayload | undefined) ?? undefined;
       if (!stored?.draft) return false;
       const draft = loadBridgeDraft(stored.draft);
