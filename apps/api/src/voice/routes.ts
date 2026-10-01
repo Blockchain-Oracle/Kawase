@@ -10,7 +10,7 @@ import { createUIMessageStreamResponse, type UIMessage } from "ai";
 import { AccessToken, RoomAgentDispatch, RoomConfiguration } from "livekit-server-sdk";
 import { z } from "zod";
 
-import { MS_PER_SECOND, VOICE_AGENT_NAME, VOICE_SESSION_TTL_S } from "@kawase/config";
+import { MS_PER_SECOND, VOICE_SESSION_TTL_S, voiceAgentName } from "@kawase/config";
 import type { Models } from "@kawase/agent";
 import { threads, users, type Db } from "@kawase/db";
 
@@ -48,7 +48,7 @@ export function voiceRoutes(deps: { db: Db; models: Models; livekit: LiveKitConf
     const token = new AccessToken(livekit.apiKey, livekit.apiSecret, { identity, ...(user.handle ? { name: user.handle } : {}), ttl: VOICE_SESSION_TTL_S });
     token.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true });
     token.roomConfig = new RoomConfiguration({
-      agents: [new RoomAgentDispatch({ agentName: VOICE_AGENT_NAME, metadata: JSON.stringify({ voiceToken, threadId, identity, locale: user.replyLanguage ?? user.locale, network: user.activeNetwork }) })],
+      agents: [new RoomAgentDispatch({ agentName: voiceAgentName(process.env), metadata: JSON.stringify({ voiceToken, threadId, identity, locale: user.replyLanguage ?? user.locale, network: user.activeNetwork }) })],
     });
     return c.json({ url: livekit.url, token: await token.toJwt(), room, threadId }, HTTP.created);
   });

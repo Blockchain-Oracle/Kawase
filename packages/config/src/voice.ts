@@ -8,6 +8,8 @@ import type { SupportedLocale } from "./locales";
  * 2026-09-29 in the voice decision).
  */
 export const VOICE_AGENT_NAME = "kawase-voice";
+/** The agent name to dispatch and register: `KAWASE_VOICE_AGENT` keeps a local worker apart from production's. */
+export const voiceAgentName = (env: Record<string, string | undefined>) => env.KAWASE_VOICE_AGENT || VOICE_AGENT_NAME;
 /** How long a voice session's LiveKit token and the worker's voice token last. */
 export const VOICE_SESSION_TTL_S = 1800;
 /** The method the worker calls on the phone to put a card on screen while talking. */

@@ -14,7 +14,7 @@ import * as elevenlabs from "@livekit/agents-plugin-elevenlabs";
 import * as openai from "@livekit/agents-plugin-openai";
 import { config } from "dotenv";
 
-import { VOICE_AGENT_NAME, VOICE_CARD_RPC, VOICE_RPC_MAX_BYTES, VOICE_SPEECH, isSupportedLocale, type SupportedLocale } from "@kawase/config";
+import { voiceAgentName, VOICE_CARD_RPC, VOICE_RPC_MAX_BYTES, VOICE_SPEECH, isSupportedLocale, type SupportedLocale } from "@kawase/config";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -213,4 +213,4 @@ export default defineAgent({
   },
 });
 
-cli.runApp(new ServerOptions({ agent: fileURLToPath(import.meta.url), agentName: VOICE_AGENT_NAME }));
+cli.runApp(new ServerOptions({ agent: fileURLToPath(import.meta.url), agentName: voiceAgentName(process.env) }));
