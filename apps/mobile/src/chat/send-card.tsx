@@ -104,7 +104,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           {[amountText, name].filter(Boolean).join(" → ")}
         </Text>
       )}
-      <SendBlocker controller={fixing} />
+      <SendBlocker controller={fixing} recheckAfterSignIn={() => void controller.revise({})} />
       {ready ? (
         <View className="gap-2">
           <Button

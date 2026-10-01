@@ -32,6 +32,26 @@ Last updated: 2026-10-01
 | 11 mixed-script amounts | fixed | the keypad display renders the fraction in the locale's digits too | code |
 | 12 provenance when saving from chat | fixed | carries the recipient's source, or "added in chat" | code |
 
-## Pass 2–4
+## Pass 2 — one coherent journey
 
-Not started: R07, R09–R16, the acceptance matrix (§11).
+| ID | Status | What changed | Evidence |
+|---|---|---|---|
+| R07 state-aware routing | fixed in code | the handle step is asked once per account (`users.handle_prompted_at`, migration `0006`); after sign-in: handle only if never answered, setup only if the wallet is not set up on the active network, else the sheet closes; the page under sign-in is remembered and returned to; nothing is submitted for the person (the chat send card re-checks after sign-in and waits for a tap) | sign-in routing not run on a device (needs a sign-out); web sign-in landed on home as expected |
+| R09 home by state | fixed | guest intro + "Try it in chat"; unknown (skeleton/last known, no checklist); setup (step n of 4); fund (Get test USDC); first send; ready (USDC balance with its mark, allowance cue, EURC row, one lime Send); the allowance is an optional card, not a step; the plus is quiet glass | simulator: ready state (`h-ready.png`); other states need other accounts |
+| R10 story that explains | fixed | five panels, one product event each, built from real cards and marks, labelled "Example · Arc Testnet": request → fields, the allowance boundary, test vs real money, one request in three languages, the first task | simulator via `/dev/board/story`, Arabic RTL; web `/welcome` renders the new story |
+| R11 interruptible carousel | fixed | stops on the last panel; pauses for drag, sheets, unfocus, background, screen reader, reduced motion; drag cancels travel and settles; labelled non-overlapping step buttons; RTL placement fixed | simulator swipe both directions incl. Arabic |
+| R12 promise only what works | fixed | entry points from the capability registry; Request shows "Soon" before the tap and does nothing; Send leads the fan; chips only for working things | simulator fan (`h-fan.png`), web home shows "Soon · Request" |
+
+## Web (judges reach Kawase here, D10)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Web sign-in | working | `@turnkey/react-wallet-kit` behind the shared core; email code → Turnkey session → api proof → home as @kawasedemo, in Chrome at `localhost:8081` |
+| tslib web crash | fixed | `metro.config.js` resolves `tslib` to `tslib.es6.js` on web |
+| Sheet text input on web | fixed | gorhom's input called an API react-native-web lacks; a plain field is used on web |
+| Approvals on web | open | no Face ID in a browser, so (R03) the allowance and sends above it cannot be approved there yet — next: an email-code confirmation as the web's device check |
+| Desktop width | open | the phone layout stretches on a laptop (story art misplaced, a black disc over the progress bar) — next: a phone-width column on wide screens |
+
+## Pass 3–4
+
+Not started: R13–R16, the acceptance matrix (§11).

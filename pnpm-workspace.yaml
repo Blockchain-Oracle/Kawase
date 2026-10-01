@@ -68,6 +68,8 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/openai@4.0.83'
   - '@ai-sdk/provider-utils@5.0.53'
   - '@ai-sdk/provider@4.0.21'
+  - '@turnkey/core@2.12.1'
+  - '@turnkey/react-wallet-kit@2.5.2'
 
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:

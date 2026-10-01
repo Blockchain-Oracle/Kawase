@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "handle_prompted_at" timestamp with time zone;

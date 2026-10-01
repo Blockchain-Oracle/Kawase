@@ -67,6 +67,7 @@ export function publicUser(user: {
   id: string;
   email: string | null;
   handle: string | null;
+  handlePromptedAt?: Date | null;
   isAnonymous: boolean;
   locale: string;
   replyLanguage: string | null;
@@ -82,6 +83,8 @@ export function publicUser(user: {
     id: user.id,
     email: user.email,
     handle: user.handle,
+    /** The optional handle step was answered (a handle saved or skipped), so onboarding does not ask again. */
+    handlePrompted: Boolean(user.handlePromptedAt) || Boolean(user.handle),
     isGuest: user.isAnonymous,
     locale: user.locale,
     replyLanguage: user.replyLanguage,

@@ -29,7 +29,19 @@ import type { SendController } from "./use-send";
 
 const ASSET_MARK = 24;
 
-export function SendBlocker({ controller, onEditAmount }: { controller: SendController; onEditAmount?: (() => void) | undefined }) {
+export function SendBlocker({
+  controller,
+  onEditAmount,
+  recheckAfterSignIn,
+}: {
+  controller: SendController;
+  onEditAmount?: (() => void) | undefined;
+  /**
+   * How the send is checked again once sign-in happened elsewhere. A sign-in restores the request; it never
+   * submits it (review R07), so the chat card passes a re-check that does not count as an answer on the card.
+   */
+  recheckAfterSignIn?: (() => void) | undefined;
+}) {
   const { t } = useT();
   const router = useRouter();
   const { status } = useSession();
@@ -45,7 +57,9 @@ export function SendBlocker({ controller, onEditAmount }: { controller: SendCont
   const signedInNow = status === "account";
   const wasBlockedBySignIn = blocking?.code === "SIGN_IN_REQUIRED";
   React.useEffect(() => {
-    if (signedInNow && wasBlockedBySignIn) void controller.revise({});
+    if (!signedInNow || !wasBlockedBySignIn) return;
+    if (recheckAfterSignIn) recheckAfterSignIn();
+    else void controller.revise({});
   }, [signedInNow, wasBlockedBySignIn]);
 
   // After a network switch the request starts over on the new network (mainnet sends are always re-confirmed). The

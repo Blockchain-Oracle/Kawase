@@ -1,8 +1,11 @@
 // The quick-action fan (Phantom P19 / M06, exact motion, Kawase's actions): the plus becomes ×, the page blurs,
 // and four labelled circles rise from the plus with a short stagger and a small overshoot, settling in a vertical
 // column at the trailing edge — not a radial arc. Closing reverses it. The blur is the app's BlurOverlay; this
-// component draws the column and the plus/× button.
+// component draws the column and the plus/× button. An action that is not available yet says so before the tap
+// (a quiet circle and a "Soon" chip, not focusable as a working button — review R12). Given `glass`, the closed
+// plus is a quiet glass circle instead of a second lime action competing with the screen's own (review R09).
 import { FAN, MOTION } from "@kawase/config";
+import { Glass } from "@kawase/ui-native/components/glass";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
@@ -11,7 +14,13 @@ import * as React from "react";
 import { Pressable, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring, withTiming } from "react-native-reanimated";
 
-type FanAction = { key: string; label: string; icon: LucideIcon };
+type FanAction = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  /** Set when the action is not available yet: the words of the chip ("Soon"). */
+  soon?: string;
+};
 
 type QuickActionFanProps = {
   open: boolean;
@@ -23,6 +32,8 @@ type QuickActionFanProps = {
   /** Bottom offset of the plus button (above the dock). */
   bottom: number;
   end?: number;
+  /** The page's theme and the `glass` token: draws the closed plus as quiet glass. */
+  glass?: { scheme: "light" | "dark"; tint: string };
   className?: string;
 };
 
@@ -70,28 +81,36 @@ function FanItem({ action, index, open, onAction, reduced }: { action: FanAction
     >
       <Pressable
         accessible={false}
+        disabled={Boolean(action.soon)}
         onPress={() => onAction(action.key)}
-        className="absolute inset-y-0 items-end justify-center"
+        className="absolute inset-y-0 flex-row items-center justify-end gap-2"
         style={{ end: FAN.circlePt + LABEL_GAP, width: LABEL_WIDTH }}
       >
-        <Text numberOfLines={1} className="text-foreground text-base font-semibold">
+        {action.soon ? (
+          <View className="bg-secondary rounded-full px-2 py-0.5">
+            <Text className="text-muted-foreground text-xs font-semibold">{action.soon}</Text>
+          </View>
+        ) : null}
+        <Text numberOfLines={1} className={cn("text-base font-semibold", action.soon ? "text-muted-foreground" : "text-foreground")}>
           {action.label}
         </Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={action.label}
+        accessibilityLabel={action.soon ? `${action.label}, ${action.soon}` : action.label}
+        accessibilityState={{ disabled: Boolean(action.soon) }}
+        disabled={Boolean(action.soon)}
         onPress={() => onAction(action.key)}
-        className="bg-primary items-center justify-center rounded-full"
+        className={cn("items-center justify-center rounded-full", action.soon ? "bg-secondary" : "bg-primary")}
         style={{ width: FAN.circlePt, height: FAN.circlePt }}
       >
-        <Icon as={action.icon} className="text-primary-foreground size-5" strokeWidth={2.4} />
+        <Icon as={action.icon} className={cn("size-5", action.soon ? "text-muted-foreground" : "text-primary-foreground")} strokeWidth={2.4} />
       </Pressable>
     </Animated.View>
   );
 }
 
-function QuickActionFan({ open, actions, onToggle, onAction, toggleLabel, bottom, end = END_INSET, className }: QuickActionFanProps) {
+function QuickActionFan({ open, actions, onToggle, onAction, toggleLabel, bottom, end = END_INSET, glass, className }: QuickActionFanProps) {
   const reduced = useReducedMotion();
   const rotation = useSharedValue(open ? ROTATE_OPEN : ROTATE_CLOSED);
   React.useEffect(() => {
@@ -111,11 +130,12 @@ function QuickActionFan({ open, actions, onToggle, onAction, toggleLabel, bottom
         accessibilityLabel={toggleLabel}
         accessibilityState={{ expanded: open }}
         onPress={onToggle}
-        className={cn("items-center justify-center rounded-full", open ? "bg-secondary" : "bg-primary")}
+        className={cn("items-center justify-center rounded-full", open ? "bg-secondary" : glass ? "" : "bg-primary")}
         style={{ width: PLUS_SIZE, height: PLUS_SIZE }}
       >
+        {glass && !open ? <Glass pointerEvents="none" scheme={glass.scheme} tint={glass.tint} radius={PLUS_SIZE * HALF} className="absolute inset-0" /> : null}
         <Animated.View style={plusStyle}>
-          <Icon as={Plus} className={cn("size-7", open ? "text-foreground" : "text-primary-foreground")} strokeWidth={2.4} />
+          <Icon as={Plus} className={cn("size-7", open || glass ? "text-foreground" : "text-primary-foreground")} strokeWidth={2.4} />
         </Animated.View>
       </Pressable>
     </View>

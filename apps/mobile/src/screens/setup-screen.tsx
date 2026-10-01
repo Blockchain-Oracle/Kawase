@@ -30,6 +30,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { OnboardingBar } from "@/components/onboarding-bar";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { finishOnboarding } from "@/onboarding/continuation";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -81,9 +82,14 @@ export function SetupScreen() {
   }, [status, signIn]);
 
   if (setup.loaded && arrivedDone.current === undefined) arrivedDone.current = Boolean(setup.allowance);
+  // Nothing to set up: back to where sign-in began (review R07), not always home.
+  const nothingToDo = Boolean(arrivedDone.current) && !receipt;
+  React.useEffect(() => {
+    if (nothingToDo && status !== "guest") finishOnboarding();
+  }, [nothingToDo, status]);
 
   if (status === "guest") return <Redirect href="/" />;
-  if (arrivedDone.current && !receipt) return <Redirect href="/" />;
+  if (nothingToDo) return null;
 
   const phase: Phase = receipt ? "done" : setup.setUp && setup.hasWallet ? "primer" : "steps";
   const networkName = network === "testnet" ? t("network.arcTestnet") : t("network.arc");
@@ -99,7 +105,7 @@ export function SetupScreen() {
     none: t("wallet.allowanceAccept"),
   }[kind];
   const cannotCheck = kind === "none";
-  const goHome = () => router.replace("/");
+  const goHome = () => finishOnboarding();
   const leading = router.canGoBack() ? { kind: "back" as const, onPress: () => router.back() } : { kind: "close" as const, onPress: goHome };
 
   const steps: SetupStep[] = [

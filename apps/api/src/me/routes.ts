@@ -24,6 +24,8 @@ const settingsSchema = z
     practiceMode: z.boolean(),
     /** The @handle; null clears it. Checked against the shared rules and for uniqueness below. */
     handle: z.string().max(FIELD.handleInputMax).nullable(),
+    /** The optional handle step was answered (Skip); onboarding does not ask again (review R07). */
+    handlePrompted: z.literal(true),
   })
   .partial();
 
@@ -61,7 +63,10 @@ export function meRoutes(db: Db, chains: Chains) {
     const parsed = settingsSchema.safeParse(await c.req.json());
     if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
     const userId = c.get("userId")!;
-    const changes = { ...parsed.data };
+    const { handlePrompted, ...settings } = parsed.data;
+    const changes: typeof settings & { handlePromptedAt?: Date } = { ...settings };
+    // Saving a handle answers the step too; either way it is recorded once and kept.
+    if ((handlePrompted || typeof changes.handle === "string") && !c.get("user")!.handlePromptedAt) changes.handlePromptedAt = new Date();
     if (typeof changes.handle === "string") {
       // A handle is a public name for an account; a guest has nothing to be paid at yet.
       if (c.get("user")!.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to choose a handle");

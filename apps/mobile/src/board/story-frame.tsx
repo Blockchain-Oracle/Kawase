@@ -9,17 +9,20 @@ import { useWindowDimensions } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CATALOGS } from "@kawase/i18n";
+
 import { BOARD, type SampleLocale } from "@/gallery/sample";
 import { STORY_INK, StoryLanguagePill, storyPanels } from "@/onboarding/story-panels";
 import type { Network } from "@/theme/theme-provider";
 
-const CANVAS_RATIO = 0.52;
+const CANVAS_RATIO = 0.44;
 const INK = STORY_INK;
 const TOP_GAP = 8;
 
 type StoryFrameProps = { locale: SampleLocale; network: Network; index?: number; autoAdvance?: boolean };
 
-export function StoryFrame({ locale, network, index: initial = 0, autoAdvance = true }: StoryFrameProps) {
+// The story is always on Arc Testnet's examples, whichever network the board frame is set to.
+export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: StoryFrameProps) {
   const t = BOARD[locale];
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -31,30 +34,46 @@ export function StoryFrame({ locale, network, index: initial = 0, autoAdvance = 
 
   React.useEffect(() => {
     if (!autoAdvance || reduced) return undefined;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % t.panels.length), MOTION.storyDwellMs);
+    // Like the real story: it rests on the last panel instead of sweeping back to the first.
+    const timer = setInterval(() => setIndex((i) => Math.min(t.panels.length - 1, i + 1)), MOTION.storyDwellMs);
     return () => clearInterval(timer);
   }, [autoAdvance, reduced, t.panels.length]);
 
+  // The board shows the real story copy from the catalogs (English or Arabic), so the two cannot drift apart.
+  const story = CATALOGS[locale].story;
+  const networkNames = CATALOGS[locale].network;
   const panels = storyPanels(
     {
-      panels: t.panels,
-      receiptTitle: t.receiptTitle,
-      allowanceTitle: t.allowanceTitle,
-      allowanceValue: t.allowanceValue,
-      faceId: t.faceId,
-      arc: "Arc",
-      arcTestnet: "Arc Testnet",
-      languages: t.languages.map((name, i) => ({ key: name, name, selected: i === 0 })),
+      panels: [
+        { title: story.requestTitle, body: story.requestBody },
+        { title: story.boundsTitle, body: story.boundsBody },
+        { title: story.practiceTitle, body: story.practiceBody },
+        { title: story.languageTitle, body: story.languageBody },
+        { title: story.firstTitle, body: story.firstBody },
+      ],
+      example: story.example,
+      request: story.exampleRequest,
+      otherRequests: [CATALOGS.es.story.exampleRequest, CATALOGS.zh.story.exampleRequest],
+      fields: { amount: story.fieldAmount, to: story.fieldTo, network: story.fieldNetwork },
+      typingNow: story.typingNow,
+      amount: "10 USDC",
+      recipient: "@amina",
+      arc: networkNames.arc,
+      arcTestnet: networkNames.arcTestnet,
+      allowance: { amount: "5,000", perDay: story.perDay, inside: story.boundsInside, above: story.boundsAbove, never: story.boundsNever },
+      practice: { faucetLine: story.faucetLine, faucetAmount: "+20", testMoney: story.testMoney, realMoney: story.realMoney },
+      sameMeaning: story.sameMeaning,
+      first: { step1: story.firstStep1, step2: story.firstStep2 },
     },
-    network,
+    { active: index, animate: autoAdvance && !reduced },
   );
-
   return (
     <Direction rtl={locale === "ar"} className="bg-background flex-1" style={{ paddingTop: insets.top + TOP_GAP, paddingBottom: insets.bottom }}>
       <StoryShell
         panels={panels}
         index={index}
         onIndexChange={setIndex}
+        rtl={locale === "ar"}
         progressLabel={t.panelOf}
         canvasHeight={canvasHeight}
         ink={INK}

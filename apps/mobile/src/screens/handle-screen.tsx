@@ -1,6 +1,8 @@
-// The @handle step (journey 3): optional, asked once after sign-in and before wallet setup, and reachable again
-// from Settings. The rules are checked as the user types (shared with the api in @kawase/config), then the api
-// says whether someone has it; Continue saves it, Skip is always there. In edit mode both go back to Settings.
+// The @handle step (journey 3): optional, asked once per account after sign-in and before wallet setup, and reachable
+// again from Settings. The rules are checked as the user types (shared with the api in @kawase/config), then the api
+// says whether someone has it; Continue saves it, Skip is always there. Either answer is recorded on the account, so
+// a returning account that skipped is never asked again at sign-in (Codex review R07). In edit mode both go back
+// to Settings.
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
@@ -74,10 +76,17 @@ export function HandleScreen() {
   }, [handle, unchanged]);
 
   if (status !== "account") return <Redirect href="/" />;
-  // Asked once: an account that already has a handle goes straight on, unless it came here to change it.
-  if (!editing && user?.handle && unchanged && !saving) return <Redirect href="/wallet" />;
+  // Asked once per account: an answered step (a handle saved or skipped) goes straight on, unless it came to edit.
+  if (!editing && (user?.handlePrompted || user?.handle) && unchanged && !saving) return <Redirect href="/wallet" />;
 
   const leave = () => (editing ? router.back() : router.replace("/wallet"));
+  // Skip is an answer too: remembered on the account. If that cannot be saved now, the step simply asks again later.
+  const skip = async () => {
+    if (editing) return leave();
+    setSaving(true);
+    await update({ handlePrompted: true }).catch(() => undefined);
+    leave();
+  };
 
   const messages: Record<NonNullable<Check["reason"]>, string> = {
     too_short: t("handle.tooShort"),
@@ -131,7 +140,7 @@ export function HandleScreen() {
           <Button size="lg" disabled={check.state !== "available" || saving} onPress={() => void save()}>
             <Text>{t("common.continue")}</Text>
           </Button>
-          <Button variant="ghost" disabled={saving} onPress={leave}>
+          <Button variant="ghost" disabled={saving} onPress={() => void skip()}>
             <Text className="text-muted-foreground">{editing ? t("common.cancel") : t("handle.skip")}</Text>
           </Button>
         </View>

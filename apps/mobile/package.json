@@ -25,6 +25,7 @@
     "@rn-primitives/slot": "^1.5.2",
     "@shopify/react-native-skia": "2.6.2",
     "@turnkey/react-native-wallet-kit": "^2.3.7",
+    "@turnkey/react-wallet-kit": "2.5.2",
     "ai": "catalog:",
     "better-auth": "1.7.6",
     "class-variance-authority": "^0.7.1",

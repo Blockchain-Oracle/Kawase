@@ -15,6 +15,7 @@ export type SessionUser = {
   id: string;
   email: string | null;
   handle: string | null;
+  handlePromptedAt: Date | null;
   isAnonymous: boolean;
   locale: string;
   replyLanguage: string | null;

@@ -11,7 +11,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ChevronLeft } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, TextInput, View } from "react-native";
 import { withUniwind } from "uniwind";
 
 type SheetColors = {
@@ -135,7 +135,9 @@ function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset
   );
 }
 
-const StyledSheetTextInput = withUniwind(BottomSheetTextInput);
+// On the web there is no on-screen keyboard to ride, and gorhom's input calls a React Native API that
+// react-native-web lacks (`TextInput.State.currentlyFocusedInput`), so a plain field is used there.
+const StyledSheetTextInput = withUniwind(Platform.OS === "web" ? (TextInput as unknown as typeof BottomSheetTextInput) : BottomSheetTextInput);
 
 type SheetInputProps = React.ComponentProps<typeof BottomSheetTextInput> & { className?: string };
 

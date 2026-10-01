@@ -43,6 +43,13 @@
       "when": 1790835637739,
       "tag": "0005_contacts_intents",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790841701832,
+      "tag": "0006_onboarding",
+      "breakpoints": true
     }
   ]
 }

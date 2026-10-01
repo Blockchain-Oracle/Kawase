@@ -6,6 +6,8 @@ export type ApiUser = {
   email: string | null;
   /** The public @handle, without the @; null until the user picks one. */
   handle: string | null;
+  /** The optional handle step was answered (saved or skipped); absent on users cached before it existed. */
+  handlePrompted?: boolean;
   isGuest: boolean;
   locale: string;
   replyLanguage: string | null;

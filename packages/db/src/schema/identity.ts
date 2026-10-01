@@ -16,6 +16,11 @@ export const users = pgTable(
     email: text(),
     /** The optional public @handle (D35): lowercase, unique without regard to case, changeable. */
     handle: text(),
+    /**
+     * When the optional handle step was answered (a handle saved or Skip): onboarding asks it once per account,
+     * not at every sign-in (Codex review R07). It stays changeable in Settings.
+     */
+    handlePromptedAt: timestampTz(),
     turnkeySubOrganizationId: uuid(),
     turnkeyUserId: uuid(),
     isAnonymous: boolean().notNull().default(true),

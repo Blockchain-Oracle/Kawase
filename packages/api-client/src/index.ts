@@ -101,7 +101,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
             ApiUser,
             "locale" | "replyLanguage" | "displayCurrency" | "timezone" | "theme" | "riskMode" | "practiceMode" | "handle"
           >
-        >,
+        > & { handlePrompted?: true },
       ) => call<{ user: ApiUser }>("PATCH", "/me", settings),
       /** The handle field's live check: which rule it breaks, or whether someone has it. */
       handleAvailability: (handle: string) =>

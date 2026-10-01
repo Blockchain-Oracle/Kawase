@@ -39,6 +39,9 @@ type BalanceCardProps = {
   /** The formatted total; undefined while loading. */
   total?: string;
   symbol: string;
+  /** The real mark of the asset the big number is in, so it never reads as a total of every asset. */
+  totalEntity?: string;
+  totalChainBadge?: string;
   subline?: string;
   /** "~40 actions left" (S6); the slot is empty until the fee reserve is known. */
   feeReserve?: string;
@@ -63,6 +66,8 @@ function BalanceCard({
   balanceLabel,
   total,
   symbol,
+  totalEntity,
+  totalChainBadge,
   subline,
   feeReserve,
   rows,
@@ -90,7 +95,8 @@ function BalanceCard({
 
       <View className="gap-1">
         <Text className="text-muted-foreground text-sm">{balanceLabel}</Text>
-        <View className="flex-row items-baseline gap-2">
+        <View className={cn("flex-row gap-2", totalEntity ? "items-center" : "items-baseline")}>
+          {totalEntity ? <Mark entity={totalEntity} size={ROW_MARK} chainBadge={totalChainBadge} /> : null}
           {total === undefined ? (
             <Skeleton className="h-12 w-40" />
           ) : (
