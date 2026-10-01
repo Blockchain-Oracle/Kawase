@@ -49,9 +49,9 @@ Last updated: 2026-10-01
 | Web sign-in | working | `@turnkey/react-wallet-kit` behind the shared core; email code → Turnkey session → api proof → home as @kawasedemo, in Chrome at `localhost:8081` |
 | tslib web crash | fixed | `metro.config.js` resolves `tslib` to `tslib.es6.js` on web |
 | Sheet text input on web | fixed | gorhom's input called an API react-native-web lacks; a plain field is used on web |
-| Approvals on web | built, last step unverified | the web's device check is a fresh email code verified by Turnkey's enclave (`initOtp` + `verifyOtp`, no new login) in a sheet (`wallet/web-approval-host.tsx`), behind the same `confirmWithBiometrics` contract; buttons read "Send/Accept with an email code" | Chrome: EURC send → "Send with an email code" → sheet "Confirm it's you · Send 1.00 EURC to Bob" → code requested and accepted by Turnkey; cancel → nothing sent. Entering the code + web signing not run (mail.tm outage) |
-| Web wording | open | a few send-flow lines and the cancel toast still say "Face ID" in a browser |
-| Desktop width | open | the phone layout stretches on a laptop (story art misplaced, a black disc over the progress bar) — next: a phone-width column on wide screens |
+| Approvals on web | working | the web's device check is a fresh email code verified by Turnkey's enclave (`initOtp` + `verifyOtp`, no new login) in a sheet (`wallet/web-approval-host.tsx`), behind the same `confirmWithBiometrics` contract; buttons read "Send/Accept with an email code" | Chrome: EURC send → "Send with an email code" → sheet "Confirm it's you · Send 1.00 EURC to Bob" → code requested and accepted by Turnkey; cancel → nothing sent. Then end to end with a new account (Guerrilla Mail inbox): web sign-up → handle → Turnkey web wallet → relayed 7702 setup → scope shown → "Accept with an email code" → Turnkey verified the code → the web wallet signed the grant → "You're all set". Found: Metro's resolution cache had kept `use-wallet-setup.ts` on the native `biometric.ts` after the web twin was added (dev-server only); and the approver registration is now identity-safe across remounts |
+| Desktop width | fixed | a phone-width column above 520 px; story art fits and the orb fills its disc on web; web wording says "a code from your email" | Chrome 1280×800 and 390×844 (web-polish fork) |
+| Web wording | fixed | `…Web` twins swapped on web in `src/i18n/index.ts` | Chrome |
 
 ## Pass 3–4
 

@@ -11,6 +11,11 @@ export function setWebApprover(approver: WebApprover | undefined) {
   current = approver;
 }
 
+/** Clears the registration only if it is still this host's: a host mounting during another's unmount keeps its own. */
+export function clearWebApprover(approver: WebApprover) {
+  if (current === approver) current = undefined;
+}
+
 export function webApprover(): WebApprover | undefined {
   return current;
 }

@@ -17,7 +17,7 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 
 import type { BiometricResult } from "./biometric";
 import { isWalletConfigured } from "./config";
-import { setWebApprover } from "./web-approver";
+import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
 
 const CODE_LENGTH = 6;
 
@@ -38,16 +38,15 @@ function ConfiguredHost() {
 
   // Registered while mounted; each request opens the sheet and waits for its answer.
   React.useEffect(() => {
-    setWebApprover(
-      (prompt) =>
-        new Promise<BiometricResult>((resolve) => {
-          setOtp(undefined);
-          setCode("");
-          setError(undefined);
-          setPending({ prompt, resolve });
-        }),
-    );
-    return () => setWebApprover(undefined);
+    const approver: WebApprover = (prompt) =>
+      new Promise<BiometricResult>((resolve) => {
+        setOtp(undefined);
+        setCode("");
+        setError(undefined);
+        setPending({ prompt, resolve });
+      });
+    setWebApprover(approver);
+    return () => clearWebApprover(approver);
   }, []);
 
   const finish = (result: BiometricResult) => {

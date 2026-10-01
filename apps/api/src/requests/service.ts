@@ -3,12 +3,12 @@
 // so it must match it) or from any wallet. A request is marked paid by the Kawase send that paid it, or by the first
 // incoming transfer of the same asset and exact amount to the requester after the request was made (the watcher).
 import { randomBytes } from "node:crypto";
-import { and, asc, desc, eq, gt, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { getAddress, type Address } from "viem";
 
 import { REQUEST_NOTE_MAX, REQUEST_TOKEN_BYTES, REQUEST_TTL_S, MS_PER_SECOND } from "@kawase/config";
 import type { PaymentRequest, PaymentRequestInput, PublicPaymentRequest } from "@kawase/api-client";
-import { paymentRequests, users, type Db } from "@kawase/db";
+import { contactAddresses, contacts, paymentRequests, users, wallets, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
@@ -33,6 +33,29 @@ export class RequestService {
 
   private explorer(network: NetworkId) {
     return this.chains.get(network)?.network.viemChain.blockExplorers?.default.url;
+  }
+
+  /** How the requester knows the payer: their own contact name, else the payer's Kawase @handle. */
+  private async payerName(row: RequestRow): Promise<string | null> {
+    if (!row.paidByAddress) return null;
+    const address = row.paidByAddress.toLowerCase();
+    const [contact] = await this.db
+      .select({ name: contacts.displayName })
+      .from(contactAddresses)
+      .innerJoin(contacts, eq(contacts.id, contactAddresses.contactId))
+      .where(and(eq(contactAddresses.userId, row.userId), isNull(contacts.deletedAt), sql`lower(${contactAddresses.address}) = ${address}`));
+    if (contact) return contact.name;
+    const [payer] = await this.db
+      .select({ handle: users.handle })
+      .from(wallets)
+      .innerJoin(users, eq(users.id, wallets.userId))
+      .where(and(eq(wallets.role, "user"), sql`lower(${wallets.address}) = ${address}`));
+    return payer?.handle ? `@${payer.handle}` : null;
+  }
+
+  private async named(row: RequestRow): Promise<PaymentRequest> {
+    const view = this.view(row);
+    return view.paidBy ? { ...view, paidBy: { ...view.paidBy, name: await this.payerName(row) } } : view;
   }
 
   view(row: RequestRow): PaymentRequest {
@@ -97,7 +120,7 @@ export class RequestService {
       .from(paymentRequests)
       .where(eq(paymentRequests.userId, userId))
       .orderBy(desc(paymentRequests.createdAt));
-    return rows.map((row) => this.view(row));
+    return Promise.all(rows.map((row) => this.named(row)));
   }
 
   private async own(userId: string, id: string) {
@@ -111,7 +134,7 @@ export class RequestService {
   }
 
   async get(userId: string, id: string) {
-    return this.view(await this.own(userId, id));
+    return this.named(await this.own(userId, id));
   }
 
   async cancel(userId: string, id: string) {
@@ -166,11 +189,12 @@ export class RequestService {
       .where(and(eq(paymentRequests.id, requestId), eq(paymentRequests.status, "open")))
       .returning();
     if (!row) return undefined;
+    const name = await this.payerName(row);
     await this.inbox.add(executor, {
       userId: row.userId,
       network: row.network,
       kind: "request_paid",
-      params: { amount: row.amount.toString(), asset: row.asset, from: paid.from, ...(row.note ? { note: row.note } : {}) },
+      params: { amount: row.amount.toString(), asset: row.asset, from: paid.from, ...(name ? { name } : {}), ...(row.note ? { note: row.note } : {}) },
       requestId: row.id,
       txHash: paid.txHash,
       dedupeKey: `request_paid:${row.id}`,

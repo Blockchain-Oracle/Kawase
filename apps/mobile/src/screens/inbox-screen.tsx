@@ -75,7 +75,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
         ) : null}
       </View>
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text numberOfLines={1} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
+        <Text numberOfLines={2} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
           {title}
         </Text>
         <Text numberOfLines={1} className={cn("text-muted-foreground text-sm", TEXT_START)}>
