@@ -27,7 +27,13 @@
         "monochromeImage": "./assets/brand/android-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "xyz.kawase.app"
+      "package": "xyz.kawase.app",
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "output": "server",
@@ -140,6 +146,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "abu.dev",
+    "extra": {
+      "eas": {
+        "projectId": "9dc112f0-be08-4556-8cb1-f6ad4bbefc70"
+      }
     }
   }
 }
