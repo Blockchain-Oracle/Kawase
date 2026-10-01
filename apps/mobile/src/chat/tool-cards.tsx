@@ -22,6 +22,7 @@ import type {
   ProposeSendOutput,
   EarnOverviewLine,
   ProposeAutomationOutput,
+  ListAutomationsOutput,
   ProposeBridgeOutput,
   ProposeEarnOutput,
   ProposeSwapOutput,
@@ -503,6 +504,8 @@ const LOADING_LABELS: Record<string, string> = {
   propose_earn: "chat.loadingEarn",
   draft_automation: "chat.loadingAutomation",
   draft_auto_save: "chat.loadingAutoSave",
+  list_automations: "chat.loadingAutomations",
+  change_automation: "chat.loadingAutomationChange",
   find_contacts: "chat.loadingContacts",
   create_payment_request: "chat.loadingRequest",
 };
@@ -559,7 +562,22 @@ export function ToolCard({
       return <EarnCard output={part.output as ProposeEarnOutput} />;
     case "draft_automation":
     case "draft_auto_save":
+    case "change_automation":
       return <AutomationCard output={part.output as ProposeAutomationOutput} />;
+    case "list_automations": {
+      const list = part.output as ListAutomationsOutput;
+      return list.automations.length > 0 ? (
+        <View className="gap-3">
+          {list.automations.map((entry) => (
+            <AutomationCard key={entry.automation.id} output={entry} />
+          ))}
+        </View>
+      ) : (
+        <AgentCard eyebrow={t("automation.title")}>
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("automation.noneOn")}</Text>
+        </AgentCard>
+      );
+    }
     case "find_contacts":
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":

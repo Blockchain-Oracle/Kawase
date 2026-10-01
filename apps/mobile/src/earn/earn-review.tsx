@@ -17,6 +17,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { shortAddress } from "@/send/copy";
 import { useMoney } from "@/send/copy";
 
 import { useEarnPolicyText, usePercent } from "./copy";
@@ -63,7 +64,10 @@ export function EarnReview({ intent, compact }: { intent: EarnIntent; compact?: 
 
       <View className="border-border overflow-hidden rounded-2xl border">
         <Text className={cn("text-muted-foreground px-4 pt-3 text-xs", TEXT_START)}>{deposit ? t("earn.into") : t("earn.from")}</Text>
-        <VaultRow vault={draft.vault} />
+        <VaultRow vault={draft.vault} network={intent.network} />
+        <Text selectable className={cn("text-muted-foreground px-4 pb-3 text-xs", TEXT_START)}>
+          {`${draft.vault.name} · ${shortAddress(draft.vault.address)}`}
+        </Text>
       </View>
 
       {warnings.map((warning) => (

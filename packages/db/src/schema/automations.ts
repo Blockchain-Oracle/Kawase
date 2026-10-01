@@ -64,6 +64,8 @@ export const automations = pgTable(
     action: jsonb().$type<AutomationAction | AutoSaveAction>().notNull(),
     /** The grant that bounds it on chain (set when it is turned on). */
     grantId: uuid(),
+    /** The request as it was asked, so a draft can be checked again after a fix without asking again. */
+    request: jsonb().$type<Record<string, unknown>>(),
     /** The policy report when it was drafted: every check and the one that blocks turning it on. */
     report: jsonb().$type<{ results: unknown[]; blocking: unknown }>(),
     nextRunAt: timestampTz(),

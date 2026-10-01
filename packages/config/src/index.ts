@@ -6,6 +6,7 @@ export * from "./cache";
 export * from "./locales";
 export * from "./models";
 export * from "./capabilities";
+export * from "./capability-scope";
 export * from "./motion";
 export * from "./handles";
 export * from "./consent";

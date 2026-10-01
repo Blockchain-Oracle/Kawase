@@ -8,6 +8,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useMoney } from "@/send/copy";
 import { biometricKind, type BiometricKind } from "@/wallet/biometric";
+import { vaultTitle } from "./vault-title";
 
 const SUFFIX: Record<BiometricKind, string> = {
   faceId: "FaceId",
@@ -20,6 +21,19 @@ const SUFFIX: Record<BiometricKind, string> = {
 };
 
 /** "4.20%": a yearly yield as the person reads percentages. */
+const COMPACT_FROM_BASE_UNITS = 100_000_000_000n;
+const USDC_SCALE = 1_000_000;
+
+/** Large amounts in a list read compactly ("1M USDC"); the exact amount is in the detail. */
+export function useCompactMoney() {
+  const { locale } = useLocale();
+  const money = useMoney();
+  return (asset: "USDC" | "EURC", baseUnits: string) =>
+    BigInt(baseUnits) < COMPACT_FROM_BASE_UNITS
+      ? money(asset, baseUnits)
+      : `${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(Number(BigInt(baseUnits)) / USDC_SCALE)} ${asset}`;
+}
+
 export function usePercent() {
   const { locale } = useLocale();
   return (fraction: number) => new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(fraction);
@@ -59,6 +73,6 @@ export function useEarnPrompt() {
     !draft
       ? t("earn.title")
       : draft.action === "deposit"
-        ? t("earn.signPromptDeposit", { amount: money("USDC", draft.amount), vault: draft.vault.name })
-        : t("earn.signPromptWithdraw", { amount: money("USDC", draft.amount), vault: draft.vault.name });
+        ? t("earn.signPromptDeposit", { amount: money("USDC", draft.amount), vault: vaultTitle(draft.vault.name) })
+        : t("earn.signPromptWithdraw", { amount: money("USDC", draft.amount), vault: vaultTitle(draft.vault.name) });
 }

@@ -47,6 +47,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { vaultTitle } from "@/earn/vault-title";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
@@ -281,7 +282,7 @@ export function EarnScreen() {
             />
           ) : null}
           <View className="border-border overflow-hidden rounded-2xl border">
-            <VaultRow vault={vault} />
+            <VaultRow vault={vault} network={network} />
           </View>
           <View className="bg-card border-border gap-2 rounded-3xl border p-4">
             <View className="flex-row items-center justify-between gap-3">
@@ -367,7 +368,7 @@ export function EarnScreen() {
                   <Pressable key={entry.vault} accessibilityRole="button" onPress={() => listed && choose(listed, "withdraw")} className="active:bg-muted flex-row items-center justify-between gap-3 px-4 py-3">
                     <View className="min-w-0 flex-1 gap-0.5">
                       <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
-                        {entry.name}
+                        {vaultTitle(entry.name)}
                       </Text>
                       <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("earn.earningAbout", { apy: percent(entry.apy) })}</Text>
                     </View>
@@ -401,7 +402,7 @@ export function EarnScreen() {
           ) : (
             <ListGroup>
               {overview.vaults.map((entry) => (
-                <VaultRow key={entry.address} vault={entry} onPress={() => choose(entry, "deposit")} />
+                <VaultRow key={entry.address} vault={entry} network={network} onPress={() => choose(entry, "deposit")} />
               ))}
             </ListGroup>
           )}

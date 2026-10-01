@@ -159,8 +159,8 @@ export class AutomationService {
     return { schedule, valid };
   }
 
-  async create(user: SessionUser, input: AutomationInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
-    const network = user.activeNetwork;
+  /** Who, how much and when, checked on fresh facts on the automation's own network (drafting and re-checking). */
+  private async draftSend(user: SessionUser, network: NetworkId, input: AutomationInput) {
     const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     const asset: AssetId = input.asset ?? "USDC";
@@ -201,6 +201,17 @@ export class AutomationService {
       amount: amount.status === "ok" ? amount.baseUnits.toString() : "0",
       note: input.note?.trim() || null,
     };
+    return { schedule, action, report: { results: evaluation.results, blocking: evaluation.blocking ?? null } };
+  }
+
+  /**
+   * A draft is a real automation row for everyone, guests included (a guest's rows move into the account they sign
+   * in to), and it keeps the request as asked, so a fix — signing in, setting up, adding the contact — re-checks
+   * this same draft instead of starting over (review K03).
+   */
+  async create(user: SessionUser, input: AutomationInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
+    const network = user.activeNetwork;
+    const drafted = await this.draftSend(user, network, input);
     const [row] = await this.db
       .insert(automations)
       .values({
@@ -209,9 +220,8 @@ export class AutomationService {
         kind: "scheduled_send",
         status: "draft",
         threadId: origin.threadId ?? null,
-        schedule,
-        action,
-        report: { results: evaluation.results, blocking: evaluation.blocking ?? null },
+        ...drafted,
+        request: { ...input },
         endsAt: new Date(Date.now() + LIFETIME_DAYS * SECONDS_PER_DAY * MS_PER_SECOND),
       })
       .returning();
@@ -223,8 +233,7 @@ export class AutomationService {
    * person already saves in, else the best active one), checking every day at 09:00 in their zone and whenever money
    * arrives, and topping up on. The card shows each, and what a check right now would move.
    */
-  async createAutoSave(user: SessionUser, input: AutoSaveInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
-    const network = user.activeNetwork;
+  private async draftSave(user: SessionUser, network: NetworkId, input: AutoSaveInput, self?: string) {
     const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     const { schedule, valid } = this.schedule(user, { every: input.every ?? "day", time: input.time, timezone: input.timezone });
@@ -239,6 +248,7 @@ export class AutomationService {
       .select({ id: automations.id })
       .from(automations)
       .where(and(eq(automations.userId, user.id), eq(automations.network, network), eq(automations.kind, "auto_save"), inArray(automations.status, ["active", "paused"])));
+    const others = existing.filter((entry) => entry.id !== self);
     const setUp = wallet ? isWalletSetUp(await client.getCode({ address: wallet })) : false;
     const evaluation = evaluateAutoSave({
       network,
@@ -250,7 +260,7 @@ export class AutomationService {
         : { status: "missing" },
       keep,
       schedule: { valid },
-      existing: existing.length > 0,
+      existing: others.length > 0,
     });
     const action: AutoSaveAction = {
       vault: vault ? getAddress(vault.address) : "",
@@ -258,6 +268,12 @@ export class AutomationService {
       keep: keep.status === "ok" ? keep.baseUnits.toString() : AUTO_SAVE_DEFAULT_KEEP.toString(),
       topUp: input.topUp ?? true,
     };
+    return { schedule, action, report: { results: evaluation.results, blocking: evaluation.blocking ?? null } };
+  }
+
+  async createAutoSave(user: SessionUser, input: AutoSaveInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
+    const network = user.activeNetwork;
+    const drafted = await this.draftSave(user, network, input);
     const [row] = await this.db
       .insert(automations)
       .values({
@@ -266,13 +282,27 @@ export class AutomationService {
         kind: "auto_save",
         status: "draft",
         threadId: origin.threadId ?? null,
-        schedule,
-        action,
-        report: { results: evaluation.results, blocking: evaluation.blocking ?? null },
+        ...drafted,
+        request: { ...input },
         endsAt: new Date(Date.now() + LIFETIME_DAYS * SECONDS_PER_DAY * MS_PER_SECOND),
       })
       .returning();
     return this.view(row!);
+  }
+
+  /**
+   * The same draft, checked again on fresh facts after a fix (sign-in, wallet setup, a contact added) — on the
+   * network it was asked on, never moved to the one the person is on now. Nothing is turned on by this.
+   */
+  async recheck(user: SessionUser, id: string): Promise<AutomationView> {
+    const row = await this.own(user.id, id);
+    if (row.status !== "draft" || !row.request) return this.view(row);
+    const drafted =
+      row.kind === "auto_save"
+        ? await this.draftSave(user, row.network, row.request as AutoSaveInput, row.id)
+        : await this.draftSend(user, row.network, row.request as AutomationInput);
+    const [updated] = await this.db.update(automations).set(drafted).where(eq(automations.id, row.id)).returning();
+    return this.view(updated!);
   }
 
   /**

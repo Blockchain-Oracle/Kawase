@@ -46,7 +46,7 @@ export function EarnOverviewCard({ output }: { output: EarnOverviewLine }) {
       {overview.vaults && overview.vaults.length > 0 ? (
         <ListGroup>
           {overview.vaults.slice(0, MAX_VAULTS).map((vault) => (
-            <VaultRow key={vault.address} vault={vault} onPress={() => router.push("/earn")} />
+            <VaultRow key={vault.address} vault={vault} network={output.network} onPress={() => router.push("/earn")} />
           ))}
         </ListGroup>
       ) : (

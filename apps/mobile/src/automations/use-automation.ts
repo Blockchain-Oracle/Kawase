@@ -79,6 +79,12 @@ export function useAutomation(initial: AutomationView | undefined) {
       if (on.kind === "auto_save") setFollowUntil(Date.now() + FIRST_CHECK_MS);
     });
 
+  /** The same draft, checked again after a fix; it never turns anything on (review K03). */
+  const recheck = React.useCallback(async () => {
+    if (!id) return;
+    const { automation: fresh } = await api.automations.recheck(id).catch(() => ({ automation: undefined }));
+    if (fresh) setAutomation(fresh);
+  }, [id]);
   const pause = () => act(async () => setAutomation((await api.automations.pause(id!)).automation));
   const resume = () => act(async () => setAutomation((await api.automations.resume(id!)).automation));
   const skip = () => act(async () => setAutomation((await api.automations.skip(id!)).automation));
@@ -101,5 +107,5 @@ export function useAutomation(initial: AutomationView | undefined) {
       await refresh();
     });
 
-  return { automation, set: setAutomation, busy, refresh, turnOn, pause, resume, skip, cancel };
+  return { automation, set: setAutomation, busy, refresh, recheck, turnOn, pause, resume, skip, cancel };
 }

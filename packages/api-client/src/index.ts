@@ -249,6 +249,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       create: (input: AutomationInput) => call<{ automation: AutomationView }>("POST", "/automations", input),
       /** Auto-save's draft: what it keeps ready, the vault, and what a check right now would move. */
       autoSave: (input: AutoSaveInput) => call<{ automation: AutomationView }>("POST", "/automations/auto-save", input),
+      /** The same draft checked again on fresh facts after a fix (sign-in, setup, a contact added); nothing turns on. */
+      recheck: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/recheck`),
       /** The grants to sign (typed data) that turn it on; one Face ID, then `activate` with every signature. */
       grant: (id: string) => call<AutomationGrantRequest>("POST", `/automations/${id}/grant`),
       activate: (id: string, signatures: { grantId: string; signature: string }[]) =>

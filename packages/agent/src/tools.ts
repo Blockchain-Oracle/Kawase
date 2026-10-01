@@ -34,7 +34,7 @@ export function buildTools(context: AgentContext) {
     }),
     get_capabilities: tool({
       description:
-        "What Kawase can do right now on the active network and on the other one: each capability is available, coming (being built) or unavailable there, with a reason. Use it for 'what can you do?' and before saying something is not possible. Not needed for a send: propose_send checks it.",
+        "What Kawase can do right now on the active network and on the other one: each capability is available, coming (being built) or unavailable there, with a reason, plus exactly what it supports today and what it does not do yet. Use it for 'what can you do?', for 'can you …' about a specific token, chain, route or rule, and before saying something is or is not possible: answer from supports and notYet, never from the capability's name alone. Not needed for a send: propose_send checks it.",
       inputSchema: z.object({}),
       execute: async () => ({ network: context.network, capabilities: await context.capabilities() }),
     }),
@@ -63,7 +63,7 @@ export function buildTools(context: AgentContext) {
     }),
     propose_send: tool({
       description:
-        "Prepare a send of USDC or EURC on the active network. Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\"), the asset only if they named it, and their note if they gave one. Kawase resolves the recipient, runs every check and shows a card; the person confirms on the card. You never confirm, and nothing is sent by this call.",
+        "Send USDC or EURC on the active network. Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\"), the asset only if they named it, and their note if they gave one. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once (their request is the instruction); above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
       inputSchema: z.object({
         recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
         amount: z
@@ -158,6 +158,26 @@ export function buildTools(context: AgentContext) {
         topUp: z.boolean().optional().describe("false only if they said not to refill the wallet from savings"),
       }),
       execute: async (input) => context.draftAutoSave(input),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    list_automations: tool({
+      description:
+        "The person's automations on the active network that are on or paused (scheduled sends and Auto-save), each as a card with its read-back, next runs, recent runs and bound. Use it for 'what automations do I have?' and before changing one.",
+      inputSchema: z.object({}),
+      execute: async () => context.listAutomations(),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: { network: output.network, automations: output.automations.map((entry) => entry.summary) },
+      }),
+    }),
+    change_automation: tool({
+      description:
+        "Pause, resume, skip the next run of, or cancel one of the person's automations, when they ask. Pass the automationId from list_automations (call it first if you do not have it) and the change. Pause, resume and skip happen at once. Cancel stops every run at once; the card then offers to revoke its permission on Arc with Face ID, so say that. Only change what they asked about; if several automations could match, ask which.",
+      inputSchema: z.object({
+        automationId: z.string().uuid().describe("From list_automations"),
+        change: z.enum(["pause", "resume", "skip_next", "cancel"]),
+      }),
+      execute: async (input) => context.changeAutomation(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     create_payment_request: tool({

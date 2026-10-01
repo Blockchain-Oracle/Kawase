@@ -15,6 +15,7 @@ import { View } from "react-native";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { vaultTitle } from "@/earn/vault-title";
 
 const AVATAR = 44;
 const BADGE = 18;
@@ -49,7 +50,7 @@ export function useCounterpartyName() {
       case "bridge":
         return item.bridge ? (getChainIdentity(item.bridge.chainId)?.name ?? t("bridge.title")) : t("bridge.title");
       case "earn":
-        return item.earn?.vault ?? t("earn.title");
+        return item.earn?.vault ? vaultTitle(item.earn.vault) : t("earn.title");
       default:
         return shortAddress(item.counterparty);
     }
@@ -134,7 +135,7 @@ export function useActivityTitle() {
       : item.bridge
         ? t("activity.bridgedTo", { chain: name(item) })
         : item.earn
-          ? t(item.earn.action === "deposit" ? "activity.depositedInto" : "activity.withdrewFrom", { vault: item.earn.vault })
+          ? t(item.earn.action === "deposit" ? "activity.depositedInto" : "activity.withdrewFrom", { vault: vaultTitle(item.earn.vault) })
         : item.direction === "in"
         ? t("activity.fromName", { name: name(item) })
         : t("activity.toName", { name: name(item) });

@@ -61,6 +61,7 @@ export function automationRoutes(automations: AutomationService) {
     return c.json({ automation: await automations.createAutoSave(c.get("user")!, input) }, HTTP.created);
   });
   app.get("/:id", async (c) => c.json({ automation: await automations.get(c.get("userId")!, c.req.param("id")) }));
+  app.post("/:id/recheck", async (c) => c.json({ automation: await automations.recheck(c.get("user")!, c.req.param("id")) }));
   app.post("/:id/grant", async (c) => c.json(await automations.grantRequest(c.get("user")!, c.req.param("id"))));
   app.post("/:id/activate", async (c) => {
     const input = await parse(activateSchema, await c.req.json());

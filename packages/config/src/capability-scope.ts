@@ -1,0 +1,55 @@
+import type { CapabilityId } from "./capabilities";
+
+/**
+ * What each capability covers today, precisely, and what it does not do yet (review K04). A capability being
+ * "available" opens its entry point; whether one specific request works is answered here: the branch that runs now
+ * (actions, assets, chains, routes, triggers) and the branches still planned. The agent reads both before saying
+ * something is or is not possible, so a broad label never stands in for the answer. Update it in the commit that
+ * changes what runs. Plain English facts: the model answers in the person's language.
+ */
+export type CapabilityScope = { supports: readonly string[]; notYet: readonly string[] };
+
+export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = {
+  send: {
+    supports: [
+      "USDC and EURC on Arc to a saved contact, a Kawase @handle or an address the person types",
+      "inside the daily allowance it goes at once; above it, to a new address over the threshold or to a look-alike address, the person confirms with Face ID (an email code on the web)",
+    ],
+    notYet: ["sending to someone on another chain", "split bills and batch payouts", "scanning a QR code to pay"],
+  },
+  request: {
+    supports: ["a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer"],
+    notYet: ["invoices with reference matching", "business profiles"],
+  },
+  swap: {
+    supports: ["USDC ↔ EURC on Arc through Circle's App Kit, with a quote, a guaranteed minimum and one Face ID"],
+    notYet: ["other tokens", "token safety checks and the person's own token rules", "limit orders, DCA and price-triggered swaps", "charts"],
+  },
+  bridge: {
+    supports: [
+      "USDC from Arc to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche, through Circle CCTP with Circle's forwarder (about a minute)",
+      "other providers (LI.FI on both networks; Relay and deBridge on mainnet) are quoted for comparison only; CCTP is the route Kawase executes",
+    ],
+    notYet: ["executing another provider's route even when it is cheaper", "bridging into Arc", "sending to someone else on another chain", "recovering a stuck transfer"],
+  },
+  yield: {
+    supports: ["depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc (mock vaults on Arc Testnet)"],
+    notYet: ["other yield protocols", "rewards", "depositing from another chain"],
+  },
+  automations: {
+    supports: [
+      "scheduled sends of a fixed amount of USDC or EURC to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
+      "Auto-save: keep an amount ready in the wallet and move the rest into the person's own vault savings, topping the wallet up when it drops below; checked daily and whenever money arrives, bounded on chain to the wallet and its own savings",
+      "listing, pausing, resuming, skipping the next run and cancelling (with a revoke on chain)",
+    ],
+    notYet: [
+      "rules on a balance threshold (for example: when the balance reaches an amount, bridge the excess to Base)",
+      "a share of money received (for example: save 20% of every salary payment)",
+      "price-triggered swaps, DCA and payroll",
+      "alerts (balance below an amount) and practice mode",
+      "editing an automation in place (cancel and set it up again for now)",
+    ],
+  },
+  marketplace: { supports: [], notYet: ["finding and paying for services over x402 within a budget"] },
+  voice: { supports: [], notYet: ["talking to Kawase by voice (typing works everywhere)"] },
+};

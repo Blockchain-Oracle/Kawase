@@ -19,6 +19,7 @@ import type {
   AutomationInput,
   AutoSaveInput,
   ProposeAutomationOutput,
+  ListAutomationsOutput,
   BridgeRequest,
   SendRequest,
   SwapRequest,
@@ -68,6 +69,10 @@ export type AgentContext = {
   draftAutomation(input: AutomationInput): Promise<ProposeAutomationOutput>;
   /** Auto-save's draft: keep an amount ready, the rest into the person's own savings (and back when low). */
   draftAutoSave(input: AutoSaveInput): Promise<ProposeAutomationOutput>;
+  /** The person's automations on this network that are on or paused. */
+  listAutomations(): Promise<ListAutomationsOutput>;
+  /** Pause, resume or skip the next run at once; cancel stops every run at once (the revoke is offered on the card). */
+  changeAutomation(input: { automationId: string; change: "pause" | "resume" | "skip_next" | "cancel" }): Promise<ProposeAutomationOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;

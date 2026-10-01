@@ -1,6 +1,7 @@
 // The agent's view of one person, built per request from the api's own services (K2: the model proposes, code
 // resolves). Money is given to the model both exactly (base units) and as a plain display string; network and
 // identity come from the session, never from the model.
+import { CAPABILITY_SCOPE } from "@kawase/config";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { LANGUAGE_NAMES, type CatalogLocale } from "@kawase/i18n";
@@ -149,20 +150,34 @@ export function buildAgentContext(input: {
     },
 
     async draftAutomation(request) {
-      if (user.isAnonymous) {
-        const automation = { id: "", network, status: "draft", kind: "scheduled_send", schedule: { every: request.every, time: request.time ?? "09:00", timezone: request.timezone ?? user.timezone }, save: null, action: { recipientWords: request.recipient, recipientAddress: null, recipientName: null, asset: request.asset ?? "USDC", amount: "0", note: null }, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
-        return { automation: automation as never, summary: summarizeAutomation(automation as never) };
-      }
+      // A guest gets a real draft too (blocked on signing in): it moves into their account when they sign in, and the
+      // card checks the same draft again — the amount and recipient they said are never lost (review K03).
       const automation = await automations.create(user, request, { threadId });
       return { automation, summary: summarizeAutomation(automation) };
     },
 
     async draftAutoSave(request) {
-      if (user.isAnonymous) {
-        const automation = { id: "", network, status: "draft", kind: "auto_save", schedule: { every: "day", time: "09:00", timezone: user.timezone }, save: null, action: null, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
-        return { automation: automation as never, summary: summarizeAutomation(automation as never) };
-      }
       const automation = await automations.createAutoSave(user, request, { threadId });
+      return { automation, summary: summarizeAutomation(automation) };
+    },
+
+    async listAutomations() {
+      if (user.isAnonymous) return { network, automations: [] };
+      const list = (await automations.list(user)).filter((entry) => entry.status !== "draft");
+      return { network, automations: list.map((automation) => ({ automation, summary: summarizeAutomation(automation) })) };
+    },
+
+    async changeAutomation({ automationId, change }) {
+      // Pausing, resuming and skipping narrow what runs, so they happen at once. Cancelling stops every run at once;
+      // revoking the grant on chain is the wallet's own transaction, offered on the card.
+      const automation =
+        change === "pause"
+          ? await automations.pause(user, automationId)
+          : change === "resume"
+            ? await automations.resume(user, automationId)
+            : change === "skip_next"
+              ? await automations.skip(user, automationId)
+              : (await automations.cancel(user, automationId)).automation;
       return { automation, summary: summarizeAutomation(automation) };
     },
 
@@ -229,6 +244,7 @@ export function buildAgentContext(input: {
         here: view[id][network].state,
         otherNetwork: view[id][other].state,
         ...(view[id][network].reason ? { reason: view[id][network].reason } : {}),
+        ...(CAPABILITY_SCOPE[id] ?? {}),
       }));
     },
 

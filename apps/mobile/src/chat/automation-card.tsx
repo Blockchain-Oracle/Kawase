@@ -1,9 +1,10 @@
 // The automation card (Stage 8): what `draft_automation` or `draft_auto_save` drafted — the read-back, the next runs
 // (or, for Auto-save, what it keeps ready and what would move now), the on-chain bound —
 // and one button named after the device's real check that signs the grant and turns it on. Blocked → the reason and
-// its one fix (add the contact, which drafts it again with the same words; set up; sign in). Once on, the card is the
-// automation's live state, with a way to manage it.
-import { useRouter } from "expo-router";
+// its one fix (sign in, set up, add the contact); once the fix happens, the same draft is checked again with the
+// request as it was asked — never a new one, and nothing turns on by itself (review K03). Once on, the card is the
+// automation's live state; cancelled from chat, it offers the revoke of its permission on Arc.
+import { useFocusEffect, useRouter } from "expo-router";
 import { ScanFace } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
@@ -19,9 +20,8 @@ import { useScheduleText, useTurnOnLabel } from "@/automations/copy";
 import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useT } from "@/i18n";
-import { canonicalFromBase } from "@/send/amount-step";
 import { nameFromWords, useMoney, usePolicyText } from "@/send/copy";
-import { api } from "@/session/api";
+import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
 import { AgentCard } from "./card";
@@ -47,22 +47,18 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
       ? t("automation.signPrompt", { readBack: `${scheduleText(automation.schedule)}: ${t("automation.sendTo", { amount: money(a.asset, a.amount), name: a.recipientName ?? nameFromWords(a.recipientWords) })}` })
       : t("automation.title");
 
-  /** After a fix, the same words make a new draft (the person never repeats themselves). */
-  const redraft = async () => {
-    if (!a) return;
-    const { automation: fresh } = await api.automations.create({
-      recipient: a.recipientWords,
-      amount: canonicalFromBase(BigInt(a.amount), a.asset),
-      asset: a.asset,
-      every: automation.schedule.every,
-      weekday: automation.schedule.weekday,
-      monthday: automation.schedule.monthday,
-      time: automation.schedule.time,
-      timezone: automation.schedule.timezone,
-      note: a.note,
-    });
-    controller.set(fresh);
-  };
+  // After a fix made elsewhere — signing in, setting the wallet up — the same draft is checked again.
+  const { status: session } = useSession();
+  const blockedOn = blocking?.code;
+  React.useEffect(() => {
+    if (session === "account" && blockedOn === "SIGN_IN_REQUIRED") void controller.recheck();
+  }, [session, blockedOn]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (automation.status === "draft" && (blockedOn === "WALLET_NOT_SET_UP" || blockedOn === "WALLET_NOT_READY")) void controller.recheck();
+    }, [automation.status, blockedOn, controller.recheck]),
+  );
+  const revokePending = automation.status === "canceled" && automation.grant?.status === "active";
 
   const fix =
     blocking?.code === "SIGN_IN_REQUIRED"
@@ -92,6 +88,11 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
           <Icon as={ScanFace} className="text-primary-foreground size-5" />
           <Text>{controller.busy ? t("automation.turningOn") : turnOnLabel}</Text>
         </Button>
+      ) : revokePending ? (
+        <Button size="lg" variant="secondary" disabled={controller.busy} onPress={() => void controller.cancel(t("automation.revokePrompt"))}>
+          <Icon as={ScanFace} className="text-foreground size-5" />
+          <Text>{t("automation.revokeNow")}</Text>
+        </Button>
       ) : (
         <View className="gap-2">
           {automation.status === "active" ? <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("automation.onBody")}</Text> : null}
@@ -103,7 +104,7 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
       {a ? (
         <AddContactSheet open={adding} onClose={() => setAdding(false)} initialName={nameFromWords(a.recipientWords)} onSaved={() => {
           setAdding(false);
-          void redraft();
+          void controller.recheck();
         }} />
       ) : null}
     </AgentCard>

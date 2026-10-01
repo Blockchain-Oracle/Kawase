@@ -17,6 +17,7 @@ import { useMoney } from "@/send/copy";
 import { usePercent } from "./copy";
 import { useEarnOverview } from "./use-earn-overview";
 import { protocolEntity } from "./vault-row";
+import { vaultTitle } from "./vault-title";
 
 const MARK = 36;
 const ZERO = 0n;
@@ -34,7 +35,7 @@ export function EarnEntry() {
   );
   if (!best && held === ZERO) return null;
   const title = held > ZERO ? t("earn.homePosition", { amount: money("USDC", held.toString()) }) : t("earn.homeCta", { apy: percent(best!.apy) });
-  const subtitle = held > ZERO ? t("earn.earningAbout", { apy: percent(positions[0]?.apy ?? best?.apy ?? 0) }) : best!.name;
+  const subtitle = held > ZERO ? t("earn.earningAbout", { apy: percent(positions[0]?.apy ?? best?.apy ?? 0) }) : vaultTitle(best!.name);
   return (
     <Pressable
       accessibilityRole="button"

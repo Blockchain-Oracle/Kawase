@@ -40,6 +40,10 @@ export type CapabilityLine = {
   here: "available" | "coming" | "unavailable";
   otherNetwork: "available" | "coming" | "unavailable";
   reason?: string;
+  /** What runs today, precisely (actions, assets, chains, routes, triggers). */
+  supports?: readonly string[];
+  /** Planned branches that do not run yet. */
+  notYet?: readonly string[];
 };
 
 export type FaucetResult =
@@ -145,3 +149,4 @@ export type AutomationSummary = {
 };
 
 export type ProposeAutomationOutput = { automation: import("./types").AutomationView; summary: AutomationSummary };
+export type ListAutomationsOutput = { network: AgentNetwork; automations: ProposeAutomationOutput[] };

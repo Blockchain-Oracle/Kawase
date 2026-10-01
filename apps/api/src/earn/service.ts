@@ -83,6 +83,9 @@ const TRACK_POLL_ATTEMPTS = 45;
 const ERROR_MAX = 140;
 const USDC_DECIMALS = decimalsOf("USDC");
 const YIELD_DIGITS = 6;
+const VAULTS_FRESH_MS = 60_000;
+const VAULTS_STALE_MS = 600_000;
+const VAULT_FETCH_ATTEMPTS = 2;
 
 const ms = (seconds: number) => seconds * MS_PER_SECOND;
 const later = (seconds: number) => new Date(Date.now() + ms(seconds));
@@ -106,6 +109,7 @@ function restingState(evaluation: EarnEvaluation): IntentState {
 
 export class EarnService {
   private readonly tracking = new Set<string>();
+  private readonly vaultCache = new Map<NetworkId, { at: number; vaults: EarnVault[] }>();
 
   constructor(
     private readonly db: Db,
@@ -122,12 +126,29 @@ export class EarnService {
     return clients;
   }
 
+  /**
+   * The vaults App Kit lists, kept for a minute (they change rarely, and Auto-save reads them on every check and
+   * view); one retry, and when Circle is briefly unreachable the last good list (up to ten minutes old) rather than
+   * "no vaults".
+   */
+  private async vaults(network: NetworkContext): Promise<EarnVault[]> {
+    const cached = this.vaultCache.get(network.id);
+    if (cached && Date.now() - cached.at < VAULTS_FRESH_MS) return cached.vaults;
+    for (let attempt = 0; attempt < VAULT_FETCH_ATTEMPTS; attempt++) {
+      try {
+        const vaults = await this.engine.vaults(network);
+        this.vaultCache.set(network.id, { at: Date.now(), vaults });
+        return vaults;
+      } catch (error) {
+        this.log.warn({ err: error, attempt }, "earn vaults failed");
+      }
+    }
+    return cached && Date.now() - cached.at < VAULTS_STALE_MS ? cached.vaults : [];
+  }
+
   /** Every USDC vault here and what this wallet holds in each (only non-empty positions are returned). */
   private async holdings(network: NetworkContext, client: NetworkClients["client"], wallet: Address | undefined) {
-    const vaults = await this.engine.vaults(network).catch((error: unknown) => {
-      this.log.warn({ err: error }, "earn vaults failed");
-      return [] as EarnVault[];
-    });
+    const vaults = await this.vaults(network);
     const positions = wallet
       ? await Promise.all(vaults.map(async (vault) => ({ vault, ...(await this.engine.position(client, vault.address, wallet).catch(() => ({ shares: ZERO, assets: ZERO }))) })))
       : [];
@@ -555,8 +576,7 @@ export class EarnService {
     const wallet = (await this.wallets.userWallet(input.userId))?.address as Address | undefined;
     if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
     const deposit = input.direction === "in";
-    const vaults = await this.engine.vaults(network).catch(() => [] as EarnVault[]);
-    const vault = vaults.find((entry) => same(entry.address, input.vault));
+    const vault = (await this.vaults(network)).find((entry) => same(entry.address, input.vault));
     if (!vault || (deposit && (vault.status === "paused" || vault.status === "deprecated"))) return { status: "skipped", reason: "VAULT_UNAVAILABLE" };
     const [preview, position] = await Promise.all([
       this.engine.preview(client, vault.address, input.amount).catch(() => undefined),

@@ -9,6 +9,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useMoney, usePolicyText } from "@/send/copy";
 import { biometricKind, type BiometricKind } from "@/wallet/biometric";
+import { vaultTitle } from "@/earn/vault-title";
 
 /** 2026-01-04 (UTC noon) was a Sunday: weekday n is that instant + n days. Midnight that day formats a bare time. */
 const A_SUNDAY_MIDNIGHT = Date.parse("2026-01-04T00:00:00Z");
@@ -47,7 +48,7 @@ export function useBoundText() {
   const money = useMoney();
   return (automation: AutomationView) => {
     const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt));
-    if (automation.save) return t("automation.saveBound", { vault: automation.save.vaultName, date });
+    if (automation.save) return t("automation.saveBound", { vault: vaultTitle(automation.save.vaultName), date });
     return t("automation.bound", { amount: money(automation.action?.asset ?? "USDC", automation.maxPerPeriod), per: t(PER[automation.schedule.every]), date });
   };
 }

@@ -21,6 +21,7 @@ import { useT } from "@/i18n";
 import { useMoney } from "@/send/copy";
 
 import { usePercent } from "./copy";
+import { vaultTitle } from "./vault-title";
 
 const ART = 120;
 const ART_COMPACT = 80;
@@ -40,7 +41,7 @@ function useEnding(intent: EarnIntent): Ending | undefined {
   switch (intent.outcome) {
     case "sent":
       return deposit
-        ? { icon: Check, tone: "success", title: t("earn.depositedTitle"), body: t("earn.depositedBody", { amount: money("USDC", intent.received ?? draft?.amount), vault: draft?.vault.name ?? "", apy: draft ? percent(draft.vault.apy) : "" }) }
+        ? { icon: Check, tone: "success", title: t("earn.depositedTitle"), body: t("earn.depositedBody", { amount: money("USDC", intent.received ?? draft?.amount), vault: draft ? vaultTitle(draft.vault.name) : "", apy: draft ? percent(draft.vault.apy) : "" }) }
         : { icon: Check, tone: "success", title: t("earn.withdrawnTitle"), body: t("earn.withdrawnBody", { amount: money("USDC", intent.received ?? draft?.minReceived) }) };
     case "not_sent":
       return { icon: X, tone: "destructive", title: t("earn.notDoneTitle"), body: t("earn.notDoneBody") };
@@ -70,7 +71,7 @@ export function EarnStatus({ intent, compact, actions, connectionLost }: { inten
     return (
       <View className={cn("items-center", compact ? "gap-2 py-2" : "gap-4 py-6")}>
         <Text className={cn("font-display text-foreground text-center font-bold", compact ? "text-lg" : "text-2xl")}>
-          {`${money("USDC", draft.amount)} ${draft.action === "deposit" ? "→" : "←"} ${draft.vault.name}`}
+          {`${money("USDC", draft.amount)} ${draft.action === "deposit" ? "→" : "←"} ${vaultTitle(draft.vault.name)}`}
         </Text>
         {reduced ? art : <Float amplitude={FLOAT_AMPLITUDE} tilt={FLOAT_TILT} cycleMs={MOTION.sendingCycleMs}>{art}</Float>}
         <StateLabel>{draft.action === "deposit" ? t("earn.depositing") : t("earn.withdrawing")}</StateLabel>

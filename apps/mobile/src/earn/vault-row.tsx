@@ -1,5 +1,6 @@
-// One vault as a row: the protocol's real mark, the vault's name and who curates it, the yield now in the display
-// face, and in words whether Circle monitors it and how much it can pay out right now (never colour alone).
+// One vault as a row: the protocol's real mark, the vault's readable title (the full name is in its detail), who
+// curates it and whether it is a test vault, the yield now in the display face, and in words whether Circle monitors
+// it and how much it can pay out right now — compact when it is large (never colour alone).
 import { ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -12,9 +13,9 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
-import { useMoney } from "@/send/copy";
 
-import { usePercent } from "./copy";
+import { useCompactMoney, usePercent } from "./copy";
+import { isTestVault, vaultTitle } from "./vault-title";
 
 const MARK = 40;
 const USDC_DECIMALS = 6;
@@ -28,12 +29,13 @@ export const decimalUnits = (decimal: string) => {
   return (BigInt(whole) * TEN ** BigInt(USDC_DECIMALS) + BigInt((fraction + "000000").slice(0, USDC_DECIMALS))).toString();
 };
 
-export function VaultRow({ vault, onPress, selected }: { vault: EarnVaultView; onPress?: () => void; selected?: boolean }) {
+export function VaultRow({ vault, onPress, selected, network = "testnet" }: { vault: EarnVaultView; onPress?: () => void; selected?: boolean; network?: "testnet" | "mainnet" }) {
   const { t } = useT();
-  const money = useMoney();
+  const compact = useCompactMoney();
   const percent = usePercent();
   const protocol = getEntity(protocolEntity(vault.protocol))?.name ?? vault.protocol;
-  const lines = [vault.curator ? t("earn.curatedBy", { name: vault.curator }) : protocol, t("earn.available", { amount: money("USDC", decimalUnits(vault.available)) })];
+  const who = vault.curator ? t("earn.curatedBy", { name: vault.curator }) : protocol;
+  const lines = [isTestVault(vault.name, network) ? `${who} · ${t("earn.testVault")}` : who, t("earn.available", { amount: compact("USDC", decimalUnits(vault.available)) })];
   return (
     <Pressable
       accessibilityRole={onPress ? "button" : undefined}
@@ -45,7 +47,7 @@ export function VaultRow({ vault, onPress, selected }: { vault: EarnVaultView; o
       <Mark entity={protocolEntity(vault.protocol)} size={MARK} />
       <View className="min-w-0 flex-1 gap-0.5">
         <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
-          {vault.name}
+          {vaultTitle(vault.name)}
         </Text>
         <Text numberOfLines={2} className={cn("text-muted-foreground text-xs", TEXT_START)}>
           {lines.join(" · ")}

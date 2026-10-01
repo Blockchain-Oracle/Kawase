@@ -22,6 +22,7 @@ import { useT } from "@/i18n";
 import { nameFromWords, shortAddress, useMoney } from "@/send/copy";
 
 import { useBoundText, useRunLabel, useRunWhen, useScheduleText } from "./copy";
+import { vaultTitle } from "@/earn/vault-title";
 
 const AVATAR = 44;
 const NEXT_RUNS_COMPACT = 2;
@@ -103,7 +104,7 @@ function SaveSummary({ automation, compact, showRuns }: { automation: Automation
           <Text numberOfLines={2} className={cn("font-display text-foreground font-bold", compact ? "text-lg" : "text-xl", TEXT_START)}>
             {t("automation.saveKeep", { amount: keep })}
           </Text>
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("automation.saveRest", { apy: percent(save.apy), vault: save.vaultName })}</Text>
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("automation.saveRest", { apy: percent(save.apy), vault: vaultTitle(save.vaultName) })}</Text>
         </View>
         <StateLabel>{t(STATUS_KEY[automation.status])}</StateLabel>
       </View>
