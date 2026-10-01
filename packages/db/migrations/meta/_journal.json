@@ -50,6 +50,13 @@
       "when": 1790841701832,
       "tag": "0006_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790844528947,
+      "tag": "0007_requests_inbox",
+      "breakpoints": true
     }
   ]
 }

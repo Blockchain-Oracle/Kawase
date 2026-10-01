@@ -4,7 +4,9 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { cn, INPUT_TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ArrowUp, Mic, Paperclip } from "lucide-react-native";
-import { TextInput, View } from "react-native";
+
+const WEB_NO_RESIZE = { resize: "none" } as object;
+import { Platform, TextInput, View } from "react-native";
 
 type ComposerLabels = {
   placeholder: string;
@@ -45,6 +47,8 @@ function Composer({
         placeholderTextColorClassName="accent-muted-foreground"
         editable={!disabled}
         multiline
+        // A browser draws a resize handle on a textarea; the composer grows by itself instead.
+        style={Platform.OS === "web" ? WEB_NO_RESIZE : undefined}
         className={cn("text-foreground max-h-32 min-h-11 px-2 py-2 font-sans text-base", INPUT_TEXT_START)}
       />
       <View className="flex-row items-center justify-between pt-1">

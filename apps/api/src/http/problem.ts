@@ -52,6 +52,7 @@ export type ProblemCode =
   | "intent_final"
   | "intent_blocked"
   | "network_mismatch"
+  | "request_unavailable"
   | "upstream"
   | "internal";
 
@@ -111,6 +112,7 @@ const TITLES: Record<ProblemCode, string> = {
   intent_final: "This is already finished",
   intent_blocked: "Something needs fixing before this can go",
   network_mismatch: "This was made on the other network",
+  request_unavailable: "This request is no longer open",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

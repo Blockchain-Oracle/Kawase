@@ -10,6 +10,7 @@ import { contactAddressEvents, contactAddresses, contactAddressTrust, contacts }
 import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
+import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 
 type UserOwned = {
@@ -46,6 +47,9 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   intents: { table: intents, userId: intents.userId },
   approvals: { table: approvals, userId: approvals.userId },
   spend_ledger: { table: spendLedger, userId: spendLedger.userId },
+  payment_requests: { table: paymentRequests, userId: paymentRequests.userId },
+  chain_events: { table: chainEvents, userId: chainEvents.userId },
+  inbox_items: { table: inboxItems, userId: inboxItems.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

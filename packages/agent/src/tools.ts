@@ -85,6 +85,23 @@ export function buildTools(context: AgentContext) {
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    create_payment_request: tool({
+      description:
+        "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
+      inputSchema: z.object({
+        amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Digits with a dot"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("USDC unless the person named EURC or euros"),
+        note: z.string().max(NOTE_MAX).optional().describe("What it is for, shown to the payer"),
+      }),
+      execute: async ({ amount, asset, note }) => context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null }),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value:
+          "request" in output
+            ? { status: "created", link: output.request.link, amount: output.request.amount, asset: output.request.asset, note: output.request.note, network: output.request.network }
+            : output,
+      }),
+    }),
     find_contacts: tool({
       description:
         "Search the person's saved contacts by name, alias or @handle (empty query lists them). Use it to answer questions about their contacts; for a send, just call propose_send with the name.",

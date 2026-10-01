@@ -8,6 +8,8 @@ import type {
   CapabilityLine,
   ContactLine,
   FaucetResult,
+  PaymentRequest,
+  PaymentRequestInput,
   ProposeSendOutput,
   SendRequest,
   WalletSummary,
@@ -42,6 +44,8 @@ export type AgentContext = {
   /** Drafts a send from the person's words; code resolves the recipient and runs every check (K2). */
   proposeSend(input: SendRequest): Promise<ProposeSendOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
+  /** A payment request with a shareable link, on the active network. */
+  createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
 };

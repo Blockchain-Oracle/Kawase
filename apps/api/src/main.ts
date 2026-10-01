@@ -6,7 +6,7 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
-import { RECONCILE_INTERVAL_MS } from "@kawase/config";
+import { RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
@@ -41,6 +41,8 @@ const app = createApp({
   approvalSecret: env.AGENT_APPROVAL_SECRET,
   ops: circleOps(env),
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
+  watchIntervalMs: WATCH_INTERVAL_MS,
+  webUrl: env.KAWASE_WEB_URL,
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")
       .map((origin) => origin.trim())

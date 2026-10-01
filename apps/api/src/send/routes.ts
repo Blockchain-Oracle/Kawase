@@ -9,9 +9,12 @@ import type { SendService } from "./service";
 const RECIPIENT_MAX = 80;
 const AMOUNT_MAX = 40;
 const NOTE_MAX = 140;
+const TOKEN_MAX = 64;
 
 const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
 const requestSchema = z.object({
+  /** Paying a payment request: its link token (recipient, asset and amount then come from the request). */
+  requestToken: z.string().max(TOKEN_MAX).nullable().optional(),
   recipient: z.string().max(RECIPIENT_MAX).nullable().optional(),
   amount: z.string().max(AMOUNT_MAX).nullable().optional(),
   asset: z.enum(["USDC", "EURC"]).nullable().optional(),

@@ -1,0 +1,92 @@
+// The in-app inbox (J1): what happened, in one list per person — money received, a request paid, a send completed.
+// It is the source of truth that push and email (Stage 9) will later read from. The same event reported twice is one
+// item (a dedupe key per event).
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
+
+import type { InboxItem, InboxKind } from "@kawase/api-client";
+import { inboxItems, type Db } from "@kawase/db";
+import type { NetworkId } from "@kawase/networks";
+
+import type { Executor } from "../send/facts";
+import type { Chains } from "../wallet/chain";
+
+const PAGE = 100;
+
+export type NewInboxItem = {
+  userId: string;
+  network: NetworkId;
+  kind: InboxKind;
+  params: Record<string, string>;
+  dedupeKey: string;
+  requestId?: string | null | undefined;
+  intentId?: string | null | undefined;
+  txHash?: string | null | undefined;
+};
+
+export class InboxService {
+  constructor(
+    private readonly db: Db,
+    private readonly chains: Chains,
+  ) {}
+
+  async add(executor: Executor, item: NewInboxItem) {
+    await executor
+      .insert(inboxItems)
+      .values({
+        userId: item.userId,
+        network: item.network,
+        kind: item.kind,
+        params: item.params,
+        dedupeKey: item.dedupeKey,
+        requestId: item.requestId ?? null,
+        intentId: item.intentId ?? null,
+        txHash: item.txHash ?? null,
+      })
+      .onConflictDoNothing({ target: inboxItems.dedupeKey });
+  }
+
+  async list(userId: string): Promise<{ items: InboxItem[]; unread: number }> {
+    const rows = await this.db
+      .select()
+      .from(inboxItems)
+      .where(eq(inboxItems.userId, userId))
+      .orderBy(desc(inboxItems.createdAt))
+      .limit(PAGE);
+    const [count] = await this.db
+      .select({ unread: sql<number>`count(*)::int` })
+      .from(inboxItems)
+      .where(and(eq(inboxItems.userId, userId), isNull(inboxItems.readAt)));
+    return {
+      unread: count?.unread ?? 0,
+      items: rows.map((row) => {
+        const explorer = this.chains.get(row.network)?.network.viemChain.blockExplorers?.default.url;
+        return {
+          id: row.id,
+          kind: row.kind,
+          network: row.network,
+          params: row.params,
+          requestId: row.requestId,
+          intentId: row.intentId,
+          txHash: row.txHash,
+          explorerUrl: row.txHash && explorer ? `${explorer}/tx/${row.txHash}` : null,
+          createdAt: row.createdAt.toISOString(),
+          readAt: row.readAt?.toISOString() ?? null,
+        };
+      }),
+    };
+  }
+
+  async read(userId: string, id: string) {
+    await this.db
+      .update(inboxItems)
+      .set({ readAt: new Date() })
+      .where(and(eq(inboxItems.id, id), eq(inboxItems.userId, userId), isNull(inboxItems.readAt)));
+  }
+
+  async readAll(userId: string) {
+    await this.db
+      .update(inboxItems)
+      .set({ readAt: new Date() })
+      .where(and(eq(inboxItems.userId, userId), isNull(inboxItems.readAt)));
+  }
+}

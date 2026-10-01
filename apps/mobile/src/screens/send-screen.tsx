@@ -46,7 +46,13 @@ const ZERO = 0n;
 
 type Step = "recipient" | "amount" | "review";
 
-export type SendPrefill = { to?: string | undefined; amount?: string | undefined; asset?: AssetId | undefined };
+export type SendPrefill = {
+  to?: string | undefined;
+  amount?: string | undefined;
+  asset?: AssetId | undefined;
+  /** Paying a payment request: its link token, carried into the send so the request is marked paid by it. */
+  requestToken?: string | undefined;
+};
 
 export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   const { t } = useT();
@@ -88,7 +94,13 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   // Review: the same send gets a new version when the person comes back with a change; a closed one starts over.
   const review = async () => {
     if (!recipient) return;
-    const request: SendRequest = { recipient: recipient.text, amount: value, asset: chosenAsset, note: note.trim() || null };
+    const request: SendRequest = {
+      recipient: recipient.text,
+      amount: value,
+      asset: chosenAsset,
+      note: note.trim() || null,
+      requestToken: prefill.requestToken ?? null,
+    };
     setCreating(true);
     try {
       if (intent && isOpen(intent)) {

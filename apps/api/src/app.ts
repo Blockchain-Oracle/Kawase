@@ -24,6 +24,10 @@ import { idempotency } from "./http/idempotency";
 import { HTTP, ProblemError, problem, problemResponse } from "./http/problem";
 import { createRateLimit } from "./http/rate-limit";
 import { meRoutes } from "./me/routes";
+import { IncomingWatcher } from "./incoming/watcher";
+import { InboxService } from "./inbox/service";
+import { inboxRoutes, publicRequestRoutes, requestRoutes } from "./requests/routes";
+import { RequestService } from "./requests/service";
 import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
@@ -54,11 +58,16 @@ export type AppDeps = {
   ops: OpsExecutor;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
   reconcileIntervalMs?: number | undefined;
+  /** Reads incoming transfers this often; off when unset. */
+  watchIntervalMs?: number | undefined;
+  /** The web app's address, for shared links. */
+  webUrl?: string | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
 const SIGN_IN_LIMIT_PER_MINUTE = 10;
 const SECONDS_PER_MINUTE = 60;
+const DEFAULT_WEB_URL = "http://localhost:8081";
 
 export function createApp(deps: AppDeps) {
   const app = new Hono<AppEnv>();
@@ -67,7 +76,10 @@ export function createApp(deps: AppDeps) {
   const faucet = new FaucetService(deps.db, wallets, deps.faucet);
   const contacts = new ContactService(deps.db);
   const recipients = new Recipients(deps.db, contacts);
-  const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log);
+  const inbox = new InboxService(deps.db, deps.chains);
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
+  const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log, requests, inbox);
+  if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
   if (deps.reconcileIntervalMs) sends.startSweeper(deps.reconcileIntervalMs);
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -122,9 +134,12 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
+  app.route("/requests", requestRoutes(requests));
+  app.route("/r", publicRequestRoutes(requests));
+  app.route("/inbox", inboxRoutes(inbox));
   app.route(
     "/agent",
-    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, models: deps.models, approvalSecret: deps.approvalSecret }),
+    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
   );
 
   return app;

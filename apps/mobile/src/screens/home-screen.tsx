@@ -15,7 +15,7 @@
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { ArrowDownToLine, Bell, MessageCircle, QrCode, ScanFace, Send, Settings2, Wallet } from "lucide-react-native";
+import { ArrowDownToLine, MessageCircle, QrCode, ScanFace, Send, Settings2, Wallet } from "lucide-react-native";
 import * as React from "react";
 import { Platform, View } from "react-native";
 import Animated, { FadeOut, useAnimatedScrollHandler, useSharedValue, ZoomIn } from "react-native-reanimated";
@@ -46,6 +46,7 @@ import { LanguagePill, LanguageSheet } from "@/components/language-sheet";
 import { NetworkPill } from "@/components/network-pill";
 import { ActivityRow, ActivityRowSkeleton } from "@/activity/activity-row";
 import { ReceiptSheet } from "@/activity/receipt-sheet";
+import { InboxBell } from "@/inbox/inbox-bell";
 import { StaleBanner } from "@/session/stale-banner";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useFund } from "@/fund/fund-provider";
@@ -258,15 +259,7 @@ export function HomeScreen() {
           }
           trailing={
             <>
-              <Button
-                variant="secondary"
-                size="icon"
-                accessibilityLabel={t("home.inbox")}
-                className="size-11"
-                onPress={() => router.push("/inbox")}
-              >
-                <Icon as={Bell} className="size-5" />
-              </Button>
+              <InboxBell />
               <Button
                 variant="secondary"
                 size="icon"

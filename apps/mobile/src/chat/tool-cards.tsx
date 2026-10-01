@@ -43,6 +43,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
 import { AgentCard, AgentCardLoading } from "./card";
+import { RequestCard } from "./request-card";
 import { ContactsCard, SendCard } from "./send-card";
 
 type Network = "mainnet" | "testnet";
@@ -488,6 +489,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_authority: "chat.loadingAuthority",
   propose_send: "chat.loadingSend",
   find_contacts: "chat.loadingContacts",
+  create_payment_request: "chat.loadingRequest",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -534,6 +536,8 @@ export function ToolCard({
       return <SendCard output={part.output as ProposeSendOutput} />;
     case "find_contacts":
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
+    case "create_payment_request":
+      return <RequestCard output={part.output as Parameters<typeof RequestCard>[0]["output"]} />;
     default:
       return null;
   }

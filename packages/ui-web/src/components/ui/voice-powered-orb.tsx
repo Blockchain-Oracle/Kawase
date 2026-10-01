@@ -325,6 +325,8 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       while (container.firstChild) {
         container.removeChild(container.firstChild);
       }
+      // Kawase: absolutely placed, so the canvas's own size can never push the container's layout.
+      Object.assign(glContext.canvas.style, { position: "absolute", inset: "0", display: "block" });
       container.appendChild(glContext.canvas);
 
       const geometry = new Triangle(glContext);
@@ -373,6 +375,10 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
         }
       };
       window.addEventListener("resize", resize);
+      // Kawase: the container is sized by its parent (a dock slot, a story disc), which can settle after mount; follow
+      // it, not only the window, so the canvas never keeps the browser's default 300×150.
+      const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(resize);
+      observer?.observe(container);
       resize();
 
       let lastTime = 0;
@@ -455,6 +461,7 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       return () => {
         cancelAnimationFrame(rafId);
         window.removeEventListener("resize", resize);
+        observer?.disconnect();
 
         // Clean up canvas safely
         if (container && glContext && glContext.canvas) {

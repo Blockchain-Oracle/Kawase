@@ -42,6 +42,8 @@ export const intents = pgTable(
     currentDraftVersion: integer().notNull().default(0),
     /** The person's own words for each field, kept so a fix (a saved contact) can re-resolve them. */
     request: jsonb().$type<Record<string, unknown>>().notNull(),
+    /** Set when this send pays a payment request; the request is marked paid when the send completes. */
+    paymentRequestId: uuid(),
     expiresAt: timestampTz().notNull(),
     completedAt: timestampTz(),
     createdAt: createdAt(),

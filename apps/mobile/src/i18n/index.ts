@@ -4,6 +4,7 @@
 import { getLocales } from "expo-localization";
 import i18next from "i18next";
 import { initReactI18next, useTranslation } from "react-i18next";
+import { Platform } from "react-native";
 
 import { DEFAULT_LOCALE, isSupportedLocale, type SupportedLocale } from "@kawase/config";
 import { CATALOGS } from "@kawase/i18n";
@@ -15,7 +16,44 @@ export function deviceLocale(): SupportedLocale {
   return isSupportedLocale(code) ? code : DEFAULT_LOCALE;
 }
 
-const resources = Object.fromEntries(Object.entries(CATALOGS).map(([locale, catalog]) => [locale, { translation: catalog }]));
+/**
+ * In a browser the owner's check is a code from their email, not Face ID (wallet/biometric.web.ts). These lines name
+ * the check, so on the web each is replaced by its `…Web` twin from the same catalog; phones keep the original words
+ * and no screen has to know the difference.
+ */
+const WEB_WORDS = [
+  "send.allowanceAbove",
+  "send.allowanceOff",
+  "send.allowanceStepUp",
+  "send.allowanceUsdcOnly",
+  "send.faceIdCancelled",
+  "send.approvalUnavailable",
+  "errors.biometricUnavailable",
+  "story.boundsBody",
+  "story.boundsAbove",
+  "limits.offBody",
+  "home.allowanceOffBody",
+  "wallet.mainnetConsentBody",
+] as const;
+
+type Tree = { [key: string]: string | Tree };
+
+function withWebWords(catalog: Tree): Tree {
+  const copy = JSON.parse(JSON.stringify(catalog)) as Tree;
+  for (const path of WEB_WORDS) {
+    const [block, key] = path.split(".") as [string, string];
+    const group = copy[block];
+    if (typeof group === "object" && typeof group[`${key}Web`] === "string") group[key] = group[`${key}Web`]!;
+  }
+  return copy;
+}
+
+const resources = Object.fromEntries(
+  Object.entries(CATALOGS).map(([locale, catalog]) => [
+    locale,
+    { translation: Platform.OS === "web" ? withWebWords(catalog as unknown as Tree) : catalog },
+  ]),
+);
 
 export function initI18n(locale: SupportedLocale) {
   if (i18next.isInitialized) {

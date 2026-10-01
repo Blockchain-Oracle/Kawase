@@ -25,6 +25,8 @@ export const apiEnvSchema = z.object({
   KAWASE_PUBLIC_URL: z.url().optional(),
   /** Browser origins allowed to call the api (the web app), comma-separated. Localhost is added in development. */
   KAWASE_WEB_ORIGINS: z.string().default(""),
+  /** The web app's own address, for links people share (payment requests: `{web}/r/{token}`). */
+  KAWASE_WEB_URL: z.url().default("https://kawase.84.46.247.92.sslip.io"),
   /** Turnkey: the parent organization and its server API key (read access to every user's sub-organization). */
   TURNKEY_ORGANIZATION_ID: z.uuid(),
   TURNKEY_API_PUBLIC_KEY: compressedPublicKey,

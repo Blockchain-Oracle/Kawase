@@ -13,6 +13,7 @@ import { amount, formatAmount, type AssetId } from "@kawase/money";
 import { capabilityView } from "../capabilities/service";
 import type { ContactService } from "../contacts/service";
 import type { FaucetService } from "../faucet/service";
+import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
 import type { SessionUser } from "../types";
@@ -53,11 +54,12 @@ export function buildAgentContext(input: {
   contacts: ContactService;
   recipients: Recipients;
   sends: SendService;
+  requests: RequestService;
   threadId: string;
   lastUserText: string;
   log: Logger;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -93,6 +95,12 @@ export function buildAgentContext(input: {
         if (answer) intent = answer.intent;
       }
       return { intent, summary: summarizeSend(intent) };
+    },
+
+    async createPaymentRequest(request) {
+      if (user.isAnonymous) return { status: "needs_sign_in" as const };
+      if (!(await wallets.userWallet(user.id))) return { status: "needs_wallet" as const };
+      return { request: await requests.create(user, request) };
     },
 
     async findContacts(query) {

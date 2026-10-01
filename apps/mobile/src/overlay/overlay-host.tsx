@@ -52,7 +52,7 @@ export function OverlayHost() {
     if (key === "receive") router.push("/wallet/receive");
     else if (key === "fund") fund.open();
     else if (key === "send") router.push("/send");
-    else if (key === "request") router.push("/request" as never);
+    else if (key === "request") router.push("/request");
   };
 
   return (

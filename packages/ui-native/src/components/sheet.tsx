@@ -5,13 +5,13 @@
 // keyboard instead of being covered by it. Kawase chrome over
 // @gorhom/bottom-sheet's modal, which needs `BottomSheetModalProvider` above it (mounted inside LocaleProvider so
 // the reading direction applies). Gorhom's own views take hex colours, not class names, so the theme is passed in.
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetTextInput, BottomSheetView, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView, BottomSheetTextInput, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ChevronLeft } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, TextInput, View, useWindowDimensions } from "react-native";
 import { withUniwind } from "uniwind";
 
 type SheetColors = {
@@ -51,9 +51,12 @@ const CONTENT_BOTTOM = 16;
 const SCRIM_OPACITY = 1;
 const BACK_SIZE = 40;
 const BACK_HIT_SLOP = 8;
+/** A sheet never grows past this share of the window; longer content scrolls inside it (review R13). */
+const MAX_HEIGHT_SHARE = 0.9;
 
 function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset = 0, onBack, backLabel, headerEnd, children, className }: SheetProps) {
   const ref = React.useRef<BottomSheetModal>(null);
+  const { height: windowHeight } = useWindowDimensions();
 
   // Dismissing a modal that was never presented leaves gorhom in its "dismissing" state for good, and the next
   // `present()` is then ignored — so only a sheet that is actually up gets dismissed.
@@ -93,6 +96,7 @@ function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset
       ref={ref}
       onDismiss={handleDismiss}
       enableDynamicSizing
+      maxDynamicContentSize={Math.round(windowHeight * MAX_HEIGHT_SHARE)}
       // Gorhom makes the whole sheet one "adjustable" element by default, which hides its rows from a screen reader.
       accessible={false}
       enablePanDownToClose
@@ -103,7 +107,7 @@ function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset
       backgroundStyle={{ backgroundColor: colors.background, borderRadius: RADIUS }}
       handleIndicatorStyle={{ backgroundColor: colors.handle, width: HANDLE_WIDTH, height: HANDLE_HEIGHT }}
     >
-      <BottomSheetView style={{ paddingBottom: bottomInset + CONTENT_BOTTOM }}>
+      <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset + CONTENT_BOTTOM }} keyboardShouldPersistTaps="handled">
         {title || onBack || headerEnd ? (
           <View className="gap-1 px-5 pb-4 pt-1">
             {onBack || headerEnd ? (
@@ -130,7 +134,7 @@ function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset
           </View>
         ) : null}
         <View className={cn("px-5", className)}>{children}</View>
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 }

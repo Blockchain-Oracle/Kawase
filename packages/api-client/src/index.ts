@@ -27,6 +27,10 @@ import type {
   SendIntent,
   SendRequest,
   SendApproveResponse,
+  PaymentRequest,
+  PaymentRequestInput,
+  PublicPaymentRequest,
+  InboxItem,
 } from "./types";
 
 export * from "./types";
@@ -179,6 +183,22 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
+    },
+
+    requests: {
+      /** The person's own requests, newest first. */
+      list: () => call<{ requests: PaymentRequest[] }>("GET", "/requests"),
+      create: (input: PaymentRequestInput) => call<{ request: PaymentRequest }>("POST", "/requests", input),
+      get: (id: string) => call<{ request: PaymentRequest }>("GET", `/requests/${id}`),
+      cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
+      /** No account needed: what the link shows to whoever opens it. */
+      open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
+    },
+
+    inbox: {
+      list: () => call<{ items: InboxItem[]; unread: number }>("GET", "/inbox"),
+      read: (id: string) => call<void>("POST", `/inbox/${id}/read`),
+      readAll: () => call<void>("POST", "/inbox/read-all"),
     },
 
     faucet: {

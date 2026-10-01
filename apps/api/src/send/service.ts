@@ -61,7 +61,7 @@ import {
   type StoredSendDraft,
 } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
-import { decimalsOf, rescale, USDC_NATIVE_DECIMALS, type AssetId } from "@kawase/money";
+import { amount, canonicalAmount, decimalsOf, rescale, USDC_NATIVE_DECIMALS, type AssetId } from "@kawase/money";
 import type { NetworkContext, NetworkId } from "@kawase/networks";
 import { evaluateSend, type PolicyResult, type SendEvaluation, type SendRoute } from "@kawase/policy";
 
@@ -72,6 +72,8 @@ import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest } from "./facts";
 import type { OpsExecutor } from "./ops";
+import type { InboxService } from "../inbox/service";
+import type { RequestService } from "../requests/service";
 import type { Recipients } from "./recipients";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -134,6 +136,8 @@ export class SendService {
     private readonly recipients: Recipients,
     private readonly ops: OpsExecutor,
     private readonly log: Logger,
+    private readonly requests: RequestService,
+    private readonly inbox: InboxService,
   ) {}
 
   private clients(network: NetworkId): NetworkClients {
@@ -145,7 +149,21 @@ export class SendService {
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
 
   async create(user: SessionUser, request: SendRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }) {
-    const stored = normaliseRequest({}, request);
+    let stored = normaliseRequest({}, request);
+    let paymentRequestId: string | null = null;
+    // Paying a request: who, which asset and how much come from the request itself, not from the link's words.
+    if (request.requestToken) {
+      const payable = await this.requests.payable(request.requestToken);
+      if (!payable) throw problem(HTTP.unprocessable, "request_unavailable");
+      const asked = payable.request;
+      stored = {
+        recipient: payable.handle ? `@${payable.handle}` : asked.payTo,
+        amount: canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, ""),
+        asset: asked.asset as AssetId,
+        note: stored.note,
+      };
+      paymentRequestId = asked.id;
+    }
     const [row] = await this.db
       .insert(intents)
       .values({
@@ -156,6 +174,7 @@ export class SendService {
         originSurface: origin.surface,
         state: "submitted",
         request: stored,
+        paymentRequestId,
         expiresAt: later(INTENT_TTL_S),
       })
       .returning();
@@ -167,7 +186,8 @@ export class SendService {
     const intent = await this.ownIntent(user.id, intentId);
     if (!DRAFTABLE_STATES.has(intent.state)) throw problem(HTTP.conflict, "intent_final");
     if (intent.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    const stored = normaliseRequest(intent.request as StoredRequest, patch);
+    // A send that pays a request keeps the request's recipient, asset and amount; only the private note can change.
+    const stored = normaliseRequest(intent.request as StoredRequest, intent.paymentRequestId ? { note: patch.note } : patch);
     await this.db
       .update(intents)
       .set({ request: stored, expiresAt: later(INTENT_TTL_S) })
@@ -752,6 +772,17 @@ export class SendService {
         .where(eq(txAttempts.id, attempt.id));
       await tx.update(spendLedger).set({ state: "committed" }).where(eq(spendLedger.intentId, intent.id));
       await this.contacts.markPaid(tx, intent.userId, intent.network, draft.to, at);
+      if (intent.paymentRequestId)
+        await this.requests.markPaid(tx, intent.paymentRequestId, { txHash: receipt.transactionHash, from: draft.from, intentId: intent.id });
+      await this.inbox.add(tx, {
+        userId: intent.userId,
+        network: intent.network,
+        kind: "send_completed",
+        params: { amount: draft.amount.toString(), asset: assetOf(this.clients(intent.network).network, draft.asset), to: draft.to },
+        intentId: intent.id,
+        txHash: receipt.transactionHash,
+        dedupeKey: `send_completed:${intent.id}`,
+      });
       return {
         result: undefined,
         events: [

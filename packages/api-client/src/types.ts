@@ -266,6 +266,8 @@ export type SendIntent = {
 };
 
 export type SendRequest = {
+  /** Paying a payment request: its link token. The send must match the request (recipient, asset, amount). */
+  requestToken?: string | null | undefined;
   recipient?: string | null | undefined;
   amount?: string | null | undefined;
   asset?: "USDC" | "EURC" | null | undefined;
@@ -275,3 +277,58 @@ export type SendRequest = {
 export type SendApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: SendIntent }
   | { status: "sign"; intent: SendIntent; approvalId: string; transaction: UnsignedTransaction };
+
+// ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
+
+export type PaymentRequestStatus = "open" | "paid" | "canceled" | "expired";
+
+/** A request the person made: share `link`; it is marked paid by the send that paid it or by a matching incoming transfer. */
+export type PaymentRequest = {
+  id: string;
+  /** The public id in the link (`/r/{token}`). */
+  token: string;
+  link: string;
+  network: NetworkId;
+  asset: "USDC" | "EURC";
+  /** Base units (6 decimals). */
+  amount: string;
+  /** Shown to the payer; never written on the chain. */
+  note: string | null;
+  status: PaymentRequestStatus;
+  createdAt: string;
+  expiresAt: string;
+  paidAt: string | null;
+  paidTx: { hash: string; explorerUrl: string } | null;
+  /** Who paid, when known: a Kawase @handle / contact name, or just the address. */
+  paidBy: { address: string; name: string | null } | null;
+};
+
+export type PaymentRequestInput = { amount: string; asset: "USDC" | "EURC"; note?: string | null | undefined };
+
+/** What anyone with the link sees (no account needed): who asks, how much, on which network. */
+export type PublicPaymentRequest = {
+  token: string;
+  network: NetworkId;
+  asset: "USDC" | "EURC";
+  amount: string;
+  note: string | null;
+  status: PaymentRequestStatus;
+  expiresAt: string;
+  requester: { handle: string | null; address: string };
+};
+
+export type InboxKind = "payment_received" | "request_paid" | "send_completed";
+
+export type InboxItem = {
+  id: string;
+  kind: InboxKind;
+  network: NetworkId;
+  /** Display values for the item's words: amount (base units), asset, from/to address, name, note. */
+  params: Record<string, string>;
+  requestId: string | null;
+  intentId: string | null;
+  txHash: string | null;
+  explorerUrl: string | null;
+  createdAt: string;
+  readAt: string | null;
+};

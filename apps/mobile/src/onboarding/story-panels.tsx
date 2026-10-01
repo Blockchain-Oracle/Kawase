@@ -17,7 +17,7 @@ import { MOTION } from "@kawase/config";
 import { arcIdentity } from "@kawase/identity";
 import { Float } from "@kawase/ui-native/components/art/float";
 import { Hanko } from "@kawase/ui-native/components/art/hanko";
-import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
+import { PaperPlane, PLANE_VIEWBOX } from "@kawase/ui-native/components/art/paper-plane";
 import { Mark } from "@kawase/ui-native/components/mark";
 import type { StoryPanel } from "@kawase/ui-native/components/story-shell";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -39,6 +39,8 @@ const MARK = 28;
 const MARK_SMALL = 22;
 const HANKO_SIZE = 76;
 const PLANE_WIDTH = 132;
+/** The plane's height at that width (its art is 240 × 160), plus the gap it keeps from the card. */
+const PLANE_HEIGHT = (PLANE_WIDTH * PLANE_VIEWBOX.height) / PLANE_VIEWBOX.width;
 const CARD_MAX = 320;
 /** Panel 1: the fields arrive this long after the request, so the change reads as cause and effect. */
 const FIELDS_DELAY_MS = MOTION.storyPanelMs;
@@ -77,13 +79,73 @@ export type StoryMotion = {
 };
 
 /** A slow float when its panel is on screen, a still object otherwise (same place either way). */
-function Drift({ on, style, phase = 0, children }: { on: boolean; style?: ViewStyle; phase?: number; children: React.ReactNode }) {
+function Drift({
+  on,
+  style,
+  phase = 0,
+  children,
+}: {
+  on: boolean;
+  style?: ViewStyle;
+  phase?: number;
+  children: React.ReactNode;
+}) {
   return on ? (
     <Float amplitude={6} tilt={2} phase={phase} {...(style ? { style } : {})}>
       {children}
     </Float>
   ) : (
     <View style={style}>{children}</View>
+  );
+}
+
+/** The art's room on the canvas: below the progress bar and the language pill, above the canvas edge. */
+const ART_TOP = 52;
+const ART_BOTTOM = 12;
+const HALF = 2;
+
+/**
+ * Centres a panel's art in the room it has and, when the room is shorter than the art (a short browser window on a
+ * laptop, a small phone), scales it down to fit, so it never runs under the progress bar or past the canvas edge.
+ * On a phone with room to spare the scale is 1. Hidden until measured, so it never flashes at the wrong size.
+ * `overlay` holds decorations positioned against the whole canvas (the seal, the plane); they are never scaled.
+ */
+function FitArt({
+  className,
+  children,
+  overlay,
+  overlayNeeds = 0,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  overlay?: React.ReactNode;
+  /** Free height the overlay needs beside the content; on a canvas without it the overlay is left out. */
+  overlayNeeds?: number;
+}) {
+  const [room, setRoom] = React.useState(0);
+  const [natural, setNatural] = React.useState(0);
+  const measured = room > 0 && natural > 0;
+  const scale = measured && natural > room ? room / natural : 1;
+  const spare = measured ? room - natural * scale : 0;
+  return (
+    <View style={{ flex: 1 }} onLayout={(event) => setRoom(event.nativeEvent.layout.height - ART_TOP - ART_BOTTOM)}>
+      <View
+        className={className}
+        onLayout={(event) => setNatural(event.nativeEvent.layout.height)}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: ART_TOP,
+          opacity: measured ? 1 : 0,
+          transform: [{ translateY: measured ? (room - natural) / HALF : 0 }, { scale }],
+        }}
+      >
+        {children}
+      </View>
+      {/* Decorations placed against the whole canvas (the seal, the plane), not against the scaled content. */}
+      {overlay && spare >= overlayNeeds ? overlay : null}
+    </View>
   );
 }
 
@@ -113,7 +175,10 @@ function FieldRow({ label, value, mark, mono }: { label: string; value: string; 
       </Text>
       <View className="flex-row items-center gap-2">
         {mark ? <Mark entity={mark} size={MARK_SMALL} /> : null}
-        <Text className={cn("text-base font-semibold", mono ? "font-mono" : "")} style={[{ color: DARK.foreground }, mono ? ADDRESS_STYLE : null]}>
+        <Text
+          className={cn("text-base font-semibold", mono ? "font-mono" : "")}
+          style={[{ color: DARK.foreground }, mono ? ADDRESS_STYLE : null]}
+        >
           {value}
         </Text>
       </View>
@@ -124,7 +189,10 @@ function FieldRow({ label, value, mark, mono }: { label: string; value: string; 
 /** A request as the person types it: an ink bubble at the trailing side, like their own chat message. */
 function RequestBubble({ text, soft }: { text: string; soft?: boolean }) {
   return (
-    <View className="max-w-full self-end rounded-3xl rounded-ee-md px-4 py-2.5" style={{ backgroundColor: soft ? SOFT_INK : STORY_INK }}>
+    <View
+      className="max-w-full self-end rounded-3xl rounded-ee-md px-4 py-2.5"
+      style={{ backgroundColor: soft ? SOFT_INK : STORY_INK }}
+    >
       <Text className={cn("font-semibold", soft ? "text-sm" : "text-base")} style={{ color: DARK.foreground }}>
         {text}
       </Text>
@@ -157,10 +225,13 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       title: request?.title ?? "",
       body: request?.body ?? "",
       art: (
-        <View className="flex-1 justify-center gap-2.5 px-6 pt-10">
+        <FitArt className="gap-2.5 px-6">
           <View className="flex-row items-center gap-3">
             <Drift on={on(PANEL.request)} phase={0.3}>
-              <View className="items-center justify-center rounded-full" style={{ width: ORB_SIZE, height: ORB_SIZE, backgroundColor: STORY_INK }}>
+              <View
+                className="items-center justify-center rounded-full"
+                style={{ width: ORB_SIZE, height: ORB_SIZE, backgroundColor: STORY_INK }}
+              >
                 <View style={{ width: ORB_INNER, height: ORB_INNER }}>
                   <Orb colors={tokens.orb.testnet} level={ORB_LEVEL} />
                 </View>
@@ -184,7 +255,7 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
               <FieldRow label={copy.fields.network} value={copy.arcTestnet} mark={test.chain} />
             </InkCard>
           </Animated.View>
-        </View>
+        </FitArt>
       ),
     },
     {
@@ -193,7 +264,14 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       title: bounds?.title ?? "",
       body: bounds?.body ?? "",
       art: (
-        <View className="flex-1 items-center justify-center px-6 pt-8">
+        <FitArt
+          className="items-center px-6"
+          overlay={
+            <Drift on={on(PANEL.bounds)} phase={0.6} style={{ position: "absolute", bottom: 18, end: 18 }}>
+              <Hanko size={HANKO_SIZE} id="story-hanko" />
+            </Drift>
+          }
+        >
           <InkCard>
             <CardEyebrow>{exampleLine}</CardEyebrow>
             <View className="flex-row items-center gap-2.5">
@@ -211,10 +289,7 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
               <ListLine icon={ShieldX} text={copy.allowance.never} tone={DARK["muted-foreground"]} />
             </View>
           </InkCard>
-          <Drift on={on(PANEL.bounds)} phase={0.6} style={{ position: "absolute", bottom: 18, end: 18 }}>
-            <Hanko size={HANKO_SIZE} id="story-hanko" />
-          </Drift>
-        </View>
+        </FitArt>
       ),
     },
     {
@@ -223,10 +298,13 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       title: practice?.title ?? "",
       body: practice?.body ?? "",
       art: (
-        <View className="flex-1 items-center justify-center gap-4 px-6 pt-8">
+        <FitArt className="items-center gap-4 px-6">
           <Drift on={on(PANEL.practice)} phase={0.2} style={{ width: "100%", alignItems: "center" }}>
             <InkCard>
-              <View className="self-start rounded-full px-3 py-1" style={{ backgroundColor: TESTNET_DARK["network-surface"] }}>
+              <View
+                className="self-start rounded-full px-3 py-1"
+                style={{ backgroundColor: TESTNET_DARK["network-surface"] }}
+              >
                 <Text className="text-xs font-semibold" style={{ color: TESTNET_DARK.network }}>
                   {copy.example}
                 </Text>
@@ -244,20 +322,26 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
           </Drift>
           {/* The two networks side by side: practice is chosen, real money is one tap away and always labelled. */}
           <View className="w-full gap-2" style={{ maxWidth: CARD_MAX }}>
-            <View className="flex-row items-center gap-2 self-start rounded-full py-2 pe-4 ps-2" style={{ backgroundColor: STORY_INK }}>
+            <View
+              className="flex-row items-center gap-2 self-start rounded-full py-2 pe-4 ps-2"
+              style={{ backgroundColor: STORY_INK }}
+            >
               <Mark entity={test.chain} size={MARK_SMALL} />
               <Text className="text-sm font-semibold" style={{ color: TESTNET_DARK.network }}>
                 {`${copy.arcTestnet} · ${copy.practice.testMoney}`}
               </Text>
             </View>
-            <View className="flex-row items-center gap-2 self-start rounded-full py-2 pe-4 ps-2" style={{ backgroundColor: CHIP_TINT }}>
+            <View
+              className="flex-row items-center gap-2 self-start rounded-full py-2 pe-4 ps-2"
+              style={{ backgroundColor: CHIP_TINT }}
+            >
               <Mark entity={real.chain} size={MARK_SMALL} />
               <Text className="text-sm font-semibold" style={{ color: STORY_INK }}>
                 {`${copy.arc} · ${copy.practice.realMoney}`}
               </Text>
             </View>
           </View>
-        </View>
+        </FitArt>
       ),
     },
     {
@@ -266,7 +350,7 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       title: language?.title ?? "",
       body: language?.body ?? "",
       art: (
-        <View className="flex-1 justify-center gap-2.5 px-6 pt-10">
+        <FitArt className="gap-2.5 px-6">
           {copy.otherRequests.map((other) => (
             <RequestBubble key={other} text={other} soft />
           ))}
@@ -278,14 +362,17 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
                 <CardEyebrow>{copy.sameMeaning}</CardEyebrow>
                 <View className="flex-row items-center gap-2">
                   <Mark entity={test.usdc} size={MARK_SMALL} />
-                  <Text className="font-mono text-base font-semibold" style={[{ color: DARK.foreground }, ADDRESS_STYLE]}>
+                  <Text
+                    className="font-mono text-base font-semibold"
+                    style={[{ color: DARK.foreground }, ADDRESS_STYLE]}
+                  >
                     {`${copy.amount} → ${copy.recipient}`}
                   </Text>
                 </View>
               </InkCard>
             </Drift>
           </View>
-        </View>
+        </FitArt>
       ),
     },
     {
@@ -294,11 +381,22 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       title: first?.title ?? "",
       body: first?.body ?? "",
       art: (
-        <View className="flex-1 items-center justify-center px-6 pt-8">
+        <FitArt
+          className="items-center px-6"
+          overlayNeeds={PLANE_HEIGHT}
+          overlay={
+            <Drift on={on(PANEL.first)} phase={0.25} style={{ position: "absolute", bottom: 14, start: 18 }}>
+              <PaperPlane width={PLANE_WIDTH} id="story-plane" />
+            </Drift>
+          }
+        >
           <InkCard>
             <CardEyebrow>{copy.arcTestnet}</CardEyebrow>
             <View className="flex-row items-center gap-3">
-              <View className="items-center justify-center rounded-full" style={{ width: MARK, height: MARK, backgroundColor: DARK.foreground }}>
+              <View
+                className="items-center justify-center rounded-full"
+                style={{ width: MARK, height: MARK, backgroundColor: DARK.foreground }}
+              >
                 <Text className="text-sm font-bold" style={{ color: STORY_INK }}>
                   1
                 </Text>
@@ -309,7 +407,10 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
               <Mark entity="provider:circle" size={MARK_SMALL} disc />
             </View>
             <View className="flex-row items-center gap-3">
-              <View className="items-center justify-center rounded-full" style={{ width: MARK, height: MARK, backgroundColor: DARK.secondary }}>
+              <View
+                className="items-center justify-center rounded-full"
+                style={{ width: MARK, height: MARK, backgroundColor: DARK.secondary }}
+              >
                 <Text className="text-sm font-bold" style={{ color: DARK.foreground }}>
                   2
                 </Text>
@@ -320,17 +421,22 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
               <Icon as={Send} className="size-4" color={DARK["muted-foreground"]} />
             </View>
           </InkCard>
-          <Drift on={on(PANEL.first)} phase={0.25} style={{ position: "absolute", bottom: 14, start: 18 }}>
-            <PaperPlane width={PLANE_WIDTH} id="story-plane" />
-          </Drift>
-        </View>
+        </FitArt>
       ),
     },
   ];
 }
 
 /** The language pill on the story's canvas: ink on the colour field, the current language in its own script. */
-export function StoryLanguagePill({ label, accessibilityLabel, onPress }: { label: string; accessibilityLabel?: string; onPress?: () => void }) {
+export function StoryLanguagePill({
+  label,
+  accessibilityLabel,
+  onPress,
+}: {
+  label: string;
+  accessibilityLabel?: string;
+  onPress?: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
