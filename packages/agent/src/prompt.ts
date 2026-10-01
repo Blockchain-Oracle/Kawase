@@ -56,7 +56,8 @@ const VOICE_LINES = `The person is talking to you; your reply is spoken aloud by
 
 /** The wallet read at the start of a voice turn, as one line the model can answer from without a tool call. */
 function walletLine(wallet: WalletSummary | undefined): string[] {
-  if (!wallet || wallet.status === "guest") return [];
+  if (!wallet) return [];
+  if (wallet.status === "guest") return ["As a guest they have no wallet to read: for their balance or allowance, say in one sentence that signing in comes first, without a tool."];
   if (wallet.status === "no_wallet") return ["They have no wallet yet."];
   const held = wallet.balances.map((money) => `${money.display} ${money.asset}`).join(", ");
   const allowance = wallet.allowance ? `a daily allowance of ${wallet.allowance.perDay.display} USDC` : "no daily allowance";
