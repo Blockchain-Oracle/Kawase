@@ -159,6 +159,13 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - **Not covered by the allowance:** a swap is always the owner's own confirmation (Face ID, an email code on the web); the agent's `propose_swap` never approves.
 - **Own transactions are not income:** the incoming watcher skips a transfer whose transaction is one of the person's own `tx_attempts`; Activity folds one currency out + another in, in one transaction, into one "Swapped" item.
 
+**As built for bridges (Stage 6b, 2026-10-01)** — the swap shape, plus a second chain.
+- App Kit's `bridge` (CCTP V2 with Circle's forwarder) is captured like a swap: approve + `bridgeWithPreapprovalAndHook` → one self-batch transaction. `checkBridgeCalls` decodes the bridge params (amount, USDC, `mintRecipient` = the person's own address, the destination's CCTP domain, no developer fee, open destination caller, the forwarder hook, `maxFee` ≤ the cap shown).
+- `BridgeDraft` (EIP-712: chainId, from, token, amount, destinationDomain, recipient, maxRouteFee, maxFee). The cap is the quoted fee + 20%; the version stands while the fresh *raw* fee is within it.
+- Tracking is three-legged: the burn receipt (exactly `amount` out of the wallet) → IRIS `/v2/messages/{arcDomain}?transactionHash=` (attestation, `forwardState`, `forwardTxHash`; `CONFIRMED` or `COMPLETE` = delivered) → the mint's receipt on the destination chain (USDC to the person ≥ amount − cap). Progress lives in the attempt's `receipt` JSON (`burnConfirmed`, `forward`, `mintTxHash`, `received`); the intent stays `executing` until delivered, `unknown_outcome` if the forward fails.
+- `compare_bridge_routes` fetches LI.FI (both networks), Relay and deBridge (mainnet) quotes for the same transfer and shows them ranked, with reason codes; only the CCTP route executes today.
+- Activity labels a transfer whose transaction is the person's own bridge intent as "Bridged to {chain}".
+
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
 - Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.

@@ -11,7 +11,7 @@ import type { NetworkContext, NetworkId } from "@kawase/networks";
 import { CIRCLE_FAUCET_SENDERS } from "../faucet/circle-faucet";
 
 export type ActivityAsset = "USDC" | "EURC";
-export type CounterpartyLabel = "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap";
+export type CounterpartyLabel = "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge";
 
 export type ActivityItem = {
   id: string;
@@ -27,6 +27,8 @@ export type ActivityItem = {
   explorerUrl: string;
   /** A swap: this item is what came in, and this is what went out for it, in the same transaction. */
   swap?: { asset: ActivityAsset; amount: string } | undefined;
+  /** A bridge out of Arc: the chain it went to. */
+  bridge?: { chainId: number } | undefined;
 };
 
 /** One page of history: the newest transfers, whether older ones exist, and the explorer page with all of them. */

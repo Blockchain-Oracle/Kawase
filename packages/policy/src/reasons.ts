@@ -28,6 +28,8 @@ export const REASONS = {
   INSUFFICIENT_GAS: "precondition",
   /** No swap price right now: "Try again" re-quotes the same request. */
   QUOTE_UNAVAILABLE: "precondition",
+  /** The amount would not cover the route's fee: a bigger amount fixes it. */
+  AMOUNT_BELOW_FEE: "precondition",
   // Clarifications: one question.
   RECIPIENT_MISSING: "clarification",
   RECIPIENT_UNKNOWN: "clarification",
@@ -39,6 +41,7 @@ export const REASONS = {
   AMOUNT_INVALID: "clarification",
   ASSET_UNCLEAR: "clarification",
   SWAP_SAME_TOKEN: "clarification",
+  DESTINATION_MISSING: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
   LOOKALIKE_ADDRESS: "warning",

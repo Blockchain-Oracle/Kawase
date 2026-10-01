@@ -24,6 +24,7 @@
     "@kawase/db": "workspace:*",
     "@kawase/env": "workspace:*",
     "@kawase/i18n": "workspace:*",
+    "@kawase/identity": "workspace:*",
     "@kawase/integrations-app-kit": "workspace:*",
     "@kawase/integrations-delegation": "workspace:*",
     "@kawase/intents": "workspace:*",

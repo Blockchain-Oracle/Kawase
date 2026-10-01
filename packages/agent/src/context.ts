@@ -12,6 +12,8 @@ import type {
   PaymentRequestInput,
   ProposeSendOutput,
   ProposeSwapOutput,
+  ProposeBridgeOutput,
+  BridgeRequest,
   SendRequest,
   SwapRequest,
   WalletSummary,
@@ -50,6 +52,8 @@ export type AgentContext = {
   proposeSend(input: SendRequest): Promise<ProposeSendOutput>;
   /** Drafts a swap between USDC and EURC with a fresh quote; the person approves on the card (always Face ID). */
   proposeSwap(input: SwapRequest): Promise<ProposeSwapOutput>;
+  /** Drafts a bridge of USDC from Arc to the person's own address on another chain; approved on the card. */
+  proposeBridge(input: BridgeRequest): Promise<ProposeBridgeOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;

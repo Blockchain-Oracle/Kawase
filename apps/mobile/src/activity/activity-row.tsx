@@ -4,7 +4,7 @@
 // "−" for money out, so colour is never the only signal. A swap is one row: both currencies' marks overlapping,
 // "Swapped USDC → EURC", what came in at the end and what went out on the muted line.
 import type { ActivityItem } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
+import { arcIdentity, chainKey, getChainIdentity } from "@kawase/identity";
 import { amount, formatAmount } from "@kawase/money";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { ListRow } from "@kawase/ui-native/components/list-row";
@@ -25,6 +25,8 @@ const SKELETON_LINE = 80;
 const SKELETON_AMOUNT = 72;
 /** Each of a swap's two marks takes this share of the avatar, overlapping corner to corner. */
 const SWAP_MARK_SHARE = 0.68;
+/** Chain marks drawn as tiles (Base) get rounded corners as an avatar. */
+const CHAIN_TILE_RADIUS = 0.28;
 
 export const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
@@ -44,6 +46,8 @@ export function useCounterpartyName() {
         return t("activity.self");
       case "swap":
         return t("activity.swap");
+      case "bridge":
+        return item.bridge ? (getChainIdentity(item.bridge.chainId)?.name ?? t("bridge.title")) : t("bridge.title");
       default:
         return shortAddress(item.counterparty);
     }
@@ -70,6 +74,17 @@ function SwapAvatar({ item, size }: { item: ActivityItem; size: number }) {
 export function CounterpartyAvatar({ item, size = AVATAR }: { item: ActivityItem; size?: number }) {
   if (item.swap) return <SwapAvatar item={item} size={size} />;
   const ids = arcIdentity(item.network);
+  if (item.bridge)
+    return (
+      <View style={{ width: size, height: size }}>
+        <View className="overflow-hidden" style={{ width: size, height: size, borderRadius: size * CHAIN_TILE_RADIUS }}>
+          <Mark entity={chainKey(item.bridge.chainId)} size={size} />
+        </View>
+        <View className="border-card absolute rounded-full border-2" style={{ end: -2, bottom: -2 }}>
+          <Mark entity={ids.usdc} size={BADGE} />
+        </View>
+      </View>
+    );
   const token = item.asset === "USDC" ? ids.usdc : ids.eurc;
   const face =
     item.counterpartyLabel === "circle_faucet" ? (
@@ -103,7 +118,9 @@ export function useActivityTitle() {
   return (item: ActivityItem) =>
     item.swap
       ? t("activity.swappedTitle", { from: item.swap.asset, to: item.asset })
-      : item.direction === "in"
+      : item.bridge
+        ? t("activity.bridgedTo", { chain: name(item) })
+        : item.direction === "in"
         ? t("activity.fromName", { name: name(item) })
         : t("activity.toName", { name: name(item) });
 }

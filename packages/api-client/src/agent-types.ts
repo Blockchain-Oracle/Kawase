@@ -28,7 +28,7 @@ export type ActivityLine = {
   counterparty: string;
   counterpartyName: string | null;
   /** Which known wallet it is, for the card's real mark ("swap": the person's own swap). */
-  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | null;
+  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | null;
   /** For a swap: what went out for `amount`. */
   paid?: Money | undefined;
   at: string;
@@ -100,3 +100,15 @@ export type SwapSummary = {
 };
 
 export type ProposeSwapOutput = { intent: import("./types").SwapIntent; summary: SwapSummary };
+
+export type BridgeSummary = {
+  intentId: string;
+  network: AgentNetwork;
+  status: "ready" | "bridging" | "delivered" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in" | "failed";
+  /** "5.00 USDC from Arc Testnet → at least 4.95 USDC on Base Sepolia". */
+  transfer: string | null;
+  route: string | null;
+  problem: string | null;
+};
+
+export type ProposeBridgeOutput = { intent: import("./types").BridgeIntent; summary: BridgeSummary };

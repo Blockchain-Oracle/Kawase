@@ -1,7 +1,7 @@
 // The wallet's life on each network: registration, the relayed 7702 setup, the everyday allowance, and
 // transactions the wallet signs itself. Every signature is checked here before anything is broadcast.
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   erc20Abi,
   hashTypedData,
@@ -15,7 +15,7 @@ import {
 } from "viem";
 
 import { DEFAULT_LIMITS, SECONDS_PER_DAY } from "@kawase/config";
-import { grants, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
+import { grants, intentDrafts, intents, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
   buildAllowanceGrant,
   describeGrant,
@@ -126,8 +126,34 @@ export class WalletService {
     } catch {
       throw problem(HTTP.badGateway, "upstream", "the explorer did not answer");
     }
-    const names = await this.contactNames(userId);
-    return { ...page, items: page.items.map((item) => ({ ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null })) };
+    const [names, bridges] = await Promise.all([this.contactNames(userId), this.bridgeDestinations(userId, page.items.map((item) => item.txHash))]);
+    return {
+      ...page,
+      items: page.items.map((item) => {
+        const bridge = bridges.get(item.txHash.toLowerCase());
+        return bridge
+          ? { ...item, counterpartyLabel: "bridge" as const, bridge, contactName: null }
+          : { ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null };
+      }),
+    };
+  }
+
+  /** Transactions that were the person's own bridges out of Arc → where each went (from the intent's draft). */
+  private async bridgeDestinations(userId: string, hashes: string[]) {
+    const lower = [...new Set(hashes.map((hash) => hash.toLowerCase()))];
+    if (lower.length === 0) return new Map<string, { chainId: number }>();
+    const rows = await this.db
+      .select({ txHash: txAttempts.txHash, payload: intentDrafts.payload })
+      .from(txAttempts)
+      .innerJoin(intents, eq(intents.id, txAttempts.intentId))
+      .innerJoin(intentDrafts, and(eq(intentDrafts.intentId, intents.id), eq(intentDrafts.version, intents.currentDraftVersion)))
+      .where(and(eq(txAttempts.userId, userId), eq(intents.kind, "bridge"), inArray(sql`lower(${txAttempts.txHash})`, lower)));
+    const out = new Map<string, { chainId: number }>();
+    for (const row of rows) {
+      const chainId = (row.payload as { view?: { chainId?: number } } | null)?.view?.chainId;
+      if (row.txHash && chainId) out.set(row.txHash.toLowerCase(), { chainId });
+    }
+    return out;
   }
 
   /** Lower-cased address → the contact's name; the current address of a contact wins over its older ones. */

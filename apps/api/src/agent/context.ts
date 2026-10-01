@@ -16,11 +16,13 @@ import type { FaucetService } from "../faucet/service";
 import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
+import type { BridgeService } from "../bridge/service";
 import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { summarizeSend } from "./send-summary";
+import { summarizeBridge } from "./bridge-summary";
 import { summarizeSwap } from "./swap-summary";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
@@ -41,7 +43,7 @@ const money = (asset: AssetId, baseUnits: string): Money => ({
   display: formatAmount(amount(asset, BigInt(baseUnits)), DISPLAY_LOCALE),
 });
 
-const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)" } as const;
+const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)", bridge: "a bridge to another chain (Circle CCTP)" } as const;
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
@@ -57,12 +59,13 @@ export function buildAgentContext(input: {
   recipients: Recipients;
   sends: SendService;
   swaps: SwapService;
+  bridges: BridgeService;
   requests: RequestService;
   threadId: string;
   lastUserText: string;
   log: Logger;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -109,6 +112,16 @@ export function buildAgentContext(input: {
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "swap"), inArray(intents.state, [...DRAFTABLE])));
       const intent = await swaps.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeSwap(intent) };
+    },
+
+    async proposeBridge(request) {
+      // One open bridge per conversation. Always confirmed on the card (Face ID or an email code).
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "bridge"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await bridges.create(user, request, { surface: "chat", threadId });
+      return { intent, summary: summarizeBridge(intent) };
     },
 
     async createPaymentRequest(request) {

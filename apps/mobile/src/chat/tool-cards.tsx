@@ -20,6 +20,7 @@ import type {
   Money,
   OnNetwork,
   ProposeSendOutput,
+  ProposeBridgeOutput,
   ProposeSwapOutput,
   WalletSummary,
 } from "@kawase/api-client";
@@ -46,6 +47,7 @@ import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { AgentCard, AgentCardLoading } from "./card";
 import { RequestCard } from "./request-card";
 import { ContactsCard, SendCard } from "./send-card";
+import { BridgeCard } from "./bridge-card";
 import { SwapCard } from "./swap-card";
 
 type Network = "mainnet" | "testnet";
@@ -491,6 +493,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_authority: "chat.loadingAuthority",
   propose_send: "chat.loadingSend",
   propose_swap: "chat.loadingSwap",
+  propose_bridge: "chat.loadingBridge",
   find_contacts: "chat.loadingContacts",
   create_payment_request: "chat.loadingRequest",
 };
@@ -539,6 +542,8 @@ export function ToolCard({
       return <SendCard output={part.output as ProposeSendOutput} />;
     case "propose_swap":
       return <SwapCard output={part.output as ProposeSwapOutput} />;
+    case "propose_bridge":
+      return <BridgeCard output={part.output as ProposeBridgeOutput} />;
     case "find_contacts":
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":

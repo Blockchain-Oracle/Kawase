@@ -13,6 +13,7 @@ import { createApp } from "./app";
 import { createTurnkeyReader } from "./auth/turnkey";
 import { circleFaucet } from "./faucet/circle-faucet";
 import { circleOps } from "./send/ops";
+import { appKitBridges } from "./bridge/engine";
 import { appKitSwaps } from "./swap/engine";
 import { createChains } from "./wallet/chain";
 
@@ -42,6 +43,7 @@ const app = createApp({
   approvalSecret: env.AGENT_APPROVAL_SECRET,
   ops: circleOps(env),
   swaps: appKitSwaps(env),
+  bridges: appKitBridges(env),
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,
   webUrl: env.KAWASE_WEB_URL,

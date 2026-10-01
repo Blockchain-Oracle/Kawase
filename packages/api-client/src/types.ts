@@ -136,11 +136,13 @@ export type ActivityItem = {
   amount: string;
   counterparty: string;
   /** Who the counterparty is, when Kawase knows: its own wallets, Circle's faucet, or the user's own address. */
-  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | null;
+  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | null;
   /** The person's own name for the counterparty, when its address is in their contacts. */
   contactName?: string | null;
   /** A swap: this item is what came in, and `swap` is what went out for it in the same transaction. */
   swap?: { asset: "USDC" | "EURC"; amount: string } | null | undefined;
+  /** A bridge out of Arc: the chain the USDC went to. */
+  bridge?: { chainId: number } | null | undefined;
   txHash: string;
   at: string;
   explorerUrl: string;
@@ -336,6 +338,64 @@ export type SwapRequest = {
 export type SwapApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: SwapIntent }
   | { status: "sign"; intent: SwapIntent; approvalId: string; transaction: UnsignedTransaction };
+
+// ── Bridges (Stage 6b) ──────────────────────────────────────────────────────────────────────────────────────
+
+export type BridgeDestinationId = "base" | "ethereum" | "arbitrum" | "optimism" | "polygon" | "avalanche";
+
+/** A chain USDC can be bridged to from the active network (testnet chains on testnet). */
+export type BridgeDestinationView = { id: BridgeDestinationId; chainId: number; name: string };
+
+export type BridgeDraftView = {
+  destination: BridgeDestinationId;
+  chainId: number;
+  /** Base units of USDC burned on Arc. */
+  amount: string;
+  /** The most the route takes on the way, and so the least that arrives. */
+  maxRouteFee: string;
+  minReceived: string;
+  /** The network fee on Arc, USDC base units, estimated. */
+  networkFee: string | null;
+  recipient: string;
+  /** Who moves it ("Circle CCTP · App Kit") and the routes considered with why this one. */
+  provider: string;
+  /** `reason`: quote_only (Kawase does not execute this provider yet), no_quote, timeout, not_on_arc_testnet, not_on_arc. */
+  routes: { provider: string; status: "chosen" | "quoted" | "unavailable"; received: string | null; reason: "quote_only" | "no_quote" | "timeout" | "not_on_arc_testnet" | "not_on_arc" | null }[];
+  quotedAt: string;
+};
+
+/** Where a bridge is after the yes: burning on Arc, waiting for Circle's attestation, minting, delivered. */
+export type BridgeStage = "burning" | "attesting" | "minting" | "delivered";
+
+export type BridgeIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  version: number;
+  request: { destination: BridgeDestinationId | null; amount: string | null };
+  draft: BridgeDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  stage: BridgeStage | null;
+  /** What arrived on the destination, from its mint, once delivered. */
+  received: string | null;
+  tx: { hash: string; explorerUrl: string } | null;
+  mintTx: { hash: string; explorerUrl: string } | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type BridgeRequest = {
+  destination?: BridgeDestinationId | null | undefined;
+  /** Decimal USDC. */
+  amount?: string | null | undefined;
+};
+
+export type BridgeApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: BridgeIntent }
+  | { status: "sign"; intent: BridgeIntent; approvalId: string; transaction: UnsignedTransaction };
 
 // ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
 

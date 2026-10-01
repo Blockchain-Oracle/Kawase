@@ -404,7 +404,8 @@ export class SwapService {
       throw problem(HTTP.badGateway, "quote_unavailable", "the swap route returned calls Kawase does not accept");
     }
 
-    const data = encodeSelfBatch(calls);
+    // Lower-case, as a parsed signed transaction reads it back (App Kit's calldata can carry upper-case hex).
+    const data = encodeSelfBatch(calls).toLowerCase() as Hex;
     const [nonce, price, estimate] = await Promise.all([
       client.getTransactionCount({ address: draft.from, blockTag: "pending" }),
       walletGasPrice(client),
@@ -500,16 +501,19 @@ export class SwapService {
 
       const parsed = parseTransaction(input.signedTransaction);
       const signer = await recoverTransactionAddress({ serializedTransaction: input.signedTransaction as never }).catch(() => undefined);
-      const matches =
-        signer?.toLowerCase() === draft.from.toLowerCase() &&
-        parsed.chainId === draft.chainId &&
-        parsed.to?.toLowerCase() === draft.from.toLowerCase() &&
-        parsed.data === unsigned.data &&
-        (parsed.value ?? ZERO) === ZERO &&
-        parsed.nonce === unsigned.nonce &&
-        (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= draft.maxFee;
+      const checks = {
+        signer: signer?.toLowerCase() === draft.from.toLowerCase(),
+        chain: parsed.chainId === draft.chainId,
+        to: parsed.to?.toLowerCase() === draft.from.toLowerCase(),
+        data: parsed.data?.toLowerCase() === unsigned.data.toLowerCase(),
+        value: (parsed.value ?? ZERO) === ZERO,
+        nonce: parsed.nonce === unsigned.nonce,
+        fee: (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= draft.maxFee,
+      };
+      const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);
+      const matches = failed.length === 0;
       if (!matches) {
-        this.log.warn({ intentId, approvalId: approval.id }, "security.draft_mismatch");
+        this.log.warn({ intentId, approvalId: approval.id, failed }, "security.draft_mismatch");
         await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, approval.id));
         return { kind: "mismatch" as const };
       }

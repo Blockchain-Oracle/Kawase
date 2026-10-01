@@ -14,3 +14,14 @@ export const SWAP_PROVIDER_LABEL = "Circle App Kit";
  * a bigger move does, because the calls' own minimum then falls below what was shown.
  */
 export const SWAP_ROUTE_SLIPPAGE_DIVISOR = 2;
+
+/** Gas for an approve + burn batch when an estimate is not possible yet (measured 180,015 on Arc testnet, 2026-10-01). */
+export const BRIDGE_BATCH_GAS_ESTIMATE = 400_000n;
+/** Who moves bridged USDC today (shown on the confirm card). */
+export const BRIDGE_PROVIDER_LABEL = "Circle CCTP · App Kit";
+/**
+ * The fee cap a bridge shows and enforces is the route's quoted fee plus this much headroom: Circle's forwarder fee
+ * drifts by a few millionths between quotes (0.054614 → 0.054639 USDC within an hour, 2026-10-01), which must not
+ * turn every approval into a new version. What arrives is still the amount less the actual fee.
+ */
+export const BRIDGE_FEE_HEADROOM_PERCENT = 120n;

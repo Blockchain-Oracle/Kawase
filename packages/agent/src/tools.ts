@@ -96,6 +96,16 @@ export function buildTools(context: AgentContext) {
       execute: async ({ amount, from, to }) => context.proposeSwap({ amount: amount ?? null, tokenIn: from ?? null, tokenOut: to ?? null }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    propose_bridge: tool({
+      description:
+        "Prepare moving the person's USDC from Arc to their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche; the testnet versions on testnet). Pass the chain and the amount as digits with a dot. Kawase quotes Circle's CCTP route (native USDC burned on Arc, minted there by Circle's forwarder, no gas needed on the other chain), compares the other routes that serve Arc, runs every check and shows a card. The person confirms on the card with Face ID (an email code on the web); nothing moves from this call.",
+      inputSchema: z.object({
+        destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("The chain they named; omit if they did not say"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say how much"),
+      }),
+      execute: async ({ destination, amount }) => context.proposeBridge({ destination: destination ?? null, amount: amount ?? null }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     create_payment_request: tool({
       description:
         "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",

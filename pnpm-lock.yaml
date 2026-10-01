@@ -141,6 +141,9 @@ importers:
       '@kawase/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@kawase/identity':
+        specifier: workspace:*
+        version: link:../../packages/identity
       '@kawase/integrations-app-kit':
         specifier: workspace:*
         version: link:../../packages/integrations/app-kit

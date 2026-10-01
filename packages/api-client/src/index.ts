@@ -30,6 +30,10 @@ import type {
   SwapApproveResponse,
   SwapIntent,
   SwapRequest,
+  BridgeApproveResponse,
+  BridgeDestinationView,
+  BridgeIntent,
+  BridgeRequest,
   PaymentRequest,
   PaymentRequestInput,
   PublicPaymentRequest,
@@ -200,6 +204,20 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
+    },
+
+    bridges: {
+      /** Where USDC can go from the active network. */
+      destinations: () => call<{ destinations: BridgeDestinationView[] }>("GET", "/bridges/destinations"),
+      create: (request: BridgeRequest) => call<{ intent: BridgeIntent }>("POST", "/bridges", request),
+      get: (id: string) => call<{ intent: BridgeIntent }>("GET", `/bridges/${id}`),
+      revise: (id: string, patch: BridgeRequest) => call<{ intent: BridgeIntent }>("PATCH", `/bridges/${id}`, patch),
+      cancel: (id: string) => call<{ intent: BridgeIntent }>("POST", `/bridges/${id}/cancel`),
+      /** Approve one version: the answer carries the one transaction (approve + burn) for the wallet to sign. */
+      approve: (id: string, version: number, idempotencyKey?: string) =>
+        call<BridgeApproveResponse>("POST", `/bridges/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signedTransaction: string) =>
+        call<BridgeApproveResponse>("POST", `/bridges/${id}/signature`, { approvalId, signedTransaction }),
     },
 
     requests: {

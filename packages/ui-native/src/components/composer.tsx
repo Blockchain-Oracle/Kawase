@@ -6,6 +6,7 @@ import { cn, INPUT_TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ArrowUp, Mic, Paperclip } from "lucide-react-native";
 
 const WEB_NO_RESIZE = { resize: "none" } as object;
+import * as React from "react";
 import { Platform, TextInput, View } from "react-native";
 
 type ComposerLabels = {
@@ -27,6 +28,11 @@ type ComposerProps = {
   className?: string;
 };
 
+/** How long after a send a returning whole message counts as iOS's autocorrect echo. */
+const AUTOCORRECT_ECHO_MS = 400;
+/** An autocorrection can shorten a word or two. */
+const ECHO_SLACK_CHARS = 4;
+
 function Composer({
   value,
   onValueChange,
@@ -38,11 +44,24 @@ function Composer({
   className,
 }: ComposerProps) {
   const canSend = !disabled && value.trim().length > 0;
+  // iOS commits a pending autocorrection after the field was cleared on send, which would put the sent message
+  // back ("arbitrum" returning as "Arboretum"). A change that brings back a whole message right after a send is
+  // that echo, not typing, and is ignored.
+  const sent = React.useRef<{ at: number; text: string } | undefined>(undefined);
+  const submit = () => {
+    sent.current = { at: Date.now(), text: value };
+    onSubmit();
+  };
+  const change = (next: string) => {
+    const last = sent.current;
+    if (last && Date.now() - last.at < AUTOCORRECT_ECHO_MS && next.length >= last.text.trim().length - ECHO_SLACK_CHARS) return;
+    onValueChange(next);
+  };
   return (
     <View className={cn("border-border bg-card rounded-xl border p-2", className)}>
       <TextInput
         value={value}
-        onChangeText={onValueChange}
+        onChangeText={change}
         placeholder={labels.placeholder}
         placeholderTextColorClassName="accent-muted-foreground"
         editable={!disabled}
@@ -75,7 +94,7 @@ function Composer({
             size="icon"
             accessibilityLabel={labels.send}
             disabled={!canSend}
-            onPress={onSubmit}
+            onPress={submit}
             className="size-11"
           >
             <Icon as={ArrowUp} className="text-primary-foreground size-5" />

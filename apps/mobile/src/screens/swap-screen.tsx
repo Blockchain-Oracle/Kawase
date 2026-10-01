@@ -42,6 +42,7 @@ import { applyKey, decimalSeparator, displayAmount, Keypad } from "@/send/keypad
 import { useSwapApproveLabel, useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapReview } from "@/swap/swap-review";
 import { SwapStatus } from "@/swap/swap-status";
+import { TradeSwitch } from "@/swap/trade-switch";
 import { isSwapFinished, isSwapMoving, isSwapOpen, useSwap } from "@/swap/use-swap";
 
 const STRIP_INSET = 6;
@@ -128,6 +129,11 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
           {t("swap.title")}
         </Text>
       </View>
+      {!settled && step === "amount" ? (
+        <View className="px-5 pt-3">
+          <TradeSwitch current="swap" />
+        </View>
+      ) : null}
     </>
   );
 

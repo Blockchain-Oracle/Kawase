@@ -48,7 +48,7 @@ class Captured extends Error {
   }
 }
 
-function kitChain(network: NetworkContext) {
+export function kitChain(network: NetworkContext) {
   return KIT_CHAINS[network.appKitChain];
 }
 
@@ -59,7 +59,7 @@ export function swapAdapterContract(network: NetworkContext): Address {
   return adapter as Address;
 }
 
-function adapterFor(input: Pick<SwapInput, "network" | "client" | "from">, signing: SigningStrategy) {
+export function adapterFor(input: Pick<SwapInput, "network" | "client" | "from">, signing: SigningStrategy) {
   const chain = kitChain(input.network);
   return createViemAdapter({
     capabilities: { addressContext: "user-controlled", supportedChains: [chain] },
@@ -125,7 +125,7 @@ export const prepareSwap = (input: SwapInput): Promise<SwapCall[]> => withRouteR
  * for the same pair, amount and slippage within seconds, mostly after several calls in a row (2026-10-01). Both the
  * estimate and the build call it, so both retry with a growing pause.
  */
-async function withRouteRetry<T>(run: () => Promise<T>): Promise<T> {
+export async function withRouteRetry<T>(run: () => Promise<T>): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
       return await run();
@@ -144,7 +144,11 @@ const noRouteYet = (error: unknown) => {
 };
 const NO_ROUTE_CODE = 331001;
 
-async function prepareOnce(input: SwapInput): Promise<SwapCall[]> {
+/**
+ * Runs a kit operation with a strategy that only captures: the first `evm-calls` payload (the whole batch, since
+ * the strategy declares `atomicBatch`) is kept and the kit is stopped there, before anything is signed.
+ */
+export async function capturedCalls(input: Pick<SwapInput, "network" | "client" | "from">, run: (adapter: ReturnType<typeof adapterFor>) => Promise<unknown>): Promise<SwapCall[]> {
   let captured: EvmCallsPayload | undefined;
   const capture: SigningStrategy = {
     manifest: { name: "kawase-capture", supportedPayloadFamilies: ["evm-calls"], broadcasts: true, atomicBatch: true },
@@ -153,21 +157,25 @@ async function prepareOnce(input: SwapInput): Promise<SwapCall[]> {
       return Promise.reject(new Captured());
     },
   };
-  const kit = new AppKit();
   try {
-    await kit.swap({
-      from: { adapter: adapterFor(input, capture), chain: input.network.appKitChain },
+    await run(adapterFor(input, capture));
+  } catch (error) {
+    if (!captured) throw error;
+  }
+  if (!captured) throw new Error("App Kit finished without asking to sign");
+  return captured.calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO }));
+}
+
+const prepareOnce = (input: SwapInput): Promise<SwapCall[]> =>
+  capturedCalls(input, (adapter) =>
+    new AppKit().swap({
+      from: { adapter, chain: input.network.appKitChain },
       tokenIn: input.tokenIn,
       tokenOut: input.tokenOut,
       amountIn: input.amountIn,
       config: { apiKey: input.apiKey, slippageBps: input.slippageBps, allowanceStrategy: "approve" },
-    } as never);
-  } catch (error) {
-    if (!captured) throw error;
-  }
-  if (!captured) throw new Error("App Kit finished a swap without asking to sign");
-  return captured.calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO }));
-}
+    } as never),
+  );
 
 const APPROVE_ABI = parseAbi([
   "function approve(address spender, uint256 amount)",

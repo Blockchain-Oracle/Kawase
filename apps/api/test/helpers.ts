@@ -12,6 +12,7 @@ import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
 import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { OpsExecutor } from "../src/send/ops";
 import type { Chains } from "../src/wallet/chain";
+import { noBridges, type BridgeEngine } from "../src/bridge/engine";
 import { noSwaps, type SwapEngine } from "../src/swap/engine";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -73,6 +74,7 @@ export function testApp(
   faucet: FaucetDrip = okFaucet,
   ops: OpsExecutor = noOps,
   swaps: SwapEngine = noSwaps,
+  bridges: BridgeEngine = noBridges,
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -86,6 +88,7 @@ export function testApp(
     faucet,
     ops,
     swaps,
+    bridges,
     models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,
