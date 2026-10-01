@@ -9,7 +9,7 @@
     "lint": "eslint src",
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
-    "test": "tsx --test test/*.test.ts"
+    "test": "tsx --test --test-concurrency=1 test/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -24,6 +24,7 @@
     "@kawase/db": "workspace:*",
     "@kawase/env": "workspace:*",
     "@kawase/i18n": "workspace:*",
+    "@kawase/integrations-app-kit": "workspace:*",
     "@kawase/integrations-delegation": "workspace:*",
     "@kawase/intents": "workspace:*",
     "@kawase/log": "workspace:*",

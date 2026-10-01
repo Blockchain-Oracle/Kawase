@@ -2,7 +2,8 @@
 // (account, network), shared by Home and the Activity tab, so switching networks shows that network's own last
 // rows — or a skeleton — and never the other network's rows under its header. Every read carries a number; a reply
 // that is not the newest for its (account, network) is dropped, so a slow answer cannot overwrite a newer one. A
-// failed refresh keeps the rows already shown for that network and marks them stale (Codex review R04).
+// failed refresh keeps the rows already shown for that network and marks them stale (Codex review R04). The api reads
+// one page; whether older movements exist, and the explorer page that has them all, travel with the rows (R15).
 import * as React from "react";
 
 import type { ActivityItem, NetworkId } from "@kawase/api-client";
@@ -15,9 +16,12 @@ export type ActivityState = {
   items: ActivityItem[];
   /** The rows are from an earlier read: the last refresh failed. */
   stale: boolean;
+  /** Older movements exist beyond these rows; all of them are at `historyUrl`. */
+  more: boolean;
+  historyUrl: string | null;
 };
 
-type Entry = { items: ActivityItem[]; loaded: boolean; failed: boolean };
+type Entry = { items: ActivityItem[]; loaded: boolean; failed: boolean; more: boolean; historyUrl: string | null };
 
 // One copy per (account, network) for the whole app, and the newest read of each.
 const entries = new Map<string, Entry>();
@@ -43,14 +47,14 @@ async function read(key: string, network: NetworkId) {
   inFlight.add(key);
   emit();
   try {
-    const { items } = await api.wallet.activity(network);
+    const { items, more, historyUrl } = await api.wallet.activity(network);
     if (newest.get(key) !== id) return;
     // Rows always say which network they belong to; anything else is not shown here.
-    entries.set(key, { items: items.filter((item) => item.network === network), loaded: true, failed: false });
+    entries.set(key, { items: items.filter((item) => item.network === network), loaded: true, failed: false, more: Boolean(more), historyUrl: historyUrl ?? null });
   } catch {
     if (newest.get(key) !== id) return;
     const previous = entries.get(key);
-    entries.set(key, { items: previous?.items ?? [], loaded: previous?.loaded ?? false, failed: true });
+    entries.set(key, { ...(previous ?? { items: [], loaded: false, more: false, historyUrl: null }), failed: true });
   } finally {
     if (newest.get(key) === id) inFlight.delete(key);
     emit();
@@ -83,11 +87,11 @@ export function useActivity(network: NetworkId) {
     if (!stale) void refresh();
   }, [refresh, stale]);
 
+  const none = { items: [], stale: false, more: false, historyUrl: null };
   let state: ActivityState;
-  if (!key) state = { status: status === "loading" ? "loading" : "ready", items: [], stale: false };
-  else if (!entry?.loaded) {
-    state = entry?.failed && !reading ? { status: "error", items: [], stale: false } : { status: "loading", items: [], stale: false };
-  } else state = { status: entry.failed ? "error" : "ready", items: entry.items, stale: entry.failed };
+  if (!key) state = { status: status === "loading" ? "loading" : "ready", ...none };
+  else if (!entry?.loaded) state = { status: entry?.failed && !reading ? "error" : "loading", ...none };
+  else state = { status: entry.failed ? "error" : "ready", items: entry.items, stale: entry.failed, more: entry.more, historyUrl: entry.historyUrl };
 
   return { ...state, network, refresh };
 }

@@ -23,6 +23,10 @@ type NetworkPillProps = {
   className?: string;
 };
 
+/** The pill is drawn 24 pt tall; the touch target reaches 44 pt above and below it (not sideways, where the
+ * language pill sits close by). */
+export const PILL_HIT_SLOP = { top: 10, bottom: 10 } as const;
+
 export function NetworkPill({ className }: NetworkPillProps) {
   const { t } = useT();
   const { network, nextName, busy, toggle, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
@@ -33,6 +37,7 @@ export function NetworkPill({ className }: NetworkPillProps) {
         accessibilityRole="switch"
         accessibilityLabel={t("network.switchTo", { network: nextName })}
         accessibilityState={{ checked: !testnet, busy }}
+        hitSlop={PILL_HIT_SLOP}
         onPress={toggle}
         className={cn("active:opacity-70", className)}
       >

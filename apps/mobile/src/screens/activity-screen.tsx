@@ -1,11 +1,13 @@
 // The Activity tab (journey 11): every USDC and EURC movement on the active network, read from the chain's
 // explorer through the api, with filters (all · received · sent), skeleton rows while loading, an inline error
-// with Retry, a quiet "couldn't refresh" line over rows from an earlier read, the designed empty state, pull to
-// refresh, and the receipt sheet on tap. Rows are kept per network, so a switch never relabels another network's. Automations and "needs you"
-// join the filters when those stages ship (8/9); Kawase's own decision record per row arrives with Stage 12.
+// with Retry, a quiet "couldn't refresh" line over rows from an earlier read, the designed empty state (naming the
+// filter when one is on), pull to refresh, and the receipt sheet on tap. The api reads one page of history; when
+// older movements exist, the end of the list says so and links the full history on ArcScan (Codex review R15).
+// Rows are kept per network, so a switch never relabels another network's. Automations and "needs you" join the
+// filters when those stages ship (8/9); Kawase's own decision record per row arrives with Stage 12.
 import { useFocusEffect } from "expo-router";
 import * as React from "react";
-import { RefreshControl, ScrollView, View } from "react-native";
+import { Linking, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { ActivityItem } from "@kawase/api-client";
@@ -16,6 +18,7 @@ import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { ActivityRow, ActivityRowSkeleton } from "@/activity/activity-row";
 import { ReceiptSheet } from "@/activity/receipt-sheet";
@@ -52,6 +55,10 @@ export function ActivityScreen() {
   );
 
   const items = activity.items.filter((item) => filter === "all" || item.direction === filter);
+  const historyUrl = activity.more ? activity.historyUrl : null;
+  const emptyTitle = { all: t("activity.emptyTitle"), in: t("activity.emptyReceived"), out: t("activity.emptySent") }[filter];
+  // A filter with nothing in it, over a history that has rows: point back to All rather than "nothing yet".
+  const emptyBody = filter !== "all" && activity.items.length > 0 ? t("activity.emptyFilterBody") : t("activity.emptyBody");
   const pull = async () => {
     setRefreshing(true);
     await activity.refresh();
@@ -79,13 +86,24 @@ export function ActivityScreen() {
           ]}
         />
 
+        {activity.stale ? (
+          <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2.5">
+            <Text accessibilityLiveRegion="polite" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
+              {t("activity.stale")}
+            </Text>
+            <Button size="sm" variant="ghost" onPress={() => void activity.refresh()}>
+              <Text className="text-foreground">{t("common.retry")}</Text>
+            </Button>
+          </View>
+        ) : null}
+
         {activity.status === "loading" ? (
           <ListGroup>
             {Array.from({ length: SKELETON_ROWS }, (_, i) => (
               <ActivityRowSkeleton key={i} />
             ))}
           </ListGroup>
-        ) : activity.status === "error" && items.length === 0 ? (
+        ) : activity.status === "error" && activity.items.length === 0 ? (
           <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
             <Text className="text-muted-foreground flex-1 text-sm">{t("activity.loadFailed")}</Text>
             <Button size="sm" variant="secondary" onPress={() => void activity.refresh()}>
@@ -93,24 +111,23 @@ export function ActivityScreen() {
             </Button>
           </View>
         ) : items.length === 0 ? (
-          <EmptyState art={<CoinStack width={ART_WIDTH} />} title={t("activity.emptyTitle")} body={t("activity.emptyBody")} />
+          <EmptyState art={<CoinStack width={ART_WIDTH} />} title={emptyTitle} body={emptyBody} />
         ) : (
-          <>
-            {activity.stale ? (
-              <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2.5">
-                <Text accessibilityLiveRegion="polite" className="text-muted-foreground flex-1 text-sm">{t("activity.stale")}</Text>
-                <Button size="sm" variant="ghost" onPress={() => void activity.refresh()}>
-                  <Text className="text-foreground">{t("common.retry")}</Text>
-                </Button>
-              </View>
-            ) : null}
-            <ListGroup>
-              {items.map((item) => (
-                <ActivityRow key={item.id} item={item} onPress={() => setOpen(item)} />
-              ))}
-            </ListGroup>
-          </>
+          <ListGroup>
+            {items.map((item) => (
+              <ActivityRow key={item.id} item={item} onPress={() => setOpen(item)} />
+            ))}
+          </ListGroup>
         )}
+
+        {historyUrl ? (
+          <View className="items-center gap-1 pb-2">
+            <Text className="text-muted-foreground text-center text-sm">{t("activity.truncated")}</Text>
+            <Button variant="link" size="sm" accessibilityRole="link" onPress={() => void Linking.openURL(historyUrl)}>
+              <Text>{t("activity.fullHistory")}</Text>
+            </Button>
+          </View>
+        ) : null}
       </ScrollView>
       <ReceiptSheet item={open} onClose={() => setOpen(undefined)} onContactSaved={() => void activity.refresh()} />
     </View>

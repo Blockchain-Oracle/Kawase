@@ -20,7 +20,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
-import { CounterpartyAvatar, shortAddress, useCounterpartyName, useSignedAmount } from "@/activity/activity-row";
+import { CounterpartyAvatar, shortAddress, useActivityTitle, useSignedAmount, useSwapPaid } from "@/activity/activity-row";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
@@ -45,7 +45,8 @@ export function ReceiptSheet({
   const { status } = useSession();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
-  const name = useCounterpartyName();
+  const title = useActivityTitle();
+  const paid = useSwapPaid();
   const signed = useSignedAmount();
   const [saving, setSaving] = React.useState<string>();
   const canSave = Boolean(item) && status === "account" && item?.counterpartyLabel === null && !item?.contactName;
@@ -70,11 +71,7 @@ export function ReceiptSheet({
           <>
             <View className="items-center gap-3 pt-2">
               <CounterpartyAvatar item={item} size={AVATAR} />
-              <Text className="text-muted-foreground text-base">
-                {item.direction === "in"
-                  ? t("activity.fromName", { name: name(item) })
-                  : t("activity.toName", { name: name(item) })}
-              </Text>
+              <Text className="text-muted-foreground text-base">{title(item)}</Text>
               <Amount
                 className={
                   item.direction === "in"
@@ -84,6 +81,7 @@ export function ReceiptSheet({
               >
                 {signed(item)}
               </Amount>
+              {paid(item) ? <Text className="text-muted-foreground text-base">{paid(item)}</Text> : null}
             </View>
             <ListGroup>
               <ListRow

@@ -27,8 +27,10 @@ export type ActivityLine = {
   amount: Money;
   counterparty: string;
   counterpartyName: string | null;
-  /** Which known wallet it is, for the card's real mark. */
-  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | null;
+  /** Which known wallet it is, for the card's real mark ("swap": the person's own swap). */
+  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | null;
+  /** For a swap: what went out for `amount`. */
+  paid?: Money | undefined;
   at: string;
   explorerUrl: string;
 };
@@ -84,3 +86,17 @@ export type SendSummary = {
 };
 
 export type ProposeSendOutput = { intent: import("./types").SendIntent; summary: SendSummary };
+
+export type SwapSummary = {
+  intentId: string;
+  network: AgentNetwork;
+  status: "ready" | "swapping" | "swapped" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in" | "failed";
+  /** "5.00 USDC → about 4.11 EURC (at least 4.07 EURC)". */
+  trade: string | null;
+  /** Quoted rate against Circle's market rate, in words. */
+  rate: string | null;
+  problem: string | null;
+  warnings: string[];
+};
+
+export type ProposeSwapOutput = { intent: import("./types").SwapIntent; summary: SwapSummary };

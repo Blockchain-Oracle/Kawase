@@ -42,7 +42,7 @@ const TARGET: Record<CapabilityId, Record<NetworkId, CapabilityState>> = {
  * swap and bridge in Stage 6, …). Until then it reports "coming" wherever the target says "available", so
  * neither the app nor the agent is ever told that something unbuilt can be done.
  */
-export const SHIPPED_CAPABILITIES: ReadonlySet<CapabilityId> = new Set<CapabilityId>(["faucet", "send", "contacts", "request", "payment_links"]);
+export const SHIPPED_CAPABILITIES: ReadonlySet<CapabilityId> = new Set<CapabilityId>(["faucet", "send", "contacts", "request", "payment_links", "swap"]);
 
 const shippedState = (id: CapabilityId, state: CapabilityState): CapabilityState =>
   state === "available" && !SHIPPED_CAPABILITIES.has(id) ? "coming" : state;

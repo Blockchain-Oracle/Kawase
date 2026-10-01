@@ -136,13 +136,18 @@ export type ActivityItem = {
   amount: string;
   counterparty: string;
   /** Who the counterparty is, when Kawase knows: its own wallets, Circle's faucet, or the user's own address. */
-  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | null;
+  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | null;
   /** The person's own name for the counterparty, when its address is in their contacts. */
   contactName?: string | null;
+  /** A swap: this item is what came in, and `swap` is what went out for it in the same transaction. */
+  swap?: { asset: "USDC" | "EURC"; amount: string } | null | undefined;
   txHash: string;
   at: string;
   explorerUrl: string;
 };
+
+/** One page of history: the newest movements, whether older ones exist, and the explorer page that has them all. */
+export type ActivityPage = { items: ActivityItem[]; more: boolean; historyUrl: string | null };
 
 export type ThreadSummary = { id: string; title: string | null; network: NetworkId; lastMessageAt: string };
 
@@ -277,6 +282,60 @@ export type SendRequest = {
 export type SendApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: SendIntent }
   | { status: "sign"; intent: SendIntent; approvalId: string; transaction: UnsignedTransaction };
+
+// ── Swaps (Stage 6) ─────────────────────────────────────────────────────────────────────────────────────────
+
+/** What a swap's numbers looked like when drafted. Amounts are base units of their own token. */
+export type SwapDraftView = {
+  tokenIn: "USDC" | "EURC";
+  tokenOut: "USDC" | "EURC";
+  amountIn: string;
+  /** What the route expects to deliver. */
+  estimatedOut: string;
+  /** The least it may deliver; the swap reverts below this. */
+  minOut: string;
+  slippageBps: number;
+  /** tokenOut per one tokenIn, from the quote, as a decimal string. */
+  rate: string;
+  /** The same from Circle's market prices, when known. */
+  marketRate: string | null;
+  /** How far the quote is under the market rate, in basis points (negative when better). */
+  rateGapBps: number | null;
+  /** Route fees in base units of tokenIn, and the network fee estimate in USDC base units. */
+  fees: { route: string; network: string | null };
+  /** Who quoted it ("Circle App Kit") and when. */
+  provider: string;
+  quotedAt: string;
+};
+
+export type SwapIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  version: number;
+  request: { tokenIn: "USDC" | "EURC" | null; tokenOut: "USDC" | "EURC" | null; amount: string | null };
+  draft: SwapDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  /** What actually arrived, from the receipt, once it is done. */
+  received: string | null;
+  tx: { hash: string; explorerUrl: string } | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type SwapRequest = {
+  tokenIn?: "USDC" | "EURC" | null | undefined;
+  tokenOut?: "USDC" | "EURC" | null | undefined;
+  /** Decimal amount of tokenIn. */
+  amount?: string | null | undefined;
+};
+
+export type SwapApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: SwapIntent }
+  | { status: "sign"; intent: SwapIntent; approvalId: string; transaction: UnsignedTransaction };
 
 // ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
 

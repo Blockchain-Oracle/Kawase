@@ -13,7 +13,7 @@ import {
   WATCH_HEAD_LAG_BLOCKS,
   WATCH_MAX_BLOCKS,
 } from "@kawase/config";
-import { chainEvents, contacts, contactAddresses, indexerCursors, users, wallets, type Db } from "@kawase/db";
+import { chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS, USDC_NATIVE_DECIMALS, rescale } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
@@ -124,6 +124,12 @@ export class IncomingWatcher {
         .onConflictDoNothing({ target: [chainEvents.chainId, chainEvents.txHash, chainEvents.logIndex] })
         .returning({ id: chainEvents.id });
       if (!inserted) return;
+      // The person's own transaction (a swap's output coming back) is not money received from someone.
+      const [own] = await tx
+        .select({ id: txAttempts.id })
+        .from(txAttempts)
+        .where(and(eq(txAttempts.userId, userId), eq(txAttempts.chainId, chainId), eq(txAttempts.txHash, entry.transactionHash!.toLowerCase())));
+      if (own) return;
       const name = await this.senderName(tx, userId, from);
       await this.inbox.add(tx, {
         userId,

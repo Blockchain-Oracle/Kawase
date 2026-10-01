@@ -1,0 +1,29 @@
+{
+  "name": "@kawase/integrations-app-kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Circle App Kit for swaps and bridges, driven by Kawase: the kit quotes and builds the calls, the user's own wallet signs them as one batch. Server-only (the kit's API key is a server secret).",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test:arc-testnet": "tsx test/swap.integration.ts"
+  },
+  "dependencies": {
+    "@circle-fin/adapter-viem-v2": "1.18.0",
+    "@circle-fin/app-kit": "1.15.3",
+    "@kawase/networks": "workspace:*",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@circle-fin/developer-controlled-wallets": "catalog:",
+    "@kawase/integrations-delegation": "workspace:*",
+    "@types/node": "catalog:",
+    "dotenv": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

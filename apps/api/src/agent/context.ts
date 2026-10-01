@@ -16,10 +16,12 @@ import type { FaucetService } from "../faucet/service";
 import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
+import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { summarizeSend } from "./send-summary";
+import { summarizeSwap } from "./swap-summary";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -39,7 +41,7 @@ const money = (asset: AssetId, baseUnits: string): Money => ({
   display: formatAmount(amount(asset, BigInt(baseUnits)), DISPLAY_LOCALE),
 });
 
-const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself" } as const;
+const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)" } as const;
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
@@ -54,12 +56,13 @@ export function buildAgentContext(input: {
   contacts: ContactService;
   recipients: Recipients;
   sends: SendService;
+  swaps: SwapService;
   requests: RequestService;
   threadId: string;
   lastUserText: string;
   log: Logger;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -82,7 +85,7 @@ export function buildAgentContext(input: {
       await db
         .update(intents)
         .set({ state: "canceled" })
-        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), inArray(intents.state, [...DRAFTABLE])));
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "send"), inArray(intents.state, [...DRAFTABLE])));
       let intent = await sends.create(user, request, { surface: "chat", threadId });
       // D33 / DESIGN.md: inside the allowance the agent just sends and says so. The person's own request is the
       // instruction; the policy has already decided that no second look is needed (above the allowance, a new
@@ -95,6 +98,17 @@ export function buildAgentContext(input: {
         if (answer) intent = answer.intent;
       }
       return { intent, summary: summarizeSend(intent) };
+    },
+
+    async proposeSwap(request) {
+      // One open swap per conversation, like sends. A swap is always confirmed on the card (Face ID or an email
+      // code): the daily allowance only covers transfers, so nothing is approved here.
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "swap"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await swaps.create(user, request, { surface: "chat", threadId });
+      return { intent, summary: summarizeSwap(intent) };
     },
 
     async createPaymentRequest(request) {
@@ -146,6 +160,7 @@ export function buildAgentContext(input: {
         counterparty: item.counterparty,
         counterpartyName: item.contactName ?? (item.counterpartyLabel ? COUNTERPARTY_NAMES[item.counterpartyLabel] : null),
         label: item.counterpartyLabel,
+        ...(item.swap ? { paid: money(item.swap.asset, item.swap.amount) } : {}),
         at: item.at,
         explorerUrl: item.explorerUrl,
       }));

@@ -1,7 +1,10 @@
 // The glass dock as the tab bar (Fomo F12 / M09, in Kawase's material): Home · Chat · orb · Activity · Profile.
 // The four tabs are the (tabs) routes; the orb in the centre is not a route — it opens the voice overlay over the
 // live page. Given to expo-router's `Tabs` as `tabBar`, so tab state, deep links and the hardware back button
-// keep working; the dock floats over the pages, which pad themselves with `useDockClearance`.
+// keep working; the dock floats over the pages, which pad themselves with `useDockClearance`. The four tabs are
+// announced as tabs and the orb as a button (Codex review R13); the orb slot is the voice overlay's trigger, and its
+// orb steps aside while the overlay's orb is up so there is only ever one (R16). The bar follows the reading
+// direction, bubble included.
 import type { Tabs } from "expo-router";
 import { Activity, Home, MessageCircle, UserRound } from "lucide-react-native";
 import type * as React from "react";
@@ -12,6 +15,7 @@ import { tokens } from "@kawase/ui-tokens";
 
 import { Orb } from "@/components/orb";
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { ORB_DOCK_SIZE } from "@/overlay/voice-overlay";
 import { useTheme } from "@/theme/theme-provider";
@@ -31,7 +35,9 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
   const { mode, network } = useTheme();
   const colors = useThemeColors();
   const overlay = useOverlay();
+  const { rtl } = useLocale();
   const activeKey = state.routes[state.index]?.name ?? "index";
+  const orbAway = overlay.shown === "voice";
 
   const labels: Record<string, string> = {
     index: t("home.dockHome"),
@@ -47,9 +53,11 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
       ? {
           key,
           label: labels[key]!,
+          action: true,
+          slotRef: overlay.voiceTrigger,
           render: () => (
-            <View style={{ width: ORB_DOCK_SIZE, height: ORB_DOCK_SIZE }}>
-              <Orb colors={tokens.orb[network]} level={ORB_IDLE_LEVEL} className="size-full" />
+            <View style={{ width: ORB_DOCK_SIZE, height: ORB_DOCK_SIZE, opacity: orbAway ? 0 : 1 }}>
+              <Orb colors={tokens.orb[network]} level={ORB_IDLE_LEVEL} paused={orbAway} className="size-full" />
             </View>
           ),
         }
@@ -68,5 +76,5 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
     if (key !== activeKey && !event.defaultPrevented) navigation.navigate(route.name, route.params);
   };
 
-  return <GlassDock items={items} activeKey={activeKey} onPress={onPress} scheme={mode} tint={colors.glass} bottomInset={insets.bottom} />;
+  return <GlassDock items={items} activeKey={activeKey} onPress={onPress} scheme={mode} tint={colors.glass} bottomInset={insets.bottom} rtl={rtl} />;
 }

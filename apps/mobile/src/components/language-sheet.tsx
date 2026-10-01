@@ -13,6 +13,7 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 
+import { PILL_HIT_SLOP } from "@/components/network-pill";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -57,6 +58,7 @@ export function LanguagePill({ onPress, className }: LanguagePillProps) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("settings.language")}
+      hitSlop={PILL_HIT_SLOP}
       onPress={onPress}
       className={cn("bg-secondary active:bg-muted flex-row items-center gap-1.5 rounded-full px-2.5 py-1", className)}
     >

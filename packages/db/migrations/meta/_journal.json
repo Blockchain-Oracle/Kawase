@@ -57,6 +57,13 @@
       "when": 1790844528947,
       "tag": "0007_requests_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790848007950,
+      "tag": "0008_swaps",
+      "breakpoints": true
     }
   ]
 }

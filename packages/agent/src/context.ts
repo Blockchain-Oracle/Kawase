@@ -11,7 +11,9 @@ import type {
   PaymentRequest,
   PaymentRequestInput,
   ProposeSendOutput,
+  ProposeSwapOutput,
   SendRequest,
+  SwapRequest,
   WalletSummary,
 } from "@kawase/api-client";
 
@@ -24,8 +26,11 @@ export type {
   FaucetResult,
   Money,
   ProposeSendOutput,
+  ProposeSwapOutput,
   SendRequest,
   SendSummary,
+  SwapRequest,
+  SwapSummary,
   WalletSummary,
 } from "@kawase/api-client";
 
@@ -43,6 +48,8 @@ export type AgentContext = {
   authority(): Promise<AuthoritySummary>;
   /** Drafts a send from the person's words; code resolves the recipient and runs every check (K2). */
   proposeSend(input: SendRequest): Promise<ProposeSendOutput>;
+  /** Drafts a swap between USDC and EURC with a fresh quote; the person approves on the card (always Face ID). */
+  proposeSwap(input: SwapRequest): Promise<ProposeSwapOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;

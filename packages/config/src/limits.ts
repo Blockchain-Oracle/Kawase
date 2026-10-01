@@ -14,6 +14,10 @@ export type LimitDefaults = {
   firstTimeRecipientApprovalThreshold: bigint;
   maxSlippageStableBps: number;
   maxSlippageOtherBps: number;
+  /** A swap quoted this far below Circle's market rate is refused (ARCHITECTURE §8 `POLICY_PRICE_IMPACT`). */
+  maxRateGapBps: number;
+  /** Above this it carries a warning. */
+  warnRateGapBps: number;
 };
 
 /**
@@ -33,8 +37,11 @@ export const DEFAULT_LIMITS = {
     newRecipientMaxDuringCooldown: usdc("50"),
     approvalThreshold: usdc("100"),
     firstTimeRecipientApprovalThreshold: usdc("20"),
-    maxSlippageStableBps: 50,
+    // The "at least" floor a person is shown; the route itself is built at half of it (SWAP_ROUTE_SLIPPAGE_DIVISOR).
+    maxSlippageStableBps: 100,
     maxSlippageOtherBps: 300,
+    maxRateGapBps: 300,
+    warnRateGapBps: 100,
   },
   testnet: {
     perTransaction: usdc("2500"),
@@ -46,8 +53,14 @@ export const DEFAULT_LIMITS = {
     newRecipientMaxDuringCooldown: usdc("500"),
     approvalThreshold: usdc("1000"),
     firstTimeRecipientApprovalThreshold: usdc("200"),
-    maxSlippageStableBps: 50,
+    // Circle's swap service finds no route on Arc testnet for USDC→EURC below 1% slippage ("No route available",
+    // 331001, 2026-10-01), and the route is built at half the floor (SWAP_ROUTE_SLIPPAGE_DIVISOR), so the floor is 2%.
+    maxSlippageStableBps: 200,
     maxSlippageOtherBps: 300,
+    // Testnet pools are thin and drift far from market prices (USDC→EURC quoted ~7% under Circle's rates on
+    // 2026-10-01); the gap is still shown, but only an extreme one refuses.
+    maxRateGapBps: 1500,
+    warnRateGapBps: 100,
   },
 } as const satisfies Record<NetworkId, LimitDefaults>;
 

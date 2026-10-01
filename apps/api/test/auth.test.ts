@@ -221,11 +221,13 @@ test("mainnet needs the consent and a live mainnet; settings and idempotent cons
       faucet: { testnet: { state: string }; mainnet: { state: string } };
       send: { testnet: { state: string } };
       swap: { testnet: { state: string } };
+      bridge: { testnet: { state: string } };
       marketplace: { mainnet: { state: string } };
     };
   };
   assert.equal(view.capabilities.faucet.testnet.state, "available", "the faucet shipped (Circle's testnet drip)");
   assert.equal(view.capabilities.send.testnet.state, "available", "send shipped in Stage 5");
-  assert.equal(view.capabilities.swap.testnet.state, "coming", "swap has not shipped yet");
+  assert.equal(view.capabilities.swap.testnet.state, "available", "swap shipped in Stage 6a");
+  assert.equal(view.capabilities.bridge.testnet.state, "coming", "bridge has not shipped yet");
   assert.equal(view.capabilities.marketplace.mainnet.state, "unavailable", "mainnet is not live on this api");
 });

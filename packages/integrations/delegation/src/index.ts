@@ -3,3 +3,4 @@ export * from "./grants";
 export * from "./receipt";
 export * from "./redeem";
 export * from "./available";
+export * from "./batch";

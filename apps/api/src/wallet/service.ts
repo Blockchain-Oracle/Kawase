@@ -15,7 +15,7 @@ import {
 } from "viem";
 
 import { DEFAULT_LIMITS, SECONDS_PER_DAY } from "@kawase/config";
-import { faucetClaims, grants, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
+import { grants, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
   buildAllowanceGrant,
   describeGrant,
@@ -118,20 +118,16 @@ export class WalletService {
    */
   async activity(userId: string, network: NetworkId) {
     const wallet = await this.userWallet(userId);
-    if (!wallet) return { items: [] };
+    if (!wallet) return { items: [], more: false, historyUrl: null };
     const { network: context, ops, relayerAddress } = this.clients(network);
-    const claims = await this.db
-      .select({ createdAt: faucetClaims.createdAt })
-      .from(faucetClaims)
-      .where(and(eq(faucetClaims.userId, userId), eq(faucetClaims.network, network), eq(faucetClaims.status, "sent")));
-    let items;
+    let page;
     try {
-      items = await fetchActivity(context, wallet.address as Address, { agent: ops.address, relayer: relayerAddress }, claims.map((claim) => claim.createdAt));
+      page = await fetchActivity(context, wallet.address as Address, { agent: ops.address, relayer: relayerAddress });
     } catch {
       throw problem(HTTP.badGateway, "upstream", "the explorer did not answer");
     }
     const names = await this.contactNames(userId);
-    return { items: items.map((item) => ({ ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null })) };
+    return { ...page, items: page.items.map((item) => ({ ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null })) };
   }
 
   /** Lower-cased address → the contact's name; the current address of a contact wins over its older ones. */

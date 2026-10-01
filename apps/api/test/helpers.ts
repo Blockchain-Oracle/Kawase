@@ -12,6 +12,7 @@ import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
 import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { OpsExecutor } from "../src/send/ops";
 import type { Chains } from "../src/wallet/chain";
+import { noSwaps, type SwapEngine } from "../src/swap/engine";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -71,6 +72,7 @@ export function testApp(
   chains: Chains = noChains,
   faucet: FaucetDrip = okFaucet,
   ops: OpsExecutor = noOps,
+  swaps: SwapEngine = noSwaps,
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -78,11 +80,12 @@ export function testApp(
   const TEST_LIMIT = 10_000;
   const app = createApp({
     db,
-    log: createLogger({ service: "api-test", level: "silent" }),
+    log: createLogger({ service: "api-test", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" }),
     turnkey,
     chains,
     faucet,
     ops,
+    swaps,
     models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,

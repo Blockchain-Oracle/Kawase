@@ -1,7 +1,7 @@
 // A small, explicit client: one function per route, problem+json turned into `ApiError`, the session token
 // supplied by the caller (secure storage on native, a cookie or storage on web).
 import type {
-  ActivityItem,
+  ActivityPage,
   AllowanceRequestResponse,
   ApiUser,
   HandleAvailability,
@@ -27,6 +27,9 @@ import type {
   SendIntent,
   SendRequest,
   SendApproveResponse,
+  SwapApproveResponse,
+  SwapIntent,
+  SwapRequest,
   PaymentRequest,
   PaymentRequestInput,
   PublicPaymentRequest,
@@ -119,7 +122,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     wallet: {
       status: () => call<WalletStatus>("GET", "/wallet"),
       /** USDC and EURC transfers in and out on one network, newest first. */
-      activity: (network: NetworkId) => call<{ items: ActivityItem[] }>("GET", `/wallet/activity?network=${network}`),
+      activity: (network: NetworkId) => call<ActivityPage>("GET", `/wallet/activity?network=${network}`),
       register: (input: { address: string; walletId: string }) =>
         call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
@@ -183,6 +186,20 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
+    },
+
+    swaps: {
+      /** A swap with a fresh quote; naming one currency is enough when there are two. */
+      create: (request: SwapRequest) => call<{ intent: SwapIntent }>("POST", "/swaps", request),
+      get: (id: string) => call<{ intent: SwapIntent }>("GET", `/swaps/${id}`),
+      /** A new amount or direction, or an empty patch to re-quote. */
+      revise: (id: string, patch: SwapRequest) => call<{ intent: SwapIntent }>("PATCH", `/swaps/${id}`, patch),
+      cancel: (id: string) => call<{ intent: SwapIntent }>("POST", `/swaps/${id}/cancel`),
+      /** Approve one version: the answer carries the one transaction (approve + swap) for the wallet to sign. */
+      approve: (id: string, version: number, idempotencyKey?: string) =>
+        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signedTransaction: string) =>
+        call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
     },
 
     requests: {

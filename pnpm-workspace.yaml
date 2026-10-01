@@ -81,6 +81,9 @@ overrides:
 # Install scripts: false = knowingly skipped (this one only prints a funding banner).
 allowBuilds:
   react-native-inappbrowser-reborn: false
+  # Optional native speed-ups for `ws` (pulled in by App Kit's Solana deps); the pure-JS fallback is fine on the api.
+  bufferutil: false
+  utf-8-validate: false
   # esbuild (through tsx, used to run TypeScript test scripts) verifies its platform binary.
   esbuild: true
   # Skia's install script only copies its prebuilt frameworks from sibling packages into place (no network).

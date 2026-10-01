@@ -1,19 +1,16 @@
 // Native twin of ui-web's voice-powered-orb (21st.dev isaiahbjork/voice-powered-orb).
 // The same fragment shader, ported from WebGL to Skia's shader language: since the revamp (Lime on Ink, D35) a glass
 // sphere with a core that breathes with the voice level. The level comes from a prop (the app owns the microphone),
-// and with reduced motion the orb is a still frame.
+// and with reduced motion (read live) the orb is a still frame. `paused` stops the frame loop while the orb cannot be
+// seen — its screen covered, the app in the background (Codex review R16). Without a label it is decoration, not an
+// element a screen reader stops on (R13).
 import { tokens } from "@kawase/ui-tokens";
+import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { Canvas, Fill, Shader, Skia, type SkSize } from "@shopify/react-native-skia";
 import * as React from "react";
 import { View, type ViewProps } from "react-native";
-import {
-  useDerivedValue,
-  useFrameCallback,
-  useReducedMotion,
-  useSharedValue,
-  type SharedValue,
-} from "react-native-reanimated";
+import { useDerivedValue, useFrameCallback, useSharedValue, type SharedValue } from "react-native-reanimated";
 
 const ORB_SHADER = Skia.RuntimeEffect.Make(`
 uniform float iTime;
@@ -134,10 +131,12 @@ type VoiceOrbProps = Omit<ViewProps, "children"> & {
   colors?: OrbColors;
   /** Voice level from 0 to 1. A number re-renders; a shared value updates without rendering. */
   level?: number | SharedValue<number>;
+  /** Holds the current frame and stops the loop (the orb is out of sight). */
+  paused?: boolean;
 };
 
-function VoiceOrb({ colors = tokens.orb.mainnet, level = 0, className, ...props }: VoiceOrbProps) {
-  const reduced = useReducedMotion();
+function VoiceOrb({ colors = tokens.orb.mainnet, level = 0, paused = false, className, ...props }: VoiceOrbProps) {
+  const reduced = useReducedMotionLive();
   const size = useSharedValue<SkSize>({ width: 0, height: 0 });
   const time = useSharedValue(STILL_TIME);
   const rot = useSharedValue(0);
@@ -149,7 +148,7 @@ function VoiceOrb({ colors = tokens.orb.mainnet, level = 0, className, ...props 
     if (typeof level === "number") levelValue.value = level;
   }, [level, levelValue]);
 
-  useFrameCallback((frame) => {
+  const frames = useFrameCallback((frame) => {
     "worklet";
     if (reduced) return;
     const dt = Math.min(frame.timeSincePreviousFrame ?? DEFAULT_FRAME_MS, MAX_FRAME_MS) / MS_PER_SECOND;
@@ -160,6 +159,10 @@ function VoiceOrb({ colors = tokens.orb.mainnet, level = 0, className, ...props 
       rot.value += dt * (BASE_ROTATION_SPEED + smoothed.value * MAX_ROTATION_SPEED * ROTATION_GAIN);
     }
   });
+
+  React.useEffect(() => {
+    frames.setActive(!paused && !reduced);
+  }, [frames, paused, reduced]);
 
   const [c1, c2, c3] = colors;
   const baseColor1 = hexToRgb(c1);
@@ -178,7 +181,12 @@ function VoiceOrb({ colors = tokens.orb.mainnet, level = 0, className, ...props 
   }));
 
   return (
-    <View accessibilityRole="image" className={cn("aspect-square w-full", className)} {...props}>
+    <View
+      accessibilityRole={props.accessibilityLabel ? "image" : undefined}
+      aria-hidden={!props.accessibilityLabel}
+      className={cn("aspect-square w-full", className)}
+      {...props}
+    >
       <Canvas style={{ flex: 1 }} onSize={size}>
         <Fill>
           <Shader source={ORB_SHADER} uniforms={uniforms} />

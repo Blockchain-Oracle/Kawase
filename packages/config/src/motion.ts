@@ -42,8 +42,8 @@ export const FAN = {
   pitchPt: 72,
   /** How far past its resting spot a circle overshoots before settling. */
   overshootPt: 6,
-  /** The fan's circles, in order of appearance from the plus button upward. */
-  count: 4,
+  /** The fan's circles, in order of appearance from the plus button upward (Send, Receive, Swap, Request, Fund). */
+  count: 5,
 } as const;
 
 /** The glass dock (F12): a floating capsule above the home indicator. */

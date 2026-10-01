@@ -297,7 +297,7 @@ export class SendService {
     const [intent] = await this.db
       .select()
       .from(intents)
-      .where(and(eq(intents.id, intentId), eq(intents.userId, userId)));
+      .where(and(eq(intents.id, intentId), eq(intents.userId, userId), eq(intents.kind, "send")));
     if (!intent) throw problem(HTTP.notFound, "not_found", "no such send");
     return intent;
   }
@@ -830,7 +830,7 @@ export class SendService {
       const open = await this.db
         .select({ id: intents.id })
         .from(intents)
-        .where(inArray(intents.state, ["executing", "unknown_outcome"]));
+        .where(and(eq(intents.kind, "send"), inArray(intents.state, ["executing", "unknown_outcome"])));
       for (const { id } of open) await this.track(id).catch((error: unknown) => this.log.warn({ intentId: id, err: error }, "sweep track failed"));
     };
     const timer = setInterval(() => void run().catch((error: unknown) => this.log.warn({ err: error }, "sweep failed")), intervalMs);

@@ -2,3 +2,4 @@
 // warning), the one that blocks, and how an allowed action is authorized. No I/O: callers gather the facts.
 export * from "./reasons";
 export * from "./send";
+export * from "./swap";

@@ -1,10 +1,23 @@
 // One conversation with the agent (journey 14): the person's messages as bubbles, the agent's words as plain text
 // with its results as cards in between, a "Thinking" line while it works, an inline error with Retry, starter
 // chips when the thread is empty, and the composer pinned above the keyboard with the mic beside it (typing is
-// always there; voice opens the orb overlay).
+// always there; voice opens the orb overlay). The view follows a reply only while the person is at the latest
+// message; scrolled up, they stay where they are and a "New messages" pill takes them down (Codex review R14).
+// The half-written message survives a thread switch or a reconnect. Retry first reads what the api kept, because an
+// answer can move money (inside the allowance the agent just sends): a reply it already has is shown; a question it
+// kept with nothing after it is asked again (nothing ran for it); a question it never got goes back into the box for
+// the person to send again. The app never repeats a question on its own when a tool may have acted.
 import { isToolUIPart, type UIMessage } from "ai";
+import { ArrowDown } from "lucide-react-native";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated, { FadeIn } from "react-native-reanimated";
 
@@ -13,6 +26,7 @@ import { Composer } from "@kawase/ui-native/components/composer";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { SuggestedActions } from "@kawase/ui-native/components/suggested-actions";
 import { Button } from "@kawase/ui-native/components/ui/button";
+import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
@@ -20,12 +34,22 @@ import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useSession } from "@/session/session-provider";
+import { useThemeColors } from "@/theme/use-theme-colors";
 
+import { draftKey, readDraft, saveDraft } from "./drafts";
+import { storedThread } from "./stored-thread";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
 
 const EDGE_INSET = 12;
 const MARK_SIZE = 64;
+/** How far from the end still counts as "reading the latest" (about two lines). */
+const NEAR_END = 64;
+/** A scroll that moved up by more than this is the person's own, not a layout nudge. */
+const SCROLLED_UP = 2;
+const SCROLL_THROTTLE_MS = 32;
+
+const textOf = (message: UIMessage) => message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
 
 type ConversationProps = {
   threadId: string;
@@ -40,22 +64,90 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
   const clearance = useDockClearance();
   const overlay = useOverlay();
   const { user } = useSession();
+  const colors = useThemeColors();
   const chat = useAgentChat(threadId, initialMessages);
-  const [draft, setDraft] = React.useState("");
+  const key = draftKey(threadId, chat.messages.length > 0);
+  const [draft, setDraft] = React.useState(() => readDraft(draftKey(threadId, initialMessages.length > 0)));
   const scroller = React.useRef<ScrollView>(null);
   const busy = chat.status === "submitted" || chat.status === "streaming";
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
 
+  // Following the latest: on while the person is at the end, off once they scroll up, on again when they come back.
+  const following = React.useRef(true);
+  const lastOffset = React.useRef(0);
+  const placed = React.useRef(false);
+  const [unseen, setUnseen] = React.useState(false);
+  const [retrying, setRetrying] = React.useState(false);
+
+  const toLatest = React.useCallback(() => {
+    following.current = true;
+    setUnseen(false);
+    scroller.current?.scrollToEnd({ animated: true });
+  }, []);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const fromEnd = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    if (fromEnd <= NEAR_END) {
+      following.current = true;
+      setUnseen(false);
+    } else if (contentOffset.y < lastOffset.current - SCROLLED_UP) following.current = false;
+    lastOffset.current = contentOffset.y;
+  };
+
+  const onContentSizeChange = () => {
+    if (!placed.current) {
+      // Opening a thread lands on its latest message without a long animated scroll.
+      placed.current = true;
+      scroller.current?.scrollToEnd({ animated: false });
+    } else if (following.current) scroller.current?.scrollToEnd({ animated: true });
+    else if (busy) setUnseen(true);
+  };
+
+  const editDraft = (text: string) => {
+    setDraft(text);
+    saveDraft(key, text);
+  };
+
   const send = React.useCallback(
-    (text: string) => {
+    (text: string, typed = false) => {
       const trimmed = text.trim();
       if (!trimmed) return;
       void chat.sendMessage({ text: trimmed });
-      setDraft("");
+      if (typed) {
+        setDraft("");
+        saveDraft(key, "");
+      } else if (draft) {
+        // A chip asked instead: what the person was typing stays, now under this thread.
+        saveDraft(key, "");
+        saveDraft(threadId, draft);
+      }
       onActivity();
+      toLatest();
     },
-    [chat, onActivity],
+    [chat, onActivity, key, draft, threadId, toLatest],
   );
+
+  const retry = async () => {
+    setRetrying(true);
+    try {
+      const stored = await storedThread(threadId);
+      // Still can't reach the api: the error stays, with everything on screen kept.
+      if (!stored) return;
+      const asked = chat.messages.findLast((message) => message.role === "user");
+      const kept = asked ? stored.findIndex((message) => message.id === asked.id) : -1;
+      chat.setMessages(stored);
+      chat.clearError();
+      if (kept >= 0 && kept === stored.length - 1) void chat.regenerate();
+      else if (asked && kept < 0) {
+        const text = textOf(asked);
+        setDraft(text);
+        saveDraft(draftKey(threadId, stored.length > 0), text);
+      }
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   // A chip from home opens a fresh thread with its question already asked.
   const asked = React.useRef(false);
@@ -99,39 +191,62 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
           <SuggestedActions className="justify-center pt-2" suggestions={chips} onSelect={send} />
         </View>
       ) : (
-        <ScrollView
-          ref={scroller}
-          className="flex-1"
-          contentContainerClassName="gap-4 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: EDGE_INSET }}
-          onContentSizeChange={() => scroller.current?.scrollToEnd({ animated: true })}
-          keyboardDismissMode="interactive"
-        >
-          {chat.messages.map((message) => (
-            <MessageView key={message.id} message={message} onToolOutput={onToolOutput} />
-          ))}
-          {thinking ? (
-            <Animated.View entering={FadeIn} className="flex-row items-center gap-2 py-1">
-              <KawaseMark size={20} />
-              <StateLabel className="text-muted-foreground">{t("home.thinking")}</StateLabel>
+        <View className="flex-1">
+          <ScrollView
+            ref={scroller}
+            className="flex-1"
+            contentContainerClassName="gap-4 px-5 pt-4"
+            contentContainerStyle={{ paddingBottom: EDGE_INSET }}
+            onContentSizeChange={onContentSizeChange}
+            onScroll={onScroll}
+            scrollEventThrottle={SCROLL_THROTTLE_MS}
+            keyboardDismissMode="interactive"
+          >
+            {chat.messages.map((message) => (
+              <MessageView key={message.id} message={message} onToolOutput={onToolOutput} />
+            ))}
+            {thinking ? (
+              <Animated.View entering={FadeIn} className="flex-row items-center gap-2 py-1">
+                <KawaseMark size={20} />
+                <StateLabel className="text-muted-foreground">{t("home.thinking")}</StateLabel>
+              </Animated.View>
+            ) : null}
+            {chat.error ? (
+              <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
+                <Text accessibilityRole="alert" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
+                  {t("chat.answerFailed")}
+                </Text>
+                <Button size="sm" variant="secondary" disabled={retrying} onPress={() => void retry()}>
+                  {retrying ? (
+                    <ActivityIndicator color={colors["muted-foreground"]} />
+                  ) : (
+                    <Text>{t("common.retry")}</Text>
+                  )}
+                </Button>
+              </View>
+            ) : null}
+          </ScrollView>
+          {unseen ? (
+            <Animated.View entering={FadeIn} className="absolute bottom-3 self-center">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("chat.toLatest")}
+                onPress={toLatest}
+                className="bg-foreground active:opacity-80 min-h-11 flex-row items-center gap-1.5 rounded-full px-4"
+              >
+                <Text className="text-background text-sm font-semibold">{t("chat.newMessages")}</Text>
+                <Icon as={ArrowDown} className="text-background size-4" />
+              </Pressable>
             </Animated.View>
           ) : null}
-          {chat.error ? (
-            <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
-              <Text className="text-muted-foreground flex-1 text-sm">{t("common.error")}</Text>
-              <Button size="sm" variant="secondary" onPress={() => void chat.regenerate()}>
-                <Text>{t("common.retry")}</Text>
-              </Button>
-            </View>
-          ) : null}
-        </ScrollView>
+        </View>
       )}
       <KeyboardStickyView offset={{ closed: 0, opened: clearance.dock }}>
         <View className="px-5 pt-2" style={{ paddingBottom: clearance.dock + EDGE_INSET }}>
           <Composer
             value={draft}
-            onValueChange={setDraft}
-            onSubmit={() => send(draft)}
+            onValueChange={editDraft}
+            onSubmit={() => send(draft, true)}
             onTalk={() => overlay.open("voice")}
             disabled={busy}
             labels={{
@@ -170,7 +285,7 @@ function MessageView({
   onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
 }) {
   if (message.role === "user") {
-    const text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+    const text = textOf(message);
     return (
       <View className="bg-secondary max-w-[85%] self-end rounded-3xl rounded-ee-md px-4 py-3">
         <Text className={cn("text-foreground text-base leading-6", TEXT_START)}>{text}</Text>

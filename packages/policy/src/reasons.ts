@@ -10,6 +10,7 @@ export type PolicyKind = (typeof POLICY_KINDS)[number];
 export const REASONS = {
   // Errors: nothing the person can fix here.
   NOT_AVAILABLE_YET: "error",
+  SWAP_PAIR_UNSUPPORTED: "error",
   // Policy refusals: terminal for this version.
   PAUSED_ALL: "policy",
   OVER_PER_TX_LIMIT: "policy",
@@ -17,6 +18,7 @@ export const REASONS = {
   OVER_WEEKLY_LIMIT: "policy",
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
+  PRICE_IMPACT_HIGH: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",
@@ -24,6 +26,8 @@ export const REASONS = {
   ON_OTHER_NETWORK: "precondition",
   INSUFFICIENT_BALANCE: "precondition",
   INSUFFICIENT_GAS: "precondition",
+  /** No swap price right now: "Try again" re-quotes the same request. */
+  QUOTE_UNAVAILABLE: "precondition",
   // Clarifications: one question.
   RECIPIENT_MISSING: "clarification",
   RECIPIENT_UNKNOWN: "clarification",
@@ -34,6 +38,7 @@ export const REASONS = {
   AMOUNT_MISSING: "clarification",
   AMOUNT_INVALID: "clarification",
   ASSET_UNCLEAR: "clarification",
+  SWAP_SAME_TOKEN: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
   LOOKALIKE_ADDRESS: "warning",
@@ -41,6 +46,7 @@ export const REASONS = {
   ABOVE_ALLOWANCE: "warning",
   NO_ALLOWANCE: "warning",
   LEAVES_LITTLE_FOR_FEES: "warning",
+  RATE_BELOW_REFERENCE: "warning",
 } as const satisfies Record<string, PolicyKind>;
 
 export type ReasonCode = keyof typeof REASONS;

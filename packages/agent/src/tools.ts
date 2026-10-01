@@ -85,6 +85,17 @@ export function buildTools(context: AgentContext) {
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    propose_swap: tool({
+      description:
+        "Prepare a swap between USDC and EURC on the active network (dollars ↔ euros). Pass the amount as digits with a dot and the currency it is in; name the other side only if the person did (with two currencies, one side implies the other). Kawase gets a fresh price, compares it with the market, runs every check and shows a card with what they give, about what they get and the least they will get. The person confirms on the card with Face ID (an email code on the web); nothing moves from this call.",
+      inputSchema: z.object({
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Digits with a dot, in the currency given up; omit if they did not say how much"),
+        from: z.enum(["USDC", "EURC"]).optional().describe("The currency they give up"),
+        to: z.enum(["USDC", "EURC"]).optional().describe("The currency they want"),
+      }),
+      execute: async ({ amount, from, to }) => context.proposeSwap({ amount: amount ?? null, tokenIn: from ?? null, tokenOut: to ?? null }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     create_payment_request: tool({
       description:
         "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",

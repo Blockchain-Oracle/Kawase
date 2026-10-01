@@ -1,15 +1,18 @@
 // The floating glass dock (Fomo F12/M09/M10, in Kawase's material): five slots in a translucent capsule above the
 // home indicator, a bubble that slides to the active slot, the orb in the centre, an optional count badge (the
 // "needs you" queue). `orientation="rail"` stands it up for wide screens (Stage 13). Content scrolls behind it.
+// Destinations are tabs (selected or not); an `action` slot — the orb, which opens the voice overlay — is a button
+// (Codex review R13). The slots mirror in Arabic and Urdu, so the bubble travels the other way there.
 import { DOCK, MOTION } from "@kawase/config";
 import { Glass } from "@kawase/ui-native/components/glass";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn } from "@kawase/ui-native/lib/utils";
 import type { LucideIcon } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 
 type DockItem = {
   key: string;
@@ -19,6 +22,10 @@ type DockItem = {
   /** A custom slot (the orb). */
   render?: (active: boolean) => React.ReactNode;
   badge?: number;
+  /** Does something rather than going somewhere: a button, never the selected tab. */
+  action?: boolean;
+  /** The slot's own view, for an overlay that rises from it and gives focus back to it. */
+  slotRef?: React.Ref<View>;
 };
 
 type GlassDockProps = {
@@ -31,6 +38,8 @@ type GlassDockProps = {
   orientation?: "bar" | "rail";
   /** Extra bottom inset (the home indicator). */
   bottomInset?: number;
+  /** Right-to-left reading: the slots are mirrored, so the bubble moves towards the left. */
+  rtl?: boolean;
   className?: string;
 };
 
@@ -43,17 +52,22 @@ const SLOT_PADDING = (DOCK.heightPt - SLOT_SIZE) * HALF;
 const ICON_STROKE_ACTIVE = 2.4;
 const ICON_STROKE = 2;
 
-function GlassDock({ items, activeKey, onPress, scheme, tint, orientation = "bar", bottomInset = 0, className }: GlassDockProps) {
-  const reduced = useReducedMotion();
+function GlassDock({ items, activeKey, onPress, scheme, tint, orientation = "bar", bottomInset = 0, rtl = false, className }: GlassDockProps) {
+  const reduced = useReducedMotionLive();
   const offset = useSharedValue(0);
   const activeIndex = Math.max(0, items.findIndex((item) => item.key === activeKey));
   const rail = orientation === "rail";
 
-  // Slots have a fixed size and no gap, so the bubble's travel is the index times the slot.
+  // Slots have a fixed size and no gap, so the bubble's travel is the index times the slot — from the start edge, which
+  // is the right one in a right-to-left bar (a transform is physical, the slot order is not). A language change that
+  // flips the bar moves the bubble with it at once instead of sliding it across.
+  const lastRtl = React.useRef(rtl);
   React.useEffect(() => {
-    const target = activeIndex * SLOT_SIZE;
-    offset.value = reduced ? withTiming(target, { duration: 0 }) : withSpring(target, SPRING);
-  }, [activeIndex, offset, reduced]);
+    const target = activeIndex * SLOT_SIZE * (rtl && !rail ? -1 : 1);
+    const flipped = lastRtl.current !== rtl;
+    lastRtl.current = rtl;
+    offset.value = reduced || flipped ? withTiming(target, { duration: 0 }) : withSpring(target, SPRING);
+  }, [activeIndex, offset, reduced, rtl, rail]);
 
   const bubbleStyle = useAnimatedStyle(() =>
     rail ? { transform: [{ translateY: offset.value }] } : { transform: [{ translateX: offset.value }] },
@@ -86,9 +100,10 @@ function GlassDock({ items, activeKey, onPress, scheme, tint, orientation = "bar
           return (
             <Pressable
               key={item.key}
-              accessibilityRole="tab"
+              ref={item.slotRef}
+              accessibilityRole={item.action ? "button" : "tab"}
               accessibilityLabel={item.label}
-              accessibilityState={{ selected: active }}
+              accessibilityState={item.action ? undefined : { selected: active }}
               onPress={() => onPress(item.key)}
               className="items-center justify-center"
               style={{ width: SLOT_SIZE, height: SLOT_SIZE }}

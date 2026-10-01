@@ -4,6 +4,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  nonceManager,
   type Address,
   type Hex,
   type PublicClient,
@@ -38,7 +39,9 @@ function clientsFor(
 ): NetworkClients {
   const network = getNetwork(id);
   const transport = http(rpcUrl);
-  const account = privateKeyToAccount(withPrefix(relayerKey));
+  // Sign-ups that set up at the same moment each send a relayed transaction; the nonce manager hands them out in
+  // order within this process, so two setups never race for the same nonce.
+  const account = privateKeyToAccount(withPrefix(relayerKey), { nonceManager });
   return {
     network,
     client: createPublicClient({ chain: network.viemChain, transport }),

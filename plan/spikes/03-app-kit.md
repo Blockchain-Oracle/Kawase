@@ -1,6 +1,7 @@
 # Spike 3: App Kit swap and bridge signed by the user's wallet
 
-> **Partly superseded on 2026-09-30 (D33): the signer is no longer a Circle PIN wallet, so the "2 PINs per swap" finding no longer applies. Still valid: App Kit runs through the viem adapter with our own signing strategy for an EOA. To be re-run with the new wallet in spike #16.**
+> **Partly superseded on 2026-09-30 (D33): the signer is no longer a Circle PIN wallet, so the "2 PINs per swap" finding no longer applies. Still valid: App Kit runs through the viem adapter with our own signing strategy for an EOA.**
+> **Re-done with the D33 wallet on 2026-10-01 (Stage 6a, `plan/stages/06-…md`):** the strategy captures the kit's calls instead of signing them, and the wallet's EIP-7702 code runs approve + swap as one batch → **one Face ID per swap**, and no long-running kit process (findings 2 and 4 below are replaced; see ARCHITECTURE "As built for swaps").
 
 Purpose: prove that Circle App Kit can swap and bridge from the Kawase vault (a Circle UCW **EOA**, spike #2), with the owner approving each step. Measure the challenge count and the idempotency handling, and find out whether we can see or prepare the calldata ourselves.
 Code: `plan/spikes/code/03-app-kit/` (`node run.mjs [--swap] [--bridge] [--earn]`; PINs go through the spike-02 relay page at `http://localhost:5199/`). Raw results: `results.testnet.json`, `run.log`.

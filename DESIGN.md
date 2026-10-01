@@ -78,7 +78,7 @@ Contrast: every text pair is at least 4.5:1 (WCAG AA) in all four themes, plus i
 Durations live in `packages/config/src/motion.ts` (no magic numbers). Starting points, declared as adaptations of the study's clips:
 - Presses and hovers: 150ms ease-out. Sheets rising: 250ms with a dim scrim; nested child panels animate height; the parent is restored with its values.
 - Story panel change (M01): the colour field and art travel horizontally inside the clipped canvas, the copy changes mid-travel, the footer never moves; ~900ms.
-- Quick-action fan (M06): the plus becomes ×, the page blurs, four circles rise and scale with a 20–35ms stagger and a small overshoot into a vertical trailing column; 220–300ms.
+- Quick-action fan (M06): the plus becomes ×, the page blurs, five circles (Send, Receive, Swap, Request, Fund) rise and scale with a 20–35ms stagger and a small overshoot into a vertical trailing column; 220–300ms.
 - Voice overlay: the page blurs and darkens in 120–200ms; the orb rises from the dock to the centre; captions fade in by word; × restores the page.
 - Page push (M11): native stack push with rounded moving corners.
 - Dock (M09/M10): the active bubble slides with a spring; the header collapses on scroll.

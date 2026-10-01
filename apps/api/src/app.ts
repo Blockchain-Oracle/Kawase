@@ -32,6 +32,9 @@ import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
+import { noSwaps, type SwapEngine } from "./swap/engine";
+import { swapRoutes } from "./swap/routes";
+import { SwapService } from "./swap/service";
 import type { AppEnv } from "./types";
 import type { Chains } from "./wallet/chain";
 import { walletRoutes } from "./wallet/routes";
@@ -56,6 +59,8 @@ export type AppDeps = {
   approvalSecret?: string | undefined;
   /** The agent's ops wallet (Circle in production, a fake in tests). */
   ops: OpsExecutor;
+  /** Swap quotes and calls (Circle App Kit in production); swaps are refused when unset. */
+  swaps?: SwapEngine | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
   reconcileIntervalMs?: number | undefined;
   /** Reads incoming transfers this often; off when unset. */
@@ -80,7 +85,11 @@ export function createApp(deps: AppDeps) {
   const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
   const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log, requests, inbox);
   if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
-  if (deps.reconcileIntervalMs) sends.startSweeper(deps.reconcileIntervalMs);
+  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
+  if (deps.reconcileIntervalMs) {
+    sends.startSweeper(deps.reconcileIntervalMs);
+    swaps.startSweeper(deps.reconcileIntervalMs);
+  }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
     windowSeconds: SECONDS_PER_MINUTE,
@@ -134,12 +143,13 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
+  app.route("/swaps", swapRoutes(swaps));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   app.route(
     "/agent",
-    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
+    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
   );
 
   return app;

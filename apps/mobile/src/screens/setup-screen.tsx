@@ -52,6 +52,8 @@ const ONBOARDING_STEPS = 3;
 const WALLET_STEP = 1;
 const ALLOWANCE_STEP = 2;
 const PHASE_FADE_MS = 220;
+/** One quiet second try of the terms record before saying it failed. */
+const CONSENT_RETRY_MS = 800;
 
 type Phase = "steps" | "primer" | "done";
 
@@ -70,6 +72,7 @@ export function SetupScreen() {
   /** What the last approval attempt ended as, when it did not succeed. */
   const [outcome, setOutcome] = React.useState<Exclude<AcceptResult["status"], "accepted">>();
   const [leaving, setLeaving] = React.useState(false);
+  const [consentFailed, setConsentFailed] = React.useState(false);
   // An allowance that was already on when this page opened belongs to a returning account: nothing to set up.
   const arrivedDone = React.useRef<boolean | undefined>(undefined);
 
@@ -145,11 +148,22 @@ export function SetupScreen() {
     failed: t("setup.failed"),
   };
 
+  // The agreement is a versioned record on the api (idempotent), kept before leaving: a failed write is tried once
+  // more, then said with Continue as the retry — never dropped silently (Codex review R15).
   const finish = async () => {
     setLeaving(true);
-    // The consent is a record, not a gate: a failure to store it must not strand the person here.
-    await api.me.consent({ kind: "terms", version: TERMS_VERSION, locale }).catch(() => undefined);
-    goHome();
+    setConsentFailed(false);
+    const record = () => api.me.consent({ kind: "terms", version: TERMS_VERSION, locale });
+    try {
+      await record().catch(async () => {
+        await new Promise((resolve) => setTimeout(resolve, CONSENT_RETRY_MS));
+        return record();
+      });
+      goHome();
+    } catch {
+      setConsentFailed(true);
+      setLeaving(false);
+    }
   };
 
   const authority = receipt ? authorityText(receipt, network, t, locale) : undefined;
@@ -159,7 +173,8 @@ export function SetupScreen() {
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top + EDGE_INSET }}>
       <View className="px-5">
-        {phase === "done" ? <View className="min-h-11" /> : <OnboardingBar leading={leading} step={{ index: phase === "primer" ? ALLOWANCE_STEP : WALLET_STEP, total: ONBOARDING_STEPS }} />}
+        {/* The language pill stays on the completion too; there is nothing to go back to once the allowance is on. */}
+        <OnboardingBar leading={phase === "done" ? undefined : leading} step={{ index: phase === "steps" ? WALLET_STEP : ALLOWANCE_STEP, total: ONBOARDING_STEPS }} />
       </View>
 
       {phase === "steps" ? (
@@ -231,9 +246,20 @@ export function SetupScreen() {
             <AuthorityReceipt className="w-full" {...authority} />
           </ScrollView>
           <View className="gap-3 px-5 pt-2" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-            <Text className="text-muted-foreground text-center text-xs">{t("setup.terms")}</Text>
+            {consentFailed ? (
+              <Text accessibilityRole="alert" className="text-destructive text-center text-sm">
+                {t("setup.termsFailed")}
+              </Text>
+            ) : null}
+            <Text className="text-muted-foreground text-center text-xs">
+              {`${t("setup.terms")} `}
+              <Text accessibilityRole="link" onPress={() => router.push("/terms")} className="text-foreground text-xs underline">
+                {t("setup.readTerms")}
+              </Text>
+            </Text>
             <Button size="lg" disabled={leaving} onPress={() => void finish()}>
-              <Text>{t("common.continue")}</Text>
+              {leaving ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
+              <Text>{consentFailed ? t("common.retry") : t("common.continue")}</Text>
             </Button>
           </View>
         </Animated.View>
