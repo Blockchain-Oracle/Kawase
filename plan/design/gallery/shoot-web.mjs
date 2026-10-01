@@ -18,7 +18,7 @@ const STATES = [
 ]
 const PAGES = [
   { route: 'dev/gallery', name: 'gallery', fullPage: true },
-  { route: 'dev/home-sample', name: 'home', fullPage: false },
+
 ]
 
 const browser = await chromium.launch({ channel: 'chrome', headless: true })

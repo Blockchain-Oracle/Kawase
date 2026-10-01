@@ -7,7 +7,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { Db } from "./client";
 import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
-import { grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
+import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 
 type UserOwned = {
   table: PgTable;
@@ -31,6 +31,7 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   audit_log: { table: auditLog, userId: auditLog.userId },
   api_idempotency: { table: apiIdempotency, userId: apiIdempotency.userId, perUserKey: ["key"] },
   outbox: { table: outbox, userId: outbox.userId },
+  faucet_claims: { table: faucetClaims, userId: faucetClaims.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

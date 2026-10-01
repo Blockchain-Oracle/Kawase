@@ -8,7 +8,9 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Toaster } from "sonner-native";
 
 import { LocaleProvider } from "@/i18n/locale-provider";
+import { FundProvider } from "@/fund/fund-provider";
 import { SessionProvider } from "@/session/session-provider";
+import { SignInProvider } from "@/sign-in/sign-in-provider";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { ThemeSync } from "@/theme/theme-sync";
 import { WalletProvider } from "@/wallet/wallet-provider";
@@ -24,7 +26,11 @@ export default function RootLayout() {
               <ThemeSync />
               <LocaleProvider>
                 <BottomSheetModalProvider>
-                  <Stack screenOptions={{ headerShown: false }} />
+                  <SignInProvider>
+                    <FundProvider>
+                      <Stack screenOptions={{ headerShown: false }} />
+                    </FundProvider>
+                  </SignInProvider>
                   <PortalHost />
                   <Toaster position="top-center" />
                 </BottomSheetModalProvider>

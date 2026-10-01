@@ -1,8 +1,10 @@
 // A small, explicit client: one function per route, problem+json turned into `ApiError`, the session token
 // supplied by the caller (secure storage on native, a cookie or storage on web).
 import type {
+  ActivityItem,
   AllowanceRequestResponse,
   ApiUser,
+  HandleAvailability,
   Capabilities,
   Consent,
   ConsentKind,
@@ -15,6 +17,8 @@ import type {
   StampedProof,
   TransactionRequestResponse,
   WalletStatus,
+  FaucetClaim,
+  FaucetStatus,
 } from "./types";
 
 export * from "./types";
@@ -86,10 +90,13 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         settings: Partial<
           Pick<
             ApiUser,
-            "locale" | "replyLanguage" | "displayCurrency" | "timezone" | "theme" | "riskMode" | "practiceMode"
+            "locale" | "replyLanguage" | "displayCurrency" | "timezone" | "theme" | "riskMode" | "practiceMode" | "handle"
           >
         >,
       ) => call<{ user: ApiUser }>("PATCH", "/me", settings),
+      /** The handle field's live check: which rule it breaks, or whether someone has it. */
+      handleAvailability: (handle: string) =>
+        call<HandleAvailability>("GET", `/me/handle/availability?handle=${encodeURIComponent(handle)}`),
       setNetwork: (network: NetworkId) => call<{ user: ApiUser }>("PUT", "/me/network", { network }),
       consents: () => call<{ consents: Consent[] }>("GET", "/me/consents"),
       consent: (input: { kind: ConsentKind; version: string; locale: string }) =>
@@ -98,6 +105,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
     wallet: {
       status: () => call<WalletStatus>("GET", "/wallet"),
+      /** USDC and EURC transfers in and out on one network, newest first. */
+      activity: (network: NetworkId) => call<{ items: ActivityItem[] }>("GET", `/wallet/activity?network=${network}`),
       register: (input: { address: string; walletId: string }) =>
         call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
@@ -122,6 +131,13 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
           requestId,
           signedTransaction,
         }),
+    },
+
+    faucet: {
+      /** Whether test money can be claimed now, when next, and what Circle's faucet sends. */
+      status: () => call<FaucetStatus>("GET", "/faucet"),
+      /** Sends test USDC and EURC to the user's own address on Arc Testnet; once a day. */
+      claim: (idempotencyKey?: string) => call<FaucetClaim>("POST", "/faucet/claim", {}, { idempotencyKey }),
     },
   };
 }

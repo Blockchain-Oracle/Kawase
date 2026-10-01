@@ -24,9 +24,14 @@ const componentName = (stem) =>
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join("");
 
+// Files are overwritten in place and only stale ones removed: wiping the folder first makes a running dev server
+// see the index missing for a moment and drop the hot update.
 for (const target of Object.keys(OUT)) {
-  rmSync(OUT[target], { recursive: true, force: true });
   mkdirSync(OUT[target], { recursive: true });
+  for (const file of readdirSync(OUT[target])) {
+    const stem = file.replace(/\.tsx?$/, "");
+    if (stem !== "index" && !stems.includes(stem)) rmSync(new URL(file, OUT[target]));
+  }
 }
 
 for (const stem of stems) {
@@ -43,7 +48,9 @@ for (const stem of stems) {
         { name: "preset-default", params: { overrides: { removeViewBox: false } } },
         "convertStyleToAttrs",
         "removeXMLNS",
-        { name: "removeAttrs", params: { attrs: ["data-name", "enable-background"] } },
+        { name: "removeAttrs", params: { attrs: ["data-name", "enable-background", "class"] } },
+        // Gradient and clip ids are global in a web page; without a per-mark prefix two marks would share "a".
+        { name: "prefixIds", params: { prefix: stem, delim: "-" } },
       ],
     },
     svgProps: { width: "100%", height: "100%" },

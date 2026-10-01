@@ -35,8 +35,13 @@ export type ProblemCode =
   | "transaction_mismatch"
   | "network_unavailable"
   | "consent_required"
+  | "handle_invalid"
+  | "handle_reserved"
+  | "handle_taken"
   | "idempotency_mismatch"
   | "rate_limited"
+  | "faucet_claimed_today"
+  | "faucet_testnet_only"
   | "upstream"
   | "internal";
 
@@ -79,8 +84,13 @@ const TITLES: Record<ProblemCode, string> = {
   transaction_mismatch: "The signed transaction differs from the request",
   network_unavailable: "This network is not available",
   consent_required: "A consent is required first",
+  handle_invalid: "The handle is not valid",
+  handle_reserved: "The handle is reserved",
+  handle_taken: "The handle is taken",
   idempotency_mismatch: "The same Idempotency-Key was used for a different request",
   rate_limited: "Too many requests",
+  faucet_claimed_today: "Test money was already sent today",
+  faucet_testnet_only: "The faucet only sends test money on testnet",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

@@ -28,6 +28,7 @@ const setupSubmitSchema = z.object({
     yParity: z.number().int().min(0).max(1),
   }),
 });
+const activitySchema = z.object({ network });
 const allowanceRequestSchema = z.object({ network, periodAmount: z.string().regex(/^\d+$/).optional() });
 const allowanceSubmitSchema = z.object({ grantId: z.uuid(), signature: hex });
 const submitTransactionSchema = z.object({ requestId: z.uuid(), signedTransaction: hex });
@@ -43,6 +44,12 @@ export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
   app.use("*", requireAccount);
 
   app.get("/", async (c) => c.json(await wallets.status(c.get("userId")!)));
+
+  /** The money history on one network (USDC and EURC in and out), from the chain's explorer. */
+  app.get("/activity", async (c) => {
+    const input = await parse(activitySchema, { network: c.req.query("network") });
+    return c.json(await wallets.activity(c.get("userId")!, input.network));
+  });
 
   /** The app creates the wallet with the Turnkey kit, then registers its address here. */
   app.post("/", async (c) => {

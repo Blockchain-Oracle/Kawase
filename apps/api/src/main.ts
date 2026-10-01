@@ -8,6 +8,7 @@ import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
 import { createTurnkeyReader } from "./auth/turnkey";
+import { circleFaucet } from "./faucet/circle-faucet";
 import { createChains } from "./wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -24,6 +25,7 @@ const app = createApp({
     apiPrivateKey: env.TURNKEY_API_PRIVATE_KEY,
   }),
   chains: createChains(env),
+  faucet: circleFaucet(env.CIRCLE_TEST_API_KEY),
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")
       .map((origin) => origin.trim())

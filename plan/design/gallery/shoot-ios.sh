@@ -1,5 +1,6 @@
 #!/bin/sh
-# Screenshots the internal gallery and the home sample on the booted iOS simulator, in each theme and in
+# Screenshots the internal gallery on the booted iOS simulator (the home sample became the real home in Phase B;
+# the direction board has its own script in ../board), in each theme and in
 # Arabic right-to-left. The app must be installed and the dev server running.
 # Run: sh plan/design/gallery/shoot-ios.sh [simulator name]
 set -e
@@ -12,9 +13,6 @@ shoot() { # route, query, file
   sips -Z 1311 "$OUT/$3" >/dev/null 2>&1 # half size keeps the repository small
   echo "$3"
 }
-shoot dev/home-sample "mode=dark&network=mainnet&lang=en" ios-home-dark-mainnet-en.png
-shoot dev/home-sample "mode=light&network=testnet&lang=ar" ios-home-light-testnet-ar.png
-shoot dev/home-sample "mode=dark&network=testnet&lang=en" ios-home-dark-testnet-en.png
 i=0
 for scroll in 0 700 1400 2100 2800; do
   i=$((i + 1))

@@ -1,4 +1,6 @@
-import { ENTITIES, chainKey, providerKey, tokenKey, venueKey, type Entity, type EntityKind, type MarkVariant } from "./registry";
+import { NETWORK_ADDRESSES, SHARED_ADDRESSES } from "@kawase/networks";
+
+import { CHAIN_IDS, ENTITIES, chainKey, providerKey, tokenKey, venueKey, type Entity, type EntityKind, type MarkVariant } from "./registry";
 
 export { ENTITIES, CHAIN_IDS, chainKey, providerKey, tokenKey, venueKey } from "./registry";
 export type { Entity, EntityKind, MarkVariant } from "./registry";
@@ -11,6 +13,16 @@ export const getTokenIdentity = (chainId: number, address: string): Entity | und
 export const getProviderIdentity = (slug: string): Entity | undefined => byId.get(providerKey(slug));
 export const getVenueIdentity = (slug: string): Entity | undefined => byId.get(venueKey(slug));
 export const entitiesOfKind = (kind: EntityKind): Entity[] => ENTITIES.filter((entity) => entity.kind === kind);
+
+/** The home network's ids per environment: the chain and its two stablecoins (balance card, receipts, receive). */
+export const arcIdentity = (environment: "mainnet" | "testnet") => {
+  const chainId = environment === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
+  return {
+    chain: chainKey(chainId),
+    usdc: tokenKey(chainId, SHARED_ADDRESSES.usdc),
+    eurc: tokenKey(chainId, NETWORK_ADDRESSES[environment].eurc),
+  };
+};
 
 /** The file stem for a variant, falling back to colour, or undefined when nothing has been delivered. */
 export const markFile = (entity: Entity, variant: MarkVariant): string | undefined => entity.marks[variant] ?? entity.marks.color;

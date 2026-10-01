@@ -56,7 +56,7 @@ const chain = (
   name,
   chainId,
   brandColor,
-  shape: "uncontained",
+  shape: "disc",
   marks,
   environment: "mainnet",
   role: "bridge-source",
@@ -142,14 +142,14 @@ export const ENTITIES: readonly Entity[] = [
   },
 
   // Bridge sources (CCTP V2 / App Kit). Testnets reuse the mark.
-  chain(CHAIN_IDS.ethereum, "Ethereum", "#627EEA", { color: "ethereum", mono: "ethereum-mono" }),
+  chain(CHAIN_IDS.ethereum, "Ethereum", "#627EEA", { color: "ethereum", mono: "ethereum-mono" }, { shape: "uncontained" }),
   chain(CHAIN_IDS.base, "Base", "#0052FF", { color: "base", mono: "base-mono" }, { shape: "tile" }),
   chain(CHAIN_IDS.arbitrum, "Arbitrum One", "#12AAFF", { color: "arbitrum", mono: "arbitrum-mono" }),
   chain(CHAIN_IDS.polygon, "Polygon", "#8247E5", { color: "polygon", mono: "polygon-mono" }),
   chain(CHAIN_IDS.avalanche, "Avalanche", "#E84142", { color: "avalanche", mono: "avalanche-mono" }),
   chain(CHAIN_IDS.optimism, "OP Mainnet", "#FF0420", { color: "optimism", mono: "optimism-mono" }),
   chain(CHAIN_IDS.unichain, "Unichain", "#F50DB4", { color: "unichain", mono: "unichain-mono" }),
-  chain(CHAIN_IDS.sepolia, "Sepolia", "#627EEA", { color: "ethereum", mono: "ethereum-mono" }, { environment: "testnet" }),
+  chain(CHAIN_IDS.sepolia, "Sepolia", "#627EEA", { color: "ethereum", mono: "ethereum-mono" }, { environment: "testnet", shape: "uncontained" }),
   chain(CHAIN_IDS.baseSepolia, "Base Sepolia", "#0052FF", { color: "base", mono: "base-mono" }, { environment: "testnet", shape: "tile" }),
   chain(CHAIN_IDS.arbitrumSepolia, "Arbitrum Sepolia", "#12AAFF", { color: "arbitrum", mono: "arbitrum-mono" }, { environment: "testnet" }),
   chain(CHAIN_IDS.polygonAmoy, "Polygon Amoy", "#8247E5", { color: "polygon", mono: "polygon-mono" }, { environment: "testnet" }),
@@ -180,7 +180,7 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("apple"), kind: "provider", name: "Apple", brandColor: "#000000", shape: "uncontained", marks: { color: "apple", mono: "apple-mono" } },
   { id: providerKey("google"), kind: "provider", name: "Google", brandColor: "#4285F4", shape: "uncontained", marks: { color: "google", mono: "google-mono" } },
   { id: providerKey("circle"), kind: "provider", name: "Circle", brandColor: "#00E599", shape: "uncontained", marks: { color: "circle", mono: "circle-mono" } },
-  { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "disc", marks: { color: "kawase", mono: "kawase-mono", wordmark: "kawase-wordmark" } },
+  { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
 
   // Registered now, marks later (Stage 6 routes and names).
   { id: venueKey("cctp"), kind: "venue", name: "Circle CCTP", brandColor: "#00E599", shape: "uncontained", marks: {} },

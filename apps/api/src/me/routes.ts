@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { SUPPORTED_LOCALES } from "@kawase/config";
+import { handleProblem, MAINNET_CONSENT_VERSION, normalizeHandle, SUPPORTED_LOCALES, type HandleProblem } from "@kawase/config";
 import { consents, users, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
@@ -13,8 +13,6 @@ import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { Chains } from "../wallet/chain";
 
-const MAINNET_CONSENT_VERSION = "1";
-
 const settingsSchema = z
   .object({
     locale: z.enum(SUPPORTED_LOCALES),
@@ -24,8 +22,27 @@ const settingsSchema = z
     theme: z.enum(["system", "light", "dark"]),
     riskMode: z.enum(["careful", "balanced", "autonomous"]),
     practiceMode: z.boolean(),
+    /** The @handle; null clears it. Checked against the shared rules and for uniqueness below. */
+    handle: z.string().max(FIELD.handleInputMax).nullable(),
   })
   .partial();
+
+const HANDLE_PROBLEMS: Record<HandleProblem, "handle_invalid" | "handle_reserved"> = {
+  too_short: "handle_invalid",
+  too_long: "handle_invalid",
+  invalid: "handle_invalid",
+  reserved: "handle_reserved",
+};
+
+/** Whether another user already has this handle (handles are unique without regard to case). */
+async function handleTaken(db: Db, handle: string, exceptUserId: string) {
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(sql`lower(${users.handle})`, handle), ne(users.id, exceptUserId)))
+    .limit(1);
+  return Boolean(row);
+}
 
 const networkSchema = z.object({ network: z.enum(["mainnet", "testnet"]) });
 const consentSchema = z.object({
@@ -43,12 +60,34 @@ export function meRoutes(db: Db, chains: Chains) {
   app.patch("/", async (c) => {
     const parsed = settingsSchema.safeParse(await c.req.json());
     if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
-    const [updated] = await db
-      .update(users)
-      .set(parsed.data)
-      .where(eq(users.id, c.get("userId")!))
-      .returning();
-    return c.json({ user: publicUser(updated!) });
+    const userId = c.get("userId")!;
+    const changes = { ...parsed.data };
+    if (typeof changes.handle === "string") {
+      // A handle is a public name for an account; a guest has nothing to be paid at yet.
+      if (c.get("user")!.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to choose a handle");
+      const reason = handleProblem(changes.handle);
+      if (reason) throw problem(HTTP.unprocessable, HANDLE_PROBLEMS[reason], undefined, { reason });
+      changes.handle = normalizeHandle(changes.handle);
+      if (await handleTaken(db, changes.handle, userId)) throw problem(HTTP.conflict, "handle_taken");
+    }
+    try {
+      const [updated] = await db.update(users).set(changes).where(eq(users.id, userId)).returning();
+      return c.json({ user: publicUser(updated!) });
+    } catch (failure) {
+      // Two people saving the same handle at once: the unique index decides, and the loser is told it is taken.
+      if (isUniqueViolation(failure, "users_handle_idx")) throw problem(HTTP.conflict, "handle_taken");
+      throw failure;
+    }
+  });
+
+  /** Live check for the handle field: the first rule it breaks, or whether someone has it. */
+  app.get("/handle/availability", async (c) => {
+    const raw = c.req.query("handle") ?? "";
+    const handle = normalizeHandle(raw);
+    const reason = handleProblem(raw);
+    if (reason) return c.json({ handle, available: false, reason });
+    const taken = await handleTaken(db, handle, c.get("userId")!);
+    return c.json(taken ? { handle, available: false, reason: "taken" } : { handle, available: true });
   });
 
   /** The network is server-authoritative (K6). Mainnet needs the real-money consent and a live mainnet. */
@@ -93,6 +132,13 @@ export function meRoutes(db: Db, chains: Chains) {
   app.get("/consents", async (c) => c.json({ consents: await listConsents(db, c.get("userId")!) }));
 
   return app;
+}
+
+const PG_UNIQUE_VIOLATION = "23505";
+function isUniqueViolation(failure: unknown, constraint: string): boolean {
+  const cause = (failure as { cause?: unknown }).cause ?? failure;
+  const error = cause as { code?: string; constraint?: string };
+  return error.code === PG_UNIQUE_VIOLATION && error.constraint === constraint;
 }
 
 async function listConsents(db: Db, userId: string) {

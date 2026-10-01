@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 
 import {
   APP_SCHEME,
+  APPLE_IOS_BUNDLE_ID,
+  APPLE_SERVICES_ID,
+  GOOGLE_WEB_CLIENT_ID,
   PASSKEY_RP_ID,
   TURNKEY_AUTH_PROXY_CONFIG_ID,
   TURNKEY_ORGANIZATION_ID,
@@ -19,7 +22,11 @@ const config: TurnkeyProviderConfig = {
   auth: {
     otp: { email: true, sms: false },
     passkey: PASSKEY_RP_ID !== "",
-    oauth: { appScheme: APP_SCHEME },
+    oauth: {
+      appScheme: APP_SCHEME,
+      ...(GOOGLE_WEB_CLIENT_ID ? { google: { primaryClientId: { webClientId: GOOGLE_WEB_CLIENT_ID } } } : {}),
+      apple: { primaryClientId: { iosBundleId: APPLE_IOS_BUNDLE_ID, serviceId: APPLE_SERVICES_ID } },
+    },
     autoRefreshSession: true,
   },
 };

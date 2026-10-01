@@ -3,7 +3,8 @@
 // With reduced motion it rests from the start.
 import { MOTION } from "@kawase/config";
 import * as React from "react";
-import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
+import { View } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import Svg, { G, Path, Rect } from "react-native-svg";
 
 import { KawaseGlyphs } from "./kawase-glyphs";
@@ -20,8 +21,6 @@ const GLYPH_X = 78;
 const GLYPH_Y = 50;
 const HALF_WAVE_MS = MOTION.flagWaveMs / 2;
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 type FlagProps = {
   width?: number;
   id?: string;
@@ -30,6 +29,21 @@ type FlagProps = {
 };
 
 const DEFAULT_WIDTH = 200;
+
+/** One still of the flag: the pole, the cloth in one of its two shapes, and the stamped 為替. */
+function FlagLayer({ width, height, id, cloth }: { width: number; height: number; id: string; cloth: string }) {
+  return (
+    <Svg width={width} height={height} viewBox={`0 0 ${FLAG_VIEWBOX.width} ${FLAG_VIEWBOX.height}`}>
+      <StippleDefs id={id} palette={SILVER} lightAngle={150} box={{ x: 0, y: 0, width: FLAG_VIEWBOX.width, height: FLAG_VIEWBOX.height }} />
+      <Rect x={POLE.x} y={POLE.y} width={POLE.width} height={POLE.height} rx={POLE.radius} fill={`url(#${id}-metal)`} />
+      <G>
+        <Path d={cloth} fill={`url(#${id}-metal)`} />
+        <Path d={cloth} fill={`url(#${id}-dots)`} mask={`url(#${id}-shade)`} />
+        <KawaseGlyphs size={GLYPH_SIZE} gap={GLYPH_GAP} x={GLYPH_X} y={GLYPH_Y} fill={SILVER.deep} relief={{ color: SILVER.glint, dx: 1.2, dy: 1.2, opacity: 0.6 }} />
+      </G>
+    </Svg>
+  );
+}
 
 export function Flag({ width = DEFAULT_WIDTH, id = "flag", wave = false }: FlagProps) {
   const reduced = useReducedMotion();
@@ -44,23 +58,20 @@ export function Flag({ width = DEFAULT_WIDTH, id = "flag", wave = false }: FlagP
     );
   }, [wave, reduced, progress]);
 
-  // Path morphing by string is not interpolable, so the wave swaps between the two curves through opacity of
-  // a second cloth: the rest cloth fades as the wave cloth appears, which reads as motion at this size.
-  const restProps = useAnimatedProps(() => ({ opacity: 1 - progress.value }));
-  const waveProps = useAnimatedProps(() => ({ opacity: progress.value }));
+  // The wave cross-fades the resting cloth into the waving one and back. Opacity lives on plain views (animated
+  // SVG props did not apply inside a page's entering animation), so the flag shows in every context.
+  const restStyle = useAnimatedStyle(() => ({ opacity: 1 - progress.value }));
+  const waveStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
 
   return (
-    <Svg width={width} height={height} viewBox={`0 0 ${FLAG_VIEWBOX.width} ${FLAG_VIEWBOX.height}`}>
-      <StippleDefs id={id} palette={SILVER} lightAngle={150} box={{ x: 0, y: 0, width: FLAG_VIEWBOX.width, height: FLAG_VIEWBOX.height }} />
-      <Rect x={POLE.x} y={POLE.y} width={POLE.width} height={POLE.height} rx={POLE.radius} fill={`url(#${id}-metal)`} />
-      <G>
-        <AnimatedPath animatedProps={restProps} d={CLOTH_REST} fill={`url(#${id}-metal)`} />
-        <AnimatedPath animatedProps={restProps} d={CLOTH_REST} fill={`url(#${id}-dots)`} mask={`url(#${id}-shade)`} />
-        <AnimatedPath animatedProps={waveProps} d={CLOTH_WAVE} fill={`url(#${id}-metal)`} />
-        <AnimatedPath animatedProps={waveProps} d={CLOTH_WAVE} fill={`url(#${id}-dots)`} mask={`url(#${id}-shade)`} />
-        <KawaseGlyphs size={GLYPH_SIZE} gap={GLYPH_GAP} x={GLYPH_X} y={GLYPH_Y} fill={SILVER.deep} relief={{ color: SILVER.glint, dx: 1.2, dy: 1.2, opacity: 0.6 }} />
-      </G>
-    </Svg>
+    <View style={{ width, height }}>
+      <Animated.View style={[{ position: "absolute", inset: 0 }, restStyle]}>
+        <FlagLayer width={width} height={height} id={`${id}-rest`} cloth={CLOTH_REST} />
+      </Animated.View>
+      <Animated.View style={[{ position: "absolute", inset: 0 }, waveStyle]}>
+        <FlagLayer width={width} height={height} id={`${id}-wave`} cloth={CLOTH_WAVE} />
+      </Animated.View>
+    </View>
   );
 }
 

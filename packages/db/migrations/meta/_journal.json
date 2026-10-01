@@ -15,6 +15,20 @@
       "when": 1790799142950,
       "tag": "0001_theme-default-dark",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790830493936,
+      "tag": "0002_handle",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790831988629,
+      "tag": "0003_faucet_claims",
+      "breakpoints": true
     }
   ]
 }

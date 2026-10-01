@@ -27,7 +27,12 @@ type DottedQrProps = {
 const DEFAULT_SIZE = 240;
 const DEFAULT_CENTER_RATIO = 0.22;
 const FINDER = 7;
-const DOT_RATIO = 0.38;
+/**
+ * Dot radius as a fraction of a module: 0.5 means neighbouring dots just touch. Measured by decoding a simulator
+ * screenshot of the receive page with jsQR (a strict decoder): 0.38, 0.45 and 0.48 did not decode, 0.5 did, to the
+ * exact wallet address. Any gap between dots is what breaks it, so do not go below this without re-running that check.
+ */
+const DOT_RATIO = 0.5;
 const FINDER_RADIUS_RATIO = 0.3;
 const FINDER_RING = 1;
 const HALF = 0.5;

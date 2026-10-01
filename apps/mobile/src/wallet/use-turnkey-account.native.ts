@@ -1,6 +1,6 @@
-// The Turnkey side of sign-in and wallet creation, bridged to the api: after the email code, the app proves
-// its Turnkey session to the api (one sign-in), creates the wallet if the account has none, and registers
-// its address.
+// The Turnkey side of sign-in and wallet creation, bridged to the api: after the email code, Apple or Google, the
+// app proves its Turnkey session to the api (one sign-in), creates the wallet if the account has none, and
+// registers its address.
 import { OtpType, useTurnkey } from "@turnkey/react-native-wallet-kit";
 import * as React from "react";
 
@@ -12,15 +12,24 @@ import { sessionStorage } from "@/session/storage";
 
 const ETHEREUM_FORMAT = "ADDRESS_FORMAT_ETHEREUM";
 const WALLET_NAME = "Kawase";
+/** The kit publishes the new session through React state; a sign-in waits this long for it to land. */
+const SESSION_WAIT_MS = 10_000;
+const SESSION_POLL_MS = 50;
+
+export type SocialProvider = "apple" | "google";
 
 export type TurnkeyAccount = {
   available: boolean;
+  /** Which social providers can be used on this platform. */
+  providers: readonly SocialProvider[];
   signedIn: boolean;
   email: string | undefined;
   /** Sends the code; returns what `verifyCode` needs. */
   sendCode: (email: string) => Promise<{ otpId: string; otpEncryptionTargetBundle: string }>;
   /** Completes the code, then proves the session to the api and links or upgrades the Kawase user. */
   verifyCode: (input: { email: string; code: string; otpId: string; otpEncryptionTargetBundle: string }) => Promise<ApiUser>;
+  /** Runs the provider's own sign-in, then proves the session to the api like `verifyCode`. */
+  signInWith: (provider: SocialProvider) => Promise<ApiUser>;
   /** With a Turnkey session already on the device: prove it to the api without a new code. */
   linkSession: () => Promise<ApiUser>;
   /** The account's wallet, created and registered when missing. */
@@ -31,25 +40,40 @@ export type TurnkeyAccount = {
 export function useTurnkeyAccount(): TurnkeyAccount {
   const turnkey = useTurnkey();
   const { adoptToken } = useSession();
-  const { initOtp, completeOtp, session, httpClient, createWallet, refreshWallets, wallets, logout, user } = turnkey;
+  const { initOtp, completeOtp, handleAppleOauth, handleGoogleOauth, session, httpClient, createWallet, refreshWallets, wallets, logout, user } = turnkey;
+
+  // A sign-in's continuation runs after the kit has re-rendered with the new session, so it reads the latest
+  // values through this ref instead of the ones captured when it started.
+  const latest = React.useRef({ session, httpClient, wallets });
+  latest.current = { session, httpClient, wallets };
+
+  const waitForSession = React.useCallback(async () => {
+    const deadline = Date.now() + SESSION_WAIT_MS;
+    while (!latest.current.session || !latest.current.httpClient) {
+      if (Date.now() > deadline) throw new Error("no Turnkey session");
+      await new Promise((resolve) => setTimeout(resolve, SESSION_POLL_MS));
+    }
+    return { session: latest.current.session, httpClient: latest.current.httpClient };
+  }, []);
 
   const proveSession = React.useCallback(async (): Promise<ApiUser> => {
-    if (!session || !httpClient) throw new Error("no Turnkey session");
+    const { session: current, httpClient: client } = await waitForSession();
     const { nonce } = await api.auth.nonce();
     // The proof is a Turnkey stamp over a "get activity" request whose activity id is the api's nonce.
-    const signed = await httpClient.stampGetActivity({ organizationId: session.organizationId, activityId: nonce });
+    const signed = await client.stampGetActivity({ organizationId: current.organizationId, activityId: nonce });
     if (!signed) throw new Error("the session could not sign");
     const guestToken = await sessionStorage.getToken();
     const { token } = await api.auth.turnkey(
-      { proof: { body: signed.body, stamp: signed.stamp.stampHeaderValue }, turnkeyUserId: session.userId, device: await deviceInfo() },
+      { proof: { body: signed.body, stamp: signed.stamp.stampHeaderValue }, turnkeyUserId: current.userId, device: await deviceInfo() },
       guestToken,
     );
     return adoptToken(token);
-  }, [session, httpClient, adoptToken]);
+  }, [waitForSession, adoptToken]);
 
   return React.useMemo<TurnkeyAccount>(
     () => ({
       available: true,
+      providers: ["apple", "google"],
       signedIn: Boolean(session),
       email: user?.userEmail,
       async sendCode(email) {
@@ -60,9 +84,14 @@ export function useTurnkeyAccount(): TurnkeyAccount {
         await completeOtp({ otpId, otpEncryptionTargetBundle, otpCode: code.trim(), contact: email.trim(), otpType: OtpType.Email });
         return proveSession();
       },
+      async signInWith(provider) {
+        await (provider === "apple" ? handleAppleOauth() : handleGoogleOauth());
+        return proveSession();
+      },
       linkSession: proveSession,
       async ensureWallet() {
-        let current = wallets;
+        let current = latest.current.wallets;
+        if (current.length === 0) current = await refreshWallets();
         if (current.length === 0) {
           await createWallet({ walletName: WALLET_NAME, accounts: [ETHEREUM_FORMAT] });
           current = await refreshWallets();
@@ -77,6 +106,6 @@ export function useTurnkeyAccount(): TurnkeyAccount {
         await logout();
       },
     }),
-    [session, user, initOtp, completeOtp, proveSession, wallets, createWallet, refreshWallets, logout],
+    [session, user, initOtp, completeOtp, handleAppleOauth, handleGoogleOauth, proveSession, createWallet, refreshWallets, logout],
   );
 }

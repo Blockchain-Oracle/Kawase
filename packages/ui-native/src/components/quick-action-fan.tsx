@@ -29,6 +29,9 @@ type QuickActionFanProps = {
 const PLUS_SIZE = 56;
 const END_INSET = 20;
 const LABEL_GAP = 12;
+/** Room for the longest label in any of the ten languages; the text is aligned to the circle's side. */
+const LABEL_WIDTH = 200;
+const HALF = 0.5;
 const CLOSED_SCALE = 0.4;
 const ROTATE_CLOSED = 0;
 const ROTATE_OPEN = 45;
@@ -56,13 +59,33 @@ function FanItem({ action, index, open, onAction, reduced }: { action: FanAction
     };
   });
 
+  // The row is anchored on its circle, not on a content-sized row: each wrapper is exactly the circle's box,
+  // centred on the plus, and the label hangs off its leading side. That keeps the circles in one straight column
+  // whatever the label's length, and makes the rise scale around the circle instead of the row's middle.
   return (
-    <Animated.View style={style} className="absolute bottom-0 end-0 flex-row items-center" pointerEvents={open ? "auto" : "none"}>
-      <Pressable accessibilityRole="button" accessibilityLabel={action.label} onPress={() => onAction(action.key)} className="flex-row items-center" style={{ gap: LABEL_GAP }}>
-        <Text className="text-foreground text-base font-semibold">{action.label}</Text>
-        <View className="bg-primary items-center justify-center rounded-full" style={{ width: FAN.circlePt, height: FAN.circlePt }}>
-          <Icon as={action.icon} className="text-primary-foreground size-5" strokeWidth={2.4} />
-        </View>
+    <Animated.View
+      style={[style, { width: FAN.circlePt, height: FAN.circlePt, end: (PLUS_SIZE - FAN.circlePt) * HALF }]}
+      className="absolute bottom-0"
+      pointerEvents={open ? "auto" : "none"}
+    >
+      <Pressable
+        accessible={false}
+        onPress={() => onAction(action.key)}
+        className="absolute inset-y-0 items-end justify-center"
+        style={{ end: FAN.circlePt + LABEL_GAP, width: LABEL_WIDTH }}
+      >
+        <Text numberOfLines={1} className="text-foreground text-base font-semibold">
+          {action.label}
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={action.label}
+        onPress={() => onAction(action.key)}
+        className="bg-primary items-center justify-center rounded-full"
+        style={{ width: FAN.circlePt, height: FAN.circlePt }}
+      >
+        <Icon as={action.icon} className="text-primary-foreground size-5" strokeWidth={2.4} />
       </Pressable>
     </Animated.View>
   );

@@ -14,6 +14,8 @@ export const users = pgTable(
     id: id(),
     /** Present after the first Turnkey sign-in; null for guests. */
     email: text(),
+    /** The optional public @handle (D35): lowercase, unique without regard to case, changeable. */
+    handle: text(),
     turnkeySubOrganizationId: uuid(),
     turnkeyUserId: uuid(),
     isAnonymous: boolean().notNull().default(true),
@@ -35,6 +37,9 @@ export const users = pgTable(
     uniqueIndex("users_email_idx")
       .on(sql`lower(${table.email})`)
       .where(sql`${table.email} is not null`),
+    uniqueIndex("users_handle_idx")
+      .on(sql`lower(${table.handle})`)
+      .where(sql`${table.handle} is not null`),
     uniqueIndex("users_turnkey_sub_organization_idx")
       .on(table.turnkeySubOrganizationId)
       .where(sql`${table.turnkeySubOrganizationId} is not null`),

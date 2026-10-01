@@ -4,7 +4,6 @@ import { Composer } from "@kawase/ui-web/components/composer";
 import { ConfirmSheet } from "@kawase/ui-web/components/confirm-sheet";
 import { NetworkChip, TestnetStrip } from "@kawase/ui-web/components/network-chip";
 import { StateLabel } from "@kawase/ui-web/components/state-label";
-import BottomMenu from "@kawase/ui-web/components/ui/bottom-menu";
 import { Bubble, BubbleContent } from "@kawase/ui-web/components/ui/bubble";
 import { Button } from "@kawase/ui-web/components/ui/button";
 import { HoldToConfirm } from "@kawase/ui-web/components/ui/hold-to-confirm";
@@ -14,22 +13,11 @@ import { ResponseStream } from "@kawase/ui-web/components/ui/response-stream";
 import { SegmentedControl } from "@kawase/ui-web/components/ui/segmented-control";
 import { AiSuggestedActions } from "@kawase/ui-web/components/ui/suggested-actions";
 import { VoicePoweredOrb } from "@kawase/ui-web/components/ui/voice-powered-orb";
-import { WalletCard } from "@kawase/ui-web/components/ui/wallet-card-2";
 import {
-  Activity,
   ArrowDownLeft,
-  ArrowLeftRight,
   ArrowUpRight,
   CalendarClock,
-  Coins,
-  Euro,
-  House,
-  QrCode,
-  Repeat,
   ScanFace,
-  Settings,
-  Users,
-  Waypoints,
 } from "lucide-react";
 import * as React from "react";
 
@@ -213,25 +201,6 @@ export function GalleryScreen({ initialLocale = "en" }: GalleryScreenProps) {
             />
           </Section>
 
-          <Section title="Wallet">
-            <WalletCard
-              label={t.totalBalance}
-              amount={t.balance}
-              subAmount={t.subBalance}
-              badge={<NetworkChip label={testnet ? t.arcTestnet : t.arc} />}
-              onAction={(id) => setLog(`wallet action: ${id}`)}
-              actions={[
-                { id: "send", label: t.send, icon: <ArrowUpRight className="size-4" />, kind: "primary" },
-                { id: "request", label: t.request, icon: <QrCode className="size-4" />, kind: "secondary" },
-                { id: "swap", label: t.swap, icon: <ArrowLeftRight className="size-4" />, kind: "icon" },
-                { id: "bridge", label: t.bridge, icon: <Waypoints className="size-4" />, kind: "icon" },
-              ]}
-              accounts={[
-                { id: "usdc", name: "USDC", detail: t.dollar, amount: "1,194.38", icon: <Coins className="size-4" /> },
-                { id: "eurc", name: "EURC", detail: t.euro, amount: "42.30", icon: <Euro className="size-4" /> },
-              ]}
-            />
-          </Section>
 
           <Section title="Activity">
             <ActivityFeed
@@ -267,18 +236,6 @@ export function GalleryScreen({ initialLocale = "en" }: GalleryScreenProps) {
             />
           </Section>
 
-          <Section title="Navigation (web only; the native apps use the platform's own navigation)">
-            <BottomMenu
-              active="home"
-              nav={[
-                { name: "home", label: "Home", icon: <House className="size-5" /> },
-                { name: "activity", label: "Activity", icon: <Activity className="size-5" /> },
-                { name: "contacts", label: "Contacts", icon: <Users className="size-5" /> },
-                { name: "automations", label: "Automations", icon: <Repeat className="size-5" /> },
-                { name: "settings", label: "Settings", icon: <Settings className="size-5" /> },
-              ]}
-            />
-          </Section>
         </div>
       </div>
     </div>

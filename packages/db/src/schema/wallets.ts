@@ -195,3 +195,28 @@ export const capabilityOverrides = pgTable(
   },
   (table) => [uniqueIndex("capability_overrides_pk").on(table.capability, table.network)],
 );
+
+export const faucetStatusEnum = pgEnum("faucet_status", ["sent", "failed"]);
+
+/**
+ * Test-money claims from the in-app faucet (S2, testnet only). One successful claim per user per day, checked
+ * against this table; the drip itself is Circle's testnet faucet sending to the user's own address.
+ */
+export const faucetClaims = pgTable(
+  "faucet_claims",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    network: networkEnum().notNull(),
+    address: text().notNull(),
+    /** What was asked for, in base units per asset: `{ USDC: "20000000", EURC: "20000000" }`. */
+    amounts: jsonb().$type<Record<string, string>>().notNull(),
+    status: faucetStatusEnum().notNull(),
+    /** The provider's error, when it refused. */
+    failure: text(),
+    createdAt: createdAt(),
+  },
+  (table) => [index("faucet_claims_user_created_idx").on(table.userId, table.createdAt)],
+);

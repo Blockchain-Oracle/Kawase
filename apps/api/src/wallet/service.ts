@@ -15,7 +15,7 @@ import {
 } from "viem";
 
 import { DEFAULT_LIMITS, SECONDS_PER_DAY } from "@kawase/config";
-import { grants, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
+import { faucetClaims, grants, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
   buildAllowanceGrant,
   describeGrant,
@@ -28,6 +28,7 @@ import {
 import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import { fetchActivity } from "./activity";
 import type { Chains, NetworkClients } from "./chain";
 
 const SALT_BYTES = 32;
@@ -101,6 +102,23 @@ export class WalletService {
   }
 
   /** The wallet's state on each available network, for the app's wallet screen. */
+  /** USDC and EURC transfers in and out of the user's wallet on one network, newest first (the chain's explorer). */
+  async activity(userId: string, network: NetworkId) {
+    const wallet = await this.userWallet(userId);
+    if (!wallet) return { items: [] };
+    const { network: context, ops, relayerAddress } = this.clients(network);
+    const claims = await this.db
+      .select({ createdAt: faucetClaims.createdAt })
+      .from(faucetClaims)
+      .where(and(eq(faucetClaims.userId, userId), eq(faucetClaims.network, network), eq(faucetClaims.status, "sent")));
+    try {
+      const items = await fetchActivity(context, wallet.address as Address, { agent: ops.address, relayer: relayerAddress }, claims.map((claim) => claim.createdAt));
+      return { items };
+    } catch {
+      throw problem(HTTP.badGateway, "upstream", "the explorer did not answer");
+    }
+  }
+
   async status(userId: string) {
     const wallet = await this.userWallet(userId);
     if (!wallet) return { address: undefined, networks: {} };
@@ -108,14 +126,12 @@ export class WalletService {
     const networks: Record<string, unknown> = {};
     for (const id of this.chains.available) {
       const { client, network } = this.clients(id);
-      const [code, balance, setup, allowance] = await Promise.all([
+      const balanceOf = (token: Address) =>
+        client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [address] });
+      const [code, usdcBalance, eurcBalance, setup, allowance] = await Promise.all([
         client.getCode({ address }),
-        client.readContract({
-          address: network.addresses.usdc,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [address],
-        }),
+        balanceOf(network.addresses.usdc),
+        balanceOf(network.addresses.eurc),
         this.db
           .select()
           .from(userWalletSetup)
@@ -137,7 +153,8 @@ export class WalletService {
       networks[id] = {
         setUp: isWalletSetUp(code),
         setupAt: setup[0]?.setupAt ?? null,
-        usdcBalance: balance.toString(),
+        usdcBalance: usdcBalance.toString(),
+        eurcBalance: eurcBalance.toString(),
         allowance: allowance[0]
           ? { id: allowance[0].id, receipt: allowance[0].receipt, expiresAt: allowance[0].expiresAt }
           : null,

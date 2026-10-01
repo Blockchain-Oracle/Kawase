@@ -12,6 +12,8 @@ import { authRoutes } from "./auth/routes";
 import { AuthService } from "./auth/service";
 import type { TurnkeyReader } from "./auth/turnkey";
 import { capabilityView } from "./capabilities/service";
+import type { FaucetDrip } from "./faucet/circle-faucet";
+import { faucetRoutes } from "./faucet/routes";
 import { idempotency } from "./http/idempotency";
 import { HTTP, ProblemError, problem, problemResponse } from "./http/problem";
 import { createRateLimit } from "./http/rate-limit";
@@ -32,6 +34,8 @@ export type AppDeps = {
   signInLimitPerMinute?: number;
   /** Browser origins allowed to call the api. */
   webOrigins?: string[];
+  /** The testnet faucet's drip (Circle's faucet in production, a fake in tests). */
+  faucet: FaucetDrip;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -91,6 +95,7 @@ export function createApp(deps: AppDeps) {
   app.route("/auth", authRoutes(deps.db, auth));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
+  app.route("/faucet", faucetRoutes(deps.db, wallets, deps.faucet));
 
   return app;
 }

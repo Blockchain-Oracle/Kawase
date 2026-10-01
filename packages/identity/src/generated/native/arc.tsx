@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { G, Path, Defs, LinearGradient, Stop, ClipPath } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkArc = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><G clipPath="url(#arc-a)"><Path fill="url(#arc-b)" d="M24 0H0v24h24z" /><Path fill="#fff" d="M4.5 19.999c.13-3.917.794-7.572 1.904-10.415C7.81 5.984 9.845 4 12.134 4s4.324 1.983 5.73 5.585c.731 1.872 1.27 4.098 1.588 6.52q.042.324.078.654.013.021.011.037s.187 1.17.227 3.204h-.02c-.279-.229-3.556-2.804-8.989-2.058.082-.92.195-1.814.34-2.671l.024-.13a21.8 21.8 0 0 1 5.426.508l-.015-.103c-.294-1.83-.728-3.506-1.287-4.939-.915-2.342-2.108-3.797-3.114-3.797S9.934 8.265 9.02 10.607a20 20 0 0 0-.604 1.808 27 27 0 0 0-.638 2.856A36 36 0 0 0 7.311 20H4.5z" /></G><Defs><LinearGradient id="arc-b" x1={12} x2={12} y1={0} y2={24} gradientUnits="userSpaceOnUse"><Stop stopColor="#182680" /><Stop offset={1} stopColor="#842D56" /></LinearGradient><ClipPath id="arc-a"><Path fill="#fff" d="M0 0h24v24H0z" /></ClipPath></Defs></Svg>;
+export default MarkArc;

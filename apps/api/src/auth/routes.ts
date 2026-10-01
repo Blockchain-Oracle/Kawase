@@ -66,6 +66,7 @@ export function authRoutes(db: Db, auth: AuthService) {
 export function publicUser(user: {
   id: string;
   email: string | null;
+  handle: string | null;
   isAnonymous: boolean;
   locale: string;
   replyLanguage: string | null;
@@ -80,6 +81,7 @@ export function publicUser(user: {
   return {
     id: user.id,
     email: user.email,
+    handle: user.handle,
     isGuest: user.isAnonymous,
     locale: user.locale,
     replyLanguage: user.replyLanguage,

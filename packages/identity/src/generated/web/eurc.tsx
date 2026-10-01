@@ -1,0 +1,7 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import type { SVGProps } from "react";
+const MarkEurc = (props: SVGProps<SVGSVGElement>) => <svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><g clipPath="url(#eurc-a)"><mask id="eurc-b" width={24} height={24} x={0} y={0} maskUnits="userSpaceOnUse" style={{
+      maskType: "luminance"
+    }}><path fill="#fff" d="M24 0H0v24h24z" /></mask><g mask="url(#eurc-b)"><path fill="#0B53BF" d="M24 0H0v24h24z" /></g><path fill="#fff" d="M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16m-1.44 2.175A5.99 5.99 0 0 0 6 12c0 2.82 1.94 5.185 4.56 5.825v-1.03a5.008 5.008 0 0 1 0-9.59zm2.88 1.03A5.01 5.01 0 0 1 17 12a5.01 5.01 0 0 1-3.56 4.795v1.03A5.99 5.99 0 0 0 18 12c0-2.82-1.94-5.185-4.56-5.825zM12.62 9c-1.17 0-2.354.654-2.782 1.925H9.07v.75h.614a4 4 0 0 0 0 .65H9.07v.75h.768C10.266 14.345 11.45 15 12.62 15c.485 0 .97-.11 1.4-.335l-.32-.76c-.35.14-.73.22-1.094.22-.723 0-1.405-.308-1.731-1.05h1.59l.31-.75H10.69a3.4 3.4 0 0 1 0-.65h2.35l.31-.75h-2.475c.326-.742 1.008-1.05 1.73-1.05.365 0 .745.08 1.095.22l.32-.76A3 3 0 0 0 12.62 9" /></g><defs><clipPath id="eurc-a"><path fill="#fff" d="M0 0h24v24H0z" /></clipPath></defs></svg>;
+export default MarkEurc;

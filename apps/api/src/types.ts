@@ -14,6 +14,7 @@ export type AppEnv = {
 export type SessionUser = {
   id: string;
   email: string | null;
+  handle: string | null;
   isAnonymous: boolean;
   locale: string;
   replyLanguage: string | null;

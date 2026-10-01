@@ -1,5 +1,5 @@
-import { WelcomeScreen } from "@/screens/welcome-screen";
+import { StoryScreen } from "@/screens/story-screen";
 
 export default function WelcomeRoute() {
-  return <WelcomeScreen />;
+  return <StoryScreen />;
 }

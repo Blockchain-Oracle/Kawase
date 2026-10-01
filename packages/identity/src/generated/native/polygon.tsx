@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { G, Path, Defs, LinearGradient, Stop, ClipPath } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkPolygon = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><G clipPath="url(#polygon-a)"><Path fill="url(#polygon-b)" d="M24 0H0v24h24z" /><Path fill="#fff" d="m15.88 14.86 3.794-2.165a.64.64 0 0 0 .326-.558v-4.33a.64.64 0 0 0-.326-.556L15.88 5.086a.66.66 0 0 0-.65 0L11.432 7.25a.64.64 0 0 0-.325.557v7.737l-2.662 1.517-2.661-1.517v-3.036l2.661-1.517 1.755 1.001V9.958l-1.43-.816a.66.66 0 0 0-.65 0l-3.796 2.165a.64.64 0 0 0-.325.557v4.33c0 .229.124.442.325.557l3.796 2.165c.2.114.45.114.65 0l3.796-2.165a.64.64 0 0 0 .325-.557V8.455l.048-.026 2.613-1.49 2.661 1.516v3.036l-2.661 1.517-1.753-.999v2.037l1.427.814a.66.66 0 0 0 .651 0z" /></G><Defs><LinearGradient id="polygon-b" x1={3.948} x2={19.217} y1={16.617} y2={7.645} gradientUnits="userSpaceOnUse"><Stop stopColor="#A726C1" /><Stop offset={0.88} stopColor="#803BDF" /><Stop offset={1} stopColor="#7B3FE4" /></LinearGradient><ClipPath id="polygon-a"><Path fill="#fff" d="M0 0h24v24H0z" /></ClipPath></Defs></Svg>;
+export default MarkPolygon;

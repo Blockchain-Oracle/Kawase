@@ -1,6 +1,6 @@
 # Provenance of the marks in `svg/`
 
-Every file here is a first-party brand asset, unchanged. One row per file. Recording crops from the reference study are never used as production marks. Add a row before adding a file; `build.mjs` turns each file into a component for native and web.
+Every file here is either a first-party brand asset or a redrawn mark from an open icon set (web3icons, MIT; simple-icons, CC0), named in its row. One row per file. Recording crops from the reference study are never used as production marks. Add a row before adding a file; `build.mjs` turns each file into a component for native and web.
 
 | File | Entity | Canonical id | Source page | Direct asset | Retrieved | Usage note from the kit | sha256 |
 |---|---|---|---|---|---|---|---|
@@ -9,15 +9,37 @@ Every file here is a first-party brand asset, unchanged. One row per file. Recor
 | `base.svg` | Base | `chain:eip155:8453` | https://github.com/base/brand-kit | https://raw.githubusercontent.com/base/brand-kit/HEAD/logo/TheSquare/Digital/Base_square_blue.svg | 2026-09-30 | Base brand kit: The Square is the network mark; the Basemark (four squares) is the wordmark | `b4f2b487011713f9…` |
 | `base-mono.svg` | Base (mono) | `chain:eip155:8453` | https://github.com/base/brand-kit | https://raw.githubusercontent.com/base/brand-kit/HEAD/logo/TheSquare/Digital/Base_square_white.svg | 2026-09-30 | same; the kit's white square | `2b29d9c645da49a7…` |
 | `solana.svg` | Solana | `chain:solana:mainnet` | https://solana.com/branding | https://raw.githubusercontent.com/solana-foundation/solana-com/main/apps/web/public/src/img/branding/solanaLogoMark.svg | 2026-09-30 | Solana Foundation branding: the gradient logomark; no mono file taken (the kit's black/white marks are in its zip) | `3d3401109aa061de…` |
+| `usdc.svg` | USDC | `token:eip155:5042:0x3600…0000` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/tokens/background/USDC` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `416ec27388edc933…` |
+| `usdc-mono.svg` | USDC (mono) | `token:eip155:5042:0x3600…0000` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/tokens/mono/USDC` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `568cbefda905b88e…` |
+| `eurc.svg` | EURC | `token:eip155:5042:0xbef5…21c1` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/tokens/background/EURC` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `0b0bec5e5be5eb04…` |
+| `eurc-mono.svg` | EURC (mono) | `token:eip155:5042:0xbef5…21c1` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/tokens/mono/EURC` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `1b0f1183e0e0dc60…` |
+| `arc.svg` | Arc | `chain:eip155:5042` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/arc` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `775733d0d306b66e…` |
+| `arc-mono.svg` | Arc (mono) | `chain:eip155:5042` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/arc` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `9bdb983d4aef4afe…` |
+| `arbitrum.svg` | Arbitrum One | `chain:eip155:42161` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/arbitrum-one` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `ddd2fdfae97322ef…` |
+| `arbitrum-mono.svg` | Arbitrum One (mono) | `chain:eip155:42161` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/arbitrum-one` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `6766ee3925147364…` |
+| `polygon.svg` | Polygon | `chain:eip155:137` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/polygon` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `d2d898eb651c07eb…` |
+| `polygon-mono.svg` | Polygon (mono) | `chain:eip155:137` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/polygon` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `8f541f993150a8c1…` |
+| `avalanche.svg` | Avalanche | `chain:eip155:43114` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/avalanche` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `06aeee0371c97848…` |
+| `avalanche-mono.svg` | Avalanche (mono) | `chain:eip155:43114` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/avalanche` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `61911aebe709ffd4…` |
+| `optimism.svg` | OP Mainnet | `chain:eip155:10` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/optimism` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `6e29ce486ff0404d…` |
+| `optimism-mono.svg` | OP Mainnet (mono) | `chain:eip155:10` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/optimism` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `780f166995844798…` |
+| `unichain.svg` | Unichain | `chain:eip155:130` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/background/unichain` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `721d4218a560305e…` |
+| `unichain-mono.svg` | Unichain (mono) | `chain:eip155:130` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/unichain` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `65dfdbc8c87c6bae…` |
+| `solana-mono.svg` | Solana (mono) | `chain:solana:mainnet` | https://github.com/0xa3k5/web3icons | `@web3icons/core@4.0.57` `dist/svgs/networks/mono/solana` | 2026-10-01 | web3icons (MIT): community-redrawn brand mark; the brand remains its owner's trademark | `3b5c010759544e87…` |
+| `apple.svg` | Apple | `provider:apple` | https://simpleicons.org | https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/apple.svg | 2026-10-01 | simple-icons (CC0): black glyph, for light surfaces; the brand remains its owner's trademark | `3455818a39df515d…` |
+| `apple-mono.svg` | Apple (mono) | `provider:apple` | https://simpleicons.org | https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/apple.svg | 2026-10-01 | simple-icons (CC0): tinted via currentColor; the brand remains its owner's trademark | `3455818a39df515d…` |
+| `google-mono.svg` | Google (mono) | `provider:google` | https://simpleicons.org | https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/google.svg | 2026-10-01 | simple-icons (CC0): tinted via currentColor; the brand remains its owner's trademark | `d60dad95ee0f161b…` |
+| `circle.svg` | Circle | `provider:circle` | https://simpleicons.org | https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/circle.svg | 2026-10-01 | simple-icons (CC0): glyph in Circle's green; the brand remains its owner's trademark | `fc3aa0f9edde83f8…` |
+| `circle-mono.svg` | Circle (mono) | `provider:circle` | https://simpleicons.org | https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/circle.svg | 2026-10-01 | simple-icons (CC0): tinted via currentColor; the brand remains its owner's trademark | `f4b32c39039e7705…` |
+| `google.svg` | Google | `provider:google` | https://developers.google.com/identity/branding-guidelines | the four-colour "G" from the sign-in branding guidelines | 2026-10-01 | Google sign-in branding: use the standard colour "G" on sign-in buttons, unaltered | `8afaa999d05d43f3…` |
+| `kawase.svg` | Kawase | `provider:kawase` | in-repo | `packages/ui-native/src/components/art/kawase-mark.tsx` geometry | 2026-10-01 | original artwork (為替 in the ink tile with the lime seal ring); glyph outlines from Noto Sans JP Bold (OFL 1.1) | `32454d02c13f9bd1…` |
+| `kawase-mono.svg` | Kawase | `provider:kawase` | in-repo | `packages/ui-native/src/components/art/kawase-mark.tsx` geometry | 2026-10-01 | original artwork (the 為替 glyphs alone); glyph outlines from Noto Sans JP Bold (OFL 1.1) | `8f8c44c45b199b56…` |
 
 ## Not delivered yet
 
-| Entity | Wanted files | Tried | Note |
-|---|---|---|---|
-| USDC, EURC | usdc, usdc-mono, eurc, eurc-mono | — | Codex collects from Circle's brand assets (`plan/prompts/codex-brand-kits.txt`) |
-| Arc | arc, arc-mono, arc-wordmark | — | Arc brand page |
-| Arbitrum, Polygon, Avalanche, OP Mainnet, Unichain | `<chain>`, `<chain>-mono` | GitHub org repos (none public for these) | Foundation/company brand kits — Codex |
-| Solana (mono) | solana-mono | — | inside the branding zip |
-| Apple, Google | apple, apple-mono, google | — | Sign-in branding guidelines |
-| Circle | circle, circle-mono | — | Circle brand page |
-| Kawase | kawase, kawase-mono, kawase-wordmark | — | Original artwork, drawn in-repo (`plan/design/artwork/brand-mark.md`) |
+| Entity | Wanted files | Note |
+|---|---|---|
+| Kawase | kawase-wordmark | The wordmark in the display face; no screen uses it yet |
+| Venues and name services (CCTP, LI.FI, Across, Relay, deBridge, Socket, ENS, Basenames) | `<slug>`, `<slug>-mono` | Added with the Stage 6 route that first lists them — the logo ships in the same change |
+
+The app icon, splash and favicon are rendered from the Kawase mark into `apps/mobile/assets/brand/` (`rsvg-convert`); changing them needs `npx expo prebuild` and a rebuild.

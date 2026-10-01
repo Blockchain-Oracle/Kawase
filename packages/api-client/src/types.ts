@@ -4,6 +4,8 @@ export type NetworkId = "mainnet" | "testnet";
 export type ApiUser = {
   id: string;
   email: string | null;
+  /** The public @handle, without the @; null until the user picks one. */
+  handle: string | null;
   isGuest: boolean;
   locale: string;
   replyLanguage: string | null;
@@ -53,6 +55,8 @@ export type WalletNetworkStatus = {
   setUp: boolean;
   setupAt: string | null;
   usdcBalance: string;
+  /** Base units (6 decimals), like `usdcBalance`. */
+  eurcBalance: string;
   allowance: { id: string; receipt: GrantReceipt; expiresAt: string } | null;
 };
 
@@ -102,4 +106,36 @@ export type Problem = {
   instance?: string;
   requestId?: string;
   [extra: string]: unknown;
+};
+
+export type HandleAvailability =
+  | { handle: string; available: true }
+  | { handle: string; available: false; reason: "too_short" | "too_long" | "invalid" | "reserved" | "taken" };
+
+export type FaucetStatus = {
+  network: NetworkId;
+  eligible: boolean;
+  /** When the next claim opens, after a successful one. */
+  nextAt: string | null;
+  /** Base units per asset ("USDC", "EURC"). */
+  amounts: Record<string, string>;
+  /** Circle's own faucet, for when the in-app drip is refused. */
+  fallbackUrl: string;
+};
+
+export type FaucetClaim = { status: "sent"; amounts: Record<string, string>; address: string; nextAt: string };
+
+export type ActivityItem = {
+  id: string;
+  network: NetworkId;
+  direction: "in" | "out";
+  asset: "USDC" | "EURC";
+  /** Base units (6 decimals). */
+  amount: string;
+  counterparty: string;
+  /** Who the counterparty is, when Kawase knows: its own wallets, Circle's faucet, or the user's own address. */
+  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | null;
+  txHash: string;
+  at: string;
+  explorerUrl: string;
 };

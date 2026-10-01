@@ -219,9 +219,11 @@ test("mainnet needs the consent and a live mainnet; settings and idempotent cons
   const view = (await capabilities.json()) as {
     capabilities: {
       faucet: { testnet: { state: string }; mainnet: { state: string } };
+      send: { testnet: { state: string } };
       marketplace: { mainnet: { state: string } };
     };
   };
-  assert.equal(view.capabilities.faucet.testnet.state, "available");
+  assert.equal(view.capabilities.faucet.testnet.state, "available", "the faucet shipped (Circle's testnet drip)");
+  assert.equal(view.capabilities.send.testnet.state, "coming", "send has not shipped yet");
   assert.equal(view.capabilities.marketplace.mainnet.state, "unavailable", "mainnet is not live on this api");
 });

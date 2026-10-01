@@ -1,7 +1,9 @@
 // Internal gallery (native): every base component in light, dark, testnet and Arabic right-to-left.
 import { tokens } from "@kawase/ui-tokens";
+import { arcIdentity } from "@kawase/identity";
 import { ActivityFeed } from "@kawase/ui-native/components/activity-feed";
 import { Amount } from "@kawase/ui-native/components/amount";
+import { BalanceCard } from "@kawase/ui-native/components/balance-card";
 import { Bubble, BubbleContent } from "@kawase/ui-native/components/bubble";
 import { Caption } from "@kawase/ui-native/components/caption";
 import { Composer } from "@kawase/ui-native/components/composer";
@@ -21,17 +23,11 @@ import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Switch } from "@kawase/ui-native/components/ui/switch";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { VoiceOrb } from "@kawase/ui-native/components/voice-orb";
-import { WalletCard } from "@kawase/ui-native/components/wallet-card";
 import {
   ArrowDownLeft,
-  ArrowLeftRight,
   ArrowUpRight,
   CalendarClock,
-  Coins,
-  Euro,
-  QrCode,
   ScanFace,
-  Waypoints,
 } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
@@ -63,7 +59,7 @@ type GalleryScreenProps = {
 
 export function GalleryScreen({ initialLocale = "en", initialScroll = 0 }: GalleryScreenProps) {
   const insets = useSafeAreaInsets();
-  const { mode, network, setMode, setNetwork } = useTheme();
+  const { mode, network, themeName, setMode, setNetwork } = useTheme();
   const [locale, setLocale] = React.useState<SampleLocale>(initialLocale);
   const [orb, setOrb] = React.useState<keyof typeof ORB_LEVELS>("speaking");
   const [message, setMessage] = React.useState("");
@@ -71,6 +67,7 @@ export function GalleryScreen({ initialLocale = "en", initialScroll = 0 }: Galle
   const [log, setLog] = React.useState("");
   const t = SAMPLE[locale];
   const testnet = network === "testnet";
+  const arc = arcIdentity(network);
 
   return (
     <ScrollView
@@ -252,35 +249,23 @@ export function GalleryScreen({ initialLocale = "en", initialScroll = 0 }: Galle
           />
         </Section>
 
-        <Section title="Wallet">
-          <WalletCard
-            label={t.totalBalance}
-            amount={t.balance}
-            subAmount={t.subBalance}
-            badge={<NetworkChip label={testnet ? t.arcTestnet : t.arc} />}
-            onAction={(id) => setLog(`wallet action: ${id}`)}
-            actions={[
-              { id: "send", label: t.send, icon: <Icon as={ArrowUpRight} className="size-4" />, kind: "primary" },
-              { id: "request", label: t.request, icon: <Icon as={QrCode} className="size-4" />, kind: "secondary" },
-              { id: "swap", label: t.swap, icon: <Icon as={ArrowLeftRight} className="size-4" />, kind: "icon" },
-              { id: "bridge", label: t.bridge, icon: <Icon as={Waypoints} className="size-4" />, kind: "icon" },
+        <Section title="Balance card">
+          <BalanceCard
+            name="@abu"
+            address={SAMPLE_ADDRESS}
+            copyLabel={t.send}
+            eyebrow={testnet ? t.testnet : "Real money"}
+            eyebrowTone={testnet ? "testnet" : "real"}
+            balanceLabel={t.totalBalance}
+            total="1,240.50"
+            symbol="USDC"
+            subline={t.subBalance}
+            feeReserve="~40"
+            rows={[
+              { key: "usdc", entity: arc.usdc, chainBadge: arc.chain, symbol: "USDC", amount: "1,194.38" },
+              { key: "eurc", entity: arc.eurc, chainBadge: arc.chain, symbol: "EURC", amount: "42.30" },
             ]}
-            accounts={[
-              {
-                id: "usdc",
-                name: "USDC",
-                detail: t.dollar,
-                amount: "1,194.38",
-                icon: <Icon as={Coins} className="size-4" />,
-              },
-              {
-                id: "eurc",
-                name: "EURC",
-                detail: t.euro,
-                amount: "42.30",
-                icon: <Icon as={Euro} className="size-4" />,
-              },
-            ]}
+            lineColor={tokens.themes[themeName].texture}
           />
         </Section>
 

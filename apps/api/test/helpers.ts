@@ -8,6 +8,7 @@ import { createLogger } from "@kawase/log";
 
 import { createApp, type App } from "../src/app";
 import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
+import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { Chains } from "../src/wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -52,9 +53,13 @@ export function fakeTurnkey(
 
 export const noChains: Chains = { available: ["testnet"], get: () => undefined };
 
+/** A faucet that always sends; tests that care pass their own. */
+export const okFaucet: FaucetDrip = async () => undefined;
+
 export function testApp(
   turnkey: TurnkeyReader,
   chains: Chains = noChains,
+  faucet: FaucetDrip = okFaucet,
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -65,6 +70,7 @@ export function testApp(
     log: createLogger({ service: "api-test", level: "silent" }),
     turnkey,
     chains,
+    faucet,
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,
   });
