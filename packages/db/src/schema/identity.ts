@@ -1,6 +1,8 @@
 // Kawase owns the user, the device sessions and the sign-in nonces. Turnkey owns the credentials.
 import { sql } from "drizzle-orm";
-import { boolean, index, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+
+import type { NotificationPrefs, QuietHours } from "@kawase/config";
 
 import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 
@@ -35,6 +37,10 @@ export const users = pgTable(
     practiceMode: boolean().notNull().default(false),
     /** Set when the user paused everything (automations, agent spending). */
     pausedAllAt: timestampTz(),
+    /** Per event and channel; what is not set follows NOTIFICATION_DEFAULTS (Stage 9). */
+    notificationPrefs: jsonb().$type<NotificationPrefs>().notNull().default({}),
+    /** Push waits during these hours (the person's time zone); null = off. */
+    quietHours: jsonb().$type<QuietHours>(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

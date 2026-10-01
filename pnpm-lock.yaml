@@ -566,6 +566,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@kawase/config':
+        specifier: workspace:*
+        version: link:../config
       '@kawase/networks':
         specifier: workspace:*
         version: link:../networks

@@ -7,3 +7,4 @@ export * from "./contacts";
 export * from "./intents";
 export * from "./requests";
 export * from "./automations";
+export * from "./notifications";

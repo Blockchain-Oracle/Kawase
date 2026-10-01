@@ -21,6 +21,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@kawase/config": "workspace:*",
     "@kawase/networks": "workspace:*",
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",

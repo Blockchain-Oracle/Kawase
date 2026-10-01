@@ -6,7 +6,7 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
-import { AUTOMATION_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
+import { AUTOMATION_TICK_MS, NOTIFY_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
@@ -16,6 +16,8 @@ import { circleOps } from "./send/ops";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
 import { appKitSwaps } from "./swap/engine";
+import { ResendEmail } from "./notify/email";
+import { ExpoPush } from "./notify/expo";
 import { createChains } from "./wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -51,6 +53,9 @@ const app = createApp({
   automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,
   webUrl: env.KAWASE_WEB_URL,
+  push: new ExpoPush(env.EXPO_ACCESS_TOKEN),
+  email: env.RESEND_API_KEY && env.EMAIL_FROM ? new ResendEmail(env.RESEND_API_KEY, env.EMAIL_FROM) : undefined,
+  notifyTickMs: NOTIFY_TICK_MS,
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")
       .map((origin) => origin.trim())

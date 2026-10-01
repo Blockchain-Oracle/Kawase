@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
+import { PUSH_RECEIPT_TICK_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -26,6 +27,10 @@ import { createRateLimit } from "./http/rate-limit";
 import { meRoutes } from "./me/routes";
 import { IncomingWatcher } from "./incoming/watcher";
 import { InboxService } from "./inbox/service";
+import type { ResendEmail } from "./notify/email";
+import type { ExpoPush } from "./notify/expo";
+import { notifyRoutes } from "./notify/routes";
+import { NotifyService } from "./notify/service";
 import { inboxRoutes, publicRequestRoutes, requestRoutes } from "./requests/routes";
 import { RequestService } from "./requests/service";
 import type { OpsExecutor } from "./send/ops";
@@ -84,6 +89,11 @@ export type AppDeps = {
   livekit?: LiveKitConfig | undefined;
   /** The web app's address, for shared links. */
   webUrl?: string | undefined;
+  /** Push (Expo) and email (Resend), Stage 9; a channel is off when unset. */
+  push?: ExpoPush | undefined;
+  email?: ResendEmail | undefined;
+  /** Sends due notifications this often; off when unset (tests drive delivery themselves). */
+  notifyTickMs?: number | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -98,7 +108,9 @@ export function createApp(deps: AppDeps) {
   const faucet = new FaucetService(deps.db, wallets, deps.faucet);
   const contacts = new ContactService(deps.db);
   const recipients = new Recipients(deps.db, contacts);
-  const inbox = new InboxService(deps.db, deps.chains);
+  const notify = new NotifyService(deps.db, { push: deps.push, email: deps.email, webUrl: deps.webUrl ?? DEFAULT_WEB_URL }, deps.log);
+  if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
+  const inbox = new InboxService(deps.db, deps.chains, notify);
   const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
   const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log, requests, inbox);
   if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
@@ -161,6 +173,7 @@ export function createApp(deps: AppDeps) {
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/auth", authRoutes(deps.db, auth));
   app.route("/me", meRoutes(deps.db, deps.chains));
+  app.route("/notifications", notifyRoutes(deps.db, notify));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
   app.route("/faucet", faucetRoutes(faucet));
   app.route("/contacts", contactRoutes(contacts));

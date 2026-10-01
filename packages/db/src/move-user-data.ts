@@ -12,6 +12,7 @@ import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
 import { automationRuns, automations } from "./schema/automations";
+import { notificationDeliveries } from "./schema/notifications";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 
 type UserOwned = {
@@ -53,6 +54,7 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   inbox_items: { table: inboxItems, userId: inboxItems.userId },
   automations: { table: automations, userId: automations.userId },
   automation_runs: { table: automationRuns, userId: automationRuns.userId },
+  notification_deliveries: { table: notificationDeliveries, userId: notificationDeliveries.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

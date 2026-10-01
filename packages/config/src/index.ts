@@ -14,3 +14,4 @@ export * from "./faucet";
 export * from "./requests";
 export * from "./trading";
 export * from "./voice";
+export * from "./notifications";

@@ -10,6 +10,8 @@ const flag = z
   .enum(["true", "false"])
   .default("false")
   .transform((value) => value === "true");
+/** `KEY=` in a .env file means "not set", not an empty secret. */
+const blankIsUnset = (value: unknown) => (value === "" ? undefined : value);
 const MAX_PORT = 65535;
 const port = z.coerce.number().int().min(1).max(MAX_PORT);
 
@@ -70,6 +72,11 @@ export const apiEnvSchema = z.object({
   LIVEKIT_URL: z.string().optional(),
   LIVEKIT_API_KEY: z.string().optional(),
   LIVEKIT_API_SECRET: z.string().optional(),
+  /** Push (Stage 9): Expo's push service; the token is needed only if "enhanced security" is on for the project. */
+  EXPO_ACCESS_TOKEN: z.preprocess(blankIsUnset, z.string().optional()),
+  /** Email (Stage 9): Resend, from an address on a domain verified there. Email is off without both. */
+  RESEND_API_KEY: z.preprocess(blankIsUnset, z.string().optional()),
+  EMAIL_FROM: z.preprocess(blankIsUnset, z.string().optional()),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),

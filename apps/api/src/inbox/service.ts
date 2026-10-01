@@ -7,6 +7,7 @@ import type { InboxItem, InboxKind } from "@kawase/api-client";
 import { inboxItems, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
+import type { NotifyService } from "../notify/service";
 import type { Executor } from "../send/facts";
 import type { Chains } from "../wallet/chain";
 
@@ -27,10 +28,12 @@ export class InboxService {
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
+    /** Push and email (Stage 9): queued with the item, in its transaction. */
+    private readonly notify?: NotifyService,
   ) {}
 
   async add(executor: Executor, item: NewInboxItem) {
-    await executor
+    const [added] = await executor
       .insert(inboxItems)
       .values({
         userId: item.userId,
@@ -42,7 +45,10 @@ export class InboxService {
         intentId: item.intentId ?? null,
         txHash: item.txHash ?? null,
       })
-      .onConflictDoNothing({ target: inboxItems.dedupeKey });
+      .onConflictDoNothing({ target: inboxItems.dedupeKey })
+      .returning({ id: inboxItems.id });
+    // The same event reported again is not told again.
+    if (added && this.notify) await this.notify.enqueue(executor, added.id, item.userId);
   }
 
   async list(userId: string): Promise<{ items: InboxItem[]; unread: number }> {
