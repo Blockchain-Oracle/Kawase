@@ -139,3 +139,5 @@ export type ActivityItem = {
   at: string;
   explorerUrl: string;
 };
+
+export type ThreadSummary = { id: string; title: string | null; network: NetworkId; lastMessageAt: string };

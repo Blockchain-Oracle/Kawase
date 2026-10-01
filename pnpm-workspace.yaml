@@ -19,6 +19,9 @@ catalog:
   # AI SDK 7 (spike 07)
   ai: 7.0.122
   "@ai-sdk/react": 4.0.125
+  # Model providers for the registry (D29; spike 07 used openai 4.0.82)
+  "@ai-sdk/openai": 4.0.83
+  "@ai-sdk/anthropic": 4.0.71
   # On-chain limits (spikes 04 and 15)
   "@metamask/smart-accounts-kit": 2.0.0
   "@circle-fin/developer-controlled-wallets": 10.8.1
@@ -61,6 +64,10 @@ minimumReleaseAgeExclude:
   - pg-connection-string@2.14.1
   - pg-protocol@1.16.1
   - pg@8.23.1
+  - '@ai-sdk/anthropic@4.0.71'
+  - '@ai-sdk/openai@4.0.83'
+  - '@ai-sdk/provider-utils@5.0.53'
+  - '@ai-sdk/provider@4.0.21'
 
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:

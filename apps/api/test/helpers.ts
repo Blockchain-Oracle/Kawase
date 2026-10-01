@@ -3,6 +3,7 @@ import { ApiKeyStamper } from "@turnkey/api-key-stamper";
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 
+import { createModels } from "@kawase/agent";
 import { createDb, users, type Db } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
@@ -71,6 +72,7 @@ export function testApp(
     turnkey,
     chains,
     faucet,
+    models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,
   });

@@ -2,7 +2,9 @@
 import { serve } from "@hono/node-server";
 import { config } from "dotenv";
 
+import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
+import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
 import { createLogger } from "@kawase/log";
 
@@ -26,6 +28,15 @@ const app = createApp({
   }),
   chains: createChains(env),
   faucet: circleFaucet(env.CIRCLE_TEST_API_KEY),
+  models: createModels(
+    { ...(env.OPENAI_API_KEY ? { openai: env.OPENAI_API_KEY } : {}), ...(env.ANTHROPIC_API_KEY ? { anthropic: env.ANTHROPIC_API_KEY } : {}) },
+    {
+      ...(env.KAWASE_MODEL_AGENT_CHAT ? { agentChat: env.KAWASE_MODEL_AGENT_CHAT as ModelRef } : {}),
+      ...(env.KAWASE_MODEL_AGENT_VOICE ? { agentVoice: env.KAWASE_MODEL_AGENT_VOICE as ModelRef } : {}),
+      ...(env.KAWASE_MODEL_UTILITY ? { utility: env.KAWASE_MODEL_UTILITY as ModelRef } : {}),
+    },
+  ),
+  approvalSecret: env.AGENT_APPROVAL_SECRET,
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")
       .map((origin) => origin.trim())

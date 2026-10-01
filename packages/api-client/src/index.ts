@@ -19,9 +19,11 @@ import type {
   WalletStatus,
   FaucetClaim,
   FaucetStatus,
+  ThreadSummary,
 } from "./types";
 
 export * from "./types";
+export * from "./agent-types";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -131,6 +133,14 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
           requestId,
           signedTransaction,
         }),
+    },
+
+    agent: {
+      /** The person's conversations, newest first. */
+      threads: () => call<{ threads: ThreadSummary[] }>("GET", "/agent/threads"),
+      /** One conversation with its messages (AI SDK UI messages). */
+      thread: (id: string) => call<{ thread: ThreadSummary; messages: unknown[] }>("GET", `/agent/threads/${id}`),
+      deleteThread: (id: string) => call<void>("DELETE", `/agent/threads/${id}`),
     },
 
     faucet: {

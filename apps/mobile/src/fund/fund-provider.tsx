@@ -7,8 +7,10 @@ import { FundSheet } from "@/fund/fund-sheet";
 
 type FundContextValue = {
   open: () => void;
-  /** When test money was last sent from the sheet (ms since epoch), for pages that watch for the credit. */
+  /** When test money was last sent (ms since epoch), for pages that watch for the credit. */
   fundedAt: number | undefined;
+  /** Test money was sent from elsewhere (the agent's faucet card): pages watch for the credit too. */
+  markFunded: () => void;
 };
 
 const FundContext = React.createContext<FundContextValue | null>(null);
@@ -16,7 +18,7 @@ const FundContext = React.createContext<FundContextValue | null>(null);
 export function FundProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setOpen] = React.useState(false);
   const [fundedAt, setFundedAt] = React.useState<number>();
-  const value = React.useMemo(() => ({ open: () => setOpen(true), fundedAt }), [fundedAt]);
+  const value = React.useMemo(() => ({ open: () => setOpen(true), fundedAt, markFunded: () => setFundedAt(Date.now()) }), [fundedAt]);
   return (
     <FundContext.Provider value={value}>
       {children}

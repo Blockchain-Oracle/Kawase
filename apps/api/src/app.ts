@@ -7,6 +7,9 @@ import { requestId } from "hono/request-id";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
+import type { Models } from "@kawase/agent";
+
+import { agentRoutes } from "./agent/routes";
 import { attachSession } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { AuthService } from "./auth/service";
@@ -14,6 +17,7 @@ import type { TurnkeyReader } from "./auth/turnkey";
 import { capabilityView } from "./capabilities/service";
 import type { FaucetDrip } from "./faucet/circle-faucet";
 import { faucetRoutes } from "./faucet/routes";
+import { FaucetService } from "./faucet/service";
 import { idempotency } from "./http/idempotency";
 import { HTTP, ProblemError, problem, problemResponse } from "./http/problem";
 import { createRateLimit } from "./http/rate-limit";
@@ -36,6 +40,10 @@ export type AppDeps = {
   webOrigins?: string[];
   /** The testnet faucet's drip (Circle's faucet in production, a fake in tests). */
   faucet: FaucetDrip;
+  /** The agent's models (D29 registry). */
+  models: Models;
+  /** HMAC key for the agent's tool approvals. */
+  approvalSecret?: string | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -46,6 +54,7 @@ export function createApp(deps: AppDeps) {
   const app = new Hono<AppEnv>();
   const auth = new AuthService(deps.db, deps.turnkey);
   const wallets = new WalletService(deps.db, deps.chains);
+  const faucet = new FaucetService(deps.db, wallets, deps.faucet);
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
     windowSeconds: SECONDS_PER_MINUTE,
@@ -95,7 +104,8 @@ export function createApp(deps: AppDeps) {
   app.route("/auth", authRoutes(deps.db, auth));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
-  app.route("/faucet", faucetRoutes(deps.db, wallets, deps.faucet));
+  app.route("/faucet", faucetRoutes(faucet));
+  app.route("/agent", agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, models: deps.models, approvalSecret: deps.approvalSecret }));
 
   return app;
 }

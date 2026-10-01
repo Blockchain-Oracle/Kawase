@@ -42,6 +42,7 @@ export type ProblemCode =
   | "rate_limited"
   | "faucet_claimed_today"
   | "faucet_testnet_only"
+  | "agent_unavailable"
   | "upstream"
   | "internal";
 
@@ -91,6 +92,7 @@ const TITLES: Record<ProblemCode, string> = {
   rate_limited: "Too many requests",
   faucet_claimed_today: "Test money was already sent today",
   faucet_testnet_only: "The faucet only sends test money on testnet",
+  agent_unavailable: "The agent is not available on this server",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

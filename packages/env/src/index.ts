@@ -14,6 +14,8 @@ const MAX_PORT = 65535;
 const port = z.coerce.number().int().min(1).max(MAX_PORT);
 
 const DEFAULT_API_PORT = 3000;
+/** An HMAC key shorter than this is too weak to sign approvals with. */
+const APPROVAL_SECRET_MIN = 32;
 
 export const apiEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -44,6 +46,24 @@ export const apiEnvSchema = z.object({
   OPS_WALLET_ADDRESS_MAINNET: address.optional(),
   /** Faucet drips for new testnet wallets. */
   FAUCET_WALLET_ID_TESTNET: z.string().optional(),
+  /** The agent's model keys (D29: provider-agnostic; OpenAI is the default role model). Chat is off without one. */
+  OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  /** Per-deployment model overrides, "provider:model" (e.g. anthropic:claude-sonnet-5-5). */
+  KAWASE_MODEL_AGENT_CHAT: z
+    .string()
+    .regex(/^(openai|anthropic):.+$/)
+    .optional(),
+  KAWASE_MODEL_AGENT_VOICE: z
+    .string()
+    .regex(/^(openai|anthropic):.+$/)
+    .optional(),
+  KAWASE_MODEL_UTILITY: z
+    .string()
+    .regex(/^(openai|anthropic):.+$/)
+    .optional(),
+  /** HMAC key for tool approvals (32+ chars); a random one per process when unset (approvals then die with a restart). */
+  AGENT_APPROVAL_SECRET: z.string().min(APPROVAL_SECRET_MIN).optional(),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),

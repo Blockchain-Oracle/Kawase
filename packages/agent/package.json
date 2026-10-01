@@ -9,9 +9,18 @@
     "lint": "eslint src"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/openai": "catalog:",
+    "@kawase/api-client": "workspace:*",
+    "@kawase/config": "workspace:*",
+    "ai": "catalog:",
+    "zod": "catalog:"
   }
 }

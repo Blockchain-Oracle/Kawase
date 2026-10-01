@@ -6,6 +6,12 @@ settings:
 
 catalogs:
   default:
+    '@ai-sdk/anthropic':
+      specifier: 4.0.71
+      version: 4.0.71
+    '@ai-sdk/openai':
+      specifier: 4.0.83
+      version: 4.0.83
     '@ai-sdk/react':
       specifier: 4.0.125
       version: 4.0.125
@@ -117,6 +123,9 @@ importers:
       '@hono/node-server':
         specifier: 'catalog:'
         version: 2.1.3(hono@4.13.12)
+      '@kawase/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@kawase/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -126,6 +135,9 @@ importers:
       '@kawase/env':
         specifier: workspace:*
         version: link:../../packages/env
+      '@kawase/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation
@@ -147,6 +159,9 @@ importers:
       '@turnkey/http':
         specifier: 'catalog:'
         version: 6.6.0
+      ai:
+        specifier: 'catalog:'
+        version: 7.0.122(zod@4.6.5)
       dotenv:
         specifier: 'catalog:'
         version: 18.0.4
@@ -433,7 +448,29 @@ importers:
         version: 6.0.3
 
   packages/agent:
+    dependencies:
+      '@ai-sdk/anthropic':
+        specifier: 'catalog:'
+        version: 4.0.71(zod@4.6.5)
+      '@ai-sdk/openai':
+        specifier: 'catalog:'
+        version: 4.0.83(zod@4.6.5)
+      '@kawase/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@kawase/config':
+        specifier: workspace:*
+        version: link:../config
+      ai:
+        specifier: 'catalog:'
+        version: 7.0.122(zod@4.6.5)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -824,6 +861,12 @@ packages:
   '@adraffy/ens-normalize@1.11.1':
     resolution: {integrity: sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==}
 
+  '@ai-sdk/anthropic@4.0.71':
+    resolution: {integrity: sha512-wiv3jhUH0RrvGzSolJMZfZ2cI9As45LhwYmcAoWvNivXjC7wzJ4W/Udq9/u7EGnGsT8lpmFKEKBrMXVeUO97Dg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/gateway@4.0.100':
     resolution: {integrity: sha512-diJXVW2D1/NUW2JSg99b8yTpN8eW9AK5ntXSW4B7NrsW5STqwcGJAAOFlfOrQBzYHJlWReyy11WefWetdx4Qsw==}
     engines: {node: '>=22'}
@@ -836,14 +879,30 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/openai@4.0.83':
+    resolution: {integrity: sha512-NgqZVWoya7hfmtLkWyIjX9THbyYMLfxFqpShdAmvMnkoT+R9AZbdULGan8+4BiBWIZ1aHiAsc90l3SL8QU/0+Q==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@5.0.51':
     resolution: {integrity: sha512-z0IsEsDx+dxlZqyCtDjMbBj16NGmxFVTgQcP3+n3EFm9ttNU6wjOgL/kgvaPwtmZM6F7JbtRuLyzr6WOfo5DMw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@5.0.53':
+    resolution: {integrity: sha512-VVe6UDd0y0/B4TfauuKKzcppqvhTmSluwwUVT4WG2/8h7gFbyFm7PM4UGM+ZXe3/RI6bv+Vl1cw/7aiBoQqdxg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider@4.0.19':
     resolution: {integrity: sha512-ryVZSSfmpEsr4bM8rbt9cSBWal+KGYRrm57C+k/hiPQHMiMahaqg2bPF0MpxSUWY8mGpt7s/ajM6PAqNTMKqPQ==}
+    engines: {node: '>=22'}
+
+  '@ai-sdk/provider@4.0.21':
+    resolution: {integrity: sha512-UpbC9C1oht8dhfKPbVXSLRZS3DI8uk8n5v2uMjBPNIYGsC2kL045ywq7D8Hh9KgnH9rP5W/GxQdYtWScRouqlA==}
     engines: {node: '>=22'}
 
   '@ai-sdk/react@4.0.125':
@@ -7084,6 +7143,12 @@ snapshots:
 
   '@adraffy/ens-normalize@1.11.1': {}
 
+  '@ai-sdk/anthropic@4.0.71(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.21
+      '@ai-sdk/provider-utils': 5.0.53(zod@4.6.5)
+      zod: 4.6.5
+
   '@ai-sdk/gateway@4.0.100(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 4.0.19
@@ -7099,6 +7164,12 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.6.5
 
+  '@ai-sdk/openai@4.0.83(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.21
+      '@ai-sdk/provider-utils': 5.0.53(zod@4.6.5)
+      zod: 4.6.5
+
   '@ai-sdk/provider-utils@5.0.51(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 4.0.19
@@ -7108,7 +7179,20 @@ snapshots:
       undici: 7.30.0
       zod: 4.6.5
 
+  '@ai-sdk/provider-utils@5.0.53(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.21
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.1
+      undici: 7.30.0
+      zod: 4.6.5
+
   '@ai-sdk/provider@4.0.19':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@4.0.21':
     dependencies:
       json-schema: 0.4.0
 

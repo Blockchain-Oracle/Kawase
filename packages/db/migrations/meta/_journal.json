@@ -29,6 +29,13 @@
       "when": 1790831988629,
       "tag": "0003_faucet_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790833837374,
+      "tag": "0004_threads",
+      "breakpoints": true
     }
   ]
 }
