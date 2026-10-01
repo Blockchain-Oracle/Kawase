@@ -1,0 +1,42 @@
+# What EAS Build uploads (https://expo.fyi/eas-build-archive): when this file exists EAS ignores every .gitignore,
+# so it repeats their rules first — secrets above all — and then leaves out what a phone build never reads.
+
+# --- .gitignore (root)
+node_modules/
+dist/
+.next/
+.expo/
+.turbo/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.21st/credentials*
+.DS_Store
+.firecrawl/
+refs/
+.spike-state*.json
+
+# --- apps/mobile/.gitignore
+apps/mobile/web-build/
+apps/mobile/expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.env*.local
+/apps/mobile/ios
+/apps/mobile/android
+
+# --- not part of the app build (design references, plans, research)
+/docs/
+/plan/
+/context/
