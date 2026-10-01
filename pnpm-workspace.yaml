@@ -88,3 +88,11 @@ allowBuilds:
   esbuild: true
   # Skia's install script only copies its prebuilt frameworks from sibling packages into place (no network).
   '@shopify/react-native-skia': true
+  # The voice worker (LiveKit Agents): onnxruntime-node ships its CPU binaries for darwin/linux/win32 in the package;
+  # its postinstall only fetches the CUDA add-on from NuGet, which a CPU worker does not use. protobufjs's postinstall
+  # is a version notice; sharp ships prebuilt @img/sharp-* binaries. @livekit/local-inference fetches its models with
+  # the worker's own `download-files` step, not at install.
+  onnxruntime-node: false
+  protobufjs: false
+  sharp: false
+  '@livekit/local-inference': false

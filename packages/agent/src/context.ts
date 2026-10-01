@@ -81,4 +81,6 @@ export type AgentContext = {
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
+  /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
+  surface: "chat" | "voice";
 };

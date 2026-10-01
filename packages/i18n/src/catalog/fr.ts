@@ -177,6 +177,17 @@ export const fr: Catalog = {
   voice: {
     soon: "La voix arrive bientôt",
     soonBody: "En attendant, écrivez ce qu’il vous faut.",
+    title: "Parler à Kawase",
+    connecting: "Connexion…",
+    listening: "À l’écoute",
+    thinking: "Réflexion",
+    speaking: "Parle",
+    failed: "La voix n’a pas pu démarrer. Réessayez ou écrivez.",
+    micDenied: "Kawase ne vous entend pas : autorisez le micro dans Réglages.",
+    openSettings: "Ouvrir Réglages",
+    mute: "Couper le micro",
+    unmute: "Activer le micro",
+    muted: "Micro coupé",
   },
   chat: {
     title: "Discussion",

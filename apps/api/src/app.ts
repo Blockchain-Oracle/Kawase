@@ -9,7 +9,7 @@ import { requestLogger, type Logger } from "@kawase/log";
 
 import type { Models } from "@kawase/agent";
 
-import { agentRoutes } from "./agent/routes";
+import { agentRoutes, createTurnRunner } from "./agent/routes";
 import { attachSession } from "./auth/middleware";
 import { authRoutes } from "./auth/routes";
 import { AuthService } from "./auth/service";
@@ -45,6 +45,7 @@ import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import type { AppEnv } from "./types";
 import type { Chains } from "./wallet/chain";
+import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
 import { WalletService } from "./wallet/service";
 
@@ -79,6 +80,8 @@ export type AppDeps = {
   automationTickMs?: number | undefined;
   /** Reads incoming transfers this often; off when unset. */
   watchIntervalMs?: number | undefined;
+  /** LiveKit Cloud for voice; voice sessions are refused without it. */
+  livekit?: LiveKitConfig | undefined;
   /** The web app's address, for shared links. */
   webUrl?: string | undefined;
 };
@@ -170,10 +173,11 @@ export function createApp(deps: AppDeps) {
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
-  app.route(
-    "/agent",
-    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
-  );
+  const agentDeps = { db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models: deps.models, approvalSecret: deps.approvalSecret };
+  // One turn runner for chat and voice: the same brain, the same threads, the same approval key.
+  const runner = createTurnRunner(agentDeps);
+  app.route("/agent", agentRoutes(agentDeps, runner));
+  app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
 
   return app;
 }

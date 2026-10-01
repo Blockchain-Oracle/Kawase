@@ -186,6 +186,11 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - Balance rules: `nextRunAt` every 10 minutes and set to now on USDC in; `planRule` decides; the decision and the disarm commit before the step. Money-in rules: the watcher inserts a pending run per matching receipt; the runner claims pending runs each tick.
 - Steps: bridge → `BridgeService.runBridge` (App Kit's captured calls, `checkBridgeCalls`, redeemed under `buildBridgeGrants`); save → `EarnService.runSave`; notify → an inbox `rule_alert`. Ops attempts (submit once by idempotency key, hash from Circle) are shared in `apps/api/src/intents/ops-attempts.ts`.
 
+**As built for voice (Stage 10, 2026-10-01)**
+- Transport: the app joins a LiveKit room over WebRTC; the worker (`apps/voice-agent`, LiveKit Agents 1.9.1, Node) is a long-running process registered with LiveKit Cloud (HTTP/WebSocket control), dispatched by name (`kawase-voice`) through the room configuration in the user's token.
+- `POST /voice/session` (user session) → LiveKit token + dispatch metadata `{voiceToken, threadId, identity, locale}`; `POST /voice/turn` (voice token, HMAC keyed from the LiveKit secret) → `createTurnRunner().run({surface: "voice"})`, the same runner as `/agent/chat`, streamed as the UI message stream.
+- Worker: `KawaseAgent.llmNode` relays text (filler after 1.2 s, apology on failure, abort on cancel); tool outputs → `performRpc("kawase.card")` to the user's identity; preemptive generation off; turn detection by Scribe's server VAD.
+
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
 - Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.

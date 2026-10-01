@@ -36,6 +36,7 @@ import type {
   AutoSaveInput,
   RuleInput,
   AutomationView,
+  VoiceSession,
   EarnApproveResponse,
   EarnIntent,
   EarnPositionView,
@@ -264,6 +265,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** Stops it at once; the answer carries the revoke transaction for the wallet to sign (the grant on chain). */
       cancel: (id: string) =>
         call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>("POST", `/automations/${id}/cancel`),
+    },
+
+    voice: {
+      /** Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. */
+      session: (input: { threadId?: string } = {}) => call<VoiceSession>("POST", "/voice/session", input),
     },
 
     requests: {

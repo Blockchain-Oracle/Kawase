@@ -66,6 +66,10 @@ export const apiEnvSchema = z.object({
     .optional(),
   /** HMAC key for tool approvals (32+ chars); a random one per process when unset (approvals then die with a restart). */
   AGENT_APPROVAL_SECRET: z.string().min(APPROVAL_SECRET_MIN).optional(),
+  /** Voice (Stage 10): LiveKit Cloud. Voice is off without all three. */
+  LIVEKIT_URL: z.string().optional(),
+  LIVEKIT_API_KEY: z.string().optional(),
+  LIVEKIT_API_SECRET: z.string().optional(),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),

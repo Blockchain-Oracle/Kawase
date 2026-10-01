@@ -39,6 +39,7 @@
     "dotenv": "catalog:",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",
+    "livekit-server-sdk": "2.19.1",
     "tsx": "catalog:",
     "viem": "catalog:",
     "zod": "catalog:"

@@ -45,7 +45,7 @@ export function ChatScreen() {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const { user } = useSession();
-  const { prompt } = useLocalSearchParams<{ prompt?: string }>();
+  const { prompt, thread } = useLocalSearchParams<{ prompt?: string; thread?: string }>();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   const [open, setOpen] = React.useState<Open>({ status: "loading" });
   const [threads, setThreads] = React.useState<ThreadSummary[]>([]);
@@ -105,6 +105,13 @@ export function ChatScreen() {
     if (prompt) void loadThreads();
     else void start();
   }, [prompt, loadThreads, start]);
+
+  // From voice ("Type instead"): the thread the conversation was saved in, to carry on typing.
+  React.useEffect(() => {
+    if (!thread) return;
+    void openThread(thread);
+    router.setParams({ thread: undefined });
+  }, [thread, openThread, router]);
 
   // A chip from home: a new thread with that question.
   React.useEffect(() => {

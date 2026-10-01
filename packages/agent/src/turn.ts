@@ -23,6 +23,9 @@ const PROMPT_CACHE_KEY = "kawase-agent-chat-v1";
 
 const messageId = createIdGenerator({ prefix: "msg", size: MESSAGE_ID_SIZE });
 
+/** Where a turn's time goes (logged by the caller at debug): the model's first token and each step. */
+export type TurnTimings = { onFirstChunk?: (ms: number) => void; onStep?: (ms: number, toolNames: string[]) => void };
+
 export type TurnInput = {
   models: Models;
   context: AgentContext;
@@ -32,12 +35,21 @@ export type TurnInput = {
   onEnd: UIMessageStreamOnEndCallback<UIMessage>;
   onError: (error: unknown) => void;
   abortSignal?: AbortSignal | undefined;
+  timings?: TurnTimings | undefined;
 };
 
-export async function agentTurn({ models, context, messages, approvalSecret, onEnd, onError, abortSignal }: TurnInput) {
+export async function agentTurn({ models, context, messages, approvalSecret, onEnd, onError, abortSignal, timings }: TurnInput) {
+  const startedAt = Date.now();
+  let firstChunk = true;
+  let stepStartedAt = startedAt;
   const tools = buildTools(context);
+  const voice = context.surface === "voice";
+  // Talking: the voice role's model, with the least reasoning — the person is waiting in silence.
+  const model = models.forRole(voice ? "agentVoice" : "agentChat");
+  // Only reasoning models take a reasoning effort (gpt-4.1 and gpt-4o refuse it).
+  const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   const result = streamText({
-    model: models.forRole("agentChat"),
+    model,
     instructions: instructions(context),
     messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
@@ -45,8 +57,22 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
     stopWhen: isStepCount(MAX_STEPS),
     ...(abortSignal ? { abortSignal } : {}),
     // Short answers fast: little reasoning, terse text (spike 7: most latency was reasoning).
-    providerOptions: { openai: { reasoningEffort: "low", textVerbosity: "low", promptCacheKey: PROMPT_CACHE_KEY } },
+    providerOptions: {
+      openai: {
+        ...(reasons ? { reasoningEffort: voice ? "none" : "low", textVerbosity: "low" } : {}),
+        promptCacheKey: voice ? `${PROMPT_CACHE_KEY}-voice` : PROMPT_CACHE_KEY,
+      },
+    },
     onError: ({ error }) => onError(error),
+    onChunk: () => {
+      if (!firstChunk) return;
+      firstChunk = false;
+      timings?.onFirstChunk?.(Date.now() - startedAt);
+    },
+    onStepFinish: (step) => {
+      timings?.onStep?.(Date.now() - stepStartedAt, step.toolCalls.map((call) => call.toolName));
+      stepStartedAt = Date.now();
+    },
   });
   return toUIMessageStream({
     stream: result.stream,

@@ -176,6 +176,17 @@ export const ar: Catalog = {
   voice: {
     soon: "الصوت في الطريق",
     soonBody: "حتى ذلك الحين، اكتب ما تحتاجه.",
+    title: "تحدّث مع Kawase",
+    connecting: "جارٍ الاتصال…",
+    listening: "يستمع",
+    thinking: "يفكّر",
+    speaking: "يتحدّث",
+    failed: "تعذّر بدء الصوت. حاول مجدداً أو اكتب بدلاً من ذلك.",
+    micDenied: "لا يسمعك Kawase: اسمح باستخدام الميكروفون في الإعدادات.",
+    openSettings: "فتح الإعدادات",
+    mute: "كتم",
+    unmute: "إلغاء الكتم",
+    muted: "مكتوم",
   },
   chat: {
     title: "الدردشة",

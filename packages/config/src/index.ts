@@ -13,3 +13,4 @@ export * from "./consent";
 export * from "./faucet";
 export * from "./requests";
 export * from "./trading";
+export * from "./voice";

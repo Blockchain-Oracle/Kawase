@@ -1,7 +1,7 @@
 # Stage 10: Voice
 
 Purpose: a stage of the Kawase build. Source of truth for scope is `plan/MASTER-PLAN.md`; decisions are in `context/08-product-research/DECISIONS-FROM-ABU.md`.
-Status: not started
+Status: in progress — the pipeline runs end to end (phone/test participant → LiveKit → worker → Kawase's own agent → speech + cards); deploy, latency, web, barge-in tuning and the language matrix open.
 
 ## Scope (from the master plan)
 - `apps/voice-agent` (the LiveKit worker, `llmNode` → api, cascade pipeline with per-locale STT/TTS from `config/voice.ts`, `gpt-live-1` delegation where it passed the spike).
@@ -11,10 +11,15 @@ Status: not started
 - **Exit:** in French, by voice only until the confirm tap: "Bonjour" small talk → "envoie 20 à Alex" (unknown) → the form pops up while talking → saved → confirm sheet → signed → spoken result. The same flow works in English and Spanish; Arabic displays RTL.
 
 ## Docs to read first (Context7 / official docs)
-- (fill in before starting: every library touched in this stage)
+- LiveKit Agents (read 2026-10-01): agent servers register with LiveKit and run each job in its own process; the agent and the app talk over WebRTC, the agent server talks to LiveKit over HTTP/WebSockets (docs.livekit.io/agents/, /agents/server/lifecycle/); `llm_node` may yield plain text to "implement a custom LLM provider without a plugin" (/agents/logic/nodes/); turn tuning: preemptive generation is ON by default, endpointing minDelay 500 ms / maxDelay 3000 ms, adaptive interruptions (/agents/logic/turns/tuning/). Expo: `@livekit/react-native` + `@livekit/react-native-expo-plugin` + `@config-plugins/react-native-webrtc`, `registerGlobals()` (/transport/sdk-platforms/expo).
+- ElevenLabs plugin (installed types): Scribe v2 realtime STT with server VAD and keyterms; TTS Flash v2.5. OpenAI plugin TTS for bn/ur.
 
 ## 21st.dev sourcing (surfaces, queries, picks: component · author · URL · why)
 - (fill in when the stage touches UI)
 
 ## Progress log
-- (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- **2026-10-01 — the pipeline, end to end.** Architecture (confirmed against the docs above, Abu asked "worker or websocket?"): the phone joins a LiveKit room over **WebRTC**; Kawase's voice **worker** (a long-running LiveKit Agents process, `apps/voice-agent`) is dispatched into the room by name and holds its control connection to LiveKit Cloud over WebSockets; audio between them is WebRTC. The worker hears (ElevenLabs Scribe v2 realtime, per-language, keyterms Arc/Kawase/USDC/EURC…), and its `llmNode` is a **relay**: `POST /voice/turn` on the api runs the very same agent turn as chat (one brain, one thread — the voice conversation is the chat transcript), streams the answer back to be spoken (ElevenLabs Flash v2.5; OpenAI TTS for Bengali/Urdu), and forwards each tool's card to the phone over LiveKit RPC (`kawase.card`). `POST /voice/session` mints the LiveKit token with the worker's dispatch and an HMAC voice token (per person, per thread, 30 min) in its metadata.
+  - **Safety from the docs and from testing:** LiveKit's *preemptive generation* (on by default) starts the LLM before the turn is confirmed — off, because a turn can call money tools; the relay aborts the api turn when a reply is cancelled. Testing on the simulator (whose microphone is the Mac's) turned speech in the room into "10 usdc" → a payment request: **by voice, every send waits for the tap on its card, even inside the daily allowance** (chat keeps D33's immediate send); the phone has a mute button; the prompt says a spoken yes never moves money.
+  - **Evidence:** `apps/voice-agent/test/voice-e2e.ts` (a scripted participant speaking ElevenLabs audio into the room): "What can you do for me on Arc?" → accurate spoken answer from `CAPABILITY_SCOPE`, `get_capabilities` card over RPC, the turn saved in the thread; "What's my balance on Arc?" (guest) → "sign in first", `get_wallet` card; "Send ten dollars to Alex" (guest) → `propose_send` card, "sign in first". iOS simulator (new dev client with LiveKit's WebRTC): microphone permission with Kawase's own line, the overlay connects, the orb follows the voice, the greeting is spoken with a live caption.
+  - **Latency (measured):** api turn prep 11 ms; the model's first step (deciding a tool + the tool) ~2.0 s, second step ~1.5 s; end of speech → first answer audio 6–9 s in the scripted test (the test's queued audio adds up to ~1 s). A "one moment" filler is spoken when the first words take >1.2 s. `gpt-4.1-mini` was no faster than the default (`gpt-5.6-luna`, reasoning none for voice). Next: give voice turns the wallet facts up front (skip a tool round trip for common questions), noise cancellation, and measure on a real phone.
+  - **Not done:** deploying the worker; web voice (livekit-client); barge-in/turn-detector tuning; the language matrix (fr/es/ar …); voice settings; the Stage exit flow (French, unknown contact → form → confirm) on a device.

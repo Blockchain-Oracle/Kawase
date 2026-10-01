@@ -128,7 +128,14 @@
         {
           "faceIDPermission": "Kawase uses Face ID to approve your daily allowance and anything above it."
         }
-      ]
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "microphonePermission": "Kawase hears you only while you talk to it, to answer you."
+        }
+      ],
+      "@livekit/react-native-expo-plugin"
     ],
     "experiments": {
       "typedRoutes": true,

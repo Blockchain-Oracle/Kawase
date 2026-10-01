@@ -1,4 +1,9 @@
 import "@/global.css";
+import "@/voice/register";
+import { LogBox } from "react-native";
+
+// Leaving a voice room closes LiveKit's signal stream; the SDK logs that expected close as an error.
+LogBox.ignoreLogs(["error reading from signal stream"]);
 
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalHost } from "@rn-primitives/portal";

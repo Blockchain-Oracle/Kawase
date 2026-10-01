@@ -49,6 +49,9 @@ const NETWORK_LINE = {
   mainnet: "Active network: Arc mainnet (REAL money).",
 } as const;
 
+/** Talking, not typing (Stage 10): the answer is spoken, and the cards still carry every detail on screen. */
+const VOICE_LINES = `The person is talking to you; your reply is spoken aloud by a voice. One or two short sentences, natural speech. Never read out an address, a transaction hash or a long number digit by digit: say the name, or "the address on your screen". Say amounts the way people say them ("twenty dollars", "about eighteen euros"). The card on their screen shows the details and the button; tell them to look at it when they need to confirm something. A spoken "yes" never approves money: by voice every send waits for their tap on the card (even inside the daily allowance), so say it is ready on their screen, never that it is on its way.`;
+
 export function instructions(context: AgentContext, now = new Date()): string {
   const who = context.isGuest
     ? "The person is a guest (not signed in)."
@@ -62,5 +65,6 @@ export function instructions(context: AgentContext, now = new Date()): string {
     who,
     `Reply in ${context.languageName} (${context.locale}).`,
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
+    ...(context.surface === "voice" ? ["", VOICE_LINES] : []),
   ].join("\n");
 }

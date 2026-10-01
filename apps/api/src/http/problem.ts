@@ -17,6 +17,7 @@ export const HTTP = {
   tooManyRequests: 429,
   internal: 500,
   badGateway: 502,
+  serviceUnavailable: 503,
 } as const;
 
 export type ProblemCode =
@@ -43,6 +44,7 @@ export type ProblemCode =
   | "faucet_claimed_today"
   | "faucet_testnet_only"
   | "agent_unavailable"
+  | "voice_unavailable"
   | "recipient_unknown"
   | "recipient_no_wallet"
   | "recipient_is_self"
@@ -104,6 +106,7 @@ const TITLES: Record<ProblemCode, string> = {
   faucet_claimed_today: "Test money was already sent today",
   faucet_testnet_only: "The faucet only sends test money on testnet",
   agent_unavailable: "The agent is not available on this server",
+  voice_unavailable: "Voice is not available on this server",
   recipient_unknown: "No one by that name or handle",
   recipient_no_wallet: "That person has no wallet yet",
   recipient_is_self: "That is your own address",

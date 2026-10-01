@@ -71,6 +71,8 @@ export function buildAgentContext(input: {
   threadId: string;
   lastUserText: string;
   log: Logger;
+  /** Where the person is: typing in chat, or talking (voice answers are spoken; the cards carry the details). */
+  surface?: "chat" | "voice" | undefined;
 }): AgentContext {
   const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
@@ -88,6 +90,7 @@ export function buildAgentContext(input: {
     isGuest: user.isAnonymous,
     handle: user.handle,
     lastUserText: input.lastUserText,
+    surface: input.surface ?? "chat",
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
@@ -100,7 +103,9 @@ export function buildAgentContext(input: {
       // D33 / DESIGN.md: inside the allowance the agent just sends and says so. The person's own request is the
       // instruction; the policy has already decided that no second look is needed (above the allowance, a new
       // address above the threshold or a lookalike all route to Face ID instead and wait on the card).
-      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous) {
+      // By voice it always waits for the tap on its card: a microphone can hear a request the person did not make
+      // (seen on 2026-10-01: speech in the room became "10 usdc"), and a spoken yes never moves money.
+      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice") {
         const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
           log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
           return undefined;

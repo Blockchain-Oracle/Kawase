@@ -13,7 +13,8 @@ import { threadMessages, threads, type Db } from "@kawase/db";
 
 import { requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
-import type { AppEnv } from "../types";
+import type { AppEnv, SessionUser } from "../types";
+import type { Logger } from "@kawase/log";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import type { FaucetService } from "../faucet/service";
@@ -40,7 +41,7 @@ const messageSchema = z.object({
 });
 const chatSchema = z.object({ id: z.uuid(), message: messageSchema });
 
-type Deps = {
+export type AgentDeps = {
   db: Db;
   chains: Chains;
   wallets: WalletService;
@@ -64,9 +65,14 @@ function titleFrom(message: UIMessage): string | null {
   return text.length > TITLE_MAX ? `${text.slice(0, TITLE_MAX - 1)}…` : text;
 }
 
-export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models, approvalSecret }: Deps) {
-  const app = new Hono<AppEnv>();
-  app.use("*", requireUser);
+/**
+ * One agent turn in a thread, for any surface (K1: one brain — chat and voice run this same function, so the voice
+ * conversation is the chat's transcript). The incoming message is either new (the person wrote or spoke) or the last
+ * assistant message again with a tool's output or an approval added on the device; the latter replaces the stored
+ * copy. The whole conversation is saved when the stream ends.
+ */
+export function createTurnRunner(deps: AgentDeps) {
+  const { db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models, approvalSecret } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const secret = approvalSecret ?? randomBytes(SECRET_BYTES).toString("hex");
 
@@ -81,32 +87,30 @@ export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients,
     return rows.map((row) => ({ id: row.id, role: row.role as UIMessage["role"], parts: row.parts as UIMessage["parts"], ...(row.metadata ? { metadata: row.metadata } : {}) }));
   };
 
-  app.post("/chat", async (c) => {
-    if (!models.hasKeyFor("agentChat")) throw problem(HTTP.internal, "agent_unavailable");
-    const parsed = chatSchema.safeParse(await c.req.json());
-    if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
-    const user = c.get("user")!;
-    const log = c.get("log");
-    const { id: threadId } = parsed.data;
-    const incoming = parsed.data.message as unknown as UIMessage;
-
+  const run = async (input: { user: SessionUser; threadId: string; incoming: UIMessage; surface: "chat" | "voice"; signal?: AbortSignal | undefined; log: Logger }) => {
+    const { user, threadId, incoming, surface, log } = input;
+    const startedAt = Date.now();
     const existing = await ownThread(user.id, threadId);
     if (!existing) await db.insert(threads).values({ id: threadId, userId: user.id, network: user.activeNetwork, title: titleFrom(incoming) });
-
-    // The incoming message is either new (the person wrote) or the last assistant message again with a tool's
-    // output or an approval added on the device; the latter replaces the stored copy.
+    // A thread opened before its first words (a voice session) takes its title from them.
+    else if (!existing.title && incoming.role === "user") await db.update(threads).set({ title: titleFrom(incoming) }).where(eq(threads.id, threadId));
     const history = existing ? await loadMessages(threadId) : [];
     const last = history.at(-1);
     const messages = last && last.id === incoming.id ? [...history.slice(0, -1), incoming] : [...history, incoming];
 
     const lastUserText = incoming.role === "user" ? incoming.parts.map((part) => (part.type === "text" ? part.text : "")).join(" ") : "";
-    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, lastUserText, log });
-    const stream = await agentTurn({
+    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, lastUserText, log, surface });
+    const preparedMs = Date.now() - startedAt;
+    return agentTurn({
+      timings: {
+        onFirstChunk: (ms) => log.info({ surface, preparedMs, firstChunkMs: ms }, "turn first chunk"),
+        onStep: (ms, tools) => log.info({ surface, stepMs: ms, tools }, "turn step"),
+      },
       models,
       context,
       messages,
       approvalSecret: secret,
-      abortSignal: c.req.raw.signal,
+      abortSignal: input.signal,
       onError: (error) => log.error({ err: error }, "agent turn failed"),
       onEnd: async ({ messages: finished }) => {
         try {
@@ -132,6 +136,22 @@ export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients,
         }
       },
     });
+  };
+
+  return { run, ownThread, loadMessages };
+}
+
+export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTurnRunner> = createTurnRunner(deps)) {
+  const { db, models } = deps;
+  const app = new Hono<AppEnv>();
+  app.use("*", requireUser);
+  const { run, ownThread, loadMessages } = runner;
+
+  app.post("/chat", async (c) => {
+    if (!models.hasKeyFor("agentChat")) throw problem(HTTP.internal, "agent_unavailable");
+    const parsed = chatSchema.safeParse(await c.req.json());
+    if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
+    const stream = await run({ user: c.get("user")!, threadId: parsed.data.id, incoming: parsed.data.message as unknown as UIMessage, surface: "chat", signal: c.req.raw.signal, log: c.get("log") });
     return createUIMessageStreamResponse({ stream });
   });
 

@@ -665,3 +665,8 @@ export type InboxItem = {
   createdAt: string;
   readAt: string | null;
 };
+
+// ── Voice (Stage 10) ────────────────────────────────────────────────────────────────────────────────────────────
+
+/** A voice session: the LiveKit room to join with this token (Kawase's voice worker is dispatched into it), and the thread the conversation is saved in (the same one chat shows). */
+export type VoiceSession = { url: string; token: string; room: string; threadId: string };

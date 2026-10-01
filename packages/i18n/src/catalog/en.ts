@@ -176,6 +176,17 @@ export const en = {
   voice: {
     soon: "Voice is on its way",
     soonBody: "Until then, type what you need.",
+    title: "Talk to Kawase",
+    connecting: "Connecting…",
+    listening: "Listening",
+    thinking: "Thinking",
+    speaking: "Speaking",
+    failed: "Voice couldn’t start. Try again, or type instead.",
+    micDenied: "Kawase can’t hear you: allow the microphone in Settings.",
+    openSettings: "Open Settings",
+    mute: "Mute",
+    unmute: "Unmute",
+    muted: "Muted",
   },
   chat: {
     title: "Chat",
