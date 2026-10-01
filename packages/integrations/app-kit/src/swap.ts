@@ -206,7 +206,16 @@ const SECONDS = 1000;
 export function checkSwapCalls(
   network: NetworkContext,
   calls: readonly SwapCall[],
-  expected: { from: Address; tokenIn: Address; tokenOut: Address; amountIn: bigint; minOut: bigint },
+  expected: {
+    from: Address;
+    tokenIn: Address;
+    tokenOut: Address;
+    /** Exactly this much of tokenIn, or (a withdrawal, where App Kit picks the shares to burn) at most this much. */
+    amountIn: bigint | { max: bigint };
+    minOut: bigint;
+    /** Earn deposits approve one base unit over the amount (App Kit's rounding buffer). */
+    approvalSlack?: bigint;
+  },
   now = Date.now(),
 ): SwapCallCheck {
   const adapter = swapAdapterContract(network).toLowerCase();
@@ -215,6 +224,17 @@ export function checkSwapCalls(
   if (calls.some((call) => call.value !== ZERO)) return { ok: false, reason: "a call carries native value" };
   const swap = calls[calls.length - 1]!;
   if (swap.to.toLowerCase() !== adapter) return { ok: false, reason: "the swap call is not to the App Kit adapter" };
+  let execute;
+  try {
+    execute = decodeFunctionData({ abi: ADAPTER_ABI, data: swap.data });
+  } catch {
+    return { ok: false, reason: "the swap call is not the adapter's execute" };
+  }
+  const [params, tokenInputs] = execute.args;
+  const taken = tokenInputs.filter((entry) => same(entry.token, expected.tokenIn)).reduce((sum, entry) => sum + entry.amount, ZERO);
+  const exact = typeof expected.amountIn === "bigint" ? expected.amountIn : undefined;
+  if (tokenInputs.some((entry) => !same(entry.token, expected.tokenIn)) || taken === ZERO || (exact !== undefined ? taken !== exact : taken > (expected.amountIn as { max: bigint }).max))
+    return { ok: false, reason: "the swap takes something other than the amount" };
   if (calls.length === MAX_CALLS) {
     const approve = calls[0]!;
     if (!same(approve.to, expected.tokenIn)) return { ok: false, reason: "the approval is for another token" };
@@ -226,21 +246,11 @@ export function checkSwapCalls(
     }
     const [spender, value] = decoded.args as readonly [Address, bigint];
     if (spender.toLowerCase() !== adapter) return { ok: false, reason: "the approval names another spender" };
-    if (value !== expected.amountIn) return { ok: false, reason: "the approval is not exactly the swap amount" };
+    if (value < taken || value > taken + (expected.approvalSlack ?? ZERO)) return { ok: false, reason: "the approval is not exactly the amount taken" };
   }
 
-  let execute;
-  try {
-    execute = decodeFunctionData({ abi: ADAPTER_ABI, data: swap.data });
-  } catch {
-    return { ok: false, reason: "the swap call is not the adapter's execute" };
-  }
-  const [params, tokenInputs] = execute.args;
   if (params.tokens.some((entry) => !same(entry.beneficiary, expected.from))) return { ok: false, reason: "an output goes to someone else" };
   if (!params.tokens.some((entry) => same(entry.token, expected.tokenOut))) return { ok: false, reason: "the output token is not the one asked for" };
-  const taken = tokenInputs.filter((entry) => same(entry.token, expected.tokenIn)).reduce((sum, entry) => sum + entry.amount, ZERO);
-  if (tokenInputs.some((entry) => !same(entry.token, expected.tokenIn)) || taken !== expected.amountIn)
-    return { ok: false, reason: "the swap takes something other than exactly the amount" };
   const guaranteedOut = params.instructions
     .filter((instruction) => same(instruction.tokenOut, expected.tokenOut))
     .reduce((best, instruction) => (instruction.minTokenOut > best ? instruction.minTokenOut : best), ZERO);

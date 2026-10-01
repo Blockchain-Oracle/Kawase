@@ -11,6 +11,8 @@ export const REASONS = {
   // Errors: nothing the person can fix here.
   NOT_AVAILABLE_YET: "error",
   SWAP_PAIR_UNSUPPORTED: "error",
+  /** The vault is not listed here, or not taking deposits. */
+  VAULT_UNAVAILABLE: "error",
   // Policy refusals: terminal for this version.
   PAUSED_ALL: "policy",
   OVER_PER_TX_LIMIT: "policy",
@@ -30,6 +32,10 @@ export const REASONS = {
   QUOTE_UNAVAILABLE: "precondition",
   /** The amount would not cover the route's fee: a bigger amount fixes it. */
   AMOUNT_BELOW_FEE: "precondition",
+  /** More than the person holds in the vault. */
+  OVER_POSITION: "precondition",
+  /** The vault cannot pay that much out right now (its liquidity is lent). */
+  VAULT_LIQUIDITY_SHORT: "precondition",
   // Clarifications: one question.
   RECIPIENT_MISSING: "clarification",
   RECIPIENT_UNKNOWN: "clarification",
@@ -50,6 +56,8 @@ export const REASONS = {
   NO_ALLOWANCE: "warning",
   LEAVES_LITTLE_FOR_FEES: "warning",
   RATE_BELOW_REFERENCE: "warning",
+  VAULT_LOW_LIQUIDITY: "warning",
+  VAULT_RISK_WARNING: "warning",
 } as const satisfies Record<string, PolicyKind>;
 
 export type ReasonCode = keyof typeof REASONS;

@@ -55,6 +55,8 @@ export type WalletIntentController<T, R> = {
   cancel: () => Promise<void>;
   refresh: () => Promise<void>;
   set: (intent: T) => void;
+  /** Forget the intent shown (back to the start of a flow). */
+  reset: () => void;
 };
 
 export function useWalletIntent<T extends Intent, R>(
@@ -81,6 +83,12 @@ export function useWalletIntent<T extends Intent, R>(
     },
     [show],
   );
+
+  const reset = React.useCallback(() => {
+    epoch.current += 1;
+    setIntent(undefined);
+    setConnectionLost(false);
+  }, []);
 
   const refresh = React.useCallback(async () => {
     if (!id) return;
@@ -172,5 +180,5 @@ export function useWalletIntent<T extends Intent, R>(
     });
   };
 
-  return { intent, busy, connectionLost, revise, approve, cancel, refresh, set };
+  return { intent, busy, connectionLost, revise, approve, cancel, refresh, set, reset };
 }

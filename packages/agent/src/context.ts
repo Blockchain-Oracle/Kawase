@@ -13,6 +13,9 @@ import type {
   ProposeSendOutput,
   ProposeSwapOutput,
   ProposeBridgeOutput,
+  ProposeEarnOutput,
+  EarnOverviewLine,
+  EarnRequest,
   BridgeRequest,
   SendRequest,
   SwapRequest,
@@ -54,6 +57,10 @@ export type AgentContext = {
   proposeSwap(input: SwapRequest): Promise<ProposeSwapOutput>;
   /** Drafts a bridge of USDC from Arc to the person's own address on another chain; approved on the card. */
   proposeBridge(input: BridgeRequest): Promise<ProposeBridgeOutput>;
+  /** The USDC vaults here (yield, liquidity) and what the person holds in them. */
+  earnOverview(): Promise<EarnOverviewLine>;
+  /** Drafts a deposit into or withdrawal from a vault; approved on the card. */
+  proposeEarn(input: EarnRequest): Promise<ProposeEarnOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;

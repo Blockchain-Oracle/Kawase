@@ -126,32 +126,35 @@ export class WalletService {
     } catch {
       throw problem(HTTP.badGateway, "upstream", "the explorer did not answer");
     }
-    const [names, bridges] = await Promise.all([this.contactNames(userId), this.bridgeDestinations(userId, page.items.map((item) => item.txHash))]);
+    const [names, own] = await Promise.all([this.contactNames(userId), this.ownIntents(userId, page.items.map((item) => item.txHash))]);
     return {
       ...page,
       items: page.items.map((item) => {
-        const bridge = bridges.get(item.txHash.toLowerCase());
-        return bridge
-          ? { ...item, counterpartyLabel: "bridge" as const, bridge, contactName: null }
-          : { ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null };
+        const mine = own.get(item.txHash.toLowerCase());
+        if (mine?.kind === "bridge") return { ...item, counterpartyLabel: "bridge" as const, bridge: { chainId: mine.chainId }, contactName: null };
+        if (mine?.kind === "earn") return { ...item, counterpartyLabel: "earn" as const, earn: { action: mine.action, vault: mine.vault }, contactName: null };
+        return { ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null };
       }),
     };
   }
 
-  /** Transactions that were the person's own bridges out of Arc → where each went (from the intent's draft). */
-  private async bridgeDestinations(userId: string, hashes: string[]) {
+  /** Transactions that were the person's own bridges or earn moves → what each was (from the intent's draft). */
+  private async ownIntents(userId: string, hashes: string[]) {
+    type Own = { kind: "bridge"; chainId: number } | { kind: "earn"; action: "deposit" | "withdraw"; vault: string };
     const lower = [...new Set(hashes.map((hash) => hash.toLowerCase()))];
-    if (lower.length === 0) return new Map<string, { chainId: number }>();
+    const out = new Map<string, Own>();
+    if (lower.length === 0) return out;
     const rows = await this.db
-      .select({ txHash: txAttempts.txHash, payload: intentDrafts.payload })
+      .select({ txHash: txAttempts.txHash, kind: intents.kind, payload: intentDrafts.payload })
       .from(txAttempts)
       .innerJoin(intents, eq(intents.id, txAttempts.intentId))
       .innerJoin(intentDrafts, and(eq(intentDrafts.intentId, intents.id), eq(intentDrafts.version, intents.currentDraftVersion)))
-      .where(and(eq(txAttempts.userId, userId), eq(intents.kind, "bridge"), inArray(sql`lower(${txAttempts.txHash})`, lower)));
-    const out = new Map<string, { chainId: number }>();
+      .where(and(eq(txAttempts.userId, userId), inArray(intents.kind, ["bridge", "earn"]), inArray(sql`lower(${txAttempts.txHash})`, lower)));
     for (const row of rows) {
-      const chainId = (row.payload as { view?: { chainId?: number } } | null)?.view?.chainId;
-      if (row.txHash && chainId) out.set(row.txHash.toLowerCase(), { chainId });
+      if (!row.txHash) continue;
+      const view = (row.payload as { view?: { chainId?: number; action?: "deposit" | "withdraw"; vault?: { name?: string } } } | null)?.view;
+      if (row.kind === "bridge" && view?.chainId) out.set(row.txHash.toLowerCase(), { kind: "bridge", chainId: view.chainId });
+      if (row.kind === "earn" && view?.action && view.vault?.name) out.set(row.txHash.toLowerCase(), { kind: "earn", action: view.action, vault: view.vault.name });
     }
     return out;
   }

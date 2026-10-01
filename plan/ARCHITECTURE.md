@@ -166,6 +166,11 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - `compare_bridge_routes` fetches LI.FI (both networks), Relay and deBridge (mainnet) quotes for the same transfer and shows them ranked, with reason codes; only the CCTP route executes today.
 - Activity labels a transfer whose transaction is the person's own bridge intent as "Bridged to {chain}".
 
+**As built for earn (Stage 6c, 2026-10-01)** — the swap shape with a vault on the other side.
+- App Kit Earn deposits and withdraws through the same adapter as swaps (approve + `execute`); the vault's ERC-4626 shares are the other token. `checkEarnCalls` = `checkSwapCalls` with the draft's bounds: a deposit takes exactly `amount` USDC and must mint at least `minOut` shares; a withdrawal burns at most `maxIn` shares (App Kit picks the number) and must pay at least `minOut` USDC; approvals may be one base unit over what is taken (App Kit's rounding buffer).
+- `EarnDraft` (EIP-712: chainId, from, vault, action, amount, maxIn, minOut, maxFee); floors and the share ceiling come from the vault's own previews (`EARN_FLOOR_BPS` 99%, `EARN_SHARES_CEILING_BPS` 101%). The vault is inferred when not named (best active one for a deposit, largest position for a withdrawal).
+- Positions are read from the vaults on chain, never stored; the receipt witness checks USDC and share transfers for the wallet in each direction.
+
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
 - Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.

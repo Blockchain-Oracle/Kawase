@@ -181,6 +181,7 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("google"), kind: "provider", name: "Google", brandColor: "#4285F4", shape: "uncontained", marks: { color: "google", mono: "google-mono" } },
   { id: providerKey("circle"), kind: "provider", name: "Circle", brandColor: "#00E599", shape: "uncontained", marks: { color: "circle", mono: "circle-mono" } },
   { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
+  { id: providerKey("morpho"), kind: "provider", name: "Morpho", brandColor: "#15181A", shape: "tile", marks: { color: "morpho", mono: "morpho-mono" } },
 
   // Registered now, marks later (Stage 6 routes and names).
   { id: venueKey("cctp"), kind: "venue", name: "Circle CCTP", brandColor: "#00E599", shape: "uncontained", marks: {} },

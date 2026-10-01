@@ -13,6 +13,7 @@ import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { OpsExecutor } from "../src/send/ops";
 import type { Chains } from "../src/wallet/chain";
 import { noBridges, type BridgeEngine } from "../src/bridge/engine";
+import { noEarn, type EarnEngine } from "../src/earn/engine";
 import { noSwaps, type SwapEngine } from "../src/swap/engine";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -75,6 +76,7 @@ export function testApp(
   ops: OpsExecutor = noOps,
   swaps: SwapEngine = noSwaps,
   bridges: BridgeEngine = noBridges,
+  earn: EarnEngine = noEarn,
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -89,6 +91,7 @@ export function testApp(
     ops,
     swaps,
     bridges,
+    earn,
     models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,

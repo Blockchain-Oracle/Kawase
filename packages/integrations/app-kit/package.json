@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test:arc-testnet": "tsx test/swap.integration.ts",
-    "test:bridge": "tsx test/bridge.integration.ts"
+    "test:bridge": "tsx test/bridge.integration.ts",
+    "test:earn": "tsx test/earn.integration.ts"
   },
   "dependencies": {
     "@circle-fin/adapter-viem-v2": "1.18.0",

@@ -31,6 +31,11 @@ import type {
   SwapIntent,
   SwapRequest,
   BridgeApproveResponse,
+  EarnApproveResponse,
+  EarnIntent,
+  EarnPositionView,
+  EarnRequest,
+  EarnVaultView,
   BridgeDestinationView,
   BridgeIntent,
   BridgeRequest,
@@ -218,6 +223,19 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<BridgeApproveResponse>("POST", `/bridges/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<BridgeApproveResponse>("POST", `/bridges/${id}/signature`, { approvalId, signedTransaction }),
+    },
+
+    earn: {
+      /** The USDC vaults on the active network, highest yield first, and what the person holds in them. */
+      overview: () => call<{ vaults: EarnVaultView[]; positions: EarnPositionView[] }>("GET", "/earn"),
+      create: (request: EarnRequest) => call<{ intent: EarnIntent }>("POST", "/earn/intents", request),
+      get: (id: string) => call<{ intent: EarnIntent }>("GET", `/earn/intents/${id}`),
+      revise: (id: string, patch: EarnRequest) => call<{ intent: EarnIntent }>("PATCH", `/earn/intents/${id}`, patch),
+      cancel: (id: string) => call<{ intent: EarnIntent }>("POST", `/earn/intents/${id}/cancel`),
+      approve: (id: string, version: number, idempotencyKey?: string) =>
+        call<EarnApproveResponse>("POST", `/earn/intents/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signedTransaction: string) =>
+        call<EarnApproveResponse>("POST", `/earn/intents/${id}/signature`, { approvalId, signedTransaction }),
     },
 
     requests: {

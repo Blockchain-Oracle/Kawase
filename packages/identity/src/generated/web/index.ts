@@ -19,6 +19,8 @@ import MarkGoogle from "./google";
 import MarkGoogleMono from "./google-mono";
 import MarkKawase from "./kawase";
 import MarkKawaseMono from "./kawase-mono";
+import MarkMorpho from "./morpho";
+import MarkMorphoMono from "./morpho-mono";
 import MarkOptimism from "./optimism";
 import MarkOptimismMono from "./optimism-mono";
 import MarkPolygon from "./polygon";
@@ -52,6 +54,8 @@ export const MARKS = {
   "google-mono": MarkGoogleMono,
   "kawase": MarkKawase,
   "kawase-mono": MarkKawaseMono,
+  "morpho": MarkMorpho,
+  "morpho-mono": MarkMorphoMono,
   "optimism": MarkOptimism,
   "optimism-mono": MarkOptimismMono,
   "polygon": MarkPolygon,

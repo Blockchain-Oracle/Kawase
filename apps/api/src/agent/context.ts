@@ -17,12 +17,14 @@ import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
 import type { BridgeService } from "../bridge/service";
+import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { summarizeSend } from "./send-summary";
 import { summarizeBridge } from "./bridge-summary";
+import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
@@ -43,7 +45,7 @@ const money = (asset: AssetId, baseUnits: string): Money => ({
   display: formatAmount(amount(asset, BigInt(baseUnits)), DISPLAY_LOCALE),
 });
 
-const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)", bridge: "a bridge to another chain (Circle CCTP)" } as const;
+const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)", bridge: "a bridge to another chain (Circle CCTP)", earn: "their own earn vault" } as const;
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
@@ -60,12 +62,13 @@ export function buildAgentContext(input: {
   sends: SendService;
   swaps: SwapService;
   bridges: BridgeService;
+  earn: EarnService;
   requests: RequestService;
   threadId: string;
   lastUserText: string;
   log: Logger;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -122,6 +125,24 @@ export function buildAgentContext(input: {
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "bridge"), inArray(intents.state, [...DRAFTABLE])));
       const intent = await bridges.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeBridge(intent) };
+    },
+
+    async earnOverview() {
+      const view = await earn.overview(user);
+      return {
+        network,
+        vaults: view.vaults.map((vault) => ({ name: vault.name, protocol: vault.protocol, apy: percent(vault.apy), available: `${vault.available} USDC`, circleGuarded: vault.circleGuarded, status: vault.status, address: vault.address })),
+        positions: view.positions.map((position) => ({ name: position.name, worth: money("USDC", position.assets).display, apy: percent(position.apy) })),
+      };
+    },
+
+    async proposeEarn(request) {
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "earn"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await earn.create(user, request, { surface: "chat", threadId });
+      return { intent, summary: summarizeEarn(intent) };
     },
 
     async createPaymentRequest(request) {

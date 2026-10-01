@@ -51,6 +51,7 @@ import { StaleBanner } from "@/session/stale-banner";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
+import { EarnEntry } from "@/earn/earn-entry";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -354,6 +355,7 @@ export function HomeScreen() {
             ) : null}
           </BalanceCard>
         )}
+        {phase === "ready" ? <EarnEntry /> : null}
         {funded ? (
           <Animated.View
             pointerEvents="none"

@@ -230,6 +230,6 @@ test("mainnet needs the consent and a live mainnet; settings and idempotent cons
   assert.equal(view.capabilities.send.testnet.state, "available", "send shipped in Stage 5");
   assert.equal(view.capabilities.swap.testnet.state, "available", "swap shipped in Stage 6a");
   assert.equal(view.capabilities.bridge.testnet.state, "available", "bridge shipped in Stage 6b");
-  assert.equal(view.capabilities.yield.testnet.state, "coming", "earn has not shipped yet");
+  assert.equal(view.capabilities.yield.testnet.state, "available", "earn shipped in Stage 6c");
   assert.equal(view.capabilities.marketplace.mainnet.state, "unavailable", "mainnet is not live on this api");
 });

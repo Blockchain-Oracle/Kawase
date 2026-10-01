@@ -48,6 +48,8 @@ export function useCounterpartyName() {
         return t("activity.swap");
       case "bridge":
         return item.bridge ? (getChainIdentity(item.bridge.chainId)?.name ?? t("bridge.title")) : t("bridge.title");
+      case "earn":
+        return item.earn?.vault ?? t("earn.title");
       default:
         return shortAddress(item.counterparty);
     }
@@ -74,6 +76,17 @@ function SwapAvatar({ item, size }: { item: ActivityItem; size: number }) {
 export function CounterpartyAvatar({ item, size = AVATAR }: { item: ActivityItem; size?: number }) {
   if (item.swap) return <SwapAvatar item={item} size={size} />;
   const ids = arcIdentity(item.network);
+  if (item.earn)
+    return (
+      <View style={{ width: size, height: size }}>
+        <View className="overflow-hidden" style={{ width: size, height: size, borderRadius: size * CHAIN_TILE_RADIUS }}>
+          <Mark entity="provider:morpho" size={size} />
+        </View>
+        <View className="border-card absolute rounded-full border-2" style={{ end: -2, bottom: -2 }}>
+          <Mark entity={ids.usdc} size={BADGE} />
+        </View>
+      </View>
+    );
   if (item.bridge)
     return (
       <View style={{ width: size, height: size }}>
@@ -120,6 +133,8 @@ export function useActivityTitle() {
       ? t("activity.swappedTitle", { from: item.swap.asset, to: item.asset })
       : item.bridge
         ? t("activity.bridgedTo", { chain: name(item) })
+        : item.earn
+          ? t(item.earn.action === "deposit" ? "activity.depositedInto" : "activity.withdrewFrom", { vault: item.earn.vault })
         : item.direction === "in"
         ? t("activity.fromName", { name: name(item) })
         : t("activity.toName", { name: name(item) });

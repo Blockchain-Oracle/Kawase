@@ -33,6 +33,9 @@ import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
 import { noBridges, type BridgeEngine } from "./bridge/engine";
+import { noEarn, type EarnEngine } from "./earn/engine";
+import { earnRoutes } from "./earn/routes";
+import { EarnService } from "./earn/service";
 import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noSwaps, type SwapEngine } from "./swap/engine";
@@ -66,6 +69,8 @@ export type AppDeps = {
   swaps?: SwapEngine | undefined;
   /** Bridge routes (Circle App Kit's CCTP in production); bridges are refused when unset. */
   bridges?: BridgeEngine | undefined;
+  /** Earn vaults (Circle App Kit Earn in production); earning is refused when unset. */
+  earn?: EarnEngine | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
   reconcileIntervalMs?: number | undefined;
   /** Reads incoming transfers this often; off when unset. */
@@ -92,10 +97,12 @@ export function createApp(deps: AppDeps) {
   if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log);
+  const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
     bridges.startSweeper(deps.reconcileIntervalMs);
+    earn.startSweeper(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -152,12 +159,13 @@ export function createApp(deps: AppDeps) {
   app.route("/sends", sendRoutes(sends));
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
+  app.route("/earn", earnRoutes(earn));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   app.route(
     "/agent",
-    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
+    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
   );
 
   return app;

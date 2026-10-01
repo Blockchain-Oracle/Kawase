@@ -25,3 +25,10 @@ export const BRIDGE_PROVIDER_LABEL = "Circle CCTP · App Kit";
  * turn every approval into a new version. What arrives is still the amount less the actual fee.
  */
 export const BRIDGE_FEE_HEADROOM_PERCENT = 120n;
+
+/** Gas for an approve + vault deposit or withdrawal batch when an estimate is not possible (measured 424,936 on Arc testnet). */
+export const EARN_BATCH_GAS_ESTIMATE = 600_000n;
+/** A deposit must return, and a withdrawal must pay, at least this share of the vault's own preview (App Kit builds at 99.5%). */
+export const EARN_FLOOR_BPS = 9_900n;
+/** A withdrawal may burn at most this share of the vault's preview in shares. */
+export const EARN_SHARES_CEILING_BPS = 10_100n;

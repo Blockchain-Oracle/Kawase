@@ -22,6 +22,7 @@ import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
 import type { BridgeService } from "../bridge/service";
+import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
 import { buildAgentContext } from "./context";
 
@@ -48,6 +49,7 @@ type Deps = {
   sends: SendService;
   swaps: SwapService;
   bridges: BridgeService;
+  earn: EarnService;
   requests: RequestService;
   models: Models;
   approvalSecret?: string | undefined;
@@ -60,7 +62,7 @@ function titleFrom(message: UIMessage): string | null {
   return text.length > TITLE_MAX ? `${text.slice(0, TITLE_MAX - 1)}…` : text;
 }
 
-export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, requests, models, approvalSecret }: Deps) {
+export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, models, approvalSecret }: Deps) {
   const app = new Hono<AppEnv>();
   app.use("*", requireUser);
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
@@ -96,7 +98,7 @@ export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients,
     const messages = last && last.id === incoming.id ? [...history.slice(0, -1), incoming] : [...history, incoming];
 
     const lastUserText = incoming.role === "user" ? incoming.parts.map((part) => (part.type === "text" ? part.text : "")).join(" ") : "";
-    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, requests, threadId, lastUserText, log });
+    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, threadId, lastUserText, log });
     const stream = await agentTurn({
       models,
       context,

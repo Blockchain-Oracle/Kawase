@@ -136,13 +136,15 @@ export type ActivityItem = {
   amount: string;
   counterparty: string;
   /** Who the counterparty is, when Kawase knows: its own wallets, Circle's faucet, or the user's own address. */
-  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | null;
+  counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | "earn" | null;
   /** The person's own name for the counterparty, when its address is in their contacts. */
   contactName?: string | null;
   /** A swap: this item is what came in, and `swap` is what went out for it in the same transaction. */
   swap?: { asset: "USDC" | "EURC"; amount: string } | null | undefined;
   /** A bridge out of Arc: the chain the USDC went to. */
   bridge?: { chainId: number } | null | undefined;
+  /** A move into or out of an earn vault. */
+  earn?: { action: "deposit" | "withdraw"; vault: string } | null | undefined;
   txHash: string;
   at: string;
   explorerUrl: string;
@@ -396,6 +398,71 @@ export type BridgeRequest = {
 export type BridgeApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: BridgeIntent }
   | { status: "sign"; intent: BridgeIntent; approvalId: string; transaction: UnsignedTransaction };
+
+// ── Earn (Stage 6c) ─────────────────────────────────────────────────────────────────────────────────────────
+
+/** A USDC vault App Kit lists on the active network. Amounts are decimal USDC; yields are fractions (0.042 = 4.2%). */
+export type EarnVaultView = {
+  address: string;
+  name: string;
+  protocol: string;
+  apy: number;
+  apy30d: number | null;
+  totalDeposits: string;
+  available: string;
+  status: string;
+  curator: string | null;
+  circleGuarded: boolean;
+  warnings: string[];
+};
+
+/** What the person holds in one vault: base units of USDC it is worth now. */
+export type EarnPositionView = { vault: string; name: string; apy: number; assets: string; shares: string };
+
+export type EarnDraftView = {
+  action: "deposit" | "withdraw";
+  vault: EarnVaultView;
+  /** USDC base units asked for. */
+  amount: string;
+  /** For a withdrawal, the least USDC that comes back; for a deposit, what the shares are worth at least. */
+  minReceived: string;
+  /** What the position is worth after this, in USDC base units, at today's rate. */
+  positionAfter: string;
+  /** About a year's yield on the position after this, at the current rate. */
+  yearlyEarnings: string;
+  networkFee: string | null;
+  quotedAt: string;
+};
+
+export type EarnIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  version: number;
+  request: { action: "deposit" | "withdraw"; vault: string | null; amount: string | null };
+  draft: EarnDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  /** What arrived (shares' worth for a deposit, USDC for a withdrawal), base units of USDC, once done. */
+  received: string | null;
+  tx: { hash: string; explorerUrl: string } | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type EarnRequest = {
+  action?: "deposit" | "withdraw" | undefined;
+  /** A vault address; without one Kawase picks the highest-yield active vault (a deposit) or the person's position (a withdrawal). */
+  vault?: string | null | undefined;
+  /** Decimal USDC. */
+  amount?: string | null | undefined;
+};
+
+export type EarnApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: EarnIntent }
+  | { status: "sign"; intent: EarnIntent; approvalId: string; transaction: UnsignedTransaction };
 
 // ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
 

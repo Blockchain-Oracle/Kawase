@@ -43,3 +43,5 @@ Every file here is either a first-party brand asset or a redrawn mark from an op
 | Venues and name services (CCTP, LI.FI, Across, Relay, deBridge, Socket, ENS, Basenames) | `<slug>`, `<slug>-mono` | Added with the Stage 6 route that first lists them — the logo ships in the same change |
 
 The app icon, splash and favicon are rendered from the Kawase mark into `apps/mobile/assets/brand/` (`rsvg-convert`); changing them needs `npx expo prebuild` and a rebuild.
+| `morpho.svg` | Morpho | `provider:morpho` | https://github.com/morpho-org/privy-morpho-recipe | https://raw.githubusercontent.com/morpho-org/privy-morpho-recipe/HEAD/public/Morpho.svg (sha256 `8e0ff3edd478222a…`) | 2026-10-01 | First-party (Morpho's own repository): the symbol's paths taken unchanged from the logo-with-wordmark file (white, as published), placed on a dark tile `#15181A`; the wordmark paths dropped | (see shasum of the file) |
+| `morpho-mono.svg` | Morpho (mono) | `provider:morpho` | https://github.com/morpho-org/privy-morpho-recipe | same file | 2026-10-01 | same symbol paths, filled black so the build turns them into currentColor | (see shasum of the file) |

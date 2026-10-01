@@ -64,6 +64,13 @@
       "when": 1790848007950,
       "tag": "0008_swaps",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790855613370,
+      "tag": "0009_earn",
+      "breakpoints": true
     }
   ]
 }

@@ -28,7 +28,7 @@ export type ActivityLine = {
   counterparty: string;
   counterpartyName: string | null;
   /** Which known wallet it is, for the card's real mark ("swap": the person's own swap). */
-  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | null;
+  label: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | "swap" | "bridge" | "earn" | null;
   /** For a swap: what went out for `amount`. */
   paid?: Money | undefined;
   at: string;
@@ -112,3 +112,21 @@ export type BridgeSummary = {
 };
 
 export type ProposeBridgeOutput = { intent: import("./types").BridgeIntent; summary: BridgeSummary };
+
+export type EarnSummary = {
+  intentId: string;
+  network: AgentNetwork;
+  status: "ready" | "moving" | "done" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in" | "failed";
+  /** "Deposit 10.00 USDC into EarnKit USDC Vault (4.2% a year)". */
+  action: string | null;
+  problem: string | null;
+  warnings: string[];
+};
+
+export type ProposeEarnOutput = { intent: import("./types").EarnIntent; summary: EarnSummary };
+
+export type EarnOverviewLine = {
+  vaults: { name: string; protocol: string; apy: string; available: string; circleGuarded: boolean; status: string; address: string }[];
+  positions: { name: string; worth: string; apy: string }[];
+  network: AgentNetwork;
+};
