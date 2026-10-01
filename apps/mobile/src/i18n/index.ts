@@ -17,11 +17,12 @@ export function deviceLocale(): SupportedLocale {
 }
 
 /**
- * In a browser the owner's check is a code from their email, not Face ID (wallet/biometric.web.ts). These lines name
- * the check, so on the web each is replaced by its `…Web` twin from the same catalog; phones keep the original words
- * and no screen has to know the difference.
+ * These lines name the owner's check, and the check differs by platform: Face ID or Touch ID on an iPhone (the
+ * original words), a fingerprint or the screen lock on Android, a code from their email in a browser
+ * (wallet/biometric.web.ts). On Android and the web each line is replaced by its `…Android` / `…Web` twin from the same
+ * catalog when it has one, so no screen has to know the difference.
  */
-const WEB_WORDS = [
+const CHECK_WORDS = [
   "send.allowanceAbove",
   "send.allowanceOff",
   "send.allowanceStepUp",
@@ -33,25 +34,31 @@ const WEB_WORDS = [
   "story.boundsAbove",
   "limits.offBody",
   "home.allowanceOffBody",
+  "wallet.allowanceBody",
   "wallet.mainnetConsentBody",
+  "setup.primerTitle",
+  "setup.primerBody",
 ] as const;
+
+const TWIN_SUFFIX: Partial<Record<typeof Platform.OS, string>> = { web: "Web", android: "Android" };
 
 type Tree = { [key: string]: string | Tree };
 
-function withWebWords(catalog: Tree): Tree {
+function withCheckWords(catalog: Tree, suffix: string): Tree {
   const copy = JSON.parse(JSON.stringify(catalog)) as Tree;
-  for (const path of WEB_WORDS) {
+  for (const path of CHECK_WORDS) {
     const [block, key] = path.split(".") as [string, string];
     const group = copy[block];
-    if (typeof group === "object" && typeof group[`${key}Web`] === "string") group[key] = group[`${key}Web`]!;
+    if (typeof group === "object" && typeof group[`${key}${suffix}`] === "string") group[key] = group[`${key}${suffix}`]!;
   }
   return copy;
 }
 
+const twinSuffix = TWIN_SUFFIX[Platform.OS];
 const resources = Object.fromEntries(
   Object.entries(CATALOGS).map(([locale, catalog]) => [
     locale,
-    { translation: Platform.OS === "web" ? withWebWords(catalog as unknown as Tree) : catalog },
+    { translation: twinSuffix ? withCheckWords(catalog as unknown as Tree, twinSuffix) : catalog },
   ]),
 );
 
