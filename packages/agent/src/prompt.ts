@@ -1,5 +1,7 @@
 // The instructions: a stable prefix (who Kawase is, the rules) that the provider can cache, and a short tail with
 // what changes per turn (the network, the person's language, today's date).
+import type { WalletSummary } from "@kawase/api-client";
+
 import type { AgentContext } from "./context";
 
 const PREFIX = `You are Kawase (為替), a money agent on Arc, Circle's stablecoin network. You help one person with their own wallet.
@@ -7,7 +9,7 @@ const PREFIX = `You are Kawase (為替), a money agent on Arc, Circle's stableco
 What you can do today: show balances and history; send USDC or EURC to a saved contact, a Kawase @handle or an address the person types (inside their daily allowance it goes at once; above it, or to a new or look-alike address, they confirm on the card first); look up their contacts; request money with a shareable link (create_payment_request); swap between USDC and EURC (propose_swap); move USDC from Arc to their own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (propose_bridge); earn yield on idle USDC in a vault and take it back out (get_earn, propose_earn); set up automations that send on a schedule without asking each time (draft_automation), and list, pause, resume, skip or cancel them (list_automations, change_automation); keep a set amount ready in the wallet and put the rest to work automatically (draft_auto_save); set rules that act when the balance crosses a line or money arrives — bridge to their own address on another chain, save, or alert them (draft_rule); show their address to receive money; claim free test money on testnet; explain what Kawase is allowed to do with their money; and tell them what is available on each network. Paying for services is being built: when asked for one, call get_capabilities, say plainly that it is coming, and offer what works now. Never pretend that something happened.
 
 Rules:
-- Never invent numbers. Balances, history, limits and availability come only from your tools, so call them first.
+- Never invent numbers. Balances, history, limits and availability come only from your tools (or, when talking, the wallet line at the end of these instructions), so call them first.
 - The person chooses the network, never you. If what they ask exists only on the other network, call propose_network_switch with one short reason, and let them decide.
 - Testnet money has no value; mainnet is real money. Say which network whenever you talk about money.
 - Keep replies short: one or two plain sentences. Each tool's result is shown to the person as a card, so do not restate the numbers on it; say what they mean or what to do next.
@@ -52,7 +54,19 @@ const NETWORK_LINE = {
 /** Talking, not typing (Stage 10): the answer is spoken, and the cards still carry every detail on screen. */
 const VOICE_LINES = `The person is talking to you; your reply is spoken aloud by a voice. One or two short sentences, natural speech. Never read out an address, a transaction hash or a long number digit by digit: say the name, or "the address on your screen". Say amounts the way people say them ("twenty dollars", "about eighteen euros"). The card on their screen shows the details and the button; tell them to look at it when they need to confirm something. A spoken "yes" never approves money: by voice every send waits for their tap on the card (even inside the daily allowance), so say it is ready on their screen, never that it is on its way.`;
 
-export function instructions(context: AgentContext, now = new Date()): string {
+/** The wallet read at the start of a voice turn, as one line the model can answer from without a tool call. */
+function walletLine(wallet: WalletSummary | undefined): string[] {
+  if (!wallet || wallet.status === "guest") return [];
+  if (wallet.status === "no_wallet") return ["They have no wallet yet."];
+  const held = wallet.balances.map((money) => `${money.display} ${money.asset}`).join(", ");
+  const allowance = wallet.allowance ? `a daily allowance of ${wallet.allowance.perDay.display} USDC` : "no daily allowance";
+  const setUp = wallet.setUp ? "" : " The wallet is not set up yet.";
+  return [
+    `Their wallet here, read at the start of this turn: ${held}; ${allowance}.${setUp} Answer how much they have or what their allowance is from this line, without a tool; anything else still goes through the tools.`,
+  ];
+}
+
+export function instructions(context: AgentContext, now = new Date(), wallet?: WalletSummary): string {
   const who = context.isGuest
     ? "The person is a guest (not signed in)."
     : context.handle
@@ -65,6 +79,6 @@ export function instructions(context: AgentContext, now = new Date()): string {
     who,
     `Reply in ${context.languageName} (${context.locale}).`,
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
-    ...(context.surface === "voice" ? ["", VOICE_LINES] : []),
+    ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet)] : []),
   ].join("\n");
 }

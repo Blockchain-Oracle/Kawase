@@ -10,6 +10,8 @@ import {
   type UIMessageStreamOnEndCallback,
 } from "ai";
 
+import type { WalletSummary } from "@kawase/api-client";
+
 import type { AgentContext } from "./context";
 import type { Models } from "./models";
 import { instructions } from "./prompt";
@@ -36,9 +38,11 @@ export type TurnInput = {
   onError: (error: unknown) => void;
   abortSignal?: AbortSignal | undefined;
   timings?: TurnTimings | undefined;
+  /** The wallet read at the start of a voice turn, given to the model as one line (no tool round trip). */
+  wallet?: WalletSummary | undefined;
 };
 
-export async function agentTurn({ models, context, messages, approvalSecret, onEnd, onError, abortSignal, timings }: TurnInput) {
+export async function agentTurn({ models, context, messages, approvalSecret, onEnd, onError, abortSignal, timings, wallet }: TurnInput) {
   const startedAt = Date.now();
   let firstChunk = true;
   let stepStartedAt = startedAt;
@@ -50,7 +54,7 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
   const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   const result = streamText({
     model,
-    instructions: instructions(context),
+    instructions: instructions(context, new Date(), wallet),
     messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     experimental_toolApprovalSecret: approvalSecret,

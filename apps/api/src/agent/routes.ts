@@ -32,6 +32,17 @@ const TITLE_MAX = 60;
 const THREADS_PAGE = 50;
 const SECRET_BYTES = 32;
 const MESSAGE_ID_MAX = 100;
+/** How long a voice turn waits for the wallet read (~170 ms warm on Arc testnet) before going on without it. */
+const WALLET_FACTS_WAIT_MS = 600;
+
+/** The value if it arrives in time; otherwise (late or failed) undefined. */
+function settleWithin<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<undefined>((resolve) => {
+    timer = setTimeout(() => resolve(undefined), ms);
+  });
+  return Promise.race([promise.catch(() => undefined), late]).finally(() => clearTimeout(timer));
+}
 
 const messageSchema = z.object({
   id: z.string().min(1).max(MESSAGE_ID_MAX),
@@ -90,6 +101,20 @@ export function createTurnRunner(deps: AgentDeps) {
   const run = async (input: { user: SessionUser; threadId: string; incoming: UIMessage; surface: "chat" | "voice"; signal?: AbortSignal | undefined; log: Logger }) => {
     const { user, threadId, incoming, surface, log } = input;
     const startedAt = Date.now();
+    const lastUserText = incoming.role === "user" ? incoming.parts.map((part) => (part.type === "text" ? part.text : "")).join(" ") : "";
+    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, lastUserText, log, surface });
+    // Talking: the wallet is read while the thread loads, so "how much do I have?" is answered in one model step
+    // instead of a tool call and a second step (~2 s of silence). Never waited on for long, never fatal.
+    let walletMs: number | undefined;
+    const walletNow =
+      surface === "voice"
+        ? settleWithin(
+            context.wallet().finally(() => {
+              walletMs = Date.now() - startedAt;
+            }),
+            WALLET_FACTS_WAIT_MS,
+          )
+        : Promise.resolve(undefined);
     const existing = await ownThread(user.id, threadId);
     if (!existing) await db.insert(threads).values({ id: threadId, userId: user.id, network: user.activeNetwork, title: titleFrom(incoming) });
     // A thread opened before its first words (a voice session) takes its title from them.
@@ -98,12 +123,12 @@ export function createTurnRunner(deps: AgentDeps) {
     const last = history.at(-1);
     const messages = last && last.id === incoming.id ? [...history.slice(0, -1), incoming] : [...history, incoming];
 
-    const lastUserText = incoming.role === "user" ? incoming.parts.map((part) => (part.type === "text" ? part.text : "")).join(" ") : "";
-    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, lastUserText, log, surface });
+    const wallet = await walletNow;
     const preparedMs = Date.now() - startedAt;
     return agentTurn({
+      wallet,
       timings: {
-        onFirstChunk: (ms) => log.info({ surface, preparedMs, firstChunkMs: ms }, "turn first chunk"),
+        onFirstChunk: (ms) => log.info({ surface, preparedMs, walletMs, walletLine: wallet !== undefined, firstChunkMs: ms }, "turn first chunk"),
         onStep: (ms, tools) => log.info({ surface, stepMs: ms, tools }, "turn step"),
       },
       models,

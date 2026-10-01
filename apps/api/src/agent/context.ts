@@ -78,8 +78,9 @@ export function buildAgentContext(input: {
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
+  // Only the active network: the agent never talks about the other one's money without a switch.
   const networkState = async () => {
-    const status = await wallets.status(user.id);
+    const status = await wallets.status(user.id, [network]);
     return { address: status.address, state: (status.networks as Record<string, NetworkState | undefined>)[network] };
   };
 

@@ -176,26 +176,24 @@ export class WalletService {
     return names;
   }
 
-  /** The wallet's state on each available network, for the app's wallet screen. */
-
-  async status(userId: string) {
+  /**
+   * The wallet's state on each available network (the app's wallet screen), or on the ones asked for (the agent reads
+   * only the active one). Networks are read in parallel: a turn waits for the slowest chain, not the sum.
+   */
+  async status(userId: string, only?: readonly NetworkId[]) {
     const wallet = await this.userWallet(userId);
     if (!wallet) return { address: undefined, networks: {} };
     const address = wallet.address as Address;
-    const networks: Record<string, unknown> = {};
-    for (const id of this.chains.available) {
+    const ids = this.chains.available.filter((id) => !only || only.includes(id));
+    const read = async (id: NetworkId) => {
       const { client, network } = this.clients(id);
       const balanceOf = (token: Address) =>
         client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [address] });
-      const [code, usdcBalance, eurcBalance, setup, allowance] = await Promise.all([
-        client.getCode({ address }),
-        balanceOf(network.addresses.usdc),
-        balanceOf(network.addresses.eurc),
-        this.db
-          .select()
-          .from(userWalletSetup)
-          .where(and(eq(userWalletSetup.userId, userId), eq(userWalletSetup.network, id))),
-        this.db
+      // The chain is the authority on whether the allowance is still on: a revoke whose answer was lost (the app
+      // went offline, the api restarted mid-wait) is found here and recorded, so the app never offers a blind second
+      // revoke for an allowance that is already off (Codex review R05). The check runs alongside the balance reads.
+      const liveAllowance = async () => {
+        const [row] = await this.db
           .select()
           .from(grants)
           .where(
@@ -207,24 +205,33 @@ export class WalletService {
             ),
           )
           .orderBy(desc(grants.createdAt))
-          .limit(1),
-      ]);
-      // The chain is the authority on whether the allowance is still on: a revoke whose answer was lost (the app
-      // went offline, the api restarted mid-wait) is found here and recorded, so the app never offers a blind second
-      // revoke for an allowance that is already off (Codex review R05).
-      let live = allowance[0];
-      if (live && (await this.disabledOnChain(client, live.delegation))) {
-        await this.db.update(grants).set({ status: "revoked" }).where(eq(grants.id, live.id));
-        live = undefined;
-      }
-      networks[id] = {
-        setUp: isWalletSetUp(code),
-        setupAt: setup[0]?.setupAt ?? null,
-        usdcBalance: usdcBalance.toString(),
-        eurcBalance: eurcBalance.toString(),
-        allowance: live ? { id: live.id, receipt: live.receipt, expiresAt: live.expiresAt } : null,
+          .limit(1);
+        if (!row || !(await this.disabledOnChain(client, row.delegation))) return row;
+        await this.db.update(grants).set({ status: "revoked" }).where(eq(grants.id, row.id));
+        return undefined;
       };
-    }
+      const [code, usdcBalance, eurcBalance, setup, live] = await Promise.all([
+        client.getCode({ address }),
+        balanceOf(network.addresses.usdc),
+        balanceOf(network.addresses.eurc),
+        this.db
+          .select()
+          .from(userWalletSetup)
+          .where(and(eq(userWalletSetup.userId, userId), eq(userWalletSetup.network, id))),
+        liveAllowance(),
+      ]);
+      return [
+        id,
+        {
+          setUp: isWalletSetUp(code),
+          setupAt: setup[0]?.setupAt ?? null,
+          usdcBalance: usdcBalance.toString(),
+          eurcBalance: eurcBalance.toString(),
+          allowance: live ? { id: live.id, receipt: live.receipt, expiresAt: live.expiresAt } : null,
+        },
+      ] as const;
+    };
+    const networks: Record<string, unknown> = Object.fromEntries(await Promise.all(ids.map(read)));
     return { address, networks };
   }
 
