@@ -68,6 +68,7 @@ import { evaluateSend, type PolicyResult, type SendEvaluation, type SendRoute } 
 
 import type { ContactService } from "../contacts/service";
 import { HTTP, problem } from "../http/problem";
+import { intentExists } from "../intents/chain";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -486,12 +487,16 @@ export class SendService {
   async runAutomation(input: {
     userId: string;
     network: NetworkId;
+    /** The run's own id for this send, fixed when the occurrence was claimed: a retry resumes it, never repeats it. */
+    intentId: string;
     grant: { id: string; delegation: Record<string, unknown> };
     to: Address;
     asset: AssetId;
     amount: bigint;
     note: string | null;
-  }): Promise<{ status: "executing"; intentId: string } | { status: "skipped"; reason: string; params?: Record<string, string> }> {
+  }): Promise<{ status: "executing"; intentId: string; resumed: boolean } | { status: "skipped"; reason: string; params?: Record<string, string> }> {
+    // Already created by an earlier attempt at this run: its tracking carries it on.
+    if (await intentExists(this.db, input.intentId)) return { status: "executing", intentId: input.intentId, resumed: true };
     const context = this.clients(input.network);
     const wallet = await this.wallets.userWallet(input.userId);
     if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
@@ -541,14 +546,16 @@ export class SendService {
     const report: PolicyReport = { results: evaluation.results, blocking: null, route: null };
     const call = encodeRedeemTransfer(context.network, input.grant.delegation as never, { token, to: input.to, amount: input.amount });
 
-    const intentId = await this.db.transaction(async (tx) => {
+    const created = await this.db.transaction(async (tx) => {
       // The same per-person lock as approvals, and the limits again under it, so a send at the same moment cannot
       // push both over.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${input.userId}:${input.network}`}, 0))`);
+      if (await intentExists(tx, input.intentId)) return "exists" as const;
       if (!(await fitsLimits(tx, input.userId, input.network, input.asset, input.amount, "00000000-0000-0000-0000-000000000000"))) return undefined;
       const [intent] = await tx
         .insert(intents)
         .values({
+          id: input.intentId,
           userId: input.userId,
           network: input.network,
           kind: "send",
@@ -598,10 +605,11 @@ export class SendService {
       });
       return id;
     });
-    if (!intentId) return { status: "skipped", reason: "OVER_DAILY_LIMIT" };
-    await this.submitToOps(intentId);
-    void this.follow(intentId);
-    return { status: "executing", intentId };
+    if (created === "exists") return { status: "executing", intentId: input.intentId, resumed: true };
+    if (!created) return { status: "skipped", reason: "OVER_DAILY_LIMIT" };
+    await this.submitToOps(created);
+    void this.follow(created);
+    return { status: "executing", intentId: created, resumed: false };
   }
 
   /** Something changed since the person looked: a new version shows them what is true now. */

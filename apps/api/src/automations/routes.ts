@@ -24,7 +24,21 @@ const inputSchema = z.object({
   timezone: z.string().max(ZONE_MAX).optional(),
   note: z.string().max(NOTE_MAX).nullable().optional(),
 });
-const activateSchema = z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
+const MAX_GRANTS = 3;
+const autoSaveSchema = z.object({
+  keep: z.string().max(AMOUNT_MAX).optional(),
+  vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional(),
+  topUp: z.boolean().optional(),
+  every: z.enum(["day", "week", "month"]).optional(),
+  time: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
+  timezone: z.string().max(ZONE_MAX).optional(),
+});
+const activateSchema = z.object({
+  signatures: z
+    .array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) }))
+    .min(1)
+    .max(MAX_GRANTS),
+});
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -42,11 +56,16 @@ export function automationRoutes(automations: AutomationService) {
     const input = await parse(inputSchema, await c.req.json());
     return c.json({ automation: await automations.create(c.get("user")!, input) }, HTTP.created);
   });
+  app.post("/auto-save", async (c) => {
+    const input = await parse(autoSaveSchema, await c.req.json());
+    return c.json({ automation: await automations.createAutoSave(c.get("user")!, input) }, HTTP.created);
+  });
   app.get("/:id", async (c) => c.json({ automation: await automations.get(c.get("userId")!, c.req.param("id")) }));
   app.post("/:id/grant", async (c) => c.json(await automations.grantRequest(c.get("user")!, c.req.param("id"))));
   app.post("/:id/activate", async (c) => {
     const input = await parse(activateSchema, await c.req.json());
-    return c.json({ automation: await automations.activate(c.get("user")!, c.req.param("id"), { grantId: input.grantId, signature: input.signature as `0x${string}` }) });
+    const signatures = input.signatures.map((entry) => ({ grantId: entry.grantId, signature: entry.signature as `0x${string}` }));
+    return c.json({ automation: await automations.activate(c.get("user")!, c.req.param("id"), { signatures }) });
   });
   app.post("/:id/pause", async (c) => c.json({ automation: await automations.pause(c.get("user")!, c.req.param("id")) }));
   app.post("/:id/resume", async (c) => c.json({ automation: await automations.resume(c.get("user")!, c.req.param("id")) }));

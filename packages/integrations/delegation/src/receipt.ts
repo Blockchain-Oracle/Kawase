@@ -9,6 +9,7 @@ import { delegationEnvironment } from "./environment";
 
 const ADDRESS_BYTES = 20;
 const ABI_WORD_BYTES = 32;
+const FIRST_ARGUMENT_OFFSET = 4;
 
 export type GrantReceipt = {
   wallet: Address;
@@ -22,8 +23,10 @@ export type GrantReceipt = {
   targets: Address[];
   /** 4-byte selectors the agent may call. */
   methods: Hex[];
-  /** Set when the grant is pinned to one recipient (an automation). */
+  /** Set when the grant is pinned to one recipient (an automation): an address pinned as the first argument. */
   recipient: Address | undefined;
+  /** Every argument pinned to an address, by its byte offset in calldata (4 = the first argument). */
+  pins: { startIndex: number; address: Address }[];
   /** The most native value a redeem may carry. 0 means none. */
   maxNativeValue: bigint | undefined;
   /** Addresses allowed to redeem, from the Redeemer caveat. */
@@ -45,6 +48,7 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
     targets: [],
     methods: [],
     recipient: undefined,
+    pins: [],
     maxNativeValue: undefined,
     redeemers: [],
     unknownCaveats: [],
@@ -79,10 +83,13 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
       case "valueLte":
         receipt.maxNativeValue = decoded.maxValue;
         break;
-      case "allowedCalldata":
-        // A pinned recipient is the first argument: one ABI word whose last 20 bytes are the address.
-        receipt.recipient = slice(decoded.value as Hex, ABI_WORD_BYTES - ADDRESS_BYTES, ABI_WORD_BYTES) as Address;
+      case "allowedCalldata": {
+        // A pinned address is one ABI word whose last 20 bytes are the address; the first argument is the recipient.
+        const address = slice(decoded.value as Hex, ABI_WORD_BYTES - ADDRESS_BYTES, ABI_WORD_BYTES) as Address;
+        receipt.pins.push({ startIndex: decoded.startIndex, address });
+        if (decoded.startIndex === FIRST_ARGUMENT_OFFSET) receipt.recipient = address;
         break;
+      }
       default:
         receipt.unknownCaveats.push(caveat.enforcer);
     }

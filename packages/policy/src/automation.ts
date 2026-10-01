@@ -74,3 +74,39 @@ export function evaluateAutomation(facts: AutomationFacts): AutomationEvaluation
   }
   return done(results);
 }
+
+export type AutoSaveFacts = {
+  network: NetworkId;
+  capability: { here: CapabilityState; other: CapabilityState };
+  signedIn: boolean;
+  wallet: { registered: boolean; setUp: boolean };
+  vault: { status: "found"; active: boolean; lowLiquidity: boolean; warnings: string[] } | { status: "missing" };
+  keep: AmountFacts;
+  schedule: { valid: boolean };
+  /** Auto-save is already on (or paused) on this network. */
+  existing: boolean;
+};
+
+/**
+ * Turning Auto-save on: a vault that takes deposits, an amount to keep ready, a schedule Kawase can keep, and no other
+ * Auto-save here. What the grants allow is fixed by code (only between the wallet and its own position in that vault),
+ * so there is no per-period cap to check; each run looks at the balance afresh.
+ */
+export function evaluateAutoSave(facts: AutoSaveFacts): AutomationEvaluation {
+  const results: PolicyResult[] = [];
+  if (!facts.signedIn) return done([result("SIGN_IN_REQUIRED")]);
+  if (facts.capability.here !== "available") {
+    const elsewhere = facts.capability.other === "available";
+    return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "automations" })]);
+  }
+  if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
+  if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
+  if (facts.vault.status === "missing") return done([...results, result("VAULT_UNAVAILABLE")]);
+  if (!facts.vault.active) results.push(result("VAULT_UNAVAILABLE"));
+  if (facts.existing) results.push(result("AUTO_SAVE_EXISTS"));
+  if (!facts.schedule.valid) results.push(result("SCHEDULE_INVALID"));
+  if (facts.keep.status === "invalid" || (facts.keep.status === "ok" && facts.keep.baseUnits < ZERO)) results.push(result("AMOUNT_INVALID"));
+  if (facts.vault.lowLiquidity) results.push(result("VAULT_LOW_LIQUIDITY"));
+  if (facts.vault.warnings.length > 0) results.push(result("VAULT_RISK_WARNING", { warnings: facts.vault.warnings.join(", ") }));
+  return done(results);
+}

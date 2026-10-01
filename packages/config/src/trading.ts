@@ -32,3 +32,10 @@ export const EARN_BATCH_GAS_ESTIMATE = 600_000n;
 export const EARN_FLOOR_BPS = 9_900n;
 /** A withdrawal may burn at most this share of the vault's preview in shares. */
 export const EARN_SHARES_CEILING_BPS = 10_100n;
+
+/** Auto-save moves nothing smaller than this (USDC base units, 1 USDC): a smaller move is not worth its transaction. */
+export const AUTO_SAVE_MIN_MOVE = 1_000_000n;
+/** What Auto-save keeps ready in the wallet when the person did not say (USDC base units, 10 USDC); the card shows it. */
+export const AUTO_SAVE_DEFAULT_KEEP = 10_000_000n;
+/** An Auto-save move's gas, for the run's fee note (the ops wallet pays it). */
+export const AUTO_SAVE_GAS_ESTIMATE = 450_000n;

@@ -1,6 +1,6 @@
-// Automations (Stage 8): something the person asked Kawase to do on a schedule ("every Tuesday send $1 to Alex"),
-// bounded on chain by its own grant (a delegation pinned to the recipient, capped per period) and run by Kawase
-// without asking again. Each occurrence is one row, unique per automation and scheduled time, so a run happens at
+// Automations (Stage 8): something the person asked Kawase to do on a schedule ("every Tuesday send $1 to Alex"), or
+// to keep doing ("keep $20 ready, the rest earns" — Auto-save, checked on its schedule and whenever money arrives),
+// bounded on chain by its own grants and run by Kawase without asking again. Each occurrence is one row, unique per automation and scheduled time, so a run happens at
 // most once however often the runner looks; a run that cannot go says why.
 import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -9,7 +9,7 @@ import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
 
 export const automationStatusEnum = pgEnum("automation_status", ["draft", "active", "paused", "canceled", "ended"]);
-export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send"]);
+export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save"]);
 export const automationRunStatusEnum = pgEnum("automation_run_status", ["executing", "succeeded", "skipped", "failed"]);
 
 /** When it runs: every day, week (on a weekday) or month (on a day of the month), at a local time in a time zone. */
@@ -35,6 +35,18 @@ export type AutomationAction = {
   note: string | null;
 };
 
+/** Auto-save: keep `keep` ready in the wallet; above it goes into the person's own position in `vault`, and (with `topUp`) below it comes back. */
+export type AutoSaveAction = {
+  vault: string;
+  vaultName: string;
+  /** Base units of USDC. */
+  keep: string;
+  topUp: boolean;
+};
+
+/** What one Auto-save run moved: into savings or back to the wallet, in USDC base units. */
+export type AutomationMove = { direction: "in" | "out"; amount: string };
+
 export const automations = pgTable(
   "automations",
   {
@@ -48,7 +60,8 @@ export const automations = pgTable(
     /** The chat that made it, if any. */
     threadId: uuid(),
     schedule: jsonb().$type<AutomationSchedule>().notNull(),
-    action: jsonb().$type<AutomationAction>().notNull(),
+    /** A scheduled send's `AutomationAction`, or Auto-save's `AutoSaveAction` (by `kind`). */
+    action: jsonb().$type<AutomationAction | AutoSaveAction>().notNull(),
     /** The grant that bounds it on chain (set when it is turned on). */
     grantId: uuid(),
     /** The policy report when it was drafted: every check and the one that blocks turning it on. */
@@ -82,6 +95,8 @@ export const automationRuns = pgTable(
     /** Why a run was skipped or failed, as a policy reason code. */
     reason: text(),
     reasonParams: jsonb().$type<Record<string, string>>(),
+    /** Auto-save: what this run moved. */
+    move: jsonb().$type<AutomationMove>(),
     intentId: uuid(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

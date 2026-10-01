@@ -1,5 +1,5 @@
-// What the model is told about a drafted automation: the read-back in plain English (when, how much, to whom), the
-// next runs, and the bound the chain enforces. The card carries the same in the person's language and the button.
+// What the model is told about a drafted automation: the read-back in plain English (when, how much, to whom — or,
+// for Auto-save, what it keeps ready and where the rest goes), the next runs, and the bound the chain enforces. The card carries the same in the person's language and the button.
 import type { AutomationSummary, AutomationView, PolicyResultView } from "@kawase/api-client";
 import { amount, formatAmount, type AssetId } from "@kawase/money";
 
@@ -13,6 +13,8 @@ const ordinals = new Intl.PluralRules(DISPLAY_LOCALE, { type: "ordinal" });
 const ordinal = (n: number) => `${n}${ORDINAL_SUFFIX[ordinals.select(n)] ?? "th"}`;
 /** "YYYY-MM-DD" from an ISO timestamp. */
 const DATE_CHARS = 10;
+const PERCENT = 100;
+const APY_DIGITS = 2;
 
 function when(automation: AutomationView) {
   const s = automation.schedule;
@@ -60,6 +62,14 @@ function describe(result: PolicyResultView): string {
       return "The amount is not valid.";
     case "OVER_PER_TX_LIMIT":
       return `More than their limit of ${money(p.asset ?? "USDC", p.limit ?? "0")} per send.`;
+    case "VAULT_UNAVAILABLE":
+      return "No vault is taking deposits on this network right now.";
+    case "AUTO_SAVE_EXISTS":
+      return "Auto-save is already on; they can turn it off in Automations first, then set this one.";
+    case "VAULT_LOW_LIQUIDITY":
+      return "The vault has little liquidity right now; topping up may come in smaller amounts.";
+    case "VAULT_RISK_WARNING":
+      return `The vault carries warnings: ${p.warnings}.`;
     case "FIRST_RUN_UNDERFUNDED":
       return `They hold ${money(p.asset ?? "USDC", p.balance ?? "0")} now, less than one run; runs are skipped until they add money.`;
     default:
@@ -67,10 +77,22 @@ function describe(result: PolicyResultView): string {
   }
 }
 
+function saveReadBack(automation: AutomationView) {
+  const save = automation.save!;
+  const keep = money("USDC", save.keep);
+  const apy = `${(save.apy * PERCENT).toFixed(APY_DIGITS)}% a year now`;
+  const now = save.now
+    ? save.now.direction === "in"
+      ? ` Right now ${money("USDC", save.now.amount)} would go into savings.`
+      : ` Right now ${money("USDC", save.now.amount)} would come back to the wallet.`
+    : " Right now there is nothing to move.";
+  return `${when(automation)}, and whenever money arrives: keep ${keep} ready in the wallet; anything above goes into savings in ${save.vaultName} (${apy})${save.topUp ? `; if the wallet drops below ${keep}, savings top it up` : ""}.${now}`;
+}
+
 export function summarizeAutomation(automation: AutomationView): AutomationSummary {
   const blocking = automation.blocking;
   const a = automation.action;
-  const who = a.recipientName ?? a.recipientWords;
+  const save = automation.save;
   const status: AutomationSummary["status"] =
     automation.status === "active"
       ? "on"
@@ -90,13 +112,24 @@ export function summarizeAutomation(automation: AutomationView): AutomationSumma
                     ? "refused"
                     : "not_possible";
   const per = PERIOD_WORDS[automation.schedule.every] ?? "per period";
+  const ends = automation.endsAt.slice(0, DATE_CHARS);
+  const readBack = save
+    ? saveReadBack(automation)
+    : a && a.amount !== "0"
+      ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${a.recipientName ?? a.recipientWords}${a.note ? ` ("${a.note}")` : ""}`
+      : null;
+  const bound = save
+    ? `Kawase can only move USDC between their wallet and their own savings in ${save.vaultName}, never to anyone else, enforced on Arc by the three grants they sign with one Face ID; it ends on ${ends}.`
+    : a && a.amount !== "0"
+      ? `At most ${money(a.asset, a.amount)} ${per} can ever go, and only to this address, enforced on Arc by the grant they sign; it ends on ${ends}.`
+      : null;
   return {
     automationId: automation.id,
     network: automation.network,
     status,
-    readBack: a.amount !== "0" ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${who}${a.note ? ` ("${a.note}")` : ""}` : null,
+    readBack,
     nextRuns: automation.nextRuns,
-    bound: a.amount !== "0" ? `At most ${money(a.asset, a.amount)} ${per} can ever go, and only to this address, enforced on Arc by the grant they sign; it ends on ${automation.endsAt.slice(0, DATE_CHARS)}.` : null,
+    bound,
     problem: blocking ? describe(blocking) : null,
     warnings: automation.results.filter((entry) => entry.kind === "warning").map(describe),
   };

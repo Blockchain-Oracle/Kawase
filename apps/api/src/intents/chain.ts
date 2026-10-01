@@ -1,10 +1,10 @@
 // Small pieces every intent that ends on chain shares (sends, swaps): attempt numbering, receipts as JSON, the gas
 // price a wallet transaction offers, and whether a failed broadcast certainly never left.
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { PublicClient, TransactionReceipt } from "viem";
 
 import { MIN_MAX_FEE_PER_GAS_GWEI } from "@kawase/config";
-import { txAttempts, type Db } from "@kawase/db";
+import { intents, txAttempts, type Db } from "@kawase/db";
 
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 export type Executor = Db | Tx;
@@ -21,6 +21,12 @@ export const receiptSummary = (receipt: TransactionReceipt) => ({
   gasUsed: receipt.gasUsed,
   effectiveGasPrice: receipt.effectiveGasPrice,
 });
+
+/** Whether a money intent with this id exists: an automation run fixes its id before the work, so a retry can tell. */
+export async function intentExists(executor: Executor, intentId: string) {
+  const [row] = await executor.select({ id: intents.id }).from(intents).where(eq(intents.id, intentId)).limit(1);
+  return Boolean(row);
+}
 
 export async function nextAttemptNo(executor: Executor, intentId: string) {
   const [row] = await executor

@@ -3,7 +3,9 @@
 // ERC-20, once (an ERC-20 call also logs from 0x3600…, which would double count — context/01-arc/gotchas.md #23);
 // EURC from its own contract. Each log becomes one row (unique per chain, tx, log), then an inbox item, and pays an
 // open request when it matches one exactly. It runs inside the api for now and moves to apps/chain-watcher when the
-// executor lands (Stage 8); the cursor and the unique rows make a repeat or a restart harmless.
+// executor lands (Stage 8); the cursor and the unique rows make a repeat or a restart harmless. Money that arrives
+// wakes the person's Auto-save (its next check is now), so what lands above their line starts earning within a tick;
+// money coming back from their own savings is not money received from someone.
 import { and, eq, inArray } from "drizzle-orm";
 import { getAddress, parseAbiItem, type Address, type Log } from "viem";
 
@@ -13,7 +15,7 @@ import {
   WATCH_HEAD_LAG_BLOCKS,
   WATCH_MAX_BLOCKS,
 } from "@kawase/config";
-import { chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, type Db } from "@kawase/db";
+import { automations, chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, type AutoSaveAction, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS, USDC_NATIVE_DECIMALS, rescale } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
@@ -130,6 +132,11 @@ export class IncomingWatcher {
         .from(txAttempts)
         .where(and(eq(txAttempts.userId, userId), eq(txAttempts.chainId, chainId), eq(txAttempts.txHash, entry.transactionHash!.toLowerCase())));
       if (own) return;
+      const saves = await tx
+        .select({ id: automations.id, status: automations.status, action: automations.action })
+        .from(automations)
+        .where(and(eq(automations.userId, userId), eq(automations.network, network), eq(automations.kind, "auto_save")));
+      if (saves.some((save) => (save.action as AutoSaveAction).vault.toLowerCase() === from.toLowerCase())) return;
       const name = await this.senderName(tx, userId, from);
       await this.inbox.add(tx, {
         userId,
@@ -141,6 +148,8 @@ export class IncomingWatcher {
       });
       const paid = await this.requests.matchIncoming(tx, { userId, network, asset, amount, txHash: entry.transactionHash!, from: getAddress(from) });
       if (paid) await tx.update(chainEvents).set({ matchedRequestId: paid.id }).where(eq(chainEvents.id, inserted.id));
+      const awake = saves.filter((save) => save.status === "active").map((save) => save.id);
+      if (asset === "USDC" && awake.length > 0) await tx.update(automations).set({ nextRunAt: new Date() }).where(inArray(automations.id, awake));
     });
   }
 

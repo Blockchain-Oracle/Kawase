@@ -117,9 +117,10 @@ test("automations on Arc testnet: unattended runs, bounded on chain", { skip: !l
   assert.equal(draft.periodSeconds, 86_400);
 
   // 2. On: the wallet signs the grant (pinned to Alex, 0.05 a day).
-  const grant = (await (await call("POST", `/automations/${draft.id}/grant`)).json()) as { grantId: string; typedData: Parameters<typeof wallet.signTypedData>[0] };
-  const signature = await wallet.signTypedData(grant.typedData);
-  const on = ((await (await call("POST", `/automations/${draft.id}/activate`, { grantId: grant.grantId, signature })).json()) as { automation: AutomationView }).automation;
+  const grant = (await (await call("POST", `/automations/${draft.id}/grant`)).json()) as { grants: { grantId: string; typedData: Parameters<typeof wallet.signTypedData>[0] }[] };
+  assert.equal(grant.grants.length, 1);
+  const signature = await wallet.signTypedData(grant.grants[0]!.typedData);
+  const on = ((await (await call("POST", `/automations/${draft.id}/activate`, { signatures: [{ grantId: grant.grants[0]!.grantId, signature }] })).json()) as { automation: AutomationView }).automation;
   assert.equal(on.status, "active");
   assert.equal(on.grant?.status, "active");
 

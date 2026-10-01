@@ -3,7 +3,7 @@
 // named after the device's real check.
 import * as React from "react";
 
-import type { AutomationSchedule, AutomationView } from "@kawase/api-client";
+import type { AutomationRunView, AutomationSchedule, AutomationView } from "@kawase/api-client";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
@@ -45,12 +45,27 @@ export function useBoundText() {
   const { t } = useT();
   const { locale } = useLocale();
   const money = useMoney();
-  return (automation: AutomationView) =>
-    t("automation.bound", {
-      amount: money(automation.action.asset, automation.maxPerPeriod),
-      per: t(PER[automation.schedule.every]),
-      date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt)),
-    });
+  return (automation: AutomationView) => {
+    const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt));
+    if (automation.save) return t("automation.saveBound", { vault: automation.save.vaultName, date });
+    return t("automation.bound", { amount: money(automation.action?.asset ?? "USDC", automation.maxPerPeriod), per: t(PER[automation.schedule.every]), date });
+  };
+}
+
+/** What one run did, in words: sent, or for Auto-save how much it saved or topped up. */
+export function useRunLabel() {
+  const { t } = useT();
+  const money = useMoney();
+  const reasonText = useRunReason();
+  return (run: AutomationRunView, automation: AutomationView) => {
+    if (run.status === "skipped") return `${t("automation.runSkipped")} · ${reasonText(run.reason, run.reasonParams, automation.network)}`;
+    if (run.status === "failed") return t("automation.runFailed");
+    if (automation.kind === "auto_save") {
+      if (run.status === "executing" || !run.move) return t("automation.runMoving");
+      return t(run.move.direction === "in" ? "automation.runSaved" : "automation.runToppedUp", { amount: money("USDC", run.move.amount) });
+    }
+    return run.status === "succeeded" ? t("automation.runSucceeded") : t("automation.runExecuting");
+  };
 }
 
 /** Why a run did not go: Kawase's own reasons, or the send rule that stopped it. */

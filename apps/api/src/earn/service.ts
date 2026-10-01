@@ -7,6 +7,9 @@
 // ceiling (shares a withdrawal may burn), all hashed. Approving: App Kit builds approve + its adapter's `execute`,
 // Kawase checks the calls against the version (`checkEarnCalls`), and the wallet sends them to itself as one
 // transaction (one Face ID). Tracking: done only when the receipt's transfers match the version.
+//
+// Auto-save (Stage 8b) moves through here too: `runSave` drafts the move the same way, and Kawase's ops wallet sends
+// it under the person's save grants (only between the wallet and its own position); the same witness settles it.
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
@@ -46,7 +49,7 @@ import type {
 } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import { checkEarnCalls, type EarnVault, type SwapCall } from "@kawase/integrations-app-kit";
-import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
+import { encodeRedeemSave, encodeSelfBatch, isWalletSetUp, type SaveGrants } from "@kawase/integrations-delegation";
 import { DRAFTABLE_STATES, earnDraftHash, loadEarnDraft, storeEarnDraft, type EarnDraft, type IntentState, type StoredEarnDraft } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
@@ -55,8 +58,9 @@ import { evaluateEarn, type EarnEvaluation, type PolicyResult } from "@kawase/po
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
-import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
+import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
+import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -109,6 +113,7 @@ export class EarnService {
     private readonly wallets: WalletService,
     private readonly engine: EarnEngine,
     private readonly log: Logger,
+    private readonly ops?: OpsExecutor | undefined,
   ) {}
 
   private clients(network: NetworkId): NetworkClients {
@@ -127,6 +132,12 @@ export class EarnService {
       ? await Promise.all(vaults.map(async (vault) => ({ vault, ...(await this.engine.position(client, vault.address, wallet).catch(() => ({ shares: ZERO, assets: ZERO }))) })))
       : [];
     return { vaults, positions: positions.filter((entry) => entry.shares > ZERO) };
+  }
+
+  /** The vaults on a network and the non-empty positions a wallet holds (for Auto-save's draft, view and runs). */
+  async holdingsOn(networkId: NetworkId, wallet: Address | undefined) {
+    const { network, client } = this.clients(networkId);
+    return this.holdings(network, client, wallet);
   }
 
   async overview(user: SessionUser): Promise<{ vaults: EarnVaultView[]; positions: EarnPositionView[] }> {
@@ -520,6 +531,156 @@ export class EarnService {
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }
 
+  // ── Auto-save (Stage 8b) ────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * One Auto-save move, sent by the ops wallet under the person's save grants: into the wallet's own position ("in":
+   * approve exactly the amount, deposit it for the wallet) or back to the wallet ("out": withdraw to the wallet). It is
+   * drafted with the vault's own preview like any earn move, recorded as an earn intent from the automation, and
+   * settled by the same receipt witness.
+   */
+  async runSave(input: {
+    userId: string;
+    network: NetworkId;
+    /** The run's own id for this move, fixed when the check was claimed: a retry resumes it, never repeats it. */
+    intentId: string;
+    grants: SaveGrants;
+    vault: Address;
+    direction: "in" | "out";
+    amount: bigint;
+  }): Promise<{ status: "executing"; intentId: string; resumed: boolean } | { status: "skipped"; reason: string }> {
+    if (await intentExists(this.db, input.intentId)) return { status: "executing", intentId: input.intentId, resumed: true };
+    if (!this.ops) return { status: "skipped", reason: "NOT_AVAILABLE_YET" };
+    const { client, network, ops } = this.clients(input.network);
+    const wallet = (await this.wallets.userWallet(input.userId))?.address as Address | undefined;
+    if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
+    const deposit = input.direction === "in";
+    const vaults = await this.engine.vaults(network).catch(() => [] as EarnVault[]);
+    const vault = vaults.find((entry) => same(entry.address, input.vault));
+    if (!vault || (deposit && (vault.status === "paused" || vault.status === "deprecated"))) return { status: "skipped", reason: "VAULT_UNAVAILABLE" };
+    const [preview, position] = await Promise.all([
+      this.engine.preview(client, vault.address, input.amount).catch(() => undefined),
+      this.engine.position(client, vault.address, wallet).catch(() => ({ shares: ZERO, assets: ZERO })),
+    ]);
+    if (!preview) return { status: "skipped", reason: "QUOTE_UNAVAILABLE" };
+    const ceiling = (preview.sharesOut * EARN_SHARES_CEILING_BPS) / BPS;
+    const draft: EarnDraft = {
+      chainId: network.chainId,
+      from: wallet,
+      vault: getAddress(vault.address),
+      action: deposit ? "deposit" : "withdraw",
+      amount: input.amount,
+      maxIn: deposit ? input.amount : ceiling < position.shares ? ceiling : position.shares,
+      minOut: deposit ? (preview.sharesIn * EARN_FLOOR_BPS) / BPS : (input.amount * EARN_FLOOR_BPS) / BPS,
+      // The ops wallet pays the gas; the person pays nothing.
+      maxFee: ZERO,
+    };
+    const after = deposit ? position.assets + input.amount : position.assets > input.amount ? position.assets - input.amount : ZERO;
+    const view: EarnDraftView = {
+      action: draft.action,
+      vault: vaultView(vault),
+      amount: input.amount.toString(),
+      minReceived: deposit ? input.amount.toString() : draft.minOut.toString(),
+      positionAfter: after.toString(),
+      yearlyEarnings: parseUnits((Number(formatUnits(after, USDC_DECIMALS)) * vault.apy).toFixed(YIELD_DIGITS), USDC_DECIMALS).toString(),
+      networkFee: "0",
+      quotedAt: new Date().toISOString(),
+    };
+    const draftHash = earnDraftHash(draft);
+    const call = encodeRedeemSave(network, input.grants, { direction: input.direction, amount: input.amount, wallet, usdc: network.addresses.usdc, vault: draft.vault });
+    const request: StoredEarnRequest = { action: draft.action, vault: draft.vault, amount: formatUnits(input.amount, USDC_DECIMALS) };
+
+    const prepared = await this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${input.userId}:${input.network}`}, 0))`);
+      if (await intentExists(tx, input.intentId)) return undefined;
+      const [intent] = await tx
+        .insert(intents)
+        .values({ id: input.intentId, userId: input.userId, network: input.network, kind: "earn", originSurface: "automation", state: "executing", request, currentDraftVersion: 1, expiresAt: later(INTENT_TTL_S) })
+        .returning({ id: intents.id });
+      const intentId = intent!.id;
+      await tx.insert(intentDrafts).values({
+        intentId,
+        version: 1,
+        payload: { draft: storeEarnDraft(draft), view } as unknown as Record<string, unknown>,
+        draftHash,
+        policyReport: { results: [], blocking: null },
+        route: "automation",
+        createdBy: "system",
+      });
+      await tx.insert(approvals).values({
+        intentId,
+        draftVersion: 1,
+        draftHash,
+        userId: input.userId,
+        network: input.network,
+        route: "automation",
+        signerAddress: wallet,
+        status: "approved",
+        decidedViaSurface: "automation",
+        expiresAt: later(APPROVAL_TTL_S),
+      });
+      const [attempt] = await tx
+        .insert(txAttempts)
+        .values({
+          userId: input.userId,
+          intentId,
+          network: input.network,
+          chainId: network.chainId,
+          attemptNo: 1,
+          kind: `earn_${draft.action}`,
+          provider: "circle_dcw",
+          idempotencyKey: randomUUID(),
+          fromAddress: ops.address,
+          toAddress: call.to,
+          status: "prepared",
+          receipt: { prepared: { to: call.to, data: call.data } },
+        })
+        .returning({ id: txAttempts.id });
+      return { intentId, attemptId: attempt!.id };
+    });
+    if (!prepared) return { status: "executing", intentId: input.intentId, resumed: true };
+    await this.submitToOps(prepared.intentId);
+    void this.follow(prepared.intentId);
+    return { status: "executing", intentId: prepared.intentId, resumed: false };
+  }
+
+  /** Hands a prepared ops attempt to Circle once; Circle de-duplicates on the attempt's idempotency key. */
+  private async submitToOps(intentId: string) {
+    const attempt = await this.latestAttempt(intentId);
+    if (!this.ops || !attempt || attempt.provider !== "circle_dcw" || attempt.providerRef) return;
+    const prepared = (attempt.receipt as { prepared?: { to: Address; data: Hex } } | null)?.prepared;
+    if (!prepared) return;
+    const { ops } = this.clients(attempt.network);
+    try {
+      const sent = await this.ops.execute({ network: attempt.network, walletId: ops.walletId, contract: prepared.to, callData: prepared.data, idempotencyKey: attempt.idempotencyKey, refId: `${intentId}:v1` });
+      await this.db.update(txAttempts).set({ providerRef: sent.id, status: "submitted" }).where(eq(txAttempts.id, attempt.id));
+    } catch (error) {
+      const e = error as { status?: number; code?: number; message?: string };
+      const definitive = typeof e.status === "number" && e.status >= HTTP.badRequest && e.status < HTTP.internal && e.status !== HTTP.tooManyRequests;
+      this.log.warn({ intentId, status: e.status, code: e.code, message: e.message }, "ops execute failed");
+      if (definitive) await this.settleFailed(intentId, attempt.id, "not_sent", `circle ${e.code ?? e.status}`);
+      else await this.db.update(txAttempts).set({ errorCode: "ops_unclear" }).where(eq(txAttempts.id, attempt.id));
+    }
+  }
+
+  /** An ops attempt's hash, once Circle has one; settles it as not sent if Circle gave up before sending. */
+  private async opsHash(intent: IntentRow, attempt: AttemptRow): Promise<Hex | undefined> {
+    if (attempt.txHash) return attempt.txHash as Hex;
+    if (!this.ops) return undefined;
+    if (!attempt.providerRef) {
+      await this.submitToOps(intent.id);
+      return undefined;
+    }
+    const transaction = await this.ops.get(intent.network, attempt.providerRef);
+    if (transaction.txHash) {
+      const hash = transaction.txHash.toLowerCase() as Hex;
+      await this.db.update(txAttempts).set({ txHash: hash, status: "pending_chain" }).where(eq(txAttempts.id, attempt.id));
+      return hash;
+    }
+    if (transaction.state === "failed") await this.settleFailed(intent.id, attempt.id, "not_sent", transaction.error ?? "failed");
+    return undefined;
+  }
+
   // ── Tracking ────────────────────────────────────────────────────────────────────────────────────────────────
 
   private async follow(intentId: string) {
@@ -539,11 +700,14 @@ export class EarnService {
     try {
       const [intent] = await this.db.select().from(intents).where(eq(intents.id, intentId));
       if (!intent || (intent.state !== "executing" && intent.state !== "unknown_outcome")) return true;
-      const attempt = await this.latestAttempt(intentId);
-      if (!attempt?.txHash) return false;
+      const latest = await this.latestAttempt(intentId);
+      if (!latest) return false;
+      const hash = latest.provider === "circle_dcw" ? await this.opsHash(intent, latest) : (latest.txHash as Hex | null);
+      if (!hash) return latest.provider === "circle_dcw" && (await this.latestAttempt(intentId))?.status === "not_sent";
+      const attempt = { ...latest, txHash: hash };
       await this.db.update(txAttempts).set({ lastReconciledAt: new Date() }).where(eq(txAttempts.id, attempt.id));
       const { client, network } = this.clients(intent.network);
-      const receipt = await client.getTransactionReceipt({ hash: attempt.txHash as Hex }).catch(() => undefined);
+      const receipt = await client.getTransactionReceipt({ hash }).catch(() => undefined);
       if (!receipt) {
         if (intent.state === "executing" && attempt.createdAt.getTime() < Date.now() - ms(SEND_UNKNOWN_AFTER_S)) {
           await this.db.update(intents).set({ state: "unknown_outcome" }).where(and(eq(intents.id, intentId), eq(intents.state, "executing")));
@@ -616,7 +780,7 @@ export class EarnService {
 }
 
 /** A decimal USDC string from App Kit ("1000000.0", sometimes with more than six places) → base units, truncated. */
-function usdcUnits(decimal: string): bigint {
+export function usdcUnits(decimal: string): bigint {
   const [whole = "0", fraction = ""] = decimal.split(".");
   return parseUnits(`${whole}.${fraction.slice(0, USDC_DECIMALS) || "0"}`, USDC_DECIMALS);
 }

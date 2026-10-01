@@ -484,15 +484,38 @@ export type AutomationRunView = {
   /** Why it was skipped or failed (a policy reason code) and its display values. */
   reason: string | null;
   reasonParams: Record<string, string> | null;
+  /** Auto-save: what the run moved, into savings ("in") or back to the wallet ("out"), in USDC base units. */
+  move: { direction: "in" | "out"; amount: string } | null;
   tx: { hash: string; explorerUrl: string } | null;
+};
+
+/** Auto-save: keep `keep` ready in the wallet; above it goes into the person's own position in one vault, below it comes back. */
+export type AutoSaveView = {
+  vault: string;
+  vaultName: string;
+  /** The vault's protocol ("morpho"), for its mark. */
+  protocol: string;
+  /** Yearly yield now, e.g. 0.042. */
+  apy: number;
+  /** USDC base units kept ready in the wallet. */
+  keep: string;
+  /** Refill the wallet from savings when it drops below `keep`. */
+  topUp: boolean;
+  /** In savings now (USDC base units). */
+  saved: string;
+  /** What a check right now would move, if anything. */
+  now: { direction: "in" | "out"; amount: string } | null;
 };
 
 export type AutomationView = {
   id: string;
   network: NetworkId;
   status: "draft" | "active" | "paused" | "canceled" | "ended";
-  kind: "scheduled_send";
+  kind: "scheduled_send" | "auto_save";
   schedule: AutomationSchedule;
+  /** Auto-save only. */
+  save: AutoSaveView | null;
+  /** A scheduled send only. */
   action: {
     recipientWords: string;
     recipientAddress: string | null;
@@ -501,7 +524,7 @@ export type AutomationView = {
     /** Base units per run. */
     amount: string;
     note: string | null;
-  };
+  } | null;
   /** The next few runs (ISO), while it is a draft or on. */
   nextRuns: string[];
   /** The most that can ever leave per period, enforced on chain by the grant, and the period. */
@@ -530,6 +553,21 @@ export type AutomationInput = {
   timezone?: string | undefined;
   note?: string | null | undefined;
 };
+
+export type AutoSaveInput = {
+  /** Decimal USDC to keep ready in the wallet; Kawase's default when not said. */
+  keep?: string | undefined;
+  /** A vault from the earn overview; the best one (or the one already used) when not said. */
+  vault?: string | undefined;
+  /** Refill the wallet from savings when it drops below `keep` (on unless the person said not to). */
+  topUp?: boolean | undefined;
+  every?: "day" | "week" | "month" | undefined;
+  time?: string | undefined;
+  timezone?: string | undefined;
+};
+
+/** The grants that turn an automation on: one for a scheduled send, three for Auto-save; one Face ID signs them all. */
+export type AutomationGrantRequest = { grants: { grantId: string; typedData: unknown }[]; receipts: unknown[] };
 
 // ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
 

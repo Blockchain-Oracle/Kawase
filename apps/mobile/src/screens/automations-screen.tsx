@@ -43,9 +43,11 @@ function AutomationItem({ initial }: { initial: AutomationView }) {
               <Button size="sm" variant="secondary" disabled={controller.busy} onPress={() => void controller.pause()}>
                 <Text>{t("automation.pause")}</Text>
               </Button>
-              <Button size="sm" variant="secondary" disabled={controller.busy} onPress={() => void controller.skip()}>
-                <Text>{t("automation.skipNext")}</Text>
-              </Button>
+              {automation.kind === "scheduled_send" ? (
+                <Button size="sm" variant="secondary" disabled={controller.busy} onPress={() => void controller.skip()}>
+                  <Text>{t("automation.skipNext")}</Text>
+                </Button>
+              ) : null}
             </>
           ) : (
             <Button size="sm" variant="secondary" disabled={controller.busy} onPress={() => void controller.resume()}>

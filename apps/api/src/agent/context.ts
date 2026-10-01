@@ -150,10 +150,19 @@ export function buildAgentContext(input: {
 
     async draftAutomation(request) {
       if (user.isAnonymous) {
-        const automation = { id: "", network, status: "draft", kind: "scheduled_send", schedule: { every: request.every, time: request.time ?? "09:00", timezone: request.timezone ?? user.timezone }, action: { recipientWords: request.recipient, recipientAddress: null, recipientName: null, asset: request.asset ?? "USDC", amount: "0", note: null }, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
+        const automation = { id: "", network, status: "draft", kind: "scheduled_send", schedule: { every: request.every, time: request.time ?? "09:00", timezone: request.timezone ?? user.timezone }, save: null, action: { recipientWords: request.recipient, recipientAddress: null, recipientName: null, asset: request.asset ?? "USDC", amount: "0", note: null }, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
         return { automation: automation as never, summary: summarizeAutomation(automation as never) };
       }
       const automation = await automations.create(user, request, { threadId });
+      return { automation, summary: summarizeAutomation(automation) };
+    },
+
+    async draftAutoSave(request) {
+      if (user.isAnonymous) {
+        const automation = { id: "", network, status: "draft", kind: "auto_save", schedule: { every: "day", time: "09:00", timezone: user.timezone }, save: null, action: null, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
+        return { automation: automation as never, summary: summarizeAutomation(automation as never) };
+      }
+      const automation = await automations.createAutoSave(user, request, { threadId });
       return { automation, summary: summarizeAutomation(automation) };
     },
 

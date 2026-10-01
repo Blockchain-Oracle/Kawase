@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "summary": {
+    "errors": 0,
+    "warnings": 4,
+    "suggestions": 10
+  },
+  "filesReviewed": 160,
+  "findings": [
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/app/dev/art.tsx",
+      "line": 56,
+      "column": 37,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/app/dev/art.tsx",
+      "line": 70,
+      "column": 84,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/app/dev/art.tsx",
+      "line": 71,
+      "column": 87,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "a11y-autofocus",
+      "severity": "warning",
+      "category": "accessibility",
+      "file": "apps/mobile/src/screens/handle-screen.tsx",
+      "line": 134,
+      "column": 11,
+      "message": "Automatic focus can disorient keyboard and screen-reader users.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "a11y-autofocus",
+      "severity": "warning",
+      "category": "accessibility",
+      "file": "apps/mobile/src/send/recipient-step.tsx",
+      "line": 228,
+      "column": 15,
+      "message": "Automatic focus can disorient keyboard and screen-reader users.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "a11y-autofocus",
+      "severity": "warning",
+      "category": "accessibility",
+      "file": "apps/mobile/src/sign-in/sign-in-sheet.tsx",
+      "line": 261,
+      "column": 17,
+      "message": "Automatic focus can disorient keyboard and screen-reader users.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 45,
+      "column": 38,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 50,
+      "column": 30,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 100,
+      "column": 55,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 103,
+      "column": 32,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 119,
+      "column": 54,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 134,
+      "column": 54,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "design-hardcoded-color",
+      "severity": "info",
+      "category": "design-system",
+      "file": "apps/mobile/src/spike/wallet-screen.native.tsx",
+      "line": 217,
+      "column": 32,
+      "message": "Hardcoded color may drift from project design tokens.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    },
+    {
+      "ruleId": "a11y-autofocus",
+      "severity": "warning",
+      "category": "accessibility",
+      "file": "apps/mobile/src/wallet/web-approval-host.tsx",
+      "line": 111,
+      "column": 13,
+      "message": "Automatic focus can disorient keyboard and screen-reader users.",
+      "confidence": 0.9,
+      "autofix": false,
+      "fixable": false
+    }
+  ],
+  "fixed": []
+}

@@ -1,6 +1,7 @@
 // Home's way into earning, under the balance: what the person already has in vaults, or what their USDC could earn
-// in the best active vault now. One row, the protocol's real mark, the yield in words; it opens /earn.
-import { useRouter } from "expo-router";
+// in the best active vault now. One row, the protocol's real mark, the yield in words; it opens /earn. Positions are
+// read again whenever Home comes into view: Auto-save moves money in and out without the person doing anything.
+import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -25,7 +26,12 @@ export function EarnEntry() {
   const router = useRouter();
   const money = useMoney();
   const percent = usePercent();
-  const { best, held, positions } = useEarnOverview();
+  const { best, held, positions, refresh } = useEarnOverview();
+  useFocusEffect(
+    React.useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
   if (!best && held === ZERO) return null;
   const title = held > ZERO ? t("earn.homePosition", { amount: money("USDC", held.toString()) }) : t("earn.homeCta", { apy: percent(best!.apy) });
   const subtitle = held > ZERO ? t("earn.earningAbout", { apy: percent(positions[0]?.apy ?? best?.apy ?? 0) }) : best!.name;

@@ -36,6 +36,8 @@ export const REASONS = {
   OVER_POSITION: "precondition",
   /** The vault cannot pay that much out right now (its liquidity is lent). */
   VAULT_LIQUIDITY_SHORT: "precondition",
+  /** Auto-save is already on here: one at a time (turn the old one off first). */
+  AUTO_SAVE_EXISTS: "precondition",
   // Clarifications: one question.
   RECIPIENT_MISSING: "clarification",
   RECIPIENT_UNKNOWN: "clarification",

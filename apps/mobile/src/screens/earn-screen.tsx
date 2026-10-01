@@ -33,6 +33,7 @@ import { useEarnApproveLabel, useEarnPolicyText, useEarnPrompt, usePercent } fro
 import { EarnReview } from "@/earn/earn-review";
 import { EarnStatus } from "@/earn/earn-status";
 import { useEarn } from "@/earn/use-earn";
+import { AutoSaveCard } from "@/earn/auto-save-card";
 import { useEarnOverview } from "@/earn/use-earn-overview";
 import { VaultRow } from "@/earn/vault-row";
 import { useFund } from "@/fund/fund-provider";
@@ -353,6 +354,8 @@ export function EarnScreen() {
           <Text className="text-muted-foreground text-center text-sm">{t("earn.heroBody")}</Text>
           {testnet ? <Text className="text-muted-foreground text-center text-xs">{t("earn.testnetVaults")}</Text> : null}
         </View>
+
+        <AutoSaveCard />
 
         {overview.positions.length > 0 ? (
           <View className="gap-2">

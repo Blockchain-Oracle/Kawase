@@ -31,7 +31,9 @@ import type {
   SwapIntent,
   SwapRequest,
   BridgeApproveResponse,
+  AutomationGrantRequest,
   AutomationInput,
+  AutoSaveInput,
   AutomationView,
   EarnApproveResponse,
   EarnIntent,
@@ -245,10 +247,12 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       get: (id: string) => call<{ automation: AutomationView }>("GET", `/automations/${id}`),
       /** A draft: the read-back, the next runs and the most that can ever go per period. Nothing runs yet. */
       create: (input: AutomationInput) => call<{ automation: AutomationView }>("POST", "/automations", input),
-      /** The grant to sign (typed data) that turns it on; Face ID, then `activate`. */
-      grant: (id: string) => call<{ grantId: string; typedData: unknown; receipt: unknown }>("POST", `/automations/${id}/grant`),
-      activate: (id: string, grantId: string, signature: string) =>
-        call<{ automation: AutomationView }>("POST", `/automations/${id}/activate`, { grantId, signature }),
+      /** Auto-save's draft: what it keeps ready, the vault, and what a check right now would move. */
+      autoSave: (input: AutoSaveInput) => call<{ automation: AutomationView }>("POST", "/automations/auto-save", input),
+      /** The grants to sign (typed data) that turn it on; one Face ID, then `activate` with every signature. */
+      grant: (id: string) => call<AutomationGrantRequest>("POST", `/automations/${id}/grant`),
+      activate: (id: string, signatures: { grantId: string; signature: string }[]) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/activate`, { signatures }),
       pause: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/pause`),
       resume: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/resume`),
       skip: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/skip`),

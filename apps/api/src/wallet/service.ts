@@ -20,6 +20,7 @@ import {
   buildAllowanceGrant,
   describeGrant,
   encodeRevoke,
+  encodeSelfBatch,
   grantTypedData,
   isWalletSetUp,
   setupAuthorizationRequest,
@@ -39,6 +40,8 @@ const MS_PER_SECOND = 1000;
 /** An allowance lives this long before the app asks for a fresh signature. */
 const ALLOWANCE_TTL_DAYS = 90;
 const REVOKE_GAS_LIMIT = 200_000n;
+/** Each further grant revoked in the same batch. */
+const REVOKE_EACH_GAS = 120_000n;
 const ZERO = 0n;
 
 const jsonSafe = (value: unknown) =>
@@ -53,8 +56,8 @@ export type PendingTransaction = {
   to: Address;
   data: Hex;
   nonce: number;
-  /** For revoking one grant (an automation's): which. */
-  grantId?: string | undefined;
+  /** For revoking an automation's grants: which. */
+  grantIds?: string[] | undefined;
 };
 
 export class WalletService {
@@ -408,15 +411,26 @@ export class WalletService {
   }
 
   /** An unsigned transaction that revokes one grant (an automation's) on chain; the wallet signs it. */
-  async revokeGrantRequest(userId: string, grantId: string) {
-    const [grant] = await this.db
+  /**
+   * Revoking an automation's grants: one grant is one `disableDelegation`; several (Auto-save's three) go as one batch
+   * the wallet sends to itself, so it is still one transaction and one Face ID.
+   */
+  async revokeGrantsRequest(userId: string, grantIds: string[]) {
+    if (grantIds.length === 0) return null;
+    const rows = await this.db
       .select()
       .from(grants)
-      .where(and(eq(grants.id, grantId), eq(grants.userId, userId)));
-    if (!grant || grant.status !== "active") return null;
-    const { network: context } = this.clients(grant.network);
-    const call = encodeRevoke(context, grant.delegation as never);
-    return this.unsignedTransaction(userId, grant.network, "revoke_grant", call.to, call.data, REVOKE_GAS_LIMIT, { grantId });
+      .where(and(inArray(grants.id, grantIds), eq(grants.userId, userId), eq(grants.status, "active")));
+    const [first] = rows;
+    if (!first) return null;
+    const { network: context } = this.clients(first.network);
+    const ids = rows.map((row) => row.id);
+    const calls = rows.map((row) => encodeRevoke(context, row.delegation as never));
+    if (calls.length === 1) return this.unsignedTransaction(userId, first.network, "revoke_grant", calls[0]!.to, calls[0]!.data, REVOKE_GAS_LIMIT, { grantIds: ids });
+    const wallet = await this.requireWallet(userId);
+    const data = encodeSelfBatch(calls.map((call) => ({ ...call, value: ZERO })));
+    const gas = REVOKE_GAS_LIMIT + REVOKE_EACH_GAS * BigInt(calls.length - 1);
+    return this.unsignedTransaction(userId, first.network, "revoke_grant", wallet.address, data, gas, { grantIds: ids });
   }
 
   private async unsignedTransaction(
@@ -435,7 +449,8 @@ export class WalletService {
       client.estimateFeesPerGas(),
     ]);
     const id = newId();
-    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce, grantId: typeof extra.grantId === "string" ? extra.grantId : undefined });
+    const grantIds = Array.isArray(extra.grantIds) ? (extra.grantIds as string[]) : undefined;
+    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce, grantIds });
     return {
       requestId: id,
       ...extra,
@@ -497,11 +512,11 @@ export class WalletService {
       .update(txAttempts)
       .set({ txHash: hash, status, receipt: jsonSafe(receipt) })
       .where(eq(txAttempts.id, attemptId));
-    if (pending.kind === "revoke_grant" && pending.grantId && status === "confirmed") {
+    if (pending.kind === "revoke_grant" && pending.grantIds?.length && status === "confirmed") {
       await this.db
         .update(grants)
         .set({ status: "revoked", revokeTxAttemptId: attemptId })
-        .where(and(eq(grants.id, pending.grantId), eq(grants.userId, userId)));
+        .where(and(inArray(grants.id, pending.grantIds), eq(grants.userId, userId)));
     }
     if (pending.kind === "revoke_allowance" && status === "confirmed") {
       await this.db

@@ -149,6 +149,17 @@ export function buildTools(context: AgentContext) {
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    draft_auto_save: tool({
+      description:
+        "Draft Auto-save: keep an amount of USDC ready in the wallet and put the rest into the person's own savings in a vault, checked every day and whenever money arrives; when the wallet drops below the amount, savings top it up. Pass keep only if the person said an amount (digits with a dot), a vault only if they chose one from get_earn, and topUp false only if they said not to refill. Kawase picks the vault (the one they already use, else the best active one), checks everything and shows a card with what it keeps, where the rest goes, what would move right now, and the bound: only between their wallet and their own savings. The person turns it on on the card with Face ID; nothing moves from this call.",
+      inputSchema: z.object({
+        keep: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC to keep ready, digits with a dot; omit if they did not say"),
+        vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Only a vault address from get_earn the person chose"),
+        topUp: z.boolean().optional().describe("false only if they said not to refill the wallet from savings"),
+      }),
+      execute: async (input) => context.draftAutoSave(input),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     create_payment_request: tool({
       description:
         "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",

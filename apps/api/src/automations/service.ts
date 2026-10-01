@@ -1,6 +1,12 @@
 // Automations (Stage 8; MASTER-PLAN "Automations + delegated authority"): "every Tuesday send $1 to Alex", run by
 // Kawase without asking again, bounded on chain by the automation's own grant.
 //
+// Auto-save (8b) is the second kind: "keep $20 ready, the rest earns". Its grants (three, signed with one Face ID)
+// only let Kawase move USDC between the wallet and the wallet's own position in one vault. It is checked on its
+// schedule and whenever money arrives (the incoming watcher pulls the next check forward): above what it keeps, the
+// rest goes into savings; below it (when topping up is on), savings refill the wallet. Moves are earn intents sent by
+// the ops wallet and settled by the earn witness.
+//
 // Drafting: who (resolved by the send rules: a contact, an @handle, or an address the person typed), how much, and
 // when (every day / week on a weekday / month on a day, at a local time in the person's zone — 09:00 and their own
 // zone when not said: inferred, never asked); the next three runs and the most that can ever leave per period.
@@ -10,30 +16,52 @@
 // automation and time), checks the send rules again on fresh facts, and has the ops wallet redeem that grant; a
 // run that cannot go is skipped with its reason and the person is told. Pausing stops runs at once; cancelling
 // stops them and hands the wallet the revoke transaction for the grant.
-import { randomBytes } from "node:crypto";
-import { and, asc, desc, eq, inArray, lte } from "drizzle-orm";
-import { getAddress, hashTypedData, verifyTypedData, type Address, type Hex, type TypedDataDefinition } from "viem";
+import { randomBytes, randomUUID } from "node:crypto";
+import { and, asc, desc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { getAddress, hashTypedData, parseUnits, verifyTypedData, type Address, type Hex, type TypedDataDefinition } from "viem";
 
-import { MS_PER_SECOND } from "@kawase/config";
-import type { AutomationInput, AutomationRunView, AutomationView, TransactionRequestResponse } from "@kawase/api-client";
+import { AUTO_SAVE_DEFAULT_KEEP, AUTO_SAVE_MIN_MOVE, GAS_FLOAT_USDC_BASE_UNITS, MS_PER_SECOND } from "@kawase/config";
+import type {
+  AutoSaveInput,
+  AutoSaveView,
+  AutomationGrantRequest,
+  AutomationInput,
+  AutomationRunView,
+  AutomationView,
+  TransactionRequestResponse,
+} from "@kawase/api-client";
 import {
   automationRuns,
   automations,
   grants,
   intents,
   txAttempts,
+  users,
+  type AutoSaveAction,
   type AutomationAction,
+  type AutomationMove,
   type AutomationSchedule,
   type Db,
 } from "@kawase/db";
-import { buildAutomationGrant, describeGrant, grantTypedData, isWalletSetUp, withSignature } from "@kawase/integrations-delegation";
+import {
+  SAVE_PURPOSES,
+  buildAutomationGrant,
+  buildSaveGrants,
+  describeGrant,
+  grantTypedData,
+  isWalletSetUp,
+  withSignature,
+  type SaveGrants,
+  type SavePurpose,
+} from "@kawase/integrations-delegation";
 import { isValidTimeZone, nextRuns, schedulePeriodSeconds } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import type { AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
-import { evaluateAutomation, type PolicyResult } from "@kawase/policy";
+import { evaluateAutoSave, evaluateAutomation, type PolicyResult } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
+import { usdcUnits, type EarnService } from "../earn/service";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
 import { jsonSafe } from "../intents/chain";
@@ -45,6 +73,9 @@ import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 
 type AutomationRow = typeof automations.$inferSelect;
+type RunRow = typeof automationRuns.$inferSelect;
+type GrantRow = typeof grants.$inferSelect;
+type ScheduleInput = Pick<AutomationInput, "every" | "weekday" | "monthday" | "time" | "timezone">;
 
 const DEFAULT_TIME = "09:00";
 /** "HH:MM". */
@@ -61,6 +92,31 @@ const MAX_WEEKDAY = 6;
 const MAX_MONTHDAY = 28;
 
 const nowSeconds = () => Math.floor(Date.now() / MS_PER_SECOND);
+const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+/** Auto-save's runs that found nothing to move: kept (each check is claimed once) but not shown. */
+const NOTHING_TO_MOVE = "NOTHING_TO_MOVE";
+/** Reasons a run stops without telling the person (they chose it, or there was nothing to do). */
+const QUIET_REASONS = new Set([NOTHING_TO_MOVE, "PAUSED_ALL"]);
+/** A claimed run whose work has not created its money intent after this long is driven again. */
+const RUN_LEASE_MS = 120_000;
+const USDC_DECIMALS = 6;
+const FINAL_INTENT_STATES: ReadonlySet<string> = new Set(["completed", "failed", "canceled", "expired", "rejected"]);
+
+/**
+ * What an Auto-save check does now: above what it keeps (never less than the gas float the wallet needs for its own
+ * transactions), the rest goes into savings; below it, with topping up on, savings refill it as far as they can.
+ * Moves under the minimum are not worth a transaction.
+ */
+export function planSave(facts: { balance: bigint; withdrawable: bigint; keep: bigint; topUp: boolean }): AutomationMove | null {
+  const floor = facts.keep > GAS_FLOAT_USDC_BASE_UNITS ? facts.keep : GAS_FLOAT_USDC_BASE_UNITS;
+  if (facts.balance >= floor + AUTO_SAVE_MIN_MOVE) return { direction: "in", amount: (facts.balance - floor).toString() };
+  if (facts.topUp && facts.balance + AUTO_SAVE_MIN_MOVE <= facts.keep) {
+    const want = facts.keep - facts.balance;
+    const amount = want < facts.withdrawable ? want : facts.withdrawable;
+    if (amount >= AUTO_SAVE_MIN_MOVE) return { direction: "out", amount: amount.toString() };
+  }
+  return null;
+}
 
 type StoredDraft = { results: PolicyResult[]; blocking: PolicyResult | null };
 
@@ -71,6 +127,7 @@ export class AutomationService {
     private readonly wallets: WalletService,
     private readonly recipients: Recipients,
     private readonly sends: SendService,
+    private readonly earn: EarnService,
     private readonly inbox: InboxService,
     private readonly log: Logger,
   ) {}
@@ -84,7 +141,7 @@ export class AutomationService {
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
 
   /** The schedule as asked, completed: 09:00 and the person's own zone when not said; this weekday / day when missing. */
-  private schedule(user: SessionUser, input: AutomationInput): { schedule: AutomationSchedule; valid: boolean } {
+  private schedule(user: SessionUser, input: ScheduleInput): { schedule: AutomationSchedule; valid: boolean } {
     const timezone = input.timezone && isValidTimeZone(input.timezone) ? input.timezone : isValidTimeZone(user.timezone) ? user.timezone : "UTC";
     const time = input.time && TIME_PATTERN.test(input.time) ? input.time.padStart(TIME_CHARS, "0") : DEFAULT_TIME;
     const today = new Date();
@@ -161,6 +218,82 @@ export class AutomationService {
     return this.view(row!);
   }
 
+  /**
+   * Auto-save's draft. Inferred, never asked: what to keep (Kawase's default when not said), the vault (the one the
+   * person already saves in, else the best active one), checking every day at 09:00 in their zone and whenever money
+   * arrives, and topping up on. The card shows each, and what a check right now would move.
+   */
+  async createAutoSave(user: SessionUser, input: AutoSaveInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
+    const network = user.activeNetwork;
+    const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
+    const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
+    const { schedule, valid } = this.schedule(user, { every: input.every ?? "day", time: input.time, timezone: input.timezone });
+    const keep = input.keep?.trim() ? parseRequestAmount(input.keep, "USDC") : ({ status: "ok", baseUnits: AUTO_SAVE_DEFAULT_KEEP } as const);
+    const view = await capabilityView(this.db, this.chains.available);
+    const { client } = this.clients(network);
+    const { vaults, positions } = await this.earn.holdingsOn(network, wallet);
+    const named = input.vault ? vaults.find((entry) => same(entry.address, input.vault!)) : undefined;
+    const held = [...positions].sort((a, b) => (b.assets > a.assets ? 1 : b.assets < a.assets ? -1 : 0))[0]?.vault;
+    const vault = named ?? held ?? vaults.find((entry) => entry.status === "active");
+    const existing = await this.db
+      .select({ id: automations.id })
+      .from(automations)
+      .where(and(eq(automations.userId, user.id), eq(automations.network, network), eq(automations.kind, "auto_save"), inArray(automations.status, ["active", "paused"])));
+    const setUp = wallet ? isWalletSetUp(await client.getCode({ address: wallet })) : false;
+    const evaluation = evaluateAutoSave({
+      network,
+      capability: { here: view.automations[network].state, other: view.automations[other].state },
+      signedIn: !user.isAnonymous,
+      wallet: { registered: Boolean(wallet), setUp },
+      vault: vault
+        ? { status: "found", active: vault.status !== "paused" && vault.status !== "deprecated", lowLiquidity: vault.status === "low_liquidity", warnings: vault.warnings }
+        : { status: "missing" },
+      keep,
+      schedule: { valid },
+      existing: existing.length > 0,
+    });
+    const action: AutoSaveAction = {
+      vault: vault ? getAddress(vault.address) : "",
+      vaultName: vault?.name ?? "",
+      keep: keep.status === "ok" ? keep.baseUnits.toString() : AUTO_SAVE_DEFAULT_KEEP.toString(),
+      topUp: input.topUp ?? true,
+    };
+    const [row] = await this.db
+      .insert(automations)
+      .values({
+        userId: user.id,
+        network,
+        kind: "auto_save",
+        status: "draft",
+        threadId: origin.threadId ?? null,
+        schedule,
+        action,
+        report: { results: evaluation.results, blocking: evaluation.blocking ?? null },
+        endsAt: new Date(Date.now() + LIFETIME_DAYS * SECONDS_PER_DAY * MS_PER_SECOND),
+      })
+      .returning();
+    return this.view(row!);
+  }
+
+  /**
+   * The wallet's USDC, what it holds in the vault, what can come back now, and what a check would move. What can come
+   * back is the position capped by the liquidity App Kit reports: the vault's own `maxWithdraw` is not reliable on
+   * testnet's mock vaults (it reads 0 while withdrawals work), and the earn draft's floors still guard each move.
+   */
+  private async saveFacts(network: NetworkId, wallet: Address, action: AutoSaveAction) {
+    const { client, network: context } = this.clients(network);
+    const [balance, { vaults, positions }] = await Promise.all([
+      client.readContract({ address: context.addresses.usdc, abi: ERC20_BALANCE, functionName: "balanceOf", args: [wallet] }),
+      this.earn.holdingsOn(network, wallet),
+    ]);
+    const vault = vaults.find((entry) => same(entry.address, action.vault));
+    const saved = positions.find((entry) => same(entry.vault.address, action.vault))?.assets ?? ZERO;
+    const liquidity = vault ? usdcUnits(vault.available) : ZERO;
+    const withdrawable = saved < liquidity ? saved : liquidity;
+    const plan = planSave({ balance, withdrawable, keep: BigInt(action.keep), topUp: action.topUp });
+    return { vault, balance, saved, withdrawable, plan };
+  }
+
   // ── Reading ─────────────────────────────────────────────────────────────────────────────────────────────────
 
   private async own(userId: string, id: string): Promise<AutomationRow> {
@@ -179,29 +312,32 @@ export class AutomationService {
       .select({ run: automationRuns, txHash: txAttempts.txHash })
       .from(automationRuns)
       .leftJoin(txAttempts, eq(txAttempts.intentId, automationRuns.intentId))
-      .where(eq(automationRuns.automationId, row.id))
+      .where(and(eq(automationRuns.automationId, row.id), or(isNull(automationRuns.reason), ne(automationRuns.reason, NOTHING_TO_MOVE))))
       .orderBy(desc(automationRuns.scheduledFor))
       .limit(RUNS_SHOWN);
-    const stored = row.action;
     const report = row.report as StoredDraft | null;
     const live = row.status === "draft" || row.status === "active";
     const upcoming = live ? (row.status === "active" && row.nextRunAt ? [row.nextRunAt, ...nextRuns(row.schedule, row.nextRunAt, NEXT_RUNS_SHOWN - 1)] : nextRuns(row.schedule, new Date(), NEXT_RUNS_SHOWN)) : [];
+    const send = row.kind === "scheduled_send" ? (row.action as AutomationAction) : null;
     return {
       id: row.id,
       network: row.network,
       status: row.status,
       kind: row.kind,
       schedule: row.schedule,
-      action: {
-        recipientWords: stored.recipientWords,
-        recipientAddress: stored.recipientAddress || null,
-        recipientName: stored.recipientName,
-        asset: stored.asset,
-        amount: stored.amount,
-        note: stored.note,
-      },
+      save: row.kind === "auto_save" ? await this.saveView(row) : null,
+      action: send
+        ? {
+            recipientWords: send.recipientWords,
+            recipientAddress: send.recipientAddress || null,
+            recipientName: send.recipientName,
+            asset: send.asset,
+            amount: send.amount,
+            note: send.note,
+          }
+        : null,
       nextRuns: upcoming.map((date) => date.toISOString()),
-      maxPerPeriod: stored.amount,
+      maxPerPeriod: send?.amount ?? "0",
       periodSeconds: schedulePeriodSeconds(row.schedule),
       endsAt: row.endsAt.toISOString(),
       grant: grant ? { id: grant.id, status: grant.status, expiresAt: grant.expiresAt.toISOString() } : null,
@@ -211,11 +347,29 @@ export class AutomationService {
         status: run.status,
         reason: run.reason,
         reasonParams: run.reasonParams ?? null,
+        move: run.move ?? null,
         tx: txHash && explorer ? { hash: txHash, explorerUrl: `${explorer}/tx/${txHash}` } : null,
       })),
       results: report?.results ?? [],
       blocking: row.status === "draft" ? (report?.blocking ?? null) : null,
       createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  private async saveView(row: AutomationRow): Promise<AutoSaveView> {
+    const action = row.action as AutoSaveAction;
+    const wallet = (await this.wallets.userWallet(row.userId))?.address as Address | undefined;
+    const facts = wallet && action.vault ? await this.saveFacts(row.network, wallet, action).catch(() => undefined) : undefined;
+    const ended = row.status === "canceled" || row.status === "ended";
+    return {
+      vault: action.vault,
+      vaultName: facts?.vault?.name ?? action.vaultName,
+      protocol: facts?.vault?.protocol ?? "morpho",
+      apy: facts?.vault?.apy ?? 0,
+      keep: action.keep,
+      topUp: action.topUp,
+      saved: (facts?.saved ?? ZERO).toString(),
+      now: ended ? null : (facts?.plan ?? null),
     };
   }
 
@@ -236,8 +390,12 @@ export class AutomationService {
 
   // ── Turning on ──────────────────────────────────────────────────────────────────────────────────────────────
 
-  /** The grant to sign: `token.transfer(recipient, …)` only, at most `amount` per period, until the automation ends. */
-  async grantRequest(user: SessionUser, id: string) {
+  /**
+   * The grants to sign. A scheduled send: one — `token.transfer(recipient, …)` only, at most `amount` per period,
+   * until the automation ends. Auto-save: three — approve the vault, deposit for the wallet, withdraw to the wallet —
+   * so Kawase can only move USDC between the wallet and its own position. One Face ID signs them all.
+   */
+  async grantRequest(user: SessionUser, id: string): Promise<AutomationGrantRequest> {
     const row = await this.own(user.id, id);
     if (row.status !== "draft") throw problem(HTTP.conflict, "intent_final");
     if ((row.report as StoredDraft | null)?.blocking) throw problem(HTTP.unprocessable, "intent_blocked");
@@ -245,11 +403,49 @@ export class AutomationService {
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
     const { client, network: context, ops } = this.clients(row.network);
     if (!isWalletSetUp(await client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.unprocessable, "wallet_not_set_up");
+    const startsAt = nowSeconds();
+    const expiresAt = Math.floor(row.endsAt.getTime() / MS_PER_SECOND);
+    const salt = (): Hex => `0x${randomBytes(SALT_BYTES).toString("hex")}`;
+    const base = {
+      userId: user.id,
+      network: row.network,
+      kind: "automation" as const,
+      automationId: row.id,
+      delegatorWalletId: wallet.id,
+      delegateAddress: ops.address,
+      startsAt: new Date(startsAt * MS_PER_SECOND),
+      expiresAt: new Date(expiresAt * MS_PER_SECOND),
+      status: "pending" as const,
+    };
+
+    if (row.kind === "auto_save") {
+      const action = row.action as AutoSaveAction;
+      const built = buildSaveGrants({
+        network: context,
+        wallet: wallet.address as Address,
+        redeemer: ops.address,
+        usdc: context.addresses.usdc,
+        vault: action.vault as Address,
+        expiresAt,
+        salts: { approve: salt(), deposit: salt(), withdraw: salt() },
+      });
+      const out: AutomationGrantRequest = { grants: [], receipts: [] };
+      for (const purpose of SAVE_PURPOSES) {
+        const typedData = grantTypedData(context, built[purpose]);
+        const receipt = { purpose, ...describeGrant(context, built[purpose]) };
+        const [inserted] = await this.db
+          .insert(grants)
+          .values({ ...base, delegation: jsonSafe(built[purpose]), delegationHash: hashTypedData(typedData), receipt: jsonSafe(receipt), periodAmount: ZERO, periodSeconds: 0, recipientAddress: wallet.address })
+          .returning({ id: grants.id });
+        out.grants.push({ grantId: inserted!.id, typedData: jsonSafe(typedData) });
+        out.receipts.push(jsonSafe(receipt));
+      }
+      return out;
+    }
+
     const action = row.action as AutomationAction;
     const token = action.asset === "USDC" ? context.addresses.usdc : context.addresses.eurc;
     const periodSeconds = schedulePeriodSeconds(row.schedule);
-    const startsAt = nowSeconds();
-    const expiresAt = Math.floor(row.endsAt.getTime() / MS_PER_SECOND);
     const grant = buildAutomationGrant({
       network: context,
       wallet: wallet.address as Address,
@@ -259,7 +455,7 @@ export class AutomationService {
       periodSeconds,
       startsAt,
       expiresAt,
-      salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
+      salt: salt(),
       recipient: action.recipientAddress as Address,
     });
     const typedData = grantTypedData(context, grant);
@@ -267,46 +463,52 @@ export class AutomationService {
     const [inserted] = await this.db
       .insert(grants)
       .values({
-        userId: user.id,
-        network: row.network,
-        kind: "automation",
-        automationId: row.id,
-        delegatorWalletId: wallet.id,
-        delegateAddress: ops.address,
+        ...base,
         delegation: jsonSafe(grant),
         delegationHash: hashTypedData(typedData),
         receipt: jsonSafe(receipt),
         periodAmount: BigInt(action.amount),
         periodSeconds,
         recipientAddress: action.recipientAddress,
-        startsAt: new Date(startsAt * MS_PER_SECOND),
-        expiresAt: new Date(expiresAt * MS_PER_SECOND),
-        status: "pending",
       })
       .returning({ id: grants.id });
-    return { grantId: inserted!.id, typedData: jsonSafe(typedData), receipt: jsonSafe(receipt) };
+    return { grants: [{ grantId: inserted!.id, typedData: jsonSafe(typedData) }], receipts: [jsonSafe(receipt)] };
   }
 
-  /** The wallet signed the grant: check the signature, then the automation is on and its first run is scheduled. */
-  async activate(user: SessionUser, id: string, input: { grantId: string; signature: Hex }) {
+  /**
+   * The wallet signed the grants: every signature is checked against the wallet, then the automation is on. A
+   * scheduled send's first run is its next occurrence; Auto-save checks at once (saving what is above its line now).
+   */
+  async activate(user: SessionUser, id: string, input: { signatures: { grantId: string; signature: Hex }[] }) {
     const row = await this.own(user.id, id);
     if (row.status !== "draft") return this.view(row);
-    const [pending] = await this.db
-      .select()
-      .from(grants)
-      .where(and(eq(grants.id, input.grantId), eq(grants.userId, user.id), eq(grants.automationId, id)));
-    if (!pending || pending.status !== "pending") throw problem(HTTP.unprocessable, "grant_not_pending");
+    const ids = input.signatures.map((entry) => entry.grantId);
+    const pending = ids.length
+      ? await this.db
+          .select()
+          .from(grants)
+          .where(and(inArray(grants.id, ids), eq(grants.userId, user.id), eq(grants.automationId, id), eq(grants.status, "pending")))
+      : [];
+    const needed = row.kind === "auto_save" ? SAVE_PURPOSES.length : 1;
+    const purposes = new Set(pending.map((grant) => (grant.receipt as { purpose?: string }).purpose));
+    if (pending.length !== needed || new Set(ids).size !== needed || (row.kind === "auto_save" && purposes.size !== needed)) throw problem(HTTP.unprocessable, "grant_not_pending");
     const wallet = await this.wallets.userWallet(user.id);
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
     const { network: context } = this.clients(row.network);
-    const signed = withSignature(pending.delegation as never, input.signature);
-    const typedData = grantTypedData(context, signed) as TypedDataDefinition;
-    const valid = await verifyTypedData({ address: wallet.address as Address, ...typedData, signature: input.signature }).catch(() => false);
-    if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
-    const [first] = nextRuns(row.schedule, new Date(), 1);
+    const signed: { grant: GrantRow; delegation: ReturnType<typeof withSignature> }[] = [];
+    for (const grant of pending) {
+      const signature = input.signatures.find((entry) => entry.grantId === grant.id)!.signature;
+      const delegation = withSignature(grant.delegation as never, signature);
+      const typedData = grantTypedData(context, delegation) as TypedDataDefinition;
+      const valid = await verifyTypedData({ address: wallet.address as Address, ...typedData, signature }).catch(() => false);
+      if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
+      signed.push({ grant, delegation });
+    }
+    const primary = row.kind === "auto_save" ? signed.find((entry) => (entry.grant.receipt as { purpose?: string }).purpose === "deposit")! : signed[0]!;
+    const first = row.kind === "auto_save" ? new Date() : nextRuns(row.schedule, new Date(), 1)[0];
     await this.db.transaction(async (tx) => {
-      await tx.update(grants).set({ status: "active", delegation: jsonSafe(signed) }).where(eq(grants.id, pending.id));
-      await tx.update(automations).set({ status: "active", grantId: pending.id, nextRunAt: first ?? null }).where(eq(automations.id, id));
+      for (const entry of signed) await tx.update(grants).set({ status: "active", delegation: jsonSafe(entry.delegation) }).where(eq(grants.id, entry.grant.id));
+      await tx.update(automations).set({ status: "active", grantId: primary.grant.id, nextRunAt: first ?? null }).where(eq(automations.id, id));
     });
     return this.get(user.id, id);
   }
@@ -347,15 +549,25 @@ export class AutomationService {
   async cancel(user: SessionUser, id: string): Promise<{ automation: AutomationView; revoke: TransactionRequestResponse | null }> {
     const row = await this.own(user.id, id);
     if (row.status !== "canceled" && row.status !== "ended") await this.db.update(automations).set({ status: "canceled", nextRunAt: null }).where(eq(automations.id, id));
-    const revoke = row.grantId ? ((await this.wallets.revokeGrantRequest(user.id, row.grantId)) as TransactionRequestResponse | null) : null;
+    const active = await this.db
+      .select({ id: grants.id })
+      .from(grants)
+      .where(and(eq(grants.automationId, id), eq(grants.userId, user.id), eq(grants.status, "active")));
+    const revoke = (await this.wallets.revokeGrantsRequest(user.id, active.map((grant) => grant.id))) as TransactionRequestResponse | null;
     return { automation: await this.get(user.id, id), revoke };
   }
 
   // ── Running ─────────────────────────────────────────────────────────────────────────────────────────────────
+  //
+  // Each occurrence is claimed once, and the claim carries the id its money intent will have (the run's operation
+  // identity), committed together with the schedule's advance. The money pipelines create the intent under exactly
+  // that id, so doing the run again — after a crash, a restart, or a second runner — finds it and resumes; nothing
+  // is sent twice. A claimed run with no outcome and no intent after a short lease is driven again; every run ends
+  // in one truthful state: succeeded, skipped (with why), or failed.
 
-  /** One pass: settle runs in flight, then claim and run every due occurrence once. */
+  /** One pass: settle or recover runs in flight, then claim and run every due occurrence once. */
   async tick() {
-    await this.settleRuns();
+    await this.reconcileRuns();
     const due = await this.db
       .select()
       .from(automations)
@@ -365,64 +577,154 @@ export class AutomationService {
   }
 
   private async runOnce(row: AutomationRow) {
+    // Auto-save moves one thing at a time: while a move is in flight, the check waits (it stays due).
+    if (row.kind === "auto_save") {
+      const [open] = await this.db
+        .select({ id: automationRuns.id })
+        .from(automationRuns)
+        .where(and(eq(automationRuns.automationId, row.id), eq(automationRuns.status, "executing")))
+        .limit(1);
+      if (open) return;
+    }
     const scheduledFor = row.nextRunAt!;
-    const period = schedulePeriodSeconds(row.schedule) * MS_PER_SECOND;
     const [next] = nextRuns(row.schedule, scheduledFor, 1);
     const nextRunAt = next && next.getTime() <= row.endsAt.getTime() ? next : null;
-    // Claim the occurrence: the unique (automation, time) row means a second runner, or a retry, finds it taken.
-    const [claimed] = await this.db
-      .insert(automationRuns)
-      .values({ automationId: row.id, userId: row.userId, scheduledFor, status: "executing" })
-      .onConflictDoNothing()
-      .returning({ id: automationRuns.id });
-    await this.db
-      .update(automations)
-      .set({ nextRunAt, lastRunAt: scheduledFor, ...(nextRunAt ? {} : { status: "ended" as const }) })
-      .where(eq(automations.id, row.id));
-    if (!claimed) return;
+    // The claim and the schedule's advance commit together. The unique (automation, time) row means a second
+    // runner, or a retry, finds the occurrence taken; the advance only moves a schedule still on this occurrence.
+    const claimed = await this.db.transaction(async (tx) => {
+      const [run] = await tx
+        .insert(automationRuns)
+        .values({ automationId: row.id, userId: row.userId, scheduledFor, status: "executing", intentId: randomUUID() })
+        .onConflictDoNothing()
+        .returning();
+      await tx
+        .update(automations)
+        .set({ nextRunAt, lastRunAt: scheduledFor, ...(nextRunAt ? {} : { status: "ended" as const }) })
+        .where(and(eq(automations.id, row.id), eq(automations.nextRunAt, scheduledFor)));
+      return run;
+    });
+    if (claimed) await this.drive(row, claimed);
+  }
 
+  /** Does one claimed run's work. Safe to call again for the same run: the money intent's id is the run's. */
+  private async drive(row: AutomationRow, run: RunRow): Promise<void> {
+    if (row.kind === "auto_save") return this.driveSave(row, run);
     // Missed (the runner was down for longer than a period): not made up later, said plainly.
-    if (scheduledFor.getTime() < Date.now() - period) return this.skipRun(row, claimed.id, "MISSED_RUN");
+    if (run.scheduledFor.getTime() < Date.now() - schedulePeriodSeconds(row.schedule) * MS_PER_SECOND) return this.skipRun(row, run.id, "MISSED_RUN");
     const [grant] = row.grantId ? await this.db.select().from(grants).where(eq(grants.id, row.grantId)) : [];
-    if (!grant || grant.status !== "active") return this.skipRun(row, claimed.id, "GRANT_INACTIVE");
+    if (!grant || grant.status !== "active") return this.skipRun(row, run.id, "GRANT_INACTIVE");
     const action = row.action as AutomationAction;
     const outcome = await this.sends.runAutomation({
       userId: row.userId,
       network: row.network,
+      intentId: run.intentId!,
       grant: { id: grant.id, delegation: grant.delegation },
       to: action.recipientAddress as Address,
       asset: action.asset,
       amount: BigInt(action.amount),
       note: action.note,
     });
-    if (outcome.status === "skipped") return this.skipRun(row, claimed.id, outcome.reason, outcome.params);
-    await this.db.update(automationRuns).set({ intentId: outcome.intentId }).where(eq(automationRuns.id, claimed.id));
-    await this.db.update(automations).set({ runsDone: row.runsDone + 1 }).where(eq(automations.id, row.id));
+    if (outcome.status === "skipped") return this.skipRun(row, run.id, outcome.reason, outcome.params);
+    if (!outcome.resumed) await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
   }
 
-  private async skipRun(row: AutomationRow, runId: string, reason: string, params?: Record<string, string>) {
-    await this.db.update(automationRuns).set({ status: "skipped", reason, reasonParams: params ?? null }).where(eq(automationRuns.id, runId));
-    const action = row.action as AutomationAction;
+  /** One Auto-save check: look at the balance afresh and move the difference, if it is worth a move. */
+  private async driveSave(row: AutomationRow, run: RunRow): Promise<void> {
+    const action = row.action as AutoSaveAction;
+    // A move already made for this run (an earlier attempt got that far) is followed, not planned again.
+    const [made] = await this.db.select({ request: intents.request }).from(intents).where(eq(intents.id, run.intentId!));
+    if (made) {
+      const request = made.request as { action: "deposit" | "withdraw"; amount: string };
+      const move: AutomationMove = { direction: request.action === "deposit" ? "in" : "out", amount: parseUnits(request.amount, USDC_DECIMALS).toString() };
+      await this.db.update(automationRuns).set({ move }).where(eq(automationRuns.id, run.id));
+      return;
+    }
+    const [owner] = await this.db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, row.userId));
+    if (owner?.pausedAllAt) return this.skipRun(row, run.id, "PAUSED_ALL");
+    const wallet = (await this.wallets.userWallet(row.userId))?.address as Address | undefined;
+    if (!wallet) return this.skipRun(row, run.id, "WALLET_NOT_READY");
+    const held = await this.db
+      .select()
+      .from(grants)
+      .where(and(eq(grants.automationId, row.id), eq(grants.status, "active")));
+    const byPurpose = new Map(held.map((grant) => [(grant.receipt as { purpose?: SavePurpose }).purpose, grant.delegation]));
+    if (!SAVE_PURPOSES.every((purpose) => byPurpose.has(purpose))) return this.skipRun(row, run.id, "GRANT_INACTIVE");
+    const facts = await this.saveFacts(row.network, wallet, action);
+    this.log.info({ automationId: row.id, runId: run.id, balance: facts.balance.toString(), saved: facts.saved.toString(), withdrawable: facts.withdrawable.toString(), plan: facts.plan }, "auto-save check");
+    if (!facts.plan) return this.skipRun(row, run.id, NOTHING_TO_MOVE);
+    const outcome = await this.earn.runSave({
+      userId: row.userId,
+      network: row.network,
+      intentId: run.intentId!,
+      grants: Object.fromEntries(SAVE_PURPOSES.map((purpose) => [purpose, byPurpose.get(purpose)])) as unknown as SaveGrants,
+      vault: action.vault as Address,
+      direction: facts.plan.direction,
+      amount: BigInt(facts.plan.amount),
+    });
+    if (outcome.status === "skipped") return this.skipRun(row, run.id, outcome.reason, undefined, facts.plan);
+    if (outcome.resumed) return this.driveSave(row, run);
+    await this.db.update(automationRuns).set({ move: facts.plan }).where(eq(automationRuns.id, run.id));
+    await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
+  }
+
+  private async skipRun(row: AutomationRow, runId: string, reason: string, params?: Record<string, string>, move?: AutomationMove) {
+    await this.db.update(automationRuns).set({ status: "skipped", reason, reasonParams: params ?? null, move: move ?? null }).where(eq(automationRuns.id, runId));
+    if (row.kind === "auto_save" && QUIET_REASONS.has(reason)) return;
+    const shown =
+      row.kind === "auto_save"
+        ? { amount: move?.amount ?? "0", asset: "USDC", to: (row.action as AutoSaveAction).vault, name: (row.action as AutoSaveAction).vaultName }
+        : (() => {
+            const action = row.action as AutomationAction;
+            return { amount: action.amount, asset: action.asset, to: action.recipientAddress, ...(action.recipientName ? { name: action.recipientName } : {}) };
+          })();
     await this.inbox.add(this.db, {
       userId: row.userId,
       network: row.network,
       kind: "automation_skipped",
-      params: { amount: action.amount, asset: action.asset, to: action.recipientAddress, ...(action.recipientName ? { name: action.recipientName } : {}), reason, ...(params ?? {}) },
+      params: { ...shown, reason, ...(params ?? {}) },
       dedupeKey: `automation_skipped:${runId}`,
     });
     this.log.info({ automationId: row.id, runId, reason }, "automation run skipped");
   }
 
-  /** Runs whose send has finished take its outcome. */
-  private async settleRuns() {
+  /**
+   * Runs in flight. One whose money intent has finished takes its outcome. One whose intent was never created — the
+   * process stopped between the claim and the work — is driven again under the same id once its lease has passed
+   * (a slow first attempt and the retry cannot both create it). A run from before runs carried an id cannot be
+   * matched to its work, so it ends as interrupted and the person is told.
+   */
+  private async reconcileRuns() {
     const open = await this.db
       .select({ run: automationRuns, state: intents.state })
       .from(automationRuns)
-      .innerJoin(intents, eq(intents.id, automationRuns.intentId))
+      .leftJoin(intents, eq(intents.id, automationRuns.intentId))
       .where(eq(automationRuns.status, "executing"));
     for (const { run, state } of open) {
-      if (state === "completed") await this.db.update(automationRuns).set({ status: "succeeded" }).where(eq(automationRuns.id, run.id));
-      else if (state === "failed") await this.db.update(automationRuns).set({ status: "failed", reason: "SEND_FAILED" }).where(eq(automationRuns.id, run.id));
+      try {
+        if (state) {
+          const failure = run.intentId && state !== "completed" && FINAL_INTENT_STATES.has(state);
+          if (state === "completed") await this.db.update(automationRuns).set({ status: "succeeded" }).where(eq(automationRuns.id, run.id));
+          else if (failure) {
+            const [row] = await this.db.select({ kind: automations.kind }).from(automations).where(eq(automations.id, run.automationId));
+            await this.db.update(automationRuns).set({ status: "failed", reason: row?.kind === "auto_save" ? "MOVE_FAILED" : "SEND_FAILED" }).where(eq(automationRuns.id, run.id));
+          }
+          continue;
+        }
+        if (run.updatedAt.getTime() > Date.now() - RUN_LEASE_MS) continue;
+        const [row] = await this.db.select().from(automations).where(eq(automations.id, run.automationId));
+        if (!row) continue;
+        if (!run.intentId) {
+          await this.skipRun(row, run.id, "RUN_INTERRUPTED");
+          continue;
+        }
+        // Take the lease again before the work, so the next pass leaves this attempt alone.
+        await this.db.update(automationRuns).set({ updatedAt: new Date() }).where(eq(automationRuns.id, run.id));
+        this.log.warn({ automationId: row.id, runId: run.id }, "automation run recovered");
+        if (row.status === "canceled" || row.status === "ended") await this.skipRun(row, run.id, "RUN_INTERRUPTED");
+        else await this.drive(row, run);
+      } catch (error) {
+        this.log.warn({ err: error, runId: run.id }, "automation run reconcile failed");
+      }
     }
   }
 
@@ -445,3 +747,5 @@ export class AutomationService {
 const ERC20_BALANCE = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
 ] as const;
+
+

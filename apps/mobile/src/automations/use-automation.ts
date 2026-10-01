@@ -1,6 +1,6 @@
 // One automation on the device, shared by the chat card and the automations screen. Turning it on is the owner's own
-// yes (Face ID, or an email code on the web) followed by the wallet signing the grant the api built — the on-chain
-// bound the runs live within. Cancelling stops runs at once on the api; the grant is then revoked on chain by the
+// yes (Face ID, or an email code on the web) followed by the wallet signing the grants the api built (one for a
+// scheduled send, three for Auto-save — still one Face ID) — the on-chain bound the runs live within. Cancelling stops runs at once on the api; the grant is then revoked on chain by the
 // wallet signing that transaction (if the person declines, Kawase still never uses it, and says so).
 import * as React from "react";
 import { toast } from "sonner-native";
@@ -16,12 +16,15 @@ import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const POLL_MS = 5_000;
+/** After turning Auto-save on it checks at once: follow it for this long so the first move shows. */
+const FIRST_CHECK_MS = 90_000;
 
 export function useAutomation(initial: AutomationView | undefined) {
   const { t } = useT();
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
   const [automation, setAutomation] = React.useState<AutomationView | undefined>(initial);
   const [busy, setBusy] = React.useState(false);
+  const [followUntil, setFollowUntil] = React.useState(0);
   const id = automation?.id;
 
   const refresh = React.useCallback(async () => {
@@ -32,13 +35,17 @@ export function useAutomation(initial: AutomationView | undefined) {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
-  // While it is on and a run is in flight, follow it.
+  // While it is on and a run is in flight (or Auto-save's first check is due), follow it.
   const inFlight = automation?.runs.some((run) => run.status === "executing") ?? false;
+  const firstCheck = followUntil > 0 && (automation?.runs.length ?? 0) === 0;
   React.useEffect(() => {
-    if (!inFlight) return undefined;
-    const timer = setInterval(() => void refresh(), POLL_MS);
+    if (!inFlight && !firstCheck) return undefined;
+    const timer = setInterval(() => {
+      if (!inFlight && Date.now() > followUntil) setFollowUntil(0);
+      void refresh();
+    }, POLL_MS);
     return () => clearInterval(timer);
-  }, [inFlight, refresh]);
+  }, [inFlight, firstCheck, followUntil, refresh]);
 
   const act = async (work: () => Promise<void>) => {
     setBusy(true);
@@ -58,15 +65,18 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(t("send.approvalUnavailable"));
         return;
       }
-      const grant = await api.automations.grant(automation.id);
+      const request = await api.automations.grant(automation.id);
       const check = await confirmWithBiometrics(prompt, t("common.cancel"));
       if (check !== "approved") {
         toast(check === "unavailable" ? t("send.approvalUnavailable") : check === "failed" ? t("send.approvalFailed") : t("send.faceIdCancelled"));
         return;
       }
-      const signature = await signer.signTypedData(grant.typedData as TypedDataDefinition);
-      const { automation: on } = await api.automations.activate(automation.id, grant.grantId, signature);
+      // One yes covers every grant this automation needs.
+      const signatures: { grantId: string; signature: string }[] = [];
+      for (const entry of request.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
+      const { automation: on } = await api.automations.activate(automation.id, signatures);
       setAutomation(on);
+      if (on.kind === "auto_save") setFollowUntil(Date.now() + FIRST_CHECK_MS);
     });
 
   const pause = () => act(async () => setAutomation((await api.automations.pause(id!)).automation));
