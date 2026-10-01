@@ -48,6 +48,8 @@ export const REASONS = {
   ASSET_UNCLEAR: "clarification",
   SWAP_SAME_TOKEN: "clarification",
   DESTINATION_MISSING: "clarification",
+  /** A schedule Kawase cannot keep (an unknown time zone, a day out of range). */
+  SCHEDULE_INVALID: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
   LOOKALIKE_ADDRESS: "warning",
@@ -57,6 +59,10 @@ export const REASONS = {
   LEAVES_LITTLE_FOR_FEES: "warning",
   RATE_BELOW_REFERENCE: "warning",
   VAULT_LOW_LIQUIDITY: "warning",
+  /** The wallet holds less than one run today; runs skip until it is topped up. */
+  FIRST_RUN_UNDERFUNDED: "warning",
+  /** A run skipped because this period's amount was already sent (the grant's cap). */
+  AUTOMATION_PERIOD_USED: "warning",
   VAULT_RISK_WARNING: "warning",
 } as const satisfies Record<string, PolicyKind>;
 

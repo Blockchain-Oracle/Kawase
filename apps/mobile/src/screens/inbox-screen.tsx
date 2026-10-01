@@ -24,6 +24,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { useRunReason } from "@/automations/copy";
 import { useInbox } from "@/inbox/use-inbox";
 import { useRequestDates } from "@/request/copy";
 import { shortAddress, useMoney } from "@/send/copy";
@@ -42,18 +43,22 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const { t } = useT();
   const money = useMoney();
   const dates = useRequestDates();
+  const reasonText = useRunReason();
   const ids = arcIdentity(item.network);
   const p = item.params;
-  const counterparty = item.kind === "send_completed" ? p.to : p.from;
+  const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
   const amount = money(p.asset, p.amount);
-  const incoming = item.kind !== "send_completed";
+  const skipped = item.kind === "automation_skipped";
+  const incoming = item.kind !== "send_completed" && !skipped;
   const title =
     item.kind === "payment_received"
       ? t("inbox.receivedFrom", { name })
       : item.kind === "request_paid"
         ? t("inbox.requestPaid")
-        : t("inbox.sentTo", { name });
+        : skipped
+          ? t("automation.inboxSkipped", { reason: reasonText(p.reason ?? null, p, item.network) })
+          : t("inbox.sentTo", { name });
   const subtitle = item.kind === "request_paid" ? t("inbox.requestPaidBy", { amount, name }) : dates.moment(item.createdAt);
   const unread = !item.readAt;
   return (
@@ -83,8 +88,8 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
         </Text>
       </View>
       {p.amount ? (
-        <Amount className={cn("text-base", incoming ? "text-success" : "text-foreground")}>
-          {`${incoming ? "+" : "−"}${amount}`}
+        <Amount className={cn("text-base", incoming ? "text-success" : skipped ? "text-muted-foreground" : "text-foreground")}>
+          {skipped ? amount : `${incoming ? "+" : "−"}${amount}`}
         </Amount>
       ) : null}
     </Pressable>
@@ -102,7 +107,8 @@ export function InboxScreen() {
 
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
-    if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
+    if (item.kind === "automation_skipped") router.push("/automations");
+    else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
     else if (item.explorerUrl) void Linking.openURL(item.explorerUrl);
   };
   const pull = async () => {

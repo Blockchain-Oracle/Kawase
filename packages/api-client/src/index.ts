@@ -31,6 +31,8 @@ import type {
   SwapIntent,
   SwapRequest,
   BridgeApproveResponse,
+  AutomationInput,
+  AutomationView,
   EarnApproveResponse,
   EarnIntent,
   EarnPositionView,
@@ -236,6 +238,23 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<EarnApproveResponse>("POST", `/earn/intents/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<EarnApproveResponse>("POST", `/earn/intents/${id}/signature`, { approvalId, signedTransaction }),
+    },
+
+    automations: {
+      list: () => call<{ automations: AutomationView[] }>("GET", "/automations"),
+      get: (id: string) => call<{ automation: AutomationView }>("GET", `/automations/${id}`),
+      /** A draft: the read-back, the next runs and the most that can ever go per period. Nothing runs yet. */
+      create: (input: AutomationInput) => call<{ automation: AutomationView }>("POST", "/automations", input),
+      /** The grant to sign (typed data) that turns it on; Face ID, then `activate`. */
+      grant: (id: string) => call<{ grantId: string; typedData: unknown; receipt: unknown }>("POST", `/automations/${id}/grant`),
+      activate: (id: string, grantId: string, signature: string) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/activate`, { grantId, signature }),
+      pause: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/pause`),
+      resume: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/resume`),
+      skip: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/skip`),
+      /** Stops it at once; the answer carries the revoke transaction for the wallet to sign (the grant on chain). */
+      cancel: (id: string) =>
+        call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>("POST", `/automations/${id}/cancel`),
     },
 
     requests: {

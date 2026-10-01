@@ -11,6 +11,9 @@ const ACTIVITY_MAX = 20;
 const REASON_MAX = 200;
 const RECIPIENT_MAX = 80;
 const NOTE_MAX = 140;
+const LAST_WEEKDAY = 6;
+const LAST_MONTHDAY = 28;
+const TIMEZONE_MAX = 64;
 
 export function buildTools(context: AgentContext) {
   return {
@@ -121,6 +124,29 @@ export function buildTools(context: AgentContext) {
         vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Only a vault address from get_earn the person chose"),
       }),
       execute: async ({ action, amount, vault }) => context.proposeEarn({ action, amount: amount ?? null, vault: vault ?? null }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    draft_automation: tool({
+      description:
+        "Draft an automation that sends money on a schedule without asking each time: \"every Tuesday send $1 to Alex\", \"pay rent of 500 on the 1st\". Pass the recipient exactly as the person said it, the amount per run as digits with a dot, how often (day, week or month), the weekday (0 = Sunday … 6 = Saturday) or day of the month (1–28) if they said one, a time (HH:MM) only if they said one (09:00 otherwise), and a time zone only if they named one (theirs otherwise). Kawase resolves the recipient, checks everything and shows a card with the read-back, the next runs and the most that can ever go per period. The person turns it on on the card with Face ID, which signs a grant the chain enforces; nothing is set up or sent by this call.",
+      inputSchema: z.object({
+        recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Per run, digits with a dot"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("Only if the person named the currency"),
+        every: z.enum(["day", "week", "month"]),
+        weekday: z.number().int().min(0).max(LAST_WEEKDAY).optional().describe("0 = Sunday … 6 = Saturday, for weekly"),
+        monthday: z.number().int().min(1).max(LAST_MONTHDAY).optional().describe("Day of the month, for monthly"),
+        time: z.string().regex(/^\d{1,2}:\d{2}$/).optional().describe("HH:MM, only if they said a time"),
+        timezone: z.string().max(TIMEZONE_MAX).optional().describe("IANA zone, only if they named one"),
+        note: z.string().max(NOTE_MAX).optional(),
+      }),
+      execute: async (input) => {
+        // K2: an address can only come from the person's own words.
+        if (/^0x/i.test(input.recipient.trim()) && !context.lastUserText.toLowerCase().includes(input.recipient.trim().toLowerCase())) {
+          throw new Error("An address must be typed by the person; ask them for it.");
+        }
+        return context.draftAutomation({ ...input, note: input.note ?? null });
+      },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     create_payment_request: tool({

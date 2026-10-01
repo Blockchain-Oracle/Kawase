@@ -146,7 +146,7 @@ export function SettingsScreen() {
               onPress={toggle}
             />
             <ListRow leading={<RowIcon icon={BookUser} />} title={t("settings.contacts")} chevron onPress={() => router.push("/contacts")} />
-            <ListRow leading={<RowIcon icon={CalendarClock} />} title={t("settings.automations")} trailing={coming} disabled />
+            <ListRow leading={<RowIcon icon={CalendarClock} />} title={t("settings.automations")} chevron onPress={() => router.push("/automations")} />
             <ListRow leading={<RowIcon icon={Coins} />} title={t("settings.displayCurrency")} trailing={coming} disabled />
           </ListGroup>
         </Section>

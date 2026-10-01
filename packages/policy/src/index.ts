@@ -5,3 +5,4 @@ export * from "./send";
 export * from "./swap";
 export * from "./bridge";
 export * from "./earn";
+export * from "./automation";

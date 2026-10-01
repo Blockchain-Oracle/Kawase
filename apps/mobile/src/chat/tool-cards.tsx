@@ -21,6 +21,7 @@ import type {
   OnNetwork,
   ProposeSendOutput,
   EarnOverviewLine,
+  ProposeAutomationOutput,
   ProposeBridgeOutput,
   ProposeEarnOutput,
   ProposeSwapOutput,
@@ -49,6 +50,7 @@ import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { AgentCard, AgentCardLoading } from "./card";
 import { RequestCard } from "./request-card";
 import { ContactsCard, SendCard } from "./send-card";
+import { AutomationCard } from "./automation-card";
 import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
@@ -499,6 +501,7 @@ const LOADING_LABELS: Record<string, string> = {
   propose_bridge: "chat.loadingBridge",
   get_earn: "chat.loadingEarn",
   propose_earn: "chat.loadingEarn",
+  draft_automation: "chat.loadingAutomation",
   find_contacts: "chat.loadingContacts",
   create_payment_request: "chat.loadingRequest",
 };
@@ -553,6 +556,8 @@ export function ToolCard({
       return <EarnOverviewCard output={part.output as EarnOverviewLine} />;
     case "propose_earn":
       return <EarnCard output={part.output as ProposeEarnOutput} />;
+    case "draft_automation":
+      return <AutomationCard output={part.output as ProposeAutomationOutput} />;
     case "find_contacts":
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":

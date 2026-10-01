@@ -46,10 +46,11 @@ import {
   newId,
   spendLedger,
   txAttempts,
+  users,
   withOutbox,
   type Db,
 } from "@kawase/db";
-import { encodeRedeemTransfer } from "@kawase/integrations-delegation";
+import { allowanceAvailable, encodeRedeemTransfer } from "@kawase/integrations-delegation";
 import {
   DRAFTABLE_STATES,
   loadSendDraft,
@@ -96,6 +97,20 @@ type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null; ro
 
 const ZERO = 0n;
 const ONE = 1n;
+/** What stops an automation's run (the rest are notes for a person looking at a card). */
+const AUTOMATION_STOPS: ReadonlySet<string> = new Set([
+  "NOT_AVAILABLE_YET",
+  "PAUSED_ALL",
+  "OVER_PER_TX_LIMIT",
+  "OVER_DAILY_LIMIT",
+  "OVER_WEEKLY_LIMIT",
+  "ADDRESS_CHANGE_HOLD",
+  "RECIPIENT_BLOCKED",
+  "LOOKALIKE_ADDRESS",
+  "INSUFFICIENT_BALANCE",
+  "WALLET_NOT_READY",
+  "WALLET_NOT_SET_UP",
+]);
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;
 /** A USDC transfer's gas when an estimate is not possible (e.g. the balance is short). */
@@ -458,6 +473,135 @@ export class SendService {
     await this.submitToOps(intentId);
     void this.follow(intentId);
     return { status: "executing", intent: await this.view(user.id, intentId) };
+  }
+
+  // ── Automations (Stage 8) ───────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * One automation run: the send rules on fresh facts for the automation's own recipient (paused, limits, a held or
+   * blocked address, the balance), then the room the automation's grant has left this period, read from the chain.
+   * If nothing stops it, the ops wallet redeems that grant — pinned to this recipient and capped per period on chain
+   * — through the same attempt, tracking and receipt witness as any send. A run that cannot go says why.
+   */
+  async runAutomation(input: {
+    userId: string;
+    network: NetworkId;
+    grant: { id: string; delegation: Record<string, unknown> };
+    to: Address;
+    asset: AssetId;
+    amount: bigint;
+    note: string | null;
+  }): Promise<{ status: "executing"; intentId: string } | { status: "skipped"; reason: string; params?: Record<string, string> }> {
+    const context = this.clients(input.network);
+    const wallet = await this.wallets.userWallet(input.userId);
+    if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
+    const walletAddress = wallet.address as Address;
+    const [owner] = await this.db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, input.userId));
+    const request: StoredRequest = {
+      recipient: input.to,
+      amount: canonicalAmount(amount(input.asset, input.amount)).replace(/ [A-Z]+$/, ""),
+      asset: input.asset,
+      note: input.note,
+    };
+    const resolution = await this.recipients.resolve({ id: input.userId, walletAddress }, input.network, input.to);
+    const gathered = await gatherFacts({
+      db: this.db,
+      chains: this.chains,
+      userId: input.userId,
+      signedIn: true,
+      pausedAll: Boolean(owner?.pausedAllAt),
+      network: input.network,
+      wallet: walletAddress,
+      request,
+      resolution,
+    });
+    const evaluation = evaluateSend(gathered.facts);
+    const stop = evaluation.results.find((entry) => AUTOMATION_STOPS.has(entry.code));
+    if (stop) return { status: "skipped", reason: stop.code, ...(stop.params ? { params: stop.params } : {}) };
+    if (resolution.facts.status !== "resolved" || resolution.facts.address.toLowerCase() !== input.to.toLowerCase())
+      return { status: "skipped", reason: "RECIPIENT_INVALID", params: { query: input.to } };
+    const room = await allowanceAvailable(context.client, context.network, input.grant.delegation as never)
+      .then((result) => result.available)
+      .catch(() => ZERO);
+    if (room < input.amount) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+
+    const token = assetAddress(context.network, input.asset);
+    const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO };
+    const draftHash = sendDraftHash(draft);
+    const payload: DraftPayload = {
+      draft: storeSendDraft(draft),
+      recipient: resolution.view,
+      asset: input.asset,
+      amount: input.amount.toString(),
+      note: input.note,
+      fee: { payer: "kawase", estimate: null },
+      allowance: { active: false, available: room.toString(), perPeriod: null },
+      suggestions: [],
+    };
+    const report: PolicyReport = { results: evaluation.results, blocking: null, route: null };
+    const call = encodeRedeemTransfer(context.network, input.grant.delegation as never, { token, to: input.to, amount: input.amount });
+
+    const intentId = await this.db.transaction(async (tx) => {
+      // The same per-person lock as approvals, and the limits again under it, so a send at the same moment cannot
+      // push both over.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${input.userId}:${input.network}`}, 0))`);
+      if (!(await fitsLimits(tx, input.userId, input.network, input.asset, input.amount, "00000000-0000-0000-0000-000000000000"))) return undefined;
+      const [intent] = await tx
+        .insert(intents)
+        .values({
+          userId: input.userId,
+          network: input.network,
+          kind: "send",
+          originSurface: "automation",
+          state: "executing",
+          request,
+          currentDraftVersion: 1,
+          expiresAt: later(INTENT_TTL_S),
+        })
+        .returning({ id: intents.id });
+      const id = intent!.id;
+      await tx.insert(intentDrafts).values({
+        intentId: id,
+        version: 1,
+        payload: payload as unknown as Record<string, unknown>,
+        draftHash,
+        policyReport: report as unknown as Record<string, unknown>,
+        route: "automation",
+        createdBy: "system",
+      });
+      await tx.insert(approvals).values({
+        intentId: id,
+        draftVersion: 1,
+        draftHash,
+        userId: input.userId,
+        network: input.network,
+        route: "automation",
+        signerAddress: walletAddress,
+        status: "approved",
+        decidedViaSurface: "automation",
+        expiresAt: later(APPROVAL_TTL_S),
+      });
+      await tx.insert(spendLedger).values({ userId: input.userId, network: input.network, intentId: id, category: "send", asset: input.asset, amount: input.amount });
+      await tx.insert(txAttempts).values({
+        userId: input.userId,
+        intentId: id,
+        network: input.network,
+        chainId: context.network.chainId,
+        attemptNo: 1,
+        kind: "send_automation",
+        provider: "circle_dcw",
+        idempotencyKey: randomUUID(),
+        fromAddress: context.ops.address,
+        toAddress: call.to,
+        status: "prepared",
+        receipt: { prepared: { to: call.to, data: call.data, grantId: input.grant.id } },
+      });
+      return id;
+    });
+    if (!intentId) return { status: "skipped", reason: "OVER_DAILY_LIMIT" };
+    await this.submitToOps(intentId);
+    void this.follow(intentId);
+    return { status: "executing", intentId };
   }
 
   /** Something changed since the person looked: a new version shows them what is true now. */

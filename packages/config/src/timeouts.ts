@@ -17,3 +17,6 @@ export const RESUME_MAX_REASKS = 2;
 export const RECONCILE_INTERVAL_MS = 15 * MS_PER_SECOND;
 /** A send still unsettled after this long is shown as "checking" (unknown outcome), never retried on its own. */
 export const SEND_UNKNOWN_AFTER_S = 5 * SECONDS_PER_MINUTE;
+
+/** How often the automation runner looks for due runs (Stage 8). A run happens within this of its time. */
+export const AUTOMATION_TICK_MS = 30_000;

@@ -4,3 +4,4 @@ export * from "./send-draft";
 export * from "./swap-draft";
 export * from "./bridge-draft";
 export * from "./earn-draft";
+export * from "./schedule";

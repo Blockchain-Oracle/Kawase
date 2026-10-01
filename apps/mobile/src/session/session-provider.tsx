@@ -112,6 +112,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     void load();
   }, [load]);
 
+  // The person's time zone, inferred from the device (never asked): automations run at their local time. Only an
+  // account still on the default is updated, so a zone they chose is never overwritten.
+  React.useEffect(() => {
+    if (status !== "account" || !user || user.timezone !== "UTC") return;
+    const device = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!device || device === "UTC") return;
+    void api.me
+      .update({ timezone: device })
+      .then(({ user: next }) => show(next))
+      .catch(() => undefined);
+  }, [status, user, show]);
+
   // While stale: try again on a timer and whenever the app returns to the foreground.
   const stale = connection !== "online";
   React.useEffect(() => {

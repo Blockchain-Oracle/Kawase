@@ -130,3 +130,18 @@ export type EarnOverviewLine = {
   positions: { name: string; worth: string; apy: string }[];
   network: AgentNetwork;
 };
+
+export type AutomationSummary = {
+  automationId: string;
+  network: AgentNetwork;
+  status: "ready" | "on" | "paused" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in" | "ended";
+  /** "Every Tuesday at 09:00 (Africa/Lagos): send 1.00 USDC to Alex". */
+  readBack: string | null;
+  nextRuns: string[];
+  /** "At most 1.00 USDC a week can ever go to this address, enforced on Arc, until 1 Oct 2027." */
+  bound: string | null;
+  problem: string | null;
+  warnings: string[];
+};
+
+export type ProposeAutomationOutput = { automation: import("./types").AutomationView; summary: AutomationSummary };

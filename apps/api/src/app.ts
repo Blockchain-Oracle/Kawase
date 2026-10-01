@@ -32,6 +32,8 @@ import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
+import { automationRoutes } from "./automations/routes";
+import { AutomationService } from "./automations/service";
 import { noBridges, type BridgeEngine } from "./bridge/engine";
 import { noEarn, type EarnEngine } from "./earn/engine";
 import { earnRoutes } from "./earn/routes";
@@ -73,6 +75,8 @@ export type AppDeps = {
   earn?: EarnEngine | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
   reconcileIntervalMs?: number | undefined;
+  /** Runs due automations this often; off when unset (tests drive the runner themselves). */
+  automationTickMs?: number | undefined;
   /** Reads incoming transfers this often; off when unset. */
   watchIntervalMs?: number | undefined;
   /** The web app's address, for shared links. */
@@ -98,6 +102,8 @@ export function createApp(deps: AppDeps) {
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log);
+  const automations = new AutomationService(deps.db, deps.chains, wallets, recipients, sends, inbox, deps.log);
+  if (deps.automationTickMs) automations.start(deps.automationTickMs);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
@@ -160,12 +166,13 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
+  app.route("/automations", automationRoutes(automations));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   app.route(
     "/agent",
-    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
+    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models: deps.models, approvalSecret: deps.approvalSecret }),
   );
 
   return app;

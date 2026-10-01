@@ -6,7 +6,7 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
-import { RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
+import { AUTOMATION_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
@@ -47,6 +47,7 @@ const app = createApp({
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
+  automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,
   webUrl: env.KAWASE_WEB_URL,
   webOrigins: [

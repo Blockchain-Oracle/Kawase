@@ -71,6 +71,20 @@
       "when": 1790855613370,
       "tag": "0009_earn",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790857801783,
+      "tag": "0010_automations",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790858752060,
+      "tag": "0011_automation_report",
+      "breakpoints": true
     }
   ]
 }

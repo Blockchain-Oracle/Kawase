@@ -171,6 +171,11 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - `EarnDraft` (EIP-712: chainId, from, vault, action, amount, maxIn, minOut, maxFee); floors and the share ceiling come from the vault's own previews (`EARN_FLOOR_BPS` 99%, `EARN_SHARES_CEILING_BPS` 101%). The vault is inferred when not named (best active one for a deposit, largest position for a withdrawal).
 - Positions are read from the vaults on chain, never stored; the receipt witness checks USDC and share transfers for the wallet in each direction.
 
+**As built for automations (Stage 8a, 2026-10-01)**
+- `automations` (schedule in the person's zone, action with the resolved recipient, status, grant, next run) and `automation_runs` (unique per automation and scheduled time: the claim that makes each occurrence run once).
+- The grant (`buildAutomationGrant`): transfer-only, recipient pinned by `AllowedCalldata`, `ERC20PeriodTransfer` cap = the amount per period (day / week / 28 days), redeemer = the ops wallet, expiry = the automation's end. Signed once by the wallet (Face ID); revoked by the wallet on cancel.
+- The runner (`AutomationService.tick`, every 30 s in the api for now): claim → re-check with the send rules on fresh facts and the grant's on-chain room → `SendService.runAutomation` (intent `originSurface: automation`, approval `route: automation`, ledger, attempt, ops redeem) → the usual tracking and witness; runs settle from their intent's state. Skips carry a reason code and an inbox item.
+
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.
 - Notifications can arrive out of order and are retried within seconds; every handler is driven by the state in the payload. `webhooks.test` (all-zero id) is a ping.

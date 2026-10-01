@@ -25,7 +25,7 @@ export const intentStateEnum = pgEnum("intent_state", [
 ]);
 export const intentKindEnum = pgEnum("intent_kind", ["send", "swap", "bridge", "earn"]);
 export const surfaceEnum = pgEnum("surface", ["app", "chat", "voice", "automation"]);
-export const approvalRouteEnum = pgEnum("approval_route", ["allowance", "wallet_signature"]);
+export const approvalRouteEnum = pgEnum("approval_route", ["allowance", "wallet_signature", "automation"]);
 
 export const intents = pgTable(
   "intents",

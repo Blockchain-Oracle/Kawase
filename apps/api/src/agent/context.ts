@@ -16,6 +16,7 @@ import type { FaucetService } from "../faucet/service";
 import type { RequestService } from "../requests/service";
 import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
+import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
@@ -23,6 +24,7 @@ import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { summarizeSend } from "./send-summary";
+import { summarizeAutomation } from "./automation-summary";
 import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
@@ -63,12 +65,13 @@ export function buildAgentContext(input: {
   swaps: SwapService;
   bridges: BridgeService;
   earn: EarnService;
+  automations: AutomationService;
   requests: RequestService;
   threadId: string;
   lastUserText: string;
   log: Logger;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -143,6 +146,15 @@ export function buildAgentContext(input: {
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "earn"), inArray(intents.state, [...DRAFTABLE])));
       const intent = await earn.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeEarn(intent) };
+    },
+
+    async draftAutomation(request) {
+      if (user.isAnonymous) {
+        const automation = { id: "", network, status: "draft", kind: "scheduled_send", schedule: { every: request.every, time: request.time ?? "09:00", timezone: request.timezone ?? user.timezone }, action: { recipientWords: request.recipient, recipientAddress: null, recipientName: null, asset: request.asset ?? "USDC", amount: "0", note: null }, nextRuns: [], maxPerPeriod: "0", periodSeconds: 0, endsAt: new Date().toISOString(), grant: null, runs: [], results: [{ code: "SIGN_IN_REQUIRED", kind: "precondition" }], blocking: { code: "SIGN_IN_REQUIRED", kind: "precondition" }, createdAt: new Date().toISOString() } as const;
+        return { automation: automation as never, summary: summarizeAutomation(automation as never) };
+      }
+      const automation = await automations.create(user, request, { threadId });
+      return { automation, summary: summarizeAutomation(automation) };
     },
 
     async createPaymentRequest(request) {

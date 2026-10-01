@@ -53,6 +53,8 @@ export type PendingTransaction = {
   to: Address;
   data: Hex;
   nonce: number;
+  /** For revoking one grant (an automation's): which. */
+  grantId?: string | undefined;
 };
 
 export class WalletService {
@@ -405,6 +407,18 @@ export class WalletService {
     });
   }
 
+  /** An unsigned transaction that revokes one grant (an automation's) on chain; the wallet signs it. */
+  async revokeGrantRequest(userId: string, grantId: string) {
+    const [grant] = await this.db
+      .select()
+      .from(grants)
+      .where(and(eq(grants.id, grantId), eq(grants.userId, userId)));
+    if (!grant || grant.status !== "active") return null;
+    const { network: context } = this.clients(grant.network);
+    const call = encodeRevoke(context, grant.delegation as never);
+    return this.unsignedTransaction(userId, grant.network, "revoke_grant", call.to, call.data, REVOKE_GAS_LIMIT, { grantId });
+  }
+
   private async unsignedTransaction(
     userId: string,
     network: NetworkId,
@@ -421,7 +435,7 @@ export class WalletService {
       client.estimateFeesPerGas(),
     ]);
     const id = newId();
-    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce });
+    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce, grantId: typeof extra.grantId === "string" ? extra.grantId : undefined });
     return {
       requestId: id,
       ...extra,
@@ -449,14 +463,17 @@ export class WalletService {
       () => undefined,
     );
     if (!signer) throw problem(HTTP.unprocessable, "transaction_mismatch", "the transaction is not signed");
-    const matches =
-      signer.toLowerCase() === pending.wallet.toLowerCase() &&
-      parsed.to?.toLowerCase() === pending.to.toLowerCase() &&
-      parsed.data === pending.data &&
-      parsed.nonce === pending.nonce &&
-      parsed.chainId === context.chainId &&
-      (parsed.value ?? ZERO) === ZERO;
-    if (!matches) throw problem(HTTP.unprocessable, "transaction_mismatch");
+    const checks = {
+      signer: signer.toLowerCase() === pending.wallet.toLowerCase(),
+      to: parsed.to?.toLowerCase() === pending.to.toLowerCase(),
+      // Hex compared without regard to case: a parsed signed transaction reads lower-case.
+      data: parsed.data?.toLowerCase() === pending.data.toLowerCase(),
+      nonce: parsed.nonce === pending.nonce,
+      chain: parsed.chainId === context.chainId,
+      value: (parsed.value ?? ZERO) === ZERO,
+    };
+    const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);
+    if (failed.length > 0) throw problem(HTTP.unprocessable, "transaction_mismatch", `differs in: ${failed.join(", ")}`);
     this.pendingTransactions.delete(requestId);
 
     const attemptId = newId();
@@ -480,6 +497,12 @@ export class WalletService {
       .update(txAttempts)
       .set({ txHash: hash, status, receipt: jsonSafe(receipt) })
       .where(eq(txAttempts.id, attemptId));
+    if (pending.kind === "revoke_grant" && pending.grantId && status === "confirmed") {
+      await this.db
+        .update(grants)
+        .set({ status: "revoked", revokeTxAttemptId: attemptId })
+        .where(and(eq(grants.id, pending.grantId), eq(grants.userId, userId)));
+    }
     if (pending.kind === "revoke_allowance" && status === "confirmed") {
       await this.db
         .update(grants)

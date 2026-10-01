@@ -464,6 +464,73 @@ export type EarnApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: EarnIntent }
   | { status: "sign"; intent: EarnIntent; approvalId: string; transaction: UnsignedTransaction };
 
+// ── Automations (Stage 8) ───────────────────────────────────────────────────────────────────────────────────
+
+export type AutomationSchedule = {
+  every: "day" | "week" | "month";
+  /** 0 = Sunday … 6 = Saturday, for weekly. */
+  weekday?: number | undefined;
+  /** 1–28, for monthly. */
+  monthday?: number | undefined;
+  /** "HH:MM" local to `timezone`. */
+  time: string;
+  timezone: string;
+};
+
+export type AutomationRunView = {
+  id: string;
+  scheduledFor: string;
+  status: "executing" | "succeeded" | "skipped" | "failed";
+  /** Why it was skipped or failed (a policy reason code) and its display values. */
+  reason: string | null;
+  reasonParams: Record<string, string> | null;
+  tx: { hash: string; explorerUrl: string } | null;
+};
+
+export type AutomationView = {
+  id: string;
+  network: NetworkId;
+  status: "draft" | "active" | "paused" | "canceled" | "ended";
+  kind: "scheduled_send";
+  schedule: AutomationSchedule;
+  action: {
+    recipientWords: string;
+    recipientAddress: string | null;
+    recipientName: string | null;
+    asset: "USDC" | "EURC";
+    /** Base units per run. */
+    amount: string;
+    note: string | null;
+  };
+  /** The next few runs (ISO), while it is a draft or on. */
+  nextRuns: string[];
+  /** The most that can ever leave per period, enforced on chain by the grant, and the period. */
+  maxPerPeriod: string;
+  periodSeconds: number;
+  endsAt: string;
+  grant: { id: string; status: string; expiresAt: string } | null;
+  runs: AutomationRunView[];
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  createdAt: string;
+};
+
+export type AutomationInput = {
+  /** As the person said it: a contact's name, an @handle, or an address they typed. */
+  recipient: string;
+  /** Decimal amount per run. */
+  amount: string;
+  asset?: "USDC" | "EURC" | undefined;
+  every: "day" | "week" | "month";
+  weekday?: number | undefined;
+  monthday?: number | undefined;
+  /** "HH:MM"; 09:00 when not said. */
+  time?: string | undefined;
+  /** IANA zone; the person's own when not said. */
+  timezone?: string | undefined;
+  note?: string | null | undefined;
+};
+
 // ── Payment requests and the inbox (Stage 5b) ───────────────────────────────────────────────────────────────
 
 export type PaymentRequestStatus = "open" | "paid" | "canceled" | "expired";
@@ -503,7 +570,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped";
 
 export type InboxItem = {
   id: string;

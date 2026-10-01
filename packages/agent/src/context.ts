@@ -16,6 +16,8 @@ import type {
   ProposeEarnOutput,
   EarnOverviewLine,
   EarnRequest,
+  AutomationInput,
+  ProposeAutomationOutput,
   BridgeRequest,
   SendRequest,
   SwapRequest,
@@ -61,6 +63,8 @@ export type AgentContext = {
   earnOverview(): Promise<EarnOverviewLine>;
   /** Drafts a deposit into or withdrawal from a vault; approved on the card. */
   proposeEarn(input: EarnRequest): Promise<ProposeEarnOutput>;
+  /** Drafts an automation (a scheduled send) with its read-back, next runs and on-chain bound; turned on on the card. */
+  draftAutomation(input: AutomationInput): Promise<ProposeAutomationOutput>;
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;

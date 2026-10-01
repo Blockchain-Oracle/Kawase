@@ -77,6 +77,7 @@ export function testApp(
   swaps: SwapEngine = noSwaps,
   bridges: BridgeEngine = noBridges,
   earn: EarnEngine = noEarn,
+  options: { automationTickMs?: number; reconcileIntervalMs?: number } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -92,6 +93,7 @@ export function testApp(
     swaps,
     bridges,
     earn,
+    ...options,
     models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,
