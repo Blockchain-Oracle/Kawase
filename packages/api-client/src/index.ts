@@ -49,6 +49,8 @@ import type {
   PaymentRequestInput,
   PublicPaymentRequest,
   InboxItem,
+  NotificationSettings,
+  NotificationSettingsChange,
 } from "./types";
 
 export * from "./types";
@@ -280,6 +282,13 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
+    },
+
+    notifications: {
+      get: () => call<NotificationSettings>("GET", "/notifications"),
+      update: (change: NotificationSettingsChange) => call<NotificationSettings>("PATCH", "/notifications", change),
+      /** This phone's Expo push token; null when notifications are turned off here or the person signs out. */
+      pushToken: (token: string | null) => call<void>("PUT", "/notifications/push-token", { token }),
     },
 
     inbox: {

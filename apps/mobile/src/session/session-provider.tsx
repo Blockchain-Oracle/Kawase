@@ -11,6 +11,8 @@ import { AppState, Platform } from "react-native";
 import { ApiError, type ApiUser, type DeviceInfo, type NetworkId } from "@kawase/api-client";
 import type { SupportedLocale } from "@kawase/config";
 
+import { forgetPushToken } from "@/notifications/push";
+
 import { api } from "./api";
 import { sessionStorage } from "./storage";
 
@@ -172,6 +174,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return updated;
       },
       async signOut() {
+        // This phone stops getting the person's notifications before the session ends.
+        await forgetPushToken();
         await api.auth.signOut().catch(() => undefined);
         await clear();
       },

@@ -154,7 +154,7 @@ export function SettingsScreen() {
         <Section title={t("settings.preferences")}>
           <ListGroup>
             <ListRow leading={<RowIcon icon={Globe} />} title={t("settings.language")} trailing={<Text className="text-muted-foreground text-base">{LANGUAGE_NAMES[locale]}</Text>} chevron onPress={() => setLanguageOpen(true)} />
-            <ListRow leading={<RowIcon icon={Bell} />} title={t("settings.notifications")} trailing={coming} disabled />
+            <ListRow leading={<RowIcon icon={Bell} />} title={t("settings.notifications")} chevron onPress={() => router.push("/notifications")} />
             <ListRow leading={<RowIcon icon={Mic} />} title={t("settings.voice")} trailing={coming} disabled />
             <ListRow leading={<RowIcon icon={Brain} />} title={t("settings.memory")} trailing={coming} disabled />
           </ListGroup>

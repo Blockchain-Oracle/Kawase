@@ -141,7 +141,15 @@
           "microphonePermission": "Kawase hears you only while you talk to it, to answer you."
         }
       ],
-      "@livekit/react-native-expo-plugin"
+      "@livekit/react-native-expo-plugin",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/brand/notification-icon.png",
+          "color": "#3F6600",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

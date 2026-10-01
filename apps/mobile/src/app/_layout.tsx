@@ -13,6 +13,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Toaster } from "sonner-native";
 
 import { LocaleProvider } from "@/i18n/locale-provider";
+import { PushSync } from "@/notifications/push-sync";
 import { FundProvider } from "@/fund/fund-provider";
 import { SessionProvider } from "@/session/session-provider";
 import { SignInProvider } from "@/sign-in/sign-in-provider";
@@ -30,6 +31,7 @@ export default function RootLayout() {
           <ThemeProvider>
             <SessionProvider>
               <ThemeSync />
+              <PushSync />
               <LocaleProvider>
                 <BottomSheetModalProvider>
                   <SignInProvider>

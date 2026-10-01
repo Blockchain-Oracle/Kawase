@@ -670,3 +670,22 @@ export type InboxItem = {
 
 /** A voice session: the LiveKit room to join with this token (Kawase's voice worker is dispatched into it), and the thread the conversation is saved in (the same one chat shows). */
 export type VoiceSession = { url: string; token: string; room: string; threadId: string };
+
+export type NotificationChannel = "push" | "email";
+/** Per event and channel (the same shape as @kawase/config's NotificationPrefs). */
+export type NotificationPrefs = Partial<Record<InboxKind, Partial<Record<NotificationChannel, boolean>>>>;
+/** "HH:MM" in the person's time zone; the end may be the next day. */
+export type QuietHours = { start: string; end: string };
+
+/** Settings → Notifications (Stage 9). `prefs` holds only what the person changed; the rest follows the defaults. */
+export type NotificationSettings = {
+  prefs: NotificationPrefs;
+  quietHours: QuietHours | null;
+  /** Where emails go; null for a guest or an account without an email. */
+  email: string | null;
+  /** Whether the api can send email yet. */
+  emailEnabled: boolean;
+  /** Whether this phone has a push token on file. */
+  pushRegistered: boolean;
+};
+export type NotificationSettingsChange = { prefs?: NotificationPrefs; quietHours?: QuietHours | null };
