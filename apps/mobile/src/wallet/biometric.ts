@@ -1,14 +1,18 @@
-// The Face ID (or Touch ID / fingerprint / device passcode) check before the allowance is signed (D33: one Face ID
-// to accept a daily allowance). Until passkeys hold the key on a real domain, the session key signs, and this
-// check is what makes the approval the device owner's. A device with no biometrics and no passcode cannot be
-// checked, so it proceeds; the web has no such check yet.
+// The device owner's check before the wallet signs anything that binds them: accepting the daily allowance, and a
+// send above it (D33). Until passkeys hold the key on a real domain the session key signs, so this check is what
+// makes the approval the owner's. Only an explicit "approved" may continue: a cancel, a failure, a lockout or a
+// device with nothing to check with (no biometrics, no passcode, the web) stops the signature and says why
+// (Codex review R03). Nothing here lowers the requirement or invents a PIN.
 import * as LocalAuthentication from "expo-local-authentication";
 import { Platform } from "react-native";
 
-export type BiometricKind = "faceId" | "touchId" | "fingerprint" | "passcode" | "none";
-export type BiometricResult = "approved" | "cancelled" | "unavailable";
+/** What the device will show, for the words on the button ("Send with Face ID", "…with your fingerprint"). */
+export type BiometricKind = "faceId" | "touchId" | "face" | "fingerprint" | "passcode" | "none";
+export type BiometricResult = "approved" | "cancelled" | "failed" | "unavailable";
 
-/** Which check this device will show, for the button's words ("Accept with Face ID"). */
+const CANCELLED = new Set(["user_cancel", "app_cancel", "system_cancel"]);
+const UNAVAILABLE = new Set(["not_enrolled", "not_available", "passcode_not_set", "lockout"]);
+
 export async function biometricKind(): Promise<BiometricKind> {
   if (Platform.OS === "web") return "none";
   const [hardware, enrolled, level] = await Promise.all([
@@ -18,15 +22,18 @@ export async function biometricKind(): Promise<BiometricKind> {
   ]);
   if (hardware && enrolled) {
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) return Platform.OS === "ios" ? "faceId" : "fingerprint";
+    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) return Platform.OS === "ios" ? "faceId" : "face";
     if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) return Platform.OS === "ios" ? "touchId" : "fingerprint";
   }
   return level === LocalAuthentication.SecurityLevel.NONE ? "none" : "passcode";
 }
 
-/** Asks the device owner to confirm; resolves "approved" when they did or the device has nothing to ask with. */
+/** Asks the device owner to confirm. Callers continue only on "approved". */
 export async function confirmWithBiometrics(promptMessage: string, cancelLabel: string): Promise<BiometricResult> {
   if ((await biometricKind()) === "none") return "unavailable";
   const result = await LocalAuthentication.authenticateAsync({ promptMessage, cancelLabel, disableDeviceFallback: false });
-  return result.success ? "approved" : "cancelled";
+  if (result.success) return "approved";
+  if (CANCELLED.has(result.error)) return "cancelled";
+  if (UNAVAILABLE.has(result.error)) return "unavailable";
+  return "failed";
 }

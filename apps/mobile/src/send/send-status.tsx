@@ -1,11 +1,12 @@
-// A send after the yes: the silver paper plane floats quickly while the network works, then flies off toward the
-// trailing side when the receipt confirms the transfer, and the ending settles in with its words (the money-ending
-// taxonomy: sent · not sent · didn't go through · still checking · cancelled · expired). Every ending says what
-// happened to the money. Reduced motion keeps the plane still and skips the flight.
+// A send after the yes: the silver paper plane floats quickly while the network works. Only a confirmed transfer
+// sends it flying off toward the trailing side before the receipt settles in; every other ending (not sent, didn't
+// go through, still checking, cancelled, expired) arrives calmly with its own words (Codex review R17.8). Each
+// ending says what happened to the money. A lost connection while the send is moving is said plainly. Reduced
+// motion keeps the plane still and skips the flight.
 import { Check, Clock, ExternalLink, Minus, X } from "lucide-react-native";
 import * as React from "react";
 import { Linking, View } from "react-native";
-import Animated, { Easing, FadeIn, Keyframe, useReducedMotion } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import type { SendIntent } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
@@ -34,16 +35,32 @@ const BADGE_COMPACT = 44;
 const FLOAT_AMPLITUDE = 6;
 const FLOAT_TILT = 3;
 
-function flight(rtl: boolean) {
-  const x = rtl ? -FLY_X : FLY_X;
-  return new Keyframe({
-    0: { opacity: 1, transform: [{ translateX: 0 }, { translateY: 0 }, { rotate: "0deg" }] },
-    100: {
-      opacity: 0,
-      transform: [{ translateX: x }, { translateY: FLY_Y }, { rotate: `${rtl ? FLY_TILT_DEG : -FLY_TILT_DEG}deg` }],
-      easing: Easing.in(Easing.cubic),
-    },
-  }).duration(MOTION.planeFlyMs);
+/** The plane, floating while the send moves and flying off once when `departing` turns true. */
+function Plane({ id, compact, rtl, departing, onDeparted }: { id: string; compact: boolean; rtl: boolean; departing: boolean; onDeparted: () => void }) {
+  const progress = useSharedValue(0);
+  React.useEffect(() => {
+    if (!departing) return undefined;
+    progress.value = withTiming(1, { duration: MOTION.planeFlyMs, easing: Easing.in(Easing.cubic) });
+    const timer = setTimeout(onDeparted, MOTION.planeFlyMs);
+    return () => clearTimeout(timer);
+  }, [departing, onDeparted, progress]);
+  const flight = useAnimatedStyle(() => ({
+    opacity: 1 - progress.value,
+    transform: [
+      { translateX: (rtl ? -FLY_X : FLY_X) * progress.value },
+      { translateY: FLY_Y * progress.value },
+      { rotate: `${(rtl ? FLY_TILT_DEG : -FLY_TILT_DEG) * progress.value}deg` },
+    ],
+  }));
+  return (
+    <Animated.View style={flight}>
+      <View style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}>
+        <Float amplitude={FLOAT_AMPLITUDE} tilt={FLOAT_TILT} cycleMs={MOTION.sendingCycleMs}>
+          <PaperPlane width={compact ? PLANE_COMPACT : PLANE_WIDTH} id={`plane-${id}`} />
+        </Float>
+      </View>
+    </Animated.View>
+  );
 }
 
 type Ending = { icon: typeof Check; tone: "success" | "destructive" | "muted"; title: string; body: string };
@@ -72,25 +89,45 @@ function useEnding(intent: SendIntent): Ending | undefined {
 }
 
 /** The moving state and the ending, with the receipt link; `actions` go under it (Done, Save as contact). */
-export function SendStatus({ intent, compact, actions }: { intent: SendIntent; compact?: boolean; actions?: React.ReactNode }) {
+export function SendStatus({
+  intent,
+  compact,
+  actions,
+  connectionLost,
+}: {
+  intent: SendIntent;
+  compact?: boolean;
+  actions?: React.ReactNode;
+  connectionLost?: boolean;
+}) {
   const { t } = useT();
   const { locale } = useLocale();
   const reduced = useReducedMotion();
   const ending = useEnding(intent);
+  const money = useMoney();
   const rtl = isRtlLocale(locale);
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
+  const moving = isMoving(intent) && intent.state !== "unknown_outcome";
+  // The flight belongs to a send this screen watched move and then confirm, not to an old sent card reopened.
+  const watched = React.useRef(moving);
+  if (moving) watched.current = true;
+  const [departed, setDeparted] = React.useState(false);
+  const onDeparted = React.useCallback(() => setDeparted(true), []);
+  const departing = watched.current && intent.outcome === "sent" && !departed && !reduced;
 
-  if (isMoving(intent) && intent.state !== "unknown_outcome") {
+  if (moving || departing) {
     return (
       <View className={cn("items-center", compact ? "gap-2 py-2" : "gap-4 py-6")}>
-        <Animated.View exiting={reduced ? undefined : flight(rtl)} style={rtl ? { transform: [{ scaleX: -1 }] } : undefined}>
-          <Float amplitude={FLOAT_AMPLITUDE} tilt={FLOAT_TILT} cycleMs={MOTION.sendingCycleMs}>
-            <PaperPlane width={compact ? PLANE_COMPACT : PLANE_WIDTH} id={`plane-${intent.id}`} />
-          </Float>
-        </Animated.View>
+        {/* With no confirm step inside the allowance, what is moving is always in view while it moves. */}
+        {intent.draft ? (
+          <Text className={cn("font-display text-foreground text-center font-bold", compact ? "text-lg" : "text-2xl")}>
+            {`${money(intent.draft.asset, intent.draft.amount)} → ${recipientName(intent.draft.recipient, intent.request.recipient)}`}
+          </Text>
+        ) : null}
+        <Plane id={intent.id} compact={Boolean(compact)} rtl={rtl} departing={departing} onDeparted={onDeparted} />
         <StateLabel>{t("send.sending")}</StateLabel>
         <Text accessibilityLiveRegion="polite" className="text-muted-foreground text-center text-sm">
-          {t("send.sendingBody", { network: networkName })}
+          {connectionLost ? t("send.connectionLost") : t("send.sendingBody", { network: networkName })}
         </Text>
       </View>
     );
@@ -117,6 +154,9 @@ export function SendStatus({ intent, compact, actions }: { intent: SendIntent; c
       <Text accessibilityLiveRegion="polite" className="text-muted-foreground text-center text-base">
         {ending.body}
       </Text>
+      {connectionLost && intent.outcome === "checking" ? (
+        <Text className="text-muted-foreground text-center text-sm">{t("send.connectionLost")}</Text>
+      ) : null}
       {intent.tx ? (
         <Button variant="ghost" size="sm" onPress={() => void Linking.openURL(intent.tx!.explorerUrl)}>
           <Icon as={ExternalLink} className="text-muted-foreground size-4" />

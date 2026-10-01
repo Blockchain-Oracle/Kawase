@@ -86,28 +86,42 @@ export function summarizeSend(intent: SendIntent): SendSummary {
         ? `@${draft.recipient.handle}`
         : short(draft.recipient.address)
     : intent.request.recipient;
-  const status: SendSummary["status"] = !blocking
-    ? "ready"
-    : blocking.code === "SIGN_IN_REQUIRED"
-      ? "needs_sign_in"
-      : blocking.kind === "clarification"
-        ? "needs_answer"
-        : blocking.kind === "precondition"
-          ? "needs_fix"
-          : blocking.kind === "policy"
-            ? "refused"
-            : "not_possible";
+  const moving = intent.state === "executing" || intent.state === "approved" || intent.state === "unknown_outcome";
+  const status: SendSummary["status"] =
+    intent.state === "completed"
+      ? "sent"
+      : moving
+        ? "sending"
+        : intent.state === "failed"
+          ? "failed"
+          : !blocking
+            ? "ready"
+            : blocking.code === "SIGN_IN_REQUIRED"
+              ? "needs_sign_in"
+              : blocking.kind === "clarification"
+                ? "needs_answer"
+                : blocking.kind === "precondition"
+                  ? "needs_fix"
+                  : blocking.kind === "policy"
+                    ? "refused"
+                    : "not_possible";
   return {
     intentId: intent.id,
     network: intent.network,
     status,
     recipient,
-    amount: draft ? money(draft.asset, draft.amount) : intent.request.amount ? `${intent.request.amount} ${intent.request.asset ?? ""}`.trim() : null,
-    approval: blocking
-      ? null
-      : intent.route === "allowance"
-        ? "Sends without asking once they tap Send: it is inside the daily allowance."
-        : "Needs their Face ID after they tap Send.",
+    amount: draft
+      ? money(draft.asset, draft.amount)
+      : intent.request.amount
+        ? `${intent.request.amount} ${intent.request.asset ?? ""}`.trim()
+        : null,
+    approval: moving
+      ? "Sending now, inside the daily allowance: no prompt was needed. The card shows when it lands."
+      : blocking
+        ? null
+        : intent.route === "allowance"
+          ? "Inside the daily allowance; it goes when they tap Send on the card."
+          : "Needs their Face ID: they tap Send on the card and confirm.",
     problem: blocking ? describe(blocking) : null,
     warnings: intent.results.filter((entry) => entry.kind === "warning").map(describe),
   };

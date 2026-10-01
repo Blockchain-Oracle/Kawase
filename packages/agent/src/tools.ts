@@ -18,7 +18,8 @@ export function buildTools(context: AgentContext) {
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
       inputSchema: z.object({}),
-      execute: () => context.wallet(),
+      // Every money card records the network it was read on, so a stored card never borrows today's network.
+      execute: async () => ({ ...(await context.wallet()), network: context.network }),
     }),
     get_activity: tool({
       description:
@@ -26,7 +27,7 @@ export function buildTools(context: AgentContext) {
       inputSchema: z.object({
         limit: z.number().int().min(1).max(ACTIVITY_MAX).optional().describe(`How many, ${ACTIVITY_DEFAULT} if unsure`),
       }),
-      execute: async ({ limit }) => ({ items: await context.activity(limit ?? ACTIVITY_DEFAULT) }),
+      execute: async ({ limit }) => ({ network: context.network, items: await context.activity(limit ?? ACTIVITY_DEFAULT) }),
     }),
     get_capabilities: tool({
       description:
@@ -38,7 +39,7 @@ export function buildTools(context: AgentContext) {
       description:
         "Send the person free test USDC and EURC from Circle's testnet faucet, once a day. Testnet only; test money has no value.",
       inputSchema: z.object({}),
-      execute: () => context.claimTestMoney(),
+      execute: async () => ({ ...(await context.claimTestMoney()), network: context.network }),
     }),
     show_receive: tool({
       description:
@@ -48,7 +49,7 @@ export function buildTools(context: AgentContext) {
         const wallet = await context.wallet();
         return wallet.status === "ready"
           ? { status: "ready" as const, address: wallet.address, handle: wallet.handle, network: context.network }
-          : { status: wallet.status };
+          : { status: wallet.status, network: context.network };
       },
     }),
     get_authority: tool({

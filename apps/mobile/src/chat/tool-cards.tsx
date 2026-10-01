@@ -1,5 +1,6 @@
 // Generative UI (L1–L12, the card base): each agent tool's result rendered as a card in the conversation, from the
-// same real data the tool returned — balances with real marks, history rows, what each network can do, the faucet's
+// same real data the tool returned, under the network that data was read on (never the one the person is on now:
+// a card reopened after a switch keeps its own network, and its actions only show while that is the active one) — balances with real marks, history rows, what each network can do, the faucet's
 // result, the receive address, the authority receipt — and the network-switch card, which runs on the device: the
 // person taps, the app switches (with the real-money sheet for mainnet), and the agent continues with the answer.
 import * as Clipboard from "expo-clipboard";
@@ -17,6 +18,7 @@ import type {
   ContactLine,
   FaucetResult,
   Money,
+  OnNetwork,
   ProposeSendOutput,
   WalletSummary,
 } from "@kawase/api-client";
@@ -70,23 +72,28 @@ function useNetworkName() {
   return (network: Network) => (network === "testnet" ? t("network.arcTestnet") : t("network.arc"));
 }
 
-function MoneyRow({ money, network }: { money: Money; network: Network }) {
-  const ids = arcIdentity(network);
+/** The network a stored activity line was read on, from its explorer link, for lines saved before cards recorded it. */
+const networkOfExplorerUrl = (url: string): Network => (url.includes("testnet") ? "testnet" : "mainnet");
+
+function MoneyRow({ money, network }: { money: Money; network: Network | undefined }) {
+  // Without a recorded network the token's own mark is shown, with no chain badge to claim one.
+  const ids = arcIdentity(network ?? "mainnet");
   return (
     <View className="flex-row items-center gap-3">
-      <Mark entity={money.asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={ROW_MARK} />
+      <Mark entity={money.asset === "USDC" ? ids.usdc : ids.eurc} {...(network ? { chainBadge: ids.chain } : {})} size={ROW_MARK} />
       <Text className="text-foreground flex-1 text-base font-semibold">{money.asset}</Text>
       <Amount className="text-foreground text-base">{money.display.replace(` ${money.asset}`, "")}</Amount>
     </View>
   );
 }
 
-function WalletCard({ output, network }: { output: WalletSummary; network: Network }) {
+function WalletCard({ output, active }: { output: WalletSummary & OnNetwork; active: Network }) {
   const { t } = useT();
   const router = useRouter();
   const signIn = useSignIn();
   const fund = useFund();
   const name = useNetworkName();
+  const network = output.network;
   if (output.status === "guest") {
     return (
       <AgentCard eyebrow={t("chat.cardWallet")}>
@@ -108,7 +115,7 @@ function WalletCard({ output, network }: { output: WalletSummary; network: Netwo
     );
   }
   return (
-    <AgentCard eyebrow={`${t("chat.cardWallet")} · ${name(network)}`}>
+    <AgentCard eyebrow={network ? `${t("chat.cardWallet")} · ${name(network)}` : t("chat.cardWallet")}>
       {output.balances.map((money) => (
         <MoneyRow key={money.asset} money={money} network={network} />
       ))}
@@ -117,22 +124,26 @@ function WalletCard({ output, network }: { output: WalletSummary; network: Netwo
           ? t("chat.allowanceOn", { amount: wholeAmount(output.allowance.perDay.display) })
           : t("chat.allowanceOff")}
       </Text>
-      <View className="flex-row gap-2">
-        <Button className="flex-1" onPress={fund.open}>
-          <Icon as={ArrowDownToLine} className="text-primary-foreground size-4" />
-          <Text>{t("home.fund")}</Text>
-        </Button>
-        <Button className="flex-1" variant="secondary" onPress={() => router.push("/wallet/receive")}>
-          <Icon as={QrCode} className="size-4" />
-          <Text>{t("home.receive")}</Text>
-        </Button>
-      </View>
+      {/* Fund and Receive act on the active network, so they only sit on a card read on that network. */}
+      {network === active ? (
+        <View className="flex-row gap-2">
+          <Button className="flex-1" onPress={fund.open}>
+            <Icon as={ArrowDownToLine} className="text-primary-foreground size-4" />
+            <Text>{t("home.fund")}</Text>
+          </Button>
+          <Button className="flex-1" variant="secondary" onPress={() => router.push("/wallet/receive")}>
+            <Icon as={QrCode} className="size-4" />
+            <Text>{t("home.receive")}</Text>
+          </Button>
+        </View>
+      ) : null}
     </AgentCard>
   );
 }
 
-function ActivityCard({ output, network }: { output: { items: ActivityLine[] }; network: Network }) {
+function ActivityCard({ output }: { output: { items: ActivityLine[] } & OnNetwork }) {
   const { t } = useT();
+  const networkName = useNetworkName();
   const { locale } = useLocale();
   const router = useRouter();
   const name = useCounterpartyName();
@@ -144,14 +155,15 @@ function ActivityCard({ output, network }: { output: { items: ActivityLine[] }; 
       </AgentCard>
     );
   }
+  const cardNetwork = output.network ?? (output.items[0] ? networkOfExplorerUrl(output.items[0].explorerUrl) : undefined);
   return (
-    <AgentCard eyebrow={t("activity.title")} className="pb-1">
+    <AgentCard eyebrow={cardNetwork ? `${t("activity.title")} · ${networkName(cardNetwork)}` : t("activity.title")} className="pb-1">
       <View className="-mx-4">
         {output.items.map((line) => {
           // The card's rows share the Activity tab's look, so the same facts read the same everywhere.
           const item: ActivityItem = {
             id: `${line.at}:${line.counterparty}:${line.amount.asset}`,
-            network,
+            network: output.network ?? networkOfExplorerUrl(line.explorerUrl),
             direction: line.direction,
             asset: line.amount.asset,
             amount: line.amount.baseUnits,
@@ -489,7 +501,8 @@ export function ToolCard({
   const { t } = useT();
   const { user } = useSession();
   const tool = part.type.replace(/^tool-/, "");
-  const network: Network = user?.activeNetwork ?? "testnet";
+  // The network the person is on now: only for whether a stored card's actions apply, never for its contents.
+  const active: Network = user?.activeNetwork ?? "testnet";
 
   if (tool === "propose_network_switch") {
     return <NetworkSwitchCard part={part} onAnswer={(output) => onToolOutput(tool, part.toolCallId, output)} />;
@@ -506,9 +519,9 @@ export function ToolCard({
 
   switch (tool) {
     case "get_wallet":
-      return <WalletCard output={part.output as WalletSummary} network={network} />;
+      return <WalletCard output={part.output as WalletSummary & OnNetwork} active={active} />;
     case "get_activity":
-      return <ActivityCard output={part.output as { items: ActivityLine[] }} network={network} />;
+      return <ActivityCard output={part.output as { items: ActivityLine[] } & OnNetwork} />;
     case "get_capabilities":
       return <CapabilitiesCard output={part.output as { network: Network; capabilities: CapabilityLine[] }} />;
     case "claim_test_money":

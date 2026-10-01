@@ -25,6 +25,8 @@ import {
   setupAuthorizationRequest,
   withSignature,
 } from "@kawase/integrations-delegation";
+import { DelegationManager } from "@metamask/smart-accounts-kit/contracts";
+import { hashDelegation } from "@metamask/smart-accounts-kit/utils";
 import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
 import { ContactService } from "../contacts/service";
@@ -177,17 +179,34 @@ export class WalletService {
           .orderBy(desc(grants.createdAt))
           .limit(1),
       ]);
+      // The chain is the authority on whether the allowance is still on: a revoke whose answer was lost (the app
+      // went offline, the api restarted mid-wait) is found here and recorded, so the app never offers a blind second
+      // revoke for an allowance that is already off (Codex review R05).
+      let live = allowance[0];
+      if (live && (await this.disabledOnChain(client, live.delegation))) {
+        await this.db.update(grants).set({ status: "revoked" }).where(eq(grants.id, live.id));
+        live = undefined;
+      }
       networks[id] = {
         setUp: isWalletSetUp(code),
         setupAt: setup[0]?.setupAt ?? null,
         usdcBalance: usdcBalance.toString(),
         eurcBalance: eurcBalance.toString(),
-        allowance: allowance[0]
-          ? { id: allowance[0].id, receipt: allowance[0].receipt, expiresAt: allowance[0].expiresAt }
-          : null,
+        allowance: live ? { id: live.id, receipt: live.receipt, expiresAt: live.expiresAt } : null,
       };
     }
     return { address, networks };
+  }
+
+  /** True when the DelegationManager has disabled this grant. A failed read is not proof of anything: it says no. */
+  private async disabledOnChain(client: NetworkClients["client"], delegation: Record<string, unknown>) {
+    return DelegationManager.read
+      .disabledDelegations({
+        client,
+        contractAddress: DELEGATION_FRAMEWORK.delegationManager,
+        delegationHash: hashDelegation(delegation as never),
+      })
+      .catch(() => false);
   }
 
   async setupRequest(userId: string, network: NetworkId) {

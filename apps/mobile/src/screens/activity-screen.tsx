@@ -1,6 +1,7 @@
 // The Activity tab (journey 11): every USDC and EURC movement on the active network, read from the chain's
 // explorer through the api, with filters (all · received · sent), skeleton rows while loading, an inline error
-// with Retry, the designed empty state, pull to refresh, and the receipt sheet on tap. Automations and "needs you"
+// with Retry, a quiet "couldn't refresh" line over rows from an earlier read, the designed empty state, pull to
+// refresh, and the receipt sheet on tap. Rows are kept per network, so a switch never relabels another network's. Automations and "needs you"
 // join the filters when those stages ship (8/9); Kawase's own decision record per row arrives with Stage 12.
 import { useFocusEffect } from "expo-router";
 import * as React from "react";
@@ -94,11 +95,21 @@ export function ActivityScreen() {
         ) : items.length === 0 ? (
           <EmptyState art={<CoinStack width={ART_WIDTH} />} title={t("activity.emptyTitle")} body={t("activity.emptyBody")} />
         ) : (
-          <ListGroup>
-            {items.map((item) => (
-              <ActivityRow key={item.id} item={item} onPress={() => setOpen(item)} />
-            ))}
-          </ListGroup>
+          <>
+            {activity.stale ? (
+              <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2.5">
+                <Text accessibilityLiveRegion="polite" className="text-muted-foreground flex-1 text-sm">{t("activity.stale")}</Text>
+                <Button size="sm" variant="ghost" onPress={() => void activity.refresh()}>
+                  <Text className="text-foreground">{t("common.retry")}</Text>
+                </Button>
+              </View>
+            ) : null}
+            <ListGroup>
+              {items.map((item) => (
+                <ActivityRow key={item.id} item={item} onPress={() => setOpen(item)} />
+              ))}
+            </ListGroup>
+          </>
         )}
       </ScrollView>
       <ReceiptSheet item={open} onClose={() => setOpen(undefined)} onContactSaved={() => void activity.refresh()} />

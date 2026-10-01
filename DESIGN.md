@@ -114,6 +114,9 @@ Every interactive component has hover, a visible focus ring (`ring`), active, di
 - **Voice is never the only way.** Every voice action has a tap equivalent, and the keyboard button is always visible.
 - **What was heard is always shown** before anything is confirmed, and the confirm card shows the exact amount, asset, recipient and network.
 - **No prompt inside the allowance; Face ID above it** (D33). Inside the allowance the agent just sends and says so. Above it, the confirm card shows the exact amount, asset and recipient, and one Face ID approves. A spoken "yes" alone never approves a payment.
+  - In chat the person's message is the request: a proposal that the policy routes inside the allowance is approved as it is made, and the card opens on the moving plane. After a fix made on a card (a saved contact, a chosen currency, a sign-in) the same request carries on by itself. Anything routed to Face ID (above what is left of the allowance, EURC, a first payment above the new-recipient threshold, a lookalike address) waits on the card.
+  - On the send screen the Send button is not a prompt: it is the person's request itself (they typed the amount and chose the recipient there).
+  - The button names the device's real check (Face ID, Touch ID, face unlock, fingerprint, passcode). Only an explicit approval continues; a device with nothing to check with cannot approve and says how to fix that.
 - **Hold-to-confirm is for actions that cannot be undone and do not go through Face ID** (revoking the agent, removing a contact). Payments use the Face ID button. The hold time is never shortened by reduced motion, and a screen reader's double tap counts as the deliberate gesture.
 - **Quiet states are grey, not lime.** Hover and pressed states of secondary, outline and ghost buttons use `muted`.
 - **Real marks, distinct roles.** Asset mark ≠ chain badge ≠ status chip ≠ avatar. Generic icons never stand in for a known entity.

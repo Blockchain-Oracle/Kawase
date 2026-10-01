@@ -4,6 +4,12 @@ export type AgentNetwork = "mainnet" | "testnet";
 
 export type Money = { asset: "USDC" | "EURC"; baseUnits: string; display: string };
 
+/**
+ * Money cards carry the network they were read on, so a card reopened later renders with that network, not the one
+ * the person is on now (Codex review R04). Optional: threads stored before this field existed lack it.
+ */
+export type OnNetwork = { network?: AgentNetwork };
+
 export type WalletSummary =
   | { status: "guest" }
   | { status: "no_wallet" }
@@ -67,7 +73,7 @@ export type ContactLine = {
 export type SendSummary = {
   intentId: string;
   network: AgentNetwork;
-  status: "ready" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in";
+  status: "sending" | "sent" | "ready" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in" | "failed";
   recipient: string | null;
   amount: string | null;
   /** How it will be approved once the person taps Send. */

@@ -2,7 +2,8 @@
 // language pill on the first panel and every panel after (it opens the language sheet; the story re-renders in
 // place, reading direction included), auto-advance that pauses while a sheet is up or motion is reduced, and a
 // footer that never moves: "Start" makes a guest and goes home, "I already have an account" opens the sign-in
-// sheet over the story, which keeps moving behind the scrim.
+// sheet over the story, which keeps moving behind the scrim. If the guest cannot be made (offline, the api down),
+// the story stays, says so, and Start tries again (Codex review R08).
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { ActivityIndicator, useWindowDimensions, View } from "react-native";
@@ -41,6 +42,7 @@ export function StoryScreen() {
   const [index, setIndex] = React.useState(0);
   const [languageOpen, setLanguageOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
+  const [startFailed, setStartFailed] = React.useState(false);
 
   // One panel's dwell, restarted by every change (a swipe resets it); held while a sheet covers the story.
   const paused = reduced || languageOpen || signIn.isOpen;
@@ -52,9 +54,12 @@ export function StoryScreen() {
 
   const start = async () => {
     setStarting(true);
+    setStartFailed(false);
     try {
       await ensureGuest(locale);
       router.replace("/");
+    } catch {
+      setStartFailed(true);
     } finally {
       setStarting(false);
     }
@@ -98,6 +103,11 @@ export function StoryScreen() {
         topEnd={<StoryLanguagePill label={LANGUAGE_NAMES[locale]} accessibilityLabel={t("settings.language")} onPress={() => setLanguageOpen(true)} />}
         footer={
           <>
+            {startFailed ? (
+              <Text accessibilityRole="alert" className="text-destructive text-center text-sm">
+                {t("errors.startFailed")}
+              </Text>
+            ) : null}
             <Button size="lg" disabled={starting} onPress={() => void start()}>
               {starting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
               <Text>{t("welcome.start")}</Text>

@@ -31,7 +31,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 import { AmountStep, baseFromCanonical } from "@/send/amount-step";
-import { recipientName, useMoney, usePolicyText } from "@/send/copy";
+import { recipientName, useMoney, useApproveLabel, usePolicyText } from "@/send/copy";
 import { choiceFromText, RecipientStep, type RecipientChoice } from "@/send/recipient-step";
 import { SendBlocker } from "@/send/send-blocker";
 import { SendReview } from "@/send/send-review";
@@ -59,6 +59,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   const controller = useSend();
   const money = useMoney();
   const policyText = usePolicyText();
+  const approveLabel = useApproveLabel();
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
 
@@ -159,6 +160,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     body = (
       <ScrollView className="flex-1" contentContainerClassName="flex-grow justify-center px-5" contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
         <SendStatus
+          connectionLost={controller.connectionLost}
           intent={intent}
           actions={
             isFinished(intent) ? (
@@ -194,7 +196,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
           <Button size="lg" disabled={Boolean(blocking) || controller.busy} onPress={() => void controller.approve(prompt)}>
             {blocking ? null : <Icon as={faceId ? ScanFace : Send} className="text-primary-foreground size-5" />}
             <Text numberOfLines={2} className="text-center">
-              {blocking ? policyText(blocking, intent.network) : controller.busy ? t("send.sending") : faceId ? t("send.sendFaceId") : t("send.sendNow")}
+              {blocking ? policyText(blocking, intent.network) : controller.busy ? t("send.sending") : faceId ? approveLabel : t("send.sendNow")}
             </Text>
           </Button>
           <Button variant="ghost" disabled={controller.busy} onPress={() => void cancel()}>

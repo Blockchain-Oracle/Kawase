@@ -1,10 +1,13 @@
 // Words for a send, in the person's language: each policy reason as one sentence with its numbers formatted here
 // (the api sends base units and ISO times), where a recipient's address came from (the trust chip), and money.
+import * as React from "react";
+
 import type { PolicyResultView, SendIntent, SendRecipientView } from "@kawase/api-client";
 import { amount, formatAmount, type AssetId } from "@kawase/money";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { biometricKind, type BiometricKind } from "@/wallet/biometric";
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
@@ -80,4 +83,23 @@ export function useTrustLabel() {
         return t("send.trustNew");
     }
   };
+}
+
+const APPROVE_KEYS: Record<BiometricKind, string> = {
+  faceId: "send.sendFaceId",
+  touchId: "send.sendTouchId",
+  face: "send.sendFace",
+  fingerprint: "send.sendFingerprint",
+  passcode: "send.sendPasscode",
+  none: "send.sendFaceId",
+};
+
+/** "Send with Face ID", "…with your fingerprint", "…with your passcode": the device's real check (review R03). */
+export function useApproveLabel() {
+  const { t } = useT();
+  const [kind, setKind] = React.useState<BiometricKind>("faceId");
+  React.useEffect(() => {
+    void biometricKind().then(setKind);
+  }, []);
+  return t(APPROVE_KEYS[kind]);
 }

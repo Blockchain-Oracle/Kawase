@@ -217,6 +217,8 @@ export function ContactScreen({ id }: { id: string | undefined }) {
   const [changing, setChanging] = React.useState(false);
   const [cancelling, setCancelling] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  /** Bumped when a delete fails, so the hold control becomes usable again. */
+  const [deleteAttempt, setDeleteAttempt] = React.useState(0);
   const [notes, setNotes] = React.useState("");
   const network = user?.activeNetwork ?? "testnet";
   const ids = arcIdentity(network);
@@ -271,6 +273,7 @@ export function ContactScreen({ id }: { id: string | undefined }) {
     } catch {
       toast(t("common.error"));
       setDeleting(false);
+      setDeleteAttempt((count) => count + 1);
     }
   };
 
@@ -408,7 +411,7 @@ export function ContactScreen({ id }: { id: string | undefined }) {
           />
         </View>
 
-        <HoldToConfirm onConfirm={() => void remove()} confirmLabel={t("contacts.deleting")} disabled={deleting} resetAfter={0}>
+        <HoldToConfirm onConfirm={() => void remove()} confirmLabel={t("contacts.deleting")} done={false} resetKey={deleteAttempt} disabled={deleting} hint={t("limits.holdHint")}>
           {t("contacts.holdToDelete")}
         </HoldToConfirm>
       </ScrollView>

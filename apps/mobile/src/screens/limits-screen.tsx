@@ -1,7 +1,10 @@
 // Wallet & limits (journey 12; N1–N5, S10, S11): what Kawase is allowed to do with this wallet on the active
 // network, in the authority receipt's plain words, and the switch that takes it away. Turning the allowance off is
 // an on-chain revoke the person signs — irreversible from here, so it is hold-to-confirm; turning it back on goes
-// through the same Face ID step as setup. The receipt is decoded from the signed grant, never from a draft. The
+// through the same Face ID step as setup. The revoke is a sequence with honest endings (Codex review R05): waiting
+// for the signature → sent → confirmed by the api; a cancelled or refused signature leaves the allowance on and the
+// control usable; a revoke whose answer was lost is checked against the chain (the api reads the DelegationManager)
+// before another one is offered, so nobody signs twice blindly. The receipt is decoded from the signed grant, never from a draft. The
 // rest of journey 12 (pause all, the risk dial, practice mode, the exit kit's sweep) lands with the executor and
 // the agent that obey them (Stages 4/5), so those rows are not shown before they do anything.
 import * as Clipboard from "expo-clipboard";
@@ -12,6 +15,7 @@ import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
+import { ApiError } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Koban } from "@kawase/ui-native/components/art/koban";
@@ -43,7 +47,21 @@ const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const ART_WIDTH = 140;
 
+/** After a lost answer, the chain is asked this many times, this far apart, before the person is asked to check again. */
+const RECONCILE_TRIES = 8;
+const RECONCILE_GAP_MS = 3_000;
+const HTTP_CLIENT_ERROR = 400;
+const HTTP_SERVER_ERROR = 500;
+const MS_PER_TENTH = 100;
+const TENTHS_PER_SECOND = 10;
+/** The hold that turns the allowance off; long enough to be deliberate. */
+const REVOKE_HOLD_MS = 1_800;
+
 const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** idle → signing → pending → (done | failed | checking → done | unconfirmed). */
+type RevokePhase = "idle" | "signing" | "pending" | "checking" | "unconfirmed" | "failed";
 
 export function LimitsScreen() {
   const { t } = useT();
@@ -53,7 +71,9 @@ export function LimitsScreen() {
   const { status, user } = useSession();
   const { wallet, refresh } = useWalletStatus();
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
-  const [revoking, setRevoking] = React.useState(false);
+  const [phase, setPhase] = React.useState<RevokePhase>("idle");
+  const [note, setNote] = React.useState<string>();
+  const [attempt, setAttempt] = React.useState(0);
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
   const state = wallet?.networks[network];
@@ -66,21 +86,79 @@ export function LimitsScreen() {
     }, [refresh]),
   );
 
+  /** The control can be held again: the allowance is still on, and the words say why. */
+  const fail = (words: string) => {
+    setNote(words);
+    setPhase("failed");
+    setAttempt((count) => count + 1);
+  };
+
+  /** Asks the api (which asks the chain) whether the allowance is off; never sends anything. */
+  const reconcile = async (grantId: string | undefined) => {
+    setNote(undefined);
+    setPhase("checking");
+    for (let tries = 0; tries < RECONCILE_TRIES; tries++) {
+      const fresh = await api.wallet.status().catch(() => undefined);
+      const allowance = fresh?.networks[network]?.allowance;
+      if (fresh && (!allowance || allowance.id !== grantId)) {
+        await refresh();
+        setPhase("idle");
+        toast(t("limits.revoked"));
+        return;
+      }
+      await sleep(RECONCILE_GAP_MS);
+    }
+    await refresh();
+    setNote(t("limits.revokeUnconfirmed"));
+    setPhase("unconfirmed");
+    setAttempt((count) => count + 1);
+  };
+
   const revoke = async () => {
     if (!signer) return;
-    setRevoking(true);
+    const grantId = state?.allowance?.id;
+    setNote(undefined);
+    setPhase("signing");
+    let request;
     try {
-      const request = await api.wallet.revokeRequest(network);
-      const signed = await signer.signTransaction(toSerializable(request.transaction));
-      await api.wallet.submitTransaction(request.requestId, signed);
-      await refresh();
-      toast(t("limits.revoked"));
+      request = await api.wallet.revokeRequest(network);
     } catch {
-      toast(t("setup.failed"));
-    } finally {
-      setRevoking(false);
+      fail(t("limits.revokeFailed"));
+      return;
+    }
+    let signed;
+    try {
+      signed = await signer.signTransaction(toSerializable(request.transaction));
+    } catch {
+      fail(t("limits.revokeNotSigned"));
+      return;
+    }
+    setPhase("pending");
+    try {
+      const result = await api.wallet.submitTransaction(request.requestId, signed);
+      if (result.status !== "confirmed") {
+        await refresh();
+        fail(t("limits.revokeReverted"));
+        return;
+      }
+      await refresh();
+      setPhase("idle");
+      toast(t("limits.revoked"));
+    } catch (error) {
+      // Refused before it was broadcast (a mismatch, an expired request): nothing reached the chain.
+      if (error instanceof ApiError && error.status >= HTTP_CLIENT_ERROR && error.status < HTTP_SERVER_ERROR) {
+        fail(t("limits.revokeFailed"));
+        return;
+      }
+      // The signed revoke may be on its way: look before offering another one.
+      await reconcile(grantId);
     }
   };
+
+  const busy = phase === "signing" || phase === "pending" || phase === "checking";
+  const holdLabel =
+    phase === "signing" ? t("limits.revokeSigning") : phase === "checking" ? t("limits.revokeChecking") : t("limits.revoking");
+  const holdSeconds = Math.round(REVOKE_HOLD_MS / MS_PER_TENTH) / TENTHS_PER_SECOND;
 
   const copy = async () => {
     if (!wallet?.address) return;
@@ -134,9 +212,27 @@ export function LimitsScreen() {
             {authority ? (
               <>
                 <AuthorityReceipt {...authority} />
-                <HoldToConfirm onConfirm={() => void revoke()} confirmLabel={t("limits.revoking")} disabled={revoking || !signer} resetAfter={0}>
+                <HoldToConfirm
+                  onConfirm={() => void revoke()}
+                  confirmLabel={holdLabel}
+                  done={false}
+                  resetKey={attempt}
+                  duration={REVOKE_HOLD_MS}
+                  hint={t("limits.holdHint", { seconds: holdSeconds })}
+                  disabled={busy || !signer}
+                >
                   {t("limits.holdToRevoke")}
                 </HoldToConfirm>
+                {note ? (
+                  <View accessibilityRole="alert" accessibilityLiveRegion="polite" className="bg-muted gap-3 rounded-2xl px-4 py-3">
+                    <Text className={cn("text-base leading-6", phase === "failed" ? "text-destructive" : "text-foreground", TEXT_START)}>{note}</Text>
+                    {phase === "unconfirmed" ? (
+                      <Button variant="secondary" onPress={() => void reconcile(state?.allowance?.id)}>
+                        <Text>{t("limits.checkAgain")}</Text>
+                      </Button>
+                    ) : null}
+                  </View>
+                ) : null}
                 <Text className={cn("text-muted-foreground px-1 text-sm", TEXT_START)}>{t("limits.revokeNote")}</Text>
               </>
             ) : (

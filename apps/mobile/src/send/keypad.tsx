@@ -39,11 +39,25 @@ export function decimalSeparator(locale: string): string {
   return sample.length === SAMPLE_LENGTH ? (sample[1] ?? ".") : ".";
 }
 
-/** A canonical value for display: the whole part grouped in the locale's digits, the separator, the typed fraction. */
+const DIGIT_COUNT = 10;
+
+/** The locale's own digits 0–9 ("٠"…"٩" in Arabic, "০"…"৯" in Bengali), so a whole amount is in one script. */
+function localDigits(locale: string): string[] {
+  const format = new Intl.NumberFormat(locale, { useGrouping: false });
+  return Array.from({ length: DIGIT_COUNT }, (_, digit) => format.format(digit));
+}
+
+/**
+ * A canonical value for display, all in the locale's digits: the whole part grouped, the separator, and the fraction
+ * exactly as typed (trailing zeros kept). The canonical value itself is what the api gets (review R17.11).
+ */
 export function displayAmount(value: string, locale: string): string {
   const [whole = "", fraction] = value.split(".");
   const grouped = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format((whole || "0") as unknown as number);
-  return fraction === undefined ? grouped : `${grouped}${decimalSeparator(locale)}${fraction}`;
+  if (fraction === undefined) return grouped;
+  const digits = localDigits(locale);
+  const typed = [...fraction].map((char) => digits[Number(char)] ?? char).join("");
+  return `${grouped}${decimalSeparator(locale)}${typed}`;
 }
 
 function Key({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {

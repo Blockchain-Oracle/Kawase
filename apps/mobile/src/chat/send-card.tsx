@@ -1,8 +1,9 @@
 // The send card (L, C1, T): what `propose_send` drafted, live. The tool's output is only where the card starts; it
 // then follows the intent itself, so a conversation reopened tomorrow shows what really happened (sent, cancelled,
-// expired) rather than the proposal it began as. Blocked → the blocker with its fix (add the contact, pick the
-// currency, sign in), and the same send resumes; ready → the review and one Send button (Face ID above the
-// allowance); moving or finished → the plane and the money ending. Nothing here is decided by the model.
+// expired) rather than the proposal it began as. Inside the allowance the request already went (D33: no prompt;
+// the api approved it as it was proposed), so the card opens on the plane. Blocked → the blocker with its fix (add
+// the contact, pick the currency, sign in); after a fix the person made here, the same request carries on by itself
+// when it lands inside the allowance, and waits for Send with Face ID above it. Nothing here is decided by the model.
 import { useRouter } from "expo-router";
 import { BookUser, ScanFace } from "lucide-react-native";
 import * as React from "react";
@@ -18,11 +19,11 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useT } from "@/i18n";
-import { recipientName, useMoney } from "@/send/copy";
+import { recipientName, useApproveLabel, useMoney } from "@/send/copy";
 import { SendBlocker } from "@/send/send-blocker";
 import { SendReview } from "@/send/send-review";
 import { SendStatus } from "@/send/send-status";
-import { isOpen, useSend } from "@/send/use-send";
+import { isOpen, useSend, type SendController } from "@/send/use-send";
 
 import { AgentCard } from "./card";
 
@@ -32,11 +33,35 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   const { t } = useT();
   const money = useMoney();
   const controller = useSend(output.intent);
+  const approveLabel = useApproveLabel();
   const [saving, setSaving] = React.useState(false);
   const intent = controller.intent ?? output.intent;
+  // A fix made on this card (a saved contact, a chosen currency, a sign-in) resumes the person's original request.
+  const fixedHere = React.useRef(false);
+  const fixing: SendController = React.useMemo(
+    () => ({
+      ...controller,
+      revise: (patch) => {
+        fixedHere.current = true;
+        return controller.revise(patch);
+      },
+      set: (next) => {
+        fixedHere.current = true;
+        controller.set(next);
+      },
+    }),
+    [controller],
+  );
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("send.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
+  const readyInside = !intent.blocking && intent.state === "ready_for_approval" && intent.route === "allowance";
+  const amountLine = intent.draft ? money(intent.draft.asset, intent.draft.amount) : "";
+  React.useEffect(() => {
+    if (!fixedHere.current || !readyInside || controller.busy) return;
+    fixedHere.current = false;
+    void controller.approve(t("send.signPrompt", { amount: amountLine, name }));
+  }, [readyInside, intent.version]); // runs when a new version lands
 
   if (!isOpen(intent)) {
     const unsavedAddress = intent.outcome === "sent" && intent.draft?.recipient.via === "address";
@@ -45,6 +70,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
         <SendStatus
           intent={intent}
           compact
+          connectionLost={controller.connectionLost}
           actions={
             unsavedAddress ? (
               <Button variant="secondary" onPress={() => setSaving(true)}>
@@ -58,7 +84,8 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
             open={saving}
             onClose={() => setSaving(false)}
             initialAddress={intent.draft?.recipient.address}
-            initialSource="pasted"
+            // The address came from the person's own chat message; say so rather than claim it was pasted.
+            initialSource={intent.draft?.recipient.source ?? "agent"}
             onSaved={() => setSaving(false)}
           />
         ) : null}
@@ -77,7 +104,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           {[amountText, name].filter(Boolean).join(" → ")}
         </Text>
       )}
-      <SendBlocker controller={controller} />
+      <SendBlocker controller={fixing} />
       {ready ? (
         <View className="gap-2">
           <Button
@@ -86,7 +113,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
             onPress={() => void controller.approve(t("send.signPrompt", { amount: amountText, name }))}
           >
             {intent.route === "wallet_signature" ? <Icon as={ScanFace} className="text-primary-foreground size-5" /> : null}
-            <Text>{intent.route === "wallet_signature" ? t("send.sendFaceId") : t("send.sendNow")}</Text>
+            <Text>{intent.route === "wallet_signature" ? approveLabel : t("send.sendNow")}</Text>
           </Button>
           <Button variant="ghost" disabled={controller.busy} onPress={() => void controller.cancel()}>
             <Text className="text-muted-foreground">{t("send.cancelSend")}</Text>

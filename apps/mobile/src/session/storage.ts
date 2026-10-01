@@ -1,10 +1,16 @@
 // Small values the app keeps between launches: the session token (secret, secure storage on native), the
-// installation id and the chosen language.
+// installation id, the chosen language, and the last user the api confirmed, so an offline start still knows who
+// is signed in (Codex review R01).
 import { randomUUID } from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const KEYS = { token: "kawase.session", installationId: "kawase.installation", locale: "kawase.locale" } as const;
+const KEYS = {
+  token: "kawase.session",
+  installationId: "kawase.installation",
+  locale: "kawase.locale",
+  user: "kawase.user",
+} as const;
 
 async function read(key: string): Promise<string | undefined> {
   if (Platform.OS === "web") {
@@ -36,6 +42,17 @@ export const sessionStorage = {
   setToken: (token: string | undefined) => write(KEYS.token, token),
   getLocale: () => read(KEYS.locale),
   setLocale: (locale: string) => write(KEYS.locale, locale),
+  /** The last user the api returned (JSON), or undefined. A damaged value reads as nothing. */
+  async getUser<T>(): Promise<T | undefined> {
+    const raw = await read(KEYS.user);
+    if (!raw) return undefined;
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return undefined;
+    }
+  },
+  setUser: (user: unknown) => write(KEYS.user, user === undefined ? undefined : JSON.stringify(user)),
   /** A stable id per install, made once. */
   async installationId(): Promise<string> {
     const existing = await read(KEYS.installationId);

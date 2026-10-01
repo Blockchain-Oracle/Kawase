@@ -48,15 +48,22 @@ export function SendBlocker({ controller, onEditAmount }: { controller: SendCont
     if (signedInNow && wasBlockedBySignIn) void controller.revise({});
   }, [signedInNow, wasBlockedBySignIn]);
 
-  // After a network switch the request starts over on the new network (mainnet sends are always re-confirmed).
+  // After a network switch the request starts over on the new network (mainnet sends are always re-confirmed). The
+  // original request is kept until the new send exists, so a failed attempt can be retried (review R17.5).
   const [switchedTo, setSwitchedTo] = React.useState<SendIntent["network"]>();
+  const [carryFailed, setCarryFailed] = React.useState(false);
+  const carryOver = React.useCallback(async () => {
+    setCarryFailed(false);
+    try {
+      const { intent: fresh } = await api.sends.create(intent.request);
+      setSwitchedTo(undefined);
+      controller.set(fresh);
+    } catch {
+      setCarryFailed(true);
+    }
+  }, [controller, intent.request]);
   React.useEffect(() => {
-    if (!switchedTo || network !== switchedTo) return;
-    setSwitchedTo(undefined);
-    void api.sends
-      .create(intent.request)
-      .then(({ intent: fresh }) => controller.set(fresh))
-      .catch(() => undefined);
+    if (switchedTo && network === switchedTo) void carryOver();
   }, [network, switchedTo]);
 
   if (!blocking) return null;
@@ -131,7 +138,11 @@ export function SendBlocker({ controller, onEditAmount }: { controller: SendCont
       );
       break;
     case "ON_OTHER_NETWORK":
-      fix = (
+      fix = carryFailed ? (
+        <Button variant="secondary" onPress={() => void carryOver()}>
+          <Text>{t("common.retry")}</Text>
+        </Button>
+      ) : (
         <Button
           disabled={switching}
           onPress={() => {

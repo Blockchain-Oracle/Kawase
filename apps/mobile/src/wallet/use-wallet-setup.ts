@@ -1,10 +1,15 @@
 // The wallet setup sequence (journey 4), lifted from the old three-card wallet screen and made automatic: create
 // and register the wallet → the relayed EIP-7702 setup on the active network → the daily allowance, which is the
 // only step that waits for the person (one Face ID). Each step can fail on its own and be retried on its own.
+//
+// The allowance is asked for before it is approved (Codex review R02): the api's proposal, decoded from its caveats,
+// is what the person reads, and exactly that payload is signed; a proposal older than the approval window is asked
+// for again and shown again instead of being signed. Only an explicit "approved" from the device check signs (R03).
 import * as React from "react";
 import type { TransactionSerializable, TypedDataDefinition } from "viem";
 
-import type { GrantReceipt, NetworkId, UnsignedTransaction } from "@kawase/api-client";
+import type { AllowanceRequestResponse, GrantReceipt, NetworkId, UnsignedTransaction } from "@kawase/api-client";
+import { APPROVAL_TTL_S, MS_PER_SECOND } from "@kawase/config";
 
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
@@ -15,7 +20,22 @@ import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 export type SetupStepKey = "wallet" | "setup" | "allowance";
-export type AcceptResult = { status: "accepted"; receipt: GrantReceipt } | { status: "cancelled" } | { status: "failed" };
+export type AcceptResult =
+  | { status: "accepted"; receipt: GrantReceipt }
+  /** The proposal shown was too old; a fresh one is on screen now, to read and approve again. */
+  | { status: "refreshed" }
+  | { status: "cancelled" }
+  /** The device has nothing to check with (no Face ID, Touch ID, fingerprint or passcode). */
+  | { status: "unavailable" }
+  /** The device check ran and did not match. */
+  | { status: "biometricFailed" }
+  | { status: "failed" };
+
+/** The allowance the api proposes: what the person reads before approving, and exactly what is signed. */
+export type AllowanceProposal = AllowanceRequestResponse & { fetchedAt: number };
+
+/** A proposal older than this is asked for again before it can be signed. */
+const PROPOSAL_MAX_AGE_MS = APPROVAL_TTL_S * MS_PER_SECOND;
 
 export function toSerializable(transaction: UnsignedTransaction): TransactionSerializable {
   return {
@@ -38,14 +58,18 @@ export function useWalletSetup(network: NetworkId) {
   const turnkey = useTurnkeyAccount();
   // Passkeys need a real domain; until then the session key signs, behind the device's Face ID check.
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
-  const { wallet, refresh } = useWalletStatus();
+  const { wallet, refresh, error: loadError } = useWalletStatus();
   const [running, setRunning] = React.useState<SetupStepKey>();
   const [failed, setFailed] = React.useState<Partial<Record<SetupStepKey, true>>>({});
+  const [proposal, setProposal] = React.useState<AllowanceProposal>();
+  const [preparing, setPreparing] = React.useState(false);
+  const [proposalError, setProposalError] = React.useState(false);
 
   const state = wallet?.networks[network];
   const hasWallet = Boolean(wallet?.address);
   const setUp = Boolean(state?.setUp);
   const loaded = status === "account" && wallet !== undefined;
+  const allowance = state?.allowance ?? null;
 
   const step = React.useCallback(
     async (key: SetupStepKey, action: () => Promise<void>) => {
@@ -85,20 +109,52 @@ export function useWalletSetup(network: NetworkId) {
     else if (hasWallet && !setUp && signer && !failed.setup) void setUpWallet();
   }, [loaded, running, hasWallet, setUp, signer, failed.wallet, failed.setup, createWallet, setUpWallet]);
 
-  /** One Face ID, then the allowance is signed and submitted; the receipt comes back decoded from the signed grant. */
+  /** Asks the api for the allowance it would grant, decoded from its caveats, for the person to read first. */
+  const prepareAllowance = React.useCallback(async () => {
+    setPreparing(true);
+    setProposalError(false);
+    try {
+      const request = await api.wallet.allowanceRequest(network);
+      setProposal({ ...request, fetchedAt: Date.now() });
+    } catch {
+      setProposalError(true);
+    } finally {
+      setPreparing(false);
+    }
+  }, [network]);
+
+  // A proposal belongs to one network; switching drops it.
+  React.useEffect(() => {
+    setProposal(undefined);
+    setProposalError(false);
+  }, [network]);
+
+  // Once the wallet is set up and no allowance is on, the proposal is fetched so it can be shown before the tap.
+  React.useEffect(() => {
+    if (loaded && hasWallet && setUp && !allowance && !proposal && !preparing && !proposalError) void prepareAllowance();
+  }, [loaded, hasWallet, setUp, allowance, proposal, preparing, proposalError, prepareAllowance]);
+
+  /** The device check, then exactly the proposal on screen is signed and submitted; the receipt is the accepted one. */
   const acceptAllowance = React.useCallback(
     async (prompt: Prompt): Promise<AcceptResult> => {
       if (!signer) return { status: "failed" };
+      if (!proposal || Date.now() - proposal.fetchedAt > PROPOSAL_MAX_AGE_MS) {
+        await prepareAllowance();
+        return { status: "refreshed" };
+      }
       const check = await confirmWithBiometrics(prompt.message, prompt.cancel);
       if (check === "cancelled") return { status: "cancelled" };
+      if (check === "unavailable") return { status: "unavailable" };
+      if (check !== "approved") return { status: "biometricFailed" };
       setRunning("allowance");
       setFailed((current) => ({ ...current, allowance: undefined }));
       try {
-        const request = await api.wallet.allowanceRequest(network);
-        const signature = await signer.signTypedData(request.typedData as unknown as TypedDataDefinition);
-        await api.wallet.allowanceSubmit(request.grantId, signature);
+        const signature = await signer.signTypedData(proposal.typedData as unknown as TypedDataDefinition);
+        const accepted = await api.wallet.allowanceSubmit(proposal.grantId, signature);
+        // The status first, so the allowance is seen as on before the proposal is dropped (no needless re-request).
         await refresh();
-        return { status: "accepted", receipt: request.receipt };
+        setProposal(undefined);
+        return { status: "accepted", receipt: accepted.receipt as GrantReceipt };
       } catch {
         setFailed((current) => ({ ...current, allowance: true }));
         return { status: "failed" };
@@ -106,7 +162,7 @@ export function useWalletSetup(network: NetworkId) {
         setRunning(undefined);
       }
     },
-    [signer, network, refresh],
+    [signer, proposal, prepareAllowance, refresh],
   );
 
   return {
@@ -115,8 +171,14 @@ export function useWalletSetup(network: NetworkId) {
     state,
     hasWallet,
     setUp,
-    allowance: state?.allowance ?? null,
+    allowance,
     running,
+    /** The wallet status could not be read at all (distinct from a failed setup step). */
+    loadError,
+    proposal,
+    preparing,
+    proposalError,
+    prepareAllowance,
     failed,
     retry: { wallet: createWallet, setup: setUpWallet },
     acceptAllowance,

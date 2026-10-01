@@ -37,6 +37,7 @@ import { LanguagePill, LanguageSheet } from "@/components/language-sheet";
 import { NetworkPill } from "@/components/network-pill";
 import { ActivityRow, ActivityRowSkeleton } from "@/activity/activity-row";
 import { ReceiptSheet } from "@/activity/receipt-sheet";
+import { StaleBanner } from "@/session/stale-banner";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
@@ -79,7 +80,7 @@ export function HomeScreen() {
   const colors = useThemeColors();
   const clearance = useDockClearance();
   const { status, user } = useSession();
-  const { wallet, loading, refresh } = useWalletStatus();
+  const { wallet, loading, error: walletError, refresh } = useWalletStatus();
   const fund = useFund();
   const signIn = useSignIn();
   const [languageOpen, setLanguageOpen] = React.useState(false);
@@ -203,6 +204,7 @@ export function HomeScreen() {
       </View>
 
       <Animated.ScrollView className="flex-1" onScroll={onScroll} scrollEventThrottle={16} contentContainerClassName="gap-6 px-5 pt-4" contentContainerStyle={{ paddingBottom: clearance.scroll }}>
+        <StaleBanner />
         <BalanceCard
           name={name}
           address={wallet?.address ? shortAddress(wallet.address) : undefined}
@@ -231,7 +233,8 @@ export function HomeScreen() {
           </Animated.View>
         ) : null}
 
-        <FirstSteps label={t("home.firstSteps")} steps={steps} />
+        {/* Steps are shown only from a known wallet state: offline or unloaded is not "not done" (review R01/R09). */}
+        {!account || (wallet !== undefined && !walletError) ? <FirstSteps label={t("home.firstSteps")} steps={steps} /> : null}
 
         <SuggestedActions suggestions={chips} onSelect={(prompt) => (prompt === FUND_CHIP ? fund.open() : router.navigate({ pathname: "/chat", params: { prompt } }))} />
 
@@ -251,11 +254,21 @@ export function HomeScreen() {
               ))}
             </ListGroup>
           ) : activity.items.length > 0 ? (
-            <ListGroup>
-              {activity.items.slice(0, RECENT_ROWS).map((item) => (
-                <ActivityRow key={item.id} item={item} onPress={() => setReceipt(item)} />
-              ))}
-            </ListGroup>
+            <>
+              {activity.stale ? (
+                <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2.5">
+                  <Text accessibilityLiveRegion="polite" className="text-muted-foreground flex-1 text-sm">{t("activity.stale")}</Text>
+                  <Button size="sm" variant="ghost" onPress={() => void activity.refresh()}>
+                    <Text className="text-foreground">{t("common.retry")}</Text>
+                  </Button>
+                </View>
+              ) : null}
+              <ListGroup>
+                {activity.items.slice(0, RECENT_ROWS).map((item) => (
+                  <ActivityRow key={item.id} item={item} onPress={() => setReceipt(item)} />
+                ))}
+              </ListGroup>
+            </>
           ) : activity.status === "error" ? (
             <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
               <Text className="text-muted-foreground flex-1 text-sm">{t("activity.loadFailed")}</Text>

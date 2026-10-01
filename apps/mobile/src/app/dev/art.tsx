@@ -7,10 +7,10 @@ import { Koban } from "@kawase/ui-native/components/art/koban";
 import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Text } from "@kawase/ui-native/components/ui/text";
-import { VoiceOrb } from "@kawase/ui-native/components/voice-orb";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Orb } from "@/components/orb";
 import { usePreviewParams } from "@/gallery/use-preview-params";
 
 const ORB_SIZE = 160;
@@ -57,10 +57,10 @@ export default function ArtRoute() {
       </Row>
       <Row title="Glass orb">
         <View style={{ width: ORB_SIZE, height: ORB_SIZE }}>
-          <VoiceOrb level={0.1} />
+          <Orb level={0.1} />
         </View>
         <View style={{ width: 96, height: 96 }}>
-          <VoiceOrb level={0.8} />
+          <Orb level={0.8} />
         </View>
       </Row>
       <Row title="Real marks (delivered · pending)">

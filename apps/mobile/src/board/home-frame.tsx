@@ -19,12 +19,12 @@ import { TexturedCard } from "@kawase/ui-native/components/textured-card";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
-import { VoiceOrb } from "@kawase/ui-native/components/voice-orb";
 import { ArrowDownToLine, Bell, Check, Copy, Download, HandCoins, Home, MessageCircle, QrCode, ScanFace, Send, Settings2, Activity as ActivityIcon, UserRound } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Orb } from "@/components/orb";
 import { BOARD, SAMPLE, SAMPLE_ADDRESS, type SampleLocale } from "@/gallery/sample";
 import type { Mode, Network } from "@/theme/theme-provider";
 
@@ -62,7 +62,7 @@ export function HomeFrame({ locale, network, mode, voice = false, fan = false }:
       label: t.home.dock.voice,
       render: () => (
         <View style={{ width: ORB_DOCK_SIZE, height: ORB_DOCK_SIZE }}>
-          <VoiceOrb colors={tokens.orb[network]} level={0.15} />
+          <Orb colors={tokens.orb[network]} level={0.15} />
         </View>
       ),
     },
@@ -191,7 +191,7 @@ export function HomeFrame({ locale, network, mode, voice = false, fan = false }:
       <BlurOverlay open={voiceOpen} onClose={() => setVoiceOpen(false)} scheme={mode} scrim={theme.scrim} closeLabel={t.voice.close} topInset={top}>
         <View className="flex-1 items-center justify-center gap-4 px-6" style={{ paddingTop: top }}>
           <View style={{ width: ORB_OVERLAY_SIZE, height: ORB_OVERLAY_SIZE }}>
-            <VoiceOrb colors={tokens.orb[network]} level={0.55} />
+            <Orb colors={tokens.orb[network]} level={0.55} />
           </View>
           <StateLabel className="text-accent">{t.voice.listening}</StateLabel>
           <Text className="text-muted-foreground text-center text-base">{s.heard}</Text>

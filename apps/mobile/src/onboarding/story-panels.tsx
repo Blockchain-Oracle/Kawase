@@ -1,6 +1,7 @@
 // The five story panels' layered art (journey 1): Kawase objects on colour fields, each layer floating on its own
 // phase. Shared by the real story (copy from the catalogs) and the direction board (sample copy), so the two
 // cannot drift apart. Panel 4's language chips are live: a tap changes the app's language in place.
+import { Orb } from "@/components/orb";
 import { ChevronDown, Globe, ScanFace } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 
@@ -14,7 +15,6 @@ import { Mark } from "@kawase/ui-native/components/mark";
 import type { StoryPanel } from "@kawase/ui-native/components/story-shell";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
-import { VoiceOrb } from "@kawase/ui-native/components/voice-orb";
 import { tokens } from "@kawase/ui-tokens";
 
 export const STORY_INK = tokens.story.ink;
@@ -69,7 +69,7 @@ export function storyPanels(copy: StoryCopy, network: "mainnet" | "testnet"): St
           <Float amplitude={6} phase={0.2}>
             <View className="items-center justify-center rounded-full" style={{ width: ORB_STAGE, height: ORB_STAGE, backgroundColor: STORY_INK }}>
               <View style={{ width: ORB_SIZE, height: ORB_SIZE }}>
-                <VoiceOrb colors={tokens.orb[network]} level={ORB_LEVEL} />
+                <Orb colors={tokens.orb[network]} level={ORB_LEVEL} />
               </View>
             </View>
           </Float>

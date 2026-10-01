@@ -1,9 +1,12 @@
 // Wallet setup (journey 4; Solflare C08/S11/S13, Phantom P10, M18): one page in three moments. First the
 // automatic steps — the wallet is created, then set up on the active network through the relayer (nothing to pay)
-// — each with its own retry. Then the Face ID primer, once, right before the only tap: "Accept with Face ID" signs
-// the daily allowance ("Not now" leaves it for later; home's first steps keep the way back). Then "You're all
-// set": the silver flag waves once — only after the allowance is on chain — and the authority receipt says in
-// plain words what Kawase can and can never do, decoded from the signed grant. Continue records the terms.
+// — each with its own retry; a wallet that cannot even be read says so with a Retry instead of spinning. Then
+// "What you're allowing", once, right before the only tap: the authority receipt of the allowance the api
+// proposes, decoded from its caveats, is the main content, and exactly that is what the device check approves and
+// the wallet signs (Codex review R02). The button and the system prompt name the device's real check, and a
+// cancel, a mismatch or a device with nothing to check with is said plainly and signs nothing (R03). "Not now"
+// leaves it for later. Then "You're all set": the flag waves once — only after the allowance is accepted — over
+// the accepted receipt. Continue records the terms.
 import * as Haptics from "expo-haptics";
 import { Redirect, useRouter } from "expo-router";
 import * as React from "react";
@@ -12,12 +15,13 @@ import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { GrantReceipt } from "@kawase/api-client";
-import { DEFAULT_LIMITS, TERMS_VERSION } from "@kawase/config";
+import { TERMS_VERSION } from "@kawase/config";
 import { amount, formatAmount } from "@kawase/money";
 import { Flag } from "@kawase/ui-native/components/art/flag";
 import { Hanko } from "@kawase/ui-native/components/art/hanko";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { AuthorityReceipt } from "@kawase/ui-native/components/authority-receipt";
+import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { SetupSteps, type SetupStep } from "@kawase/ui-native/components/setup-steps";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -32,12 +36,15 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { authorityText } from "@/wallet/authority";
 import { biometricKind, type BiometricKind } from "@/wallet/biometric";
-import { useWalletSetup } from "@/wallet/use-wallet-setup";
+import { useWalletSetup, type AcceptResult } from "@/wallet/use-wallet-setup";
 
 const EDGE_INSET = 12;
 const FOOTER_GAP = 16;
 const KOBAN_WIDTH = 72;
-const HANKO_SIZE = 168;
+const HANKO_SIZE = 64;
+const SKELETON_ROWS = 3;
+const USDC_UNIT = 1_000_000n;
+const ZERO = 0n;
 const FLAG_WIDTH = 220;
 /** The onboarding steps after sign-in: handle · wallet · allowance. */
 const ONBOARDING_STEPS = 3;
@@ -59,7 +66,8 @@ export function SetupScreen() {
   const setup = useWalletSetup(network);
   const [kind, setKind] = React.useState<BiometricKind>("faceId");
   const [receipt, setReceipt] = React.useState<GrantReceipt>();
-  const [acceptError, setAcceptError] = React.useState(false);
+  /** What the last approval attempt ended as, when it did not succeed. */
+  const [outcome, setOutcome] = React.useState<Exclude<AcceptResult["status"], "accepted">>();
   const [leaving, setLeaving] = React.useState(false);
   // An allowance that was already on when this page opened belongs to a returning account: nothing to set up.
   const arrivedDone = React.useRef<boolean | undefined>(undefined);
@@ -79,8 +87,18 @@ export function SetupScreen() {
 
   const phase: Phase = receipt ? "done" : setup.setUp && setup.hasWallet ? "primer" : "steps";
   const networkName = network === "testnet" ? t("network.arcTestnet") : t("network.arc");
-  const daily = formatAmount(amount("USDC", DEFAULT_LIMITS[network].daily), locale);
-  const acceptLabel = kind === "faceId" ? t("setup.acceptFaceId") : kind === "touchId" ? t("setup.acceptTouchId") : kind === "fingerprint" ? t("setup.acceptFingerprint") : t("wallet.allowanceAccept");
+  // The amount in the system prompt is the proposal's own, never a default from config.
+  const proposed = BigInt(setup.proposal?.receipt.amountPerPeriod ?? "0");
+  const perPeriod = formatAmount(amount("USDC", proposed), locale, proposed % USDC_UNIT === ZERO ? { fractionDigits: 0 } : {});
+  const acceptLabel = {
+    faceId: t("setup.acceptFaceId"),
+    touchId: t("setup.acceptTouchId"),
+    face: t("setup.acceptFace"),
+    fingerprint: t("setup.acceptFingerprint"),
+    passcode: t("setup.acceptPasscode"),
+    none: t("wallet.allowanceAccept"),
+  }[kind];
+  const cannotCheck = kind === "none";
   const goHome = () => router.replace("/");
   const leading = router.canGoBack() ? { kind: "back" as const, onPress: () => router.back() } : { kind: "close" as const, onPress: goHome };
 
@@ -88,9 +106,10 @@ export function SetupScreen() {
     {
       key: "wallet",
       label: t("setup.stepWallet"),
-      state: setup.hasWallet ? "done" : setup.failed.wallet ? "failed" : setup.running === "wallet" || !setup.loaded ? "running" : "waiting",
-      detail: setup.failed.wallet ? t("setup.failed") : setup.running === "wallet" ? t("wallet.creating") : undefined,
-      onRetry: () => void setup.retry.wallet(),
+      // A wallet that could not be read is a load failure with its own Retry, not a step "running" forever.
+      state: setup.hasWallet ? "done" : setup.failed.wallet || (!setup.loaded && setup.loadError) ? "failed" : setup.running === "wallet" || !setup.loaded ? "running" : "waiting",
+      detail: !setup.loaded && setup.loadError ? t("errors.walletLoadFailed") : setup.failed.wallet ? t("setup.failed") : setup.running === "wallet" ? t("wallet.creating") : undefined,
+      onRetry: () => void (!setup.loaded && setup.loadError ? setup.refresh() : setup.retry.wallet()),
     },
     {
       key: "setup",
@@ -103,12 +122,20 @@ export function SetupScreen() {
   ];
 
   const accept = async () => {
-    setAcceptError(false);
-    const result = await setup.acceptAllowance({ message: t("setup.faceIdPrompt", { amount: daily }), cancel: t("common.cancel") });
+    setOutcome(undefined);
+    const result = await setup.acceptAllowance({ message: t("setup.faceIdPrompt", { amount: perPeriod }), cancel: t("common.cancel") });
     if (result.status === "accepted") {
       setReceipt(result.receipt);
       if (Platform.OS !== "web") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else if (result.status === "failed") setAcceptError(true);
+    } else setOutcome(result.status);
+  };
+
+  const outcomeText = {
+    refreshed: t("errors.scopeRefreshed"),
+    cancelled: t("errors.notSigned"),
+    unavailable: t("errors.biometricUnavailable"),
+    biometricFailed: t("errors.biometricFailed"),
+    failed: t("setup.failed"),
   };
 
   const finish = async () => {
@@ -119,6 +146,7 @@ export function SetupScreen() {
   };
 
   const authority = receipt ? authorityText(receipt, network, t, locale) : undefined;
+  const proposalAuthority = setup.proposal ? authorityText(setup.proposal.receipt, network, t, locale) : undefined;
   const accepting = setup.running === "allowance";
 
   return (
@@ -140,16 +168,41 @@ export function SetupScreen() {
 
       {phase === "primer" ? (
         <Animated.View key="primer" entering={FadeIn.duration(PHASE_FADE_MS)} exiting={FadeOut.duration(PHASE_FADE_MS)} className="flex-1">
-          <View className="flex-1 items-center justify-center gap-6 px-6">
+          <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-6">
             <Hanko size={HANKO_SIZE} id="setup-hanko" />
-            <View className="gap-3">
-              <Text className="font-display text-foreground text-center text-3xl font-bold">{t("setup.primerTitle")}</Text>
-              <Text className="text-muted-foreground text-center text-base leading-6">{t("setup.primerBody", { amount: daily })}</Text>
+            <View className="gap-2">
+              <Text accessibilityRole="header" className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
+                {t("setup.scopeTitle")}
+              </Text>
+              <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{t("setup.scopeBody")}</Text>
             </View>
-          </View>
-          <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-            {acceptError ? <Text className="text-destructive pb-1 text-center text-sm">{t("setup.failed")}</Text> : null}
-            <Button size="lg" disabled={accepting} onPress={() => void accept()}>
+            {proposalAuthority ? (
+              <AuthorityReceipt className="w-full" {...proposalAuthority} />
+            ) : setup.proposalError ? (
+              <View className="bg-muted gap-3 rounded-2xl p-4">
+                <Text className={cn("text-foreground text-base", TEXT_START)}>{t("errors.scopeLoadFailed")}</Text>
+                <Button variant="secondary" onPress={() => void setup.prepareAllowance()}>
+                  <Text>{t("common.retry")}</Text>
+                </Button>
+              </View>
+            ) : (
+              <View accessibilityLabel={t("common.loading")} className="bg-card border-border gap-3 rounded-3xl border p-4">
+                {Array.from({ length: SKELETON_ROWS }, (_, row) => (
+                  <Skeleton key={row} className="h-4 w-full rounded-md" />
+                ))}
+              </View>
+            )}
+          </ScrollView>
+          <View className="gap-2 px-5 pt-2" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
+            {cannotCheck || outcome ? (
+              <Text
+                accessibilityRole="alert"
+                className={cn("pb-1 text-center text-sm", outcome === "cancelled" || outcome === "refreshed" ? "text-muted-foreground" : "text-destructive")}
+              >
+                {cannotCheck ? t("errors.biometricUnavailable") : outcomeText[outcome!]}
+              </Text>
+            ) : null}
+            <Button size="lg" disabled={accepting || !setup.proposal || setup.preparing || cannotCheck} onPress={() => void accept()}>
               {accepting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
               <Text>{accepting ? t("setup.approving") : acceptLabel}</Text>
             </Button>

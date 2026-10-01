@@ -81,7 +81,17 @@ export function buildAgentContext(input: {
         .update(intents)
         .set({ state: "canceled" })
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), inArray(intents.state, [...DRAFTABLE])));
-      const intent = await sends.create(user, request, { surface: "chat", threadId });
+      let intent = await sends.create(user, request, { surface: "chat", threadId });
+      // D33 / DESIGN.md: inside the allowance the agent just sends and says so. The person's own request is the
+      // instruction; the policy has already decided that no second look is needed (above the allowance, a new
+      // address above the threshold or a lookalike all route to Face ID instead and wait on the card).
+      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous) {
+        const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
+          log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
+          return undefined;
+        });
+        if (answer) intent = answer.intent;
+      }
       return { intent, summary: summarizeSend(intent) };
     },
 

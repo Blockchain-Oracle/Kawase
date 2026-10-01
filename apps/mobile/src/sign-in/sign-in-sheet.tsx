@@ -4,6 +4,10 @@
 // chevron; the email survives going back. While a provider's flow runs its button spins and the others wait; a
 // cancelled provider sheet is not an error. After the api knows the account, the wallet is created in the same
 // sheet ("Creating your wallet…"), then the caller decides where to go next.
+//
+// Failures say what failed (Codex review R08): a wrong or expired code, too many codes, no connection, or "you're
+// signed in, but the wallet wasn't created" — which keeps the sign-in and retries only the wallet. A sheet closed
+// mid-request ignores the late answer instead of navigating, and a new code can be asked for after a short wait.
 import * as React from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,11 +23,14 @@ import { LanguagePill, LanguageSheet } from "@/components/language-sheet";
 import { useT } from "@/i18n";
 import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
-import { isCancelled } from "@/wallet/sign-in-errors";
+import { classifySignInFailure, type SignInFailure } from "@/wallet/sign-in-errors";
 import { useTurnkeyAccount, type SocialProvider } from "@/wallet/use-turnkey-account";
 
 const CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** A new code can be asked for this long after the last one was sent. */
+const RESEND_COOLDOWN_S = 30;
+const MS_PER_SECOND = 1_000;
 
 type Step = { name: "methods" } | { name: "code"; email: string; otpId: string; otpEncryptionTargetBundle: string };
 type Pending = "code" | "verify" | "resend" | "continue" | SocialProvider | "wallet" | undefined;
@@ -47,53 +54,111 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
   const [pending, setPending] = React.useState<Pending>();
   const [error, setError] = React.useState<string>();
   const [languageOpen, setLanguageOpen] = React.useState(false);
+  /** Signed in, but the wallet was not created: the account to finish with a retry of the wallet step only. */
+  const [walletFor, setWalletFor] = React.useState<ApiUser>();
+  const [resendAt, setResendAt] = React.useState(0);
+  const [now, setNow] = React.useState(() => Date.now());
+  // Every opening and closing starts a new generation; an answer from an older one is ignored.
+  const generation = React.useRef(0);
 
   // A fresh sheet starts at the methods; the email typed last time stays.
   React.useEffect(() => {
+    generation.current += 1;
     if (!open) {
       setStep({ name: "methods" });
       setCode("");
       setError(undefined);
       setPending(undefined);
+      setWalletFor(undefined);
     }
   }, [open]);
 
+  // The resend countdown ticks only while it runs.
+  React.useEffect(() => {
+    if (resendAt <= now) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), MS_PER_SECOND);
+    return () => clearInterval(timer);
+  }, [resendAt, now]);
+  const resendIn = Math.max(0, Math.ceil((resendAt - now) / MS_PER_SECOND));
+
   const busy = pending !== undefined;
 
-  /** Runs one sign-in path: the api account, then the wallet, then hands over. */
-  const finish = async (signIn: () => Promise<ApiUser>, which: Pending, failure = t("common.error")) => {
-    setPending(which);
-    setError(undefined);
-    try {
-      const user = await signIn();
-      setPending("wallet");
-      await turnkey.ensureWallet();
-      setPending(undefined);
-      onSignedIn(user);
-    } catch (problem) {
-      setPending(undefined);
-      if (!isCancelled(problem)) setError(failure);
+  const message = (failure: SignInFailure, verifying: boolean) => {
+    switch (failure) {
+      case "invalidCode":
+        return t("signIn.invalidCode");
+      case "expiredCode":
+        return t("errors.expiredCode");
+      case "rateLimited":
+        return t("errors.rateLimited");
+      case "offline":
+        return t("errors.offlineAction");
+      default:
+        return verifying ? t("errors.signInFailed") : t("common.error");
     }
   };
 
+  /** The wallet step on its own: after a sign-in, and again from the Retry when it failed. */
+  const createWallet = async (user: ApiUser, started: number) => {
+    setPending("wallet");
+    setError(undefined);
+    try {
+      await turnkey.ensureWallet();
+      if (started !== generation.current) return;
+      setPending(undefined);
+      setWalletFor(undefined);
+      onSignedIn(user);
+    } catch (problem) {
+      if (started !== generation.current) return;
+      setPending(undefined);
+      setWalletFor(user);
+      setError(classifySignInFailure(problem) === "offline" ? t("errors.offlineAction") : t("errors.walletFailed"));
+    }
+  };
+
+  /** Runs one sign-in path: the api account first, then the wallet, then hands over. */
+  const finish = async (signIn: () => Promise<ApiUser>, which: Pending) => {
+    const started = generation.current;
+    setPending(which);
+    setError(undefined);
+    let user: ApiUser;
+    try {
+      user = await signIn();
+    } catch (problem) {
+      if (started !== generation.current) return;
+      setPending(undefined);
+      const failure = classifySignInFailure(problem);
+      if (failure !== "cancelled") setError(message(failure, true));
+      return;
+    }
+    // Signed in, but the sheet was closed meanwhile: the account exists; the person decides where to go.
+    if (started !== generation.current) return;
+    await createWallet(user, started);
+  };
+
   const sendCode = async (resend = false) => {
+    const started = generation.current;
     const address = (step.name === "code" ? step.email : email).trim();
     setPending(resend ? "resend" : "code");
     setError(undefined);
     try {
       const sent = await turnkey.sendCode(address);
+      if (started !== generation.current) return;
       setStep({ name: "code", email: address, ...sent });
       setCode("");
-    } catch {
-      setError(t("common.error"));
+      setNow(Date.now());
+      setResendAt(Date.now() + RESEND_COOLDOWN_S * MS_PER_SECOND);
+    } catch (problem) {
+      if (started !== generation.current) return;
+      setError(message(classifySignInFailure(problem), false));
     } finally {
-      setPending(undefined);
+      if (started === generation.current) setPending(undefined);
     }
   };
 
   const verify = (value: string) => {
     if (step.name !== "code" || value.trim().length !== CODE_LENGTH || busy) return;
-    void finish(() => turnkey.verifyCode({ email: step.email, code: value, otpId: step.otpId, otpEncryptionTargetBundle: step.otpEncryptionTargetBundle }), "verify", t("signIn.invalidCode"));
+    void finish(() => turnkey.verifyCode({ email: step.email, code: value, otpId: step.otpId, otpEncryptionTargetBundle: step.otpEncryptionTargetBundle }), "verify");
   };
 
   const onCodeChange = (value: string) => {
@@ -112,17 +177,22 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
       <Sheet
         open={open}
         onClose={onClose}
-        title={step.name === "methods" ? t("signIn.sheetTitle") : t("signIn.codeTitle")}
-        subtitle={step.name === "methods" ? t("signIn.subtitle") : t("signIn.codeSent", { email: step.email })}
+        title={walletFor ? t("setup.stepWallet") : step.name === "methods" ? t("signIn.sheetTitle") : t("signIn.codeTitle")}
+        subtitle={walletFor ? undefined : step.name === "methods" ? t("signIn.subtitle") : t("signIn.codeSent", { email: step.email })}
         colors={sheetColors}
         closeLabel={t("common.close")}
         bottomInset={insets.bottom}
-        onBack={step.name === "code" && !busy ? () => setStep({ name: "methods" }) : undefined}
+        onBack={step.name === "code" && !busy && !walletFor ? () => setStep({ name: "methods" }) : undefined}
         backLabel={t("common.back")}
         headerEnd={languagePill}
         className="gap-3"
       >
-        {step.name === "methods" ? (
+        {walletFor ? (
+          <Button size="lg" disabled={busy} onPress={() => void createWallet(walletFor, generation.current)}>
+            {pending === "wallet" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
+            <Text>{t("common.retry")}</Text>
+          </Button>
+        ) : step.name === "methods" ? (
           <>
               {!turnkey.available ? <Text className="text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm">{t("signIn.webUnavailable")}</Text> : null}
 
@@ -196,14 +266,18 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
                 {pending === "verify" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
                 <Text>{t("signIn.verify")}</Text>
               </Button>
-              <Button variant="ghost" disabled={busy} onPress={() => void sendCode(true)}>
+              <Button variant="ghost" disabled={busy || resendIn > 0} onPress={() => void sendCode(true)}>
                 {pending === "resend" ? <ActivityIndicator color={colors["muted-foreground"]} /> : null}
-                <Text className="text-muted-foreground">{t("signIn.resend")}</Text>
+                <Text className="text-muted-foreground">{resendIn > 0 ? t("errors.resendIn", { seconds: resendIn }) : t("signIn.resend")}</Text>
               </Button>
           </>
         )}
             {working ? <StatusLine label={working} color={colors["muted-foreground"]} /> : null}
-            {error ? <Text className="text-destructive text-sm">{error}</Text> : null}
+            {error ? (
+              <Text accessibilityRole="alert" className="text-destructive text-sm">
+                {error}
+              </Text>
+            ) : null}
       </Sheet>
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
     </>
