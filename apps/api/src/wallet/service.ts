@@ -27,6 +27,7 @@ import {
 } from "@kawase/integrations-delegation";
 import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
+import { ContactService } from "../contacts/service";
 import { HTTP, problem } from "../http/problem";
 import { fetchActivity } from "./activity";
 import type { Chains, NetworkClients } from "./chain";
@@ -56,10 +57,16 @@ export class WalletService {
   /** Unsigned transactions handed to the wallet, remembered until the signed one comes back. */
   private readonly pendingTransactions = new Map<string, PendingTransaction>();
 
+  /** The person's address book, to put their own names on counterparties in the history. */
+  private readonly contacts: ContactService;
+
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
-  ) {}
+    contacts?: ContactService,
+  ) {
+    this.contacts = contacts ?? new ContactService(db);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -101,8 +108,12 @@ export class WalletService {
     return wallet;
   }
 
-  /** The wallet's state on each available network, for the app's wallet screen. */
-  /** USDC and EURC transfers in and out of the user's wallet on one network, newest first (the chain's explorer). */
+  /**
+   * USDC and EURC transfers in and out of the user's wallet on one network, newest first (the chain's explorer),
+   * with the person's own contact name on a counterparty whose address is in their book (any version of it, so an
+   * old address still reads as the person it belonged to). Names are added after the explorer cache: a contact
+   * saved a second ago shows at once.
+   */
   async activity(userId: string, network: NetworkId) {
     const wallet = await this.userWallet(userId);
     if (!wallet) return { items: [] };
@@ -111,13 +122,29 @@ export class WalletService {
       .select({ createdAt: faucetClaims.createdAt })
       .from(faucetClaims)
       .where(and(eq(faucetClaims.userId, userId), eq(faucetClaims.network, network), eq(faucetClaims.status, "sent")));
+    let items;
     try {
-      const items = await fetchActivity(context, wallet.address as Address, { agent: ops.address, relayer: relayerAddress }, claims.map((claim) => claim.createdAt));
-      return { items };
+      items = await fetchActivity(context, wallet.address as Address, { agent: ops.address, relayer: relayerAddress }, claims.map((claim) => claim.createdAt));
     } catch {
       throw problem(HTTP.badGateway, "upstream", "the explorer did not answer");
     }
+    const names = await this.contactNames(userId);
+    return { items: items.map((item) => ({ ...item, contactName: names.get(item.counterparty.toLowerCase()) ?? null })) };
   }
+
+  /** Lower-cased address → the contact's name; the current address of a contact wins over its older ones. */
+  private async contactNames(userId: string) {
+    const book = await this.contacts.addressBook(userId);
+    const names = new Map<string, string>();
+    const ranked = [...book].sort((a, b) => Number(b.status === "active" && b.isPreferred) - Number(a.status === "active" && a.isPreferred));
+    for (const entry of ranked) {
+      const key = entry.address.toLowerCase();
+      if (!names.has(key)) names.set(key, entry.name);
+    }
+    return names;
+  }
+
+  /** The wallet's state on each available network, for the app's wallet screen. */
 
   async status(userId: string) {
     const wallet = await this.userWallet(userId);

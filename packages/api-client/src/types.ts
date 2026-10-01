@@ -135,9 +135,141 @@ export type ActivityItem = {
   counterparty: string;
   /** Who the counterparty is, when Kawase knows: its own wallets, Circle's faucet, or the user's own address. */
   counterpartyLabel: "circle_faucet" | "kawase_agent" | "kawase_relayer" | "self" | null;
+  /** The person's own name for the counterparty, when its address is in their contacts. */
+  contactName?: string | null;
   txHash: string;
   at: string;
   explorerUrl: string;
 };
 
 export type ThreadSummary = { id: string; title: string | null; network: NetworkId; lastMessageAt: string };
+
+// ── Contacts and sends (Stage 5) ────────────────────────────────────────────────────────────────────────────
+
+export type AddressSource = "typed" | "pasted" | "scanned" | "handle" | "received" | "agent";
+export type ContactAddressStatus = "pending_cooldown" | "active" | "retired" | "blocked";
+
+export type ContactAddress = {
+  id: string;
+  address: string;
+  version: number;
+  status: ContactAddressStatus;
+  source: AddressSource;
+  sourceDetail: string | null;
+  /** When a changed address becomes payable. */
+  activatesAt: string | null;
+  createdAt: string;
+  /** Per network: whether it was paid, how often, and how it was verified. */
+  trust: Partial<Record<NetworkId, { paymentCount: number; lastPaidAt: string | null; verifiedMethod: string | null }>>;
+};
+
+export type Contact = {
+  id: string;
+  displayName: string;
+  aliases: string[];
+  handle: string | null;
+  kind: "person" | "business";
+  label: string | null;
+  notes: string | null;
+  /** The address money goes to now (null while a change is on hold). */
+  address: string | null;
+  /** Set while a changed address waits out its cooldown; payments to the contact are frozen until then. */
+  pendingChange: { address: string; activatesAt: string } | null;
+  addresses: ContactAddress[];
+  createdAt: string;
+};
+
+export type ContactInput = {
+  displayName: string;
+  /** An 0x address or an @handle. */
+  address: string;
+  source?: AddressSource | undefined;
+  kind?: "person" | "business" | undefined;
+  label?: string | null | undefined;
+  notes?: string | null | undefined;
+  aliases?: string[] | undefined;
+};
+
+/** A match for the recipient search: a saved contact or a Kawase @handle. */
+export type RecipientMatch =
+  | { kind: "contact"; contactId: string; name: string; handle: string | null; address: string | null; onHold: boolean }
+  | { kind: "handle"; handle: string; address: string };
+
+export type PolicyKind = "error" | "policy" | "precondition" | "clarification" | "warning";
+export type PolicyResultView = { code: string; kind: PolicyKind; params?: Record<string, string> };
+
+export type IntentState =
+  | "submitted"
+  | "working"
+  | "input_required"
+  | "auth_required"
+  | "ready_for_approval"
+  | "approved"
+  | "executing"
+  | "completed"
+  | "failed"
+  | "rejected"
+  | "canceled"
+  | "expired"
+  | "unknown_outcome";
+
+/**
+ * How a send ended, in money terms (the money-ending taxonomy): sent and confirmed; not sent (nothing left the
+ * wallet); reverted (on chain but undone; only a fee may have been paid); checking (the outcome is not known yet
+ * and nothing is retried); canceled; expired.
+ */
+export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired";
+
+export type SendRecipientView = {
+  via: "contact" | "handle" | "address";
+  address: string;
+  name: string | null;
+  handle: string | null;
+  contactId: string | null;
+  /** How the address reached the book ("scanned", "handle"…), for the trust chip. */
+  source: AddressSource | null;
+  verifiedMethod: string | null;
+  paidBefore: boolean;
+};
+
+export type SendDraftView = {
+  recipient: SendRecipientView;
+  asset: "USDC" | "EURC";
+  /** Base units (6 decimals). */
+  amount: string;
+  note: string | null;
+  /** Who pays the network fee, and about how much (USDC base units, 6 decimals). */
+  fee: { payer: "kawase" | "wallet"; estimate: string | null };
+};
+
+export type SendIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  version: number;
+  /** The person's own words for each field. */
+  request: { recipient: string | null; amount: string | null; asset: "USDC" | "EURC" | null; note: string | null };
+  draft: SendDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  route: "allowance" | "wallet_signature" | null;
+  allowance: { active: boolean; available: string; perPeriod: string | null };
+  /** For an unknown name: Kawase handles that match it exactly; never chosen for the person. */
+  suggestions: RecipientMatch[];
+  tx: { hash: string; explorerUrl: string } | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type SendRequest = {
+  recipient?: string | null | undefined;
+  amount?: string | null | undefined;
+  asset?: "USDC" | "EURC" | null | undefined;
+  note?: string | null | undefined;
+};
+
+export type SendApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: SendIntent }
+  | { status: "sign"; intent: SendIntent; approvalId: string; transaction: UnsignedTransaction };

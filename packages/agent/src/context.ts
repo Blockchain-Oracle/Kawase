@@ -6,7 +6,10 @@ import type {
   AgentNetwork,
   AuthoritySummary,
   CapabilityLine,
+  ContactLine,
   FaucetResult,
+  ProposeSendOutput,
+  SendRequest,
   WalletSummary,
 } from "@kawase/api-client";
 
@@ -15,8 +18,12 @@ export type {
   AgentNetwork,
   AuthoritySummary,
   CapabilityLine,
+  ContactLine,
   FaucetResult,
   Money,
+  ProposeSendOutput,
+  SendRequest,
+  SendSummary,
   WalletSummary,
 } from "@kawase/api-client";
 
@@ -32,4 +39,9 @@ export type AgentContext = {
   capabilities(): Promise<CapabilityLine[]>;
   claimTestMoney(): Promise<FaucetResult>;
   authority(): Promise<AuthoritySummary>;
+  /** Drafts a send from the person's words; code resolves the recipient and runs every check (K2). */
+  proposeSend(input: SendRequest): Promise<ProposeSendOutput>;
+  findContacts(query: string): Promise<ContactLine[]>;
+  /** The person's latest message, so an address the model passes can be checked against their own words. */
+  lastUserText: string;
 };

@@ -14,8 +14,10 @@ import type {
   ActivityLine,
   AuthoritySummary,
   CapabilityLine,
+  ContactLine,
   FaucetResult,
   Money,
+  ProposeSendOutput,
   WalletSummary,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
@@ -39,6 +41,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
 import { AgentCard, AgentCardLoading } from "./card";
+import { ContactsCard, SendCard } from "./send-card";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -154,6 +157,8 @@ function ActivityCard({ output, network }: { output: { items: ActivityLine[] }; 
             amount: line.amount.baseUnits,
             counterparty: line.counterparty,
             counterpartyLabel: line.label,
+            // A known wallet's name comes from its label; otherwise the name is the person's contact, if any.
+            contactName: line.label ? null : line.counterpartyName,
             txHash: "",
             at: line.at,
             explorerUrl: line.explorerUrl,
@@ -469,6 +474,8 @@ const LOADING_LABELS: Record<string, string> = {
   claim_test_money: "fund.testSending",
   show_receive: "chat.loadingWallet",
   get_authority: "chat.loadingAuthority",
+  propose_send: "chat.loadingSend",
+  find_contacts: "chat.loadingContacts",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -510,6 +517,10 @@ export function ToolCard({
       return <ReceiveCard output={part.output as { status: string }} />;
     case "get_authority":
       return <AuthorityCard output={part.output as { network: Network; authority: AuthoritySummary }} />;
+    case "propose_send":
+      return <SendCard output={part.output as ProposeSendOutput} />;
+    case "find_contacts":
+      return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     default:
       return null;
   }

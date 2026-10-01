@@ -2,7 +2,7 @@
 
 Purpose: the detailed architecture from the planning session (2026-09-29), kept current as the build changes. It extends §Architecture in `MASTER-PLAN.md`. If this file and the code disagree, update this file.
 Sources: the Plan-agent design of 2026-09-29; `context/08-product-research/*` (see citations inline); doc checks of the verified stack (MASTER-PLAN §Verified stack).
-Last updated: 2026-09-30
+Last updated: 2026-10-01
 
 ## 1. Key decisions (K1–K6)
 
@@ -141,6 +141,15 @@ SendDraft { uint256 chainId; address from; address to; address asset; uint256 am
 - **Chain events:** `UNIQUE(chain_id, tx_hash, log_index)`. Payments are projected from the system emitter `0xffff…FFFE` only, because it emits a double log. `workflowID = "{chainId}:{tx}:{log}"`.
 - **Circle webhooks:** deduplicated by `notificationId` in `provider_webhook_events`.
 - **Concurrent spending:** a per-(user, network) advisory lock plus `spend_ledger` reservations (`reserved → committed | released`). Window sums count reserved and committed rows together.
+
+**As built for sends (Stage 5a, 2026-10-01)**
+- `apps/api/src/send/service.ts` holds the whole path; `packages/policy` (`evaluateSend`) and `packages/intents` (`SendDraft`, `sendDraftHash`, the state table) are pure.
+- **Checks before the lock, reservation under it.** Approve and signature-submit first re-run resolution and the policy on fresh facts (chain reads included) *outside* any transaction; only then do they take the intent's row lock plus `pg_advisory_xact_lock(hashtextextended('{user}:{network}'))` and, on that one connection, re-check state, version and the app limits (`fitsLimits`) before inserting the approval, the `spend_ledger` reservation and the `tx_attempts` row. A transaction must never borrow a second pooled connection: the first build did, and two simultaneous taps deadlocked the pool (found by the testnet test).
+- **Allowance route:** the prepared redeem (`to`, `data`, `grantId`) is stored in `tx_attempts.receipt.prepared` with the v4 key before Circle is called, so a lost answer is recovered by calling Circle again with the same key and body (Circle returns the same transaction). `refId = {intentId}:v{version}`.
+- **Wallet route:** the api builds the transfer (nonce from `pending`, fees floored at 20 gwei, gas × 1.3), stores it on the approval row, and on submit checks signer, chain, token, calldata, value, nonce and `gas × maxFeePerGas ≤ draft.maxFee`. The hash (`keccak256(signedTx)`) is stored before broadcast. A node refusal that is clearly pre-acceptance (nonce too low, insufficient funds) settles as `not_sent`; anything unclear is left to the tracker.
+- **Tracking lives in the api for now** (`track()` after approve for ~90 s, on `GET /sends/:id` while in flight, and a sweeper every `RECONCILE_INTERVAL_MS`). It moves into the DBOS executor in Stage 8, with no change to the guarantees. After `SEND_UNKNOWN_AFTER_S` without a witness the intent shows `unknown_outcome` ("still checking") and is only ever re-checked.
+- **Witness:** completed only when the receipt has a `Transfer` log from the draft's token with the draft's from, to and amount; on success the ledger row commits, the contact address's per-network trust is bumped, and `send.completed` goes to the outbox.
+- **Chat:** `propose_send` takes the person's words; an `0x…` recipient must appear verbatim in their latest message (checked in the tool). A newer proposal in the same thread cancels any earlier open one, so an old card cannot be approved by mistake. The model sees `summarizeSend()` (plain English, formatted amounts); the card gets the intent and follows it live.
 
 **Circle webhooks (decided by spike #13, `plan/spikes/13-webhooks.md`)**
 - `POST /webhooks/circle` verifies `X-Circle-Signature` (ECDSA-SHA256) over the **raw** body with the public key for `X-Circle-Key-Id` (cached), then inserts `(source, notificationId)` under a unique key and acts only when the insert is new. HEAD returns 200 for Circle's URL check.

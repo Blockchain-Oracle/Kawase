@@ -9,6 +9,8 @@ import type { AgentContext } from "./context";
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
 const REASON_MAX = 200;
+const RECIPIENT_MAX = 80;
+const NOTE_MAX = 140;
 
 export function buildTools(context: AgentContext) {
   return {
@@ -28,7 +30,7 @@ export function buildTools(context: AgentContext) {
     }),
     get_capabilities: tool({
       description:
-        "What Kawase can do right now on the active network and on the other one: each capability is available, coming (being built) or unavailable there, with a reason. Use it for 'what can you do?' and before answering any request to move money.",
+        "What Kawase can do right now on the active network and on the other one: each capability is available, coming (being built) or unavailable there, with a reason. Use it for 'what can you do?' and before saying something is not possible. Not needed for a send: propose_send checks it.",
       inputSchema: z.object({}),
       execute: async () => ({ network: context.network, capabilities: await context.capabilities() }),
     }),
@@ -54,6 +56,39 @@ export function buildTools(context: AgentContext) {
         "Exactly what Kawase is allowed to do with the person's money on the active network (the daily allowance they signed: how much, until when, which token) and what it can never do.",
       inputSchema: z.object({}),
       execute: async () => ({ network: context.network, authority: await context.authority() }),
+    }),
+    propose_send: tool({
+      description:
+        "Prepare a send of USDC or EURC on the active network. Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\"), the asset only if they named it, and their note if they gave one. Kawase resolves the recipient, runs every check and shows a card; the person confirms on the card. You never confirm, and nothing is sent by this call.",
+      inputSchema: z.object({
+        recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
+        amount: z
+          .string()
+          .regex(/^\d+(\.\d+)?$/)
+          .optional()
+          .describe("Digits with a dot; omit if they did not say how much"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("Only if the person named the currency"),
+        note: z.string().max(NOTE_MAX).optional().describe("A private note the person asked to attach"),
+      }),
+      execute: async (input) => {
+        // K2: an address can only come from the person's own words, never from the model or a tool result.
+        if (/^0x/i.test(input.recipient.trim()) && !context.lastUserText.toLowerCase().includes(input.recipient.trim().toLowerCase())) {
+          throw new Error("An address must be typed by the person; ask them for it.");
+        }
+        return context.proposeSend({
+          recipient: input.recipient,
+          amount: input.amount ?? null,
+          asset: input.asset ?? null,
+          note: input.note ?? null,
+        });
+      },
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    find_contacts: tool({
+      description:
+        "Search the person's saved contacts by name, alias or @handle (empty query lists them). Use it to answer questions about their contacts; for a send, just call propose_send with the name.",
+      inputSchema: z.object({ query: z.string().max(RECIPIENT_MAX).describe("Part of a name or handle; empty for all") }),
+      execute: async ({ query }) => ({ contacts: await context.findContacts(query) }),
     }),
     // Runs on the device: the card shows the reason and a button; the person decides, and the app switches.
     propose_network_switch: tool({

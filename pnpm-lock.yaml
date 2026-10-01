@@ -126,6 +126,9 @@ importers:
       '@kawase/agent':
         specifier: workspace:*
         version: link:../../packages/agent
+      '@kawase/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@kawase/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -141,6 +144,9 @@ importers:
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation
+      '@kawase/intents':
+        specifier: workspace:*
+        version: link:../../packages/intents
       '@kawase/log':
         specifier: workspace:*
         version: link:../../packages/log
@@ -150,6 +156,9 @@ importers:
       '@kawase/networks':
         specifier: workspace:*
         version: link:../../packages/networks
+      '@kawase/policy':
+        specifier: workspace:*
+        version: link:../../packages/policy
       '@metamask/smart-accounts-kit':
         specifier: 'catalog:'
         version: 2.0.0(supports-color@8.1.1)(typescript@6.0.3)(viem@2.57.0(typescript@6.0.3)(zod@4.6.5))(zod@4.6.5)
@@ -628,6 +637,10 @@ importers:
         version: 6.0.3
 
   packages/intents:
+    dependencies:
+      viem:
+        specifier: 'catalog:'
+        version: 2.57.0(typescript@6.0.3)(zod@4.6.5)
     devDependencies:
       typescript:
         specifier: 'catalog:'
@@ -669,6 +682,16 @@ importers:
         version: 6.0.3
 
   packages/policy:
+    dependencies:
+      '@kawase/config':
+        specifier: workspace:*
+        version: link:../config
+      '@kawase/money':
+        specifier: workspace:*
+        version: link:../money
+      '@kawase/networks':
+        specifier: workspace:*
+        version: link:../networks
     devDependencies:
       typescript:
         specifier: 'catalog:'

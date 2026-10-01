@@ -20,6 +20,13 @@ import type {
   FaucetClaim,
   FaucetStatus,
   ThreadSummary,
+  Contact,
+  ContactInput,
+  AddressSource,
+  RecipientMatch,
+  SendIntent,
+  SendRequest,
+  SendApproveResponse,
 } from "./types";
 
 export * from "./types";
@@ -141,6 +148,37 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** One conversation with its messages (AI SDK UI messages). */
       thread: (id: string) => call<{ thread: ThreadSummary; messages: unknown[] }>("GET", `/agent/threads/${id}`),
       deleteThread: (id: string) => call<void>("DELETE", `/agent/threads/${id}`),
+    },
+
+    contacts: {
+      list: () => call<{ contacts: Contact[] }>("GET", "/contacts"),
+      get: (id: string) => call<{ contact: Contact }>("GET", `/contacts/${id}`),
+      create: (input: ContactInput) => call<{ contact: Contact }>("POST", "/contacts", input),
+      update: (id: string, patch: Partial<Pick<ContactInput, "displayName" | "aliases" | "notes" | "label" | "kind">>) =>
+        call<{ contact: Contact }>("PATCH", `/contacts/${id}`, patch),
+      /** The new address waits out a cooldown; the contact cannot be paid until then. */
+      changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
+        call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
+      cancelChange: (id: string) => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending`),
+      remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
+    },
+
+    /** The send screen's search: contacts by name, alias or handle, then an exact Kawase @handle. */
+    recipients: {
+      search: (query: string) => call<{ matches: RecipientMatch[] }>("GET", `/recipients?q=${encodeURIComponent(query)}`),
+    },
+
+    sends: {
+      create: (request: SendRequest) => call<{ intent: SendIntent }>("POST", "/sends", request),
+      get: (id: string) => call<{ intent: SendIntent }>("GET", `/sends/${id}`),
+      /** A fix or an edit: the same send, a new version. An empty patch re-checks it (after a saved contact). */
+      revise: (id: string, patch: SendRequest) => call<{ intent: SendIntent }>("PATCH", `/sends/${id}`, patch),
+      cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
+      /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
+      approve: (id: string, version: number, idempotencyKey?: string) =>
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signedTransaction: string) =>
+        call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
     },
 
     faucet: {

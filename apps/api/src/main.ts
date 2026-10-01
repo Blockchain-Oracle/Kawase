@@ -6,11 +6,13 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
+import { RECONCILE_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
 import { createTurnkeyReader } from "./auth/turnkey";
 import { circleFaucet } from "./faucet/circle-faucet";
+import { circleOps } from "./send/ops";
 import { createChains } from "./wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -37,6 +39,8 @@ const app = createApp({
     },
   ),
   approvalSecret: env.AGENT_APPROVAL_SECRET,
+  ops: circleOps(env),
+  reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")
       .map((origin) => origin.trim())

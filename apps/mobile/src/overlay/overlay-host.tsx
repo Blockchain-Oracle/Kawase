@@ -42,12 +42,12 @@ export function OverlayHost() {
     { key: "fund", label: t("home.fund"), icon: ArrowDownToLine },
   ];
 
-  // Receive and Fund are built; Send and Request say so until Stage 5 lands them (never a dead tap).
+  // Send, Receive and Fund are built; Request says so until it lands (never a dead tap).
   const onAction = (key: string) => {
     overlay.close();
     if (key === "receive") router.push("/wallet/receive");
     else if (key === "fund") fund.open();
-    else if (key === "send") toast(t("coming.send"));
+    else if (key === "send") router.push("/send");
     else toast(t("coming.request"));
   };
 

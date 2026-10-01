@@ -1,0 +1,66 @@
+// Every reason a request can stop or carry a note, and its kind (T1). The kind decides what the person sees:
+// an error explains, a policy refusal is final (edit the amount, open the rule, or cancel; never "split it"),
+// a precondition shows its fix inline and the request resumes after it, a clarification asks one question,
+// and a warning goes on the confirm card without blocking.
+
+/** Kinds in precedence order: when several block at once, the first kind present leads (ARCHITECTURE §3). */
+export const POLICY_KINDS = ["error", "policy", "precondition", "clarification", "warning"] as const;
+export type PolicyKind = (typeof POLICY_KINDS)[number];
+
+export const REASONS = {
+  // Errors: nothing the person can fix here.
+  NOT_AVAILABLE_YET: "error",
+  // Policy refusals: terminal for this version.
+  PAUSED_ALL: "policy",
+  OVER_PER_TX_LIMIT: "policy",
+  OVER_DAILY_LIMIT: "policy",
+  OVER_WEEKLY_LIMIT: "policy",
+  ADDRESS_CHANGE_HOLD: "policy",
+  RECIPIENT_BLOCKED: "policy",
+  // Preconditions: one fix, then the same request resumes.
+  SIGN_IN_REQUIRED: "precondition",
+  WALLET_NOT_READY: "precondition",
+  WALLET_NOT_SET_UP: "precondition",
+  ON_OTHER_NETWORK: "precondition",
+  INSUFFICIENT_BALANCE: "precondition",
+  INSUFFICIENT_GAS: "precondition",
+  // Clarifications: one question.
+  RECIPIENT_MISSING: "clarification",
+  RECIPIENT_UNKNOWN: "clarification",
+  RECIPIENT_AMBIGUOUS: "clarification",
+  RECIPIENT_INVALID: "clarification",
+  RECIPIENT_IS_SELF: "clarification",
+  RECIPIENT_NO_WALLET: "clarification",
+  AMOUNT_MISSING: "clarification",
+  AMOUNT_INVALID: "clarification",
+  ASSET_UNCLEAR: "clarification",
+  // Warnings: shown on the confirm card.
+  FIRST_TIME_RECIPIENT: "warning",
+  LOOKALIKE_ADDRESS: "warning",
+  UNSAVED_ADDRESS: "warning",
+  ABOVE_ALLOWANCE: "warning",
+  NO_ALLOWANCE: "warning",
+  LEAVES_LITTLE_FOR_FEES: "warning",
+} as const satisfies Record<string, PolicyKind>;
+
+export type ReasonCode = keyof typeof REASONS;
+
+/** One check's outcome. `params` are display values (decimal strings, names) for the message templates. */
+export type PolicyResult = {
+  code: ReasonCode;
+  kind: PolicyKind;
+  params?: Record<string, string>;
+};
+
+export const result = (code: ReasonCode, params?: Record<string, string>): PolicyResult =>
+  params ? { code, kind: REASONS[code], params } : { code, kind: REASONS[code] };
+
+/** The result that decides what happens next: the first by kind precedence, warnings never block. */
+export function blockingResult(results: readonly PolicyResult[]): PolicyResult | undefined {
+  for (const kind of POLICY_KINDS) {
+    if (kind === "warning") return undefined;
+    const found = results.find((entry) => entry.kind === kind);
+    if (found) return found;
+  }
+  return undefined;
+}

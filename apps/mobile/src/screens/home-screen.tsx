@@ -272,7 +272,7 @@ export function HomeScreen() {
       </Animated.ScrollView>
 
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
-      <ReceiptSheet item={receipt} onClose={() => setReceipt(undefined)} />
+      <ReceiptSheet item={receipt} onClose={() => setReceipt(undefined)} onContactSaved={() => void activity.refresh()} />
     </View>
   );
 }

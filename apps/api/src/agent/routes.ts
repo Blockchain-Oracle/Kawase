@@ -17,6 +17,9 @@ import type { AppEnv } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import type { FaucetService } from "../faucet/service";
+import type { ContactService } from "../contacts/service";
+import type { Recipients } from "../send/recipients";
+import type { SendService } from "../send/service";
 import { buildAgentContext } from "./context";
 
 const TITLE_MAX = 60;
@@ -32,7 +35,17 @@ const messageSchema = z.object({
 });
 const chatSchema = z.object({ id: z.uuid(), message: messageSchema });
 
-type Deps = { db: Db; chains: Chains; wallets: WalletService; faucet: FaucetService; models: Models; approvalSecret?: string | undefined };
+type Deps = {
+  db: Db;
+  chains: Chains;
+  wallets: WalletService;
+  faucet: FaucetService;
+  contacts: ContactService;
+  recipients: Recipients;
+  sends: SendService;
+  models: Models;
+  approvalSecret?: string | undefined;
+};
 
 /** The first words the person wrote, as the thread's title. */
 function titleFrom(message: UIMessage): string | null {
@@ -41,7 +54,7 @@ function titleFrom(message: UIMessage): string | null {
   return text.length > TITLE_MAX ? `${text.slice(0, TITLE_MAX - 1)}…` : text;
 }
 
-export function agentRoutes({ db, chains, wallets, faucet, models, approvalSecret }: Deps) {
+export function agentRoutes({ db, chains, wallets, faucet, contacts, recipients, sends, models, approvalSecret }: Deps) {
   const app = new Hono<AppEnv>();
   app.use("*", requireUser);
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
@@ -76,7 +89,8 @@ export function agentRoutes({ db, chains, wallets, faucet, models, approvalSecre
     const last = history.at(-1);
     const messages = last && last.id === incoming.id ? [...history.slice(0, -1), incoming] : [...history, incoming];
 
-    const context = buildAgentContext({ user, db, chains, wallets, faucet, log });
+    const lastUserText = incoming.role === "user" ? incoming.parts.map((part) => (part.type === "text" ? part.text : "")).join(" ") : "";
+    const context = buildAgentContext({ user, db, chains, wallets, faucet, contacts, recipients, sends, threadId, lastUserText, log });
     const stream = await agentTurn({
       models,
       context,

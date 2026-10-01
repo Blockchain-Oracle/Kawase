@@ -6,8 +6,10 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 
 import type { Db } from "./client";
 import { threadMessages, threads } from "./schema/chat";
+import { contactAddressEvents, contactAddresses, contactAddressTrust, contacts } from "./schema/contacts";
 import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
+import { approvals, intents, spendLedger } from "./schema/intents";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 
 type UserOwned = {
@@ -35,6 +37,15 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   faucet_claims: { table: faucetClaims, userId: faucetClaims.userId },
   threads: { table: threads, userId: threads.userId },
   thread_messages: { table: threadMessages, userId: threadMessages.userId },
+  // Contacts keep their ids, so addresses, trust and events follow them; a guest contact whose name the account
+  // already uses is dropped with its addresses (the account's own book wins).
+  contacts: { table: contacts, userId: contacts.userId, perUserKey: ["displayName"] },
+  contact_addresses: { table: contactAddresses, userId: contactAddresses.userId },
+  contact_address_trust: { table: contactAddressTrust, userId: contactAddressTrust.userId },
+  contact_address_events: { table: contactAddressEvents, userId: contactAddressEvents.userId },
+  intents: { table: intents, userId: intents.userId },
+  approvals: { table: approvals, userId: approvals.userId },
+  spend_ledger: { table: spendLedger, userId: spendLedger.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

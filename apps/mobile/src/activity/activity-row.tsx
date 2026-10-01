@@ -25,10 +25,11 @@ const SKELETON_AMOUNT = 72;
 
 export const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
-/** Who the other side is, in words: a known wallet's name, or its short address. */
+/** Who the other side is, in words: the person's own contact name, a known wallet's name, or its short address. */
 export function useCounterpartyName() {
   const { t } = useT();
   return (item: ActivityItem) => {
+    if (item.contactName) return item.contactName;
     switch (item.counterpartyLabel) {
       case "circle_faucet":
         return t("activity.circleFaucet");

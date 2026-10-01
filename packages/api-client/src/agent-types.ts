@@ -49,3 +49,32 @@ export type AuthoritySummary = {
   onlyThisToken: boolean;
   unknownTerms: boolean;
 } | null;
+
+/** A saved contact as the agent sees it (no notes: they are the person's own untrusted text). */
+export type ContactLine = {
+  name: string;
+  handle: string | null;
+  /** Short form, e.g. 0x1234…abcd; null while an address change is on hold. */
+  address: string | null;
+  onHold: boolean;
+  paidBefore: boolean;
+};
+
+/**
+ * What the model is told about a proposed send (the card gets the whole intent): plain English it rephrases in the
+ * person's language, never numbers it has to compute.
+ */
+export type SendSummary = {
+  intentId: string;
+  network: AgentNetwork;
+  status: "ready" | "needs_answer" | "needs_fix" | "refused" | "not_possible" | "needs_sign_in";
+  recipient: string | null;
+  amount: string | null;
+  /** How it will be approved once the person taps Send. */
+  approval: string | null;
+  /** What stops it, in plain English, when something does. */
+  problem: string | null;
+  warnings: string[];
+};
+
+export type ProposeSendOutput = { intent: import("./types").SendIntent; summary: SendSummary };

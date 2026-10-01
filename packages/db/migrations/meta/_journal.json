@@ -36,6 +36,13 @@
       "when": 1790833837374,
       "tag": "0004_threads",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790835637739,
+      "tag": "0005_contacts_intents",
+      "breakpoints": true
     }
   ]
 }

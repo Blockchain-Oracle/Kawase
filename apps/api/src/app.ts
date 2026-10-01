@@ -15,6 +15,8 @@ import { authRoutes } from "./auth/routes";
 import { AuthService } from "./auth/service";
 import type { TurnkeyReader } from "./auth/turnkey";
 import { capabilityView } from "./capabilities/service";
+import { contactRoutes, recipientRoutes } from "./contacts/routes";
+import { ContactService } from "./contacts/service";
 import type { FaucetDrip } from "./faucet/circle-faucet";
 import { faucetRoutes } from "./faucet/routes";
 import { FaucetService } from "./faucet/service";
@@ -22,6 +24,10 @@ import { idempotency } from "./http/idempotency";
 import { HTTP, ProblemError, problem, problemResponse } from "./http/problem";
 import { createRateLimit } from "./http/rate-limit";
 import { meRoutes } from "./me/routes";
+import type { OpsExecutor } from "./send/ops";
+import { Recipients } from "./send/recipients";
+import { sendRoutes } from "./send/routes";
+import { SendService } from "./send/service";
 import type { AppEnv } from "./types";
 import type { Chains } from "./wallet/chain";
 import { walletRoutes } from "./wallet/routes";
@@ -44,6 +50,10 @@ export type AppDeps = {
   models: Models;
   /** HMAC key for the agent's tool approvals. */
   approvalSecret?: string | undefined;
+  /** The agent's ops wallet (Circle in production, a fake in tests). */
+  ops: OpsExecutor;
+  /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
+  reconcileIntervalMs?: number | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -55,6 +65,10 @@ export function createApp(deps: AppDeps) {
   const auth = new AuthService(deps.db, deps.turnkey);
   const wallets = new WalletService(deps.db, deps.chains);
   const faucet = new FaucetService(deps.db, wallets, deps.faucet);
+  const contacts = new ContactService(deps.db);
+  const recipients = new Recipients(deps.db, contacts);
+  const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log);
+  if (deps.reconcileIntervalMs) sends.startSweeper(deps.reconcileIntervalMs);
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
     windowSeconds: SECONDS_PER_MINUTE,
@@ -105,7 +119,13 @@ export function createApp(deps: AppDeps) {
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
   app.route("/faucet", faucetRoutes(faucet));
-  app.route("/agent", agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, models: deps.models, approvalSecret: deps.approvalSecret }));
+  app.route("/contacts", contactRoutes(contacts));
+  app.route("/recipients", recipientRoutes(recipients));
+  app.route("/sends", sendRoutes(sends));
+  app.route(
+    "/agent",
+    agentRoutes({ db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, models: deps.models, approvalSecret: deps.approvalSecret }),
+  );
 
   return app;
 }

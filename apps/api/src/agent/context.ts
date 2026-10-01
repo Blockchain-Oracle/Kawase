@@ -1,18 +1,24 @@
 // The agent's view of one person, built per request from the api's own services (K2: the model proposes, code
 // resolves). Money is given to the model both exactly (base units) and as a plain display string; network and
 // identity come from the session, never from the model.
+import { and, eq, inArray } from "drizzle-orm";
+
 import { LANGUAGE_NAMES, type CatalogLocale } from "@kawase/i18n";
 import type { AgentContext, Money, WalletSummary } from "@kawase/agent";
 import type { CapabilityId } from "@kawase/config";
-import type { Db } from "@kawase/db";
+import { intents, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { amount, formatAmount, type AssetId } from "@kawase/money";
 
 import { capabilityView } from "../capabilities/service";
+import type { ContactService } from "../contacts/service";
 import type { FaucetService } from "../faucet/service";
+import type { Recipients } from "../send/recipients";
+import type { SendService } from "../send/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { summarizeSend } from "./send-summary";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -34,8 +40,24 @@ const money = (asset: AssetId, baseUnits: string): Money => ({
 
 const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself" } as const;
 
-export function buildAgentContext(input: { user: SessionUser; db: Db; chains: Chains; wallets: WalletService; faucet: FaucetService; log: Logger }): AgentContext {
-  const { user, db, chains, wallets, faucet, log } = input;
+const ADDRESS_HEAD = 6;
+const ADDRESS_TAIL = 4;
+const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
+
+export function buildAgentContext(input: {
+  user: SessionUser;
+  db: Db;
+  chains: Chains;
+  wallets: WalletService;
+  faucet: FaucetService;
+  contacts: ContactService;
+  recipients: Recipients;
+  sends: SendService;
+  threadId: string;
+  lastUserText: string;
+  log: Logger;
+}): AgentContext {
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -50,6 +72,35 @@ export function buildAgentContext(input: { user: SessionUser; db: Db; chains: Ch
     languageName: LANGUAGE_NAMES[locale] ?? LANGUAGE_NAMES.en,
     isGuest: user.isAnonymous,
     handle: user.handle,
+    lastUserText: input.lastUserText,
+
+    async proposeSend(request) {
+      // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
+      // can never be approved by mistake.
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await sends.create(user, request, { surface: "chat", threadId });
+      return { intent, summary: summarizeSend(intent) };
+    },
+
+    async findContacts(query) {
+      if (user.isAnonymous) return [];
+      const text = query.trim();
+      const [all, matches] = await Promise.all([contacts.list(user.id), recipients.search(user.id, text)]);
+      const ids = new Set(matches.flatMap((match) => (match.kind === "contact" ? [match.contactId] : [])));
+      const shown = all.filter((contact) => ids.has(contact.id));
+      return Promise.all(
+        shown.map(async (contact) => ({
+          name: contact.displayName,
+          handle: contact.handle,
+          address: contact.address ? `${contact.address.slice(0, ADDRESS_HEAD)}…${contact.address.slice(-ADDRESS_TAIL)}` : null,
+          onHold: Boolean(contact.pendingChange),
+          paidBefore: contact.address ? await recipients.paidBefore(user.id, network, contact.address) : false,
+        })),
+      );
+    },
 
     async wallet(): Promise<WalletSummary> {
       if (user.isAnonymous) return { status: "guest" };
@@ -75,7 +126,7 @@ export function buildAgentContext(input: { user: SessionUser; db: Db; chains: Ch
         direction: item.direction,
         amount: money(item.asset, item.amount),
         counterparty: item.counterparty,
-        counterpartyName: item.counterpartyLabel ? COUNTERPARTY_NAMES[item.counterpartyLabel] : null,
+        counterpartyName: item.contactName ?? (item.counterpartyLabel ? COUNTERPARTY_NAMES[item.counterpartyLabel] : null),
         label: item.counterpartyLabel,
         at: item.at,
         explorerUrl: item.explorerUrl,

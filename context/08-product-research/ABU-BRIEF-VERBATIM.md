@@ -213,3 +213,9 @@ Links given: where firecore means firecreal https://luma.com/ivroypr5 https://ta
 > note design too is not left out cause we said we wanted to move in certain direction thanks **design and flows with animations and more lol
 
 (Claude's reading: before building further, re-read the plan (REVAMP-PLAN, STATUS, decisions) and audit what was built against what was promised — features, UI, the Lime on Ink design direction from the reference study, the flows, and the motion grammar — then fix the gaps and continue with Phase C. The audit and its fixes are logged in `plan/stages/03-core-platform.md`.)
+
+## Build message, 2026-10-01: after the audit + Stage 4 report (Abu pasted Claude's report back, then wrote)
+
+> lets continue building dont worry about the apple id or something
+
+(Claude's reading: Apple and Google sign-in testing on a device is not a blocker and not to be chased; carry on with the next stage, Stage 5 — send with real execution.)

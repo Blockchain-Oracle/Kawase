@@ -50,3 +50,13 @@ export const DEFAULT_LIMITS = {
     maxSlippageOtherBps: 300,
   },
 } as const satisfies Record<NetworkId, LimitDefaults>;
+
+/**
+ * A changed contact address waits this long before money can go to it, and the contact is frozen meanwhile (I4:
+ * "vendor master change control"; Bankr's 24 h cooldown, `07-automations-contacts-safety/limits-and-safety.md`).
+ * The first address of a new contact is payable at once: the first-time warning covers it.
+ */
+export const CONTACT_ADDRESS_CHANGE_COOLDOWN_S = SECONDS_PER_DAY;
+/** An address whose first and last characters match a saved contact's this far is flagged as a lookalike (I5). */
+export const LOOKALIKE_PREFIX_CHARS = 4;
+export const LOOKALIKE_SUFFIX_CHARS = 4;

@@ -30,6 +30,10 @@ export const MOTION = {
   dockBubbleMs: 220,
   /** A word of caption fading in. */
   captionWordMs: 180,
+  /** The paper plane's quick float while a send is moving, one full cycle. */
+  sendingCycleMs: 1_600,
+  /** The plane leaving when the send is confirmed, before the receipt settles in. */
+  planeFlyMs: 650,
 } as const;
 
 /** Geometry of the quick-action fan (P19, settled state): circles in a vertical trailing column. */

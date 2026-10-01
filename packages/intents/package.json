@@ -13,5 +13,8 @@
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "viem": "catalog:"
   }
 }

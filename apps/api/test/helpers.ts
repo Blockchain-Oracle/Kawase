@@ -10,6 +10,7 @@ import { createLogger } from "@kawase/log";
 import { createApp, type App } from "../src/app";
 import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
 import type { FaucetDrip } from "../src/faucet/circle-faucet";
+import type { OpsExecutor } from "../src/send/ops";
 import type { Chains } from "../src/wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -54,6 +55,14 @@ export function fakeTurnkey(
 
 export const noChains: Chains = { available: ["testnet"], get: () => undefined };
 
+/** An ops wallet that refuses everything; tests that send pass Circle's. */
+export const noOps: OpsExecutor = {
+  execute: async () => {
+    throw new Error("no ops wallet in this test");
+  },
+  get: async (_, id) => ({ id, state: "failed", txHash: undefined, error: "no ops wallet in this test" }),
+};
+
 /** A faucet that always sends; tests that care pass their own. */
 export const okFaucet: FaucetDrip = async () => undefined;
 
@@ -61,6 +70,7 @@ export function testApp(
   turnkey: TurnkeyReader,
   chains: Chains = noChains,
   faucet: FaucetDrip = okFaucet,
+  ops: OpsExecutor = noOps,
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -72,6 +82,7 @@ export function testApp(
     turnkey,
     chains,
     faucet,
+    ops,
     models: createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,

@@ -101,7 +101,7 @@ export function ActivityScreen() {
           </ListGroup>
         )}
       </ScrollView>
-      <ReceiptSheet item={open} onClose={() => setOpen(undefined)} />
+      <ReceiptSheet item={open} onClose={() => setOpen(undefined)} onContactSaved={() => void activity.refresh()} />
     </View>
   );
 }

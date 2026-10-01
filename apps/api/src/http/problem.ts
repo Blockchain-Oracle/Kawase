@@ -43,6 +43,15 @@ export type ProblemCode =
   | "faucet_claimed_today"
   | "faucet_testnet_only"
   | "agent_unavailable"
+  | "recipient_unknown"
+  | "recipient_no_wallet"
+  | "recipient_is_self"
+  | "address_invalid"
+  | "contact_exists"
+  | "intent_stale"
+  | "intent_final"
+  | "intent_blocked"
+  | "network_mismatch"
   | "upstream"
   | "internal";
 
@@ -93,6 +102,15 @@ const TITLES: Record<ProblemCode, string> = {
   faucet_claimed_today: "Test money was already sent today",
   faucet_testnet_only: "The faucet only sends test money on testnet",
   agent_unavailable: "The agent is not available on this server",
+  recipient_unknown: "No one by that name or handle",
+  recipient_no_wallet: "That person has no wallet yet",
+  recipient_is_self: "That is your own address",
+  address_invalid: "That is not an Arc address",
+  contact_exists: "A contact with that name exists",
+  intent_stale: "This was changed since you saw it",
+  intent_final: "This is already finished",
+  intent_blocked: "Something needs fixing before this can go",
+  network_mismatch: "This was made on the other network",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };
