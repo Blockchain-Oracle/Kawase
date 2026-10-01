@@ -318,6 +318,7 @@ export const pt: Catalog = {
     scopeBody: "Leia uma vez. É exatamente o que você aprova, tirado da própria permissão, e você pode desligar quando quiser.",
     acceptFace: "Aceitar com desbloqueio facial",
     acceptPasscode: "Aceitar com seu código",
+    acceptEmailCode: "Aceitar com um código por email",
     faceIdPrompt: "Permitir que o Kawase envie até {{amount}} por dia",
     approving: "Aprovando…",
     notNow: "Agora não",
@@ -461,6 +462,7 @@ export const pt: Catalog = {
     sendFace: "Enviar com desbloqueio facial",
     sendFingerprint: "Enviar com sua digital",
     sendPasscode: "Enviar com seu código",
+    sendEmailCode: "Enviar com um código por email",
     showFullAddress: "Mostra o endereço completo",
     youWrote: "Você escreveu “{{words}}”",
   },
@@ -550,6 +552,11 @@ export const pt: Catalog = {
     signInBody: "Entre para manter uma agenda das pessoas para quem você paga.",
     loadFailed: "Não foi possível carregar seus contatos.",
     noMatches: "Nenhum contato corresponde.",
+  },
+  approval: {
+    title: "Confirme que é você",
+    body: "Na web, um código enviado para {{email}} substitui o Face ID. Nada é assinado até você digitá-lo.",
+    confirm: "Confirmar",
   },
   capability: {
     send: "Enviar dinheiro",

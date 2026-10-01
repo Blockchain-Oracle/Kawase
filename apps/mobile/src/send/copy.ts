@@ -91,6 +91,7 @@ const APPROVE_KEYS: Record<BiometricKind, string> = {
   face: "send.sendFace",
   fingerprint: "send.sendFingerprint",
   passcode: "send.sendPasscode",
+  emailCode: "send.sendEmailCode",
   none: "send.sendFaceId",
 };
 

@@ -66,9 +66,9 @@ function describe(result: PolicyResultView): string {
     case "UNSAVED_ADDRESS":
       return "The address is not a saved contact.";
     case "ABOVE_ALLOWANCE":
-      return `Above what is left of the daily allowance (${money(p.asset, p.available)}), so it needs Face ID.`;
+      return `Above what is left of the daily allowance (${money(p.asset, p.available)}), so it needs their confirmation on the card.`;
     case "NO_ALLOWANCE":
-      return "The daily allowance is off, so it needs Face ID.";
+      return "The daily allowance is off, so it needs their confirmation on the card.";
     case "LEAVES_LITTLE_FOR_FEES":
       return "Very little USDC will be left for future network fees.";
     default:
@@ -121,7 +121,7 @@ export function summarizeSend(intent: SendIntent): SendSummary {
         ? null
         : intent.route === "allowance"
           ? "Inside the daily allowance; it goes when they tap Send on the card."
-          : "Needs their Face ID: they tap Send on the card and confirm.",
+          : "Needs their own confirmation: they tap Send on the card (Face ID on a phone, an email code on the web).",
     problem: blocking ? describe(blocking) : null,
     warnings: intent.results.filter((entry) => entry.kind === "warning").map(describe),
   };

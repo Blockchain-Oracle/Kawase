@@ -318,6 +318,7 @@ export const ur: Catalog = {
     scopeBody: "اسے ایک بار پڑھ لیں۔ یہی بالکل وہ ہے جس کی آپ منظوری دیتے ہیں، براہِ راست اجازت سے لیا گیا — اور آپ اسے کبھی بھی بند کر سکتے ہیں۔",
     acceptFace: "فیس اَن لاک سے قبول کریں",
     acceptPasscode: "پاس کوڈ سے قبول کریں",
+    acceptEmailCode: "ای میل کوڈ سے قبول کریں",
     faceIdPrompt: "روزانہ {{amount}} تک بھیجنے کی اجازت دیں",
     approving: "منظوری ہو رہی ہے…",
     notNow: "ابھی نہیں",
@@ -461,6 +462,7 @@ export const ur: Catalog = {
     sendFace: "چہرے سے ان لاک کر کے بھیجیں",
     sendFingerprint: "اپنے فنگر پرنٹ سے بھیجیں",
     sendPasscode: "اپنے پاس کوڈ سے بھیجیں",
+    sendEmailCode: "ای میل کوڈ سے بھیجیں",
     showFullAddress: "پورا پتا دکھاتا ہے",
     youWrote: "‏آپ نے لکھا «{{words}}»",
   },
@@ -550,6 +552,11 @@ export const ur: Catalog = {
     signInBody: "جنہیں آپ ادائیگی کرتے ہیں ان کے پتوں کی فہرست رکھنے کے لیے سائن ان کریں۔",
     loadFailed: "آپ کے رابطے لوڈ نہیں ہو سکے۔",
     noMatches: "کوئی رابطہ نہیں ملا۔",
+  },
+  approval: {
+    title: "تصدیق کریں کہ یہ آپ ہیں",
+    body: "‏ویب پر، {{email}} پر بھیجا گیا کوڈ Face ID کی جگہ لیتا ہے۔ کوڈ درج کرنے تک کچھ بھی دستخط نہیں ہوتا۔",
+    confirm: "تصدیق کریں",
   },
   capability: {
     send: "پیسے بھیجنا",

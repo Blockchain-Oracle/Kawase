@@ -317,6 +317,7 @@ export const en = {
     scopeBody: "Read this once. It is exactly what you approve, taken from the permission itself — and you can turn it off at any time.",
     acceptFace: "Accept with face unlock",
     acceptPasscode: "Accept with your passcode",
+    acceptEmailCode: "Accept with an email code",
     faceIdPrompt: "Allow Kawase to send up to {{amount}} a day",
     approving: "Approving…",
     notNow: "Not now",
@@ -460,6 +461,7 @@ export const en = {
     sendFace: "Send with face unlock",
     sendFingerprint: "Send with your fingerprint",
     sendPasscode: "Send with your passcode",
+    sendEmailCode: "Send with an email code",
     showFullAddress: "Shows the full address",
     youWrote: "You wrote “{{words}}”",
   },
@@ -549,6 +551,11 @@ export const en = {
     signInBody: "Sign in to keep an address book of the people you pay.",
     loadFailed: "Couldn't load your contacts.",
     noMatches: "No contacts match.",
+  },
+  approval: {
+    title: "Confirm it's you",
+    body: "On the web, a code sent to {{email}} stands in for Face ID. Nothing is signed until you enter it.",
+    confirm: "Confirm",
   },
   capability: {
     send: "Send money",

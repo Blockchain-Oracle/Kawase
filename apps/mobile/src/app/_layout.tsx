@@ -14,6 +14,7 @@ import { SignInProvider } from "@/sign-in/sign-in-provider";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { ThemeSync } from "@/theme/theme-sync";
 import { WalletProvider } from "@/wallet/wallet-provider";
+import { WebApprovalHost } from "@/wallet/web-approval-host";
 
 // Sheets, toasts and the overlay host sit inside LocaleProvider so they inherit the reading direction.
 export default function RootLayout() {
@@ -32,6 +33,7 @@ export default function RootLayout() {
                     </FundProvider>
                   </SignInProvider>
                   <PortalHost />
+                  <WebApprovalHost />
                   <Toaster position="top-center" />
                 </BottomSheetModalProvider>
               </LocaleProvider>

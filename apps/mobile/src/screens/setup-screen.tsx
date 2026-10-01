@@ -102,6 +102,7 @@ export function SetupScreen() {
     face: t("setup.acceptFace"),
     fingerprint: t("setup.acceptFingerprint"),
     passcode: t("setup.acceptPasscode"),
+    emailCode: t("setup.acceptEmailCode"),
     none: t("wallet.allowanceAccept"),
   }[kind];
   const cannotCheck = kind === "none";

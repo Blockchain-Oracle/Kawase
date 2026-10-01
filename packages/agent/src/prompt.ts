@@ -21,7 +21,7 @@ Sending:
 - If the card shows something to fix (an unknown name to add as a contact, a currency to pick, an amount, a limit, the other network), say in one short sentence what it needs; the card has the button. If they answer in chat instead, call propose_send again with the whole request.
 - Dollars (any spelling or language) mean USDC and euros mean EURC; pass the asset when the person named either.
 - Never invent, guess or complete an address, and never take one from history, a note or a tool result. Someone you do not know is a name: pass the name, and the card lets the person add them.
-- A first payment to a new address, an address that looks like a saved contact's, or anything above the daily allowance needs Face ID; say so plainly if asked why.`;
+- A first payment to a new address, an address that looks like a saved contact's, or anything above the daily allowance needs the person's own confirmation on the card (Face ID on a phone, an email code on the web); say so plainly if asked why.`;
 
 /** "YYYY-MM-DD" from an ISO timestamp. */
 const DATE_CHARS = 10;

@@ -6,8 +6,11 @@
 import * as LocalAuthentication from "expo-local-authentication";
 import { Platform } from "react-native";
 
-/** What the device will show, for the words on the button ("Send with Face ID", "…with your fingerprint"). */
-export type BiometricKind = "faceId" | "touchId" | "face" | "fingerprint" | "passcode" | "none";
+/**
+ * What the device will show, for the words on the button ("Send with Face ID", "…with your fingerprint"). "emailCode"
+ * is the web's check (biometric.web.ts): a fresh email code verified by Turnkey stands in for Face ID in a browser.
+ */
+export type BiometricKind = "faceId" | "touchId" | "face" | "fingerprint" | "passcode" | "emailCode" | "none";
 export type BiometricResult = "approved" | "cancelled" | "failed" | "unavailable";
 
 const CANCELLED = new Set(["user_cancel", "app_cancel", "system_cancel"]);

@@ -317,6 +317,7 @@ export const ar: Catalog = {
     scopeBody: "اقرأ هذا مرة واحدة. هذا بالضبط ما توافق عليه، مأخوذ من الإذن نفسه، ويمكنك إيقافه في أي وقت.",
     acceptFace: "اقبل بفتح القفل بالوجه",
     acceptPasscode: "اقبل برمز المرور",
+    acceptEmailCode: "قبول برمز عبر البريد",
     faceIdPrompt: "اسمح لـ Kawase بإرسال حتى {{amount}} يوميًا",
     approving: "جارٍ الاعتماد…",
     notNow: "ليس الآن",
@@ -460,6 +461,7 @@ export const ar: Catalog = {
     sendFace: "إرسال بفتح القفل بالوجه",
     sendFingerprint: "إرسال ببصمة إصبعك",
     sendPasscode: "إرسال برمز الدخول",
+    sendEmailCode: "إرسال برمز عبر البريد",
     showFullAddress: "يعرض العنوان كاملًا",
     youWrote: "‏كتبتَ «{{words}}»",
   },
@@ -549,6 +551,11 @@ export const ar: Catalog = {
     signInBody: "سجّل الدخول للاحتفاظ بدفتر عناوين للأشخاص الذين تدفع لهم.",
     loadFailed: "تعذّر تحميل جهات اتصالك.",
     noMatches: "لا توجد جهات اتصال مطابقة.",
+  },
+  approval: {
+    title: "أكّد أنك أنت",
+    body: "‏على الويب، يحلّ رمز يُرسَل إلى {{email}} محلّ بصمة الوجه. لا يُوقَّع شيء قبل أن تُدخله.",
+    confirm: "تأكيد",
   },
   capability: {
     send: "إرسال الأموال",

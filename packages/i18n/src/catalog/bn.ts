@@ -318,6 +318,7 @@ export const bn: Catalog = {
     scopeBody: "একবার পড়ে নিন। ঠিক এটাই আপনি অনুমোদন করছেন, সরাসরি অনুমতি থেকে নেওয়া — আর যেকোনো সময় বন্ধ করতে পারবেন।",
     acceptFace: "ফেস আনলক দিয়ে গ্রহণ করুন",
     acceptPasscode: "পাসকোড দিয়ে গ্রহণ করুন",
+    acceptEmailCode: "ইমেল কোড দিয়ে গ্রহণ করুন",
     faceIdPrompt: "Kawase-কে দিনে {{amount}} পর্যন্ত পাঠাতে দিন",
     approving: "অনুমোদন হচ্ছে…",
     notNow: "এখন নয়",
@@ -461,6 +462,7 @@ export const bn: Catalog = {
     sendFace: "ফেস আনলক দিয়ে পাঠান",
     sendFingerprint: "আঙুলের ছাপ দিয়ে পাঠান",
     sendPasscode: "পাসকোড দিয়ে পাঠান",
+    sendEmailCode: "ইমেল কোড দিয়ে পাঠান",
     showFullAddress: "পুরো ঠিকানা দেখায়",
     youWrote: "আপনি লিখেছেন “{{words}}”",
   },
@@ -550,6 +552,11 @@ export const bn: Catalog = {
     signInBody: "যাদের পেমেন্ট করেন তাদের ঠিকানার খাতা রাখতে সাইন ইন করুন।",
     loadFailed: "আপনার পরিচিতি লোড করা যায়নি।",
     noMatches: "কোনো পরিচিতি মেলেনি।",
+  },
+  approval: {
+    title: "নিশ্চিত করুন যে এটি আপনি",
+    body: "ওয়েবে, {{email}}-এ পাঠানো একটি কোড Face ID-এর জায়গা নেয়। কোডটি দেওয়ার আগে কিছুই সই হয় না।",
+    confirm: "নিশ্চিত করুন",
   },
   capability: {
     send: "টাকা পাঠানো",

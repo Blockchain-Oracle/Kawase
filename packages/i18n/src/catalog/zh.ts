@@ -316,6 +316,7 @@ export const zh: Catalog = {
     scopeBody: "请读一遍。这正是你要批准的内容，直接取自授权本身，你可以随时关闭。",
     acceptFace: "用面部解锁接受",
     acceptPasscode: "用密码接受",
+    acceptEmailCode: "用邮箱验证码接受",
     faceIdPrompt: "允许 Kawase 每天最多发送 {{amount}}",
     approving: "正在批准…",
     notNow: "以后再说",
@@ -459,6 +460,7 @@ export const zh: Catalog = {
     sendFace: "用面部解锁发送",
     sendFingerprint: "用指纹发送",
     sendPasscode: "用设备密码发送",
+    sendEmailCode: "用邮箱验证码发送",
     showFullAddress: "显示完整地址",
     youWrote: "你输入的是“{{words}}”",
   },
@@ -548,6 +550,11 @@ export const zh: Catalog = {
     signInBody: "登录后可以保存你常付款的人。",
     loadFailed: "无法加载你的联系人。",
     noMatches: "没有匹配的联系人。",
+  },
+  approval: {
+    title: "确认是你本人",
+    body: "在网页上，发送到 {{email}} 的验证码代替面容 ID。输入之前不会签署任何内容。",
+    confirm: "确认",
   },
   capability: {
     send: "转账",

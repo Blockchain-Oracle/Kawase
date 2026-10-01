@@ -318,6 +318,7 @@ export const hi: Catalog = {
     scopeBody: "इसे एक बार पढ़ें। यही वह है जिसे आप स्वीकार करते हैं, सीधे अनुमति से लिया गया — और आप इसे कभी भी बंद कर सकते हैं।",
     acceptFace: "फ़ेस अनलॉक से स्वीकार करें",
     acceptPasscode: "पासकोड से स्वीकार करें",
+    acceptEmailCode: "ईमेल कोड से स्वीकार करें",
     faceIdPrompt: "Kawase को रोज़ {{amount}} तक भेजने दें",
     approving: "मंज़ूरी दी जा रही है…",
     notNow: "अभी नहीं",
@@ -461,6 +462,7 @@ export const hi: Catalog = {
     sendFace: "फ़ेस अनलॉक से भेजें",
     sendFingerprint: "अपने फ़िंगरप्रिंट से भेजें",
     sendPasscode: "अपने पासकोड से भेजें",
+    sendEmailCode: "ईमेल कोड से भेजें",
     showFullAddress: "पूरा पता दिखाता है",
     youWrote: "आपने लिखा “{{words}}”",
   },
@@ -550,6 +552,11 @@ export const hi: Catalog = {
     signInBody: "जिन्हें आप भुगतान करते हैं, उनकी पता-सूची रखने के लिए साइन इन करें।",
     loadFailed: "आपके संपर्क लोड नहीं हो सके।",
     noMatches: "कोई संपर्क मेल नहीं खाता।",
+  },
+  approval: {
+    title: "पुष्टि करें कि यह आप हैं",
+    body: "वेब पर, {{email}} पर भेजा गया कोड Face ID की जगह लेता है। कोड डालने तक कुछ भी साइन नहीं होता।",
+    confirm: "पुष्टि करें",
   },
   capability: {
     send: "पैसे भेजना",
