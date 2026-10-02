@@ -1,6 +1,4 @@
-// The polyfill must load before anything that needs random bytes (Turnkey's session keys).
-import "react-native-get-random-values";
-
+// Turnkey's session keys need `crypto.getRandomValues`: the entry (`index.ts`) installs it before any module runs.
 import { TurnkeyProvider, type TurnkeyCallbacks, type TurnkeyProviderConfig } from "@turnkey/react-native-wallet-kit";
 import type { ReactNode } from "react";
 
