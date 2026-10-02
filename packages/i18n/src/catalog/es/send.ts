@@ -97,4 +97,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "Enviar con un código por email",
   showFullAddress: "Muestra la dirección completa",
   youWrote: "Escribiste «{{words}}»",
+  otherChain: "¿Su billetera está en otra cadena?",
+  otherChainBridge: "Envía USDC allí por un puente: tú eliges la cadena y la ruta.",
+  otherChainConvert: "Solo USDC cruza de cadena. Convierte primero tu {{asset}} a USDC.",
 };

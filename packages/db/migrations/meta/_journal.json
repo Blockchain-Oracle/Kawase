@@ -250,12 +250,33 @@
     {
       "idx": 35,
       "version": "7",
+      "when": 1791000078000,
+      "tag": "0021_request_any_asset",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791000079000,
+      "tag": "0022_places",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791000080000,
+      "tag": "0023_token_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
       "when": 1791000081000,
       "tag": "0074_splits",
       "breakpoints": true
     },
     {
-      "idx": 36,
+      "idx": 39,
       "version": "7",
       "when": 1791000082000,
       "tag": "0075_discoverable",

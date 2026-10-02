@@ -68,6 +68,7 @@ import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { tokenRulesOf } from "../tokens/rules";
 import type { SwapEngine } from "./engine";
 import { createSwapVenues, VenueRefused, type SwapVenues, type VenueFailure, type VenueQuote } from "./venues";
 
@@ -261,7 +262,8 @@ export class SwapService {
       }
     }
 
-    // The token rules (D12) for what is bought.
+    // The token rules (D12) for what is bought: the person's own (Token rules screen), else the defaults.
+    const rules = await tokenRulesOf(this.db, user.id, network);
     let tokenRules: TokenRuleFacts | undefined;
     if (viewOut && this.assets) {
       const safety = await this.assets.safety(network, viewOut).catch(() => undefined);
@@ -272,8 +274,9 @@ export class SwapService {
         unverified,
         tradeUsd: valueUsd,
         spentTodayUsd: unverified ? await this.unverifiedSpentToday(user.id, network, intent.id) : 0,
-        perTradeUsd: TOKEN_RULES.unverifiedPerTradeUsd,
-        perDayUsd: TOKEN_RULES.unverifiedPerDayUsd,
+        perTradeUsd: rules.unverifiedPerTradeUsd,
+        perDayUsd: rules.unverifiedPerDayUsd,
+        access: rules.access,
       };
     }
 
@@ -292,14 +295,15 @@ export class SwapService {
       quote,
       thresholds: stablePair
         ? { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: limits.maxRateGapBps, warnRateGapBps: limits.warnRateGapBps }
-        : { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: TOKEN_RULES.maxPriceImpactBps, warnRateGapBps: TOKEN_RULES.warnPriceImpactBps },
+        : { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: rules.maxPriceImpactBps, warnRateGapBps: Math.min(TOKEN_RULES.warnPriceImpactBps, rules.maxPriceImpactBps) },
       tokenRules,
     });
     return { wallet, evaluation, quote, marketRate, amount, viewIn, viewOut, best, quotes, failures, valueUsd, unverifiedOut: tokenRules?.unverified ?? false };
   }
 
   /** US dollars bought today in tokens Kawase does not vouch for (the token rules' daily limit). */
-  private async unverifiedSpentToday(userId: string, network: NetworkId, exclude: string): Promise<number> {
+  /** USD bought today in tokens Kawase does not vouch for (the token rules' daily cap), leaving out one intent. */
+  async unverifiedSpentToday(userId: string, network: NetworkId, exclude: string): Promise<number> {
     const since = new Date(Date.now() - MS_PER_DAY);
     const rows = await this.db
       .select({ id: intents.id, payload: intentDrafts.payload })

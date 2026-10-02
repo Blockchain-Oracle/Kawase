@@ -34,6 +34,12 @@ export const REASONS = {
   PRICE_IMPACT_HIGH: "policy",
   /** A new address can get only a small amount per payment until its cooldown ends (Wallet & limits). */
   NEW_RECIPIENT_COOLDOWN: "policy",
+  /** R6: the recipient is a token contract (money sent there is lost). */
+  RECIPIENT_TOKEN_CONTRACT: "policy",
+  /** R6: the token's issuer has blocked the recipient (USDC/EURC blocklist). */
+  RECIPIENT_ISSUER_BLOCKED: "policy",
+  /** R6: an address that looks like a saved contact's but is not it (a lookalike) is never paid. */
+  LOOKALIKE_ADDRESS: "policy",
   /** More leverage than the venue's collateral factor allows at the opening health floor. */
   LEVERAGE_TOO_HIGH: "policy",
   /** The account would be too close to liquidation after this borrow or withdrawal. */
@@ -46,6 +52,8 @@ export const REASONS = {
   TOKEN_RULE_TRADE: "policy",
   /** Over the token rules' daily limit for unverified tokens (D12: $200 by default). */
   TOKEN_RULE_DAY: "policy",
+  /** The person's token rules allow only tokens Kawase vouches for (D12 access level "verified only"). */
+  TOKEN_RULE_ACCESS: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",
@@ -85,7 +93,8 @@ export const REASONS = {
   RULE_INCOMPLETE: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
-  LOOKALIKE_ADDRESS: "warning",
+  /** R6: a contract that is not a known smart wallet: it may not be able to move what it receives. */
+  RECIPIENT_CONTRACT: "warning",
   UNSAVED_ADDRESS: "warning",
   ABOVE_ALLOWANCE: "warning",
   NO_ALLOWANCE: "warning",

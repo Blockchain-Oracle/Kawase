@@ -10,10 +10,7 @@ import { Linking, Share, View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { PaymentRequest } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
 import { DottedQr } from "@kawase/ui-native/components/dotted-qr";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { NetworkChip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -23,9 +20,10 @@ import { tokens } from "@kawase/ui-tokens";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { shortAddress, useMoney } from "@/send/copy";
+import { shortAddress } from "@/send/copy";
 
 import { effectiveStatus, useRequestDates, useRequestStatusLabel } from "./copy";
+import { RequestTokenMark, requestFigures } from "./request-token";
 
 const ASSET_MARK = 32;
 const ASSET_MARK_COMPACT = 26;
@@ -48,15 +46,13 @@ export type RequestShareCardProps = {
 export function RequestShareCard({ request, requester, compact, onCancel, cancelling }: RequestShareCardProps) {
   const { t } = useT();
   const { locale } = useLocale();
-  const money = useMoney();
   const statusLabel = useRequestStatusLabel();
   const dates = useRequestDates();
-  const ids = arcIdentity(request.network);
-  const asset = request.asset as AssetId;
-  const assetMark = asset === "USDC" ? ids.usdc : ids.eurc;
+  const asset = request.asset;
   const status = effectiveStatus(request);
   const open = status === "open";
-  const figures = formatAmount(toAmount(asset, BigInt(request.amount)), locale, { withSymbol: false });
+  const figures = requestFigures(request, locale);
+  const sum = requestFigures(request, locale, true);
   const networkName = request.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const ink = tokens.themes.dark;
 
@@ -66,7 +62,7 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
   };
   const share = async () => {
     await Share.share({
-      message: t("request.shareMessage", { name: requester, amount: money(asset, request.amount), network: networkName, link: request.link }),
+      message: t("request.shareMessage", { name: requester, amount: sum, network: networkName, link: request.link }),
     });
   };
 
@@ -75,9 +71,9 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
       <View className={cn("items-center gap-2", compact ? "" : "pt-1")}>
         <Text className="text-muted-foreground text-sm">{t("request.requests", { name: requester })}</Text>
         <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
-          <Mark entity={assetMark} chainBadge={ids.chain} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
+          <RequestTokenMark request={request} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
           <Text
-            accessibilityLabel={money(asset, request.amount)}
+            accessibilityLabel={sum}
             className={cn("font-display text-foreground font-bold", compact ? "text-[32px]" : "text-5xl")}
             style={{ fontVariant: ["tabular-nums"] }}
           >
@@ -103,7 +99,7 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
               background={ink.background}
               center={
                 <View className="items-center justify-center rounded-2xl" style={{ backgroundColor: ink.background, padding: CENTER_PADDING }}>
-                  <Mark entity={assetMark} size={CENTER_MARK} />
+                  <RequestTokenMark request={request} size={CENTER_MARK} />
                 </View>
               }
             />

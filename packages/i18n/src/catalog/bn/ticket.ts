@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "কোনো রুট নেই",
   reason_timeout: "সময়মতো উত্তর নেই",
   reason_failed: "দাম পাওয়া যায়নি",
+  ruleVerifiedOnly: "আপনার নিয়মে শুধু যাচাই করা টোকেন চলে",
 };

@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import type { PolicyResultView, SendIntent, SendRecipientView } from "@kawase/api-client";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { ASSETS, amount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
@@ -18,10 +18,21 @@ export const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEA
 export const nameFromWords = (words: string) =>
   /^(@|0x)/i.test(words) ? words : words.charAt(0).toLocaleUpperCase() + words.slice(1);
 
+const TOKEN_DIGITS = 6;
+
+/**
+ * Money in words for any asset (R1): USDC and EURC as before; any other token in its own decimals (pass them; a
+ * send's draft carries them as `draft.token.decimals`).
+ */
 export function useMoney() {
   const { locale } = useLocale();
-  return (asset: string | null | undefined, baseUnits: string | null | undefined) =>
-    asset && baseUnits ? formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale) : "";
+  return (asset: string | null | undefined, baseUnits: string | null | undefined, decimals?: number | string | null) => {
+    if (!asset || !baseUnits) return "";
+    if (asset in ASSETS && (decimals === undefined || decimals === null || Number(decimals) === ASSETS[asset as AssetId].decimals))
+      return formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale);
+    if (decimals === undefined || decimals === null || decimals === "") return `${baseUnits} ${asset}`;
+    return formatTokenAmount(BigInt(baseUnits), Number(decimals), asset, locale, { fractionDigits: TOKEN_DIGITS, trimZeros: true });
+  };
 }
 
 export function useWhen() {
@@ -50,7 +61,7 @@ export function usePolicyText() {
       query: p.query ? nameFromWords(p.query) : "",
       limit: money(p.asset, p.limit),
       used: money(p.asset, p.used),
-      balance: money(p.asset, p.balance),
+      balance: money(p.asset, p.balance, p.decimals),
       available: money(p.asset, p.available),
       needed: money("USDC", p.needed),
       cap: money(p.asset, p.cap),

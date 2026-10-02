@@ -12,15 +12,17 @@ export type CapabilityScope = { supports: readonly string[]; notYet: readonly st
 export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = {
   send: {
     supports: [
-      "USDC and EURC on Arc to a saved contact, a Kawase @handle or an address the person types",
-      "inside the daily allowance it goes at once; above it, to a new address over the threshold or to a look-alike address, the person confirms with Face ID (an email code on the web)",
+      "any token the person holds on Arc, to a saved contact, a Kawase @handle, an address they type or scan, with the recipient check on every payment: a token contract or a look-alike of a saved contact is refused, a non-wallet contract is warned about, the issuer's blocklist is checked where the token has one, and their own address is named",
+      "inside the daily allowance it goes at once; above it, to a new address or for a token outside the allowance, the person confirms with Face ID (an email code on the web)",
+      "USDC to someone on another chain (Base, Ethereum, Arbitrum, OP Mainnet, Polygon, Avalanche) through the best bridge route",
+      "Withdraw: one token, several or everything, each as itself or as cash, to an exchange (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, Coinbase via Base), the person's own wallet on Arc or another chain, or their bank through an exchange; the route is planned per token (transfer, bridge or convert first) and confirmed once",
     ],
-    notYet: ["sending to someone on another chain", "split bills and batch payouts", "scanning a QR code to pay"],
+    notYet: ["tokens other than USDC crossing chains as themselves (they convert to USDC first)", "a test-amount offer for a first-time withdraw destination", "exchanges on testnet (withdraw goes to the person's own wallet there)"],
   },
   request: {
     supports: [
-      "a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer",
-      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll (scheduled payments to several people, each bounded on chain)",
+      "a payment request with a shareable link in any token on Arc; marked paid by a Kawase send or a matching plain transfer",
+      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll as a scheduled automation",
     ],
     notYet: ["invoice reminders by email", "invoices in tokens other than USDC and EURC"],
   },
@@ -69,17 +71,14 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   automations: {
     supports: [
-      "scheduled sends of a fixed amount of USDC or EURC to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
-      "Auto-save: keep an amount ready in the wallet and move the rest into the person's own vault savings, topping the wallet up when it drops below; checked daily and whenever money arrives, bounded on chain to the wallet and its own savings",
-      "rules: when the balance goes above or drops below an amount, or when money arrives (optionally from someone, or at least an amount) — bridge USDC to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (route fee bounded on chain), save it into their own vault, or alert them; amounts: what is above a line, a share of the money that arrived, or a fixed amount; balance rules fire once per crossing",
+      "scheduled sends of a fixed amount to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period; payroll to several people the same way",
+      "Auto-save and round-ups into the person's own vault savings, bounded on chain to the wallet and its own savings",
+      "rules: when the balance crosses a line, when money arrives, or when a price crosses a level — bridge USDC to the person's own address on another chain (fee bounded on chain), save, alert, or send to someone; DCA buys on a schedule",
+      "a step an automation may not take alone (every swap or DCA buy, anything above its grant, a payment held by the allowlist or cooldown) waits in Needs you: inbox, push and Activity; answered once from any device, reminded at 12 hours, expired at 24",
+      "practice runs before going live, editing in place (lowering applies at once; raising signs a new grant), a reminder 24 hours before weekly and monthly runs, skipping and retrying once when underfunded",
       "listing, pausing, resuming, skipping the next run and cancelling (with a revoke on chain)",
     ],
-    notYet: [
-      "rules that send to someone else, swap, or act on a price (price-triggered swaps, DCA)",
-      "payroll and multi-step rules",
-      "practice mode (what a rule would have done)",
-      "editing an automation in place (cancel and set it up again for now)",
-    ],
+    notYet: ["swaps that run unattended (every swap waits for the person)", "multi-step rules"],
   },
   lend: {
     supports: [

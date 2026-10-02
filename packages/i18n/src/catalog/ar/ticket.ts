@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "لا يوجد مسار",
   reason_timeout: "لم يرد في الوقت",
   reason_failed: "تعذّر التسعير",
+  ruleVerifiedOnly: "قواعدك تسمح بالرموز الموثّقة فقط",
 };

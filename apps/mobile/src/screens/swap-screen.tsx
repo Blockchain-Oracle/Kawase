@@ -250,6 +250,8 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
       case "TOKEN_RULE_TRADE":
       case "TOKEN_RULE_DAY":
         return { label: t("policy.fixEditAmount"), onPress: () => setStep("amount") };
+      case "TOKEN_RULE_ACCESS":
+        return { label: t("tokenRules.change"), onPress: () => router.push("/token-rules") };
       default:
         return undefined;
     }

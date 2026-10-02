@@ -70,6 +70,8 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
 import { scan } from "./scan";
 import { split } from "./split";
 import { resume } from "./resume";
@@ -147,6 +149,8 @@ export const es: Catalog = {
   memory,
   insight,
   forYou,
+  withdraw,
+  tokenRules,
   scan,
   split,
   resume,

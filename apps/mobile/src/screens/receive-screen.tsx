@@ -150,7 +150,7 @@ export function ReceiveScreen() {
           </Pressable>
           <View className="bg-network-surface flex-row items-start gap-2 rounded-2xl px-4 py-3">
             <Icon as={TriangleAlert} className="text-network mt-0.5 size-4" />
-            <Text className="text-network flex-1 text-sm">{t("receive.warning")}</Text>
+            <Text className="text-network flex-1 text-sm">{t("receive.anyToken")}</Text>
           </View>
         </View>
       </View>

@@ -101,6 +101,8 @@ const TRACK_POLL_MS = 3_000;
 const TRACK_POLL_ATTEMPTS = 120;
 const ERROR_MAX = 140;
 const QUOTE_TIMEOUT_MS = 6_000;
+/** App Kit's CCTP estimate simulates the burn and reads Circle's fees: 6.2–6.8 s on Arc Testnet (measured 10-02). */
+const CCTP_QUOTE_TIMEOUT_MS = 15_000;
 const NO_QUOTE = -1n;
 const TRUST: Record<CrossChainProvider, CrossChainRouteView["trust"]> = { cctp: "burn_mint", across: "solver", relay: "solver" };
 const CHAIN_NAMES: Record<string, string> = { base: "Base", ethereum: "Ethereum", arbitrum: "Arbitrum", optimism: "OP Mainnet", polygon: "Polygon", avalanche: "Avalanche" };
@@ -109,8 +111,8 @@ const ms = (seconds: number) => seconds * MS_PER_SECOND;
 const later = (seconds: number) => new Date(Date.now() + ms(seconds));
 const sleep = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-const within = <T>(promise: Promise<T>, fallback: T) =>
-  Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), QUOTE_TIMEOUT_MS))]).catch(() => fallback);
+const within = <T>(promise: Promise<T>, fallback: T, timeoutMs = QUOTE_TIMEOUT_MS) =>
+  Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs))]).catch(() => fallback);
 
 const feeInUsdc = (nativeWei: bigint) => {
   const scaled = rescale(nativeWei, USDC_NATIVE_DECIMALS, USDC_DECIMALS);
@@ -224,6 +226,7 @@ export class CrossChainService {
         return { provider: "cctp", received, minReceived: received, etaSeconds: null, reason: null };
       }),
       failed("cctp", { code: "timeout" }),
+      CCTP_QUOTE_TIMEOUT_MS,
     ).catch((error: unknown) => failed("cctp", error));
     const across: Promise<Quote> = testnet
       ? Promise.resolve({ provider: "across", received: null, minReceived: null, etaSeconds: null, reason: "not_on_arc_testnet" })

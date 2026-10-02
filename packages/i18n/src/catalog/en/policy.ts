@@ -23,7 +23,8 @@ export const policy = {
   AMOUNT_INVALID: "That amount isn't valid.",
   ASSET_UNCLEAR: "USDC or EURC?",
   FIRST_TIME_RECIPIENT: "First payment to this address",
-  LOOKALIKE_ADDRESS: "Looks like {{name}}'s address, but it is different. Check every character.",
+  LOOKALIKE_ADDRESS:
+    "This looks like {{name}}'s address but is different, so Kawase won't send to it. Check it with {{name}}.",
   UNSAVED_ADDRESS: "This address isn't in your contacts",
   ABOVE_ALLOWANCE: "Above what's left of your allowance ({{available}})",
   NO_ALLOWANCE: "Your daily allowance is off",
@@ -43,5 +44,9 @@ export const policy = {
   fixOpenContact: "Open contact",
   AGENT_PAUSED: "Paused: this one needs your approval",
   NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
-  NEW_RECIPIENT_COOLDOWN: "New recipients can get up to {{cap}} per payment until {{until}}. Change it in Wallet & limits.",
+  NEW_RECIPIENT_COOLDOWN:
+    "New recipients can get up to {{cap}} per payment until {{until}}. Change it in Wallet & limits.",
+  RECIPIENT_TOKEN_CONTRACT: "That address is a token contract. Money sent there is lost, so Kawase won't send it.",
+  RECIPIENT_ISSUER_BLOCKED: "The issuer of {{asset}} has blocked this address, so it can't receive {{asset}}.",
+  RECIPIENT_CONTRACT: "This address is a contract, not a wallet. It may not be able to move what it receives.",
 } as const;

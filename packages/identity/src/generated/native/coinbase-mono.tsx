@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { Path } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkCoinbaseMono = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><Path fill="currentColor" d="M12.151 6.721c-2.925 0-4.943 2.246-4.944 5.296 0 3.016 2.051 5.262 4.977 5.262 2.119 0 3.8-1.341 4.406-3.285h4.238C20.054 18.184 16.557 21 12.185 21c-5.178 0-9.046-3.821-9.046-8.983S7.107 3 12.185 3c4.472 0 7.902 2.816 8.676 6.972H16.59c-.639-1.944-2.32-3.251-4.439-3.251" /></Svg>;
+export default MarkCoinbaseMono;

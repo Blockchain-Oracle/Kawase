@@ -89,7 +89,7 @@ function useEnding(intent: SendIntent): Ending | undefined {
   const { t } = useT();
   const money = useMoney();
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
-  const sent = money(intent.draft?.asset, intent.draft?.amount);
+  const sent = money(intent.draft?.asset, intent.draft?.amount, intent.draft?.token?.decimals);
   switch (intent.outcome) {
     case "sent":
       return {
@@ -158,7 +158,7 @@ export function SendStatus({
         {/* With no confirm step inside the allowance, what is moving is always in view while it moves. */}
         {intent.draft ? (
           <Text className={cn("font-display text-foreground text-center font-bold", compact ? "text-lg" : "text-2xl")}>
-            {`${money(intent.draft.asset, intent.draft.amount)} → ${recipientName(intent.draft.recipient, intent.request.recipient)}`}
+            {`${money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals)} → ${recipientName(intent.draft.recipient, intent.request.recipient)}`}
           </Text>
         ) : null}
         <Plane id={intent.id} compact={Boolean(compact)} rtl={rtl} departing={departing} onDeparted={onDeparted} />

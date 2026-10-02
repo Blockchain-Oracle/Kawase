@@ -17,7 +17,8 @@ const requestSchema = z.object({
   requestToken: z.string().max(TOKEN_MAX).nullable().optional(),
   recipient: z.string().max(RECIPIENT_MAX).nullable().optional(),
   amount: z.string().max(AMOUNT_MAX).nullable().optional(),
-  asset: z.enum(["USDC", "EURC"]).nullable().optional(),
+  /** "USDC", "EURC", a verified symbol or a token address (any asset, R1). */
+  asset: z.string().regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/).nullable().optional(),
   note: z.string().max(NOTE_MAX).nullable().optional(),
 });
 const approveSchema = z.object({ version: z.number().int().positive() });

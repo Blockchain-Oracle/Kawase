@@ -17,11 +17,14 @@ export const markets: Catalog["markets"] = {
   testnetTitle: "मार्केट मेननेट पर हैं",
   testnetBody: "टेस्ट पैसे से सिर्फ़ USDC और EURC की अदला-बदली होती है। असली मार्केट देखने के लिए मेननेट पर जाएँ।",
   switchToMainnet: "मेननेट पर जाएँ",
-  perpsBody: "Arc पर लॉन्ग और शॉर्ट बन रहा है: पहले Aave के ज़रिए cirBTC, WETH और EURC।",
   empty: "अभी यहाँ कुछ नहीं",
   loadFailed: "मार्केट लोड नहीं हो सके।",
   updated: "{{time}} पर अपडेट",
   stale: "{{time}} के आख़िरी दाम दिखा रहे हैं",
   recentSearches: "हाल की खोजें",
   segmentsLabel: "मार्केट के हिस्से",
+  yourPositions: "आपकी पोज़िशन",
+  marginVenue: "Kawase Margin · Arc पर Aave V4",
+  perpsMainnet:
+    "लॉन्ग और शॉर्ट Arc मेननेट पर चलते हैं। ट्रेड करने के लिए नेटवर्क बदलें; आपका टेस्टनेट पैसा जैसा है वैसा ही रहेगा।",
 };

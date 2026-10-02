@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "कोई रास्ता नहीं",
   reason_timeout: "समय पर जवाब नहीं",
   reason_failed: "दाम नहीं मिला",
+  ruleVerifiedOnly: "आपके नियम सिर्फ़ सत्यापित टोकन की अनुमति देते हैं",
 };

@@ -24,7 +24,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "یہ رقم درست نہیں۔",
   ASSET_UNCLEAR: "‏USDC یا EURC؟",
   FIRST_TIME_RECIPIENT: "اس پتے پر پہلی ادائیگی",
-  LOOKALIKE_ADDRESS: "یہ {{name}} کے پتے جیسا لگتا ہے، مگر مختلف ہے۔ ہر حرف جانچیں۔",
+  LOOKALIKE_ADDRESS:
+    "یہ {{name}} کے پتے جیسا لگتا ہے مگر مختلف ہے، اس لیے Kawase نہیں بھیجے گا۔ {{name}} سے تصدیق کریں۔",
   UNSAVED_ADDRESS: "یہ پتہ آپ کے رابطوں میں نہیں",
   ABOVE_ALLOWANCE: "آپ کی باقی حد ({{available}}) سے زیادہ",
   NO_ALLOWANCE: "آپ کی روزانہ کی حد بند ہے",
@@ -44,5 +45,9 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "رابطہ کھولیں",
   AGENT_PAUSED: "رکا ہوا: اس کے لیے آپ کی منظوری چاہیے",
   NOT_ON_ALLOWLIST: "آپ کی اجازت فہرست میں نہیں: اس کے لیے آپ کی منظوری چاہیے",
-  NEW_RECIPIENT_COOLDOWN: "{{until}} تک نئے وصول کنندگان فی ادائیگی {{cap}} تک پا سکتے ہیں۔ اسے والیٹ اور حدود میں بدلیں۔",
+  NEW_RECIPIENT_COOLDOWN:
+    "{{until}} تک نئے وصول کنندگان فی ادائیگی {{cap}} تک پا سکتے ہیں۔ اسے والیٹ اور حدود میں بدلیں۔",
+  RECIPIENT_TOKEN_CONTRACT: "یہ پتہ ایک ٹوکن کنٹریکٹ ہے۔ وہاں بھیجی رقم ضائع ہو جاتی ہے، اس لیے Kawase نہیں بھیجے گا۔",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}} کے جاری کنندہ نے یہ پتہ بلاک کیا ہے، اس لیے یہ {{asset}} وصول نہیں کر سکتا۔",
+  RECIPIENT_CONTRACT: "یہ پتہ والٹ نہیں بلکہ کنٹریکٹ ہے۔ ہو سکتا ہے یہ موصولہ رقم آگے نہ بھیج سکے۔",
 };

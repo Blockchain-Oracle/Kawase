@@ -52,7 +52,9 @@ function describe(result: PolicyResultView): string {
     case "TOKEN_RULE_TRADE":
       return `The person's token rules allow at most $${p.limit} per trade in unverified tokens; this is about $${p.value}. Offer a smaller amount, or changing the rule (with Face ID).`;
     case "TOKEN_RULE_DAY":
-      return `The person's token rules allow at most $${p.limit} a day in unverified tokens, and $${p.spent} is already used today.`;
+      return `The person's token rules allow at most $${p.limit} a day in unverified tokens, and $${p.spent} is already used today. Offer changing the rule in Token rules (with Face ID).`;
+    case "TOKEN_RULE_ACCESS":
+      return "The person's token rules allow only tokens Kawase vouches for, and this one is unverified. Say so; they can change it in Token rules (with Face ID).";
     case "TOKEN_UNVERIFIED":
       return `This token is not on the lists Kawase checks (${p.reason}); the card warns them.`;
     default:

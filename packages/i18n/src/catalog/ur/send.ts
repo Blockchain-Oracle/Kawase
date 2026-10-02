@@ -96,4 +96,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "ای میل کوڈ سے بھیجیں",
   showFullAddress: "پورا پتا دکھاتا ہے",
   youWrote: "‏آپ نے لکھا «{{words}}»",
+  otherChain: "ان کا والیٹ کسی اور چین پر ہے؟",
+  otherChainBridge: "برج کے ذریعے وہاں USDC بھیجیں: چین اور راستہ آپ چنیں۔",
+  otherChainConvert: "‏صرف USDC چینز کے پار جاتا ہے۔ پہلے اپنا {{asset}} USDC میں بدلیں۔",
 };

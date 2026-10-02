@@ -14,7 +14,8 @@ const TOKEN_MAX = 64;
 
 const createSchema = z.object({
   amount: z.string().trim().min(1).max(AMOUNT_MAX),
-  asset: z.enum(["USDC", "EURC"]),
+  /** "USDC", "EURC", a verified symbol or any token's address (R1). */
+  asset: z.string().regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/),
   note: z.string().max(REQUEST_NOTE_MAX).nullable().optional(),
 });
 
