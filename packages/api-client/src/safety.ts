@@ -119,3 +119,11 @@ export type SafetyToolOutput = {
   safety: SafetyView | null;
   reason?: string | undefined;
 };
+
+/**
+ * The brake (cards/automate-safety.md): a risky draft — over half the balance to someone new, a price impact over the
+ * rule, leverage above 5× — carries one of these warnings, and its approval must say `override: true` (the person saw
+ * the warning and goes ahead with Face ID). The api refuses it otherwise (`brake_override`).
+ */
+export const BRAKE_CODES: readonly string[] = ["BRAKE_HALF_BALANCE", "BRAKE_PRICE_IMPACT", "BRAKE_LEVERAGE"];
+export const hasBrake = (results: readonly { code: string }[] | undefined) => Boolean(results?.some((entry) => BRAKE_CODES.includes(entry.code)));

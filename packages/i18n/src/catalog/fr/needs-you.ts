@@ -25,4 +25,5 @@ export const needsYou: Catalog["needsYou"] = {
   expires: "Attend jusqu'à {{time}}",
   switchNetwork: "Ceci attend sur {{network}}. Changez de réseau pour répondre.",
   failed: "Cela n'a pas abouti. Il attend toujours.",
+  reason_BRAKE_HALF_BALANCE: "Plus de la moitié de ce que vous détenez, vers un nouveau destinataire : il vous attend.",
 };

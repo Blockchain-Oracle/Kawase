@@ -33,6 +33,8 @@ export type MarginEvaluation = { results: PolicyResult[]; blocking: PolicyResult
 const ZERO = 0n;
 /** Leverage is shown to one decimal, rounded down (3.44× → "3.4"). */
 const BPS_PER_TENTH = 1_000;
+/** The brake: leverage above 5× (10_000 bps = 1×). */
+const BRAKE_LEVERAGE_BPS = 50_000;
 const TENTHS = 10;
 const s = (value: bigint) => value.toString();
 const leverage = (bps: number) => (Math.floor(bps / BPS_PER_TENTH) / TENTHS).toString();
@@ -45,7 +47,7 @@ export function evaluateMargin(facts: MarginFacts): MarginEvaluation {
     const elsewhere = facts.capability.other === "available";
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "margin" })]);
   }
-  if (facts.pausedAll) return done([result("PAUSED_ALL")]);
+  // Pause all stops the agent and automations; this is always the person's own yes, so it is never blocked (D-pause).
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
   if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
 
@@ -61,6 +63,8 @@ export function evaluateMargin(facts: MarginFacts): MarginEvaluation {
     if (facts.amount.status === "missing") results.push(result("AMOUNT_MISSING"));
     if (facts.amount.status === "invalid" || (facts.amount.status === "ok" && facts.amount.baseUnits <= ZERO)) results.push(result("AMOUNT_INVALID"));
     if (facts.leverageBps !== null && facts.leverageBps > market.maxLeverageBps) results.push(result("LEVERAGE_TOO_HIGH", { max: leverage(market.maxLeverageBps) }));
+    // The brake (cards/automate-safety.md): above 5× it warns and needs the person's explicit override.
+    else if (facts.leverageBps !== null && facts.leverageBps > BRAKE_LEVERAGE_BPS) results.push(result("BRAKE_LEVERAGE", { leverage: leverage(facts.leverageBps) }));
     if (facts.amount.status === "ok" && facts.amount.baseUnits > ZERO) {
       const margin = facts.amount.baseUnits;
       if (margin > facts.wallet.usdc) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.wallet.usdc), asset: "USDC" }));

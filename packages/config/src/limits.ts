@@ -12,9 +12,15 @@ export type LimitDefaults = {
   /** Sends above this always need an explicit approval, even in autonomous mode. */
   approvalThreshold: bigint;
   firstTimeRecipientApprovalThreshold: bigint;
+  /** A first payment well above this offers sending this much first ("send a test amount first?", D-cooldown). */
+  testAmount: bigint;
   maxSlippageStableBps: number;
   maxSlippageOtherBps: number;
-  /** A swap quoted this far below Circle's market rate is refused (ARCHITECTURE §8 `POLICY_PRICE_IMPACT`). */
+  /**
+   * The price-impact rule (D12 token rules, "max price impact 5%"): a swap quoted this far below the market rate is
+   * braked — it warns and needs the person's explicit override (cards/automate-safety.md "Brake"); three times this is
+   * refused outright (ARCHITECTURE §8 `POLICY_PRICE_IMPACT`).
+   */
   maxRateGapBps: number;
   /** Above this it carries a warning. */
   warnRateGapBps: number;
@@ -37,10 +43,11 @@ export const DEFAULT_LIMITS = {
     newRecipientMaxDuringCooldown: usdc("50"),
     approvalThreshold: usdc("100"),
     firstTimeRecipientApprovalThreshold: usdc("20"),
+    testAmount: usdc("1"),
     // The "at least" floor a person is shown; the route itself is built at half of it (SWAP_ROUTE_SLIPPAGE_DIVISOR).
     maxSlippageStableBps: 100,
     maxSlippageOtherBps: 300,
-    maxRateGapBps: 300,
+    maxRateGapBps: 500,
     warnRateGapBps: 100,
   },
   testnet: {
@@ -53,6 +60,7 @@ export const DEFAULT_LIMITS = {
     newRecipientMaxDuringCooldown: usdc("500"),
     approvalThreshold: usdc("1000"),
     firstTimeRecipientApprovalThreshold: usdc("200"),
+    testAmount: usdc("0.01"),
     // Circle's swap service finds no route on Arc testnet for USDC→EURC below 1% slippage ("No route available",
     // 331001, 2026-10-01), and the route is built at half the floor (SWAP_ROUTE_SLIPPAGE_DIVISOR), so the floor is 2%.
     maxSlippageStableBps: 200,

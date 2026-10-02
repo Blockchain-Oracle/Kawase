@@ -25,4 +25,5 @@ export const needsYou: Catalog["needsYou"] = {
   expires: "等待至 {{time}}",
   switchNetwork: "此项在 {{network}} 上等待。切换网络后处理。",
   failed: "没有成功。仍在等待。",
+  reason_BRAKE_HALF_BALANCE: "超过你持有的一半，付给新收款人，所以等你处理。",
 };

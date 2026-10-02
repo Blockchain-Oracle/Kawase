@@ -270,8 +270,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SendRequest) => call<{ intent: SendIntent }>("PATCH", `/sends/${id}`, patch),
       cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
     },
@@ -302,8 +302,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SwapRequest) => call<{ intent: SwapIntent }>("PATCH", `/swaps/${id}`, patch),
       cancel: (id: string) => call<{ intent: SwapIntent }>("POST", `/swaps/${id}/cancel`),
       /** Approve one version: the answer carries the one transaction (approve + swap) for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
     },

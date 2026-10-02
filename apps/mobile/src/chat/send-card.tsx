@@ -98,7 +98,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (
-        <SendReview intent={intent} compact />
+        <SendReview intent={intent} compact onRevise={(patch) => void controller.revise(patch)} />
       ) : (
         <Text className={cn("text-foreground font-display text-xl font-bold", TEXT_START)}>
           {[amountText, name].filter(Boolean).join(" → ")}

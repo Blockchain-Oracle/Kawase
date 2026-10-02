@@ -219,7 +219,7 @@ export class ActivityFeedService {
         .where(and(eq(automationRuns.userId, user.id), eq(automations.network, network), inArray(automationRuns.status, ["skipped", "failed", "practiced", "needs_you"]), gt(automationRuns.scheduledFor, since), or(isNull(automationRuns.reason), notInArray(automationRuns.reason, QUIET))))
         .orderBy(desc(automationRuns.scheduledFor))
         .limit(ROWS),
-      this.db.select().from(practiceRuns).where(and(eq(practiceRuns.userId, user.id), eq(practiceRuns.network, network), eq(practiceRuns.kind, "send"), gt(practiceRuns.createdAt, since))),
+      this.db.select().from(practiceRuns).where(and(eq(practiceRuns.userId, user.id), eq(practiceRuns.network, network), inArray(practiceRuns.kind, ["send", "purchase"]), gt(practiceRuns.createdAt, since))),
       this.db.select().from(attentionItems).where(and(eq(attentionItems.userId, user.id), eq(attentionItems.network, network), eq(attentionItems.status, "pending"), isNull(attentionItems.runId))),
     ]);
     const seenTx = new Set(hashes);

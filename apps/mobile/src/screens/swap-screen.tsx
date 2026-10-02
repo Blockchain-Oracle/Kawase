@@ -32,6 +32,7 @@ import { tapFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { BrakeNote } from "@/safety/brake-note";
 import { AssetPickerSheet, type AssetChoice } from "@/portfolio/asset-picker-sheet";
 import { tokenAmount } from "@/portfolio/format";
 import { usePortfolio } from "@/portfolio/use-portfolio";
@@ -305,7 +306,9 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
                 </Button>
               ) : null}
             </View>
-          ) : null}
+          ) : (
+            <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} />
+          )}
         </ScrollView>
         <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
           <SlideToConfirm

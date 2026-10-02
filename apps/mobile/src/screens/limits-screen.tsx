@@ -50,8 +50,6 @@ const SKELETON_HEIGHT = 220;
 const REVOKE_HOLD_MS = 1_800;
 const MS_PER_TENTH = 100;
 const TENTHS_PER_SECOND = 10;
-/** Where "move my money out" goes. The Withdraw hub (another lane) replaces Send here once it exists. */
-const SWEEP_ROUTE = "/send";
 const RISK_MODES: RiskMode[] = ["careful", "balanced", "autonomous"];
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
@@ -292,7 +290,7 @@ export function LimitsScreen() {
               ) : (
                 <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("safety.exitNothing")}</Text>
               )}
-              <Button onPress={() => router.push(SWEEP_ROUTE)}>
+              <Button onPress={() => router.push({ pathname: "/withdraw", params: { everything: "1" } })}>
                 <Text>{t("safety.exitMove")}</Text>
               </Button>
             </View>

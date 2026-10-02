@@ -108,7 +108,8 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Treino: teria sido executado (nada foi enviado)",
   reason_PRACTICE_RUN_REFUSED: "Treino: a Arc o teria recusado",
   reason_PAUSED_ALL: "Em pausa: você pausou tudo",
-  practiceBody: "Treino: as execuções são simuladas na Arc e mostradas como “teria”. Nada se move até você ativar de verdade.",
+  practiceBody:
+    "Treino: as execuções são simuladas na Arc e mostradas como “teria”. Nada se move até você ativar de verdade.",
   practising: "Treino",
   practiceFirst: "Treinar primeiro",
   goLive: "Ativar de verdade",
@@ -127,7 +128,8 @@ export const automation: Catalog["automation"] = {
   edited: "Alterado",
   payroll: "Pagar {{count}} pessoas",
   payrollLine: "{{amount}} para {{name}}",
-  payrollBound: "Cada pessoa pode receber no máximo o próprio valor {{per}}, só no próprio endereço, garantido pela Arc; até {{date}}.",
+  payrollBound:
+    "Cada pessoa pode receber no máximo o próprio valor {{per}}, só no próprio endereço, garantido pela Arc; até {{date}}.",
   dca: "Trocar {{amount}} por {{symbolOut}}",
   dcaBound: "Não guarda nenhuma permissão: cada troca espera seu sim em “Esperando você”.",
   rulePrice: "Quando {{amountIn}} comprar pelo menos {{minOut}}",
@@ -152,4 +154,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} agora compra {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Automação de amanhã",
   reason_INSUFFICIENT_BALANCE: "Não havia dinheiro suficiente na carteira",
+  reason_BRAKE_HALF_BALANCE: "Mais da metade do saldo para alguém novo: esperando por você",
 };

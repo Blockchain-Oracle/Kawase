@@ -313,7 +313,7 @@ export function createApp(deps: AppDeps) {
   app.route("/sends", sendRoutes(sends));
   // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
   // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
-  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$/;
+  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$|^\/marketplace\/agent-wallet\/top-up$/;
   app.use("*", async (c, next) => {
     if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
       throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");

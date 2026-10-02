@@ -150,4 +150,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} 现在可买到 {{quotedOut}} {{symbolOut}}",
   inboxReminder: "明天的自动任务",
   reason_INSUFFICIENT_BALANCE: "当时钱包余额不足",
+  reason_BRAKE_HALF_BALANCE: "超过一半余额付给新收款人：等你处理",
 };
