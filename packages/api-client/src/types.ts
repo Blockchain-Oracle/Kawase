@@ -18,6 +18,15 @@ export type ApiUser = {
   riskMode: "careful" | "balanced" | "autonomous";
   practiceMode: boolean;
   turnkeySubOrganizationId: string | null;
+  /** Settings → Voice (defaults filled in by the api); absent on users cached before it existed. */
+  voicePrefs?: VoicePrefs;
+};
+
+/** GPT-Live's voices, the speaking pace and whether Kawase greets first (the same shape as @kawase/config's). */
+export type VoicePrefs = {
+  voice: "marin" | "aster" | "beacon" | "cinder" | "stone" | "vesper";
+  speed: "relaxed" | "normal" | "brisk";
+  autoSpeak: boolean;
 };
 
 export type DeviceInfo = {

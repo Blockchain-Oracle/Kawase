@@ -27,4 +27,6 @@ export type SessionUser = {
   practiceMode: boolean;
   turnkeySubOrganizationId: string | null;
   turnkeyUserId: string | null;
+  /** Settings → Voice as stored (read with `voicePrefs`). */
+  voicePrefs?: unknown;
 };

@@ -2,7 +2,17 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { handleProblem, MAINNET_CONSENT_VERSION, normalizeHandle, SUPPORTED_LOCALES, type HandleProblem } from "@kawase/config";
+import {
+  GPT_LIVE_VOICES,
+  handleProblem,
+  MAINNET_CONSENT_VERSION,
+  normalizeHandle,
+  SUPPORTED_LOCALES,
+  VOICE_SPEEDS,
+  voicePrefs,
+  type HandleProblem,
+  type VoiceSpeed,
+} from "@kawase/config";
 import { consents, users, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
@@ -26,6 +36,14 @@ const settingsSchema = z
     handle: z.string().max(FIELD.handleInputMax).nullable(),
     /** The optional handle step was answered (Skip); onboarding does not ask again (review R07). */
     handlePrompted: z.literal(true),
+    /** Settings → Voice: any subset; the rest keeps its stored value (or the default). */
+    voicePrefs: z
+      .object({
+        voice: z.enum(GPT_LIVE_VOICES),
+        speed: z.enum(Object.keys(VOICE_SPEEDS) as [VoiceSpeed, ...VoiceSpeed[]]),
+        autoSpeak: z.boolean(),
+      })
+      .partial(),
   })
   .partial();
 
@@ -63,10 +81,17 @@ export function meRoutes(db: Db, chains: Chains) {
     const parsed = settingsSchema.safeParse(await c.req.json());
     if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
     const userId = c.get("userId")!;
-    const { handlePrompted, ...settings } = parsed.data;
-    const changes: typeof settings & { handlePromptedAt?: Date } = { ...settings };
+    const { handlePrompted, voicePrefs: voiceChange, ...settings } = parsed.data;
+    const changes: typeof settings & { handlePromptedAt?: Date; voicePrefs?: ReturnType<typeof voicePrefs> } = {
+      ...settings,
+    };
+    if (voiceChange) {
+      const given = Object.fromEntries(Object.entries(voiceChange).filter(([, value]) => value !== undefined));
+      changes.voicePrefs = voicePrefs({ ...voicePrefs(c.get("user")!.voicePrefs), ...given });
+    }
     // Saving a handle answers the step too; either way it is recorded once and kept.
-    if ((handlePrompted || typeof changes.handle === "string") && !c.get("user")!.handlePromptedAt) changes.handlePromptedAt = new Date();
+    if ((handlePrompted || typeof changes.handle === "string") && !c.get("user")!.handlePromptedAt)
+      changes.handlePromptedAt = new Date();
     if (typeof changes.handle === "string") {
       // A handle is a public name for an account; a guest has nothing to be paid at yet.
       if (c.get("user")!.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to choose a handle");

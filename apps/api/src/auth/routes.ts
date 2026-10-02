@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { voicePrefs } from "@kawase/config";
 import type { Db } from "@kawase/db";
 
 import { FIELD } from "../http/fields";
@@ -78,6 +79,7 @@ export function publicUser(user: {
   riskMode: string;
   practiceMode: boolean;
   turnkeySubOrganizationId: string | null;
+  voicePrefs?: unknown;
 }) {
   return {
     id: user.id,
@@ -95,5 +97,7 @@ export function publicUser(user: {
     riskMode: user.riskMode,
     practiceMode: user.practiceMode,
     turnkeySubOrganizationId: user.turnkeySubOrganizationId,
+    /** Settings → Voice, with the defaults filled in. */
+    voicePrefs: voicePrefs(user.voicePrefs),
   };
 }

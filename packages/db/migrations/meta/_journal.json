@@ -127,6 +127,13 @@
       "when": 1790928000001,
       "tag": "0017_thread_turn_lease",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790928000002,
+      "tag": "0050_voice_prefs",
+      "breakpoints": true
     }
   ]
 }
