@@ -27,6 +27,7 @@ import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
+import type { WithdrawService } from "../withdraw/service";
 import type { CrossChainService } from "../crosschain/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
@@ -76,6 +77,7 @@ export type AgentDeps = {
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
+  withdraw?: WithdrawService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -119,6 +121,7 @@ export function createTurnRunner(deps: AgentDeps) {
     margin,
     onramp,
     crosschain,
+    withdraw,
     assets,
     automations,
     requests,
@@ -179,6 +182,7 @@ export function createTurnRunner(deps: AgentDeps) {
       margin,
       onramp,
       crosschain,
+      withdraw,
       assets,
       automations,
       requests,

@@ -68,6 +68,7 @@ import type {
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
 import { railsEndpoints } from "./rails";
+import { withdrawEndpoints } from "./withdraw";
 import type {
   BusinessProfile,
   BusinessProfileInput,
@@ -90,6 +91,7 @@ export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
 export * from "./rails";
+export * from "./withdraw";
 export * from "./business";
 export * from "./history";
 
@@ -148,6 +150,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
   return {
     ...railsEndpoints(call),
+    ...withdrawEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),

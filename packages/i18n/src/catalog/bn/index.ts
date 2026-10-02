@@ -61,6 +61,7 @@ import { history } from "./history";
 import { privacy } from "./privacy";
 import { move } from "./move";
 import { movePolicy } from "./move-policy";
+import { withdraw } from "./withdraw";
 
 export const bn: Catalog = {
   common,
@@ -124,4 +125,5 @@ export const bn: Catalog = {
   privacy,
   move,
   movePolicy,
+  withdraw,
 };

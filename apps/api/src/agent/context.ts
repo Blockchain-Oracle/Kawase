@@ -41,6 +41,8 @@ import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
+import { moneyOutContext } from "./money-out-context";
+import type { WithdrawService } from "../withdraw/service";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -83,6 +85,7 @@ export function buildAgentContext(input: {
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
+  withdraw?: WithdrawService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -120,6 +123,7 @@ export function buildAgentContext(input: {
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, threadId }),
+    ...moneyOutContext({ user, withdraw: input.withdraw }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

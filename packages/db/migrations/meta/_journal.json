@@ -204,6 +204,13 @@
       "when": 1791000065000,
       "tag": "0032_crosschain",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791000066000,
+      "tag": "0022_places",
+      "breakpoints": true
     }
   ]
 }

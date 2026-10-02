@@ -189,7 +189,7 @@ export function HomeScreen() {
     { key: "add", label: t("assets.addMoney"), icon: ArrowDownToLine, primary: !hasMoney, onPress: fund.open },
     { key: "send", label: t("assets.send"), icon: Send, primary: hasMoney, onPress: () => router.push("/send") },
     { key: "swap", label: t("assets.swap"), icon: ArrowLeftRight, primary: false, onPress: () => router.push("/swap") },
-    { key: "withdraw", label: t("assets.withdraw"), icon: ArrowUpFromLine, primary: false, onPress: () => router.push("/send") },
+    { key: "withdraw", label: t("assets.withdraw"), icon: ArrowUpFromLine, primary: false, onPress: () => router.push("/withdraw") },
   ];
 
   return (

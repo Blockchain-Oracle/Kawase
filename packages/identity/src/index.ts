@@ -1,8 +1,8 @@
 import { NETWORK_ADDRESSES, SHARED_ADDRESSES } from "@kawase/networks";
 
-import { CHAIN_IDS, ENTITIES, chainKey, providerKey, tokenKey, venueKey, type Entity, type EntityKind, type MarkVariant } from "./registry";
+import { CHAIN_IDS, ENTITIES, chainKey, exchangeKey, providerKey, tokenKey, venueKey, walletKey, type Entity, type EntityKind, type MarkVariant } from "./registry";
 
-export { ENTITIES, CHAIN_IDS, chainKey, providerKey, tokenKey, venueKey } from "./registry";
+export { ENTITIES, CHAIN_IDS, chainKey, exchangeKey, providerKey, tokenKey, venueKey, walletKey } from "./registry";
 export type { Entity, EntityKind, MarkVariant } from "./registry";
 
 const byId = new Map(ENTITIES.map((entity) => [entity.id, entity]));
@@ -12,6 +12,8 @@ export const getChainIdentity = (chainId: number): Entity | undefined => byId.ge
 export const getTokenIdentity = (chainId: number, address: string): Entity | undefined => byId.get(tokenKey(chainId, address));
 export const getProviderIdentity = (slug: string): Entity | undefined => byId.get(providerKey(slug));
 export const getVenueIdentity = (slug: string): Entity | undefined => byId.get(venueKey(slug));
+export const getExchangeIdentity = (slug: string): Entity | undefined => byId.get(exchangeKey(slug));
+export const getWalletIdentity = (slug: string): Entity | undefined => byId.get(walletKey(slug));
 export const entitiesOfKind = (kind: EntityKind): Entity[] => ENTITIES.filter((entity) => entity.kind === kind);
 
 /** The home network's ids per environment: the chain and its two stablecoins (balance card, receipts, receive). */

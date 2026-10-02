@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
+import { moneyOutTools } from "./money-out-tools";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -390,6 +391,8 @@ export function buildTools(context: AgentContext) {
     }),
     // Money rails (B1): margin, buy, cross-chain moves with options.
     ...railsTools(context),
+    // Money out (A2): withdraw any asset anywhere.
+    ...moneyOutTools(context),
   };
 }
 

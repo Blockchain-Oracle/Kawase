@@ -19,6 +19,7 @@ import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./s
 import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 import { portfolioSnapshots, walletTokens } from "./schema/assets";
+import { places } from "./schema/places";
 
 type UserOwned = {
   table: PgTable;
@@ -73,6 +74,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   // The asset registry (A0): tokens seen arriving and the balance chart's snapshots; the account's own rows win.
   wallet_tokens: { table: walletTokens, userId: walletTokens.userId, perUserKey: ["chainId", "tokenAddress"] },
   portfolio_snapshots: { table: portfolioSnapshots, userId: portfolioSnapshots.userId, perUserKey: ["network", "takenAt"] },
+  // My places (Withdraw): the account's own saved place for the same address wins.
+  places: { table: places, userId: places.userId, perUserKey: ["network", "chain", "address"] },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

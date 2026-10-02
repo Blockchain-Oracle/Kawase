@@ -59,6 +59,8 @@ import { onrampRoutes } from "./onramp/routes";
 import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
+import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
+import { WithdrawService } from "./withdraw/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
@@ -182,6 +184,7 @@ export function createApp(deps: AppDeps) {
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
+  const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -282,6 +285,8 @@ export function createApp(deps: AppDeps) {
   app.route("/margin", marginRoutes(margin));
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
+  app.route("/withdrawals", withdrawRoutes(withdraw));
+  app.route("/places", placeRoutes(withdraw));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -319,6 +324,7 @@ export function createApp(deps: AppDeps) {
     margin,
     onramp,
     crosschain,
+    withdraw,
     assets,
     automations,
     requests,

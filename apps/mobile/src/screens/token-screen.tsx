@@ -34,6 +34,7 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useToken, useTokenChart } from "@/token/use-token";
+import { withdrawHref } from "@/withdraw/href";
 
 const RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M", "1Y", "ALL"];
 const MARK = 36;
@@ -121,8 +122,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push({ pathname: "/swap", params: { sell: token.address } });
         return;
       case "send":
-      case "withdraw":
         router.push({ pathname: "/send", params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address } });
+        return;
+      case "withdraw":
+        router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
         return;
       case "receive":
         router.push("/wallet/receive");

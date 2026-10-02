@@ -11,4 +11,5 @@ export const receive: Catalog["receive"] = {
   noWalletBody: "地址会随账户一起创建。",
   setUpFirst: "请先设置钱包",
   setUpFirstBody: "只需一步，你的地址即可收款。",
+  anyToken: "Arc 上的任意代币都会到账这里。在其他链上发送的？它会到达那条链上的同一地址：在“充值”中把它转回 Arc。",
 };

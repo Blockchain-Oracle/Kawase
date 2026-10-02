@@ -33,6 +33,8 @@ import type {
   BuyProposalOutput,
   CrossChainRequest,
   ProposeCrossChainOutput,
+  WithdrawPlanInput,
+  WithdrawProposalOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -130,6 +132,8 @@ export type AgentContext = {
   proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
   /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */
   proposeCrossChain?(input: CrossChainRequest): Promise<ProposeCrossChainOutput>;
+  /** Plans a withdrawal (any assets, to an exchange, a saved place or an own wallet); the card opens Withdraw. */
+  proposeWithdraw?(input: WithdrawPlanInput): Promise<WithdrawProposalOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */
