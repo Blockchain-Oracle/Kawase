@@ -30,6 +30,10 @@ export const onrampOrders = pgTable(
     /** The token to buy with what arrives (any token), when the person asked for one. */
     thenToken: text(),
     destination: text().notNull(),
+    /** Whose address that is: the person's own wallet, or their agent wallet (topped up with Apple Pay, B2-2). */
+    destinationKind: text().notNull().default("wallet"),
+    /** The block when it started: an agent wallet's arrivals are read from the chain from here (no watcher row). */
+    fromBlock: money(),
     /** Base units that arrived (6 decimals), the transfer that brought them, and when. */
     received: money(),
     receivedTx: text(),

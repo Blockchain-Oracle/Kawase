@@ -135,7 +135,14 @@ export function BuySheet({
           <Text className={cn("text-foreground flex-1 text-sm", TEXT_START)}>{t("buy.methods")}</Text>
         </View>
         <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
-          {[network === "testnet" ? t("buy.sandbox") : t("buy.realMoney"), t("buy.delivers", { asset, network: network === "testnet" ? t("network.arcTestnet") : t("network.arc") }), prefill.then ? t("buy.thenNote", { token: prefill.then }) : null]
+          {[
+            network === "testnet" ? t("buy.sandbox") : t("buy.realMoney"),
+            // Into the agent wallet (B2-2) or the person's own wallet.
+            prefill.destination === "agent_wallet"
+              ? t("agentWallet.deliversAgent", { network: network === "testnet" ? t("network.arcTestnet") : t("network.arc") })
+              : t("buy.delivers", { asset, network: network === "testnet" ? t("network.arcTestnet") : t("network.arc") }),
+            prefill.then ? t("buy.thenNote", { token: prefill.then }) : null,
+          ]
             .filter(Boolean)
             .join(" ")}
         </Text>

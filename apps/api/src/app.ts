@@ -225,6 +225,14 @@ export function createApp(deps: AppDeps) {
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
       : undefined;
+  // "Top up my agent wallet with Apple Pay": the onramp lands on the agent wallet and the marketplace puts it to work.
+  if (marketplace) {
+    onramp.setAgentWallets({
+      address: async (user) => (await marketplace.ensureAgentWallet(user.id, user.activeNetwork)).address,
+      ownMoves: (userId, network) => marketplace.moveHashes(userId, network),
+      arrived: (userId, network) => marketplace.putToWork(userId, network),
+    });
+  }
   const account = new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace, inbox);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);

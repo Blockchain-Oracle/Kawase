@@ -65,4 +65,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "‏Circle Gateway نینو پیمنٹ سے ادا کیا گیا",
     eip3009: "‏USDC ٹرانسفر سے ادا کیا گیا",
   },
+  cardTopUp: "یا سیدھے اس میں USDC خریدیں",
+  expressPay: "Pay",
+  orCard: "یا کارڈ سے ادائیگی کریں",
+  cardButton: "ڈیبٹ کارڈ",
+  deliversAgent: "‏USDC سیدھے {{network}} پر آپ کے ایجنٹ والیٹ میں جاتے ہیں۔",
+  noRefund: "کوئی ریفنڈ نہیں: {{seller}} نے ادائیگی رکھ لی۔ ادا شدہ کالز ابھی ریفنڈ نہیں ہو سکتیں۔",
+  notCharged: "رقم نہیں کٹی: ادائیگی کبھی مکمل نہیں ہوئی۔",
+  refundNone: "کوئی ریفنڈ نہیں",
+  refundNotCharged: "رقم نہیں کٹی",
 };

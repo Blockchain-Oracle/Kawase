@@ -25,6 +25,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { CardTopUp } from "@/marketplace/card-top-up";
 import { Chip, MoveRow, PurchaseRow, TopUpPresets } from "@/marketplace/parts";
 import { useAgentWallet } from "@/marketplace/use-agent-wallet";
 import { shortAddress } from "@/send/copy";
@@ -175,6 +176,7 @@ export function AgentWalletScreen() {
                 <Button disabled={busy} onPress={() => void wallet.topUp(chosen)}>
                   <Text>{wallet.busy === "top_up" ? t("common.loading") : `${t("agentWallet.topUp")} ${price(chosen)}`}</Text>
                 </Button>
+                <CardTopUp amount={chosen} disabled={busy} />
                 <Button variant="secondary" disabled={busy || BigInt(view.balances.total) === BigInt(0)} onPress={() => void wallet.returnAll()}>
                   <Text>{wallet.busy === "return" ? t("common.loading") : t("agentWallet.return")}</Text>
                 </Button>

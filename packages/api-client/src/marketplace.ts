@@ -46,6 +46,8 @@ export type PurchaseView = {
   reasonCode: string | null;
   settlement: string | null;
   responsePreview: string | null;
+  /** After a failed call: "none" (paid, no refund: x402 has none yet), "not_charged" (the payment never settled). */
+  refund: "none" | "not_charged" | null;
   paidAt: string | null;
   createdAt: string;
 };
