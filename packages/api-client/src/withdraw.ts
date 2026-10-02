@@ -3,7 +3,7 @@
 // and why a line cannot go. Kept apart from types.ts so the lanes merge cleanly; the client spreads
 // `withdrawEndpoints` into its routes.
 import type { TokenView } from "./assets";
-import type { NetworkId } from "./types";
+import type { NetworkId, PolicyResultView } from "./types";
 
 type Call = <T>(method: string, path: string, body?: unknown, options?: { idempotencyKey?: string | undefined }) => Promise<T>;
 
@@ -106,6 +106,8 @@ export type WithdrawDestinationView = {
   address: string | null;
   placeId: string | null;
   exchange: ExchangeView | null;
+  /** Nothing has gone to this address from Kawase yet: a small test amount is offered first. */
+  firstTime: boolean;
 };
 
 export type WithdrawPlanView = {
@@ -116,6 +118,43 @@ export type WithdrawPlanView = {
   blocking: WithdrawReason | null;
   /** Approximate USD that leaves, for the review's total. */
   totalUsd: number | null;
+};
+
+/** One step of a withdrawal kept on the server (it survives the app closing; "Finish it" resumes it). */
+export type WithdrawalStepView = {
+  id: string;
+  kind: "swap" | "send" | "bridge";
+  token: { address: string; symbol: string; decimals: number };
+  /** Base units; null until the conversions before it have delivered (the last move of all the USDC). */
+  amount: string | null;
+  state: "pending" | "active" | "done" | "failed";
+  /** A bridge that left Arc and is on its way. */
+  arriving: boolean;
+  intentId: string | null;
+  received: string | null;
+  moved: string | null;
+  explorerUrl: string | null;
+  fillUrl: string | null;
+  failure: "changed" | "checking" | "not_sent" | "unavailable" | null;
+  blocking: PolicyResultView | null;
+};
+
+export type WithdrawalView = {
+  id: string;
+  network: NetworkId;
+  status: "running" | "stopped" | "done" | "canceled";
+  destination: Omit<WithdrawDestinationView, "exchange" | "firstTime"> & { exchange: { slug: string; name: string; networkLabel: string } | null };
+  steps: WithdrawalStepView[];
+  totalUsd: number | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+/** The next step to sign: its intent (created now, or the same one while it still stands). */
+export type WithdrawalNextView = {
+  withdrawal: WithdrawalView;
+  step: WithdrawalStepView | null;
+  intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null } | null;
 };
 
 /** What propose_withdraw returns: the plan, and the card opens the Withdraw screen with it prefilled. */
@@ -135,6 +174,14 @@ export function withdrawEndpoints(call: Call) {
       /** Bridge destinations for "my other wallet", with Arc first. */
       chains: () => call<{ chains: { key: string; name: string; chainId: number | null }[] }>("GET", "/withdrawals/chains"),
       plan: (input: WithdrawPlanInput) => call<{ plan: WithdrawPlanView }>("POST", "/withdrawals/plan", input),
+      /** Starts a withdrawal on the server from a reviewed plan (its steps; nothing moves until each step is signed). */
+      start: (input: WithdrawPlanInput) => call<{ withdrawal: WithdrawalView }>("POST", "/withdrawals", input),
+      get: (id: string) => call<{ withdrawal: WithdrawalView }>("GET", `/withdrawals/${id}`),
+      /** The unfinished ones, for "Finish it". */
+      open: () => call<{ withdrawals: WithdrawalView[] }>("GET", "/withdrawals?open=1"),
+      /** The next step's intent to sign. */
+      next: (id: string) => call<WithdrawalNextView>("POST", `/withdrawals/${id}/next`),
+      cancel: (id: string) => call<{ withdrawal: WithdrawalView }>("POST", `/withdrawals/${id}/cancel`),
     },
   };
 }

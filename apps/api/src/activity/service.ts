@@ -9,7 +9,7 @@ import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from "drizzle
 import type { Address } from "viem";
 
 import type { FeedItem, FeedKind, FeedPage, FeedToken, WhyStep, WhyView } from "@kawase/api-client";
-import { attentionItems, auditLog, automationRuns, automations, chainEvents, intentDrafts, intents, practiceRuns, txAttempts, walletTokens, type Db, type DcaAction, type PayrollAction, type RuleAction } from "@kawase/db";
+import { attentionItems, auditLog, automationRuns, automations, chainEvents, intentDrafts, intents, practiceRuns, txAttempts, walletTokens, withdrawals, type Db, type DcaAction, type PayrollAction, type RuleAction } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import type { NetworkContext, NetworkId } from "@kawase/networks";
 
@@ -20,6 +20,7 @@ import type { SessionUser } from "../types";
 import { fetchActivity } from "../wallet/activity";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { withdrawalView } from "../withdraw/withdrawals";
 import { chainTransfers, type ChainTransfer } from "./alchemy";
 
 /** 30 days. */
@@ -292,6 +293,32 @@ export class ActivityFeedService {
         row.counterparty = request.recipientAddress;
         row.contactName = request.name;
       }
+      items.push(row);
+    }
+
+    // A withdrawal is one row ("Withdrawn to Kraken"): its steps' rows fold into it and open from it.
+    const moves = await this.db
+      .select()
+      .from(withdrawals)
+      .where(and(eq(withdrawals.userId, user.id), eq(withdrawals.network, network), gt(withdrawals.createdAt, since)))
+      .orderBy(desc(withdrawals.createdAt));
+    for (const run of moves) {
+      if (run.status === "canceled" && run.steps.every((step) => !step.intentId)) continue;
+      const stepIntents = new Set(run.steps.map((step) => step.intentId).filter((value): value is string => Boolean(value)));
+      const folded = items.filter((row) => row.intentId && stepIntents.has(row.intentId));
+      for (const row of folded) items.splice(items.indexOf(row), 1);
+      const row = base(`withdrawal:${run.id}`, (folded[0]?.at ?? run.updatedAt.toISOString()) > run.updatedAt.toISOString() ? folded[0]!.at : run.updatedAt.toISOString());
+      row.kind = "withdraw";
+      row.direction = "out";
+      row.status = run.status === "done" ? "confirmed" : run.status === "stopped" ? "failed" : run.status === "canceled" ? "skipped" : run.steps.some((step) => step.arriving || step.state === "active") ? "checking" : "waiting";
+      const first = run.steps[0];
+      if (first && run.steps.length === 1) {
+        row.token = { address: first.token.address, symbol: first.token.symbol, decimals: first.token.decimals };
+        row.amount = first.moved ?? first.amount;
+      }
+      row.counterparty = run.destination.address;
+      row.contactName = run.destination.label ?? run.destination.exchange?.name ?? null;
+      row.withdrawal = withdrawalView(run);
       items.push(row);
     }
 

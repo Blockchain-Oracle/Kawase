@@ -4,8 +4,9 @@
 // person, payments still being checked) — each with a way to its "why".
 import type { WhyView } from "./history";
 import type { NetworkId } from "./types";
+import type { WithdrawalView } from "./withdraw";
 
-export type FeedKind = "receive" | "send" | "swap" | "bridge" | "earn" | "margin" | "automation" | "request_paid" | "faucet" | "practice" | "other";
+export type FeedKind = "receive" | "send" | "swap" | "bridge" | "earn" | "margin" | "automation" | "request_paid" | "faucet" | "practice" | "withdraw" | "other";
 export type FeedStatus = "confirmed" | "checking" | "skipped" | "failed" | "practiced" | "waiting";
 export type FeedToken = { address: string; symbol: string; decimals: number };
 
@@ -38,6 +39,8 @@ export type FeedItem = {
   reasonParams: Record<string, string> | null;
   bridge: { chainId: number } | null;
   earn: { action: "deposit" | "withdraw"; vault: string } | null;
+  /** A withdrawal: one row for all its steps ("Withdrawn to Kraken"), which open into the steps (money-out.md). */
+  withdrawal?: WithdrawalView | null | undefined;
 };
 
 export type FeedPage = {

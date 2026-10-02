@@ -6,12 +6,12 @@
 // sending one something it does not credit is a strong warning with the convert offer, and exchanges are
 // mainnet-only. Executing is the app's: each step is an existing intent (swap, send, cross-chain), checked by its
 // own engine (R6 included), after one Face ID for the reviewed plan.
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { formatUnits, getAddress, isAddress } from "viem";
 
 import type { ExchangeView, HoldingView, PlaceInput, PlaceView, TokenView, WithdrawDestinationView, WithdrawLegView, WithdrawPlanInput, WithdrawPlanView, WithdrawReason, WithdrawStep } from "@kawase/api-client";
 import { EXCHANGES, GAS_FLOAT_USDC_BASE_UNITS, WITHDRAW_DUST_USD, exchangeRail, findExchange, type Exchange } from "@kawase/config";
-import { places, type Db } from "@kawase/db";
+import { intents, places, type Db } from "@kawase/db";
 import { CANONICAL_TOKENS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
 
 import type { BridgeEngine } from "../bridge/engine";
@@ -154,7 +154,25 @@ export class WithdrawService {
 
   // ── The plan ─────────────────────────────────────────────────────────────────────────────────────────────────
 
-  private async destination(user: SessionUser, input: WithdrawPlanInput): Promise<{ destination: WithdrawDestinationView | null; blocking: WithdrawReason | null }> {
+  /** Whether money already went to this address from Kawase (a place used, a completed send or cross-chain move). */
+  private async known(userId: string, network: NetworkId, chainKey: string, address: string): Promise<boolean> {
+    const lower = address.toLowerCase();
+    const [used] = await this.db
+      .select({ id: places.id })
+      .from(places)
+      .where(and(eq(places.userId, userId), eq(places.network, network), eq(places.chain, chainKey), eq(places.address, lower), isNull(places.deletedAt), sql`${places.lastUsedAt} is not null`))
+      .limit(1);
+    if (used) return true;
+    const kinds = chainKey === ARC ? (["send"] as const) : (["crosschain"] as const);
+    const [paid] = await this.db
+      .select({ id: intents.id })
+      .from(intents)
+      .where(and(eq(intents.userId, userId), eq(intents.network, network), inArray(intents.kind, [...kinds]), eq(intents.state, "completed"), sql`lower(${intents.request}->>'recipient') = ${lower}`))
+      .limit(1);
+    return Boolean(paid);
+  }
+
+  private async destination(user: SessionUser, input: WithdrawPlanInput): Promise<{ destination: Omit<WithdrawDestinationView, "firstTime"> | null; blocking: WithdrawReason | null }> {
     const network = user.activeNetwork;
     const context = this.context(network);
     const saved = await this.places(user);
@@ -226,7 +244,11 @@ export class WithdrawService {
     const context = this.context(network);
     const usdc = lower(context.addresses.usdc);
     const eurc = lower(context.addresses.eurc);
-    const { destination, blocking } = await this.destination(user, input);
+    const found = await this.destination(user, input);
+    const blocking = found.blocking;
+    const destination: WithdrawDestinationView | null = found.destination
+      ? { ...found.destination, firstTime: found.destination.address && isAddress(found.destination.address) ? !(await this.known(user.id, network, found.destination.chain.key, found.destination.address)) : false }
+      : null;
     const portfolio = await this.assets.portfolio(user);
     const holdings = [...portfolio.assets, ...portfolio.hidden];
     const toExchange = destination?.kind === "exchange" && destination.exchange !== null;

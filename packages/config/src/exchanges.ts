@@ -57,3 +57,9 @@ export const EXCHANGE_NETWORK = "mainnet" as const;
 
 /** Withdraw (money-out.md): a holding worth less than this (USD) is left out of "everything". */
 export const WITHDRAW_DUST_USD = 0.01;
+
+/** An unfinished withdrawal stays offered ("Finish it") this many days. */
+export const WITHDRAW_OPEN_DAYS = 7;
+
+/** A first-time destination is offered a test of this much USDC first (money-out.md "What if"). */
+export const WITHDRAW_TEST_AMOUNT = { mainnet: "1", testnet: "0.1" } as const;

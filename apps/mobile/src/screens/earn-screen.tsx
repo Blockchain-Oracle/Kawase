@@ -3,9 +3,10 @@
 // the vaults with their real marks, yield now, curator, Circle's monitoring and liquidity. Choosing a vault opens
 // the amount ticket (Deposit, or Withdraw when they hold some there); review says what goes where, the least that
 // comes back, the position after and about a year's yield at today's rate; one lime button named after the
-// device's real check.
+// device's real check. The asset chip at the top (R1, the universal picker) earns on any held asset: USDC shows the
+// vaults and every other source; any other asset shows where it can earn (Aave V4, Morpho, LP), or why nowhere.
 import { useRouter } from "expo-router";
-import { ChevronLeft, ScanFace } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, ScanFace } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
@@ -27,6 +28,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useEarnApproveLabel, useEarnPolicyText, useEarnPrompt, usePercent } from "@/earn/copy";
@@ -49,6 +51,8 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 import { vaultTitle } from "@/earn/vault-title";
 import { useYieldOptions } from "@/lend/use-lend";
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { stableToken, type TicketToken } from "@/portfolio/ticket-token";
 import { useChooseYield, YieldOptionRow } from "@/lend/yield-options";
 
 const STRIP_INSET = 6;
@@ -101,7 +105,9 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   // Vaults that could not give a deposit back now are not offered (gaps.md G1); positions in them stay listed above.
   const depositable = (overview.vaults ?? []).filter((entry) => entry.liquidity !== "stuck");
   const stuckCount = (overview.vaults?.length ?? 0) - depositable.length;
-  const position = vault ? overview.positions.find((entry) => entry.vault.toLowerCase() === vault.address.toLowerCase()) : undefined;
+  const position = vault
+    ? overview.positions.find((entry) => entry.vault.toLowerCase() === vault.address.toLowerCase())
+    : undefined;
   const intent = controller.intent;
   const settled = intent && (isIntentMoving(intent) || isIntentFinished(intent));
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
@@ -123,10 +129,14 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
     setStep("amount");
   };
 
-  // Other places USDC earns (Aave V4, LP campaigns as advanced) beside the vaults; each opens its own ticket.
-  const others = useYieldOptions("USDC");
+  // The asset to earn on (R1): USDC by default; any held asset from the universal picker.
+  const [earnToken, setEarnToken] = React.useState<TicketToken>(() => stableToken(network, "USDC"));
+  const [picking, setPicking] = React.useState(false);
+  const onUsdc = earnToken.address.toLowerCase() === stableToken(network, "USDC").address.toLowerCase();
+  // Other places it earns (Aave V4, Morpho, LP campaigns as advanced); for USDC beside the vaults. Each opens its ticket.
+  const others = useYieldOptions(earnToken.symbol);
   const chooseYield = useChooseYield();
-  const elsewhere = (others.view?.options ?? []).filter((option) => option.kind !== "morpho_vault");
+  const elsewhere = (others.view?.options ?? []).filter((option) => !onUsdc || option.kind !== "morpho_vault");
 
   const prefilled = React.useRef(false);
   React.useEffect(() => {
@@ -160,9 +170,20 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
 
   const header = (
     <>
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={back}>
+      {testnet ? (
+        <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
+      ) : null}
+      <View
+        className="flex-row items-center gap-3 px-5"
+        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
+      >
+        <Button
+          variant="secondary"
+          size="icon"
+          accessibilityLabel={t("common.back")}
+          className="size-11"
+          onPress={back}
+        >
           <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
         </Button>
         <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
@@ -176,7 +197,11 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
     status !== "account"
       ? { title: t("earnPolicy.SIGN_IN_REQUIRED"), action: t("policy.fixSignIn"), onPress: () => signIn.open() }
       : wallet && !wallet.address
-        ? { title: t("earnPolicy.WALLET_NOT_READY"), action: t("policy.fixSetUp"), onPress: () => router.push("/wallet") }
+        ? {
+            title: t("earnPolicy.WALLET_NOT_READY"),
+            action: t("policy.fixSetUp"),
+            onPress: () => router.push("/wallet"),
+          }
         : undefined;
   if (blockedPage) {
     return (
@@ -224,7 +249,11 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   let body: React.ReactNode;
   if (visible === "status" && intent) {
     body = (
-      <ScrollView className="flex-1" contentContainerClassName="flex-grow justify-center px-5" contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="flex-grow justify-center px-5"
+        contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }}
+      >
         <EarnStatus
           intent={intent}
           connectionLost={controller.connectionLost}
@@ -249,7 +278,9 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           <EarnReview intent={intent} />
           {blocking ? (
             <View className="bg-muted gap-3 rounded-2xl px-4 py-3">
-              <Text className={cn("text-foreground text-base", TEXT_START)}>{policyText(blocking, intent.network)}</Text>
+              <Text className={cn("text-foreground text-base", TEXT_START)}>
+                {policyText(blocking, intent.network)}
+              </Text>
               {fix ? (
                 <Button variant="secondary" onPress={fix.onPress}>
                   <Text>{fix.label}</Text>
@@ -259,10 +290,20 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           ) : null}
         </ScrollView>
         <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Button size="lg" disabled={Boolean(blocking) || !intent.draft || controller.busy} onPress={() => void controller.approve(prompt(intent.draft))}>
+          <Button
+            size="lg"
+            disabled={Boolean(blocking) || !intent.draft || controller.busy}
+            onPress={() => void controller.approve(prompt(intent.draft))}
+          >
             {blocking ? null : <Icon as={ScanFace} className="text-primary-foreground size-5" />}
             <Text numberOfLines={2} className="text-center">
-              {blocking ? policyText(blocking, intent.network) : controller.busy ? (draftAction === "deposit" ? t("earn.depositing") : t("earn.withdrawing")) : approveLabel(draftAction)}
+              {blocking
+                ? policyText(blocking, intent.network)
+                : controller.busy
+                  ? draftAction === "deposit"
+                    ? t("earn.depositing")
+                    : t("earn.withdrawing")
+                  : approveLabel(draftAction)}
             </Text>
           </Button>
           <Button
@@ -309,11 +350,19 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           </View>
           <View className="bg-card border-border gap-2 rounded-3xl border p-4">
             <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-muted-foreground text-sm">{action === "deposit" ? t("earn.youPutIn") : t("earn.youTakeOut")}</Text>
+              <Text className="text-muted-foreground text-sm">
+                {action === "deposit" ? t("earn.youPutIn") : t("earn.youTakeOut")}
+              </Text>
               <View className="flex-row items-center gap-2">
-                <Text className="text-muted-foreground text-xs">{limit !== undefined ? t("send.available", { amount: money("USDC", limit.toString()) }) : " "}</Text>
+                <Text className="text-muted-foreground text-xs">
+                  {limit !== undefined ? t("send.available", { amount: money("USDC", limit.toString()) }) : " "}
+                </Text>
                 {limit !== undefined && limit > ZERO ? (
-                  <Pressable accessibilityRole="button" onPress={() => setValue(canonicalFromBase(limit, "USDC"))} className="bg-muted active:bg-secondary rounded-full px-3 py-1">
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setValue(canonicalFromBase(limit, "USDC"))}
+                    className="bg-muted active:bg-secondary rounded-full px-3 py-1"
+                  >
                     <Text className="text-foreground text-xs font-semibold">{t("send.max")}</Text>
                   </Pressable>
                 ) : null}
@@ -337,7 +386,11 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           </View>
         </View>
         <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => setValue(applyKey(value, key, decimalsOf("USDC")))} />
+          <Keypad
+            decimal={decimalSeparator(locale)}
+            backspaceLabel={t("send.deleteDigit")}
+            onKey={(key) => setValue(applyKey(value, key, decimalsOf("USDC")))}
+          />
           <Button size="lg" disabled={!cta.enabled || creating || controller.busy} onPress={() => void review()}>
             <Text>{creating || controller.busy ? t("common.loading") : cta.label}</Text>
           </Button>
@@ -366,7 +419,10 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           {held > ZERO ? (
             <>
               <Text className="text-muted-foreground text-sm">{t("earn.inVaults")}</Text>
-              <Text className="font-display text-foreground text-4xl font-bold" style={{ fontVariant: ["tabular-nums"] }}>
+              <Text
+                className="font-display text-foreground text-4xl font-bold"
+                style={{ fontVariant: ["tabular-nums"] }}
+              >
                 {money("USDC", held.toString())}
               </Text>
             </>
@@ -376,26 +432,53 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
             </Text>
           )}
           <Text className="text-muted-foreground text-center text-sm">{t("earn.heroBody")}</Text>
-          {testnet ? <Text className="text-muted-foreground text-center text-xs">{t("earn.testnetVaults")}</Text> : null}
+          {testnet ? (
+            <Text className="text-muted-foreground text-center text-xs">{t("earn.testnetVaults")}</Text>
+          ) : null}
         </View>
 
-        <AutoSaveCard />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("earn.earnOn")}: ${earnToken.symbol}`}
+          onPress={() => setPicking(true)}
+          className="border-border bg-card active:bg-muted flex-row items-center gap-3 self-start rounded-full border py-1.5 pe-3 ps-1.5"
+        >
+          <TokenMark token={earnToken} size={MARK} />
+          <Text className="text-foreground text-base font-semibold">
+            {t("earn.earnOnAsset", { asset: earnToken.symbol })}
+          </Text>
+          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+        </Pressable>
 
-        {overview.positions.length > 0 ? (
+        {onUsdc ? <AutoSaveCard /> : null}
+
+        {onUsdc && overview.positions.length > 0 ? (
           <View className="gap-2">
             <Eyebrow>{t("earn.yourPosition")}</Eyebrow>
             <ListGroup>
               {overview.positions.map((entry) => {
-                const listed = overview.vaults?.find((candidate) => candidate.address.toLowerCase() === entry.vault.toLowerCase());
+                const listed = overview.vaults?.find(
+                  (candidate) => candidate.address.toLowerCase() === entry.vault.toLowerCase(),
+                );
                 return (
-                  <Pressable key={entry.vault} accessibilityRole="button" onPress={() => listed && choose(listed, "withdraw")} className="active:bg-muted flex-row items-center justify-between gap-3 px-4 py-3">
+                  <Pressable
+                    key={entry.vault}
+                    accessibilityRole="button"
+                    onPress={() => listed && choose(listed, "withdraw")}
+                    className="active:bg-muted flex-row items-center justify-between gap-3 px-4 py-3"
+                  >
                     <View className="min-w-0 flex-1 gap-0.5">
                       <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
                         {vaultTitle(entry.name)}
                       </Text>
-                      <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("earn.earningAbout", { apy: percent(entry.apy) })}</Text>
+                      <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
+                        {t("earn.earningAbout", { apy: percent(entry.apy) })}
+                      </Text>
                     </View>
-                    <Text className="font-display text-foreground text-lg font-bold" style={{ fontVariant: ["tabular-nums"] }}>
+                    <Text
+                      className="font-display text-foreground text-lg font-bold"
+                      style={{ fontVariant: ["tabular-nums"] }}
+                    >
                       {money("USDC", entry.assets)}
                     </Text>
                   </Pressable>
@@ -405,48 +488,77 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
           </View>
         ) : null}
 
-        <View className="gap-2">
-          <Eyebrow>{t("earn.vaults")}</Eyebrow>
-          {overview.failed && !overview.vaults ? (
-            <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
-              <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{t("earn.loadFailed")}</Text>
-              <Button size="sm" variant="secondary" onPress={() => void overview.refresh()}>
-                <Text>{t("common.retry")}</Text>
-              </Button>
-            </View>
-          ) : !overview.vaults ? (
-            <View className="gap-2">
-              {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-                <Skeleton key={index} className="rounded-2xl" style={{ height: SKELETON_HEIGHT }} />
-              ))}
-            </View>
-          ) : depositable.length === 0 ? (
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("earn.noVaults")}</Text>
-          ) : (
-            <>
-              <ListGroup>
-                {depositable.map((entry) => (
-                  <VaultRow key={entry.address} vault={entry} network={network} onPress={() => choose(entry, "deposit")} />
+        {onUsdc ? (
+          <View className="gap-2">
+            <Eyebrow>{t("earn.vaults")}</Eyebrow>
+            {overview.failed && !overview.vaults ? (
+              <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
+                <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{t("earn.loadFailed")}</Text>
+                <Button size="sm" variant="secondary" onPress={() => void overview.refresh()}>
+                  <Text>{t("common.retry")}</Text>
+                </Button>
+              </View>
+            ) : !overview.vaults ? (
+              <View className="gap-2">
+                {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+                  <Skeleton key={index} className="rounded-2xl" style={{ height: SKELETON_HEIGHT }} />
                 ))}
-              </ListGroup>
-              {stuckCount > 0 ? <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("earn.stuckHidden", { count: stuckCount })}</Text> : null}
-            </>
-          )}
-        </View>
+              </View>
+            ) : depositable.length === 0 ? (
+              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("earn.noVaults")}</Text>
+            ) : (
+              <>
+                <ListGroup>
+                  {depositable.map((entry) => (
+                    <VaultRow
+                      key={entry.address}
+                      vault={entry}
+                      network={network}
+                      onPress={() => choose(entry, "deposit")}
+                    />
+                  ))}
+                </ListGroup>
+                {stuckCount > 0 ? (
+                  <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>
+                    {t("earn.stuckHidden", { count: stuckCount })}
+                  </Text>
+                ) : null}
+              </>
+            )}
+          </View>
+        ) : null}
+
+        {!onUsdc && others.view && elsewhere.length === 0 ? (
+          <Text className={cn("text-muted-foreground px-1 text-sm leading-5", TEXT_START)}>
+            {t("yieldOptions.none", { asset: earnToken.symbol })}
+          </Text>
+        ) : null}
+        {!onUsdc && !others.view && !others.failed ? (
+          <Skeleton className="rounded-2xl" style={{ height: SKELETON_HEIGHT }} />
+        ) : null}
 
         {elsewhere.length > 0 ? (
           <View className="gap-2">
-            <Eyebrow>{t("yieldOptions.moreWays")}</Eyebrow>
+            <Eyebrow>{onUsdc ? t("yieldOptions.moreWays") : t("earn.waysFor", { asset: earnToken.symbol })}</Eyebrow>
             <ListGroup>
               {elsewhere.map((option) => (
-                <YieldOptionRow key={option.id} option={option} best={false} onPress={option.executable ? () => chooseYield(option, null) : undefined} />
+                <YieldOptionRow
+                  key={option.id}
+                  option={option}
+                  best={false}
+                  onPress={option.executable ? () => chooseYield(option, null) : undefined}
+                />
               ))}
             </ListGroup>
           </View>
         ) : null}
 
         {!testnet ? (
-          <Pressable accessibilityRole="button" onPress={() => router.push("/borrow")} className="bg-card border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border px-4 py-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/borrow")}
+            className="bg-card border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border px-4 py-3"
+          >
             <Mark entity="provider:aave" size={MARK} />
             <View className="min-w-0 flex-1">
               <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("lend.borrowTitle")}</Text>
@@ -464,6 +576,24 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
       <Animated.View key={visible} entering={enter} exiting={exit} className="flex-1">
         {body}
       </Animated.View>
+      <AssetPickerSheet
+        open={picking}
+        onClose={() => setPicking(false)}
+        title={t("earn.earnOn")}
+        mode="held"
+        selected={earnToken.address.toLowerCase()}
+        onSelect={({ token }) => {
+          setPicking(false);
+          setEarnToken(token);
+        }}
+        unavailable={(token) =>
+          token.kind === "permissioned"
+            ? t("tokenPage.n_permissioned")
+            : token.kind === "position"
+              ? t("earn.alreadyEarning")
+              : undefined
+        }
+      />
     </View>
   );
 }
