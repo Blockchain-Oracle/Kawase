@@ -19,6 +19,7 @@ export const zh: Catalog = {
   errors: {
     offline: "你已离线。显示的是 Kawase 最后一次获取的信息。",
     serverTrouble: "暂时无法连接 Kawase。显示的是最后一次获取的信息。",
+    storageUnavailable: "安全存储暂不可用。请解锁设备后重试。您的账户未被重置。",
     offlineAction: "没有网络连接。请检查网络后重试。",
     expiredCode: "验证码已过期，请重新发送。",
     rateLimited: "发送的验证码太多了。请等几分钟再试。",

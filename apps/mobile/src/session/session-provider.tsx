@@ -19,7 +19,7 @@ import { sessionStorage } from "./storage";
 type Status = "loading" | "none" | "guest" | "account";
 
 /** Whether the user shown was just confirmed by the api, or is the last one it confirmed. */
-export type Connection = "online" | "offline" | "unreachable";
+export type Connection = "online" | "offline" | "unreachable" | "storage-unavailable";
 
 type SessionState = {
   status: Status;
@@ -77,7 +77,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setUser(next);
     if (networks) setAvailableNetworks(networks);
     setStatus(next.isGuest ? "guest" : "account");
-    void sessionStorage.setUser(next);
+    void sessionStorage.setUser(next).catch(() => console.warn("[session] account cache write unavailable"));
   }, []);
 
   const clear = React.useCallback(async () => {
@@ -96,7 +96,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const version = epoch.current;
     const ticket = ++reading.current;
     const current = () => version === epoch.current && ticket === reading.current && !adopting.current;
-    const token = await sessionStorage.getToken();
+    let token: string | undefined;
+    try {
+      token = await sessionStorage.getToken();
+    } catch {
+      // A locked or unavailable keychain does not prove that there is no account.
+      if (current()) setConnection("storage-unavailable");
+      return;
+    }
     if (!current()) return;
     if (!token) {
       setStatus("none");
@@ -117,7 +124,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       // The connection, not the account, failed: keep the token and show the last confirmed user.
       setConnection(connectionFrom(error));
-      const cached = await sessionStorage.getUser<ApiUser>();
+      const cached = await sessionStorage.getUser<ApiUser>().catch(() => undefined);
       if (!current()) return;
       if (cached) {
         setUser(cached);

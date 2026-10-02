@@ -24,10 +24,17 @@ export function StaleBanner({ className }: { className?: string }) {
     await retry().finally(() => setRetrying(false));
   };
   return (
-    <View accessibilityRole="alert" className={cn("bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2", className)}>
+    <View
+      accessibilityRole="alert"
+      className={cn("bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2", className)}
+    >
       <Icon as={CloudOff} className="text-muted-foreground size-4" />
       <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
-        {connection === "offline" ? t("errors.offline") : t("errors.serverTrouble")}
+        {connection === "storage-unavailable"
+          ? t("errors.storageUnavailable")
+          : connection === "offline"
+            ? t("errors.offline")
+            : t("errors.serverTrouble")}
       </Text>
       <Button size="sm" variant="ghost" disabled={retrying} onPress={() => void again()}>
         <Text className="text-foreground text-sm">{t("common.retry")}</Text>

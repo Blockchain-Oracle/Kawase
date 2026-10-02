@@ -18,6 +18,8 @@ export const en = {
   errors: {
     offline: "You're offline. Showing what Kawase knew last.",
     serverTrouble: "Kawase can't be reached right now. Showing what it knew last.",
+    storageUnavailable:
+      "Secure storage is unavailable. Unlock your device and try again. Your account has not been reset.",
     offlineAction: "No connection. Check your internet and try again.",
     expiredCode: "That code has expired. Send a new one.",
     rateLimited: "Too many codes were sent. Wait a few minutes, then try again.",

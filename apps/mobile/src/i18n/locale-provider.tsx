@@ -24,18 +24,21 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = React.useState<SupportedLocale | undefined>();
 
   React.useEffect(() => {
-    void sessionStorage.getLocale().then((stored) => {
-      const initial = stored && isSupportedLocale(stored) ? stored : deviceLocale();
-      initI18n(initial);
-      setLocaleState(initial);
-    });
+    void sessionStorage
+      .getLocale()
+      .catch(() => undefined)
+      .then((stored) => {
+        const initial = stored && isSupportedLocale(stored) ? stored : deviceLocale();
+        initI18n(initial);
+        setLocaleState(initial);
+      });
   }, []);
 
   // The account's language wins over the device's once the user is known.
   React.useEffect(() => {
     if (status === "account" && user && isSupportedLocale(user.locale) && user.locale !== locale) {
       void applyLocale(user.locale);
-      void sessionStorage.setLocale(user.locale);
+      void sessionStorage.setLocale(user.locale).catch(() => undefined);
       setLocaleState(user.locale);
     }
   }, [status, user, locale]);
@@ -46,8 +49,8 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       rtl: isRtlLocale(locale ?? DEFAULT_LOCALE),
       async chooseLocale(next) {
         await applyLocale(next);
-        await sessionStorage.setLocale(next);
         setLocaleState(next);
+        await sessionStorage.setLocale(next).catch(() => undefined);
         if (status === "guest" || status === "account") await update({ locale: next }).catch(() => undefined);
       },
     }),

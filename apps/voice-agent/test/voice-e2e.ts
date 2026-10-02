@@ -70,7 +70,7 @@ console.log(lastLoud ? `greeting heard ${lastLoud - joined} ms after joining` : 
 for (let i = 0; i + FRAME_SAMPLES <= pcm.length; i += FRAME_SAMPLES) await source.captureFrame(new AudioFrame(pcm.slice(i, i + FRAME_SAMPLES), SAMPLE_RATE, 1, FRAME_SAMPLES));
 speechEnded = Date.now();
 while (Date.now() - speechEnded < 30_000 && (firstLoudAfter === undefined || Date.now() - lastLoud < 2000)) await silence(100);
-console.log(firstLoudAfter ? `answer began ${firstLoudAfter - speechEnded} ms after the question ended` : "no answer heard");
+console.log(firstLoudAfter ? `first sound (includes filler; useful response unmeasured) ${firstLoudAfter - speechEnded} ms after the question ended` : "no answer heard");
 console.log("cards", cards.map((card) => (card as { toolName: string }).toolName));
 
 await wait(1500);

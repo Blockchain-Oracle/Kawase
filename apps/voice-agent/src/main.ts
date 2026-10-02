@@ -291,7 +291,7 @@ export default defineAgent({
       await session.interrupt({ force: true }).await;
       return "ok";
     });
-    // Explicitly disable the SDK's recording defaults: no raw audio or provider-side transcript uploads.
+    // Disable LiveKit SDK recording uploads. Speech-provider retention is a separate, still-open dependency.
     await session.start({
       agent: new KawaseAgent(turnRelay(meta, { filler: FILLER[locale], sorry: SORRY[locale] }, sendCard)),
       room: ctx.room,

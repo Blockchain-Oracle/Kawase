@@ -19,6 +19,8 @@ export const es: Catalog = {
   errors: {
     offline: "Estás sin conexión. Mostramos lo último que Kawase sabía.",
     serverTrouble: "No se puede conectar con Kawase ahora. Mostramos lo último que sabía.",
+    storageUnavailable:
+      "El almacenamiento seguro no está disponible. Desbloquea el dispositivo e inténtalo de nuevo. Tu cuenta no se ha restablecido.",
     offlineAction: "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
     expiredCode: "Ese código caducó. Pide uno nuevo.",
     rateLimited: "Se enviaron demasiados códigos. Espera unos minutos y vuelve a intentarlo.",

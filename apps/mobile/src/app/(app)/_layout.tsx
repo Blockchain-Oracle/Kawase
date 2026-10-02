@@ -25,7 +25,13 @@ export default function AppLayout() {
       <View className="bg-background flex-1">
         <EmptyState
           art={<Icon as={CloudOff} className="text-muted-foreground" size={ICON} />}
-          title={connection === "offline" ? t("errors.offline") : t("errors.serverTrouble")}
+          title={
+            connection === "storage-unavailable"
+              ? t("errors.storageUnavailable")
+              : connection === "offline"
+                ? t("errors.offline")
+                : t("errors.serverTrouble")
+          }
           action={
             <Button onPress={() => void retry()}>
               <Text>{t("common.retry")}</Text>
