@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { G, Circle, Path, Defs, RadialGradient, Stop, ClipPath, Rect } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkGoldsky = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 192 192" {...props}><G clipPath="url(#goldsky-a)"><Circle cx={96} cy={96} r={96} fill="url(#goldsky-b)" /><Path fill="#fff" d="M40 96c0-30.928 25.072-56 56-56s56 25.072 56 56z" /><Path fill="url(#goldsky-c)" fillOpacity={0.66} d="M40 96h112c0 30.928-25.072 56-56 56s-56-25.072-56-56" /><Path fill="#fff" fillOpacity={0.2} d="M0 96C0 42.98 42.98 0 96 0c53.019 0 96 42.98 96 96z" /></G><Defs><RadialGradient id="goldsky-b" cx={0} cy={0} r={1} gradientTransform="matrix(0 -192 309.1 0 96 192)" gradientUnits="userSpaceOnUse"><Stop stopColor="#FE5117" /><Stop offset={1} stopColor="#FFC61C" /></RadialGradient><RadialGradient id="goldsky-c" cx={0} cy={0} r={1} gradientTransform="matrix(0 56 -112 0 96 96)" gradientUnits="userSpaceOnUse"><Stop stopColor="#fff" /><Stop offset={1} stopColor="#D9D9D9" stopOpacity={0} /><Stop offset={1} stopColor="#fff" stopOpacity={0} /></RadialGradient><ClipPath id="goldsky-a"><Rect width={192} height={192} fill="#fff" rx={96} /></ClipPath></Defs></Svg>;
+export default MarkGoldsky;

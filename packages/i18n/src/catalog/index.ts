@@ -1,13 +1,13 @@
-import { ar } from "./ar";
-import { bn } from "./bn";
-import { en, type Catalog } from "./en";
-import { es } from "./es";
-import { fr } from "./fr";
-import { hi } from "./hi";
-import { pt } from "./pt";
-import { ru } from "./ru";
-import { ur } from "./ur";
-import { zh } from "./zh";
+import { ar } from "./ar/index";
+import { bn } from "./bn/index";
+import { en, type Catalog } from "./en/index";
+import { es } from "./es/index";
+import { fr } from "./fr/index";
+import { hi } from "./hi/index";
+import { pt } from "./pt/index";
+import { ru } from "./ru/index";
+import { ur } from "./ur/index";
+import { zh } from "./zh/index";
 
 export type { Catalog };
 

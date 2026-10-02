@@ -1,0 +1,33 @@
+import type { Catalog } from "../en/index";
+
+export const setup: Catalog["setup"] = {
+  title: "আপনার ওয়ালেট তৈরি হচ্ছে",
+  subtitle: "{{network}}-এ। কয়েক সেকেন্ড লাগবে, আর নেটওয়ার্ক ফি দেয় Kawase।",
+  stepWallet: "আপনার ওয়ালেট তৈরি করুন",
+  stepNetwork: "{{network}}-এ সেট আপ করুন",
+  settingUpDetail: "Kawase-এর রিলে দিয়ে সই করে পাঠানো হচ্ছে…",
+  failed: "এটা হয়নি। আবার চেষ্টা করুন।",
+  primerTitle: "দৈনিক সীমার জন্য একবার Face ID",
+  primerTitleAndroid: "দৈনিক সীমার জন্য একবার অনুমোদন",
+  primerBody:
+    "Kawase না জিজ্ঞেস করে আপনার হয়ে দিনে {{amount}} পর্যন্ত পাঠাতে পারে। এর বেশি হলে আবার আপনার Face ID লাগবে, আর আপনি যেকোনো সময় এটা বন্ধ করতে পারেন।",
+  primerBodyAndroid:
+    "Kawase না জিজ্ঞেস করে আপনার হয়ে দিনে {{amount}} পর্যন্ত পাঠাতে পারে। এর বেশি হলে আবার আপনার আঙুলের ছাপ বা স্ক্রিন লক লাগবে, আর আপনি যেকোনো সময় এটা বন্ধ করতে পারেন।",
+  acceptFaceId: "Face ID দিয়ে গ্রহণ করুন",
+  acceptTouchId: "Touch ID দিয়ে গ্রহণ করুন",
+  acceptFingerprint: "আঙুলের ছাপ দিয়ে গ্রহণ করুন",
+  scopeTitle: "আপনি কী অনুমতি দিচ্ছেন",
+  scopeBody:
+    "একবার পড়ে নিন। ঠিক এটাই আপনি অনুমোদন করছেন, সরাসরি অনুমতি থেকে নেওয়া — আর যেকোনো সময় বন্ধ করতে পারবেন।",
+  acceptFace: "ফেস আনলক দিয়ে গ্রহণ করুন",
+  acceptPasscode: "পাসকোড দিয়ে গ্রহণ করুন",
+  acceptEmailCode: "ইমেল কোড দিয়ে গ্রহণ করুন",
+  faceIdPrompt: "Kawase-কে দিনে {{amount}} পর্যন্ত পাঠাতে দিন",
+  approving: "অনুমোদন হচ্ছে…",
+  notNow: "এখন নয়",
+  doneTitle: "সব তৈরি",
+  doneBody: "আপনার ওয়ালেট {{network}}-এ তৈরি। Kawase এটা দিয়ে ঠিক কী কী করতে পারে, তা এখানে।",
+  terms: "এগিয়ে গেলে আপনি Kawase-এর ব্যবহারের শর্তে সম্মত হচ্ছেন।",
+  readTerms: "শর্তগুলো পড়ুন",
+  termsFailed: "আপনার সম্মতি সংরক্ষণ করা গেল না। সংযোগ দেখে আবার চেষ্টা করুন।",
+};

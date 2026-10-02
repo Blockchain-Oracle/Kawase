@@ -1,0 +1,34 @@
+---
+title: "Réseaux"
+description: "Le réseau principal Arc et le réseau de test Arc côte à côte : ce qui les différencie, ce qui n'est disponible que sur l'un des deux et comment Kawase les garde séparés."
+sourceHash: 23465b593fd86e92
+---
+
+<Marks names="arc usdc eurc" />
+
+**Arc** est le réseau de stablecoins de Circle : USDC sert de token de gas, les frais sont donc payés en dollars, et les transactions sont finalisées en moins
+d'une seconde. Kawase prend en charge exactement deux réseaux Arc.
+
+| | Réseau principal Arc | Réseau de test Arc |
+|---|---|---|
+| Argent | Argent réel | Argent de test sans valeur |
+| Chain ID | `5042` | `5042002` |
+| Explorateur | `explorer.arc.io` | `testnet.arcscan.app` |
+| Recevoir de l'argent | Recevez de l'argent depuis n'importe quel portefeuille ou exchange qui envoie vers Arc ; l'achat avec Apple Pay ou une carte bancaire arrive bientôt | Le faucet intégré à l'app (environ 20 USDC + 20 EURC par jour) |
+| Rendement | Coffres Morpho listés par Circle's App Kit Earn | Les coffres Morpho fictifs du réseau de test Arc |
+| Destinations du pont | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | leurs réseaux de test (Base Sepolia, Ethereum Sepolia, …) |
+| Marketplace x402 | Prévu (le catalogue de Circle est réservé au réseau principal) | Non disponible |
+| Limites par défaut | Plus basses | Dix fois plus élevées (aucun argent réel en jeu) |
+| Où commencent les nouveaux comptes | | ✓ |
+
+Chaque parcours dans Kawase a été testé de bout en bout avec de vraies transactions sur le **réseau de test Arc** ; les preuves sont accessibles depuis la
+page de démonstration de la vitrine. Les disponibilités ci-dessous indiquent ce que l'app propose sur chaque réseau :
+
+<AvailabilityMatrix />
+
+## Comment Kawase les garde séparés
+
+- **Un appui pour changer de réseau**, dans les deux sens : consultez [le bouton de changement de réseau](./features/network-toggle.mdx).
+- **Le réseau est indiqué de trois façons** : dans le badge de l'en-tête, dans la bande du réseau de test ou le libellé ARGENT RÉEL, et par la couleur de l'orbe.
+- **Le serveur contrôle le choix.** Chaque paiement est préparé pour un réseau et y reste associé jusqu'à la fin ; si le réseau change entre-temps, le paiement s'arrête au lieu de passer sur l'autre réseau.
+- **Une seule adresse de portefeuille sur les deux réseaux**, avec les soldes, l'activité et les limites gérés séparément pour chaque réseau.

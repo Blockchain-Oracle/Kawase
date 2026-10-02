@@ -1,0 +1,33 @@
+---
+title: "跨链和提现"
+description: "通过 Circle CCTP，将 USDC 从 Arc 转到六个网络上的自己的地址；我们也在对比其他跨链方案，提现到任意地址的功能即将推出。"
+sourceHash: 6e5133b4d0f03047
+---
+
+<Status ids="bridge withdraw" />
+
+<Marks names="arc base ethereum arbitrum optimism polygon avalanche circle" />
+
+## 将 USDC 跨出 Arc（当前可用）
+
+使用“将 20 美元转到 Base”，或打开跨链页面。Kawase 会通过 **Circle CCTP** 和 Circle 的转发器，将 **USDC 从 Arc 转到你自己的地址**，支持 **Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche**：
+
+- 你的 USDC 会在 Arc 上销毁，然后由 Circle 在目标网络上铸造。你不需要在目标网络上准备 gas。费用会从转账金额中扣除，并在确认前显示。
+- 整个过程大约需要一分钟。卡片会显示三个步骤：在 Arc 上销毁、等待 Circle 的证明，以及在目标网络上铸造。系统还会确认资金确实已到达你在该网络上的地址。
+- 你只需通过 **一次 Face ID** 确认。授权和销毁会作为一笔交易，从你的钱包发出。费用设有上限：如果路线费用超过显示给你的上限，就不会发送任何资金。
+
+## 路线对比
+
+确认前，Kawase 可以对比不同服务商的同一笔转账，并根据实际到账金额进行排名：
+
+- **Circle CCTP** — Kawase 当前执行的路线。
+- **LI.FI**（两个网络）、**Relay** 和 **deBridge**（主网）— 当前仅提供报价用于对比。
+- **Across** 和 **Relay** 的执行路线，以及跨链进入 Arc 的功能，正在添加中。
+
+## 提现到任意地址（即将推出）
+
+目前，你已经可以将 USDC 或 EURC 转到 **Arc 上的任意地址**，包括交易所的 Arc 充值地址；也可以将 USDC 跨链到上面六个网络中**你自己的**地址。将资金一步转到其他网络上的任意地址（例如朋友的地址，或其他网络上的交易所地址）**即将推出**。
+
+如果你需要在没有 Kawase 的情况下转出资金，请参阅[不使用 Kawase 提现](../withdraw-without-kawase.mdx)。
+
+<ScopeList ids="bridge" />

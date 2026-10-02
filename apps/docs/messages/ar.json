@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "webApp": "فتح تطبيق الويب",
+    "showcase": "عرض توضيحي",
+    "docs": "الوثائق"
+  },
+  "home": {
+    "eyebrow": "وثائق Kawase",
+    "title": "أموال تتحرك عندما تتحدث",
+    "body": "Kawase هو تطبيق أموال يعتمد على الذكاء الاصطناعي لكل ما يتعلق بـ Arc. اسأل بلغتك، صوتياً أو نصياً: يقترح التطبيق، وتوافق أنت، وتتولى الشبكة فرض حدودك.",
+    "start": "البدء",
+    "safety": "كيف يحافظ على أمانك",
+    "cards": {
+      "gettingStarted": {
+        "title": "البدء",
+        "body": "افتح تطبيق الويب كضيف خلال ثوانٍ، أو ثبّته على iPhone أو Android."
+      },
+      "safety": {
+        "title": "نموذج الأمان",
+        "body": "ما الذي يمكن للوكيل فعله من دون سؤالك، ومتى يحتاج إلى Face ID، وما الذي لا يمكنه فعله أبداً."
+      },
+      "availability": {
+        "title": "ما يعمل اليوم",
+        "body": "كل الإمكانات المتاحة على الشبكة الرئيسية والشبكة التجريبية، والمُنشأة من سجل التطبيق نفسه."
+      },
+      "architecture": {
+        "title": "البنية",
+        "body": "كيف تتكامل المحادثة والصوت ومحرك السياسات وArc، للقضاة والمطورين."
+      }
+    }
+  },
+  "matrix": {
+    "capability": "الإمكانات",
+    "mainnet": "الشبكة الرئيسية لـ Arc",
+    "testnet": "الشبكة التجريبية لـ Arc",
+    "caption": "يُنشأ هذا عند بناء الموقع، من سجل الإمكانات الذي يقرأه التطبيق والوكيل. تعني \"قريباً\" أن الإمكانية لم تُطلق بعد."
+  },
+  "state": {
+    "available": "متاحة",
+    "coming": "قريباً",
+    "unavailable": "غير متاحة على هذه الشبكة"
+  },
+  "scope": {
+    "supports": "ما يعمل اليوم",
+    "notYet": "ليس بعد"
+  },
+  "areas": {
+    "tokens": "أي رمز على Arc",
+    "meme_coins": "عملات الميم",
+    "perps": "الشراء والبيع على المكشوف (perps)",
+    "buy": "الشراء باستخدام Apple Pay أو البطاقة",
+    "borrow": "الاقتراض",
+    "withdraw": "السحب إلى أي مكان",
+    "export_wallet": "تصدير محفظتك"
+  },
+  "limits": {
+    "rule": "الافتراضي",
+    "mainnet": "الشبكة الرئيسية",
+    "testnet": "الشبكة التجريبية",
+    "daily": "الحد اليومي: يُرسل دفعة واحدة من دون طلب تأكيد",
+    "perTransaction": "أكبر دفعة واحدة",
+    "weekly": "الإجمالي في الأسبوع",
+    "monthly": "الإجمالي في الشهر",
+    "perRecipientWeekly": "إلى شخص واحد في الأسبوع",
+    "firstTime": "أول دفعة إلى عنوان جديد: يلزم Face ID للمبالغ الأعلى",
+    "caption": "القيم الافتراضية من إعدادات التطبيق نفسه. حدود الشبكة التجريبية أعلى لأنه لا توجد أموال حقيقية معرضة للخطر."
+  },
+  "status": {
+    "label": "الحالة"
+  },
+  "fumadocs": {
+    "Ask AI(AI chat button)": "اسأل الذكاء الاصطناعي",
+    "Back to Home(404 not found page)": "العودة إلى الصفحة الرئيسية",
+    "Choose a language(language switcher)": "اختيار لغة",
+    "Choose a language(language switcher)(aria-label)": "اختيار لغة",
+    "Close Banner(banner)(aria-label)": "إغلاق الشريط",
+    "Close Search(search dialog)(aria-label)": "إغلاق البحث",
+    "Close Sidebar(aria-label)": "إغلاق الشريط الجانبي",
+    "Close Sidebar(sidebar)(aria-label)": "إغلاق الشريط الجانبي",
+    "Collapse Sidebar(sidebar)(aria-label)": "طي الشريط الجانبي",
+    "Copied Anchor Link(heading anchor)(aria-label)": "تم نسخ رابط العنوان",
+    "Copied Link(accordion)(aria-label)": "تم نسخ الرابط",
+    "Copied Markdown(page actions)": "تم نسخ Markdown",
+    "Copied Text(code block)(aria-label)": "تم نسخ النص",
+    "Copy Anchor Link(heading anchor)(aria-label)": "نسخ رابط العنوان",
+    "Copy Link(accordion)(aria-label)": "نسخ الرابط",
+    "Copy Markdown(page actions)": "نسخ Markdown",
+    "Copy Text(code block)(aria-label)": "نسخ النص",
+    "Dark(theme switcher)(aria-label)": "داكن",
+    "Default(type table)": "الافتراضي",
+    "Edit on GitHub(edit page)": "التعديل على GitHub",
+    "Hide Sidebar(sidebar)": "إخفاء الشريط الجانبي",
+    "Last updated on(page footer)": "آخر تحديث في",
+    "Layout Tab(layout tab trigger)": "علامة تبويب التخطيط",
+    "Light(theme switcher)(aria-label)": "فاتح",
+    "Next Page(pagination)": "الصفحة التالية",
+    "No Headings(table of contents)": "لا توجد عناوين",
+    "No results found(search dialog)": "لم يتم العثور على نتائج",
+    "On this page(table of contents)": "في هذه الصفحة",
+    "Open Search(search trigger)(aria-label)": "فتح البحث",
+    "Open Sidebar(aria-label)": "فتح الشريط الجانبي",
+    "Open Sidebar(sidebar)(aria-label)": "فتح الشريط الجانبي",
+    "Open in ChatGPT(page actions)": "فتح في ChatGPT",
+    "Open in Claude(page actions)": "فتح في Claude",
+    "Open in Cursor(page actions)": "فتح في Cursor",
+    "Open in GitHub(page actions)": "فتح في GitHub",
+    "Open in Scira AI(page actions)": "فتح في Scira AI",
+    "Open(page actions)": "فتح",
+    "Page Not Found(404 not found page)": "الصفحة غير موجودة",
+    "Parameters(type table)": "المَعلمات",
+    "Previous Page(pagination)": "الصفحة السابقة",
+    "Prop(type table)": "الخاصية",
+    "Read {url}, I want to ask questions about it.(page actions)": "اقرأ {url}، أريد طرح أسئلة عنه.",
+    "Returns(type table)": "القيم المُعادة",
+    "Search(search dialog)": "بحث",
+    "Search(search trigger)": "بحث",
+    "Show Sidebar(sidebar)": "إظهار الشريط الجانبي",
+    "System(theme switcher)(aria-label)": "النظام",
+    "Table of Contents(inline table of contents)": "جدول المحتويات",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "ربما أُزيلت الصفحة التي تبحث عنها، أو تغير اسمها، أو أنها غير متاحة مؤقتاً.",
+    "Toggle Menu(home layout header)(aria-label)": "تبديل القائمة",
+    "Toggle Theme(theme switcher)(aria-label)": "تبديل المظهر",
+    "Type(type table)": "النوع",
+    "View as Markdown(page actions)": "عرض بصيغة Markdown"
+  }
+}

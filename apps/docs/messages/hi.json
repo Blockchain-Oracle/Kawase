@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "webApp": "वेब ऐप खोलें",
+    "showcase": "शोकेस",
+    "docs": "दस्तावेज़"
+  },
+  "home": {
+    "eyebrow": "Kawase दस्तावेज़",
+    "title": "आपके बोलते ही चलने वाला पैसा",
+    "body": "Kawase, Arc पर हर काम के लिए AI मनी ऐप है। अपनी भाषा में, आवाज़ या टेक्स्ट से पूछें: यह तरीका सुझाता है, आप मंज़ूरी देते हैं और ब्लॉकचेन आपकी सीमाओं को लागू करता है।",
+    "start": "शुरू करें",
+    "safety": "यह आपको सुरक्षित कैसे रखता है",
+    "cards": {
+      "gettingStarted": {
+        "title": "शुरू करें",
+        "body": "कुछ ही सेकंड में गेस्ट के रूप में वेब ऐप खोलें या इसे iPhone या Android पर इंस्टॉल करें।"
+      },
+      "safety": {
+        "title": "सुरक्षा मॉडल",
+        "body": "एजेंट आपकी अनुमति के बिना क्या कर सकता है, उसे आपका Face ID कब चाहिए और वह क्या कभी नहीं कर सकता।"
+      },
+      "availability": {
+        "title": "आज क्या काम करता है",
+        "body": "मेननेट और टेस्टनेट पर उपलब्ध हर सुविधा, ऐप की अपनी रजिस्ट्री से तैयार की गई।"
+      },
+      "architecture": {
+        "title": "आर्किटेक्चर",
+        "body": "जज और बिल्डर के लिए: चैट, आवाज़, पॉलिसी इंजन और Arc एक साथ कैसे काम करते हैं।"
+      }
+    }
+  },
+  "matrix": {
+    "capability": "क्षमता",
+    "mainnet": "Arc मेननेट",
+    "testnet": "Arc टेस्टनेट",
+    "caption": "साइट बनाते समय इसे ऐप और एजेंट द्वारा पढ़ी जाने वाली क्षमता रजिस्ट्री से तैयार किया जाता है। \"आ रहा है\" का मतलब है कि इसे अभी जारी नहीं किया गया है।"
+  },
+  "state": {
+    "available": "उपलब्ध",
+    "coming": "आ रहा है",
+    "unavailable": "इस नेटवर्क पर उपलब्ध नहीं"
+  },
+  "scope": {
+    "supports": "आज क्या चलता है",
+    "notYet": "अभी नहीं"
+  },
+  "areas": {
+    "tokens": "Arc पर कोई भी टोकन",
+    "meme_coins": "मीम कॉइन",
+    "perps": "लॉन्ग और शॉर्ट (perps)",
+    "buy": "Apple Pay या कार्ड से खरीदें",
+    "borrow": "उधार लें",
+    "withdraw": "कहीं भी पैसे निकालें",
+    "export_wallet": "अपना वॉलेट एक्सपोर्ट करें"
+  },
+  "limits": {
+    "rule": "डिफ़ॉल्ट",
+    "mainnet": "मेननेट",
+    "testnet": "टेस्टनेट",
+    "daily": "दैनिक सीमा: एक बार में भेजी गई रकम, बिना पूछे",
+    "perTransaction": "एक बार में सबसे बड़ा भुगतान",
+    "weekly": "हर हफ़्ते की कुल रकम",
+    "monthly": "हर महीने की कुल रकम",
+    "perRecipientWeekly": "एक व्यक्ति को हर हफ़्ते",
+    "firstTime": "नए पते पर पहला भुगतान: इससे अधिक पर Face ID",
+    "caption": "डिफ़ॉल्ट ऐप की अपनी कॉन्फ़िगरेशन से लिए गए हैं। टेस्टनेट की सीमाएँ अधिक हैं, क्योंकि वहाँ असली पैसा जोखिम में नहीं है।"
+  },
+  "status": {
+    "label": "स्थिति"
+  },
+  "fumadocs": {
+    "Ask AI(AI chat button)": "AI से पूछें",
+    "Back to Home(404 not found page)": "होम पर वापस जाएँ",
+    "Choose a language(language switcher)": "भाषा चुनें",
+    "Choose a language(language switcher)(aria-label)": "भाषा चुनें",
+    "Close Banner(banner)(aria-label)": "बैनर बंद करें",
+    "Close Search(search dialog)(aria-label)": "सर्च बंद करें",
+    "Close Sidebar(aria-label)": "साइडबार बंद करें",
+    "Close Sidebar(sidebar)(aria-label)": "साइडबार बंद करें",
+    "Collapse Sidebar(sidebar)(aria-label)": "साइडबार छोटा करें",
+    "Copied Anchor Link(heading anchor)(aria-label)": "एंकर लिंक कॉपी हो गया",
+    "Copied Link(accordion)(aria-label)": "लिंक कॉपी हो गया",
+    "Copied Markdown(page actions)": "Markdown कॉपी हो गया",
+    "Copied Text(code block)(aria-label)": "टेक्स्ट कॉपी हो गया",
+    "Copy Anchor Link(heading anchor)(aria-label)": "एंकर लिंक कॉपी करें",
+    "Copy Link(accordion)(aria-label)": "लिंक कॉपी करें",
+    "Copy Markdown(page actions)": "Markdown कॉपी करें",
+    "Copy Text(code block)(aria-label)": "टेक्स्ट कॉपी करें",
+    "Dark(theme switcher)(aria-label)": "डार्क",
+    "Default(type table)": "डिफ़ॉल्ट",
+    "Edit on GitHub(edit page)": "GitHub पर एडिट करें",
+    "Hide Sidebar(sidebar)": "साइडबार छिपाएँ",
+    "Last updated on(page footer)": "आखिरी बार अपडेट किया गया",
+    "Layout Tab(layout tab trigger)": "लेआउट टैब",
+    "Light(theme switcher)(aria-label)": "लाइट",
+    "Next Page(pagination)": "अगला पेज",
+    "No Headings(table of contents)": "कोई हेडिंग नहीं",
+    "No results found(search dialog)": "कोई नतीजा नहीं मिला",
+    "On this page(table of contents)": "इस पेज पर",
+    "Open Search(search trigger)(aria-label)": "सर्च खोलें",
+    "Open Sidebar(aria-label)": "साइडबार खोलें",
+    "Open Sidebar(sidebar)(aria-label)": "साइडबार खोलें",
+    "Open in ChatGPT(page actions)": "ChatGPT में खोलें",
+    "Open in Claude(page actions)": "Claude में खोलें",
+    "Open in Cursor(page actions)": "Cursor में खोलें",
+    "Open in GitHub(page actions)": "GitHub में खोलें",
+    "Open in Scira AI(page actions)": "Scira AI में खोलें",
+    "Open(page actions)": "खोलें",
+    "Page Not Found(404 not found page)": "पेज नहीं मिला",
+    "Parameters(type table)": "पैरामीटर",
+    "Previous Page(pagination)": "पिछला पेज",
+    "Prop(type table)": "प्रॉप",
+    "Read {url}, I want to ask questions about it.(page actions)": "{url} पढ़ें, मैं इसके बारे में सवाल पूछना चाहता हूँ।",
+    "Returns(type table)": "रिटर्न",
+    "Search(search dialog)": "सर्च",
+    "Search(search trigger)": "सर्च",
+    "Show Sidebar(sidebar)": "साइडबार दिखाएँ",
+    "System(theme switcher)(aria-label)": "सिस्टम",
+    "Table of Contents(inline table of contents)": "विषय-सूची",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "जिस पेज को आप ढूँढ रहे हैं, हो सकता है उसे हटा दिया गया हो, उसका नाम बदल दिया गया हो या वह कुछ समय के लिए उपलब्ध न हो।",
+    "Toggle Menu(home layout header)(aria-label)": "मेन्यू बदलें",
+    "Toggle Theme(theme switcher)(aria-label)": "थीम बदलें",
+    "Type(type table)": "टाइप",
+    "View as Markdown(page actions)": "Markdown के रूप में देखें"
+  }
+}

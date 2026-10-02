@@ -7,6 +7,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import { cue } from "@/feedback/feedback";
 import { api } from "@/session/api";
 
 /** on: Kawase can notify this phone. off: not yet asked (or turned off here). denied: only phone Settings can change it. */
@@ -14,9 +15,15 @@ export type PushState = "on" | "off" | "denied" | "unavailable";
 
 const CHANNEL = "default";
 
-// While the app is open, a notification still shows as a banner (the inbox also updates).
+// While the app is open, a notification still shows as a banner (the inbox also updates). Money arriving plays
+// Kawase's own coin chime (with its haptic) instead of the system sound; everything else keeps the system sound.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data as { kind?: string; inboxItemId?: string } | undefined;
+    const received = data?.kind === "payment_received";
+    if (received) void cue("received", `received:${data?.inboxItemId ?? notification.request.identifier}`);
+    return { shouldShowBanner: true, shouldShowList: true, shouldPlaySound: !received, shouldSetBadge: false };
+  },
 });
 
 /** iOS simulators have no push token; Android emulators with Google Play do. */

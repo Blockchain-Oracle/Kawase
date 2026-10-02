@@ -165,6 +165,8 @@ export class AuthService {
     });
 
     const device = await this.upsertDevice(user.id, input.device);
+    // The session key that proved this sign-in is this device's Turnkey API key: "sign out this device" deletes it.
+    await this.db.update(devices).set({ turnkeyPublicKey: stamp.publicKey }).where(eq(devices.id, device.id));
     const { token } = await createSession(this.db, user.id, device.id);
     return { token, user, device, turnkeyUser };
   }

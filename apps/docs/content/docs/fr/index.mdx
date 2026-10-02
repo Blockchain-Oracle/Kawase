@@ -1,0 +1,45 @@
+---
+title: "Ce qu'est Kawase"
+description: "Une application financière avec IA pour tout faire sur Arc. Parlez ou écrivez dans votre langue ; l'agent propose, vous approuvez, et des limites sur la chaîne encadrent ce qu'il peut faire."
+sourceHash: 964d27b3491e7914
+---
+
+Kawase (為替, « échange » en japonais) est une application financière avec un agent IA au cœur de son fonctionnement, conçue pour **Arc**, le réseau de stablecoins de Circle. Dites-lui ce que vous voulez — « envoyer 20 dollars à Alex », « échanger la moitié de mes euros en dollars », « mettre 10 dollars de côté chaque vendredi » — à la voix ou par écrit, dans l'une des dix langues disponibles. Kawase s'occupe des détails, vous montre exactement ce qui va se passer, puis l'exécute.
+
+<Marks names="usdc eurc arc circle morpho" />
+
+## Une seule application pour tout faire sur Arc
+
+L'objectif est de vous permettre de faire tout ce qui est possible avec votre argent sur Arc en le demandant à Kawase :
+
+- **Envoyer, recevoir et demander** des USDC et des EURC à un contact enregistré, à un `@handle` Kawase ou à n'importe quelle adresse.
+- **Échanger et trader** : USDC ↔ EURC aujourd'hui ; tous les tokens sur Arc, les meme coins et les positions long/short (perps) sont en cours d'ajout.
+- **Acheter** avec Apple Pay ou une carte grâce à Onramp Kit de Circle.
+- **Faire un pont et retirer** : transférer des USDC d'Arc vers six autres réseaux avec Circle CCTP, en comparant d'autres ponts (Across, Relay) ; retirer vers n'importe quel endroit.
+- **Gagner des intérêts et emprunter** : coffres Morpho aujourd'hui ; Aave V4 et l'emprunt sont en cours d'ajout.
+- **Automatisations** : paiements programmés, épargne automatique et règles qui s'exécutent seules dans les limites que vous signez une seule fois.
+- **Le marketplace x402** : payer des services et des API à chaque appel, dans la limite d'un budget.
+- **La Voix** sur iPhone et Android, et toute l'application dans **dix langues**.
+
+Tout n'est pas encore disponible. La [page de disponibilité](./availability.mdx) est générée à partir du même registre des fonctionnalités que lisent l'application et l'agent. Elle indique donc toujours honnêtement ce qui fonctionne aujourd'hui et ce qui arrive :
+
+<AvailabilityMatrix />
+
+## Pourquoi un agent, et pourquoi c'est sûr
+
+La plupart des applications financières vous obligent à trouver le bon écran. Avec Kawase, dites simplement ce que vous voulez et l'agent s'occupe du reste : qui est « Alex », quelle devise vous détenez et quel itinéraire est le moins cher. Il ne peut jamais transférer plus d'argent que ce que vous l'avez autorisé à faire :
+
+- **Dans la limite de votre plafond quotidien**, l'agent envoie simplement l'argent et vous prévient — sans vous demander de confirmation. Ce plafond est une limite sur la chaîne que vous avez signée une seule fois ; la chaîne refuse tout ce qui la dépasse.
+- **Au-delà du plafond**, pour un nouveau destinataire au-dessus d'un certain seuil, une adresse qui ressemble à une autre, un échange ou un pont, vous confirmez avec **Face ID** (empreinte digitale ou verrouillage de l'écran sur Android, code reçu par e-mail sur le Web).
+- **Les Automatisations** s'exécutent sans surveillance, mais chacune est liée sur la chaîne à son destinataire et au montant autorisé par période.
+
+Consultez le [modèle de sécurité](./safety.mdx) pour plus de détails.
+
+## Deux réseaux, une seule pression
+
+Kawase fonctionne sur **Arc Réseau principal** (Argent réel) et **Arc Réseau de test** (Argent de test, disponible gratuitement grâce au faucet intégré à l'application). Les nouveaux comptes commencent sur le Réseau de test. Le sélecteur de réseau dans l'en-tête permet de passer de l'un à l'autre en une seule pression, comme pour le mode sombre. L'application, l'orbe et chaque carte d'argent indiquent toujours le réseau utilisé. Consultez la page [réseaux](./networks.mdx).
+
+## Où l'essayer
+
+- **Application Web**, sans installation, utilisable en tant qu'invité : [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io)
+- **iPhone** (TestFlight) et **Android** (APK) : consultez le guide [premiers pas](./getting-started.mdx).

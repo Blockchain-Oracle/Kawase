@@ -3,6 +3,8 @@ import MarkAave from "./aave";
 import MarkAaveMono from "./aave-mono";
 import MarkAcross from "./across";
 import MarkAcrossMono from "./across-mono";
+import MarkAisa from "./aisa";
+import MarkAisaMono from "./aisa-mono";
 import MarkApple from "./apple";
 import MarkAppleMono from "./apple-mono";
 import MarkArbitrum from "./arbitrum";
@@ -13,16 +15,22 @@ import MarkAvalanche from "./avalanche";
 import MarkAvalancheMono from "./avalanche-mono";
 import MarkBase from "./base";
 import MarkBaseMono from "./base-mono";
+import MarkBlockrun from "./blockrun";
+import MarkBlockrunMono from "./blockrun-mono";
 import MarkBtc from "./btc";
 import MarkBtcMono from "./btc-mono";
 import MarkCircle from "./circle";
 import MarkCircleMono from "./circle-mono";
 import MarkDebridge from "./debridge";
 import MarkDebridgeMono from "./debridge-mono";
+import MarkDefillama from "./defillama";
 import MarkEthereum from "./ethereum";
 import MarkEthereumMono from "./ethereum-mono";
 import MarkEurc from "./eurc";
 import MarkEurcMono from "./eurc-mono";
+import MarkExa from "./exa";
+import MarkExaMono from "./exa-mono";
+import MarkGoldsky from "./goldsky";
 import MarkGoogle from "./google";
 import MarkGoogleMono from "./google-mono";
 import MarkKawase from "./kawase";
@@ -35,12 +43,16 @@ import MarkOptimism from "./optimism";
 import MarkOptimismMono from "./optimism-mono";
 import MarkPolygon from "./polygon";
 import MarkPolygonMono from "./polygon-mono";
+import MarkQuicknode from "./quicknode";
+import MarkQuicknodeMono from "./quicknode-mono";
 import MarkSolana from "./solana";
 import MarkSolanaMono from "./solana-mono";
 import MarkUnichain from "./unichain";
 import MarkUnichainMono from "./unichain-mono";
 import MarkUsdc from "./usdc";
 import MarkUsdcMono from "./usdc-mono";
+import MarkVangrid from "./vangrid";
+import MarkVangridMono from "./vangrid-mono";
 import MarkWeth from "./weth";
 import MarkWethMono from "./weth-mono";
 
@@ -50,6 +62,8 @@ export const MARKS = {
   "aave-mono": MarkAaveMono,
   "across": MarkAcross,
   "across-mono": MarkAcrossMono,
+  "aisa": MarkAisa,
+  "aisa-mono": MarkAisaMono,
   "apple": MarkApple,
   "apple-mono": MarkAppleMono,
   "arbitrum": MarkArbitrum,
@@ -60,16 +74,22 @@ export const MARKS = {
   "avalanche-mono": MarkAvalancheMono,
   "base": MarkBase,
   "base-mono": MarkBaseMono,
+  "blockrun": MarkBlockrun,
+  "blockrun-mono": MarkBlockrunMono,
   "btc": MarkBtc,
   "btc-mono": MarkBtcMono,
   "circle": MarkCircle,
   "circle-mono": MarkCircleMono,
   "debridge": MarkDebridge,
   "debridge-mono": MarkDebridgeMono,
+  "defillama": MarkDefillama,
   "ethereum": MarkEthereum,
   "ethereum-mono": MarkEthereumMono,
   "eurc": MarkEurc,
   "eurc-mono": MarkEurcMono,
+  "exa": MarkExa,
+  "exa-mono": MarkExaMono,
+  "goldsky": MarkGoldsky,
   "google": MarkGoogle,
   "google-mono": MarkGoogleMono,
   "kawase": MarkKawase,
@@ -82,12 +102,16 @@ export const MARKS = {
   "optimism-mono": MarkOptimismMono,
   "polygon": MarkPolygon,
   "polygon-mono": MarkPolygonMono,
+  "quicknode": MarkQuicknode,
+  "quicknode-mono": MarkQuicknodeMono,
   "solana": MarkSolana,
   "solana-mono": MarkSolanaMono,
   "unichain": MarkUnichain,
   "unichain-mono": MarkUnichainMono,
   "usdc": MarkUsdc,
   "usdc-mono": MarkUsdcMono,
+  "vangrid": MarkVangrid,
+  "vangrid-mono": MarkVangridMono,
   "weth": MarkWeth,
   "weth-mono": MarkWethMono,
 } as const;

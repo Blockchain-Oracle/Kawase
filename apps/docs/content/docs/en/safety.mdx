@@ -1,0 +1,93 @@
+---
+title: Safety model
+description: Your own wallet, an on-chain daily allowance with no prompt inside it, Face ID above it, automation grants pinned on chain, and a short list of things the agent can never do.
+---
+
+Kawase lets an AI move money for you. That only works if what it **can** do is small, visible and enforced by the
+network — not by trust in the AI or in Kawase's servers. This page describes how.
+
+## Your wallet
+
+- When you sign in (email code, Apple or Google), Kawase creates an ordinary Ethereum-style account (an **EOA**) whose key
+  is held by **Turnkey** in secure hardware, inside a sub-organization that belongs to you. There is no PIN and no
+  password. It is **one address on both networks**.
+- Kawase then upgrades that same account in place with **EIP-7702**, pointing its code at MetaMask's audited
+  `EIP7702StatelessDeleGator`. You sign one authorization; Kawase's relayer sends it and pays the fee, so setup costs you
+  nothing.
+- After the upgrade your account can grant **delegations** (ERC-7710, from MetaMask's Delegation Framework): narrow,
+  signed permissions with limits built in. Those are the only way the agent can ever move your money without you.
+
+## Two ways a payment is authorized
+
+| | Inside your everyday allowance | Everything else |
+|---|---|---|
+| What it covers | USDC payments up to what is left of today's allowance, to someone you've paid before or named in this request | Above the allowance, any EURC payment, a first payment to a new address above the threshold, look-alike addresses, every swap, bridge and vault move, any change to your limits |
+| What you do | **Nothing.** Kawase sends and tells you. | **Face ID** (fingerprint or screen lock on Android; an email code on the web) |
+| What enforces it | The **chain**: your signed allowance delegation | **Your signature** over the exact transaction |
+
+### The everyday allowance
+
+You accept it once, with one Face ID, during setup. It is a delegation from your account to Kawase's agent wallet with
+these limits written into it — **decoded from the signed bytes** and shown to you as a receipt before you sign:
+
+- **Token**: USDC only, and only its `transfer` function.
+- **Amount**: up to the daily allowance per 24-hour period (an on-chain period cap).
+- **Who may use it**: only Kawase's agent wallet (a redeemer lock). A copy of the permission is useless to anyone else.
+- **Expiry**: 90 days, after which it is dead and you accept a new one.
+- **No native value**: nothing in it allows sending the network's gas token.
+
+The chain refuses anything outside those limits — a larger amount, another token, another function, after expiry or after
+you revoke it. This was tested on Arc testnet, including attempts by a leaked agent key, which the chain reverted.
+
+### Face ID above it
+
+Above the allowance, Kawase builds the exact transaction, shows you the amount, currency, recipient and network, and asks
+your wallet to sign **that** transaction. The server then checks the signed bytes match the card — sender, recipient,
+amount, network, fees — before broadcasting. A mismatch freezes the payment.
+
+Today the signature comes from your signed-in session behind the device's own biometric check. **Passkeys are coming**
+(they need Kawase's own domain): once you add one, Turnkey itself will require it for every wallet signature, so neither a
+stolen session nor Kawase's own server could sign for you.
+
+## Automations: pinned on chain
+
+Each automation gets **its own grant**, signed with one Face ID when you turn it on:
+
+- **Scheduled payments**: transfer only, **pinned to one recipient**, at most the amount per period, expiring when the
+  automation ends.
+- **Auto-save**: may only move USDC between your wallet and your own vault savings.
+- **Bridge rules**: may only bridge USDC to **your own** address, with the route fee capped.
+
+Cancelling an automation **revokes its grant on chain** in the same step.
+
+## What the agent can never do
+
+- Move more than your allowance in a day, or use the allowance for anything other than a USDC transfer.
+- Send to a recipient other than the one an automation's grant is pinned to.
+- Swap, bridge, pay in EURC, pay a look-alike address or raise your limits without your Face ID.
+- Approve a payment because of a spoken "yes": voice payments always wait for your tap.
+- Invent an address: addresses come only from your contacts or from your own message, word for word.
+- Choose the network: that is part of your session on the server, and every payment is checked against it.
+- Mark something as paid without proof: only a receipt with the exact transfer counts. An unclear outcome is shown as
+  "still checking" and **never retried automatically**, so nothing is paid twice.
+
+## Default limits
+
+On top of the on-chain allowance, Kawase's policy engine checks your limits before anything is prepared (two taps at once
+cannot both fit under the same limit):
+
+<LimitsTable />
+
+## Revoke and pause
+
+- **Revoke the allowance**: Wallet & limits → Revoke (press and hold to confirm). It is one ordinary transaction from your
+  wallet that disables the delegation on chain; the agent can no longer send anything without your Face ID.
+- **Pause, skip or cancel** any automation from the Automations screen or in chat; cancelling revokes its grant.
+- **Pause everything** at once (all automations and agent spending) is enforced by the server already; the switch for it
+  in Settings is **coming**.
+- **Leave entirely**: see [Withdraw without Kawase](./withdraw-without-kawase.mdx).
+
+## Proof
+
+Every step above was run on Arc testnet with real transactions; the evidence table with explorer links is on the
+showcase's demo page, and the [architecture](./architecture.mdx) page lists the tests.

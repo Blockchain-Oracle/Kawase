@@ -1,0 +1,32 @@
+---
+title: "Redes"
+description: "A rede principal e a rede de testes da Arc lado a lado — o que muda, o que existe em apenas uma delas e como a Kawase mantém tudo separado."
+sourceHash: 23465b593fd86e92
+---
+
+<Marks names="arc usdc eurc" />
+
+A **Arc** é a rede de stablecoins da Circle: USDC é seu token de gas, então as taxas são pagas em dólares, e as transações são concluídas em menos de um segundo. A Kawase é compatível com exatamente duas redes da Arc.
+
+| | Arc rede principal | Arc rede de testes |
+|---|---|---|
+| Dinheiro | Real | Dinheiro de teste sem valor |
+| ID da rede | `5042` | `5042002` |
+| Explorador | `explorer.arc.io` | `testnet.arcscan.app` |
+| Como receber dinheiro | Receba de qualquer carteira ou corretora que envie para a Arc; comprar com Apple Pay ou cartão está a caminho | O faucet dentro do app (cerca de 20 USDC + 20 EURC por dia) |
+| Render | Vaults da Morpho listados pelo App Kit Earn da Circle | Vaults Morpho simulados da rede de testes da Arc |
+| Destinos da ponte | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | suas redes de testes (Base Sepolia, Ethereum Sepolia, …) |
+| Marketplace x402 | Planejado (o catálogo da Circle está disponível apenas na rede principal) | Indisponível |
+| Limites padrão | Menores | Dez vezes maiores (sem risco de perder dinheiro real) |
+| Onde novas contas começam | | ✓ |
+
+Todos os fluxos da Kawase foram executados de ponta a ponta com transações reais na **rede de testes da Arc**; as evidências estão vinculadas à página de demonstração do showcase. A disponibilidade abaixo mostra o que o app oferece em cada rede:
+
+<AvailabilityMatrix />
+
+## Como a Kawase mantém tudo separado
+
+- **Uma toque para trocar**, nos dois sentidos: veja [o seletor de rede](./features/network-toggle.mdx).
+- **A rede é mostrada de três formas**: o selo no cabeçalho, a faixa da rede de testes ou o rótulo DINHEIRO REAL, e a cor da esfera.
+- **O servidor controla a escolha.** Cada pagamento é preparado para uma rede e permanece nela até o fim; se a rede mudar nesse intervalo, o pagamento é interrompido em vez de passar para a outra rede.
+- **Um único endereço de carteira nas duas redes**, com saldos, atividades e limites separados por rede.

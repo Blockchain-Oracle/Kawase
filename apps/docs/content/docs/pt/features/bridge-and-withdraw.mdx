@@ -1,0 +1,39 @@
+---
+title: "Fazer ponte e sacar"
+description: "Mova USDC da Arc para seu próprio endereço em seis redes usando o Circle CCTP, com comparação com outras pontes; sacar para qualquer lugar estará disponível em breve."
+sourceHash: 6e5133b4d0f03047
+---
+
+<Status ids="bridge withdraw" />
+
+<Marks names="arc base ethereum arbitrum optimism polygon avalanche circle" />
+
+## Fazer ponte de USDC para fora da Arc (hoje)
+
+“Enviar 20 dólares para a Base” ou usar a tela de Ponte. A Kawase move **USDC da Arc para seu próprio endereço** na **Base, Ethereum,
+Arbitrum, Optimism, Polygon ou Avalanche** por meio do **Circle CCTP**, com o encaminhador da Circle:
+
+- Seu USDC é queimado na Arc e criado na rede de destino pela Circle. Você não precisa de gas do outro lado. A
+  taxa é descontada do valor e aparece antes da confirmação.
+- O processo leva cerca de um minuto. O cartão acompanha três etapas: a queima na Arc, o atestado da Circle e a criação na
+  rede de destino — além de verificar se o dinheiro realmente chegou ao seu endereço lá.
+- Você confirma com **um único Face ID**. A aprovação e a queima acontecem em uma só transação da sua carteira. A taxa tem um limite:
+  se a taxa da rota ficar acima do limite mostrado, nada será enviado.
+
+## Comparação das rotas
+
+Antes da confirmação, a Kawase pode comparar a mesma transferência entre provedores e classificá-los pelo valor que realmente chega:
+
+- **Circle CCTP** — a rota que a Kawase executa hoje.
+- **LI.FI** (nas duas redes), **Relay** e **deBridge** (na rede principal) — hoje, apenas para comparação de cotações.
+- **Across** e **Relay** como rotas executadas, além da ponte **para a Arc**, serão adicionados.
+
+## Sacar para qualquer lugar (em breve)
+
+Hoje, você já pode enviar USDC ou EURC para **qualquer endereço na Arc** — inclusive o endereço de depósito na Arc de uma corretora — e
+fazer uma ponte de USDC para o seu próprio endereço nas seis redes acima. Sacar para qualquer endereço em outra rede (para um amigo
+ou uma corretora em outra rede) em uma só etapa estará disponível **em breve**.
+
+Se algum dia precisar sair sem usar a Kawase, veja [Sacar sem a Kawase](../withdraw-without-kawase.mdx).
+
+<ScopeList ids="bridge" />

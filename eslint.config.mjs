@@ -25,7 +25,7 @@ export default tseslint.config(
     // Installed registry components (21st.dev, shadcn, React Native Reusables) keep their authors' code style:
     // layout numbers, shader constants and loose types are not rewritten. Code written for Kawase next to
     // them (one folder up) follows the full rule set.
-    files: ["packages/ui-web/src/components/ui/**", "packages/ui-native/src/components/ui/**"],
+    files: ["packages/ui-web/src/components/ui/**", "packages/ui-native/src/components/ui/**", "apps/landing/src/components/ui/**"],
     rules: {
       "@typescript-eslint/no-magic-numbers": "off",
       "@typescript-eslint/no-empty-object-type": "off",

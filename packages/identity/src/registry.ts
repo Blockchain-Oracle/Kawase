@@ -221,6 +221,18 @@ export const ENTITIES: readonly Entity[] = [
     environment: "mainnet",
   },
 
+  // x402 services the agent buys from (sources and kit rules in PROVENANCE.md).
+  { id: providerKey("blockrun"), kind: "provider", name: "BlockRun", brandColor: "#000000", shape: "uncontained", marks: { color: "blockrun", mono: "blockrun-mono" } },
+  { id: providerKey("exa"), kind: "provider", name: "Exa", brandColor: "#0143D9", shape: "uncontained", marks: { color: "exa", mono: "exa-mono" } },
+  // Kit: the Q on a dark surface, sharp corners, never inside a rounded container, so a square tile.
+  { id: providerKey("quicknode"), kind: "provider", name: "Quicknode", brandColor: "#6CFF75", shape: "tile", marks: { color: "quicknode", mono: "quicknode-mono" } },
+  { id: providerKey("aisa"), kind: "provider", name: "AIsa", brandColor: "#F76918", shape: "uncontained", marks: { color: "aisa", mono: "aisa-mono" } },
+  // Only raster logos published so far: the labelled neutral disc until a vector arrives.
+  { id: providerKey("orthogonal"), kind: "provider", name: "Orthogonal", brandColor: "#161616", shape: "uncontained", marks: {} },
+  { id: providerKey("goldsky"), kind: "provider", name: "Goldsky", brandColor: "#FE5117", shape: "disc", marks: { color: "goldsky" } },
+  { id: providerKey("vangrid"), kind: "provider", name: "Vangrid", brandColor: "#000000", shape: "disc", marks: { color: "vangrid", mono: "vangrid-mono" } },
+  { id: providerKey("defillama"), kind: "provider", name: "DefiLlama", brandColor: "#0062EE", shape: "tile", marks: { color: "defillama" } },
+
   // Registered now, marks later (Stage 6 routes and names).
   { id: venueKey("cctp"), kind: "venue", name: "Circle CCTP", brandColor: "#00E599", shape: "uncontained", marks: {} },
   { id: venueKey("lifi"), kind: "venue", name: "LI.FI", brandColor: "#5F2FEA", shape: "uncontained", marks: {} },

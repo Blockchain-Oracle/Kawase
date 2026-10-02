@@ -1,0 +1,15 @@
+export const common = {
+  stop: "Stop",
+  appName: "Kawase",
+  continue: "Continue",
+  cancel: "Cancel",
+  back: "Back",
+  done: "Done",
+  retry: "Try again",
+  signOut: "Sign out",
+  guest: "Guest",
+  loading: "One moment…",
+  error: "Something went wrong. Try again.",
+  close: "Close",
+  share: "Share",
+} as const;

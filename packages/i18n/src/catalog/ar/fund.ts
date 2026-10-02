@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "أضف أموالًا",
+  subtitle: "إلى محفظتك على {{network}}",
+  testTitle: "احصل على USDC تجريبي",
+  testBody: "مبلغ {{usdc}} USDC و {{eurc}} EURC من صنبور Circle، مرة في اليوم",
+  testClaim: "أرسل لي أموالًا تجريبية",
+  testSending: "جارٍ إرسال الأموال التجريبية…",
+  testSent: "أُرسلت، وستصل خلال ثوانٍ",
+  testClaimed: "حصلت عليها اليوم · المرة التالية من {{time}}",
+  testFailed: "لم يُرسل صنبور Circle هذه المرة. حاول مجددًا، أو اطلبها من Circle مباشرة.",
+  testSignIn: "سجّل الدخول أولًا لتحصل على عنوانك الخاص",
+  testSetUpFirst: "جهّز محفظتك أولًا",
+  openCircle: "صنبور Circle",
+  receiveTitle: "استلم على Arc",
+  receiveBody: "رمز QR وعنوانك",
+  walletTitle: "من محفظة أخرى أو منصة تداول",
+  walletBody: "أرسل USDC أو EURC على Arc إلى عنوانك",
+  bridgeTitle: "انقل من سلسلة أخرى",
+  bridgeBody: "إيثريوم و Base و Arbitrum وغيرها",
+  bridgeSubtitle: "أين أموالك الآن",
+  bridgeComingBody: "النقل إلى Arc قيد البناء. حاليًا، أرسل USDC إلى عنوانك على Arc.",
+  coming: "قريبًا",
+};

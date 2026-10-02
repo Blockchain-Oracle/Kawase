@@ -1,0 +1,23 @@
+# Build context for the docs image (workspace root). Replaces the root .dockerignore for this Dockerfile only.
+**/node_modules
+**/.next
+**/.expo
+**/.turbo
+**/ios
+**/android
+**/dist
+.git
+.firecrawl
+.pnpm-store
+.claude
+refs
+context
+plan
+deploy
+docs
+apps/mobile
+apps/landing
+apps/voice-agent
+.env
+.env.*
+!.env.example

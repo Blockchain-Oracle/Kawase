@@ -25,6 +25,12 @@ catalog:
   # On-chain limits (spikes 04 and 15)
   "@metamask/smart-accounts-kit": 2.0.0
   "@circle-fin/developer-controlled-wallets": 10.8.1
+  # x402 marketplace (B2): both rails (Gateway nanopayments + plain EIP-3009) and the testnet demo seller
+  "@circle-fin/x402-batching": 3.5.0
+  "@x402/core": 2.28.0
+  "@x402/evm": 2.28.0
+  "@x402/express": 2.28.0
+  express: 5.2.1
   "@types/node": 24.19.0
   tsx: 4.23.15
   dotenv: 18.0.4

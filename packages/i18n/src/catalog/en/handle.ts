@@ -1,0 +1,16 @@
+export const handle = {
+  title: "Pick a handle",
+  subtitle: "People can pay you at your @handle. It's optional, and you can change it later in Settings.",
+  placeholder: "yourname",
+  checking: "Checking…",
+  available: "Available",
+  tooShort: "At least 3 characters",
+  tooLong: "20 characters at most",
+  invalid: "Letters, numbers and _ only",
+  reserved: "That one is reserved",
+  taken: "Already taken",
+  skip: "Skip for now",
+  clear: "Clear",
+  row: "Handle",
+  none: "Not set",
+} as const;

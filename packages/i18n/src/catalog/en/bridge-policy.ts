@@ -1,0 +1,15 @@
+export const bridgePolicy = {
+  NOT_AVAILABLE_YET: "Bridging isn't available on this network yet.",
+  ON_OTHER_NETWORK: "Bridging works on {{network}}.",
+  PAUSED_ALL: "You paused all money movement. Resume it in Settings to continue.",
+  SIGN_IN_REQUIRED: "Sign in to bridge.",
+  WALLET_NOT_READY: "Set up your wallet first.",
+  WALLET_NOT_SET_UP: "Set up your wallet on this network first.",
+  DESTINATION_MISSING: "Which chain?",
+  AMOUNT_MISSING: "How much?",
+  AMOUNT_INVALID: "That amount isn't valid.",
+  INSUFFICIENT_BALANCE: "Not enough USDC. You have {{balance}}.",
+  INSUFFICIENT_GAS: "Keep about {{needed}} on Arc for the network fee.",
+  AMOUNT_BELOW_FEE: "That's less than the route's fee of up to {{fee}}. Send more.",
+  QUOTE_UNAVAILABLE: "No route right now.",
+} as const;

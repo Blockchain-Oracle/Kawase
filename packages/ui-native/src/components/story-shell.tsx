@@ -10,7 +10,7 @@
 // or down to change panel) and each progress segment is a labelled button with its own, non-overlapping target.
 // The copy scrolls when a long translation needs more room than the space under the canvas. The top-end slot holds
 // the language pill from the first panel.
-import { MOTION } from "@kawase/config";
+import { MOTION, SPRING } from "@kawase/config";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
@@ -22,6 +22,7 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
   type SharedValue,
 } from "react-native-reanimated";
@@ -79,7 +80,9 @@ const FLICK_VELOCITY = 600;
 const EDGE_RESISTANCE = 0.25;
 /** Horizontal movement before the swipe claims the gesture; vertical movement past this lets it go. */
 const ACTIVE_OFFSET = 12;
-/** A released swipe that does not page settles back faster than a full panel change. */
+/** The copy moves at this share of the field's travel, and is fully faded by 1 / COPY_FADE of a panel. */
+const COPY_TRAVEL = 0.35;
+const COPY_FADE = 1.8;
 
 function StoryCopy({
   panel,
@@ -96,7 +99,15 @@ function StoryCopy({
   active: boolean;
   onHeight: (height: number) => void;
 }) {
-  const style = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - Math.abs(translate.value / width + slot)) }));
+  // The copy travels with its panel (M01: copy changes mid-travel), at a share of the field's speed, and fades
+  // faster than it moves, so mid-swipe reads as motion rather than two texts overlapping in place.
+  const style = useAnimatedStyle(() => {
+    const offset = translate.value / width + slot;
+    return {
+      opacity: Math.max(0, 1 - Math.abs(offset) * COPY_FADE),
+      transform: [{ translateX: offset * width * COPY_TRAVEL }],
+    };
+  });
   return (
     <Animated.View
       style={[{ position: "absolute", left: 0, right: 0 }, style]}
@@ -261,27 +272,32 @@ function StoryShell({
     );
   }, [index, width, reduced, translate, target, dir, publish]);
 
-  const settle = (next: number) => {
-    "worklet";
-    target.value = next;
-    translate.value = withTiming(
-      -dir * next * width,
-      { duration: reduced ? 0 : MOTION.storySettleMs, easing: Easing.out(Easing.cubic) },
-      (finished) => {
-        if (finished) scheduleOnRN(publish, next);
-      },
-    );
-  };
-
   const interaction = React.useCallback((phase: "start" | "end") => onInteraction?.(phase), [onInteraction]);
 
-  const pan = Gesture.Pan()
+  // Built once per geometry, never per render: a new gesture object on every render reconfigures the detector,
+  // which can hitch an active drag. Everything inside runs on the UI thread.
+  const pan = React.useMemo(() => {
+    const settle = (next: number, velocity: number) => {
+      "worklet";
+      target.value = next;
+      const to = -dir * next * width;
+      const done = (finished?: boolean) => {
+        "worklet";
+        if (finished) scheduleOnRN(publish, next);
+      };
+      // A release carries the finger's speed into the settle (a flick lands faster than a slow drag).
+      translate.value = reduced
+        ? withTiming(to, { duration: 0 }, done)
+        : withSpring(to, { ...SPRING.layout, velocity, overshootClamping: true }, done);
+    };
+    return Gesture.Pan()
     .activeOffsetX([-ACTIVE_OFFSET, ACTIVE_OFFSET])
     .failOffsetY([-ACTIVE_OFFSET, ACTIVE_OFFSET])
-    .onStart(() => {
-      // The finger takes over mid-travel: stop where the canvas is and follow from there.
+    .onStart((event) => {
+      // The finger takes over mid-travel: stop where the canvas is and follow from there. The activation distance
+      // is already in translationX, so subtract it or the canvas would jump by it on grab.
       cancelAnimation(translate);
-      start.value = translate.value;
+      start.value = translate.value - event.translationX;
       dragging.value = true;
       released.value = false;
       scheduleOnRN(interaction, "start");
@@ -304,14 +320,15 @@ function StoryShell({
       const backward = travelled > width * PAGE_THRESHOLD || velocity > FLICK_VELOCITY;
       const nearest = Math.round((-dir * start.value) / width);
       const next = Math.min(last, Math.max(0, nearest + (forward ? 1 : backward ? -1 : 0)));
-      settle(next);
+      settle(next, event.velocityX);
     })
     .onFinalize(() => {
       if (!dragging.value) return;
       dragging.value = false;
       // A drag taken away (a system gesture, a sheet) settles on the current panel instead of stranding mid-way.
-      if (!released.value) settle(Math.min(last, Math.max(0, target.value)));
+      if (!released.value) settle(Math.min(last, Math.max(0, target.value)), 0);
     });
+  }, [width, dir, last, reduced, publish, interaction, translate, start, dragging, released, target]);
 
   const onAccessibilityAction = (event: AccessibilityActionEvent) => {
     if (event.nativeEvent.actionName === "increment" && index < last) onIndexChange(index + 1);

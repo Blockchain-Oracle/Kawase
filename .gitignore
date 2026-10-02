@@ -14,3 +14,7 @@ dist/
 refs/*/
 # spike state (testnet keys)
 .spike-state*.json
+
+# Local agent worktrees and the local pnpm store
+.claude/worktrees/
+.pnpm-store/

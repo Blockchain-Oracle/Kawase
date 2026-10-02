@@ -1,52 +1,51 @@
-// One conversation with the agent (journey 14): the person's messages as bubbles, the agent's words as plain text
-// with its results as cards in between, a "Thinking" line while it works, an inline error with Retry, starter
-// chips when the thread is empty, and the composer pinned above the keyboard with the mic beside it (typing is
-// always there; voice opens the orb overlay). The view follows a reply only while the person is at the latest
-// message; scrolled up, they stay where they are and a "New messages" pill takes them down (Codex review R14).
-// The half-written message survives a thread switch or a reconnect. Retry first reads what the api kept, because an
-// answer can move money (inside the allowance the agent just sends): a reply it already has is shown; a question it
-// kept with nothing after it is shown without being repeated; a question it never got goes back into the box for
-// the person to send again. A saved question alone cannot establish whether a tool acted.
+// One conversation with the agent (journey 14, plan §1.2). The person's messages are raised ink bubbles that rise
+// from the composer when sent; the agent's turns open with the 為替 mark, its words fade in block by block, and its
+// results are cards in between (tool steps show as live chips that become the card). A new thread shows a greeting
+// and state-aware suggestion tiles. The composer (the orb capsule) sits above the dock and rides the keyboard; the
+// thread lifts with the keyboard only while the person is reading the latest message (KeyboardChatScrollView,
+// "whenAtEnd" — the ChatGPT pattern). Long-press a message to copy it.
+//
+// Safety notes kept from the previous version: the half-written message survives a thread switch or a reconnect;
+// Retry first reads what the api kept, because an answer can move money (inside the allowance the agent just sends):
+// a reply it already has is shown; a question it kept with nothing after it is shown without being repeated; a
+// question it never got goes back into the box. A saved question alone cannot establish whether a tool acted.
 import { isToolUIPart, type UIMessage } from "ai";
-import { ArrowDown } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
+import { ArrowDown, ArrowLeftRight, ArrowUpRight, CalendarClock, HandCoins, Route, Sprout } from "lucide-react-native";
 import * as React from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from "react-native";
-import { KeyboardAvoidingView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
-import Animated, { FadeIn, interpolate, useAnimatedStyle } from "react-native-reanimated";
+import { ActivityIndicator, Pressable, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
+import { KeyboardChatScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
+import Animated, { FadeIn, LinearTransition, SlideInDown } from "react-native-reanimated";
+import { toast } from "sonner-native";
 
+import { MOTION, SPRING } from "@kawase/config";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
-import { Composer } from "@kawase/ui-native/components/composer";
+import { Composer, type ComposerAction } from "@kawase/ui-native/components/composer";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
-import { SuggestedActions } from "@kawase/ui-native/components/suggested-actions";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useDockClearance } from "@/dock/use-dock-clearance";
+import { cue, tapFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
-import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 import { draftKey, readDraft, saveDraft } from "./drafts";
+import { EmptyThread } from "./empty-thread";
+import { MessageText } from "./message-text";
+import { ChatResumeProvider } from "./resume";
 import { storedThread } from "./stored-thread";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
 
 const EDGE_INSET = 12;
-const MARK_SIZE = 64;
+const AVATAR_SIZE = 22;
 /** How far from the end still counts as "reading the latest" (about two lines). */
 const NEAR_END = 64;
-/** A scroll that moved up by more than this is the person's own, not a layout nudge. */
-const SCROLLED_UP = 2;
 const SCROLL_THROTTLE_MS = 32;
 
 const textOf = (message: UIMessage) => message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
@@ -62,51 +61,41 @@ type ConversationProps = {
 export function Conversation({ threadId, initialMessages, initialPrompt, onActivity }: ConversationProps) {
   const { t } = useT();
   const clearance = useDockClearance();
-  const keyboard = useReanimatedKeyboardAnimation();
-  const composerSpace = useAnimatedStyle(() => ({
-    paddingBottom: interpolate(keyboard.progress.value, [0, 1], [clearance.dock + EDGE_INSET, EDGE_INSET]),
-  }));
   const overlay = useOverlay();
-  const { user } = useSession();
   const colors = useThemeColors();
   const chat = useAgentChat(threadId, initialMessages);
   const key = draftKey(threadId, chat.messages.length > 0);
   const [draft, setDraft] = React.useState(() => readDraft(draftKey(threadId, initialMessages.length > 0)));
-  const scroller = React.useRef<ScrollView>(null);
+  const scroller = React.useRef<Animated.ScrollView>(null);
   const busy = chat.status === "submitted" || chat.status === "streaming";
-  const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
 
-  // Following the latest: on while the person is at the end, off once they scroll up, on again when they come back.
-  const following = React.useRef(true);
-  const lastOffset = React.useRef(0);
-  const placed = React.useRef(false);
-  const [unseen, setUnseen] = React.useState(false);
+  // Messages already there when the thread opened don't animate in; new ones do.
+  const shownAtOpen = React.useRef(new Set(initialMessages.map((message) => message.id)));
+
+  // The composer block's height (it grows with multiline text), so the thread's end clears it.
+  const [composerHeight, setComposerHeight] = React.useState(0);
+  const onComposerLayout = (event: LayoutChangeEvent) => setComposerHeight(event.nativeEvent.layout.height);
+
+  const [atEnd, setAtEnd] = React.useState(true);
   const [retrying, setRetrying] = React.useState(false);
   const [interrupted, setInterrupted] = React.useState(false);
 
   const toLatest = React.useCallback(() => {
-    following.current = true;
-    setUnseen(false);
+    setAtEnd(true);
     scroller.current?.scrollToEnd({ animated: true });
   }, []);
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const fromEnd = contentSize.height - layoutMeasurement.height - contentOffset.y;
-    if (fromEnd <= NEAR_END) {
-      following.current = true;
-      setUnseen(false);
-    } else if (contentOffset.y < lastOffset.current - SCROLLED_UP) following.current = false;
-    lastOffset.current = contentOffset.y;
+    setAtEnd(contentSize.height - layoutMeasurement.height - contentOffset.y <= NEAR_END);
   };
 
+  const placed = React.useRef(false);
   const onContentSizeChange = () => {
     if (!placed.current) {
-      // Opening a thread lands on its latest message without a long animated scroll.
       placed.current = true;
       scroller.current?.scrollToEnd({ animated: false });
-    } else if (following.current) scroller.current?.scrollToEnd({ animated: true });
-    else if (busy) setUnseen(true);
+    } else if (atEnd) scroller.current?.scrollToEnd({ animated: true });
   };
 
   const editDraft = (text: string) => {
@@ -124,7 +113,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
         setDraft("");
         saveDraft(key, "");
       } else if (draft) {
-        // A chip asked instead: what the person was typing stays, now under this thread.
+        // A tile asked instead: what the person was typing stays, now under this thread.
         saveDraft(key, "");
         saveDraft(threadId, draft);
       }
@@ -138,7 +127,6 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
     setRetrying(true);
     try {
       const stored = await storedThread(threadId);
-      // Still can't reach the api: the error stays, with everything on screen kept.
       if (!stored) return;
       const asked = chat.messages.findLast((message) => message.role === "user");
       const kept = asked ? stored.findIndex((message) => message.id === asked.id) : -1;
@@ -171,12 +159,13 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
     [chat],
   );
 
-  const chips = [
-    { label: t("home.chipWhatCanYouDo"), prompt: t("home.chipWhatCanYouDo") },
-    { label: t("chat.chipBalance"), prompt: t("chat.chipBalance") },
-    ...(testnet ? [{ label: t("home.chipTestUsdc"), prompt: t("home.chipTestUsdc") }] : []),
-    { label: t("chat.chipAddress"), prompt: t("chat.chipAddress") },
-    { label: t("chat.chipAuthority"), prompt: t("chat.chipAuthority") },
+  const actions: ComposerAction[] = [
+    { label: t("chatHome.actionSend"), template: t("chatHome.actionSendTemplate"), icon: ArrowUpRight },
+    { label: t("chatHome.actionRequest"), template: t("chatHome.actionRequestTemplate"), icon: HandCoins },
+    { label: t("chatHome.actionSwap"), template: t("chatHome.actionSwapTemplate"), icon: ArrowLeftRight },
+    { label: t("chatHome.actionBridge"), template: t("chatHome.actionBridgeTemplate"), icon: Route },
+    { label: t("chatHome.actionSave"), template: t("chatHome.actionSaveTemplate"), icon: Sprout },
+    { label: t("chatHome.actionAutomate"), template: t("chatHome.actionAutomateTemplate"), icon: CalendarClock },
   ];
 
   const last = chat.messages.at(-1);
@@ -187,33 +176,40 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
       last?.role === "assistant" &&
       !last.parts.some((part) => (part.type === "text" && part.text.length > 0) || isToolUIPart(part)));
 
+  const empty = chat.messages.length === 0;
+
   return (
-    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      {chat.messages.length === 0 ? (
-        <View className="flex-1 items-center justify-center gap-4 px-6">
-          <KawaseMark size={MARK_SIZE} />
-          <Text className="font-display text-foreground text-center text-2xl font-bold">{t("chat.emptyTitle")}</Text>
-          <Text className="text-muted-foreground text-center text-base">{t("chat.emptyBodyLive")}</Text>
-          <SuggestedActions className="justify-center pt-2" suggestions={chips} onSelect={send} />
-        </View>
+    <View className="flex-1">
+      {empty ? (
+        <EmptyThread onAsk={(prompt) => send(prompt)} />
       ) : (
         <View className="flex-1">
-          <ScrollView
+          <KeyboardChatScrollView
             ref={scroller}
-            className="flex-1"
-            contentContainerClassName="gap-4 px-5 pt-4"
+            keyboardLiftBehavior="whenAtEnd"
+            offset={composerHeight}
+            contentContainerClassName="gap-5 px-5 pt-4"
             contentContainerStyle={{ paddingBottom: EDGE_INSET }}
             onContentSizeChange={onContentSizeChange}
             onScroll={onScroll}
             scrollEventThrottle={SCROLL_THROTTLE_MS}
             keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
           >
-            {chat.messages.map((message) => (
-              <MessageView key={message.id} message={message} onToolOutput={onToolOutput} />
-            ))}
+            <ChatResumeProvider send={send}>
+              {chat.messages.map((message) => (
+                <MessageView
+                  key={message.id}
+                  message={message}
+                  fresh={!shownAtOpen.current.has(message.id)}
+                  onToolOutput={onToolOutput}
+                  copiedLabel={t("chatHome.copied")}
+                />
+              ))}
+            </ChatResumeProvider>
             {thinking ? (
               <Animated.View entering={FadeIn} className="flex-row items-center gap-2 py-1">
-                <KawaseMark size={20} />
+                <KawaseMark size={AVATAR_SIZE} />
                 <StateLabel className="text-muted-foreground">{t("home.thinking")}</StateLabel>
               </Animated.View>
             ) : null}
@@ -223,16 +219,12 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
                   {t("chat.answerFailed")}
                 </Text>
                 <Button size="sm" variant="secondary" disabled={retrying} onPress={() => void retry()}>
-                  {retrying ? (
-                    <ActivityIndicator color={colors["muted-foreground"]} />
-                  ) : (
-                    <Text>{t("common.retry")}</Text>
-                  )}
+                  {retrying ? <ActivityIndicator color={colors["muted-foreground"]} /> : <Text>{t("common.retry")}</Text>}
                 </Button>
               </View>
             ) : null}
-          </ScrollView>
-          {unseen ? (
+          </KeyboardChatScrollView>
+          {!atEnd && busy ? (
             <Animated.View entering={FadeIn} className="absolute bottom-3 self-center">
               <Pressable
                 accessibilityRole="button"
@@ -247,80 +239,97 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
           ) : null}
         </View>
       )}
-      <Animated.View className="px-5 pt-2" style={composerSpace}>
-        {interrupted ? (
-          <Text accessibilityRole="alert" className="text-muted-foreground pb-2 text-center text-sm">
-            {t("chat.stopped")}
-          </Text>
-        ) : null}
-        <Composer
-          value={draft}
-          onValueChange={editDraft}
-          onSubmit={() => send(draft, true)}
-          onTalk={() => overlay.open("voice")}
-          disabled={busy}
-          generating={busy}
-          onStop={() => {
-            void chat.stop();
-            setInterrupted(true);
-          }}
-          labels={{
-            placeholder: t("chat.placeholder"),
-            attach: t("chat.placeholder"),
-            talk: t("home.dockVoice"),
-            send: t("home.send"),
-            stop: t("common.stop"),
-          }}
-        />
-      </Animated.View>
-    </KeyboardAvoidingView>
-  );
-}
-
-/** The model is told to write plain text; if it still marks **emphasis**, show it as weight, never as asterisks. */
-const EMPHASIS = "**";
-
-function emphasis(text: string): React.ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((piece, i) =>
-    piece.startsWith(EMPHASIS) && piece.endsWith(EMPHASIS) ? (
-      <Text key={i} className="text-foreground font-semibold">
-        {piece.slice(EMPHASIS.length, -EMPHASIS.length)}
-      </Text>
-    ) : (
-      piece
-    ),
+      <KeyboardStickyView offset={{ closed: 0, opened: clearance.dock - EDGE_INSET }}>
+        <View onLayout={onComposerLayout} className="px-4 pt-2" style={{ paddingBottom: clearance.dock + EDGE_INSET }}>
+          {interrupted ? (
+            <Text accessibilityRole="alert" className="text-muted-foreground pb-2 text-center text-sm">
+              {t("chat.stopped")}
+            </Text>
+          ) : null}
+          <Composer
+            value={draft}
+            onValueChange={editDraft}
+            onSubmit={() => send(draft, true)}
+            onSent={() => void cue("send")}
+            onTalk={() => overlay.open("voice")}
+            disabled={busy}
+            generating={busy}
+            onStop={() => {
+              void chat.stop();
+              setInterrupted(true);
+            }}
+            actions={actions}
+            colors={{
+              glow: colors.ring,
+              border: colors.border,
+              card: colors.card,
+              send: colors.primary,
+              onSend: colors["primary-foreground"],
+            }}
+            labels={{
+              placeholder: t("chatHome.placeholder"),
+              talk: t("home.dockVoice"),
+              send: t("home.send"),
+              stop: t("common.stop"),
+              actions: t("chatHome.actionsLabel"),
+            }}
+          />
+        </View>
+      </KeyboardStickyView>
+    </View>
   );
 }
 
 function MessageView({
   message,
+  fresh,
   onToolOutput,
+  copiedLabel,
 }: {
   message: UIMessage;
+  fresh: boolean;
   onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
+  copiedLabel: string;
 }) {
+  const reduced = useReducedMotionLive();
+  const text = textOf(message);
+  const copy = () => {
+    if (!text) return;
+    void Clipboard.setStringAsync(text);
+    tapFeedback("selection");
+    toast(copiedLabel);
+  };
+
   if (message.role === "user") {
-    const text = textOf(message);
     return (
-      <View className="bg-secondary max-w-[85%] self-end rounded-3xl rounded-ee-md px-4 py-3">
-        <Text className={cn("text-foreground text-base leading-6", TEXT_START)}>{text}</Text>
-      </View>
+      <Animated.View
+        entering={fresh && !reduced ? SlideInDown.springify().damping(SPRING.layout.damping).stiffness(SPRING.layout.stiffness) : undefined}
+        className="max-w-[85%] self-end"
+      >
+        <Pressable onLongPress={copy} accessibilityHint={copiedLabel} className="bg-secondary rounded-[22px] rounded-ee-md px-4 py-3">
+          <Text className={cn("text-foreground text-[16px] leading-6", TEXT_START)}>{text}</Text>
+        </Pressable>
+      </Animated.View>
     );
   }
+
   return (
-    <View className="gap-3">
-      {message.parts.map((part, i) => {
-        if (part.type === "text") {
-          return part.text.length > 0 ? (
-            <Text key={i} className={cn("text-foreground text-base leading-6", TEXT_START)}>
-              {emphasis(part.text)}
-            </Text>
-          ) : null;
-        }
-        if (isToolUIPart(part))
-          return <ToolCard key={part.toolCallId} part={part as unknown as ToolPart} onToolOutput={onToolOutput} />;
-        return null;
-      })}
-    </View>
+    <Animated.View layout={reduced ? undefined : LinearTransition.duration(MOTION.sheetMs)} className="flex-row gap-3">
+      <View className="pt-0.5">
+        <KawaseMark size={AVATAR_SIZE} />
+      </View>
+      <Pressable onLongPress={copy} className="min-w-0 flex-1 gap-3">
+        {message.parts.map((part, i) => {
+          if (part.type === "text") return part.text.length > 0 ? <MessageText key={i} text={part.text} /> : null;
+          if (isToolUIPart(part))
+            return (
+              <Animated.View key={part.toolCallId} layout={reduced ? undefined : LinearTransition.duration(MOTION.sheetMs)}>
+                <ToolCard part={part as unknown as ToolPart} onToolOutput={onToolOutput} />
+              </Animated.View>
+            );
+          return null;
+        })}
+      </Pressable>
+    </Animated.View>
   );
 }
