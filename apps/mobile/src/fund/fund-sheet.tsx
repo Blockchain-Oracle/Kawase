@@ -24,6 +24,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { useBuy } from "@/onramp/buy-provider";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -57,6 +58,7 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const signIn = useSignIn();
+  const buy = useBuy();
   const { status, user } = useSession();
   const { wallet } = useWalletStatus();
   const [panel, setPanel] = React.useState<Panel>("root");
@@ -189,6 +191,17 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
           ) : null}
 
           <ListGroup>
+            {/* Buying is the primary way in (D36): first row, real marks, Circle's checkout. */}
+            <ListRow
+              leading={<Mark entity="provider:apple" size={ROW_MARK} variant="mono" tint={colors.foreground} disc />}
+              title={t("buy.rowTitle")}
+              subtitle={t("buy.rowBody")}
+              trailing={<Icon as={ChevronRight} className="text-muted-foreground size-5 rtl:-scale-x-100" />}
+              onPress={() => {
+                onClose();
+                buy.open();
+              }}
+            />
             <ListRow
               leading={<Mark entity={ids.chain} size={ROW_MARK} />}
               title={t("fund.receiveTitle")}

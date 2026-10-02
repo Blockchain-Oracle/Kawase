@@ -54,6 +54,9 @@ import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
+import { noOnramp, type OnrampEngine } from "./onramp/engine";
+import { onrampRoutes } from "./onramp/routes";
+import { OnrampService } from "./onramp/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
@@ -94,6 +97,10 @@ export type AppDeps = {
   bridges?: BridgeEngine | undefined;
   /** Earn vaults (Circle App Kit Earn in production); earning is refused when unset. */
   earn?: EarnEngine | undefined;
+  /** Buy with Apple Pay / card (Circle Onramp Kit in production); buying is refused when unset. */
+  onramp?: OnrampEngine | undefined;
+  /** Circle's API key for verifying its webhook signatures (the LIVE key in production). */
+  circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
   market?: MarketData | undefined;
   /** Refreshes the shared market cache this often; off when unset. */
@@ -160,6 +167,7 @@ export function createApp(deps: AppDeps) {
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -183,6 +191,7 @@ export function createApp(deps: AppDeps) {
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
+    onramp.startReconciler(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -254,6 +263,7 @@ export function createApp(deps: AppDeps) {
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
   app.route("/margin", marginRoutes(margin));
+  app.route("/onramp", onrampRoutes(onramp));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -276,6 +286,7 @@ export function createApp(deps: AppDeps) {
     bridges,
     earn,
     margin,
+    onramp,
     assets,
     automations,
     requests,

@@ -19,6 +19,7 @@ import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
 import { liveMarketData } from "./market/sources";
 import { appKitSwaps } from "./swap/engine";
+import { circleOnramp } from "./onramp/engine";
 import { ResendEmail } from "./notify/email";
 import { ExpoPush } from "./notify/expo";
 import { createChains } from "./wallet/chain";
@@ -55,6 +56,8 @@ const app = createApp({
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
+  onramp: circleOnramp(env),
+  circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
   market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,

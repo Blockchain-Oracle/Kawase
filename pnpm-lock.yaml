@@ -135,6 +135,9 @@ importers:
       '@circle-fin/developer-controlled-wallets':
         specifier: 'catalog:'
         version: 10.8.1(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+      '@circle-fin/onramp-kit':
+        specifier: 1.0.3
+        version: 1.0.3
       '@circle-fin/x402-batching':
         specifier: 'catalog:'
         version: 3.5.0(@x402/core@2.28.0)(@x402/evm@2.28.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(viem@2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5))
@@ -1890,6 +1893,10 @@ packages:
 
   '@circle-fin/onramp-kit@1.0.2':
     resolution: {integrity: sha512-Y3gB/E6LFD/a/5nSZbT5H8pfKeHKat7+6NsomGlNsSh9LALkJalBmwSXtro52HctMxMjuxcQQ2J0YGn9R6qHJA==}
+    engines: {node: '>=20.0.0'}
+
+  '@circle-fin/onramp-kit@1.0.3':
+    resolution: {integrity: sha512-/pwmh1+O50ElERMjS73/6b4n7AI0qqR7V5pxg6AzIGjlNA2oB9WYttZKLysbTnw7g7im66b8jEgGkqSs9WmC8g==}
     engines: {node: '>=20.0.0'}
 
   '@circle-fin/provider-cctp-v2@1.14.0':
@@ -10957,6 +10964,11 @@ snapshots:
       - utf-8-validate
 
   '@circle-fin/onramp-kit@1.0.2':
+    dependencies:
+      pino: 10.1.0
+      zod: 3.25.67
+
+  '@circle-fin/onramp-kit@1.0.3':
     dependencies:
       pino: 10.1.0
       zod: 3.25.67

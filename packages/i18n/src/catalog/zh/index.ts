@@ -53,6 +53,7 @@ import { assets } from "./assets";
 import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
+import { buy } from "./buy";
 
 export const zh: Catalog = {
   common,
@@ -108,4 +109,5 @@ export const zh: Catalog = {
   markets,
   tokenPage,
   ticket,
+  buy,
 };

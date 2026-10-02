@@ -12,3 +12,4 @@ export * from "./margin";
 export * from "./assets";
 export * from "./marketplace";
 export * from "./account";
+export * from "./onramp";

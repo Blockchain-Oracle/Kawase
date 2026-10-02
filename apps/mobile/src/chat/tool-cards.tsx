@@ -49,6 +49,7 @@ import type {
   MarginMarketsOutput,
   MarginPositionsOutput,
   ProposeMarginOutput,
+  BuyProposalOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -78,6 +79,7 @@ import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
+import { OnrampBuyCard } from "./buy-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
@@ -662,6 +664,8 @@ export function ToolCard({
       return (part.output as Partial<ProposeMarginOutput>).intent ? <MarginOrderCard output={part.output as ProposeMarginOutput} /> : null;
     case "get_markets":
       return (part.output as Partial<MarginMarketsOutput>).markets ? <MarginMarketsCard output={part.output as MarginMarketsOutput} /> : null;
+    case "start_buy":
+      return (part.output as Partial<BuyProposalOutput>).asset ? <OnrampBuyCard output={part.output as BuyProposalOutput} /> : null;
     case "get_positions":
       return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
     case "search_services":
