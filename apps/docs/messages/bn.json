@@ -1,13 +1,13 @@
 {
   "nav": {
     "webApp": "ওয়েব অ্যাপ খুলুন",
-    "showcase": "শোকেস",
-    "docs": "ডকুমেন্টেশন"
+    "showcase": "পরিচিতি",
+    "docs": "ডকস"
   },
   "home": {
-    "eyebrow": "Kawase ডকুমেন্টেশন",
-    "title": "আপনি বললেই যে টাকা চলে",
-    "body": "Kawase হলো Arc-এর সবকিছুর জন্য একটি AI মানি অ্যাপ। নিজের ভাষায়, ভয়েসে বা লিখে বলুন: এটি প্রস্তাব দেবে, আপনি অনুমোদন করবেন, আর ব্লকচেইন আপনার সীমা মেনে চলবে।",
+    "eyebrow": "Kawase ডকস",
+    "title": "আপনি কথা বললেই যে টাকা চলে",
+    "body": "Kawase হলো Arc-এর সবকিছুর জন্য একটি AI money app। নিজের ভাষায়, ভয়েসে বা লিখে বলুন: এটি প্রস্তাব দেবে, আপনি অনুমোদন করবেন, আর চেইন আপনার সীমা কার্যকর করবে।",
     "start": "শুরু করুন",
     "safety": "এটি কীভাবে আপনাকে নিরাপদ রাখে",
     "cards": {
@@ -16,12 +16,12 @@
         "body": "কয়েক সেকেন্ডের মধ্যে অতিথি হিসেবে ওয়েব অ্যাপ খুলুন, অথবা iPhone বা Android-এ ইনস্টল করুন।"
       },
       "safety": {
-        "title": "নিরাপত্তা ব্যবস্থা",
-        "body": "আপনাকে না জিজ্ঞেস করে এজেন্ট কী করতে পারে, কখন আপনার Face ID দরকার হয়, আর এটি কী কখনোই করতে পারে না।"
+        "title": "নিরাপত্তা মডেল",
+        "body": "এজেন্ট আপনার অনুমতি ছাড়া কী করতে পারে, কখন আপনার Face ID দরকার হয়, আর কী এটি কখনোই করতে পারে না।"
       },
       "availability": {
-        "title": "আজ কী কী কাজ করে",
-        "body": "মেইননেট ও টেস্টনেটে থাকা সব সুবিধা, অ্যাপের নিজস্ব রেজিস্ট্রি থেকে তৈরি।"
+        "title": "আজ কী কাজ করে",
+        "body": "মেইননেট ও টেস্টনেটের প্রতিটি সক্ষমতা, অ্যাপের নিজস্ব রেজিস্ট্রি থেকে তৈরি।"
       },
       "architecture": {
         "title": "আর্কিটেকচার",
@@ -30,14 +30,14 @@
     }
   },
   "matrix": {
-    "capability": "সুবিধা",
+    "capability": "সক্ষমতা",
     "mainnet": "Arc মেইননেট",
     "testnet": "Arc টেস্টনেট",
-    "caption": "সাইট তৈরি হওয়ার সময় অ্যাপ ও এজেন্ট যে সক্ষমতা রেজিস্ট্রি পড়ে, সেখান থেকে এটি তৈরি হয়। \"Coming\" মানে এটি এখনো প্রকাশ করা হয়নি।"
+    "caption": "সাইট তৈরি করার সময় অ্যাপ ও এজেন্ট যে সক্ষমতা রেজিস্ট্রি পড়ে, সেখান থেকে এটি তৈরি হয়। \"আসছে\" মানে এটি এখনো প্রকাশ করা হয়নি।"
   },
   "state": {
     "available": "উপলভ্য",
-    "coming": "শীঘ্রই আসছে",
+    "coming": "আসছে",
     "unavailable": "এই নেটওয়ার্কে নেই"
   },
   "scope": {
@@ -47,8 +47,8 @@
   "areas": {
     "tokens": "Arc-এর যেকোনো টোকেন",
     "meme_coins": "মিম কয়েন",
-    "perps": "লং ও শর্ট (perps)",
-    "buy": "Apple Pay বা কার্ড দিয়ে কিনুন",
+    "perps": "লং ও শর্ট (পার্পস)",
+    "buy": "Apple Pay বা কার্ডে কিনুন",
     "borrow": "ধার নিন",
     "withdraw": "যেকোনো জায়গায় উত্তোলন করুন",
     "export_wallet": "আপনার ওয়ালেট এক্সপোর্ট করুন"
@@ -57,27 +57,27 @@
     "rule": "ডিফল্ট",
     "mainnet": "মেইননেট",
     "testnet": "টেস্টনেট",
-    "daily": "দৈনিক সীমা: একবারে পাঠানো যায়, কোনো প্রম্পট ছাড়াই",
+    "daily": "দৈনিক ভাতা: একবারে পাঠানো যায়, কোনো প্রম্পট ছাড়াই",
     "perTransaction": "একবারে সবচেয়ে বড় পেমেন্ট",
     "weekly": "প্রতি সপ্তাহে মোট",
     "monthly": "প্রতি মাসে মোট",
-    "perRecipientWeekly": "প্রতি সপ্তাহে একজন ব্যক্তিকে",
+    "perRecipientWeekly": "প্রতি সপ্তাহে একজনকে",
     "firstTime": "নতুন ঠিকানায় প্রথম পেমেন্ট: এর বেশি হলে Face ID",
-    "caption": "অ্যাপের নিজস্ব কনফিগারেশন থেকে নেওয়া ডিফল্ট সীমা। টেস্টনেটের সীমা বেশি, কারণ এখানে আসল টাকা ঝুঁকিতে নেই।"
+    "caption": "অ্যাপের নিজস্ব কনফিগারেশন থেকে নেওয়া ডিফল্ট। টেস্টনেটের সীমা বেশি, কারণ এখানে আসল টাকা ঝুঁকিতে নেই।"
   },
   "status": {
     "label": "স্ট্যাটাস"
   },
   "fumadocs": {
     "Ask AI(AI chat button)": "AI-কে জিজ্ঞেস করুন",
-    "Back to Home(404 not found page)": "হোমে ফিরে যান",
-    "Choose a language(language switcher)": "ভাষা বেছে নিন",
-    "Choose a language(language switcher)(aria-label)": "ভাষা বেছে নিন",
+    "Back to Home(404 not found page)": "হোমে ফিরুন",
+    "Choose a language(language switcher)": "একটি ভাষা বেছে নিন",
+    "Choose a language(language switcher)(aria-label)": "একটি ভাষা বেছে নিন",
     "Close Banner(banner)(aria-label)": "ব্যানার বন্ধ করুন",
     "Close Search(search dialog)(aria-label)": "সার্চ বন্ধ করুন",
     "Close Sidebar(aria-label)": "সাইডবার বন্ধ করুন",
     "Close Sidebar(sidebar)(aria-label)": "সাইডবার বন্ধ করুন",
-    "Collapse Sidebar(sidebar)(aria-label)": "সাইডবার ছোট করুন",
+    "Collapse Sidebar(sidebar)(aria-label)": "সাইডবার সংকুচিত করুন",
     "Copied Anchor Link(heading anchor)(aria-label)": "অ্যাঙ্কর লিংক কপি হয়েছে",
     "Copied Link(accordion)(aria-label)": "লিংক কপি হয়েছে",
     "Copied Markdown(page actions)": "Markdown কপি হয়েছে",
@@ -86,15 +86,15 @@
     "Copy Link(accordion)(aria-label)": "লিংক কপি করুন",
     "Copy Markdown(page actions)": "Markdown কপি করুন",
     "Copy Text(code block)(aria-label)": "টেক্সট কপি করুন",
-    "Dark(theme switcher)(aria-label)": "ডার্ক",
+    "Dark(theme switcher)(aria-label)": "গাঢ়",
     "Default(type table)": "ডিফল্ট",
     "Edit on GitHub(edit page)": "GitHub-এ সম্পাদনা করুন",
     "Hide Sidebar(sidebar)": "সাইডবার লুকান",
     "Last updated on(page footer)": "সর্বশেষ আপডেট",
     "Layout Tab(layout tab trigger)": "লেআউট ট্যাব",
-    "Light(theme switcher)(aria-label)": "লাইট",
+    "Light(theme switcher)(aria-label)": "হালকা",
     "Next Page(pagination)": "পরের পৃষ্ঠা",
-    "No Headings(table of contents)": "কোনো শিরোনাম নেই",
+    "No Headings(table of contents)": "কোনো হেডিং নেই",
     "No results found(search dialog)": "কোনো ফলাফল পাওয়া যায়নি",
     "On this page(table of contents)": "এই পৃষ্ঠায়",
     "Open Search(search trigger)(aria-label)": "সার্চ খুলুন",
@@ -110,14 +110,14 @@
     "Parameters(type table)": "প্যারামিটার",
     "Previous Page(pagination)": "আগের পৃষ্ঠা",
     "Prop(type table)": "প্রপ",
-    "Read {url}, I want to ask questions about it.(page actions)": "{url} পড়ুন, এ বিষয়ে আমি প্রশ্ন করতে চাই।",
+    "Read {url}, I want to ask questions about it.(page actions)": "{url} পড়ুন, আমি এটি সম্পর্কে প্রশ্ন করতে চাই।",
     "Returns(type table)": "রিটার্ন",
     "Search(search dialog)": "সার্চ",
     "Search(search trigger)": "সার্চ",
     "Show Sidebar(sidebar)": "সাইডবার দেখান",
     "System(theme switcher)(aria-label)": "সিস্টেম",
     "Table of Contents(inline table of contents)": "সূচিপত্র",
-    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "আপনার খোঁজা পৃষ্ঠাটি হয়তো সরিয়ে ফেলা হয়েছে, এর নাম বদলানো হয়েছে, অথবা এটি সাময়িকভাবে অনুপলভ্য।",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "আপনি যে পৃষ্ঠাটি খুঁজছেন, সেটি হয়তো সরিয়ে ফেলা হয়েছে, এর নাম পরিবর্তন করা হয়েছে, অথবা সাময়িকভাবে অনুপলভ্য।",
     "Toggle Menu(home layout header)(aria-label)": "মেনু টগল করুন",
     "Toggle Theme(theme switcher)(aria-label)": "থিম টগল করুন",
     "Type(type table)": "ধরন",

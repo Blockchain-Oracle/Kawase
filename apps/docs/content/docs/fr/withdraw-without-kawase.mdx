@@ -1,54 +1,104 @@
 ---
-title: "Retirer des fonds sans Kawase"
-description: "Votre argent se trouve sur votre propre compte Arc. Découvrez comment le transférer, le vérifier sur l'explorateur et ce que l'option d'export vous permettra de faire."
-sourceHash: 8f08c09f57888ea0
+title: "Retirer sans Kawase"
+description: "Guide étape par étape pour retirer votre argent, avec le kit de sortie de Kawase ou entièrement sans Kawase en exportant votre portefeuille, puis en vérifiant le tout sur l'explorateur."
+sourceHash: 440035d13a881623
 ---
 
-Kawase ne détient jamais votre argent. Vos USDC et EURC se trouvent sur **votre propre compte** sur Arc, et les autorisations que vous avez données à l'agent sont limitées et expirent automatiquement. Cette page explique comment récupérer votre argent, avec l'aide de Kawase ou sans elle.
+Kawase ne détient jamais votre argent. Vos jetons se trouvent dans **votre propre compte** sur Arc, et les autorisations que vous avez accordées à l'agent sont
+limitées et expirent automatiquement. Ce guide vous explique comment tout retirer étape par étape : d'abord avec l'aide de Kawase, puis sans elle.
 
 <Status ids="export_wallet" />
 
-## Pendant que Kawase fonctionne : envoyez votre argent
+## Avant de commencer
 
-Le moyen le plus rapide est d'effectuer un paiement classique :
+Rassemblez ce qui n'est pas encore de l'argent classique dans votre portefeuille :
+
+- **Épargne** dans un coffre : retirez-la depuis l'écran Rendement.
+- **Fourniture Aave V4** ou prêt : remboursez et retirez les fonds depuis l'écran Emprunter.
+- Positions **long ou short** : fermez-les (Fermer · Tout) depuis la page de chaque position.
+- **Le portefeuille de l'agent** : Paramètres → Portefeuille de l'agent → **Rendre à mon portefeuille**.
+- Tout autre jeton peut être retiré tel quel avec Retirer sur Arc, ou converti en USDC pour être transféré vers une autre chaîne.
+
+## Partie 1 : avec Kawase (le kit de sortie)
 
 <Steps>
 <Step>
-### Choisissez la destination
-Une adresse que vous contrôlez dans un autre portefeuille (MetaMask, Rabby, …) sur lequel **Arc** est ajouté, ou l'adresse de dépôt **Arc** d'une plateforme d'échange. Vérifiez que le réseau est bien Arc : envoyer des fonds à une adresse sur un autre réseau ne produit pas le même résultat.
+### Mettre l'agent en pause
+Paramètres → **Portefeuille et limites** → **Tout mettre en pause**. Tout ce que fait l'agent sans vous demander s'arrête immédiatement. Vos paiements Face ID
+continuent de fonctionner.
 </Step>
 <Step>
-### Envoyez tout
-Dites « envoie tous mes USDC à 0x… » (collez l'adresse dans le même message) ou utilisez l'écran Envoyer. Les montants importants nécessitent votre Face ID. Répétez l'opération pour les EURC.
+### Révoquer toutes les autorisations
+Dans le kit de sortie, **maintenez appuyé pour révoquer**. Un seul Face ID envoie une transaction qui révoque toutes les autorisations sur ce réseau : votre
+allocation et les autorisations de toutes les automatisations. Les automatisations prennent fin. Répétez l'opération sur l'autre réseau si vous l'avez utilisé.
 </Step>
 <Step>
-### Révoquez l'agent
-Portefeuille et limites → **Révoquer** (maintenez le bouton appuyé). Annulez toutes les automatisations ; chaque annulation révoque son autorisation sur la chaîne.
+### Retirer tout l'argent
+Dans le kit de sortie, **sortir l'argent** ouvre [Retirer](./features/bridge-and-withdraw.mdx#withdraw) avec tout
+sélectionné (ou dites « retirer tout vers mon compte Kraken »). Choisissez la destination : une **plateforme d'échange** (Kraken, Bybit, OKX, Binance,
+Bitget, KuCoin ou Coinbase via Base), **votre propre portefeuille** sur Arc ou une autre chaîne, ou votre banque via une plateforme d'échange.
+Kawase prépare chaque jeton (un transfert, un pont ou une conversion préalable en USDC), vous avertit si la destination ne
+crédite pas certains jetons, puis vous confirmez une seule fois avec Face ID.
+</Step>
+<Step>
+### Vérifier sur l'explorateur
+Ouvrez votre adresse sur l'explorateur (ci-dessous) et vérifiez que les soldes se trouvent bien là où vous les avez envoyés.
 </Step>
 </Steps>
 
-Vous pouvez aussi envoyer vos USDC directement à **votre propre adresse** sur Base, Ethereum, Arbitrum, Optimism, Polygon ou Avalanche avec un [pont](./features/bridge-and-withdraw.mdx).
+## Partie 2 : sans Kawase (exporter votre portefeuille)
 
-## Vérifiez tout sur l'explorateur
+La clé de votre portefeuille est conservée pour vous par **Turnkey**. L'exportation vous en donne une copie personnelle, afin que vous puissiez utiliser le même compte dans n'importe quel
+portefeuille.
+
+<Steps>
+<Step>
+### Exporter
+Paramètres → **Compte** → **Exporter le portefeuille**. Lisez les avertissements, confirmez avec Face ID, puis Turnkey déchiffre votre **phrase de récupération**
+sur votre appareil. Les captures d'écran et les enregistrements d'écran sont bloqués pendant son affichage, et elle est masquée lorsque vous quittez l'écran. Notez-la
+dans un endroit sûr, hors ligne. Toute personne qui la possède contrôle votre argent.
+</Step>
+<Step>
+### L'importer dans un autre portefeuille
+Dans MetaMask, Rabby ou un autre portefeuille qui autorise les réseaux personnalisés, choisissez d'importer une phrase de récupération. Vous obtenez **la même
+adresse** que dans Kawase.
+</Step>
+<Step>
+### Ajouter Arc
+Ajoutez le réseau avec les informations du tableau ci-dessous. Vos soldes s'affichent tels qu'ils sont enregistrés sur la chaîne.
+</Step>
+<Step>
+### Déplacer votre argent
+Envoyez des fonds depuis ce portefeuille comme vous le feriez depuis n'importe quel autre. Les positions dans les coffres, sur Aave et sur marge se trouvent dans votre propre compte auprès de ces
+protocoles. Vous pouvez donc les gérer avec n'importe quelle interface compatible avec Arc.
+</Step>
+</Steps>
+
+Exportez votre portefeuille pendant que Kawase fonctionne si vous voulez en conserver une copie que vous contrôlez : l'exportation passe par l'application.
+
+## Tout vérifier sur l'explorateur
 
 Vous n'avez pas besoin de Kawase pour voir votre argent. Ouvrez votre adresse sur l'explorateur de blocs d'Arc :
 
 - Réseau principal : `https://explorer.arc.io/address/<your address>`
 - Réseau de test : `https://testnet.arcscan.app/address/<your address>`
 
-Vous pourrez y voir :
+Vous pouvez y voir :
 
-- vos soldes en **USDC** et **EURC** (sur Arc, les USDC servent aussi de jeton de gaz du réseau : il n'y a qu'un seul solde, affiché à la fois comme monnaie native et comme jeton USDC) ;
-- chaque transaction, y compris les paiements effectués par l'agent dans le cadre de votre autorisation ;
-- le **code** de votre compte : après la configuration, il s'agit de `0xef0100` suivi de l'adresse `EIP7702StatelessDeleGator`. Il s'agit de la mise à niveau EIP-7702 ; votre compte fonctionne toujours comme un compte normal.
+- vos soldes (sur Arc, l'USDC est aussi le jeton de gas du réseau : il n'y a qu'un seul solde, affiché à la fois comme monnaie native et comme jeton
+  USDC) ;
+- toutes les transactions, y compris les paiements effectués par l'agent avec votre allocation ;
+- le **code** de votre compte : après la configuration, il s'agit de `0xef0100` suivi de l'adresse
+  `EIP7702StatelessDeleGator`. Il s'agit de la mise à niveau EIP-7702 ; votre compte continue de fonctionner comme un compte normal.
 
 Les reçus de Kawase renvoient vers ces mêmes pages.
 
 ## Si Kawase disparaît
 
-- **Les autorisations de l'agent cessent d'être utiles.** Votre autorisation et les autorisations des automatisations ne peuvent être utilisées que par le portefeuille de l'agent de Kawase. Elles expirent également (l'autorisation après 90 jours et chaque automatisation à sa date de fin).
-- **Votre argent reste sur votre compte.** Il s'agit d'un compte classique sur Arc, dont la clé est conservée pour vous par Turnkey.
-- **Exporter le portefeuille (bientôt disponible).** Réglages → Compte → Exporter le portefeuille affichera la clé de votre portefeuille grâce à l'export sécurisé de Turnkey, après votre Face ID et l'affichage d'avertissements clairs. Vous pourrez alors importer le compte dans n'importe quel portefeuille compatible avec Arc et transférer votre argent sans Kawase. Cette option **n'est pas encore disponible** ; en attendant, suivez les étapes ci-dessus.
+- **Les autorisations de l'agent cessent d'être utiles.** Votre allocation et les autorisations des automatisations ne peuvent être utilisées que par le portefeuille de l'agent de Kawase,
+  et elles expirent : l'allocation après 90 jours, et chaque automatisation à sa date de fin.
+- **Votre argent reste dans votre compte.** Il s'agit d'un compte ordinaire sur Arc.
+- **Avec une phrase de récupération exportée** (partie 2), vous pouvez tout déplacer depuis n'importe quel portefeuille compatible avec Arc.
 
 ## Ajouter Arc à un autre portefeuille
 
@@ -58,15 +108,16 @@ Les reçus de Kawase renvoient vers ces mêmes pages.
 | ID de chaîne | `5042` | `5042002` |
 | RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
 | Symbole de la monnaie | USDC | USDC |
-| Explorateur | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+| Explorateur | `https://explorer.arc.io` | `https://testnet.arcscan.app` |
 
-Sur certains portefeuilles, le solde de gaz est affiché comme « ETH » sur les réseaux personnalisés ; sur Arc, il s'agit d'USDC. L'adresse du jeton USDC est
-`0x3600000000000000000000000000000000000000` sur les deux réseaux ; celle d'EURC est
-`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` sur le réseau principal et `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` sur le réseau de test.
+Certains portefeuilles affichent le solde de gas comme « ETH » sur les réseaux personnalisés ; sur Arc, il s'agit d'USDC. L'adresse du jeton USDC est
+`0x3600000000000000000000000000000000000000` sur les deux réseaux ; l'EURC est à l'adresse
+`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` sur le réseau principal et à l'adresse `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` sur le réseau de test.
 
 ## Supprimer la mise à niveau EIP-7702 (facultatif)
 
-Vous n'avez pas besoin d'annuler la mise à niveau pour transférer votre argent. Si vous souhaitez retrouver un compte classique après l'avoir exporté, signez une autorisation EIP-7702 pointant vers l'adresse zéro et envoyez-la depuis le compte lui-même, par exemple avec viem :
+Vous n'avez pas besoin d'annuler la mise à niveau pour déplacer votre argent. Si vous voulez retrouver un compte classique après l'avoir exporté, signez une
+autorisation EIP-7702 pointant vers l'adresse zéro et envoyez-la depuis le compte lui-même, par exemple avec viem :
 
 ```ts
 import { zeroAddress } from "viem";

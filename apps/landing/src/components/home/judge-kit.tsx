@@ -1,6 +1,6 @@
 // The judge kit: every way to try or check Kawase, in one grid. TestFlight shows "Invite only" until a public link
 // is set (NEXT_PUBLIC_TESTFLIGHT_URL); nothing links to a page that does not exist.
-import { Activity, BookOpen, Receipt } from "lucide-react";
+import { Activity, BookOpen, Laptop, Receipt } from "lucide-react";
 
 import { FAUCET } from "@kawase/config";
 import { Mark } from "@kawase/ui-web/components/mark";
@@ -33,6 +33,12 @@ const ITEMS: readonly ResourceCardItem[] = [
     title: "Android",
     subtitle: "Install the preview build (APK)",
     href: links.androidApk,
+  },
+  {
+    icon: <Laptop className={GLYPH} aria-hidden />,
+    title: "Mac (preview)",
+    subtitle: "Apple silicon. Not yet notarized by Apple: the first time, right-click Kawase → Open",
+    href: links.desktopMac,
   },
   {
     icon: <BookOpen className={GLYPH} aria-hidden />,
@@ -74,7 +80,7 @@ export function JudgeKit() {
       title="Try it, read it, check it"
       body="The fastest path: open the web app as a guest, ask it something in your language, then check the evidence page for the transactions behind each claim."
     >
-      <ResourceCardsGrid items={ITEMS} className="lg:grid-cols-4" />
+      <ResourceCardsGrid items={ITEMS} className="lg:grid-cols-3" />
     </Section>
   );
 }

@@ -1,0 +1,45 @@
+---
+title: Web and desktop
+description: Kawase in any browser with nothing to install, as an installable web app, and as a desktop app for the Mac that always runs the current release.
+---
+
+<Marks names="kawase arc" />
+
+## In the browser
+
+Open [app.getkawase.xyz](https://app.getkawase.xyz). You start as a **guest**, and everything works as on the phone:
+chat, cards, Markets, voice and every screen.
+
+- **Confirming a payment**: an **email code** stands in for Face ID.
+- **Voice**: tap the orb and allow the microphone when the browser asks. If you refuse it, Kawase says how to allow it, and
+  typing is right there.
+- **Install it**: Kawase is an installable web app. In Chrome or Edge use **Install**, in Safari **Add to Dock** (Mac) or
+  **Add to Home Screen** (iPhone). If the network drops, an offline page says so instead of a broken screen. Kawase never
+  caches balances, so nothing old is ever shown as current money.
+
+## The desktop app (Mac)
+
+[Download Kawase for Mac](https://getkawase.xyz/download/Kawase-mac.dmg) (Apple silicon, about 2 MB), open the disk image
+and drag Kawase to Applications.
+
+<Callout type="warn">
+**Not yet notarized by Apple: the first time, right-click Kawase → Open.** On macOS 15 and later, open it once, then go to
+**System Settings → Privacy & Security** and choose **Open Anyway**. This is a preview build, not a signed release.
+</Callout>
+
+It is the live web app in a native window, so it is **always the current release** with nothing to update:
+
+- the title bar takes Kawase's colours and follows your light or dark mode;
+- copy, paste and the usual menus work; ⌘+ and ⌘− zoom;
+- **`kawase://` links** (the same as on the phone) open the matching page in the window, for example `kawase://r/…` opens
+  a payment request;
+- sign-in windows open inside the app, and any other site (an explorer, these docs) opens in your browser;
+- the page gets **no access to your computer** beyond the window it runs in.
+
+Voice inside the desktop app hasn't been checked yet; use the web app in a browser, or your phone, for voice.
+
+Windows and Linux builds come from the same source (`apps/desktop`); they haven't been built yet.
+
+## On the phone
+
+Kawase for **iPhone** is on TestFlight and for **Android** as an APK. See [getting started](../getting-started.mdx).

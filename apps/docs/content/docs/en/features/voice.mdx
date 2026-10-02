@@ -1,6 +1,6 @@
 ---
 title: Voice
-description: Talk to Kawase on iPhone and Android in your language; it answers aloud and shows the same cards as chat. Payments by voice always wait for your tap.
+description: Talk to Kawase on iPhone, Android and the web in your language; it answers aloud and shows the same cards as chat. Payments by voice always wait for your tap.
 ---
 
 <Status ids="voice" />
@@ -9,20 +9,31 @@ Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it
 and puts the same **cards** on screen as chat does.
 
 - **One conversation.** What you said by voice is in your chat thread, and typing picks it up where you left off.
-- **What was heard is always shown** before anything is confirmed.
+- **Captions on both sides**: what Kawase heard, and what it is saying.
 - **A spoken "yes" never approves a payment.** A send by voice is prepared on its card and waits for your tap and Face ID
   (fingerprint or screen lock on Android) — even inside your daily allowance.
+- **Mute** with one tap: nothing is heard or sent while muted. **Type instead** is always there.
 - **The orb shows the network**: lime on mainnet, sky blue on testnet.
 
-## Languages and voices
+## On the web
 
-Kawase hears all ten languages with ElevenLabs Scribe v2 (realtime). It speaks with ElevenLabs Flash v2.5 in English,
-Spanish, French, Portuguese, Russian, Chinese, Hindi and Arabic, and with OpenAI's speech model in Bengali and Urdu, which
-Flash v2.5 does not cover.
+Voice works in the web app too: allow the microphone when the browser asks. If you refuse it, or there is no microphone,
+Kawase stays connected, says how to allow it, and typing is right beside it. Kawase's own voice still plays.
+
+## Settings → Voice
+
+- **Kawase's voice**: one of six.
+- **Speaking speed**: relaxed, normal or brisk.
+- **Kawase speaks first**: it greets you as soon as voice opens; turned off, it waits for you.
+
+Changes apply the next time you start talking.
 
 ## How it works
 
-The phone joins a LiveKit room over WebRTC. Kawase's voice worker turns speech into text, runs **the same agent turn as
-chat** (same tools, same limits, same thread), and speaks the answer while the cards arrive on your screen.
+The phone or browser joins a LiveKit room over WebRTC, and Kawase's voice worker joins the same room. Every money or
+account request is handed to **the same agent turn as chat** (same tools, same limits, same thread); the cards arrive on
+your screen while the answer is spoken. Before speaking amounts, assets, @handles or the network, the worker checks them
+against what the tools returned and corrects a mismatch. If the realtime voice can't start, Kawase falls back to a
+listen → answer → speak pipeline with the same agent behind it. LiveKit doesn't record the conversation.
 
 <ScopeList ids="voice" />

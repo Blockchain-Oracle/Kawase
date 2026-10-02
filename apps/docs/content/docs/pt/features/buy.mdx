@@ -1,20 +1,47 @@
 ---
 title: "Comprar com Apple Pay ou cartão"
-description: "Compre USDC ou EURC com Apple Pay, Google Pay ou cartão de débito pelo Onramp Kit da Circle, direto para sua carteira Kawase na Arc."
-sourceHash: 361d72332dc37a35
+description: "Compre USDC ou EURC com cartão de débito, Apple Pay ou Google Pay pela Onramp da Circle. Os tokens são enviados para sua própria carteira na Arc e confirmados quando chegam à rede."
+sourceHash: 305adca20f73622e
 ---
 
 <Status ids="buy" />
 
 <Marks names="circle apple google usdc eurc" />
 
-As compras estão planejadas pelo **Onramp Kit da Circle**: pague com cartão de débito, Apple Pay ou Google Pay e receba USDC ou EURC
-diretamente na sua carteira Kawase na Arc. O servidor da Kawase cria a sessão e a abre em uma janela segura do navegador;
-a Kawase só confirma a compra quando o dinheiro é confirmado na blockchain.
+"Compre 50 dólares em USDC" ou **Adicionar dinheiro → Comprar com Apple Pay ou cartão** (a primeira opção).
 
-Para comprar qualquer outro token com Apple Pay, o plano é comprar USDC primeiro e depois fazer a troca com uma única aprovação. As duas taxas serão mostradas
-antes do pagamento.
+<Steps>
+<Step>
+### Escolha o valor
+Escolha um valor sugerido ou digite um valor em dólares ou euros. A tela mostra os métodos de pagamento oferecidos pela Circle e informa claramente
+se é **dinheiro real** (rede principal) ou a **sandbox da Circle** (rede de testes, apenas com cartões de teste).
+</Step>
+<Step>
+### Pague na Circle
+**Comprar** abre o checkout da Circle em tela cheia (onde o Apple Pay funciona). A Kawase cria a sessão no servidor para **o seu
+próprio endereço** na Arc.
+</Step>
+<Step>
+### Dinheiro recebido
+De volta à Kawase, o pedido é acompanhado até **a rede confirmar o envio**. Depois, você verá "Seu dinheiro foi recebido". Se o
+pagamento não for concluído, o motivo informado pela Circle será mostrado com a opção **Tentar novamente**.
+</Step>
+</Steps>
 
-Isso está **a caminho**: ainda não está disponível no app. Enquanto isso, na rede de testes, você pode usar a
-[faucet](../getting-started.mdx#4-get-test-money) gratuita; na rede principal, você pode receber USDC de qualquer carteira ou corretora que envie para
-a Arc.
+## Comprando outro token
+
+Peça qualquer outro token ("compre 30 dólares em cirBTC com Apple Pay") e a Kawase compra USDC primeiro. Depois, abre a troca pelo token
+recebido, com mais uma aprovação e as duas taxas mostradas. Ela só continua para um token canônico ou listado, nunca para uma
+imitação.
+
+## Onde funciona
+
+- **Rede principal**: Onramp de produção da Circle com cartões reais. Apple Pay e Google Pay aparecem quando a Circle conclui a
+  verificação comercial do domínio da Kawase. O checkout mostra os métodos disponíveis.
+- **Rede de testes**: sandbox da Onramp da Circle com cartões de teste. Nenhum dinheiro real é movimentado. O
+  [faucet](../getting-started.mdx#4-get-test-money) gratuito também funciona.
+
+Ainda não é possível vender para uma conta bancária. Para sacar, envie os fundos para uma corretora que aceite depósitos na Arc (veja
+[Retirar sem a Kawase](../withdraw-without-kawase.mdx)).
+
+<ScopeList ids="buy" />

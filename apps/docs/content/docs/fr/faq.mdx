@@ -1,57 +1,45 @@
 ---
 title: "FAQ"
 description: "Réponses courtes aux premières questions que les gens posent sur Kawase."
-sourceHash: 100e47ce1292e6ff
+sourceHash: c25b3da55902b93e
 ---
 
-## Kawase est-elle une banque ou un dépositaire ?
+## Kawase est-il une banque ou un dépositaire ?
 
-Non. Votre argent se trouve sur **votre propre compte** sur Arc. Kawase détient les autorisations que vous avez signées : une
-allocation quotidienne et une autorisation par automatisation. La blockchain en fait respecter les limites. Consultez le [modèle de sécurité](./safety.mdx).
+Non. Votre argent se trouve sur **votre propre compte** sur Arc. Kawase détient les autorisations que vous avez signées : un plafond quotidien et une autorisation par automatisation. La blockchain en fait respecter les limites. Consultez le [modèle de sécurité](./safety.mdx).
 
-## Dois-je avoir de l'expérience dans les cryptomonnaies ?
+## Dois-je m'y connaître en crypto ?
 
-Non. Vous parlez à Kawase comme à une personne : « envoie 20 dollars à Alex ». Pas de phrases de récupération, de réglages de frais réseau ni de
-codes PIN. Connectez-vous avec un code reçu par e-mail, Apple ou Google.
+Non. Vous parlez à Kawase comme à une personne : « envoie 20 dollars à Alex ». Il n'y a pas de phrase secrète, de réglage de frais de réseau ni de code PIN. Connectez-vous avec un code envoyé par e-mail, Apple ou Google.
 
 ## L'IA décide-t-elle où va mon argent ?
 
-Elle fait des propositions ; le code décide et la blockchain fait respecter les règles. Le modèle ne peut pas choisir le réseau, inventer une adresse ou autoriser un
-paiement. Dans les limites de votre allocation, il envoie de l'argent aux personnes que vous avez déjà payées ou que vous avez nommées. Tout le reste attend votre Face ID.
+Elle fait des propositions ; le code décide et la blockchain fait respecter les règles. Le modèle ne peut pas choisir le réseau, inventer une adresse ou approuver un paiement. Dans les limites de votre plafond, il envoie de l'argent aux personnes que vous avez déjà payées ou nommées. Pour toute autre action, votre Face ID est nécessaire.
 
 ## Que se passe-t-il si l'IA me comprend mal ?
 
-Chaque action s'affiche sous forme de carte avec le montant exact, la devise, le destinataire et le réseau, avant tout transfert. Ce qui a été
-entendu par la voix est toujours affiché sous forme de texte. Une nouvelle demande dans la même conversation annule une ancienne carte ouverte. Une vieille carte
-ne peut donc pas être approuvée par erreur.
+Chaque action s'affiche sous forme de carte avec le montant exact, la devise, le destinataire et le réseau avant tout transfert. Ce qui a été entendu par la voix est toujours affiché en toutes lettres. Une nouvelle demande dans la même conversation annule une ancienne carte ouverte. Une ancienne carte ne peut donc pas être approuvée par erreur.
 
-## Combien cela coûte-t-il ?
+## Combien ça coûte ?
 
-Kawase paie les frais réseau pour configurer votre portefeuille et pour les paiements effectués dans les limites de votre allocation. Pour les paiements que vous signez vous-même,
-de petits frais réseau en USDC sont affichés sur la carte. Les ponts affichent les frais du prestataire avant votre confirmation ; les échanges affichent le taux et
-les frais.
+Kawase paie les frais de réseau pour configurer votre portefeuille et pour les paiements effectués dans les limites de votre plafond. Pour les paiements que vous signez vous-même, de petits frais de réseau en USDC s'affichent sur la carte. Les ponts affichent les frais du prestataire avant votre confirmation. Les échanges affichent le taux et les frais.
 
-## Quels pays et quelles devises sont pris en charge ?
+## Quels pays et quelles devises ?
 
-Kawase fonctionne aujourd'hui avec **USDC** (dollars) et **EURC** (euros) sur Arc, dans dix langues. D'autres tokens arrivent bientôt — consultez
-[ce qui fonctionne aujourd'hui](./availability.mdx).
+Kawase est conçu autour de **USDC** (dollars) et d'**EURC** (euros) sur Arc, dans dix langues. Sur le Réseau principal, vous pouvez aussi détenir et échanger **n'importe quel jeton sur Arc**, et Acheter par carte si le service Onramp de Circle est disponible dans votre pays. Consultez [ce qui fonctionne aujourd'hui](./availability.mdx).
 
 ## Que devient un paiement si mon téléphone s'éteint en cours de route ?
 
-Rien n'est perdu ni payé deux fois. Chaque paiement est enregistré avant d'être envoyé. Kawase vérifie le réseau jusqu'à connaître
-le résultat, et seul un reçu indiquant le transfert exact le marque comme payé. Les Automatisations ne sont exécutées qu'une seule fois par lancement et sont récupérées
-après un redémarrage.
+Rien n'est perdu et aucun paiement n'est effectué deux fois. Chaque paiement est enregistré avant d'être envoyé. Kawase vérifie le réseau jusqu'à connaître le résultat. Seul un reçu contenant le transfert exact permet de le marquer comme payé. Les automatisations ne sont exécutées qu'une fois par exécution et sont récupérées après un redémarrage.
 
-## Puis-je l'utiliser un jour sans Kawase ?
+## Puis-je un jour l'utiliser sans Kawase ?
 
-Oui. Votre compte est un compte ordinaire sur Arc. Consultez [Retirer sans Kawase](./withdraw-without-kawase.mdx).
+Oui. Votre compte est un compte ordinaire sur Arc. Dans Réglages → Compte → Exporter le portefeuille, vous pouvez obtenir sa phrase de récupération. Consultez [Retirer de l'argent sans Kawase](./withdraw-without-kawase.mdx).
 
-## Pourquoi le réseau de test existe-t-il dans l'application ?
+## Pourquoi le Réseau de test existe-t-il dans l'application ?
 
-Pour que vous puissiez tout essayer — envois, échanges, ponts, automatisations, voix — avec de l'argent de test gratuit avant d'utiliser de l'argent réel. Le
-bouton dans l'en-tête permet de changer de réseau en un geste.
+Pour que vous puissiez tout essayer — Envoyer de l'argent, échanger, utiliser des ponts, créer des automatisations et utiliser la voix — avec de l'Argent de test gratuit avant de passer à l'Argent réel. Le bouton dans l'en-tête permet de changer de réseau en un geste.
 
 ## Le code est-il open source ?
 
-Le dépôt est [Blockchain-Oracle/kawase](https://github.com/Blockchain-Oracle/kawase) sur GitHub. Il est rendu public
-pour la soumission au hackathon.
+Le dépôt [Blockchain-Oracle/kawase](https://github.com/Blockchain-Oracle/kawase) est disponible sur GitHub. Il est rendu public pour la participation au hackathon.

@@ -1,46 +1,73 @@
 ---
 title: "Automatisations"
-description: "Paiements programmés, épargne automatique et règles qui s'exécutent seules, chacun limité sur la chaîne par une autorisation que vous signez une seule fois avec Face ID."
-sourceHash: ac77249124998350
+description: "Paiements programmés, épargne automatique, paie, DCA et règles (solde, entrées ou sorties d'argent, prix) qui s'exécutent automatiquement grâce à des autorisations que vous signez une seule fois, avec des essais en mode pratique et une intervention requise pour tout ce qu'elles ne peuvent pas faire seules."
+sourceHash: 4d4a986aeccb8f32
 ---
 
 <Status ids="automations" />
 
-Les Automatisations permettent à un agent de s'occuper des tâches qui doivent s'exécuter sans que vous ouvriez l'application. Chaque automatisation
-s'exécute **sans surveillance**, dans le cadre d'une autorisation sur la chaîne que vous signez une seule fois — ainsi, même Kawase ne peut pas lui faire faire davantage.
+Les automatisations permettent à un agent de vous faire gagner du temps : elles exécutent les actions qui ne devraient pas vous obliger à ouvrir l'application. Chaque automatisation
+s'exécute **sans intervention**, dans le cadre d'une autorisation sur la blockchain que vous signez une seule fois. Même Kawase ne peut donc pas lui faire faire davantage.
 
 ## Paiements programmés
 
-« Chaque vendredi à 9 h, envoie 10 dollars à Alex. » Kawase vous indique les prochaines exécutions et le montant maximum qui pourrait être transféré,
-puis vous l'activez avec **un seul Face ID**. Cela signe l'**autorisation** de l'automatisation : elle peut uniquement transférer ce token, uniquement
-à l'adresse d'Alex (enregistrée sur la chaîne), et uniquement jusqu'au montant prévu pour chaque période. Fréquences possibles : tous les jours, chaque semaine un jour donné,
-ou chaque mois du 1er au 28, selon votre fuseau horaire.
+« Chaque vendredi à 9 h, envoie 10 dollars à Alex. » Kawase vous affiche les prochaines exécutions et le montant maximum qui pourrait être transféré,
+puis vous l'activez avec **un seul Face ID**. Cela signe l'**autorisation** de l'automatisation : elle ne peut transférer que ce jeton,
+à l'adresse d'Alex (enregistrée sur la blockchain), et dans la limite du montant prévu pour chaque période. Fréquences disponibles : tous les jours, toutes les semaines un jour donné,
+ou tous les mois du 1er au 28, selon votre fuseau horaire.
 
-Chaque exécution a lieu **une seule fois** : si le serveur de Kawase redémarre en cours d'exécution, celle-ci est reprise avec le même identifiant et n'est jamais
-payée deux fois. Une exécution qui ne peut pas avoir lieu (fonds insuffisants, limite dépassée) est **ignorée avec une explication** dans votre boîte de réception.
+Chaque exécution a lieu **exactement une fois** : si le serveur de Kawase redémarre en cours d'exécution, celle-ci est récupérée avec le même identifiant et n'est jamais
+payée deux fois. Les exécutions hebdomadaires et mensuelles font l'objet d'un **rappel la veille** (avec une alerte si le solde de votre portefeuille est insuffisant). Une exécution
+qui ne peut pas avoir lieu est **ignorée avec une explication** dans votre boîte de réception. Si elle est ignorée par manque d'argent, elle est **réessayée une fois**
+lorsque l'argent arrive.
 
 ## Épargne automatique
 
-« Garde 100 dollars dans mon portefeuille et épargne le reste. » L'épargne automatique conserve ce montant disponible et transfère tout excédent vers
-l'épargne de votre propre coffre (voir [Rendement](./earn-and-borrow.mdx)) ; lorsque le solde de votre portefeuille passe sous ce seuil, elle le réapprovisionne depuis
-l'épargne. Elle vérifie le solde chaque jour et chaque fois que vous recevez de l'argent. Ses autorisations permettent uniquement de transférer des USDC **entre votre portefeuille et votre propre
-épargne** — jamais ailleurs.
+« Garde 100 dollars dans mon portefeuille et épargne le reste. » L'épargne automatique conserve ce montant disponible et transfère tout ce qui le dépasse dans votre
+épargne personnelle du coffre (voir [Rendement](./earn-and-borrow.mdx)). Lorsque le solde de votre portefeuille passe sous ce seuil, elle le renfloue depuis
+votre épargne. Elle vérifie le solde chaque jour et chaque fois que de l'argent arrive. Ses autorisations permettent uniquement de transférer des USDC **entre votre portefeuille et votre propre
+épargne**, et jamais ailleurs.
+
+## Paie et DCA
+
+- La **paie** paie plusieurs personnes à une date donnée du mois. Chaque bénéficiaire dispose de sa propre autorisation, qui lui est associée ainsi qu'à son montant,
+  et toutes sont signées avec **un seul Face ID**. Voir [Entreprise](./business.mdx#payroll).
+- La **DCA** (« achète 20 dollars de cirBTC chaque semaine ») achète un jeton pour un montant fixe, selon un calendrier. Chaque exécution vous attend dans
+  **Vous devez intervenir**, avec un nouveau prix exécutable.
 
 ## Règles
 
-« Quand mon solde dépasse 500, transfère ce qui dépasse 400 vers mon adresse Base. » Les règles comprennent :
+« Lorsque mon solde dépasse 500, transfère ce qui dépasse 400 vers mon adresse Base. » Une règle comprend :
 
-- un **déclencheur** : le solde dépasse ou passe sous un montant, ou vous recevez de l'argent (éventuellement d'une personne donnée ou pour au moins un
-  certain montant) ;
-- une **action** : transférer des USDC vers votre propre adresse sur un autre réseau (les frais du pont sont plafonnés sur la chaîne), les épargner dans votre
-  coffre, ou simplement vous avertir ;
+- un **déclencheur** : le solde dépasse ou passe sous un montant ; de l'argent arrive (éventuellement d'une personne donnée, ou pour au moins un
+  certain montant) ; de l'argent sort (**arrondis**) ; ou le **prix** d'un jeton franchit un seuil (vérifié sur le prix exécutable toutes les deux minutes) ;
+- une **action** : transférer des USDC vers votre propre adresse sur un autre réseau (les frais du pont sont plafonnés sur la blockchain), placer de l'argent dans votre
+  coffre, **envoyer de l'argent à quelqu'un** (avec une limite sur la blockchain), **échanger**, ou simplement vous alerter ;
 - un **montant** : ce qui dépasse un seuil, une part de l'argent reçu ou un montant fixe.
 
-Une règle de solde se déclenche **une fois par franchissement** et se réarme lorsque le solde revient au niveau précédent.
+Une règle fondée sur le solde ou le prix se déclenche **une fois par franchissement** et se réarme lorsque le seuil est à nouveau franchi dans l'autre sens. Une règle d'**arrondi** (« arrondis mes
+paiements et épargne la différence ») place la différence de chaque envoi dans votre propre coffre.
+
+## Commencer en mode pratique
+
+Une nouvelle automatisation peut commencer en **mode pratique** : elle s'exécute sans autorisation, et chaque exécution correspond exactement au transfert qui aurait été effectué, sous forme d'essai sur
+Arc, avec la mention **« aurait été effectué »**. Rien ne bouge. Lorsque tout vous convient, **Activer** signe son autorisation. Demandez « que se passerait-il si
+cette automatisation s'exécutait maintenant ? » pour lancer un essai à la demande. Lorsque le [mode pratique](./limits-and-control.mdx#practice-mode) global est activé, toutes les
+automatisations s'exécutent en mode pratique.
+
+## Vous devez intervenir
+
+Une automatisation n'échange jamais de jetons seule et ne paie jamais plus que ce que son autorisation permet, ni en dehors de votre liste autorisée ou de vos règles concernant les nouveaux bénéficiaires. Lorsqu'une
+exécution arrive à une telle étape, elle attend dans **Vous devez intervenir** (dans la boîte de réception et les Automatisations, avec une notification push si les notifications sont configurées).
+L'approbation ouvre le même envoi ou échange que celui que vous effectueriez manuellement. Les éléments sans réponse font l'objet d'un rappel après 12 heures et expirent après
+24 heures. Voir [Vous devez intervenir](./limits-and-control.mdx#needs-you).
 
 ## Les gérer
 
-Depuis l'écran Automatisations ou dans le chat : afficher la liste, **mettre en pause**, **reprendre**, **ignorer la prochaine exécution** et **annuler**. L'annulation
-**révoque également l'autorisation sur la chaîne** : la permission est supprimée, elle n'est pas simplement masquée.
+Depuis l'écran Automatisations ou dans le chat : afficher la liste, **mettre en pause**, **reprendre**, **ignorer la prochaine exécution**, **modifier** et **annuler**.
+
+- **Modification** sur place : demander un montant inférieur s'applique immédiatement ; demander un montant supérieur signe une nouvelle autorisation en même temps que la
+  révocation de l'ancienne.
+- **L'annulation** **révoque également l'autorisation sur la blockchain** : la permission est supprimée, et pas seulement masquée.
 
 <ScopeList ids="automations" />

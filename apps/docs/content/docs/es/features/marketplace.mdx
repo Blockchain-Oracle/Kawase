@@ -1,18 +1,53 @@
 ---
-title: "Mercado de x402"
-description: "Pagar servicios y API por llamada mediante x402, dentro de un presupuesto que tú estableces. Próximamente."
-sourceHash: 3c4377298862e5c0
+title: "Billetera del agente y marketplace"
+description: "Kawase paga los servicios en cada llamada mediante x402 desde su propia billetera del agente, dentro del presupuesto diario y el límite por llamada que estableces, y registra cada compra."
+sourceHash: b30083e867ea8387
 ---
 
 <Status ids="marketplace" />
 
-**x402** es un estándar abierto para pagar una solicitud web con stablecoins: el servicio responde "402 Payment Required"
-con un precio, el cliente paga en USDC y obtiene el resultado. El plan de Kawase es permitir que el agente **encuentre y pague servicios**
-del catálogo x402 de Circle en tu nombre, siempre dentro de un presupuesto:
+<Marks names="circle usdc blockrun exa defillama" />
 
-- una billetera independiente del marketplace, cuyo saldo es el límite máximo,
-- límites por llamada, por sesión y por día, definidos por ti,
-- cada compra se muestra con su precio, el servicio y el resultado.
+**x402** es un estándar abierto para pagar una solicitud web con stablecoins: el servicio responde «402 Payment Required»,
+el cliente paga en USDC y recibe el resultado. Kawase lo usa para **comprar respuestas por ti**: búsquedas web y noticias,
+cuotas de mercados de predicción, rendimientos y precios de DefiLlama, precios de acciones y enriquecimiento de datos, desde el **catálogo x402 de Circle** en Arc.
 
-El catálogo de Circle solo incluye servicios de la red principal, así que el marketplace está previsto para la **red principal** y no está disponible en la red de pruebas. Está
-**próximamente**: aún no está disponible en la app.
+## Tu billetera del agente
+
+Las compras nunca salen directamente de tu billetera principal. Kawase tiene una **billetera del agente** separada para ti
+y solo puede gastar lo que deposites:
+
+- **Añade fondos** desde tu billetera de Kawase con un importe predeterminado. La primera recarga requiere firmar una **autorización limitada para el marketplace** con Face ID;
+  las siguientes no necesitan confirmación, siempre dentro de ese límite. También puedes añadir fondos con **Apple Pay o una tarjeta** mediante Onramp de Circle, directamente
+  en la billetera del agente.
+- El saldo se divide entre **Circle Gateway** (listo para nanopagos, que aceptan la mayoría de los vendedores) y una parte **disponible**
+  para vendedores que aceptan USDC normal (EIP-3009). Cuando una compra con USDC normal necesita más saldo disponible, Kawase lo repone desde
+  Gateway.
+- **Devolver a mi billetera** envía ambas partes de vuelta en cualquier momento.
+
+Ajustes → **Billetera del agente** muestra el saldo, lo gastado hoy, la dirección y el historial completo de compras
+y movimientos.
+
+## Presupuestos que estableces
+
+- un **presupuesto diario** y un **límite por llamada**;
+- **preguntarme primero** por encima del límite: la compra espera tu consentimiento en una tarjeta dentro del chat;
+- las **categorías** en las que Kawase puede comprar;
+- **vendedores bloqueados**: toca cualquier compra para bloquear a su vendedor.
+
+Los límites más estrictos se aplican de inmediato; para ampliarlos, se requiere Face ID. Si una compra se rechaza, se indica la regla que la detuvo.
+
+## Cada compra queda registrada
+
+El chat muestra lo que encontró Kawase (la marca del vendedor, lo que devuelve y el precio). Después de pagar, muestra un recibo: «Pagado 0.002
+USDC a …». La respuesta del vendedor aparece marcada como **no verificada**. x402 todavía no tiene un estándar de reembolso: si una llamada falla después del pago,
+el recibo indica que el vendedor se quedó con el importe; si Circle informa que un pago falló, aparece marcado como **no cobrado**. Kawase trata el texto externo como datos, nunca como instrucciones, y
+lo indica cuando una respuesta intenta decirle qué hacer.
+
+## Redes
+
+- **Red principal**: el catálogo de Circle (unas 2,100 opciones en Arc), con pagos mediante ambos métodos.
+- **Red de pruebas**: el catálogo de Circle no tiene opciones en la red de pruebas, así que Kawase usa su propio vendedor de demostración (`seller.getkawase.xyz`) para
+  probarlo de principio a fin con Dinero de prueba.
+
+<ScopeList ids="marketplace" />

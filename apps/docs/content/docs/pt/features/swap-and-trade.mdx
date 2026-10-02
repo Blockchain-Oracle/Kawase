@@ -1,29 +1,70 @@
 ---
-title: "Trocar e negociar"
-description: "Troque USDC e EURC hoje com um mínimo garantido e um Face ID; qualquer token na Arc, meme coins e posições compradas/vendidas estão a caminho."
-sourceHash: 65c2ca9143c4cfd4
+title: "Negociar qualquer token"
+description: "Mercados, uma página para cada token na Arc com suas verificações de segurança, e compra, venda ou troca de qualquer par pelo melhor preço entre três plataformas, confirmada com um deslize."
+sourceHash: 7e1dd705a5bc50d0
 ---
 
-<Status ids="swap tokens meme_coins perps" />
+<Status ids="swap" />
 
-<Marks names="usdc eurc circle" />
+<Marks names="arc usdc eurc kyberswap circle lifi" />
 
-## Trocar USDC ↔ EURC (hoje)
+## Mercados
 
-“Trocar 10 dólares por euros” ou use a tela Trocar. A Kawase recebe uma cotação pelo **App Kit da Circle** e mostra:
+A aba **Mercados** (na barra inferior, entre Início e a esfera) também está aberta para visitantes:
 
-- o valor que você envia e o valor mínimo que recebe;
-- a taxa de mercado da Circle ao lado da taxa cotada e as tarifas;
-- um aviso se a cotação estiver muito pior que a taxa de mercado; uma cotação muito pior é recusada.
+- **Pesquise** por nome, símbolo ou endereço do contrato.
+- Seções **Em alta · Meme · Comprado e vendido · Ações e câmbio · Novos**, um carrossel de mercados em alta e um **mapa de calor**, em que cada
+  bloco tem tamanho proporcional ao volume do dia e cor de acordo com sua variação.
+- As linhas mostram o preço, a variação do dia, o volume e a liquidez. Um token que copia outro recebe o selo **cópia**;
+  falsificações continuam sinalizadas na lista e nunca aparecem no carrossel ou no mapa de calor.
 
-Na rede principal, o mínimo garantido fica 1% abaixo da cotação (2% na rede de testes, onde os pools têm pouca liquidez). A rota usa metade dessa tolerância, então uma pequena mudança entre a cotação e a sua confirmação ainda mantém o mínimo garantido.
+Os **Mercados** só estão disponíveis na Arc na rede principal. Na rede de testes, a aba informa isso e oferece a opção de mudar de rede.
 
-Você confirma cada troca por conta própria com **um Face ID** — as trocas nunca usam o limite diário. A aprovação e a troca são enviadas para a rede como **uma única transação** (um lote EIP-7702 da sua própria carteira). Assim, ou as duas acontecem, ou nenhuma acontece. A Kawase só marca a troca como concluída quando o recibo mostra o valor exato saindo da sua carteira e pelo menos o mínimo chegando.
+## Uma página para cada token
 
-## Qualquer token, meme coins e posições compradas ou vendidas (em breve)
+Toque em qualquer token, nos **Mercados**, no Início ou em um cartão de conversa, para abrir a página dele:
 
-O plano é tornar **todos os tokens na Arc** disponíveis desde o início: ver tudo o que seu endereço possui, trocar qualquer token listado com cotações comparadas entre agregadores e negociar **meme coins** com verificações de segurança (detecção de cópias, dados de risco do token e regras definidas por você para limitar o risco). **Posições compradas ou vendidas** (futuros perpétuos) nas plataformas de perps da Arc também estão planejadas da mesma forma: uma tela clara com alavancagem, preço de liquidação e take-profit/stop-loss, confirmada com Face ID.
+- seu ícone, preço e variação, além de um gráfico que você pode percorrer, com períodos de uma hora até todo o histórico;
+- **quanto você tem** dele;
+- valor de mercado, liquidez, volume, número de detentores, valor totalmente diluído e o contrato (copie com um toque);
+- **Segurança**: uma avaliação com os motivos, as verificações do **GoPlus** (honeypot, taxas de compra e venda e poderes do proprietário) e possíveis
+  tokens parecidos, com links;
+- **Comprar · Vender** e uma tela **Mais**, que lista todas as outras ações, com o motivo quando alguma não estiver disponível.
 
-Esses recursos aparecem como **em breve** na matriz acima até serem lançados. Nada nesta página é apresentado como disponível antes disso.
+## Seu portfólio, todos os tokens
+
+O Início mostra **todos os tokens que seu endereço possui** na Arc e também em Ethereum, Base, Arbitrum, OP, Polygon e Avalanche, cada um com
+seu ícone e valor reais. A Kawase esconde o que poderia induzir você ao erro:
+
+- um **falsificador** (uma stablecoin ou um símbolo conhecido em outro endereço, ou com outras casas decimais) fica oculto;
+- um token **sem preço e sem pool** vai para Ocultos;
+- um token sem preço nunca é incluído no seu total.
+
+## Comprar, vender ou trocar qualquer par
+
+"Compre 20 dólares de ARGUS", "venda metade do meu cirBTC" ou use o atalho na página de um token. Você paga com **qualquer token que tenha**
+e recebe qualquer outro token (pesquise por nome, símbolo ou endereço). Para cada operação, a Kawase consulta **três plataformas ao mesmo tempo**: KyberSwap,
+App Kit da Circle e LI.FI, e recomenda a que entregar mais. As outras aparecem com o que entregariam ou com o motivo pelo qual não conseguiram fazer uma cotação.
+
+A revisão mostra o valor que você recebe **no mínimo**, o impacto no preço em relação ao preço de mercado e a rota. Você confirma
+**deslizando** o cartão e depois usando o **Face ID**. Somente a plataforma escolhida cria a transação, com metade da tolerância de slippage mostrada,
+e a Kawase verifica as chamadas (roteador, valores, destinatário e o mínimo on-chain) antes de pedir autorização à sua carteira. A
+aprovação e a operação são enviadas como **uma única transação** pela sua própria carteira.
+
+## Regras dos tokens
+
+Toda compra passa primeiro pelas suas **regras de tokens**:
+
+- imitadores e honeypots são **bloqueados**;
+- um token **não verificado** fica limitado a **$50 por operação** e **$200 por dia**;
+- o impacto no preço pode ser de no máximo **5%** para qualquer token que não seja uma stablecoin.
+
+Uma operação bloqueada informa qual regra a interrompeu e o que precisaria mudar para que fosse permitida.
+
+## Na rede de testes
+
+A Arc na rede de testes permite negociar apenas **USDC ↔ EURC**, pelo mesmo atalho. Todos os outros tokens e as moedas meme estão disponíveis somente na rede principal.
+
+As posições compradas e vendidas têm sua própria página: [Comprado e vendido](./long-short.mdx).
 
 <ScopeList ids="swap" />

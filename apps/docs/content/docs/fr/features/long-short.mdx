@@ -1,0 +1,55 @@
+---
+title: "Long et short"
+description: "Kawase Margin ouvre une position long ou short avec effet de levier via votre propre compte Aave V4 sur Arc, en une seule transaction que vous confirmez en faisant glisser, avec le prix de liquidation affiché en premier."
+sourceHash: c040ac083125c6c6
+---
+
+<Status ids="margin" />
+
+<Marks names="aave cirbtc weth eurc usdc kyberswap" />
+
+**Kawase Margin** vous permet de miser sur la hausse (**long**) ou la baisse (**short**) d'un prix avec plus d'argent que votre mise. Le service fonctionne sur
+**Aave V4** sur le réseau principal Arc, via **votre propre** compte Aave : aucun compte d'exchange, aucun prêt flash et aucun fonds détenu par
+Kawase.
+
+## Comment une position est créée
+
+- **Long X** : votre marge en USDC est échangée contre X et fournie comme garantie. Kawase emprunte ensuite des USDC contre cette garantie, les échange contre davantage de X et fournit ces X, plusieurs fois en boucle.
+- **Short X** : vos USDC sont fournis comme garantie. Kawase emprunte ensuite des X, les échange contre des USDC et fournit ces USDC, en boucle.
+- **La clôture** suit le processus inverse : retirer, échanger, rembourser, puis renvoyer le solde dans votre portefeuille.
+
+La position entière est ouverte ou fermée en **une seule transaction** depuis votre propre portefeuille (un lot EIP-7702). Les étapes d'échange viennent de
+KyberSwap, avec des données d'appel vérifiées. À chaque boucle, l'emprunt s'arrête à un niveau de santé sûr selon les prix de l'oracle, et le compte s'ouvre avec un
+**niveau de santé de 1,10 ou plus**.
+
+## Marchés
+
+Les marchés utilisent les réserves disponibles d'Aave V4 sur Arc. Aujourd'hui :
+
+- **cirBTC** (Bitcoin de Circle) et **WETH** : long et short ;
+- **EURC** : short uniquement, car EURC ne peut pas servir de garantie sur Aave V4.
+
+L'effet de levier maximal dépend du facteur de garantie de chaque actif. Avec les facteurs actuels, il est d'environ **3,4× en long sur cirBTC**, **4× en long sur
+WETH** et **2,4× en short**. La marge est payée en **USDC**.
+
+## Le ticket
+
+« Long Bitcoin 2× avec 10 dollars », ou l'écran **Long et short**. Le choix d'un côté prépare immédiatement un vrai plan (10 $, 2×). Le ticket affiche donc dès le début des données en direct :
+
+- votre marge et le montant avec effet de levier, avec des valeurs prédéfinies et Max ;
+- une **règle d'effet de levier** limitée par le marché, avec un repère tous les demi-paliers ;
+- le **prix de liquidation** et la distance qui vous en sépare, le **niveau de santé** du compte, le taux d'emprunt et les frais du réseau ;
+- le parcours et une ligne de risque.
+
+Vous confirmez en **faisant glisser** (vert pour un long, rouge pour un short), puis avec Face ID. Le ticket suit la transaction, de la vérification à la finalisation. Toute modification du plan réinitialise le geste, pour que vous ne confirmiez jamais des chiffres que vous n'avez pas vus.
+
+## Positions
+
+Chaque position possède sa propre page : les gains et pertes sont répartis entre **variation du prix** et **coût de l'emprunt**, avec une **jauge de santé**, son
+prix de liquidation et **Fermer 25 % · 50 % · 75 % · Tout**, qui prépare la clôture dans le même ticket. La carte **Pour vous** de l'accueil vous avertit lorsque le niveau de santé d'une position ouverte passe sous 1,25 ou lorsque la liquidation est à moins de 10 % de variation.
+
+## Pas sur le réseau de test
+
+Aave V4 est disponible uniquement sur le réseau principal Arc, donc Kawase Margin aussi. Sur le réseau de test, l'écran l'explique et propose de changer de réseau.
+
+<ScopeList ids="margin" />
