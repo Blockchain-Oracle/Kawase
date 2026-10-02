@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "Пополнить",
+  subtitle: "Ваш кошелёк в сети {{network}}",
+  testTitle: "Получить тестовые USDC",
+  testBody: "{{usdc}} USDC и {{eurc}} EURC из крана Circle, раз в день",
+  testClaim: "Прислать тестовые деньги",
+  testSending: "Отправляем тестовые деньги…",
+  testSent: "Отправлено — поступит через несколько секунд",
+  testClaimed: "Сегодня уже получено · следующий раз с {{time}}",
+  testFailed: "Кран Circle на этот раз не отправил. Попробуйте ещё раз или запросите напрямую у Circle.",
+  testSignIn: "Сначала войдите, чтобы получить свой адрес",
+  testSetUpFirst: "Сначала настройте кошелёк",
+  openCircle: "Кран Circle",
+  receiveTitle: "Получить в Arc",
+  receiveBody: "Ваш QR-код и адрес",
+  walletTitle: "С другого кошелька или биржи",
+  walletBody: "Отправьте USDC или EURC в сети Arc на ваш адрес",
+  bridgeTitle: "Мост из другой сети",
+  bridgeBody: "Ethereum, Base, Arbitrum и другие",
+  bridgeSubtitle: "Где сейчас ваши деньги",
+  bridgeComingBody: "Мост в Arc ещё строится. Пока отправляйте USDC на ваш адрес в Arc.",
+  coming: "Скоро",
+};

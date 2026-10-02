@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "টাকা যোগ করুন",
+  subtitle: "{{network}}-এ আপনার ওয়ালেটে",
+  testTitle: "টেস্ট USDC নিন",
+  testBody: "Circle-এর ফসেট থেকে {{usdc}} USDC আর {{eurc}} EURC, দিনে একবার",
+  testClaim: "আমাকে টেস্ট টাকা পাঠান",
+  testSending: "টেস্ট টাকা পাঠানো হচ্ছে…",
+  testSent: "পাঠানো হয়েছে — কয়েক সেকেন্ডে পৌঁছাবে",
+  testClaimed: "আজ নেওয়া হয়ে গেছে · পরের বার {{time}} থেকে",
+  testFailed: "এবার Circle-এর ফসেট পাঠায়নি। আবার চেষ্টা করুন, বা সরাসরি Circle-এর কাছে চান।",
+  testSignIn: "নিজের ঠিকানা পেতে আগে সাইন ইন করুন",
+  testSetUpFirst: "আগে আপনার ওয়ালেট সেট আপ করুন",
+  openCircle: "Circle ফসেট",
+  receiveTitle: "Arc-এ গ্রহণ করুন",
+  receiveBody: "আপনার QR কোড আর ঠিকানা",
+  walletTitle: "অন্য ওয়ালেট বা এক্সচেঞ্জ থেকে",
+  walletBody: "Arc-এ USDC বা EURC আপনার ঠিকানায় পাঠান",
+  bridgeTitle: "অন্য চেইন থেকে ব্রিজ করুন",
+  bridgeBody: "Ethereum, Base, Arbitrum এবং আরও",
+  bridgeSubtitle: "আপনার টাকা এখন কোথায়",
+  bridgeComingBody: "Arc-এ ব্রিজ করার সুবিধা তৈরি হচ্ছে। আপাতত Arc-এ আপনার ঠিকানায় USDC পাঠান।",
+  coming: "শিগগিরই",
+};

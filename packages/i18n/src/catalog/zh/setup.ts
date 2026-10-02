@@ -1,0 +1,31 @@
+import type { Catalog } from "../en/index";
+
+export const setup: Catalog["setup"] = {
+  title: "正在设置你的钱包",
+  subtitle: "在 {{network}} 上。只需几秒钟，网络费用由 Kawase 支付。",
+  stepWallet: "创建你的钱包",
+  stepNetwork: "在 {{network}} 上完成设置",
+  settingUpDetail: "正在通过 Kawase 的中继签名并发送…",
+  failed: "没有成功，请重试。",
+  primerTitle: "一次面容 ID，开启每日额度",
+  primerTitleAndroid: "一次确认，开启每日额度",
+  primerBody: "Kawase 每天最多可替你发送 {{amount}}，无需询问。超出部分需要再次使用面容 ID，你也可以随时关闭。",
+  primerBodyAndroid:
+    "Kawase 每天最多可替你发送 {{amount}}，无需询问。超出部分需要再次验证指纹或屏幕锁定，你也可以随时关闭。",
+  acceptFaceId: "用面容 ID 接受",
+  acceptTouchId: "用触控 ID 接受",
+  acceptFingerprint: "用指纹接受",
+  scopeTitle: "你要允许的内容",
+  scopeBody: "请读一遍。这正是你要批准的内容，直接取自授权本身，你可以随时关闭。",
+  acceptFace: "用面部解锁接受",
+  acceptPasscode: "用密码接受",
+  acceptEmailCode: "用邮箱验证码接受",
+  faceIdPrompt: "允许 Kawase 每天最多发送 {{amount}}",
+  approving: "正在批准…",
+  notNow: "以后再说",
+  doneTitle: "一切就绪",
+  doneBody: "你的钱包已在 {{network}} 上就绪。以下是 Kawase 可以用它做的全部事情。",
+  terms: "继续即表示你同意 Kawase 的使用条款。",
+  readTerms: "阅读条款",
+  termsFailed: "无法保存你的同意记录。请检查网络后重试。",
+};

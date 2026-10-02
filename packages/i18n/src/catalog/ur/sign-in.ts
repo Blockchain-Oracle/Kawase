@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "اپنے اکاؤنٹ کا اتصال مکمل کریں۔ نئے کوڈ کے بغیر دوبارہ کوشش کریں۔",
+  accountFailed: "آپ سائن ان ہیں۔ اکاؤنٹ لوڈ نہیں ہوا۔ دوبارہ کوشش کریں۔",
+  recoveryRequired:
+    "یہ ای میل موجودہ والیٹ سے وابستہ ہے۔ اس کا اصل سائن ان طریقہ استعمال کریں۔ آپ کی مہمان گفتگو محفوظ ہے۔",
+  title: "سائن ان",
+  subtitle: "ای میل پر ایک کوڈ۔ نہ پاس ورڈ، نہ PIN۔",
+  email: "ای میل",
+  emailPlaceholder: "you@example.com",
+  sendCode: "مجھے کوڈ بھیجیں",
+  codeSent: "ہم نے {{email}} پر کوڈ بھیج دیا ہے",
+  code: "‏6 ہندسوں کا کوڈ",
+  verify: "سائن ان",
+  apple: "‏Apple سے جاری رکھیں",
+  google: "‏Google سے جاری رکھیں",
+  or: "یا",
+  continueAs: "‏{{email}} کے طور پر جاری رکھیں",
+  invalidCode: "یہ کوڈ کام نہیں کیا۔ دوبارہ کوشش کریں۔",
+  sheetTitle: "سائن اِن کریں یا اکاؤنٹ بنائیں",
+  codeTitle: "اپنی ای میل دیکھیں",
+  resend: "نیا کوڈ بھیجیں",
+  signingIn: "سائن اِن ہو رہا ہے…",
+  webUnavailable: "ویب پر سائن اِن جلد آ رہا ہے۔ فی الحال اپنے فون پر Kawase ایپ استعمال کریں۔",
+};
