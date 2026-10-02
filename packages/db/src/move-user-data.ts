@@ -18,6 +18,7 @@ import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
 import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
+import { portfolioSnapshots, walletTokens } from "./schema/assets";
 
 type UserOwned = {
   table: PgTable;
@@ -69,6 +70,9 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   invoices: { table: invoices, userId: invoices.userId, perUserKey: ["number"] },
   payout_batches: { table: payoutBatches, userId: payoutBatches.userId },
   payrolls: { table: payrolls, userId: payrolls.userId },
+  // The asset registry (A0): tokens seen arriving and the balance chart's snapshots; the account's own rows win.
+  wallet_tokens: { table: walletTokens, userId: walletTokens.userId, perUserKey: ["chainId", "tokenAddress"] },
+  portfolio_snapshots: { table: portfolioSnapshots, userId: portfolioSnapshots.userId, perUserKey: ["network", "takenAt"] },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
