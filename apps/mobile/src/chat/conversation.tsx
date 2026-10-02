@@ -29,7 +29,7 @@ import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useDockClearance } from "@/dock/use-dock-clearance";
-import { tapFeedback } from "@/feedback/feedback";
+import { cue, tapFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -247,7 +247,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
             value={draft}
             onValueChange={editDraft}
             onSubmit={() => send(draft, true)}
-            onSent={() => tapFeedback()}
+            onSent={() => void cue("send")}
             onTalk={() => overlay.open("voice")}
             disabled={busy}
             generating={busy}

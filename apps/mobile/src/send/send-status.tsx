@@ -28,7 +28,7 @@ import { cn } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
-import { confirmedFeedback } from "@/feedback/feedback";
+import { confirmedFeedback, cue } from "@/feedback/feedback";
 
 import { recipientName, useMoney } from "./copy";
 import { isMoving } from "./use-send";
@@ -141,6 +141,7 @@ export function SendStatus({
   const departing = watched.current && intent.outcome === "sent" && !departed && !reduced;
   React.useEffect(() => {
     if (watched.current && intent.outcome === "sent") void confirmedFeedback(`send:${intent.id}`);
+    if (watched.current && intent.outcome === "not_sent") void cue("error", `send-failed:${intent.id}`);
   }, [intent.id, intent.outcome]);
 
   if (moving || departing) {
