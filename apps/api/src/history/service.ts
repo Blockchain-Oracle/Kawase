@@ -24,6 +24,7 @@ import {
   type Db,
 } from "@kawase/db";
 import { amount as toAmount, canonicalAmount, type AssetId } from "@kawase/money";
+import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import type { ContactService } from "../contacts/service";
@@ -65,6 +66,7 @@ export class HistoryService {
     private readonly chains: Chains,
     private readonly wallets: WalletService,
     private readonly contacts: ContactService,
+    private readonly log?: Logger | undefined,
   ) {}
 
   // ── Why ────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -199,7 +201,11 @@ export class HistoryService {
     const clients = this.chains.get(network);
     if (!wallet || !clients) return { items: [] as ActivityItem[], complete: true, purchases: [] as (typeof marketplacePurchases.$inferSelect)[] };
     const [chain, purchases] = await Promise.all([
-      fetchActivityRange(clients.network, wallet.address as Address, { agent: clients.ops.address, relayer: clients.relayerAddress }, { from, to }),
+      // The explorer can be slow or down: the file and the report still come, marked incomplete, never a failure.
+      fetchActivityRange(clients.network, wallet.address as Address, { agent: clients.ops.address, relayer: clients.relayerAddress }, { from, to }).catch((error: unknown) => {
+        this.log?.warn({ err: error, network }, "explorer history unread; export marked incomplete");
+        return { items: [] as ActivityItem[], complete: false };
+      }),
       this.db
         .select()
         .from(marketplacePurchases)

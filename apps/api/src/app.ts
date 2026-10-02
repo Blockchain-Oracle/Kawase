@@ -355,7 +355,7 @@ export function createApp(deps: AppDeps) {
   const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
-  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
