@@ -31,6 +31,8 @@ import type { ResendEmail } from "./notify/email";
 import type { ExpoPush } from "./notify/expo";
 import { notifyRoutes } from "./notify/routes";
 import { NotifyService } from "./notify/service";
+import { publicRoutes } from "./public/routes";
+import { PublicStatsService } from "./public/service";
 import { inboxRoutes, publicRequestRoutes, requestRoutes } from "./requests/routes";
 import { RequestService } from "./requests/service";
 import type { OpsExecutor } from "./send/ops";
@@ -206,6 +208,7 @@ export function createApp(deps: AppDeps) {
 
   app.get("/health", (c) => c.json({ ok: true, networks: deps.chains.available }));
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
+  app.route("/public", publicRoutes(new PublicStatsService(deps.db)));
   app.route("/auth", authRoutes(deps.db, auth));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/notifications", notifyRoutes(deps.db, notify));
