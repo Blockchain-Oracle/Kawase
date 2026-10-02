@@ -9,7 +9,7 @@ export const MOTION = {
   /** Sheets and cards rising; nested panels changing height. */
   sheetMs: 250,
   /** A story panel change (M01): field + art travel, copy changes mid-travel. */
-  storyPanelMs: 420,
+  storyPanelMs: 650,
   /** A finger-released page settles without waiting for React. */
   storySettleMs: 260,
   composerMs: 180,
