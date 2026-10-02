@@ -8,7 +8,8 @@ export type InvoiceLineInput = { description: string; quantity: number; /** Deci
 export type InvoiceInput = {
   clientName: string;
   clientEmail?: string | undefined;
-  asset: "USDC" | "EURC";
+  /** A symbol (USDC, EURC, cirBTC, a listed token) or a token address on Arc. */
+  asset: string;
   lines: InvoiceLineInput[];
   dueInDays?: number | undefined;
   dueAt?: string | undefined;
@@ -25,7 +26,10 @@ export type InvoiceView = {
   number: string;
   clientName: string;
   clientEmail: string | null;
-  asset: "USDC" | "EURC";
+  /** The token symbol; amounts are in its base units (`decimals`). */
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: InvoiceLine[];
   total: string;
   paid: string;
@@ -49,7 +53,9 @@ export type InvoicePublicView = {
   network: NetworkId;
   business: BusinessProfile;
   clientName: string;
-  asset: "USDC" | "EURC";
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: InvoiceLine[];
   total: string;
   paid: string;
@@ -68,7 +74,9 @@ export type PayoutProblem = { index: number; recipient: string; problem: string 
 export type PayoutView = {
   id: string;
   network: NetworkId;
-  asset: "USDC" | "EURC";
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: PayoutLine[];
   total: string;
   status: "ready" | "submitted" | "confirmed" | "failed";

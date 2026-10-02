@@ -419,7 +419,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** The printable invoice (HTML) for a PDF or a browser. */
       documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
       payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
-      createPayout: (input: { asset: "USDC" | "EURC"; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
+      createPayout: (input: { asset: string; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
       signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
       submitPayout: (id: string, requestId: string, signedTransaction: string) =>
         call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),

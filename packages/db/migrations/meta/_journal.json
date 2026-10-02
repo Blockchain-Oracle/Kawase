@@ -190,6 +190,20 @@
       "when": 1791000063000,
       "tag": "0044_agent_refill",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791000064000,
+      "tag": "0045_security_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791000065000,
+      "tag": "0046_invoice_assets",
+      "breakpoints": true
     }
   ]
 }

@@ -6,14 +6,16 @@
 // person's own session may do. Deleting the account deletes the person's data at Kawase (contacts, threads and their
 // transcripts, inbox, requests, grants as Kawase holds them) — the wallet stays theirs in their Turnkey sub-org — and
 // holds the @handle for 30 days. Money in the agent wallet goes back to their wallet first.
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, count, eq, isNull, ne, sql } from "drizzle-orm";
 
-import { HANDLE_HOLD_DAYS, SECONDS_PER_DAY } from "@kawase/config";
+import { HANDLE_HOLD_DAYS, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "@kawase/config";
 import { devices, grants, handleHolds, sessions, users, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import type { AuditWriter } from "../audit/writer";
+import type { InboxService } from "../inbox/service";
+import { approximatePlace } from "./location";
 import type { TurnkeyReader } from "../auth/turnkey";
 import { HTTP, problem } from "../http/problem";
 import type { MarketplaceService } from "../marketplace/service";
@@ -22,6 +24,12 @@ import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 
 const MS_PER_SECOND = 1000;
+const MS_PER_DAY = 86_400_000;
+/** A device row this new at sign-in is a device the account has not used before. */
+const NEW_DEVICE_WINDOW_MINUTES = 2;
+const NEW_DEVICE_WINDOW_MS = NEW_DEVICE_WINDOW_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
+const LOCATION_REFRESH_MS = MS_PER_DAY;
+const PLATFORM_NAMES = { ios: "iOS", android: "Android", web: "Web", desktop: "Desktop" } as const;
 
 export type DeviceView = {
   id: string;
@@ -34,6 +42,8 @@ export type DeviceView = {
   signedIn: boolean;
   /** The device's Turnkey session key, for the app to delete when signing it out. */
   turnkeyPublicKey: string | null;
+  /** Roughly where it was last seen ("Lisbon, Portugal"). */
+  location: string | null;
 };
 
 export class AccountService {
@@ -45,7 +55,41 @@ export class AccountService {
     private readonly audit: AuditWriter,
     private readonly log: Logger,
     private readonly marketplace?: MarketplaceService | undefined,
+    /** Security notices (inbox, push, email). */
+    private readonly inbox?: InboxService | undefined,
   ) {}
+
+  private platformName(platform: DeviceView["platform"]) {
+    return PLATFORM_NAMES[platform];
+  }
+
+  /** A security notice on the account: everywhere it is told (inbox, push to the other devices, email). */
+  private async securityNotice(userId: string, kind: "device_signed_in" | "device_signed_out", device: typeof devices.$inferSelect) {
+    if (!this.inbox) return;
+    const [owner] = await this.db.select({ network: users.activeNetwork }).from(users).where(eq(users.id, userId));
+    await this.inbox.add(this.db, {
+      userId,
+      network: owner?.network ?? "testnet",
+      kind,
+      params: { name: device.name ?? this.platformName(device.platform), platform: this.platformName(device.platform), ...(device.location ? { location: device.location } : {}) },
+      dedupeKey: `${kind}:${device.id}:${Date.now()}`,
+    });
+  }
+
+  /**
+   * After an account sign-in: where the device is, roughly; and when it is a device the account has not used before
+   * (while it has others), a "new sign-in" notice to the person everywhere else.
+   */
+  async signedIn(input: { userId: string; deviceId: string; deviceCreatedAt: Date; ip: string | undefined }) {
+    const place = await approximatePlace(input.ip);
+    const [device] = place
+      ? await this.db.update(devices).set({ location: place, locationAt: new Date() }).where(eq(devices.id, input.deviceId)).returning()
+      : await this.db.select().from(devices).where(eq(devices.id, input.deviceId));
+    if (!device) return;
+    const fresh = Date.now() - input.deviceCreatedAt.getTime() < NEW_DEVICE_WINDOW_MS;
+    const [others] = await this.db.select({ n: count() }).from(devices).where(and(eq(devices.userId, input.userId), ne(devices.id, input.deviceId)));
+    if (fresh && Number(others?.n ?? 0) > 0) await this.securityNotice(input.userId, "device_signed_in", device);
+  }
 
   async devices(userId: string, currentDeviceId: string | undefined): Promise<DeviceView[]> {
     const rows = await this.db
@@ -66,14 +110,24 @@ export class AccountService {
       current: device.id === currentDeviceId,
       signedIn: Number(live) > 0 && !device.revokedAt,
       turnkeyPublicKey: device.turnkeyPublicKey,
+      location: device.location,
     }));
   }
 
   /** The app names this device and says it is alive (Settings → Devices). */
-  async touchCurrent(userId: string, deviceId: string, input: { name?: string | undefined; appVersion?: string | undefined }) {
+  async touchCurrent(userId: string, deviceId: string, input: { name?: string | undefined; appVersion?: string | undefined; ip?: string | undefined }) {
+    const [current] = await this.db.select({ locationAt: devices.locationAt }).from(devices).where(and(eq(devices.id, deviceId), eq(devices.userId, userId)));
+    // The place is looked up again at most once a day.
+    const stale = !current?.locationAt || Date.now() - current.locationAt.getTime() > LOCATION_REFRESH_MS;
+    const place = stale ? await approximatePlace(input.ip) : null;
     await this.db
       .update(devices)
-      .set({ lastSeenAt: new Date(), ...(input.name ? { name: input.name } : {}), ...(input.appVersion ? { appVersion: input.appVersion } : {}) })
+      .set({
+        lastSeenAt: new Date(),
+        ...(input.name ? { name: input.name } : {}),
+        ...(input.appVersion ? { appVersion: input.appVersion } : {}),
+        ...(place ? { location: place, locationAt: new Date() } : {}),
+      })
       .where(and(eq(devices.id, deviceId), eq(devices.userId, userId)));
   }
 
@@ -86,6 +140,7 @@ export class AccountService {
       await tx.update(devices).set({ revokedAt: new Date(), expoPushToken: null }).where(eq(devices.id, deviceId));
     });
     await this.audit.write({ userId: user.id, actor: "user", action: "device.sign_out", subjectType: "device", subjectId: deviceId, deviceId: by.deviceId });
+    await this.securityNotice(user.id, "device_signed_out", device).catch((error: unknown) => this.log.warn({ err: error }, "sign-out notice failed"));
     return { turnkeyPublicKey: device.turnkeyPublicKey };
   }
 

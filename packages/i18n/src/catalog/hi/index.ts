@@ -59,6 +59,7 @@ import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
+import { alerts } from "./alerts";
 
 export const hi: Catalog = {
   common,
@@ -120,4 +121,5 @@ export const hi: Catalog = {
   report,
   history,
   privacy,
+  alerts,
 };

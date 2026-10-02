@@ -5,7 +5,7 @@ import { FileDown, Share2 } from "lucide-react-native";
 import { View } from "react-native";
 
 import type { InvoiceView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -36,7 +36,7 @@ export function InvoiceCard({ output }: { output: { invoice: InvoiceView | null;
       </AgentCard>
     );
   }
-  const money = formatAmount(toAmount(invoice.asset as AssetId, BigInt(invoice.total)), locale);
+  const money = formatTokenAmount(BigInt(invoice.total), invoice.decimals, invoice.asset, locale);
   const due = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(invoice.dueAt));
   return (
     <AgentCard eyebrow={`${t("business.invoice")} · ${invoice.network === "testnet" ? t("network.arcTestnet") : t("network.arc")}`}>

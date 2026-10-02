@@ -1,7 +1,7 @@
 // Business mode (cards/agent-business.md): a business profile; invoices with line items and an on-chain reference
 // (Arc's Memo contract), paid through their payment request link and matched by that reference; batch payouts the
 // wallet signs once; and payroll, a group of scheduled sends (one grant per payee) run by the automation engine.
-import { index, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, money, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
@@ -39,7 +39,14 @@ export const invoices = pgTable(
     requestId: uuid().references(() => paymentRequests.id, { onDelete: "set null" }),
     clientName: text().notNull(),
     clientEmail: text(),
+    /** The symbol shown; `tokenAddress` and `decimals` say which token exactly (any Arc token, A0). */
     asset: text().notNull(),
+    tokenAddress: text(),
+    decimals: integer().notNull().default(6),
+    /** The link for an invoice in a token payment requests do not carry (USDC and EURC use their request token). */
+    publicToken: text(),
+    /** The last reminder sent: "due_soon", "due_today" or "overdue". */
+    reminded: text(),
     lineItems: jsonb().$type<InvoiceLine[]>().notNull(),
     total: money().notNull(),
     dueAt: timestampTz().notNull(),
@@ -71,6 +78,8 @@ export const payoutBatches = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     network: networkEnum().notNull(),
     asset: text().notNull(),
+    tokenAddress: text(),
+    decimals: integer().notNull().default(6),
     lines: jsonb().$type<PayoutLine[]>().notNull(),
     total: money().notNull(),
     status: payoutStatusEnum().notNull().default("ready"),

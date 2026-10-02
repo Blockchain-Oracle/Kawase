@@ -1,4 +1,5 @@
 // Business mode (cards/agent-business.md): invoices, batch payouts and payroll.
+import { MS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "./units";
 
 export const INVOICE_NUMBER_PREFIX = "INV-";
 export const INVOICE_NUMBER_DIGITS = 4;
@@ -21,3 +22,8 @@ export const PAYROLL_PAYEES_MAX = 20;
 export const INVOICE_DUE_CHOICES = [7, 14, 30] as const;
 /** Payroll days offered (1–28, so every month has them). */
 export const PAYROLL_MONTHDAYS = [1, 15, 28] as const;
+/** An invoice is "due soon" this long before its due date (the day-before reminder). */
+export const INVOICE_DUE_SOON_MS = SECONDS_PER_DAY * MS_PER_SECOND;
+/** How often invoice reminders are looked for. */
+const INVOICE_REMINDER_TICK_MINUTES = 15;
+export const INVOICE_REMINDER_TICK_MS = INVOICE_REMINDER_TICK_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;

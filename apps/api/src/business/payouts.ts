@@ -1,14 +1,14 @@
 // Batch payouts (cards/agent-business.md "Payouts (batch, from a CSV or contacts)"): every line is resolved and checked
 // like a send's recipient (R6: a contact, an @handle or a typed address; never yourself, never a token contract, never a
 // look-alike of a saved contact, never an address on hold), then one transaction the wallet sends to itself pays them all
-// through its 7702 DeleGator, all or nothing: one Face ID. Its receipt shows one transfer per line.
+// through its 7702 DeleGator, all or nothing: one Face ID. Its receipt shows one transfer per line. Any token the
+// registry knows (R1): USDC, EURC, cirBTC, a listed token or an address; amounts in that token's decimals.
 import { and, desc, eq } from "drizzle-orm";
-import { erc20Abi, encodeFunctionData, getAddress, type Address, type Hex } from "viem";
+import { erc20Abi, encodeFunctionData, getAddress, parseUnits, type Address, type Hex } from "viem";
 
 import type { PayoutCreateResult, PayoutLineInput, PayoutProblem, PayoutView } from "@kawase/api-client";
 import { PAYOUT_GAS_BASE, PAYOUT_GAS_PER_LINE, PAYOUT_LINES_MAX } from "@kawase/config";
 import { payoutBatches, type Db, type PayoutLine } from "@kawase/db";
-import { parseAmount } from "@kawase/money";
 
 import type { AuditWriter } from "../audit/writer";
 import { HTTP, problem } from "../http/problem";
@@ -16,16 +16,18 @@ import type { Recipients } from "../send/recipients";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { businessToken, type TokenResolver } from "./tokens";
 
 const ZERO = 0n;
-const DISPLAY_LOCALE = "en";
 
 type BatchRow = typeof payoutBatches.$inferSelect;
 
 const view = (row: BatchRow): PayoutView => ({
   id: row.id,
   network: row.network,
-  asset: row.asset as "USDC" | "EURC",
+  asset: row.asset,
+  tokenAddress: row.tokenAddress,
+  decimals: row.decimals,
   lines: row.lines,
   total: row.total.toString(),
   status: row.status,
@@ -40,27 +42,31 @@ export class PayoutService {
     private readonly wallets: WalletService,
     private readonly recipients: Recipients,
     private readonly audit: AuditWriter,
+    /** Any Arc token by symbol or address (A's registry); USDC and EURC only without it. */
+    private readonly resolveToken?: TokenResolver | undefined,
   ) {}
 
-  private token(network: SessionUser["activeNetwork"], asset: "USDC" | "EURC"): Address {
-    const clients = this.chains.get(network);
+  private token(row: BatchRow): Address {
+    if (row.tokenAddress) return getAddress(row.tokenAddress);
+    const clients = this.chains.get(row.network);
     if (!clients) throw problem(HTTP.unprocessable, "network_unavailable");
-    return asset === "EURC" ? clients.network.addresses.eurc : clients.network.addresses.usdc;
+    return row.asset === "EURC" ? clients.network.addresses.eurc : clients.network.addresses.usdc;
   }
 
-  async create(user: SessionUser, input: { asset: "USDC" | "EURC"; lines: PayoutLineInput[] }): Promise<PayoutCreateResult> {
+  async create(user: SessionUser, input: { asset: string; lines: PayoutLineInput[] }): Promise<PayoutCreateResult> {
     if (input.lines.length === 0 || input.lines.length > PAYOUT_LINES_MAX) throw problem(HTTP.unprocessable, "validation", `1 to ${PAYOUT_LINES_MAX} lines`);
     const wallet = await this.wallets.userWallet(user.id);
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
     const clients = this.chains.get(user.activeNetwork);
     if (!clients) throw problem(HTTP.unprocessable, "network_unavailable");
-    const tokens = new Set([clients.network.addresses.usdc.toLowerCase(), clients.network.addresses.eurc.toLowerCase()]);
+    const token = await businessToken(this.chains, this.resolveToken, user, input.asset);
+    const tokens = new Set([clients.network.addresses.usdc.toLowerCase(), clients.network.addresses.eurc.toLowerCase(), token.address.toLowerCase()]);
     const lines: PayoutLine[] = [];
     const problems: PayoutProblem[] = [];
     for (const [index, line] of input.lines.entries()) {
       let amount: bigint;
       try {
-        amount = parseAmount(line.amount, input.asset, DISPLAY_LOCALE).baseUnits;
+        amount = parseUnits(line.amount.trim().replace(/,/g, ""), token.decimals);
       } catch {
         problems.push({ index, recipient: line.recipient, problem: "amount" });
         continue;
@@ -87,7 +93,7 @@ export class PayoutService {
     }
     if (problems.length > 0) return { payout: null, problems };
     const total = lines.reduce((sum, line) => sum + BigInt(line.amount), ZERO);
-    const [row] = await this.db.insert(payoutBatches).values({ userId: user.id, network: user.activeNetwork, asset: input.asset, lines, total }).returning();
+    const [row] = await this.db.insert(payoutBatches).values({ userId: user.id, network: user.activeNetwork, asset: token.symbol, tokenAddress: token.address, decimals: token.decimals, lines, total }).returning();
     return { payout: view(row!), problems: [] };
   }
 
@@ -110,7 +116,7 @@ export class PayoutService {
   async signRequest(user: SessionUser, id: string) {
     const row = await this.own(user, id);
     if (row.status !== "ready") throw problem(HTTP.conflict, "intent_final");
-    const token = this.token(row.network, row.asset as "USDC" | "EURC");
+    const token = this.token(row);
     const wallet = await this.wallets.userWallet(user.id);
     const clients = this.chains.get(row.network)!;
     const balance = await clients.client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [wallet!.address as Address] });

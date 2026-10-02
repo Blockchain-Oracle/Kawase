@@ -10,6 +10,7 @@ import { sessions, type Db } from "@kawase/db";
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import { clientIp } from "./location";
 import type { AccountService } from "./service";
 
 const CONFIRM_MAX = 200;
@@ -42,7 +43,7 @@ export function accountRoutes(db: Db, account: AccountService) {
   app.patch("/devices/current", async (c) => {
     const input = await parse(touchSchema, await c.req.json());
     const deviceId = await currentDevice(c);
-    if (deviceId) await account.touchCurrent(c.get("userId")!, deviceId, input);
+    if (deviceId) await account.touchCurrent(c.get("userId")!, deviceId, { ...input, ip: clientIp(c) });
     return c.body(null, HTTP.noContent);
   });
 

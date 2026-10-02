@@ -698,7 +698,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue";
 
 export type InboxItem = {
   id: string;

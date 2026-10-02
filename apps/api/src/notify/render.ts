@@ -3,16 +3,18 @@
 // catalogs are shared with the app), testnet prefixed so test money never reads as real, and the app screen it opens.
 import type { InboxKind } from "@kawase/api-client";
 import { CATALOGS, type CatalogLocale } from "@kawase/i18n";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { amount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
+const USDC_DECIMALS = 6;
+const MAX_SHOWN_DECIMALS = 6;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
 type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string> };
-type Block = "notify" | "automation" | "inbox";
+type Block = "notify" | "automation" | "inbox" | "alerts";
 
 function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
   const pick = (catalog: unknown) => (catalog as Record<Block, Record<string, unknown>>)[block]?.[key];
@@ -23,10 +25,17 @@ function text(locale: CatalogLocale, block: Block, key: string, values: Record<s
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
+/** Any token's amount from base units and decimals (invoices can be in any Arc token), in the person's locale. */
+function tokenAmount(baseUnits: string | undefined, decimals: string | undefined, symbol: string | undefined, locale: CatalogLocale) {
+  if (!baseUnits) return "";
+  const places = Number(decimals ?? USDC_DECIMALS);
+  return formatTokenAmount(BigInt(baseUnits), places, symbol ?? "", locale, { fractionDigits: Math.min(places, MAX_SHOWN_DECIMALS), trimZeros: true }).trim();
+}
+
 export function renderNotification(item: Item, locale: CatalogLocale): RenderedNotification {
   const p = item.params;
   const money = (asset: string | undefined, baseUnits: string | undefined) =>
-    asset && baseUnits ? formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale) : "";
+    !asset || !baseUnits ? "" : asset === "USDC" || asset === "EURC" ? formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale) : tokenAmount(baseUnits, p.decimals, asset, locale);
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? short(counterparty) : "");
   const sum = money(p.asset, p.amount);
@@ -60,8 +69,33 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
       body = p.balance ? text(locale, "automation", "ruleAlertBalance", { amount: money("USDC", p.balance) }) : "";
       path = "/automations";
       break;
+    case "device_signed_in":
+    case "device_signed_out": {
+      const device = p.name || text(locale, "alerts", "aDevice");
+      title = text(locale, "alerts", item.kind === "device_signed_in" ? "deviceSignedInTitle" : "deviceSignedOutTitle", { name: device });
+      body =
+        item.kind === "device_signed_out"
+          ? text(locale, "alerts", "deviceSignedOutBody")
+          : text(locale, "alerts", p.location ? "deviceSignedInBody" : "deviceSignedInBodyNoPlace", { platform: p.platform ?? "", location: p.location ?? "" });
+      path = "/account/devices";
+      break;
+    }
+    case "invoice_due":
+    case "invoice_overdue": {
+      const owed = tokenAmount(p.amount, p.decimals, p.asset, locale);
+      title = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueTitle" : p.stage === "due_today" ? "invoiceDueTodayTitle" : "invoiceDueSoonTitle", { number: p.number ?? "" });
+      body = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueBody" : "invoiceDueBody", {
+        client: p.client ?? "",
+        amount: owed,
+        date: p.due ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(p.due)) : "",
+      });
+      path = p.invoiceId ? `/business/invoice/${p.invoiceId}` : "/business";
+      break;
+    }
   }
-  if (item.network === "testnet") title = `${text(locale, "notify", "testnet")} · ${title}`;
+  // Security notices are about the account, not about test money.
+  const security = item.kind === "device_signed_in" || item.kind === "device_signed_out";
+  if (item.network === "testnet" && !security) title = `${text(locale, "notify", "testnet")} · ${title}`;
   return { title, body, path };
 }
 

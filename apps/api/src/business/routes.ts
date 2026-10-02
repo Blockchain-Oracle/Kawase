@@ -23,6 +23,9 @@ const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
 const decimal = z.string().regex(/^\d+(\.\d+)?$/);
 const text = z.string().trim().min(1).max(INVOICE_TEXT_MAX);
 const asset = z.enum(["USDC", "EURC"]);
+/** Invoices and payouts: a symbol or a token address (an address is 42 characters). */
+const ASSET_TEXT_MAX = 42;
+const anyAsset = z.string().trim().min(1).max(ASSET_TEXT_MAX);
 const RECIPIENT_MAX = 80;
 const LAST_WEEKDAY = 6;
 const LAST_MONTHDAY = 28;
@@ -31,14 +34,14 @@ const profileSchema = z.object({ name: text, address: z.string().max(INVOICE_TEX
 const invoiceSchema = z.object({
   clientName: text,
   clientEmail: z.string().max(INVOICE_TEXT_MAX).optional(),
-  asset,
+  asset: anyAsset,
   lines: z.array(z.object({ description: text, quantity: z.number().int().min(1).max(INVOICE_QUANTITY_MAX), unitPrice: decimal })).min(1).max(INVOICE_LINES_MAX),
   dueInDays: z.number().int().min(0).max(INVOICE_DUE_DAYS_MAX).optional(),
   dueAt: z.iso.datetime().optional(),
   note: z.string().max(INVOICE_TEXT_MAX).optional(),
 });
 const line = z.object({ recipient: z.string().trim().min(1).max(RECIPIENT_MAX), amount: decimal });
-const payoutSchema = z.object({ asset, lines: z.array(line).min(1).max(PAYOUT_LINES_MAX) });
+const payoutSchema = z.object({ asset: anyAsset, lines: z.array(line).min(1).max(PAYOUT_LINES_MAX) });
 const submitSchema = z.object({ requestId: z.uuid(), signedTransaction: hex });
 const payrollSchema = z.object({
   name: text,

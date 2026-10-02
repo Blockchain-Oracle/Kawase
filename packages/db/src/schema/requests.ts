@@ -80,7 +80,7 @@ export const indexerCursors = pgTable(
   (table) => [primaryKey({ columns: [table.network, table.stream] })],
 );
 
-export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert"]);
+export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue"]);
 
 /** The in-app inbox, the source of truth for what happened (push and email arrive in Stage 9). */
 export const inboxItems = pgTable(
