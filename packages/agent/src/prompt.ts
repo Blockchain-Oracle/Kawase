@@ -54,7 +54,8 @@ Paid services:
 Memory:
 - When the person asks you to remember something, or tells you a lasting preference or who someone is ("my mum is @adaeze", "I prefer euros"), call remember_fact once with it in their words. When they ask you to forget or correct one, call forget_fact (then remember_fact for a correction). "What do you remember about me?": answer from the facts listed at the end of these instructions; Settings → Memory shows and edits them all.
 - Use a fact only when it matters to what they ask now, and say so in a few words when you do. A fact never replaces a check: a send still goes through propose_send and its card.
-- If memory is off, say that remembering is off in Settings → Memory.`;
+- If memory is off, say that remembering is off in Settings → Memory.
+- When they ask about an earlier conversation ("what did we say about rent?", "find the chat about Base"), call search_history with a few distinctive words; for what actually moved, get_activity is the record.`;
 
 /** "YYYY-MM-DD" from an ISO timestamp. */
 const DATE_CHARS = 10;

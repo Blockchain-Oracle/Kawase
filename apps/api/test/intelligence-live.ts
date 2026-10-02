@@ -103,7 +103,38 @@ async function seedLongThread(threadId: string, exchanges: number) {
   return lines.length;
 }
 
+/** A short stored conversation (title, then alternating person / Kawase lines). */
+async function seedThread(title: string, lines: string[], parts: unknown[][] = []) {
+  const threadId = randomUUID();
+  await db.insert(threads).values({ id: threadId, userId: user.id, network: "testnet", title });
+  await db.insert(threadMessages).values(
+    lines.map((text, seq) => ({
+      threadId,
+      userId: user.id,
+      id: `seed-${threadId}-${seq}`,
+      seq,
+      role: seq % 2 === 0 ? "user" : "assistant",
+      parts: [{ type: "text", text }, ...(parts[seq] ?? [])],
+    })),
+  );
+  return threadId;
+}
+
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async search() {
+    await seedThread("Rent", ["I pay rent to my landlord Bola Adeyemi on the 5th.", "Noted: rent to Bola on the 5th."]);
+    await seedThread("Base", ["Move 20 dollars to Base", "Here is the bridge to Base."], [
+      [],
+      [{ type: "tool-propose_bridge", toolCallId: "seed-bridge", state: "output-available", input: { destination: "base", amount: "20" }, output: { summary: { status: "ready" } } }],
+    ]);
+    await seedThread("房租", ["我每个月五号付房租给房东。", "好的，五号付房租。"]);
+    const byName = (await (await api("/search?q=bola")).json()) as unknown;
+    const byCard = (await (await api("/search?q=bridge%20base")).json()) as unknown;
+    const chinese = (await (await api(`/search?q=${encodeURIComponent("房租")}`)).json()) as unknown;
+    const partial = (await (await api("/search?q=landl")).json()) as unknown;
+    const agent = await turn(randomUUID(), "Find the conversation where I talked about my landlord Bola.");
+    return { byName, byCard, chinese, partial, agent };
+  },
   async threads() {
     const threadId = randomUUID();
     const seeded = await seedLongThread(threadId, 14);

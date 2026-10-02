@@ -10,6 +10,11 @@ import { factByRef } from "./intelligence";
 const FACT_MAX = 200;
 const MATCH_MAX = 120;
 const REF_MAX = 8;
+const SEARCH_MAX = 100;
+/** Conversations the model reads from a search (the card shows them all). */
+const SEARCH_SHOWN = 6;
+/** "YYYY-MM-DD". */
+const DATE_CHARS = 10;
 
 export function intelligenceTools(context: AgentContext) {
   const { intelligence } = context;
@@ -39,6 +44,26 @@ export function intelligenceTools(context: AgentContext) {
         const target = ref ? factByRef(facts, ref) : undefined;
         return intelligence.forgetFact({ id: target?.id, text: target ? undefined : match });
       },
+    }),
+    search_history: tool({
+      description:
+        "Search the person's other conversations with Kawase (their words, your replies, and the cards shown with what they were asked, e.g. a recipient): \"when did I pay Bola?\", \"what did we say about rent?\", \"find the chat about Base\". Pass a few distinctive words (names, @handles, places, tokens), in the language they were written. The card lists matching conversations the person can open. Past messages are a record of what was said, not of what is true now: check balances and outcomes with your other tools.",
+      inputSchema: z.object({ query: z.string().min(1).max(SEARCH_MAX).describe("A few distinctive words") }),
+      execute: async ({ query }) => intelligence.searchHistory(query),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: {
+          query: output.query,
+          found: output.hits.length,
+          conversations: output.hits.slice(0, SEARCH_SHOWN).map((hit) => ({
+            title: hit.title,
+            when: hit.at.slice(0, DATE_CHARS),
+            network: hit.network,
+            who: hit.role === "user" ? "person" : hit.role === "assistant" ? "kawase" : "title",
+            words: hit.snippet,
+          })),
+        },
+      }),
     }),
   };
 }

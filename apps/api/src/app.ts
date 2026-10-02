@@ -64,6 +64,8 @@ import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
 import { memoryRoutes } from "./memory/routes";
 import { MemoryService } from "./memory/service";
+import { searchRoutes } from "./search/routes";
+import { SearchService } from "./search/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -269,6 +271,7 @@ export function createApp(deps: AppDeps) {
   app.route("/agent", agentRoutes(agentDeps, runner));
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
+  app.route("/search", searchRoutes(new SearchService(deps.db)));
 
   return app;
 }

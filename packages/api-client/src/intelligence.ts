@@ -30,6 +30,24 @@ export type MemoryUsed = { id: string; fact: string };
 /** The metadata Kawase attaches to an assistant message. */
 export type AgentMessageMetadata = { memoryUsed?: MemoryUsed[] | undefined };
 
+/** A conversation that matches a search, with the best-matching words around the match. */
+export type HistoryHit = {
+  threadId: string;
+  title: string | null;
+  network: AgentNetwork;
+  lastMessageAt: string;
+  /** The matching message: who wrote it, when, and the words around the match. */
+  messageId: string | null;
+  role: "user" | "assistant" | null;
+  at: string;
+  snippet: string;
+  /** How many messages in that conversation match. */
+  matches: number;
+};
+
+/** What search_history returns (the chat's search card). */
+export type HistorySearchOutput = { query: string; hits: HistoryHit[] };
+
 export type { AgentNetwork };
 
 /** The client's `call`, as the factory below receives it. */
@@ -47,5 +65,7 @@ export function intelligenceApi(call: Call) {
       forget: (id: string) => call<void>("DELETE", `/memory/facts/${id}`),
       forgetAll: () => call<void>("DELETE", "/memory/facts"),
     },
+    /** Every conversation's words, the cards they showed and what those were asked, searched on the server. */
+    search: (query: string) => call<HistorySearchOutput>("GET", `/search?q=${encodeURIComponent(query)}`),
   };
 }

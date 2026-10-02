@@ -1,7 +1,7 @@
 // The agent's intelligence layer (A5): what it remembers about the person, and how it notices which remembered fact a
 // reply relied on (the "From memory" line under that reply). The api implements `IntelligenceContext`; nothing here
 // reads storage.
-import type { MemoryFact, MemoryToolOutput, MemoryUsed } from "@kawase/api-client";
+import type { HistorySearchOutput, MemoryFact, MemoryToolOutput, MemoryUsed } from "@kawase/api-client";
 
 import type { ThreadDigest } from "./threads";
 
@@ -20,6 +20,8 @@ export type IntelligenceContext = {
   /** This thread's rolling summary of its older messages (null until the thread is long). */
   threadDigest(): Promise<ThreadDigest | null>;
   saveThreadDigest(digest: ThreadDigest): Promise<void>;
+  /** The person's other conversations that match (words, cards and what they were asked), best first. */
+  searchHistory(query: string): Promise<HistorySearchOutput>;
   /** Background work that failed after the person had their answer (logged, never shown). */
   warn(error: unknown, what: string): void;
 };

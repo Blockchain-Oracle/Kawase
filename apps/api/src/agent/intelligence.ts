@@ -7,6 +7,7 @@ import { threadDigests, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 
 import { MemoryService } from "../memory/service";
+import { SearchService } from "../search/service";
 import type { SessionUser } from "../types";
 
 const WORD_MIN = 2;
@@ -66,6 +67,12 @@ export function buildIntelligence(input: { db: Db; user: SessionUser; threadId: 
         .values({ threadId, ...digest })
         .onConflictDoUpdate({ target: threadDigests.threadId, set: { ...digest, updatedAt: new Date() } });
       log.info({ threadId, folded: digest.folded }, "thread summarized");
+    },
+
+    async searchHistory(query) {
+      // Other conversations: this one is already in front of the model.
+      const found = await new SearchService(db).search(user.id, query);
+      return { query: found.query, hits: found.hits.filter((hit) => hit.threadId !== threadId) };
     },
 
     warn(error, what) {

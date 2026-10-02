@@ -155,6 +155,13 @@
       "when": 1791000071000,
       "tag": "0071_thread_digests",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791000072000,
+      "tag": "0072_message_search",
+      "breakpoints": true
     }
   ]
 }
