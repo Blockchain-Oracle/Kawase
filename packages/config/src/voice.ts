@@ -80,3 +80,9 @@ export const GPT_LIVE_READY_TIMEOUT_MS = 8000;
 export const READBACK_SETTLE_MS = 1500;
 /** GPT-Live caps each appended text at 500 tokens; Kawase keeps its texts well under that. */
 export const GPT_LIVE_APPEND_MAX_CHARS = 1500;
+/**
+ * GPT-Live can hand a request over before the person has finished speaking (observed 2026-10-02: "How much is…"). Kawase
+ * waits for the end of their speech, at most this long, then this much more for the last words of the transcript.
+ */
+export const GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS = 3000;
+export const GPT_LIVE_TRANSCRIPT_TAIL_MS = 300;

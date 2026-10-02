@@ -9,6 +9,8 @@ import * as openai from "@livekit/agents-plugin-openai";
 import {
   GPT_LIVE_APPEND_MAX_CHARS,
   GPT_LIVE_READY_TIMEOUT_MS,
+  GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS,
+  GPT_LIVE_TRANSCRIPT_TAIL_MS,
   READBACK_SETTLE_MS,
   type SupportedLocale,
   type VoicePrefs,
@@ -41,7 +43,7 @@ export function persona(locale: SupportedLocale, prefs: VoicePrefs): string {
     "You are the voice of Kawase, a money app on Arc (Circle's stablecoin network). You are warm, calm and brief: one or two short sentences.",
     `Speak ${language} (the person's app language). If the person speaks another language, answer in theirs.`,
     PACE[prefs.speed],
-    "You cannot see the person's money, contacts, account, limits or anything on Arc. Always delegate to the client for anything about money, payments, balances, requests, swaps, bridges, savings, automations, contacts, limits, the network, settings or their account, and wait for its commentary.",
+    "You know nothing about Kawase's features, the person's money, contacts, account, limits or anything on Arc. Delegate every request and every question to the client — including what Kawase can do — and wait for its commentary. Only greetings, thanks and goodbyes you may answer yourself.",
     "When commentary arrives, say it in your own words, but keep every amount, asset (USDC, EURC…), recipient, network and status exactly as given. Never state an amount, asset, recipient or network that was not given to you in commentary. Never guess.",
     "Money never moves because of something said aloud: a payment happens only when the person taps its card on screen. Never say something was sent, paid or done unless the commentary says so. If the commentary says a card is ready, tell the person to check and tap the card.",
     "Small talk is fine, briefly. Don't read out addresses or long numbers character by character; the card shows them.",
@@ -130,25 +132,58 @@ export async function startGptLive(input: {
       live.appendCommentary(clip(`Correct what you just said, briefly. The exact facts are: ${line}`));
     });
     live.on("transcript_delta", ({ text }) => guard.heard(text));
+    // KAWASE_VOICE_DEBUG=1 traces the conversation (it includes what was said: never on in production).
+    if (process.env.KAWASE_VOICE_DEBUG === "1") {
+      live.on("input_speech_started", () => console.info("voice debug: person started speaking"));
+      live.on("input_audio_transcription_completed", (event) => {
+        if (event.isFinal) console.info(`voice debug: heard "${event.transcript}"`);
+      });
+      live.on("transcript_delta", ({ text }) => console.info(`voice debug: said "${text}"`));
+      live.on("delegation_created", ({ id, pendingTranscript }) => console.info(`voice debug: delegation ${id} "${pendingTranscript}"`));
+      session.on(voice.AgentSessionEventTypes.AgentStateChanged, (event) => console.info(`voice debug: agent ${event.newState}`));
+    }
     live.on("error", (event) => {
       if (event.recoverable) return;
       console.error("GPT-Live failed", event.error);
       onFatal(event.error);
     });
 
+    // What the person is saying now. GPT-Live may delegate mid-sentence, so a request waits for the end of their speech
+    // and uses the settled transcript (the delegation's own transcript can be a fragment, or empty).
+    let speaking = false;
+    let heard = "";
+    live.on("input_speech_started", () => {
+      speaking = true;
+      heard = "";
+    });
+    live.on("input_speech_stopped", () => {
+      speaking = false;
+    });
+    live.on("input_audio_transcription_completed", (event) => {
+      heard = event.transcript;
+      if (event.isFinal) speaking = false;
+    });
     const lastUserText = () =>
       [...agent.chatCtx.items]
         .reverse()
         .find((item): item is llm.ChatMessage => item instanceof llm.ChatMessage && item.role === "user")
         ?.textContent?.trim() ?? "";
+    const settledRequest = async (pending: string) => {
+      await waitUntil(() => !speaking, GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS);
+      await new Promise((resolve) => setTimeout(resolve, GPT_LIVE_TRANSCRIPT_TAIL_MS));
+      // This turn's words (whichever of the two saw more of them); the chat history only as a last resort.
+      const current = heard.trim().length >= pending.trim().length ? heard.trim() : pending.trim();
+      return current || lastUserText();
+    };
 
     live.on("delegation_created", ({ id, pendingTranscript }) => {
       // A newer request replaces an older one still in flight (the person changed their mind or interrupted).
       current?.abort();
       const abort = new AbortController();
       current = abort;
-      const text = pendingTranscript.trim() || lastUserText();
       void (async () => {
+        const text = await settledRequest(pendingTranscript);
+        if (abort.signal.aborted) return;
         if (!text) {
           live.appendCommentary(SORRY[locale], { delegationId: id });
           return;
