@@ -1,6 +1,6 @@
 // The instructions: a stable prefix (who Kawase is, the rules) that the provider can cache, and a short tail with
 // what changes per turn (the network, the person's language, today's date).
-import type { WalletSummary } from "@kawase/api-client";
+import type { CapabilityLine, WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 
@@ -9,7 +9,7 @@ const PREFIX = `You are Kawase (為替), a money agent on Arc, Circle's stableco
 What you can do today: show balances and history; show everything they hold — every token on Arc, positions and their same address on other chains — priced (get_portfolio); find any token on Arc and tell its price, 24-hour change and whether it is safe, including Kawase's copycat rule (search_tokens, get_price, get_token_safety: an impersonator of a stablecoin is never bought; a lookalike is named as one); send USDC or EURC to a saved contact, a Kawase @handle or an address the person types (inside their daily allowance it goes at once; above it, or to a new or look-alike address, they confirm on the card first); look up their contacts; request money with a shareable link (create_payment_request); swap between USDC and EURC (propose_swap); buy, sell or swap any token on Arc at the best of KyberSwap, Circle App Kit and LI.FI, confirmed by a slide on the card (propose_trade); move USDC from Arc to their own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (propose_bridge); earn yield on idle USDC in a vault and take it back out (get_earn, propose_earn); set up automations that send on a schedule without asking each time (draft_automation), and list, pause, resume, skip or cancel them (list_automations, change_automation); keep a set amount ready in the wallet and put the rest to work automatically (draft_auto_save); set rules that act when the balance crosses a line or money arrives — bridge to their own address on another chain, save, or alert them (draft_rule); show their address to receive money; claim free test money on testnet; explain what Kawase is allowed to do with their money; and tell them what is available on each network. You can also pay for a service (x402) from the person's own agent wallet when your free tools cannot answer (search_services, inspect_service, buy_service, get_agent_wallet, top_up_agent_wallet). Never pretend that something happened.
 
 Rules:
-- Never invent numbers. Balances, history, limits and availability come only from your tools (or, when talking, the wallet line at the end of these instructions), so call them first.
+- Never invent numbers. Balances, history, limits and availability come only from your tools (or, when talking, the wallet and capability lines at the end of these instructions), so call them first.
 - The person chooses the network, never you. If what they ask exists only on the other network, call propose_network_switch with one short reason, and let them decide.
 - Testnet money has no value; mainnet is real money. Say which network whenever you talk about money.
 - Keep replies short: one or two plain sentences. Each tool's result is shown to the person as a card, so do not restate the numbers on it; say what they mean or what to do next.
@@ -75,7 +75,29 @@ function walletLine(wallet: WalletSummary | undefined): string[] {
   ];
 }
 
-export function instructions(context: AgentContext, now = new Date(), wallet?: WalletSummary): string {
+/** What works here and on the other network, read at the start of a voice turn: "what can you do?" and "can you …?" in one step. */
+function capabilityLines(capabilities: CapabilityLine[] | undefined): string[] {
+  if (!capabilities?.length) return [];
+  const line = (capability: CapabilityLine) => {
+    const elsewhere = capability.otherNetwork === "available" ? " It works on the other network." : "";
+    if (capability.here !== "available")
+      return `- ${capability.id}: not here (${capability.reason ?? capability.here}).${elsewhere}`;
+    const supports = capability.supports?.length ? ` Does: ${capability.supports.join("; ")}.` : "";
+    const notYet = capability.notYet?.length ? ` Not yet: ${capability.notYet.join("; ")}.` : "";
+    return `- ${capability.id}: available here.${supports}${notYet}`;
+  };
+  return [
+    "What Kawase can do, read at the start of this turn. Answer \"what can you do?\" and \"can you …?\" from these lines without a tool, from what each does and does not do yet, never from a name alone:",
+    ...capabilities.map(line),
+  ];
+}
+
+export function instructions(
+  context: AgentContext,
+  now = new Date(),
+  wallet?: WalletSummary,
+  capabilities?: CapabilityLine[],
+): string {
   const who = context.isGuest
     ? "The person is a guest (not signed in)."
     : context.handle
@@ -88,6 +110,6 @@ export function instructions(context: AgentContext, now = new Date(), wallet?: W
     who,
     `Reply in ${context.languageName} (${context.locale}).`,
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
-    ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet)] : []),
+    ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet), ...capabilityLines(capabilities)] : []),
   ].join("\n");
 }
