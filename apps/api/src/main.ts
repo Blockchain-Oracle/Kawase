@@ -55,7 +55,7 @@ const app = createApp({
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
-  market: liveMarketData(),
+  market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,

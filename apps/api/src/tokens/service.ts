@@ -35,7 +35,8 @@ import {
   CANONICAL_TOKENS,
   NETWORKS,
   TESTNET_PRICE_TWINS,
-  impersonatesStablecoin,
+  isForeignImpostor,
+  isImpostor,
   isArcUsdc,
   normalizeSymbol,
   type NetworkId,
@@ -44,6 +45,7 @@ import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS } from "@kawase/money";
 
 import { HTTP, problem } from "../http/problem";
+import { priceKey, type WalletHolding } from "../market/alchemy";
 import type { MarketData, PoolRow, TokenMarket } from "../market/sources";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
@@ -54,6 +56,12 @@ import { safetyVerdict, type Lookalike } from "./safety";
 const MAINNET_CHAIN_ID = NETWORKS.mainnet.chainId;
 /** Other chains (LI.FI scans ~60) and positions may take longer than a Home screen should wait; they fill the cache. */
 const SLOW_SOURCE_WAIT_MS = 3_000;
+/** Alchemy answered in 0.8–6.4 s in the live check; past this the fallback path answers and Alchemy fills its cache. */
+const ALCHEMY_WAIT_MS = 7_000;
+/** How the bridge chains' native coins (ETH, POL, AVAX) are addressed. */
+const NATIVE_ADDRESS = "0x0000000000000000000000000000000000000000";
+const STABLE_DECIMALS = 6;
+const NETWORK_EURC_MAINNET = NETWORKS.mainnet.addresses.eurc;
 
 /** The answer if it comes within `ms`, else `fallback` (the work goes on and fills its cache for the next read). */
 function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -125,6 +133,15 @@ export class AssetService {
       const priceUsd = mainnet && isArcUsdc(mainnet) ? (listedPrice ?? 1) : (market?.priceUsd ?? listedPrice);
       prices.set(address, { priceUsd, change24hPct: market?.change24hPct ?? null, market });
     }
+    // Majors no DEX list prices (and any token the others missed): Alchemy's Prices API, when configured.
+    const unpriced = lookups.filter(([address, mainnet]) => mainnet && prices.get(address)?.priceUsd === null);
+    if (unpriced.length > 0 && this.market.wallets) {
+      const found = await this.market.wallets.prices(unpriced.map(([, mainnet]) => ({ chainId: MAINNET_CHAIN_ID, address: mainnet! }))).catch(() => new Map<string, number>());
+      for (const [address, mainnet] of unpriced) {
+        const value = found.get(priceKey(MAINNET_CHAIN_ID, mainnet!));
+        if (value !== undefined) prices.set(address, { ...prices.get(address)!, priceUsd: value });
+      }
+    }
     return { prices, at, stale };
   }
 
@@ -150,11 +167,16 @@ export class AssetService {
         .where(and(eq(walletTokens.userId, user.id), eq(walletTokens.chainId, chainId))),
     ]);
     const visibility = new Map(seen.map((row) => [row.token, row.visibility]));
+    // Primary discovery: Alchemy's Portfolio API (Arc and the bridge chains in one call); the watcher's list and the
+    // market's list stay as the fallback and the real-time path. Balances on Arc are read on chain either way.
+    const index = this.market.wallets ? await within(this.market.wallets.holdings(wallet, network), ALCHEMY_WAIT_MS, null) : null;
+    const indexed = index?.holdings ?? null;
     const candidates = [
       ...new Set([
         ...CANONICAL_TOKENS[network].map((token) => token.address.toLowerCase()),
         ...listed.keys(),
         ...seen.map((row) => row.token),
+        ...(indexed ?? []).filter((entry) => entry.chainId === chainId && entry.tokenAddress).map((entry) => entry.tokenAddress!),
       ]),
     ];
     const balances = await this.balancesOnArc(network, wallet, candidates);
@@ -172,7 +194,11 @@ export class AssetService {
       this.earnPositions
         ? within(this.earnPositions(user).catch((error: unknown) => (this.log.warn({ err: error }, "portfolio earn positions failed"), [])), SLOW_SOURCE_WAIT_MS, [])
         : Promise.resolve([]),
-      network === "mainnet" ? within(this.otherChains(wallet), SLOW_SOURCE_WAIT_MS, [] as HoldingView[]) : Promise.resolve([] as HoldingView[]),
+      indexed
+        ? this.otherChainsFromIndex(network, indexed.filter((entry) => entry.chainId !== chainId))
+        : network === "mainnet"
+          ? within(this.otherChains(wallet), SLOW_SOURCE_WAIT_MS, [] as HoldingView[])
+          : Promise.resolve([] as HoldingView[]),
     ]);
     const described = await this.directory.describe(network, chainId, clients.client, held, new Map([...prices].flatMap(([address, priced]) => (priced.market ? [[address, priced.market] as const] : []))));
 
@@ -256,7 +282,8 @@ export class AssetService {
       history,
       fx,
       pricedAt: new Date(at).toISOString(),
-      stale,
+      // A chain Alchemy could not answer for is shown from its last answer, or missing: either way, not fresh.
+      stale: stale || (index?.failedChains.length ?? 0) > 0,
     };
   }
 
@@ -293,6 +320,51 @@ export class AssetService {
       if (result?.status === "success") out.set(token.toLowerCase(), result.result as bigint);
     });
     return out;
+  }
+
+  /**
+   * The wallet's tokens on the bridge chains, from Alchemy (native coins and every ERC-20). Kawase's own rules decide
+   * what shows: a stablecoin symbol with the wrong decimals is a fake; no price means Hidden; tokens without a price
+   * never count toward the total. Test networks value test USDC/EURC at their mainnet twin.
+   */
+  private async otherChainsFromIndex(network: NetworkId, entries: readonly WalletHolding[]): Promise<HoldingView[]> {
+    const usable = entries.filter((entry) => entry.decimals !== null && entry.symbol);
+    const missing = usable.filter((entry) => entry.priceUsd === null && entry.tokenAddress).map((entry) => ({ chainId: entry.chainId, address: entry.tokenAddress! }));
+    const fetched = missing.length && this.market.wallets && network === "mainnet" ? await this.market.wallets.prices(missing).catch(() => new Map<string, number>()) : new Map<string, number>();
+    const twins = network === "testnet" ? await this.prices("mainnet", [CANONICAL_TOKENS.mainnet[0]!.address, NETWORK_EURC_MAINNET]) : undefined;
+    return usable.map((entry) => {
+      const decimals = entry.decimals!;
+      const symbol = entry.symbol!;
+      const fake = isForeignImpostor(symbol, decimals);
+      const twin = twins && !fake && decimals === STABLE_DECIMALS ? (symbol === "USDC" ? 1 : symbol === "EURC" ? (twins.prices.get(NETWORK_EURC_MAINNET.toLowerCase())?.priceUsd ?? null) : null) : null;
+      const looked = entry.tokenAddress ? fetched.get(priceKey(entry.chainId, entry.tokenAddress)) : undefined;
+      const priceUsd = fake ? null : (entry.priceUsd ?? looked ?? twin);
+      const amount = formatUnits(entry.balance, decimals);
+      const valueUsd = priceUsd === null ? null : Number(amount) * priceUsd;
+      const token: TokenView = {
+        chainId: entry.chainId,
+        address: entry.tokenAddress ? getAddress(entry.tokenAddress) : NATIVE_ADDRESS,
+        symbol,
+        name: entry.name ?? symbol,
+        decimals,
+        logoUrl: entry.logoUrl,
+        kind: "token",
+        status: fake ? "impersonator" : priceUsd === null ? "unverified" : "listed",
+        isTest: network === "testnet",
+      };
+      const reason: HiddenReason | null = fake ? "impersonator" : priceUsd === null ? "spam" : valueUsd !== null && valueUsd < DUST_USD ? "dust" : null;
+      return {
+        token,
+        balance: entry.balance.toString(),
+        amount,
+        priceUsd,
+        valueUsd: valueUsd === null ? null : round(valueUsd),
+        change24hPct: null,
+        chainName: entry.chainName,
+        hidden: reason !== null,
+        hiddenReason: reason,
+      };
+    });
   }
 
   /** The wallet's tokens on the other chains LI.FI indexes (the same address on each EVM chain). */
@@ -518,7 +590,7 @@ export class AssetService {
       decimals: canonical?.decimals ?? side.decimals,
       logoUrl: side.logoUrl,
       kind: canonical?.kind ?? "token",
-      status: this.directory.status("mainnet", lower, side.symbol, Boolean(canonical), listed.has(lower) || Boolean(side.coingeckoId), owners),
+      status: this.directory.status("mainnet", lower, side.symbol, Boolean(canonical), listed.has(lower) || Boolean(side.coingeckoId), owners, side.decimals),
       isTest: false,
     };
   }
@@ -587,7 +659,7 @@ function hideReason(token: TokenView, valueUsd: number | null, visibility: "auto
 }
 
 const MEME_EXCLUDED_KINDS = new Set(["dollar", "fiat", "bitcoin", "ether", "rwa", "permissioned", "position"]);
-const isMeme = (token: TokenView) => !MEME_EXCLUDED_KINDS.has(token.kind) && !impersonatesStablecoin("mainnet", token.symbol, token.address);
+const isMeme = (token: TokenView) => !MEME_EXCLUDED_KINDS.has(token.kind) && !isImpostor("mainnet", token.symbol, token.address, token.decimals);
 
 /**
  * What a person can do with a token here, each with its reason when they cannot (R1, R2; capability-matrix.md).
