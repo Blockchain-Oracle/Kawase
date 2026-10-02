@@ -8,3 +8,5 @@ export * from "./earn";
 export * from "./automation";
 export * from "./limits";
 export * from "./margin";
+export * from "./crosschain";
+export * from "./lend";

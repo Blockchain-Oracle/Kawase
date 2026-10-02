@@ -13,6 +13,7 @@ export const capability: Catalog["capability"] = {
   faucet: "Dinheiro de teste",
   payment_links: "Links de pagamento",
   margin: "Comprado e vendido",
+  lend: "Pegar e emprestar",
   buy: "Comprar com cartão",
   memory: "Memória e sugestões",
 };

@@ -223,13 +223,27 @@
       "idx": 31,
       "version": "7",
       "when": 1791000074000,
-      "tag": "0060_safety",
+      "tag": "0032_crosschain",
       "breakpoints": true
     },
     {
       "idx": 32,
       "version": "7",
       "when": 1791000075000,
+      "tag": "0033_lend",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791000076000,
+      "tag": "0060_safety",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791000077000,
       "tag": "0061_automations_8c",
       "breakpoints": true
     }

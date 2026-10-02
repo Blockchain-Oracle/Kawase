@@ -13,6 +13,7 @@ export const capability: Catalog["capability"] = {
   faucet: "测试币",
   payment_links: "付款链接",
   margin: "做多和做空",
+  lend: "借款与出借",
   buy: "用银行卡购买",
   memory: "记忆与建议",
 };

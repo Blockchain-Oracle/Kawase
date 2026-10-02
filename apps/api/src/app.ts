@@ -60,6 +60,10 @@ import { MarginService } from "./margin/service";
 import { noOnramp, type OnrampEngine } from "./onramp/engine";
 import { onrampRoutes } from "./onramp/routes";
 import { OnrampService } from "./onramp/service";
+import { crossChainRoutes } from "./crosschain/routes";
+import { CrossChainService } from "./crosschain/service";
+import { lendRoutes } from "./lend/routes";
+import { LendService } from "./lend/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
@@ -193,6 +197,8 @@ export function createApp(deps: AppDeps) {
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
+  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
+  const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -225,6 +231,8 @@ export function createApp(deps: AppDeps) {
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
     onramp.startReconciler(deps.reconcileIntervalMs);
+    crosschain.startSweeper(deps.reconcileIntervalMs);
+    lend.startSweeper(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -306,6 +314,8 @@ export function createApp(deps: AppDeps) {
   app.route("/earn", earnRoutes(earn));
   app.route("/margin", marginRoutes(margin));
   app.route("/onramp", onrampRoutes(onramp));
+  app.route("/crosschain", crossChainRoutes(crosschain));
+  app.route("/lend", lendRoutes(lend));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -345,6 +355,8 @@ export function createApp(deps: AppDeps) {
     earn,
     margin,
     onramp,
+    crosschain,
+    lend,
     assets,
     automations,
     requests,

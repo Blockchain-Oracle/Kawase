@@ -134,3 +134,14 @@ export const RULER = {
   snap: SNAP_SPRING,
   reducedMotionMs: 100,
 } as const;
+
+/** The borrow health gauge: the needle easing to a new health as the amount changes, and its scale. */
+export const HEALTH_GAUGE = {
+  moveMs: 320,
+  trackPt: 8,
+  needlePt: 16,
+  /** Health shown at the right end of the track; anything higher (or no debt) sits there. */
+  scaleMax: 3,
+  /** Health at the left end: 1 is where liquidation starts. */
+  scaleMin: 1,
+} as const;
