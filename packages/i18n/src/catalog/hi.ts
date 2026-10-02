@@ -1128,6 +1128,8 @@ export const hi: Catalog = {
     payment_links: "भुगतान लिंक",
   },
   chatHome: {
+    seeAll: "सभी देखें ({{count}})",
+    seeLess: "कम दिखाएँ",
     greetMorning: "सुप्रभात",
     greetAfternoon: "नमस्कार",
     greetEvening: "शुभ संध्या",

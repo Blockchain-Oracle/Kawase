@@ -1110,6 +1110,8 @@ export const ar: Catalog = {
     payment_links: "روابط الدفع",
   },
   chatHome: {
+    seeAll: "عرض الكل ({{count}})",
+    seeLess: "عرض أقل",
     greetMorning: "صباح الخير",
     greetAfternoon: "مساء الخير",
     greetEvening: "مساء الخير",

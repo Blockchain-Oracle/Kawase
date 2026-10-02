@@ -1129,6 +1129,8 @@ export const ur: Catalog = {
     payment_links: "ادائیگی کے لنکس",
   },
   chatHome: {
+    seeAll: "سب دیکھیں ({{count}})",
+    seeLess: "کم دکھائیں",
     greetMorning: "صبح بخیر",
     greetAfternoon: "سہ پہر بخیر",
     greetEvening: "شام بخیر",

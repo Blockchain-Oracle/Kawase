@@ -1124,6 +1124,8 @@ export const en = {
     payment_links: "Payment links",
   },
   chatHome: {
+    seeAll: "See all {{count}}",
+    seeLess: "Show less",
     greetMorning: "Good morning",
     greetAfternoon: "Good afternoon",
     greetEvening: "Good evening",

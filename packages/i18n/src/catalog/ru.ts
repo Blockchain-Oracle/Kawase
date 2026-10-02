@@ -1133,6 +1133,8 @@ export const ru: Catalog = {
     payment_links: "Платёжные ссылки",
   },
   chatHome: {
+    seeAll: "Показать все ({{count}})",
+    seeLess: "Свернуть",
     greetMorning: "Доброе утро",
     greetAfternoon: "Добрый день",
     greetEvening: "Добрый вечер",

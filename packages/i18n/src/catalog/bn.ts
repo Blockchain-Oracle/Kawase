@@ -1122,6 +1122,8 @@ export const bn: Catalog = {
     payment_links: "পেমেন্ট লিংক",
   },
   chatHome: {
+    seeAll: "সব দেখুন ({{count}})",
+    seeLess: "কম দেখান",
     greetMorning: "সুপ্রভাত",
     greetAfternoon: "শুভ অপরাহ্ন",
     greetEvening: "শুভ সন্ধ্যা",

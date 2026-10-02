@@ -1096,6 +1096,8 @@ export const zh: Catalog = {
     payment_links: "付款链接",
   },
   chatHome: {
+    seeAll: "查看全部（{{count}}）",
+    seeLess: "收起",
     greetMorning: "早上好",
     greetAfternoon: "下午好",
     greetEvening: "晚上好",

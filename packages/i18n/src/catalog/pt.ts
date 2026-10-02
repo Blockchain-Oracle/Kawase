@@ -1131,6 +1131,8 @@ export const pt: Catalog = {
     payment_links: "Links de pagamento",
   },
   chatHome: {
+    seeAll: "Ver tudo ({{count}})",
+    seeLess: "Ver menos",
     greetMorning: "Bom dia",
     greetAfternoon: "Boa tarde",
     greetEvening: "Boa noite",

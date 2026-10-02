@@ -5,7 +5,26 @@
 // person taps, the app switches (with the real-money sheet for mainnet), and the agent continues with the answer.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { ArrowDownToLine, Copy, ExternalLink, QrCode, Waypoints } from "lucide-react-native";
+import {
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowUpRight,
+  AudioLines,
+  CalendarClock,
+  Copy,
+  Droplets,
+  ExternalLink,
+  HandCoins,
+  Link2,
+  QrCode,
+  Route,
+  Sparkles,
+  Sprout,
+  Store,
+  Users,
+  Waypoints,
+  type LucideIcon,
+} from "lucide-react-native";
 import * as React from "react";
 import { Linking, View } from "react-native";
 import { toast } from "sonner-native";
@@ -254,24 +273,63 @@ function CapabilityChip({
   );
 }
 
+/** One icon per capability; anything new falls back to the spark until it gets its own. */
+const CAPABILITY_ICON: Record<string, LucideIcon> = {
+  send: ArrowUpRight,
+  request: HandCoins,
+  contacts: Users,
+  swap: ArrowLeftRight,
+  bridge: Route,
+  yield: Sprout,
+  automations: CalendarClock,
+  marketplace: Store,
+  voice: AudioLines,
+  faucet: Droplets,
+  payment_links: Link2,
+};
+/** How many tiles show before "See all": three rows of two. */
+const CAPABILITY_PREVIEW = 6;
+
 function CapabilitiesCard({ output }: { output: { network: Network; capabilities: CapabilityLine[] } }) {
   const { t } = useT();
   const name = useNetworkName();
+  const [all, setAll] = React.useState(false);
   // Available first, then what is coming; what is unavailable everywhere is left out.
   const order = { available: 0, coming: 1, unavailable: 2 } as const;
   const lines = output.capabilities
     .filter((line) => line.here !== "unavailable" || line.otherNetwork !== "unavailable")
     .sort((a, b) => order[a.here] - order[b.here]);
+  const shown = all ? lines : lines.slice(0, CAPABILITY_PREVIEW);
   return (
     <AgentCard eyebrow={`${t("chat.cardCapabilities")} · ${name(output.network)}`}>
-      {lines.map((line) => (
-        <View key={line.id} className="flex-row items-center gap-3">
-          <Text className={cn("text-foreground flex-1 text-base", TEXT_START)}>{t(`capability.${line.id}`)}</Text>
-          <CapabilityChip state={line.here} otherNetwork={line.otherNetwork} here={output.network} />
-        </View>
-      ))}
+      <View className="flex-row flex-wrap gap-2">
+        {shown.map((line) => (
+          <View key={line.id} className="bg-secondary basis-[48%] grow gap-2 rounded-2xl p-3">
+            <View className="flex-row items-center justify-between">
+              <Icon as={CAPABILITY_ICON[line.id] ?? Sparkles} className="text-foreground size-5" />
+              <CapabilityDot state={line.here} />
+            </View>
+            <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)} numberOfLines={1}>
+              {t(`capability.${line.id}`)}
+            </Text>
+            {line.here !== "available" ? (
+              <CapabilityChip state={line.here} otherNetwork={line.otherNetwork} here={output.network} />
+            ) : null}
+          </View>
+        ))}
+      </View>
+      {lines.length > CAPABILITY_PREVIEW ? (
+        <Button variant="ghost" size="sm" className="self-start" onPress={() => setAll((open) => !open)}>
+          <Text>{all ? t("chatHome.seeLess") : t("chatHome.seeAll", { count: lines.length })}</Text>
+        </Button>
+      ) : null}
     </AgentCard>
   );
+}
+
+/** Mint when it works here, muted when it doesn't (the words are on the chip; colour is never the only signal). */
+function CapabilityDot({ state }: { state: CapabilityLine["here"] }) {
+  return <View className={cn("size-2 rounded-full", state === "available" ? "bg-success" : "bg-muted-foreground/40")} />;
 }
 
 function FaucetCard({ output }: { output: FaucetResult }) {
