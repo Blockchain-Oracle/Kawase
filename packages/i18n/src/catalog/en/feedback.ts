@@ -5,5 +5,6 @@ export const feedback = {
   haptics: "Haptics",
   hapticsBody: "Touch feedback for confirmed results.",
   narration: "Onboarding narration",
+  narrationBody: "Reads the welcome story aloud as you swipe.",
   saveFailed: "Couldn’t save this preference. Try again.",
 } as const;

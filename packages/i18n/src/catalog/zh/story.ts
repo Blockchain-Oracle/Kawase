@@ -36,4 +36,5 @@ export const story: Catalog["story"] = {
   firstStep2: "转一些到朋友的 @handle",
   goTo: "前往第 {{n}} 步",
   canvasHint: "上下滑动以切换步骤",
+  readAloud: "朗读",
 };

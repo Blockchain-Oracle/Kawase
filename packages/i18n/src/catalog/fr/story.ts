@@ -42,4 +42,5 @@ export const story: Catalog["story"] = {
   firstStep2: "En envoyer au @handle d'un ami",
   goTo: "Aller à l'étape {{n}}",
   canvasHint: "Balayez vers le haut ou le bas pour changer d'étape",
+  readAloud: "Lire à voix haute",
 };
