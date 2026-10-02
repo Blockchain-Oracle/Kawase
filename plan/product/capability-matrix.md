@@ -28,7 +28,7 @@ Key: **S** send on Arc · **X** send/withdraw to another chain as itself · **E*
 | Instance | View/chart | Trade | Alert | Watch | Share | Automate |
 |---|---|---|---|---|---|---|
 | Spot pair | ✓ | ✓ swap ticket | ✓ price | ✓ | ✓ | ✓ DCA/limit |
-| Perp market | ✓ | ✓ Kawase Margin (Aave V4: cirBTC, WETH, EURC); Hibachi markets if connected | ✓ | ✓ | ✓ | TP/SL; DCA ✗ |
+| Perp market | ✓ | ✓ Kawase Margin (Aave V4: cirBTC and WETH long/short; EURC short only, CF 0); Hibachi markets if connected | ✓ | ✓ | ✓ | TP/SL; DCA ✗ |
 | Launchpad curve | ✓ progress to graduation | ✓ where an aggregator routes; else link + alert | ✓ graduation alert | ✓ | ✓ | ✗ |
 | Closed / delisted | read-only + reason | ✗ | ✗ | ✓ | ✓ | ✗ |
 

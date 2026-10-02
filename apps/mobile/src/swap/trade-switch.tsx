@@ -8,7 +8,7 @@ import { SegmentedControl } from "@kawase/ui-native/components/segmented-control
 import { useCapability } from "@/home/use-capability";
 import { useT } from "@/i18n";
 
-export function TradeSwitch({ current }: { current: "swap" | "bridge" }) {
+export function TradeSwitch({ current }: { current: "swap" | "bridge" | "margin" }) {
   const { t } = useT();
   const router = useRouter();
   const bridgeReady = useCapability("bridge") === "available";
@@ -18,11 +18,13 @@ export function TradeSwitch({ current }: { current: "swap" | "bridge" }) {
       label={t("swap.title")}
       value={current}
       onValueChange={(value) => {
-        if (value !== current) router.replace(value === "bridge" ? "/bridge" : "/swap");
+        if (value !== current) router.replace(value === "bridge" ? "/bridge" : value === "margin" ? "/margin" : "/swap");
       }}
       options={[
         { value: "swap", label: t("swap.title") },
         { value: "bridge", label: t("bridge.title") },
+        // Long/Short shows on both networks: on testnet its screen says it is mainnet only and offers the switch (R2).
+        { value: "margin", label: t("margin.title") },
       ]}
     />
   );

@@ -64,4 +64,5 @@ export const earn: Catalog["earn"] = {
   homeCta: "年收益约 {{apy}}",
   homePosition: "{{amount}} 正在金库中赚取收益",
   yourPosition: "你的持仓",
+  stuckHidden: "另有 {{count}} 个目前无法支付，已隐藏",
 };

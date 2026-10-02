@@ -73,3 +73,18 @@ export const NETWORK_ADDRESSES = {
     stableFxEscrow: "0xd68256f4D69C6BbEcB873D8588AE0Dc6B8E22E10",
   },
 } as const satisfies Record<NetworkId, PerNetworkAddresses>;
+
+/**
+ * Aave V4 on Arc mainnet (bgd-labs/aave-address-book `AaveV4Arc.ts`, CHAIN_ID 5042; every address has code on
+ * mainnet and none on testnet; reserves, factors and the oracle read live 2026-10-02). Kawase Margin, earn supply and
+ * borrow go through the Main Spoke by reserve id, never the shallow ERC-4626 tokenization spokes (gaps.md G22).
+ * The reserves themselves (USDC, EURC, cirBTC, WETH) are read from the Spoke at run time, not listed here.
+ */
+export const AAVE_V4: Record<NetworkId, { coreHub: Address; mainSpoke: Address; forexSpoke: Address } | null> = {
+  mainnet: {
+    coreHub: "0x17288dfc86205301064577b98B02b81017e6F79C",
+    mainSpoke: "0xB843bdC3a87A05E77E07Df9FE48928b3A34b134d",
+    forexSpoke: "0x4164EBCAF74670aa74C8D4F59de6157c0780F1bB",
+  },
+  testnet: null,
+};

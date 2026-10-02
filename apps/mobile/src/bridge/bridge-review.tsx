@@ -109,7 +109,13 @@ export function BridgeReview({ intent, compact }: { intent: BridgeIntent; compac
                 {route.status === "chosen"
                   ? t("bridge.routeChosen")
                   : route.received
-                    ? `${t("bridge.routeWouldArrive", { amount: money("USDC", route.received) })} · ${t(`bridge.reason_${route.reason ?? "quote_only"}`)}`
+                    ? [
+                        t("bridge.routeWouldArrive", { amount: money("USDC", route.received) }),
+                        route.extraCost && route.extraCost !== "0" ? t("bridge.routeExtraCost", { amount: money("USDC", route.extraCost) }) : null,
+                        t(`bridge.reason_${route.reason ?? "quote_only"}`),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
                     : t(`bridge.reason_${route.reason ?? "no_quote"}`)}
               </Text>
             </View>

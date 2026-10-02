@@ -10,4 +10,5 @@ export const capability = {
   voice: "Voice",
   faucet: "Test money",
   payment_links: "Payment links",
+  margin: "Long and short",
 } as const;

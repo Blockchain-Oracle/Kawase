@@ -26,6 +26,13 @@ import type {
   SendRequest,
   SwapRequest,
   WalletSummary,
+  MarginMarketsOutput,
+  MarginPositionsOutput,
+  MarginRequest,
+  ProposeMarginOutput,
+  PortfolioView,
+  TokenDetailView,
+  TokenSearchResult,
   AgentTopUpProposal,
   AgentWalletLine,
   BuyOutcome,
@@ -103,4 +110,19 @@ export type AgentContext = {
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  // Money rails (B1). Optional so a context without them still builds; the tools say so when one is missing.
+  /** Kawase Margin markets from the venue's live reserves, with each side's leverage cap. */
+  marginMarkets?(): Promise<MarginMarketsOutput>;
+  /** The person's open long/short positions with live P&L, health and liquidation price. */
+  marginPositions?(): Promise<MarginPositionsOutput>;
+  /** Drafts a margin order (open or close); the person slides to confirm on the card. */
+  proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
+  portfolio(): Promise<PortfolioView>;
+  /** Tokens on this network by name, symbol or address, with the copycat status of each. */
+  searchTokens(query: string): Promise<TokenSearchResult[]>;
+  /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
+  tokenDetail(address: string): Promise<TokenDetailView>;
+  /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
+  proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
 };

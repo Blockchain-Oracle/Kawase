@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "মার্কেট",
+  title: "মার্কেট",
+  search: "টোকেন খুঁজুন",
+  trending: "ট্রেন্ডিং",
+  meme: "মিম",
+  perps: "লং/শর্ট",
+  fx: "স্টক ও বৈদেশিক মুদ্রা",
+  new: "নতুন",
+  hot: "সবচেয়ে গরম",
+  heatmap: "হিটম্যাপ",
+  vol: "ভলিউম {{value}}",
+  liq: "লিকুইডিটি {{value}}",
+  mcap: "ক্যাপ {{value}}",
+  testnetTitle: "মার্কেট মেইননেটে",
+  testnetBody: "টেস্ট টাকায় শুধু USDC আর EURC বদল করা যায়। আসল মার্কেট দেখতে মেইননেটে যান।",
+  switchToMainnet: "মেইননেটে যান",
+  perpsBody: "Arc-এ লং ও শর্ট তৈরি হচ্ছে: প্রথমে Aave দিয়ে cirBTC, WETH ও EURC।",
+  empty: "এখন এখানে কিছু নেই",
+  loadFailed: "মার্কেট লোড করা যায়নি।",
+  updated: "{{time}}-এ আপডেট",
+  stale: "{{time}}-এর শেষ দাম দেখানো হচ্ছে",
+  recentSearches: "সাম্প্রতিক খোঁজ",
+  segmentsLabel: "মার্কেটের ভাগ",
+};

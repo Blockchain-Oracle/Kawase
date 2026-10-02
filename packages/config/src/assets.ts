@@ -1,0 +1,56 @@
+// The asset registry, discovery, portfolio and market data (A0, G5; plan/product/cards/trade.md). Every external
+// source here is shared by all clients through the api's cache, never called per device.
+import { MS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "./units";
+
+/** LI.FI's token list for Arc (symbols, logos, USD prices): refreshed this often. */
+export const TOKEN_LIST_TTL_MS = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Prices and 24 h change: one snapshot per minute serves everyone (GeckoTerminal allows ~10 calls a minute). */
+export const PRICE_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Market lists (trending, new) and a token's market page. */
+export const MARKET_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Charts change slowly at the ranges a phone shows. */
+export const CHART_TTL_MS = 2 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** GoPlus safety facts barely move; a day keeps the free tier quiet. */
+export const SAFETY_TTL_MS = 6 * SECONDS_PER_HOUR * MS_PER_SECOND;
+/** Balances on other chains (LI.FI) per wallet. */
+export const OTHER_CHAIN_BALANCES_TTL_MS = 2 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Foreign-exchange rates for the display currency. */
+export const FX_TTL_MS = SECONDS_PER_HOUR * MS_PER_SECOND;
+/** A stale answer may be served this long when the source is down or the budget is spent. */
+export const MARKET_STALE_MAX_MS = SECONDS_PER_DAY * MS_PER_SECOND;
+
+/** The api refreshes the shared market cache (Markets lists, listed tokens' prices) this often. */
+export const MARKET_WARM_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** GeckoTerminal's public API: calls per minute Kawase allows itself (their limit is ~10 on the free tier). */
+export const GECKOTERMINAL_CALLS_PER_MINUTE = 9;
+/** GeckoTerminal's tokens/multi endpoint takes at most this many addresses per call. */
+export const GECKOTERMINAL_MULTI_MAX = 30;
+/** An external call that takes longer than this is treated as down (the cache answers instead). */
+export const MARKET_FETCH_TIMEOUT_MS = 8 * MS_PER_SECOND;
+
+/** Below this many US dollars a holding of an unlisted token counts as dust and is hidden by default. */
+export const DUST_USD = 0.01;
+/** A holding of a listed token worth less than this is still shown (the person bought it), sorted last. */
+export const HOLDING_MIN_DISPLAY_USD = 0;
+
+/** Portfolio snapshots for the balance chart: at most one per person per network this often. */
+export const PORTFOLIO_SNAPSHOT_EVERY_MS = 15 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** The balance chart's longest range. */
+export const PORTFOLIO_HISTORY_DAYS = 365;
+
+/**
+ * Discovery: the watcher reads every ERC-20 Transfer to a Kawase wallet. Each new wallet is also read backwards
+ * from when it was registered, at most this far, so tokens that arrived before Kawase watched are found.
+ */
+export const TOKEN_BACKFILL_MAX_S = 30 * SECONDS_PER_DAY;
+/** Arc's RPCs answer `eth_getLogs` for at most 10,000 blocks per call (measured 2026-10-02: 10,000 → "range too large"). */
+export const TOKEN_BACKFILL_WINDOW_BLOCKS = 9_999n;
+/** Backfill windows read per watcher tick, so a long backfill never delays live payments. */
+export const TOKEN_BACKFILL_WINDOWS_PER_TICK = 12;
+/** Registration time → block: read back this much earlier than the estimate, for clock and block-time drift. */
+export const TOKEN_BACKFILL_MARGIN_S = SECONDS_PER_HOUR;
+
+/** Token search: results per query. */
+export const TOKEN_SEARCH_LIMIT = 20;
+/** Market list rows per segment. */
+export const MARKET_LIST_LIMIT = 30;

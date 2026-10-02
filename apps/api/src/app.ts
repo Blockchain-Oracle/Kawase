@@ -48,9 +48,14 @@ import { earnRoutes } from "./earn/routes";
 import { EarnService } from "./earn/service";
 import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
+import { noMarketData, type MarketData } from "./market/sources";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { marginRoutes } from "./margin/routes";
+import { MarginService } from "./margin/service";
+import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
+import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
 import type { Discovery } from "@kawase/integrations-x402";
 import type { AgentWalletProvider } from "./marketplace/agent-wallets";
@@ -89,6 +94,10 @@ export type AppDeps = {
   bridges?: BridgeEngine | undefined;
   /** Earn vaults (Circle App Kit Earn in production); earning is refused when unset. */
   earn?: EarnEngine | undefined;
+  /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
+  market?: MarketData | undefined;
+  /** Refreshes the shared market cache this often; off when unset. */
+  marketWarmMs?: number | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
   reconcileIntervalMs?: number | undefined;
   /** Runs due automations this often; off when unset (tests drive the runner themselves). */
@@ -144,9 +153,13 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
-  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
+  // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
+  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
+  if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
+  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
+  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -169,6 +182,7 @@ export function createApp(deps: AppDeps) {
     swaps.startSweeper(deps.reconcileIntervalMs);
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
+    margin.startSweeper(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -239,6 +253,10 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
+  app.route("/margin", marginRoutes(margin));
+  app.route("/portfolio", portfolioRoutes(assets));
+  app.route("/tokens", tokenRoutes(assets));
+  app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
@@ -257,6 +275,8 @@ export function createApp(deps: AppDeps) {
     swaps,
     bridges,
     earn,
+    margin,
+    assets,
     automations,
     requests,
     models: deps.models,

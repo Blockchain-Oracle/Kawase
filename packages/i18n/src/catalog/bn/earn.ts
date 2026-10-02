@@ -64,4 +64,5 @@ export const earn: Catalog["earn"] = {
   homeCta: "বছরে প্রায় {{apy}} আয় করুন",
   homePosition: "{{amount}} ভল্টে আয় করছে",
   yourPosition: "আপনার পজিশন",
+  stuckHidden: "আরও {{count}}টি এখন ফেরত দিতে পারে না, তাই লুকানো আছে",
 };

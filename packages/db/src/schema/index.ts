@@ -8,6 +8,8 @@ export * from "./intents";
 export * from "./requests";
 export * from "./automations";
 export * from "./notifications";
+export * from "./margin";
+export * from "./assets";
 export * from "./marketplace";
 export * from "./account";
 export * from "./safety";

@@ -12,4 +12,5 @@ export const capability: Catalog["capability"] = {
   voice: "语音",
   faucet: "测试币",
   payment_links: "付款链接",
+  margin: "做多和做空",
 };

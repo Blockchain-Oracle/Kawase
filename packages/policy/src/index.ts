@@ -7,3 +7,4 @@ export * from "./bridge";
 export * from "./earn";
 export * from "./automation";
 export * from "./limits";
+export * from "./margin";
