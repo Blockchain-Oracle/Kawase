@@ -4,6 +4,7 @@ import type { WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { memoryLines, type MemoryFact } from "./intelligence";
+import { digestLines, type ThreadDigest } from "./threads";
 
 const PREFIX = `You are Kawase (為替), a money agent on Arc, Circle's stablecoin network. You help one person with their own wallet.
 
@@ -80,7 +81,7 @@ function walletLine(wallet: WalletSummary | undefined): string[] {
 }
 
 /** Per-turn additions from the intelligence layer (A5), after the cacheable prefix. */
-export type TurnExtras = { memory?: MemoryFact[] | undefined };
+export type TurnExtras = { memory?: MemoryFact[] | undefined; digest?: ThreadDigest | undefined };
 
 export function instructions(context: AgentContext, now = new Date(), wallet?: WalletSummary, extras: TurnExtras = {}): string {
   const who = context.isGuest
@@ -97,5 +98,6 @@ export function instructions(context: AgentContext, now = new Date(), wallet?: W
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
     ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet)] : []),
     ...memoryLines(extras.memory ?? []),
+    ...digestLines(extras.digest),
   ].join("\n");
 }

@@ -16,6 +16,7 @@ import type { WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { factsUsed } from "./intelligence";
+import { foldThread, windowFor } from "./threads";
 import type { Models } from "./models";
 import { instructions } from "./prompt";
 import { buildTools } from "./tools";
@@ -67,8 +68,13 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
   let stepStartedAt = startedAt;
   const tools = buildTools(context);
   const voice = context.surface === "voice";
-  // What the person asked Kawase to remember (A5); a failed read never stops the turn.
-  const memory = await context.intelligence.memory().catch(() => []);
+  // What the person asked Kawase to remember, and a long thread's summary (A5); a failed read never stops the turn.
+  const [memory, digest] = await Promise.all([
+    context.intelligence.memory().catch(() => []),
+    context.intelligence.threadDigest().catch(() => null),
+  ]);
+  // A long thread: the summary of its older part plus the recent messages, verbatim.
+  const { window, summarized } = windowFor(messages, digest);
   const watch = watchTurn();
   // Talking: the voice role's model, with the least reasoning — the person is waiting in silence.
   const model = models.forRole(voice ? "agentVoice" : "agentChat");
@@ -76,8 +82,8 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
   const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   const result = streamText({
     model,
-    instructions: instructions(context, new Date(), wallet, { memory }),
-    messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
+    instructions: instructions(context, new Date(), wallet, { memory, digest: summarized && digest ? digest : undefined }),
+    messages: await convertToModelMessages(window, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     experimental_toolApprovalSecret: approvalSecret,
     stopWhen: isStepCount(MAX_STEPS),
@@ -113,7 +119,14 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
       void context.intelligence.markMemoryUsed(memoryUsed.map((fact) => fact.id)).catch(() => undefined);
       return { memoryUsed };
     },
-    onEnd,
+    onEnd: async (event) => {
+      await onEnd(event);
+      // After the person has their answer: fold older messages into the summary when enough have piled up.
+      if (event.isAborted) return;
+      void foldThread(models, event.messages, digest)
+        .then((next) => (next ? context.intelligence.saveThreadDigest(next) : undefined))
+        .catch((error: unknown) => context.intelligence.warn(error, "thread summary failed"));
+    },
     onError: (error) => {
       onError(error);
       return "error";

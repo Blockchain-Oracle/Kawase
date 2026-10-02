@@ -1,7 +1,9 @@
 // The api's side of the agent's intelligence layer (A5): memory first. Built per turn inside `buildAgentContext`, so
 // it is scoped to one person, one thread and one network like every other tool.
 import type { IntelligenceContext, MemoryFact } from "@kawase/agent";
-import type { Db } from "@kawase/db";
+import { eq } from "drizzle-orm";
+
+import { threadDigests, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 
 import { MemoryService } from "../memory/service";
@@ -51,6 +53,23 @@ export function buildIntelligence(input: { db: Db; user: SessionUser; threadId: 
 
     async markMemoryUsed(ids) {
       await memory.markUsed(user.id, ids);
+    },
+
+    async threadDigest() {
+      const [row] = await db.select().from(threadDigests).where(eq(threadDigests.threadId, threadId));
+      return row ? { summary: row.summary, throughMessageId: row.throughMessageId, folded: row.folded, actions: row.actions } : null;
+    },
+
+    async saveThreadDigest(digest) {
+      await db
+        .insert(threadDigests)
+        .values({ threadId, ...digest })
+        .onConflictDoUpdate({ target: threadDigests.threadId, set: { ...digest, updatedAt: new Date() } });
+      log.info({ threadId, folded: digest.folded }, "thread summarized");
+    },
+
+    warn(error, what) {
+      log.warn({ err: error }, what);
     },
   };
 }

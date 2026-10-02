@@ -1,7 +1,7 @@
 // What the agent remembers about a person (cards/agent-business.md, Memory): short facts they asked it to keep
 // ("Mum is @adaeze", "prefers EURC"), each with the conversation it came from and when it was last used. The person
 // sees, edits and forgets every one in Settings → Memory, and can turn memory off (`agent_preferences`).
-import { boolean, index, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, timestampTz, updatedAt } from "./common";
 import { threads } from "./chat";
@@ -25,6 +25,24 @@ export const memoryFacts = pgTable(
   },
   (table) => [index("memory_facts_user_idx").on(table.userId, table.createdAt)],
 );
+
+/**
+ * A long thread's rolling summary (context bounding): the older messages folded into a few sentences by the cheap
+ * model, up to `throughMessageId`; the agent then reads the summary plus the recent messages. `actions` are the
+ * tools' own results from the folded part, copied as they were (canonical), never paraphrased. It goes with its
+ * thread (deleted or moved with it).
+ */
+export const threadDigests = pgTable("thread_digests", {
+  threadId: uuid()
+    .primaryKey()
+    .references(() => threads.id, { onDelete: "cascade" }),
+  summary: text().notNull(),
+  throughMessageId: text().notNull(),
+  /** How many messages the summary covers. */
+  folded: integer().notNull(),
+  actions: jsonb().$type<string[]>().notNull().default([]),
+  updatedAt: updatedAt(),
+});
 
 /** One row per person, created on first change; no row means the defaults. */
 export const agentPreferences = pgTable("agent_preferences", {

@@ -7,8 +7,8 @@ import { writeFileSync } from "node:fs";
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 
-import { createModels } from "@kawase/agent";
-import { createDb, threadTurns } from "@kawase/db";
+import { createModels, windowFor } from "@kawase/agent";
+import { createDb, threadDigests, threadMessages, threads, threadTurns } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "../src/app";
@@ -78,7 +78,53 @@ export async function turn(threadId: string, text: string) {
 export const api = (path: string, init: RequestInit = {}) =>
   app.request(path, { ...init, headers: { ...(init.headers ?? {}), authorization: `Bearer ${token}`, "content-type": "application/json" } });
 
+/** A long thread written straight into storage: early facts, small talk, one card, then many exchanges. */
+async function seedLongThread(threadId: string, exchanges: number) {
+  await db.insert(threads).values({ id: threadId, userId: user.id, network: "testnet", title: "Long thread" });
+  const lines: { role: "user" | "assistant"; parts: unknown[] }[] = [
+    { role: "user", parts: [{ type: "text", text: "My landlord is Bola Adeyemi and rent is due on the 5th of every month. I pay it in euros." }] },
+    { role: "assistant", parts: [{ type: "text", text: "Got it: Bola Adeyemi, rent on the 5th, in euros." }] },
+    { role: "user", parts: [{ type: "text", text: "What's in my wallet?" }] },
+    {
+      role: "assistant",
+      parts: [
+        { type: "tool-get_wallet", toolCallId: "call-seed-wallet", state: "output-available", input: {}, output: { status: "guest", network: "testnet" } },
+        { type: "text", text: "You're a guest, so there is no wallet yet. Sign in first." },
+      ],
+    },
+  ];
+  for (let i = 0; i < exchanges; i += 1) {
+    lines.push({ role: "user", parts: [{ type: "text", text: `Quick question ${i + 1}: how do fees work on Arc?` }] });
+    lines.push({ role: "assistant", parts: [{ type: "text", text: "Fees on Arc are paid in USDC and are usually a fraction of a cent." }] });
+  }
+  await db.insert(threadMessages).values(
+    lines.map((line, seq) => ({ threadId, userId: user.id, id: `seed-${seq}`, seq, role: line.role, parts: line.parts })),
+  );
+  return lines.length;
+}
+
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async threads() {
+    const threadId = randomUUID();
+    const seeded = await seedLongThread(threadId, 14);
+    const first = await turn(threadId, "Thanks. One more: is Arc fast?");
+    // The fold runs after the answer; give it a moment.
+    let digest: (typeof threadDigests.$inferSelect)[] = [];
+    for (let i = 0; i < POLLS && digest.length === 0; i += 1) {
+      digest = await db.select().from(threadDigests).where(eq(threadDigests.threadId, threadId));
+      if (digest.length === 0) await wait(POLL_MS);
+    }
+    const stored = (await (await api(`/agent/threads/${threadId}`)).json()) as { messages: Message[] };
+    const { window, summarized } = windowFor(stored.messages as never, digest[0] ?? null);
+    const recall = await turn(threadId, "Remind me: who is my landlord, when is rent due, and in which currency do I pay it?");
+    return {
+      seeded,
+      first,
+      digest: digest[0] ?? null,
+      nextTurnReads: { messages: window.length, of: stored.messages.length, summarized, earliestInWindow: window[0]?.id },
+      recall,
+    };
+  },
   async memory() {
     const first = randomUUID();
     const second = randomUUID();

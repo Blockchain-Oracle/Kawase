@@ -3,7 +3,10 @@
 // reads storage.
 import type { MemoryFact, MemoryToolOutput, MemoryUsed } from "@kawase/api-client";
 
+import type { ThreadDigest } from "./threads";
+
 export type { MemoryFact, MemoryToolOutput, MemoryUsed } from "@kawase/api-client";
+export type { ThreadDigest } from "./threads";
 
 export type IntelligenceContext = {
   /** The facts this turn reads, the same list for the whole turn (empty while memory is off). */
@@ -14,6 +17,11 @@ export type IntelligenceContext = {
   forgetFact(input: { id?: string | undefined; text?: string | undefined }): Promise<MemoryToolOutput>;
   /** The facts a finished turn relied on: their "last used" moves to now. */
   markMemoryUsed(ids: string[]): Promise<void>;
+  /** This thread's rolling summary of its older messages (null until the thread is long). */
+  threadDigest(): Promise<ThreadDigest | null>;
+  saveThreadDigest(digest: ThreadDigest): Promise<void>;
+  /** Background work that failed after the person had their answer (logged, never shown). */
+  warn(error: unknown, what: string): void;
 };
 
 /** How the model refers to a fact: "m1", "m2"… in the order `memory()` returned them. */
