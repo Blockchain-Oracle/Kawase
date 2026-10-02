@@ -1,0 +1,18 @@
+---
+title: "Mercado de x402"
+description: "Pagar servicios y API por llamada mediante x402, dentro de un presupuesto que tú estableces. Próximamente."
+sourceHash: 3c4377298862e5c0
+---
+
+<Status ids="marketplace" />
+
+**x402** es un estándar abierto para pagar una solicitud web con stablecoins: el servicio responde "402 Payment Required"
+con un precio, el cliente paga en USDC y obtiene el resultado. El plan de Kawase es permitir que el agente **encuentre y pague servicios**
+del catálogo x402 de Circle en tu nombre, siempre dentro de un presupuesto:
+
+- una billetera independiente del marketplace, cuyo saldo es el límite máximo,
+- límites por llamada, por sesión y por día, definidos por ti,
+- cada compra se muestra con su precio, el servicio y el resultado.
+
+El catálogo de Circle solo incluye servicios de la red principal, así que el marketplace está previsto para la **red principal** y no está disponible en la red de pruebas. Está
+**próximamente**: aún no está disponible en la app.

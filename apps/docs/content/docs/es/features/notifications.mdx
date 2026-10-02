@@ -1,0 +1,26 @@
+---
+title: "Notificaciones"
+description: "Una bandeja de entrada dentro de la app para todo lo que ocurre con tu dinero, con notificaciones push y por email para los eventos que elijas."
+sourceHash: fab729b865e31134
+---
+
+La **bandeja de entrada** de Kawase es el registro: allí aparece cada pago recibido, solicitud pagada, pago completado, automatización omitida y
+alerta de una regla. Al tocar una notificación, se abre la pantalla correspondiente.
+
+Además de la bandeja de entrada, Kawase puede avisarte mediante **notificaciones push** (en tu teléfono) y **email**. En Ajustes → Notificaciones eliges,
+para cada evento y canal, qué quieres recibir. Estas son las opciones predeterminadas:
+
+| Evento | Push | Email |
+|---|---|---|
+| Dinero recibido | activado | activado |
+| Tu solicitud fue pagada | activado | activado |
+| Tu pago se completó | activado | desactivado |
+| Se omitió una automatización | activado | activado |
+| Alerta de una regla | activado | activado |
+
+Las **horas de silencio** según tu zona horaria retienen las notificaciones push hasta la mañana; los emails siguen llegando. Los eventos de seguridad nunca
+se pueden silenciar.
+
+Cada notificación se envía como máximo una vez por canal, aunque Kawase vuelva a intentarlo. La entrega de notificaciones push y emails está integrada en
+la app y el servidor; se activará cuando se conecten las cuentas de los proveedores de notificaciones push (Apple y Google) y de email para el lanzamiento
+público. La bandeja de entrada ya funciona.

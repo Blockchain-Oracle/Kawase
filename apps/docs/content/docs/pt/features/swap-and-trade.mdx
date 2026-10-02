@@ -1,0 +1,29 @@
+---
+title: "Trocar e negociar"
+description: "Troque USDC e EURC hoje com um mínimo garantido e um Face ID; qualquer token na Arc, meme coins e posições compradas/vendidas estão a caminho."
+sourceHash: 65c2ca9143c4cfd4
+---
+
+<Status ids="swap tokens meme_coins perps" />
+
+<Marks names="usdc eurc circle" />
+
+## Trocar USDC ↔ EURC (hoje)
+
+“Trocar 10 dólares por euros” ou use a tela Trocar. A Kawase recebe uma cotação pelo **App Kit da Circle** e mostra:
+
+- o valor que você envia e o valor mínimo que recebe;
+- a taxa de mercado da Circle ao lado da taxa cotada e as tarifas;
+- um aviso se a cotação estiver muito pior que a taxa de mercado; uma cotação muito pior é recusada.
+
+Na rede principal, o mínimo garantido fica 1% abaixo da cotação (2% na rede de testes, onde os pools têm pouca liquidez). A rota usa metade dessa tolerância, então uma pequena mudança entre a cotação e a sua confirmação ainda mantém o mínimo garantido.
+
+Você confirma cada troca por conta própria com **um Face ID** — as trocas nunca usam o limite diário. A aprovação e a troca são enviadas para a rede como **uma única transação** (um lote EIP-7702 da sua própria carteira). Assim, ou as duas acontecem, ou nenhuma acontece. A Kawase só marca a troca como concluída quando o recibo mostra o valor exato saindo da sua carteira e pelo menos o mínimo chegando.
+
+## Qualquer token, meme coins e posições compradas ou vendidas (em breve)
+
+O plano é tornar **todos os tokens na Arc** disponíveis desde o início: ver tudo o que seu endereço possui, trocar qualquer token listado com cotações comparadas entre agregadores e negociar **meme coins** com verificações de segurança (detecção de cópias, dados de risco do token e regras definidas por você para limitar o risco). **Posições compradas ou vendidas** (futuros perpétuos) nas plataformas de perps da Arc também estão planejadas da mesma forma: uma tela clara com alavancagem, preço de liquidação e take-profit/stop-loss, confirmada com Face ID.
+
+Esses recursos aparecem como **em breve** na matriz acima até serem lançados. Nada nesta página é apresentado como disponível antes disso.
+
+<ScopeList ids="swap" />

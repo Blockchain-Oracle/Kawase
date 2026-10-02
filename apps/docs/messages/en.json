@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "webApp": "Open the web app",
+    "showcase": "Showcase",
+    "docs": "Docs"
+  },
+  "home": {
+    "eyebrow": "Kawase docs",
+    "title": "Money that moves when you speak",
+    "body": "Kawase is an AI money app for everything on Arc. Ask in your own language, by voice or by text: it proposes, you approve, and the chain enforces your limits.",
+    "start": "Get started",
+    "safety": "How it keeps you safe",
+    "cards": {
+      "gettingStarted": { "title": "Get started", "body": "Open the web app as a guest in seconds, or install it on iPhone or Android." },
+      "safety": { "title": "Safety model", "body": "What the agent may do without asking, when it needs your Face ID, and what it can never do." },
+      "availability": { "title": "What works today", "body": "Every capability on mainnet and testnet, generated from the app's own registry." },
+      "architecture": { "title": "Architecture", "body": "How chat, voice, the policy engine and Arc fit together, for judges and builders." }
+    }
+  },
+  "matrix": {
+    "capability": "Capability",
+    "mainnet": "Arc mainnet",
+    "testnet": "Arc testnet",
+    "caption": "Generated when the site is built, from the capability registry the app and the agent read. \"Coming\" means it has not shipped yet."
+  },
+  "state": {
+    "available": "Available",
+    "coming": "Coming",
+    "unavailable": "Not on this network"
+  },
+  "scope": {
+    "supports": "What runs today",
+    "notYet": "Not yet"
+  },
+  "areas": {
+    "tokens": "Any token on Arc",
+    "meme_coins": "Meme coins",
+    "perps": "Long and short (perps)",
+    "buy": "Buy with Apple Pay or card",
+    "borrow": "Borrow",
+    "withdraw": "Withdraw anywhere",
+    "export_wallet": "Export your wallet"
+  },
+  "limits": {
+    "rule": "Default",
+    "mainnet": "Mainnet",
+    "testnet": "Testnet",
+    "daily": "Daily allowance: sent at once, no prompt",
+    "perTransaction": "Largest single payment",
+    "weekly": "Total per week",
+    "monthly": "Total per month",
+    "perRecipientWeekly": "To one person per week",
+    "firstTime": "First payment to a new address: Face ID above",
+    "caption": "Defaults from the app's own configuration. Testnet limits are higher because no real money is at risk."
+  },
+  "status": {
+    "label": "Status"
+  }
+}

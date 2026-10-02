@@ -1,0 +1,45 @@
+---
+title: Automations
+description: Scheduled payments, Auto-save and rules that run by themselves, each bounded on chain by a grant you sign once with Face ID.
+---
+
+<Status ids="automations" />
+
+Automations are where an agent earns its keep: things that should happen without you opening the app. Every automation
+runs **unattended**, but inside an on-chain grant you sign once — so even Kawase itself cannot make it do more.
+
+## Scheduled payments
+
+"Every Friday at 9 send 10 dollars to Alex." Kawase reads it back with the next runs and the maximum it could ever move,
+then you turn it on with **one Face ID**. That signs the automation's own **grant**: it may only transfer that token, only
+to Alex's address (pinned on chain), and only up to the amount per period. Schedules: every day, every week on a weekday,
+or every month on day 1–28, in your own time zone.
+
+Each run happens **exactly once**: if Kawase's server restarts mid-run, the run is recovered under the same id, never
+paid twice. A run that can't go ahead (not enough money, over a limit) is **skipped with a reason** in your inbox.
+
+## Auto-save
+
+"Keep 100 dollars in my wallet and save the rest." Auto-save keeps that amount ready and moves anything above it into your
+own vault savings (see [Earn](./earn-and-borrow.mdx)); when your wallet drops below the line, it tops it back up from
+savings. It checks daily and whenever money arrives. Its grants only allow moving USDC **between your wallet and your own
+savings** — never anywhere else.
+
+## Rules
+
+"When my balance goes above 500, bridge what's above 400 to my Base address." Rules have:
+
+- a **trigger**: the balance goes above or below an amount, or money arrives (optionally from someone, or at least an
+  amount);
+- an **action**: bridge USDC to your own address on another network (the route fee is capped on chain), save it into your
+  vault, or just alert you;
+- an **amount**: what is above a line, a share of the money that arrived, or a fixed amount.
+
+A balance rule fires **once per crossing** and re-arms when the balance goes back.
+
+## Managing them
+
+From the Automations screen or in chat: list, **pause**, **resume**, **skip the next run**, and **cancel**. Cancelling
+also **revokes the grant on chain**, so the permission is gone, not just hidden.
+
+<ScopeList ids="automations" />

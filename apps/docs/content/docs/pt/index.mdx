@@ -1,0 +1,47 @@
+---
+title: "O que é a Kawase"
+description: "Um app de dinheiro com IA para tudo na Arc. Peça por voz ou texto no seu idioma; o agente propõe, você aprova e os limites na blockchain definem o que ele pode fazer."
+sourceHash: 964d27b3491e7914
+---
+
+Kawase (為替, "câmbio" em japonês) é um app de dinheiro com um agente de IA no centro, criado para a **Arc**, a rede de stablecoins da Circle. Você diz o que quer — "enviar 20 dólares para Alex", "trocar metade dos meus euros por dólares", "separar 10
+dólares toda sexta-feira" — por voz ou digitando, em qualquer um dos dez idiomas. A Kawase cuida dos detalhes, mostra exatamente o que vai acontecer e faz isso.
+
+<Marks names="usdc eurc arc circle morpho" />
+
+## Um app para tudo na Arc
+
+A ideia é que qualquer coisa que uma pessoa possa fazer com dinheiro na Arc também possa ser feita pedindo à Kawase:
+
+- **Enviar, receber e pedir dinheiro** em USDC e EURC para um contato salvo, um `@handle` da Kawase ou qualquer endereço.
+- **Trocar USDC e EURC**: hoje; qualquer token na Arc, memecoins e posições compradas/vendidas (perps) estão sendo adicionados.
+- **Comprar** com Apple Pay ou cartão pelo Onramp Kit da Circle.
+- **Ponte de e para a Arc e sacar**: mover USDC da Arc para outras seis redes usando o Circle CCTP, com outras pontes (Across, Relay)
+  comparadas; sacar em qualquer lugar.
+- **Render e pegar empréstimos**: cofres da Morpho hoje; Aave V4 e empréstimos estão sendo adicionados.
+- **Automações**: pagamentos agendados, economia automática e regras que funcionam sozinhas dentro dos limites que você assina uma vez.
+- **O marketplace x402**: pagar serviços e APIs a cada chamada, dentro de um orçamento.
+- **Voz** no iPhone e Android, e o app inteiro em **dez idiomas**.
+
+Nem tudo isso já foi lançado. A [página de disponibilidade](./availability.mdx) é gerada pelo mesmo registro de recursos que o app e o agente consultam. Assim, ela sempre informa com honestidade o que funciona hoje e o que está por vir:
+
+<AvailabilityMatrix />
+
+## Por que um agente e por que ele é seguro
+
+A maioria dos apps de dinheiro faz você encontrar a tela certa. A Kawase permite que você diga o que quer, e o agente cuida do resto: quem é o "Alex", qual moeda você tem e qual é a rota mais barata. O que ele nunca pode fazer é movimentar dinheiro além do que você permitiu:
+
+- **Dentro do seu limite diário**, o agente simplesmente envia e avisa você — sem pedir confirmação. O limite é definido na blockchain e assinado por você uma vez; a rede recusa qualquer valor acima dele.
+- **Acima do limite**, para um novo destinatário acima de um valor definido, um endereço parecido, uma troca ou uma ponte, você confirma com o **Face ID** (impressão digital ou bloqueio de tela no Android, um código enviado por e-mail na web).
+- **As Automações** funcionam sem supervisão, mas cada uma fica vinculada na blockchain ao destinatário e ao valor por período.
+
+Leia o [modelo de segurança](./safety.mdx) para saber mais.
+
+## Duas redes, um toque
+
+A Kawase funciona na **Arc (Rede principal)** (dinheiro real) e na **Arc (Rede de testes)** (dinheiro de teste, disponibilizado gratuitamente pelo faucet dentro do app). As contas novas começam na Rede de testes. O seletor de rede no cabeçalho alterna entre elas com um toque, como o modo escuro; o app, o orbe e todos os cartões de dinheiro sempre mostram em qual rede você está. Veja [redes](./networks.mdx).
+
+## Onde experimentar
+
+- **App web**, sem instalação, começa como visitante: [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io)
+- **iPhone** (TestFlight) e **Android** (APK): veja [como começar](./getting-started.mdx).

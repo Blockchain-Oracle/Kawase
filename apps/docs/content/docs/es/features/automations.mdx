@@ -1,0 +1,45 @@
+---
+title: "Automatizaciones"
+description: "Pagos programados, ahorro automático y reglas que se ejecutan solas, cada una limitada en cadena por un permiso que firmas una vez con Face ID."
+sourceHash: ac77249124998350
+---
+
+<Status ids="automations" />
+
+Las Automatizaciones son donde un agente demuestra su utilidad: tareas que deberían ocurrir sin que abras la app. Cada automatización
+se ejecuta **sin supervisión**, pero dentro de un permiso en cadena que firmas una sola vez; así, ni siquiera Kawase puede hacer que haga más.
+
+## Pagos programados
+
+«Todos los viernes a las 9, envía 10 dólares a Alex». Kawase te muestra el resumen, las próximas ejecuciones y el máximo que podría mover,
+y luego la activas con **un solo Face ID**. Eso firma el **permiso** de la automatización: solo puede transferir ese token, únicamente
+a la dirección de Alex (fijada en cadena) y hasta el importe establecido por periodo. Puedes programarlo para cada día, cada semana en un día laborable
+o cada mes, del día 1 al 28, según tu zona horaria.
+
+Cada ejecución ocurre **exactamente una vez**: si el servidor de Kawase se reinicia a mitad de una ejecución, esta se recupera con el mismo ID y nunca
+se paga dos veces. Una ejecución que no pueda realizarse (por falta de dinero o por superar un límite) se **omite con un motivo** en tu bandeja de entrada.
+
+## Ahorro automático
+
+«Guarda 100 dólares en mi cartera y ahorra el resto». El ahorro automático mantiene ese importe disponible y mueve todo lo que lo supere a tu
+propia bóveda de ahorro (consulta [Generar rendimiento](./earn-and-borrow.mdx)); cuando el saldo de tu cartera baja del límite, lo repone desde
+tus ahorros. Comprueba el saldo a diario y cada vez que llega dinero. Sus permisos solo permiten mover USDC **entre tu cartera y tus propios
+ahorros**; nunca a ningún otro destino.
+
+## Reglas
+
+«Cuando mi saldo supere 500, envía lo que supere 400 a mi dirección de Base». Las reglas tienen:
+
+- un **activador**: el saldo supera o baja de un importe, o llega dinero (opcionalmente de alguien o por un importe mínimo);
+- una **acción**: enviar USDC a tu propia dirección en otra red (la comisión de la ruta tiene un límite en cadena), guardarlo en tu
+  bóveda o simplemente avisarte;
+- un **importe**: lo que supere un límite, una parte del dinero recibido o un importe fijo.
+
+Una regla de saldo se activa **una vez por cada cruce** y vuelve a quedar lista cuando el saldo regresa al otro lado del límite.
+
+## Cómo gestionarlas
+
+Desde la pantalla de Automatizaciones o en el chat puedes: ver la lista, **pausar**, **reanudar**, **omitir la próxima ejecución** y **cancelar**. Al cancelar
+también **revocas el permiso en cadena**, así que el permiso desaparece y no queda simplemente oculto.
+
+<ScopeList ids="automations" />

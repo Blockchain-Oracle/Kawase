@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- Shown by sw.js when a page can't load. Strings are the app's own (packages/i18n catalogs: errors.offlineAction,
+     common.retry), one per supported language, picked from the browser's languages. -->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0B0C10" />
+    <title>Kawase</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body { margin: 0; height: 100%; background: #0B0C10; color: #F4F5F7; }
+      body {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 24px;
+        font-family: Manrope, "Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali",
+          "Noto Sans SC", system-ui, sans-serif;
+        text-align: center;
+      }
+      img { width: 72px; height: 72px; border-radius: 16px; }
+      p { margin: 0; max-width: 320px; font-size: 16px; line-height: 1.5; color: #A0A6B4; }
+      button {
+        height: 48px; padding: 0 28px; border: 0; border-radius: 999px; background: #D4FF3A; color: #0B0C10;
+        font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+      }
+      button:focus-visible { outline: 2px solid #D4FF3A; outline-offset: 3px; }
+    </style>
+  </head>
+  <body>
+    <img src="/icons/icon-192.png" alt="Kawase" />
+    <p id="message">No connection. Check your internet and try again.</p>
+    <button id="retry" type="button">Try again</button>
+    <script>
+      var STRINGS = {"en":["No connection. Check your internet and try again.","Try again"],"zh":["没有网络连接。请检查网络后重试。","重试"],"hi":["इंटरनेट कनेक्शन नहीं है। जाँचें और फिर कोशिश करें।","फिर कोशिश करें"],"es":["Sin conexión. Revisa tu internet e inténtalo de nuevo.","Reintentar"],"fr":["Pas de connexion. Vérifiez votre accès à Internet et réessayez.","Réessayer"],"ar":["لا يوجد اتصال. تحقق من الإنترنت وحاول مرة أخرى.","حاول مرة أخرى"],"bn":["সংযোগ নেই। ইন্টারনেট দেখে আবার চেষ্টা করুন।","আবার চেষ্টা করুন"],"pt":["Sem conexão. Verifique sua internet e tente de novo.","Tentar de novo"],"ru":["Нет подключения. Проверьте интернет и попробуйте ещё раз.","Повторить"],"ur":["کنکشن نہیں ہے۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔","دوبارہ کوشش کریں"]};
+      var RTL = { ar: true, ur: true };
+      var langs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"]);
+      var lang = "en";
+      for (var i = 0; i < langs.length; i++) {
+        var code = String(langs[i]).toLowerCase().split("-")[0];
+        if (STRINGS[code]) { lang = code; break; }
+      }
+      document.documentElement.lang = lang;
+      document.documentElement.dir = RTL[lang] ? "rtl" : "ltr";
+      document.getElementById("message").textContent = STRINGS[lang][0];
+      document.getElementById("retry").textContent = STRINGS[lang][1];
+      document.getElementById("retry").addEventListener("click", function () { location.reload(); });
+      window.addEventListener("online", function () { location.reload(); });
+    </script>
+  </body>
+</html>

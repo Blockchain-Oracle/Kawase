@@ -1,0 +1,87 @@
+---
+title: Withdraw without Kawase
+description: Your money is in your own account on Arc. How to move it out, check it on the explorer, and what the export option will give you.
+---
+
+Kawase never holds your money. Your USDC and EURC sit in **your own account** on Arc, and the permissions you gave the agent
+are narrow and expire on their own. This page explains how to get your money out — with Kawase's help, and without it.
+
+<Status ids="export_wallet" />
+
+## While Kawase is running: send it out
+
+The quickest exit is a normal payment:
+
+<Steps>
+<Step>
+### Pick where it goes
+An address you control in another wallet (MetaMask, Rabby, …) that has **Arc** added, or an exchange's **Arc** deposit
+address. Check the network is Arc; sending to an address on another network is not the same thing.
+</Step>
+<Step>
+### Send everything
+Say "send all my USDC to 0x…" (paste the address in the same message) or use the Send screen. Larger amounts ask for your
+Face ID. Repeat for EURC.
+</Step>
+<Step>
+### Revoke the agent
+Wallet & limits → **Revoke** (press and hold). Cancel any automations; each cancel revokes its grant on chain.
+</Step>
+</Steps>
+
+USDC can also go straight to **your own address** on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche with a
+[bridge](./features/bridge-and-withdraw.mdx).
+
+## Check everything on the explorer
+
+You don't need Kawase to see your money. Open your address on Arc's block explorer:
+
+- Mainnet: `https://explorer.arc.io/address/<your address>`
+- Testnet: `https://testnet.arcscan.app/address/<your address>`
+
+There you can see:
+
+- your **USDC** and **EURC** balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native
+  coin and as the USDC token),
+- every transaction, including the payments the agent made under your allowance,
+- your account's **code**: after setup it is `0xef0100` followed by the `EIP7702StatelessDeleGator` address. That is the
+  EIP-7702 upgrade; your account still works as a normal account.
+
+Kawase's receipts link to these same pages.
+
+## If Kawase disappears
+
+- **The agent's permissions stop being useful.** Your allowance and automation grants can only be used by Kawase's own agent
+  wallet, and they expire (the allowance after 90 days, each automation at its end date).
+- **Your money stays in your account.** It is an ordinary account on Arc whose key is held for you by Turnkey.
+- **Export wallet (coming).** Settings → Account → Export wallet will show your wallet's key through Turnkey's secure export,
+  after Face ID and clear warnings. With it you can import the account into any wallet that supports Arc and move your
+  money without Kawase. This option is **not available yet**; until it is, the steps above are the way out.
+
+## Adding Arc to another wallet
+
+| | Mainnet | Testnet |
+|---|---|---|
+| Network name | Arc | Arc Testnet |
+| Chain ID | `5042` | `5042002` |
+| RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
+| Currency symbol | USDC | USDC |
+| Explorer | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+
+Some wallets label the gas balance "ETH" on custom networks; on Arc it is USDC. The USDC token address is
+`0x3600000000000000000000000000000000000000` on both networks; EURC is
+`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` on mainnet and `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` on testnet.
+
+## Removing the EIP-7702 upgrade (optional)
+
+You don't need to undo the upgrade to move your money. If you want a plain account again after exporting it, sign an
+EIP-7702 authorization pointing at the zero address and send it from the account itself, for example with viem:
+
+```ts
+import { zeroAddress } from "viem";
+
+const authorization = await walletClient.signAuthorization({ contractAddress: zeroAddress, executor: "self" });
+await walletClient.sendTransaction({ to: walletClient.account.address, authorizationList: [authorization] });
+```
+
+Afterwards the explorer shows no code on your address.

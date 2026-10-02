@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "@kawase/ui-tokens/web.css";
+
+/* Classes used by the shared web components (Mark, the orb) live in packages/ui-web. */
+@source "../../../../packages/ui-web/src";
+
+/* Two themes from the tokens: :root is paper (light), .dark is ink (the default). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* The textured-card material (DESIGN.md "Materials"): a quiet stipple in the texture token. */
+.stipple {
+  background-image: radial-gradient(circle at center, var(--texture) 1px, transparent 1px);
+  background-size: 6px 6px;
+}

@@ -1,0 +1,77 @@
+---
+title: "Primeros pasos"
+description: "Abre Kawase en el navegador como invitado o instálala en iPhone o Android. Después, consigue Dinero de prueba gratis y haz tu primer pago."
+sourceHash: d04f550afbef6dcf
+---
+
+## 1. Abre la app
+
+<Tabs items={['Web', 'iPhone', 'Android']}>
+  <Tab value="Web">
+    Abre [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io) en cualquier navegador moderno. Empiezas como
+    **invitado**: sin registrarte y sin correo electrónico. Puedes chatear con Kawase, explorar todas las pantallas y ver qué haría.
+
+    En la web, un **código de correo electrónico** reemplaza a Face ID cuando un pago necesita tu confirmación. La Voz todavía no está
+    disponible en la app web; escribir funciona en todas partes.
+  </Tab>
+  <Tab value="iPhone">
+    Kawase para iPhone se distribuye mediante **TestFlight** mientras está en fase beta. Instala TestFlight desde App Store
+    y abre el enlace de invitación que recibiste. Publicaremos un enlace público de TestFlight en la página de presentación cuando esté
+    disponible.
+  </Tab>
+  <Tab value="Android">
+    Descarga la versión de Android (APK) desde Expo:
+    [build e644e19d](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed).
+    Ábrela en el teléfono y permite la instalación. En Android, la confirmación se hace con tu **huella digital o bloqueo de pantalla**.
+  </Tab>
+</Tabs>
+
+## 2. Elige tu idioma
+
+El selector de idioma aparece en la primera pantalla. Kawase habla [diez idiomas](./features/languages.mdx), y el árabe y el
+urdu cambian todo el diseño a derecha a izquierda al instante. Puedes cambiarlo de nuevo en cualquier momento desde Ajustes.
+
+## 3. Inicia sesión cuando quieras guardar tus cosas
+
+Los invitados pueden explorar todo. Para guardar dinero, inicia sesión con:
+
+- un **código de correo electrónico**,
+- **Apple**, o
+- **Google**.
+
+No hay contraseña ni PIN. Al iniciar sesión se crea tu billetera (consulta [seguridad](./safety.mdx)): una dirección que funciona en
+ambas redes. Todo lo que hiciste como invitado —tus chats y tus contactos— pasa a tu cuenta.
+
+Configurar la billetera no cuesta nada: firmas una autorización y Kawase paga la comisión de la red.
+
+## 4. Consigue Dinero de prueba
+
+Las cuentas nuevas empiezan en la **Red de pruebas**, donde el dinero no tiene valor. Pídele a Kawase «consigue dinero de prueba» o abre el faucet
+desde la pantalla de inicio. Cada solicitud entrega aproximadamente **20 USDC de prueba y 20 EURC de prueba** del faucet de Circle, una vez al día. Si se rechaza la
+solicitud dentro de la app, el faucet de Circle está en [faucet.circle.com](https://faucet.circle.com) (elige «Arc Testnet»).
+
+## 5. Acepta tu límite diario
+
+Kawase te pide una vez que aceptes un **límite diario**: una cantidad de USDC al día que el agente puede enviar por ti sin
+volver a preguntarte. Lo apruebas con un Face ID. El valor predeterminado aparece en la tarjeta antes de aprobarlo; consulta la
+[tabla de límites](./safety.mdx#default-limits).
+
+## 6. Haz tu primer pago
+
+Escribe o di, por ejemplo:
+
+> envía 1 dólar a @kawasedemo
+
+Kawase encuentra al destinatario, comprueba tu saldo y tus límites, y muestra la tarjeta del pago: cantidad exacta, moneda, destinatario
+y red. Si está dentro de tu límite, lo envía de inmediato; si lo supera, espera tu Face ID. La tarjeta sigue el pago
+hasta que la red lo confirma, y el recibo incluye un enlace al explorador de bloques.
+
+## 7. Prueba lo demás
+
+- «cambia 2 dólares a euros»
+- «mueve 1 dólar a Base»
+- «pon 5 dólares en ahorros»
+- «cada viernes a las 9 envía 1 dólar a Alex»
+- «guarda 20 dólares en mi billetera y ahorra el resto»
+
+Cada opción muestra primero una tarjeta y te indica exactamente qué necesita de ti.

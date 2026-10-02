@@ -1,0 +1,54 @@
+---
+title: What Kawase is
+description: An AI money app for everything on Arc. Ask by voice or text in your own language; the agent proposes, you approve, and on-chain limits bound what it can do.
+---
+
+Kawase (為替, "exchange" in Japanese) is a money app with an AI agent at its centre, built for **Arc**, Circle's stablecoin
+network. You tell it what you want — "send 20 dollars to Alex", "swap half my euros to dollars", "every Friday put 10
+dollars aside" — by voice or by typing, in any of ten languages. Kawase works out the details, shows you exactly what will
+happen, and does it.
+
+<Marks names="usdc eurc arc circle morpho" />
+
+## One app for everything on Arc
+
+The goal is that anything a person can do with money on Arc, they can do by asking Kawase:
+
+- **Send, receive and request** USDC and EURC, to a saved contact, a Kawase `@handle` or any address.
+- **Swap and trade**: USDC ↔ EURC today; any token on Arc, meme coins and long/short positions (perps) are being added.
+- **Buy** with Apple Pay or a card through Circle's Onramp Kit.
+- **Bridge and withdraw**: move USDC from Arc to six other networks over Circle CCTP, with other bridges (Across, Relay)
+  compared; withdraw anywhere.
+- **Earn and borrow**: Morpho vaults today; Aave V4 and borrowing are being added.
+- **Automations**: scheduled payments, Auto-save and rules that run by themselves inside limits you sign once.
+- **The x402 marketplace**: pay for services and APIs per call, inside a budget.
+- **Voice** on iPhone and Android, and the whole app in **ten languages**.
+
+Not all of this has shipped. The [availability page](./availability.mdx) is generated from the same capability registry the
+app and the agent read, so it always says honestly what runs today and what is coming:
+
+<AvailabilityMatrix />
+
+## Why an agent, and why it is safe
+
+Most money apps make you find the right screen. Kawase lets you say what you mean, and the agent fills in the rest: who
+"Alex" is, which currency you hold, which route is cheapest. What it can never do is move money beyond what you allowed:
+
+- **Inside your daily allowance** the agent just sends and tells you — no prompt. The allowance is an on-chain limit you
+  signed once; the chain refuses anything above it.
+- **Above the allowance**, for a new recipient over a threshold, a look-alike address, a swap or a bridge, you confirm with
+  **Face ID** (fingerprint or screen lock on Android, an email code on the web).
+- **Automations** run unattended, but each one is pinned on chain to its recipient and amount per period.
+
+Read the [safety model](./safety.mdx) for the details.
+
+## Two networks, one tap
+
+Kawase runs on **Arc mainnet** (real money) and **Arc testnet** (test money, free from the in-app faucet). New accounts
+start on testnet. The network pill in the header switches between them in one tap, like dark mode; the app, the orb and
+every money card always say which one you are on. See [networks](./networks.mdx).
+
+## Where to try it
+
+- **Web app**, no install, starts as a guest: [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io)
+- **iPhone** (TestFlight) and **Android** (APK): see [getting started](./getting-started.mdx).

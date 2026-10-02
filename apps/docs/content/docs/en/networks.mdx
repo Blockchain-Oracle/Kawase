@@ -1,0 +1,34 @@
+---
+title: Networks
+description: Arc mainnet and Arc testnet side by side — what differs, what is only on one of them, and how Kawase keeps them apart.
+---
+
+<Marks names="arc usdc eurc" />
+
+**Arc** is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under
+a second. Kawase supports exactly two Arc networks.
+
+| | Arc mainnet | Arc testnet |
+|---|---|---|
+| Money | Real | Test money with no value |
+| Chain ID | `5042` | `5042002` |
+| Explorer | `explorer.arc.io` | `testnet.arcscan.app` |
+| Getting money | Receive from any wallet or exchange that sends to Arc; buying with Apple Pay or card is coming | The in-app faucet (about 20 USDC + 20 EURC a day) |
+| Earn | Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |
+| Bridge destinations | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | their test networks (Base Sepolia, Ethereum Sepolia, …) |
+| x402 marketplace | Planned (Circle's catalog is mainnet-only) | Not available |
+| Default limits | Lower | Ten times higher (no real money at risk) |
+| Where new accounts start | | ✓ |
+
+Every flow in Kawase has been run end to end with real transactions on **Arc testnet**; the evidence is linked from the
+showcase's demo page. The availability below is what the app offers on each network:
+
+<AvailabilityMatrix />
+
+## How Kawase keeps them apart
+
+- **One tap to switch**, both ways: see [the network toggle](./features/network-toggle.mdx).
+- **The network is shown three ways**: the header pill, the testnet strip or the REAL MONEY label, and the orb's colour.
+- **The server owns the choice.** Every payment is prepared for one network and carries it to the end; if the network
+  changes in between, the payment stops instead of crossing over.
+- **One wallet address on both networks**, with balances, activity and limits kept per network.

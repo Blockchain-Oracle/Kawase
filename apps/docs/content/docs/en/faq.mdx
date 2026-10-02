@@ -1,0 +1,56 @@
+---
+title: FAQ
+description: Short answers to the questions people ask first about Kawase.
+---
+
+## Is Kawase a bank or a custodian?
+
+No. Your money sits in **your own account** on Arc. Kawase holds permissions you signed — a daily allowance and one grant
+per automation — and the chain enforces their limits. See the [safety model](./safety.mdx).
+
+## Do I need crypto experience?
+
+No. You talk to Kawase like you would to a person: "send 20 dollars to Alex". There are no seed phrases, gas settings or
+PINs. Sign in with an email code, Apple or Google.
+
+## Does the AI decide where my money goes?
+
+It proposes; code decides and the chain enforces. The model cannot choose the network, invent an address or approve a
+payment. Inside your allowance it sends to people you've paid before or named; anything else waits for your Face ID.
+
+## What if the AI misunderstands me?
+
+Every action is shown as a card with the exact amount, currency, recipient and network before anything moves, and what was
+heard by voice is always shown in words. A newer request in the same conversation cancels an older open card, so an old card
+can't be approved by mistake.
+
+## What does it cost?
+
+Kawase pays the network fee to set your wallet up and for payments inside your allowance. For payments you sign yourself,
+a small USDC network fee is shown on the card. Bridges show the provider's fee before you confirm; swaps show the rate and
+fees.
+
+## Which countries and currencies?
+
+Kawase works with **USDC** (dollars) and **EURC** (euros) on Arc today, in ten languages. More tokens are on the way — see
+[what works today](./availability.mdx).
+
+## What happens to a payment if my phone dies mid-way?
+
+Nothing is lost or doubled. Each payment is recorded before it is sent; Kawase keeps checking the network until it knows
+the outcome, and only a receipt with the exact transfer marks it paid. Automations are claimed once per run and recovered
+after a restart.
+
+## Can I use it without Kawase one day?
+
+Yes. Your account is an ordinary account on Arc; see [Withdraw without Kawase](./withdraw-without-kawase.mdx).
+
+## Why does testnet exist in the app?
+
+So you can try everything — sends, swaps, bridges, automations, voice — with free test money before using real money. The
+header pill switches networks in one tap.
+
+## Is the code open?
+
+The repository is [Blockchain-Oracle/kawase](https://github.com/Blockchain-Oracle/kawase) on GitHub; it is being made public
+for the hackathon submission.

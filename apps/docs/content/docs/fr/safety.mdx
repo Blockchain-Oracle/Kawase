@@ -1,0 +1,94 @@
+---
+title: "Modèle de sécurité"
+description: "Votre propre portefeuille, une allocation quotidienne on-chain sans confirmation pour les paiements couverts, Face ID au-delà, des autorisations d'automatisation verrouillées on-chain et une courte liste de ce que l'agent ne peut jamais faire."
+sourceHash: 02e7458e65e9901c
+---
+
+Kawase permet à une IA de déplacer de l'argent pour vous. Cela n'est possible que si ce qu'elle **peut** faire est limité, visible et imposé par le
+réseau — et non par la confiance accordée à l'IA ou aux serveurs de Kawase. Cette page explique comment.
+
+## Votre portefeuille
+
+- Lorsque vous vous connectez (code envoyé par e-mail, Apple ou Google), Kawase crée un compte ordinaire de type Ethereum (un **EOA**) dont la clé
+  est conservée par **Turnkey** dans du matériel sécurisé, au sein d'une sous-organisation qui vous appartient. Il n'y a ni code PIN ni
+  mot de passe. Il s'agit de **la même adresse sur les deux réseaux**.
+- Kawase met ensuite à niveau ce même compte sur place avec **EIP-7702**, en faisant pointer son code vers
+  `EIP7702StatelessDeleGator`, le contrat audité de MetaMask. Vous signez une autorisation ; le relais de Kawase l'envoie et paie les frais, si bien que cette configuration ne vous coûte
+  rien.
+- Après la mise à niveau, votre compte peut accorder des **délégations** (ERC-7710, issues du Delegation Framework de MetaMask) : des
+  autorisations précises et signées, avec des limites intégrées. C'est le seul moyen pour l'agent de déplacer votre argent sans vous.
+
+## Deux façons d'autoriser un paiement
+
+| | Dans votre allocation quotidienne | Tout le reste |
+|---|---|---|
+| Ce que cela couvre | Les paiements en USDC jusqu'au montant restant de l'allocation du jour, vers une personne que vous avez déjà payée ou indiquée dans cette demande | Au-delà de l'allocation, tout paiement en EURC, un premier paiement vers une nouvelle adresse au-dessus du seuil, les adresses similaires, chaque échange, pont et mouvement vers un coffre, ainsi que toute modification de vos limites |
+| Ce que vous faites | **Rien.** Kawase envoie le paiement et vous en informe. | **Face ID** (empreinte digitale ou verrouillage de l'écran sur Android ; code envoyé par e-mail sur le Web) |
+| Ce qui l'impose | **La chaîne** : votre délégation d'allocation signée | **Votre signature** sur la transaction exacte |
+
+### L'allocation quotidienne
+
+Vous l'acceptez une seule fois, avec un Face ID, lors de la configuration. Il s'agit d'une délégation de votre compte vers le portefeuille de l'agent de Kawase, avec
+les limites suivantes inscrites — **décodées à partir des octets signés** et affichées comme reçu avant la signature :
+
+- **Jeton** : USDC uniquement, et seulement sa fonction `transfer`.
+- **Montant** : jusqu'à l'allocation quotidienne par période de 24 heures (un plafond de période on-chain).
+- **Qui peut l'utiliser** : uniquement le portefeuille de l'agent de Kawase (un verrou de bénéficiaire). Une copie de l'autorisation ne sert à rien pour les autres.
+- **Expiration** : 90 jours, après quoi elle devient invalide et vous en acceptez une nouvelle.
+- **Aucune valeur native** : rien ne permet d'envoyer le jeton utilisé pour payer les frais du réseau.
+
+La chaîne refuse tout ce qui dépasse ces limites : montant plus élevé, autre jeton, autre fonction, utilisation après expiration ou après
+révocation. Cela a été testé sur le réseau de test Arc, notamment avec des tentatives effectuées à l'aide d'une clé d'agent divulguée, que la chaîne a annulées.
+
+### Face ID au-delà de l'allocation
+
+Au-delà de l'allocation, Kawase prépare la transaction exacte, vous montre le montant, la devise, le destinataire et le réseau, puis demande
+à votre portefeuille de signer **cette** transaction. Le serveur vérifie ensuite que les octets signés correspondent à la carte — expéditeur, destinataire,
+montant, réseau et frais — avant la diffusion. Toute différence bloque le paiement.
+
+Aujourd'hui, la signature provient de votre session ouverte, protégée par la vérification biométrique de l'appareil. **Les clés d'accès arrivent bientôt**
+(elles nécessitent le propre domaine de Kawase) : une fois que vous en avez ajouté une, Turnkey l'exigera lui-même pour chaque signature de portefeuille. Ainsi, ni une
+session volée ni le serveur de Kawase ne pourront signer à votre place.
+
+## Automatisations : verrouillées on-chain
+
+Chaque automatisation reçoit **sa propre autorisation**, signée avec un Face ID lorsque vous l'activez :
+
+- **Paiements programmés** : transfert uniquement, **verrouillé sur un seul destinataire**, au maximum le montant par période, avec une expiration à la fin de
+  l'automatisation.
+- **Épargne automatique** : peut uniquement déplacer des USDC entre votre portefeuille et votre propre coffre d'épargne.
+- **Règles de pont** : peuvent uniquement transférer des USDC vers **votre propre** adresse, avec des frais d'itinéraire plafonnés.
+
+L'annulation d'une automatisation **révoque son autorisation on-chain** au cours de la même étape.
+
+## Ce que l'agent ne peut jamais faire
+
+- Déplacer plus que votre allocation en une journée ou utiliser l'allocation pour autre chose qu'un transfert en USDC.
+- Envoyer de l'argent à un autre destinataire que celui indiqué dans l'autorisation d'une automatisation.
+- Échanger, utiliser un pont, payer en EURC, payer une adresse similaire ou augmenter vos limites sans votre Face ID.
+- Approuver un paiement à la suite d'un « oui » prononcé : les paiements vocaux attendent toujours que vous appuyiez.
+- Inventer une adresse : les adresses proviennent uniquement de vos contacts ou de votre propre message, mot pour mot.
+- Choisir le réseau : il fait partie de votre session sur le serveur, et chaque paiement est vérifié par rapport à celui-ci.
+- Marquer quelque chose comme payé sans preuve : seul un reçu contenant le transfert exact est accepté. Un résultat incertain est affiché comme
+  « vérification en cours » et **n'est jamais réessayé automatiquement**, afin que rien ne soit payé deux fois.
+
+## Limites par défaut
+
+En plus de l'allocation on-chain, le moteur de règles de Kawase vérifie vos limites avant toute préparation (deux appuis simultanés
+ne peuvent pas tous les deux respecter la même limite) :
+
+<LimitsTable />
+
+## Révoquer et mettre en pause
+
+- **Révoquer l'allocation** : Portefeuille et limites → Révoquer (maintenez le bouton appuyé pour confirmer). Il s'agit d'une transaction ordinaire depuis votre
+  portefeuille, qui désactive la délégation on-chain ; l'agent ne peut alors plus rien envoyer sans votre Face ID.
+- **Mettre en pause, ignorer ou annuler** n'importe quelle automatisation depuis l'écran Automatisations ou dans une conversation ; l'annulation révoque son autorisation.
+- **Tout mettre en pause** en une seule fois (toutes les automatisations et les dépenses de l'agent) est déjà appliqué par le serveur ; le bouton correspondant
+  dans les Paramètres **arrive bientôt**.
+- **Partir complètement** : consultez [Retirer vos fonds sans Kawase](./withdraw-without-kawase.mdx).
+
+## Preuves
+
+Chaque étape ci-dessus a été exécutée sur le réseau de test Arc avec de vraies transactions ; le tableau des preuves, avec les liens vers les explorateurs, se trouve sur la
+page de démonstration de la vitrine, et la page [architecture](./architecture.mdx) répertorie les tests.

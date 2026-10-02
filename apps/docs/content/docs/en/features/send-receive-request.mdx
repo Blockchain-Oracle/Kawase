@@ -1,0 +1,44 @@
+---
+title: Send, receive and request
+description: Pay anyone in USDC or EURC by name, @handle or address; receive with one address on both networks; request money with a shareable link.
+---
+
+<Status ids="send request payment_links" />
+
+<Marks names="usdc eurc arc" />
+
+## Send
+
+Say or type who and how much — "send 20 dollars to Alex", "pay @mira 5 euros" — or use the Send screen. Kawase:
+
+1. **Finds the recipient**: a saved contact, a Kawase `@handle`, or an `0x…` address you typed yourself. The agent can only
+   use an address that came from your contacts or appears word for word in your own message.
+2. **Picks the currency** you hold, or asks if it is unclear.
+3. **Checks everything at once**: your balance, your limits, whether this is a first payment to that address, whether the
+   address looks like one of your contacts' (a look-alike), and whether a contact's address changed recently.
+4. **Shows the payment card** with the exact amount, currency, recipient and network.
+
+Then one of two things happens:
+
+| Situation | What you do |
+|---|---|
+| USDC, inside what is left of today's allowance, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |
+| Above the allowance, any EURC payment, a first payment to a new address above the threshold, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |
+
+A payment is only marked **paid** when the network's receipt shows the exact transfer. If the answer is unclear, the card
+says "still checking" and Kawase keeps looking; it never sends twice.
+
+## Receive
+
+Your wallet has **one address on both networks**. Open Receive for the address and its QR code. Payments that arrive are
+noticed by Kawase's watcher, show up in Activity and the inbox, and can wake your [automations](./automations.mdx).
+
+## Request
+
+Ask "request 15 dollars from Sam for dinner" or open Request. Kawase creates a **payment request** in USDC or EURC with a
+shareable link. The person paying can open it in the web app; the request is marked paid when a Kawase payment or a
+matching plain transfer arrives.
+
+## What is not built yet
+
+<ScopeList ids="send request" />

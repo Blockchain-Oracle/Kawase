@@ -1,0 +1,98 @@
+---
+title: "আর্কিটেকচার"
+description: "Kawase কীভাবে তৈরি — চ্যাট ও ভয়েসের জন্য এক এজেন্ট মস্তিষ্ক, একটি বিশুদ্ধ পলিসি ইঞ্জিন, অন-চেইন সীমা, একমাত্র বাস হিসেবে Postgres, আর হোস্টিংয়ের জন্য Coolify।"
+sourceHash: 626fba33e352db9a
+---
+
+## কাঠামো
+
+```text
+ iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
+        │  chat (SSE), screens                    │ audio
+        ▼                                          ▼
+ ┌──────────────────────────────┐        ┌───────────────────────┐
+ │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
+ │  agent turn (AI SDK 7)       │  turn  │  LiveKit Agents worker │
+ │  policy · intents · runners  │        │  STT → turn → TTS      │
+ └──────┬───────────┬───────────┘        └───────────────────────┘
+        │           │
+        ▼           ▼
+   Postgres     Arc (mainnet / testnet) · Circle (App Kit, CCTP, wallets, faucet) · Turnkey
+```
+
+## এক মস্তিষ্ক
+
+`packages/agent`-এর `agentTurn()` একইভাবে **চ্যাট** ও **ভয়েস** পরিচালনা করে: ভয়েস ওয়ার্কার যা শুনেছে, তা একই টার্নে পাঠায়,
+একই টুল, সীমা ও থ্রেড ব্যবহার করে। মডেলটি (ডিফল্ট হিসেবে OpenAI-এর `gpt-5.6-luna`, একটি মডেল রেজিস্ট্রির মাধ্যমে বাছাই করা)
+শুধু **প্রস্তাব দেয়**: কোনো টুল নেটওয়ার্ক, ঠিকানা বা "approve" ফ্ল্যাগ নেয় না। কোড প্রাপক নির্ধারণ করে, পলিসি চালায়,
+ট্রানজ্যাকশন তৈরি করে এবং তা সম্পন্ন করে।
+
+## বিশুদ্ধ পলিসি, স্পষ্ট ইন্টেন্ট
+
+- `packages/policy` তথ্য থেকে ফলাফলে যাওয়া একটি বিশুদ্ধ ফাংশন (ত্রুটি, প্রত্যাখ্যান, পূর্বশর্ত, স্পষ্টীকরণ, সতর্কতা)
+  এবং এর সঙ্গে **রুট**: allowance বা ওয়ালেট সিগনেচার। কার্ডের খসড়া তৈরি হলে এটি চলে, অনুমোদনের সময় নতুন তথ্য নিয়ে আবার চলে,
+  এবং সম্পাদনের সময়ও আবার চলে।
+- `packages/intents` প্রতিটি কাজকে সংস্করণযুক্ত, EIP-712-হ্যাশ করা **খসড়া** হিসেবে নির্ধারণ করে
+  (`SendDraft`, `SwapDraft`, `BridgeDraft`, `EarnDraft`)। কোনো অনুমোদনে ঠিক কোন সংস্করণ অনুমোদন করা হয়েছে তা উল্লেখ থাকে;
+  পরিবর্তন হলে নতুন সংস্করণ তৈরি হয়।
+- **সমাধান করে আবার চালিয়ে যাওয়া**: কিছু অনুপস্থিত থাকলে (কোনো পরিচিতি, মুদ্রা বা সাইন-ইন), শুরু থেকে না করে একই ইন্টেন্টের
+  কাজ চালিয়ে যাওয়া হয়।
+
+## টাকার প্রবাহ
+
+- **Allowance দিয়ে পাঠানো**: প্রতি ব্যবহারকারীর লকের অধীনে spend-ledger-এ রিজার্ভ করা হয়। এরপর Kawase-এর এজেন্ট ওয়ালেট
+  (Circle-এর developer-controlled wallet) আপনার delegation রিডিম করে; তারপর রসিদের `Transfer` লগ খসড়ার সঙ্গে মিলিয়ে দেখা হয়।
+- **ওয়ালেট-সই করা কাজ** (উপরের allowance-এর বেশি পরিমাণ, swap, bridge, earn): api সঠিক ট্রানজ্যাকশন তৈরি করে — App
+  Kit-এর কাজের ক্ষেত্রে kit-এর কলগুলো ধরে যাচাই করা হয়, তারপর একটি EIP-7702 self-batch-এ মোড়ানো হয় — ডিভাইসটি
+  Face ID দিয়ে এতে সই করে, আর broadcast করার আগে api সই করা বাইটগুলো খসড়ার সঙ্গে মিলিয়ে দেখে।
+- **Bridges** তিনটি ধাপে ট্র্যাক করা হয়: Arc-এ burn, Circle-এর attestation এবং গন্তব্য চেইনে mint।
+- **অটোমেশন** api-এর runner-এ প্রতি 30 সেকেন্ডে চলে: প্রতিটি occurrence ঠিক একবার claim করা হয়, নতুন তথ্য দিয়ে আবার যাচাই করা হয়
+  এবং অটোমেশনের নিজস্ব grant-এর অধীনে একই send, earn বা bridge পথ ব্যবহার করে পরিশোধ করা হয়।
+- **সবখানে idempotency**: Circle-এ কল করার আগে Circle-এর idempotency key সংরক্ষণ করা হয়; broadcast করার আগে raw transaction-এর
+  hash সংরক্ষণ করা হয়; ফলাফল অস্পষ্ট হলে `unknown_outcome` করা হয় এবং শুধু আবার যাচাই করা হয়, কখনো আবার পাঠানো হয় না।
+
+## ডেটা
+
+**Postgres 17 with Drizzle** একমাত্র স্টোর এবং একমাত্র মেসেজ বাস: প্রতিটি পরিবর্তনের সঙ্গে একই ট্রানজ্যাকশনে একটি outbox লেখা হয়,
+`pg_notify` ব্যবহার করে server-sent events-এর মাধ্যমে ইভেন্টগুলো ছড়িয়ে দেওয়া হয়, আর notifications-এর সত্যিকারের উৎস হিসেবে
+একটি inbox table ব্যবহৃত হয়। টাকা নির্ভুল base unit হিসেবে (`numeric(78,0)`, TypeScript-এ `bigint`) সংরক্ষণ করা হয়; id হলো UUIDv7।
+
+## Monorepo
+
+| অংশ | এটি কী |
+|---|---|
+| `apps/api` | Hono API: auth, agent chat stream, intents ও approvals, runners, webhooks |
+| `apps/mobile` | Expo 57 / React Native 0.86: iOS, Android ও web app |
+| `apps/voice-agent` | LiveKit Agents worker (Node) |
+| `apps/docs` | এই সাইট (Fumadocs 16, Next 16) |
+| `apps/landing` | showcase ও judge kit |
+| `packages/config` | সব constant: limits, capability registry, locales, voice, timeouts |
+| `packages/policy`, `packages/intents` | বিশুদ্ধ policy engine ও EIP-712 drafts |
+| `packages/integrations/*` | delegations (MetaMask Delegation Framework), Circle App Kit |
+| `packages/networks`, `packages/money` | দুটি Arc network ও যাচাই করা address; নির্ভুল money type |
+| `packages/identity` | উৎস-তথ্যসহ আসল logo |
+
+## Public API
+
+api পাওয়া যাবে `https://kawase-api.84.46.247.92.sslip.io` ঠিকানায়। Public, authentication ছাড়া ব্যবহারযোগ্য endpoint:
+
+| Endpoint | কী দেয় |
+|---|---|
+| `GET /health` | `{ ok, networks }` |
+| `GET /capabilities` | runtime override-সহ, প্রতিটি network-এর capability registry |
+| `GET /public/stats` | শুধু মোট সংখ্যা (সম্পন্ন send, swap, bridge, earn move, automation run, account) |
+
+বাকি সবকিছুর জন্য session দরকার (app থেকে bearer token, অথবা web-এ cookie)।
+
+## হোস্টিং
+
+সবকিছু Traefik ও Let's Encrypt-এর পেছনে থাকা একটি **Coolify** server-এ চলে: api, web app, voice worker, এই docs
+ও showcase, এবং Postgres। প্রতিটি service monorepo root থেকে তৈরি করা Dockerfile ব্যবহার করে; serviceগুলো `::`-এ শোনে
+(Coolify-এর health check `localhost`-কে IPv6 হিসেবে সমাধান করে)।
+
+## যেসব টেস্ট এটি প্রমাণ করে
+
+আসল transaction-সহ Arc testnet-এর বিরুদ্ধে চালান (`pnpm --filter @kawase/api test`): send (allowance ও wallet-signed,
+double tap → one send, tampered signature প্রত্যাখ্যান), swap, bridge (burn → attestation → mint), earn deposit ও
+withdrawal, scheduled automation, Auto-save, rule এবং বাধাগ্রস্ত run-এর পর recovery। delegation package নিজেই
+on-chain limit প্রমাণ করে (`pnpm --filter @kawase/integrations-delegation test:arc-testnet`)।

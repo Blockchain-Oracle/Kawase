@@ -1,0 +1,46 @@
+---
+title: "Automatisations"
+description: "Paiements programmés, épargne automatique et règles qui s'exécutent seules, chacun limité sur la chaîne par une autorisation que vous signez une seule fois avec Face ID."
+sourceHash: ac77249124998350
+---
+
+<Status ids="automations" />
+
+Les Automatisations permettent à un agent de s'occuper des tâches qui doivent s'exécuter sans que vous ouvriez l'application. Chaque automatisation
+s'exécute **sans surveillance**, dans le cadre d'une autorisation sur la chaîne que vous signez une seule fois — ainsi, même Kawase ne peut pas lui faire faire davantage.
+
+## Paiements programmés
+
+« Chaque vendredi à 9 h, envoie 10 dollars à Alex. » Kawase vous indique les prochaines exécutions et le montant maximum qui pourrait être transféré,
+puis vous l'activez avec **un seul Face ID**. Cela signe l'**autorisation** de l'automatisation : elle peut uniquement transférer ce token, uniquement
+à l'adresse d'Alex (enregistrée sur la chaîne), et uniquement jusqu'au montant prévu pour chaque période. Fréquences possibles : tous les jours, chaque semaine un jour donné,
+ou chaque mois du 1er au 28, selon votre fuseau horaire.
+
+Chaque exécution a lieu **une seule fois** : si le serveur de Kawase redémarre en cours d'exécution, celle-ci est reprise avec le même identifiant et n'est jamais
+payée deux fois. Une exécution qui ne peut pas avoir lieu (fonds insuffisants, limite dépassée) est **ignorée avec une explication** dans votre boîte de réception.
+
+## Épargne automatique
+
+« Garde 100 dollars dans mon portefeuille et épargne le reste. » L'épargne automatique conserve ce montant disponible et transfère tout excédent vers
+l'épargne de votre propre coffre (voir [Rendement](./earn-and-borrow.mdx)) ; lorsque le solde de votre portefeuille passe sous ce seuil, elle le réapprovisionne depuis
+l'épargne. Elle vérifie le solde chaque jour et chaque fois que vous recevez de l'argent. Ses autorisations permettent uniquement de transférer des USDC **entre votre portefeuille et votre propre
+épargne** — jamais ailleurs.
+
+## Règles
+
+« Quand mon solde dépasse 500, transfère ce qui dépasse 400 vers mon adresse Base. » Les règles comprennent :
+
+- un **déclencheur** : le solde dépasse ou passe sous un montant, ou vous recevez de l'argent (éventuellement d'une personne donnée ou pour au moins un
+  certain montant) ;
+- une **action** : transférer des USDC vers votre propre adresse sur un autre réseau (les frais du pont sont plafonnés sur la chaîne), les épargner dans votre
+  coffre, ou simplement vous avertir ;
+- un **montant** : ce qui dépasse un seuil, une part de l'argent reçu ou un montant fixe.
+
+Une règle de solde se déclenche **une fois par franchissement** et se réarme lorsque le solde revient au niveau précédent.
+
+## Les gérer
+
+Depuis l'écran Automatisations ou dans le chat : afficher la liste, **mettre en pause**, **reprendre**, **ignorer la prochaine exécution** et **annuler**. L'annulation
+**révoque également l'autorisation sur la chaîne** : la permission est supprimée, elle n'est pas simplement masquée.
+
+<ScopeList ids="automations" />
