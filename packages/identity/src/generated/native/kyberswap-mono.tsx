@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { Path } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkKyberswapMono = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><Path fill="currentColor" d="M12.78 3.053a.265.265 0 0 0-.418.16l-1.387 7.029a.265.265 0 0 0 .39.28l6.159-3.459a.26.26 0 0 0 .134-.212.26.26 0 0 0-.106-.228z" /><Path fill="currentColor" d="M10.778 3.383a.265.265 0 0 1 .419.262l-1.604 8.129a.3.3 0 0 0 0 .1l1.61 8.52a.26.26 0 0 1-.115.269.27.27 0 0 1-.293-.002l-5.03-3.346a.26.26 0 0 1-.119-.22v-9.74c0-.083.04-.162.106-.211z" /><Path fill="currentColor" d="M12.355 20.784a.265.265 0 0 0 .408.171l4.974-3.309a.26.26 0 0 0 .084-.348.26.26 0 0 0-.09-.094l-6.35-3.97a.265.265 0 0 0-.4.273zm5.593-4.69a.266.266 0 0 0 .368-.089.3.3 0 0 0 .037-.134V8.26a.26.26 0 0 0-.131-.228.26.26 0 0 0-.263-.002l-6.414 3.601a.27.27 0 0 0-.135.224.26.26 0 0 0 .125.23z" /></Svg>;
+export default MarkKyberswapMono;

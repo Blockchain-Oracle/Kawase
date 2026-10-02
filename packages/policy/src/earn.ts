@@ -16,7 +16,7 @@ export type EarnFacts = {
   action: "deposit" | "withdraw";
   vault:
     | { status: "missing" }
-    | { status: "found"; active: boolean; lowLiquidity: boolean; warnings: string[]; available: bigint; position: bigint };
+    | { status: "found"; active: boolean; lowLiquidity: boolean; stuck?: boolean; warnings: string[]; available: bigint; position: bigint };
   /** USDC base units. */
   amount: AmountFacts;
   thresholds: { gasFloat: bigint };
@@ -49,7 +49,9 @@ export function evaluateEarn(facts: EarnFacts): EarnEvaluation {
     if (!vault.active) results.push(result("VAULT_UNAVAILABLE"));
     if (amount > facts.wallet.usdc) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.wallet.usdc), asset: "USDC" }));
     else if (facts.wallet.usdc - amount < facts.thresholds.gasFloat) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
-    if (vault.lowLiquidity) results.push(result("VAULT_LOW_LIQUIDITY"));
+    // Never into a source that could not give it back now (gaps.md G1); low liquidity is a warning on the card.
+    if (vault.stuck) results.push(result("VAULT_LIQUIDITY_STUCK", { available: s(vault.available), asset: "USDC" }));
+    else if (vault.lowLiquidity) results.push(result("VAULT_LOW_LIQUIDITY"));
   } else {
     if (amount > vault.position) results.push(result("OVER_POSITION", { position: s(vault.position), asset: "USDC" }));
     else if (amount > vault.available) results.push(result("VAULT_LIQUIDITY_SHORT", { available: s(vault.available), asset: "USDC" }));

@@ -46,6 +46,8 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { margin } from "./margin";
+import { marginPolicy } from "./margin-policy";
 
 export const ar: Catalog = {
   common,
@@ -94,4 +96,6 @@ export const ar: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  margin,
+  marginPolicy,
 };

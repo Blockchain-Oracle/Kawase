@@ -1,0 +1,110 @@
+// The money-rails part of the agent's view (builder B1): Kawase Margin markets, positions and orders. Kept apart
+// from context.ts so the lanes merge cleanly; context.ts spreads it in.
+import { and, eq, inArray } from "drizzle-orm";
+import { formatUnits } from "viem";
+
+import type { AgentContext } from "@kawase/agent";
+import type { MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
+import { intents, type Db } from "@kawase/db";
+
+import type { MarginService } from "../margin/service";
+import type { SessionUser } from "../types";
+
+const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
+const PRICE_DECIMALS = 8;
+const PERCENT = 100;
+const MONEY_DIGITS = 2;
+const RATE_DIGITS = 2;
+const USDC_DECIMALS = 6;
+
+const dollars = (value: number) => `$${value.toFixed(MONEY_DIGITS)}`;
+const price = (eightDecimals: string | null) => (eightDecimals ? dollars(Number(formatUnits(BigInt(eightDecimals), PRICE_DECIMALS))) : "unknown");
+const pct = (fraction: number) => `${(fraction * PERCENT).toFixed(RATE_DIGITS)}%`;
+
+const REASONS: Record<string, string> = {
+  SIGN_IN_REQUIRED: "The person must sign in first.",
+  ON_OTHER_NETWORK: "Kawase Margin runs on Arc mainnet only (Aave V4 has no testnet); offer to switch to mainnet.",
+  NOT_AVAILABLE_YET: "Kawase Margin is not available right now.",
+  PAUSED_ALL: "The person paused all money movement.",
+  WALLET_NOT_READY: "The wallet is not set up yet.",
+  WALLET_NOT_SET_UP: "The wallet is not set up on this network yet; the card offers to set it up.",
+  MARKET_MISSING: "Which market? (get_markets lists them)",
+  SIDE_MISSING: "Long or short?",
+  MARGIN_MARKET_UNAVAILABLE: "No lending market lists that token, so it cannot be traded long or short here; offer a spot buy or a price alert instead.",
+  MARGIN_SIDE_UNAVAILABLE: "That side is not possible on this market (for example EURC cannot be collateral, so it can be shorted but not longed; a long EURC is a spot buy).",
+  POSITION_MISSING: "There is no open position like that.",
+  AMOUNT_MISSING: "How much margin, in USDC?",
+  AMOUNT_INVALID: "The margin amount is not valid.",
+  INSUFFICIENT_BALANCE: "Not enough USDC for that margin.",
+  INSUFFICIENT_GAS: "A little USDC must stay for the network fee.",
+  LEVERAGE_TOO_HIGH: "That leverage is above what the market allows; offer the maximum shown.",
+  QUOTE_UNAVAILABLE: "No swap price right now; try again in a moment.",
+};
+
+export function summarizeMargin(intent: MarginIntent): MarginSummary {
+  const draft = intent.draft;
+  const blocking = intent.blocking;
+  const moving = intent.state === "executing" || intent.state === "approved" || intent.state === "unknown_outcome";
+  const closing = intent.request.action === "close";
+  const status: MarginSummary["status"] =
+    intent.state === "completed"
+      ? "done"
+      : moving
+        ? closing
+          ? "closing"
+          : "opening"
+        : intent.state === "failed"
+          ? "failed"
+          : !blocking
+            ? "ready"
+            : blocking.code === "SIGN_IN_REQUIRED"
+              ? "needs_sign_in"
+              : blocking.kind === "clarification"
+                ? "needs_answer"
+                : blocking.kind === "precondition"
+                  ? "needs_fix"
+                  : blocking.kind === "policy"
+                    ? "refused"
+                    : "not_possible";
+  const text = draft
+    ? closing
+      ? `Close ${pct(draft.fraction)} of the ${draft.side} ${draft.market} position on ${intent.network}: about ${dollars(draft.notionalUsd)} unwound, at least ${formatUnits(BigInt(draft.returnedMin), USDC_DECIMALS)} USDC back.`
+      : `${draft.leverage}× ${draft.side} ${draft.market} with ${formatUnits(BigInt(draft.margin), USDC_DECIMALS)} USDC margin on ${intent.network}: about ${dollars(draft.notionalUsd)} exposure, liquidation at ${price(draft.liquidationPrice)} (now ${price(draft.markPrice)}), borrow rate ${pct(draft.borrowApr)} a year. The person slides to confirm on the card.`
+    : "";
+  return { intentId: intent.id, network: intent.network, status, text, blocking: blocking ? (REASONS[blocking.code] ?? blocking.code) : null };
+}
+
+const marketsSummary = (view: MarginMarketsView) =>
+  view.available
+    ? view.markets
+        .map((m) => `${m.market} ${price(m.price)}: long ${m.long.available ? `up to ${m.long.maxLeverage.toFixed(1)}×` : "not possible"}, short ${m.short.available ? `up to ${m.short.maxLeverage.toFixed(1)}×` : "not possible"}`)
+        .join("; ")
+    : "Kawase Margin is on Arc mainnet only (Aave V4 has no testnet); offer to switch.";
+
+const positionSummary = (p: MarginPositionView) =>
+  `${p.side} ${p.market} ${p.leverage.toFixed(1)}×: P&L ${dollars(p.pnlUsd)} (${pct(p.pnlPercent)}), liquidation ${price(p.liquidationPrice)}, mark ${price(p.markPrice)}, id ${p.id}`;
+
+export function railsContext(input: { user: SessionUser; db: Db; margin: MarginService | undefined; threadId: string }): Partial<AgentContext> {
+  const { user, db, margin, threadId } = input;
+  if (!margin) return {};
+  const network = user.activeNetwork;
+  return {
+    async marginMarkets() {
+      const view = await margin.markets(network);
+      return { ...view, summary: marketsSummary(view) };
+    },
+    async marginPositions() {
+      const positions = user.isAnonymous ? [] : await margin.positions(user);
+      return { network, positions, summary: positions.length ? positions.map(positionSummary).join("; ") : "No open positions." };
+    },
+    async proposeMargin(request) {
+      // One open order per conversation: a newer proposal replaces an earlier one still waiting.
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "margin"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await margin.create(user, request, { surface: "chat", threadId });
+      return { intent, summary: summarizeMargin(intent) };
+    },
+  };
+}

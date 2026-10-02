@@ -17,4 +17,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
     "El fondo solo puede pagar {{available}} ahora; el resto está prestado. Prueba con menos o más tarde.",
   VAULT_LOW_LIQUIDITY: "Liquidez baja: los retiros pueden tener que esperar",
   VAULT_RISK_WARNING: "App Kit marca este fondo: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "Esta bóveda solo puede pagar {{available}} ahora, así que Kawase no depositará en ella. Elige una con liquidez.",
 };

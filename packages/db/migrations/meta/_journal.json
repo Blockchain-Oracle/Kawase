@@ -141,6 +141,13 @@
       "when": 1791000041000,
       "tag": "0041_account",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791000042000,
+      "tag": "0030_margin",
+      "breakpoints": true
     }
   ]
 }

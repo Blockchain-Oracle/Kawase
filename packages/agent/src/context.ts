@@ -26,6 +26,10 @@ import type {
   SendRequest,
   SwapRequest,
   WalletSummary,
+  MarginMarketsOutput,
+  MarginPositionsOutput,
+  MarginRequest,
+  ProposeMarginOutput,
   AgentTopUpProposal,
   AgentWalletLine,
   BuyOutcome,
@@ -103,4 +107,11 @@ export type AgentContext = {
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  // Money rails (B1). Optional so a context without them still builds; the tools say so when one is missing.
+  /** Kawase Margin markets from the venue's live reserves, with each side's leverage cap. */
+  marginMarkets?(): Promise<MarginMarketsOutput>;
+  /** The person's open long/short positions with live P&L, health and liquidation price. */
+  marginPositions?(): Promise<MarginPositionsOutput>;
+  /** Drafts a margin order (open or close); the person slides to confirm on the card. */
+  proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
 };

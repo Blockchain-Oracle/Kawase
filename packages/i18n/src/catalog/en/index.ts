@@ -47,6 +47,8 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { margin } from "./margin";
+import { marginPolicy } from "./margin-policy";
 
 export const en = {
   common,
@@ -95,6 +97,8 @@ export const en = {
   deleteAccount,
   update,
   chatHome,
+  margin,
+  marginPolicy,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

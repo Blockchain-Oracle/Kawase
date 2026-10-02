@@ -16,4 +16,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
   VAULT_LIQUIDITY_SHORT: "لا تستطيع الخزنة دفع أكثر من {{available}} الآن؛ الباقي مُقرَض. جرّب أقل أو لاحقًا.",
   VAULT_LOW_LIQUIDITY: "سيولة منخفضة: قد يتأخر السحب",
   VAULT_RISK_WARNING: "يشير App Kit إلى هذه الخزنة: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "هذه الخزنة لا تستطيع دفع سوى {{available}} الآن، لذلك لن يودع Kawase فيها. اختر خزنة ذات سيولة.",
 };
