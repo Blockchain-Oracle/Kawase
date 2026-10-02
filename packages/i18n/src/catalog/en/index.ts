@@ -71,6 +71,8 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 
@@ -145,6 +147,8 @@ export const en = {
   memory,
   insight,
   forYou,
+  withdraw,
+  tokenRules,
   alerts,
   chatCards,
 } as const;

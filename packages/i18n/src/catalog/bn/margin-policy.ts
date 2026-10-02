@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "লিভারেজে আপনার পুরো মার্জিন হারাতে পারেন।",
   fixTryAgain: "আবার চেষ্টা করুন",
   fixSwitch: "Arc-এ যান",
+  BRAKE_LEVERAGE: "{{leverage}}× পাঁচ গুণের বেশি: আপনার বিপক্ষে ছোট একটা নড়াচড়াও মার্জিন মুছে দিতে পারে।",
 };

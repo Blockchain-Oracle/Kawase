@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "L'envoi n'est pas encore disponible sur ce réseau.",
   ON_OTHER_NETWORK: "L'envoi fonctionne sur {{network}}.",
-  PAUSED_ALL: "Vous avez mis tous les envois en pause. Reprenez-les dans les Réglages pour continuer.",
+  PAUSED_ALL: "En pause : Kawase et les automatisations ne font rien sans vous. Reprenez dans Portefeuille et limites.",
   OVER_PER_TX_LIMIT: "C'est au-delà de votre limite de {{limit}} par envoi.",
   OVER_DAILY_LIMIT: "C'est au-delà de votre limite quotidienne de {{limit}} ({{used}} utilisés aujourd'hui).",
   OVER_WEEKLY_LIMIT: "C'est au-delà de votre limite hebdomadaire de {{limit}} ({{used}} utilisés cette semaine).",
@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "Ce montant n'est pas valide.",
   ASSET_UNCLEAR: "USDC ou EURC ?",
   FIRST_TIME_RECIPIENT: "Premier paiement à cette adresse",
-  LOOKALIKE_ADDRESS: "Ressemble à l'adresse de {{name}}, mais elle est différente. Vérifiez chaque caractère.",
+  LOOKALIKE_ADDRESS:
+    "Cette adresse ressemble à celle de {{name}} mais elle est différente : Kawase n'y enverra rien. Vérifiez avec {{name}}.",
   UNSAVED_ADDRESS: "Cette adresse n'est pas dans vos contacts",
   ABOVE_ALLOWANCE: "Au-delà de ce qui reste de votre plafond ({{available}})",
   NO_ALLOWANCE: "Votre plafond quotidien est désactivé",
@@ -47,5 +48,15 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "Ouvrir le contact",
   AGENT_PAUSED: "En pause : celui-ci demande votre accord",
   NOT_ON_ALLOWLIST: "Pas sur votre liste autorisée : celui-ci demande votre accord",
-  NEW_RECIPIENT_COOLDOWN: "Les nouveaux destinataires peuvent recevoir jusqu'à {{cap}} par paiement jusqu'à {{until}}. Modifiez-le dans Portefeuille et limites.",
+  NEW_RECIPIENT_COOLDOWN:
+    "Nouveau destinataire : jusqu'à {{until}}, plus de {{cap}} vers lui demande votre accord. Modifiez-le dans Portefeuille et limites.",
+  TEST_AMOUNT_SUGGESTED: "Premier paiement ici. Envoyer d'abord {{test}} pour vérifier qu'il arrive ?",
+  BRAKE_HALF_BALANCE: "C'est plus de la moitié de ce que vous détenez, vers quelqu'un que vous n'avez jamais payé.",
+  BRAKE_PRICE_IMPACT: "Ce prix est {{gap}} % sous le marché, au-delà de votre règle de {{max}} %.",
+  BRAKE_LEVERAGE: "{{leverage}}× dépasse 5× : un petit mouvement contraire peut effacer la marge.",
+  RECIPIENT_TOKEN_CONTRACT:
+    "Cette adresse est le contrat d'un jeton. L'argent envoyé là est perdu : Kawase ne l'enverra pas.",
+  RECIPIENT_ISSUER_BLOCKED: "L'émetteur de {{asset}} a bloqué cette adresse : elle ne peut pas recevoir de {{asset}}.",
+  RECIPIENT_CONTRACT:
+    "Cette adresse est un contrat, pas un portefeuille. Il risque de ne pas pouvoir déplacer ce qu'il reçoit.",
 };

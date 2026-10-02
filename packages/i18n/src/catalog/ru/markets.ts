@@ -18,11 +18,14 @@ export const markets: Catalog["markets"] = {
   testnetBody:
     "Тестовые деньги меняются только на USDC и EURC. Переключитесь на mainnet, чтобы увидеть настоящие рынки.",
   switchToMainnet: "Переключиться на mainnet",
-  perpsBody: "Лонг и шорт в Arc в разработке: сначала cirBTC, WETH и EURC через Aave.",
   empty: "Сейчас здесь пусто",
   loadFailed: "Не удалось загрузить рынки.",
   updated: "Обновлено {{time}}",
   stale: "Последние цены на {{time}}",
   recentSearches: "Недавние поиски",
   segmentsLabel: "Разделы рынка",
+  yourPositions: "Ваши позиции",
+  marginVenue: "Kawase Margin · Aave V4 в Arc",
+  perpsMainnet:
+    "Лонг и шорт работают в основной сети Arc. Переключите сеть, чтобы торговать; ваши тестовые деньги останутся как есть.",
 };

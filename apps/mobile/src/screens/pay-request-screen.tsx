@@ -14,12 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import { ApiError, type InvoicePublicView, type PublicPaymentRequest } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { NetworkChip, TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -28,12 +25,12 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { InvoiceLinkPage } from "@/business/invoice-link-page";
+import { canonicalUnits } from "@/portfolio/ticket-token";
+import { RequestTokenMark, requestDecimals, requestFigures } from "@/request/request-token";
 import { InvoicePanel } from "@/business/invoice-panel";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { effectiveStatus, requesterName } from "@/request/copy";
-import { canonicalFromBase } from "@/send/amount-step";
-import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -62,7 +59,6 @@ export function PayRequestScreen({ token }: { token: string }) {
   const { locale } = useLocale();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const money = useMoney();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const { wallet } = useWalletStatus();
@@ -162,11 +158,11 @@ export function PayRequestScreen({ token }: { token: string }) {
     );
   }
 
-  const ids = arcIdentity(request.network);
-  const asset = request.asset as AssetId;
+  const asset = request.asset;
+  const requested = { ...request, assetToken: request.assetToken };
   const name = requesterName(request.requester);
-  const amountText = money(asset, request.amount);
-  const figures = formatAmount(toAmount(asset, BigInt(request.amount)), locale, { withSymbol: false });
+  const amountText = requestFigures(requested, locale, true);
+  const figures = requestFigures(requested, locale);
   const networkName = request.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const current = effectiveStatus(request);
   const own =
@@ -179,8 +175,8 @@ export function PayRequestScreen({ token }: { token: string }) {
       pathname: "/send",
       params: {
         to: request.requester.handle ? `@${request.requester.handle}` : request.requester.address,
-        amount: canonicalFromBase(BigInt(request.amount), asset),
-        asset,
+        amount: canonicalUnits(BigInt(request.amount), requestDecimals(requested)),
+        asset: asset === "USDC" || asset === "EURC" ? asset : (request.assetToken?.address ?? asset),
         request: request.token,
       },
     });
@@ -205,7 +201,7 @@ export function PayRequestScreen({ token }: { token: string }) {
         <View className="items-center gap-2">
           <Text className="text-muted-foreground text-base">{t("request.requests", { name })}</Text>
           <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
-            <Mark entity={asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={ASSET_MARK} />
+            <RequestTokenMark request={requested} size={ASSET_MARK} />
             <Text accessibilityLabel={amountText} className="font-display text-foreground text-5xl font-bold" style={{ fontVariant: ["tabular-nums"] }}>
               {figures}
             </Text>

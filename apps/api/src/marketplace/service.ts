@@ -80,6 +80,7 @@ import { amount, formatPrice } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import { recordPractice } from "../safety/practice";
 import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
@@ -704,6 +705,25 @@ export class MarketplaceService {
   }
 
   /**
+   * Practice mode (cards/automate-safety.md, R11): the seller was asked its live price and every rule was checked, but
+   * nothing is paid and no consent row waits. The card says what would have happened: paid from the agent wallet, or
+   * waited for the person's tap first, or needed a top-up. Recorded as a practice run, so Activity shows it.
+   */
+  private async practiceBuy(userId: string, network: NetworkId, service: ServiceListing, amount: bigint, why: "over_per_call" | "ask_first" | "after_paid_data" | undefined): Promise<BuyOutcome> {
+    const agent = await this.agentWallet(userId, network);
+    const held = agent ? await this.balances(network, agent.address) : undefined;
+    const funded = held ? held.gateway.available >= amount || held.onHand - AGENT_WALLET_GAS_RESERVE >= amount : false;
+    await recordPractice(this.db, {
+      userId,
+      network,
+      kind: "purchase",
+      summary: { amount: amount.toString(), asset: "USDC", name: service.provider.name, url: service.url, funded: funded ? "1" : "0", ...(why ? { why } : {}) },
+      result: { ok: true, error: null, simulatedAt: new Date().toISOString() },
+    });
+    return { network, status: "practiced", service, price: amount.toString(), wouldAsk: why ?? null, funded };
+  }
+
+  /**
    * One paid call for the agent. `tainted` is set once paid data was read in this turn: from then on every purchase
    * waits for the person's tap (MASTER-PLAN §Security, the tainted-turn rule).
    */
@@ -776,6 +796,7 @@ export class MarketplaceService {
       amount,
     };
     const why = amount > BigInt(settings.perCallCap) ? "over_per_call" : settings.askFirst ? "ask_first" : context.tainted ? "after_paid_data" : undefined;
+    if (user.practiceMode) return this.practiceBuy(user.id, network, service, amount, why);
     if (why && !approved) {
       const [pending] =
         earlier?.status === "needs_consent" && earlier.amount === amount

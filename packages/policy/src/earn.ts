@@ -35,7 +35,7 @@ export function evaluateEarn(facts: EarnFacts): EarnEvaluation {
     const elsewhere = facts.capability.other === "available";
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "yield" })]);
   }
-  if (facts.pausedAll) return done([result("PAUSED_ALL")]);
+  // Pause all stops the agent and automations; this is always the person's own yes, so it is never blocked (D-pause).
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
   if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
   if (facts.vault.status === "missing") return done([...results, result("VAULT_UNAVAILABLE")]);

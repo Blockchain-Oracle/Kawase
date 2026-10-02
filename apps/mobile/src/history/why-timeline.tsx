@@ -3,10 +3,11 @@
 // that stopped it (a blocking check, a send that failed) is the red one. Shared by the Why screen and the chat's Why
 // card (explain_transaction).
 import type { WhyStep, WhyView } from "@kawase/api-client";
-import { ProcessTimeline, type ProcessStep } from "@kawase/ui-native/components/process-timeline";
+import { ProcessTimeline, type TimelineStep } from "@kawase/ui-native/components/process-timeline";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { useThemeColors } from "@/theme/use-theme-colors";
 
 export function useStepText() {
   const { t, i18n } = useT();
@@ -50,14 +51,16 @@ const FAILED_SENDS = new Set(["failed", "reverted"]);
 
 export function WhyTimeline({ why, max }: { why: WhyView; max?: number }) {
   const { locale } = useLocale();
+  const colors = useThemeColors();
   const text = useStepText();
   const time = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(iso));
   // Per-request rows ("POST /…") are the raw audit trail; the timeline shows what each step meant.
   const shown = why.steps.filter((step) => !(step.step === "audit" && step.action.includes(" ")));
-  const steps: ProcessStep[] = (max ? shown.slice(0, max) : shown).map((step) => {
+  const steps: TimelineStep[] = (max ? shown.slice(0, max) : shown).map((step, index) => {
     const { title, detail } = text(step);
     const failed = (step.step === "checked" && Boolean(step.blocking)) || (step.step === "sent" && FAILED_SENDS.has(step.status));
-    return { title, description: detail, meta: time(step.at), state: failed ? "failed" : "done" };
+    // The step's detail, then when it happened.
+    return { id: `${step.step}-${index}`, title, description: [detail, time(step.at)].filter(Boolean).join("\n"), state: failed ? "failed" : "done" };
   });
-  return <ProcessTimeline steps={steps} />;
+  return <ProcessTimeline steps={steps} spinnerColor={colors.foreground} />;
 }

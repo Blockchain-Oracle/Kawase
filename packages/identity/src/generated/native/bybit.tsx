@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { G, Path, Defs, ClipPath } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkBybit = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><G clipPath="url(#bybit-a)"><Path fill="#000" d="M24 0H0v24h24z" /><Path fill="#F6A500" d="M15.403 13.445V9.334h.827v4.111z" /><Path fill="#fff" d="M5.772 14.666H4v-4.111h1.7c.827 0 1.308.45 1.308 1.155a.95.95 0 0 1-.523.85.96.96 0 0 1 .582.923c0 .768-.54 1.183-1.295 1.183m-.137-3.395h-.81v.947h.81c.35 0 .546-.19.546-.474 0-.282-.196-.473-.546-.473m.053 1.668h-.862v1.011h.862c.374 0 .553-.23.553-.507 0-.278-.179-.502-.553-.502zm3.901.041v1.686h-.821V12.98l-1.272-2.425h.898l.79 1.657.78-1.657h.897zm3.615 1.686h-1.772v-4.111h1.701c.827 0 1.308.45 1.308 1.155a.95.95 0 0 1-.524.85.96.96 0 0 1 .583.923c0 .768-.541 1.183-1.296 1.183m-.137-3.395h-.809v.947h.81c.35 0 .546-.19.546-.474 0-.282-.196-.473-.547-.473m.053 1.668h-.862v1.011h.862c.375 0 .553-.23.553-.507 0-.278-.178-.502-.553-.502zm5.773-1.669v3.396h-.825v-3.395H16.96v-.716H20v.716z" /></G><Defs><ClipPath id="bybit-a"><Path fill="#fff" d="M0 0h24v24H0z" /></ClipPath></Defs></Svg>;
+export default MarkBybit;

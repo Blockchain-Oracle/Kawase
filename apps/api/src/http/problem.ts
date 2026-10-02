@@ -64,6 +64,7 @@ export type ProblemCode =
   | "agent_wallet_short"
   | "change_not_pending"
   | "practice_mode"
+  | "brake_override"
   | "token_invalid"
   | "upstream"
   | "internal";
@@ -135,6 +136,7 @@ const TITLES: Record<ProblemCode, string> = {
   agent_wallet_short: "The agent wallet does not hold enough",
   change_not_pending: "That change is no longer waiting for approval",
   practice_mode: "Practice mode is on: nothing real moves",
+  brake_override: "A risky action: confirm it on its card",
   token_invalid: "Not a token on this network",
   upstream: "A provider did not answer",
   internal: "Something went wrong",

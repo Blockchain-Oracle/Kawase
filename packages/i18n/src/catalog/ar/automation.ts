@@ -150,4 +150,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} يشتري الآن {{quotedOut}} {{symbolOut}}",
   inboxReminder: "أتمتة الغد",
   reason_INSUFFICIENT_BALANCE: "لم يكن في المحفظة ما يكفي حينها",
+  reason_BRAKE_HALF_BALANCE: "أكثر من نصف الرصيد إلى شخص جديد: بانتظارك",
 };

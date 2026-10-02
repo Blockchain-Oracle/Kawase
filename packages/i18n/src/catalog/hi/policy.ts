@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "इस नेटवर्क पर अभी भेजना उपलब्ध नहीं है।",
   ON_OTHER_NETWORK: "{{network}} पर भेजना काम करता है।",
-  PAUSED_ALL: "आपने सभी भुगतान रोक दिए हैं। जारी रखने के लिए सेटिंग में फिर से शुरू करें।",
+  PAUSED_ALL: "रुका हुआ: Kawase और ऑटोमेशन आपके बिना कुछ नहीं करते। वॉलेट और सीमाएँ में फिर शुरू करें।",
   OVER_PER_TX_LIMIT: "यह प्रति भुगतान {{limit}} की आपकी सीमा से ज़्यादा है।",
   OVER_DAILY_LIMIT: "यह आपकी {{limit}} की दैनिक सीमा से ज़्यादा है (आज {{used}} इस्तेमाल हुआ)।",
   OVER_WEEKLY_LIMIT: "यह आपकी {{limit}} की साप्ताहिक सीमा से ज़्यादा है (इस हफ़्ते {{used}} इस्तेमाल हुआ)।",
@@ -24,7 +24,7 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "यह राशि मान्य नहीं है।",
   ASSET_UNCLEAR: "USDC या EURC?",
   FIRST_TIME_RECIPIENT: "इस पते पर पहला भुगतान",
-  LOOKALIKE_ADDRESS: "यह {{name}} के पते जैसा दिखता है, पर अलग है। हर अक्षर जाँचें।",
+  LOOKALIKE_ADDRESS: "यह {{name}} के पते जैसा दिखता है पर अलग है, इसलिए Kawase नहीं भेजेगा। {{name}} से पुष्टि करें।",
   UNSAVED_ADDRESS: "यह पता आपके संपर्कों में नहीं है",
   ABOVE_ALLOWANCE: "आपकी बची सीमा ({{available}}) से ज़्यादा",
   NO_ALLOWANCE: "आपकी दैनिक सीमा बंद है",
@@ -44,5 +44,13 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "संपर्क खोलें",
   AGENT_PAUSED: "रुका हुआ: इसके लिए आपकी मंज़ूरी चाहिए",
   NOT_ON_ALLOWLIST: "आपकी अनुमत सूची में नहीं: इसके लिए आपकी मंज़ूरी चाहिए",
-  NEW_RECIPIENT_COOLDOWN: "{{until}} तक नए प्राप्तकर्ता प्रति भुगतान {{cap}} तक पा सकते हैं। इसे वॉलेट और सीमाएँ में बदलें।",
+  NEW_RECIPIENT_COOLDOWN:
+    "नया प्राप्तकर्ता: {{until}} तक, उन्हें {{cap}} से ज़्यादा भेजने के लिए आपकी मंज़ूरी चाहिए। इसे वॉलेट और सीमाएँ में बदलें।",
+  TEST_AMOUNT_SUGGESTED: "यहाँ पहला भुगतान। पहले {{test}} भेजकर देखें कि पहुँचता है?",
+  BRAKE_HALF_BALANCE: "यह आपकी रकम के आधे से ज़्यादा है, किसी ऐसे को जिसे आपने पहले भुगतान नहीं किया।",
+  BRAKE_PRICE_IMPACT: "यह कीमत बाज़ार से {{gap}}% कम है, आपके {{max}}% नियम से ज़्यादा।",
+  BRAKE_LEVERAGE: "{{leverage}}× पाँच गुना से ऊपर है: आपके ख़िलाफ़ छोटी-सी चाल मार्जिन मिटा सकती है।",
+  RECIPIENT_TOKEN_CONTRACT: "यह पता एक टोकन कॉन्ट्रैक्ट है। वहाँ भेजा पैसा खो जाता है, इसलिए Kawase नहीं भेजेगा।",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}} के जारीकर्ता ने इस पते को ब्लॉक किया है, इसलिए यह {{asset}} नहीं पा सकता।",
+  RECIPIENT_CONTRACT: "यह पता वॉलेट नहीं, कॉन्ट्रैक्ट है। हो सकता है यह मिली रक़म आगे न भेज सके।",
 };

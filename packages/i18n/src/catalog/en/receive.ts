@@ -9,4 +9,6 @@ export const receive = {
   noWalletBody: "Your address is created with your account.",
   setUpFirst: "Set up your wallet first",
   setUpFirstBody: "One step, and your address is ready to receive.",
+  anyToken:
+    "Any token on Arc arrives here. Sent on another chain? It lands at this same address there: bring it to Arc from Add money.",
 } as const;

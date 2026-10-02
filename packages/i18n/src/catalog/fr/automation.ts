@@ -111,7 +111,8 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Entraînement : se serait exécuté (rien n'a été envoyé)",
   reason_PRACTICE_RUN_REFUSED: "Entraînement : Arc l'aurait refusé",
   reason_PAUSED_ALL: "En pause : vous avez tout mis en pause",
-  practiceBody: "Entraînement : les exécutions sont simulées sur Arc et affichées comme « aurait ». Rien ne bouge avant la mise en service.",
+  practiceBody:
+    "Entraînement : les exécutions sont simulées sur Arc et affichées comme « aurait ». Rien ne bouge avant la mise en service.",
   practising: "Entraînement",
   practiceFirst: "S'entraîner d'abord",
   goLive: "Activer pour de vrai",
@@ -130,7 +131,8 @@ export const automation: Catalog["automation"] = {
   edited: "Modifié",
   payroll: "Payer {{count}} personnes",
   payrollLine: "{{amount}} à {{name}}",
-  payrollBound: "Chaque personne peut recevoir au plus son propre montant {{per}}, uniquement à son adresse, imposé par Arc ; jusqu'au {{date}}.",
+  payrollBound:
+    "Chaque personne peut recevoir au plus son propre montant {{per}}, uniquement à son adresse, imposé par Arc ; jusqu'au {{date}}.",
   dca: "Échanger {{amount}} contre {{symbolOut}}",
   dcaBound: "Ne détient aucune permission : chaque échange attend votre accord dans « Vous attend ».",
   rulePrice: "Quand {{amountIn}} achète au moins {{minOut}}",
@@ -155,4 +157,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} achète maintenant {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Automatisation de demain",
   reason_INSUFFICIENT_BALANCE: "Pas assez d'argent dans le portefeuille à ce moment",
+  reason_BRAKE_HALF_BALANCE: "Plus de la moitié du solde vers un nouveau : vous attend",
 };

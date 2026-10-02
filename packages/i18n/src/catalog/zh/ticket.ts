@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "无路径",
   reason_timeout: "未及时响应",
   reason_failed: "无法报价",
+  ruleVerifiedOnly: "你的规则只允许已验证代币",
 };

@@ -25,4 +25,5 @@ export const needsYou: Catalog["needsYou"] = {
   expires: "{{time}} तक इंतज़ार",
   switchNetwork: "यह {{network}} पर इंतज़ार में है। जवाब देने के लिए नेटवर्क बदलें।",
   failed: "यह नहीं हो पाया। अब भी इंतज़ार में।",
+  reason_BRAKE_HALF_BALANCE: "आपकी रकम का आधे से ज़्यादा किसी नए को, इसलिए यह आपका इंतज़ार करता है।",
 };

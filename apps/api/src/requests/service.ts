@@ -2,6 +2,7 @@
 // asks, how much and on which network — no account needed — and can pay from Kawase (the send carries the request,
 // so it must match it) or from any wallet. A request is marked paid by the Kawase send that paid it, or by the first
 // incoming transfer of the same asset and exact amount to the requester after the request was made (the watcher).
+// Any token can be asked for (R1): USDC and EURC by name, every other token by its address on the network.
 import { randomBytes } from "node:crypto";
 import { and, asc, desc, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { getAddress, type Address } from "viem";
@@ -13,7 +14,7 @@ import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
-import { parseRequestAmount, type Executor } from "../send/facts";
+import { parseTokenAmount, type Executor, type TokenLookup } from "../send/facts";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -21,6 +22,7 @@ import type { WalletService } from "../wallet/service";
 type RequestRow = typeof paymentRequests.$inferSelect;
 
 const ZERO = 0n;
+const STABLE_DECIMALS = 6;
 
 export class RequestService {
   constructor(
@@ -29,7 +31,16 @@ export class RequestService {
     private readonly wallets: WalletService,
     private readonly inbox: InboxService,
     private readonly webUrl: string,
+    private readonly lookup?: TokenLookup,
   ) {}
+
+  /** The token of a row: USDC/EURC by name, any other from its stored symbol and decimals. */
+  private tokenOf(row: RequestRow) {
+    const network = this.chains.get(row.network)?.network;
+    if (row.asset === "USDC" || row.asset === "EURC")
+      return { address: (row.asset === "USDC" ? network?.addresses.usdc : network?.addresses.eurc) ?? "", symbol: row.asset, decimals: STABLE_DECIMALS };
+    return { address: getAddress(row.asset), symbol: row.assetSymbol ?? "?", decimals: row.assetDecimals ?? 0 };
+  }
 
   private explorer(network: NetworkId) {
     return this.chains.get(network)?.network.viemChain.blockExplorers?.default.url;
@@ -65,7 +76,8 @@ export class RequestService {
       token: row.token,
       link: `${this.webUrl.replace(/\/$/, "")}/r/${row.token}`,
       network: row.network,
-      asset: row.asset as PaymentRequest["asset"],
+      asset: this.tokenOf(row).symbol,
+      assetToken: this.tokenOf(row),
       amount: row.amount.toString(),
       note: row.note,
       status: row.status,
@@ -94,7 +106,16 @@ export class RequestService {
   async create(user: SessionUser, input: PaymentRequestInput): Promise<PaymentRequest> {
     const wallet = await this.wallets.userWallet(user.id);
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
-    const parsed = parseRequestAmount(input.amount, input.asset);
+    const upper = input.asset.trim().toUpperCase();
+    const named = upper === "USDC" || upper === "EURC" ? upper : undefined;
+    const found = named ? undefined : this.lookup ? await this.lookup(user.activeNetwork, input.asset) : undefined;
+    // USDC and EURC asked for by address are still USDC and EURC (the watcher matches them by name).
+    const context = this.chains.get(user.activeNetwork)?.network;
+    const byAddress = found && context ? (found.address.toLowerCase() === context.addresses.usdc.toLowerCase() ? "USDC" : found.address.toLowerCase() === context.addresses.eurc.toLowerCase() ? "EURC" : undefined) : undefined;
+    const stable = named ?? byAddress;
+    if (!stable && !found) throw problem(HTTP.unprocessable, "validation", "no such token on this network");
+    const decimals = stable ? STABLE_DECIMALS : found!.decimals;
+    const parsed = parseTokenAmount(input.amount, decimals);
     if (parsed.status !== "ok" || parsed.baseUnits <= ZERO) throw problem(HTTP.unprocessable, "validation", "the amount is not valid");
     const note = input.note?.trim().slice(0, REQUEST_NOTE_MAX) || null;
     const [row] = await this.db
@@ -103,7 +124,9 @@ export class RequestService {
         userId: user.id,
         token: randomBytes(REQUEST_TOKEN_BYTES).toString("base64url"),
         network: user.activeNetwork,
-        asset: input.asset,
+        asset: stable ?? found!.address.toLowerCase(),
+        assetSymbol: stable ? null : found!.symbol,
+        assetDecimals: stable ? null : found!.decimals,
         amount: parsed.baseUnits,
         note,
         payTo: getAddress(wallet.address),
@@ -161,7 +184,8 @@ export class RequestService {
     return {
       token: request.token,
       network: request.network,
-      asset: request.asset as PublicPaymentRequest["asset"],
+      asset: this.tokenOf(request).symbol,
+      assetToken: this.tokenOf(request),
       amount: request.amount.toString(),
       note: request.note,
       status: request.status,
@@ -194,7 +218,7 @@ export class RequestService {
       userId: row.userId,
       network: row.network,
       kind: "request_paid",
-      params: { amount: row.amount.toString(), asset: row.asset, from: paid.from, ...(name ? { name } : {}), ...(row.note ? { note: row.note } : {}) },
+      params: { amount: row.amount.toString(), asset: this.tokenOf(row).symbol, ...(row.asset === "USDC" || row.asset === "EURC" ? {} : { decimals: String(row.assetDecimals ?? "") }), from: paid.from, ...(name ? { name } : {}), ...(row.note ? { note: row.note } : {}) },
       requestId: row.id,
       txHash: paid.txHash,
       dedupeKey: `request_paid:${row.id}`,

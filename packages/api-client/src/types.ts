@@ -254,12 +254,17 @@ export type SendRecipientView = {
   source: AddressSource | null;
   verifiedMethod: string | null;
   paidBefore: boolean;
+  /** What the address is on chain (R6): a token contract (never paid), a smart wallet, another contract; null for an account. */
+  contract?: "token" | "smart_wallet" | "contract" | null;
 };
 
 export type SendDraftView = {
   recipient: SendRecipientView;
-  asset: "USDC" | "EURC";
-  /** Base units (6 decimals). */
+  /** The token's symbol ("USDC", "cirBTC"). */
+  asset: string;
+  /** The token in full for any asset (R1); null on drafts made before any-asset sends (USDC/EURC, 6 decimals). */
+  token?: { address: string; symbol: string; decimals: number } | null;
+  /** Base units of the token. */
   amount: string;
   note: string | null;
   /** Who pays the network fee, and about how much (USDC base units, 6 decimals). */
@@ -275,7 +280,8 @@ export type SendIntent = {
   practice?: { ok: boolean; error: string | null } | null;
   version: number;
   /** The person's own words for each field. */
-  request: { recipient: string | null; amount: string | null; asset: "USDC" | "EURC" | null; note: string | null };
+  /** As asked; `asset` is "USDC"/"EURC", a verified symbol or a token address. */
+  request: { recipient: string | null; amount: string | null; asset: string | null; note: string | null };
   draft: SendDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;
@@ -294,7 +300,8 @@ export type SendRequest = {
   requestToken?: string | null | undefined;
   recipient?: string | null | undefined;
   amount?: string | null | undefined;
-  asset?: "USDC" | "EURC" | null | undefined;
+  /** "USDC", "EURC", a verified symbol, or any token's address on the active network (R1). */
+  asset?: string | null | undefined;
   note?: string | null | undefined;
 };
 
@@ -701,8 +708,11 @@ export type PaymentRequest = {
   token: string;
   link: string;
   network: NetworkId;
-  asset: "USDC" | "EURC";
-  /** Base units (6 decimals). */
+  /** The token's symbol ("USDC", "ARGUS"). */
+  asset: string;
+  /** The token in full (any asset, R1). */
+  assetToken: RequestToken;
+  /** Base units of the token. */
   amount: string;
   /** Shown to the payer; never written on the chain. */
   note: string | null;
@@ -715,13 +725,20 @@ export type PaymentRequest = {
   paidBy: { address: string; name: string | null } | null;
 };
 
-export type PaymentRequestInput = { amount: string; asset: "USDC" | "EURC"; note?: string | null | undefined };
+/** `asset`: "USDC", "EURC", a verified symbol or any token's address on the active network (R1). */
+export type PaymentRequestInput = { amount: string; asset: string; note?: string | null | undefined };
+
+/** A request's token: its address on the network, symbol and decimals. */
+export type RequestToken = { address: string; symbol: string; decimals: number };
 
 /** What anyone with the link sees (no account needed): who asks, how much, on which network. */
 export type PublicPaymentRequest = {
   token: string;
   network: NetworkId;
-  asset: "USDC" | "EURC";
+  /** The token's symbol. */
+  asset: string;
+  /** The token in full (any asset, R1). */
+  assetToken: RequestToken;
   amount: string;
   note: string | null;
   status: PaymentRequestStatus;

@@ -119,6 +119,7 @@ export class IncomingWatcher {
         else if (token === usdcView) continue;
         else {
           if (token === eurc) await this.record(network, context.chainId, "EURC", entry, ownerOf, false);
+          else await this.recordToken(network, context.chainId, entry, ownerOf);
           found.push(entry);
         }
       }
@@ -129,6 +130,29 @@ export class IncomingWatcher {
       .insert(indexerCursors)
       .values({ network, stream: STREAM, lastBlock: toBlock })
       .onConflictDoUpdate({ target: [indexerCursors.network, indexerCursors.stream], set: { lastBlock: toBlock, updatedAt: new Date() } });
+  }
+
+  /**
+   * Any other token that arrives (R1): kept as a chain event and matched against an open request for exactly it. It
+   * is not announced on its own: unsolicited tokens are how spam arrives (they show in Hidden instead).
+   */
+  private async recordToken(network: NetworkId, chainId: number, entry: TransferLog, ownerOf: Map<string, string>) {
+    const from = entry.args.from;
+    const to = entry.args.to;
+    const value = entry.args.value;
+    if (!from || !to || !value || !entry.transactionHash || entry.logIndex === null || entry.blockNumber === null) return;
+    const userId = ownerOf.get(to.toLowerCase());
+    if (!userId || from.toLowerCase() === to.toLowerCase()) return;
+    await this.db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(chainEvents)
+        .values({ userId, network, chainId, blockNumber: entry.blockNumber!, txHash: entry.transactionHash!, logIndex: entry.logIndex!, asset: entry.address.toLowerCase(), fromAddress: getAddress(from), toAddress: getAddress(to), amount: value })
+        .onConflictDoNothing({ target: [chainEvents.chainId, chainEvents.txHash, chainEvents.logIndex] })
+        .returning({ id: chainEvents.id });
+      if (!inserted) return;
+      const paid = await this.requests.matchIncoming(tx, { userId, network, asset: entry.address.toLowerCase(), amount: value, txHash: entry.transactionHash!, from: getAddress(from) });
+      if (paid) await tx.update(chainEvents).set({ matchedRequestId: paid.id }).where(eq(chainEvents.id, inserted.id));
+    });
   }
 
   /** Remember which tokens reached which wallet (one row per person and token; the last block moves forward). */

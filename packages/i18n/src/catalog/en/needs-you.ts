@@ -23,4 +23,5 @@ export const needsYou = {
   expires: "Waits until {{time}}",
   switchNetwork: "This waits on {{network}}. Switch networks to answer it.",
   failed: "That didn't go through. It still waits.",
+  reason_BRAKE_HALF_BALANCE: "Over half of what you hold, to someone new, so it waits for you.",
 } as const;

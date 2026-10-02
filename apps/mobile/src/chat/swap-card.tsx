@@ -15,6 +15,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
+import { BrakeNote } from "@/safety/brake-note";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useSwapApproveLabel, useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapReview } from "@/swap/swap-review";
@@ -83,6 +84,7 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
           ) : null}
         </View>
       ) : null}
+      {ready ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
       <View className="gap-2">
         {ready ? (
           <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>

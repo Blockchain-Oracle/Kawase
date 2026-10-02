@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "قد تخسر هامشك كله مع الرافعة.",
   fixTryAgain: "حاول مجددًا",
   fixSwitch: "التبديل إلى Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× أعلى من 5×: حركة صغيرة ضدك قد تمحو الهامش.",
 };

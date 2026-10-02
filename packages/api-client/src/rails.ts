@@ -445,8 +445,8 @@ export function railsEndpoints(call: Call) {
       get: (id: string) => call<{ intent: MarginIntent }>("GET", `/margin/orders/${id}`),
       revise: (id: string, patch: MarginRequest) => call<{ intent: MarginIntent }>("PATCH", `/margin/orders/${id}`, patch),
       cancel: (id: string) => call<{ intent: MarginIntent }>("POST", `/margin/orders/${id}/cancel`),
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/signature`, { approvalId, signedTransaction }),
     },

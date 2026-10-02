@@ -13,7 +13,6 @@ import { toast } from "sonner-native";
 
 import type { PaymentRequest } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
-import type { AssetId } from "@kawase/money";
 import { CoinStack } from "@kawase/ui-native/components/art/coin-stack";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
@@ -26,6 +25,8 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
 import { RequestAmount } from "@/request/request-amount";
 import { RequestRow } from "@/request/request-row";
 import { RequestShareCard } from "@/request/request-share-card";
@@ -58,7 +59,8 @@ export function RequestScreen() {
   const testnet = network === "testnet";
 
   const [step, setStep] = React.useState<Step>(params.id ? "share" : "amount");
-  const [asset, setAsset] = React.useState<AssetId>("USDC");
+  const [token, setToken] = React.useState<TicketToken>(() => stableToken(network, "USDC"));
+  const [picking, setPicking] = React.useState(false);
   const [value, setValue] = React.useState("");
   const [note, setNote] = React.useState("");
   const [creating, setCreating] = React.useState(false);
@@ -95,7 +97,7 @@ export function RequestScreen() {
   const create = async () => {
     setCreating(true);
     try {
-      const { request } = await api.requests.create({ amount: value, asset, note: note.trim() || null });
+      const { request } = await api.requests.create({ amount: value, asset: assetParam(token), note: note.trim() || null });
       setOpened(request);
       setStep("share");
       setValue("");
@@ -184,8 +186,8 @@ export function RequestScreen() {
         <Animated.View key="amount" entering={entering} className="flex-1">
           <RequestAmount
             network={network}
-            asset={asset}
-            onAsset={setAsset}
+            token={token}
+            onPickAsset={() => setPicking(true)}
             value={value}
             onValue={setValue}
             note={note}
@@ -249,6 +251,18 @@ export function RequestScreen() {
           </ScrollView>
         </Animated.View>
       )}
+      <AssetPickerSheet
+        open={picking}
+        onClose={() => setPicking(false)}
+        title={t("assets.pickerTitle")}
+        mode="any"
+        selected={token.address.toLowerCase()}
+        onSelect={({ token: next }) => {
+          setToken(next);
+          if (value && unitsFromCanonical(value, next.decimals) === undefined) setValue("");
+        }}
+        unavailable={(candidate) => (candidate.status === "impersonator" ? t("tokenPage.n_blocked") : candidate.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
+      />
     </View>
   );
 }

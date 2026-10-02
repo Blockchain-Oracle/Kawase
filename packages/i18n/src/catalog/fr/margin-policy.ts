@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "Le levier peut vous faire perdre toute votre marge.",
   fixTryAgain: "Réessayer",
   fixSwitch: "Passer sur Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× dépasse 5× : un petit mouvement contraire peut effacer la marge.",
 };

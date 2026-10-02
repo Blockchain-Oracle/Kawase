@@ -22,6 +22,8 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { PositionRow } from "@/margin/position-row";
+import { useMarginPositions } from "@/margin/use-margin";
 import { change, holdingAmount, money } from "@/portfolio/format";
 import { tokenChip } from "@/portfolio/token-chip";
 
@@ -45,6 +47,9 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
   const { locale } = useLocale();
   const router = useRouter();
   const [hiddenOpen, setHiddenOpen] = React.useState(false);
+  // Kawase Margin longs and shorts sit with the earn positions (surfaces.md Home §7: perps with side, leverage, P&L).
+  const { positions: margin } = useMarginPositions();
+  const marginRows = margin ?? [];
   const fx = portfolio?.fx ?? { currency: "USD", perUsd: 1 };
   const openToken = (holding: HoldingView) => router.push(`/token/${holding.token.chainId}/${holding.token.address}`);
 
@@ -94,7 +99,7 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
     );
   }
 
-  const empty = portfolio.assets.length === 0 && portfolio.otherChains.length === 0 && portfolio.positions.length === 0;
+  const empty = portfolio.assets.length === 0 && portfolio.otherChains.length === 0 && portfolio.positions.length === 0 && marginRows.length === 0;
 
   return (
     <>
@@ -155,8 +160,11 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
 
       <ListRow standalone title={t("assets.explore")} leading={<Icon as={Compass} className="text-foreground size-5" />} chevron onPress={() => router.navigate("/markets")} />
 
-      {portfolio.positions.length > 0 ? (
+      {portfolio.positions.length > 0 || marginRows.length > 0 ? (
         <ListGroup label={t("assets.positions")}>
+          {marginRows.map((position) => (
+            <PositionRow key={position.id} position={position} />
+          ))}
           {portfolio.positions.map((position) => (
             <ListRow
               key={position.id}
