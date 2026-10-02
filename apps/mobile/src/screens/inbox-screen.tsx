@@ -48,7 +48,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const p = item.params;
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
-  const amount = money(p.asset, p.amount);
+  const amount = money(p.asset, p.amount, p.decimals);
   const skipped = item.kind === "automation_skipped";
   const alert = item.kind === "rule_alert";
   const incoming = item.kind !== "send_completed" && !skipped && !alert;

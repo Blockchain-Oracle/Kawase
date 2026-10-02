@@ -26,6 +26,12 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** R6: the recipient is a token contract (money sent there is lost). */
+  RECIPIENT_TOKEN_CONTRACT: "policy",
+  /** R6: the token's issuer has blocked the recipient (USDC/EURC blocklist). */
+  RECIPIENT_ISSUER_BLOCKED: "policy",
+  /** R6: an address that looks like a saved contact's but is not it (a lookalike) is never paid. */
+  LOOKALIKE_ADDRESS: "policy",
   /** More leverage than the venue's collateral factor allows at the opening health floor. */
   LEVERAGE_TOO_HIGH: "policy",
   /** The source can pay out almost nothing right now: Kawase does not deposit into it (gaps.md G1). */
@@ -75,7 +81,8 @@ export const REASONS = {
   RULE_INCOMPLETE: "clarification",
   // Warnings: shown on the confirm card.
   FIRST_TIME_RECIPIENT: "warning",
-  LOOKALIKE_ADDRESS: "warning",
+  /** R6: a contract that is not a known smart wallet: it may not be able to move what it receives. */
+  RECIPIENT_CONTRACT: "warning",
   UNSAVED_ADDRESS: "warning",
   ABOVE_ALLOWANCE: "warning",
   NO_ALLOWANCE: "warning",

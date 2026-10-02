@@ -56,7 +56,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   const eyebrow = `${t("send.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
   const readyInside = !intent.blocking && intent.state === "ready_for_approval" && intent.route === "allowance";
-  const amountLine = intent.draft ? money(intent.draft.asset, intent.draft.amount) : "";
+  const amountLine = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : "";
   React.useEffect(() => {
     if (!fixedHere.current || !readyInside || controller.busy) return;
     fixedHere.current = false;
@@ -94,7 +94,7 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   }
 
   const ready = !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
-  const amountText = intent.draft ? money(intent.draft.asset, intent.draft.amount) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
+  const amountText = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (

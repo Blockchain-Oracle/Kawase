@@ -117,7 +117,11 @@ export function buildAgentContext(input: {
         .update(intents)
         .set({ state: "canceled" })
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "send"), inArray(intents.state, [...DRAFTABLE])));
-      let intent = await sends.create(user, request, { surface: "chat", threadId });
+      // A token named by its name or symbol (not USDC/EURC) is found like a trade's: held and verified first.
+      const asked = request.asset?.trim();
+      const asset =
+        asked && !/^(usdc|eurc|0x[0-9a-fA-F]{40})$/i.test(asked) ? ((await assets.search(user, network, asked).catch(() => []))[0]?.token.address ?? asked) : asked ? asked.replace(/^(usdc|eurc)$/i, (symbol) => symbol.toUpperCase()) : request.asset;
+      let intent = await sends.create(user, { ...request, asset }, { surface: "chat", threadId });
       // D33 / DESIGN.md: inside the allowance the agent just sends and says so. The person's own request is the
       // instruction; the policy has already decided that no second look is needed (above the allowance, a new
       // address above the threshold or a lookalike all route to Face ID instead and wait on the card).

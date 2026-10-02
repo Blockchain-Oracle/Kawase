@@ -252,12 +252,17 @@ export type SendRecipientView = {
   source: AddressSource | null;
   verifiedMethod: string | null;
   paidBefore: boolean;
+  /** What the address is on chain (R6): a token contract (never paid), a smart wallet, another contract; null for an account. */
+  contract?: "token" | "smart_wallet" | "contract" | null;
 };
 
 export type SendDraftView = {
   recipient: SendRecipientView;
-  asset: "USDC" | "EURC";
-  /** Base units (6 decimals). */
+  /** The token's symbol ("USDC", "cirBTC"). */
+  asset: string;
+  /** The token in full for any asset (R1); null on drafts made before any-asset sends (USDC/EURC, 6 decimals). */
+  token?: { address: string; symbol: string; decimals: number } | null;
+  /** Base units of the token. */
   amount: string;
   note: string | null;
   /** Who pays the network fee, and about how much (USDC base units, 6 decimals). */
@@ -271,7 +276,8 @@ export type SendIntent = {
   outcome: SendOutcome | null;
   version: number;
   /** The person's own words for each field. */
-  request: { recipient: string | null; amount: string | null; asset: "USDC" | "EURC" | null; note: string | null };
+  /** As asked; `asset` is "USDC"/"EURC", a verified symbol or a token address. */
+  request: { recipient: string | null; amount: string | null; asset: string | null; note: string | null };
   draft: SendDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;
@@ -290,7 +296,8 @@ export type SendRequest = {
   requestToken?: string | null | undefined;
   recipient?: string | null | undefined;
   amount?: string | null | undefined;
-  asset?: "USDC" | "EURC" | null | undefined;
+  /** "USDC", "EURC", a verified symbol, or any token's address on the active network (R1). */
+  asset?: string | null | undefined;
   note?: string | null | undefined;
 };
 

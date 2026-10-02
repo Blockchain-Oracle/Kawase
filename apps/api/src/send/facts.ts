@@ -1,7 +1,9 @@
-// Gathers what the policy needs for one send, fresh each time: balances, the 7702 code and what is left of the
-// allowance from the chain; limits and what was already spent from the database; who the recipient is.
+// Gathers what the policy needs for one send of any asset (R1), fresh each time: the token, balances, the 7702 code
+// and what is left of the allowance from the chain; limits and what was already spent from the database; who the
+// recipient is, and what that address is on chain (R6: a token contract, a smart wallet, another contract, blocked by
+// the token's issuer, a Kawase user).
 import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
-import { erc20Abi, type Address } from "viem";
+import { erc20Abi, formatUnits, parseUnits, type Address } from "viem";
 
 import {
   DEFAULT_LIMITS,
@@ -12,20 +14,42 @@ import {
 } from "@kawase/config";
 import { grants, limits as limitsTable, spendLedger, type Db } from "@kawase/db";
 import { allowanceAvailable, isWalletSetUp } from "@kawase/integrations-delegation";
-import { AmountParseError, parseAmount, type AssetId } from "@kawase/money";
+import { AmountParseError, decimalsOf, parseAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 import type { AmountFacts, SendFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
 import type { Chains } from "../wallet/chain";
-import type { Resolution } from "./recipients";
+import { inspectRecipient, type Resolution, type RecipientInspection } from "./recipients";
 
 export type StoredRequest = {
   recipient: string | null;
   amount: string | null;
-  asset: AssetId | null;
+  /** "USDC"/"EURC", a verified symbol, or a lower-case token address on the network. */
+  asset: string | null;
   note: string | null;
 };
+
+/** What a send needs to know about its token. */
+export type SendToken = { address: Address; symbol: string; decimals: number; priceUsd: number | null };
+/** Turns what was asked ("USDC", "cirBTC", "0x…") into the token on this network; undefined when it is not one. */
+export type TokenLookup = (network: NetworkId, value: string) => Promise<SendToken | undefined>;
+
+const DECIMAL = /^\d+(\.\d+)?$/;
+/** Limits for tokens other than USDC and EURC are kept in US dollars, in USDC base units, under this ledger label. */
+export const USD_LEDGER_ASSET = "USD";
+const USD_DECIMALS = 6;
+
+/** "10.5" in any token's own decimals. */
+export function parseTokenAmount(text: string | null, decimals: number): AmountFacts {
+  if (!text || !text.trim()) return { status: "missing" };
+  const value = text.trim();
+  if (!DECIMAL.test(value) || (value.split(".")[1]?.length ?? 0) > decimals) return { status: "invalid" };
+  return { status: "ok", baseUnits: parseUnits(value, decimals) };
+}
+
+/** The ledger bucket a send's limits count in: USDC and EURC in their own units, every other token in dollars. */
+export const ledgerAsset = (symbol: string): string => (symbol === "USDC" || symbol === "EURC" ? symbol : USD_LEDGER_ASSET);
 
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
 
@@ -65,8 +89,8 @@ export async function activeAllowance(db: Db, userId: string, network: NetworkId
   return row ? { id: row.id, delegation: row.delegation, perPeriod: row.periodAmount } : undefined;
 }
 
-/** Reserved and committed spend of one asset in the last day and week, leaving out one intent (the one being checked). */
-export async function spent(db: Executor, userId: string, network: NetworkId, asset: AssetId, exceptIntentId: string | undefined) {
+/** Reserved and committed spend of one ledger asset in the last day and week, leaving out one intent (the one being checked). */
+export async function spent(db: Executor, userId: string, network: NetworkId, asset: string, exceptIntentId: string | undefined) {
   const since = (seconds: number) => new Date(Date.now() - seconds * MS_PER_SECOND);
   const sum = async (seconds: number) => {
     const [row] = await db
@@ -110,13 +134,22 @@ export async function userLimits(db: Executor, userId: string, network: NetworkI
 }
 
 /** The app limits again, under the approval lock: true when this amount still fits. */
-export async function fitsLimits(executor: Executor, userId: string, network: NetworkId, asset: AssetId, amount: bigint, exceptIntentId: string) {
+export async function fitsLimits(executor: Executor, userId: string, network: NetworkId, asset: string, amount: bigint, exceptIntentId: string) {
   const limitValues = await userLimits(executor, userId, network);
   const used = await spent(executor, userId, network, asset, exceptIntentId);
   return amount <= limitValues.perTx && used.day + amount <= limitValues.daily && used.week + amount <= limitValues.weekly;
 }
 
-export type GatheredFacts = { facts: SendFacts; allowance: ActiveAllowance | undefined };
+export type GatheredFacts = {
+  facts: SendFacts;
+  allowance: ActiveAllowance | undefined;
+  /** The token the send uses, once known. */
+  token: SendToken | undefined;
+  /** The amount in the ledger's units (see `ledgerAsset`), for reserving the spend; null when unpriced. */
+  ledger: { asset: string; amount: bigint | null } | undefined;
+  /** What the recipient's address is on chain (R6), when it resolved. */
+  inspection: RecipientInspection | undefined;
+};
 
 export async function gatherFacts(input: {
   db: Db;
@@ -129,28 +162,31 @@ export async function gatherFacts(input: {
   request: StoredRequest;
   resolution: Resolution;
   exceptIntentId?: string | undefined;
+  /** Any token beyond USDC and EURC (the asset registry); without it only those two are known. */
+  lookup?: TokenLookup | undefined;
 }): Promise<GatheredFacts> {
   const { db, chains, userId, network, wallet, request } = input;
   const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
   const view = await capabilityView(db, chains.available);
   const clients = chains.get(network);
-  const asset = request.asset ?? undefined;
+  const named = request.asset ?? undefined;
 
-  const empty = { USDC: ZERO, EURC: ZERO } satisfies Record<AssetId, bigint>;
-  let balances: Record<AssetId, bigint> = empty;
+  let usdc = ZERO;
+  let eurc = ZERO;
   let setUp = false;
   let allowance: ActiveAllowance | undefined;
   let available = ZERO;
   if (clients && wallet) {
     const balanceOf = (token: Address) =>
       clients.client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
-    const [usdc, eurc, code, grant] = await Promise.all([
+    const [usdcBalance, eurcBalance, code, grant] = await Promise.all([
       balanceOf(clients.network.addresses.usdc),
       balanceOf(clients.network.addresses.eurc),
       clients.client.getCode({ address: wallet }),
       activeAllowance(db, userId, network),
     ]);
-    balances = { USDC: usdc, EURC: eurc };
+    usdc = usdcBalance;
+    eurc = eurcBalance;
     setUp = isWalletSetUp(code);
     allowance = grant;
     if (grant && setUp) {
@@ -161,23 +197,57 @@ export async function gatherFacts(input: {
     }
   }
 
-  const chosenAsset = asset ?? (balances.EURC > ZERO && balances.USDC === ZERO ? "EURC" : "USDC");
-  const [limitValues, spentValues] = await Promise.all([
+  // The token: the one named, else the stablecoin held (both held and none named: ask which).
+  const assetUnclear = !named && usdc > ZERO && eurc > ZERO;
+  const chosen = named ?? (eurc > ZERO && usdc === ZERO ? "EURC" : "USDC");
+  const stable = (symbol: "USDC" | "EURC"): SendToken | undefined =>
+    clients ? { address: symbol === "USDC" ? clients.network.addresses.usdc : clients.network.addresses.eurc, symbol, decimals: decimalsOfStable(symbol), priceUsd: null } : undefined;
+  const upper = chosen.toUpperCase();
+  const token: SendToken | undefined =
+    upper === "USDC" || upper === "EURC" ? stable(upper) : input.lookup ? await input.lookup(network, chosen).catch(() => undefined) : undefined;
+  const isUsdc = Boolean(token && clients && token.address.toLowerCase() === clients.network.addresses.usdc.toLowerCase());
+  const isEurc = Boolean(token && clients && token.address.toLowerCase() === clients.network.addresses.eurc.toLowerCase());
+  const balance = !token || !clients || !wallet ? ZERO : isUsdc ? usdc : isEurc ? eurc : await clients.client.readContract({ address: token.address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }).catch(() => ZERO);
+  const amount: AmountFacts = token ? parseTokenAmount(request.amount, token.decimals) : parseRequestAmount(request.amount, undefined);
+
+  // Limits: USDC and EURC in their own units; any other token by its value in dollars (none when it has no price).
+  const ledgerSymbol = token ? ledgerAsset(isUsdc ? "USDC" : isEurc ? "EURC" : token.symbol) : "USDC";
+  const valued =
+    amount.status === "ok" && token && ledgerSymbol === USD_LEDGER_ASSET
+      ? token.priceUsd !== null
+        ? parseUnits((Number(formatUnits(amount.baseUnits, token.decimals)) * token.priceUsd).toFixed(USD_DECIMALS), USD_DECIMALS)
+        : null
+      : undefined;
+  const [limitValues, spentValues, inspection] = await Promise.all([
     userLimits(db, userId, network),
-    spent(db, userId, network, chosenAsset, input.exceptIntentId),
+    spent(db, userId, network, ledgerSymbol, input.exceptIntentId),
+    clients && input.resolution.facts.status === "resolved"
+      ? inspectRecipient(db, clients.client, input.resolution.facts.address as Address, token && (isUsdc || isEurc) ? token.address : undefined)
+      : Promise.resolve(undefined),
   ]);
+  const recipient =
+    input.resolution.facts.status === "resolved" && inspection
+      ? { ...input.resolution.facts, contract: inspection.contract ?? undefined, issuerBlocked: inspection.issuerBlocked }
+      : input.resolution.facts;
 
   return {
     allowance,
+    token,
+    ledger: amount.status === "ok" ? { asset: ledgerSymbol, amount: valued === undefined ? amount.baseUnits : valued } : undefined,
+    inspection,
     facts: {
       network,
       capability: { here: view.send[network].state, other: view.send[other].state },
       signedIn: input.signedIn,
       pausedAll: input.pausedAll,
-      wallet: { registered: Boolean(wallet), setUp, balances },
-      recipient: input.resolution.facts,
-      asset,
-      amount: parseRequestAmount(request.amount, asset),
+      wallet: { registered: Boolean(wallet), setUp, balance, usdc },
+      recipient,
+      asset: token?.symbol ?? (named || undefined),
+      assetUnclear,
+      isUsdc,
+      decimals: token?.decimals,
+      amount,
+      limitAmount: valued,
       allowance: { active: Boolean(allowance), available },
       limits: limitValues,
       spent: spentValues,
@@ -188,3 +258,5 @@ export async function gatherFacts(input: {
     },
   };
 }
+
+const decimalsOfStable = (symbol: "USDC" | "EURC") => decimalsOf(symbol);

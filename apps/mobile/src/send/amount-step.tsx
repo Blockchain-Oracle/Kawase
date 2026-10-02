@@ -1,5 +1,5 @@
-// How much (revamp journey 10, the amount ticket): who it goes to at the top (tap to change), the asset chips with
-// their real marks and what is available, the amount itself large in the display face (64 pt, tabular), Max, an
+// How much (revamp journey 10, the amount ticket): who it goes to at the top (tap to change), the asset — any token
+// the person holds, from the universal picker (R1) — with its real mark and what is available, the amount itself large in the display face (64 pt, tabular), Max, an
 // optional private note, the keypad, and one button that carries the validation in words ("Enter an amount",
 // "Not enough USDC", "Review"). Balances come from the wallet status; the policy checks everything again at review.
 import { ChevronDown } from "lucide-react-native";
@@ -8,11 +8,10 @@ import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { NetworkId } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
 import { AmountParseError, decimalsOf, parseAmount, type AssetId } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
-import { Mark } from "@kawase/ui-native/components/mark";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Input } from "@kawase/ui-native/components/ui/input";
@@ -22,11 +21,12 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 
+import { canonicalUnits, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+
 import { useMoney } from "./copy";
 import { applyKey, decimalSeparator, displayAmount, Keypad } from "./keypad";
 import type { RecipientChoice } from "./recipient-step";
 
-const ASSETS: AssetId[] = ["USDC", "EURC"];
 const AVATAR = 32;
 const CHIP_MARK = 24;
 const NOTE_MAX = 140;
@@ -62,28 +62,29 @@ export type AmountStepProps = {
   network: NetworkId;
   recipient: RecipientChoice;
   onChangeRecipient: () => void;
-  asset: AssetId;
-  onAsset: (asset: AssetId) => void;
+  /** The token being sent (any held asset). */
+  token: TicketToken;
+  /** Opens the universal asset picker. */
+  onPickAsset: () => void;
   value: string;
   onValue: (value: string) => void;
   note: string;
   onNote: (note: string) => void;
-  /** Balances in base units; undefined while loading. */
-  balances: Record<AssetId, bigint> | undefined;
+  /** The token's balance in base units; undefined while loading. */
+  balance: bigint | undefined;
   onReview: () => void;
   busy: boolean;
 };
 
 export function AmountStep(props: AmountStepProps) {
-  const { network, recipient, asset, value, balances, busy } = props;
+  const { recipient, token, value, balance, busy } = props;
+  const asset = token.symbol;
   const { t } = useT();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
   const money = useMoney();
-  const ids = arcIdentity(network);
   const separator = decimalSeparator(locale);
-  const balance = balances?.[asset];
-  const base = baseFromCanonical(value, asset);
+  const base = unitsFromCanonical(value, token.decimals);
 
   const cta =
     base === undefined || base === ZERO
@@ -113,26 +114,16 @@ export function AmountStep(props: AmountStepProps) {
           <Icon as={ChevronDown} className="text-muted-foreground size-4" />
         </Pressable>
 
-        <View accessibilityRole="radiogroup" className="flex-row gap-2">
-          {ASSETS.map((option) => {
-            const selected = option === asset;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => props.onAsset(option)}
-                className={cn(
-                  "flex-1 flex-row items-center justify-center gap-2 rounded-full border py-2.5",
-                  selected ? "border-foreground bg-secondary" : "border-border bg-muted active:bg-secondary",
-                )}
-              >
-                <Mark entity={option === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={CHIP_MARK} />
-                <Text className="text-foreground text-base font-semibold">{option}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("assets.pickerTitle")}: ${token.name}`}
+          onPress={props.onPickAsset}
+          className="border-border bg-secondary active:bg-muted flex-row items-center justify-center gap-2 self-center rounded-full border py-2 pe-4 ps-2"
+        >
+          <TokenMark token={token} size={CHIP_MARK} />
+          <Text className="text-foreground text-base font-semibold">{asset}</Text>
+          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+        </Pressable>
 
         <View className="items-center gap-2 py-2">
           <View className="flex-row items-baseline gap-2" style={{ direction: "ltr" }}>
@@ -151,12 +142,12 @@ export function AmountStep(props: AmountStepProps) {
           </View>
           <View className="flex-row items-center gap-2">
             <Text className="text-muted-foreground text-sm">
-              {balance !== undefined ? t("send.available", { amount: money(asset, balance.toString()) }) : " "}
+              {balance !== undefined ? t("send.available", { amount: money(asset, balance.toString(), token.decimals) }) : " "}
             </Text>
             {balance !== undefined && balance > ZERO ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => props.onValue(canonicalFromBase(balance, asset))}
+                onPress={() => props.onValue(canonicalUnits(balance, token.decimals))}
                 className="bg-muted active:bg-secondary rounded-full px-3 py-1"
               >
                 <Text className="text-foreground text-xs font-semibold">{t("send.max")}</Text>
@@ -179,7 +170,7 @@ export function AmountStep(props: AmountStepProps) {
       </View>
 
       <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-        <Keypad decimal={separator} backspaceLabel={t("send.deleteDigit")} onKey={(key) => props.onValue(applyKey(value, key, decimalsOf(asset)))} />
+        <Keypad decimal={separator} backspaceLabel={t("send.deleteDigit")} onKey={(key) => props.onValue(applyKey(value, key, token.decimals))} />
         <Button size="lg" disabled={!cta.enabled || busy} onPress={props.onReview}>
           <Text>{busy ? t("common.loading") : cta.label}</Text>
         </Button>

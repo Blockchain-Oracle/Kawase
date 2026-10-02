@@ -24,7 +24,7 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "यह राशि मान्य नहीं है।",
   ASSET_UNCLEAR: "USDC या EURC?",
   FIRST_TIME_RECIPIENT: "इस पते पर पहला भुगतान",
-  LOOKALIKE_ADDRESS: "यह {{name}} के पते जैसा दिखता है, पर अलग है। हर अक्षर जाँचें।",
+  LOOKALIKE_ADDRESS: "यह {{name}} के पते जैसा दिखता है पर अलग है, इसलिए Kawase नहीं भेजेगा। {{name}} से पुष्टि करें।",
   UNSAVED_ADDRESS: "यह पता आपके संपर्कों में नहीं है",
   ABOVE_ALLOWANCE: "आपकी बची सीमा ({{available}}) से ज़्यादा",
   NO_ALLOWANCE: "आपकी दैनिक सीमा बंद है",
@@ -42,4 +42,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "{{network}} पर जाएँ",
   fixEditAmount: "राशि बदलें",
   fixOpenContact: "संपर्क खोलें",
+  RECIPIENT_TOKEN_CONTRACT: "यह पता एक टोकन कॉन्ट्रैक्ट है। वहाँ भेजा पैसा खो जाता है, इसलिए Kawase नहीं भेजेगा।",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}} के जारीकर्ता ने इस पते को ब्लॉक किया है, इसलिए यह {{asset}} नहीं पा सकता।",
+  RECIPIENT_CONTRACT: "यह पता वॉलेट नहीं, कॉन्ट्रैक्ट है। हो सकता है यह मिली रक़म आगे न भेज सके।",
 };
