@@ -58,6 +58,7 @@ import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
+import { auditWrites } from "./audit/middleware";
 import { InvoiceService } from "./business/invoices";
 import { PayoutService } from "./business/payouts";
 import { PayrollService } from "./business/payroll";
@@ -216,6 +217,7 @@ export function createApp(deps: AppDeps) {
   app.use("*", general.middleware);
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
+  app.use("*", auditWrites(audit));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
