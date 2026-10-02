@@ -26,6 +26,7 @@ import { SendStatus } from "@/send/send-status";
 import { isOpen, useSend, type SendController } from "@/send/use-send";
 
 import { useResumeWhenFixed } from "@/intents/use-resume";
+import { ShareReceiptButton } from "@/receipt/share-receipt";
 
 import { AgentCard } from "./card";
 
@@ -79,10 +80,29 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           compact
           connectionLost={controller.connectionLost}
           actions={
-            unsavedAddress ? (
-              <Button variant="secondary" onPress={() => setSaving(true)}>
-                <Text>{t("send.saveContact")}</Text>
-              </Button>
+            unsavedAddress || (intent.outcome === "sent" && intent.tx && intent.draft) ? (
+              <View className="gap-2">
+                {unsavedAddress ? (
+                  <Button variant="secondary" onPress={() => setSaving(true)}>
+                    <Text>{t("send.saveContact")}</Text>
+                  </Button>
+                ) : null}
+                {intent.outcome === "sent" && intent.tx && intent.draft ? (
+                  <ShareReceiptButton
+                    variant="ghost"
+                    receipt={{
+                      direction: "sent",
+                      amount: money(intent.draft.asset, intent.draft.amount),
+                      counterparty: name,
+                      network: intent.network,
+                      at: intent.completedAt ?? intent.createdAt,
+                      txHash: intent.tx.hash,
+                      explorerUrl: intent.tx.explorerUrl,
+                      note: intent.request.note,
+                    }}
+                  />
+                ) : null}
+              </View>
             ) : undefined
           }
         />

@@ -16,6 +16,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { Page } from "@/account/page";
+import { IncomingActions } from "@/receipt/incoming-actions";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -107,6 +108,18 @@ export function WhyScreen() {
               <Icon as={ExternalLink} className="size-4" />
               <Text>{t("activity.viewExplorer")}</Text>
             </Button>
+          ) : null}
+          {/* Money that came in: save the sender, share the receipt (A5-2). */}
+          {why.kind === "incoming" && typeof why.facts.from === "string" && why.facts.amount !== null && why.facts.amount !== undefined ? (
+            <IncomingActions
+              from={why.facts.from}
+              amountBase={String(why.facts.amount)}
+              asset={String(why.facts.asset ?? "USDC")}
+              network={why.network}
+              at={typeof why.facts.at === "string" ? why.facts.at : (why.steps[0]?.at ?? new Date().toISOString())}
+              txHash={why.txHash}
+              explorerUrl={why.explorerUrl}
+            />
           ) : null}
         </>
       )}

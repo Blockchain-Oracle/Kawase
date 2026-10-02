@@ -125,7 +125,8 @@ export class HistoryService {
       .limit(1);
     if (incoming && view.kind === "other") {
       view.kind = "incoming";
-      view.facts = { from: incoming.fromAddress, amount: incoming.amount.toString(), asset: incoming.asset };
+      // `at`: when Kawase saw it arrive (the receipt's date; A5-2).
+      view.facts = { from: incoming.fromAddress, amount: incoming.amount.toString(), asset: incoming.asset, at: iso(incoming.createdAt) };
       if (incoming.matchedRequestId) view.steps.push({ step: "matched", at: iso(incoming.createdAt), what: "request", reference: incoming.matchedRequestId });
     }
 

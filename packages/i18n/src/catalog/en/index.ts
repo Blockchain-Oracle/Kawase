@@ -66,6 +66,8 @@ import { forYou } from "./for-you";
 import { scan } from "./scan";
 import { split } from "./split";
 import { resume } from "./resume";
+import { receipt } from "./receipt";
+import { importContacts } from "./import-contacts";
 
 export const en = {
   common,
@@ -133,6 +135,8 @@ export const en = {
   scan,
   split,
   resume,
+  receipt,
+  importContacts,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
