@@ -59,6 +59,8 @@ export type ProblemCode =
   | "network_mismatch"
   | "request_unavailable"
   | "quote_unavailable"
+  | "marketplace_unavailable"
+  | "agent_wallet_short"
   | "upstream"
   | "internal";
 
@@ -124,6 +126,8 @@ const TITLES: Record<ProblemCode, string> = {
   network_mismatch: "This was made on the other network",
   request_unavailable: "This request is no longer open",
   quote_unavailable: "No swap price right now; try again in a moment",
+  marketplace_unavailable: "Paying for services is not available here",
+  agent_wallet_short: "The agent wallet does not hold enough",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

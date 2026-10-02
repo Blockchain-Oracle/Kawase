@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "पैसे जोड़ें",
+  subtitle: "{{network}} पर आपके वॉलेट में",
+  testTitle: "टेस्ट USDC पाएँ",
+  testBody: "Circle के फ़ॉसेट से {{usdc}} USDC और {{eurc}} EURC, दिन में एक बार",
+  testClaim: "मुझे टेस्ट पैसे भेजें",
+  testSending: "टेस्ट पैसे भेजे जा रहे हैं…",
+  testSent: "भेज दिए — कुछ सेकंड में पहुँचेंगे",
+  testClaimed: "आज ले लिए · अगली बार {{time}} से",
+  testFailed: "इस बार Circle के फ़ॉसेट ने नहीं भेजा। फिर कोशिश करें, या सीधे Circle से माँगें।",
+  testSignIn: "अपना पता पाने के लिए पहले साइन इन करें",
+  testSetUpFirst: "पहले अपना वॉलेट सेट अप करें",
+  openCircle: "Circle फ़ॉसेट",
+  receiveTitle: "Arc पर पाएँ",
+  receiveBody: "आपका QR कोड और पता",
+  walletTitle: "दूसरे वॉलेट या एक्सचेंज से",
+  walletBody: "Arc पर USDC या EURC अपने पते पर भेजें",
+  bridgeTitle: "दूसरी चेन से ब्रिज करें",
+  bridgeBody: "Ethereum, Base, Arbitrum और भी",
+  bridgeSubtitle: "आपका पैसा अभी कहाँ है",
+  bridgeComingBody: "Arc में ब्रिज करना अभी बन रहा है। फ़िलहाल Arc पर अपने पते पर USDC भेजें।",
+  coming: "जल्द आ रहा है",
+};

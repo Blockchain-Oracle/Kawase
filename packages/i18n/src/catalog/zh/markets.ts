@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "市场",
+  title: "市场",
+  search: "搜索代币",
+  trending: "热门",
+  meme: "Meme",
+  perps: "多空",
+  fx: "股票与外汇",
+  new: "新币",
+  hot: "最热",
+  heatmap: "热力图",
+  vol: "成交 {{value}}",
+  liq: "流动性 {{value}}",
+  mcap: "市值 {{value}}",
+  testnetTitle: "市场在主网上",
+  testnetBody: "测试币只能兑换 USDC 和 EURC。切换到主网查看真实市场。",
+  switchToMainnet: "切换到主网",
+  perpsBody: "Arc 上的多空交易正在开发：首先通过 Aave 支持 cirBTC、WETH 和 EURC。",
+  empty: "暂无内容",
+  loadFailed: "无法加载市场。",
+  updated: "更新于 {{time}}",
+  stale: "显示 {{time}} 的最新价格",
+  recentSearches: "最近搜索",
+  segmentsLabel: "市场分区",
+};

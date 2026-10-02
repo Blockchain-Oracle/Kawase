@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "充值",
+  subtitle: "存入你在 {{network}} 上的钱包",
+  testTitle: "获取测试 USDC",
+  testBody: "来自 Circle 水龙头的 {{usdc}} USDC 和 {{eurc}} EURC，每天一次",
+  testClaim: "给我发测试币",
+  testSending: "正在发送测试币…",
+  testSent: "已发送，几秒内到账",
+  testClaimed: "今天已领取 · 下次可在 {{time}} 起领取",
+  testFailed: "这次 Circle 水龙头没有发送。请重试，或直接向 Circle 申请。",
+  testSignIn: "请先登录，获取你自己的地址",
+  testSetUpFirst: "请先设置你的钱包",
+  openCircle: "Circle 水龙头",
+  receiveTitle: "在 Arc 上收款",
+  receiveBody: "你的二维码和地址",
+  walletTitle: "从其他钱包或交易所转入",
+  walletBody: "在 Arc 上把 USDC 或 EURC 发送到你的地址",
+  bridgeTitle: "从其他链跨链转入",
+  bridgeBody: "Ethereum、Base、Arbitrum 等",
+  bridgeSubtitle: "你的钱目前所在的链",
+  bridgeComingBody: "跨链到 Arc 的功能正在开发中。目前请把 USDC 发送到你在 Arc 上的地址。",
+  coming: "即将推出",
+};

@@ -40,3 +40,7 @@ yarn-error.*
 /docs/
 /plan/
 /context/
+
+# --- local agent worktrees and the local pnpm store: never uploaded
+.claude/
+.pnpm-store/

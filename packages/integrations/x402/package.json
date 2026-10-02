@@ -1,0 +1,28 @@
+{
+  "name": "@kawase/integrations-x402",
+  "version": "0.0.0",
+  "private": true,
+  "description": "x402 marketplace: Circle's discovery catalog, paying a seller on both rails (Gateway nanopayments and plain EIP-3009), and the agent wallet's Gateway deposit and withdrawal. Server-only.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@circle-fin/x402-batching": "catalog:",
+    "@kawase/config": "workspace:*",
+    "@kawase/networks": "workspace:*",
+    "@x402/core": "catalog:",
+    "@x402/evm": "catalog:",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "پیسے شامل کریں",
+  subtitle: "‏{{network}} پر آپ کے والیٹ میں",
+  testTitle: "ٹیسٹ USDC حاصل کریں",
+  testBody: "روزانہ ایک بار، Circle کے فاسٹ سے {{usdc}} USDC اور {{eurc}} EURC",
+  testClaim: "مجھے ٹیسٹ پیسے بھیجیں",
+  testSending: "ٹیسٹ پیسے بھیجے جا رہے ہیں…",
+  testSent: "بھیج دیے، چند سیکنڈ میں پہنچ جائیں گے",
+  testClaimed: "آج لے لیے · اگلی بار {{time}} سے",
+  testFailed: "اس بار Circle کے فاسٹ نے نہیں بھیجا۔ دوبارہ کوشش کریں، یا براہِ راست Circle سے مانگیں۔",
+  testSignIn: "اپنا پتا لینے کے لیے پہلے سائن اِن کریں",
+  testSetUpFirst: "پہلے اپنا والیٹ سیٹ اپ کریں",
+  openCircle: "‏Circle کا فاسٹ",
+  receiveTitle: "‏Arc پر وصول کریں",
+  receiveBody: "آپ کا QR کوڈ اور پتا",
+  walletTitle: "کسی دوسرے والیٹ یا ایکسچینج سے",
+  walletBody: "اپنے پتے پر Arc کے ذریعے USDC یا EURC بھیجیں",
+  bridgeTitle: "کسی دوسری چین سے برج کریں",
+  bridgeBody: "ایتھیریم، Base، Arbitrum اور مزید",
+  bridgeSubtitle: "آپ کا پیسہ اس وقت کہاں ہے",
+  bridgeComingBody: "برج کی سہولت ابھی بن رہی ہے۔ فی الحال Arc پر اپنے پتے پر USDC بھیجیں۔",
+  coming: "جلد آ رہا ہے",
+};

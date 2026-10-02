@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "请完成账户连接。无需新验证码即可重试。",
+  accountFailed: "您已登录。账户加载失败，请重试。",
+  recoveryRequired: "此邮箱已关联现有钱包。请使用原来的登录方式。访客对话已保留。",
+  title: "登录",
+  subtitle: "一个邮箱验证码。无需密码，无需 PIN。",
+  email: "邮箱",
+  emailPlaceholder: "you@example.com",
+  sendCode: "发送验证码到邮箱",
+  codeSent: "验证码已发送至 {{email}}",
+  code: "6 位验证码",
+  verify: "登录",
+  apple: "通过 Apple 继续",
+  google: "通过 Google 继续",
+  or: "或",
+  continueAs: "以 {{email}} 继续",
+  invalidCode: "验证码无效，请重试。",
+  sheetTitle: "登录或创建账户",
+  codeTitle: "查看你的邮箱",
+  resend: "重新发送验证码",
+  signingIn: "正在登录…",
+  webUnavailable: "网页登录即将推出。目前请在手机上使用 Kawase 应用。",
+};

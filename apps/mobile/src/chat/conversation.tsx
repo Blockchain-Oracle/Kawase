@@ -29,7 +29,7 @@ import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useDockClearance } from "@/dock/use-dock-clearance";
-import { tapFeedback } from "@/feedback/feedback";
+import { cue, tapFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -37,6 +37,7 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 import { draftKey, readDraft, saveDraft } from "./drafts";
 import { EmptyThread } from "./empty-thread";
 import { MessageText } from "./message-text";
+import { ChatResumeProvider } from "./resume";
 import { storedThread } from "./stored-thread";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
@@ -195,15 +196,17 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
             keyboardDismissMode="interactive"
             keyboardShouldPersistTaps="handled"
           >
-            {chat.messages.map((message) => (
-              <MessageView
-                key={message.id}
-                message={message}
-                fresh={!shownAtOpen.current.has(message.id)}
-                onToolOutput={onToolOutput}
-                copiedLabel={t("chatHome.copied")}
-              />
-            ))}
+            <ChatResumeProvider send={send}>
+              {chat.messages.map((message) => (
+                <MessageView
+                  key={message.id}
+                  message={message}
+                  fresh={!shownAtOpen.current.has(message.id)}
+                  onToolOutput={onToolOutput}
+                  copiedLabel={t("chatHome.copied")}
+                />
+              ))}
+            </ChatResumeProvider>
             {thinking ? (
               <Animated.View entering={FadeIn} className="flex-row items-center gap-2 py-1">
                 <KawaseMark size={AVATAR_SIZE} />
@@ -247,7 +250,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
             value={draft}
             onValueChange={editDraft}
             onSubmit={() => send(draft, true)}
-            onSent={() => tapFeedback()}
+            onSent={() => void cue("send")}
             onTalk={() => overlay.open("voice")}
             disabled={busy}
             generating={busy}

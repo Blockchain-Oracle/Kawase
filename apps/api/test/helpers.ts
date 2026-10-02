@@ -7,7 +7,7 @@ import { createModels } from "@kawase/agent";
 import { createDb, users, type Db } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
-import { createApp, type App } from "../src/app";
+import { createApp, type App, type AppDeps } from "../src/app";
 import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
 import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { OpsExecutor } from "../src/send/ops";
@@ -77,7 +77,7 @@ export function testApp(
   swaps: SwapEngine = noSwaps,
   bridges: BridgeEngine = noBridges,
   earn: EarnEngine = noEarn,
-  options: { automationTickMs?: number; reconcileIntervalMs?: number } = {},
+  options: { automationTickMs?: number; reconcileIntervalMs?: number; agentWallets?: AppDeps["agentWallets"]; discovery?: AppDeps["discovery"] } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");

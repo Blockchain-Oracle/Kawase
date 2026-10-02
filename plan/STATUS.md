@@ -3,6 +3,38 @@
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
 Last updated: 2026-10-01 night (Stage 6, 8a/8b with rules, J10's K01–K04/K06, Stage 10 voice deployed, Android/EAS set up; current state per area in `plan/COVERAGE.md`)
 
+## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
+
+**Read first:**
+- the approved plan `/Users/abu/.claude/plans/noble-nibbling-shannon.md`;
+- the product definition `plan/product/` (D36, the how-tree: rules, capability matrix, cards, routes, surfaces, decisions, gaps).
+
+Abu's direction: define every flow end to end, every asset first-class, the whole Arc ecosystem with options (perps via Kawase Margin on Aave V4 + Connect Hibachi, meme coins, Apple Pay buy via Circle Onramp Kit, yield and borrow across protocols, executed bridges, the x402 Agent wallet), sourced 21st.dev components, no screenshot loops, daily TestFlight.
+
+**Landed on main:**
+- `d903bd2`: product definition.
+- `576182c`, `aff2220`, `628bae8`: **sign-in fixed in Release builds.** The root cause was the `getRandomValues` polyfill loading after Turnkey's crypto. Also new: real error logging, the `POST /client-events` beacon and an OTP countdown.
+- `59feaf8`: chat and composer redesign.
+- `f28f9d5`: smooth story swipe.
+- Docs (`apps/docs`), landing (`apps/landing`, `/demo`, `/live`), `GET /public/stats`, PWA.
+- `d1db81a`: worktrees kept out of EAS.
+- `67c6af8`: links on **getkawase.xyz** (bought via Namecheap 10-02; DNS A @/www/* → 84.46.247.92).
+
+**Delivery:**
+- **TestFlight 1.0.0 (7):** EAS `44fca440`, auto-submit `7bfaa477`.
+- **Coolify:** API `aa050ec` live. Serial redeploys run for API, web, docs (`pkfhd3wsjqegxhscwirqjosp`, docs.getkawase.xyz) and landing (`nsnfikr0etw0u2kdltsz8vyf`, getkawase.xyz).
+- **The Coolify CLI needs the tunnel:** `ssh -N -L 8001:localhost:8000 agari-box`.
+
+**Builders in worktrees** (`.claude/worktrees/*`; each merges when its slice is done):
+- **A:** assets, portfolio, Home/dock, Markets, token page, any-pair swap. Slice 1 `a84df90`.
+- **B1:** money rails: margin, Onramp, bridges, yield/borrow. Kyber adapter `ad7f509`, fixes `15c05b8`, slide and ruler `a4560f1`.
+- **B2:** x402 Agent wallet, account, business, history.
+- **Lane C:** GPT-Live voice, web voice, narration, Settings → Voice (migration 0050).
+
+**Migration ranges:** A 0020–29, B1 0030–39, B2 0040–49, C 0050–59.
+
+**Next for the lead:** merge slices as they finish; Circle KYB domain (pay.getkawase.xyz) via the browser; COVERAGE update; daily build.
+
 ## Active repair — 2026-10-02
 
 Abu requested a round-off and continuation by Claude Code because Codex credit is nearly exhausted. The full handoff is `design/CLAUDE-CODE-HANDOFF-2026-10-02.md`; the approved plan is `design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md`. All A–U deliverables remain required. API 998f0b2 and worker 63629f2 are healthy; web 13b5deb deployed healthy. TestFlight **1.0.0 (5)** source 13b5deb finished building and submission efe2a4b8-36be-432a-8399-c8f8271406ed returned FINISHED; Apple availability/device acceptance is unverified. Native signed Release 13b5deb verified onboarding, French language/panel preservation, primary guest continuation and guest chat/compact composer. Keyboard/Stop/gesture/device checks remain open. Audio foundation, persistent switches, race tests and four synthetic GPT-Live fixtures are in the local round-off commit, **not pushed/deployed or included in build 5**. Expo Doctor 21/21 and pods pass; its native rebuild is next. No production voice selected; financial paraphrasing, phone useful latency, listening, cost and provider retention remain open. All three Coolify auto-deploy flags were restored true and services healthy. Exact evidence: `design/review-evidence/2026-10-02/repair-delivery.json`. Continue from the handoff; do not call these repairs the complete product.

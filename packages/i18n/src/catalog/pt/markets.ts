@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "Mercados",
+  title: "Mercados",
+  search: "Buscar tokens",
+  trending: "Em alta",
+  meme: "Meme",
+  perps: "Long/Short",
+  fx: "Ações e câmbio",
+  new: "Novos",
+  hot: "Mais quentes",
+  heatmap: "Mapa de calor",
+  vol: "Vol. {{value}}",
+  liq: "Liq. {{value}}",
+  mcap: "Cap. {{value}}",
+  testnetTitle: "Os mercados estão na mainnet",
+  testnetBody: "Dinheiro de teste troca apenas USDC e EURC. Mude para a mainnet para ver mercados reais.",
+  switchToMainnet: "Mudar para a mainnet",
+  perpsBody: "Long e short na Arc estão em construção: primeiro cirBTC, WETH e EURC pela Aave.",
+  empty: "Nada por enquanto",
+  loadFailed: "Não foi possível carregar os mercados.",
+  updated: "Atualizado {{time}}",
+  stale: "Mostrando os últimos preços de {{time}}",
+  recentSearches: "Buscas recentes",
+  segmentsLabel: "Segmentos de mercado",
+};

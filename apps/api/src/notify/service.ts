@@ -227,7 +227,7 @@ export class NotifyService {
             to: phone.expoPushToken,
             title: rendered.title,
             body: rendered.body,
-            data: { path: rendered.path, inboxItemId: item.id, network: item.network },
+            data: { path: rendered.path, inboxItemId: item.id, network: item.network, kind: item.kind },
             sound: "default",
             priority: "high",
             channelId: ANDROID_CHANNEL,

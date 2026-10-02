@@ -1,0 +1,13 @@
+export const inbox = {
+  title: "Inbox",
+  emptyTitle: "All quiet",
+  emptyBody: "Things that need you, and what Kawase did, will show up here.",
+  receivedFrom: "Received from {{name}}",
+  requestPaid: "Your request was paid",
+  requestPaidBy: "{{amount}} from {{name}}",
+  sentTo: "Sent to {{name}}",
+  unread: "New",
+  markAllRead: "Mark all read",
+  loadFailed: "Couldn't load your inbox.",
+  bellUnread: "Inbox, {{count}} new",
+} as const;

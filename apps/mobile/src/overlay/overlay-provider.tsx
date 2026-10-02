@@ -9,6 +9,8 @@
 // to it. `shown` stays set through an overlay's exit (until it reports `exited`), so the dock's orb is not drawn
 // twice while the overlay's orb travels home (R16).
 import * as React from "react";
+
+import { cue } from "@/feedback/feedback";
 import { BackHandler, Platform, View, type ViewProps } from "react-native";
 
 import { BlurTarget, BlurTargetProvider } from "@kawase/ui-native/components/blur-target";
@@ -48,9 +50,16 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
     return {
       current,
       shown: current ?? leaving,
-      open: setCurrent,
+      open: (kind) => {
+        if (kind === "fan") void cue("fanOpen");
+        setCurrent(kind);
+      },
       close,
-      toggle: (kind) => (current === kind ? close() : setCurrent(kind)),
+      toggle: (kind) => {
+        if (current === kind) return close();
+        if (kind === "fan") void cue("fanOpen");
+        setCurrent(kind);
+      },
       exited: (kind) => setLeaving((was) => (was === kind ? null : was)),
       voiceTrigger,
       blurTarget,

@@ -77,6 +77,14 @@ export function buildAutomationGrant(terms: GrantTerms & { recipient: Address })
   return build(terms, terms.recipient);
 }
 
+/**
+ * The marketplace grant (cards/marketplace.md, X29): USDC `transfer` only, only to the person's own agent wallet, at
+ * most `amountPerPeriod` per day, redeemable only by the ops wallet. Topping up the agent wallet needs nothing more.
+ */
+export function buildMarketplaceGrant(terms: GrantTerms & { agentWallet: Address }): Delegation {
+  return build(terms, terms.agentWallet);
+}
+
 /** The EIP-712 payload the wallet signs for a grant. */
 export function grantTypedData(network: NetworkContext, grant: Delegation): TypedDataDefinition {
   const environment = delegationEnvironment(network);

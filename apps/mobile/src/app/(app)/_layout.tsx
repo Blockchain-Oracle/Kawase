@@ -12,6 +12,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
+import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 
@@ -20,6 +21,8 @@ const ICON = 40;
 export default function AppLayout() {
   const { t } = useT();
   const { status, connection, retry } = useSession();
+  const updateRequired = useUpdateRequired();
+  if (updateRequired) return <UpdateRequiredScreen />;
   if (status === "loading" && connection !== "online") {
     return (
       <View className="bg-background flex-1">

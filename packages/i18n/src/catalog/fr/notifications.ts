@@ -1,0 +1,36 @@
+import type { Catalog } from "../en/index";
+
+export const notifications: Catalog["notifications"] = {
+  title: "Notifications",
+  subtitle: "Kawase vous prévient quand votre argent bouge et quand il a fait quelque chose pour vous. Rien d'autre.",
+  phone: "Sur ce téléphone",
+  phoneOn: "Activées",
+  phoneOff: "Les notifications de Kawase sont désactivées sur ce téléphone.",
+  turnOn: "Activer les notifications",
+  openSettings: "Ouvrir les réglages du téléphone",
+  phoneUnavailable: "Ce téléphone ne peut pas encore recevoir les notifications de Kawase.",
+  webNote: "Sur le web, Kawase vous prévient par email et dans votre boîte de réception.",
+  emailTitle: "Email",
+  emailTo: "Les emails sont envoyés à {{email}}.",
+  emailNone: "Connectez-vous avec votre email pour recevoir des emails.",
+  emailSoon: "L'email arrive bientôt ; vos choix ci-dessous sont conservés.",
+  events: "Ce qu'on vous signale",
+  push: "Push",
+  email: "Email",
+  kindPaymentReceived: "Argent reçu",
+  kindRequestPaid: "Une demande payée",
+  kindSendCompleted: "Un envoi effectué",
+  kindAutomationSkipped: "Une automatisation sautée",
+  kindRuleAlert: "Alertes de règles",
+  quietTitle: "Heures calmes",
+  quietOff: "Désactivées",
+  quietRange: "De {{start}} à {{end}}",
+  quietBody:
+    "Pendant les heures calmes, les push attendent la fin ; votre boîte de réception et vos emails reçoivent tout.",
+  saveFailed: "Impossible d'enregistrer. Réessayez.",
+  primerTitle: "Sachez quand l'argent arrive",
+  primerBody:
+    "Kawase vous prévient quand vous êtes payé, quand un envoi arrive et quand une automatisation s'exécute pour vous.",
+  primerAllow: "Activer les notifications",
+  primerLater: "Plus tard",
+};

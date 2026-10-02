@@ -9,7 +9,11 @@ import type { AgentContext, Money, WalletSummary } from "@kawase/agent";
 import type { CapabilityId } from "@kawase/config";
 import { intents, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
+import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/api-client";
+
+import type { MarketplaceService } from "../marketplace/service";
+import { summarizeAgentWallet, summarizeBuy, summarizeInspect, summarizeServices, summarizeTopUp } from "./marketplace-summary";
 
 import { capabilityView } from "../capabilities/service";
 import type { ContactService } from "../contacts/service";
@@ -70,6 +74,8 @@ export function buildAgentContext(input: {
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
+  /** The x402 marketplace; paid services answer "unavailable" without it. */
+  marketplace?: MarketplaceService | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -79,6 +85,9 @@ export function buildAgentContext(input: {
   const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
+  const { marketplace } = input;
+  // Set once paid data was read in this turn: every later purchase in it waits for the person's tap.
+  let tainted = false;
 
   // Only the active network: the agent never talks about the other one's money without a switch.
   const networkState = async () => {
@@ -220,6 +229,55 @@ export function buildAgentContext(input: {
       if (user.isAnonymous) return { status: "needs_sign_in" as const };
       if (!(await wallets.userWallet(user.id))) return { status: "needs_wallet" as const };
       return { request: await requests.create(user, request) };
+    },
+
+    async searchServices({ query, category }) {
+      if (!marketplace) return { network, services: [], total: 0, summary: { status: "unavailable" } };
+      const found = await marketplace.search(user, query, category);
+      return { ...found, summary: summarizeServices(found.services, found.total) };
+    },
+
+    async inspectService(request) {
+      const result = marketplace ? await marketplace.inspect(user, request) : { network, status: "unavailable" as const };
+      return { result, summary: summarizeInspect(result) };
+    },
+
+    async buyService(request) {
+      const outcome: BuyOutcome = marketplace
+        ? await marketplace.buy(user, request, { threadId, tainted })
+        : { network, status: "refused", reason: "unavailable" };
+      if (outcome.status === "paid" || outcome.status === "free") tainted = true;
+      return { outcome, summary: summarizeBuy(outcome) };
+    },
+
+    async agentWallet() {
+      const wallet: AgentWalletLine = user.isAnonymous
+        ? { network, status: "needs_sign_in" }
+        : marketplace
+          ? { status: "ready", ...(await marketplace.view(user)) }
+          : { network, status: "unavailable" };
+      return { wallet, summary: summarizeAgentWallet(wallet) };
+    },
+
+    async proposeAgentTopUp({ amount: asked }) {
+      let proposal: AgentTopUpProposal;
+      if (user.isAnonymous) proposal = { network, status: "needs_sign_in" };
+      else if (!marketplace) proposal = { network, status: "unavailable" };
+      else if (!(await wallets.userWallet(user.id))) proposal = { network, status: "needs_wallet" };
+      else {
+        const view = await marketplace.view(user);
+        const preset = view.topUpPresets[0] ?? "0";
+        const suggested = asked ? parseAmount(asked, "USDC", "en").baseUnits.toString() : preset;
+        proposal = {
+          network,
+          status: "proposed",
+          suggested,
+          presets: view.topUpPresets,
+          wallet: { onHand: view.balances.onHand, inGateway: view.balances.inGateway, total: view.balances.total },
+          grantPerDay: view.grant?.perDay ?? null,
+        };
+      }
+      return { proposal, summary: summarizeTopUp(proposal) };
     },
 
     async findContacts(query) {

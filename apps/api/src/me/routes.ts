@@ -1,9 +1,9 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, gt, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { handleProblem, MAINNET_CONSENT_VERSION, normalizeHandle, SUPPORTED_LOCALES, type HandleProblem } from "@kawase/config";
-import { consents, users, type Db } from "@kawase/db";
+import { consents, handleHolds, users, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
 import { requireAccount, requireUser } from "../auth/middleware";
@@ -36,14 +36,24 @@ const HANDLE_PROBLEMS: Record<HandleProblem, "handle_invalid" | "handle_reserved
   reserved: "handle_reserved",
 };
 
-/** Whether another user already has this handle (handles are unique without regard to case). */
+/**
+ * Whether another user already has this handle (handles are unique without regard to case), or a deleted account's
+ * hold on it has not run out (cards/access.md: the @handle is held 30 days).
+ */
 async function handleTaken(db: Db, handle: string, exceptUserId: string) {
-  const [row] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(eq(sql`lower(${users.handle})`, handle), ne(users.id, exceptUserId)))
-    .limit(1);
-  return Boolean(row);
+  const [[row], [held]] = await Promise.all([
+    db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(sql`lower(${users.handle})`, handle), ne(users.id, exceptUserId)))
+      .limit(1),
+    db
+      .select({ handle: handleHolds.handle })
+      .from(handleHolds)
+      .where(and(eq(handleHolds.handle, handle.toLowerCase()), gt(handleHolds.heldUntil, new Date())))
+      .limit(1),
+  ]);
+  return Boolean(row ?? held);
 }
 
 const networkSchema = z.object({ network: z.enum(["mainnet", "testnet"]) });

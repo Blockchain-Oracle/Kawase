@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "Termina de conectar tu cuenta. Reintenta sin un código nuevo.",
+  accountFailed: "Has iniciado sesión. No se pudo cargar tu cuenta. Reintenta.",
+  recoveryRequired:
+    "Este correo pertenece a una cartera existente. Usa su método de acceso original. Tu conversación como invitado se conserva.",
+  title: "Iniciar sesión",
+  subtitle: "Un código por correo. Sin contraseñas ni PIN.",
+  email: "Correo",
+  emailPlaceholder: "tu@ejemplo.com",
+  sendCode: "Enviarme un código",
+  codeSent: "Enviamos un código a {{email}}",
+  code: "Código de 6 dígitos",
+  verify: "Iniciar sesión",
+  apple: "Continuar con Apple",
+  google: "Continuar con Google",
+  or: "o",
+  continueAs: "Continuar como {{email}}",
+  invalidCode: "Ese código no funcionó. Inténtalo de nuevo.",
+  sheetTitle: "Inicia sesión o crea una cuenta",
+  codeTitle: "Revisa tu correo",
+  resend: "Enviar un código nuevo",
+  signingIn: "Iniciando sesión…",
+  webUnavailable: "Pronto podrás iniciar sesión en la web. Por ahora, usa la app de Kawase en tu teléfono.",
+};
