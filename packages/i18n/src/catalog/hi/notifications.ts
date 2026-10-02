@@ -32,4 +32,6 @@ export const notifications: Catalog["notifications"] = {
     "जब आपको भुगतान मिलता है, जब भेजा गया पैसा पहुँचता है और जब कोई ऑटोमेशन आपके लिए चलता है, Kawase आपको बताता है।",
   primerAllow: "सूचनाएँ चालू करें",
   primerLater: "अभी नहीं",
+  kindPositionHealth: "हेल्थ अलर्ट",
+  kindPositionClosed: "टेक-प्रॉफ़िट और स्टॉप-लॉस",
 };

@@ -68,6 +68,7 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { protect } from "./protect";
 
 export const en = {
   common,
@@ -137,6 +138,7 @@ export const en = {
   memory,
   insight,
   forYou,
+  protect,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

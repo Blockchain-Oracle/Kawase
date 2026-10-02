@@ -31,4 +31,6 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "Kawase сообщит, когда вам заплатят, когда дойдёт перевод и когда автоматизация сработает за вас.",
   primerAllow: "Включить уведомления",
   primerLater: "Не сейчас",
+  kindPositionHealth: "Оповещения о здоровье",
+  kindPositionClosed: "Тейк-профит и стоп-лосс",
 };

@@ -12,7 +12,7 @@ import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
 import { automationRuns, automations } from "./schema/automations";
-import { marginPositions } from "./schema/margin";
+import { accountHealth, marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
@@ -62,6 +62,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   automation_runs: { table: automationRuns, userId: automationRuns.userId },
   notification_deliveries: { table: notificationDeliveries, userId: notificationDeliveries.userId },
   margin_positions: { table: marginPositions, userId: marginPositions.userId },
+  // One row per person and network: the account's own last-told level wins.
+  account_health: { table: accountHealth, userId: accountHealth.userId, perUserKey: ["network"] },
   onramp_orders: { table: onrampOrders, userId: onrampOrders.userId },
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },

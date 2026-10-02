@@ -2,7 +2,7 @@
 // event kinds, what each channel does by default, and the timings of delivery, so the api and the app agree.
 
 /** Every inbox event, in the order Settings → Notifications lists them. */
-export const NOTIFICATION_KINDS = ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert"] as const;
+export const NOTIFICATION_KINDS = ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "position_health", "position_closed"] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export const NOTIFICATION_CHANNELS = ["push", "email"] as const;
@@ -21,6 +21,9 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationKind, Record<Notification
   send_completed: { push: true, email: false },
   automation_skipped: { push: true, email: true },
   rule_alert: { push: true, email: true },
+  // Money at risk, and what Kawase did with a position on its own: always worth an email too.
+  position_health: { push: true, email: true },
+  position_closed: { push: true, email: true },
 };
 
 export function notificationOn(prefs: NotificationPrefs | null | undefined, kind: NotificationKind, channel: NotificationChannel): boolean {

@@ -29,4 +29,6 @@ export const notifications = {
   primerBody: "Kawase tells you when you're paid, when a send lands and when an automation runs for you.",
   primerAllow: "Turn on notifications",
   primerLater: "Not now",
+  kindPositionHealth: "Health alerts",
+  kindPositionClosed: "Take-profit and stop-loss",
 } as const;

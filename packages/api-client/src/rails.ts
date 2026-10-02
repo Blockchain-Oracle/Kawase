@@ -77,6 +77,32 @@ export type MarginPositionView = {
   borrowApr: number;
   openedAt: string;
   closedAt: string | null;
+  /** Take-profit and stop-loss (the asset's price, USD 8 decimals) Kawase closes the whole position at, when set. */
+  takeProfit?: string | null | undefined;
+  stopLoss?: string | null | undefined;
+  /** "armed" (watched), "closing" (a protective close in flight), "unavailable" (no route can carry it now). */
+  protection?: "armed" | "closing" | "unavailable" | null | undefined;
+};
+
+/** Whether Kawase may close positions for the person (the grants signed once), and until when. */
+export type MarginProtectionView = {
+  network: NetworkId;
+  grant: "none" | "pending" | "active" | "expired" | "revoked";
+  expiresAt: string | null;
+  /** Mainnet only: Uniswap v3 on Arc is the route a protective close takes. */
+  available: boolean;
+};
+
+/** The grants to sign (one Face ID), each with what it allows, decoded for display. */
+export type MarginProtectionGrantRequest = { grants: { grantId: string; typedData: Record<string, unknown> }[]; receipts: Record<string, unknown>[]; expiresAt: string };
+
+/** Prices as the person types them, in US dollars ("92000"); null clears one. */
+export type MarginProtectionChange = { takeProfit?: string | null | undefined; stopLoss?: string | null | undefined };
+
+export type MarginProtectionResult = {
+  position: MarginPositionView;
+  /** The grants are not signed yet: the targets are saved and watched once they are. */
+  needsGrant: boolean;
 };
 
 export type MarginRequest = {
@@ -459,6 +485,12 @@ export function railsEndpoints(call: Call) {
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/signature`, { approvalId, signedTransaction }),
+      /** Take-profit / stop-loss: the grants (signed once) and each position's targets. */
+      protection: () => call<MarginProtectionView>("GET", "/margin/protection"),
+      protectionGrant: () => call<MarginProtectionGrantRequest>("POST", "/margin/protection/grant"),
+      protectionActivate: (signatures: { grantId: string; signature: string }[]) => call<MarginProtectionView>("POST", "/margin/protection/grant/activate", { signatures }),
+      protectionRevoke: () => call<MarginProtectionView>("DELETE", "/margin/protection/grant"),
+      protect: (positionId: string, change: MarginProtectionChange) => call<MarginProtectionResult>("PUT", `/margin/positions/${positionId}/protection`, change),
     },
   };
 }

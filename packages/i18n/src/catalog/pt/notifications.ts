@@ -33,4 +33,6 @@ export const notifications: Catalog["notifications"] = {
     "O Kawase avisa quando você recebe um pagamento, quando um envio chega e quando uma automação roda por você.",
   primerAllow: "Ativar notificações",
   primerLater: "Agora não",
+  kindPositionHealth: "Alertas de saúde",
+  kindPositionClosed: "Take-profit e stop-loss",
 };

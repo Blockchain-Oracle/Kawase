@@ -31,4 +31,6 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "有人付款给你、转账到账、自动化替你运行时，Kawase 都会通知你。",
   primerAllow: "开启通知",
   primerLater: "以后再说",
+  kindPositionHealth: "健康度提醒",
+  kindPositionClosed: "止盈与止损",
 };

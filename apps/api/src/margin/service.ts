@@ -40,7 +40,7 @@ import type {
 } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, marginPositions, newId, txAttempts, type Db } from "@kawase/db";
 import { BPS, WAD, borrowApr, hasNoDebt, readAccount, readMarket, spokeMoves, valueOf, type AaveAccount, type AaveMarket, type AaveReserve } from "@kawase/integrations-aave-v4";
-import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
+import { encodeRedeemProtect, encodeSelfBatch, isWalletSetUp, type ProtectGrants } from "@kawase/integrations-delegation";
 import { DRAFTABLE_STATES, loadMarginDraft, marginDraftHash, storeMarginDraft, type IntentState, type MarginDraft, type StoredMarginDraft } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
@@ -48,6 +48,9 @@ import { AAVE_V4, type NetworkContext, type NetworkId } from "@kawase/networks";
 import { evaluateMargin, type MarginEvaluation, type MarginFacts, type PolicyResult } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
+import type { InboxService } from "../inbox/service";
+import { OpsAttempts } from "../intents/ops-attempts";
+import type { OpsExecutor } from "../send/ops";
 import { HTTP, problem } from "../http/problem";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
@@ -56,6 +59,7 @@ import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { PlanError, liquidationPrice, maxLeverageBps, planClose, planOpen, type AccountBase, type Plan, type PlanLimits } from "./plan";
 import { kyberSwapper } from "./swapper";
+import { uniswapSwapper } from "./uniswap";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
@@ -68,6 +72,7 @@ type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 
 const VENUE = "Aave V4";
 const PROVIDER = "Aave V4 · KyberSwap";
+const PROTECT_PROVIDER = "Aave V4 · Uniswap v3";
 const ZERO = 0n;
 const ONE = 1n;
 const PERCENT = 100n;
@@ -135,12 +140,19 @@ export class MarginService {
   private readonly tracking = new Set<string>();
   private readonly marketCache = new Map<NetworkId, { at: number; market: AaveMarket }>();
 
+  /** Protective closes go out through the ops wallet (Circle), under the person's protection grants. */
+  private readonly opsAttempts: OpsAttempts | undefined;
+
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
     private readonly wallets: WalletService,
     private readonly log: Logger,
-  ) {}
+    ops?: OpsExecutor,
+    private readonly inbox?: InboxService,
+  ) {
+    this.opsAttempts = ops ? new OpsAttempts(db, chains, ops, log, (intentId, attemptId, error) => this.settleFailed(intentId, attemptId, "not_sent", error)) : undefined;
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -159,6 +171,11 @@ export class MarginService {
     const market = await readMarket(clients.client, spoke);
     this.marketCache.set(network, { at: Date.now(), market });
     return market;
+  }
+
+  /** The venue as read now (cached briefly), for the protection monitor. */
+  venueFor(network: NetworkId) {
+    return this.venue(network);
   }
 
   private usdcOf(network: NetworkContext, market: AaveMarket) {
@@ -299,7 +316,176 @@ export class MarginService {
       borrowApr: borrowApr(debtReserve) * (1 + account.riskPremiumBps / BPS_NUMBER),
       openedAt: row.openedAt.toISOString(),
       closedAt: row.closedAt?.toISOString() ?? null,
+      takeProfit: row.takeProfit?.toString() ?? null,
+      stopLoss: row.stopLoss?.toString() ?? null,
+      protection: (row.protection as MarginPositionView["protection"]) ?? null,
     };
+  }
+
+  /**
+   * One open position's close, read fresh: the venue, the live amounts it holds of the shared account, the account
+   * outside it, and whether it is the only debtor of its debt asset (then a full close repays "all").
+   */
+  async closeContext(userId: string, network: NetworkId, positionId: string) {
+    const clients = this.chains.get(network);
+    const wallet = (await this.wallets.userWallet(userId))?.address as Address | undefined;
+    const venue = await this.venue(network);
+    if (!clients || !wallet || !venue) return undefined;
+    const usdc = this.usdcOf(clients.network, venue);
+    const rows = await this.openRows(userId, network);
+    const row = rows.find((entry) => entry.id === positionId);
+    const asset = row ? venue.reserves.find((reserve) => same(reserve.underlying, row.asset)) : undefined;
+    if (!usdc || !row || !asset) return undefined;
+    const side = row.side as MarginSide;
+    const account = await readAccount(clients.client, venue.spoke, wallet, venue.reserves.length);
+    const live = this.live(row, rows, account, asset, usdc);
+    const collateral = side === "long" ? asset : usdc;
+    const debt = side === "long" ? usdc : asset;
+    const soleDebtor = !rows.some((other) => other.id !== row.id && (side === "long" ? other.side === "long" : same(other.asset, row.asset) && other.side === "short"));
+    return { clients, wallet, venue, usdc, asset, side, row, rows, account, live, collateral, debt, soleDebtor, base: baseOf(account, { collateral, collateralAmount: live.collateral, debt, debtAmount: live.debt }) };
+  }
+
+  /** A full close planned through the route protection can use (Uniswap v3, recipient the wallet). */
+  async planProtectiveClose(context: NonNullable<Awaited<ReturnType<MarginService["closeContext"]>>>, slippageBps: number, mode: "quote" | "build") {
+    const { clients, wallet, venue, usdc, asset, side, live, base, soleDebtor } = context;
+    return planClose(
+      { side, wallet, spoke: venue.spoke, usdc, asset, collateral: live.collateral, debt: live.debt, fractionBps: FULL_BPS, base, soleDebtor, limits: { ...limits, slippageBps } },
+      uniswapSwapper({ client: clients.client as never, wallet, slippageBps, mode }),
+    );
+  }
+
+  /**
+   * Kawase closes a position for the person (take-profit or stop-loss): the close planned now, every call under the
+   * grant that covers it, simulated from the ops wallet, then recorded as an order of its own (origin "automation")
+   * and handed to the ops wallet once. The receipt is witnessed exactly as for a close the person signs.
+   */
+  async protectiveClose(input: { userId: string; network: NetworkId; positionId: string; reason: "take_profit" | "stop_loss"; slippageBps: number; grants: ProtectGrants; terms: { spoke: Address; router: Address; tokens: Address[] } }): Promise<{ intentId: string } | { refused: string }> {
+    const ops = this.chains.get(input.network)?.ops;
+    if (!this.opsAttempts || !ops) return { refused: "no_ops_wallet" };
+    const context = await this.closeContext(input.userId, input.network, input.positionId);
+    if (!context) return { refused: "position_gone" };
+    let plan: Plan;
+    try {
+      plan = await this.planProtectiveClose(context, input.slippageBps, "build");
+    } catch (error) {
+      this.log.warn({ err: error, positionId: input.positionId }, "protective close plan failed");
+      return { refused: "no_route" };
+    }
+    let redeem: { to: Address; data: Hex };
+    try {
+      redeem = encodeRedeemProtect(context.clients.network, input.grants, input.terms, plan.calls);
+    } catch (error) {
+      this.log.error({ err: error, positionId: input.positionId }, "security.protect_call_refused");
+      return { refused: "not_covered" };
+    }
+    try {
+      await context.clients.client.call({ account: ops.address as Address, to: redeem.to, data: redeem.data });
+    } catch (error) {
+      this.log.warn({ err: error, positionId: input.positionId }, "protective close simulation reverted");
+      return { refused: "simulation" };
+    }
+    const { venue, usdc, asset, side, row } = context;
+    const collateralReserve = side === "long" ? asset : usdc;
+    const debtReserve = side === "long" ? usdc : asset;
+    const draft: MarginDraft = {
+      chainId: context.clients.network.chainId,
+      from: context.wallet,
+      spoke: venue.spoke,
+      action: CLOSE,
+      side: side === "long" ? LONG : SHORT,
+      collateralReserveId: plan.collateralReserveId,
+      debtReserveId: plan.debtReserveId,
+      margin: ZERO,
+      debtDelta: plan.debtDelta,
+      collateralDelta: plan.collateralDelta,
+      returnedMin: plan.returnedMin,
+      fractionBps: FULL_BPS,
+      maxFee: ZERO,
+    };
+    const view: MarginDraftView = {
+      action: "close",
+      market: row.market,
+      side,
+      asset: asset.underlying,
+      assetDecimals: asset.decimals,
+      margin: "0",
+      leverage: 0,
+      notionalUsd: usd(valueOf(side === "long" ? plan.collateralDelta : plan.debtDelta, asset.decimals, asset.price)),
+      size: "0",
+      debtDelta: plan.debtDelta.toString(),
+      debtAsset: debtReserve.symbol,
+      debtDecimals: debtReserve.decimals,
+      collateralDelta: plan.collateralDelta.toString(),
+      collateralAsset: collateralReserve.symbol,
+      collateralDecimals: collateralReserve.decimals,
+      returnedMin: plan.returnedMin.toString(),
+      healthAfter: health(plan.healthAfterBps),
+      liquidationPrice: null,
+      liquidationDistance: null,
+      markPrice: asset.price.toString(),
+      borrowApr: borrowApr(debtReserve),
+      fraction: 1,
+      loops: plan.loops,
+      venues: plan.venues,
+      fees: { network: "0" },
+      provider: PROTECT_PROVIDER,
+      quotedAt: new Date().toISOString(),
+    };
+    const request: StoredRequest = { action: "close", market: row.market, side, margin: null, leverage: null, positionId: row.id, fraction: 1 };
+    const prepared = await this.db.transaction(async (tx) => {
+      // One protective close per position at a time: the row says so while it is in flight.
+      const [claimed] = await tx
+        .update(marginPositions)
+        .set({ protection: "closing" })
+        .where(and(eq(marginPositions.id, row.id), eq(marginPositions.status, "open"), eq(marginPositions.protection, "armed")))
+        .returning({ id: marginPositions.id });
+      if (!claimed) return undefined;
+      const [intent] = await tx
+        .insert(intents)
+        .values({ userId: input.userId, network: input.network, kind: "margin", originSurface: "automation", state: "executing", request, expiresAt: later(INTENT_TTL_S), currentDraftVersion: 1 })
+        .returning();
+      const payload: DraftPayload = { draft: storeMarginDraft(draft), view };
+      await tx.insert(intentDrafts).values({ intentId: intent!.id, version: 1, payload: payload as unknown as Record<string, unknown>, draftHash: marginDraftHash(draft), policyReport: { results: [], blocking: null }, route: "automation", createdBy: "system" });
+      const [attempt] = await tx
+        .insert(txAttempts)
+        .values({
+          userId: input.userId,
+          intentId: intent!.id,
+          network: input.network,
+          chainId: context.clients.network.chainId,
+          attemptNo: 1,
+          kind: "margin_protect",
+          provider: "circle_dcw",
+          idempotencyKey: randomUUID(),
+          fromAddress: ops.address,
+          toAddress: redeem.to,
+          status: "prepared",
+          receipt: { prepared: { to: redeem.to, data: redeem.data }, reason: input.reason, positionId: row.id },
+        })
+        .returning();
+      return { intentId: intent!.id, attempt: attempt! };
+    });
+    if (!prepared) return { refused: "already_closing" };
+    await this.opsAttempts.submit(prepared.intentId, prepared.attempt);
+    void this.follow(prepared.intentId);
+    return { intentId: prepared.intentId };
+  }
+
+  /** How a protective close ended, told to the person (the inbox, then push and email as they chose). */
+  private async tellProtective(intent: IntentRow, outcome: "closed" | "failed", returned: bigint | null) {
+    if (intent.originSurface !== "automation" || !this.inbox) return;
+    const request = intent.request as StoredRequest;
+    const [attempt] = await this.db.select().from(txAttempts).where(eq(txAttempts.intentId, intent.id)).limit(1);
+    const reason = (attempt?.receipt as { reason?: string } | null)?.reason ?? "stop_loss";
+    if (outcome === "failed" && request.positionId) await this.db.update(marginPositions).set({ protection: "unavailable" }).where(and(eq(marginPositions.id, request.positionId), eq(marginPositions.protection, "closing")));
+    await this.inbox.add(this.db, {
+      userId: intent.userId,
+      network: intent.network,
+      kind: "position_closed",
+      params: { market: request.market ?? "", side: request.side ?? "", reason, outcome, ...(returned !== null ? { asset: "USDC", amount: returned.toString() } : {}) },
+      dedupeKey: `position_closed:${intent.id}`,
+      intentId: intent.id,
+    });
   }
 
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -813,9 +999,12 @@ export class MarginService {
       const [intent] = await this.db.select().from(intents).where(eq(intents.id, intentId));
       if (!intent || (intent.state !== "executing" && intent.state !== "unknown_outcome")) return true;
       const attempt = await this.latestAttempt(intentId);
-      if (!attempt?.txHash) return false;
+      if (!attempt) return false;
+      // A protective close goes out through Circle: its hash comes from Circle once Circle has sent it.
+      const hash = attempt.txHash ?? (attempt.provider === "circle_dcw" && this.opsAttempts ? await this.opsAttempts.hash(intentId, intent.network, attempt) : undefined);
+      if (!hash) return false;
       await this.db.update(txAttempts).set({ lastReconciledAt: new Date() }).where(eq(txAttempts.id, attempt.id));
-      const receipt = await this.clients(intent.network).client.getTransactionReceipt({ hash: attempt.txHash as Hex }).catch(() => undefined);
+      const receipt = await this.clients(intent.network).client.getTransactionReceipt({ hash: hash as Hex }).catch(() => undefined);
       if (!receipt) {
         if (intent.state === "executing" && attempt.createdAt.getTime() < Date.now() - ms(SEND_UNKNOWN_AFTER_S)) {
           await this.db.update(intents).set({ state: "unknown_outcome" }).where(and(eq(intents.id, intentId), eq(intents.state, "executing")));
@@ -868,6 +1057,7 @@ export class MarginService {
         .set({ status: "confirmed", receipt: { positionId, supplied: supplied.toString(), borrowed: borrowed.toString(), repaid: repaid.toString(), withdrawn: withdrawn.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
         .where(eq(txAttempts.id, attempt.id));
     });
+    if (!open) await this.tellProtective(intent, "closed", BigInt(view.returnedMin));
   }
 
   private async recordOpen(tx: Tx, intent: IntentRow, view: MarginDraftView, draft: MarginDraft, moved: { supplied: bigint; borrowed: bigint }) {
@@ -925,13 +1115,13 @@ export class MarginService {
   }
 
   private async settleFailed(intentId: string, attemptId: string, how: "not_sent" | "reverted" | "mismatch", error: string | null, receipt?: TransactionReceipt) {
-    await this.db.transaction(async (tx) => {
+    const failed = await this.db.transaction(async (tx) => {
       const [moved] = await tx
         .update(intents)
         .set({ state: "failed", completedAt: new Date() })
         .where(and(eq(intents.id, intentId), inArray(intents.state, ["executing", "unknown_outcome", "approved"])))
         .returning({ id: intents.id });
-      if (!moved) return;
+      if (!moved) return false;
       await tx
         .update(txAttempts)
         .set({
@@ -940,7 +1130,11 @@ export class MarginService {
           ...(receipt ? { receipt: jsonSafe(receiptSummary(receipt)) } : {}),
         })
         .where(eq(txAttempts.id, attemptId));
+      return true;
     });
+    if (!failed) return;
+    const [intent] = await this.db.select().from(intents).where(eq(intents.id, intentId));
+    if (intent) await this.tellProtective(intent, "failed", null);
   }
 
   startSweeper(intervalMs: number) {

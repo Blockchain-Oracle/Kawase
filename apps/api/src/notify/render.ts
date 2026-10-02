@@ -60,6 +60,20 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
       body = p.balance ? text(locale, "automation", "ruleAlertBalance", { amount: money("USDC", p.balance) }) : "";
       path = "/automations";
       break;
+    case "position_health":
+      // Aave V4 health is one per account: margin positions and borrowing share it.
+      title = text(locale, "notify", p.level === "danger" ? "healthDangerTitle" : "healthWarningTitle", { health: p.health ?? "" });
+      body = text(locale, "notify", "healthBody");
+      path = p.path || "/margin";
+      break;
+    case "position_closed": {
+      const position = `${p.market ?? ""} ${text(locale, "notify", `side_${p.side === "short" ? "short" : "long"}`)}`;
+      const closed = p.outcome === "closed";
+      title = closed ? text(locale, "notify", p.reason === "take_profit" ? "takeProfitTitle" : "stopLossTitle", { position }) : text(locale, "notify", "protectFailedTitle", { position });
+      body = closed ? text(locale, "notify", "protectClosedBody", { amount: sum }) : text(locale, "notify", "protectFailedBody");
+      path = "/margin";
+      break;
+    }
   }
   if (item.network === "testnet") title = `${text(locale, "notify", "testnet")} · ${title}`;
   return { title, body, path };

@@ -67,6 +67,7 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { protect } from "./protect";
 
 export const pt: Catalog = {
   common,
@@ -136,4 +137,5 @@ export const pt: Catalog = {
   memory,
   insight,
   forYou,
+  protect,
 };

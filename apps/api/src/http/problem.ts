@@ -62,6 +62,11 @@ export type ProblemCode =
   | "simulation_failed"
   | "marketplace_unavailable"
   | "agent_wallet_short"
+  // Margin protection (take-profit / stop-loss): a target on the wrong side, or a close no route can carry now.
+  | "protection_unavailable"
+  | "take_profit_wrong_side"
+  | "stop_loss_wrong_side"
+  | "stop_loss_past_liquidation"
   | "upstream"
   | "internal";
 
@@ -130,6 +135,10 @@ const TITLES: Record<ProblemCode, string> = {
   simulation_failed: "This would not go through right now; nothing was sent",
   marketplace_unavailable: "Paying for services is not available here",
   agent_wallet_short: "The agent wallet does not hold enough",
+  protection_unavailable: "Kawase cannot protect this position right now",
+  take_profit_wrong_side: "The take-profit is on the wrong side of the price",
+  stop_loss_wrong_side: "The stop-loss is on the wrong side of the price",
+  stop_loss_past_liquidation: "The stop-loss must come before liquidation",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

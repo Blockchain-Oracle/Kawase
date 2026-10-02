@@ -53,6 +53,7 @@ import { noSwaps, type SwapEngine } from "./swap/engine";
 import { createSwapVenues } from "./swap/venues";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { MarginProtection } from "./margin/protection";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
 import { noOnramp, type OnrampEngine } from "./onramp/engine";
@@ -186,7 +187,8 @@ export function createApp(deps: AppDeps) {
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
-  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
+  const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
@@ -213,6 +215,7 @@ export function createApp(deps: AppDeps) {
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
+    protection.start();
     onramp.startReconciler(deps.reconcileIntervalMs);
     crosschain.startSweeper(deps.reconcileIntervalMs);
     lend.startSweeper(deps.reconcileIntervalMs);
@@ -287,7 +290,7 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
-  app.route("/margin", marginRoutes(margin));
+  app.route("/margin", marginRoutes(margin, protection));
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));

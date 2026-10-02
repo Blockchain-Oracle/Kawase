@@ -31,4 +31,6 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "‏يخبرك Kawase عندما يدفع لك أحد، وعندما يصل إرسال، وعندما تعمل أتمتة نيابةً عنك.",
   primerAllow: "تفعيل الإشعارات",
   primerLater: "ليس الآن",
+  kindPositionHealth: "تنبيهات الصحة",
+  kindPositionClosed: "جني الأرباح ووقف الخسارة",
 };
