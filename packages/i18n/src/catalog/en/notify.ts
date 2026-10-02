@@ -11,4 +11,11 @@ export const notify = {
   emailOpen: "Open Kawase",
   emailNeverApprove: "Kawase never asks you to approve or sign anything by email.",
   emailWhy: "You get this because it's on in Kawase. Change it in Settings → Notifications.",
+  needsYouTitle: "Needs you",
+  needsYouReminderTitle: "Still waiting for you",
+  needsYouSend: "Send {{amount}} to {{name}}",
+  needsYouSwap: "Swap {{amount}} {{symbolIn}} to {{symbolOut}}",
+  reminderTitle: "Tomorrow, {{at}}",
+  reminderPayroll: "Payroll for {{people}} people",
+  reminderShort: "Your wallet holds less than this run",
 } as const;

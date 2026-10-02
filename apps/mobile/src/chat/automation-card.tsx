@@ -16,6 +16,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AutomationSummary } from "@/automations/automation-summary";
+import { PracticeActions } from "@/automations/automation-more";
 import { useRuleText, useScheduleText, useTurnOnLabel } from "@/automations/copy";
 import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
@@ -104,6 +105,8 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
           </Button>
         </View>
       )}
+      {/* 8c: practise first, go live from practice, and what the next runs would do. */}
+      {!blocking || blocking.code === "WALLET_NOT_SET_UP" ? <PracticeActions controller={{ ...controller, automation }} goLivePrompt={prompt} /> : null}
       {a ? (
         <AddContactSheet open={adding} onClose={() => setAdding(false)} initialName={nameFromWords(a.recipientWords)} onSaved={() => {
           setAdding(false);

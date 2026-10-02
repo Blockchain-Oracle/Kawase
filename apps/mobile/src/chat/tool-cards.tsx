@@ -93,7 +93,9 @@ import { InvoiceCard } from "./invoice-card";
 import { ReportCard } from "@/history/report-card";
 import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
+import { SafetyCard } from "./safety-card";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
+import type { SafetyToolOutput } from "@kawase/api-client";
 import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
@@ -575,6 +577,12 @@ function NetworkSwitchCard({
 }
 
 const LOADING_LABELS: Record<string, string> = {
+  get_limits: "safety.loading",
+  pause_all: "safety.loading",
+  set_risk_mode: "safety.loading",
+  propose_limit_change: "safety.loading",
+  propose_allowlist_change: "safety.loading",
+  revoke_grant: "safety.loading",
   get_wallet: "chat.loadingWallet",
   get_activity: "chat.loadingActivity",
   get_capabilities: "chat.loadingCapabilities",
@@ -715,6 +723,13 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "get_limits":
+    case "pause_all":
+    case "set_risk_mode":
+    case "propose_limit_change":
+    case "propose_allowlist_change":
+    case "revoke_grant":
+      return <SafetyCard output={part.output as SafetyToolOutput} />;
     case "create_invoice":
       return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
     case "get_report": {

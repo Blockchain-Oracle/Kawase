@@ -32,6 +32,8 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** A new address can get only a small amount per payment until its cooldown ends (Wallet & limits). */
+  NEW_RECIPIENT_COOLDOWN: "policy",
   /** More leverage than the venue's collateral factor allows at the opening health floor. */
   LEVERAGE_TOO_HIGH: "policy",
   /** The account would be too close to liquidation after this borrow or withdrawal. */
@@ -97,6 +99,10 @@ export const REASONS = {
   /** A run skipped because this period's amount was already sent (the grant's cap). */
   AUTOMATION_PERIOD_USED: "warning",
   VAULT_RISK_WARNING: "warning",
+  /** Paused: the agent and automations stand still; the person's own Face ID still works. */
+  AGENT_PAUSED: "warning",
+  /** Only allowlisted recipients go without the person; this one needs their Face ID. */
+  NOT_ON_ALLOWLIST: "warning",
   /** Leverage: the margin can be lost; the card names the liquidation price. */
   MARGIN_RISK: "warning",
   HEALTH_NEAR_LIMIT: "warning",

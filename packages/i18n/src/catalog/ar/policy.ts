@@ -42,4 +42,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "انتقل إلى {{network}}",
   fixEditAmount: "غيّر المبلغ",
   fixOpenContact: "افتح جهة الاتصال",
+  AGENT_PAUSED: "متوقف مؤقتًا: هذه الدفعة تحتاج موافقتك",
+  NOT_ON_ALLOWLIST: "ليس في قائمة السماح: هذه الدفعة تحتاج موافقتك",
+  NEW_RECIPIENT_COOLDOWN: "يمكن للمستلمين الجدد تلقي حتى {{cap}} لكل دفعة حتى {{until}}. غيّر ذلك في المحفظة والحدود.",
 };

@@ -1,0 +1,28 @@
+import type { Catalog } from "../en/index";
+
+export const needsYou: Catalog["needsYou"] = {
+  title: "آپ کا انتظار",
+  send: "{{name}} کو {{amount}} بھیجیں",
+  swap: "{{amount}} کو {{symbolOut}} میں بدلیں",
+  swapQuote: "آخری قیمت پر تقریباً {{amount}}",
+  reason_NOT_ON_ALLOWLIST: "آپ کی اجازت فہرست میں نہیں، اس لیے آپ کا انتظار۔",
+  reason_NEW_RECIPIENT_COOLDOWN: "نیا وصول کنندہ: ابھی آپ کے بغیر ملنے والی رقم سے زیادہ۔",
+  reason_OVER_GRANT: "یہ آٹومیشن خود جتنا بھیج سکتا ہے اس سے زیادہ۔",
+  reason_SWAP_STEP: "ہر تبادلہ آپ کی اپنی ہاں ہے۔",
+  reason_PRICE_REACHED: "لائیو قیمت پر آپ کی قیمت آ گئی۔",
+  approve: "دیکھیں اور منظور کریں",
+  decline: "اس بار نہیں",
+  status_pending: "انتظار میں",
+  status_approved: "منظور",
+  status_declined: "مسترد",
+  status_expired: "ختم",
+  alreadyAnswered: "پہلے ہی جواب دیا: {{status}} {{when}}",
+  answered: "{{when}} جواب دیا، {{via}}",
+  via_app: "ایپ میں",
+  via_push: "اطلاع سے",
+  via_web: "ویب پر",
+  via_chat: "چیٹ میں",
+  expires: "{{time}} تک انتظار",
+  switchNetwork: "یہ {{network}} پر انتظار میں ہے۔ جواب دینے کے لیے نیٹ ورک بدلیں۔",
+  failed: "یہ نہیں ہو سکا۔ اب بھی انتظار میں۔",
+};

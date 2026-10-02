@@ -14,6 +14,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
 import { useT } from "@/i18n";
+import { SafetyStripFrame } from "@/safety/safety-strip";
 import { useSession } from "@/session/session-provider";
 
 const ICON = 40;
@@ -46,5 +47,10 @@ export default function AppLayout() {
   }
   if (status === "loading") return null;
   if (status === "none") return <Redirect href="/welcome" />;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  // Paused or practising: one strip above every screen says so (cards/automate-safety.md).
+  return (
+    <SafetyStripFrame>
+      <Stack screenOptions={{ headerShown: false }} />
+    </SafetyStripFrame>
+  );
 }

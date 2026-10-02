@@ -1,0 +1,28 @@
+import type { Catalog } from "../en/index";
+
+export const needsYou: Catalog["needsYou"] = {
+  title: "Esperando você",
+  send: "Enviar {{amount}} para {{name}}",
+  swap: "Trocar {{amount}} por {{symbolOut}}",
+  swapQuote: "Cerca de {{amount}} na última cotação",
+  reason_NOT_ON_ALLOWLIST: "Não está na sua lista permitida, então espera por você.",
+  reason_NEW_RECIPIENT_COOLDOWN: "Um novo destinatário: mais do que pode receber sem você por enquanto.",
+  reason_OVER_GRANT: "Mais do que esta automação pode enviar sozinha.",
+  reason_SWAP_STEP: "Cada troca é o seu próprio sim.",
+  reason_PRICE_REACHED: "Seu preço foi atingido na cotação ao vivo.",
+  approve: "Revisar e aprovar",
+  decline: "Desta vez não",
+  status_pending: "Aguardando",
+  status_approved: "Aprovado",
+  status_declined: "Recusado",
+  status_expired: "Expirado",
+  alreadyAnswered: "Já respondido: {{status}} {{when}}",
+  answered: "Respondido {{when}}, {{via}}",
+  via_app: "no app",
+  via_push: "por uma notificação",
+  via_web: "na web",
+  via_chat: "no chat",
+  expires: "Aguarda até {{time}}",
+  switchNetwork: "Isto aguarda em {{network}}. Troque de rede para responder.",
+  failed: "Não deu certo. Ainda aguarda.",
+};

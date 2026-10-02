@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "آپ کی آٹومیشن چلی: {{kind}}",
   automationKind: {
+    payroll: "تنخواہ",
+    dca: "باقاعدہ خریداری",
     scheduled_send: "طے شدہ ادائیگی",
     auto_save: "آٹو سیو",
     rule: "ایک اصول",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "ان سے بھی موازنہ کیا: {{providers}}",
   approved: {
+    declined: "آپ نے مسترد کیا",
+    expired: "وقت پر جواب نہیں",
     allowance: "آپ کی روزانہ کی حد سے منظور",
     wallet_signature: "آپ نے منظور کیا",
     automation: "آٹومیشن کی حد سے منظور",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "اس کے آن چین حوالے سے",
   recorded: "ریکارڈ کیا گیا",
   audit: {
+    automation: {
+      run_skipped: "Kawase نے چھوڑنا درج کیا",
+      run_practiced: "مشق کے طور پر درج",
+    },
+    needs_you: {
+      opened: "آپ کا انتظار کیا",
+      approved: "آپ نے منظور کیا",
+      declined: "آپ نے مسترد کیا",
+    },
     payout: { sent: "ایک ساتھ ادائیگی ریکارڈ ہوئی" },
     invoice: { created: "انوائس بنائی گئی", paid: "انوائس ادا شدہ نشان زد", canceled: "انوائس منسوخ ہوئی" },
     payroll: { activated: "تنخواہیں آن ہوئیں" },

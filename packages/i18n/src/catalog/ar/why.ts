@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "عملت أتمتتك: {{kind}}",
   automationKind: {
+    payroll: "الرواتب",
+    dca: "شراء متكرر",
     scheduled_send: "دفعة مجدولة",
     auto_save: "الادخار التلقائي",
     rule: "قاعدة",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "قورن أيضًا مع: {{providers}}",
   approved: {
+    declined: "رفضته",
+    expired: "لم تتم الإجابة في الوقت",
     allowance: "وافق عليه حدّك اليومي",
     wallet_signature: "وافقتَ عليه",
     automation: "وافق عليه حد الأتمتة",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "بمرجعه على السلسلة",
   recorded: "سُجّل",
   audit: {
+    automation: {
+      run_skipped: "سجّل Kawase التخطي",
+      run_practiced: "سُجّل كتدريب",
+    },
+    needs_you: {
+      opened: "انتظرك",
+      approved: "وافقت عليه",
+      declined: "رفضته",
+    },
     payout: { sent: "سُجّلت الدفعة الجماعية" },
     invoice: { created: "أُنشئت الفاتورة", paid: "عُلّمت الفاتورة مدفوعة", canceled: "أُلغيت الفاتورة" },
     payroll: { activated: "شُغّلت الرواتب" },

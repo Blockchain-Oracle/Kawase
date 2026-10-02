@@ -5,6 +5,8 @@ import * as React from "react";
 
 import type { AutomationRunView, AutomationSchedule, AutomationView, RuleView } from "@kawase/api-client";
 
+import { formatTokenAmount } from "@kawase/money";
+
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useMoney, usePolicyText } from "@/send/copy";
@@ -49,7 +51,11 @@ export function useBoundText() {
   return (automation: AutomationView) => {
     const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt));
     if (automation.save) return t("automation.saveBound", { vault: vaultTitle(automation.save.vaultName), date });
+    if (automation.payroll) return t("automation.payrollBound", { per: t(PER[automation.schedule.every]), date });
+    if (automation.dca) return t("automation.dcaBound");
     const step = automation.rule?.step;
+    if (step?.type === "send") return t("automation.ruleBoundSend", { amount: money(step.asset, step.capPerDay), name: step.recipientName ?? step.recipientWords });
+    if (step?.type === "swap") return t("automation.dcaBound");
     if (step?.type === "bridge") return t("automation.ruleBoundBridge", { chain: step.destinationName, date });
     if (step?.type === "save") return t("automation.ruleBoundSave", { vault: vaultTitle(step.vaultName), date });
     if (step?.type === "notify") return t("automation.ruleBoundNotify");
@@ -60,10 +66,14 @@ export function useBoundText() {
 /** A rule in words: when it fires, what it does and how much, and where it stands now. */
 export function useRuleText() {
   const { t } = useT();
+  const { locale } = useLocale();
   const money = useMoney();
+  const tokens = (baseUnits: string, decimals: number, symbol: string) => formatTokenAmount(BigInt(baseUnits), decimals, symbol, locale, { trimZeros: true });
   return {
     when: (rule: RuleView) => {
       const trigger = rule.trigger;
+      if (trigger.type === "price") return t("automation.rulePrice", { amountIn: tokens(trigger.amountIn, trigger.decimalsIn, trigger.symbolIn), minOut: tokens(trigger.minOut, trigger.decimalsOut, trigger.symbolOut) });
+      if (trigger.type === "money_out") return t("automation.ruleMoneyOut");
       if (trigger.type !== "money_in") return t(trigger.type === "balance_above" ? "automation.ruleAbove" : "automation.ruleBelow", { amount: money("USDC", trigger.threshold) });
       const name = trigger.fromName ?? trigger.from ?? "";
       if (name && trigger.minAmount) return t("automation.ruleMoneyInFromMin", { name, amount: money("USDC", trigger.minAmount) });
@@ -73,19 +83,33 @@ export function useRuleText() {
     },
     what: (rule: RuleView) => {
       const amount = rule.amount;
+      const trigger = rule.trigger;
       const how =
         amount.mode === "fixed"
           ? money("USDC", amount.amount)
           : amount.mode === "percent"
             ? t("automation.ruleHowPercent", { percent: `${amount.percent}%` })
-            : t("automation.ruleHowExcess", { amount: money("USDC", amount.reserve) });
+            : amount.mode === "roundup"
+              ? t("automation.ruleHowRoundup", { amount: money("USDC", amount.unit) })
+              : t("automation.ruleHowExcess", { amount: money("USDC", amount.reserve) });
       const step = rule.step;
       if (step.type === "bridge") return t("automation.ruleBridge", { how, chain: step.destinationName });
       if (step.type === "save") return t("automation.ruleSave", { how, vault: vaultTitle(step.vaultName) });
+      if (step.type === "send") return t("automation.ruleSend", { how, name: step.recipientName ?? step.recipientWords });
+      if (step.type === "swap") return t("automation.ruleSwap", { how: trigger.type === "price" ? tokens(trigger.amountIn, trigger.decimalsIn, trigger.symbolIn) : how, symbol: step.symbolOut });
       return t("automation.ruleNotify");
     },
-    cadence: (rule: RuleView) => t(rule.trigger.type === "money_in" ? "automation.ruleChecksMoneyIn" : "automation.ruleChecksBalance"),
-    state: (rule: RuleView) => (rule.trigger.type === "money_in" ? null : t(rule.armed ? "automation.ruleArmed" : "automation.ruleDisarmed")),
+    cadence: (rule: RuleView) =>
+      t(
+        rule.trigger.type === "money_in"
+          ? "automation.ruleChecksMoneyIn"
+          : rule.trigger.type === "money_out"
+            ? "automation.ruleChecksMoneyOut"
+            : rule.trigger.type === "price"
+              ? "automation.ruleChecksPrice"
+              : "automation.ruleChecksBalance",
+      ),
+    state: (rule: RuleView) => (rule.trigger.type === "money_in" || rule.trigger.type === "money_out" ? null : t(rule.armed ? "automation.ruleArmed" : "automation.ruleDisarmed")),
     now: (rule: RuleView) =>
       rule.now ? (rule.now.amount ? t("automation.ruleNowMove", { amount: money("USDC", rule.now.amount) }) : t("automation.ruleNowAlert")) : t("automation.ruleNowNone"),
   };
@@ -97,6 +121,8 @@ export function useRunLabel() {
   const money = useMoney();
   const reasonText = useRunReason();
   return (run: AutomationRunView, automation: AutomationView) => {
+    if (run.status === "practiced") return run.practice && !run.practice.ok ? t("automation.runPracticedRefused", { error: run.practice.error ?? "" }) : t("automation.runPracticed");
+    if (run.status === "needs_you") return `${t("automation.runNeedsYou")} · ${reasonText(run.reason, run.reasonParams, automation.network)}`;
     if (run.status === "skipped") return `${t("automation.runSkipped")} · ${reasonText(run.reason, run.reasonParams, automation.network)}`;
     if (run.status === "failed") return t("automation.runFailed");
     if (automation.rule) {
@@ -105,12 +131,16 @@ export function useRunLabel() {
       const decided = run.trigger?.amount;
       if (step.type === "notify") return t("automation.runAlerted", { amount: money("USDC", run.trigger?.balance ?? "0") });
       if (step.type === "bridge") return t("automation.runBridged", { amount: money("USDC", decided ?? "0"), chain: step.destinationName });
+      if (step.type === "send") return t("automation.runSucceeded");
+      if (step.type === "swap") return t("automation.runSwapOpened");
       return t("automation.runSaved", { amount: money("USDC", decided ?? "0") });
     }
     if (automation.kind === "auto_save") {
       if (run.status === "executing" || !run.move) return t("automation.runMoving");
       return t(run.move.direction === "in" ? "automation.runSaved" : "automation.runToppedUp", { amount: money("USDC", run.move.amount) });
     }
+    if (automation.payroll && run.status === "succeeded" && run.reason === "PAYROLL_PARTIAL") return t("automation.reason_PAYROLL_PARTIAL", run.reasonParams ?? {});
+    if (automation.dca && run.status !== "executing") return t("automation.runSwapOpened");
     return run.status === "succeeded" ? t("automation.runSucceeded") : t("automation.runExecuting");
   };
 }

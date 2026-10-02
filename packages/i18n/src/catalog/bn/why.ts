@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "আপনার অটোমেশন চলেছে: {{kind}}",
   automationKind: {
+    payroll: "বেতন",
+    dca: "নিয়মিত কেনা",
     scheduled_send: "নির্ধারিত সময়ের পেমেন্ট",
     auto_save: "অটো-সেভ",
     rule: "একটি নিয়ম",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "আরও তুলনা করা হয়েছে: {{providers}}",
   approved: {
+    declined: "আপনি প্রত্যাখ্যান করেছেন",
+    expired: "সময়মতো উত্তর নেই",
     allowance: "আপনার দৈনিক সীমা অনুমোদন করেছে",
     wallet_signature: "আপনি অনুমোদন করেছেন",
     automation: "অটোমেশনের সীমা অনুমোদন করেছে",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "এর অন-চেইন রেফারেন্স দিয়ে",
   recorded: "রেকর্ড করা হয়েছে",
   audit: {
+    automation: {
+      run_skipped: "Kawase বাদ পড়া রেকর্ড করেছে",
+      run_practiced: "অনুশীলন হিসেবে রেকর্ড",
+    },
+    needs_you: {
+      opened: "আপনার অপেক্ষা করেছে",
+      approved: "আপনি অনুমোদন দিয়েছেন",
+      declined: "আপনি প্রত্যাখ্যান করেছেন",
+    },
     payout: { sent: "পেআউট রেকর্ড হয়েছে" },
     invoice: {
       created: "ইনভয়েস তৈরি হয়েছে",

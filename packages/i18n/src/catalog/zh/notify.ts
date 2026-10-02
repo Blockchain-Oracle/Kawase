@@ -13,4 +13,11 @@ export const notify: Catalog["notify"] = {
   emailOpen: "打开 Kawase",
   emailNeverApprove: "Kawase 绝不会通过邮件让你批准或签署任何内容。",
   emailWhy: "你收到这封邮件，是因为你在 Kawase 中开启了它。可在“设置 → 通知”中更改。",
+  needsYouTitle: "等你处理",
+  needsYouReminderTitle: "仍在等你处理",
+  needsYouSend: "向 {{name}} 发送 {{amount}}",
+  needsYouSwap: "将 {{amount}} {{symbolIn}} 兑换为 {{symbolOut}}",
+  reminderTitle: "明天，{{at}}",
+  reminderPayroll: "{{people}} 人的工资",
+  reminderShort: "你的钱包余额少于本次运行所需",
 };

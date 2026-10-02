@@ -40,7 +40,10 @@ import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
-import { automationRoutes } from "./automations/routes";
+import { automationRoutes, needsYouRoutes } from "./automations/routes";
+import { automationMarket } from "./automations/market";
+import { NeedsYouService } from "./automations/needs-you";
+import { createSwapVenues } from "./swap/venues";
 import { AutomationService } from "./automations/service";
 import { noBridges, type BridgeEngine } from "./bridge/engine";
 import { noEarn, type EarnEngine } from "./earn/engine";
@@ -82,6 +85,10 @@ import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
+import { safetyRoutes } from "./safety/routes";
+import { activityRoutes } from "./activity/routes";
+import { ActivityFeedService } from "./activity/service";
+import { SafetyService } from "./safety/service";
 import { memoryRoutes } from "./memory/routes";
 import { MemoryService } from "./memory/service";
 import { searchRoutes } from "./search/routes";
@@ -122,6 +129,8 @@ export type AppDeps = {
   circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
   market?: MarketData | undefined;
+  /** Alchemy's Transfers API for Activity (every token, in and out); the explorer's USDC/EURC page without it. */
+  alchemyApiKey?: string | undefined;
   /** Refreshes the shared market cache this often; off when unset. */
   marketWarmMs?: number | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
@@ -186,6 +195,8 @@ export function createApp(deps: AppDeps) {
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
+  needsYou.bind({ sends, swaps });
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
@@ -199,9 +210,16 @@ export function createApp(deps: AppDeps) {
     bridges,
     inbox,
     deps.log,
+    needsYou,
+    automationMarket(deps.chains, createSwapVenues(deps.swaps ?? noSwaps), assets),
   );
+  // Round-ups: each of the person's own completed sends gives every round-up rule one run.
+  sends.onSent((sent) => automations.queueRoundUps(sent));
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
+  needsYou.setAudit(audit);
+  automations.setAudit(audit);
+  const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
   const marketplace =
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
@@ -283,6 +301,14 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
+  // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
+  // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
+  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$/;
+  app.use("*", async (c, next) => {
+    if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
+      throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");
+    await next();
+  });
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
@@ -294,10 +320,12 @@ export function createApp(deps: AppDeps) {
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
+  app.route("/needs-you", needsYouRoutes(needsYou));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
+  app.route("/safety", safetyRoutes(safety));
   const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
   if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
   const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
@@ -308,6 +336,7 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
   app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
@@ -331,6 +360,7 @@ export function createApp(deps: AppDeps) {
     assets,
     automations,
     requests,
+    safety,
     models: deps.models,
     approvalSecret: deps.approvalSecret,
   };

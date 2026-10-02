@@ -86,6 +86,15 @@ export const grants = pgTable(
     periodAmount: money().notNull(),
     periodSeconds: integer().notNull(),
     recipientAddress: text(),
+    /** An allowance's token (one allowance per token, cards/automate-safety.md). */
+    tokenAddress: text(),
+    /**
+     * The server's own, tighter cap on an allowance (tightening is instant, X7): at most this per period is used, even
+     * though the signed grant allows `periodAmount`. Null = the signed amount.
+     */
+    policyCap: money(),
+    /** A temporary raise: an extra allowance for one token that ends by itself (its Timestamp caveat). */
+    boost: boolean().notNull().default(false),
     startsAt: timestampTz().notNull(),
     expiresAt: timestampTz().notNull(),
     status: grantStatusEnum().notNull().default("pending"),

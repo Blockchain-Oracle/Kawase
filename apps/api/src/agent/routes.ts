@@ -32,6 +32,7 @@ import type { LendService } from "../lend/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
+import type { SafetyService } from "../safety/service";
 import type { InvoiceService } from "../business/invoices";
 import type { HistoryService } from "../history/service";
 import { buildAgentContext } from "./context";
@@ -85,6 +86,8 @@ export type AgentDeps = {
   approvalSecret?: string | undefined;
   /** The x402 marketplace; paid services are off without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Wallet & limits (A3); the safety tools answer "unavailable" without it. */
+  safety?: SafetyService | undefined;
   /** Business mode: invoices from chat. */
   invoices?: InvoiceService | undefined;
   history?: HistoryService | undefined;
@@ -187,6 +190,7 @@ export function createTurnRunner(deps: AgentDeps) {
       automations,
       requests,
       marketplace,
+      safety: deps.safety,
       invoices,
       history: historyService,
       threadId,

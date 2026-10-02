@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "你的自动化已执行：{{kind}}",
   automationKind: {
+    payroll: "工资发放",
+    dca: "定期买入",
     scheduled_send: "定时付款",
     auto_save: "自动储蓄",
     rule: "一条规则",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "也比较了：{{providers}}",
   approved: {
+    declined: "你拒绝了",
+    expired: "未及时处理",
     allowance: "由你的每日额度批准",
     wallet_signature: "由你本人批准",
     automation: "由该自动化的限额批准",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "依据其链上参考号",
   recorded: "已记录",
   audit: {
+    automation: {
+      run_skipped: "Kawase 已记录跳过",
+      run_practiced: "记为练习",
+    },
+    needs_you: {
+      opened: "等待你处理",
+      approved: "你已批准",
+      declined: "你拒绝了",
+    },
     payout: { sent: "已记录批量付款" },
     invoice: { created: "已创建发票", paid: "发票已标记为已付", canceled: "发票已取消" },
     payroll: { activated: "发薪已开启" },
