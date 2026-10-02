@@ -37,6 +37,15 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={tokens.fonts.googleFontsHref} />
+        {/* Installable web app (PWA): manifest, theme colour, home-screen icon, and an offline-page-only worker. */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content={tokens.themes.dark.background} />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("/sw.js"))`,
+          }}
+        />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: columnCss }} />
       </head>
