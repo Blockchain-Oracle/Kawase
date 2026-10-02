@@ -47,6 +47,14 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { voiceSettings } from "./voice-settings";
+import { margin } from "./margin";
+import { marginPolicy } from "./margin-policy";
+import { assets } from "./assets";
+import { markets } from "./markets";
+import { tokenPage } from "./token-page";
+import { ticket } from "./ticket";
+import { buy } from "./buy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
@@ -98,6 +106,14 @@ export const en = {
   deleteAccount,
   update,
   chatHome,
+  voiceSettings,
+  margin,
+  marginPolicy,
+  assets,
+  markets,
+  tokenPage,
+  ticket,
+  buy,
   memory,
   insight,
   forYou,

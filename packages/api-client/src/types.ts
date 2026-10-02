@@ -1,4 +1,6 @@
 // Shapes the api returns. Kept by hand next to the routes in apps/api; a test there compares them.
+import type { TokenView } from "./assets";
+
 export type NetworkId = "mainnet" | "testnet";
 
 export type ApiUser = {
@@ -18,6 +20,15 @@ export type ApiUser = {
   riskMode: "careful" | "balanced" | "autonomous";
   practiceMode: boolean;
   turnkeySubOrganizationId: string | null;
+  /** Settings → Voice (defaults filled in by the api); absent on users cached before it existed. */
+  voicePrefs?: VoicePrefs;
+};
+
+/** GPT-Live's voices, the speaking pace and whether Kawase greets first (the same shape as @kawase/config's). */
+export type VoicePrefs = {
+  voice: "marin" | "aster" | "beacon" | "cinder" | "stone" | "vesper";
+  speed: "relaxed" | "normal" | "brisk";
+  autoSpeak: boolean;
 };
 
 export type DeviceInfo = {
@@ -290,9 +301,25 @@ export type SendApproveResponse =
 // ── Swaps (Stage 6) ─────────────────────────────────────────────────────────────────────────────────────────
 
 /** What a swap's numbers looked like when drafted. Amounts are base units of their own token. */
+export type SwapRouteView = {
+  /** kyberswap | app_kit | lifi */
+  venue: string;
+  label: string;
+  status: "chosen" | "quoted" | "unavailable";
+  /** Base units of tokenOut, when it quoted. */
+  estimatedOut: string | null;
+  minOut: string | null;
+  /** Exchanges the route goes through, for "via …". */
+  via: string[];
+  feeUsd: number | null;
+  /** Why it was not chosen or did not quote: not_on_network, no_route, timeout, failed. */
+  reason: string | null;
+};
+
 export type SwapDraftView = {
-  tokenIn: "USDC" | "EURC";
-  tokenOut: "USDC" | "EURC";
+  /** Symbols, for the words ("USDC", "ARGUS"). */
+  tokenIn: string;
+  tokenOut: string;
   amountIn: string;
   /** What the route expects to deliver. */
   estimatedOut: string;
@@ -301,15 +328,24 @@ export type SwapDraftView = {
   slippageBps: number;
   /** tokenOut per one tokenIn, from the quote, as a decimal string. */
   rate: string;
-  /** The same from Circle's market prices, when known. */
+  /** The same from market prices, when known. */
   marketRate: string | null;
-  /** How far the quote is under the market rate, in basis points (negative when better). */
+  /** How far the quote is under the market price, in basis points (negative when better): the price impact. */
   rateGapBps: number | null;
   /** Route fees in base units of tokenIn, and the network fee estimate in USDC base units. */
   fees: { route: string; network: string | null };
-  /** Who quoted it ("Circle App Kit") and when. */
+  /** Who quoted the chosen route ("KyberSwap") and when. */
   provider: string;
   quotedAt: string;
+  /** Both tokens in full (any pair, R1). Absent on drafts made before any-pair swaps. */
+  tokens?: { in: TokenView; out: TokenView };
+  /** The chosen venue and every venue asked, with why the others lost (R3). */
+  venue?: string;
+  routes?: SwapRouteView[];
+  /** The trade's value in US dollars, when priced. */
+  valueUsd?: number | null;
+  /** The token bought is not one Kawase vouches for: the token rules applied. */
+  unverifiedOut?: boolean;
 };
 
 export type SwapIntent = {
@@ -318,7 +354,8 @@ export type SwapIntent = {
   state: IntentState;
   outcome: SendOutcome | null;
   version: number;
-  request: { tokenIn: "USDC" | "EURC" | null; tokenOut: "USDC" | "EURC" | null; amount: string | null };
+  /** As asked: "USDC"/"EURC" or a token address. */
+  request: { tokenIn: string | null; tokenOut: string | null; amount: string | null };
   draft: SwapDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;
@@ -331,8 +368,9 @@ export type SwapIntent = {
 };
 
 export type SwapRequest = {
-  tokenIn?: "USDC" | "EURC" | null | undefined;
-  tokenOut?: "USDC" | "EURC" | null | undefined;
+  /** "USDC", "EURC", a verified symbol, or any token's 0x address on the active network. */
+  tokenIn?: string | null | undefined;
+  tokenOut?: string | null | undefined;
   /** Decimal amount of tokenIn. */
   amount?: string | null | undefined;
 };
@@ -362,7 +400,15 @@ export type BridgeDraftView = {
   /** Who moves it ("Circle CCTP · App Kit") and the routes considered with why this one. */
   provider: string;
   /** `reason`: quote_only (Kawase does not execute this provider yet), no_quote, timeout, not_on_arc_testnet, not_on_arc. */
-  routes: { provider: string; status: "chosen" | "quoted" | "unavailable"; received: string | null; reason: "quote_only" | "no_quote" | "timeout" | "not_on_arc_testnet" | "not_on_arc" | null }[];
+  routes: {
+    provider: string;
+    status: "chosen" | "quoted" | "unavailable";
+    received: string | null;
+    /** USDC base units paid on top of the amount (deBridge's flat fee); ranking counts it against `received`. */
+    extraCost?: string;
+    etaSeconds?: number | null;
+    reason: "quote_only" | "no_quote" | "timeout" | "not_on_arc_testnet" | "not_on_arc" | "amount_too_low" | null;
+  }[];
   quotedAt: string;
 };
 
@@ -414,6 +460,8 @@ export type EarnVaultView = {
   curator: string | null;
   circleGuarded: boolean;
   warnings: string[];
+  /** Ranked by: "stuck" vaults (almost nothing withdrawable now) are hidden from deposits; "low" carries a warning. */
+  liquidity: "liquid" | "low" | "stuck";
 };
 
 /** What the person holds in one vault: base units of USDC it is worth now. */

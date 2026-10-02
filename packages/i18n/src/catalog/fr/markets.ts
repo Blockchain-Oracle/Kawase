@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "Marchés",
+  title: "Marchés",
+  search: "Rechercher des jetons",
+  trending: "Tendance",
+  meme: "Mème",
+  perps: "Long/Short",
+  fx: "Actions et devises",
+  new: "Nouveaux",
+  hot: "Populaires",
+  heatmap: "Carte thermique",
+  vol: "Vol. {{value}}",
+  liq: "Liq. {{value}}",
+  mcap: "Cap. {{value}}",
+  testnetTitle: "Les marchés sont sur le mainnet",
+  testnetBody: "L'argent de test n'échange que l'USDC et l'EURC. Passez au mainnet pour voir les vrais marchés.",
+  switchToMainnet: "Passer au mainnet",
+  perpsBody: "Le long et le short sur Arc sont en construction : cirBTC, WETH et EURC via Aave d'abord.",
+  empty: "Rien pour le moment",
+  loadFailed: "Impossible de charger les marchés.",
+  updated: "Mis à jour {{time}}",
+  stale: "Derniers prix de {{time}}",
+  recentSearches: "Recherches récentes",
+  segmentsLabel: "Segments de marché",
+};

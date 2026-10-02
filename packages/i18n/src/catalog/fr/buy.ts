@@ -1,0 +1,37 @@
+import type { Catalog } from "../en/index";
+
+export const buy: Catalog["buy"] = {
+  title: "Acheter",
+  rowTitle: "Acheter avec Apple Pay ou carte",
+  rowBody: "Apple Pay, Google Pay ou carte de débit. Arrive dans votre portefeuille.",
+  amount: "Montant",
+  methods: "Apple Pay · Google Pay · Carte de débit",
+  continue: "Acheter {{amount}}",
+  sandbox: "Bac à sable Circle : cartes de test, pas d'argent réel.",
+  realMoney: "Argent réel. Le paiement Circle s'ouvre dans une feuille du navigateur.",
+  delivers: "{{asset}} arrive dans votre portefeuille sur {{network}}.",
+  thenNote: "Puis achetez {{token}} avec (une approbation de plus).",
+  byCircle: "Paiement par Circle",
+  opening: "Ouverture du paiement Circle…",
+  waiting: "En route",
+  stillWatching:
+    "Nous le confirmerons dès son arrivée. Si vous avez fermé le paiement sans payer, rien n'a été débité.",
+  funded: "Votre compte est alimenté",
+  fundedBody: "{{amount}} sont arrivés.",
+  thenAction: "Acheter {{token}} maintenant",
+  done: "Terminé",
+  notCompleted: "Cela n'a pas abouti",
+  tryAgain: "Réessayer",
+  failedStart: "Le paiement Circle ne s'est pas ouvert. Réessayez dans un instant.",
+  expired: "Ce paiement a expiré. Rien n'a été débité.",
+  reason_SESSION_TIMEOUT: "Le paiement a expiré. Rien n'a été débité.",
+  reason_CANCELED_BY_CUSTOMER: "Vous avez fermé le paiement. Rien n'a été débité.",
+  reason_NO_PAYMENT_OPTIONS:
+    "Aucun moyen de paiement n'est encore disponible pour vous ici. Essayez Depuis une plateforme d'échange.",
+  reason_CUSTOMER_PENDING_REVIEW: "Votre vérification d'identité est en cours d'examen. Nous vous préviendrons.",
+  reason_CUSTOMER_REJECTED: "Le prestataire n'a pas pu vous vérifier, il ne peut donc pas vous vendre.",
+  reason_PAYMENT_PROVIDER_ERROR: "Le prestataire de paiement a eu un problème. Rien n'a été débité.",
+  reason_other: "L'achat n'a pas abouti.",
+  cardReady: "Acheter {{amount}} de {{asset}}",
+  cardOpen: "Acheter avec Apple Pay ou carte",
+};

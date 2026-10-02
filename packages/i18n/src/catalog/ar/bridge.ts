@@ -47,4 +47,6 @@ export const bridge: Catalog["bridge"] = {
   changed: "تغيّرت رسوم المسار. راجع الأرقام الجديدة.",
   routeUnavailable: "لا يوجد مسار الآن. حاول بعد قليل.",
   viewArrival: "شاهد الوصول",
+  reason_amount_too_low: "يحتاج إلى مبلغ أكبر",
+  routeExtraCost: "بالإضافة إلى رسوم {{amount}}",
 };

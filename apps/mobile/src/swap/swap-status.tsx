@@ -18,8 +18,6 @@ import Animated, {
 
 import type { SwapIntent } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
-import { arcIdentity } from "@kawase/identity";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -27,8 +25,8 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
-import { useMoney } from "@/send/copy";
 
+import { SwapTokenMark, useSwapMoney } from "./swap-tokens";
 import { isSwapMoving } from "./use-swap";
 
 const MARK = 56;
@@ -45,9 +43,8 @@ const MIDPOINT = 0.5;
 const BOTH_SIDES = 2;
 
 /** Two marks trading places: `in` rises over to the far side while `out` dips under to the near one. */
-function Exchange({ tokenIn, tokenOut, network, compact }: { tokenIn: "USDC" | "EURC"; tokenOut: "USDC" | "EURC"; network: SwapIntent["network"]; compact: boolean }) {
+function Exchange({ draft, network, compact }: { draft: NonNullable<SwapIntent["draft"]>; network: SwapIntent["network"]; compact: boolean }) {
   const reduced = useReducedMotion();
-  const ids = arcIdentity(network);
   const progress = useSharedValue(0);
   const travel = compact ? TRAVEL_COMPACT : TRAVEL;
   const size = compact ? MARK_COMPACT : MARK;
@@ -64,23 +61,23 @@ function Exchange({ tokenIn, tokenOut, network, compact }: { tokenIn: "USDC" | "
     transform: [{ translateX: travel - BOTH_SIDES * travel * progress.value }, { translateY: LIFT * Math.sin(Math.PI * progress.value) }],
     zIndex: progress.value < MIDPOINT ? 1 : BOTH_SIDES,
   }));
-  const mark = (asset: "USDC" | "EURC") => <Mark entity={asset === "USDC" ? ids.usdc : ids.eurc} size={size} />;
+  const mark = (side: "in" | "out") => <SwapTokenMark draft={draft} side={side} network={network} size={size} />;
   if (reduced) {
     return (
       <View className="flex-row items-center gap-4" style={{ direction: "ltr" }}>
-        {mark(tokenIn)}
+        {mark("in")}
         <Icon as={ArrowRight} className="text-muted-foreground size-5" />
-        {mark(tokenOut)}
+        {mark("out")}
       </View>
     );
   }
   return (
     <View className="items-center justify-center" style={{ height: compact ? STAGE_COMPACT : STAGE_HEIGHT, width: size + BOTH_SIDES * travel, direction: "ltr" }}>
       <Animated.View className="absolute" style={first}>
-        {mark(tokenIn)}
+        {mark("in")}
       </Animated.View>
       <Animated.View className="absolute" style={second}>
-        {mark(tokenOut)}
+        {mark("out")}
       </Animated.View>
     </View>
   );
@@ -90,10 +87,10 @@ type Ending = { icon: typeof Check; tone: "success" | "destructive" | "muted"; t
 
 function useEnding(intent: SwapIntent): Ending | undefined {
   const { t } = useT();
-  const money = useMoney();
+  const money = useSwapMoney();
   const draft = intent.draft;
-  const paid = draft ? money(draft.tokenIn, draft.amountIn) : "";
-  const received = draft ? money(draft.tokenOut, intent.received ?? draft.estimatedOut) : "";
+  const paid = draft ? money(draft, "in", draft.amountIn, intent.network) : "";
+  const received = draft ? money(draft, "out", intent.received ?? draft.estimatedOut, intent.network) : "";
   switch (intent.outcome) {
     case "sent":
       return { icon: Check, tone: "success", title: t("swap.swappedTitle"), body: t("swap.swappedBody", { received, paid }) };
@@ -114,7 +111,7 @@ function useEnding(intent: SwapIntent): Ending | undefined {
 
 export function SwapStatus({ intent, compact, actions, connectionLost }: { intent: SwapIntent; compact?: boolean; actions?: React.ReactNode; connectionLost?: boolean }) {
   const { t } = useT();
-  const money = useMoney();
+  const money = useSwapMoney();
   const reduced = useReducedMotion();
   const ending = useEnding(intent);
   const draft = intent.draft;
@@ -124,9 +121,9 @@ export function SwapStatus({ intent, compact, actions, connectionLost }: { inten
     return (
       <View className={cn("items-center", compact ? "gap-2 py-2" : "gap-4 py-6")}>
         <Text className={cn("font-display text-foreground text-center font-bold", compact ? "text-lg" : "text-2xl")}>
-          {`${money(draft.tokenIn, draft.amountIn)} → ${draft.tokenOut}`}
+          {`${money(draft, "in", draft.amountIn, intent.network)} → ${draft.tokenOut}`}
         </Text>
-        <Exchange tokenIn={draft.tokenIn} tokenOut={draft.tokenOut} network={intent.network} compact={Boolean(compact)} />
+        <Exchange draft={draft} network={intent.network} compact={Boolean(compact)} />
         <StateLabel>{t("swap.swapping")}</StateLabel>
         <Text accessibilityLiveRegion="polite" className="text-muted-foreground text-center text-sm">
           {connectionLost ? t("send.connectionLost") : t("swap.swappingBody", { network: networkName })}

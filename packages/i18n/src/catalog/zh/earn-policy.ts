@@ -16,4 +16,5 @@ export const earnPolicy: Catalog["earnPolicy"] = {
   VAULT_LIQUIDITY_SHORT: "金库现在只能支付 {{available}}，其余已借出。请减少金额或稍后再试。",
   VAULT_LOW_LIQUIDITY: "流动性低：取款可能需要等待",
   VAULT_RISK_WARNING: "App Kit 标记了此金库：{{warnings}}",
+  VAULT_LIQUIDITY_STUCK: "该金库目前只能支付 {{available}}，因此 Kawase 不会存入。请选择流动性充足的金库。",
 };

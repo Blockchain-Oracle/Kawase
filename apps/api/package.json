@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "catalog:",
+    "@circle-fin/onramp-kit": "1.0.3",
     "@circle-fin/x402-batching": "catalog:",
     "@hono/node-server": "catalog:",
     "@kawase/agent": "workspace:*",
@@ -26,8 +27,10 @@
     "@kawase/env": "workspace:*",
     "@kawase/i18n": "workspace:*",
     "@kawase/identity": "workspace:*",
+    "@kawase/integrations-aave-v4": "workspace:*",
     "@kawase/integrations-app-kit": "workspace:*",
     "@kawase/integrations-delegation": "workspace:*",
+    "@kawase/integrations-kyberswap": "workspace:*",
     "@kawase/integrations-x402": "workspace:*",
     "@kawase/intents": "workspace:*",
     "@kawase/log": "workspace:*",

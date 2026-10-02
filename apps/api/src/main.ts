@@ -6,7 +6,7 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
-import { AUTOMATION_TICK_MS, NOTIFY_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
+import { AUTOMATION_TICK_MS, MARKET_WARM_MS, NOTIFY_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
@@ -17,7 +17,9 @@ import { Discovery } from "@kawase/integrations-x402";
 import { circleAgentWallets } from "./marketplace/agent-wallets";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
+import { liveMarketData } from "./market/sources";
 import { appKitSwaps } from "./swap/engine";
+import { circleOnramp } from "./onramp/engine";
 import { ResendEmail } from "./notify/email";
 import { ExpoPush } from "./notify/expo";
 import { createChains } from "./wallet/chain";
@@ -54,6 +56,10 @@ const app = createApp({
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
+  onramp: circleOnramp(env),
+  circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
+  market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
+  marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,

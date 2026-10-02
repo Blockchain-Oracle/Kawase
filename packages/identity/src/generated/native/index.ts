@@ -1,4 +1,8 @@
 // GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import MarkAave from "./aave";
+import MarkAaveMono from "./aave-mono";
+import MarkAcross from "./across";
+import MarkAcrossMono from "./across-mono";
 import MarkAisa from "./aisa";
 import MarkAisaMono from "./aisa-mono";
 import MarkApple from "./apple";
@@ -13,8 +17,12 @@ import MarkBase from "./base";
 import MarkBaseMono from "./base-mono";
 import MarkBlockrun from "./blockrun";
 import MarkBlockrunMono from "./blockrun-mono";
+import MarkBtc from "./btc";
+import MarkBtcMono from "./btc-mono";
 import MarkCircle from "./circle";
 import MarkCircleMono from "./circle-mono";
+import MarkDebridge from "./debridge";
+import MarkDebridgeMono from "./debridge-mono";
 import MarkDefillama from "./defillama";
 import MarkEthereum from "./ethereum";
 import MarkEthereumMono from "./ethereum-mono";
@@ -27,6 +35,8 @@ import MarkGoogle from "./google";
 import MarkGoogleMono from "./google-mono";
 import MarkKawase from "./kawase";
 import MarkKawaseMono from "./kawase-mono";
+import MarkKyberswap from "./kyberswap";
+import MarkKyberswapMono from "./kyberswap-mono";
 import MarkMorpho from "./morpho";
 import MarkMorphoMono from "./morpho-mono";
 import MarkOptimism from "./optimism";
@@ -43,9 +53,15 @@ import MarkUsdc from "./usdc";
 import MarkUsdcMono from "./usdc-mono";
 import MarkVangrid from "./vangrid";
 import MarkVangridMono from "./vangrid-mono";
+import MarkWeth from "./weth";
+import MarkWethMono from "./weth-mono";
 
 /** File stem → component. Absent stems have not been delivered (see PROVENANCE.md). */
 export const MARKS = {
+  "aave": MarkAave,
+  "aave-mono": MarkAaveMono,
+  "across": MarkAcross,
+  "across-mono": MarkAcrossMono,
   "aisa": MarkAisa,
   "aisa-mono": MarkAisaMono,
   "apple": MarkApple,
@@ -60,8 +76,12 @@ export const MARKS = {
   "base-mono": MarkBaseMono,
   "blockrun": MarkBlockrun,
   "blockrun-mono": MarkBlockrunMono,
+  "btc": MarkBtc,
+  "btc-mono": MarkBtcMono,
   "circle": MarkCircle,
   "circle-mono": MarkCircleMono,
+  "debridge": MarkDebridge,
+  "debridge-mono": MarkDebridgeMono,
   "defillama": MarkDefillama,
   "ethereum": MarkEthereum,
   "ethereum-mono": MarkEthereumMono,
@@ -74,6 +94,8 @@ export const MARKS = {
   "google-mono": MarkGoogleMono,
   "kawase": MarkKawase,
   "kawase-mono": MarkKawaseMono,
+  "kyberswap": MarkKyberswap,
+  "kyberswap-mono": MarkKyberswapMono,
   "morpho": MarkMorpho,
   "morpho-mono": MarkMorphoMono,
   "optimism": MarkOptimism,
@@ -90,6 +112,8 @@ export const MARKS = {
   "usdc-mono": MarkUsdcMono,
   "vangrid": MarkVangrid,
   "vangrid-mono": MarkVangridMono,
+  "weth": MarkWeth,
+  "weth-mono": MarkWethMono,
 } as const;
 
 export type MarkStem = keyof typeof MARKS;

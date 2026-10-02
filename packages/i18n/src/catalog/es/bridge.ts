@@ -49,4 +49,6 @@ export const bridge: Catalog["bridge"] = {
   changed: "Cambió la comisión de la ruta. Revisa las nuevas cifras.",
   routeUnavailable: "No hay ruta ahora. Inténtalo en un momento.",
   viewArrival: "Ver la llegada",
+  reason_amount_too_low: "Necesita un monto mayor",
+  routeExtraCost: "más {{amount}} de comisión",
 };

@@ -1,0 +1,23 @@
+export const marginPolicy = {
+  SIGN_IN_REQUIRED: "Sign in to trade.",
+  ON_OTHER_NETWORK: "Long and short work on {{network}}.",
+  NOT_AVAILABLE_YET: "Long and short aren't available right now.",
+  PAUSED_ALL: "You paused all money movement. Resume it in Settings to continue.",
+  WALLET_NOT_READY: "Set up your wallet first.",
+  WALLET_NOT_SET_UP: "Set up your wallet on this network first.",
+  MARKET_MISSING: "Which market?",
+  SIDE_MISSING: "Long or short?",
+  MARGIN_MARKET_UNAVAILABLE:
+    "No lending market lists {{market}}, so it can't go long or short here. Buy it, or set a price alert.",
+  MARGIN_SIDE_UNAVAILABLE: "{{market}} can't go {{side}} here. A long on it is a plain buy.",
+  POSITION_MISSING: "There's no open position like that.",
+  AMOUNT_MISSING: "How much margin?",
+  AMOUNT_INVALID: "That amount isn't valid.",
+  INSUFFICIENT_BALANCE: "Not enough USDC. You have {{balance}}.",
+  INSUFFICIENT_GAS: "Keep about {{needed}} for the network fee.",
+  LEVERAGE_TOO_HIGH: "This market allows up to {{max}}×.",
+  QUOTE_UNAVAILABLE: "No price right now.",
+  MARGIN_RISK: "Leverage can lose your whole margin.",
+  fixTryAgain: "Try again",
+  fixSwitch: "Switch to Arc",
+} as const;

@@ -17,4 +17,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
     "O cofre só pode pagar {{available}} agora; o resto está emprestado. Tente menos ou mais tarde.",
   VAULT_LOW_LIQUIDITY: "Liquidez baixa: saques podem ter que esperar",
   VAULT_RISK_WARNING: "O App Kit sinaliza este cofre: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "Este cofre só pode pagar {{available}} agora, então o Kawase não vai depositar nele. Escolha um com liquidez.",
 };

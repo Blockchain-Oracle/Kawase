@@ -135,6 +135,9 @@ importers:
       '@circle-fin/developer-controlled-wallets':
         specifier: 'catalog:'
         version: 10.8.1(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+      '@circle-fin/onramp-kit':
+        specifier: 1.0.3
+        version: 1.0.3
       '@circle-fin/x402-batching':
         specifier: 'catalog:'
         version: 3.5.0(@x402/core@2.28.0)(@x402/evm@2.28.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6))(viem@2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5))
@@ -162,12 +165,18 @@ importers:
       '@kawase/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@kawase/integrations-aave-v4':
+        specifier: workspace:*
+        version: link:../../packages/integrations/aave-v4
       '@kawase/integrations-app-kit':
         specifier: workspace:*
         version: link:../../packages/integrations/app-kit
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation
+      '@kawase/integrations-kyberswap':
+        specifier: workspace:*
+        version: link:../../packages/integrations/kyberswap
       '@kawase/integrations-x402':
         specifier: workspace:*
         version: link:../../packages/integrations/x402
@@ -453,6 +462,9 @@ importers:
       '@kawase/wallet':
         specifier: workspace:*
         version: link:../../packages/wallet
+      '@livekit/components-react':
+        specifier: 2.9.24
+        version: 2.9.24(livekit-client@2.22.3(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tslib@2.8.1)
       '@livekit/react-native':
         specifier: 3.0.0
         version: 3.0.0(@livekit/react-native-webrtc@144.2.0(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(supports-color@8.1.1))(livekit-client@2.22.3(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(tslib@2.8.1)
@@ -667,6 +679,12 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
+      dotenv:
+        specifier: 'catalog:'
+        version: 18.0.4
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -888,6 +906,22 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/integrations/aave-v4:
+    dependencies:
+      viem:
+        specifier: 'catalog:'
+        version: 2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/integrations/app-kit:
     dependencies:
       '@circle-fin/adapter-viem-v2':
@@ -946,6 +980,22 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 18.0.4
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/integrations/kyberswap:
+    dependencies:
+      viem:
+        specifier: 'catalog:'
+        version: 2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
       tsx:
         specifier: 'catalog:'
         version: 4.23.15
@@ -1843,6 +1893,10 @@ packages:
 
   '@circle-fin/onramp-kit@1.0.2':
     resolution: {integrity: sha512-Y3gB/E6LFD/a/5nSZbT5H8pfKeHKat7+6NsomGlNsSh9LALkJalBmwSXtro52HctMxMjuxcQQ2J0YGn9R6qHJA==}
+    engines: {node: '>=20.0.0'}
+
+  '@circle-fin/onramp-kit@1.0.3':
+    resolution: {integrity: sha512-/pwmh1+O50ElERMjS73/6b4n7AI0qqR7V5pxg6AzIGjlNA2oB9WYttZKLysbTnw7g7im66b8jEgGkqSs9WmC8g==}
     engines: {node: '>=20.0.0'}
 
   '@circle-fin/provider-cctp-v2@1.14.0':
@@ -10910,6 +10964,11 @@ snapshots:
       - utf-8-validate
 
   '@circle-fin/onramp-kit@1.0.2':
+    dependencies:
+      pino: 10.1.0
+      zod: 3.25.67
+
+  '@circle-fin/onramp-kit@1.0.3':
     dependencies:
       pino: 10.1.0
       zod: 3.25.67

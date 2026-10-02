@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import type { AgentContext } from "./context";
+import { railsTools } from "./rails-tools";
 import { intelligenceTools } from "./intelligence-tools";
 import { withQuarantine } from "./quarantine";
 
@@ -17,6 +18,17 @@ const LAST_WEEKDAY = 6;
 const LAST_MONTHDAY = 28;
 const TIMEZONE_MAX = 64;
 const MAX_PERCENT = 100;
+const TOKEN_QUERY_MAX = 64;
+const SEARCH_SHOWN = 8;
+const ASSETS_SHOWN = 20;
+
+/** A symbol, name or 0x address → the best match on this network (held and verified tokens first). */
+async function resolveToken(context: AgentContext, query: string) {
+  const text = query.trim();
+  if (/^0x[0-9a-fA-F]{40}$/.test(text)) return context.tokenDetail(text);
+  const [best] = await context.searchTokens(text);
+  return best ? context.tokenDetail(best.token.address) : null;
+}
 const SERVICE_QUERY_MAX = 120;
 const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
@@ -25,6 +37,7 @@ const BODY_MAX = 4_000;
 export function buildTools(context: AgentContext) {
   // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
   return withQuarantine({
+    ...railsTools(context),
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
@@ -235,6 +248,77 @@ export function buildTools(context: AgentContext) {
         "Search the person's saved contacts by name, alias or @handle (empty query lists them). Use it to answer questions about their contacts; for a send, just call propose_send with the name.",
       inputSchema: z.object({ query: z.string().max(RECIPIENT_MAX).describe("Part of a name or handle; empty for all") }),
       execute: async ({ query }) => ({ contacts: await context.findContacts(query) }),
+    }),
+    propose_trade: tool({
+      description:
+        "Buy, sell or swap any token on the active network: \"buy $10 of ARGUS\", \"sell my cirBTC\", \"swap 5 USDC to WETH\". Pass from (what they give up) and to (what they want) as the person named them (a symbol, a name, or a 0x address), and the amount as digits with a dot in the from token; for a buy with no from, Kawase pays with USDC, for a sale with no to, it gets USDC. Kawase finds the token (held and verified first), asks KyberSwap, Circle App Kit and LI.FI for fresh quotes and recommends the best, checks the price impact and the token rules (fakes of stablecoins and honeypots are never bought; unverified tokens have a per-trade and per-day limit), and shows a ticket card. The person confirms by sliding on the card; nothing moves from this call. Use propose_swap only for plain USDC ↔ EURC.",
+      inputSchema: z.object({
+        from: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they give up; omit for a buy paid in dollars"),
+        to: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they want; omit for a sale to dollars"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Digits with a dot, in the from token; omit if they did not say"),
+      }),
+      execute: async ({ from, to, amount }) => context.proposeTrade({ from: from ?? null, to: to ?? null, amount: amount ?? null }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    get_portfolio: tool({
+      description:
+        "Everything the person holds on the active network, priced: every token on Arc (not only USDC and EURC), what sits in positions (savings vaults), what their same address holds on other chains (mainnet), and what is hidden as spam or lookalikes. Total and 24-hour change in US dollars plus their display currency. Use it for 'what do I have', 'my portfolio', 'how much is my X worth'.",
+      inputSchema: z.object({}),
+      execute: async () => ({ network: context.network, portfolio: await context.portfolio() }),
+      toModelOutput: ({ output }) => {
+        const view = output.portfolio;
+        const line = (row: (typeof view.assets)[number]) => ({ symbol: row.token.symbol, name: row.token.name, amount: row.amount, valueUsd: row.valueUsd, change24hPct: row.change24hPct, status: row.token.status, chain: row.chainName });
+        return {
+          type: "json",
+          value: {
+            network: output.network,
+            isTest: view.isTest,
+            totalUsd: view.totalUsd,
+            change24hUsd: view.change24hUsd,
+            change24hPct: view.change24hPct,
+            displayCurrency: view.fx,
+            assets: view.assets.slice(0, ASSETS_SHOWN).map(line),
+            positions: view.positions.map((position) => ({ title: position.title, valueUsd: position.valueUsd, apyPct: position.apyPct ?? null })),
+            otherChains: view.otherChains.slice(0, ASSETS_SHOWN).map(line),
+            hiddenCount: view.hidden.length,
+          },
+        };
+      },
+    }),
+    search_tokens: tool({
+      description:
+        "Find tokens on the active network by name, symbol or 0x address, with price, liquidity, whether the person holds it, and its status: canonical (Kawase's verified list), listed (market lists), unverified, lookalike (copies a listed token's symbol) or impersonator (uses a stablecoin's symbol at a fake address — never buy). Use it before talking about a token the person named.",
+      inputSchema: z.object({ query: z.string().min(1).max(TOKEN_QUERY_MAX).describe("Name, symbol or 0x address as the person said it") }),
+      execute: async ({ query }) => ({ network: context.network, results: await context.searchTokens(query) }),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: {
+          network: output.network,
+          results: output.results.slice(0, SEARCH_SHOWN).map((result) => ({ symbol: result.token.symbol, name: result.token.name, address: result.token.address, status: result.token.status, priceUsd: result.priceUsd, liquidityUsd: result.liquidityUsd, held: result.held })),
+        },
+      }),
+    }),
+    get_token_safety: tool({
+      description:
+        "Is a token safe to buy? Kawase's copycat rule (impersonators of stablecoins are blocked; lookalikes are flagged) plus contract checks (honeypot, sell and buy tax, mint, owner, open source, holders, from GoPlus on mainnet), and the lookalikes using the same symbol. Pass the name, symbol or address. Say the verdict plainly; 'block' means Kawase will not buy it.",
+      inputSchema: z.object({ token: z.string().min(1).max(TOKEN_QUERY_MAX) }),
+      execute: async ({ token }) => {
+        const detail = await resolveToken(context, token);
+        return detail
+          ? { status: "found" as const, network: context.network, token: detail.token, safety: detail.safety, market: detail.market, actions: detail.actions }
+          : { status: "not_found" as const, network: context.network, query: token };
+      },
+    }),
+    get_price: tool({
+      description:
+        "A token's current price in US dollars on the active network, with its 24-hour change, liquidity, volume and market cap (GeckoTerminal and LI.FI, refreshed each minute). Pass the name, symbol or address. Test tokens are valued at their mainnet twin.",
+      inputSchema: z.object({ token: z.string().min(1).max(TOKEN_QUERY_MAX) }),
+      execute: async ({ token }) => {
+        const detail = await resolveToken(context, token);
+        return detail
+          ? { status: "found" as const, network: context.network, token: detail.token, market: detail.market, pricedAt: detail.pricedAt, stale: detail.stale }
+          : { status: "not_found" as const, network: context.network, query: token };
+      },
     }),
     // Runs on the device: the card shows the reason and a button; the person decides, and the app switches.
     propose_network_switch: tool({

@@ -53,6 +53,9 @@ export const apiEnvSchema = z.object({
   /** The agent's model keys (D29: provider-agnostic; OpenAI is the default role model). Chat is off without one. */
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  /** Alchemy's Portfolio and Prices APIs: every token a wallet holds on Arc and the six bridge chains. Without it the
+   * portfolio falls back to the Transfer-log watcher + Multicall3 (Arc) and LI.FI (other chains). */
+  ALCHEMY_API_KEY: z.string().optional(),
   /** Per-deployment model overrides, "provider:model" (e.g. anthropic:claude-sonnet-5-5). */
   KAWASE_MODEL_AGENT_CHAT: z
     .string()
@@ -81,6 +84,8 @@ export const apiEnvSchema = z.object({
   KAWASE_MIN_APP_VERSION: z.preprocess(blankIsUnset, z.string().regex(/^\d+(\.\d+){0,2}$/).optional()),
   /** The testnet x402 demo seller (apps/x402-seller): Circle's catalog has no testnet listings (MASTER-PLAN:233). */
   X402_DEMO_SELLER_URL: z.preprocess(blankIsUnset, z.url().optional()),
+  /** Onramp: the hostname of a page that embeds the widget in an iframe. Unset in the app's flow (top level). */
+  ONRAMP_REFERRER_DOMAIN: z.preprocess(blankIsUnset, z.string().regex(/^[a-z0-9.-]+$/).optional()),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),

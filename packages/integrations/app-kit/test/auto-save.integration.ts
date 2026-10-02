@@ -72,7 +72,7 @@ const check = (name: string, ok: boolean, tx?: string) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}`, tx ? EXPLORER + tx : "");
 };
 
-const vaults = await exploreVaults(network, apiKey);
+const vaults = await exploreVaults(network, apiKey, { stuckBelowUsd: 1_000, lowShare: 0.1 });
 const vault = vaults.find((entry) => entry.status === "active")?.address ?? vaults[0]!.address;
 console.log("vault", vault);
 

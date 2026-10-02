@@ -52,7 +52,7 @@ export function VaultRow({ vault, onPress, selected, network = "testnet" }: { va
         <Text numberOfLines={2} className={cn("text-muted-foreground text-xs", TEXT_START)}>
           {lines.join(" · ")}
         </Text>
-        {vault.circleGuarded || vault.status === "low_liquidity" ? (
+        {vault.circleGuarded || vault.liquidity !== "liquid" ? (
           <View className="flex-row flex-wrap items-center gap-2 pt-0.5">
             {vault.circleGuarded ? (
               <View className="flex-row items-center gap-1">
@@ -60,7 +60,7 @@ export function VaultRow({ vault, onPress, selected, network = "testnet" }: { va
                 <Text className="text-success text-xs font-semibold">{t("earn.circleGuarded")}</Text>
               </View>
             ) : null}
-            {vault.status === "low_liquidity" ? <Text className="text-muted-foreground text-xs">{t("earn.lowLiquidity")}</Text> : null}
+            {vault.liquidity !== "liquid" ? <Text className="text-foreground text-xs font-semibold">{t("earn.lowLiquidity")}</Text> : null}
           </View>
         ) : null}
       </View>

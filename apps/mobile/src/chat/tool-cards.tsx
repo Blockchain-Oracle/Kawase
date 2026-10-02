@@ -46,6 +46,10 @@ import type {
   ProposeEarnOutput,
   ProposeSwapOutput,
   WalletSummary,
+  MarginMarketsOutput,
+  MarginPositionsOutput,
+  ProposeMarginOutput,
+  BuyProposalOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -74,6 +78,8 @@ import { AutomationCard } from "./automation-card";
 import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
+import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
+import { OnrampBuyCard } from "./buy-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
@@ -563,6 +569,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_authority: "chat.loadingAuthority",
   propose_send: "chat.loadingSend",
   propose_swap: "chat.loadingSwap",
+  propose_trade: "chat.loadingSwap",
   propose_bridge: "chat.loadingBridge",
   get_earn: "chat.loadingEarn",
   propose_earn: "chat.loadingEarn",
@@ -629,6 +636,7 @@ export function ToolCard({
     case "propose_send":
       return <SendCard output={part.output as ProposeSendOutput} />;
     case "propose_swap":
+    case "propose_trade":
       return <SwapCard output={part.output as ProposeSwapOutput} />;
     case "propose_bridge":
       return <BridgeCard output={part.output as ProposeBridgeOutput} />;
@@ -659,6 +667,15 @@ export function ToolCard({
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":
       return <RequestCard output={part.output as Parameters<typeof RequestCard>[0]["output"]} />;
+    case "propose_perp_order":
+    case "close_position":
+      return (part.output as Partial<ProposeMarginOutput>).intent ? <MarginOrderCard output={part.output as ProposeMarginOutput} /> : null;
+    case "get_markets":
+      return (part.output as Partial<MarginMarketsOutput>).markets ? <MarginMarketsCard output={part.output as MarginMarketsOutput} /> : null;
+    case "start_buy":
+      return (part.output as Partial<BuyProposalOutput>).asset ? <OnrampBuyCard output={part.output as BuyProposalOutput} /> : null;
+    case "get_positions":
+      return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
     case "search_services":
       return <ServicesCard output={part.output as ServiceSearchResult} />;
     case "inspect_service":

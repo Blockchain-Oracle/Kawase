@@ -1,45 +1,45 @@
-// Swap (Stage 6; C-trading): how much and which way → review → swapping → the ending. One header; the steps
-// cross-fade in place. The amount step is a ticket in two halves (what you give, what you get) joined by the flip
-// button, with the balance and Max on the side being spent, the amount large in the display face, and the keypad.
-// Review shows the fresh quote next to Circle's market rate (SwapReview), the one fix when something stops it, and
-// one lime button named after the device's real check ("Swap with Face ID"): a swap is always the owner's own yes,
-// because the everyday allowance only covers transfers. Going back to change the amount or the direction makes a
-// new version of the same swap.
+// The swap ticket for any pair (surfaces.md "Trade tickets"; Swap Ticket 21st.dev 27122; R1, R3, R5). "You pay": any
+// held asset from the universal picker, the amount large in the display face, 25/50/Max; the flip; "You get": any
+// token on Arc, from search. Review: the recommended venue's quote with the others under "N routes", the least that
+// arrives, the price impact against the token rules, then **slide to confirm** — the slide resets on any change of
+// pair, amount or quote, and the quote refreshes every SWAP_QUOTE_TTL_S while the ticket is open. After the slide the
+// wallet approves (Face ID; an email code on the web) one transaction (approve + swap), the marks trade places while
+// it runs, and the receipt says what actually arrived. Entry: Home's Swap, the fan, a token page's Buy/Sell
+// (`/swap?buy=0x…` / `?sell=0x…`), chat cards and links (`/swap?from=USDC&amount=10`).
 import { useRouter } from "expo-router";
-import { ArrowUpDown, ChevronLeft, ScanFace } from "lucide-react-native";
+import { ArrowUpDown, ChevronDown, ChevronLeft } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { AppState, Pressable, ScrollView, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import type { PolicyResultView, SwapRequest } from "@kawase/api-client";
-import { MOTION } from "@kawase/config";
-import { arcIdentity } from "@kawase/identity";
-import { decimalsOf, type AssetId } from "@kawase/money";
-import { Amount } from "@kawase/ui-native/components/amount";
+import type { PolicyResultView, SwapRequest, TokenView } from "@kawase/api-client";
+import { MOTION, MS_PER_SECOND, SWAP_QUOTE_TTL_S } from "@kawase/config";
+import { arcIdentity, CHAIN_IDS, getEntity } from "@kawase/identity";
 import { CoinStack } from "@kawase/ui-native/components/art/coin-stack";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
+import { SlideToConfirm } from "@kawase/ui-native/components/slide-to-confirm";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { tapFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { AssetPickerSheet, type AssetChoice } from "@/portfolio/asset-picker-sheet";
+import { tokenAmount } from "@/portfolio/format";
+import { usePortfolio } from "@/portfolio/use-portfolio";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useWalletStatus } from "@/wallet/use-wallet-status";
-
-import { baseFromCanonical, canonicalFromBase } from "@/send/amount-step";
-import { useMoney } from "@/send/copy";
 import { applyKey, decimalSeparator, displayAmount, Keypad } from "@/send/keypad";
-import { useSwapApproveLabel, useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
+import { useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapReview } from "@/swap/swap-review";
 import { SwapStatus } from "@/swap/swap-status";
 import { TradeSwitch } from "@/swap/trade-switch";
@@ -52,44 +52,96 @@ const ART_WIDTH = 150;
 const MARK = 32;
 const FLIP = 44;
 const ZERO = 0n;
-const TICKET_SIZE = 56;
-const TICKET_LINE_HEIGHT = 66;
+const TICKET_SIZE = 52;
+const TICKET_LINE_HEIGHT = 62;
 const TICKET_MIN_SCALE = 0.5;
+const QUARTER = 4n;
+const HALF = 2n;
+const DECIMAL = /^\d+(\.\d+)?$/;
 
 type Step = "amount" | "review";
+type TicketToken = Pick<TokenView, "chainId" | "address" | "symbol" | "name" | "decimals" | "logoUrl">;
 
-export type SwapPrefill = { from?: AssetId | undefined; amount?: string | undefined };
+export type SwapPrefill = { from?: string | undefined; amount?: string | undefined; buy?: string | undefined; sell?: string | undefined };
 
-const other = (asset: AssetId): AssetId => (asset === "USDC" ? "EURC" : "USDC");
+/** Arc's USDC or EURC on this network, from the identity registry (the default side of a buy or a sale). */
+function stable(network: "mainnet" | "testnet", symbol: "USDC" | "EURC"): TicketToken {
+  const ids = arcIdentity(network);
+  const entity = getEntity(symbol === "USDC" ? ids.usdc : ids.eurc)!;
+  return { chainId: network === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet, address: entity.address!, symbol, name: entity.name, decimals: entity.decimals!, logoUrl: null };
+}
+
+/** Base units → the canonical decimal string the keypad edits ("12.5"). */
+function canonical(units: bigint, decimals: number) {
+  const text = units.toString().padStart(decimals + 1, "0");
+  const whole = text.slice(0, text.length - decimals) || "0";
+  const fraction = text.slice(text.length - decimals).replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole;
+}
+
+function baseUnits(value: string, decimals: number): bigint | undefined {
+  if (!DECIMAL.test(value) || (value.split(".")[1]?.length ?? 0) > decimals) return undefined;
+  const [whole = "0", fraction = ""] = value.split(".");
+  return BigInt(whole + fraction.padEnd(decimals, "0"));
+}
 
 export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
   const { t } = useT();
-  const { locale } = useLocale();
+  const { locale, rtl } = useLocale();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const fund = useFund();
-  const { wallet } = useWalletStatus();
+  const { portfolio } = usePortfolio();
   const controller = useSwap();
-  const money = useMoney();
   const policyText = useSwapPolicyText();
-  const approveLabel = useSwapApproveLabel();
   const prompt = useSwapPrompt();
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
-  const ids = arcIdentity(network);
 
-  const state = wallet?.networks[network];
-  const balances = state ? { USDC: BigInt(state.usdcBalance), EURC: BigInt(state.eurcBalance ?? "0") } : undefined;
-  // Until the person picks, swap from what they hold most of (USDC when they hold neither).
-  const [from, setFrom] = React.useState<AssetId | undefined>(prefill.from);
-  const tokenIn: AssetId = from ?? (balances && balances.EURC > balances.USDC ? "EURC" : "USDC");
-  const tokenOut = other(tokenIn);
+  const [tokenIn, setTokenIn] = React.useState<TicketToken>(() =>
+    prefill.from === "EURC" ? stable(network, "EURC") : stable(network, "USDC"),
+  );
+  const [tokenOut, setTokenOut] = React.useState<TicketToken>(() => (prefill.from === "EURC" ? stable(network, "USDC") : stable(network, "EURC")));
+  const [picker, setPicker] = React.useState<"in" | "out">();
   const [step, setStep] = React.useState<Step>("amount");
   const [value, setValue] = React.useState(prefill.amount ?? "");
   const [creating, setCreating] = React.useState(false);
+  const [foreground, setForeground] = React.useState(0);
+
+  // A token page's Buy or Sell: the token on its side, dollars on the other.
+  React.useEffect(() => {
+    const address = prefill.buy ?? prefill.sell;
+    if (!address) return undefined;
+    let live = true;
+    const chainId = network === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
+    api.tokens
+      .get(chainId, address)
+      .then(({ token }) => {
+        if (!live) return;
+        if (prefill.buy) {
+          setTokenOut(token.token);
+          setTokenIn(stable(network, "USDC"));
+        } else {
+          setTokenIn(token.token);
+          setTokenOut(stable(network, "USDC"));
+        }
+      })
+      .catch(() => toast(t("tokenPage.notFound")));
+    return () => {
+      live = false;
+    };
+  }, [prefill.buy, prefill.sell, network, t]);
+
+  // Coming back from the background is a change of quote freshness: the slide starts over (R5).
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener("change", (next) => {
+      if (next === "active") setForeground((count) => count + 1);
+    });
+    return () => subscription.remove();
+  }, []);
 
   const intent = controller.intent;
   const settled = intent && (isSwapMoving(intent) || isSwapFinished(intent));
@@ -99,8 +151,20 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
     else setStep("amount");
   };
 
+  // The quote stays fresh while the ticket is open on review: a new version every SWAP_QUOTE_TTL_S.
+  const revise = controller.revise;
+  React.useEffect(() => {
+    if (step !== "review" || !intent || !isSwapOpen(intent) || controller.busy) return undefined;
+    const timer = setInterval(() => void revise({}), SWAP_QUOTE_TTL_S * MS_PER_SECOND);
+    return () => clearInterval(timer);
+  }, [step, intent, controller.busy, revise]);
+
+  const holding = portfolio?.assets.find((entry) => entry.token.address.toLowerCase() === tokenIn.address.toLowerCase());
+  const balanceIn = holding ? BigInt(holding.balance) : portfolio ? ZERO : undefined;
+  const title = prefill.buy ? t("ticket.buyTitle", { symbol: tokenOut.symbol }) : prefill.sell ? t("ticket.sellTitle", { symbol: tokenIn.symbol }) : t("ticket.title");
+
   const review = async () => {
-    const request: SwapRequest = { tokenIn, tokenOut, amount: value };
+    const request: SwapRequest = { tokenIn: tokenIn.address, tokenOut: tokenOut.address, amount: value };
     setCreating(true);
     try {
       if (intent && isSwapOpen(intent)) {
@@ -118,6 +182,19 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
     }
   };
 
+  const choose = (side: "in" | "out") => (choice: AssetChoice) => {
+    const token = choice.token;
+    if (side === "in") {
+      if (token.address.toLowerCase() === tokenOut.address.toLowerCase()) setTokenOut(tokenIn);
+      setTokenIn(token);
+      if (value && baseUnits(value, token.decimals) === undefined) setValue("");
+    } else {
+      if (token.address.toLowerCase() === tokenIn.address.toLowerCase()) setTokenIn(tokenOut);
+      setTokenOut(token);
+    }
+    tapFeedback("selection");
+  };
+
   const header = (
     <>
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
@@ -125,11 +202,11 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
         <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={back}>
           <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
         </Button>
-        <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
-          {t("swap.title")}
+        <Text accessibilityRole="header" numberOfLines={1} className="font-display text-foreground shrink text-2xl font-bold">
+          {title}
         </Text>
       </View>
-      {!settled && step === "amount" ? (
+      {!settled && step === "amount" && !prefill.buy && !prefill.sell ? (
         <View className="px-5 pt-3">
           <TradeSwitch current="swap" />
         </View>
@@ -137,23 +214,17 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
     </>
   );
 
-  const blockedPage =
-    status !== "account"
-      ? { title: t("swapPolicy.SIGN_IN_REQUIRED"), action: t("policy.fixSignIn"), onPress: () => signIn.open() }
-      : wallet && !wallet.address
-        ? { title: t("swapPolicy.WALLET_NOT_READY"), action: t("policy.fixSetUp"), onPress: () => router.push("/wallet") }
-        : undefined;
-  if (blockedPage) {
+  if (status !== "account") {
     return (
       <View className="bg-background flex-1">
         {header}
         <View className="flex-1" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
           <EmptyState
             art={<CoinStack width={ART_WIDTH} id="swap-blocked-stack" />}
-            title={blockedPage.title}
+            title={t("swapPolicy.SIGN_IN_REQUIRED")}
             action={
-              <Button onPress={blockedPage.onPress}>
-                <Text>{blockedPage.action}</Text>
+              <Button onPress={() => signIn.open()}>
+                <Text>{t("policy.fixSignIn")}</Text>
               </Button>
             }
           />
@@ -165,8 +236,6 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
   /** The one fix a blocking reason offers, if any. */
   const fixFor = (blocking: PolicyResultView): { label: string; onPress: () => void } | undefined => {
     switch (blocking.code) {
-      case "SIGN_IN_REQUIRED":
-        return { label: t("policy.fixSignIn"), onPress: () => signIn.open() };
       case "INSUFFICIENT_BALANCE":
       case "INSUFFICIENT_GAS":
         return { label: t("policy.fixAddMoney"), onPress: fund.open };
@@ -178,6 +247,8 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
       case "AMOUNT_MISSING":
       case "AMOUNT_INVALID":
       case "PRICE_IMPACT_HIGH":
+      case "TOKEN_RULE_TRADE":
+      case "TOKEN_RULE_DAY":
         return { label: t("policy.fixEditAmount"), onPress: () => setStep("amount") };
       default:
         return undefined;
@@ -197,9 +268,16 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
           connectionLost={controller.connectionLost}
           actions={
             isSwapFinished(intent) ? (
-              <Button size="lg" onPress={leave}>
-                <Text>{t("send.done")}</Text>
-              </Button>
+              <>
+                <Button size="lg" onPress={leave}>
+                  <Text>{t("send.done")}</Text>
+                </Button>
+                {intent.outcome === "sent" ? (
+                  <Button variant="ghost" onPress={() => router.replace(`/token/${tokenOut.chainId}/${tokenOut.address}`)}>
+                    <Text className="text-foreground">{t("ticket.viewToken", { symbol: tokenOut.symbol })}</Text>
+                  </Button>
+                ) : null}
+              </>
             ) : null
           }
         />
@@ -208,6 +286,9 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
   } else if (visible === "review" && intent) {
     const blocking = intent.blocking;
     const fix = blocking ? fixFor(blocking) : undefined;
+    const ready = !blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
+    const resetKey = `${intent.version}:${tokenIn.address}:${tokenOut.address}:${value}:${foreground}`;
+    const slideLabel = prefill.buy ? t("ticket.slideBuy") : prefill.sell ? t("ticket.slideSell") : t("ticket.slide");
     body = (
       <View className="flex-1">
         <ScrollView className="flex-1" contentContainerClassName="gap-4 px-5 pt-4 pb-4">
@@ -225,12 +306,18 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
           ) : null}
         </ScrollView>
         <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Button size="lg" disabled={Boolean(blocking) || !intent.draft || controller.busy} onPress={() => void controller.approve(prompt(intent.draft))}>
-            {blocking ? null : <Icon as={ScanFace} className="text-primary-foreground size-5" />}
-            <Text numberOfLines={2} className="text-center">
-              {blocking ? policyText(blocking, intent.network) : controller.busy ? t("swap.swapping") : approveLabel}
-            </Text>
-          </Button>
+          <SlideToConfirm
+            onConfirm={() => void controller.approve(prompt(intent.draft, intent.network))}
+            pendingLabel={t("ticket.confirming")}
+            resetKey={resetKey}
+            disabled={!ready || controller.busy}
+            hint={intent.draft ? prompt(intent.draft, intent.network) : undefined}
+            tone={prefill.sell ? "short" : prefill.buy ? "long" : "primary"}
+            rtl={rtl}
+            onHaptic={(kind) => tapFeedback(kind === "arm" ? "selection" : "light")}
+          >
+            {blocking ? policyText(blocking, intent.network) : controller.busy ? t("ticket.refreshing") : slideLabel}
+          </SlideToConfirm>
           <Button
             variant="ghost"
             disabled={controller.busy}
@@ -245,49 +332,67 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
       </View>
     );
   } else {
-    const balanceIn = balances?.[tokenIn];
-    const balanceOut = balances?.[tokenOut];
-    const base = baseFromCanonical(value, tokenIn);
+    const base = baseUnits(value, tokenIn.decimals);
     const cta =
       base === undefined || base === ZERO
-        ? { label: t("send.enterAmount"), enabled: false }
+        ? { label: t("ticket.needAmount"), enabled: false }
         : balanceIn !== undefined && base > balanceIn
-          ? { label: t("send.notEnough", { asset: tokenIn }), enabled: false }
+          ? { label: t("ticket.notEnough", { symbol: tokenIn.symbol }), enabled: false }
           : { label: t("swap.review"), enabled: true };
     const flip = () => {
-      setFrom(tokenOut);
-      if (baseFromCanonical(value, tokenOut) === undefined && value) setValue("");
+      setTokenIn(tokenOut);
+      setTokenOut(tokenIn);
+      if (value && baseUnits(value, tokenOut.decimals) === undefined) setValue("");
+      tapFeedback("selection");
     };
+    const share = (divisor: bigint) => balanceIn !== undefined && setValue(canonical(balanceIn / divisor, tokenIn.decimals));
+    const tokenButton = (token: TicketToken, side: "in" | "out") => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${side === "in" ? t("ticket.pay") : t("ticket.get")}: ${token.symbol}`}
+        onPress={() => setPicker(side)}
+        className="bg-secondary active:bg-muted flex-row items-center gap-2 rounded-full py-1.5 ps-1.5 pe-3"
+      >
+        <TokenMark token={token} size={MARK} />
+        <Text className="text-foreground text-base font-semibold">{token.symbol}</Text>
+        <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+      </Pressable>
+    );
     body = (
       <View className="flex-1">
         <View className="flex-1 gap-4 px-5 pt-4">
           <View className="bg-card border-border gap-3 rounded-3xl border p-4">
             <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-muted-foreground text-sm">{t("swap.youPay")}</Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="text-muted-foreground text-xs">{balanceIn !== undefined ? t("send.available", { amount: money(tokenIn, balanceIn.toString()) }) : " "}</Text>
-                {balanceIn !== undefined && balanceIn > ZERO ? (
-                  <Pressable accessibilityRole="button" onPress={() => setValue(canonicalFromBase(balanceIn, tokenIn))} className="bg-muted active:bg-secondary rounded-full px-3 py-1">
-                    <Text className="text-foreground text-xs font-semibold">{t("send.max")}</Text>
-                  </Pressable>
-                ) : null}
-              </View>
+              <Text className="text-muted-foreground text-sm">{t("ticket.pay")}</Text>
+              <Text className="text-muted-foreground text-xs">{balanceIn !== undefined ? t("ticket.balance", { amount: tokenAmount(balanceIn.toString(), tokenIn.decimals, tokenIn.symbol, locale) }) : " "}</Text>
             </View>
             <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
-              <Mark entity={tokenIn === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={MARK} />
+              {tokenButton(tokenIn, "in")}
               <Text
                 accessibilityLiveRegion="polite"
-                accessibilityLabel={`${value || "0"} ${tokenIn}`}
+                accessibilityLabel={`${value || "0"} ${tokenIn.symbol}`}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={TICKET_MIN_SCALE}
-                className={cn("font-display flex-1 font-bold", value ? "text-foreground" : "text-muted-foreground")}
+                className={cn("font-display flex-1 text-right font-bold", value ? "text-foreground" : "text-muted-foreground")}
                 style={{ fontSize: TICKET_SIZE, lineHeight: TICKET_LINE_HEIGHT, fontVariant: ["tabular-nums"] }}
               >
                 {displayAmount(value, locale)}
               </Text>
-              <Text className="font-display text-muted-foreground text-xl font-semibold">{tokenIn}</Text>
             </View>
+            {balanceIn !== undefined && balanceIn > ZERO ? (
+              <View className="flex-row justify-end gap-2">
+                {[
+                  { label: t("ticket.quarter"), divisor: QUARTER },
+                  { label: t("ticket.half"), divisor: HALF },
+                  { label: t("ticket.max"), divisor: 1n },
+                ].map((chip) => (
+                  <Pressable key={chip.label} accessibilityRole="button" onPress={() => share(chip.divisor)} className="bg-muted active:bg-secondary rounded-full px-3 py-1">
+                    <Text className="text-foreground text-xs font-semibold">{chip.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
             <View className="flex-row items-center gap-3">
               <View className="bg-border h-px flex-1" />
               <Pressable
@@ -301,20 +406,16 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
               </Pressable>
               <View className="bg-border h-px flex-1" />
             </View>
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("swap.youGet")}</Text>
             <View className="flex-row items-center justify-between gap-3">
-              <View className="flex-row items-center gap-3">
-                <Mark entity={tokenOut === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={MARK} />
-                <Text className="font-display text-foreground text-xl font-semibold">{tokenOut}</Text>
-              </View>
-              {balanceOut !== undefined ? <Amount className="text-muted-foreground text-xs">{t("send.available", { amount: money(tokenOut, balanceOut.toString()) })}</Amount> : null}
+              <Text className="text-muted-foreground text-sm">{t("ticket.get")}</Text>
+              {tokenButton(tokenOut, "out")}
             </View>
           </View>
         </View>
         <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => setValue(applyKey(value, key, decimalsOf(tokenIn)))} />
+          <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => setValue(applyKey(value, key, tokenIn.decimals))} />
           <Button size="lg" disabled={!cta.enabled || creating || controller.busy} onPress={() => void review()}>
-            <Text>{creating || controller.busy ? t("common.loading") : cta.label}</Text>
+            <Text>{creating || controller.busy ? t("ticket.quoting") : cta.label}</Text>
           </Button>
         </View>
       </View>
@@ -327,6 +428,25 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
       <Animated.View key={visible} entering={enter} exiting={exit} className="flex-1">
         {body}
       </Animated.View>
+      <AssetPickerSheet
+        open={picker === "in"}
+        onClose={() => setPicker(undefined)}
+        title={t("assets.pickerPay")}
+        mode="held"
+        selected={tokenIn.address.toLowerCase()}
+        onSelect={choose("in")}
+        unavailable={(token) => (token.status === "impersonator" ? t("tokenPage.n_blocked") : undefined)}
+        onAddMoney={fund.open}
+      />
+      <AssetPickerSheet
+        open={picker === "out"}
+        onClose={() => setPicker(undefined)}
+        title={t("assets.pickerGet")}
+        mode="any"
+        selected={tokenOut.address.toLowerCase()}
+        onSelect={choose("out")}
+        unavailable={(token) => (token.status === "impersonator" ? t("tokenPage.n_blocked") : testnet && token.kind !== "dollar" && token.kind !== "fiat" ? t("tokenPage.n_mainnet_only") : undefined)}
+      />
     </View>
   );
 }

@@ -2,6 +2,7 @@
 // Testnet). Tests that never earn get `noEarn`. The vault list is cached for a minute per network.
 import type { Address, PublicClient } from "viem";
 
+import { EARN_LIQUIDITY } from "@kawase/config";
 import type { ApiEnv } from "@kawase/env";
 import {
   exploreVaults,
@@ -34,7 +35,7 @@ export function appKitEarn(env: ApiEnv): EarnEngine {
     vaults: async (network) => {
       const hit = cache.get(network.id);
       if (hit && Date.now() - hit.at < VAULTS_CACHE_MS) return hit.vaults;
-      const vaults = await exploreVaults(network, key(network));
+      const vaults = await exploreVaults(network, key(network), EARN_LIQUIDITY);
       cache.set(network.id, { at: Date.now(), vaults });
       return vaults;
     },

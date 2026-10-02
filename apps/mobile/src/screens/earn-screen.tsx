@@ -93,6 +93,9 @@ export function EarnScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
 
   const usdc = wallet?.networks[network] ? BigInt(wallet.networks[network]!.usdcBalance) : undefined;
+  // Vaults that could not give a deposit back now are not offered (gaps.md G1); positions in them stay listed above.
+  const depositable = (overview.vaults ?? []).filter((entry) => entry.liquidity !== "stuck");
+  const stuckCount = (overview.vaults?.length ?? 0) - depositable.length;
   const position = vault ? overview.positions.find((entry) => entry.vault.toLowerCase() === vault.address.toLowerCase()) : undefined;
   const intent = controller.intent;
   const settled = intent && (isIntentMoving(intent) || isIntentFinished(intent));
@@ -397,14 +400,17 @@ export function EarnScreen() {
                 <Skeleton key={index} className="rounded-2xl" style={{ height: SKELETON_HEIGHT }} />
               ))}
             </View>
-          ) : overview.vaults.length === 0 ? (
+          ) : depositable.length === 0 ? (
             <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("earn.noVaults")}</Text>
           ) : (
-            <ListGroup>
-              {overview.vaults.map((entry) => (
-                <VaultRow key={entry.address} vault={entry} network={network} onPress={() => choose(entry, "deposit")} />
-              ))}
-            </ListGroup>
+            <>
+              <ListGroup>
+                {depositable.map((entry) => (
+                  <VaultRow key={entry.address} vault={entry} network={network} onPress={() => choose(entry, "deposit")} />
+                ))}
+              </ListGroup>
+              {stuckCount > 0 ? <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("earn.stuckHidden", { count: stuckCount })}</Text> : null}
+            </>
           )}
         </View>
       </ScrollView>

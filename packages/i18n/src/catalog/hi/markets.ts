@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "मार्केट",
+  title: "मार्केट",
+  search: "टोकन खोजें",
+  trending: "ट्रेंडिंग",
+  meme: "मीम",
+  perps: "लॉन्ग/शॉर्ट",
+  fx: "स्टॉक और विदेशी मुद्रा",
+  new: "नए",
+  hot: "सबसे गर्म",
+  heatmap: "हीटमैप",
+  vol: "वॉल्यूम {{value}}",
+  liq: "लिक्विडिटी {{value}}",
+  mcap: "कैप {{value}}",
+  testnetTitle: "मार्केट मेननेट पर हैं",
+  testnetBody: "टेस्ट पैसे से सिर्फ़ USDC और EURC की अदला-बदली होती है। असली मार्केट देखने के लिए मेननेट पर जाएँ।",
+  switchToMainnet: "मेननेट पर जाएँ",
+  perpsBody: "Arc पर लॉन्ग और शॉर्ट बन रहा है: पहले Aave के ज़रिए cirBTC, WETH और EURC।",
+  empty: "अभी यहाँ कुछ नहीं",
+  loadFailed: "मार्केट लोड नहीं हो सके।",
+  updated: "{{time}} पर अपडेट",
+  stale: "{{time}} के आख़िरी दाम दिखा रहे हैं",
+  recentSearches: "हाल की खोजें",
+  segmentsLabel: "मार्केट के हिस्से",
+};
