@@ -17,3 +17,7 @@ export const PAYOUT_LINES_MAX = 50;
 export const PAYOUT_GAS_BASE = 120_000n;
 export const PAYOUT_GAS_PER_LINE = 60_000n;
 export const PAYROLL_PAYEES_MAX = 20;
+/** Due-date choices on a new invoice (days). */
+export const INVOICE_DUE_CHOICES = [7, 14, 30] as const;
+/** Payroll days offered (1–28, so every month has them). */
+export const PAYROLL_MONTHDAYS = [1, 15, 28] as const;

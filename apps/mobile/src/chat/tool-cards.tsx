@@ -75,6 +75,7 @@ import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
+import { InvoiceCard } from "./invoice-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
 
@@ -575,6 +576,7 @@ const LOADING_LABELS: Record<string, string> = {
   buy_service: "market.loadingBuy",
   get_agent_wallet: "market.loadingWallet",
   top_up_agent_wallet: "market.loadingWallet",
+  create_invoice: "business.loadingInvoice",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -661,6 +663,8 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "create_invoice":
+      return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
     default:
       return null;
   }
