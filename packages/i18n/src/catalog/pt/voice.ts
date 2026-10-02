@@ -10,6 +10,7 @@ export const voice: Catalog["voice"] = {
   speaking: "Falando",
   failed: "A voz não iniciou. Tente de novo ou digite.",
   micDenied: "A Kawase não te ouve: permita o microfone nos Ajustes.",
+  micDeniedWeb: "A Kawase não te ouve: permita o microfone para este site no seu navegador.",
   openSettings: "Abrir Ajustes",
   mute: "Silenciar",
   unmute: "Ativar microfone",
