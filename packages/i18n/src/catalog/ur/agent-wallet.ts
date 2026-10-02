@@ -38,6 +38,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   failed: "ایجنٹ والیٹ لوڈ نہیں ہو سکا۔",
   moveTopUp: "ٹاپ اپ",
   moveDeposit: "ادائیگی کے لیے تیار کیا گیا",
+  moveRefill: "دستیاب رقم میں واپس لایا گیا",
   moveReturn: "آپ کے والیٹ میں واپس",
   pending: "زیرِ کارروائی",
   failedRow: "ناکام",

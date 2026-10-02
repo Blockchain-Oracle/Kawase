@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS } from "@kawase/config";
+import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -67,6 +67,14 @@ import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
+import { auditWrites } from "./audit/middleware";
+import { InvoiceService } from "./business/invoices";
+import { PayoutService } from "./business/payouts";
+import { PayrollService } from "./business/payroll";
+import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
+import { PrivacyService } from "./history/privacy";
+import { historyRoutes, privacyRoutes } from "./history/routes";
+import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
@@ -239,6 +247,7 @@ export function createApp(deps: AppDeps) {
   app.use("*", general.middleware);
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
+  app.use("*", auditWrites(audit));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -276,9 +285,22 @@ export function createApp(deps: AppDeps) {
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
+  const payroll = new PayrollService(deps.db, automations, audit);
+  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  app.route("/invoices/public", publicInvoiceRoutes(invoices));
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  const privacy = new PrivacyService(deps.db, audit, deps.log);
+  if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
+  app.route("/history", historyRoutes(history));
+  app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
     marketplace,
+    invoices,
+    history,
     db: deps.db,
     chains: deps.chains,
     wallets,

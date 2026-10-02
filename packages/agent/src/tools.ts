@@ -31,6 +31,8 @@ const SERVICE_QUERY_MAX = 120;
 const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
+const INVOICE_DUE_MAX = 365;
+const REPORT_DAYS_MAX = 31;
 
 export function buildTools(context: AgentContext) {
   return {
@@ -374,6 +376,26 @@ export function buildTools(context: AgentContext) {
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot, only if they said"),
       }),
       execute: async (input) => context.proposeAgentTopUp(input),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    create_invoice: tool({
+      description:
+        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\"). Pass the client's name as said, the total as digits with a dot, the currency (USDC unless they said euros/EURC), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link.",
+      inputSchema: z.object({
+        client: z.string().min(1).max(RECIPIENT_MAX),
+        amount: z.string().regex(/^\d+(\.\d+)?$/),
+        asset: z.enum(["USDC", "EURC"]).optional(),
+        description: z.string().min(1).max(NOTE_MAX),
+        dueInDays: z.number().int().min(0).max(INVOICE_DUE_MAX).optional(),
+      }),
+      execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    get_report: tool({
+      description:
+        "The person's report on the active network for the last week (or the days they say, up to 31): money received and sent, swaps, bridges, earn moves, what the agent spent on services, automations that ran or skipped, invoices paid. Use it for 'how did I do this week?', 'what did I spend?', 'weekly summary'.",
+      inputSchema: z.object({ days: z.number().int().min(1).max(REPORT_DAYS_MAX).optional() }),
+      execute: async (input) => context.report(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
   };

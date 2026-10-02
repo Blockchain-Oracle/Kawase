@@ -38,6 +38,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   failed: "تعذّر تحميل محفظة الوكيل.",
   moveTopUp: "تعبئة",
   moveDeposit: "جُهّز للدفع",
+  moveRefill: "أُعيد إلى الرصيد المتاح",
   moveReturn: "أُعيد إلى محفظتك",
   pending: "قيد التنفيذ",
   failedRow: "فشل",

@@ -85,7 +85,7 @@ export const marketplacePurchases = pgTable(
   ],
 );
 
-export const agentMoveKindEnum = pgEnum("agent_move_kind", ["top_up", "deposit", "return"]);
+export const agentMoveKindEnum = pgEnum("agent_move_kind", ["top_up", "deposit", "return", "refill"]);
 export const agentMoveStatusEnum = pgEnum("agent_move_status", ["pending", "confirmed", "failed"]);
 
 /** Money into or out of the agent wallet: top-ups under the grant, Gateway deposits, returns to the person. */

@@ -6,23 +6,28 @@
 // Rows are kept per network, so a switch never relabels another network's. Automations and "needs you" join the
 // filters when those stages ship (8/9); Kawase's own decision record per row arrives with Stage 12.
 import { useFocusEffect } from "expo-router";
+import { Download } from "lucide-react-native";
 import * as React from "react";
 import { Linking, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { ActivityItem } from "@kawase/api-client";
+import type { ActivityItem, ReportView } from "@kawase/api-client";
 import { CoinStack } from "@kawase/ui-native/components/art/coin-stack";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { Button } from "@kawase/ui-native/components/ui/button";
+import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { ActivityRow, ActivityRowSkeleton } from "@/activity/activity-row";
 import { ReceiptSheet } from "@/activity/receipt-sheet";
 import { useDockClearance } from "@/dock/use-dock-clearance";
+import { ExportSheet } from "@/history/export-sheet";
+import { ReportCard } from "@/history/report-card";
+import { api } from "@/session/api";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -47,11 +52,16 @@ export function ActivityScreen() {
   const [filter, setFilter] = React.useState<Filter>("all");
   const [open, setOpen] = React.useState<ActivityItem>();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [exporting, setExporting] = React.useState(false);
+  const [report, setReport] = React.useState<ReportView>();
+  const account = Boolean(user && !user.isGuest);
 
   useFocusEffect(
     React.useCallback(() => {
       void activity.refresh();
-    }, [activity.refresh]),
+      // The week's report sits above the list (signed in only); a failure just leaves it out.
+      if (account) void api.history.report(network).then((result) => setReport(result.report)).catch(() => undefined);
+    }, [activity.refresh, account, network]),
   );
 
   const items = activity.items.filter((item) => filter === "all" || item.direction === filter);
@@ -74,7 +84,16 @@ export function ActivityScreen() {
         contentContainerStyle={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void pull()} tintColor={colors["muted-foreground"]} />}
       >
-        <Text className="font-display text-foreground text-2xl font-bold">{t("activity.title")}</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="font-display text-foreground text-2xl font-bold">{t("activity.title")}</Text>
+          {account ? (
+            <Button size="sm" variant="secondary" onPress={() => setExporting(true)}>
+              <Icon as={Download} className="size-4" />
+              <Text>{t("history.export")}</Text>
+            </Button>
+          ) : null}
+        </View>
+        {report ? <ReportCard report={report} /> : null}
         <SegmentedControl
           label={t("activity.title")}
           value={filter}
@@ -130,6 +149,7 @@ export function ActivityScreen() {
         ) : null}
       </ScrollView>
       <ReceiptSheet item={open} onClose={() => setOpen(undefined)} onContactSaved={() => void activity.refresh()} />
+      {account ? <ExportSheet open={exporting} onClose={() => setExporting(false)} network={network} /> : null}
     </View>
   );
 }

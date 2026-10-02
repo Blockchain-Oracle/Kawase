@@ -11,7 +11,9 @@ import {
   ArrowUpRight,
   AudioLines,
   CalendarClock,
+  CandlestickChart,
   Copy,
+  CreditCard,
   Droplets,
   ExternalLink,
   HandCoins,
@@ -81,6 +83,9 @@ import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { OnrampBuyCard } from "./buy-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
+import { InvoiceCard } from "./invoice-card";
+import { ReportCard } from "@/history/report-card";
+import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
 
@@ -295,6 +300,8 @@ const CAPABILITY_ICON: Record<string, LucideIcon> = {
   voice: AudioLines,
   faucet: Droplets,
   payment_links: Link2,
+  margin: CandlestickChart,
+  buy: CreditCard,
 };
 /** How many tiles show before "See all": three rows of two. */
 const CAPABILITY_PREVIEW = 6;
@@ -582,6 +589,8 @@ const LOADING_LABELS: Record<string, string> = {
   buy_service: "market.loadingBuy",
   get_agent_wallet: "market.loadingWallet",
   top_up_agent_wallet: "market.loadingWallet",
+  create_invoice: "business.loadingInvoice",
+  get_report: "report.loading",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -678,6 +687,16 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "create_invoice":
+      return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
+    case "get_report": {
+      const report = (part.output as { report: ReportView | null }).report;
+      return report ? (
+        <AgentCard eyebrow={`${t("report.title")} · ${report.network === "testnet" ? t("network.arcTestnet") : t("network.arc")}`}>
+          <ReportCard report={report} compact />
+        </AgentCard>
+      ) : null;
+    }
     default:
       return null;
   }
