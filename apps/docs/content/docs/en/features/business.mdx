@@ -12,8 +12,9 @@ on every invoice.
 
 ## Invoices
 
-"Invoice Acme 500 USDC for the logo", or **New invoice**: the client, the currency (USDC or EURC), line items, due in 7, 14
-or 30 days, and a note, with a live total. Each invoice gets a number (`INV-0001`, …) and:
+"Invoice Acme 500 USDC for the logo", or **New invoice**: the client, the token (USDC, EURC, any token you hold, or any
+token on Arc by name or address; look-alikes are refused), line items, due in 7, 14 or 30 days, and a note, with a live
+total. Each invoice gets a number (`INV-0001`, …) and:
 
 - a **payment link** (`/r/…`) to send to the client;
 - a **PDF** you can share;
@@ -29,7 +30,8 @@ is paid and what is left, and lets you send the link again, share the PDF or can
 
 ## Payouts
 
-Pay many people at once: paste or type "who, amount" lines (a CSV works), for contacts, @handles or addresses. Each line is
+Pay many people at once, in any token: paste or type "who, amount" lines (a CSV works), for contacts, @handles or
+addresses. Each line is
 **checked like a send** (your own address, a token contract, a look-alike, an address on hold) and your balance is
 checked. Then **one Face ID** signs **one transaction** that pays everyone: all or nothing. Past payouts list their
 transaction.
@@ -41,8 +43,9 @@ payee gets their own grant on chain, pinned to them and to their amount per mont
 more. Pause, resume or cancel the whole payroll. If a payee's saved address changes, only that line pauses until you
 check it; every other line still runs. Each line has its own id, so a run never pays a line twice.
 
-## Not yet
+## Reminders
 
-Invoices are in USDC or EURC only, and reminders by email aren't sent yet.
+Kawase reminds you the day before an invoice is due, and once when it is overdue: in the inbox and by push, and the
+overdue one also by email.
 
 <ScopeList ids="request" />

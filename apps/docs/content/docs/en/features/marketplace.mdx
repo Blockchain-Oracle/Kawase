@@ -17,7 +17,8 @@ Purchases never come out of your main wallet directly. Kawase has a separate **a
 spend what you put in:
 
 - **Top up** from your Kawase wallet with a preset. The first top-up signs a **capped marketplace grant** with Face ID;
-  later top-ups need no prompt, inside that cap.
+  later top-ups need no prompt, inside that cap. Or top up with **Apple Pay or a card** through Circle's Onramp, straight
+  into the agent wallet.
 - Its balance is split between **Circle Gateway** (ready for nanopayments, which most sellers take) and a part **on hand**
   for sellers that take plain USDC (EIP-3009). When a plain-USDC purchase needs more on hand, Kawase refills it from
   Gateway itself.
@@ -38,7 +39,8 @@ Tightening applies at once; loosening asks for Face ID. A refusal names the rule
 ## Every purchase receipted
 
 Chat shows what Kawase found (the seller's mark, what it returns and the price) and, after paying, a receipt: "Paid 0.002
-USDC to …". The seller's answer is labelled **unchecked**. Kawase treats outside text as data, never as instructions, and
+USDC to …". The seller's answer is labelled **unchecked**. x402 has no refund standard yet: if a call fails after payment,
+the receipt says the seller kept it; a payment that Circle reports as failed is marked **not charged**. Kawase treats outside text as data, never as instructions, and
 says so when an answer tries to tell it what to do.
 
 ## Networks

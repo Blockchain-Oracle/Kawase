@@ -23,8 +23,9 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "a payment request with a shareable link in any token on Arc; marked paid by a Kawase send or a matching plain transfer",
       "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll as a scheduled automation",
+      "invoices and payouts in any token on Arc (a verified symbol or an exact address; look-alikes refused), and invoice reminders: the day before it is due and once overdue (inbox and push; overdue also by email)",
     ],
-    notYet: ["invoice reminders by email", "invoices in tokens other than USDC and EURC"],
+    notYet: [],
   },
   swap: {
     supports: [
@@ -48,7 +49,6 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     notYet: [
       "Apple Pay and Google Pay on mainnet until Circle finishes its business check of Kawase's domain (the checkout shows which methods it offers)",
       "selling to a bank account (cash out goes through an exchange that takes Arc deposits)",
-      "buying straight into the agent wallet",
     ],
   },
   bridge: {
@@ -99,10 +99,10 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "finding paid services in Circle's x402 catalog on Arc (web search and news, prediction-market odds, DefiLlama yields and prices, stock prices, data enrichment) and paying for one call from the person's own agent wallet, within a daily budget and a per-call cap they set",
       "both payment rails: Circle Gateway nanopayments (most listings) and plain EIP-3009 USDC",
-      "the Agent wallet page: balance (in Gateway and on hand), top up from the Kawase wallet under a capped grant, return to the wallet, budget, categories, blocked sellers, history",
+      "the Agent wallet page: balance (in Gateway and on hand), top up from the Kawase wallet under a capped grant or with Apple Pay or a card through Circle's Onramp, return to the wallet, budget, categories, blocked sellers, history",
       "on testnet, Kawase's own demo seller (Circle's catalog has no testnet listings)",
     ],
-    notYet: ["buying with Apple Pay straight into the agent wallet", "refunds from sellers", "subscriptions or streaming payments"],
+    notYet: ["refunds from sellers (x402 has no refund standard yet; a receipt says so when a seller kept a payment for a failed call)", "subscriptions or streaming payments"],
   },
   voice: {
     supports: [

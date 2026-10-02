@@ -1,18 +1,18 @@
 {
   "nav": {
     "webApp": "Abrir la aplicación web",
-    "showcase": "Presentación",
+    "showcase": "Muestra",
     "docs": "Documentación"
   },
   "home": {
     "eyebrow": "Documentación de Kawase",
     "title": "Dinero que se mueve cuando hablas",
-    "body": "Kawase es una aplicación de dinero con IA para todo lo que puedes hacer en Arc. Pregunta en tu idioma, por voz o por texto: la aplicación propone, tú apruebas y la cadena hace cumplir tus límites.",
-    "start": "Comenzar",
+    "body": "Kawase es una aplicación de dinero con IA para todo lo que puedes hacer en Arc. Pregunta en tu idioma, por voz o por texto: propone, tú apruebas y la cadena hace cumplir tus límites.",
+    "start": "Primeros pasos",
     "safety": "Cómo te mantiene a salvo",
     "cards": {
       "gettingStarted": {
-        "title": "Comenzar",
+        "title": "Primeros pasos",
         "body": "Abre la aplicación web como invitado en segundos o instálala en iPhone o Android."
       },
       "safety": {
@@ -21,11 +21,11 @@
       },
       "availability": {
         "title": "Qué funciona hoy",
-        "body": "Todas las funciones disponibles en la red principal y la red de pruebas, generadas a partir del registro de la aplicación."
+        "body": "Todas las funciones disponibles en la Red principal y la Red de pruebas, generadas a partir del registro de la propia aplicación."
       },
       "architecture": {
         "title": "Arquitectura",
-        "body": "Cómo encajan el chat, la voz, el motor de políticas y Arc, para jueces y desarrolladores."
+        "body": "Cómo se conectan el chat, la Voz, el motor de políticas y Arc, para jueces y desarrolladores."
       }
     }
   },
@@ -33,7 +33,7 @@
     "capability": "Función",
     "mainnet": "Arc Red principal",
     "testnet": "Arc Red de pruebas",
-    "caption": "Se genera al crear el sitio, a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que todavía no se ha publicado."
+    "caption": "Se genera al crear el sitio a partir del registro de funciones que consultan la aplicación y el agente. \"Próximamente\" significa que aún no está disponible."
   },
   "state": {
     "available": "Disponible",
@@ -42,11 +42,11 @@
   },
   "scope": {
     "supports": "Lo que funciona hoy",
-    "notYet": "Todavía no"
+    "notYet": "Aún no"
   },
   "areas": {
     "tokens": "Cualquier token en Arc",
-    "meme_coins": "Memecoins",
+    "meme_coins": "Meme coins",
     "perps": "Largo y corto (perps)",
     "buy": "Comprar con Apple Pay o tarjeta",
     "borrow": "Pedir prestado",
@@ -62,8 +62,8 @@
     "weekly": "Total por semana",
     "monthly": "Total por mes",
     "perRecipientWeekly": "A una persona por semana",
-    "firstTime": "Primer pago a una dirección nueva: Face ID para importes superiores",
-    "caption": "Valores predeterminados de la propia configuración de la aplicación. Los límites de la red de pruebas son más altos porque no hay dinero real en riesgo."
+    "firstTime": "Primer pago a una dirección nueva: Face ID a partir de este importe",
+    "caption": "Valores predeterminados de la configuración de la propia aplicación. Los límites de la Red de pruebas son más altos porque no hay Dinero real en riesgo."
   },
   "status": {
     "label": "Estado"
@@ -90,7 +90,7 @@
     "Default(type table)": "Predeterminado",
     "Edit on GitHub(edit page)": "Editar en GitHub",
     "Hide Sidebar(sidebar)": "Ocultar barra lateral",
-    "Last updated on(page footer)": "Última actualización",
+    "Last updated on(page footer)": "Última actualización:",
     "Layout Tab(layout tab trigger)": "Pestaña de diseño",
     "Light(theme switcher)(aria-label)": "Claro",
     "Next Page(pagination)": "Página siguiente",
@@ -110,15 +110,15 @@
     "Parameters(type table)": "Parámetros",
     "Previous Page(pagination)": "Página anterior",
     "Prop(type table)": "Propiedad",
-    "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre ella.",
-    "Returns(type table)": "Devuelve",
+    "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre ello.",
+    "Returns(type table)": "Valores devueltos",
     "Search(search dialog)": "Buscar",
     "Search(search trigger)": "Buscar",
     "Show Sidebar(sidebar)": "Mostrar barra lateral",
     "System(theme switcher)(aria-label)": "Sistema",
-    "Table of Contents(inline table of contents)": "Tabla de contenido",
+    "Table of Contents(inline table of contents)": "Índice",
     "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Es posible que la página que buscas se haya eliminado, haya cambiado de nombre o no esté disponible temporalmente.",
-    "Toggle Menu(home layout header)(aria-label)": "Mostrar u ocultar menú",
+    "Toggle Menu(home layout header)(aria-label)": "Mostrar u ocultar el menú",
     "Toggle Theme(theme switcher)(aria-label)": "Cambiar tema",
     "Type(type table)": "Tipo",
     "View as Markdown(page actions)": "Ver como Markdown"

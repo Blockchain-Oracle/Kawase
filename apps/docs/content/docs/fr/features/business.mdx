@@ -1,49 +1,52 @@
 ---
-title: "Entreprise"
-description: "Des factures avec un lien de paiement, un PDF et une référence sur la blockchain qui les marque comme payées ; des paiements groupés signés une seule fois ; une paie plafonnée sur la blockchain pour chaque personne."
-sourceHash: 853e9da7aa51cec7
+title: "Affaires"
+description: "Des factures avec un lien de paiement, un PDF et une référence on-chain qui les marque comme payées ; des paiements groupés signés une seule fois ; une paie plafonnée on-chain pour chaque personne."
+sourceHash: 641b91dcea90d194
 ---
 
 <Status ids="request" />
 
 <Marks names="usdc eurc arc" />
 
-Réglages → **Entreprise** transforme Kawase en un outil pour les petites entreprises. Votre **profil d'entreprise** (nom et coordonnées) est
-imprimé sur chaque facture.
+**Paramètres** → **Affaires** transforme Kawase en un outil simple pour les petites entreprises. Votre **profil d'entreprise** (nom et coordonnées) est imprimé
+sur chaque facture.
 
 ## Factures
 
-« Facturer 500 USDC à Acme pour le logo » ou **Nouvelle facture** : le client, la devise (USDC ou EURC), les articles, une échéance dans 7, 14
-ou 30 jours et une note, avec un total mis à jour en direct. Chaque facture reçoit un numéro (`INV-0001`, …) et :
+« Facturer 500 USDC à Acme pour le logo » ou **Nouvelle facture** : le client, le jeton (USDC, EURC, n'importe quel
+jeton que vous détenez, ou n'importe quel jeton sur Arc indiqué par son nom ou son adresse ; les imitations sont refusées), les lignes, une
+échéance à 7, 14 ou 30 jours et une note, avec un total mis à jour en direct. Chaque facture reçoit un numéro (`INV-0001`, …) et :
 
 - un **lien de paiement** (`/r/…`) à envoyer au client ;
 - un **PDF** à partager ;
-- une **référence sur la blockchain** pour le contrat **Memo** d'Arc. C'est un identifiant opaque : aucun nom ni montant n'est inscrit sur la blockchain.
+- une **référence on-chain** pour le contrat **Memo** d'Arc. C'est un identifiant opaque : aucun nom ni montant n'est inscrit on-chain.
 
-Le client ouvre le lien et voit la facture : votre entreprise, le numéro, les articles, la date d'échéance et ce qui a déjà
-été payé. Il peut payer avec Kawase ou, dans n'importe quel navigateur avec un portefeuille : **Payer avec votre portefeuille** bascule vers Arc (en ajoutant Arc si
-nécessaire) et envoie exactement le paiement indiqué sur la facture, avec sa référence.
+Le client ouvre le lien et voit la facture : votre entreprise, le numéro, les lignes, la date d'échéance et ce qui est déjà
+payé. Il peut payer avec Kawase ou depuis n'importe quel navigateur avec un portefeuille : **Payer avec votre portefeuille** bascule le paiement sur Arc (en ajoutant Arc si
+nécessaire) et envoie le montant exact indiqué sur la facture, avec sa référence.
 
 Kawase surveille Arc pour cette référence et enregistre chaque paiement comme **partiellement payé**, **payé** ou **trop payé**, avec sa
-transaction. Un envoi Kawase ou un transfert simple du montant exact via le lien est également pris en compte. La page de la facture affiche le total, le montant
-payé et le solde restant. Elle permet aussi de renvoyer le lien, de partager le PDF ou d'annuler.
+transaction. Un envoi Kawase ou un virement simple du montant exact effectué depuis le lien est également pris en compte. La page de la facture affiche le total, le montant
+payé et le reste à payer. Elle vous permet aussi de renvoyer le lien, de partager le PDF ou d'annuler.
 
 ## Paiements
 
-Payez plusieurs personnes à la fois : collez ou saisissez des lignes au format « qui, montant » (un fichier CSV fonctionne aussi), pour des contacts, des @handles ou des adresses. Chaque ligne est
-**vérifiée comme un envoi** (votre propre adresse, un contrat de jeton, une adresse qui lui ressemble, une adresse bloquée) et votre solde est
-vérifié. Ensuite, **une seule validation Face ID** signe **une seule transaction** qui paie tout le monde : tout est exécuté ou rien ne l'est. Les paiements précédents affichent leur
+Payez plusieurs personnes à la fois, avec n'importe quel jeton : collez ou saisissez des lignes au format « qui, montant » (un fichier CSV fonctionne), pour des contacts, des @handles ou
+des adresses. Chaque ligne est
+**vérifiée comme lors d'un envoi** (votre propre adresse, un contrat de jeton, une imitation, une adresse suspendue) et votre solde est
+vérifié. Ensuite, **un seul Face ID** signe **une seule transaction** qui paie tout le monde : tout ou rien. Les paiements précédents affichent leur
 transaction.
 
 ## Paie
 
-Donnez-lui un nom, choisissez le jour du mois et ajoutez les bénéficiaires. **Activer** signe la limite de chaque bénéficiaire avec **une seule validation Face ID** : chaque
-bénéficiaire reçoit sa propre autorisation sur la blockchain, rattachée à son identité et à son montant mensuel. Ainsi, une exécution ne peut jamais payer quelqu'un d'autre ou
-un montant supérieur. Mettez toute la paie en pause, reprenez-la ou annulez-la. Si l'adresse enregistrée d'un bénéficiaire change, seule cette ligne se met en pause jusqu'à ce que vous
-la vérifiiez ; toutes les autres continuent de fonctionner. Chaque ligne possède son propre identifiant, afin qu'une exécution ne paie jamais une ligne deux fois.
+Donnez-lui un nom, choisissez le jour du mois et ajoutez les bénéficiaires. **Activer** signe la limite de chaque bénéficiaire avec **un seul Face ID** : chaque
+bénéficiaire reçoit sa propre autorisation on-chain, liée à son identité et à son montant mensuel. Une exécution ne peut donc jamais payer une autre personne ou
+dépasser ce montant. Mettez toute la paie en pause, reprenez-la ou annulez-la. Si l'adresse enregistrée d'un bénéficiaire change, seule cette ligne est mise en pause jusqu'à ce que vous
+la vérifiiez ; toutes les autres continuent de fonctionner. Chaque ligne a son propre identifiant : une exécution ne paie donc jamais une ligne deux fois.
 
-## Pas encore disponible
+## Rappels
 
-Les factures sont uniquement en USDC ou en EURC, et les rappels par e-mail ne sont pas encore envoyés.
+Kawase vous rappelle la veille de l'échéance d'une facture, puis une seule fois lorsqu'elle est en retard : dans la boîte de réception et par notification push. Le
+rappel de retard est également envoyé par e-mail.
 
 <ScopeList ids="request" />

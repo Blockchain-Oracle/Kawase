@@ -1,49 +1,52 @@
 ---
-title: "Empresas"
-description: "Facturas con un enlace de pago, un PDF y una referencia en la cadena que las marca como pagadas; pagos por lotes firmados una sola vez; nóminas limitadas en la cadena por persona."
-sourceHash: 853e9da7aa51cec7
+title: "Negocios"
+description: "Facturas con un enlace de pago, un PDF y una referencia en cadena que las marca como pagadas; pagos por lotes firmados una sola vez; nóminas limitadas en cadena por persona."
+sourceHash: 641b91dcea90d194
 ---
 
 <Status ids="request" />
 
 <Marks names="usdc eurc arc" />
 
-Ajustes → **Empresa** convierte Kawase en una herramienta sencilla para pequeñas empresas. Tu **perfil de empresa** (nombre y datos) aparece
-en todas las facturas.
+Ajustes → **Negocios** convierte Kawase en una pequeña herramienta para empresas. Tu **perfil de negocio** (nombre y datos) aparece
+en cada factura.
 
 ## Facturas
 
-«Factura a Acme 500 USDC por el logo», o **Nueva factura**: el cliente, la moneda (USDC o EURC), los conceptos, el vencimiento en 7, 14
-o 30 días y una nota, con un total actualizado. Cada factura recibe un número (`INV-0001`, …) y:
+«Facturar 500 USDC a Acme por el logo» o **Nueva factura**: el cliente, el token (USDC, EURC, cualquier token que tengas o cualquier
+token de Arc por nombre o dirección; se rechazan las imitaciones), los conceptos, el vencimiento en 7, 14 o 30 días y una nota, con un
+total actualizado. Cada factura recibe un número (`INV-0001`, …) y:
 
 - un **enlace de pago** (`/r/…`) para enviárselo al cliente;
-- un **PDF** que puedes compartir;
-- una **referencia en la cadena** para el contrato **Memo** de Arc. Es un identificador opaco: no se envían nombres ni cantidades a la cadena.
+- un **PDF** para compartir;
+- una **referencia en cadena** para el contrato **Memo** de Arc. Es un identificador opaco: no se guardan nombres ni importes en la cadena.
 
-El cliente abre el enlace y ve la factura: tu empresa, el número, los conceptos, la fecha de vencimiento y lo que ya está
-pagado. Puede pagar con Kawase o desde cualquier navegador con una wallet: **Pagar con tu wallet** cambia la red a Arc (y añade Arc si
-hace falta) y envía el pago exacto que indica la factura, junto con su referencia.
+El cliente abre el enlace y ve la factura: tu negocio, el número, los conceptos, la fecha de vencimiento y lo que ya se ha
+pagado. Puede pagar con Kawase o desde cualquier navegador con una billetera: **Pagar con tu billetera** cambia a Arc (y añade Arc si
+hace falta) y envía el importe exacto de la factura con su referencia.
 
-Kawase busca esa referencia en Arc y registra cada pago como **parcialmente pagado**, **pagado** o **pagado de más**, junto con su
-transacción. Un envío de Kawase o una transferencia simple exacta a través del enlace también cuenta. La página de la factura muestra el total, lo que
-se ha pagado y lo que queda, y te permite volver a enviar el enlace, compartir el PDF o cancelar.
+Kawase supervisa Arc para detectar esa referencia y registra cada pago como **pagada parcialmente**, **pagada** o **pagada de más**, con su
+transacción. También cuentan un envío de Kawase o una transferencia normal exacta mediante el enlace. La página de la factura muestra el total, lo
+pagado y lo que falta, y te permite volver a enviar el enlace, compartir el PDF o cancelar.
 
 ## Pagos
 
-Paga a muchas personas a la vez: pega o escribe líneas con el formato «quién, cantidad» (también sirve un CSV), para contactos,
-@handles o direcciones. Cada línea se **comprueba como un envío** (tu propia dirección, un contrato de token, una dirección parecida, una
-dirección retenida) y se comprueba tu saldo. Después, **un Face ID** firma **una transacción** que paga a todos: todo o nada. Los pagos anteriores muestran su
+Paga a varias personas a la vez, con cualquier token: pega o escribe líneas con el formato «quién, importe» (también funciona un CSV), para
+Contactos, @handles o direcciones. Cada línea se
+**comprueba como un envío** (tu propia dirección, un contrato de token, una imitación, una dirección retenida) y se comprueba tu saldo.
+Después, **un Face ID** firma **una transacción** que paga a todos: todo o nada. Los pagos anteriores muestran su
 transacción.
 
 ## Nóminas
 
-Ponle un nombre, elige el día del mes y añade a los beneficiarios. **Activarla** firma el límite de cada beneficiario con **un Face ID**: cada
-beneficiario recibe su propia asignación en la cadena, vinculada a esa persona y a su cantidad mensual, para que una ejecución nunca pueda pagarle a otra persona ni
-pagar de más. Pausa, reanuda o cancela toda la nómina. Si cambia la dirección guardada de un beneficiario, solo esa línea se pausa hasta que
-la compruebes; las demás siguen funcionando. Cada línea tiene su propio identificador, para que una ejecución nunca pague una línea dos veces.
+Ponle un nombre, elige el día del mes y añade a los beneficiarios. **Activar** firma el límite de cada beneficiario con **un Face ID**: cada
+beneficiario recibe su propia asignación en cadena, vinculada a él y a su importe mensual, para que una ejecución nunca pueda pagar a otra persona ni
+un importe mayor. Pausa, reanuda o cancela toda la nómina. Si cambia la dirección guardada de un beneficiario, solo se pausa esa línea hasta que
+la revises; las demás siguen funcionando. Cada línea tiene su propio identificador, para que una ejecución nunca pague dos veces la misma línea.
 
-## Aún no disponible
+## Recordatorios
 
-Las facturas solo están disponibles en USDC o EURC, y todavía no se envían recordatorios por correo electrónico.
+Kawase te avisa el día anterior al vencimiento de una factura y una vez cuando ya ha vencido: en la bandeja de entrada y mediante una notificación
+push; la de vencimiento también llega por correo electrónico.
 
 <ScopeList ids="request" />

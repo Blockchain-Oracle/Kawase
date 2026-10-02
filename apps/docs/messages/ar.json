@@ -2,17 +2,17 @@
   "nav": {
     "webApp": "فتح تطبيق الويب",
     "showcase": "عرض توضيحي",
-    "docs": "الوثائق"
+    "docs": "المستندات"
   },
   "home": {
-    "eyebrow": "وثائق Kawase",
+    "eyebrow": "مستندات Kawase",
     "title": "أموال تتحرك عندما تتحدث",
-    "body": "Kawase هو تطبيق أموال بالذكاء الاصطناعي لكل ما يتعلق بـ Arc. اسأل بلغتك، بالصوت أو بالكتابة: يقترح التطبيق، وتوافق أنت، وتفرض الشبكة حدودك.",
-    "start": "البدء",
+    "body": "Kawase هو تطبيق أموال مدعوم بالذكاء الاصطناعي لكل ما هو موجود على Arc. اطلب بلغتك، صوتياً أو نصياً: يقترح التطبيق، وتوافق أنت، وتتولى الشبكة فرض حدودك.",
+    "start": "بدء الاستخدام",
     "safety": "كيف يحافظ على أمانك",
     "cards": {
       "gettingStarted": {
-        "title": "البدء",
+        "title": "بدء الاستخدام",
         "body": "افتح تطبيق الويب كضيف خلال ثوانٍ، أو ثبّته على iPhone أو Android."
       },
       "safety": {
@@ -21,11 +21,11 @@
       },
       "availability": {
         "title": "ما يعمل اليوم",
-        "body": "كل الإمكانات على الشبكة الرئيسية والشبكة التجريبية، والتي يتم إنشاؤها من سجل التطبيق نفسه."
+        "body": "كل الإمكانات على الشبكة الرئيسية والشبكة التجريبية، ويتم إنشاؤها من سجل التطبيق نفسه."
       },
       "architecture": {
         "title": "البنية",
-        "body": "كيف تتكامل المحادثة والصوت ومحرك السياسات وArc، للمحكّمين والمطوّرين."
+        "body": "كيف تتكامل المحادثة والصوت ومحرك السياسات وArc معاً، للمحكّمين والمطوّرين."
       }
     }
   },
@@ -33,7 +33,7 @@
     "capability": "الإمكانات",
     "mainnet": "الشبكة الرئيسية لـ Arc",
     "testnet": "الشبكة التجريبية لـ Arc",
-    "caption": "يتم إنشاؤها عند بناء الموقع من سجل الإمكانات الذي يقرأه التطبيق والوكيل. تعني \"قريباً\" أنها لم تُطلق بعد."
+    "caption": "يتم إنشاؤها عند بناء الموقع من سجل الإمكانات الذي يقرأه التطبيق والوكيل. تعني كلمة «قريباً» أن الإمكانية لم تُطلَق بعد."
   },
   "state": {
     "available": "متاح",
@@ -47,23 +47,23 @@
   "areas": {
     "tokens": "أي رمز على Arc",
     "meme_coins": "عملات الميم",
-    "perps": "شراء وبيع على المكشوف (perps)",
+    "perps": "شراء وبيع على المكشوف (العقود الدائمة)",
     "buy": "الشراء باستخدام Apple Pay أو البطاقة",
     "borrow": "الاقتراض",
     "withdraw": "السحب إلى أي مكان",
     "export_wallet": "تصدير محفظتك"
   },
   "limits": {
-    "rule": "الافتراضي",
+    "rule": "افتراضي",
     "mainnet": "الشبكة الرئيسية",
     "testnet": "الشبكة التجريبية",
-    "daily": "الحد اليومي: يُرسل دفعة واحدة، من دون طلب تأكيد",
+    "daily": "المخصص اليومي: يُرسل دفعة واحدة من دون طلب تأكيد",
     "perTransaction": "أكبر دفعة واحدة",
-    "weekly": "الإجمالي أسبوعياً",
-    "monthly": "الإجمالي شهرياً",
-    "perRecipientWeekly": "إلى شخص واحد أسبوعياً",
-    "firstTime": "الدفعة الأولى إلى عنوان جديد: يُطلب Face ID عند تجاوز الحد",
-    "caption": "الإعدادات الافتراضية مأخوذة من إعدادات التطبيق نفسه. حدود الشبكة التجريبية أعلى لأنه لا توجد أموال حقيقية معرّضة للخطر."
+    "weekly": "الإجمالي في الأسبوع",
+    "monthly": "الإجمالي في الشهر",
+    "perRecipientWeekly": "إلى شخص واحد في الأسبوع",
+    "firstTime": "أول دفعة إلى عنوان جديد: يلزم Face ID للمبالغ الأعلى",
+    "caption": "القيم الافتراضية مأخوذة من إعدادات التطبيق نفسه. حدود الشبكة التجريبية أعلى، لأنه لا توجد أموال حقيقية معرضة للخطر."
   },
   "status": {
     "label": "الحالة"
@@ -87,7 +87,7 @@
     "Copy Markdown(page actions)": "نسخ Markdown",
     "Copy Text(code block)(aria-label)": "نسخ النص",
     "Dark(theme switcher)(aria-label)": "داكن",
-    "Default(type table)": "الافتراضي",
+    "Default(type table)": "افتراضي",
     "Edit on GitHub(edit page)": "التعديل على GitHub",
     "Hide Sidebar(sidebar)": "إخفاء الشريط الجانبي",
     "Last updated on(page footer)": "آخر تحديث في",
@@ -107,11 +107,11 @@
     "Open in Scira AI(page actions)": "فتح في Scira AI",
     "Open(page actions)": "فتح",
     "Page Not Found(404 not found page)": "الصفحة غير موجودة",
-    "Parameters(type table)": "المعاملات",
+    "Parameters(type table)": "المعلمات",
     "Previous Page(pagination)": "الصفحة السابقة",
     "Prop(type table)": "الخاصية",
     "Read {url}, I want to ask questions about it.(page actions)": "اقرأ {url}، أريد طرح أسئلة عنه.",
-    "Returns(type table)": "القيم المُعادة",
+    "Returns(type table)": "القيم المرجعة",
     "Search(search dialog)": "بحث",
     "Search(search trigger)": "بحث",
     "Show Sidebar(sidebar)": "إظهار الشريط الجانبي",
@@ -121,6 +121,6 @@
     "Toggle Menu(home layout header)(aria-label)": "تبديل القائمة",
     "Toggle Theme(theme switcher)(aria-label)": "تبديل السمة",
     "Type(type table)": "النوع",
-    "View as Markdown(page actions)": "عرض بصيغة Markdown"
+    "View as Markdown(page actions)": "العرض بصيغة Markdown"
   }
 }
