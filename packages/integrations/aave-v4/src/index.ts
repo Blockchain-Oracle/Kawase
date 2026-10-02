@@ -179,8 +179,10 @@ export async function readAccount(client: PublicClient, spoke: Address, user: Ad
   return {
     reserves,
     healthFactor: data.healthFactor,
-    totalCollateralValue: data.totalCollateralValue,
-    totalDebtValue: data.totalDebtValueRay / RAY,
+    // The Spoke reports both in the oracle's 8-decimal USD scaled by WAD (debt by WAD and RAY): a $47,263 collateral
+    // reads 4.7263e30 (checked against a live account 10-02, where Σ value × factor ÷ debt equals its healthFactor).
+    totalCollateralValue: data.totalCollateralValue / WAD,
+    totalDebtValue: data.totalDebtValueRay / RAY / WAD,
     avgCollateralFactor: data.avgCollateralFactor,
     riskPremiumBps: Number(data.riskPremium),
   };
