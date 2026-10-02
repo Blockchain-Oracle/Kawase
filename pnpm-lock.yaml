@@ -637,6 +637,12 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
+      dotenv:
+        specifier: 'catalog:'
+        version: 18.0.4
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
