@@ -14,6 +14,8 @@ import { SuggestionService } from "../suggestions/service";
 import type { WalletService } from "../wallet/service";
 import type { BridgeService } from "../bridge/service";
 import type { MarginService } from "../margin/service";
+import type { InvoiceService } from "../business/invoices";
+import { PayCodeService } from "../paycodes/service";
 import { StatusService } from "../status/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
@@ -38,6 +40,7 @@ export function buildIntelligence(input: {
   bridges: BridgeService;
   chains: Chains;
   margin?: MarginService | undefined;
+  invoices?: InvoiceService | undefined;
 }): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
@@ -117,6 +120,10 @@ export function buildIntelligence(input: {
 
     async status() {
       return new StatusService(db, input.chains).view();
+    },
+
+    async payCode(code) {
+      return new PayCodeService(input.requests, input.invoices, undefined).resolve(user, code);
     },
 
     warn(error, what) {

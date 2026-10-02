@@ -9,6 +9,7 @@ import type {
   MemoryFact,
   MemoryToolOutput,
   MemoryUsed,
+  PayCodeView,
   SettingDiff,
   SettingId,
   StatusView,
@@ -44,6 +45,8 @@ export type IntelligenceContext = {
   settingDiff(input: { setting: SettingId; value: string; reason: string | null }): Promise<SettingDiff>;
   /** Whether what Kawase depends on answers now. */
   status(): Promise<StatusView>;
+  /** What a payment code (address, EIP-681 link, Kawase request or invoice link) means on the active network. */
+  payCode(code: string): Promise<PayCodeView>;
   /** Background work that failed after the person had their answer (logged, never shown). */
   warn(error: unknown, what: string): void;
 };

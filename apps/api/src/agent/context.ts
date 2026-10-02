@@ -119,7 +119,7 @@ export function buildAgentContext(input: {
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, threadId }),
-    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, invoices: input.invoices }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

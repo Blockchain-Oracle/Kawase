@@ -6,7 +6,7 @@
 // request is shown, so a slow read cannot replace a thread opened after it (Codex review R14).
 import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CloudOff, History, SquarePen } from "lucide-react-native";
+import { CloudOff, History, ScanLine, SquarePen } from "lucide-react-native";
 import * as React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,6 +24,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Conversation } from "@/chat/conversation";
 import { HistoryHitRow } from "@/chat/insight-cards";
 import { useHistorySearch } from "@/chat/use-history-search";
+import { ScanModal } from "@/scan/scan-modal";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -59,6 +60,8 @@ export function ChatScreen() {
   );
   // Every conversation's words are searched on the server; until it answers, the loaded titles stand in.
   const found = useHistorySearch(search);
+  // Scan to pay from chat: the code becomes the first words of a new conversation, and the agent reads it.
+  const [scanning, setScanning] = React.useState(false);
   // Every open bumps this; a read that finishes after a newer open is dropped.
   const latestOpen = React.useRef(0);
 
@@ -155,6 +158,9 @@ export function ChatScreen() {
           <Icon as={History} className="size-5" />
         </Button>
         <Text className="font-display text-foreground flex-1 text-center text-xl font-bold">{t("chat.title")}</Text>
+        <Button variant="secondary" size="icon" className="size-11" accessibilityLabel={t("scan.title")} onPress={() => setScanning(true)}>
+          <Icon as={ScanLine} className="size-5" />
+        </Button>
         <Button
           variant="secondary"
           size="icon"
@@ -274,6 +280,16 @@ export function ChatScreen() {
           </Text>
         )}
       </Sheet>
+      <ScanModal
+        open={scanning}
+        origin="chat"
+        onClose={() => setScanning(false)}
+        onCode={(code) => {
+          setScanning(false);
+          fresh(t("scan.chatPrompt", { code }));
+          return true;
+        }}
+      />
     </View>
   );
 }

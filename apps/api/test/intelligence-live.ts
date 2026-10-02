@@ -154,6 +154,48 @@ async function realAccountApp() {
 }
 
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async scan() {
+    const real = await realAccountApp();
+    const call = (path: string, body?: unknown) =>
+      real.request(path, body === undefined ? { headers: { authorization: `Bearer ${token}` } } : jsonRequest("POST", body, token));
+    const { request } = (await (await call("/requests", { amount: "0.25", asset: "USDC", note: "Lunch" })).json()) as { request: { link: string; token: string } };
+    const resolve = async (code: string) => ((await (await call("/pay-codes/resolve", { code })).json()) as unknown);
+    const person = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
+    const usdc = "0x3600000000000000000000000000000000000000";
+    const codes = {
+      requestLink: await resolve(request.link),
+      appScheme: await resolve(`kawase://r/${request.token}`),
+      eip681Usdc: await resolve(`ethereum:${usdc}@5042002/transfer?address=${person}&uint256=1.5e6`),
+      eip681Native: await resolve(`ethereum:${person}@5042002?value=2e18`),
+      bareAddress: await resolve(person.toLowerCase()),
+      otherArcNetwork: await resolve(`ethereum:${person}@5042?value=1e18`),
+      base: await resolve(`ethereum:${usdc}@8453/transfer?address=${person}&uint256=1e6`),
+      otherToken: await resolve(`ethereum:0x1111111111111111111111111111111111111111@5042002/transfer?address=${person}&uint256=1e6`),
+      lookalikeHost: await resolve(`https://kawase-pay.example/r/${request.token}`),
+    };
+    const threadId = randomUUID();
+    const response = await real.request(
+      "/agent/chat",
+      jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text: `Pay this: ethereum:${usdc}@5042002/transfer?address=${person}&uint256=1.5e6` }] } }, token),
+    );
+    await response.text();
+    for (let i = 0; i < POLLS; i += 1) {
+      const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+      if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+      await wait(POLL_MS);
+    }
+    const stored = (await (await call(`/agent/threads/${threadId}`)).json()) as { messages: Message[] };
+    const reply = stored.messages.at(-1)!;
+    const tool = reply.parts.find((part) => part.type === "tool-pay_from_code") as { output?: { code: unknown; send: { summary: unknown } | null } } | undefined;
+    return {
+      codes,
+      agent: {
+        reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+        code: tool?.output?.code,
+        send: tool?.output?.send?.summary ?? null,
+      },
+    };
+  },
   async cards() {
     const real = await realAccountApp();
     const ask = async (threadId: string, text: string) => {

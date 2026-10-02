@@ -83,6 +83,7 @@ import type {
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import { intelligenceApi } from "./intelligence";
+import { everydayApi } from "./everyday";
 
 export * from "./types";
 export * from "./agent-types";
@@ -94,6 +95,7 @@ export * from "./rails";
 export * from "./business";
 export * from "./history";
 export * from "./intelligence";
+export * from "./everyday";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -481,6 +483,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     },
 
     ...intelligenceApi(call),
+    ...everydayApi(call),
   };
 }
 
