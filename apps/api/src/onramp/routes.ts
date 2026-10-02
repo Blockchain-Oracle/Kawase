@@ -14,6 +14,7 @@ const startSchema = z.object({
   amount: z.string().max(TEXT_MAX).nullable().optional(),
   currency: z.string().max(TEXT_MAX).nullable().optional(),
   then: z.string().max(TEXT_MAX).nullable().optional(),
+  destination: z.enum(["wallet", "agent_wallet"]).nullable().optional(),
 });
 const eventSchema = z.object({ event: z.string().max(CODE_MAX), code: z.string().max(CODE_MAX).nullable().optional(), payload: z.record(z.string(), z.unknown()).optional() });
 

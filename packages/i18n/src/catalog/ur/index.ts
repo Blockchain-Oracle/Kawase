@@ -77,6 +77,8 @@ import { split } from "./split";
 import { resume } from "./resume";
 import { receipt } from "./receipt";
 import { importContacts } from "./import-contacts";
+import { alerts } from "./alerts";
+import { chatCards } from "./chat-cards";
 
 export const ur: Catalog = {
   common,
@@ -156,4 +158,6 @@ export const ur: Catalog = {
   resume,
   receipt,
   importContacts,
+  alerts,
+  chatCards,
 };

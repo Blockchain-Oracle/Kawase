@@ -64,4 +64,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "通过 Circle Gateway 纳米支付付款",
     eip3009: "通过 USDC 转账付款",
   },
+  cardTopUp: "或者直接购买 USDC 存入其中",
+  expressPay: "Pay",
+  orCard: "或使用银行卡支付",
+  cardButton: "借记卡",
+  deliversAgent: "USDC 会直接存入你在 {{network}} 上的代理钱包。",
+  noRefund: "未退款：{{seller}} 保留了这笔付款。付费调用目前还无法退款。",
+  notCharged: "未扣款：这笔付款没有完成。",
+  refundNone: "未退款",
+  refundNotCharged: "未扣款",
 };

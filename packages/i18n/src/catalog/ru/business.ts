@@ -31,6 +31,8 @@ export const business: Catalog["business"] = {
   clientName: "Имя клиента",
   clientEmail: "Почта клиента (необязательно)",
   currency: "Валюта",
+  otherToken: "Другой токен: название, тикер или адрес",
+  tokenContract: "Контракт токена {{asset}} в Arc",
   lines: "Позиции",
   lineDescription: "За что",
   removeLine: "Удалить позицию",

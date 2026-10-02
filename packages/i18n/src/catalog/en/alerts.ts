@@ -1,0 +1,17 @@
+export const alerts = {
+  deviceSignedInTitle: "New sign-in on {{name}}",
+  deviceSignedInBody: "{{platform}} · {{location}}. If this wasn't you, sign it out in Devices and turn on Pause all.",
+  deviceSignedInBodyNoPlace: "{{platform}}. If this wasn't you, sign it out in Devices and turn on Pause all.",
+  deviceSignedOutTitle: "{{name}} was signed out",
+  deviceSignedOutBody: "It can no longer use your account. If you didn't do this, check Devices now.",
+  invoiceDueSoonTitle: "{{number}} is due tomorrow",
+  invoiceDueTodayTitle: "{{number}} is due today",
+  invoiceDueBody: "{{client}} owes {{amount}}.",
+  invoiceOverdueTitle: "{{number}} is overdue",
+  invoiceOverdueBody: "{{client}} still owes {{amount}} (due {{date}}).",
+  kindDeviceSignedIn: "New sign-ins",
+  kindDeviceSignedOut: "Devices signed out",
+  kindInvoiceDue: "Invoices falling due",
+  kindInvoiceOverdue: "Overdue invoices",
+  aDevice: "a device",
+} as const;

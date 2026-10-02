@@ -23,6 +23,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { CardTopUp } from "@/marketplace/card-top-up";
 import { SellerMark, TopUpPresets } from "@/marketplace/parts";
 import { useAgentWallet, usePrice } from "@/marketplace/use-agent-wallet";
 import { api } from "@/session/api";
@@ -242,6 +243,11 @@ export function BuyCard({ output, onSend }: { output: { outcome: BuyOutcome }; o
           <Text className={cn("text-destructive text-sm", TEXT_START)}>
             {t(`market.failed.${outcome.reason}`, { amount: outcome.purchase ? price(outcome.purchase.amount) : "" })}
           </Text>
+          {outcome.purchase?.refund ? (
+            <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
+              {outcome.purchase.refund === "none" ? t("agentWallet.noRefund", { seller: outcome.purchase.provider }) : t("agentWallet.notCharged")}
+            </Text>
+          ) : null}
         </AgentCard>
       );
     case "practiced":
@@ -353,6 +359,7 @@ export function TopUpCard({ output, onSend }: { output: { proposal: AgentTopUpPr
       </Text>
       <Text className={cn("text-foreground text-sm", TEXT_START)}>{`${t("agentWallet.balance")}: ${price(proposal.wallet.total)}`}</Text>
       {active ? <TopUpPanel presets={proposal.presets} suggested={proposal.suggested} onDone={() => onSend?.(t("market.topUpResume"))} /> : null}
+      {active ? <CardTopUp amount={proposal.suggested} /> : null}
     </AgentCard>
   );
 }

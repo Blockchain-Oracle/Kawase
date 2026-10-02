@@ -79,6 +79,9 @@ export const devices = pgTable(
     name: text(),
     /** The Turnkey session key that proved the latest sign-in here: the API key "sign out this device" deletes. */
     turnkeyPublicKey: text(),
+    /** Where it last signed in or was seen, coarsely ("Lisbon, Portugal"), from its IP; the IP itself is never kept. */
+    location: text(),
+    locationAt: timestampTz(),
     lastSeenAt: timestampTz().defaultNow().notNull(),
     revokedAt: timestampTz(),
     createdAt: createdAt(),
