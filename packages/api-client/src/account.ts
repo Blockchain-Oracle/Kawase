@@ -12,6 +12,8 @@ export type DeviceView = {
   current: boolean;
   signedIn: boolean;
   turnkeyPublicKey: string | null;
+  /** Roughly where it was last seen ("Lisbon, Portugal"). */
+  location: string | null;
 };
 
 export type AccountHoldings = {

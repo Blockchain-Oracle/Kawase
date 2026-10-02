@@ -5,7 +5,7 @@
 // filling. Import from the phone's contacts (I7) arrives in Stage 5c, and the page says so instead of hiding it.
 // A second tab, My places (surfaces.md Contacts), lists the exchanges and own wallets money is taken out to.
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { Search, UserPlus } from "lucide-react-native";
+import { ContactRound, Search, UserPlus } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -67,9 +67,15 @@ export function ContactsScreen() {
     : contacts;
 
   const addButton = account ? (
-    <Button variant="secondary" size="icon" accessibilityLabel={t("contacts.add")} className="size-11" onPress={() => setAdding(true)}>
-      <Icon as={UserPlus} className="size-5" />
-    </Button>
+    <View className="flex-row gap-2">
+      {/* Import from the phone's contacts (A5-2, I7). */}
+      <Button variant="secondary" size="icon" accessibilityLabel={t("importContacts.title")} className="size-11" onPress={() => router.push("/contacts/import")}>
+        <Icon as={ContactRound} className="size-5" />
+      </Button>
+      <Button variant="secondary" size="icon" accessibilityLabel={t("contacts.add")} className="size-11" onPress={() => setAdding(true)}>
+        <Icon as={UserPlus} className="size-5" />
+      </Button>
+    </View>
   ) : undefined;
 
   let body: React.ReactNode;

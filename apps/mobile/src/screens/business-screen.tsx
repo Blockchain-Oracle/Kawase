@@ -8,7 +8,7 @@ import { RefreshControl, View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { BusinessProfile, InvoiceView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -87,7 +87,7 @@ export function BusinessScreen() {
     }, [load]),
   );
 
-  const money = (invoice: InvoiceView) => formatAmount(toAmount(invoice.asset as AssetId, BigInt(invoice.total)), locale);
+  const money = (invoice: InvoiceView) => formatTokenAmount(BigInt(invoice.total), invoice.decimals, invoice.asset, locale);
 
   return (
     <Page

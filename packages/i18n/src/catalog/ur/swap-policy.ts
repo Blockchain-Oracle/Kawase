@@ -19,4 +19,5 @@ export const swapPolicy: Catalog["swapPolicy"] = {
     "یہ قیمت بازار سے {{gap}}% کم ہے، جو Kawase کی اجازت {{max}}% سے زیادہ ہے۔ کم رقم آزمائیں یا انتظار کریں۔",
   RATE_BELOW_REFERENCE: "یہ قیمت بازار کی شرح سے {{gap}}% کم ہے۔",
   fixTryAgain: "دوبارہ کوشش کریں",
+  BRAKE_PRICE_IMPACT: "یہ قیمت بازار سے {{gap}}% کم ہے، جو آپ کے {{max}}% اصول سے زیادہ ہے۔",
 };

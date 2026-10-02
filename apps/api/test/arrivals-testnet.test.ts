@@ -23,7 +23,7 @@ import { RequestService } from "../src/requests/service";
 import { AssetService } from "../src/tokens/service";
 import { WalletService } from "../src/wallet/service";
 import { createChains } from "../src/wallet/chain";
-import { TEST_TOKEN_ABI, TEST_TOKEN_BYTECODE } from "./fixtures/test-token";
+import { TEST_TOKEN_ABI, TEST_TOKEN_BYTECODE } from "./fixtures/arrival-token";
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });

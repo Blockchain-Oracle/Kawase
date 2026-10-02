@@ -16,13 +16,14 @@ import { marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
-import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
+import { businessProfiles, invoices, payoutBatches } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
 import { portfolioSnapshots, walletTokens } from "./schema/assets";
 import { places } from "./schema/places";
 import { tokenRules } from "./schema/token-rules";
+import { splitShares, splits } from "./schema/splits";
 import { withdrawals } from "./schema/withdrawals";
 
 type UserOwned = {
@@ -78,7 +79,6 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   business_profiles: { table: businessProfiles, userId: businessProfiles.userId, perUserKey: [] },
   invoices: { table: invoices, userId: invoices.userId, perUserKey: ["number"] },
   payout_batches: { table: payoutBatches, userId: payoutBatches.userId },
-  payrolls: { table: payrolls, userId: payrolls.userId },
   memory_facts: { table: memoryFacts, userId: memoryFacts.userId },
   // One row per person: the account's own preferences win over the guest's.
   agent_preferences: { table: agentPreferences, userId: agentPreferences.userId, perUserKey: [] },
@@ -90,6 +90,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   places: { table: places, userId: places.userId, perUserKey: ["network", "chain", "address"] },
   // Token rules (D12): one row per network; the account's own rules win.
   token_rules: { table: tokenRules, userId: tokenRules.userId, perUserKey: ["network"] },
+  splits: { table: splits, userId: splits.userId },
+  split_shares: { table: splitShares, userId: splitShares.userId },
   // Withdrawals (their steps point at intents, which move too).
   withdrawals: { table: withdrawals, userId: withdrawals.userId },
 };

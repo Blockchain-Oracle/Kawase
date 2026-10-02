@@ -92,6 +92,7 @@ import { LendOrderCard, YieldOptionsCard } from "./lend-card";
 import { WithdrawCard } from "./withdraw-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
+import { BUSINESS_LOADING_LABELS, BusinessToolCard } from "./business-cards";
 import { ReportCard } from "@/history/report-card";
 import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
@@ -101,6 +102,8 @@ import type { SafetyToolOutput } from "@kawase/api-client";
 import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
+import type { PayCodeView } from "@kawase/api-client";
+import { PayCodeCard, SplitBillCard } from "./pay-code-card";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -620,6 +623,9 @@ const LOADING_LABELS: Record<string, string> = {
   explain_choice: "insight.loadingDecision",
   propose_setting_change: "insight.loadingSetting",
   get_status: "insight.loadingStatus",
+  pay_from_code: "scan.reading",
+  split_bill: "split.loading",
+  ...BUSINESS_LOADING_LABELS,
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -736,6 +742,7 @@ export function ToolCard({
       return <SafetyCard output={part.output as SafetyToolOutput} />;
     case "create_invoice":
       return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
+    // Cards stored before the tool became weekly_report.
     case "get_report": {
       const report = (part.output as { report: ReportView | null }).report;
       return report ? (
@@ -761,7 +768,13 @@ export function ToolCard({
       return <SettingDiffCard output={part.output as SettingDiff} />;
     case "get_status":
       return <StatusCard output={part.output as StatusView} />;
+    case "split_bill":
+      return <SplitBillCard output={part.output as Parameters<typeof SplitBillCard>[0]["output"]} />;
+    case "pay_from_code": {
+      const paid = part.output as { code: PayCodeView; send: ProposeSendOutput | null };
+      return paid.send ? <SendCard output={paid.send} /> : <PayCodeCard view={paid.code} />;
+    }
     default:
-      return null;
+      return <BusinessToolCard tool={tool} output={part.output} />;
   }
 }

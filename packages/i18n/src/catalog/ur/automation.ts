@@ -151,4 +151,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} سے اب {{quotedOut}} {{symbolOut}} ملتا ہے",
   inboxReminder: "کل کا آٹومیشن",
   reason_INSUFFICIENT_BALANCE: "تب والیٹ میں کافی رقم نہیں تھی",
+  reason_BRAKE_HALF_BALANCE: "آدھے سے زیادہ بیلنس کسی نئے کو: آپ کا انتظار",
 };

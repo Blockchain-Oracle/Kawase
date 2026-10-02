@@ -18,4 +18,5 @@ export const swapPolicy: Catalog["swapPolicy"] = {
   PRICE_IMPACT_HIGH: "此价格比市场低 {{gap}}%，超过了 Kawase 允许的 {{max}}%。请尝试更小的金额或稍后再试。",
   RATE_BELOW_REFERENCE: "此价格比市场汇率低 {{gap}}%。",
   fixTryAgain: "重试",
+  BRAKE_PRICE_IMPACT: "此价格比市场低 {{gap}}%，超过你设定的 {{max}}% 规则。",
 };

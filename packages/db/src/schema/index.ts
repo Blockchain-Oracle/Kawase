@@ -18,4 +18,5 @@ export * from "./business";
 export * from "./memory";
 export * from "./places";
 export * from "./token-rules";
+export * from "./splits";
 export * from "./withdrawals";

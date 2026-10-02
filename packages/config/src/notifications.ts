@@ -2,7 +2,7 @@
 // event kinds, what each channel does by default, and the timings of delivery, so the api and the app agree.
 
 /** Every inbox event, in the order Settings → Notifications lists them. */
-export const NOTIFICATION_KINDS = ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert"] as const;
+export const NOTIFICATION_KINDS = ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue"] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export const NOTIFICATION_CHANNELS = ["push", "email"] as const;
@@ -21,6 +21,12 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationKind, Record<Notification
   send_completed: { push: true, email: false },
   automation_skipped: { push: true, email: true },
   rule_alert: { push: true, email: true },
+  // Security (cards/automate-safety.md "security: new device"): always both, so a stolen session is seen at once.
+  device_signed_in: { push: true, email: true },
+  device_signed_out: { push: true, email: true },
+  // Business: a nudge before an invoice falls due, and email once it is overdue.
+  invoice_due: { push: true, email: false },
+  invoice_overdue: { push: true, email: true },
 };
 
 export function notificationOn(prefs: NotificationPrefs | null | undefined, kind: NotificationKind, channel: NotificationChannel): boolean {

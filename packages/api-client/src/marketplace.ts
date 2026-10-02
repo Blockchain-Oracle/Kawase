@@ -46,6 +46,8 @@ export type PurchaseView = {
   reasonCode: string | null;
   settlement: string | null;
   responsePreview: string | null;
+  /** After a failed call: "none" (paid, no refund: x402 has none yet), "not_charged" (the payment never settled). */
+  refund: "none" | "not_charged" | null;
   paidAt: string | null;
   createdAt: string;
 };
@@ -128,6 +130,11 @@ export type BuyOutcome = { network: NetworkId } & (
   | { status: "failed"; reason: "seller_error" | "failed_after_payment" | "payment_failed"; purchase?: PurchaseView | undefined; service?: ServiceListing | undefined }
   | { status: "needs_sign_in" }
   | { status: "needs_wallet" }
+  /**
+   * Practice mode: every rule checked against the live price, nothing paid. `wouldAsk`: it would have waited for the
+   * person's tap first (and why); `funded`: the agent wallet could have paid it.
+   */
+  | { status: "practiced"; service: ServiceListing; price: string; wouldAsk: "over_per_call" | "ask_first" | "after_paid_data" | null; funded: boolean }
 );
 
 export type ServiceSearchResult = { network: NetworkId; services: ServiceListing[]; total: number };

@@ -7,6 +7,7 @@ import { REPORT_DAYS, TRANSCRIPT_RETENTION_CHOICES } from "@kawase/config";
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import type { ExportLinks } from "./export-link";
 import type { PrivacyService } from "./privacy";
 import type { HistoryService } from "./service";
 
@@ -48,6 +49,23 @@ export function historyRoutes(history: HistoryService) {
     return c.json({ report: await history.report(c.get("user")!, input.network, input.days) });
   });
 
+  return app;
+}
+
+/** `/files/export/:token`: the file a chat export link points at (no session: the signed link is the permission). */
+export function exportFileRoutes(history: HistoryService, links: ExportLinks) {
+  const app = new Hono<AppEnv>();
+  app.get("/:token", async (c) => {
+    const claims = links.verify(c.req.param("token"));
+    if (!claims) throw problem(HTTP.notFound, "not_found", "this link has expired; ask Kawase for a new one");
+    const file = await history.export({ id: claims.sub }, claims.network, claims.month, claims.format);
+    return c.body(file.body, HTTP.ok, {
+      "content-type": file.contentType,
+      "content-disposition": `attachment; filename="${file.filename}"`,
+      "cache-control": "private, no-store",
+      "x-kawase-complete": String(file.complete),
+    });
+  });
   return app;
 }
 

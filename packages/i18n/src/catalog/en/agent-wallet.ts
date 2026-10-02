@@ -63,4 +63,13 @@ export const agentWallet = {
     gateway: "Paid by Circle Gateway nanopayment",
     eip3009: "Paid by USDC transfer",
   },
+  cardTopUp: "Or buy USDC straight into it",
+  expressPay: "Pay",
+  orCard: "or pay with card",
+  cardButton: "Debit card",
+  deliversAgent: "USDC goes straight to your agent wallet on {{network}}.",
+  noRefund: "No refund: {{seller}} kept the payment. Paid calls can't be refunded yet.",
+  notCharged: "Not charged: the payment never went through.",
+  refundNone: "no refund",
+  refundNotCharged: "not charged",
 } as const;

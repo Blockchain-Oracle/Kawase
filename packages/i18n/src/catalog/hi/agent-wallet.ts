@@ -65,4 +65,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "Circle Gateway नैनोपेमेंट से भुगतान",
     eip3009: "USDC ट्रांसफ़र से भुगतान",
   },
+  cardTopUp: "या सीधे इसमें USDC खरीदें",
+  expressPay: "Pay",
+  orCard: "या कार्ड से भुगतान करें",
+  cardButton: "डेबिट कार्ड",
+  deliversAgent: "USDC सीधे {{network}} पर आपके एजेंट वॉलेट में जाता है।",
+  noRefund: "कोई रिफ़ंड नहीं: {{seller}} ने भुगतान रख लिया। पेड कॉल का अभी रिफ़ंड नहीं हो सकता।",
+  notCharged: "पैसा नहीं कटा: भुगतान कभी पूरा नहीं हुआ।",
+  refundNone: "कोई रिफ़ंड नहीं",
+  refundNotCharged: "पैसा नहीं कटा",
 };

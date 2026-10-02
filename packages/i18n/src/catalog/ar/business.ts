@@ -31,6 +31,8 @@ export const business: Catalog["business"] = {
   clientName: "اسم العميل",
   clientEmail: "بريد العميل (اختياري)",
   currency: "العملة",
+  otherToken: "رمز مميز آخر: الاسم أو الرمز المختصر أو العنوان",
+  tokenContract: "عقد الرمز المميز {{asset}} على Arc",
   lines: "البنود",
   lineDescription: "مقابل ماذا",
   removeLine: "إزالة البند",

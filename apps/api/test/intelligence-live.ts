@@ -154,6 +154,73 @@ async function realAccountApp() {
 }
 
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async split() {
+    const real = await realAccountApp();
+    const threadId = randomUUID();
+    const response = await real.request(
+      "/agent/chat",
+      jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text: "Split 30 dollars for dinner with Amina and Tunde." }] } }, token),
+    );
+    await response.text();
+    for (let i = 0; i < POLLS; i += 1) {
+      const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+      if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+      await wait(POLL_MS);
+    }
+    const stored = (await (await real.request(`/agent/threads/${threadId}`, { headers: { authorization: `Bearer ${token}` } })).json()) as { messages: Message[] };
+    const reply = stored.messages.at(-1)!;
+    const tool = reply.parts.find((part) => part.type === "tool-split_bill") as { input?: unknown; output?: { status: string; split?: { shares: { name: string; amount: string; request: { link: string } }[]; myShare: string | null } } } | undefined;
+    return {
+      reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+      input: tool?.input,
+      status: tool?.output?.status,
+      myShare: tool?.output?.split?.myShare,
+      shares: tool?.output?.split?.shares.map((share) => ({ name: share.name, amount: share.amount, link: share.request.link })),
+    };
+  },
+  async scan() {
+    const real = await realAccountApp();
+    const call = (path: string, body?: unknown) =>
+      real.request(path, body === undefined ? { headers: { authorization: `Bearer ${token}` } } : jsonRequest("POST", body, token));
+    const { request } = (await (await call("/requests", { amount: "0.25", asset: "USDC", note: "Lunch" })).json()) as { request: { link: string; token: string } };
+    const resolve = async (code: string) => ((await (await call("/pay-codes/resolve", { code })).json()) as unknown);
+    const person = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
+    const usdc = "0x3600000000000000000000000000000000000000";
+    const codes = {
+      requestLink: await resolve(request.link),
+      appScheme: await resolve(`kawase://r/${request.token}`),
+      eip681Usdc: await resolve(`ethereum:${usdc}@5042002/transfer?address=${person}&uint256=1.5e6`),
+      eip681Native: await resolve(`ethereum:${person}@5042002?value=2e18`),
+      bareAddress: await resolve(person.toLowerCase()),
+      otherArcNetwork: await resolve(`ethereum:${person}@5042?value=1e18`),
+      base: await resolve(`ethereum:${usdc}@8453/transfer?address=${person}&uint256=1e6`),
+      otherToken: await resolve(`ethereum:0x1111111111111111111111111111111111111111@5042002/transfer?address=${person}&uint256=1e6`),
+      lookalikeHost: await resolve(`https://kawase-pay.example/r/${request.token}`),
+      anyToken: await resolve(`ethereum:0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C@5042002/transfer?address=${person}&uint256=2500000`),
+    };
+    const threadId = randomUUID();
+    const response = await real.request(
+      "/agent/chat",
+      jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text: `Pay this: ethereum:${usdc}@5042002/transfer?address=${person}&uint256=1.5e6` }] } }, token),
+    );
+    await response.text();
+    for (let i = 0; i < POLLS; i += 1) {
+      const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+      if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+      await wait(POLL_MS);
+    }
+    const stored = (await (await call(`/agent/threads/${threadId}`)).json()) as { messages: Message[] };
+    const reply = stored.messages.at(-1)!;
+    const tool = reply.parts.find((part) => part.type === "tool-pay_from_code") as { output?: { code: unknown; send: { summary: unknown } | null } } | undefined;
+    return {
+      codes,
+      agent: {
+        reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+        code: tool?.output?.code,
+        send: tool?.output?.send?.summary ?? null,
+      },
+    };
+  },
   async cards() {
     const real = await realAccountApp();
     const ask = async (threadId: string, text: string) => {

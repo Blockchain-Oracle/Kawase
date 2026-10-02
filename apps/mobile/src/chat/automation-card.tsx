@@ -33,7 +33,8 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 
 import { AgentCard } from "./card";
 
-export function AutomationCard({ output }: { output: ProposeAutomationOutput }) {
+/** The card for one automation; the Payroll screen passes just the automation (the summary is for the model). */
+export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutput, "automation"> }) {
   const { t } = useT();
   const router = useRouter();
   const signIn = useSignIn();

@@ -32,7 +32,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "xyz.kawase.app",
       "blockedPermissions": [
-        "android.permission.CAMERA",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -166,6 +165,21 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kawase uses the camera to scan payment QR codes.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Kawase reads your contacts only when you choose people to import, and checks who is on Kawase only if you agree."
         }
       ]
     ],

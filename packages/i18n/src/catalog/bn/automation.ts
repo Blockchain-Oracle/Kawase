@@ -125,7 +125,8 @@ export const automation: Catalog["automation"] = {
   edited: "বদলানো হয়েছে",
   payroll: "{{count}} জনকে পেমেন্ট",
   payrollLine: "{{name}}-কে {{amount}}",
-  payrollBound: "প্রত্যেকে {{per}} সর্বোচ্চ নিজের পরিমাণ, শুধু নিজের ঠিকানায় পেতে পারে, Arc-এ নিশ্চিত; {{date}} পর্যন্ত।",
+  payrollBound:
+    "প্রত্যেকে {{per}} সর্বোচ্চ নিজের পরিমাণ, শুধু নিজের ঠিকানায় পেতে পারে, Arc-এ নিশ্চিত; {{date}} পর্যন্ত।",
   dca: "{{amount}} {{symbolOut}}-এ বদলান",
   dcaBound: "কোনো অনুমতি রাখে না: প্রতিটি অদলবদল “আপনার অপেক্ষায়”-তে আপনার হ্যাঁর অপেক্ষা করে।",
   rulePrice: "যখন {{amountIn}} দিয়ে অন্তত {{minOut}} পাওয়া যায়",
@@ -150,4 +151,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}}-এ এখন {{quotedOut}} {{symbolOut}} পাওয়া যায়",
   inboxReminder: "আগামীকালের অটোমেশন",
   reason_INSUFFICIENT_BALANCE: "তখন ওয়ালেটে যথেষ্ট টাকা ছিল না",
+  reason_BRAKE_HALF_BALANCE: "ব্যালান্সের অর্ধেকের বেশি নতুন কাউকে: আপনার অপেক্ষায়",
 };

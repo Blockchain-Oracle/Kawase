@@ -31,6 +31,8 @@ export const business: Catalog["business"] = {
   clientName: "客户名称",
   clientEmail: "客户邮箱（可选）",
   currency: "币种",
+  otherToken: "其他代币：名称、符号或地址",
+  tokenContract: "{{asset}} 在 Arc 上的代币合约",
   lines: "项目",
   lineDescription: "用途",
   removeLine: "删除项目",

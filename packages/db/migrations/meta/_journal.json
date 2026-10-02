@@ -272,6 +272,48 @@
       "idx": 38,
       "version": "7",
       "when": 1791000081000,
+      "tag": "0074_splits",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791000082000,
+      "tag": "0075_discoverable",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791000083000,
+      "tag": "0045_security_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791000084000,
+      "tag": "0046_invoice_assets",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791000085000,
+      "tag": "0047_drop_payrolls",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791000086000,
+      "tag": "0048_onramp_destination",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791000087000,
       "tag": "0024_withdrawals",
       "breakpoints": true
     }

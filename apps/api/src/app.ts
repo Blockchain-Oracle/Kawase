@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -82,10 +82,11 @@ import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
 import { InvoiceService } from "./business/invoices";
 import { PayoutService } from "./business/payouts";
-import { PayrollService } from "./business/payroll";
+import { tokenResolver } from "./business/tokens";
 import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { PrivacyService } from "./history/privacy";
-import { historyRoutes, privacyRoutes } from "./history/routes";
+import { ExportLinks } from "./history/export-link";
+import { exportFileRoutes, historyRoutes, privacyRoutes } from "./history/routes";
 import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
@@ -102,6 +103,12 @@ import { SearchService } from "./search/service";
 import { suggestionRoutes } from "./suggestions/routes";
 import { SuggestionService } from "./suggestions/service";
 import { StatusService } from "./status/service";
+import { payCodeRoutes } from "./paycodes/routes";
+import { PayCodeService } from "./paycodes/service";
+import { splitRoutes } from "./splits/routes";
+import { SplitService } from "./splits/service";
+import { intentRoutes } from "./intents/routes";
+import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -237,6 +244,15 @@ export function createApp(deps: AppDeps) {
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
       : undefined;
+  // "Top up my agent wallet with Apple Pay": the onramp lands on the agent wallet and the marketplace puts it to work.
+  if (marketplace) {
+    onramp.setAgentWallets({
+      address: async (user) => (await marketplace.ensureAgentWallet(user.id, user.activeNetwork)).address,
+      ownMoves: (userId, network) => marketplace.moveHashes(userId, network),
+      arrived: (userId, network) => marketplace.putToWork(userId, network),
+    });
+  }
+  const account = new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace, inbox);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
@@ -306,7 +322,7 @@ export function createApp(deps: AppDeps) {
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/client-events", clientEventRoutes());
   app.route("/public", publicRoutes(new PublicStatsService(deps.db)));
-  app.route("/auth", authRoutes(deps.db, auth));
+  app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input)));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/notifications", notifyRoutes(deps.db, notify));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
@@ -316,7 +332,7 @@ export function createApp(deps: AppDeps) {
   app.route("/sends", sendRoutes(sends));
   // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
   // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
-  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$/;
+  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$|^\/marketplace\/agent-wallet\/top-up$/;
   app.use("*", async (c, next) => {
     if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
       throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");
@@ -342,23 +358,31 @@ export function createApp(deps: AppDeps) {
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
   app.route("/safety", safetyRoutes(safety));
-  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
-  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
-  const payroll = new PayrollService(deps.db, automations, audit);
-  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  const resolveToken = tokenResolver(assets);
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
+  app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
-  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  // Everyday money (A5-2): scan to pay.
+  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
+  app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
+  app.route("/contacts-discovery", discoveryRoutes(deps.db));
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
   app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
+  const exportLinks = new ExportLinks(deps.approvalSecret);
+  app.route("/files/export", exportFileRoutes(history, exportLinks));
   app.route("/privacy", privacyRoutes(privacy));
-  app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
+  app.route("/account", accountRoutes(deps.db, account));
   const agentDeps = {
     marketplace,
     invoices,
     history,
+    business: { payouts, account, exportLinks },
     db: deps.db,
     chains: deps.chains,
     wallets,

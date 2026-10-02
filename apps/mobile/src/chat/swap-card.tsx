@@ -15,11 +15,14 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
+import { BrakeNote } from "@/safety/brake-note";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useSwapApproveLabel, useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapReview } from "@/swap/swap-review";
 import { SwapStatus } from "@/swap/swap-status";
 import { isSwapOpen, useSwap } from "@/swap/use-swap";
+
+import { useResumeWhenFixed } from "@/intents/use-resume";
 
 import { AgentCard } from "./card";
 
@@ -35,6 +38,8 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const intent = controller.intent ?? output.intent;
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("swap.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
+  // Fixed elsewhere (signed in, set up, money added): the same swap is quoted and checked again (R12).
+  useResumeWhenFixed(isSwapOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
 
   if (!isSwapOpen(intent)) {
     return (
@@ -83,6 +88,7 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
           ) : null}
         </View>
       ) : null}
+      {ready ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
       <View className="gap-2">
         {ready ? (
           <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>

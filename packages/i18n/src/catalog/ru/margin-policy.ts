@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "С плечом можно потерять всю маржу.",
   fixTryAgain: "Попробовать снова",
   fixSwitch: "Перейти в Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× выше 5×: небольшое движение против вас может обнулить маржу.",
 };

@@ -125,6 +125,8 @@ const AUTOMATION_STOPS: ReadonlySet<string> = new Set([
   // Unattended runs never pay a new address above its cooldown cap, nor anyone off the allowlist when it is on.
   "NEW_RECIPIENT_COOLDOWN",
   "NOT_ON_ALLOWLIST",
+  // The brake: over half the balance to someone new is never sent without the person.
+  "BRAKE_HALF_BALANCE",
 ]);
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;

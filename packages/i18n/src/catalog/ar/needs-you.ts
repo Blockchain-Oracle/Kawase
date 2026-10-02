@@ -25,4 +25,5 @@ export const needsYou: Catalog["needsYou"] = {
   expires: "ينتظر حتى {{time}}",
   switchNetwork: "هذا ينتظر على {{network}}. بدّل الشبكة للإجابة.",
   failed: "لم يكتمل. ما زال ينتظر.",
+  reason_BRAKE_HALF_BALANCE: "أكثر من نصف ما تملكه إلى شخص جديد، لذا ينتظرك.",
 };
