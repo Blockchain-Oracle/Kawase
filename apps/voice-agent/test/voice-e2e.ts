@@ -14,10 +14,15 @@ const QUESTION = process.argv[2] ?? "What can you do for me on Arc?";
 const SAMPLE_RATE = 16_000;
 const FRAME_SAMPLES = 160;
 const LOUD = 600;
+// A cold worker process plus the GPT-Live connection can take ~20 s before the greeting: wait for it.
+const GREETING_WAIT_MS = 40_000;
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const json = (body: unknown, token?: string) => ({ method: "POST", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
 
 const guest = (await (await fetch(`${API}/auth/guest`, json({ device: { platform: "web", installationId: `voice-e2e-${Date.now()}` }, locale: "en" }))).json()) as { token: string };
+// KAWASE_E2E_VOICE=cinder (any GPT-Live voice) saves Settings → Voice first, to check the worker uses it.
+if (process.env.KAWASE_E2E_VOICE)
+  await fetch(`${API}/me`, { ...json({ voicePrefs: { voice: process.env.KAWASE_E2E_VOICE } }, guest.token), method: "PATCH" });
 const session = (await (await fetch(`${API}/voice/session`, json({}, guest.token))).json()) as { url: string; token: string; room: string; threadId: string };
 if (!session.token) throw new Error(`no voice session: ${JSON.stringify(session)}`);
 console.log("room", session.room, "thread", session.threadId);
@@ -66,7 +71,7 @@ const silence = async (ms: number) => {
 };
 // The greeting: wait for it to start and to finish (1.5 s of quiet).
 const joined = Date.now();
-while (Date.now() - joined < 20_000 && (lastLoud === 0 || Date.now() - lastLoud < 1500)) await silence(100);
+while (Date.now() - joined < GREETING_WAIT_MS && (lastLoud === 0 || Date.now() - lastLoud < 1500)) await silence(100);
 console.log(lastLoud ? `greeting heard ${lastLoud - joined} ms after joining` : "no greeting heard");
 
 type Thread = { messages?: { role: string; parts: { type: string; text?: string }[] }[] };

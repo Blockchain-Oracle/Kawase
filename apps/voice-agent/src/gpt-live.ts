@@ -153,20 +153,25 @@ export async function startGptLive(input: {
       onFatal(event.error);
     });
 
-    // What the person is saying now. GPT-Live may delegate mid-sentence, so a request waits for the end of their speech
-    // and uses the settled transcript (the delegation's own transcript can be a fragment, or empty).
+    // What the person has said since the last request Kawase took. GPT-Live can split one question into several speech
+    // segments and delegate mid-sentence, so a request waits for the end of the person's speech and joins every
+    // segment since the last delegation (the delegation's own transcript can be the last fragment only, or empty).
+    // Words GPT-Live answered by itself (a greeting, thanks) are dropped when it starts speaking with nothing delegated.
+    const segments = new Map<string, string>();
     let speaking = false;
-    let heard = "";
+    let delegationOpen = false;
     live.on("input_speech_started", () => {
       speaking = true;
-      heard = "";
     });
     live.on("input_speech_stopped", () => {
       speaking = false;
     });
     live.on("input_audio_transcription_completed", (event) => {
-      heard = event.transcript;
+      segments.set(event.itemId, event.transcript);
       if (event.isFinal) speaking = false;
+    });
+    session.on(voice.AgentSessionEventTypes.AgentStateChanged, (event) => {
+      if (event.newState === "speaking" && !delegationOpen) segments.clear();
     });
     const lastUserText = () =>
       [...agent.chatCtx.items]
@@ -174,11 +179,18 @@ export async function startGptLive(input: {
         .find((item): item is llm.ChatMessage => item instanceof llm.ChatMessage && item.role === "user")
         ?.textContent?.trim() ?? "";
     const settledRequest = async (pending: string) => {
+      delegationOpen = true;
       await waitUntil(() => !speaking, GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS);
       await new Promise((resolve) => setTimeout(resolve, GPT_LIVE_TRANSCRIPT_TAIL_MS));
-      // This turn's words (whichever of the two saw more of them); the chat history only as a last resort.
-      const current = heard.trim().length >= pending.trim().length ? heard.trim() : pending.trim();
-      return current || lastUserText();
+      let text = [...segments.values()]
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .join(" ");
+      const fragment = pending.trim();
+      if (fragment && !text.includes(fragment)) text = `${text} ${fragment}`.trim();
+      segments.clear();
+      delegationOpen = false;
+      return text || lastUserText();
     };
 
     live.on("delegation_created", ({ id, pendingTranscript }) => {
