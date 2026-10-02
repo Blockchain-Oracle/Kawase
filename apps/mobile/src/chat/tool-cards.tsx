@@ -77,6 +77,8 @@ import { SwapCard } from "./swap-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
+import type { MemoryToolOutput } from "@kawase/api-client";
+import { MemoryCard } from "./memory-card";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -575,6 +577,8 @@ const LOADING_LABELS: Record<string, string> = {
   buy_service: "market.loadingBuy",
   get_agent_wallet: "market.loadingWallet",
   top_up_agent_wallet: "market.loadingWallet",
+  remember_fact: "memory.loadingRemember",
+  forget_fact: "memory.loadingForget",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -661,6 +665,9 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "remember_fact":
+    case "forget_fact":
+      return <MemoryCard output={part.output as MemoryToolOutput} />;
     default:
       return null;
   }

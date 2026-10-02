@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import type { AgentContext } from "./context";
+import { intelligenceTools } from "./intelligence-tools";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -292,6 +293,8 @@ export function buildTools(context: AgentContext) {
       execute: async (input) => context.proposeAgentTopUp(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    // Memory, history search, Arc knowledge and the extra cards (A5).
+    ...intelligenceTools(context),
   };
 }
 

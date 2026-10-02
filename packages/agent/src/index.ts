@@ -1,5 +1,6 @@
 // The single brain: agentTurn, prompts, tools. Server-only.
 export * from "./context";
+export * from "./intelligence";
 export * from "./models";
 export { instructions } from "./prompt";
 export { buildTools, type AgentTools } from "./tools";

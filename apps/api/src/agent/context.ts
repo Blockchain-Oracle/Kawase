@@ -33,6 +33,7 @@ import { summarizeAutomation } from "./automation-summary";
 import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
+import { buildIntelligence } from "./intelligence";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -101,6 +102,7 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
+    intelligence: buildIntelligence({ db, user, threadId, log }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

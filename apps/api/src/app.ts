@@ -62,6 +62,8 @@ import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
+import { memoryRoutes } from "./memory/routes";
+import { MemoryService } from "./memory/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -266,6 +268,7 @@ export function createApp(deps: AppDeps) {
   const runner = createTurnRunner(agentDeps);
   app.route("/agent", agentRoutes(agentDeps, runner));
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
+  app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
 
   return app;
 }

@@ -65,12 +65,14 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import { intelligenceApi } from "./intelligence";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./intelligence";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -382,6 +384,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** A failure seen on the phone, for the api's logs; no account needed. */
       report: (event: ClientEvent) => call<void>("POST", "/client-events", event, { token: "" }),
     },
+
+    ...intelligenceApi(call),
   };
 }
 

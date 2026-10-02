@@ -1,0 +1,105 @@
+{
+  "scenario": "memory",
+  "model": "default (packages/config)",
+  "at": "2026-10-02T15:28:22.971Z",
+  "result": {
+    "remembered": {
+      "asked": "Please remember that my mum is @adaeze and that I prefer euros.",
+      "ms": 9355,
+      "reply": "I’ll remember that your mum is @adaeze and that you prefer euros.",
+      "tools": [
+        {
+          "tool": "remember_fact",
+          "state": "output-available",
+          "input": {
+            "fact": "My mum is @adaeze and I prefer euros."
+          },
+          "output": {
+            "fact": {
+              "id": "01a0fd3b-2ddd-7da3-9cfa-1b61bfa4c08a",
+              "fact": "My mum is @adaeze and I prefer euros.",
+              "createdAt": "2026-10-02T15:28:29.149Z",
+              "updatedAt": "2026-10-02T15:28:29.149Z",
+              "lastUsedAt": null,
+              "sourceThreadId": "c1603671-1708-4e42-8fa4-a6508bdd9fed"
+            },
+            "status": "saved",
+            "updated": false
+          }
+        }
+      ],
+      "metadata": null
+    },
+    "afterSave": {
+      "enabled": true,
+      "facts": [
+        {
+          "id": "01a0fd3b-2ddd-7da3-9cfa-1b61bfa4c08a",
+          "fact": "My mum is @adaeze and I prefer euros.",
+          "sourceThreadId": "c1603671-1708-4e42-8fa4-a6508bdd9fed",
+          "createdAt": "2026-10-02T15:28:29.149Z",
+          "updatedAt": "2026-10-02T15:28:29.149Z",
+          "lastUsedAt": null
+        }
+      ]
+    },
+    "used": {
+      "asked": "Who is my mum on Kawase?",
+      "ms": 3672,
+      "reply": "You told me your mum is @adaeze.",
+      "tools": [],
+      "metadata": {
+        "memoryUsed": [
+          {
+            "id": "01a0fd3b-2ddd-7da3-9cfa-1b61bfa4c08a",
+            "fact": "My mum is @adaeze and I prefer euros."
+          }
+        ]
+      }
+    },
+    "forgotten": {
+      "asked": "Forget what you know about my mum.",
+      "ms": 2997,
+      "reply": "Forgotten.",
+      "tools": [
+        {
+          "tool": "forget_fact",
+          "state": "output-available",
+          "input": {
+            "ref": "m1"
+          },
+          "output": {
+            "fact": {
+              "id": "01a0fd3b-2ddd-7da3-9cfa-1b61bfa4c08a",
+              "fact": "My mum is @adaeze and I prefer euros."
+            },
+            "status": "forgotten"
+          }
+        }
+      ],
+      "metadata": null
+    },
+    "afterForget": {
+      "enabled": true,
+      "facts": []
+    },
+    "off": {
+      "asked": "Remember that my brother is @tunde.",
+      "ms": 3996,
+      "reply": "Remembering is off in Settings → Memory, so I couldn’t save that.",
+      "tools": [
+        {
+          "tool": "remember_fact",
+          "state": "output-available",
+          "input": {
+            "fact": "My brother is @tunde."
+          },
+          "output": {
+            "status": "memory_off"
+          }
+        }
+      ],
+      "metadata": null
+    }
+  }
+}

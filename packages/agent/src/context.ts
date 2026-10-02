@@ -35,6 +35,8 @@ import type {
   ServiceSearchResult,
 } from "@kawase/api-client";
 
+import type { IntelligenceContext } from "./intelligence";
+
 export type {
   ActivityLine,
   AgentNetwork,
@@ -103,4 +105,6 @@ export type AgentContext = {
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  /** Memory, history search, Arc knowledge and the extra cards (A5). */
+  intelligence: IntelligenceContext;
 };

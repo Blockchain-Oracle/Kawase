@@ -46,6 +46,7 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { memory } from "./memory";
 
 export const fr: Catalog = {
   common,
@@ -94,4 +95,5 @@ export const fr: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  memory,
 };
