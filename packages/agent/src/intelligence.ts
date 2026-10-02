@@ -1,7 +1,19 @@
 // The agent's intelligence layer (A5): what it remembers about the person, and how it notices which remembered fact a
 // reply relied on (the "From memory" line under that reply). The api implements `IntelligenceContext`; nothing here
 // reads storage.
-import type { HistorySearchOutput, MemoryFact, MemoryToolOutput, MemoryUsed, SuggestionsView } from "@kawase/api-client";
+import type {
+  ChartOutput,
+  ChartRangeId,
+  DecisionView,
+  HistorySearchOutput,
+  MemoryFact,
+  MemoryToolOutput,
+  MemoryUsed,
+  SettingDiff,
+  SettingId,
+  StatusView,
+  SuggestionsView,
+} from "@kawase/api-client";
 
 import type { ThreadDigest } from "./threads";
 
@@ -24,6 +36,14 @@ export type IntelligenceContext = {
   searchHistory(query: string): Promise<HistorySearchOutput>;
   /** Home's "For you" cards, computed now (idle cash next to a liquid vault, expiring requests, stuck bridges…). */
   forYou(): Promise<SuggestionsView>;
+  /** The portfolio's value (no token) or a token's price over a range, for the chart card. */
+  chart(input: { token?: string | undefined; range: ChartRangeId }): Promise<ChartOutput>;
+  /** Why the latest bridge route, swap venue or vault in this conversation was chosen, next to the others asked. */
+  explainChoice(about: "bridge" | "swap" | "earn"): Promise<DecisionView>;
+  /** A preference now and as asked (memory, reply language, theme); the card's Apply changes it. */
+  settingDiff(input: { setting: SettingId; value: string; reason: string | null }): Promise<SettingDiff>;
+  /** Whether what Kawase depends on answers now. */
+  status(): Promise<StatusView>;
   /** Background work that failed after the person had their answer (logged, never shown). */
   warn(error: unknown, what: string): void;
 };

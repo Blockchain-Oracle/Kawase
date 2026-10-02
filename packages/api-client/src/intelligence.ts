@@ -78,6 +78,69 @@ export type Suggestion = {
 
 export type SuggestionsView = { network: AgentNetwork; suggestions: Suggestion[]; muted: SuggestionKind[] };
 
+/** show_chart: a price or the portfolio over a range, as the chart card draws it (values in US dollars). */
+export type ChartRangeId = "1D" | "1W" | "1M" | "1Y";
+export type ChartOutput =
+  | {
+      status: "ready";
+      kind: "portfolio" | "token";
+      network: AgentNetwork;
+      range: ChartRangeId;
+      /** "Portfolio", or the token's symbol. */
+      title: string;
+      /** For a token: what the card needs to fetch other ranges. */
+      token?: { chainId: number; address: string; symbol: string; name: string; logoUrl: string | null } | undefined;
+      /** Oldest first; `t` is milliseconds since 1970. */
+      points: { t: number; v: number }[];
+      last: number;
+      changePct: number | null;
+    }
+  | { status: "not_found"; query: string; network: AgentNetwork }
+  | { status: "empty"; kind: "portfolio" | "token"; title: string; network: AgentNetwork; range: ChartRangeId };
+
+/** explain_choice: why the agent picked this route, vault or venue, next to what else it asked (R3). */
+export type DecisionOption = {
+  name: string;
+  status: "chosen" | "quoted" | "unavailable";
+  /** What the person would get with it, formatted ("19.98 USDC", "4.2% a year"). */
+  value: string | null;
+  fee: string | null;
+  eta: string | null;
+  /** Why it was not chosen or could not quote (a code the app words: no_quote, timeout, lower_out, lower_yield…). */
+  reason: string | null;
+};
+export type DecisionView =
+  | {
+      status: "ready";
+      about: "bridge" | "swap" | "earn";
+      network: AgentNetwork;
+      /** What was decided ("20 USDC to Base", "10 USDC → EURC", "Deposit 50 USDC"). */
+      subject: string;
+      /** How the winner was picked: most_received, highest_yield. */
+      basis: "most_received" | "highest_yield";
+      options: DecisionOption[];
+      quotedAt: string | null;
+    }
+  | { status: "none"; about: "bridge" | "swap" | "earn"; network: AgentNetwork };
+
+/** propose_setting_change: one preference, now and after; the card's Apply makes the change on the device. */
+export type SettingId = "memory" | "replyLanguage" | "theme";
+export type SettingDiff =
+  | { status: "proposed"; setting: SettingId; now: string; after: string; reason: string | null }
+  | { status: "unchanged"; setting: SettingId; now: string }
+  | { status: "needs_sign_in"; setting: SettingId };
+
+/** get_status: whether what Kawase depends on is answering now. */
+export type DependencyState = "ok" | "slow" | "down";
+export type DependencyLine = {
+  id: "kawase_api" | "database" | "arc_testnet" | "arc_mainnet" | "circle" | "prices" | "fx";
+  state: DependencyState;
+  ms: number | null;
+  /** A short fact ("block 12,345,678 · 1 s old"), English. */
+  detail: string | null;
+};
+export type StatusView = { checkedAt: string; overall: DependencyState; items: DependencyLine[] };
+
 export type { AgentNetwork };
 
 /** The client's `call`, as the factory below receives it. */
@@ -104,5 +167,7 @@ export function intelligenceApi(call: Call) {
       /** "Don't show this kind" (and back). */
       mute: (kind: SuggestionKind, muted: boolean) => call<{ muted: SuggestionKind[] }>("PUT", `/suggestions/kinds/${kind}`, { muted }),
     },
+    /** Whether what Kawase depends on is answering now (public, cached briefly). */
+    status: () => call<StatusView>("GET", "/status"),
   };
 }

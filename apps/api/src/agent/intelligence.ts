@@ -12,6 +12,12 @@ import type { EarnService } from "../earn/service";
 import type { RequestService } from "../requests/service";
 import { SuggestionService } from "../suggestions/service";
 import type { WalletService } from "../wallet/service";
+import type { BridgeService } from "../bridge/service";
+import { StatusService } from "../status/service";
+import type { SwapService } from "../swap/service";
+import type { AssetService } from "../tokens/service";
+import type { Chains } from "../wallet/chain";
+import { chartFor, decisionFor, settingDiff } from "./insight";
 import type { SessionUser } from "../types";
 
 const WORD_MIN = 2;
@@ -26,6 +32,10 @@ export function buildIntelligence(input: {
   wallets: WalletService;
   earn: EarnService;
   requests: RequestService;
+  assets: AssetService;
+  swaps: SwapService;
+  bridges: BridgeService;
+  chains: Chains;
 }): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
@@ -89,6 +99,22 @@ export function buildIntelligence(input: {
 
     async forYou() {
       return new SuggestionService(db, input.wallets, input.earn, input.requests, log).list(user);
+    },
+
+    async chart({ token, range }) {
+      return chartFor(input.assets, user, { token, range });
+    },
+
+    async explainChoice(about) {
+      return decisionFor({ db, swaps: input.swaps, bridges: input.bridges, earn: input.earn }, user, threadId, about);
+    },
+
+    async settingDiff({ setting, value, reason }) {
+      return settingDiff(memory, user, setting, value, reason);
+    },
+
+    async status() {
+      return new StatusService(db, input.chains).view();
     },
 
     warn(error, what) {

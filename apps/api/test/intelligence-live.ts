@@ -14,7 +14,10 @@ import { loadApiEnv } from "@kawase/env";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "../src/app";
+import { appKitBridges } from "../src/bridge/engine";
 import { appKitEarn } from "../src/earn/engine";
+import { liveMarketData } from "../src/market/sources";
+import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
 import { deleteUser, fakeTurnkey, jsonRequest, noChains, noOps, okFaucet } from "./helpers";
 
@@ -141,6 +144,9 @@ async function realAccountApp() {
     faucet: okFaucet,
     ops: noOps,
     earn: appKitEarn(env),
+    bridges: appKitBridges(env),
+    swaps: appKitSwaps(env),
+    market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
     models: createModels({ openai: openaiKey }),
     rateLimitPerMinute: RATE,
     signInLimitPerMinute: RATE,
@@ -148,6 +154,45 @@ async function realAccountApp() {
 }
 
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async cards() {
+    const real = await realAccountApp();
+    const ask = async (threadId: string, text: string) => {
+      const response = await real.request(
+        "/agent/chat",
+        jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text }] } }, token),
+      );
+      if (response.status !== 200) throw new Error(`chat ${response.status}: ${await response.text()}`);
+      await response.text();
+      for (let i = 0; i < POLLS; i += 1) {
+        const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+        if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+        await wait(POLL_MS);
+      }
+      const stored = (await (await real.request(`/agent/threads/${threadId}`, { headers: { authorization: `Bearer ${token}` } })).json()) as { messages: Message[] };
+      const reply = stored.messages.at(-1)!;
+      const shrink = (output: unknown) => {
+        const text = JSON.stringify(output);
+        return text.length > SHOWN_CHARS ? `${text.slice(0, SHOWN_CHARS)}…` : output;
+      };
+      return {
+        asked: text,
+        reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+        tools: reply.parts
+          .filter((part) => part.type.startsWith("tool-"))
+          .map((part) => ({ tool: part.type.slice("tool-".length), state: part.state, input: part.input, output: shrink(part.output) })),
+      };
+    };
+    const SHOWN_CHARS = 1_600;
+    const tokenChart = await ask(randomUUID(), "Show me a chart of EURC over the last month.");
+    const portfolio = await ask(randomUUID(), "Chart my portfolio over the week.");
+    const status = await ask(randomUUID(), "Is Arc down? Check if everything is working.");
+    const setting = await ask(randomUUID(), "From now on reply to me in French.");
+    const thread = randomUUID();
+    const bridge = await ask(thread, "Bridge 1 USDC to Base.");
+    const why = await ask(thread, "Why did you pick that route? What else did you check?");
+    const publicStatus = (await (await real.request("/status")).json()) as unknown;
+    return { tokenChart, portfolio, status, setting, bridge, why, publicStatus };
+  },
   async knowledge() {
     const fees = await turn(randomUUID(), "Why do I pay network fees in USDC on Arc, and roughly how much does a transfer cost?");
     const finality = await turn(randomUUID(), "How fast is a payment final on Arc? Can it be reversed?");

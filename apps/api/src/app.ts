@@ -76,6 +76,7 @@ import { searchRoutes } from "./search/routes";
 import { SearchService } from "./search/service";
 import { suggestionRoutes } from "./suggestions/routes";
 import { SuggestionService } from "./suggestions/service";
+import { StatusService } from "./status/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -306,6 +307,9 @@ export function createApp(deps: AppDeps) {
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
   app.route("/search", searchRoutes(new SearchService(deps.db)));
   app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log)));
+  // Dependency health, public (the status card, docs and landing), cached for half a minute.
+  const status = new StatusService(deps.db, deps.chains);
+  app.get("/status", async (c) => c.json(await status.view()));
 
   return app;
 }

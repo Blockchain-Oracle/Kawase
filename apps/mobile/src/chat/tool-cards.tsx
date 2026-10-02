@@ -83,9 +83,9 @@ import { OnrampBuyCard } from "./buy-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
-import type { HistorySearchOutput, MemoryToolOutput, SuggestionsView } from "@kawase/api-client";
+import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
-import { ForYouChatCard, HistorySearchCard, KnowledgeCard } from "./insight-cards";
+import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -590,6 +590,10 @@ const LOADING_LABELS: Record<string, string> = {
   search_history: "insight.searching",
   get_for_you: "forYou.loading",
   arc_knowledge: "insight.lookingUp",
+  show_chart: "insight.loadingChart",
+  explain_choice: "insight.loadingDecision",
+  propose_setting_change: "insight.loadingSetting",
+  get_status: "insight.loadingStatus",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -695,6 +699,14 @@ export function ToolCard({
       return <ForYouChatCard output={part.output as SuggestionsView} />;
     case "arc_knowledge":
       return <KnowledgeCard output={part.output as { passages: { title: string; source: string }[] }} />;
+    case "show_chart":
+      return <ChartCard output={part.output as ChartOutput} />;
+    case "explain_choice":
+      return <DecisionCard output={part.output as DecisionView} />;
+    case "propose_setting_change":
+      return <SettingDiffCard output={part.output as SettingDiff} />;
+    case "get_status":
+      return <StatusCard output={part.output as StatusView} />;
     default:
       return null;
   }

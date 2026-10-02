@@ -17,6 +17,11 @@ const SEARCH_SHOWN = 6;
 /** "YYYY-MM-DD". */
 const DATE_CHARS = 10;
 const KNOWLEDGE_MAX = 200;
+const TOKEN_MAX = 80;
+const SETTING_MAX = 40;
+const SETTING_REASON_MAX = 160;
+const PRICE_DIGITS = 4;
+const CHANGE_DIGITS = 2;
 
 export function intelligenceTools(context: AgentContext) {
   const { intelligence } = context;
@@ -79,6 +84,53 @@ export function intelligenceTools(context: AgentContext) {
           passages: output.passages.map((passage) => ({ title: passage.title, source: passage.source, text: passage.text })),
         },
       }),
+    }),
+    show_chart: tool({
+      description:
+        "Draw a chart card: the person's whole portfolio value over time (no token), or a token's price (pass its name, symbol or address). Range 1D, 1W, 1M or 1Y (1W if they did not say); the card lets them switch range. Use it for \"show me my balance over the month\", \"chart BTC this week\", \"how has EURC moved?\". It shows the change over the range; never predict where it goes next.",
+      inputSchema: z.object({
+        token: z.string().min(1).max(TOKEN_MAX).optional().describe("Name, symbol or address; omit for the portfolio"),
+        range: z.enum(["1D", "1W", "1M", "1Y"]).optional(),
+      }),
+      execute: async ({ token, range }) => intelligence.chart({ token, range: range ?? "1W" }),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value:
+          output.status === "ready"
+            ? {
+                status: output.status,
+                chart: output.title,
+                range: output.range,
+                network: output.network,
+                nowUsd: Number(output.last.toFixed(PRICE_DIGITS)),
+                changePct: output.changePct === null ? null : Number(output.changePct.toFixed(CHANGE_DIGITS)),
+                highUsd: Number(Math.max(...output.points.map((point) => point.v)).toFixed(PRICE_DIGITS)),
+                lowUsd: Number(Math.min(...output.points.map((point) => point.v)).toFixed(PRICE_DIGITS)),
+              }
+            : output,
+      }),
+    }),
+    explain_choice: tool({
+      description:
+        "Show why Kawase picked the route, venue or vault on the latest bridge, swap or earn card in this conversation: every option it asked, what each would deliver (or yield), fees, time, and why the others lost or could not quote. Use it for \"why this route?\", \"why not Across?\", \"is there a better rate?\", \"why that vault?\". It reads the card's own quotes; it does not re-quote.",
+      inputSchema: z.object({ about: z.enum(["bridge", "swap", "earn"]) }),
+      execute: async ({ about }) => intelligence.explainChoice(about),
+    }),
+    propose_setting_change: tool({
+      description:
+        "Show a card with one of the person's preferences now and after the change they asked for, with an Apply button they tap: memory on or off (value on/off), the language you reply in (a language code like fr, or same for the app's language), or the theme (system, dark, light). Nothing changes until they tap. Limits, allowances and risk settings are not changed here.",
+      inputSchema: z.object({
+        setting: z.enum(["memory", "replyLanguage", "theme"]),
+        value: z.string().min(1).max(SETTING_MAX),
+        reason: z.string().max(SETTING_REASON_MAX).optional().describe("One short line, in their language"),
+      }),
+      execute: async ({ setting, value, reason }) => intelligence.settingDiff({ setting, value, reason: reason ?? null }),
+    }),
+    get_status: tool({
+      description:
+        "Whether what Kawase depends on is working right now: Kawase's own service and database, Arc (latest block and its age, per network), Circle, the price source and the FX source, each ok, slow or down. Use it when something seems broken or slow, or when they ask \"is Arc down?\", \"is everything working?\".",
+      inputSchema: z.object({}),
+      execute: async () => intelligence.status(),
     }),
     get_for_you: tool({
       description:
