@@ -55,6 +55,9 @@ import { ticket } from "./ticket";
 import { buy } from "./buy";
 import { move } from "./move";
 import { movePolicy } from "./move-policy";
+import { lend } from "./lend";
+import { lendPolicy } from "./lend-policy";
+import { yieldOptions } from "./yield-options";
 
 export const ru: Catalog = {
   common,
@@ -112,4 +115,7 @@ export const ru: Catalog = {
   buy,
   move,
   movePolicy,
+  lend,
+  lendPolicy,
+  yieldOptions,
 };

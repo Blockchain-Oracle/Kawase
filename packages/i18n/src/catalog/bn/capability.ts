@@ -13,4 +13,5 @@ export const capability: Catalog["capability"] = {
   faucet: "টেস্ট টাকা",
   payment_links: "পেমেন্ট লিংক",
   margin: "লং ও শর্ট",
+  lend: "ধার নেওয়া ও দেওয়া",
 };

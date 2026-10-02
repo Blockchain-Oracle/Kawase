@@ -95,6 +95,23 @@ function restingState(evaluation: LendEvaluation): IntentState {
   return "input_required";
 }
 
+/**
+ * Where the account would be liquidated, when its collateral after the action is one asset other than what it owes:
+ * health moves in step with that asset's price, so it reaches 1 at price ÷ health. Mixed collateral has no one price.
+ */
+function liquidationOf(market: AaveMarket, account: AaveAccount, action: StoredRequest["action"], reserve: AaveReserve, added: AaveReserve | undefined, healthAfterBps: number | null) {
+  if (healthAfterBps === null || healthAfterBps <= 0) return null;
+  const collateralIds = new Set(account.reserves.filter((entry) => entry.usingAsCollateral && entry.supplied > ZERO).map((entry) => entry.reserveId));
+  if (added) collateralIds.add(added.reserveId);
+  if (action === "supply" && account.reserves[reserve.reserveId]?.usingAsCollateral) collateralIds.add(reserve.reserveId);
+  const debtIds = new Set(account.reserves.filter((entry) => entry.debt > ZERO).map((entry) => entry.reserveId));
+  if (action === "borrow") debtIds.add(reserve.reserveId);
+  if (collateralIds.size !== 1) return null;
+  const only = market.reserves.find((entry) => entry.reserveId === [...collateralIds][0]);
+  if (!only || debtIds.has(only.reserveId)) return null;
+  return { asset: only.symbol, price: ((only.price * BPS) / BigInt(healthAfterBps)).toString() };
+}
+
 export class LendService {
   private readonly tracking = new Set<string>();
   private readonly marketCache = new Map<NetworkId, { at: number; market: AaveMarket }>();
@@ -159,7 +176,7 @@ export class LendService {
     const network = user.activeNetwork;
     const base = { network, minBorrowHealth: LEND.minBorrowHealthBps / BPS_NUMBER };
     const market = await this.venue(network);
-    if (!market) return { ...base, available: false, reason: "mainnet_only", reserves: [], supplied: [], borrowed: [], health: null, borrowRoomUsd: 0 };
+    if (!market) return { ...base, available: false, reason: "mainnet_only", reserves: [], held: [], supplied: [], borrowed: [], health: null, borrowRoomUsd: 0, weightedCollateralUsd: 0, debtUsd: 0 };
     const reserves = market.reserves.map((reserve) => ({
       reserveId: reserve.reserveId,
       asset: reserve.symbol,
@@ -173,8 +190,17 @@ export class LendService {
       liquidity: reserve.liquidity.toString(),
     }));
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
-    if (!wallet || user.isAnonymous) return { ...base, available: true, reason: null, reserves, supplied: [], borrowed: [], health: null, borrowRoomUsd: 0 };
-    const account = await readAccount(this.clients(network).client, market.spoke, wallet, market.reserves.length);
+    if (!wallet || user.isAnonymous) return { ...base, available: true, reason: null, reserves, held: [], supplied: [], borrowed: [], health: null, borrowRoomUsd: 0, weightedCollateralUsd: 0, debtUsd: 0 };
+    const client = this.clients(network).client;
+    const [account, balances] = await Promise.all([
+      readAccount(client, market.spoke, wallet, market.reserves.length),
+      Promise.all(market.reserves.map((reserve) => client.readContract({ address: reserve.underlying, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }))),
+    ]);
+    // What the wallet itself holds of each listed asset: what it could put in as collateral or repay with.
+    const held = market.reserves
+      .map((reserve, index) => ({ reserveId: reserve.reserveId, asset: reserve.symbol, amount: balances[index]!, decimals: reserve.decimals }))
+      .filter((entry) => entry.amount > ZERO)
+      .map((entry) => ({ ...entry, amount: entry.amount.toString() }));
     const free = await this.free(user.id, network, market, account);
     const supplied = market.reserves
       .filter((reserve) => (free.supplied.get(reserve.reserveId) ?? ZERO) > ZERO)
@@ -195,10 +221,13 @@ export class LendService {
       available: true,
       reason: null,
       reserves,
+      held,
       supplied,
       borrowed,
       health: hasNoDebt(account) ? null : Number(formatUnits(account.healthFactor, WAD_DECIMALS)),
       borrowRoomUsd: room > ZERO ? usd(room) : 0,
+      weightedCollateralUsd: usd(weightedTotal),
+      debtUsd: usd(account.totalDebtValue),
     };
   }
 
@@ -373,13 +402,13 @@ export class LendService {
       pausedAll: false,
       wallet: { registered: Boolean(wallet), setUp, usdc: usdcBalance },
       action,
-      asset: !request.asset ? { status: "missing" } : !reserve ? { status: "unknown", name: request.asset } : { status: "found", symbol: reserve.symbol, borrowable: reserve.borrowable && !reserve.paused && !reserve.frozen, collateralOk: reserve.collateralFactorBps > 0 },
+      asset: !request.asset ? { status: "missing" } : !reserve ? { status: "unknown", name: request.asset } : { status: "found", symbol: reserve.symbol, decimals: reserve.decimals, borrowable: reserve.borrowable && !reserve.paused && !reserve.frozen, collateralOk: reserve.collateralFactorBps > 0 },
       amount,
       limit: { balance, supplied, debt },
       collateral: !request.collateralAsset
         ? { status: "none" }
         : collateral && collateral.collateralFactorBps > 0
-          ? { status: "ok", balance: collateralBalance, amount: collateralAmount?.status === "ok" ? collateralAmount.baseUnits : ZERO }
+          ? { status: "ok", symbol: collateral.symbol, decimals: collateral.decimals, balance: collateralBalance, amount: collateralAmount?.status === "ok" ? collateralAmount.baseUnits : ZERO }
           : { status: "not_collateral", symbol: collateral?.symbol ?? request.collateralAsset },
       health: { afterBps: healthAfterBps, minBps: LEND.minBorrowHealthBps, warnBps: LEND.warnHealthBps },
       gasFloat: GAS_FLOAT_USDC_BASE_UNITS,
@@ -412,7 +441,7 @@ export class LendService {
 
   private async draft(user: SessionUser, intent: IntentRow, request: StoredRequest, createdBy: "user" | "agent" | "system") {
     const fresh = await this.evaluate(user, intent, request);
-    const { wallet, clients, market, reserve, collateral, collateralAmount, value, all, healthBefore, healthAfterBps, evaluation } = fresh;
+    const { wallet, clients, market, reserve, collateral, collateralAmount, account, value, all, healthBefore, healthAfterBps, evaluation } = fresh;
     let draft: LendDraft | null = null;
     let view: LendDraftView | null = null;
     if (wallet && clients && market && reserve && value > ZERO) {
@@ -440,7 +469,7 @@ export class LendService {
         collateral: withCollateral ? { asset: collateral!.symbol, amount: collateralAmount.baseUnits.toString(), decimals: collateral!.decimals } : null,
         healthBefore,
         healthAfter: healthAfterBps === null ? null : healthAfterBps / BPS_NUMBER,
-        liquidationPrice: null,
+        liquidation: account ? liquidationOf(market, account, request.action, reserve, withCollateral ? collateral! : undefined, healthAfterBps) : null,
         rate: request.action === "borrow" || request.action === "repay" ? borrowApr(reserve) : supplyApr(reserve),
         networkFee: feeInUsdc(fee).toString(),
         quotedAt: new Date().toISOString(),

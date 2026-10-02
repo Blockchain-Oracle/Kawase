@@ -141,7 +141,8 @@ function summarizeLend(intent: LendIntent): string {
   if (!draft) return blocking ?? "Needs more details.";
   const amount = `${formatUnits(BigInt(draft.amount), draft.decimals)} ${draft.asset}`;
   const extra = draft.collateral ? ` with ${formatUnits(BigInt(draft.collateral.amount), draft.collateral.decimals)} ${draft.collateral.asset} as collateral` : "";
-  const health = draft.healthAfter !== null ? `, health after ${draft.healthAfter.toFixed(MONEY_DIGITS)}` : "";
+  const liquidation = draft.liquidation ? ` (liquidated if ${draft.liquidation.asset} falls to ${price(draft.liquidation.price)})` : "";
+  const health = draft.healthAfter !== null ? `, health after ${draft.healthAfter.toFixed(MONEY_DIGITS)}${liquidation}` : "";
   const line = `${draft.action} ${draft.all ? `all (${amount})` : amount}${extra} on Aave V4 at ${pct(draft.rate)} a year${health}. The person confirms on the card.`;
   return blocking ? `${line} Blocked: ${blocking}` : line;
 }

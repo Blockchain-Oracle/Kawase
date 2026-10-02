@@ -15,11 +15,11 @@ export type LendFacts = {
   pausedAll: boolean;
   wallet: { registered: boolean; setUp: boolean; usdc: bigint };
   action: "supply" | "withdraw" | "borrow" | "repay";
-  asset: { status: "found"; symbol: string; borrowable: boolean; collateralOk: boolean } | { status: "missing" } | { status: "unknown"; name: string };
+  asset: { status: "found"; symbol: string; decimals: number; borrowable: boolean; collateralOk: boolean } | { status: "missing" } | { status: "unknown"; name: string };
   amount: AmountFacts | { status: "all" };
   /** What the action can reach: the wallet's balance (supply, repay), the free supply (withdraw), the debt (repay). */
   limit: { balance: bigint; supplied: bigint; debt: bigint };
-  collateral: { status: "none" } | { status: "ok"; balance: bigint; amount: bigint } | { status: "not_collateral"; symbol: string };
+  collateral: { status: "none" } | { status: "ok"; symbol: string; decimals: number; balance: bigint; amount: bigint } | { status: "not_collateral"; symbol: string };
   health: { afterBps: number | null; minBps: number; warnBps: number };
   gasFloat: bigint;
 };
@@ -50,13 +50,15 @@ export function evaluateLend(facts: LendFacts): LendEvaluation {
   if (amount.status === "invalid" || (amount.status === "ok" && amount.baseUnits <= ZERO)) results.push(result("AMOUNT_INVALID"));
   const value = amount.status === "ok" ? amount.baseUnits : amount.status === "all" ? (facts.action === "repay" ? facts.limit.debt : facts.limit.supplied) : undefined;
   if (value !== undefined && value > ZERO) {
-    if (facts.action === "supply" && value > facts.limit.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.limit.balance), asset: facts.asset.symbol }));
-    if (facts.action === "withdraw" && value > facts.limit.supplied) results.push(result("OVER_POSITION", { position: s(facts.limit.supplied), asset: facts.asset.symbol }));
+    const symbol = facts.asset.symbol;
+    const decimals = String(facts.asset.decimals);
+    if (facts.action === "supply" && value > facts.limit.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.limit.balance), asset: symbol, decimals }));
+    if (facts.action === "withdraw" && value > facts.limit.supplied) results.push(result("OVER_POSITION", { position: s(facts.limit.supplied), asset: symbol, decimals }));
     if (facts.action === "repay") {
-      if (facts.limit.debt === ZERO) results.push(result("LEND_NOTHING_OWED", { asset: facts.asset.symbol }));
-      else if (value > facts.limit.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.limit.balance), asset: facts.asset.symbol }));
+      if (facts.limit.debt === ZERO) results.push(result("LEND_NOTHING_OWED", { asset: symbol }));
+      else if (value > facts.limit.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.limit.balance), asset: symbol, decimals }));
     }
-    if (facts.collateral.status === "ok" && facts.collateral.amount > facts.collateral.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.collateral.balance), asset: "collateral" }));
+    if (facts.collateral.status === "ok" && facts.collateral.amount > facts.collateral.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.collateral.balance), asset: facts.collateral.symbol, decimals: String(facts.collateral.decimals) }));
   } else if ((facts.action === "withdraw" || facts.action === "repay") && amount.status === "all") {
     results.push(facts.action === "repay" ? result("LEND_NOTHING_OWED", { asset: facts.asset.symbol }) : result("OVER_POSITION", { position: "0", asset: facts.asset.symbol }));
   }

@@ -331,6 +331,8 @@ export type LendAccountView = {
   available: boolean;
   reason: "mainnet_only" | null;
   reserves: LendReserveView[];
+  /** What the wallet holds of each listed asset (what it could put in as collateral, or repay with). */
+  held: { reserveId: number; asset: string; amount: string; decimals: number }[];
   /** What this person has on Aave V4 outside Kawase Margin positions: supplied (earning) and borrowed. */
   supplied: { reserveId: number; asset: string; amount: string; decimals: number; collateral: boolean; usd: number }[];
   borrowed: { reserveId: number; asset: string; amount: string; decimals: number; usd: number }[];
@@ -338,6 +340,9 @@ export type LendAccountView = {
   /** USD more that could be borrowed against what is supplied, keeping health at the floor. */
   borrowRoomUsd: number;
   minBorrowHealth: number;
+  /** Account-wide (margin positions included, as the Spoke counts them): collateral × factor, and debt, in USD. */
+  weightedCollateralUsd: number;
+  debtUsd: number;
 };
 
 export type LendRequest = {
@@ -360,8 +365,8 @@ export type LendDraftView = {
   collateral: { asset: string; amount: string; decimals: number } | null;
   healthBefore: number | null;
   healthAfter: number | null;
-  /** The borrowed asset's price at which the account would be liquidated, when one asset dominates (USD, 8 decimals). */
-  liquidationPrice: string | null;
+  /** The collateral's price at which the account would be liquidated (USD, 8 decimals), when it is one asset. */
+  liquidation: { asset: string; price: string } | null;
   rate: number;
   networkFee: string;
   quotedAt: string;

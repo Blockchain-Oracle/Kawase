@@ -9,7 +9,7 @@ import { after, test } from "node:test";
 import { createPublicClient, createWalletClient, http, type Address } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { LendIntent, YieldOptionsView } from "@kawase/api-client";
+import type { LendAccountView, LendIntent, YieldOptionsView } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork, type NetworkId } from "@kawase/networks";
 
@@ -67,6 +67,16 @@ test("lend: yield options, a borrow with its health, the floor and the collatera
   const draft = borrow.intent.draft;
   assert.ok(draft?.healthAfter && draft.healthAfter > 2, JSON.stringify(borrow.intent));
   console.log(`borrow 5 USDC against 0.0002 cirBTC: health after ${draft!.healthAfter!.toFixed(2)}, rate ${(draft!.rate * 100).toFixed(2)}%; blocked by ${borrow.intent.blocking?.code}`);
+  // One collateral asset: health moves with its price, so liquidation is at price ÷ health.
+  assert.equal(draft!.liquidation?.asset, "cirBTC");
+  const account = (await (await call("GET", "/lend/account")).json()) as LendAccountView;
+  const btc = account.reserves.find((reserve) => reserve.asset === "cirBTC")!;
+  const expected = Number(btc.price) / draft!.healthAfter!;
+  assert.ok(Math.abs(Number(draft!.liquidation!.price) - expected) / expected < 1e-3, `${draft!.liquidation!.price} vs ${expected}`);
+  console.log(`liquidated if cirBTC falls to $${(Number(draft!.liquidation!.price) / 1e8).toFixed(0)} (now $${(Number(btc.price) / 1e8).toFixed(0)})`);
+  assert.deepEqual([account.available, account.held, account.debtUsd, account.weightedCollateralUsd], [true, [], 0, 0]);
+  const short = borrow.intent.results.find((result) => result.code === "INSUFFICIENT_BALANCE" && result.params?.asset === "cirBTC");
+  assert.equal(short?.params?.decimals, "8", JSON.stringify(borrow.intent.results));
   const greedy = (await (await call("PATCH", `/lend/orders/${borrow.intent.id}`, { amount: "16" })).json()) as { intent: LendIntent };
   assert.equal(greedy.intent.blocking?.code, "HEALTH_TOO_LOW");
   const euro = (await (await call("POST", "/lend/orders", { action: "borrow", asset: "USDC", amount: "5", collateralAsset: "EURC", collateralAmount: "10" })).json()) as { intent: LendIntent };
