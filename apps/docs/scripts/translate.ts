@@ -32,6 +32,11 @@ const RETRY_BASE_MS = 2_000;
 const HASH_CHARS = 16;
 const HTTP_TOO_MANY = 429;
 const HTTP_SERVER_ERROR = 500;
+const ERROR_EXCERPT_CHARS = 300;
+const JSON_INDENT = 2;
+/** argv[0] is node, argv[1] the script. */
+const FIRST_ARG = 2;
+const FRONTMATTER_OPEN = "---\n";
 
 const APP_DIR = fileURLToPath(new URL("..", import.meta.url));
 const CONTENT_DIR = join(APP_DIR, "content/docs");
@@ -58,7 +63,7 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(FIRST_ARG);
 const force = args.includes("--force");
 /** Only rewrite frontmatter and the index from what is on disk; no API calls. */
 const normalizeOnly = args.includes("--normalize");
@@ -186,7 +191,7 @@ async function callModel(system: string, input: string, json: boolean): Promise<
     }
     const retryable = !response.ok && (response.status === HTTP_TOO_MANY || response.status >= HTTP_SERVER_ERROR);
     if (attempt >= MAX_ATTEMPTS || (!response.ok && !retryable)) {
-      throw new Error(`OpenAI ${response.status}: ${(await response.text().catch(() => "")).slice(0, 300)}`);
+      throw new Error(`OpenAI ${response.status}: ${(await response.text().catch(() => "")).slice(0, ERROR_EXCERPT_CHARS)}`);
     }
     await new Promise((resolve) => setTimeout(resolve, RETRY_BASE_MS * attempt));
   }
@@ -212,7 +217,7 @@ const sameShape = (a: ReturnType<typeof shape>, b: ReturnType<typeof shape>) =>
   (Object.keys(a) as (keyof typeof a)[]).every((key) => a[key] === b[key]);
 
 function withSourceHash(mdx: string, sourceHash: string): string {
-  const end = mdx.indexOf("\n---", 3);
+  const end = mdx.indexOf("\n---", FRONTMATTER_OPEN.length - 1);
   const front = mdx.slice(0, end).replace(/^sourceHash:.*\n?/m, "");
   return `${front.trimEnd()}\nsourceHash: ${sourceHash}${mdx.slice(end)}`;
 }
@@ -221,7 +226,7 @@ const existingHash = (mdx: string) => /^sourceHash:\s*(\S+)/m.exec(mdx)?.[1];
 
 /** Re-emits `title` and `description` as JSON strings (valid YAML), so a translated colon can never break the page. */
 function normalizeFrontmatter(mdx: string): string {
-  const end = mdx.indexOf("\n---", 3);
+  const end = mdx.indexOf("\n---", FRONTMATTER_OPEN.length - 1);
   if (!mdx.startsWith("---\n") || end < 0) return mdx;
   const lines = mdx
     .slice("---\n".length, end)
@@ -286,7 +291,7 @@ async function translateMdx(lang: SupportedLocale, file: string): Promise<string
 // ---------- JSON (meta, messages, scope) ----------
 
 async function translateJson<T>(lang: SupportedLocale, value: T): Promise<T> {
-  const text = await callModel(instructions(lang, "json"), `Translate this JSON object:\n${JSON.stringify(value, null, 2)}`, true);
+  const text = await callModel(instructions(lang, "json"), `Translate this JSON object:\n${JSON.stringify(value, null, JSON_INDENT)}`, true);
   return JSON.parse(text) as T;
 }
 
@@ -312,7 +317,7 @@ async function translateMeta(lang: SupportedLocale, file: string): Promise<strin
   };
   const out = join(CONTENT_DIR, lang, file);
   await mkdir(dirname(out), { recursive: true });
-  await writeFile(out, `${JSON.stringify(result, null, 2)}\n`);
+  await writeFile(out, `${JSON.stringify(result, null, JSON_INDENT)}\n`);
   return "written";
 }
 
@@ -329,7 +334,7 @@ function fumadocsLabels(): Record<string, string> {
 async function translateMessages(lang: SupportedLocale): Promise<string> {
   const english = JSON.parse(await readFile(join(MESSAGES_DIR, "en.json"), "utf8")) as Record<string, unknown>;
   const translated = await translateJson(lang, { ...english, fumadocs: fumadocsLabels() });
-  await writeFile(join(MESSAGES_DIR, `${lang}.json`), `${JSON.stringify(translated, null, 2)}\n`);
+  await writeFile(join(MESSAGES_DIR, `${lang}.json`), `${JSON.stringify(translated, null, JSON_INDENT)}\n`);
   return "written";
 }
 
@@ -341,7 +346,7 @@ async function translateScope(lang: SupportedLocale): Promise<string> {
   const translated = await translateJson(lang, keyed);
   const bySentence = Object.fromEntries(sentences.map((sentence, index) => [sentence, translated[`s${index}`] ?? sentence]));
   await mkdir(join(MESSAGES_DIR, "scope"), { recursive: true });
-  await writeFile(join(MESSAGES_DIR, "scope", `${lang}.json`), `${JSON.stringify(bySentence, null, 2)}\n`);
+  await writeFile(join(MESSAGES_DIR, "scope", `${lang}.json`), `${JSON.stringify(bySentence, null, JSON_INDENT)}\n`);
   return "written";
 }
 

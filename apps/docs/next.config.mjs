@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
@@ -9,7 +9,7 @@ const config = {
   // A self-contained server for the Docker image (Dockerfile); traced from the workspace root so the
   // @kawase packages it imports are included.
   output: "standalone",
-  outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
+  outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   // Internal packages ship TypeScript source.
   transpilePackages: [
     "@kawase/config",
