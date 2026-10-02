@@ -1,6 +1,6 @@
 // The safety model in one picture: what happens to a request depending on where it falls. Every number is read from
 // DEFAULT_LIMITS (packages/config/src/limits.ts), the same defaults the app and its policy engine use.
-import { ArrowRight, Fingerprint, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, Fingerprint, PauseCircle, ShieldCheck, Zap } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { DEFAULT_LIMITS } from "@kawase/config";
@@ -93,6 +93,26 @@ export function Safety() {
                 safety model
               </a>{" "}
               for the full list.
+            </>
+          }
+        />
+        <Lane
+          tone="ask"
+          icon={<PauseCircle className="size-5" aria-hidden />}
+          when="Whenever you want"
+          then="You stay in control"
+          detail={
+            <>
+              Pause all stops everything the agent does without asking. Practice mode runs the exact transaction as a
+              dry run, so nothing moves. Needs you holds any step an automation may not take alone, every swap
+              included. The exit kit revokes every permission in one transaction. See{" "}
+              <a
+                className="underline underline-offset-4 hover:text-foreground"
+                href={`${links.docs}/docs/features/limits-and-control`}
+              >
+                limits and control
+              </a>
+              .
             </>
           }
         />

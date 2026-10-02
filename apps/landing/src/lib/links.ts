@@ -8,6 +8,8 @@ export const links = {
   landing: process.env.NEXT_PUBLIC_LANDING_URL ?? PUBLIC_LINKS.landing,
   github: PUBLIC_LINKS.github,
   androidApk: PUBLIC_LINKS.androidApk,
+  /** The desktop preview for Apple-silicon Macs (not notarized yet; every surface says so next to the link). */
+  desktopMac: PUBLIC_LINKS.desktopMac,
   testFlight: process.env.NEXT_PUBLIC_TESTFLIGHT_URL ?? PUBLIC_LINKS.testFlight,
   demoVideo: process.env.NEXT_PUBLIC_DEMO_VIDEO_URL ?? null,
   /** Server-side only: where /live reads the public counts. */
