@@ -2,7 +2,7 @@
 // over the canonical tokens, Arc's listed tokens and every token the watcher has seen arrive at the wallet; other
 // chains come from LI.FI's balance index (mainnet). Prices: GeckoTerminal's token markets (shared cache), LI.FI's
 // list as the fallback; test tokens are valued at their mainnet twin and always labelled test money.
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gte } from "drizzle-orm";
 import { erc20Abi, formatUnits, getAddress, isAddress, type Address } from "viem";
 
 import {
@@ -29,8 +29,9 @@ import type {
   TokenDetailView,
   TokenSearchResult,
   TokenView,
+  WatchRow,
 } from "@kawase/api-client";
-import { portfolioSnapshots, walletTokens, type Db } from "@kawase/db";
+import { portfolioSnapshots, walletTokens, watchlist, type Db } from "@kawase/db";
 import {
   CANONICAL_TOKENS,
   NETWORKS,
@@ -439,6 +440,51 @@ export class AssetService {
     const valueUsd = priceUsd === null ? null : Number(formatUnits(amount, view.decimals)) * priceUsd;
     if (hideReason(view, valueUsd, rows[0]?.visibility) !== null) return null;
     return { symbol: view.symbol, decimals: view.decimals };
+  }
+
+  // ── The watchlist (the token page's star; Markets "Watchlist") ──────────────────────────────────────────────────
+
+  async watched(userId: string, network: NetworkId, address: string): Promise<boolean> {
+    const [row] = await this.db
+      .select({ token: watchlist.tokenAddress })
+      .from(watchlist)
+      .where(and(eq(watchlist.userId, userId), eq(watchlist.chainId, chainIdOf(network)), eq(watchlist.tokenAddress, address.toLowerCase())));
+    return Boolean(row);
+  }
+
+  async watch(user: SessionUser, network: NetworkId, address: string, on: boolean): Promise<{ watched: boolean }> {
+    const chainId = chainIdOf(network);
+    const token = address.toLowerCase();
+    if (on) await this.db.insert(watchlist).values({ userId: user.id, network, chainId, tokenAddress: token }).onConflictDoNothing();
+    else await this.db.delete(watchlist).where(and(eq(watchlist.userId, user.id), eq(watchlist.chainId, chainId), eq(watchlist.tokenAddress, token)));
+    return { watched: on };
+  }
+
+  /** The starred tokens on a network with today's price and 24 h change, newest star first. */
+  async watchlist(user: SessionUser, network: NetworkId = user.activeNetwork): Promise<WatchRow[]> {
+    const clients = this.chains.get(network);
+    const rows = await this.db
+      .select({ token: watchlist.tokenAddress })
+      .from(watchlist)
+      .where(and(eq(watchlist.userId, user.id), eq(watchlist.network, network)))
+      .orderBy(desc(watchlist.createdAt));
+    if (rows.length === 0) return [];
+    const addresses = rows.map((row) => row.token);
+    const [described, { prices }, held] = await Promise.all([
+      this.directory.describe(network, chainIdOf(network), clients?.client, addresses),
+      this.prices(network, addresses).catch(() => ({ prices: new Map<string, Priced>() })),
+      this.db
+        .select({ token: walletTokens.tokenAddress })
+        .from(walletTokens)
+        .where(and(eq(walletTokens.userId, user.id), eq(walletTokens.chainId, chainIdOf(network)))),
+    ]);
+    const holding = new Set(held.map((row) => row.token));
+    return addresses.flatMap((address) => {
+      const token = described.get(address);
+      if (!token) return [];
+      const priced = prices.get(address);
+      return [{ token, priceUsd: priced?.priceUsd ?? null, change24hPct: priced?.change24hPct ?? null, held: holding.has(address) }];
+    });
   }
 
   async setVisibility(user: SessionUser, address: string, visibility: "auto" | "shown" | "hidden") {

@@ -349,7 +349,7 @@ export function createApp(deps: AppDeps) {
   app.route("/places", placeRoutes(withdraw));
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
-  app.route("/tokens", tokenRoutes(assets));
+  app.route("/tokens", tokenRoutes(assets, deps.db));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
   app.route("/needs-you", needsYouRoutes(needsYou));

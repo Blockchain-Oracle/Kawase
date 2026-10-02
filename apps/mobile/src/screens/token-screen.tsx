@@ -3,18 +3,30 @@
 // Navigator pills, a finger scrubs the price; the person's holding; stats; Safety (Kawase's copycat rule + GoPlus,
 // lookalikes linked); About; and a sticky bar with Buy · Sell and a More sheet where every other action is listed
 // with its reason when it cannot be done here. Guests see everything; any write asks them to sign in in place.
+// Extras: a star (the Markets Watchlist) and share in the header; the chart as a line or as candles (21st ssychui
+// Candle Chart twin) with the interval pills; the person's own trades' profit and loss; this asset's Activity.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { AlertTriangle, ChevronLeft, MoreHorizontal, ShieldAlert, ShieldCheck } from "lucide-react-native";
+import {
+  AlertTriangle,
+  ChevronLeft,
+  MoreHorizontal,
+  Share2,
+  ShieldAlert,
+  ShieldCheck,
+  Star,
+} from "lucide-react-native";
 import * as React from "react";
-import { Linking, Pressable, ScrollView, View } from "react-native";
+import { Linking, Pressable, ScrollView, Share, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
+import { PUBLIC_LINKS } from "@kawase/config";
 import { CHAIN_IDS } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { AreaChart, RangePills, type ChartPoint } from "@kawase/ui-native/components/area-chart";
+import { CandleChart, type CandlePoint } from "@kawase/ui-native/components/candle-chart";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
@@ -33,7 +45,9 @@ import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
+import { FeedRow } from "@/activity/feed-row";
 import { useToken, useTokenChart } from "@/token/use-token";
+import { useTokenMine } from "@/token/use-token-mine";
 import { withdrawHref } from "@/withdraw/href";
 
 const RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M", "1Y", "ALL"];
@@ -47,7 +61,16 @@ const SECONDS_TO_MS = 1000;
 const SCROLL_BOTTOM = 96;
 const ZERO = 0n;
 /** Actions that move or receive money: they need a signed-in account and the token's own network. */
-const WRITES: ReadonlySet<TokenAction> = new Set(["buy", "sell", "send", "receive", "withdraw", "bridge", "earn", "long_short"]);
+const WRITES: ReadonlySet<TokenAction> = new Set([
+  "buy",
+  "sell",
+  "send",
+  "receive",
+  "withdraw",
+  "bridge",
+  "earn",
+  "long_short",
+]);
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
@@ -60,7 +83,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const { detail, error, loading, refresh } = useToken(chainId, address);
   const [range, setRange] = React.useState<ChartRange>("1D");
   const candles = useTokenChart(chainId, address, range);
+  const mine = useTokenMine(chainId, address);
+  const [chartKind, setChartKind] = React.useState<"line" | "candles">("line");
   const [scrub, setScrub] = React.useState<ChartPoint | null>(null);
+  const [candleScrub, setCandleScrub] = React.useState<CandlePoint | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
   const fx = USD_FX;
@@ -97,7 +123,8 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 
   const token = detail.token;
   const chip = tokenChip(token, t);
-  const shownPrice = scrub ? scrub.v : detail.market.priceUsd;
+  const shownPrice = scrub ? scrub.v : candleScrub ? candleScrub.c : detail.market.priceUsd;
+  const scrubbedAt = scrub?.t ?? candleScrub?.t;
   const changeLabel = change(detail.market.change24hPct, locale);
   const holds = detail.holding && BigInt(detail.holding.balance) > ZERO;
 
@@ -122,7 +149,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push({ pathname: "/swap", params: { sell: token.address } });
         return;
       case "send":
-        router.push({ pathname: "/send", params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address } });
+        router.push({
+          pathname: "/send",
+          params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address },
+        });
         return;
       case "withdraw":
         router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
@@ -155,13 +185,22 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     { label: t("tokenPage.marketCap"), value: money(detail.market.marketCapUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.liquidity"), value: money(detail.market.liquidityUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.volume"), value: money(detail.market.volume24hUsd, fx, locale, { compact: true }) },
-    { label: t("tokenPage.holders"), value: detail.market.holders !== null ? new Intl.NumberFormat(locale).format(detail.market.holders) : "—" },
+    {
+      label: t("tokenPage.holders"),
+      value: detail.market.holders !== null ? new Intl.NumberFormat(locale).format(detail.market.holders) : "—",
+    },
     { label: t("tokenPage.fdv"), value: money(detail.market.fdvUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.contract"), value: shortAddress(token.address), onPress: () => void copy() },
   ];
 
-  const safetyTone = detail.safety.level === "block" ? "text-destructive" : detail.safety.level === "caution" ? "text-foreground" : "text-success";
-  const safetyIcon = detail.safety.level === "block" ? ShieldAlert : detail.safety.level === "caution" ? AlertTriangle : ShieldCheck;
+  const safetyTone =
+    detail.safety.level === "block"
+      ? "text-destructive"
+      : detail.safety.level === "caution"
+        ? "text-foreground"
+        : "text-success";
+  const safetyIcon =
+    detail.safety.level === "block" ? ShieldAlert : detail.safety.level === "caution" ? AlertTriangle : ShieldCheck;
 
   return (
     <View className="bg-background flex-1">
@@ -173,38 +212,133 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             <Text numberOfLines={1} className="text-foreground shrink text-lg font-semibold">
               {token.name}
             </Text>
-            {chip ? <Text className={cn("rounded-full px-1.5 py-0.5 text-[11px] font-semibold", chip.tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground")}>{chip.label}</Text> : null}
+            {chip ? (
+              <Text
+                className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
+                  chip.tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground",
+                )}
+              >
+                {chip.label}
+              </Text>
+            ) : null}
           </View>
           <Text className="text-muted-foreground text-sm">{token.symbol}</Text>
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={mine.watched ? t("tokenPage.unwatch") : t("tokenPage.watch")}
+          accessibilityState={{ selected: mine.watched }}
+          hitSlop={8}
+          onPress={() => {
+            if (!mine.account) {
+              signIn.open();
+              return;
+            }
+            void mine.toggleWatch().then((on) => toast(on ? t("tokenPage.watched") : t("tokenPage.unwatched")));
+          }}
+          className="bg-secondary active:bg-muted size-10 items-center justify-center rounded-full"
+        >
+          <Icon as={Star} className={cn("size-5", mine.watched ? "text-primary fill-primary" : "text-foreground")} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("tokenPage.share")}
+          hitSlop={8}
+          onPress={() =>
+            void Share.share({
+              message: t("tokenPage.shareMessage", {
+                name: token.name,
+                symbol: token.symbol,
+                url: `${PUBLIC_LINKS.webApp}/token/${token.chainId}/${token.address}`,
+              }),
+            })
+          }
+          className="bg-secondary active:bg-muted size-10 items-center justify-center rounded-full"
+        >
+          <Icon as={Share2} className="text-foreground size-5" />
+        </Pressable>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pt-2" contentContainerStyle={{ paddingBottom: SCROLL_BOTTOM }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-6 px-5 pt-2"
+        contentContainerStyle={{ paddingBottom: SCROLL_BOTTOM }}
+      >
         <View className="gap-1">
           <Amount accessibilityLiveRegion="polite" className="font-display text-foreground text-4xl font-bold">
             {price(shownPrice, fx, locale)}
           </Amount>
-          {scrub ? (
-            <Text className="text-muted-foreground text-sm">{new Date(scrub.t * SECONDS_TO_MS).toLocaleString(locale)}</Text>
+          {scrubbedAt !== undefined ? (
+            <Text className="text-muted-foreground text-sm">
+              {new Date(scrubbedAt * SECONDS_TO_MS).toLocaleString(locale)}
+            </Text>
           ) : changeLabel ? (
-            <Amount className={cn("text-base", (detail.market.change24hPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>{t("assets.today", { change: changeLabel })}</Amount>
+            <Amount
+              className={cn("text-base", (detail.market.change24hPct ?? 0) >= 0 ? "text-success" : "text-destructive")}
+            >
+              {t("assets.today", { change: changeLabel })}
+            </Amount>
           ) : null}
         </View>
 
         <View className="gap-3">
+          <View accessibilityRole="radiogroup" className="bg-muted flex-row self-end rounded-full p-0.5">
+            {(["line", "candles"] as const).map((kind) => (
+              <Pressable
+                key={kind}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: chartKind === kind }}
+                onPress={() => setChartKind(kind)}
+                className={cn("rounded-full px-3 py-1", chartKind === kind && "bg-background")}
+              >
+                <Text
+                  className={cn(
+                    "text-xs font-semibold",
+                    chartKind === kind ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {t(`tokenPage.chart_${kind}`)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           {candles === undefined ? (
             <Skeleton className="rounded-2xl" style={{ height: CHART_HEIGHT }} />
+          ) : chartKind === "candles" && (candles?.length ?? 0) > 0 ? (
+            <CandleChart
+              candles={candles}
+              height={CHART_HEIGHT}
+              colors={{
+                up: colors.success,
+                down: colors.destructive,
+                muted: colors["muted-foreground"],
+                grid: colors.border,
+                scrub: colors.border,
+              }}
+              formatValue={(value) => price(value, fx, locale)}
+              onScrub={setCandleScrub}
+              accessibilityLabel={t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) })}
+            />
           ) : points.length > 1 ? (
             <AreaChart
               points={points}
               height={CHART_HEIGHT}
-              colors={{ up: colors.success, down: colors.destructive, muted: colors["muted-foreground"], scrub: colors.border }}
+              colors={{
+                up: colors.success,
+                down: colors.destructive,
+                muted: colors["muted-foreground"],
+                scrub: colors.border,
+              }}
               formatValue={(value) => price(value, fx, locale)}
               onScrub={setScrub}
               accessibilityLabel={t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) })}
             />
           ) : (
-            <View className="bg-card border-border items-center justify-center rounded-2xl border" style={{ height: CHART_HEIGHT }}>
+            <View
+              className="bg-card border-border items-center justify-center rounded-2xl border"
+              style={{ height: CHART_HEIGHT }}
+            >
               <Text className="text-muted-foreground text-sm">{t("tokenPage.noChart")}</Text>
             </View>
           )}
@@ -215,7 +349,65 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           <View className="bg-card border-border gap-1 rounded-2xl border p-4">
             <Eyebrow>{t("tokenPage.myHolding")}</Eyebrow>
             <Amount className="text-foreground text-xl font-semibold">{holdingAmount(detail.holding, locale)}</Amount>
-            <Text className="text-muted-foreground text-sm">{t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}</Text>
+            <Text className="text-muted-foreground text-sm">
+              {t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}
+            </Text>
+          </View>
+        ) : null}
+
+        {mine.trades ? (
+          <View className="bg-card border-border gap-3 rounded-2xl border p-4">
+            <Eyebrow>{t("tokenPage.yourTrades", { count: mine.trades.trades })}</Eyebrow>
+            <View className="flex-row flex-wrap gap-y-3">
+              <View className="w-1/2 gap-0.5">
+                <Text className="text-muted-foreground text-xs">{t("tokenPage.avgCost")}</Text>
+                <Amount className="text-foreground text-base">
+                  {mine.trades.avgCostUsd !== null ? price(mine.trades.avgCostUsd, fx, locale) : "—"}
+                </Amount>
+              </View>
+              <View className="w-1/2 gap-0.5">
+                <Text className="text-muted-foreground text-xs">{t("tokenPage.costBasis")}</Text>
+                <Amount className="text-foreground text-base">{money(mine.trades.costBasisUsd, fx, locale)}</Amount>
+              </View>
+              <View className="w-1/2 gap-0.5">
+                <Text className="text-muted-foreground text-xs">{t("tokenPage.unrealized")}</Text>
+                <Amount
+                  className={cn(
+                    "text-base",
+                    (mine.trades.unrealizedUsd ?? 0) >= 0 ? "text-success" : "text-destructive",
+                  )}
+                >
+                  {mine.trades.unrealizedUsd !== null
+                    ? `${mine.trades.unrealizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.unrealizedUsd), fx, locale)}`
+                    : "—"}
+                </Amount>
+              </View>
+              <View className="w-1/2 gap-0.5">
+                <Text className="text-muted-foreground text-xs">{t("tokenPage.realized")}</Text>
+                <Amount className={cn("text-base", mine.trades.realizedUsd >= 0 ? "text-success" : "text-destructive")}>
+                  {`${mine.trades.realizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.realizedUsd), fx, locale)}`}
+                </Amount>
+              </View>
+            </View>
+            <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>
+              {t("tokenPage.tradesNote")}
+            </Text>
+          </View>
+        ) : null}
+
+        {mine.activity && mine.activity.length > 0 ? (
+          <View className="gap-2">
+            <View className="flex-row items-center justify-between px-1">
+              <Eyebrow>{t("tokenPage.activity")}</Eyebrow>
+              <Pressable accessibilityRole="link" hitSlop={10} onPress={() => router.push("/activity")}>
+                <Text className="text-muted-foreground text-xs font-semibold">{t("tokenPage.seeAll")}</Text>
+              </Pressable>
+            </View>
+            <View className="bg-card border-border overflow-hidden rounded-2xl border">
+              {mine.activity.map((item) => (
+                <FeedRow key={item.id} item={item} onPress={() => router.push("/activity")} />
+              ))}
+            </View>
           </View>
         ) : null}
 
@@ -223,7 +415,13 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           <Eyebrow className="px-1">{t("tokenPage.stats")}</Eyebrow>
           <View className="bg-card border-border flex-row flex-wrap rounded-2xl border p-2">
             {stats.map((stat) => (
-              <Pressable key={stat.label} disabled={!stat.onPress} onPress={stat.onPress} accessibilityRole={stat.onPress ? "button" : "text"} className="w-1/2 gap-0.5 p-2 active:opacity-70">
+              <Pressable
+                key={stat.label}
+                disabled={!stat.onPress}
+                onPress={stat.onPress}
+                accessibilityRole={stat.onPress ? "button" : "text"}
+                className="w-1/2 gap-0.5 p-2 active:opacity-70"
+              >
                 <Text className="text-muted-foreground text-xs">{stat.label}</Text>
                 <Amount className="text-foreground text-base">{stat.value}</Amount>
               </Pressable>
@@ -237,7 +435,11 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             <View className="flex-row items-center gap-2">
               <Icon as={safetyIcon} className={cn("size-5", safetyTone)} />
               <Text className={cn("text-base font-semibold", safetyTone)}>
-                {detail.safety.level === "block" ? t("tokenPage.safetyBlock") : detail.safety.level === "caution" ? t("tokenPage.safetyCaution") : t("tokenPage.safetyOk")}
+                {detail.safety.level === "block"
+                  ? t("tokenPage.safetyBlock")
+                  : detail.safety.level === "caution"
+                    ? t("tokenPage.safetyCaution")
+                    : t("tokenPage.safetyOk")}
               </Text>
             </View>
             {detail.safety.reasons.map((reason) => (
@@ -249,13 +451,30 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
               {detail.safety.checks.map((check) => (
                 <View key={check.id} className="flex-row items-center justify-between">
                   <Text className="text-muted-foreground text-sm">{t(`tokenPage.c_${check.id}`)}</Text>
-                  <Text className={cn("text-sm font-medium", check.state === "danger" ? "text-destructive" : check.state === "warn" ? "text-foreground" : check.state === "ok" ? "text-success" : "text-muted-foreground")}>
-                    {check.value && check.state !== "unknown" ? `${check.value}${check.id.endsWith("tax") ? "%" : ""}` : t(`tokenPage.s_${check.state}`)}
+                  <Text
+                    className={cn(
+                      "text-sm font-medium",
+                      check.state === "danger"
+                        ? "text-destructive"
+                        : check.state === "warn"
+                          ? "text-foreground"
+                          : check.state === "ok"
+                            ? "text-success"
+                            : "text-muted-foreground",
+                    )}
+                  >
+                    {check.value && check.state !== "unknown"
+                      ? `${check.value}${check.id.endsWith("tax") ? "%" : ""}`
+                      : t(`tokenPage.s_${check.state}`)}
                   </Text>
                 </View>
               ))}
             </View>
-            <Text className="text-muted-foreground text-xs">{detail.safety.checkedBy ? t("tokenPage.checkedBy", { name: detail.safety.checkedBy }) : t("tokenPage.notChecked")}</Text>
+            <Text className="text-muted-foreground text-xs">
+              {detail.safety.checkedBy
+                ? t("tokenPage.checkedBy", { name: detail.safety.checkedBy })
+                : t("tokenPage.notChecked")}
+            </Text>
           </View>
           {detail.safety.lookalikes.length > 0 ? (
             <ListGroup label={t("tokenPage.lookalikes")}>
@@ -278,13 +497,21 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             <View className="bg-card border-border gap-3 rounded-2xl border p-4">
               {detail.about.description ? (
                 <Pressable onPress={() => setAboutOpen((value) => !value)}>
-                  <Text numberOfLines={aboutOpen ? undefined : ABOUT_LINES} className={cn("text-foreground text-sm leading-5", TEXT_START)}>
+                  <Text
+                    numberOfLines={aboutOpen ? undefined : ABOUT_LINES}
+                    className={cn("text-foreground text-sm leading-5", TEXT_START)}
+                  >
                     {detail.about.description}
                   </Text>
                 </Pressable>
               ) : null}
               {detail.about.websites.map((site) => (
-                <Text key={site} accessibilityRole="link" onPress={() => void Linking.openURL(site)} className="text-accent text-sm">
+                <Text
+                  key={site}
+                  accessibilityRole="link"
+                  onPress={() => void Linking.openURL(site)}
+                  className="text-accent text-sm"
+                >
                   {site.replace(/^https?:\/\//, "")}
                 </Text>
               ))}
@@ -293,7 +520,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         ) : null}
       </ScrollView>
 
-      <View className="bg-background border-border flex-row items-center gap-3 border-t px-5 pt-3" style={{ paddingBottom: insets.bottom + EDGE_INSET }}>
+      <View
+        className="bg-background border-border flex-row items-center gap-3 border-t px-5 pt-3"
+        style={{ paddingBottom: insets.bottom + EDGE_INSET }}
+      >
         <View className="flex-1 gap-1">
           <Button disabled={Boolean(buyReason)} onPress={() => run("buy")}>
             <Text>{t("tokenPage.a_buy")}</Text>
@@ -304,11 +534,19 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             <Text>{t("tokenPage.a_sell")}</Text>
           </Button>
         </View>
-        <Button variant="secondary" size="icon" className="size-12" accessibilityLabel={t("tokenPage.more")} onPress={() => setMoreOpen(true)}>
+        <Button
+          variant="secondary"
+          size="icon"
+          className="size-12"
+          accessibilityLabel={t("tokenPage.more")}
+          onPress={() => setMoreOpen(true)}
+        >
           <Icon as={MoreHorizontal} className="size-5" />
         </Button>
       </View>
-      {buyReason ? <Text className="text-muted-foreground bg-background px-5 pb-2 text-center text-xs">{buyReason}</Text> : null}
+      {buyReason ? (
+        <Text className="text-muted-foreground bg-background px-5 pb-2 text-center text-xs">{buyReason}</Text>
+      ) : null}
 
       <Sheet
         open={moreOpen}
@@ -340,9 +578,14 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 
 function BackButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} className="bg-muted active:bg-secondary items-center justify-center rounded-full" style={{ width: BACK, height: BACK }}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      className="bg-muted active:bg-secondary items-center justify-center rounded-full"
+      style={{ width: BACK, height: BACK }}
+    >
       <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
     </Pressable>
   );
 }
-

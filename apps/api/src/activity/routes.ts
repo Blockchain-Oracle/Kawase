@@ -16,7 +16,9 @@ export function activityRoutes(feed: ActivityFeedService) {
   app.get("/", async (c) => {
     const parsed = network.safeParse(c.req.query("network") ?? c.get("user")!.activeNetwork);
     if (!parsed.success) throw problem(HTTP.badRequest, "validation");
-    return c.json(await feed.list(c.get("user")!, parsed.data));
+    const token = c.req.query("token");
+    if (token !== undefined && !/^0x[0-9a-fA-F]{40}$/.test(token)) throw problem(HTTP.badRequest, "validation");
+    return c.json(await feed.list(c.get("user")!, parsed.data, { token }));
   });
   app.get("/why/run/:id", async (c) => {
     const id = z.uuid().safeParse(c.req.param("id"));

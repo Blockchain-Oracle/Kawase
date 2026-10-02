@@ -55,7 +55,7 @@ export type FeedPage = {
 };
 
 export type ActivityFeedApi = {
-  list: (network: NetworkId) => Promise<FeedPage>;
+  list: (network: NetworkId, token?: string) => Promise<FeedPage>;
   /** Why an automation run went the way it did (no transaction needed: a skip, a practice run, a step waiting). */
   runWhy: (runId: string) => Promise<{ why: WhyView }>;
 };

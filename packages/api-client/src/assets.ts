@@ -160,3 +160,23 @@ export type MarketRow = {
 export type MarketListView = { segment: MarketSegment; network: NetworkId; rows: MarketRow[]; pricedAt: string; stale: boolean; available: boolean };
 
 export type TokenSearchResult = { token: TokenView; priceUsd: number | null; liquidityUsd: number | null; held: boolean };
+
+/** A starred token on the Markets "Watchlist" segment. */
+export type WatchRow = { token: TokenView; priceUsd: number | null; change24hPct: number | null; held: boolean };
+
+/**
+ * Profit and loss from the person's own trades of one token (Kawase's swaps), at average cost: what they paid for what
+ * they still hold, what selling has realised, and what the rest is worth now against its cost (USD).
+ */
+export type TokenTradesView = {
+  trades: number;
+  /** Base units of the token: bought, sold, and still held from those buys. */
+  bought: string;
+  sold: string;
+  held: string;
+  avgCostUsd: number | null;
+  costBasisUsd: number;
+  realizedUsd: number;
+  unrealizedUsd: number | null;
+  lastTradeAt: string | null;
+};

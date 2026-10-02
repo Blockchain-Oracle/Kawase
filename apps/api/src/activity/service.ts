@@ -52,7 +52,16 @@ export class ActivityFeedService {
     return clients.network;
   }
 
-  async list(user: SessionUser, network: NetworkId): Promise<FeedPage> {
+  async list(user: SessionUser, network: NetworkId, options: { token?: string | undefined } = {}): Promise<FeedPage> {
+    const page = await this.everything(user, network);
+    if (!options.token) return page;
+    // One asset's activity (the token page): rows whose main leg or other leg is that token.
+    const token = options.token.toLowerCase();
+    const mine = (item: FeedItem) => item.token?.address.toLowerCase() === token || item.other?.token.address.toLowerCase() === token || Boolean(item.withdrawal?.steps.some((step) => step.token.address.toLowerCase() === token));
+    return { ...page, items: page.items.filter(mine) };
+  }
+
+  private async everything(user: SessionUser, network: NetworkId): Promise<FeedPage> {
     const context = this.context(network);
     const clients = this.chains.get(network)!;
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;

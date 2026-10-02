@@ -38,9 +38,20 @@ import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { LongShortSegment } from "@/markets/long-short-segment";
+import { useRecentSearches } from "@/markets/recent-searches";
+import { WatchlistSegment } from "@/markets/watchlist-segment";
 
-const SEGMENTS: readonly MarketSegment[] = ["trending", "meme", "perps", "fx", "new"];
-const SEGMENT_KEYS: Record<MarketSegment, string> = { trending: "markets.trending", meme: "markets.meme", perps: "markets.perps", fx: "markets.fx", new: "markets.new" };
+/** The Markets segments, the person's Watchlist first (the stars from token pages). */
+type Segment = MarketSegment | "watchlist";
+const SEGMENTS: readonly Segment[] = ["watchlist", "trending", "meme", "perps", "fx", "new"];
+const SEGMENT_KEYS: Record<Segment, string> = {
+  watchlist: "markets.watchlist",
+  trending: "markets.trending",
+  meme: "markets.meme",
+  perps: "markets.perps",
+  fx: "markets.fx",
+  new: "markets.new",
+};
 const HOT_COUNT = 6;
 const HEAT_COUNT = 16;
 const SKELETON_ROWS = 6;
@@ -51,7 +62,8 @@ const EDGE_INSET = 12;
 const STRIP_INSET = 6;
 
 /** Opens a token's page on its own network. */
-export const tokenHref = (token: Pick<TokenView, "chainId" | "address">) => `/token/${token.chainId}/${token.address}` as const;
+export const tokenHref = (token: Pick<TokenView, "chainId" | "address">) =>
+  `/token/${token.chainId}/${token.address}` as const;
 
 export function MarketsScreen() {
   const { t } = useT();
@@ -62,13 +74,15 @@ export function MarketsScreen() {
   const colors = useThemeColors();
   const { status, user } = useSession();
   const networkSwitch = useNetworkSwitch();
-  const [segment, setSegment] = React.useState<MarketSegment>("trending");
+  const [segment, setSegment] = React.useState<Segment>("trending");
   const [query, setQuery] = React.useState("");
+  const [searchFocused, setSearchFocused] = React.useState(false);
+  const recentSearches = useRecentSearches();
   const [languageOpen, setLanguageOpen] = React.useState(false);
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   const account = status === "account";
   // Markets live on mainnet; a testnet session still reads them, labelled.
-  const { market, loading, error, refresh } = useMarket(segment, "mainnet");
+  const { market, loading, error, refresh } = useMarket(segment === "watchlist" ? "trending" : segment, "mainnet");
   const { results, searching } = useTokenSearch(query, "mainnet");
   const fx = USD_FX;
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
@@ -79,7 +93,14 @@ export function MarketsScreen() {
   const rowProps = (row: MarketRow) => {
     const chip = tokenChip(row.token, t);
     const changeLabel = change(row.change24hPct, locale);
-    const details = [row.volume24hUsd !== null ? t("markets.vol", { value: money(row.volume24hUsd, fx, locale, { compact: true }) }) : null, row.liquidityUsd !== null ? t("markets.liq", { value: money(row.liquidityUsd, fx, locale, { compact: true }) }) : null]
+    const details = [
+      row.volume24hUsd !== null
+        ? t("markets.vol", { value: money(row.volume24hUsd, fx, locale, { compact: true }) })
+        : null,
+      row.liquidityUsd !== null
+        ? t("markets.liq", { value: money(row.liquidityUsd, fx, locale, { compact: true }) })
+        : null,
+    ]
       .filter(Boolean)
       .join(" · ");
     return {
@@ -95,8 +116,13 @@ export function MarketsScreen() {
 
   return (
     <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center justify-between gap-3 px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
+      {testnet ? (
+        <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
+      ) : null}
+      <View
+        className="flex-row items-center justify-between gap-3 px-5 pb-2"
+        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
+      >
         <View className="flex-row items-center gap-2">
           <HeaderAvatar />
           {!account ? <LanguagePill onPress={() => setLanguageOpen(true)} /> : null}
@@ -105,7 +131,12 @@ export function MarketsScreen() {
         {account ? <InboxBell /> : null}
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-2" contentContainerStyle={{ paddingBottom: clearance.scroll }} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 px-5 pt-2"
+        contentContainerStyle={{ paddingBottom: clearance.scroll }}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text accessibilityRole="header" className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
           {t("markets.title")}
         </Text>
@@ -118,6 +149,8 @@ export function MarketsScreen() {
             placeholder={t("markets.search")}
             placeholderTextColor={colors["muted-foreground"]}
             accessibilityLabel={t("markets.search")}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -141,10 +174,17 @@ export function MarketsScreen() {
                   <AssetRow
                     key={result.token.address}
                     token={result.token}
-                    amount={result.liquidityUsd !== null ? t("markets.liq", { value: money(result.liquidityUsd, fx, locale, { compact: true }) }) : result.token.symbol}
+                    amount={
+                      result.liquidityUsd !== null
+                        ? t("markets.liq", { value: money(result.liquidityUsd, fx, locale, { compact: true }) })
+                        : result.token.symbol
+                    }
                     value={price(result.priceUsd, fx, locale)}
                     {...(chip ? { chip } : {})}
-                    onPress={() => open(result.token)}
+                    onPress={() => {
+                      void recentSearches.remember(result.token);
+                      open(result.token);
+                    }}
                   />
                 );
               })}
@@ -154,19 +194,54 @@ export function MarketsScreen() {
           )
         ) : (
           <>
+            {searchFocused && recentSearches.recent.length > 0 ? (
+              <View className="gap-2">
+                <View className="flex-row items-center justify-between px-1">
+                  <Eyebrow>{t("markets.recent")}</Eyebrow>
+                  <Pressable accessibilityRole="button" hitSlop={10} onPress={() => void recentSearches.clear()}>
+                    <Text className="text-muted-foreground text-xs font-semibold">{t("markets.recentClear")}</Text>
+                  </Pressable>
+                </View>
+                <ListGroup>
+                  {recentSearches.recent.map((token) => (
+                    <AssetRow
+                      key={`${token.chainId}:${token.address}`}
+                      token={token}
+                      amount={token.symbol}
+                      value=""
+                      onPress={() => open(token)}
+                    />
+                  ))}
+                </ListGroup>
+              </View>
+            ) : null}
             {testnet ? (
               <View className="bg-card border-border gap-3 rounded-2xl border p-4">
-                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("markets.testnetTitle")}</Text>
-                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("markets.testnetBody")}</Text>
+                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>
+                  {t("markets.testnetTitle")}
+                </Text>
+                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
+                  {t("markets.testnetBody")}
+                </Text>
                 {networkSwitch.nextAvailable ? (
-                  <Button variant="secondary" onPress={() => void networkSwitch.switchNetwork("mainnet")} disabled={networkSwitch.busy}>
+                  <Button
+                    variant="secondary"
+                    onPress={() => void networkSwitch.switchNetwork("mainnet")}
+                    disabled={networkSwitch.busy}
+                  >
                     <Text>{t("markets.switchToMainnet")}</Text>
                   </Button>
                 ) : null}
               </View>
             ) : null}
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2" accessibilityRole="tablist" accessibilityLabel={t("markets.segmentsLabel")}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerClassName="gap-2"
+              accessibilityRole="tablist"
+              accessibilityLabel={t("markets.segmentsLabel")}
+            >
               {SEGMENTS.map((value) => {
                 const active = value === segment;
                 return (
@@ -177,15 +252,23 @@ export function MarketsScreen() {
                     onPress={() => setSegment(value)}
                     className={cn("rounded-full px-4 py-2", active ? "bg-foreground" : "bg-muted active:bg-secondary")}
                   >
-                    <Text className={cn("text-sm font-semibold", active ? "text-background" : "text-muted-foreground")}>{t(SEGMENT_KEYS[value])}</Text>
+                    <Text className={cn("text-sm font-semibold", active ? "text-background" : "text-muted-foreground")}>
+                      {t(SEGMENT_KEYS[value])}
+                    </Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
-            {market?.stale ? <Text className="text-muted-foreground text-xs">{t("markets.stale", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}</Text> : null}
+            {market?.stale ? (
+              <Text className="text-muted-foreground text-xs">
+                {t("markets.stale", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}
+              </Text>
+            ) : null}
 
-            {segment === "perps" ? (
+            {segment === "watchlist" ? (
+              <WatchlistSegment />
+            ) : segment === "perps" ? (
               <LongShortSegment />
             ) : loading && rows.length === 0 ? (
               <SkeletonRows />
@@ -211,7 +294,9 @@ export function MarketsScreen() {
                         <Pressable
                           key={row.token.address}
                           accessibilityRole="button"
-                          accessibilityLabel={[row.token.name, price(row.priceUsd, fx, locale), changeLabel].filter(Boolean).join(", ")}
+                          accessibilityLabel={[row.token.name, price(row.priceUsd, fx, locale), changeLabel]
+                            .filter(Boolean)
+                            .join(", ")}
                           onPress={() => open(row.token)}
                           className="bg-card border-border active:bg-muted gap-3 rounded-2xl border p-4"
                           style={{ width: HOT_CARD_WIDTH }}
@@ -222,7 +307,16 @@ export function MarketsScreen() {
                               {row.token.symbol}
                             </Text>
                             <Amount className="text-foreground text-sm">{price(row.priceUsd, fx, locale)}</Amount>
-                            {changeLabel ? <Amount className={cn("text-sm", (row.change24hPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>{changeLabel}</Amount> : null}
+                            {changeLabel ? (
+                              <Amount
+                                className={cn(
+                                  "text-sm",
+                                  (row.change24hPct ?? 0) >= 0 ? "text-success" : "text-destructive",
+                                )}
+                              >
+                                {changeLabel}
+                              </Amount>
+                            ) : null}
                           </View>
                         </Pressable>
                       );
@@ -233,7 +327,12 @@ export function MarketsScreen() {
                 <View className="gap-2">
                   <Eyebrow className="px-1">{t("markets.heatmap")}</Eyebrow>
                   <MarketHeatmap
-                    colors={{ up: colors.success, down: colors.destructive, flat: colors.muted, text: colors.foreground }}
+                    colors={{
+                      up: colors.success,
+                      down: colors.destructive,
+                      flat: colors.muted,
+                      text: colors.foreground,
+                    }}
                     tiles={promoted.slice(0, HEAT_COUNT).map((row) => ({
                       key: row.token.address,
                       label: row.token.symbol,
@@ -251,14 +350,23 @@ export function MarketsScreen() {
                     <AssetRow key={row.token.address} {...rowProps(row)} />
                   ))}
                 </ListGroup>
-                {market ? <Text className="text-muted-foreground text-center text-xs">{t("markets.updated", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}</Text> : null}
+                {market ? (
+                  <Text className="text-muted-foreground text-center text-xs">
+                    {t("markets.updated", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}
+                  </Text>
+                ) : null}
               </>
             )}
           </>
         )}
       </ScrollView>
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
-      <MainnetConsentSheet open={networkSwitch.consentNeeded} busy={networkSwitch.busy} onAccept={() => void networkSwitch.acceptMainnet()} onClose={networkSwitch.dismissConsent} />
+      <MainnetConsentSheet
+        open={networkSwitch.consentNeeded}
+        busy={networkSwitch.busy}
+        onAccept={() => void networkSwitch.acceptMainnet()}
+        onClose={networkSwitch.dismissConsent}
+      />
     </View>
   );
 }
