@@ -6,10 +6,10 @@
   },
   "home": {
     "eyebrow": "Documentation de Kawase",
-    "title": "L'argent qui bouge quand vous parlez",
-    "body": "Kawase est une application financière avec IA pour tout faire sur Arc. Demandez ce que vous voulez dans votre langue, à la voix ou par écrit : l'application vous fait une proposition, vous l'approuvez et la blockchain fait respecter vos limites.",
+    "title": "Votre argent bouge quand vous parlez",
+    "body": "Kawase est une application d'argent basée sur l'IA, pour tout ce qui se passe sur Arc. Demandez ce que vous voulez dans votre langue, à l'oral ou par écrit : l'application vous fait une proposition, vous l'approuvez et la blockchain fait respecter vos limites.",
     "start": "Commencer",
-    "safety": "Comment votre argent reste protégé",
+    "safety": "Comment votre argent reste en sécurité",
     "cards": {
       "gettingStarted": {
         "title": "Commencer",
@@ -17,15 +17,15 @@
       },
       "safety": {
         "title": "Modèle de sécurité",
-        "body": "Découvrez ce que l'agent peut faire sans vous demander confirmation, quand il a besoin de votre Face ID et ce qu'il ne peut jamais faire."
+        "body": "Découvrez ce que l'agent peut faire sans vous demander votre accord, quand il a besoin de votre Face ID et ce qu'il ne pourra jamais faire."
       },
       "availability": {
         "title": "Ce qui fonctionne aujourd'hui",
-        "body": "Toutes les fonctionnalités disponibles sur le réseau principal et le réseau de test, à partir du registre de l'application."
+        "body": "Toutes les fonctionnalités disponibles sur le réseau principal et le réseau de test, générées à partir du registre de l'application."
       },
       "architecture": {
         "title": "Architecture",
-        "body": "Comment le chat, la voix, le moteur de règles et Arc fonctionnent ensemble, pour les juges et les développeurs."
+        "body": "Découvrez comment le chat, la voix, le moteur de règles et Arc s'articulent, pour les jurés et les développeurs."
       }
     }
   },
@@ -33,12 +33,12 @@
     "capability": "Fonctionnalité",
     "mainnet": "Réseau principal Arc",
     "testnet": "Réseau de test Arc",
-    "caption": "Généré lors de la création du site à partir du registre des fonctionnalités lu par l'application et l'agent. « Bientôt disponible » signifie que la fonctionnalité n'est pas encore disponible."
+    "caption": "Généré lors de la création du site à partir du registre des fonctionnalités consulté par l'application et l'agent. « À venir » signifie que la fonctionnalité n'est pas encore disponible."
   },
   "state": {
     "available": "Disponible",
-    "coming": "Bientôt disponible",
-    "unavailable": "Pas sur ce réseau"
+    "coming": "À venir",
+    "unavailable": "Indisponible sur ce réseau"
   },
   "scope": {
     "supports": "Ce qui fonctionne aujourd'hui",
@@ -48,22 +48,22 @@
     "tokens": "N'importe quel jeton sur Arc",
     "meme_coins": "Meme coins",
     "perps": "Long et short (perps)",
-    "buy": "Acheter avec Apple Pay ou une carte",
+    "buy": "Acheter avec Apple Pay ou par carte",
     "borrow": "Emprunter",
-    "withdraw": "Retirer n'importe où",
+    "withdraw": "Retirer vers n'importe où",
     "export_wallet": "Exporter votre portefeuille"
   },
   "limits": {
     "rule": "Par défaut",
     "mainnet": "Réseau principal",
     "testnet": "Réseau de test",
-    "daily": "Plafond quotidien : envoyé en une fois, sans demande de confirmation",
-    "perTransaction": "Plus gros paiement unique",
+    "daily": "Plafond quotidien : envoyé en une seule fois, sans demande de confirmation",
+    "perTransaction": "Montant maximal d'un paiement",
     "weekly": "Total par semaine",
     "monthly": "Total par mois",
     "perRecipientWeekly": "À une personne par semaine",
     "firstTime": "Premier paiement vers une nouvelle adresse : Face ID au-delà de cette limite",
-    "caption": "Valeurs par défaut de la configuration de l'application. Les limites du réseau de test sont plus élevées, car aucun argent réel n'est en jeu."
+    "caption": "Valeurs par défaut définies dans la configuration de l'application. Les limites du réseau de test sont plus élevées, car aucun argent réel n'est en jeu."
   },
   "status": {
     "label": "Statut"
@@ -109,7 +109,7 @@
     "Page Not Found(404 not found page)": "Page introuvable",
     "Parameters(type table)": "Paramètres",
     "Previous Page(pagination)": "Page précédente",
-    "Prop(type table)": "Propriété",
+    "Prop(type table)": "Prop",
     "Read {url}, I want to ask questions about it.(page actions)": "Lisez {url}, je veux poser des questions à son sujet.",
     "Returns(type table)": "Valeurs renvoyées",
     "Search(search dialog)": "Rechercher",

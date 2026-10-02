@@ -1,64 +1,52 @@
 ---
-title: "O que é o Kawase"
-description: "Um app de dinheiro com IA para tudo na Arc. Pergunte por voz ou texto no seu idioma; o agente propõe, você aprova e os limites na rede definem o que ele pode fazer."
-sourceHash: b87bd42ed1c13fe2
+title: "O que é a Kawase"
+description: "Um app de dinheiro com IA para tudo na Arc. Peça por voz ou texto no seu idioma; o agente propõe, você aprova, e os limites on-chain definem o que ele pode fazer."
+sourceHash: c38c8b4a29bf5354
 ---
 
-Kawase (為替, "câmbio" em japonês) é um app de dinheiro com um agente de IA no centro, criado para a **Arc**, a rede de
-stablecoins da Circle. Você diz o que quer — "enviar 20 dólares para Alex", "trocar metade dos meus euros por dólares",
-"toda sexta-feira, separar 10 dólares" — por voz ou texto, em qualquer um dos dez idiomas. O Kawase cuida dos detalhes,
-mostra exatamente o que vai acontecer e faz isso.
+Kawase (為替, “câmbio” em japonês) é um app de dinheiro com um agente de IA no centro, criado para a **Arc**, a rede de stablecoins da Circle. Você diz o que quer — “enviar 20 dólares para Alex”, “trocar metade dos meus euros por dólares”, “toda sexta-feira separar 10
+dólares” — por voz ou digitando, em qualquer um dos dez idiomas. A Kawase cuida dos detalhes, mostra exatamente o que vai acontecer e faz isso.
 
 <Marks names="usdc eurc arc circle aave morpho kyberswap" />
 
 ## Um app para tudo na Arc
 
-A ideia é que qualquer coisa que uma pessoa possa fazer com dinheiro na Arc também possa ser feita pedindo ao Kawase:
+A ideia é que qualquer coisa que uma pessoa possa fazer com dinheiro na Arc também possa ser feita pedindo à Kawase:
 
-- **Enviar, receber e pedir** USDC e EURC para um contato salvo, um `@handle` do Kawase ou qualquer endereço.
-- **[Negociar qualquer token](./features/swap-and-trade.mdx)**: mercados, uma página com verificações de segurança para cada token e qualquer par
-  pelo melhor preço entre KyberSwap, App Kit da Circle e LI.FI, incluindo memecoins (na rede principal).
-- **[Comprado e vendido](./features/long-short.mdx)** com o Kawase Margin na Aave V4 (na rede principal).
+- **[Enviar, receber e pedir dinheiro](./features/send-receive-request.mdx)** com qualquer token, para um contato salvo, um `@handle` da Kawase, qualquer endereço ou um código QR escaneado; divida uma conta com um link para cada pessoa.
+- **[Sacar](./features/bridge-and-withdraw.mdx#withdraw)** qualquer token para uma corretora, sua própria carteira em outra rede ou seu banco por meio de uma corretora, com uma única confirmação.
+- **[Negociar qualquer token](./features/swap-and-trade.mdx)**: Mercados, uma página com verificações de segurança para cada token, e qualquer par pelo melhor preço entre KyberSwap, App Kit da Circle e LI.FI, incluindo memecoins (rede principal).
+- **[Comprado e vendido](./features/long-short.mdx)** com a Margem da Kawase na Aave V4 (rede principal).
 - **[Comprar](./features/buy.mdx)** com cartão, Apple Pay ou Google Pay pela Onramp da Circle.
-- **[Ponte](./features/bridge-and-withdraw.mdx)** USDC para qualquer pessoa em seis redes usando Circle CCTP, Across ou Relay, classificadas
-  pelo valor que chega, e trazer USDC para a Arc sem pagar gas na outra rede.
-- **[Render e pegar emprestado](./features/earn-and-borrow.mdx)**: opções de rendimento na Aave V4, nos cofres da Morpho e na Aero; empréstimos na
-  Aave V4 com um indicador de saúde.
-- **[Automações](./features/automations.mdx)**: pagamentos programados, salvamento automático, folha de pagamento, DCA e regras, cada um com limites na
-  rede e testes práticos antes da execução.
-- **[Negócios](./features/business.mdx)**: faturas com uma referência na rede, pagamentos em lote e folha de pagamento.
-- **[A carteira do agente](./features/marketplace.mdx)**: o Kawase paga por serviços a cada chamada usando x402, dentro de um orçamento.
-- **[Limites e controle](./features/limits-and-control.mdx)**: seu limite por token, Pausar tudo, modo de prática, kit de saída e Precisa de você.
-- **[Memória e busca](./features/memory-and-search.mdx)**, sugestões na página inicial e respostas sobre a Arc com fontes.
-- **Voz** no iPhone, Android e na web, e o app inteiro em **dez idiomas**, no navegador ou no
-  [app para desktop](./features/web-and-desktop.mdx).
+- **[Fazer ponte](./features/bridge-and-withdraw.mdx)** com USDC para qualquer pessoa em seis redes usando Circle CCTP, Across ou Relay, classificadas pelo valor que chega, e trazer USDC para a Arc sem pagar gas na outra rede.
+- **[Render e pegar emprestado](./features/earn-and-borrow.mdx)**: opções de rendimento na Aave V4, nos cofres da Morpho e na Aero; empréstimos na Aave V4 com um indicador de saúde.
+- **[Automações](./features/automations.mdx)**: pagamentos agendados, poupança automática, folha de pagamento, DCA e regras, cada um com limites on-chain e simulações antes da execução.
+- **[Empresas](./features/business.mdx)**: faturas com uma referência on-chain, pagamentos em lote e folha de pagamento.
+- **[A carteira do agente](./features/marketplace.mdx)**: a Kawase paga por serviços a cada chamada usando x402, dentro de um orçamento.
+- **[Limites e controle](./features/limits-and-control.mdx)**: seu limite por token, Pausar tudo, modo de simulação, o kit de saída e Precisa de você.
+- **[Memória e busca](./features/memory-and-search.mdx)**, sugestões na Página inicial e respostas sobre a Arc com fontes.
+- **Voz** no iPhone, Android e na web, e o app inteiro em **dez idiomas**, no navegador ou no [app para computador](./features/web-and-desktop.mdx).
 
-Alguns recursos funcionam apenas na rede principal, e alguns ainda estão sendo desenvolvidos. A [página de disponibilidade](./availability.mdx) é gerada a partir do mesmo registro de recursos que
-o app e o agente consultam. Assim, ela sempre informa com clareza o que funciona hoje e o que está por vir:
+Alguns recursos estão disponíveis apenas na rede principal, e algumas partes ainda estão sendo desenvolvidas. A [página de disponibilidade](./availability.mdx) é gerada pelo mesmo registro de recursos que o app e o agente consultam. Assim, ela sempre informa com transparência o que funciona hoje e o que está a caminho:
 
 <AvailabilityMatrix />
 
 ## Por que um agente e por que ele é seguro
 
-A maioria dos apps de dinheiro faz você encontrar a tela certa. O Kawase permite que você diga o que quer, e o agente cuida do
-resto: quem é o "Alex", qual moeda você tem e qual rota é mais barata. O que ele nunca pode fazer é movimentar dinheiro além do que você permitiu:
+A maioria dos apps de dinheiro faz você encontrar a tela certa. A Kawase permite que você diga o que quer, e o agente cuida do resto: quem é “Alex”, qual moeda você tem e qual rota é mais barata. O que ele nunca pode fazer é movimentar dinheiro além do que você permitiu:
 
-- **Dentro do seu limite diário**, o agente simplesmente envia e avisa — sem pedir confirmação. O limite é uma restrição na rede que você
-  assinou uma vez; a rede recusa qualquer valor acima dele.
-- **Acima do limite**, para um novo destinatário acima de um valor definido, um endereço parecido, uma troca ou uma ponte, você confirma com o
-  **Face ID** (impressão digital ou bloqueio de tela no Android, um código enviado por e-mail na web).
-- **As Automações** funcionam sem supervisão, mas cada uma fica vinculada na rede ao destinatário e ao valor por período.
+- **Dentro do seu limite diário**, o agente simplesmente envia e avisa você — sem pedir confirmação. O limite é uma regra on-chain que você assinou uma vez; a rede recusa qualquer valor acima dele.
+- **Acima do limite**, para um novo destinatário acima de um determinado valor, um endereço parecido, uma troca ou uma ponte, você confirma com o **Face ID** (impressão digital ou bloqueio de tela no Android, código enviado por e-mail na web).
+- **As Automações** funcionam sem supervisão, mas cada uma fica vinculada on-chain ao destinatário e ao valor de cada período.
 
-Leia o [modelo de segurança](./safety.mdx) para saber mais.
+Leia o [modelo de segurança](./safety.mdx) para ver os detalhes.
 
 ## Duas redes, um toque
 
-O Kawase funciona na **Arc na rede principal** (Dinheiro real) e na **Arc na rede de testes** (Dinheiro de teste, grátis na torneira dentro do app). As contas novas
-começam na rede de testes. O seletor de rede no cabeçalho alterna entre elas com um toque, como o modo escuro; o app, o orbe e
-cada cartão de dinheiro sempre mostram em qual rede você está. Veja [redes](./networks.mdx).
+A Kawase funciona na **Arc na rede principal** (Dinheiro real) e na **Arc na rede de testes** (Dinheiro de teste, liberado pelo faucet do app). As novas contas começam na rede de testes. O seletor de rede no cabeçalho alterna entre elas com um toque, como o modo escuro; o app, a esfera e todos os cartões de dinheiro sempre informam em qual rede você está. Veja [redes](./networks.mdx).
 
 ## Onde experimentar
 
-- **App web**, sem instalação, começa como convidado: [app.getkawase.xyz](https://app.getkawase.xyz)
-- **Mac**: o [app para desktop](./features/web-and-desktop.mdx)
+- **App da web**, sem instalação, começa como visitante: [app.getkawase.xyz](https://app.getkawase.xyz)
+- **Mac**: o [app para computador](./features/web-and-desktop.mdx)
 - **iPhone** (TestFlight) e **Android** (APK): veja [como começar](./getting-started.mdx).

@@ -13,15 +13,15 @@
     "cards": {
       "gettingStarted": {
         "title": "Comenzar",
-        "body": "Abre la aplicación web como invitado en unos segundos o instálala en iPhone o Android."
+        "body": "Abre la aplicación web como invitado en segundos o instálala en iPhone o Android."
       },
       "safety": {
         "title": "Modelo de seguridad",
-        "body": "Qué puede hacer el agente sin preguntar, cuándo necesita tu Face ID y qué nunca puede hacer."
+        "body": "Qué puede hacer el agente sin preguntarte, cuándo necesita tu Face ID y qué nunca puede hacer."
       },
       "availability": {
         "title": "Qué funciona hoy",
-        "body": "Todas las funciones disponibles en la red principal y la red de pruebas, generadas a partir del registro de la propia aplicación."
+        "body": "Todas las funciones disponibles en la red principal y la red de pruebas, generadas a partir del registro de la aplicación."
       },
       "architecture": {
         "title": "Arquitectura",
@@ -31,9 +31,9 @@
   },
   "matrix": {
     "capability": "Función",
-    "mainnet": "Red principal de Arc",
-    "testnet": "Red de pruebas de Arc",
-    "caption": "Se genera al crear el sitio a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que aún no se ha publicado."
+    "mainnet": "Arc Red principal",
+    "testnet": "Arc Red de pruebas",
+    "caption": "Se genera al crear el sitio, a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que todavía no se ha publicado."
   },
   "state": {
     "available": "Disponible",
@@ -42,28 +42,28 @@
   },
   "scope": {
     "supports": "Lo que funciona hoy",
-    "notYet": "Aún no"
+    "notYet": "Todavía no"
   },
   "areas": {
     "tokens": "Cualquier token en Arc",
     "meme_coins": "Memecoins",
-    "perps": "Largo y corto (perpetuos)",
+    "perps": "Largo y corto (perps)",
     "buy": "Comprar con Apple Pay o tarjeta",
     "borrow": "Pedir prestado",
     "withdraw": "Retirar a cualquier lugar",
-    "export_wallet": "Exportar tu cartera"
+    "export_wallet": "Exportar tu billetera"
   },
   "limits": {
     "rule": "Predeterminado",
     "mainnet": "Red principal",
     "testnet": "Red de pruebas",
     "daily": "Límite diario: se envía de una vez, sin confirmación",
-    "perTransaction": "Pago único máximo",
+    "perTransaction": "Pago individual más grande",
     "weekly": "Total por semana",
     "monthly": "Total por mes",
     "perRecipientWeekly": "A una persona por semana",
-    "firstTime": "Primer pago a una dirección nueva: Face ID por encima de este límite",
-    "caption": "Valores predeterminados de la configuración de la propia aplicación. Los límites de la red de pruebas son más altos porque no hay dinero real en riesgo."
+    "firstTime": "Primer pago a una dirección nueva: Face ID para importes superiores",
+    "caption": "Valores predeterminados de la propia configuración de la aplicación. Los límites de la red de pruebas son más altos porque no hay dinero real en riesgo."
   },
   "status": {
     "label": "Estado"
@@ -90,7 +90,7 @@
     "Default(type table)": "Predeterminado",
     "Edit on GitHub(edit page)": "Editar en GitHub",
     "Hide Sidebar(sidebar)": "Ocultar barra lateral",
-    "Last updated on(page footer)": "Última actualización:",
+    "Last updated on(page footer)": "Última actualización",
     "Layout Tab(layout tab trigger)": "Pestaña de diseño",
     "Light(theme switcher)(aria-label)": "Claro",
     "Next Page(pagination)": "Página siguiente",
@@ -111,14 +111,14 @@
     "Previous Page(pagination)": "Página anterior",
     "Prop(type table)": "Propiedad",
     "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre ella.",
-    "Returns(type table)": "Resultados",
+    "Returns(type table)": "Devuelve",
     "Search(search dialog)": "Buscar",
     "Search(search trigger)": "Buscar",
     "Show Sidebar(sidebar)": "Mostrar barra lateral",
     "System(theme switcher)(aria-label)": "Sistema",
-    "Table of Contents(inline table of contents)": "Índice",
+    "Table of Contents(inline table of contents)": "Tabla de contenido",
     "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Es posible que la página que buscas se haya eliminado, haya cambiado de nombre o no esté disponible temporalmente.",
-    "Toggle Menu(home layout header)(aria-label)": "Mostrar u ocultar el menú",
+    "Toggle Menu(home layout header)(aria-label)": "Mostrar u ocultar menú",
     "Toggle Theme(theme switcher)(aria-label)": "Cambiar tema",
     "Type(type table)": "Tipo",
     "View as Markdown(page actions)": "Ver como Markdown"

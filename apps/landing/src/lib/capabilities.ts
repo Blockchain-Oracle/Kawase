@@ -7,13 +7,13 @@ import { CAPABILITIES, CAPABILITY_SCOPE, type CapabilityId, type CapabilityState
 import { CHAIN_IDS, ENTITIES, arcIdentity, chainKey, providerKey, venueKey } from "@kawase/identity";
 import type { NetworkId } from "@kawase/networks";
 
-/** Areas of the plan without a registry id yet (rename here if capabilities.ts picks other ids). */
-export const PLANNED_AREAS = ["withdraw"] as const;
+/** Areas of the plan without a registry id yet (none today: Withdraw ships inside `send`). */
+export const PLANNED_AREAS: readonly string[] = [];
 /** Shipped account features outside the registry: Settings → Account → Export wallet (B2, commit ea8b10b). */
 const ACCOUNT_AREAS = {
   export_wallet: { mainnet: "available", testnet: "available" },
 } as const satisfies Record<string, Record<NetworkId, CapabilityState>>;
-export type AreaId = CapabilityId | (typeof PLANNED_AREAS)[number] | keyof typeof ACCOUNT_AREAS;
+export type AreaId = CapabilityId | keyof typeof ACCOUNT_AREAS;
 
 export const NETWORKS: readonly NetworkId[] = ["mainnet", "testnet"];
 
@@ -144,10 +144,11 @@ export const AREAS: readonly Area[] = [
     marks: ["apple", "google", "circle"],
   },
   {
-    id: "withdraw",
-    docs: "/docs/features/bridge-and-withdraw",
+    id: "send",
+    docs: "/docs/features/bridge-and-withdraw#withdraw",
     title: "Withdraw anywhere",
-    body: "One screen for every asset and destination: your own address on another chain, an exchange, or a friend.",
+    body: "Any token, as itself or as cash, to an exchange, your own wallet on another chain, or your bank through an exchange.",
+    today: 3,
   },
   {
     id: "bridge",

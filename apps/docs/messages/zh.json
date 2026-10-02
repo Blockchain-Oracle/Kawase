@@ -6,18 +6,18 @@
   },
   "home": {
     "eyebrow": "Kawase 文档",
-    "title": "用一句话，让资金流转",
-    "body": "Kawase 是一款适用于 Arc 全部功能的 AI 资金应用。用你的语言，通过语音或文字发出请求：它提出方案，你确认，区块链则执行你的限额。",
+    "title": "用语音让资金流动",
+    "body": "Kawase 是一款适用于 Arc 上各种场景的 AI 资金应用。用你的语言，通过语音或文字发出请求：它会提出方案，你确认后，区块链会执行你的限额。",
     "start": "开始使用",
-    "safety": "它如何保障安全",
+    "safety": "了解它如何保护你的安全",
     "cards": {
       "gettingStarted": {
         "title": "开始使用",
         "body": "几秒内即可作为访客打开网页应用，也可以将它安装到 iPhone 或 Android 设备上。"
       },
       "safety": {
-        "title": "安全机制",
-        "body": "了解代理无需询问即可执行哪些操作，什么时候需要你的 Face ID，以及哪些操作永远无法执行。"
+        "title": "安全模型",
+        "body": "了解代理无需询问即可执行哪些操作、何时需要你的 Face ID，以及哪些操作永远无法执行。"
       },
       "availability": {
         "title": "目前可用的功能",
@@ -25,7 +25,7 @@
       },
       "architecture": {
         "title": "架构",
-        "body": "了解聊天、语音、策略引擎和 Arc 如何协同工作，适合评审者和开发者阅读。"
+        "body": "了解聊天、语音、策略引擎和 Arc 如何协同工作，供评审者和构建者参考。"
       }
     }
   },
@@ -33,7 +33,7 @@
     "capability": "功能",
     "mainnet": "Arc 主网",
     "testnet": "Arc 测试网",
-    "caption": "网站构建时，根据应用和代理读取的功能注册表生成。“即将推出”表示该功能尚未上线。"
+    "caption": "网站构建时会根据应用和代理读取的功能注册表生成。“即将推出”表示该功能尚未上线。"
   },
   "state": {
     "available": "可用",
@@ -46,9 +46,9 @@
   },
   "areas": {
     "tokens": "Arc 上的任意代币",
-    "meme_coins": "Meme 币",
+    "meme_coins": "迷因币",
     "perps": "做多和做空（永续合约）",
-    "buy": "用 Apple Pay 或银行卡购买",
+    "buy": "使用 Apple Pay 或银行卡购买",
     "borrow": "借款",
     "withdraw": "提现到任意地方",
     "export_wallet": "导出你的钱包"
@@ -57,12 +57,12 @@
     "rule": "默认值",
     "mainnet": "主网",
     "testnet": "测试网",
-    "daily": "每日额度：一次性发送，无需提示",
-    "perTransaction": "单笔最大付款金额",
+    "daily": "每日额度：一次发送，无需提示",
+    "perTransaction": "单笔最大金额",
     "weekly": "每周总额",
     "monthly": "每月总额",
-    "perRecipientWeekly": "每周向同一人转账的额度",
-    "firstTime": "向新地址进行首次付款：超过此额度需要 Face ID",
+    "perRecipientWeekly": "每周向同一人转账的金额",
+    "firstTime": "向新地址进行首次转账：超过此金额需要 Face ID",
     "caption": "默认值来自应用自己的配置。测试网限额更高，因为不会涉及真实资金风险。"
   },
   "status": {
@@ -70,7 +70,7 @@
   },
   "fumadocs": {
     "Ask AI(AI chat button)": "询问 AI",
-    "Back to Home(404 not found page)": "返回主页",
+    "Back to Home(404 not found page)": "返回首页",
     "Choose a language(language switcher)": "选择语言",
     "Choose a language(language switcher)(aria-label)": "选择语言",
     "Close Banner(banner)(aria-label)": "关闭横幅",
@@ -78,11 +78,11 @@
     "Close Sidebar(aria-label)": "关闭侧边栏",
     "Close Sidebar(sidebar)(aria-label)": "关闭侧边栏",
     "Collapse Sidebar(sidebar)(aria-label)": "收起侧边栏",
-    "Copied Anchor Link(heading anchor)(aria-label)": "标题链接已复制",
+    "Copied Anchor Link(heading anchor)(aria-label)": "标题锚点链接已复制",
     "Copied Link(accordion)(aria-label)": "链接已复制",
     "Copied Markdown(page actions)": "Markdown 已复制",
     "Copied Text(code block)(aria-label)": "文本已复制",
-    "Copy Anchor Link(heading anchor)(aria-label)": "复制标题链接",
+    "Copy Anchor Link(heading anchor)(aria-label)": "复制标题锚点链接",
     "Copy Link(accordion)(aria-label)": "复制链接",
     "Copy Markdown(page actions)": "复制 Markdown",
     "Copy Text(code block)(aria-label)": "复制文本",
@@ -90,8 +90,8 @@
     "Default(type table)": "默认值",
     "Edit on GitHub(edit page)": "在 GitHub 上编辑",
     "Hide Sidebar(sidebar)": "隐藏侧边栏",
-    "Last updated on(page footer)": "上次更新时间：",
-    "Layout Tab(layout tab trigger)": "布局选项卡",
+    "Last updated on(page footer)": "最后更新于",
+    "Layout Tab(layout tab trigger)": "布局标签",
     "Light(theme switcher)(aria-label)": "浅色",
     "Next Page(pagination)": "下一页",
     "No Headings(table of contents)": "没有标题",
@@ -110,17 +110,17 @@
     "Parameters(type table)": "参数",
     "Previous Page(pagination)": "上一页",
     "Prop(type table)": "属性",
-    "Read {url}, I want to ask questions about it.(page actions)": "阅读 {url}，我想就此提问。",
+    "Read {url}, I want to ask questions about it.(page actions)": "阅读 {url}，我想询问有关它的问题。",
     "Returns(type table)": "返回值",
     "Search(search dialog)": "搜索",
     "Search(search trigger)": "搜索",
     "Show Sidebar(sidebar)": "显示侧边栏",
-    "System(theme switcher)(aria-label)": "跟随系统",
+    "System(theme switcher)(aria-label)": "系统",
     "Table of Contents(inline table of contents)": "目录",
-    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "你要找的页面可能已被删除、改名，或暂时无法访问。",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "你要查找的页面可能已被删除、改名，或暂时无法访问。",
     "Toggle Menu(home layout header)(aria-label)": "切换菜单",
     "Toggle Theme(theme switcher)(aria-label)": "切换主题",
     "Type(type table)": "类型",
-    "View as Markdown(page actions)": "以 Markdown 查看"
+    "View as Markdown(page actions)": "以 Markdown 格式查看"
   }
 }

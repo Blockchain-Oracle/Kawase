@@ -6,18 +6,18 @@
   },
   "home": {
     "eyebrow": "Documentação do Kawase",
-    "title": "Dinheiro que se move quando você fala",
-    "body": "Kawase é um app de dinheiro com IA para tudo na Arc. Pergunte no seu idioma, por voz ou texto: ele faz uma proposta, você aprova e a rede aplica seus limites.",
+    "title": "Dinheiro que se movimenta quando você fala",
+    "body": "Kawase é um app de dinheiro com IA para tudo na Arc. Peça no seu idioma, por voz ou texto: ele propõe, você aprova e a rede aplica seus limites.",
     "start": "Começar",
-    "safety": "Como ele mantém seu dinheiro seguro",
+    "safety": "Como o app mantém seu dinheiro seguro",
     "cards": {
       "gettingStarted": {
         "title": "Começar",
-        "body": "Abra o app web como convidado em poucos segundos ou instale no iPhone ou Android."
+        "body": "Abra o app web como convidado em poucos segundos ou instale-o no iPhone ou Android."
       },
       "safety": {
         "title": "Modelo de segurança",
-        "body": "O que o agente pode fazer sem perguntar, quando precisa do seu Face ID e o que ele nunca pode fazer."
+        "body": "O que o agente pode fazer sem perguntar, quando ele precisa do seu Face ID e o que nunca pode fazer."
       },
       "availability": {
         "title": "O que funciona hoje",
@@ -46,7 +46,7 @@
   },
   "areas": {
     "tokens": "Qualquer token na Arc",
-    "meme_coins": "Meme coins",
+    "meme_coins": "Moedas meme",
     "perps": "Comprado e vendido (perps)",
     "buy": "Comprar com Apple Pay ou cartão",
     "borrow": "Pegar emprestado",
@@ -63,14 +63,14 @@
     "monthly": "Total por mês",
     "perRecipientWeekly": "Para uma pessoa por semana",
     "firstTime": "Primeiro pagamento para um endereço novo: Face ID acima desse limite",
-    "caption": "Valores padrão da própria configuração do app. Os limites da rede de testes são maiores porque não há dinheiro real em risco."
+    "caption": "Valores padrão da própria configuração do app. Os limites da rede de testes são maiores porque nenhum dinheiro real está em risco."
   },
   "status": {
     "label": "Status"
   },
   "fumadocs": {
     "Ask AI(AI chat button)": "Perguntar à IA",
-    "Back to Home(404 not found page)": "Voltar para o início",
+    "Back to Home(404 not found page)": "Voltar para a página inicial",
     "Choose a language(language switcher)": "Escolher um idioma",
     "Choose a language(language switcher)(aria-label)": "Escolher um idioma",
     "Close Banner(banner)(aria-label)": "Fechar banner",
@@ -78,11 +78,11 @@
     "Close Sidebar(aria-label)": "Fechar barra lateral",
     "Close Sidebar(sidebar)(aria-label)": "Fechar barra lateral",
     "Collapse Sidebar(sidebar)(aria-label)": "Recolher barra lateral",
-    "Copied Anchor Link(heading anchor)(aria-label)": "Link de âncora copiado",
+    "Copied Anchor Link(heading anchor)(aria-label)": "Link âncora copiado",
     "Copied Link(accordion)(aria-label)": "Link copiado",
     "Copied Markdown(page actions)": "Markdown copiado",
     "Copied Text(code block)(aria-label)": "Texto copiado",
-    "Copy Anchor Link(heading anchor)(aria-label)": "Copiar link de âncora",
+    "Copy Anchor Link(heading anchor)(aria-label)": "Copiar link âncora",
     "Copy Link(accordion)(aria-label)": "Copiar link",
     "Copy Markdown(page actions)": "Copiar Markdown",
     "Copy Text(code block)(aria-label)": "Copiar texto",
@@ -110,14 +110,14 @@
     "Parameters(type table)": "Parâmetros",
     "Previous Page(pagination)": "Página anterior",
     "Prop(type table)": "Prop",
-    "Read {url}, I want to ask questions about it.(page actions)": "Leia {url}, quero fazer perguntas sobre isso.",
+    "Read {url}, I want to ask questions about it.(page actions)": "Leia {url}; quero fazer perguntas sobre isso.",
     "Returns(type table)": "Retornos",
     "Search(search dialog)": "Buscar",
     "Search(search trigger)": "Buscar",
     "Show Sidebar(sidebar)": "Mostrar barra lateral",
     "System(theme switcher)(aria-label)": "Sistema",
     "Table of Contents(inline table of contents)": "Sumário",
-    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "A página que você procura pode ter sido removida, ter mudado de nome ou estar temporariamente indisponível.",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "A página que você está procurando pode ter sido removida, ter mudado de nome ou estar temporariamente indisponível.",
     "Toggle Menu(home layout header)(aria-label)": "Alternar menu",
     "Toggle Theme(theme switcher)(aria-label)": "Alternar tema",
     "Type(type table)": "Tipo",

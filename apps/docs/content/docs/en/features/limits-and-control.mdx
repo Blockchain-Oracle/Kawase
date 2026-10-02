@@ -1,6 +1,6 @@
 ---
 title: Limits and control
-description: Your allowance per token, Kawase's own checks, Pause all, the risk dial, practice mode, the exit kit, Needs you, and a why behind every movement.
+description: Your allowance per token, Kawase's own checks, the brake, token rules, Pause all, the risk dial, practice mode, the exit kit, Needs you, and a why behind every movement.
 ---
 
 <Marks names="usdc eurc arc" />
@@ -23,14 +23,30 @@ is left today, and any temporary raise.
 On top of the chain's limit, Kawase applies rules of its own:
 
 - a **per-payment** cap;
-- **new recipients**: for the first hours after you add someone, the agent may pay them only a small amount at a time;
+- **new recipients**: for the first hours after you add someone, the allowance and automations stay off that address;
+  your own payment still goes through, with a test amount suggested;
 - **allowlist only**: the agent pays only people on your list;
 - a **temporary raise**: more for a while, then back by itself.
 
+## The brake
+
+Some requests are unusual enough to stop and show you why, even inside your limits: **more than half your balance to
+someone new**, a trade whose **price impact** is over your rule, or **leverage above 5×**. The card shows a brake panel;
+it's your call, and approving goes ahead. An automation that hits the brake waits in Needs you instead.
+
+## Token rules
+
+**Wallet & limits → Token rules** sets which tokens Kawase may buy for you: **verified only**, or verified and popular
+ones with warnings; caps for unverified tokens per trade and per day, with today's meter; and the highest price impact you
+accept. Copycats and high-risk tokens are always blocked. Tightening applies at once; loosening asks for Face ID and your
+wallet's signature.
+
 ## Pause all
 
-One switch turns off everything the agent does **without asking**. Payments you approve with Face ID still work, so you can
-still move your money out while paused. While paused, a strip sits above every screen.
+One switch turns off everything the agent does **without asking**: no payment uses the allowance (each one waits for your
+Face ID), every automation run is skipped, and the agent buys nothing in the marketplace. What you do yourself still
+works, swaps, bridges and withdrawals included, so you can always move your money out. While paused, a strip sits above
+every screen.
 
 ## The risk dial
 
@@ -43,13 +59,15 @@ still move your money out while paused. While paused, a strip sits above every s
 ## Practice mode
 
 With practice on, Kawase runs **the exact transaction** you asked for as a dry run on Arc, from your own address, and shows
-**"Would have sent"** with the chain's answer. **Nothing moves.** Practice also covers automations, and swaps, bridges,
-savings moves and margin orders are refused before anything is signed, so the PRACTICE strip never hides a real payment.
+**"Would have sent"** with the chain's answer. **Nothing moves.** Practice also covers automations, and a marketplace
+purchase answers **"would pay"** with the live price and nothing paid. Swaps, bridges, savings moves and margin orders are
+refused before anything is signed, so the PRACTICE strip never hides a real payment.
 
 ## The exit kit
 
 If something feels wrong: **pause**, then **hold to revoke** every permission on the network with **one Face ID** (one
-transaction), then **move the money out**. Automations whose grants are revoked end.
+transaction), then **move the money out**, which opens [Withdraw](./bridge-and-withdraw.mdx#withdraw) for everything.
+Automations whose grants are revoked end.
 
 ## Needs you
 

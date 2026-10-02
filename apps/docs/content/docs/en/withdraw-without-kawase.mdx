@@ -16,7 +16,7 @@ Gather what isn't plain money in your wallet yet:
 - **Aave V4** supply or a loan: repay and withdraw on the Borrow screen.
 - **Long or short** positions: close them (Close · All) on each position's page.
 - **The agent wallet**: Settings → Agent wallet → **Return to my wallet**.
-- Tokens other than USDC and EURC: trade them to USDC, or export your wallet (part 2) and move them from any wallet.
+- Any other token can go out with Withdraw as itself on Arc, or converted to USDC to cross to another chain.
 
 ## Part 1: with Kawase (the exit kit)
 
@@ -32,15 +32,12 @@ In the exit kit, **hold to revoke**. One Face ID sends one transaction that revo
 allowance and every automation's grant. Automations end. Repeat on the other network if you used it.
 </Step>
 <Step>
-### Pick where the money goes
-An address you control in another wallet (MetaMask, Rabby, …) with **Arc** added, or an exchange's **Arc** deposit address.
-Check the network is Arc; an address on another network is not the same thing.
-</Step>
-<Step>
-### Send everything
-Say "send all my USDC to 0x…" (paste the address in the same message) or use the Send screen, and confirm with Face ID.
-Repeat for EURC. To land on another network instead, [bridge](./features/bridge-and-withdraw.mdx) USDC to your own
-address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche.
+### Withdraw everything
+In the exit kit, **move the money out** opens [Withdraw](./features/bridge-and-withdraw.mdx#withdraw) with everything
+selected (or say "withdraw everything to my Kraken"). Pick where it goes: an **exchange** (Kraken, Bybit, OKX, Binance,
+Bitget, KuCoin, or Coinbase through Base), **your own wallet** on Arc or another chain, or your bank through an exchange.
+Kawase plans each token (a transfer, a bridge, or a conversion to USDC first), warns you about anything the destination
+wouldn't credit, and you confirm once with Face ID.
 </Step>
 <Step>
 ### Check the explorer

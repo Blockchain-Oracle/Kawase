@@ -1,76 +1,94 @@
 ---
 title: "Limites e controle"
-description: "Sua cota por token, as próprias verificações da Kawase, Pausar tudo, o controle de risco, o modo de prática, o kit de saída, Precisa de você e o motivo por trás de cada movimentação."
-sourceHash: 0bb308d278c0c7f7
+description: "Sua permissão por token, as próprias verificações da Kawase, o freio, as regras de token, Pausar tudo, o seletor de risco, o modo de prática, o kit de saída, Precisa de você e o motivo por trás de cada movimentação."
+sourceHash: b500a73c1084f3dd
 ---
 
 <Marks names="usdc eurc arc" />
 
-Tudo o que o agente pode fazer sem perguntar está escrito em **Configurações → Carteira e limites**, e a maior parte disso é aplicada
-pela própria Arc. Nesta página, você vê o que pode alterar ali. O modelo por trás disso está na [página de segurança](../safety.mdx).
+Tudo o que o agente pode fazer sem perguntar está escrito em **Configurações → Carteira e limites**, e a maior parte é aplicada
+pela própria Arc. Esta página mostra o que você pode mudar lá. O modelo por trás disso está na [página de segurança](../safety.mdx).
 
-## Sua cota por token
+## Sua permissão, por token
 
-O **recibo de autorização** mostra, para cada token, o que a Arc aplica (a autorização que você assinou), o limite menor definido pela Kawase, o que
-ainda resta hoje e qualquer aumento temporário.
+O **comprovante de autorização** mostra, para cada token, o que a Arc aplica (a permissão que você assinou) e o limite menor
+definido pela Kawase, o que ainda resta hoje e qualquer aumento temporário.
 
 - **Adicionar um token**: qualquer token que você tenha ou um endereço que você cole, verificado na rede.
-- **Diminuir** um número: ele é salvo na hora.
-- **Aumentar** um número: você vê **Agora → Depois**. Uma aprovação assina a nova autorização na rede **junto com** a revogação da
-  antiga, para que nunca existam duas autorizações ativas ao mesmo tempo.
+- **Reduza** um número e ele será salvo na hora.
+- **Aumente** um número e você verá **Agora → Depois**: uma aprovação assina a nova permissão na rede **junto com** a revogação da
+  antiga, para que duas permissões nunca fiquem ativas ao mesmo tempo.
 
 ## O que a Kawase verifica por conta própria
 
 Além do limite da rede, a Kawase aplica regras próprias:
 
 - um limite **por pagamento**;
-- **novos destinatários**: nas primeiras horas depois que você adiciona alguém, o agente só pode pagar um valor pequeno por vez;
-- **somente lista de permissões**: o agente paga apenas para as pessoas da sua lista;
-- um **aumento temporário**: o limite fica maior por um tempo e depois volta sozinho.
+- **novos destinatários**: nas primeiras horas depois que você adiciona alguém, a permissão e as automações ficam desativadas para esse endereço;
+  seu próprio pagamento ainda é concluído, com um valor de teste sugerido;
+- **somente lista de permitidos**: o agente paga apenas pessoas da sua lista;
+- um **aumento temporário**: mais por um tempo, depois volta sozinho.
+
+## O freio
+
+Alguns pedidos são incomuns o bastante para serem interrompidos e mostrarem o motivo, mesmo dentro dos seus limites: **mais da metade do seu saldo para
+alguém novo**, uma negociação cujo **impacto no preço** ultrapassa sua regra ou uma **alavancagem acima de 5×**. O cartão mostra um painel de freio;
+a decisão é sua, e a aprovação continua. Uma automação que aciona o freio fica esperando em Precisa de você.
+
+## Regras de token
+
+**Carteira e limites → Regras de token** define quais tokens a Kawase pode comprar para você: **somente verificados** ou verificados e populares
+com avisos; limites para tokens não verificados por negociação e por dia, com o medidor de hoje; e o maior impacto no preço que você aceita. Tokens
+imitadores e de alto risco são sempre bloqueados. Tornar as regras mais rígidas vale na hora; torná-las mais flexíveis pede Face ID e a assinatura da
+sua carteira.
 
 ## Pausar tudo
 
-Um único botão desativa tudo o que o agente faz **sem perguntar**. Os pagamentos que você aprova com o Face ID continuam funcionando, então você
-ainda pode tirar seu dinheiro enquanto tudo está pausado. Durante a pausa, uma faixa aparece acima de todas as telas.
+Um botão desativa tudo o que o agente faz **sem perguntar**: nenhum pagamento usa a permissão (cada um espera pelo seu
+Face ID), todas as execuções de automações são ignoradas e o agente não compra nada no marketplace. O que você fizer por conta própria continua
+funcionando, incluindo trocas, pontes e saques, para que você sempre possa tirar seu dinheiro. Enquanto estiver pausado, uma faixa aparece acima
+de todas as telas.
 
-## O controle de risco
+## O seletor de risco
 
-**Proteção · Equilibrado · Autônomo**:
+**Protegido · Equilibrado · Autônomo**:
 
-- **Proteção**: todo pagamento espera sua confirmação, inclusive no chat.
-- **Equilibrado**: dentro da sua cota, uma solicitação digitada é executada na hora.
-- **Autônomo**: a Kawase pode agir por conta própria com base nas sugestões dela, dentro dos seus limites, e depois avisa você.
+- **Protegido**: todo pagamento espera sua confirmação, inclusive no chat.
+- **Equilibrado**: dentro da sua permissão, um pedido digitado é executado na hora.
+- **Autônomo**: a Kawase pode agir por conta própria com base nas sugestões dela dentro dos seus limites e depois avisa você.
 
 ## Modo de prática
 
-Com a prática ativada, a Kawase executa **a transação exata** que você pediu como um teste na Arc, usando o seu próprio endereço, e mostra
-**"Teria enviado"** com a resposta da rede. **Nada é movimentado.** A prática também inclui as automações, e trocas, pontes,
-movimentações de rendimento e ordens de margem são recusadas antes de qualquer assinatura. Assim, a faixa PRÁTICA nunca esconde um pagamento real.
+Com a prática ativada, a Kawase executa **a transação exata** que você pediu como um teste na Arc, a partir do seu próprio endereço, e mostra
+**"Teria enviado"** com a resposta da rede. **Nada é movimentado.** A prática também inclui automações, e uma compra no marketplace responde
+**"pagaria"** com o preço atual, sem nenhum pagamento. Trocas, pontes, movimentações de rendimento e ordens de margem são recusadas antes que algo seja
+assinado, para que a faixa PRÁTICA nunca esconda um pagamento real.
 
 ## O kit de saída
 
-Se algo parecer errado: **pause** e depois **mantenha pressionado para revogar** todas as permissões na rede com **um Face ID** (uma
-transação). Em seguida, **tire o dinheiro**. As automações cujas autorizações forem revogadas são encerradas.
+Se algo parecer errado: **pause**, depois **mantenha pressionado para revogar** todas as permissões na rede com **um Face ID** (uma
+transação), e então **tire o dinheiro**, o que abre [Saque](./bridge-and-withdraw.mdx#withdraw) para tudo.
+As automações cujas permissões forem revogadas são encerradas.
 
 ## Precisa de você
 
-Algumas etapas uma automação nunca pode realizar sozinha: **toda troca**, um pagamento **acima da autorização** ou um pagamento bloqueado pela sua **lista de permissões** ou pelo
-**tempo de espera**. Elas ficam em **Precisa de você**, na caixa de entrada e em Automações, com uma notificação push quando as
-notificações estiverem configuradas. Responda de qualquer lugar, uma vez só: uma segunda resposta encontra o item já respondido e informa quando e onde.
-A aprovação abre exatamente o envio ou a troca que você faria manualmente, com uma nova verificação. Os itens sem resposta recebem um lembrete depois de **12
-horas** e expiram depois de **24**.
+Algumas etapas que uma automação nunca pode realizar sozinha: **toda troca**, um pagamento **acima da permissão** ou um pagamento que sua **lista de permitidos** ou
+seu **tempo de espera** bloqueie. Elas ficam em **Precisa de você**, na caixa de entrada e em Automações, com uma notificação push onde as
+notificações estiverem configuradas. Responda de qualquer lugar, uma vez: uma segunda resposta encontra tudo já respondido e informa quando e onde.
+A aprovação abre exatamente o envio ou a troca que você faria manualmente, com uma nova verificação. Itens sem resposta recebem um lembrete depois de **12
+horas** e expiram após **24**.
 
-## Atividade e motivo
+## Atividade e o motivo
 
-**Atividade** é um único histórico com todos os tokens que entram e saem: envios, recebimentos, trocas com as duas etapas, pontes, rendimento,
-margem, execuções de automações, pedidos pagos, o faucet e execuções de prática. Cada linha mostra o status (verificando, ignorado e o motivo,
-prática, aguardando). Filtros: **Tudo · Entradas · Saídas · Negociações · Automações · Precisa de você**, com a quantidade ao lado do último.
+**Atividade** é um único feed com todos os tokens que entram e saem: envios, recebimentos, trocas com as duas etapas, pontes, rendimentos, margem,
+execuções de automações, pedidos pagos, o faucet e execuções de prática. Cada linha informa o status (verificando, ignorado e o motivo,
+prática, aguardando). Filtros: **Todos · Entradas · Saídas · Negociações · Automações · Precisa de você**, o último com a quantidade.
 
-Toque em uma linha para ver o recibo (valor, horário, rede, a outra parte e a transação) e depois em **Por quê**: o registro da decisão
+Toque em uma linha para ver seu comprovante (valor, horário, rede, a outra parte e a transação), depois em **Por quê**: o registro da decisão
 por trás dela ou, no caso de uma execução que nunca chegou à rede, o que a interrompeu e como você respondeu. Em Atividade, você também pode
 ler **o relatório da semana** e **exportar** seu histórico como CSV ou beancount.
 
-## Pelo chat
+## No chat
 
-Pergunte: "quais são meus limites?", "pause tudo", "defina o controle como proteção", "aumente minha cota de USDC para 50" ou "revogue
-tudo". Cada resposta é um cartão, e as alterações são aprovadas no próprio cartão.
+Pergunte "quais são meus limites?", "pause tudo", "mude o seletor para protegido", "aumente minha permissão de USDC para 50" ou "revogue
+tudo". Cada resposta é um cartão, e as mudanças são aprovadas no cartão.

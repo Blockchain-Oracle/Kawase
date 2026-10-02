@@ -1,27 +1,41 @@
 ---
 title: "Contatos e @handles"
-description: "Salve pessoas por nome, pague por nome ou @handle e receba alertas sobre endereços alterados ou parecidos."
-sourceHash: 4bd90c8b9e0cc168
+description: "Salve pessoas por nome, pague por nome ou @handle e receba avisos sobre endereços alterados ou parecidos."
+sourceHash: 456835ae75f4f0c4
 ---
 
 <Status ids="contacts" />
 
 ## Contatos
 
-Um contato é um nome (e apelidos) associado a um ou mais endereços. A Kawase usa os contatos para entender “enviar para Alex” e proteger você:
+Um contato é um nome (e apelidos) com um ou mais endereços. Kawase usa os contatos para entender “enviar para Alex” e
+proteger você:
 
-- **Alterações de endereço ficam retidas.** Quando o endereço de um contato muda, o novo endereço espera **24 horas** antes de poder receber dinheiro, e o contato fica congelado nesse período. Um endereço alterado é uma forma clássica de roubar um pagamento.
-- **Endereços parecidos são sinalizados.** Um endereço cujos quatro primeiros e quatro últimos caracteres sejam iguais aos de um dos seus contatos é tratado como parecido: a Kawase interrompe a ação e pede o Face ID.
-- **O histórico de pagamentos** aumenta a confiança em cada endereço e rede: o primeiro pagamento para um endereço recebe mais verificações do que os pagamentos seguintes.
+- **Alterações de endereço ficam retidas.** Quando o endereço de um contato muda, o novo endereço espera **24 horas** antes que o dinheiro possa ser enviado para
+  ele, e o contato fica congelado enquanto isso. Um endereço alterado é uma forma comum de roubar um pagamento.
+- **Endereços parecidos são sinalizados.** Um endereço cujos quatro primeiros e quatro últimos caracteres sejam iguais aos de um dos seus contatos é
+  tratado como parecido: Kawase interrompe a ação e pede o Face ID.
+- **Histórico de pagamentos** aumenta a confiança em cada endereço e rede: o primeiro pagamento para um endereço recebe mais cuidado
+  do que os pagamentos repetidos.
 
-Se você mencionar alguém que a Kawase não conhece, ela pedirá para salvar essa pessoa e continuará com o mesmo pagamento — você não precisa começar de novo.
+Se você mencionar alguém que Kawase não conhece, o app pedirá para salvar essa pessoa e continuará com o mesmo pagamento — você não
+precisa começar de novo.
+
+### Adicionar pessoas
+
+- **Salvar um remetente**: o dinheiro recebido de alguém oferece a opção **Salvar remetente como contato**, com o endereço usado no
+  pagamento.
+- **Importar do seu celular**: Contatos → Importar lê nomes e e-mails **somente no seu celular**. **Encontrar quem está no Kawase**
+  envia apenas e-mails com hash, nunca os nomes, e-mails ou números; as pessoas que permitem ser encontradas são adicionadas pelo
+  @handle em um toque, e você pode convidar as demais. A opção para permitir que outras pessoas encontrem você dessa forma fica na mesma página.
 
 ## @handles
 
 Um `@handle` é um nome público opcional pelo qual você pode receber pagamentos: “enviar 10 para @abu”. Regras:
 
 - De 3 a 20 caracteres: letras minúsculas, números e sublinhado.
-- É único, independentemente de maiúsculas e minúsculas; nomes que possam se passar por Kawase, Arc, Circle ou pela equipe são reservados.
-- Você escolhe o seu durante a configuração inicial (ou pode pular essa etapa) e pode alterá-lo em Configurações.
+- É único, independentemente de maiúsculas e minúsculas; nomes que possam se passar pelo Kawase, Arc, Circle ou por membros da equipe são reservados.
+- Você escolhe o seu durante o cadastro inicial (ou pode pular essa etapa) e pode alterá-lo em Configurações.
 
-Um handle aponta para o endereço da carteira Kawase da pessoa. Se ela ainda não tiver configurado uma carteira, a Kawase avisará você em vez de tentar adivinhar.
+Um handle corresponde ao endereço da carteira Kawase da pessoa. Se a pessoa ainda não tiver configurado uma carteira, Kawase avisará você
+em vez de tentar adivinhar.

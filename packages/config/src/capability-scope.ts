@@ -30,14 +30,13 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "buying, selling or swapping any token on Arc mainnet, meme coins included, at the best quote of KyberSwap, Circle App Kit and LI.FI (the others shown), paid with any token the person holds and confirmed by a slide on the card",
       "on Arc Testnet only USDC ↔ EURC exists to trade; other tokens and meme coins are mainnet only",
-      "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%)",
+      "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%), which they change on the Token rules screen (tightening at once, loosening with their wallet's signature)",
       "price, 24-hour change, a price chart and safety for any token on Arc; the Markets tab (trending, new, heatmap) and search by name, symbol or address",
     ],
     notYet: [
-      "limit orders, DCA and price-triggered swaps",
+      "limit orders that fill by themselves (DCA and price-triggered swaps run as automations, and each one waits for the person's tap)",
       "buying on a launchpad's curve before the token graduates (the token page shows it and links the launchpad)",
       "candlestick charts and profit and loss from the person's own trades",
-      "changing the token rules on a screen (being built)",
     ],
   },
   buy: {

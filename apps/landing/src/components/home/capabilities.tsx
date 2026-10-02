@@ -68,9 +68,11 @@ export function Capabilities() {
       body={
         <>
           Any token, long and short, buying with a card, yield, borrowing, bridges, automations, business tools and
-          paid AI services, all from one conversation. {shipped} of these {AREAS.length} run today; the rest are marked
-          “Coming” from the same registry the app and its agent read, so this page can’t claim more than the product
-          does. The <a className="underline underline-offset-4 hover:text-foreground" href={`${links.docs}/docs/availability`}>availability matrix</a> has every network.
+          paid AI services, all from one conversation.{" "}
+          {shipped === AREAS.length
+            ? `All ${AREAS.length} run today (some on mainnet only),`
+            : `${shipped} of these ${AREAS.length} run today; the rest are marked “Coming”,`}{" "}
+          read from the same registry the app and its agent read, so this page can’t claim more than the product does. The <a className="underline underline-offset-4 hover:text-foreground" href={`${links.docs}/docs/availability`}>availability matrix</a> has every network.
         </>
       }
     >

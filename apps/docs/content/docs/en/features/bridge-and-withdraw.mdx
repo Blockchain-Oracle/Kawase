@@ -1,9 +1,9 @@
 ---
 title: Bridge and withdraw
-description: Send USDC from Arc to anyone on six networks over Circle CCTP, Across or Relay, ranked by what arrives; bring USDC to Arc with no gas on the other chain; follow each move until it lands.
+description: Withdraw any token to an exchange, your own wallet or your bank through an exchange; send USDC to anyone on six networks over CCTP, Across or Relay; bring USDC to Arc with no gas.
 ---
 
-<Status ids="bridge withdraw" />
+<Status ids="bridge send" />
 
 <Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
@@ -43,11 +43,31 @@ or Circle's attestation). If a provider **refunds** instead, the card says so pl
 
 Arc Testnet uses **CCTP only**; Across and Relay serve Arc mainnet. Bring to Arc is mainnet only.
 
-## Withdraw anywhere (coming)
+## Withdraw
 
-Today you can send USDC or EURC to **any address on Arc**, including an exchange's Arc deposit address, and USDC to anyone
-on the six networks above. A single **Withdraw** screen for every asset and destination is being built.
+**Withdraw** (from Home, or "withdraw everything to my Kraken") takes one token, several or everything out of Kawase:
+
+<Steps>
+<Step>
+### What
+Pick the tokens. Each one goes **as itself** or **as cash** (converted to USDC first).
+</Step>
+<Step>
+### Where
+An **exchange** (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, or Coinbase through Base), **your own wallet** on Arc or
+another chain, or **your bank** through an exchange. Kawase knows which assets and networks each exchange accepts and
+warns you before you send something it would not credit. Places you withdraw to are saved in **My places**.
+</Step>
+<Step>
+### One confirmation
+Kawase plans a line per token: a transfer on Arc, a bridge, or a conversion first. You slide once and confirm with one
+Face ID. A tracker follows every line to the end; if something stops half way, **Finish it** picks up where it was.
+</Step>
+</Steps>
+
+Tokens other than USDC cross chains as USDC (converted first). On testnet, exchanges aren't offered; withdraw goes to your
+own wallet. In the **exit kit**, "move the money out" opens Withdraw for everything.
 
 To take your money out without Kawase at all, follow [Withdraw without Kawase](../withdraw-without-kawase.mdx).
 
-<ScopeList ids="bridge" />
+<ScopeList ids="bridge send" />

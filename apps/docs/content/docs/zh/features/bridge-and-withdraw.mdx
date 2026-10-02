@@ -1,53 +1,71 @@
 ---
 title: "跨链和提现"
-description: "通过 Circle CCTP、Across 或 Relay，将 USDC 从 Arc 转账给六个网络上的任何人，并按到账金额排序；无需在另一个网络支付 gas，即可将 USDC 转入 Arc；跟踪每一步，直到资金到账。"
-sourceHash: 7d6adac00ab78af3
+description: "将任意代币提现到交易所、你自己的钱包或通过交易所提现到银行；通过 CCTP、Across 或 Relay 在六个网络之间向任何人转账 USDC；无需燃料费即可将 USDC 转入 Arc。"
+sourceHash: 998c665fe77a0b00
 ---
 
-<Status ids="bridge withdraw" />
+<Status ids="bridge send" />
 
 <Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-向 Kawase 发出请求（“在 Base 上给 Alex 转 20 美元”、“把我在 Base 上的 USDC 转到 Arc”），它会在你面前显示一张**转账卡片**，并打开全屏的**跨链转账**页面。它可以在 Arc 与 **Base、Ethereum、Arbitrum、
-Optimism、Polygon 或 Avalanche** 之间转移 USDC。
+询问 Kawase（“在 Base 上向 Alex 转账 20 美元”“将我的 USDC 从 Base 转入 Arc”），它会在你面前显示一张**转账卡片**，
+同时全屏打开**跨链转账**。它可以在 Arc 与 **Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche** 之间转移 USDC。
 
 ## 从 Arc 转出，转给任何人
 
-收款人可以是**你自己**、**联系人**、**@handle** 或任何 **0x 地址**。Kawase 会向三个服务商获取实时
-报价：
+收款人可以是**你自己**、**联系人**、**@handle** 或任何 **0x 地址**。Kawase 会向三个服务商获取实时报价：
 
-- **Circle CCTP**：Circle 在 Arc 上销毁 USDC，并在另一个网络上铸造 USDC；
-- **Across** 和 **Relay**：求解器在另一端支付，然后从你的存款中获得偿还。
+- **Circle CCTP**：Circle 会在 Arc 上销毁 USDC，并在另一个网络上铸造 USDC；
+- **Across** 和 **Relay**：求解器会在另一端支付，然后从你的存款中获得偿还。
 
-它们会按**扣除费用后的到账金额**排序。如果到账金额相同，则优先选择速度更快的服务商。最多会显示三条路线，包括
-服务商标识、到账金额、费用和预计时间。系统会为你选择最佳路线，你也可以点击其他路线。
+它们会按**扣除费用后实际到账的金额**排序。如果金额相同，则优先选择速度更快的服务商。最多会显示三条路线，并标明服务商、
+到账金额、费用和预计时间。系统会为你选择最佳路线，你也可以点选其他路线。
 
-在请求你的钱包确认之前，Kawase 会生成所选服务商的交易并**检查交易**：对于 Across，它会解码存款信息（付款人、
-收款人、代币、金额、最低金额、目标网络，以及没有额外消息）；对于 Relay，它会检查授权，以及存入 Relay 列出的
-存款合约；对于 CCTP，则会检查 Circle 自己的调用。交易会从你的钱包发起模拟，然后你滑动并使用 Face ID 确认，
-以**一笔交易**发送。
+在请求你的钱包确认前，Kawase 会构建所选服务商的交易并**进行检查**：对于 Across，它会解码存款信息（付款人、收款人、
+代币、金额、最低金额、目的地以及没有额外消息）；对于 Relay，它会检查授权，以及向 Relay 列出的存款合约存入资金；
+对于 CCTP，则会检查 Circle 自己的调用。交易会先在你的钱包中模拟，然后你滑动并使用 Face ID 确认，作为**一笔交易**发送。
 
 ## 转入 Arc
 
-如果你在另一个网络上、同一个地址中持有 USDC，Kawase 会找到这些余额（显示各网络的余额，并选择金额最大的余额），
-并通过 **Relay 的 permit** 将其转入 Arc：只需签名一次，**无需在该网络支付 gas**。在你签名之前，系统会检查
-permit（你的地址、金额、Relay 合约，以及该网络上的 USDC）。
+如果你在另一个网络的相同地址上持有 USDC，Kawase 会找到这些 USDC（显示各网络余额，并选择余额最多的网络），
+然后通过 **Relay 的许可签名**将其转入 Arc：只需一次签名，**无需在该网络支付燃料费**。在你签名之前，系统会检查许可信息
+（你的地址、金额、Relay 的合约以及该网络上的 USDC）。
 
 ## 跟踪转账
 
-每笔转账都会被跟踪：**已签名 → 已发送 → 转账中 → 已到账**，并提供区块浏览器链接。Kawase 会通过收据检查
-钱包实际转出的金额，然后通过服务商自己的状态信息确认到账情况（Across 存款状态、Relay 请求状态或 Circle 的
-attestation）。如果服务商改为**退款**，卡片会清楚地显示这一点。资金绝不会被发送两次。
+每笔转账都会被跟踪：**已签名 → 已发送 → 转入中 → 已到账**，并提供区块浏览器链接。Kawase 会根据收据检查你的钱包实际转出的金额，
+然后通过服务商自己的状态信息确认到账情况（Across 存款状态、Relay 请求状态或 Circle 的证明）。如果服务商改为**退款**，
+卡片会清楚地显示这一点。任何资金都不会被发送两次。
 
-## 在测试网上
+## 测试网上
 
-Arc 测试网仅使用 **CCTP**；Across 和 Relay 服务于 Arc 主网。转入 Arc 仅支持主网。
+Arc 测试网只使用 **CCTP**；Across 和 Relay 服务于 Arc 主网。转入 Arc 仅支持主网。
 
-## 随时提现（即将推出）
+## 提现
 
-目前，你可以将 USDC 或 EURC 转账到 **Arc 上的任何地址**，包括交易所的 Arc 充值地址；也可以将 USDC 转账给上述
-六个网络上的任何人。我们正在开发一个适用于所有资产和目标地址的统一 **提现**页面。
+**提现**（从首页操作，或说“把所有资金提现到我的 Kraken”）可以将一个、多个或全部代币从 Kawase 转出：
 
-如果你想完全不使用 Kawase 提现，请查看[不使用 Kawase 提现](../withdraw-without-kawase.mdx)。
+<Steps>
+<Step>
+### 资产
+选择代币。每种代币都可以**按原代币提现**，也可以**按现金提现**（先兑换为 USDC）。
+</Step>
+<Step>
+### 去向
+可以是**交易所**（Kraken、Bybit、OKX、Binance、Bitget、KuCoin，或通过 Base 使用 Coinbase）、Arc 或其他链上的**你自己的钱包**，
+也可以是**通过交易所提现到你的银行**。Kawase 知道每家交易所接受哪些资产和网络。如果你要发送的资产无法入账，
+它会在发送前提醒你。你提现到的地点会保存在**我的地点**中。
+</Step>
+<Step>
+### 一次确认
+Kawase 会为每种代币安排一条处理步骤：在 Arc 上转账、跨链，或先兑换。你只需滑动一次，然后使用一个 Face ID 确认。
+跟踪器会跟进每条步骤，直到全部完成；如果中途停下，点击**继续完成**即可从中断处继续。
+</Step>
+</Steps>
 
-<ScopeList ids="bridge" />
+除了 USDC 以外的代币会先兑换为 USDC，再跨链。在测试网上不提供交易所选项，提现只能转到你自己的钱包。在**退出工具包**中，
+“转出资金”会为全部资金打开提现页面。
+
+如果你想完全不通过 Kawase 转出资金，请按照[不使用 Kawase 提现](../withdraw-without-kawase.mdx)的说明操作。
+
+<ScopeList ids="bridge send" />

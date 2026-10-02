@@ -3,14 +3,14 @@
   "pages": [
     "index",
     "getting-started",
-    "---Cómo usar Kawase---",
+    "---Usar Kawase---",
     "...features",
     "---Confianza---",
     "safety",
     "withdraw-without-kawase",
     "networks",
     "availability",
-    "---Para creadores y jueces---",
+    "---Para desarrolladores y jueces---",
     "architecture",
     "faq"
   ]
