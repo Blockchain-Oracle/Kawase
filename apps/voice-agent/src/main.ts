@@ -43,9 +43,19 @@ export default defineAgent({
       let payload = JSON.stringify(card);
       // LiveKit RPC payloads are small; a big card is read from the thread by the phone instead.
       if (Buffer.byteLength(payload) > VOICE_RPC_MAX_BYTES)
-        payload = JSON.stringify({ toolName: card.toolName, toolCallId: card.toolCallId, threadId: meta.threadId, fetch: true });
+        payload = JSON.stringify({
+          toolName: card.toolName,
+          toolCallId: card.toolCallId,
+          threadId: meta.threadId,
+          fetch: true,
+        });
       void ctx.room.localParticipant
-        ?.performRpc({ destinationIdentity: meta.identity, method: VOICE_CARD_RPC, payload, responseTimeout: RPC_TIMEOUT_MS })
+        ?.performRpc({
+          destinationIdentity: meta.identity,
+          method: VOICE_CARD_RPC,
+          payload,
+          responseTimeout: RPC_TIMEOUT_MS,
+        })
         .catch((error: unknown) => console.warn("card not delivered", error));
     };
 

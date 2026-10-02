@@ -3,12 +3,7 @@
 // shared value from the audio level, never through React state per tick), Kawase's cards rising as its tools produce
 // them — a send to confirm is confirmed on its card with Face ID, never by a spoken "yes" — and Stop, Mute and
 // "Type instead". The room itself (native or browser) is joined by the platform's voice-session file.
-import {
-  useLocalParticipant,
-  useRoomContext,
-  useTranscriptions,
-  useVoiceAssistant,
-} from "@livekit/components-react";
+import { useLocalParticipant, useRoomContext, useTranscriptions, useVoiceAssistant } from "@livekit/components-react";
 import { Keyboard, Mic, MicOff, Square } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Platform, ScrollView, View } from "react-native";
@@ -113,7 +108,8 @@ export function Conversation({
     const participant = room.localParticipant;
     participant.registerRpcMethod(VOICE_CARD_RPC, async (data) => {
       const card = JSON.parse(data.payload) as Card & { fetch?: boolean };
-      if (!card.fetch) setCards((current) => [...current.filter((entry) => entry.toolCallId !== card.toolCallId), card]);
+      if (!card.fetch)
+        setCards((current) => [...current.filter((entry) => entry.toolCallId !== card.toolCallId), card]);
       return "ok";
     });
     return () => participant.unregisterRpcMethod(VOICE_CARD_RPC);
@@ -155,7 +151,9 @@ export function Conversation({
           {t("voice.failed")}
         </Text>
       ) : null}
-      {you?.text.trim() ? <LiveCaption id={you.id} text={you.text} textClassName="text-muted-foreground text-base" /> : null}
+      {you?.text.trim() ? (
+        <LiveCaption id={you.id} text={you.text} textClassName="text-muted-foreground text-base" />
+      ) : null}
       {answer?.text.trim() ? (
         <LiveCaption id={answer.id} text={answer.text} textClassName="text-foreground text-lg leading-7" />
       ) : null}

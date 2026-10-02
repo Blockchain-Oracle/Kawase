@@ -15,7 +15,10 @@ test("numbers normalize across locales", () => {
 });
 
 test("a faithful paraphrase passes", () => {
-  assert.deepEqual(readbackProblems("I've got 10 USDC ready for @amina on testnet — tap the card to approve.", factsOf(line)), []);
+  assert.deepEqual(
+    readbackProblems("I've got 10 USDC ready for @amina on testnet — tap the card to approve.", factsOf(line)),
+    [],
+  );
   assert.deepEqual(readbackProblems("Votre paiement de 10,00 USDC pour @amina est prêt.", factsOf(line)), []);
 });
 
@@ -33,9 +36,16 @@ test("numbers that are not amounts are ignored", () => {
 
 test("canonical facts come from the tool summaries", () => {
   const facts = canonicalFacts([
-    { toolName: "propose_send", toolCallId: "1", output: { summary: "Send 10 USDC to @amina on testnet, awaiting the card tap." } },
+    {
+      toolName: "propose_send",
+      toolCallId: "1",
+      output: { summary: "Send 10 USDC to @amina on testnet, awaiting the card tap." },
+    },
     { toolName: "get_balance", toolCallId: "2", output: { summary: { USDC: "12.45" } } },
     { toolName: "noise", toolCallId: "3", output: { other: true } },
   ]);
-  assert.equal(facts, 'propose_send: Send 10 USDC to @amina on testnet, awaiting the card tap.\nget_balance: {"USDC":"12.45"}');
+  assert.equal(
+    facts,
+    'propose_send: Send 10 USDC to @amina on testnet, awaiting the card tap.\nget_balance: {"USDC":"12.45"}',
+  );
 });

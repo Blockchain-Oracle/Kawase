@@ -86,3 +86,6 @@ export const GPT_LIVE_APPEND_MAX_CHARS = 1500;
  */
 export const GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS = 3000;
 export const GPT_LIVE_TRANSCRIPT_TAIL_MS = 300;
+
+/** The voice-start cue (assets/audio/voice-start.mp3, 0.52 s) plays out before LiveKit takes the audio route. */
+export const VOICE_START_CUE_MS = 550;

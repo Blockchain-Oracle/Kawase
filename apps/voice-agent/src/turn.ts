@@ -25,7 +25,9 @@ export const API_URL = process.env.KAWASE_API_URL ?? "http://localhost:3023";
 
 /** A durable id per spoken turn: the same request (a retry, a reconnect) maps to the same turn on the api. */
 export const turnId = (meta: SessionMeta, key: string) =>
-  createHash("sha256").update(`${meta.turnNamespace ?? meta.threadId}:${key}`).digest("hex");
+  createHash("sha256")
+    .update(`${meta.turnNamespace ?? meta.threadId}:${key}`)
+    .digest("hex");
 
 type StreamChunk = { type: string; delta?: string; toolCallId?: string; toolName?: string; output?: unknown };
 
@@ -76,7 +78,11 @@ export async function runTurn(
         tools.set(chunk.toolCallId, chunk.toolName);
         events.onToolCall?.(chunk.toolName);
       } else if (chunk.type === "tool-output-available" && chunk.toolCallId) {
-        const card = { toolName: tools.get(chunk.toolCallId) ?? "", toolCallId: chunk.toolCallId, output: chunk.output };
+        const card = {
+          toolName: tools.get(chunk.toolCallId) ?? "",
+          toolCallId: chunk.toolCallId,
+          output: chunk.output,
+        };
         cards.push(card);
         events.onCard?.(card);
       }

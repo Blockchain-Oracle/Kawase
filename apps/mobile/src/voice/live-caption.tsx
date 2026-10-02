@@ -14,7 +14,8 @@ type WordSegmenter = { segment(text: string): Iterable<{ segment: string; isWord
 
 /** Words with their punctuation; languages without spaces (Chinese) are split with Intl.Segmenter when present. */
 function words(text: string): { text: string; spaceAfter: boolean }[] {
-  const Segmenter = (Intl as unknown as { Segmenter?: new (locale?: string, options?: object) => WordSegmenter }).Segmenter;
+  const Segmenter = (Intl as unknown as { Segmenter?: new (locale?: string, options?: object) => WordSegmenter })
+    .Segmenter;
   const pieces: string[] = [];
   if (typeof Segmenter === "function") {
     for (const part of new Segmenter(undefined, { granularity: "word" }).segment(text)) {
@@ -25,13 +26,32 @@ function words(text: string): { text: string; spaceAfter: boolean }[] {
   return pieces.map((piece) => ({ text: piece.trimEnd(), spaceAfter: /\s$/.test(piece) }));
 }
 
-export function LiveCaption({ id, text, className, textClassName }: { id: string; text: string; className?: string; textClassName?: string }) {
+export function LiveCaption({
+  id,
+  text,
+  className,
+  textClassName,
+}: {
+  id: string;
+  text: string;
+  className?: string;
+  textClassName?: string;
+}) {
   const reduced = useReducedMotionLive();
   const list = React.useMemo(() => words(text.trim()), [text]);
   const [spaceWidth, setSpaceWidth] = React.useState(0);
   return (
-    <View accessible accessibilityLabel={text} accessibilityLiveRegion="polite" className={cn("flex-row flex-wrap justify-center", className)}>
-      <Text aria-hidden onLayout={(event) => setSpaceWidth(event.nativeEvent.layout.width)} className={cn(textClassName, "absolute opacity-0")}>
+    <View
+      accessible
+      accessibilityLabel={text}
+      accessibilityLiveRegion="polite"
+      className={cn("flex-row flex-wrap justify-center", className)}
+    >
+      <Text
+        aria-hidden
+        onLayout={(event) => setSpaceWidth(event.nativeEvent.layout.width)}
+        className={cn(textClassName, "absolute opacity-0")}
+      >
         {" "}
       </Text>
       {list.map((word, index) => (

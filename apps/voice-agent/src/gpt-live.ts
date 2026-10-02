@@ -35,7 +35,8 @@ function required(name: string): string {
   return value;
 }
 
-const clip = (text: string) => (text.length > GPT_LIVE_APPEND_MAX_CHARS ? `${text.slice(0, GPT_LIVE_APPEND_MAX_CHARS)}…` : text);
+const clip = (text: string) =>
+  text.length > GPT_LIVE_APPEND_MAX_CHARS ? `${text.slice(0, GPT_LIVE_APPEND_MAX_CHARS)}…` : text;
 
 export function persona(locale: SupportedLocale, prefs: VoicePrefs): string {
   const language = LANGUAGE_IN_ENGLISH[locale];
@@ -139,8 +140,12 @@ export async function startGptLive(input: {
         if (event.isFinal) console.info(`voice debug: heard "${event.transcript}"`);
       });
       live.on("transcript_delta", ({ text }) => console.info(`voice debug: said "${text}"`));
-      live.on("delegation_created", ({ id, pendingTranscript }) => console.info(`voice debug: delegation ${id} "${pendingTranscript}"`));
-      session.on(voice.AgentSessionEventTypes.AgentStateChanged, (event) => console.info(`voice debug: agent ${event.newState}`));
+      live.on("delegation_created", ({ id, pendingTranscript }) =>
+        console.info(`voice debug: delegation ${id} "${pendingTranscript}"`),
+      );
+      session.on(voice.AgentSessionEventTypes.AgentStateChanged, (event) =>
+        console.info(`voice debug: agent ${event.newState}`),
+      );
     }
     live.on("error", (event) => {
       if (event.recoverable) return;
@@ -194,9 +199,12 @@ export async function startGptLive(input: {
           const facts = canonicalFacts(turn.cards);
           const line = turn.text || SORRY[locale];
           if (facts)
-            live.appendThinking(clip(`Kawase's canonical facts for this answer (exact; never contradict them):\n${facts}`), {
-              delegationId: id,
-            });
+            live.appendThinking(
+              clip(`Kawase's canonical facts for this answer (exact; never contradict them):\n${facts}`),
+              {
+                delegationId: id,
+              },
+            );
           live.appendCommentary(clip(line), { delegationId: id });
           guard.expect(line, facts);
         } catch (error) {

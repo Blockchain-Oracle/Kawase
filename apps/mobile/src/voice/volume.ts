@@ -17,7 +17,8 @@ export function useVolume(track: Track | undefined, onVolume: (volume: number) =
   const callback = React.useRef(onVolume);
   callback.current = onVolume;
   const media = track?.mediaStreamTrack as unknown as MediaStreamTrack | undefined;
-  const peerConnectionId = (media as { _peerConnectionId?: number } | undefined)?._peerConnectionId ?? NO_PEER_CONNECTION;
+  const peerConnectionId =
+    (media as { _peerConnectionId?: number } | undefined)?._peerConnectionId ?? NO_PEER_CONNECTION;
   const trackId = media?.id;
 
   React.useEffect(() => {

@@ -26,7 +26,20 @@ const SERVER_VAD = {
   minSilenceDurationMs: 300,
 };
 /** Names Scribe should hear as written. */
-const KEYTERMS = ["Arc", "Kawase", "USDC", "EURC", "Base", "Arbitrum", "Optimism", "Polygon", "Avalanche", "Ethereum", "Morpho", "Auto-save"];
+const KEYTERMS = [
+  "Arc",
+  "Kawase",
+  "USDC",
+  "EURC",
+  "Base",
+  "Arbitrum",
+  "Optimism",
+  "Polygon",
+  "Avalanche",
+  "Ethereum",
+  "Morpho",
+  "Auto-save",
+];
 /** When the agent's first words take longer than this (it is checking something), a short filler is said first. */
 const FILLER_AFTER_MS = 1200;
 

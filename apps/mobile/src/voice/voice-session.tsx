@@ -8,11 +8,12 @@ import { View } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
 
 import type { VoiceSession as Session } from "@kawase/api-client";
+import { VOICE_START_CUE_MS } from "@kawase/config";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
-import { claimVoiceAudio } from "@/feedback/feedback";
+import { claimVoiceAudio, cue } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
@@ -39,12 +40,16 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
     let closing: Promise<void> | undefined;
     setFailed(false);
     setSession(undefined);
-    const ready = claimVoiceAudio().then(async (releaseOwnership) => {
-      release = releaseOwnership;
-      if (!live) return;
-      await AudioSession.startAudioSession();
-      startedAudio = true;
-    });
+    // The start cue plays first and is let finish: claiming the audio for LiveKit stops every interface sound.
+    const ready = cue("voiceStart")
+      .then(() => new Promise((resolve) => setTimeout(resolve, VOICE_START_CUE_MS)))
+      .then(() => claimVoiceAudio())
+      .then(async (releaseOwnership) => {
+        release = releaseOwnership;
+        if (!live) return;
+        await AudioSession.startAudioSession();
+        startedAudio = true;
+      });
     const close = () =>
       (closing ??= (async () => {
         await ready.catch(() => undefined);
@@ -67,6 +72,17 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
       void close().catch(() => undefined);
     };
   }, [attempt]);
+
+  // The person ended voice (the overlay closed): the end cue plays once LiveKit has given the audio back.
+  React.useEffect(
+    () => () => {
+      void closeAudio
+        .current()
+        .catch(() => undefined)
+        .then(() => cue("voiceEnd"));
+    },
+    [],
+  );
 
   if (failed) {
     return (
