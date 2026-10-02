@@ -77,9 +77,9 @@ import { SwapCard } from "./swap-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
-import type { HistorySearchOutput, MemoryToolOutput } from "@kawase/api-client";
+import type { HistorySearchOutput, MemoryToolOutput, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
-import { HistorySearchCard } from "./insight-cards";
+import { ForYouChatCard, HistorySearchCard } from "./insight-cards";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -581,6 +581,7 @@ const LOADING_LABELS: Record<string, string> = {
   remember_fact: "memory.loadingRemember",
   forget_fact: "memory.loadingForget",
   search_history: "insight.searching",
+  get_for_you: "forYou.loading",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -672,6 +673,8 @@ export function ToolCard({
       return <MemoryCard output={part.output as MemoryToolOutput} />;
     case "search_history":
       return <HistorySearchCard output={part.output as HistorySearchOutput} />;
+    case "get_for_you":
+      return <ForYouChatCard output={part.output as SuggestionsView} />;
     default:
       return null;
   }

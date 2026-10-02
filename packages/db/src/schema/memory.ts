@@ -1,7 +1,7 @@
 // What the agent remembers about a person (cards/agent-business.md, Memory): short facts they asked it to keep
 // ("Mum is @adaeze", "prefers EURC"), each with the conversation it came from and when it was last used. The person
 // sees, edits and forgets every one in Settings → Memory, and can turn memory off (`agent_preferences`).
-import { boolean, index, integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, timestampTz, updatedAt } from "./common";
 import { threads } from "./chat";
@@ -51,5 +51,20 @@ export const agentPreferences = pgTable("agent_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   /** Off: no fact is read or saved (the facts stay until forgotten). */
   memoryEnabled: boolean().notNull().default(true),
+  /** "For you" suggestion kinds the person said not to show again. */
+  mutedSuggestions: text().array().notNull().default([]),
   updatedAt: updatedAt(),
 });
+
+/** A "For you" suggestion the person dismissed; it stays hidden for a while (or for good, if its subject is done). */
+export const suggestionDismissals = pgTable(
+  "suggestion_dismissals",
+  {
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    suggestionId: text().notNull(),
+    dismissedAt: createdAt(),
+  },
+  (table) => [primaryKey({ name: "suggestion_dismissals_pk", columns: [table.userId, table.suggestionId] })],
+);

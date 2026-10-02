@@ -8,13 +8,25 @@ import type { Logger } from "@kawase/log";
 
 import { MemoryService } from "../memory/service";
 import { SearchService } from "../search/service";
+import type { EarnService } from "../earn/service";
+import type { RequestService } from "../requests/service";
+import { SuggestionService } from "../suggestions/service";
+import type { WalletService } from "../wallet/service";
 import type { SessionUser } from "../types";
 
 const WORD_MIN = 2;
 /** Words of two or more letters, lowercased, for matching "forget my landlord" to a fact. */
 const words = (text: string) => new Set(text.toLowerCase().split(/[^\p{L}\p{N}@_]+/u).filter((word) => word.length >= WORD_MIN));
 
-export function buildIntelligence(input: { db: Db; user: SessionUser; threadId: string; log: Logger }): IntelligenceContext {
+export function buildIntelligence(input: {
+  db: Db;
+  user: SessionUser;
+  threadId: string;
+  log: Logger;
+  wallets: WalletService;
+  earn: EarnService;
+  requests: RequestService;
+}): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
   // One read per turn: the instructions and forget_fact's refs see the same list.
@@ -73,6 +85,10 @@ export function buildIntelligence(input: { db: Db; user: SessionUser; threadId: 
       // Other conversations: this one is already in front of the model.
       const found = await new SearchService(db).search(user.id, query);
       return { query: found.query, hits: found.hits.filter((hit) => hit.threadId !== threadId) };
+    },
+
+    async forYou() {
+      return new SuggestionService(db, input.wallets, input.earn, input.requests, log).list(user);
     },
 
     warn(error, what) {

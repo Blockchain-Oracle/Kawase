@@ -49,6 +49,7 @@ import { update } from "./update";
 import { chatHome } from "./chat-home";
 import { memory } from "./memory";
 import { insight } from "./insight";
+import { forYou } from "./for-you";
 
 export const en = {
   common,
@@ -99,6 +100,7 @@ export const en = {
   chatHome,
   memory,
   insight,
+  forYou,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

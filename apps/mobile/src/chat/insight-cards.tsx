@@ -5,12 +5,13 @@ import { MessagesSquare } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
 
-import type { HistoryHit, HistorySearchOutput } from "@kawase/api-client";
+import type { HistoryHit, HistorySearchOutput, SuggestionsView } from "@kawase/api-client";
 import { ListRow } from "@kawase/ui-native/components/list-row";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { ForYouList } from "@/home/for-you";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 
@@ -60,3 +61,15 @@ export function HistorySearchCard({ output }: { output: HistorySearchOutput }) {
 
 /** Conversations listed on the card (the history sheet shows all of them). */
 const CARD_HITS = 5;
+
+/** get_for_you: the same cards as Home's "For you", or a calm line when nothing needs the person. */
+export function ForYouChatCard({ output }: { output: SuggestionsView }) {
+  const { t } = useT();
+  if (output.suggestions.length === 0)
+    return (
+      <AgentCard eyebrow={t("forYou.title")}>
+        <Text className={cn("text-muted-foreground text-sm leading-6", TEXT_START)}>{t("forYou.nothing")}</Text>
+      </AgentCard>
+    );
+  return <ForYouList view={output} />;
+}

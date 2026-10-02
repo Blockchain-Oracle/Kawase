@@ -1,0 +1,30 @@
+import type { Catalog } from "../en/index";
+
+export const forYou: Catalog["forYou"] = {
+  title: "لك",
+  loading: "أبحث عمّا يحتاج انتباهك…",
+  nothing: "لا شيء يحتاج انتباهك الآن.",
+  hide: "إخفاء",
+  hideThis: "أخفِ هذا",
+  muteKind: "لا تُظهر هذا النوع",
+  showAgain: "أظهر الأنواع المخفية مجددًا ({{count}})",
+  idleTitle: "{{amount}} USDC بلا عمل",
+  idleBody: "يدفع {{vault}} الآن نحو {{apy}}% سنويًا ويمكنه ردّ المبلغ كله فورًا. يبقى {{keep}} USDC جاهزًا للإنفاق.",
+  idleAction: "شغّلها",
+  idlePrompt: "شغّل {{amount}} USDC في {{vault}} واترك {{keep}} USDC في محفظتي.",
+  requestTitle: "طلبك بمبلغ {{amount}} {{asset}} ينتهي قريبًا",
+  requestBody: "بقيت نحو {{hours}} ساعة للدفع. هل تشارك الرابط مجددًا؟",
+  requestAction: "شارك الرابط",
+  bridgeTitle: "تحويلك إلى {{chain}} يتأخر",
+  bridgeBody: "مرّت {{minutes}} دقيقة، وعادة يصل خلال دقيقة تقريبًا. اطّلع أين وصل.",
+  bridgeAction: "تحقّق",
+  healthTitle: "صحة قرضك تنخفض",
+  healthBody: "عامل الصحة {{health}}. إضافة ضمان أو سداد جزء صغير يبقيه آمنًا.",
+  healthAction: "راجعه",
+  healthPrompt: "عامل صحة قرضي {{health}}. ما خياراتي؟",
+  moveTitle: "تحرّك اليورو {{change}} مقابل الدولار",
+  moveBody:
+    "قيمة {{held}} EURC لديك {{valueChange}} بالدولار (سعر البنك المركزي الأوروبي {{rate}} دولار لليورو، {{date}}).",
+  moveAction: "اسأل عن السبب",
+  movePrompt: "لماذا تحرّك اليورو {{change}} مقابل الدولار، وماذا يعني ذلك لـ {{held}} EURC لدي؟",
+};

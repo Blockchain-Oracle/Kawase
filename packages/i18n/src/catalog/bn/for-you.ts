@@ -1,0 +1,30 @@
+import type { Catalog } from "../en/index";
+
+export const forYou: Catalog["forYou"] = {
+  title: "আপনার জন্য",
+  loading: "কী আপনার মনোযোগ চায় দেখছি…",
+  nothing: "এই মুহূর্তে কিছুই আপনার মনোযোগ চায় না।",
+  hide: "লুকান",
+  hideThis: "এটি লুকান",
+  muteKind: "এই ধরনেরটি আর দেখাবেন না",
+  showAgain: "লুকানো ধরনগুলো আবার দেখান ({{count}})",
+  idleTitle: "{{amount}} USDC অলস পড়ে আছে",
+  idleBody:
+    "{{vault}} এখন বছরে প্রায় {{apy}}% দেয় এবং পুরোটা সঙ্গে সঙ্গে ফেরত দিতে পারে। {{keep}} USDC খরচের জন্য তৈরি থাকবে।",
+  idleAction: "কাজে লাগান",
+  idlePrompt: "{{amount}} USDC {{vault}}-এ কাজে লাগাও এবং আমার ওয়ালেটে {{keep}} USDC রাখো।",
+  requestTitle: "আপনার {{amount}} {{asset}}-এর অনুরোধ শিগগির শেষ হবে",
+  requestBody: "পরিশোধের জন্য প্রায় {{hours}} ঘণ্টা বাকি। লিংকটি আবার শেয়ার করবেন?",
+  requestAction: "লিংক শেয়ার করুন",
+  bridgeTitle: "{{chain}}-এ আপনার ব্রিজ দেরি করছে",
+  bridgeBody: "{{minutes}} মিনিট হয়ে গেছে; সাধারণত প্রায় এক মিনিটে পৌঁছায়। দেখুন এটি কোথায় আছে।",
+  bridgeAction: "দেখুন",
+  healthTitle: "আপনার ঋণের হেলথ কমছে",
+  healthBody: "হেলথ ফ্যাক্টর {{health}}। একটু জামানত যোগ করলে বা কিছু শোধ করলে নিরাপদ থাকবে।",
+  healthAction: "দেখুন",
+  healthPrompt: "আমার ঋণের হেলথ ফ্যাক্টর {{health}}। আমার কী কী বিকল্প আছে?",
+  moveTitle: "ডলারের বিপরীতে ইউরো {{change}} নড়েছে",
+  moveBody: "আপনার {{held}} EURC ডলারে {{valueChange}} (ECB হার {{rate}} USD প্রতি EUR, {{date}})।",
+  moveAction: "কারণ জিজ্ঞেস করুন",
+  movePrompt: "ডলারের বিপরীতে ইউরো কেন {{change}} নড়ল, আর আমার {{held}} EURC-এর জন্য এর মানে কী?",
+};

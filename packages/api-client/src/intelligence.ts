@@ -48,6 +48,36 @@ export type HistoryHit = {
 /** What search_history returns (the chat's search card). */
 export type HistorySearchOutput = { query: string; hits: HistoryHit[] };
 
+/** The kinds of "For you" suggestion (cards/agent-business.md, Proactive suggestions). */
+export const SUGGESTION_KINDS = ["idle_cash", "expiring_request", "stuck_bridge", "health_drop", "big_move"] as const;
+export type SuggestionKind = (typeof SUGGESTION_KINDS)[number];
+
+/**
+ * A suggestion's one action: open chat with the kind's prompt prefilled (the app words it in the person's language
+ * from the facts), open a screen, or share a link.
+ */
+export type SuggestionAction =
+  | { type: "chat" }
+  | { type: "thread"; threadId: string }
+  | { type: "route"; path: string }
+  | { type: "share"; url: string };
+
+/**
+ * One proactive card. `facts` are display values the app puts into the kind's sentence (amount, asset, apy, vault,
+ * chain, change…), already formatted; the id is stable for the same situation, so a dismissal holds.
+ */
+export type Suggestion = {
+  id: string;
+  kind: SuggestionKind;
+  network: AgentNetwork;
+  facts: Record<string, string>;
+  action: SuggestionAction;
+  /** Higher first. */
+  priority: number;
+};
+
+export type SuggestionsView = { network: AgentNetwork; suggestions: Suggestion[]; muted: SuggestionKind[] };
+
 export type { AgentNetwork };
 
 /** The client's `call`, as the factory below receives it. */
@@ -67,5 +97,12 @@ export function intelligenceApi(call: Call) {
     },
     /** Every conversation's words, the cards they showed and what those were asked, searched on the server. */
     search: (query: string) => call<HistorySearchOutput>("GET", `/search?q=${encodeURIComponent(query)}`),
+    suggestions: {
+      /** Home's "For you": computed now from holdings, positions and events on the active network. */
+      list: () => call<SuggestionsView>("GET", "/suggestions"),
+      dismiss: (id: string) => call<void>("POST", `/suggestions/${encodeURIComponent(id)}/dismiss`, {}),
+      /** "Don't show this kind" (and back). */
+      mute: (kind: SuggestionKind, muted: boolean) => call<{ muted: SuggestionKind[] }>("PUT", `/suggestions/kinds/${kind}`, { muted }),
+    },
   };
 }

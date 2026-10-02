@@ -48,6 +48,7 @@ import { update } from "./update";
 import { chatHome } from "./chat-home";
 import { memory } from "./memory";
 import { insight } from "./insight";
+import { forYou } from "./for-you";
 
 export const pt: Catalog = {
   common,
@@ -98,4 +99,5 @@ export const pt: Catalog = {
   chatHome,
   memory,
   insight,
+  forYou,
 };

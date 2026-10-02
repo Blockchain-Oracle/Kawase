@@ -65,5 +65,15 @@ export function intelligenceTools(context: AgentContext) {
         },
       }),
     }),
+    get_for_you: tool({
+      description:
+        "What is worth the person's attention now, the same cards as Home's \"For you\": USDC sitting idle next to a vault that can pay it back at once, their payment request about to expire, a bridge that has not arrived, a move in a currency they hold. Use it for \"anything I should know?\", \"what should I do with my money?\" (state facts and options, never advice to buy or sell). Each card has its one action.",
+      inputSchema: z.object({}),
+      execute: async () => intelligence.forYou(),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: { network: output.network, cards: output.suggestions.map((entry) => ({ kind: entry.kind, ...entry.facts })) },
+      }),
+    }),
   };
 }

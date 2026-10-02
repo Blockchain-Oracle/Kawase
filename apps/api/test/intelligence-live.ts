@@ -8,10 +8,14 @@ import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 
 import { createModels, windowFor } from "@kawase/agent";
-import { createDb, threadDigests, threadMessages, threads, threadTurns } from "@kawase/db";
+import type { SuggestionsView } from "@kawase/api-client";
+import { createDb, intents, paymentRequests, threadDigests, threadMessages, threads, threadTurns, users, wallets } from "@kawase/db";
+import { loadApiEnv } from "@kawase/env";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "../src/app";
+import { appKitEarn } from "../src/earn/engine";
+import { createChains } from "../src/wallet/chain";
 import { deleteUser, fakeTurnkey, jsonRequest, noChains, noOps, okFaucet } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
@@ -21,6 +25,7 @@ config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true }
 const url = process.env.DATABASE_URL;
 const openai = process.env.OPENAI_API_KEY;
 if (!url || !openai) throw new Error("DATABASE_URL and OPENAI_API_KEY are needed");
+const openaiKey: string = openai;
 
 const { db, pool } = createDb(url, { poolSize: 4 });
 const RATE = 10_000;
@@ -31,7 +36,7 @@ const app = createApp({
   chains: noChains,
   faucet: okFaucet,
   ops: noOps,
-  models: createModels({ openai }),
+  models: createModels({ openai: openaiKey }),
   rateLimitPerMinute: RATE,
   signInLimitPerMinute: RATE,
 });
@@ -120,7 +125,89 @@ async function seedThread(title: string, lines: string[], parts: unknown[][] = [
   return threadId;
 }
 
+/**
+ * The guest becomes an account whose wallet (read-only here) is the testnet ops wallet, which holds real test USDC
+ * and EURC, and the api reads the real chain, App Kit's real vaults and the ECB's real rates.
+ */
+async function realAccountApp() {
+  const env = loadApiEnv();
+  await db.update(users).set({ isAnonymous: false, email: `a5-live-${randomUUID()}@example.com` }).where(eq(users.id, user.id));
+  await db.insert(wallets).values({ userId: user.id, role: "user", custody: "external", address: env.OPS_WALLET_ADDRESS_TESTNET! });
+  return createApp({
+    db,
+    log: createLogger({ service: "intelligence-live", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" }),
+    turnkey: fakeTurnkey({}),
+    chains: createChains(env),
+    faucet: okFaucet,
+    ops: noOps,
+    earn: appKitEarn(env),
+    models: createModels({ openai: openaiKey }),
+    rateLimitPerMinute: RATE,
+    signInLimitPerMinute: RATE,
+  });
+}
+
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async suggestions() {
+    const real = await realAccountApp();
+    const call = (path: string, init: RequestInit = {}) =>
+      real.request(path, { ...init, headers: { ...(init.headers ?? {}), authorization: `Bearer ${token}`, "content-type": "application/json" } });
+    const HOURS_LEFT = 20;
+    const STUCK_MINUTES = 40;
+    const MS_PER_MINUTE = 60_000;
+    await db.insert(paymentRequests).values({
+      userId: user.id,
+      token: `a5${randomUUID().slice(0, 8)}`,
+      network: "testnet",
+      asset: "USDC",
+      amount: 5_000_000n,
+      note: "Dinner",
+      payTo: loadApiEnv().OPS_WALLET_ADDRESS_TESTNET!,
+      expiresAt: new Date(Date.now() + HOURS_LEFT * 60 * MS_PER_MINUTE),
+    });
+    const stuckAt = new Date(Date.now() - STUCK_MINUTES * MS_PER_MINUTE);
+    await db.insert(intents).values({
+      userId: user.id,
+      network: "testnet",
+      kind: "bridge",
+      originSurface: "app",
+      state: "executing",
+      request: { destination: "base", amount: "3" },
+      expiresAt: new Date(Date.now() + MS_PER_MINUTE * 60),
+      createdAt: stuckAt,
+      updatedAt: stuckAt,
+    });
+    const first = (await (await call("/suggestions")).json()) as SuggestionsView;
+    const request = first.suggestions.find((entry) => entry.kind === "expiring_request");
+    if (request) await call(`/suggestions/${encodeURIComponent(request.id)}/dismiss`, { method: "POST", body: "{}" });
+    const muted = (await (await call("/suggestions/kinds/big_move", { method: "PUT", body: JSON.stringify({ muted: true }) })).json()) as unknown;
+    const after = (await (await call("/suggestions")).json()) as SuggestionsView;
+    await call("/suggestions/kinds/big_move", { method: "PUT", body: JSON.stringify({ muted: false }) });
+    // The same cards through the agent.
+    const threadId = randomUUID();
+    const response = await real.request(
+      "/agent/chat",
+      jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text: "Anything I should know about my money right now?" }] } }, token),
+    );
+    await response.text();
+    for (let i = 0; i < POLLS; i += 1) {
+      const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+      if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+      await wait(POLL_MS);
+    }
+    const stored = (await (await call(`/agent/threads/${threadId}`)).json()) as { messages: Message[] };
+    const reply = stored.messages.at(-1)!;
+    return {
+      first,
+      dismissed: request?.id ?? null,
+      muted,
+      after: { kinds: after.suggestions.map((entry) => entry.kind), muted: after.muted },
+      agent: {
+        reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+        tools: reply.parts.filter((part) => part.type.startsWith("tool-")).map((part) => ({ tool: part.type.slice("tool-".length), state: part.state, output: part.output })),
+      },
+    };
+  },
   async search() {
     await seedThread("Rent", ["I pay rent to my landlord Bola Adeyemi on the 5th.", "Noted: rent to Bola on the 5th."]);
     await seedThread("Base", ["Move 20 dollars to Base", "Here is the bridge to Base."], [

@@ -1,0 +1,30 @@
+import type { Catalog } from "../en/index";
+
+export const forYou: Catalog["forYou"] = {
+  title: "Para ti",
+  loading: "Buscando lo que necesita tu atención…",
+  nothing: "Ahora mismo nada necesita tu atención.",
+  hide: "Ocultar",
+  hideThis: "Ocultar esto",
+  muteKind: "No mostrar este tipo",
+  showAgain: "Volver a mostrar los tipos ocultos ({{count}})",
+  idleTitle: "{{amount}} USDC están parados",
+  idleBody:
+    "{{vault}} paga ahora un {{apy}}% anual aprox. y puede devolverlo todo al momento. {{keep}} USDC quedan listos para gastar.",
+  idleAction: "Ponerlos a trabajar",
+  idlePrompt: "Pon {{amount}} USDC a trabajar en {{vault}} y deja {{keep}} USDC en mi monedero.",
+  requestTitle: "Tu solicitud de {{amount}} {{asset}} vence pronto",
+  requestBody: "Quedan unas {{hours}} h para pagarla. ¿Compartir el enlace otra vez?",
+  requestAction: "Compartir enlace",
+  bridgeTitle: "Tu puente a {{chain}} está tardando",
+  bridgeBody: "Lleva {{minutes}} min; normalmente llega en un minuto. Mira dónde está.",
+  bridgeAction: "Revisarlo",
+  healthTitle: "La salud de tu préstamo está bajando",
+  healthBody: "Factor de salud {{health}}. Añadir garantía o devolver un poco lo mantiene seguro.",
+  healthAction: "Revisarlo",
+  healthPrompt: "El factor de salud de mi préstamo es {{health}}. ¿Qué opciones tengo?",
+  moveTitle: "El euro se movió {{change}} frente al dólar",
+  moveBody: "Tus {{held}} EURC valen {{valueChange}} en dólares (tipo del BCE {{rate}} USD por EUR, {{date}}).",
+  moveAction: "Preguntar por qué",
+  movePrompt: "¿Por qué se movió el euro {{change}} frente al dólar y qué significa para mis {{held}} EURC?",
+};

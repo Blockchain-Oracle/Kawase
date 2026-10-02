@@ -1,0 +1,30 @@
+import type { Catalog } from "../en/index";
+
+export const forYou: Catalog["forYou"] = {
+  title: "आपके लिए",
+  loading: "देख रहा है कि किस पर ध्यान चाहिए…",
+  nothing: "अभी किसी चीज़ पर आपका ध्यान नहीं चाहिए।",
+  hide: "छिपाएँ",
+  hideThis: "इसे छिपाएँ",
+  muteKind: "इस तरह का न दिखाएँ",
+  showAgain: "छिपे हुए प्रकार फिर दिखाएँ ({{count}})",
+  idleTitle: "{{amount}} USDC बेकार पड़ा है",
+  idleBody:
+    "{{vault}} अभी लगभग {{apy}}% सालाना देता है और पूरा पैसा तुरंत लौटा सकता है। {{keep}} USDC खर्च के लिए तैयार रहेगा।",
+  idleAction: "काम पर लगाएँ",
+  idlePrompt: "{{amount}} USDC को {{vault}} में काम पर लगाओ और मेरे वॉलेट में {{keep}} USDC रखो।",
+  requestTitle: "आपका {{amount}} {{asset}} का अनुरोध जल्द खत्म होगा",
+  requestBody: "भुगतान के लिए लगभग {{hours}} घंटे बचे हैं। लिंक फिर से शेयर करें?",
+  requestAction: "लिंक शेयर करें",
+  bridgeTitle: "{{chain}} पर आपका ब्रिज देर ले रहा है",
+  bridgeBody: "{{minutes}} मिनट हो गए; आमतौर पर लगभग एक मिनट लगता है। देखें यह कहाँ है।",
+  bridgeAction: "देखें",
+  healthTitle: "आपके लोन की हेल्थ गिर रही है",
+  healthBody: "हेल्थ फ़ैक्टर {{health}}। थोड़ा कोलैटरल जोड़ने या चुकाने से यह सुरक्षित रहेगा।",
+  healthAction: "देखें",
+  healthPrompt: "मेरे लोन का हेल्थ फ़ैक्टर {{health}} है। मेरे पास क्या विकल्प हैं?",
+  moveTitle: "यूरो डॉलर के मुकाबले {{change}} बदला",
+  moveBody: "आपका {{held}} EURC डॉलर में {{valueChange}} है (ECB दर {{rate}} USD प्रति EUR, {{date}})।",
+  moveAction: "वजह पूछें",
+  movePrompt: "यूरो डॉलर के मुकाबले {{change}} क्यों बदला, और मेरे {{held}} EURC के लिए इसका क्या मतलब है?",
+};

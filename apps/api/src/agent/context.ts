@@ -102,7 +102,7 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
-    intelligence: buildIntelligence({ db, user, threadId, log }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

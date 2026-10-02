@@ -1,0 +1,30 @@
+import type { Catalog } from "../en/index";
+
+export const forYou: Catalog["forYou"] = {
+  title: "Для вас",
+  loading: "Смотрю, что требует внимания…",
+  nothing: "Сейчас ничего не требует вашего внимания.",
+  hide: "Скрыть",
+  hideThis: "Скрыть это",
+  muteKind: "Не показывать такое",
+  showAgain: "Снова показывать скрытые типы ({{count}})",
+  idleTitle: "{{amount}} USDC лежат без дела",
+  idleBody:
+    "{{vault}} сейчас платит около {{apy}}% годовых и может сразу вернуть всё. {{keep}} USDC останутся под рукой.",
+  idleAction: "Пустить в работу",
+  idlePrompt: "Вложи {{amount}} USDC в {{vault}} и оставь {{keep}} USDC в моём кошельке.",
+  requestTitle: "Ваш запрос на {{amount}} {{asset}} скоро истекает",
+  requestBody: "Осталось около {{hours}} ч. Поделиться ссылкой ещё раз?",
+  requestAction: "Поделиться ссылкой",
+  bridgeTitle: "Перевод в {{chain}} задерживается",
+  bridgeBody: "Прошло {{minutes}} мин; обычно он приходит примерно за минуту. Посмотрите, где он.",
+  bridgeAction: "Проверить",
+  healthTitle: "Здоровье вашего займа падает",
+  healthBody: "Фактор здоровья {{health}}. Добавьте залог или погасите немного, чтобы было безопасно.",
+  healthAction: "Посмотреть",
+  healthPrompt: "Фактор здоровья моего займа {{health}}. Какие у меня варианты?",
+  moveTitle: "Евро изменился к доллару на {{change}}",
+  moveBody: "Ваши {{held}} EURC в долларах: {{valueChange}} (курс ЕЦБ {{rate}} USD за EUR, {{date}}).",
+  moveAction: "Спросить почему",
+  movePrompt: "Почему евро изменился к доллару на {{change}} и что это значит для моих {{held}} EURC?",
+};

@@ -1,0 +1,122 @@
+{
+  "scenario": "suggestions",
+  "model": "default (packages/config)",
+  "at": "2026-10-02T16:12:23.107Z",
+  "result": {
+    "first": {
+      "network": "testnet",
+      "suggestions": [
+        {
+          "id": "stuck_bridge:01a0fd63-5ee5-7363-8e4a-9738a5140a46",
+          "kind": "stuck_bridge",
+          "network": "testnet",
+          "facts": {
+            "chain": "Base",
+            "amount": "3",
+            "minutes": "40"
+          },
+          "action": {
+            "type": "route",
+            "path": "/activity"
+          },
+          "priority": 90
+        },
+        {
+          "id": "expiring_request:01a0fd63-5ee1-7a61-abad-eb61c9e3e5c3",
+          "kind": "expiring_request",
+          "network": "testnet",
+          "facts": {
+            "amount": "5.00",
+            "asset": "USDC",
+            "note": "Dinner",
+            "hours": "20"
+          },
+          "action": {
+            "type": "share",
+            "url": "http://localhost:8081/r/a5e648861a"
+          },
+          "priority": 70
+        },
+        {
+          "id": "big_move:EURC:2026-10-02",
+          "kind": "big_move",
+          "network": "testnet",
+          "facts": {
+            "asset": "EURC",
+            "change": "-0.6%",
+            "valueChange": "−$0.32",
+            "held": "43.25",
+            "rate": "1.1225",
+            "date": "2026-10-02"
+          },
+          "action": {
+            "type": "chat"
+          },
+          "priority": 40
+        }
+      ],
+      "muted": []
+    },
+    "dismissed": "expiring_request:01a0fd63-5ee1-7a61-abad-eb61c9e3e5c3",
+    "muted": {
+      "muted": [
+        "big_move"
+      ]
+    },
+    "after": {
+      "kinds": [
+        "stuck_bridge"
+      ],
+      "muted": [
+        "big_move"
+      ]
+    },
+    "agent": {
+      "reply": "On Arc Testnet, a 3 USDC bridge to Base has not arrived after 40 minutes. Your EURC holding also moved down about 0.6% (−$0.32); testnet money has no value.",
+      "tools": [
+        {
+          "tool": "get_for_you",
+          "state": "output-available",
+          "output": {
+            "muted": [],
+            "network": "testnet",
+            "suggestions": [
+              {
+                "id": "stuck_bridge:01a0fd63-5ee5-7363-8e4a-9738a5140a46",
+                "kind": "stuck_bridge",
+                "facts": {
+                  "chain": "Base",
+                  "amount": "3",
+                  "minutes": "40"
+                },
+                "action": {
+                  "path": "/activity",
+                  "type": "route"
+                },
+                "network": "testnet",
+                "priority": 90
+              },
+              {
+                "id": "big_move:EURC:2026-10-02",
+                "kind": "big_move",
+                "facts": {
+                  "date": "2026-10-02",
+                  "held": "43.25",
+                  "rate": "1.1225",
+                  "asset": "EURC",
+                  "change": "-0.6%",
+                  "valueChange": "−$0.32"
+                },
+                "action": {
+                  "type": "chat"
+                },
+                "network": "testnet",
+                "priority": 40
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
