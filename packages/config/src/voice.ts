@@ -14,6 +14,7 @@ export const voiceAgentName = (env: Record<string, string | undefined>) => env.K
 export const VOICE_SESSION_TTL_S = 1800;
 /** The method the worker calls on the phone to put a card on screen while talking. */
 export const VOICE_CARD_RPC = "kawase.card";
+export const VOICE_STOP_RPC = "kawase.stop";
 /** LiveKit RPC payloads are capped at 15 KiB; a bigger card is fetched from the thread instead. */
 export const VOICE_RPC_MAX_BYTES = 14_000;
 

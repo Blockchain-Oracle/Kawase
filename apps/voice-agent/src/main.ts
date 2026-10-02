@@ -7,6 +7,7 @@
 //
 // The worker is dispatched by name only (the api's session token names it), with the session's voice token in the
 // job's metadata. Run: `pnpm --filter @kawase/voice-agent dev` (local) or `start` (production).
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { ReadableStream } from "node:stream/web";
 import { type JobContext, ServerOptions, cli, defineAgent, llm, voice } from "@livekit/agents";
@@ -14,7 +15,15 @@ import * as elevenlabs from "@livekit/agents-plugin-elevenlabs";
 import * as openai from "@livekit/agents-plugin-openai";
 import { config } from "dotenv";
 
-import { voiceAgentName, VOICE_CARD_RPC, VOICE_RPC_MAX_BYTES, VOICE_SPEECH, isSupportedLocale, type SupportedLocale } from "@kawase/config";
+import {
+  voiceAgentName,
+  VOICE_CARD_RPC,
+  VOICE_STOP_RPC,
+  VOICE_RPC_MAX_BYTES,
+  VOICE_SPEECH,
+  isSupportedLocale,
+  type SupportedLocale,
+} from "@kawase/config";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -26,9 +35,27 @@ function required(name: string): string {
   return value;
 }
 const RPC_TIMEOUT_MS = 5000;
-const SERVER_VAD = { vadSilenceThresholdSecs: 0.45, vadThreshold: 0.5, minSpeechDurationMs: 120, minSilenceDurationMs: 300 };
+const SERVER_VAD = {
+  vadSilenceThresholdSecs: 0.45,
+  vadThreshold: 0.5,
+  minSpeechDurationMs: 120,
+  minSilenceDurationMs: 300,
+};
 /** Names Scribe should hear as written. */
-const KEYTERMS = ["Arc", "Kawase", "USDC", "EURC", "Base", "Arbitrum", "Optimism", "Polygon", "Avalanche", "Ethereum", "Morpho", "Auto-save"];
+const KEYTERMS = [
+  "Arc",
+  "Kawase",
+  "USDC",
+  "EURC",
+  "Base",
+  "Arbitrum",
+  "Optimism",
+  "Polygon",
+  "Avalanche",
+  "Ethereum",
+  "Morpho",
+  "Auto-save",
+];
 /** When the agent's first words take longer than this (it is checking something), a short filler is said first. */
 const FILLER_AFTER_MS = 1200;
 const OPENAI_VOICE = "alloy";
@@ -47,7 +74,14 @@ const GREETING: Record<SupportedLocale, string> = {
   ur: "سلام، میں سن رہا ہوں۔",
 };
 
-type SessionMeta = { voiceToken: string; threadId: string; identity: string; locale: string; network: string };
+type SessionMeta = {
+  voiceToken: string;
+  threadId: string;
+  identity: string;
+  locale: string;
+  network: string;
+  turnNamespace?: string;
+};
 
 /** Said while the agent checks something, so the silence is never empty. */
 const FILLER: Record<SupportedLocale, string> = {
@@ -91,7 +125,7 @@ class RelayLLM extends llm.LLM {
 }
 
 type LlmOutput = Awaited<ReturnType<voice.Agent["llmNode"]>>;
-type TurnRelay = (text: string) => NonNullable<LlmOutput>;
+type TurnRelay = (text: string, turnId: string) => NonNullable<LlmOutput>;
 
 class KawaseAgent extends voice.Agent {
   constructor(private readonly relay: TurnRelay) {
@@ -99,9 +133,11 @@ class KawaseAgent extends voice.Agent {
   }
 
   override async llmNode(chatCtx: llm.ChatContext): Promise<LlmOutput> {
-    const last = [...chatCtx.items].reverse().find((item): item is llm.ChatMessage => item instanceof llm.ChatMessage && item.role === "user");
+    const last = [...chatCtx.items]
+      .reverse()
+      .find((item): item is llm.ChatMessage => item instanceof llm.ChatMessage && item.role === "user");
     const text = last?.textContent?.trim();
-    return text ? this.relay(text) : null;
+    return text ? this.relay(text, last!.id) : null;
   }
 }
 
@@ -109,8 +145,12 @@ class KawaseAgent extends voice.Agent {
  * One spoken turn: the api streams the agent's UI message stream (server-sent events). Text is spoken as it arrives;
  * each tool's output goes to the phone as a card, so it is on screen while the answer is being said.
  */
-function turnRelay(meta: SessionMeta, words: { filler: string; sorry: string }, sendCard: (card: { toolName: string; toolCallId: string; output: unknown }) => void): TurnRelay {
-  return (text) => {
+function turnRelay(
+  meta: SessionMeta,
+  words: { filler: string; sorry: string },
+  sendCard: (card: { toolName: string; toolCallId: string; output: unknown }) => void,
+): TurnRelay {
+  return (text, turnId) => {
     const abort = new AbortController();
     return new ReadableStream<string | llm.ChatChunk>({
       // The person interrupted: stop the turn on the api too.
@@ -122,13 +162,22 @@ function turnRelay(meta: SessionMeta, words: { filler: string; sorry: string }, 
         const tools = new Map<string, string>();
         let spoken = false;
         const fillerTimer = setTimeout(() => {
-          if (!spoken) controller.enqueue(words.filler);
+          if (!spoken && !abort.signal.aborted) controller.enqueue(words.filler);
         }, FILLER_AFTER_MS);
         try {
           const response = await fetch(`${API_URL}/voice/turn`, {
             method: "POST",
-            headers: { authorization: `Bearer ${meta.voiceToken}`, "content-type": "application/json" },
-            body: JSON.stringify({ text }),
+            headers: {
+              authorization: `Bearer ${meta.voiceToken}`,
+              "content-type": "application/json",
+              "x-kawase-voice-protocol": "2",
+            },
+            body: JSON.stringify({
+              text,
+              turnId: createHash("sha256")
+                .update(`${meta.turnNamespace ?? meta.threadId}:${turnId}`)
+                .digest("hex"),
+            }),
             signal: abort.signal,
           });
           if (!response.ok || !response.body) throw new Error(`voice turn ${response.status}`);
@@ -138,24 +187,36 @@ function turnRelay(meta: SessionMeta, words: { filler: string; sorry: string }, 
           let buffer = "";
           for (;;) {
             const { value, done } = await reader.read();
-            if (done) break;
+            if (done || abort.signal.aborted) break;
             buffer += decoder.decode(value, { stream: true });
             const events = buffer.split("\n\n");
             buffer = events.pop() ?? "";
             for (const event of events) {
-              const data = event.split("\n").find((line) => line.startsWith("data: "))?.slice("data: ".length);
+              const data = event
+                .split("\n")
+                .find((line) => line.startsWith("data: "))
+                ?.slice("data: ".length);
               if (!data || data === "[DONE]") continue;
-              const chunk = JSON.parse(data) as { type: string; delta?: string; toolCallId?: string; toolName?: string; output?: unknown };
+              const chunk = JSON.parse(data) as {
+                type: string;
+                delta?: string;
+                toolCallId?: string;
+                toolName?: string;
+                output?: unknown;
+              };
               if (chunk.type === "text-delta" && chunk.delta) {
                 if (!spoken) console.info(`voice turn: first words after ${Date.now() - startedAt} ms`);
                 spoken = true;
                 controller.enqueue(chunk.delta);
-              }
-              else if (chunk.type === "tool-input-available" && chunk.toolCallId && chunk.toolName) {
+              } else if (chunk.type === "tool-input-available" && chunk.toolCallId && chunk.toolName) {
                 console.info(`voice turn: ${chunk.toolName} called after ${Date.now() - startedAt} ms`);
                 tools.set(chunk.toolCallId, chunk.toolName);
-              }
-              else if (chunk.type === "tool-output-available" && chunk.toolCallId) sendCard({ toolName: tools.get(chunk.toolCallId) ?? "", toolCallId: chunk.toolCallId, output: chunk.output });
+              } else if (chunk.type === "tool-output-available" && chunk.toolCallId)
+                sendCard({
+                  toolName: tools.get(chunk.toolCallId) ?? "",
+                  toolCallId: chunk.toolCallId,
+                  output: chunk.output,
+                });
             }
           }
         } catch (error) {
@@ -183,14 +244,31 @@ export default defineAgent({
     const sendCard = (card: { toolName: string; toolCallId: string; output: unknown }) => {
       let payload = JSON.stringify(card);
       // LiveKit RPC payloads are small; a big card is read from the thread by the phone instead.
-      if (Buffer.byteLength(payload) > VOICE_RPC_MAX_BYTES) payload = JSON.stringify({ toolName: card.toolName, toolCallId: card.toolCallId, threadId: meta.threadId, fetch: true });
+      if (Buffer.byteLength(payload) > VOICE_RPC_MAX_BYTES)
+        payload = JSON.stringify({
+          toolName: card.toolName,
+          toolCallId: card.toolCallId,
+          threadId: meta.threadId,
+          fetch: true,
+        });
       void ctx.room.localParticipant
-        ?.performRpc({ destinationIdentity: meta.identity, method: VOICE_CARD_RPC, payload, responseTimeout: RPC_TIMEOUT_MS })
+        ?.performRpc({
+          destinationIdentity: meta.identity,
+          method: VOICE_CARD_RPC,
+          payload,
+          responseTimeout: RPC_TIMEOUT_MS,
+        })
         .catch((error: unknown) => console.warn("card not delivered", error));
     };
 
     const elevenKey = required("ELEVENLABS_API_KEY");
-    const stt = new elevenlabs.STT({ apiKey: elevenKey, model: speech.stt.model, languageCode: speech.stt.language, serverVad: SERVER_VAD, keyterms: KEYTERMS });
+    const stt = new elevenlabs.STT({
+      apiKey: elevenKey,
+      model: speech.stt.model,
+      languageCode: speech.stt.language,
+      serverVad: SERVER_VAD,
+      keyterms: KEYTERMS,
+    });
     const tts =
       speech.tts.provider === "elevenlabs"
         ? new elevenlabs.TTS({ apiKey: elevenKey, model: speech.tts.model, languageCode: speech.tts.language })
@@ -208,7 +286,17 @@ export default defineAgent({
         interruption: { enabled: true },
       },
     });
-    await session.start({ agent: new KawaseAgent(turnRelay(meta, { filler: FILLER[locale], sorry: SORRY[locale] }, sendCard)), room: ctx.room });
+    ctx.room.localParticipant?.registerRpcMethod(VOICE_STOP_RPC, async (data) => {
+      if (data.callerIdentity !== meta.identity) throw new Error("unauthorized voice control");
+      await session.interrupt({ force: true }).await;
+      return "ok";
+    });
+    // Explicitly disable the SDK's recording defaults: no raw audio or provider-side transcript uploads.
+    await session.start({
+      agent: new KawaseAgent(turnRelay(meta, { filler: FILLER[locale], sorry: SORRY[locale] }, sendCard)),
+      room: ctx.room,
+      record: false,
+    });
     session.say(GREETING[locale]);
   },
 });
