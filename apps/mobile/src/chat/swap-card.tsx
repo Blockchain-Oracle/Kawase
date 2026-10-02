@@ -85,7 +85,7 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
       ) : null}
       <View className="gap-2">
         {ready ? (
-          <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft))}>
+          <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>
             <Icon as={ScanFace} className="text-primary-foreground size-5" />
             <Text>{controller.busy ? t("swap.swapping") : approveLabel}</Text>
           </Button>

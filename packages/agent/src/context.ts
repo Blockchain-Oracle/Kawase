@@ -30,6 +30,9 @@ import type {
   MarginPositionsOutput,
   MarginRequest,
   ProposeMarginOutput,
+  PortfolioView,
+  TokenDetailView,
+  TokenSearchResult,
   AgentTopUpProposal,
   AgentWalletLine,
   BuyOutcome,
@@ -114,4 +117,12 @@ export type AgentContext = {
   marginPositions?(): Promise<MarginPositionsOutput>;
   /** Drafts a margin order (open or close); the person slides to confirm on the card. */
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
+  portfolio(): Promise<PortfolioView>;
+  /** Tokens on this network by name, symbol or address, with the copycat status of each. */
+  searchTokens(query: string): Promise<TokenSearchResult[]>;
+  /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
+  tokenDetail(address: string): Promise<TokenDetailView>;
+  /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
+  proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
 };

@@ -1,0 +1,27 @@
+import type { Catalog } from "../en/index";
+
+export const markets: Catalog["markets"] = {
+  dock: "الأسواق",
+  title: "الأسواق",
+  search: "ابحث عن رموز",
+  trending: "الرائج",
+  meme: "ميم",
+  perps: "شراء/بيع على المكشوف",
+  fx: "أسهم وعملات",
+  new: "جديد",
+  hot: "الأكثر نشاطًا",
+  heatmap: "خريطة حرارية",
+  vol: "حجم {{value}}",
+  liq: "سيولة {{value}}",
+  mcap: "قيمة {{value}}",
+  testnetTitle: "الأسواق على الشبكة الرئيسية",
+  testnetBody: "المال التجريبي يبادل USDC وEURC فقط. انتقل إلى الشبكة الرئيسية لترى الأسواق الحقيقية.",
+  switchToMainnet: "الانتقال إلى الشبكة الرئيسية",
+  perpsBody: "الشراء والبيع على المكشوف في Arc قيد البناء: أولًا cirBTC وWETH وEURC عبر Aave.",
+  empty: "لا شيء هنا الآن",
+  loadFailed: "تعذّر تحميل الأسواق.",
+  updated: "حُدّث {{time}}",
+  stale: "آخر الأسعار من {{time}}",
+  recentSearches: "عمليات البحث الأخيرة",
+  segmentsLabel: "أقسام السوق",
+};

@@ -52,6 +52,7 @@ import type {
   NotificationSettings,
   NotificationSettingsChange,
 } from "./types";
+import type { Candle, ChartRange, MarketListView, MarketSegment, PortfolioView, TokenDetailView, TokenSearchResult } from "./assets";
 import type { ClientEvent } from "./client-events";
 import type {
   AgentWalletSettings,
@@ -69,6 +70,7 @@ import { railsEndpoints } from "./rails";
 
 export * from "./types";
 export * from "./agent-types";
+export * from "./assets";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
@@ -245,6 +247,24 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
     },
 
+    /** Every asset the person holds (Arc, other chains, positions), priced; and their show/hide choices. */
+    portfolio: {
+      get: () => call<{ portfolio: PortfolioView }>("GET", "/portfolio"),
+      setVisibility: (address: string, visibility: "auto" | "shown" | "hidden") =>
+        call<{ address: string; visibility: string }>("POST", "/portfolio/visibility", { address, visibility }),
+    },
+    /** Public market data (guests too): a token's page, its chart, search, and the Markets lists. */
+    tokens: {
+      get: (chainId: number, address: string) => call<{ token: TokenDetailView }>("GET", `/tokens/${chainId}/${address}`),
+      chart: (chainId: number, address: string, range: ChartRange) =>
+        call<{ range: ChartRange; candles: Candle[] }>("GET", `/tokens/${chainId}/${address}/chart?range=${range}`),
+      search: (query: string, network?: NetworkId) =>
+        call<{ results: TokenSearchResult[] }>("GET", `/tokens/search?q=${encodeURIComponent(query)}${network ? `&network=${network}` : ""}`),
+    },
+    markets: {
+      list: (segment: MarketSegment, network?: NetworkId) =>
+        call<{ market: MarketListView }>("GET", `/markets?segment=${segment}${network ? `&network=${network}` : ""}`),
+    },
     swaps: {
       /** A swap with a fresh quote; naming one currency is enough when there are two. */
       create: (request: SwapRequest) => call<{ intent: SwapIntent }>("POST", "/swaps", request),

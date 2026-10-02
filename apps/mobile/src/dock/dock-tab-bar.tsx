@@ -1,4 +1,5 @@
-// The glass dock as the tab bar (Fomo F12 / M09, in Kawase's material): Home · Chat · orb · Activity · Profile.
+// The glass dock as the tab bar (Fomo F12 / M09, in Kawase's material): Home · Markets · orb · Chat · Activity
+// (surfaces.md "Shell": trading needs a home; profile and settings open from the header avatar on every tab).
 // The four tabs are the (tabs) routes; the orb in the centre is not a route — it opens the voice overlay over the
 // live page. Given to expo-router's `Tabs` as `tabBar`, so tab state, deep links and the hardware back button
 // keep working; the dock floats over the pages, which pad themselves with `useDockClearance`. The four tabs are
@@ -6,7 +7,7 @@
 // orb steps aside while the overlay's orb is up so there is only ever one (R16). The bar follows the reading
 // direction, bubble included.
 import type { Tabs } from "expo-router";
-import { Activity, Home, MessageCircle, UserRound } from "lucide-react-native";
+import { Activity, ChartCandlestick, Home, MessageCircle } from "lucide-react-native";
 import type * as React from "react";
 import { View } from "react-native";
 import { useKeyboardState } from "react-native-keyboard-controller";
@@ -28,8 +29,8 @@ type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tab
 const ORB_KEY = "voice";
 const ORB_IDLE_LEVEL = 0.15;
 
-/** Route names in the (tabs) group, in dock order; the orb sits between chat and activity. */
-const TAB_ORDER = ["index", "chat", ORB_KEY, "activity", "settings"] as const;
+/** Route names in the (tabs) group, in dock order; the orb sits in the centre. Settings is a tab without a slot. */
+const TAB_ORDER = ["index", "markets", ORB_KEY, "chat", "activity"] as const;
 
 export function DockTabBar({ state, navigation, insets }: TabBarProps) {
   const { t } = useT();
@@ -43,12 +44,12 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
 
   const labels: Record<string, string> = {
     index: t("home.dockHome"),
+    markets: t("markets.dock"),
     chat: t("home.dockChat"),
     [ORB_KEY]: t("home.dockVoice"),
     activity: t("home.dockActivity"),
-    settings: t("home.dockProfile"),
   };
-  const icons = { index: Home, chat: MessageCircle, activity: Activity, settings: UserRound } as const;
+  const icons = { index: Home, markets: ChartCandlestick, chat: MessageCircle, activity: Activity } as const;
 
   const items: DockItem[] = TAB_ORDER.map((key) =>
     key === ORB_KEY

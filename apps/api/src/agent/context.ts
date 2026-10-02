@@ -26,6 +26,7 @@ import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { SwapService } from "../swap/service";
+import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -73,6 +74,7 @@ export function buildAgentContext(input: {
   bridges: BridgeService;
   earn: EarnService;
   margin?: MarginService | undefined;
+  assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
@@ -83,7 +85,7 @@ export function buildAgentContext(input: {
   /** Where the person is: typing in chat, or talking (voice answers are spoken; the cards carry the details). */
   surface?: "chat" | "voice" | undefined;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
   const { marketplace } = input;
@@ -149,6 +151,28 @@ export function buildAgentContext(input: {
       const intent = await bridges.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeBridge(intent) };
     },
+
+    async proposeTrade(request) {
+      // A token as the person named it: an address or a verified symbol goes through as is; any other name is the
+      // best match of a search (held and verified first), so the model never has to know an address.
+      const resolve = async (text: string | null) => {
+        if (!text) return null;
+        const value = text.trim();
+        if (/^0x[0-9a-fA-F]{40}$/.test(value) || /^(usdc|eurc|dollars?|euros?)$/i.test(value)) return value.replace(/^dollars?$/i, "USDC").replace(/^euros?$/i, "EURC");
+        const [best] = await assets.search(user, network, value);
+        return best?.token.address ?? value;
+      };
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "swap"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await swaps.create(user, { tokenIn: await resolve(request.from), tokenOut: await resolve(request.to), amount: request.amount }, { surface: "chat", threadId });
+      return { intent, summary: summarizeSwap(intent) };
+    },
+
+    portfolio: () => assets.portfolio(user),
+    searchTokens: (query) => assets.search(user, network, query),
+    tokenDetail: (address) => assets.token(user, network, address),
 
     async earnOverview() {
       const view = await earn.overview(user);

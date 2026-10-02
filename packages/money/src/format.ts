@@ -11,6 +11,8 @@ export type FormatOptions = {
   fractionDigits?: number;
   /** Show the asset symbol after the number. Default true. */
   withSymbol?: boolean;
+  /** Drop trailing zeros after the decimal point ("63.67", not "63.670000"). */
+  trimZeros?: boolean;
 };
 
 /**
@@ -19,22 +21,29 @@ export type FormatOptions = {
  * Formatting works from bigint strings, so large amounts never lose precision.
  */
 export function formatAmount(value: Amount, locale: string, options: FormatOptions = {}): string {
-  const decimals = decimalsOf(value.asset);
+  return formatTokenAmount(value.baseUnits, decimalsOf(value.asset), ASSETS[value.asset].symbol, locale, options);
+}
+
+/**
+ * The same, for any token (R1): base units with the token's own decimals and symbol, as read from its contract or
+ * the asset registry. USDC and EURC go through `formatAmount`; every other token comes here.
+ */
+export function formatTokenAmount(baseUnits: bigint, decimals: number, symbol: string, locale: string, options: FormatOptions = {}): string {
   const fractionDigits = Math.min(options.fractionDigits ?? DEFAULT_DISPLAY_FRACTION_DIGITS, decimals);
-  const negative = value.baseUnits < ZERO;
-  const abs = negative ? -value.baseUnits : value.baseUnits;
+  const negative = baseUnits < ZERO;
+  const abs = negative ? -baseUnits : baseUnits;
   const divisor = TEN ** BigInt(decimals);
   const whole = abs / divisor;
   const fraction = (abs % divisor).toString().padStart(decimals, "0").slice(0, fractionDigits);
   const decimalString = fractionDigits > 0 ? `${whole}.${fraction}` : `${whole}`;
   const formatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: options.trimZeros ? 0 : fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
   // Intl accepts decimal strings for exact formatting ("string" overload, ES2023 Intl.NumberFormat v3).
   const number = formatter.format(decimalString as unknown as number);
   const signed = negative ? `-${number}` : number;
-  return options.withSymbol === false ? signed : `${signed} ${ASSETS[value.asset].symbol}`;
+  return options.withSymbol === false ? signed : `${signed} ${symbol}`;
 }
 
 /**
