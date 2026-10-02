@@ -185,7 +185,7 @@ export class AssetService {
 
     for (const position of positionsRaw) {
       const value = Number(formatUnits(BigInt(position.assets), usdc?.decimals ?? USDC_ERC20_DECIMALS)) * usdcPrice;
-      positions.push({ kind: "earn", id: getAddress(position.vault), title: position.name, provider: "morpho", valueUsd: round(value), apyPct: position.apy, token: usdc ?? null });
+      positions.push({ kind: "earn", id: getAddress(position.vault), title: position.name, provider: "morpho", valueUsd: round(value), apyPct: round(position.apy * PERCENT), token: usdc ?? null });
     }
 
     for (const address of held) {

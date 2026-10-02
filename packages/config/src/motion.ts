@@ -45,6 +45,8 @@ export const MOTION = {
   sendingCycleMs: 1_600,
   /** The plane leaving when the send is confirmed, before the receipt settles in. */
   planeFlyMs: 650,
+  /** A live number (the balance hero, a price) counting to its new value (21st.dev 21513 Number Ticker). */
+  tickerMs: 600,
 } as const;
 
 /** Springs shared by layout changes that follow a finger or a focus (composer growing, chips arriving). */
