@@ -44,10 +44,14 @@ export function SignInProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setOpen] = React.useState(false);
+  const currentPath = React.useRef(pathname);
+  currentPath.current = pathname;
+  const completion = React.useRef(0);
 
   const value = React.useMemo(
     () => ({
       open: () => {
+        completion.current += 1;
         rememberReturnTo(pathname);
         setOpen(true);
       },
@@ -57,9 +61,11 @@ export function SignInProvider({ children }: { children: React.ReactNode }) {
   );
 
   const onSignedIn = async (user: ApiUser) => {
+    const ticket = ++completion.current;
     setOpen(false);
     const from = pathname;
     const next = await nextStep(user);
+    if (completion.current !== ticket || currentPath.current !== from) return;
     const go = (path: "/handle" | "/wallet" | "/") => (ONBOARDING_PATHS.has(from) ? router.replace(path) : router.push(path));
     if (next === "handle") go("/handle");
     else if (next === "setup") go("/wallet");

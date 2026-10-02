@@ -15,7 +15,7 @@ import type { UIMessage } from "ai";
 import type { ThreadSummary } from "@kawase/api-client";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Sheet } from "@kawase/ui-native/components/sheet";
+import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -51,6 +51,10 @@ export function ChatScreen() {
   const [threads, setThreads] = React.useState<ThreadSummary[]>([]);
   const [threadsFailed, setThreadsFailed] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const matches = threads.filter((entry) =>
+    (entry.title ?? t("chat.untitled")).toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)),
+  );
   // Every open bumps this; a read that finishes after a newer open is dropped.
   const latestOpen = React.useRef(0);
 
@@ -120,12 +124,20 @@ export function ChatScreen() {
     router.setParams({ prompt: undefined });
   }, [prompt, fresh, router]);
 
-  const when = (iso: string) => new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  const when = (iso: string) =>
+    new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(
+      new Date(iso),
+    );
 
   return (
     <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-2 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
+      {testnet ? (
+        <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
+      ) : null}
+      <View
+        className="flex-row items-center gap-2 px-5"
+        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
+      >
         <Button
           variant="secondary"
           size="icon"
@@ -139,13 +151,25 @@ export function ChatScreen() {
           <Icon as={History} className="size-5" />
         </Button>
         <Text className="font-display text-foreground flex-1 text-center text-xl font-bold">{t("chat.title")}</Text>
-        <Button variant="secondary" size="icon" className="size-11" accessibilityLabel={t("chat.newChat")} onPress={() => fresh()}>
+        <Button
+          variant="secondary"
+          size="icon"
+          className="size-11"
+          accessibilityLabel={t("chat.newChat")}
+          onPress={() => fresh()}
+        >
           <Icon as={SquarePen} className="size-5" />
         </Button>
       </View>
 
       {open.status === "ready" ? (
-        <Conversation key={open.id} threadId={open.id} initialMessages={open.messages} initialPrompt={open.prompt} onActivity={() => void loadThreads()} />
+        <Conversation
+          key={open.id}
+          threadId={open.id}
+          initialMessages={open.messages}
+          initialPrompt={open.prompt}
+          onActivity={() => void loadThreads()}
+        />
       ) : open.status === "failed" ? (
         <View className="flex-1 items-center justify-center gap-4 px-8">
           <Icon as={CloudOff} className="text-muted-foreground" size={FAILED_ICON} />
@@ -167,7 +191,22 @@ export function ChatScreen() {
         </View>
       )}
 
-      <Sheet open={historyOpen} onClose={() => setHistoryOpen(false)} title={t("chat.history")} colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }} closeLabel={t("common.close")} bottomInset={insets.bottom} className="gap-3">
+      <Sheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title={t("chat.history")}
+        colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
+        closeLabel={t("common.close")}
+        bottomInset={insets.bottom}
+        className="gap-3"
+      >
+        <SheetInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder={t("chat.search")}
+          accessibilityLabel={t("chat.search")}
+          autoCorrect={false}
+        />
         <Button
           variant="secondary"
           onPress={() => {
@@ -188,9 +227,9 @@ export function ChatScreen() {
             </Button>
           </View>
         ) : null}
-        {threads.length > 0 ? (
+        {matches.length > 0 ? (
           <ListGroup>
-            {threads.map((thread) => (
+            {matches.map((thread) => (
               <ListRow
                 key={thread.id}
                 title={thread.title ?? t("chat.untitled")}
@@ -204,7 +243,9 @@ export function ChatScreen() {
             ))}
           </ListGroup>
         ) : threadsFailed ? null : (
-          <Text className="text-muted-foreground py-2 text-center text-sm">{t("chat.noHistory")}</Text>
+          <Text className="text-muted-foreground py-2 text-center text-sm">
+            {search.trim() ? t("chat.noMatches") : t("chat.noHistory")}
+          </Text>
         )}
       </Sheet>
     </View>

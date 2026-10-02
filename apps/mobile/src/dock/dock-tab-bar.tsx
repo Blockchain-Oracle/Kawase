@@ -9,6 +9,7 @@ import type { Tabs } from "expo-router";
 import { Activity, Home, MessageCircle, UserRound } from "lucide-react-native";
 import type * as React from "react";
 import { View } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 
 import { GlassDock, type DockItem } from "@kawase/ui-native/components/glass-dock";
 import { tokens } from "@kawase/ui-tokens";
@@ -36,6 +37,7 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
   const colors = useThemeColors();
   const overlay = useOverlay();
   const { rtl } = useLocale();
+  const keyboardVisible = useKeyboardState((keyboard) => keyboard.isVisible);
   const activeKey = state.routes[state.index]?.name ?? "index";
   const orbAway = overlay.shown === "voice";
 
@@ -76,5 +78,6 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
     if (key !== activeKey && !event.defaultPrevented) navigation.navigate(route.name, route.params);
   };
 
+  if (keyboardVisible) return null;
   return <GlassDock items={items} activeKey={activeKey} onPress={onPress} scheme={mode} tint={colors.glass} bottomInset={insets.bottom} rtl={rtl} />;
 }

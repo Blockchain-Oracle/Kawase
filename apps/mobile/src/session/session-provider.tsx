@@ -33,7 +33,7 @@ type SessionState = {
   /** Creates the guest account (first launch) or does nothing when a session exists. */
   ensureGuest: (locale: SupportedLocale) => Promise<void>;
   /** Stores a token the sign-in screen obtained and loads the user behind it. */
-  adoptToken: (token: string) => Promise<ApiUser>;
+  adoptToken: (token: string, authAttemptId?: string) => Promise<ApiUser>;
   refresh: () => Promise<void>;
   update: (settings: Parameters<typeof api.me.update>[0]) => Promise<ApiUser>;
   setNetwork: (network: NetworkId) => Promise<ApiUser>;
@@ -49,7 +49,8 @@ const STALE_RETRY_MS = 20_000;
 export async function deviceInfo(locale?: string): Promise<DeviceInfo> {
   const platform = Platform.OS === "ios" || Platform.OS === "android" ? Platform.OS : "web";
   const info: DeviceInfo = { platform, installationId: await sessionStorage.installationId() };
-  if (Application.nativeApplicationVersion) info.appVersion = Application.nativeApplicationVersion;
+  if (Application.nativeApplicationVersion)
+    info.appVersion = `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion ?? "unknown"})`;
   if (locale) info.locale = locale;
   return info;
 }
@@ -66,6 +67,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<ApiUser>();
   const [availableNetworks, setAvailableNetworks] = React.useState<NetworkId[]>(["testnet"]);
   const [connection, setConnection] = React.useState<Connection>("online");
+  // A read begun under an old token cannot clear or replace a newly authenticated account.
+  const epoch = React.useRef(0);
+  const reading = React.useRef(0);
+  const adopting = React.useRef(false);
+  const creatingGuest = React.useRef<Promise<void> | undefined>(undefined);
 
   const show = React.useCallback((next: ApiUser, networks?: NetworkId[]) => {
     setUser(next);
@@ -75,15 +81,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clear = React.useCallback(async () => {
+    const version = ++epoch.current;
     await sessionStorage.setToken(undefined);
+    if (version !== epoch.current) return;
     await sessionStorage.setUser(undefined);
+    if (version !== epoch.current) return;
     setUser(undefined);
     setStatus("none");
     setConnection("online");
   }, []);
 
   const load = React.useCallback(async () => {
+    if (adopting.current) return;
+    const version = epoch.current;
+    const ticket = ++reading.current;
+    const current = () => version === epoch.current && ticket === reading.current && !adopting.current;
     const token = await sessionStorage.getToken();
+    if (!current()) return;
     if (!token) {
       setStatus("none");
       setUser(undefined);
@@ -91,9 +105,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const me = await api.me.get();
+      if (!current()) return;
       show(me.user, me.availableNetworks);
       setConnection("online");
     } catch (error) {
+      if (!current()) return;
       if (isInvalidSession(error)) {
         // The api no longer knows this session (expired or revoked): start again on the first screen.
         await clear();
@@ -102,6 +118,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // The connection, not the account, failed: keep the token and show the last confirmed user.
       setConnection(connectionFrom(error));
       const cached = await sessionStorage.getUser<ApiUser>();
+      if (!current()) return;
       if (cached) {
         setUser(cached);
         setStatus(cached.isGuest ? "guest" : "account");
@@ -120,9 +137,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (status !== "account" || !user || user.timezone !== "UTC") return;
     const device = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!device || device === "UTC") return;
+    const version = epoch.current;
+    const ticket = ++reading.current;
     void api.me
       .update({ timezone: device })
-      .then(({ user: next }) => show(next))
+      .then(({ user: next }) => {
+        if (version === epoch.current && ticket === reading.current && !adopting.current) show(next);
+      })
       .catch(() => undefined);
   }, [status, user, show]);
 
@@ -149,31 +170,60 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       stale,
       retry: load,
       async ensureGuest(locale) {
-        if (await sessionStorage.getToken()) return load();
-        const { token, user: guest } = await api.auth.guest({ device: await deviceInfo(locale), locale });
-        await sessionStorage.setToken(token);
-        show(guest);
-        setConnection("online");
+        if (creatingGuest.current) return creatingGuest.current;
+        const version = epoch.current;
+        const pending = (async () => {
+          if (await sessionStorage.getToken()) return load();
+          const { token, user: guest } = await api.auth.guest({ device: await deviceInfo(locale), locale });
+          if (version !== epoch.current) return;
+          await sessionStorage.setToken(token);
+          if (version !== epoch.current) return;
+          show(guest);
+          setConnection("online");
+        })().finally(() => {
+          if (creatingGuest.current === pending) creatingGuest.current = undefined;
+        });
+        creatingGuest.current = pending;
+        return pending;
       },
-      async adoptToken(token) {
-        await sessionStorage.setToken(token);
-        const me = await api.me.get();
-        show(me.user, me.availableNetworks);
-        setConnection("online");
-        return me.user;
+      async adoptToken(token, authAttemptId) {
+        const version = ++epoch.current;
+        adopting.current = true;
+        try {
+          await sessionStorage.setToken(token);
+          if (version !== epoch.current) throw new Error("sign-in superseded");
+          const me = await api.me.get(authAttemptId);
+          if (version !== epoch.current) throw new Error("sign-in superseded");
+          show(me.user, me.availableNetworks);
+          setConnection("online");
+          return me.user;
+        } catch (error) {
+          if (version === epoch.current) setConnection(connectionFrom(error));
+          throw error;
+        } finally {
+          if (version === epoch.current) adopting.current = false;
+        }
       },
       refresh: load,
       async update(settings) {
+        const version = epoch.current;
+        const ticket = ++reading.current;
         const { user: updated } = await api.me.update(settings);
-        show(updated);
+        if (version !== epoch.current) throw new Error("account changed");
+        if (ticket === reading.current && !adopting.current) show(updated);
         return updated;
       },
       async setNetwork(network) {
+        const version = epoch.current;
+        const ticket = ++reading.current;
         const { user: updated } = await api.me.setNetwork(network);
-        show(updated);
+        if (version !== epoch.current) throw new Error("account changed");
+        if (ticket === reading.current && !adopting.current) show(updated);
         return updated;
       },
       async signOut() {
+        epoch.current += 1;
+        adopting.current = false;
         // This phone stops getting the person's notifications before the session ends.
         await forgetPushToken();
         await api.auth.signOut().catch(() => undefined);

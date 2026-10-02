@@ -4,6 +4,7 @@
 import { randomUUID } from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { orderedWrite } from "./write-queue";
 
 const KEYS = {
   token: "kawase.session",
@@ -23,18 +24,20 @@ async function read(key: string): Promise<string | undefined> {
   return (await SecureStore.getItemAsync(key)) ?? undefined;
 }
 
-async function write(key: string, value: string | undefined): Promise<void> {
-  if (Platform.OS === "web") {
-    try {
-      if (value === undefined) globalThis.localStorage?.removeItem(key);
-      else globalThis.localStorage?.setItem(key, value);
-    } catch {
-      // Private windows and blocked storage: the session lasts for the page.
+function write(key: string, value: string | undefined): Promise<void> {
+  return orderedWrite(key, async () => {
+    if (Platform.OS === "web") {
+      try {
+        if (value === undefined) globalThis.localStorage?.removeItem(key);
+        else globalThis.localStorage?.setItem(key, value);
+      } catch {
+        // Private windows and blocked storage: the session lasts for the page.
+      }
+      return;
     }
-    return;
-  }
-  if (value === undefined) await SecureStore.deleteItemAsync(key);
-  else await SecureStore.setItemAsync(key, value);
+    if (value === undefined) await SecureStore.deleteItemAsync(key);
+    else await SecureStore.setItemAsync(key, value);
+  });
 }
 
 export const sessionStorage = {

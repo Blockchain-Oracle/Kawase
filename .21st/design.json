@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "project": {
+    "name": "kawase",
+    "productType": "Multilingual mobile money agent on Arc",
+    "stack": [
+      "Expo 57",
+      "React Native",
+      "Uniwind",
+      "React Native Reusables",
+      "Reanimated"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "packages/ui-tokens/tokens.json"
+    ],
+    "components": [
+      "packages/ui-native/src/components",
+      "packages/ui-web/src/components"
+    ],
+    "assets": [],
+    "instructions": [
+      "DESIGN.md",
+      "plan/design/REVAMP-PLAN.md",
+      "plan/design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md"
+    ]
+  },
+  "design": {
+    "colorMode": "dark",
+    "colors": {
+      "light": {
+        "background": "#F7F8F4",
+        "foreground": "#101210",
+        "card": "#FFFFFF",
+        "card-foreground": "#101210",
+        "popover": "#FFFFFF",
+        "popover-foreground": "#101210",
+        "primary": "#101210",
+        "primary-foreground": "#D4FF3A",
+        "secondary": "#ECEEE7",
+        "secondary-foreground": "#101210",
+        "muted": "#ECEEE7",
+        "muted-foreground": "#5C6158",
+        "accent": "#3F6600",
+        "accent-foreground": "#FFFFFF",
+        "destructive": "#C4262E",
+        "destructive-foreground": "#FFFFFF",
+        "success": "#1A7F56",
+        "border": "#D9DCD2",
+        "input": "#D9DCD2",
+        "ring": "#3F6600",
+        "network": "#101210",
+        "network-foreground": "#D4FF3A",
+        "network-surface": "#E6F5C2",
+        "glass": "#FFFFFFB8",
+        "glass-border": "#00000014",
+        "scrim": "#0B0C1099",
+        "texture": "#0000000F",
+        "silver": "#9AA0A8",
+        "silver-deep": "#5B6067"
+      },
+      "dark": {
+        "background": "#0B0C10",
+        "foreground": "#F4F5F7",
+        "card": "#14161C",
+        "card-foreground": "#F4F5F7",
+        "popover": "#171A21",
+        "popover-foreground": "#F4F5F7",
+        "primary": "#D4FF3A",
+        "primary-foreground": "#0B0C10",
+        "secondary": "#1C1F27",
+        "secondary-foreground": "#F4F5F7",
+        "muted": "#1C1F27",
+        "muted-foreground": "#A0A6B4",
+        "accent": "#D4FF3A",
+        "accent-foreground": "#0B0C10",
+        "destructive": "#FF5C5C",
+        "destructive-foreground": "#2A0505",
+        "success": "#35D39B",
+        "border": "#262A34",
+        "input": "#262A34",
+        "ring": "#D4FF3A",
+        "network": "#D4FF3A",
+        "network-foreground": "#0B0C10",
+        "network-surface": "#1E2A0A",
+        "glass": "#14161CA6",
+        "glass-border": "#FFFFFF1F",
+        "scrim": "#000000A6",
+        "texture": "#FFFFFF14",
+        "silver": "#C9CDD3",
+        "silver-deep": "#6E7279"
+      },
+      "testnet": {
+        "network": "#0A6AAB",
+        "network-foreground": "#FFFFFF",
+        "network-surface": "#DDF0FB",
+        "ring": "#0A6AAB"
+      },
+      "testnet-dark": {
+        "network": "#4CC2FF",
+        "network-foreground": "#04131C",
+        "network-surface": "#0D2A3A",
+        "ring": "#4CC2FF"
+      }
+    },
+    "typography": {
+      "display": "Space Grotesk",
+      "body": "Manrope",
+      "mono": "JetBrains Mono",
+      "scripts": [
+        "Noto Sans Arabic",
+        "Noto Nastaliq Urdu",
+        "Noto Sans Devanagari",
+        "Noto Sans Bengali",
+        "Noto Sans SC"
+      ],
+      "googleFontsAxes": {
+        "Space Grotesk": "wght@500..700",
+        "Manrope": "wght@400..700",
+        "JetBrains Mono": "wght@400..600",
+        "Noto Sans Arabic": "wght@400..700",
+        "Noto Nastaliq Urdu": "wght@400..700",
+        "Noto Sans Devanagari": "wght@400..700",
+        "Noto Sans Bengali": "wght@400..700",
+        "Noto Sans SC": "wght@400..700"
+      }
+    },
+    "spacing": {},
+    "radius": {
+      "surface": 24
+    },
+    "shadows": {},
+    "motion": {
+      "swipeSettleMs": 260,
+      "panelTravelMs": 420,
+      "readingDwellMs": 4500,
+      "composerMs": 180
+    },
+    "density": "mobile"
+  },
+  "components": {
+    "installed": [
+      "React Native Reusables",
+      "Gesture Handler",
+      "Reanimated",
+      "Skia",
+      "Gorhom Bottom Sheet"
+    ],
+    "preferredPrimitives": [
+      "packages/ui-native/src/components/ui",
+      "Sheet",
+      "Composer",
+      "StoryShell",
+      "ListRow"
+    ],
+    "patterns": [
+      "Fixed footer onboarding",
+      "Quick-action fan",
+      "History sheet",
+      "Compact-to-expanded composer"
+    ]
+  },
+  "constraints": {
+    "must": [
+      "Lime on Ink; authentic entity marks; native keyboard and accessibility; preserve approved fan/history/orb motion"
+    ],
+    "avoid": [
+      "AI-generated designs",
+      "unverified capability claims",
+      "decorative UI copied from another product"
+    ]
+  },
+  "decisions": [
+    {
+      "date": "2026-10-02",
+      "decision": "Adapt researched zochory/prompt-input-dynamic-grow behavior using existing RNR primitives and Kawase tokens",
+      "source": "https://21st.dev/@zochory/components/prompt-input-dynamic-grow"
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "project.instructions",
+      "source": "DESIGN.md"
+    }
+  ],
+  "generatedAt": "2026-10-02T07:31:57.947Z"
+}

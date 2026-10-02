@@ -14,6 +14,7 @@ import {
   TURNKEY_ORGANIZATION_ID,
   isWalletConfigured,
 } from "./config";
+import { classifySignInFailure } from "./sign-in-errors";
 
 const config: TurnkeyProviderConfig = {
   organizationId: TURNKEY_ORGANIZATION_ID,
@@ -32,7 +33,7 @@ const config: TurnkeyProviderConfig = {
 };
 
 const callbacks: TurnkeyCallbacks = {
-  onError: (error) => console.warn("[wallet]", error),
+  onError: (error) => console.warn("[wallet]", { category: classifySignInFailure(error), code: error.code }),
 };
 
 export function WalletProvider({ children }: { children: ReactNode }) {

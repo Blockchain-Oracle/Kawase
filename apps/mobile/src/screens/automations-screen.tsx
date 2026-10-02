@@ -23,6 +23,7 @@ import { useAutomation } from "@/automations/use-automation";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
+import { useSignIn } from "@/sign-in/sign-in-provider";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
@@ -54,7 +55,12 @@ function AutomationItem({ initial }: { initial: AutomationView }) {
               <Text>{t("automation.resume")}</Text>
             </Button>
           )}
-          <Button size="sm" variant="ghost" disabled={controller.busy} onPress={() => void controller.cancel(t("automation.revokePrompt"))}>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={controller.busy}
+            onPress={() => void controller.cancel(t("automation.revokePrompt"))}
+          >
             <Text className="text-destructive">{t("automation.cancel")}</Text>
           </Button>
         </View>
@@ -68,31 +74,63 @@ export function AutomationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useSession();
+  const signIn = useSignIn();
+  const canLoad = Boolean(user && !user.isGuest);
+  const latestLoad = React.useRef(0);
+  const scope = `${user?.id ?? "guest"}:${user?.activeNetwork ?? "testnet"}`;
+  const loadedScope = React.useRef(scope);
   const [list, setList] = React.useState<AutomationView[]>();
   const [failed, setFailed] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
 
   const load = React.useCallback(async () => {
+    const ticket = ++latestLoad.current;
+    if (loadedScope.current !== scope) {
+      loadedScope.current = scope;
+      setList(undefined);
+      setFailed(false);
+    }
+    if (!canLoad) {
+      setList(undefined);
+      setFailed(false);
+      return;
+    }
     try {
       const { automations } = await api.automations.list();
+      if (ticket !== latestLoad.current) return;
       setList(automations.filter((entry) => entry.status !== "draft"));
       setFailed(false);
     } catch {
+      if (ticket !== latestLoad.current) return;
       setFailed(true);
     }
-  }, []);
+  }, [canLoad, scope]);
   useFocusEffect(
     React.useCallback(() => {
       void load();
+      return () => {
+        latestLoad.current += 1;
+      };
     }, [load]),
   );
 
   return (
     <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={() => router.back()}>
+      {testnet ? (
+        <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
+      ) : null}
+      <View
+        className="flex-row items-center gap-3 px-5"
+        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
+      >
+        <Button
+          variant="secondary"
+          size="icon"
+          accessibilityLabel={t("common.back")}
+          className="size-11"
+          onPress={() => router.back()}
+        >
           <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
         </Button>
         <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
@@ -112,7 +150,18 @@ export function AutomationsScreen() {
           />
         }
       >
-        {failed && !list ? (
+        {!canLoad ? (
+          <EmptyState
+            art={<PaperPlane width={ART_WIDTH} />}
+            title={t("automation.guestTitle")}
+            body={t("automation.guestBody")}
+            action={
+              <Button onPress={signIn.open}>
+                <Text>{t("signIn.title")}</Text>
+              </Button>
+            }
+          />
+        ) : failed && !list ? (
           <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
             <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{t("automation.failed")}</Text>
             <Button size="sm" variant="secondary" onPress={() => void load()}>

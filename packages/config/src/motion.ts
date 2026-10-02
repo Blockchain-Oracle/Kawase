@@ -9,7 +9,10 @@ export const MOTION = {
   /** Sheets and cards rising; nested panels changing height. */
   sheetMs: 250,
   /** A story panel change (M01): field + art travel, copy changes mid-travel. */
-  storyPanelMs: 900,
+  storyPanelMs: 420,
+  /** A finger-released page settles without waiting for React. */
+  storySettleMs: 260,
+  composerMs: 180,
   /** How long a story panel stays before the next one (auto-advance); swiping resets it. */
   storyDwellMs: 4_500,
   /** The blur behind an overlay reaching full strength (M06). */

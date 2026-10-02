@@ -12,7 +12,7 @@ import * as React from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { ApiUser } from "@kawase/api-client";
+import { ApiError, type ApiUser } from "@kawase/api-client";
 import { OrDivider } from "@kawase/ui-native/components/or-divider";
 import { ProviderButton } from "@kawase/ui-native/components/provider-button";
 import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
@@ -25,6 +25,7 @@ import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { classifySignInFailure, type SignInFailure } from "@/wallet/sign-in-errors";
 import { useTurnkeyAccount, type SocialProvider } from "@/wallet/use-turnkey-account";
+import { AuthStageError } from "@/wallet/auth-stage";
 
 const CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,9 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
   const [languageOpen, setLanguageOpen] = React.useState(false);
   /** Signed in, but the wallet was not created: the account to finish with a retry of the wallet step only. */
   const [walletFor, setWalletFor] = React.useState<ApiUser>();
+  const [resumeSession, setResumeSession] = React.useState(false);
+  const [recoveryRequired, setRecoveryRequired] = React.useState(false);
+  const activeAttempt = React.useRef(false);
   const [resendAt, setResendAt] = React.useState(0);
   const [now, setNow] = React.useState(() => Date.now());
   // Every opening and closing starts a new generation; an answer from an older one is ignored.
@@ -70,6 +74,8 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
       setError(undefined);
       setPending(undefined);
       setWalletFor(undefined);
+      setResumeSession(false);
+      setRecoveryRequired(false);
     }
   }, [open]);
 
@@ -118,6 +124,8 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
 
   /** Runs one sign-in path: the api account first, then the wallet, then hands over. */
   const finish = async (signIn: () => Promise<ApiUser>, which: Pending) => {
+    if (activeAttempt.current) return;
+    activeAttempt.current = true;
     const started = generation.current;
     setPending(which);
     setError(undefined);
@@ -125,15 +133,42 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
     try {
       user = await signIn();
     } catch (problem) {
+      activeAttempt.current = false;
       if (started !== generation.current) return;
       setPending(undefined);
+      if (
+        problem instanceof AuthStageError &&
+        problem.cause instanceof ApiError &&
+        problem.cause.code === "account_recovery_required"
+      ) {
+        setResumeSession(false);
+        setRecoveryRequired(true);
+        setStep({ name: "methods" });
+        setCode("");
+        setError(t("signIn.recoveryRequired"));
+        return;
+      }
       const failure = classifySignInFailure(problem);
-      if (failure !== "cancelled") setError(message(failure, true));
+      const recoverable =
+        problem instanceof AuthStageError && ["session", "proof", "link", "account"].includes(problem.stage);
+      setResumeSession(recoverable);
+      if (failure !== "cancelled")
+        setError(
+          recoverable
+            ? t(problem.stage === "account" ? "signIn.accountFailed" : "signIn.linkFailed")
+            : message(failure, true),
+        );
       return;
     }
     // Signed in, but the sheet was closed meanwhile: the account exists; the person decides where to go.
-    if (started !== generation.current) return;
+    if (started !== generation.current) {
+      activeAttempt.current = false;
+      return;
+    }
+    setResumeSession(false);
+    setRecoveryRequired(false);
     await createWallet(user, started);
+    activeAttempt.current = false;
   };
 
   const sendCode = async (resend = false) => {
@@ -158,7 +193,16 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
 
   const verify = (value: string) => {
     if (step.name !== "code" || value.trim().length !== CODE_LENGTH || busy) return;
-    void finish(() => turnkey.verifyCode({ email: step.email, code: value, otpId: step.otpId, otpEncryptionTargetBundle: step.otpEncryptionTargetBundle }), "verify");
+    void finish(
+      () =>
+        turnkey.verifyCode({
+          email: step.email,
+          code: value,
+          otpId: step.otpId,
+          otpEncryptionTargetBundle: step.otpEncryptionTargetBundle,
+        }),
+      "verify",
+    );
   };
 
   const onCodeChange = (value: string) => {
@@ -170,15 +214,28 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
 
   const sheetColors = { background: colors.card, handle: colors.muted, scrim: colors.scrim };
   const languagePill = <LanguagePill onPress={() => setLanguageOpen(true)} />;
-  const working = pending === "wallet" ? t("wallet.creating") : pending === "verify" || pending === "continue" || pending === "apple" || pending === "google" ? t("signIn.signingIn") : undefined;
+  const working =
+    pending === "wallet"
+      ? t("wallet.creating")
+      : pending === "verify" || pending === "continue" || pending === "apple" || pending === "google"
+        ? t("signIn.signingIn")
+        : undefined;
 
   return (
     <>
       <Sheet
         open={open}
         onClose={onClose}
-        title={walletFor ? t("setup.stepWallet") : step.name === "methods" ? t("signIn.sheetTitle") : t("signIn.codeTitle")}
-        subtitle={walletFor ? undefined : step.name === "methods" ? t("signIn.subtitle") : t("signIn.codeSent", { email: step.email })}
+        title={
+          walletFor ? t("setup.stepWallet") : step.name === "methods" ? t("signIn.sheetTitle") : t("signIn.codeTitle")
+        }
+        subtitle={
+          walletFor
+            ? undefined
+            : step.name === "methods"
+              ? t("signIn.subtitle")
+              : t("signIn.codeSent", { email: step.email })
+        }
         colors={sheetColors}
         closeLabel={t("common.close")}
         bottomInset={insets.bottom}
@@ -192,92 +249,111 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
             {pending === "wallet" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
             <Text>{t("common.retry")}</Text>
           </Button>
+        ) : resumeSession ? (
+          <Button size="lg" disabled={busy} onPress={() => void finish(turnkey.linkSession, "continue")}>
+            {busy ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
+            <Text>{t("common.retry")}</Text>
+          </Button>
         ) : step.name === "methods" ? (
           <>
-              {!turnkey.available ? <Text className="text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm">{t("signIn.webUnavailable")}</Text> : null}
+            {!turnkey.available ? (
+              <Text className="text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm">
+                {t("signIn.webUnavailable")}
+              </Text>
+            ) : null}
 
-              {turnkey.signedIn && turnkey.email ? (
-                <Button size="lg" variant="secondary" disabled={busy} onPress={() => void finish(turnkey.linkSession, "continue")}>
-                  {pending === "continue" ? <ActivityIndicator color={colors.foreground} /> : null}
-                  <Text numberOfLines={1}>{t("signIn.continueAs", { email: turnkey.email })}</Text>
-                </Button>
-              ) : null}
-
-              <SheetInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder={t("signIn.emailPlaceholder")}
-                placeholderTextColor={colors["muted-foreground"]}
-                accessibilityLabel={t("signIn.email")}
-                autoCapitalize="none"
-                autoCorrect={false}
-                spellCheck={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                keyboardType="email-address"
-                returnKeyType="send"
-                editable={turnkey.available && !busy}
-                onSubmitEditing={() => (EMAIL_PATTERN.test(email.trim()) ? void sendCode() : undefined)}
-              />
-              <Button size="lg" disabled={busy || !turnkey.available || !EMAIL_PATTERN.test(email.trim())} onPress={() => void sendCode()}>
-                {pending === "code" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
-                <Text>{t("signIn.sendCode")}</Text>
+            {turnkey.signedIn && turnkey.email && !recoveryRequired ? (
+              <Button
+                size="lg"
+                variant="secondary"
+                disabled={busy}
+                onPress={() => void finish(turnkey.linkSession, "continue")}
+              >
+                {pending === "continue" ? <ActivityIndicator color={colors.foreground} /> : null}
+                <Text numberOfLines={1}>{t("signIn.continueAs", { email: turnkey.email })}</Text>
               </Button>
+            ) : null}
 
-              {turnkey.providers.length > 0 ? (
-                <>
-                  <OrDivider label={t("signIn.or")} />
-                  {turnkey.providers
-                    // Apple first on Apple platforms (HIG), Google first elsewhere.
-                    .slice()
-                    .sort((a) => (a === (Platform.OS === "ios" ? "apple" : "google") ? -1 : 1))
-                    .map((provider) => (
-                      <ProviderButton
-                        key={provider}
-                        provider={provider}
-                        label={provider === "apple" ? t("signIn.apple") : t("signIn.google")}
-                        scheme={mode}
-                        pending={pending === provider}
-                        disabled={busy && pending !== provider}
-                        onPress={() => void finish(() => turnkey.signInWith(provider), provider)}
-                      />
-                    ))}
-                </>
-              ) : null}
+            <SheetInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t("signIn.emailPlaceholder")}
+              placeholderTextColor={colors["muted-foreground"]}
+              accessibilityLabel={t("signIn.email")}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="email"
+              textContentType="emailAddress"
+              keyboardType="email-address"
+              returnKeyType="send"
+              editable={turnkey.available && !busy}
+              onSubmitEditing={() => (EMAIL_PATTERN.test(email.trim()) ? void sendCode() : undefined)}
+            />
+            <Button
+              size="lg"
+              disabled={busy || !turnkey.available || !EMAIL_PATTERN.test(email.trim())}
+              onPress={() => void sendCode()}
+            >
+              {pending === "code" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
+              <Text>{t("signIn.sendCode")}</Text>
+            </Button>
 
+            {turnkey.providers.length > 0 ? (
+              <>
+                <OrDivider label={t("signIn.or")} />
+                {turnkey.providers
+                  // Apple first on Apple platforms (HIG), Google first elsewhere.
+                  .slice()
+                  .sort((a) => (a === (Platform.OS === "ios" ? "apple" : "google") ? -1 : 1))
+                  .map((provider) => (
+                    <ProviderButton
+                      key={provider}
+                      provider={provider}
+                      label={provider === "apple" ? t("signIn.apple") : t("signIn.google")}
+                      scheme={mode}
+                      pending={pending === provider}
+                      disabled={busy && pending !== provider}
+                      onPress={() => void finish(() => turnkey.signInWith(provider), provider)}
+                    />
+                  ))}
+              </>
+            ) : null}
           </>
         ) : (
           <>
-              <SheetInput
-                value={code}
-                onChangeText={onCodeChange}
-                placeholder={t("signIn.code")}
-                placeholderTextColor={colors["muted-foreground"]}
-                accessibilityLabel={t("signIn.code")}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoComplete="one-time-code"
-                maxLength={CODE_LENGTH}
-                autoFocus
-                editable={!busy}
-                className="font-mono text-center text-2xl tracking-[8px]"
-              />
-              <Button size="lg" disabled={busy || code.length !== CODE_LENGTH} onPress={() => verify(code)}>
-                {pending === "verify" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
-                <Text>{t("signIn.verify")}</Text>
-              </Button>
-              <Button variant="ghost" disabled={busy || resendIn > 0} onPress={() => void sendCode(true)}>
-                {pending === "resend" ? <ActivityIndicator color={colors["muted-foreground"]} /> : null}
-                <Text className="text-muted-foreground">{resendIn > 0 ? t("errors.resendIn", { seconds: resendIn }) : t("signIn.resend")}</Text>
-              </Button>
+            <SheetInput
+              value={code}
+              onChangeText={onCodeChange}
+              placeholder={t("signIn.code")}
+              placeholderTextColor={colors["muted-foreground"]}
+              accessibilityLabel={t("signIn.code")}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              autoComplete="one-time-code"
+              maxLength={CODE_LENGTH}
+              autoFocus
+              editable={!busy}
+              className="font-mono text-center text-2xl tracking-[8px]"
+            />
+            <Button size="lg" disabled={busy || code.length !== CODE_LENGTH} onPress={() => verify(code)}>
+              {pending === "verify" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
+              <Text>{t("signIn.verify")}</Text>
+            </Button>
+            <Button variant="ghost" disabled={busy || resendIn > 0} onPress={() => void sendCode(true)}>
+              {pending === "resend" ? <ActivityIndicator color={colors["muted-foreground"]} /> : null}
+              <Text className="text-muted-foreground">
+                {resendIn > 0 ? t("errors.resendIn", { seconds: resendIn }) : t("signIn.resend")}
+              </Text>
+            </Button>
           </>
         )}
-            {working ? <StatusLine label={working} color={colors["muted-foreground"]} /> : null}
-            {error ? (
-              <Text accessibilityRole="alert" className="text-destructive text-sm">
-                {error}
-              </Text>
-            ) : null}
+        {working ? <StatusLine label={working} color={colors["muted-foreground"]} /> : null}
+        {error ? (
+          <Text accessibilityRole="alert" className="text-destructive text-sm">
+            {error}
+          </Text>
+        ) : null}
       </Sheet>
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
     </>

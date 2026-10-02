@@ -2,6 +2,7 @@ import type { Catalog } from "./en";
 
 export const fr: Catalog = {
   common: {
+    stop: "Arrêter",
     appName: "Kawase",
     continue: "Continuer",
     cancel: "Annuler",
@@ -29,9 +30,12 @@ export const fr: Catalog = {
     scopeLoadFailed: "Impossible de préparer votre plafond quotidien.",
     scopeRefreshed: "Le plafond quotidien a été mis à jour. Relisez-le, puis approuvez.",
     notSigned: "Rien n'a été signé.",
-    biometricUnavailable: "Activez Face ID, Touch ID, une empreinte ou un code dans les Réglages du téléphone pour approuver.",
-    biometricUnavailableWeb: "Pour approuver sur le web, il faut l’email de votre compte. Connectez-vous avec votre email pour continuer.",
-    biometricUnavailableAndroid: "Configurez une empreinte ou un verrouillage de l'écran dans les Paramètres du téléphone pour approuver.",
+    biometricUnavailable:
+      "Activez Face ID, Touch ID, une empreinte ou un code dans les Réglages du téléphone pour approuver.",
+    biometricUnavailableWeb:
+      "Pour approuver sur le web, il faut l’email de votre compte. Connectez-vous avec votre email pour continuer.",
+    biometricUnavailableAndroid:
+      "Configurez une empreinte ou un verrouillage de l'écran dans les Paramètres du téléphone pour approuver.",
     biometricFailed: "Pas de correspondance. Rien n'a été signé. Réessayez.",
   },
   network: {
@@ -55,6 +59,10 @@ export const fr: Catalog = {
     tryFirst: "Essayer d'abord, se connecter plus tard",
   },
   signIn: {
+    linkFailed: "Terminez la connexion de votre compte. Réessayez sans nouveau code.",
+    accountFailed: "Vous êtes connecté. Votre compte ne peut pas être chargé. Réessayez.",
+    recoveryRequired:
+      "Cet e-mail est lié à un portefeuille existant. Utilisez sa méthode de connexion d’origine. Votre conversation invitée est conservée.",
     title: "Se connecter",
     subtitle: "Un code par e-mail. Ni mot de passe, ni code PIN.",
     email: "E-mail",
@@ -72,7 +80,8 @@ export const fr: Catalog = {
     codeTitle: "Consultez vos e-mails",
     resend: "Envoyer un nouveau code",
     signingIn: "Connexion…",
-    webUnavailable: "La connexion sur le web arrive bientôt. Pour l'instant, utilisez l'app Kawase sur votre téléphone.",
+    webUnavailable:
+      "La connexion sur le web arrive bientôt. Pour l'instant, utilisez l'app Kawase sur votre téléphone.",
   },
   wallet: {
     title: "Portefeuille",
@@ -87,7 +96,8 @@ export const fr: Catalog = {
     allowanceTitle: "Plafond quotidien",
     allowanceBody:
       "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, vous approuvez avec Face ID.",
-    allowanceBodyAndroid: "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, vous approuvez avec votre empreinte ou le verrouillage de l'écran.",
+    allowanceBodyAndroid:
+      "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, vous approuvez avec votre empreinte ou le verrouillage de l'écran.",
     allowanceAccept: "Accepter",
     allowanceAcceptFaceId: "Accepter avec Face ID",
     allowanceActive: "Actif · {{amount}} par jour",
@@ -96,8 +106,10 @@ export const fr: Catalog = {
     mainnetConsentTitle: "Argent réel",
     mainnetConsentBody:
       "Le réseau principal utilise de vrais USDC. Kawase ne les déplace que dans les limites que vous fixez, et jamais au-delà de votre plafond sans votre Face ID.",
-    mainnetConsentBodyWeb: "Le mainnet utilise de vrais USDC. Kawase ne les déplace que dans les limites que vous fixez, et jamais au-delà de votre plafond sans votre confirmation.",
-    mainnetConsentBodyAndroid: "Le réseau principal utilise de vrais USDC. Kawase ne les déplace que dans les limites que vous fixez, et jamais au-delà de votre plafond sans votre empreinte ou le verrouillage de l'écran.",
+    mainnetConsentBodyWeb:
+      "Le mainnet utilise de vrais USDC. Kawase ne les déplace que dans les limites que vous fixez, et jamais au-delà de votre plafond sans votre confirmation.",
+    mainnetConsentBodyAndroid:
+      "Le réseau principal utilise de vrais USDC. Kawase ne les déplace que dans les limites que vous fixez, et jamais au-delà de votre plafond sans votre empreinte ou le verrouillage de l'écran.",
     mainnetConsentAccept: "J'ai compris",
     testnetMoney: "Les USDC de test n'ont aucune valeur.",
   },
@@ -164,16 +176,20 @@ export const fr: Catalog = {
     dockProfile: "Profil",
     funded: "Vous avez des fonds",
     guestTitle: "Votre agent d’argent sur Arc",
-    guestBody: "Posez vos questions sur Arc, les soldes et les envois — pas besoin de portefeuille pour essayer. Connectez-vous quand vous voulez le vôtre.",
+    guestBody:
+      "Posez vos questions sur Arc, les soldes et les envois — pas besoin de portefeuille pour essayer. Connectez-vous quand vous voulez le vôtre.",
     guestTry: "Essayer dans le chat",
     chipHowSending: "Comment marchent les envois ?",
     usdcBalance: "Solde en USDC",
     stepSendFirst: "Faites votre premier envoi",
     stepsProgress: "Étape {{n}} sur {{total}}",
     allowanceOffTitle: "Laissez Kawase envoyer pour vous",
-    allowanceOffBody: "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans vous demander. Sans lui tout fonctionne, et chaque envoi demande votre Face ID.",
-    allowanceOffBodyWeb: "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans demander. Sans lui, tout fonctionne aussi, et chaque envoi demande un code reçu par email.",
-    allowanceOffBodyAndroid: "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans vous demander. Sans lui tout fonctionne, et chaque envoi demande votre empreinte ou le verrouillage de l'écran.",
+    allowanceOffBody:
+      "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans vous demander. Sans lui tout fonctionne, et chaque envoi demande votre Face ID.",
+    allowanceOffBodyWeb:
+      "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans demander. Sans lui, tout fonctionne aussi, et chaque envoi demande un code reçu par email.",
+    allowanceOffBodyAndroid:
+      "Facultatif. Avec un plafond quotidien, les envois en dessous partent sans vous demander. Sans lui tout fonctionne, et chaque envoi demande votre empreinte ou le verrouillage de l'écran.",
     allowanceOffAction: "Activer",
     allowanceCue: "Plafond actif · jusqu'à {{amount}} par jour",
     soon: "Bientôt",
@@ -194,6 +210,9 @@ export const fr: Catalog = {
     muted: "Micro coupé",
   },
   chat: {
+    search: "Rechercher des conversations",
+    noMatches: "Aucune conversation correspondante.",
+    stopped: "Réponse arrêtée. Les paiements envoyés restent suivis.",
     title: "Discussion",
     emptyTitle: "Demandez-moi ce que vous voulez",
     emptyBody: "« Envoie 10 USDC à Alex », « Que sais-tu faire ? » — l’agent arrive dans la prochaine version.",
@@ -330,10 +349,12 @@ export const fr: Catalog = {
     quietTitle: "Heures calmes",
     quietOff: "Désactivées",
     quietRange: "De {{start}} à {{end}}",
-    quietBody: "Pendant les heures calmes, les push attendent la fin ; votre boîte de réception et vos emails reçoivent tout.",
+    quietBody:
+      "Pendant les heures calmes, les push attendent la fin ; votre boîte de réception et vos emails reçoivent tout.",
     saveFailed: "Impossible d'enregistrer. Réessayez.",
     primerTitle: "Sachez quand l'argent arrive",
-    primerBody: "Kawase vous prévient quand vous êtes payé, quand un envoi arrive et quand une automatisation s'exécute pour vous.",
+    primerBody:
+      "Kawase vous prévient quand vous êtes payé, quand un envoi arrive et quand une automatisation s'exécute pour vous.",
     primerAllow: "Activer les notifications",
     primerLater: "Plus tard",
   },
@@ -374,17 +395,24 @@ export const fr: Catalog = {
     haveAccount: "J'ai déjà un compte",
     panelOf: "Étape {{n}} sur {{total}}",
     requestTitle: "Dites à Kawase ce qu'il vous faut.",
-    requestBody: "Écrivez-le comme vous le diriez. Kawase en fait un paiement exact, que vous vérifiez avant que rien ne bouge.",
+    requestBody:
+      "Écrivez-le comme vous le diriez. Kawase en fait un paiement exact, que vous vérifiez avant que rien ne bouge.",
     boundsTitle: "Vous fixez ce qu'il peut dépenser.",
-    boundsBody: "Un Face ID fixe un plafond quotidien. En dessous, les envois partent sans vous demander ; au-delà, il faut votre Face ID. Désactivable à tout moment.",
-    boundsBodyWeb: "Une confirmation fixe un plafond quotidien. En dessous, les envois partent sans demander ; au-delà, un code reçu par email est requis. Désactivable à tout moment.",
-    boundsBodyAndroid: "Une seule approbation fixe un plafond quotidien. En dessous, les envois partent sans vous demander ; au-delà, il faut votre empreinte ou le verrouillage de l'écran. Désactivable à tout moment.",
+    boundsBody:
+      "Un Face ID fixe un plafond quotidien. En dessous, les envois partent sans vous demander ; au-delà, il faut votre Face ID. Désactivable à tout moment.",
+    boundsBodyWeb:
+      "Une confirmation fixe un plafond quotidien. En dessous, les envois partent sans demander ; au-delà, un code reçu par email est requis. Désactivable à tout moment.",
+    boundsBodyAndroid:
+      "Une seule approbation fixe un plafond quotidien. En dessous, les envois partent sans vous demander ; au-delà, il faut votre empreinte ou le verrouillage de l'écran. Désactivable à tout moment.",
     practiceTitle: "Entraînez-vous avec de l'argent test.",
-    practiceBody: "Arc Testnet fonctionne comme le vrai, avec des USDC de test gratuits de Circle. L'argent réel est à un geste, et Kawase indique toujours où vous êtes.",
+    practiceBody:
+      "Arc Testnet fonctionne comme le vrai, avec des USDC de test gratuits de Circle. L'argent réel est à un geste, et Kawase indique toujours où vous êtes.",
     languageTitle: "Dans votre langue.",
-    languageBody: "Dix langues, lues et écrites. Changez-la avec le bouton ci-dessus — tout suit, y compris l'écriture de droite à gauche.",
+    languageBody:
+      "Dix langues, lues et écrites. Changez-la avec le bouton ci-dessus — tout suit, y compris l'écriture de droite à gauche.",
     firstTitle: "Essayez en une minute.",
-    firstBody: "Recevez des USDC de test gratuits, puis envoyez-en à un ami. Pas d'argent réel tant que vous ne l'avez pas choisi.",
+    firstBody:
+      "Recevez des USDC de test gratuits, puis envoyez-en à un ami. Pas d'argent réel tant que vous ne l'avez pas choisi.",
     example: "Exemple",
     exampleRequest: "Envoie 10 USDC à @amina",
     fieldAmount: "Montant",
@@ -415,13 +443,16 @@ export const fr: Catalog = {
     failed: "Cela n'a pas abouti. Réessayez.",
     primerTitle: "Un Face ID pour votre plafond quotidien",
     primerTitleAndroid: "Une seule approbation pour votre plafond quotidien",
-    primerBody: "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, il faudra de nouveau votre Face ID, et vous pouvez le désactiver à tout moment.",
-    primerBodyAndroid: "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, il faudra de nouveau votre empreinte ou le verrouillage de l'écran, et vous pouvez le désactiver à tout moment.",
+    primerBody:
+      "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, il faudra de nouveau votre Face ID, et vous pouvez le désactiver à tout moment.",
+    primerBodyAndroid:
+      "Kawase peut envoyer jusqu'à {{amount}} par jour pour vous sans demander. Au-delà, il faudra de nouveau votre empreinte ou le verrouillage de l'écran, et vous pouvez le désactiver à tout moment.",
     acceptFaceId: "Accepter avec Face ID",
     acceptTouchId: "Accepter avec Touch ID",
     acceptFingerprint: "Accepter avec votre empreinte",
     scopeTitle: "Ce que vous autorisez",
-    scopeBody: "Lisez-le une fois. C'est exactement ce que vous approuvez, tiré de l'autorisation elle-même, et vous pouvez la désactiver à tout moment.",
+    scopeBody:
+      "Lisez-le une fois. C'est exactement ce que vous approuvez, tiré de l'autorisation elle-même, et vous pouvez la désactiver à tout moment.",
     acceptFace: "Accepter avec le déverrouillage facial",
     acceptPasscode: "Accepter avec votre code",
     acceptEmailCode: "Accepter avec un code par email",
@@ -437,17 +468,22 @@ export const fr: Catalog = {
   terms: {
     title: "Conditions d'utilisation",
     draft: "Brouillon",
-    draftNote: "Un court brouillon pour l'aperçu de Kawase. Des conditions complètes et une politique de confidentialité le remplaceront avant un lancement public.",
+    draftNote:
+      "Un court brouillon pour l'aperçu de Kawase. Des conditions complètes et une politique de confidentialité le remplaceront avant un lancement public.",
     whatTitle: "Ce qu'est Kawase",
-    whatBody: "Un assistant pour votre propre portefeuille. Il vous aide à envoyer, recevoir et suivre vos USDC et EURC sur Arc.",
+    whatBody:
+      "Un assistant pour votre propre portefeuille. Il vous aide à envoyer, recevoir et suivre vos USDC et EURC sur Arc.",
     controlTitle: "Ce que Kawase peut faire",
-    controlBody: "Kawase ne déplace de l'argent que lorsque vous le demandez. Dans le plafond quotidien que vous avez fixé, il envoie sans redemander ; au-delà, il attend que vous confirmiez que c'est bien vous. Vous pouvez modifier ou désactiver le plafond à tout moment dans Portefeuille et limites.",
+    controlBody:
+      "Kawase ne déplace de l'argent que lorsque vous le demandez. Dans le plafond quotidien que vous avez fixé, il envoie sans redemander ; au-delà, il attend que vous confirmiez que c'est bien vous. Vous pouvez modifier ou désactiver le plafond à tout moment dans Portefeuille et limites.",
     riskTitle: "Avant d'envoyer",
-    riskBody: "Les paiements sur une blockchain sont irréversibles : vérifiez qui vous payez. Kawase prépare et explique ; ce n'est pas un conseil financier.",
+    riskBody:
+      "Les paiements sur une blockchain sont irréversibles : vérifiez qui vous payez. Kawase prépare et explique ; ce n'est pas un conseil financier.",
     testTitle: "Argent de test",
     testBody: "Sur Arc de test, l'argent sert à essayer Kawase et n'a aucune valeur.",
     dataTitle: "Vos informations",
-    dataBody: "Kawase conserve votre e-mail, votre identifiant, vos contacts et vos conversations pour faire fonctionner l'app. Ce que vous écrivez ou dites à l'agent est envoyé à un modèle d'IA pour vous répondre.",
+    dataBody:
+      "Kawase conserve votre e-mail, votre identifiant, vos contacts et vos conversations pour faire fonctionner l'app. Ce que vous écrivez ou dites à l'agent est envoyé à un modèle d'IA pour vous répondre.",
     version: "Version {{version}}",
   },
   authority: {
@@ -460,9 +496,11 @@ export const fr: Catalog = {
     neverMore: "Envoyer plus de {{amount}} en une journée",
     neverOtherTokens: "Toucher un autre jeton ou un autre contrat",
     neverLimits: "Modifier vos limites ou cette autorisation",
-    worstCase: "Si tout tournait mal, {{amount}} au plus pourraient partir en une journée, et vous pouvez tout couper à tout moment.",
+    worstCase:
+      "Si tout tournait mal, {{amount}} au plus pourraient partir en une journée, et vous pouvez tout couper à tout moment.",
     meta: "{{network}} · jusqu'au {{date}}",
-    unknownTerms: "Cette autorisation contient des conditions que Kawase ne sait pas lire. Ne vous fiez pas à ce résumé.",
+    unknownTerms:
+      "Cette autorisation contient des conditions que Kawase ne sait pas lire. Ne vous fiez pas à ce résumé.",
   },
   fund: {
     title: "Ajouter de l'argent",
@@ -494,7 +532,8 @@ export const fr: Catalog = {
     notSetUpBody: "Configurez d'abord votre portefeuille sur ce réseau. Cela prend quelques secondes.",
     offBody: "Le plafond quotidien est désactivé : chaque envoi demande votre Face ID.",
     offBodyWeb: "Le plafond quotidien est désactivé : chaque envoi demande un code reçu par email.",
-    offBodyAndroid: "Le plafond quotidien est désactivé : chaque envoi demande votre empreinte ou le verrouillage de l'écran.",
+    offBodyAndroid:
+      "Le plafond quotidien est désactivé : chaque envoi demande votre empreinte ou le verrouillage de l'écran.",
     turnOn: "Activer le plafond quotidien",
     holdToRevoke: "Maintenez pour désactiver le plafond",
     revoking: "Désactivation…",
@@ -506,7 +545,8 @@ export const fr: Catalog = {
     revokeNotSigned: "La signature n'a pas abouti. Votre plafond est toujours actif.",
     revokeFailed: "Cela n'a pas abouti. Votre plafond est toujours actif.",
     revokeReverted: "Le réseau l'a refusé. Votre plafond est toujours actif.",
-    revokeUnconfirmed: "Pas encore confirmé. Cela peut encore aboutir sur le réseau — vérifiez de nouveau avant de réessayer.",
+    revokeUnconfirmed:
+      "Pas encore confirmé. Cela peut encore aboutir sur le réseau — vérifiez de nouveau avant de réessayer.",
     checkAgain: "Vérifier à nouveau",
   },
   send: {
@@ -543,7 +583,8 @@ export const fr: Catalog = {
     allowanceInside: "Dans votre plafond quotidien : envoyé sans rien demander",
     allowanceAbove: "Au-delà de ce qui reste de votre plafond : votre Face ID est demandé",
     allowanceAboveWeb: "Au-delà de ce qui reste de votre plafond — un code reçu par email est requis",
-    allowanceAboveAndroid: "Au-delà de ce qui reste de votre plafond : votre empreinte ou le verrouillage de l'écran est demandé",
+    allowanceAboveAndroid:
+      "Au-delà de ce qui reste de votre plafond : votre empreinte ou le verrouillage de l'écran est demandé",
     allowanceOff: "Votre plafond est désactivé : votre Face ID est demandé",
     allowanceOffWeb: "Votre plafond est désactivé — un code reçu par email est requis",
     allowanceOffAndroid: "Votre plafond est désactivé : votre empreinte ou le verrouillage de l'écran est demandé",
@@ -552,7 +593,8 @@ export const fr: Catalog = {
     allowanceStepUpAndroid: "Votre empreinte ou le verrouillage de l'écran est demandé pour ce destinataire",
     allowanceUsdcOnly: "Votre plafond quotidien ne couvre que l’USDC — Face ID requis",
     allowanceUsdcOnlyWeb: "Votre plafond quotidien ne couvre que l’USDC — un code reçu par email est requis",
-    allowanceUsdcOnlyAndroid: "Votre plafond quotidien ne couvre que l’USDC — empreinte ou verrouillage de l'écran requis",
+    allowanceUsdcOnlyAndroid:
+      "Votre plafond quotidien ne couvre que l’USDC — empreinte ou verrouillage de l'écran requis",
     allowanceLeft: "Il reste {{amount}} sur {{total}} aujourd'hui",
     sendNow: "Envoyer",
     sendFaceId: "Envoyer avec Face ID",
@@ -566,7 +608,8 @@ export const fr: Catalog = {
     revertedTitle: "Échec",
     revertedBody: "Le réseau l'a annulé. Rien n'est arrivé à {{name}}.",
     checkingTitle: "Vérification en cours",
-    checkingBody: "C'est plus long que d'habitude. Kawase vérifie auprès du réseau et ne l'enverra pas une seconde fois.",
+    checkingBody:
+      "C'est plus long que d'habitude. Kawase vérifie auprès du réseau et ne l'enverra pas une seconde fois.",
     canceledTitle: "Annulé",
     expiredTitle: "Expiré",
     expiredBody: "Rien n'a été envoyé. Recommencez quand vous voulez.",
@@ -591,11 +634,15 @@ export const fr: Catalog = {
     trustUnsaved: "Pas dans vos contacts",
     didYouMean: "Vouliez-vous dire @{{handle}} ?",
     replaced: "Remplacé par une demande plus récente",
-    approvalUnavailable: "Activez Face ID, Touch ID ou un code dans les réglages du téléphone pour approuver cet envoi.",
-    approvalUnavailableWeb: "Pour approuver sur le web, il faut l’email de votre compte. Connectez-vous avec votre email pour continuer.",
-    approvalUnavailableAndroid: "Configurez une empreinte ou un verrouillage de l'écran dans les Paramètres du téléphone pour approuver cet envoi.",
+    approvalUnavailable:
+      "Activez Face ID, Touch ID ou un code dans les réglages du téléphone pour approuver cet envoi.",
+    approvalUnavailableWeb:
+      "Pour approuver sur le web, il faut l’email de votre compte. Connectez-vous avec votre email pour continuer.",
+    approvalUnavailableAndroid:
+      "Configurez une empreinte ou un verrouillage de l'écran dans les Paramètres du téléphone pour approuver cet envoi.",
     approvalFailed: "La vérification a échoué. Rien n’a été envoyé. Réessayez.",
-    connectionLost: "Impossible de joindre Kawase pour l’instant. L’envoi est peut-être en cours ; ceci se mettra à jour à votre retour en ligne.",
+    connectionLost:
+      "Impossible de joindre Kawase pour l’instant. L’envoi est peut-être en cours ; ceci se mettra à jour à votre retour en ligne.",
     sendTouchId: "Envoyer avec Touch ID",
     sendFace: "Envoyer avec le déverrouillage facial",
     sendFingerprint: "Envoyer avec votre empreinte",
@@ -611,7 +658,8 @@ export const fr: Catalog = {
     OVER_PER_TX_LIMIT: "C'est au-delà de votre limite de {{limit}} par envoi.",
     OVER_DAILY_LIMIT: "C'est au-delà de votre limite quotidienne de {{limit}} ({{used}} utilisés aujourd'hui).",
     OVER_WEEKLY_LIMIT: "C'est au-delà de votre limite hebdomadaire de {{limit}} ({{used}} utilisés cette semaine).",
-    ADDRESS_CHANGE_HOLD: "L'adresse de {{name}} a changé récemment. Pour votre sécurité, les paiements vers cette personne sont suspendus jusqu'à {{until}}.",
+    ADDRESS_CHANGE_HOLD:
+      "L'adresse de {{name}} a changé récemment. Pour votre sécurité, les paiements vers cette personne sont suspendus jusqu'à {{until}}.",
     RECIPIENT_BLOCKED: "{{name}} est bloqué.",
     SIGN_IN_REQUIRED: "Connectez-vous pour envoyer de l'argent.",
     WALLET_NOT_READY: "Configurez d'abord votre portefeuille.",
@@ -634,10 +682,12 @@ export const fr: Catalog = {
     NO_ALLOWANCE: "Votre plafond quotidien est désactivé",
     LEAVES_LITTLE_FOR_FEES: "Il restera très peu d'USDC pour les frais de réseau",
     SCHEDULE_INVALID: "Ce calendrier ne peut pas être tenu (fuseau horaire ou jour inconnu).",
-    AUTO_SAVE_EXISTS: "L’épargne auto est déjà activée. Désactivez-la d’abord dans Automatisations, puis créez la nouvelle.",
+    AUTO_SAVE_EXISTS:
+      "L’épargne auto est déjà activée. Désactivez-la d’abord dans Automatisations, puis créez la nouvelle.",
     RULE_INCOMPLETE: "Il manque un nombre à cette règle : le seuil, la part ou le montant.",
     BRIDGE_FEE_HIGH: "Les frais du transfert sont trop élevés pour l’instant ; elle réessaiera la prochaine fois.",
-    FIRST_RUN_UNDERFUNDED: "Vous avez {{balance}}, moins qu'une exécution ; elles seront sautées jusqu'à ce que vous ajoutiez de l'argent.",
+    FIRST_RUN_UNDERFUNDED:
+      "Vous avez {{balance}}, moins qu'une exécution ; elles seront sautées jusqu'à ce que vous ajoutiez de l'argent.",
     AUTOMATION_PERIOD_USED: "Déjà envoyé sur cette période",
     fixSignIn: "Se connecter",
     fixAddContact: "Ajouter {{name}}",
@@ -679,9 +729,11 @@ export const fr: Catalog = {
     notSwappedTitle: "Pas échangé",
     notSwappedBody: "Rien n'est sorti de votre portefeuille.",
     revertedTitle: "L'échange n'a pas abouti",
-    revertedBody: "Le prix est passé sous votre minimum, l'opération a donc été annulée. Seuls les frais de réseau ont été dépensés.",
+    revertedBody:
+      "Le prix est passé sous votre minimum, l'opération a donc été annulée. Seuls les frais de réseau ont été dépensés.",
     checkingTitle: "Vérification en cours",
-    checkingBody: "Le réseau n'a pas encore confirmé cet échange. Kawase continue de vérifier et ne relance jamais tout seul.",
+    checkingBody:
+      "Le réseau n'a pas encore confirmé cet échange. Kawase continue de vérifier et ne relance jamais tout seul.",
     canceledTitle: "Échange annulé",
     expiredTitle: "Ce prix a expiré",
     expiredBody: "Les prix durent quelques minutes. Recommencez pour en obtenir un nouveau.",
@@ -706,7 +758,8 @@ export const fr: Catalog = {
     SWAP_SAME_TOKEN: "Choisissez deux devises différentes.",
     SWAP_PAIR_UNSUPPORTED: "Kawase ne peut pas échanger celles-ci ici.",
     QUOTE_UNAVAILABLE: "Pas de prix pour l'instant.",
-    PRICE_IMPACT_HIGH: "Ce prix est {{gap}} % sous le marché, plus que les {{max}} % autorisés par Kawase. Essayez un montant plus petit ou attendez.",
+    PRICE_IMPACT_HIGH:
+      "Ce prix est {{gap}} % sous le marché, plus que les {{max}} % autorisés par Kawase. Essayez un montant plus petit ou attendez.",
     RATE_BELOW_REFERENCE: "Ce prix est {{gap}} % sous le taux du marché.",
     fixTryAgain: "Réessayer",
   },
@@ -748,7 +801,8 @@ export const fr: Catalog = {
     revertedTitle: "Le pont n'a pas abouti",
     revertedBody: "Rien n'a quitté Arc. Seuls les frais de réseau ont été dépensés.",
     checkingTitle: "Toujours en route",
-    checkingBody: "Vos USDC ont quitté Arc et Circle les livre encore. Kawase continue de vérifier ; rien n'est envoyé deux fois.",
+    checkingBody:
+      "Vos USDC ont quitté Arc et Circle les livre encore. Kawase continue de vérifier ; rien n'est envoyé deux fois.",
     canceledTitle: "Pont annulé",
     expiredTitle: "Ce prix a expiré",
     expiredBody: "Recommencez pour en obtenir un nouveau.",
@@ -851,21 +905,26 @@ export const fr: Catalog = {
     INSUFFICIENT_BALANCE: "Pas assez d'USDC. Vous avez {{balance}}.",
     INSUFFICIENT_GAS: "Gardez environ {{needed}} pour les frais de réseau.",
     OVER_POSITION: "C'est plus que ce que vous avez dans ce coffre ({{position}}).",
-    VAULT_LIQUIDITY_SHORT: "Le coffre ne peut verser que {{available}} pour l'instant ; le reste est prêté. Essayez moins ou plus tard.",
+    VAULT_LIQUIDITY_SHORT:
+      "Le coffre ne peut verser que {{available}} pour l'instant ; le reste est prêté. Essayez moins ou plus tard.",
     VAULT_LOW_LIQUIDITY: "Liquidité faible : les retraits peuvent devoir attendre",
     VAULT_RISK_WARNING: "App Kit signale ce coffre : {{warnings}}",
   },
   automation: {
+    guestTitle: "Programmez votre argent",
+    guestBody: "Connectez-vous pour créer et gérer des automatisations. Votre conversation reste ici.",
     title: "Automatisations",
     emptyTitle: "Rien en pilote automatique pour l'instant",
-    emptyBody: "Demandez à Kawase dans le chat : « chaque mardi, envoie 1 $ à Alex ». Elle fonctionne dans une limite signée par votre portefeuille.",
+    emptyBody:
+      "Demandez à Kawase dans le chat : « chaque mardi, envoie 1 $ à Alex ». Elle fonctionne dans une limite signée par votre portefeuille.",
     everyDay: "Chaque jour à {{time}}",
     everyWeek: "Chaque {{weekday}} à {{time}}",
     everyMonth: "Le {{day}} de chaque mois à {{time}}",
     sendTo: "Envoyer {{amount}} à {{name}}",
     nextRuns: "Prochaines exécutions",
     nextRun: "Prochaine : {{when}}",
-    bound: "Au plus {{amount}} {{per}} peuvent partir, et seulement vers cette adresse. Arc l'impose ; elle prend fin le {{date}}.",
+    bound:
+      "Au plus {{amount}} {{per}} peuvent partir, et seulement vers cette adresse. Arc l'impose ; elle prend fin le {{date}}.",
     perDay: "par jour",
     perWeek: "par semaine",
     perMonth: "tous les 28 jours",
@@ -881,7 +940,8 @@ export const fr: Catalog = {
     statusCanceled: "Annulée",
     statusEnded: "Terminée",
     statusDraft: "Pas encore active",
-    onBody: "Kawase l'exécute sans demander. Vous pouvez la mettre en pause, sauter une exécution ou l'annuler à tout moment.",
+    onBody:
+      "Kawase l'exécute sans demander. Vous pouvez la mettre en pause, sauter une exécution ou l'annuler à tout moment.",
     pause: "Mettre en pause",
     resume: "Reprendre",
     skipNext: "Sauter la prochaine",
@@ -897,7 +957,8 @@ export const fr: Catalog = {
     reason_GRANT_INACTIVE: "Son autorisation n'est pas active",
     reason_SEND_FAILED: "L'envoi n'a pas abouti",
     revoked: "Annulée, et son autorisation révoquée sur Arc.",
-    revokeLater: "Annulée. Son autorisation reste sur Arc jusqu'à ce que vous la révoquiez, mais Kawase ne l'utilisera pas.",
+    revokeLater:
+      "Annulée. Son autorisation reste sur Arc jusqu'à ce que vous la révoquiez, mais Kawase ne l'utilisera pas.",
     manage: "Gérer les automatisations",
     signPrompt: "Activer : {{readBack}}",
     revokePrompt: "Révoquer l'autorisation de cette automatisation",
@@ -912,7 +973,8 @@ export const fr: Catalog = {
     saveNowOut: "En ce moment, {{amount}} reviendrait dans votre portefeuille",
     saveNowNone: "Rien à déplacer pour l’instant",
     saveSaved: "En épargne : {{amount}}",
-    saveBound: "Kawase ne peut déplacer des USDC qu’entre votre portefeuille et votre propre épargne dans {{vault}}, jamais vers quelqu’un d’autre. Arc le garantit ; fin le {{date}}.",
+    saveBound:
+      "Kawase ne peut déplacer des USDC qu’entre votre portefeuille et votre propre épargne dans {{vault}}, jamais vers quelqu’un d’autre. Arc le garantit ; fin le {{date}}.",
     saveSignPrompt: "Activer l’épargne auto : garder {{amount}} disponible",
     runSaved: "Épargné {{amount}}",
     runToppedUp: "Réalimenté {{amount}}",
@@ -935,15 +997,18 @@ export const fr: Catalog = {
     ruleNotify: "Me prévenir",
     ruleHowExcess: "ce qui dépasse {{amount}}",
     ruleHowPercent: "{{percent}} de la somme",
-    ruleChecksBalance: "Vérifie toutes les 10 minutes et dès que de l’argent arrive ; se déclenche une fois à chaque franchissement du seuil",
+    ruleChecksBalance:
+      "Vérifie toutes les 10 minutes et dès que de l’argent arrive ; se déclenche une fois à chaque franchissement du seuil",
     ruleChecksMoneyIn: "S’exécute une fois pour chaque paiement correspondant",
     ruleArmed: "En attente du franchissement du seuil",
     ruleDisarmed: "Déclenchée ; attend que votre solde repasse de l’autre côté",
     ruleNowMove: "Maintenant, elle déplacerait {{amount}}",
     ruleNowAlert: "Maintenant, elle vous préviendrait",
     ruleNowNone: "Maintenant, rien ne se passerait",
-    ruleBoundBridge: "Kawase ne peut déplacer des USDC que de votre portefeuille vers votre propre adresse sur {{chain}}, via Circle ; les frais de la route ne peuvent jamais dépasser 16.77 USDC. Arc le garantit ; fin le {{date}}.",
-    ruleBoundSave: "Kawase ne peut déplacer des USDC que vers votre propre épargne dans {{vault}}, jamais vers quelqu’un d’autre. Arc le garantit ; fin le {{date}}.",
+    ruleBoundBridge:
+      "Kawase ne peut déplacer des USDC que de votre portefeuille vers votre propre adresse sur {{chain}}, via Circle ; les frais de la route ne peuvent jamais dépasser 16.77 USDC. Arc le garantit ; fin le {{date}}.",
+    ruleBoundSave:
+      "Kawase ne peut déplacer des USDC que vers votre propre épargne dans {{vault}}, jamais vers quelqu’un d’autre. Arc le garantit ; fin le {{date}}.",
     ruleBoundNotify: "Cette règle vous prévient seulement. Elle ne déplace jamais d’argent.",
     runBridged: "{{amount}} transférés vers {{chain}}",
     runAlerted: "Prévenu · solde {{amount}}",
@@ -980,7 +1045,8 @@ export const fr: Catalog = {
     retired: "Ancienne",
     changeAddress: "Changer d'adresse",
     changeTitle: "Nouvelle adresse pour {{name}}",
-    changeNote: "Pour votre sécurité, une nouvelle adresse attend 24 heures avant de pouvoir recevoir de l'argent, et les paiements à {{name}} sont suspendus jusque-là.",
+    changeNote:
+      "Pour votre sécurité, une nouvelle adresse attend 24 heures avant de pouvoir recevoir de l'argent, et les paiements à {{name}} sont suspendus jusque-là.",
     changeRequested: "Changement d'adresse demandé",
     cancelChange: "Annuler le changement",
     changeCancelled: "Changement annulé",
@@ -1038,7 +1104,8 @@ export const fr: Catalog = {
     pay: "Payer {{amount}}",
     signInToPay: "Connectez-vous pour payer",
     otherWallet: "Payer depuis un autre portefeuille",
-    otherWalletBody: "Envoyez exactement {{amount}} sur {{network}} à cette adresse. La demande passe à « payée » dès réception.",
+    otherWalletBody:
+      "Envoyez exactement {{amount}} sur {{network}} à cette adresse. La demande passe à « payée » dès réception.",
     ownRequest: "C’est votre propre demande. Partagez le lien avec la personne qui doit payer.",
     paidTitle: "Déjà payée",
     paidBody: "Cette demande a été payée. Plus rien à faire.",

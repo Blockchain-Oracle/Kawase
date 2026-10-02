@@ -11,7 +11,7 @@ const CANCELLED = /cancel|did not complete successfully|1001/i;
 const INVALID_CODE = /invalid otp|otp code is invalid|INVALID_OTP_CODE/i;
 const EXPIRED_CODE = /expired/i;
 const RATE_LIMITED = /too many|rate.?limit|maximum number of otps|MAX_OTP_INITIATED_ERROR/i;
-const OFFLINE = /network request failed|fetch failed|could not connect|offline|timed out|internet connection|NETWORK_ERROR|TIMEOUT|SERVICE_UNAVAILABLE/i;
+const OFFLINE = /network request failed|fetch failed|could not connect|offline|timed out|internet connection|NETWORK_ERROR|TIMEOUT/i;
 const HTTP_TOO_MANY = 429;
 /** How deep the `cause` chain is followed. */
 const CHAIN_DEPTH = 5;
@@ -33,8 +33,8 @@ export const isCancelled = (failure: unknown) =>
   failure instanceof Error && CANCELLED.test(`${failure.message} ${String((failure as { code?: unknown }).code ?? "")}`);
 
 export function classifySignInFailure(failure: unknown): SignInFailure {
-  if (isCancelled(failure)) return "cancelled";
   const links = chain(failure);
+  if (links.some((link) => CANCELLED.test(`${String(link.message ?? "")} ${String(link.code ?? "")}`))) return "cancelled";
   const text = links.map((link) => `${String(link.message ?? "")} ${String(link.code ?? "")}`).join(" ");
   const statuses = links.map((link) => Number(link.status ?? link.statusCode));
   if (INVALID_CODE.test(text)) return EXPIRED_CODE.test(text) ? "expiredCode" : "invalidCode";

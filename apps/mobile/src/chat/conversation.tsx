@@ -5,8 +5,8 @@
 // message; scrolled up, they stay where they are and a "New messages" pill takes them down (Codex review R14).
 // The half-written message survives a thread switch or a reconnect. Retry first reads what the api kept, because an
 // answer can move money (inside the allowance the agent just sends): a reply it already has is shown; a question it
-// kept with nothing after it is asked again (nothing ran for it); a question it never got goes back into the box for
-// the person to send again. The app never repeats a question on its own when a tool may have acted.
+// kept with nothing after it is shown without being repeated; a question it never got goes back into the box for
+// the person to send again. A saved question alone cannot establish whether a tool acted.
 import { isToolUIPart, type UIMessage } from "ai";
 import { ArrowDown } from "lucide-react-native";
 import * as React from "react";
@@ -18,8 +18,8 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { KeyboardAvoidingView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { FadeIn, interpolate, useAnimatedStyle } from "react-native-reanimated";
 
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 import { Composer } from "@kawase/ui-native/components/composer";
@@ -62,6 +62,10 @@ type ConversationProps = {
 export function Conversation({ threadId, initialMessages, initialPrompt, onActivity }: ConversationProps) {
   const { t } = useT();
   const clearance = useDockClearance();
+  const keyboard = useReanimatedKeyboardAnimation();
+  const composerSpace = useAnimatedStyle(() => ({
+    paddingBottom: interpolate(keyboard.progress.value, [0, 1], [clearance.dock + EDGE_INSET, EDGE_INSET]),
+  }));
   const overlay = useOverlay();
   const { user } = useSession();
   const colors = useThemeColors();
@@ -78,6 +82,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
   const placed = React.useRef(false);
   const [unseen, setUnseen] = React.useState(false);
   const [retrying, setRetrying] = React.useState(false);
+  const [interrupted, setInterrupted] = React.useState(false);
 
   const toLatest = React.useCallback(() => {
     following.current = true;
@@ -113,6 +118,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
     (text: string, typed = false) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+      setInterrupted(false);
       void chat.sendMessage({ text: trimmed });
       if (typed) {
         setDraft("");
@@ -138,8 +144,8 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
       const kept = asked ? stored.findIndex((message) => message.id === asked.id) : -1;
       chat.setMessages(stored);
       chat.clearError();
-      if (kept >= 0 && kept === stored.length - 1) void chat.regenerate();
-      else if (asked && kept < 0) {
+      // A saved question alone does not prove that its tool never acted. Never regenerate it automatically.
+      if (asked && kept < 0) {
         const text = textOf(asked);
         setDraft(text);
         saveDraft(draftKey(threadId, stored.length > 0), text);
@@ -182,7 +188,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
       !last.parts.some((part) => (part.type === "text" && part.text.length > 0) || isToolUIPart(part)));
 
   return (
-    <View className="flex-1">
+    <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
       {chat.messages.length === 0 ? (
         <View className="flex-1 items-center justify-center gap-4 px-6">
           <KawaseMark size={MARK_SIZE} />
@@ -241,24 +247,33 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
           ) : null}
         </View>
       )}
-      <KeyboardStickyView offset={{ closed: 0, opened: clearance.dock }}>
-        <View className="px-5 pt-2" style={{ paddingBottom: clearance.dock + EDGE_INSET }}>
-          <Composer
-            value={draft}
-            onValueChange={editDraft}
-            onSubmit={() => send(draft, true)}
-            onTalk={() => overlay.open("voice")}
-            disabled={busy}
-            labels={{
-              placeholder: t("chat.placeholder"),
-              attach: t("chat.placeholder"),
-              talk: t("home.dockVoice"),
-              send: t("home.send"),
-            }}
-          />
-        </View>
-      </KeyboardStickyView>
-    </View>
+      <Animated.View className="px-5 pt-2" style={composerSpace}>
+        {interrupted ? (
+          <Text accessibilityRole="alert" className="text-muted-foreground pb-2 text-center text-sm">
+            {t("chat.stopped")}
+          </Text>
+        ) : null}
+        <Composer
+          value={draft}
+          onValueChange={editDraft}
+          onSubmit={() => send(draft, true)}
+          onTalk={() => overlay.open("voice")}
+          disabled={busy}
+          generating={busy}
+          onStop={() => {
+            void chat.stop();
+            setInterrupted(true);
+          }}
+          labels={{
+            placeholder: t("chat.placeholder"),
+            attach: t("chat.placeholder"),
+            talk: t("home.dockVoice"),
+            send: t("home.send"),
+            stop: t("common.stop"),
+          }}
+        />
+      </Animated.View>
+    </KeyboardAvoidingView>
   );
 }
 

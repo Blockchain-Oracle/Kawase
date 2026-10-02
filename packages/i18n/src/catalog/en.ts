@@ -1,6 +1,7 @@
 // The source catalog. Every other language has exactly these keys (a test checks).
 export const en = {
   common: {
+    stop: "Stop",
     appName: "Kawase",
     continue: "Continue",
     cancel: "Cancel",
@@ -29,7 +30,8 @@ export const en = {
     scopeRefreshed: "The allowance was updated. Read it again, then approve.",
     notSigned: "Nothing was signed.",
     biometricUnavailable: "Turn on Face ID, Touch ID, a fingerprint or a passcode in your phone's Settings to approve.",
-    biometricUnavailableWeb: "Approving on the web needs the email on your account. Sign in with your email to continue.",
+    biometricUnavailableWeb:
+      "Approving on the web needs the email on your account. Sign in with your email to continue.",
     biometricUnavailableAndroid: "Set up a fingerprint or a screen lock in your phone's Settings to approve.",
     biometricFailed: "That didn't match. Nothing was signed. Try again.",
   },
@@ -54,6 +56,10 @@ export const en = {
     tryFirst: "Try it first, sign in later",
   },
   signIn: {
+    linkFailed: "Finish connecting your account. Try again without a new code.",
+    accountFailed: "You are signed in. Your account could not load. Try again.",
+    recoveryRequired:
+      "This email belongs to an existing wallet. Use its original sign-in method. Your guest conversation is kept.",
     title: "Sign in",
     subtitle: "One email code. No passwords, no PIN.",
     email: "Email",
@@ -86,7 +92,8 @@ export const en = {
     allowanceTitle: "Daily allowance",
     allowanceBody:
       "Kawase can send up to {{amount}} a day for you without asking. Above that, you approve with Face ID.",
-    allowanceBodyAndroid: "Kawase can send up to {{amount}} a day for you without asking. Above that, you approve with your fingerprint or screen lock.",
+    allowanceBodyAndroid:
+      "Kawase can send up to {{amount}} a day for you without asking. Above that, you approve with your fingerprint or screen lock.",
     allowanceAccept: "Accept",
     allowanceAcceptFaceId: "Accept with Face ID",
     allowanceActive: "On · {{amount}} a day",
@@ -95,8 +102,10 @@ export const en = {
     mainnetConsentTitle: "Real money",
     mainnetConsentBody:
       "Mainnet uses real USDC. Kawase moves it only within the limits you set, and never above your allowance without your Face ID.",
-    mainnetConsentBodyWeb: "Mainnet uses real USDC. Kawase moves it only within the limits you set, and never above your allowance without your confirmation.",
-    mainnetConsentBodyAndroid: "Mainnet uses real USDC. Kawase moves it only within the limits you set, and never above your allowance without your fingerprint or screen lock.",
+    mainnetConsentBodyWeb:
+      "Mainnet uses real USDC. Kawase moves it only within the limits you set, and never above your allowance without your confirmation.",
+    mainnetConsentBodyAndroid:
+      "Mainnet uses real USDC. Kawase moves it only within the limits you set, and never above your allowance without your fingerprint or screen lock.",
     mainnetConsentAccept: "I understand",
     testnetMoney: "Test USDC has no value.",
   },
@@ -170,9 +179,12 @@ export const en = {
     stepSendFirst: "Send your first payment",
     stepsProgress: "Step {{n}} of {{total}}",
     allowanceOffTitle: "Let Kawase send for you",
-    allowanceOffBody: "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for your Face ID.",
-    allowanceOffBodyWeb: "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for a code from your email.",
-    allowanceOffBodyAndroid: "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for your fingerprint or screen lock.",
+    allowanceOffBody:
+      "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for your Face ID.",
+    allowanceOffBodyWeb:
+      "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for a code from your email.",
+    allowanceOffBodyAndroid:
+      "Optional. With a daily allowance, sends inside it go without asking. Without it everything still works, and each send asks for your fingerprint or screen lock.",
     allowanceOffAction: "Turn on",
     allowanceCue: "Allowance on · up to {{amount}} a day",
     soon: "Soon",
@@ -193,6 +205,9 @@ export const en = {
     muted: "Muted",
   },
   chat: {
+    search: "Search conversations",
+    noMatches: "No matching conversations.",
+    stopped: "Reply stopped. Submitted payments are still tracked.",
     title: "Chat",
     emptyTitle: "Ask me anything",
     emptyBody: "“Send 10 USDC to Alex”, “What can you do?” — the agent arrives in the next build.",
@@ -375,15 +390,21 @@ export const en = {
     haveAccount: "I already have an account",
     panelOf: "Step {{n}} of {{total}}",
     requestTitle: "Tell Kawase what you need.",
-    requestBody: "Type it the way you'd say it. Kawase turns it into an exact payment you can check before anything moves.",
+    requestBody:
+      "Type it the way you'd say it. Kawase turns it into an exact payment you can check before anything moves.",
     boundsTitle: "You set what it can spend.",
-    boundsBody: "One Face ID sets a daily allowance. Inside it, sends go without asking; anything more needs your Face ID. Turn it off any time.",
-    boundsBodyWeb: "One confirmation sets a daily allowance. Inside it, sends go without asking; anything more needs a code from your email. Turn it off any time.",
-    boundsBodyAndroid: "One approval sets a daily allowance. Inside it, sends go without asking; anything more needs your fingerprint or screen lock. Turn it off any time.",
+    boundsBody:
+      "One Face ID sets a daily allowance. Inside it, sends go without asking; anything more needs your Face ID. Turn it off any time.",
+    boundsBodyWeb:
+      "One confirmation sets a daily allowance. Inside it, sends go without asking; anything more needs a code from your email. Turn it off any time.",
+    boundsBodyAndroid:
+      "One approval sets a daily allowance. Inside it, sends go without asking; anything more needs your fingerprint or screen lock. Turn it off any time.",
     practiceTitle: "Practice with test money.",
-    practiceBody: "Arc Testnet works like the real thing, with free test USDC from Circle. Real money is one tap away, and Kawase always shows which one you're on.",
+    practiceBody:
+      "Arc Testnet works like the real thing, with free test USDC from Circle. Real money is one tap away, and Kawase always shows which one you're on.",
     languageTitle: "In your language.",
-    languageBody: "Ten languages, read and written. Change it with the button above — everything follows, right-to-left included.",
+    languageBody:
+      "Ten languages, read and written. Change it with the button above — everything follows, right-to-left included.",
     firstTitle: "Try it in a minute.",
     firstBody: "Get free test USDC, then send some to a friend. No real money until you choose it.",
     example: "Example",
@@ -416,13 +437,16 @@ export const en = {
     failed: "That didn't go through. Try again.",
     primerTitle: "One Face ID for your daily allowance",
     primerTitleAndroid: "One approval for your daily allowance",
-    primerBody: "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your Face ID again, and you can turn it off at any time.",
-    primerBodyAndroid: "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your fingerprint or screen lock again, and you can turn it off at any time.",
+    primerBody:
+      "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your Face ID again, and you can turn it off at any time.",
+    primerBodyAndroid:
+      "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your fingerprint or screen lock again, and you can turn it off at any time.",
     acceptFaceId: "Accept with Face ID",
     acceptTouchId: "Accept with Touch ID",
     acceptFingerprint: "Accept with your fingerprint",
     scopeTitle: "What you're allowing",
-    scopeBody: "Read this once. It is exactly what you approve, taken from the permission itself — and you can turn it off at any time.",
+    scopeBody:
+      "Read this once. It is exactly what you approve, taken from the permission itself — and you can turn it off at any time.",
     acceptFace: "Accept with face unlock",
     acceptPasscode: "Accept with your passcode",
     acceptEmailCode: "Accept with an email code",
@@ -438,17 +462,21 @@ export const en = {
   terms: {
     title: "Terms of use",
     draft: "Draft",
-    draftNote: "A short draft for Kawase's preview. Full terms and a privacy policy will replace it before a public launch.",
+    draftNote:
+      "A short draft for Kawase's preview. Full terms and a privacy policy will replace it before a public launch.",
     whatTitle: "What Kawase is",
     whatBody: "An assistant for your own wallet. It helps you send, receive and keep track of USDC and EURC on Arc.",
     controlTitle: "What Kawase may do",
-    controlBody: "Kawase moves money only when you ask it to. Inside the daily allowance you set, it sends without asking again; anything more waits for you to confirm it's you. You can change or turn off the allowance in Wallet & limits at any time.",
+    controlBody:
+      "Kawase moves money only when you ask it to. Inside the daily allowance you set, it sends without asking again; anything more waits for you to confirm it's you. You can change or turn off the allowance in Wallet & limits at any time.",
     riskTitle: "Before you send",
-    riskBody: "Payments on a blockchain can't be reversed, so check who you're paying. Kawase drafts and explains; it isn't financial advice.",
+    riskBody:
+      "Payments on a blockchain can't be reversed, so check who you're paying. Kawase drafts and explains; it isn't financial advice.",
     testTitle: "Test money",
     testBody: "On Arc Testnet, money is for trying Kawase out and has no value.",
     dataTitle: "Your information",
-    dataBody: "Kawase keeps your email, handle, contacts and conversations to run the app. What you type or say to the agent is sent to an AI model to answer you.",
+    dataBody:
+      "Kawase keeps your email, handle, contacts and conversations to run the app. What you type or say to the agent is sent to an AI model to answer you.",
     version: "Version {{version}}",
   },
   authority: {
@@ -461,7 +489,8 @@ export const en = {
     neverMore: "Send more than {{amount}} in a day",
     neverOtherTokens: "Touch any other token or contract",
     neverLimits: "Change your limits or this permission",
-    worstCase: "If everything went wrong, at most {{amount}} could leave in one day — and you can switch it off at any time.",
+    worstCase:
+      "If everything went wrong, at most {{amount}} could leave in one day — and you can switch it off at any time.",
     meta: "{{network}} · until {{date}}",
     unknownTerms: "This permission has terms Kawase cannot read. Do not rely on this summary.",
   },
@@ -593,10 +622,12 @@ export const en = {
     didYouMean: "Did you mean @{{handle}}?",
     replaced: "Replaced by a newer request",
     approvalUnavailable: "Turn on Face ID, Touch ID or a passcode in your phone's settings to approve this send.",
-    approvalUnavailableWeb: "Approving on the web needs the email on your account. Sign in with your email to continue.",
+    approvalUnavailableWeb:
+      "Approving on the web needs the email on your account. Sign in with your email to continue.",
     approvalUnavailableAndroid: "Set up a fingerprint or a screen lock in your phone's Settings to approve this send.",
     approvalFailed: "That check didn't match. Nothing was sent. Try again.",
-    connectionLost: "Can't reach Kawase right now. The send may still be going through; this updates when you're back online.",
+    connectionLost:
+      "Can't reach Kawase right now. The send may still be going through; this updates when you're back online.",
     sendTouchId: "Send with Touch ID",
     sendFace: "Send with face unlock",
     sendFingerprint: "Send with your fingerprint",
@@ -612,7 +643,8 @@ export const en = {
     OVER_PER_TX_LIMIT: "That's above your limit of {{limit}} per send.",
     OVER_DAILY_LIMIT: "That's over your daily limit of {{limit}} ({{used}} used today).",
     OVER_WEEKLY_LIMIT: "That's over your weekly limit of {{limit}} ({{used}} used this week).",
-    ADDRESS_CHANGE_HOLD: "{{name}}'s address changed recently. Payments to them are paused until {{until}}, for your safety.",
+    ADDRESS_CHANGE_HOLD:
+      "{{name}}'s address changed recently. Payments to them are paused until {{until}}, for your safety.",
     RECIPIENT_BLOCKED: "{{name}} is blocked.",
     SIGN_IN_REQUIRED: "Sign in to send money.",
     WALLET_NOT_READY: "Set up your wallet first.",
@@ -707,7 +739,8 @@ export const en = {
     SWAP_SAME_TOKEN: "Pick two different currencies.",
     SWAP_PAIR_UNSUPPORTED: "Kawase can't swap these here.",
     QUOTE_UNAVAILABLE: "No price right now.",
-    PRICE_IMPACT_HIGH: "This price is {{gap}}% below the market, more than the {{max}}% Kawase allows. Try a smaller amount or wait.",
+    PRICE_IMPACT_HIGH:
+      "This price is {{gap}}% below the market, more than the {{max}}% Kawase allows. Try a smaller amount or wait.",
     RATE_BELOW_REFERENCE: "This price is {{gap}}% below the market rate.",
     fixTryAgain: "Try again",
   },
@@ -852,11 +885,14 @@ export const en = {
     INSUFFICIENT_BALANCE: "Not enough USDC. You have {{balance}}.",
     INSUFFICIENT_GAS: "Keep about {{needed}} for the network fee.",
     OVER_POSITION: "That's more than you have in this vault ({{position}}).",
-    VAULT_LIQUIDITY_SHORT: "The vault can pay out only {{available}} right now; the rest is lent out. Try less or later.",
+    VAULT_LIQUIDITY_SHORT:
+      "The vault can pay out only {{available}} right now; the rest is lent out. Try less or later.",
     VAULT_LOW_LIQUIDITY: "Low liquidity: withdrawals may have to wait",
     VAULT_RISK_WARNING: "App Kit flags this vault: {{warnings}}",
   },
   automation: {
+    guestTitle: "Put your money on a schedule",
+    guestBody: "Sign in to create and manage automations. Your conversation stays here.",
     title: "Automations",
     emptyTitle: "Nothing on autopilot yet",
     emptyBody: "Ask Kawase in chat: “every Tuesday send $1 to Alex”. It runs within a limit your wallet signs.",
@@ -913,7 +949,8 @@ export const en = {
     saveNowOut: "Right now {{amount}} would come back to your wallet",
     saveNowNone: "Nothing to move right now",
     saveSaved: "In savings: {{amount}}",
-    saveBound: "Kawase can only move USDC between your wallet and your own savings in {{vault}}, never to anyone else. Arc enforces it; it ends {{date}}.",
+    saveBound:
+      "Kawase can only move USDC between your wallet and your own savings in {{vault}}, never to anyone else. Arc enforces it; it ends {{date}}.",
     saveSignPrompt: "Turn on Auto-save: keep {{amount}} ready",
     runSaved: "Saved {{amount}}",
     runToppedUp: "Topped up {{amount}}",
@@ -943,8 +980,10 @@ export const en = {
     ruleNowMove: "Right now it would move {{amount}}",
     ruleNowAlert: "Right now it would tell you",
     ruleNowNone: "Right now nothing would happen",
-    ruleBoundBridge: "Kawase can only move USDC from your wallet to your own address on {{chain}}, through Circle; the route’s fee can never be more than 16.77 USDC. Arc enforces it; it ends {{date}}.",
-    ruleBoundSave: "Kawase can only move USDC into your own savings in {{vault}}, never to anyone else. Arc enforces it; it ends {{date}}.",
+    ruleBoundBridge:
+      "Kawase can only move USDC from your wallet to your own address on {{chain}}, through Circle; the route’s fee can never be more than 16.77 USDC. Arc enforces it; it ends {{date}}.",
+    ruleBoundSave:
+      "Kawase can only move USDC into your own savings in {{vault}}, never to anyone else. Arc enforces it; it ends {{date}}.",
     ruleBoundNotify: "This rule only tells you. It never moves money.",
     runBridged: "Bridged {{amount}} to {{chain}}",
     runAlerted: "Told you · balance {{amount}}",
@@ -981,7 +1020,8 @@ export const en = {
     retired: "Old",
     changeAddress: "Change address",
     changeTitle: "New address for {{name}}",
-    changeNote: "For your safety, a new address waits 24 hours before money can go to it, and payments to {{name}} pause until then.",
+    changeNote:
+      "For your safety, a new address waits 24 hours before money can go to it, and payments to {{name}} pause until then.",
     changeRequested: "Address change requested",
     cancelChange: "Cancel the change",
     changeCancelled: "Change cancelled",
@@ -1039,7 +1079,8 @@ export const en = {
     pay: "Pay {{amount}}",
     signInToPay: "Sign in to pay",
     otherWallet: "Pay from another wallet",
-    otherWalletBody: "Send exactly {{amount}} on {{network}} to this address. The request is marked paid when it arrives.",
+    otherWalletBody:
+      "Send exactly {{amount}} on {{network}} to this address. The request is marked paid when it arrives.",
     ownRequest: "This is your own request. Share the link with whoever should pay.",
     paidTitle: "Already paid",
     paidBody: "This request has been paid. Nothing more to do.",

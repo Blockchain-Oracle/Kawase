@@ -186,7 +186,7 @@ export function SettingsScreen() {
         <Section title={t("settings.help")}>
           <ListGroup>
             <ListRow leading={<RowIcon icon={LifeBuoy} />} title={t("settings.trust")} trailing={coming} disabled />
-            <ListRow title={t("settings.version")} trailing={<Text className="text-muted-foreground font-mono text-sm">{Application.nativeApplicationVersion ?? "web"}</Text>} />
+            <ListRow title={t("settings.version")} trailing={<Text className="text-muted-foreground font-mono text-sm">{Application.nativeApplicationVersion ? `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion ?? "?"})` : "web"}</Text>} />
           </ListGroup>
         </Section>
 

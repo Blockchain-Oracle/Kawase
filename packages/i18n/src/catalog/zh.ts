@@ -2,6 +2,7 @@ import type { Catalog } from "./en";
 
 export const zh: Catalog = {
   common: {
+    stop: "停止",
     appName: "Kawase",
     continue: "继续",
     cancel: "取消",
@@ -55,6 +56,9 @@ export const zh: Catalog = {
     tryFirst: "先试用，稍后登录",
   },
   signIn: {
+    linkFailed: "请完成账户连接。无需新验证码即可重试。",
+    accountFailed: "您已登录。账户加载失败，请重试。",
+    recoveryRequired: "此邮箱已关联现有钱包。请使用原来的登录方式。访客对话已保留。",
     title: "登录",
     subtitle: "一个邮箱验证码。无需密码，无需 PIN。",
     email: "邮箱",
@@ -95,7 +99,8 @@ export const zh: Catalog = {
     mainnetConsentTitle: "真实资金",
     mainnetConsentBody: "主网使用真实的 USDC。Kawase 只在你设定的限额内操作，未经你的面容 ID 绝不超出额度。",
     mainnetConsentBodyWeb: "主网使用真实的 USDC。Kawase 只会在你设定的限额内转账，未经你确认绝不会超出额度。",
-    mainnetConsentBodyAndroid: "主网使用真实的 USDC。Kawase 只在你设定的限额内操作，未经你的指纹或屏幕锁定验证绝不超出额度。",
+    mainnetConsentBodyAndroid:
+      "主网使用真实的 USDC。Kawase 只在你设定的限额内操作，未经你的指纹或屏幕锁定验证绝不超出额度。",
     mainnetConsentAccept: "我明白",
     testnetMoney: "测试网 USDC 没有价值。",
   },
@@ -171,7 +176,8 @@ export const zh: Catalog = {
     allowanceOffTitle: "让 Kawase 替你转账",
     allowanceOffBody: "可选。开启每日额度后，额度内的转账无需每次确认。不开启也一切正常，每笔转账都会请求面容 ID。",
     allowanceOffBodyWeb: "可选。开启日常额度后，额度内的转账无需询问。不开启也能正常使用，每笔转账都会要求邮箱验证码。",
-    allowanceOffBodyAndroid: "可选。开启每日额度后，额度内的转账无需每次确认。不开启也一切正常，每笔转账都会请求指纹或屏幕锁定验证。",
+    allowanceOffBodyAndroid:
+      "可选。开启每日额度后，额度内的转账无需每次确认。不开启也一切正常，每笔转账都会请求指纹或屏幕锁定验证。",
     allowanceOffAction: "开启",
     allowanceCue: "每日额度已开启 · 每天最多 {{amount}}",
     soon: "即将推出",
@@ -192,6 +198,9 @@ export const zh: Catalog = {
     muted: "已静音",
   },
   chat: {
+    search: "搜索对话",
+    noMatches: "没有匹配的对话。",
+    stopped: "回复已停止。已提交的付款仍会跟踪。",
     title: "聊天",
     emptyTitle: "有什么想问的？",
     emptyBody: "“给 Alex 转 10 USDC”“你能做什么？”——助手将在下个版本上线。",
@@ -378,7 +387,8 @@ export const zh: Catalog = {
     boundsBodyWeb: "一次确认即可设置日常额度。额度内的转账无需再问；超出部分需要邮箱验证码。随时可以关闭。",
     boundsBodyAndroid: "一次确认即可设定每日额度。额度内转账无需询问；超出则需要你的指纹或屏幕锁定。随时可以关闭。",
     practiceTitle: "用测试资金练手。",
-    practiceBody: "Arc Testnet 和真实网络一样运作，并有 Circle 提供的免费测试 USDC。一键即可切换到真实资金，Kawase 始终标明你所在的网络。",
+    practiceBody:
+      "Arc Testnet 和真实网络一样运作，并有 Circle 提供的免费测试 USDC。一键即可切换到真实资金，Kawase 始终标明你所在的网络。",
     languageTitle: "用你的语言。",
     languageBody: "支持十种语言的阅读和书写。用上方按钮切换——一切随之改变，包括从右到左的文字。",
     firstTitle: "一分钟上手。",
@@ -414,7 +424,8 @@ export const zh: Catalog = {
     primerTitle: "一次面容 ID，开启每日额度",
     primerTitleAndroid: "一次确认，开启每日额度",
     primerBody: "Kawase 每天最多可替你发送 {{amount}}，无需询问。超出部分需要再次使用面容 ID，你也可以随时关闭。",
-    primerBodyAndroid: "Kawase 每天最多可替你发送 {{amount}}，无需询问。超出部分需要再次验证指纹或屏幕锁定，你也可以随时关闭。",
+    primerBodyAndroid:
+      "Kawase 每天最多可替你发送 {{amount}}，无需询问。超出部分需要再次验证指纹或屏幕锁定，你也可以随时关闭。",
     acceptFaceId: "用面容 ID 接受",
     acceptTouchId: "用触控 ID 接受",
     acceptFingerprint: "用指纹接受",
@@ -439,13 +450,15 @@ export const zh: Catalog = {
     whatTitle: "Kawase 是什么",
     whatBody: "一个服务于你自己钱包的助手，帮你在 Arc 上发送、接收并管理 USDC 和 EURC。",
     controlTitle: "Kawase 可以做什么",
-    controlBody: "只有在你要求时，Kawase 才会转出资金。在你设定的每日额度内，它会直接发送，不再询问；超出部分需要你确认是本人。你可以随时在「钱包与额度」中修改或关闭额度。",
+    controlBody:
+      "只有在你要求时，Kawase 才会转出资金。在你设定的每日额度内，它会直接发送，不再询问；超出部分需要你确认是本人。你可以随时在「钱包与额度」中修改或关闭额度。",
     riskTitle: "发送之前",
     riskBody: "区块链上的付款无法撤回，请确认收款人。Kawase 负责起草和解释，不构成理财建议。",
     testTitle: "测试币",
     testBody: "在 Arc 测试网上，测试币仅供试用 Kawase，没有实际价值。",
     dataTitle: "你的信息",
-    dataBody: "Kawase 保存你的邮箱、用户名、联系人和对话，用于运行应用。你对助手输入或说出的内容会发送给 AI 模型来回答你。",
+    dataBody:
+      "Kawase 保存你的邮箱、用户名、联系人和对话，用于运行应用。你对助手输入或说出的内容会发送给 AI 模型来回答你。",
     version: "版本 {{version}}",
   },
   authority: {
@@ -854,6 +867,8 @@ export const zh: Catalog = {
     VAULT_RISK_WARNING: "App Kit 标记了此金库：{{warnings}}",
   },
   automation: {
+    guestTitle: "为资金安排计划",
+    guestBody: "登录以创建和管理自动化。您的对话将保留。",
     title: "自动化",
     emptyTitle: "还没有自动执行的任务",
     emptyBody: "在聊天里告诉 Kawase：“每周二给 Alex 转 1 美元”。它会在你钱包签署的限额内运行。",
@@ -910,7 +925,8 @@ export const zh: Catalog = {
     saveNowOut: "现在会有 {{amount}} 回到你的钱包",
     saveNowNone: "现在没有需要移动的",
     saveSaved: "储蓄中：{{amount}}",
-    saveBound: "Kawase 只能在你的钱包和你自己在 {{vault}} 中的储蓄之间移动 USDC，绝不会转给任何其他人。由 Arc 强制执行；于 {{date}} 结束。",
+    saveBound:
+      "Kawase 只能在你的钱包和你自己在 {{vault}} 中的储蓄之间移动 USDC，绝不会转给任何其他人。由 Arc 强制执行；于 {{date}} 结束。",
     saveSignPrompt: "开启自动储蓄：保留 {{amount}} 随时可用",
     runSaved: "已存入 {{amount}}",
     runToppedUp: "已补足 {{amount}}",
@@ -940,8 +956,10 @@ export const zh: Catalog = {
     ruleNowMove: "现在会移动 {{amount}}",
     ruleNowAlert: "现在会提醒你",
     ruleNowNone: "现在不会有任何动作",
-    ruleBoundBridge: "Kawase 只能通过 Circle 把 USDC 从你的钱包转到你在 {{chain}} 上的自己地址；路线费用永远不会超过 16.77 USDC。由 Arc 强制执行；于 {{date}} 结束。",
-    ruleBoundSave: "Kawase 只能把 USDC 存入你自己在 {{vault}} 中的储蓄，绝不会转给任何其他人。由 Arc 强制执行；于 {{date}} 结束。",
+    ruleBoundBridge:
+      "Kawase 只能通过 Circle 把 USDC 从你的钱包转到你在 {{chain}} 上的自己地址；路线费用永远不会超过 16.77 USDC。由 Arc 强制执行；于 {{date}} 结束。",
+    ruleBoundSave:
+      "Kawase 只能把 USDC 存入你自己在 {{vault}} 中的储蓄，绝不会转给任何其他人。由 Arc 强制执行；于 {{date}} 结束。",
     ruleBoundNotify: "这条规则只会提醒你，从不移动资金。",
     runBridged: "已跨链 {{amount}} 到 {{chain}}",
     runAlerted: "已提醒 · 余额 {{amount}}",

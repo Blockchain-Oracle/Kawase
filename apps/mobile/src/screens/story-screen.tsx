@@ -12,7 +12,7 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import * as React from "react";
 import { AccessibilityInfo, ActivityIndicator, AppState, useWindowDimensions, View } from "react-native";
-import { useReducedMotion } from "react-native-reanimated";
+import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEFAULT_LIMITS, FAUCET, MOTION, type SupportedLocale } from "@kawase/config";
@@ -71,7 +71,7 @@ export function StoryScreen() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionLive();
   const appActive = useAppActive();
   const screenReader = useScreenReader();
   const [focused, setFocused] = React.useState(true);
@@ -188,12 +188,11 @@ export function StoryScreen() {
             ) : null}
             <Button size="lg" disabled={starting} onPress={() => void start()}>
               {starting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
-              <Text>{t("welcome.start")}</Text>
+              <Text>{t("welcome.tryFirst")}</Text>
             </Button>
             <Button size="lg" variant="secondary" disabled={starting} onPress={signIn.open}>
               <Text>{t("story.haveAccount")}</Text>
             </Button>
-            <Text className="text-muted-foreground text-center text-sm">{t("welcome.tryFirst")}</Text>
           </>
         }
       />
