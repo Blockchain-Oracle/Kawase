@@ -1,14 +1,14 @@
 /**
- * Kawase's public addresses: where a person or a judge reaches each surface (deploy/coolify.md "Planned
+ * Kawase's public addresses (domain getkawase.xyz, bought 2026-10-02; the sslip.io hosts stay as aliases): where a person or a judge reaches each surface (deploy/coolify.md "Planned
  * applications"; Android build from deploy/android.md, 2026-10-02). The docs and the landing read these, so a link
  * changes in one place. `testFlight` stays null until a public TestFlight link exists; surfaces then say
  * "invite only" instead of inventing one.
  */
 export const PUBLIC_LINKS = {
-  webApp: "https://kawase.84.46.247.92.sslip.io",
-  api: "https://kawase-api.84.46.247.92.sslip.io",
-  docs: "https://kawase-docs.84.46.247.92.sslip.io",
-  landing: "https://kawase-landing.84.46.247.92.sslip.io",
+  webApp: "https://app.getkawase.xyz",
+  api: "https://api.getkawase.xyz",
+  docs: "https://docs.getkawase.xyz",
+  landing: "https://getkawase.xyz",
   github: "https://github.com/Blockchain-Oracle/kawase",
   /** EAS preview build e644e19d (universal APK). Do not use fc084aa7 (blank-screen bug). */
   androidApk: "https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed",
