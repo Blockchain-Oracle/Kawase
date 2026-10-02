@@ -4,7 +4,8 @@
 // Kawase knows can be saved as a contact from here (I3: save a contact from a received payment) — the receipt closes
 // and the add-contact sheet opens with the address filled in and "from a payment you received" as its source.
 import * as Clipboard from "expo-clipboard";
-import { Copy, ExternalLink, UserPlus } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Copy, ExternalLink, HelpCircle, UserPlus } from "lucide-react-native";
 import * as React from "react";
 import { Linking, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,6 +44,7 @@ export function ReceiptSheet({
   const { t } = useT();
   const { locale } = useLocale();
   const { status } = useSession();
+  const router = useRouter();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const title = useActivityTitle();
@@ -141,6 +143,18 @@ export function ReceiptSheet({
               >
                 <Icon as={UserPlus} className="size-4" />
                 <Text>{t("send.saveContact")}</Text>
+              </Button>
+            ) : null}
+            {status === "account" ? (
+              <Button
+                variant="secondary"
+                onPress={() => {
+                  onClose();
+                  router.push({ pathname: "/why/[tx]", params: { tx: item.txHash, network: item.network } });
+                }}
+              >
+                <Icon as={HelpCircle} className="size-4" />
+                <Text>{t("why.open")}</Text>
               </Button>
             ) : null}
             <Button variant="secondary" onPress={() => void Linking.openURL(item.explorerUrl)}>

@@ -53,6 +53,10 @@ import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { business } from "./business";
+import { why } from "./why";
+import { report } from "./report";
+import { history } from "./history";
+import { privacy } from "./privacy";
 
 export const fr: Catalog = {
   common,
@@ -108,4 +112,8 @@ export const fr: Catalog = {
   tokenPage,
   ticket,
   business,
+  why,
+  report,
+  history,
+  privacy,
 };

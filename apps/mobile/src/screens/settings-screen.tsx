@@ -333,7 +333,12 @@ export function SettingsScreen() {
               chevron
               {...(account ? { onPress: () => router.push("/account/devices") } : { onPress: signIn.open })}
             />
-            <ListRow leading={<RowIcon icon={Database} />} title={t("settings.privacy")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Database} />}
+              title={t("settings.privacy")}
+              chevron
+              onPress={() => (account ? router.push("/privacy") : signIn.open())}
+            />
           </ListGroup>
         </Section>
 

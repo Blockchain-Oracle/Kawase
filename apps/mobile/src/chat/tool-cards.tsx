@@ -80,6 +80,8 @@ import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
+import { ReportCard } from "@/history/report-card";
+import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
 
@@ -582,6 +584,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_agent_wallet: "market.loadingWallet",
   top_up_agent_wallet: "market.loadingWallet",
   create_invoice: "business.loadingInvoice",
+  get_report: "report.loading",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -678,6 +681,14 @@ export function ToolCard({
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
     case "create_invoice":
       return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
+    case "get_report": {
+      const report = (part.output as { report: ReportView | null }).report;
+      return report ? (
+        <AgentCard eyebrow={`${t("report.title")} · ${report.network === "testnet" ? t("network.arcTestnet") : t("network.arc")}`}>
+          <ReportCard report={report} compact />
+        </AgentCard>
+      ) : null;
+    }
     default:
       return null;
   }
