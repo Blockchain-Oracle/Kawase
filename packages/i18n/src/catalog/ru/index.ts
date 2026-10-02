@@ -52,6 +52,7 @@ import { assets } from "./assets";
 import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
+import { buy } from "./buy";
 
 export const ru: Catalog = {
   common,
@@ -106,4 +107,5 @@ export const ru: Catalog = {
   markets,
   tokenPage,
   ticket,
+  buy,
 };
