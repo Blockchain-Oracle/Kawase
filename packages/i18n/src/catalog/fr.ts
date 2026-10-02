@@ -792,6 +792,8 @@ export const fr: Catalog = {
     reason_timeout: "N'a pas répondu à temps",
     reason_not_on_arc_testnet: "Ne dessert pas Arc Testnet",
     reason_not_on_arc: "Ne dessert pas Arc",
+    reason_amount_too_low: "Montant trop faible",
+    routeExtraCost: "plus {{amount}} de frais",
     howItWorks: "Circle brûle vos USDC sur Arc et émet les mêmes USDC sur {{chain}} : ni réserve, ni jeton enveloppé.",
     review: "Vérifier le pont",
     bridgeFaceId: "Envoyer avec Face ID",
@@ -852,6 +854,7 @@ export const fr: Catalog = {
     circleGuarded: "Surveillé par Circle",
     available: "{{amount}} peuvent être retirés maintenant",
     lowLiquidity: "Liquidité faible : les retraits peuvent attendre",
+    stuckHidden: "{{count}} autres ne peuvent rien verser pour l'instant : elles sont masquées",
     deposit: "Déposer",
     withdraw: "Retirer",
     into: "Dans",
@@ -919,6 +922,7 @@ export const fr: Catalog = {
     VAULT_LIQUIDITY_SHORT:
       "Le coffre ne peut verser que {{available}} pour l'instant ; le reste est prêté. Essayez moins ou plus tard.",
     VAULT_LOW_LIQUIDITY: "Liquidité faible : les retraits peuvent devoir attendre",
+    VAULT_LIQUIDITY_STUCK: "Ce coffre ne peut verser que {{available}} pour l'instant, donc Kawase n'y dépose rien. Choisissez-en un liquide.",
     VAULT_RISK_WARNING: "App Kit signale ce coffre : {{warnings}}",
   },
   automation: {

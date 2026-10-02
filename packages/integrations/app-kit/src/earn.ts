@@ -26,7 +26,29 @@ export type EarnVault = {
   /** Circle's own monitoring of the vault, and any warnings App Kit raises about it. */
   circleGuarded: boolean;
   warnings: string[];
+  /** What a deposit could get back out now: "stuck" vaults are never chosen for a deposit (gaps.md G1). */
+  liquidity: VaultLiquidity;
 };
+
+export type VaultLiquidity = "liquid" | "low" | "stuck";
+
+/** Thresholds from @kawase/config `EARN_LIQUIDITY` (USDC is priced at $1 here: these are USDC vaults). */
+export type LiquidityThresholds = { stuckBelowUsd: number; lowShare: number };
+
+/** Liquid, low or stuck, from what the vault can pay out now against what it holds (and App Kit's own flag). */
+export function vaultLiquidity(vault: { available: string; totalDeposits: string; status: string }, thresholds: LiquidityThresholds): VaultLiquidity {
+  const available = Number(vault.available);
+  const total = Number(vault.totalDeposits);
+  if (!Number.isFinite(available) || available < thresholds.stuckBelowUsd) return "stuck";
+  if (vault.status === "low_liquidity" || (total > 0 && available / total < thresholds.lowShare)) return "low";
+  return "liquid";
+}
+
+const LIQUIDITY_ORDER: Record<VaultLiquidity, number> = { liquid: 0, low: 1, stuck: 2 };
+
+/** Liquid sources first, then low, then stuck; by yield within each (never by yield alone). */
+export const rankVaults = <T extends { liquidity: VaultLiquidity; apy: number }>(vaults: readonly T[]): T[] =>
+  [...vaults].sort((a, b) => LIQUIDITY_ORDER[a.liquidity] - LIQUIDITY_ORDER[b.liquidity] || b.apy - a.apy);
 
 type KitVault = {
   vaultAddress: string;
@@ -46,26 +68,32 @@ type KitVault = {
 
 const earnParams = (input: { apiKey: string }) => (input.apiKey ? { config: { apiKey: input.apiKey } } : {});
 
-/** The USDC vaults App Kit lists on this Arc network, highest yield first. */
-export async function exploreVaults(network: NetworkContext, apiKey: string): Promise<EarnVault[]> {
+/**
+ * The USDC vaults App Kit lists on this Arc network, ranked by what they can pay out now, then by yield. Testnet's
+ * mock vaults report no liquidity at all, so there every vault counts as liquid (it is test money).
+ */
+export async function exploreVaults(network: NetworkContext, apiKey: string, thresholds: LiquidityThresholds): Promise<EarnVault[]> {
   const kit = new AppKit() as unknown as { earn: { exploreVaults: (params: unknown) => Promise<{ vaults: KitVault[] }> } };
   const { vaults } = await withRouteRetry(() => kit.earn.exploreVaults({ chain: network.appKitChain, ...(apiKey ? { apiKey } : {}) }));
-  return vaults
+  const listed = vaults
     .filter((vault) => vault.asset === "USDC")
-    .map((vault) => ({
-      address: vault.vaultAddress as Address,
-      name: vault.name,
-      protocol: vault.protocol,
-      apy: vault.currentApy,
-      apy30d: vault.apyProfile?.d30 ?? null,
-      totalDeposits: vault.totalDeposits ?? "0",
-      available: vault.liquidityProfile?.available ?? vault.liquidity ?? "0",
-      status: vault.status,
-      curator: vault.manager?.name ?? null,
-      circleGuarded: Boolean(vault.circleGuarded),
-      warnings: [...(vault.riskSignals?.warnings ?? []), ...(vault.riskSignals?.earnKitWarnings ?? [])],
-    }))
-    .sort((a, b) => b.apy - a.apy);
+    .map((vault) => {
+      const view = {
+        address: vault.vaultAddress as Address,
+        name: vault.name,
+        protocol: vault.protocol,
+        apy: vault.currentApy,
+        apy30d: vault.apyProfile?.d30 ?? null,
+        totalDeposits: vault.totalDeposits ?? "0",
+        available: vault.liquidityProfile?.available ?? vault.liquidity ?? "0",
+        status: vault.status,
+        curator: vault.manager?.name ?? null,
+        circleGuarded: Boolean(vault.circleGuarded),
+        warnings: [...(vault.riskSignals?.warnings ?? []), ...(vault.riskSignals?.earnKitWarnings ?? [])],
+      };
+      return { ...view, liquidity: network.isRealMoney ? vaultLiquidity(view, thresholds) : ("liquid" as const) };
+    });
+  return rankVaults(listed);
 }
 
 export type EarnInput = {

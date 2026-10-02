@@ -227,7 +227,9 @@ export class EarnService {
     // Infer, don't ask: the named vault; else the best active one to deposit into, or the largest position to take from.
     const named = request.vault ? vaults.find((vault) => same(vault.address, request.vault!)) : undefined;
     const largest = [...positions].sort((a, b) => (b.assets > a.assets ? 1 : b.assets < a.assets ? -1 : 0))[0]?.vault;
-    const vault = named ?? (request.action === "deposit" ? vaults.find((entry) => entry.status === "active") : largest);
+    // Deposits go to the best liquid source (vaults come ranked by what they can pay out now, gaps.md G1), never a stuck one.
+    const depositable = (entry: EarnVault) => entry.status === "active" && entry.liquidity !== "stuck";
+    const vault = named ?? (request.action === "deposit" ? (vaults.find((entry) => depositable(entry) && entry.liquidity === "liquid") ?? vaults.find(depositable)) : largest);
     const position = vault ? positions.find((entry) => same(entry.vault.address, vault.address)) : undefined;
     const available = vault ? usdcUnits(vault.available) : ZERO;
 
@@ -239,7 +241,7 @@ export class EarnService {
       wallet: { registered: Boolean(wallet), setUp, usdc },
       action: request.action,
       vault: vault
-        ? { status: "found", active: vault.status !== "paused" && vault.status !== "deprecated", lowLiquidity: vault.status === "low_liquidity", warnings: vault.warnings, available, position: position?.assets ?? ZERO }
+        ? { status: "found", active: vault.status !== "paused" && vault.status !== "deprecated", lowLiquidity: vault.liquidity !== "liquid", stuck: vault.liquidity === "stuck", warnings: vault.warnings, available, position: position?.assets ?? ZERO }
         : { status: "missing" },
       amount,
       thresholds: { gasFloat: GAS_FLOAT_USDC_BASE_UNITS },

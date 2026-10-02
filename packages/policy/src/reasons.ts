@@ -21,6 +21,8 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** The source can pay out almost nothing right now: Kawase does not deposit into it (gaps.md G1). */
+  VAULT_LIQUIDITY_STUCK: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",

@@ -778,6 +778,8 @@ export const ur: Catalog = {
     reason_timeout: "وقت پر جواب نہیں دیا",
     reason_not_on_arc_testnet: "‏Arc Testnet پر کام نہیں کرتا",
     reason_not_on_arc: "‏Arc پر کام نہیں کرتا",
+    reason_amount_too_low: "زیادہ رقم درکار ہے",
+    routeExtraCost: "ساتھ {{amount}} فیس",
     howItWorks:
       "‏Circle آپ کے USDC کو Arc پر برن کرتا ہے اور {{chain}} پر اتنے ہی USDC منٹ کرتا ہے: نہ پول، نہ ریپڈ ٹوکن۔",
     review: "برج دیکھیں",
@@ -839,6 +841,7 @@ export const ur: Catalog = {
     circleGuarded: "‏Circle کی نگرانی میں",
     available: "ابھی {{amount}} نکالے جا سکتے ہیں",
     lowLiquidity: "کم لیکویڈیٹی: نکاسی میں تاخیر ہو سکتی ہے",
+    stuckHidden: "مزید {{count}} ابھی ادائیگی نہیں کر سکتے، اس لیے چھپائے گئے ہیں",
     deposit: "جمع کریں",
     withdraw: "نکالیں",
     into: "میں",
@@ -905,6 +908,7 @@ export const ur: Catalog = {
     OVER_POSITION: "یہ اس والٹ میں آپ کی رقم ({{position}}) سے زیادہ ہے۔",
     VAULT_LIQUIDITY_SHORT: "والٹ ابھی صرف {{available}} دے سکتا ہے؛ باقی قرض پر ہے۔ کم رقم یا بعد میں آزمائیں۔",
     VAULT_LOW_LIQUIDITY: "کم لیکویڈیٹی: نکاسی میں انتظار کرنا پڑ سکتا ہے",
+    VAULT_LIQUIDITY_STUCK: "یہ والٹ ابھی صرف {{available}} واپس دے سکتا ہے، اس لیے Kawase اس میں رقم نہیں ڈالے گا۔ لیکویڈیٹی والا چنیں۔",
     VAULT_RISK_WARNING: "‏App Kit اس والٹ کو نشان زد کرتا ہے: {{warnings}}",
   },
   automation: {

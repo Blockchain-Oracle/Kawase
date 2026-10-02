@@ -779,6 +779,8 @@ export const ru: Catalog = {
     reason_timeout: "Не ответил вовремя",
     reason_not_on_arc_testnet: "Не работает с Arc Testnet",
     reason_not_on_arc: "Не работает с Arc",
+    reason_amount_too_low: "Нужна сумма больше",
+    routeExtraCost: "плюс комиссия {{amount}}",
     howItWorks: "Circle сжигает ваши USDC в Arc и выпускает такие же USDC в {{chain}}: без пулов и обёрнутых токенов.",
     review: "Проверить перевод",
     bridgeFaceId: "Отправить с Face ID",
@@ -839,6 +841,7 @@ export const ru: Catalog = {
     circleGuarded: "Под наблюдением Circle",
     available: "Сейчас можно вывести {{amount}}",
     lowLiquidity: "Низкая ликвидность: вывод может подождать",
+    stuckHidden: "Ещё {{count}} сейчас не могут выплатить, поэтому скрыты",
     deposit: "Внести",
     withdraw: "Вывести",
     into: "Куда",
@@ -906,6 +909,7 @@ export const ru: Catalog = {
     VAULT_LIQUIDITY_SHORT:
       "Хранилище сейчас может выплатить только {{available}}; остальное выдано в долг. Попробуйте меньше или позже.",
     VAULT_LOW_LIQUIDITY: "Низкая ликвидность: вывод может подождать",
+    VAULT_LIQUIDITY_STUCK: "Этот сейф сейчас может выплатить только {{available}}, поэтому Kawase не будет вносить в него деньги. Выберите ликвидный.",
     VAULT_RISK_WARNING: "App Kit отмечает это хранилище: {{warnings}}",
   },
   automation: {

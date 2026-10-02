@@ -776,6 +776,8 @@ export const hi: Catalog = {
     reason_timeout: "समय पर जवाब नहीं दिया",
     reason_not_on_arc_testnet: "Arc Testnet पर काम नहीं करता",
     reason_not_on_arc: "Arc पर काम नहीं करता",
+    reason_amount_too_low: "बड़ी राशि चाहिए",
+    routeExtraCost: "साथ में {{amount}} शुल्क",
     howItWorks:
       "Circle आपके USDC को Arc पर बर्न करता है और {{chain}} पर उतने ही USDC मिंट करता है: न पूल, न रैप्ड टोकन।",
     review: "ब्रिज देखें",
@@ -837,6 +839,7 @@ export const hi: Catalog = {
     circleGuarded: "Circle की निगरानी में",
     available: "अभी {{amount}} निकाले जा सकते हैं",
     lowLiquidity: "कम तरलता: निकासी में देर हो सकती है",
+    stuckHidden: "{{count}} और अभी भुगतान नहीं कर सकते, इसलिए छिपाए गए हैं",
     deposit: "जमा करें",
     withdraw: "निकालें",
     into: "में",
@@ -903,6 +906,7 @@ export const hi: Catalog = {
     OVER_POSITION: "यह इस वॉल्ट में आपकी रकम ({{position}}) से ज़्यादा है।",
     VAULT_LIQUIDITY_SHORT: "वॉल्ट अभी सिर्फ़ {{available}} दे सकता है; बाकी उधार पर है। कम राशि या बाद में आज़माएँ।",
     VAULT_LOW_LIQUIDITY: "कम तरलता: निकासी में इंतज़ार करना पड़ सकता है",
+    VAULT_LIQUIDITY_STUCK: "यह वॉल्ट अभी केवल {{available}} ही लौटा सकता है, इसलिए Kawase इसमें पैसा नहीं डालेगा। तरलता वाला कोई चुनें।",
     VAULT_RISK_WARNING: "App Kit इस वॉल्ट को चिह्नित करता है: {{warnings}}",
   },
   automation: {

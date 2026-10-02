@@ -773,6 +773,8 @@ export const en = {
     reason_timeout: "Didn't answer in time",
     reason_not_on_arc_testnet: "Doesn't serve Arc Testnet",
     reason_not_on_arc: "Doesn't serve Arc",
+    reason_amount_too_low: "Needs a larger amount",
+    routeExtraCost: "plus {{amount}} fee",
     howItWorks: "Circle burns your USDC on Arc and mints the same USDC on {{chain}}: no pool, no wrapped token.",
     review: "Review bridge",
     bridgeFaceId: "Bridge with Face ID",
@@ -832,6 +834,7 @@ export const en = {
     circleGuarded: "Monitored by Circle",
     available: "{{amount}} can be paid out now",
     lowLiquidity: "Low liquidity: withdrawals may wait",
+    stuckHidden: "{{count}} more can't pay out now, so they're hidden",
     deposit: "Deposit",
     withdraw: "Withdraw",
     into: "Into",
@@ -899,6 +902,7 @@ export const en = {
     VAULT_LIQUIDITY_SHORT:
       "The vault can pay out only {{available}} right now; the rest is lent out. Try less or later.",
     VAULT_LOW_LIQUIDITY: "Low liquidity: withdrawals may have to wait",
+    VAULT_LIQUIDITY_STUCK: "This vault can pay out only {{available}} right now, so Kawase won't put money in. Pick a liquid one.",
     VAULT_RISK_WARNING: "App Kit flags this vault: {{warnings}}",
   },
   automation: {

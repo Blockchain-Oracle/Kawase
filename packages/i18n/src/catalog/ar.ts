@@ -761,6 +761,8 @@ export const ar: Catalog = {
     reason_timeout: "لم يرد في الوقت",
     reason_not_on_arc_testnet: "لا يخدم Arc Testnet",
     reason_not_on_arc: "لا يخدم Arc",
+    reason_amount_too_low: "يحتاج إلى مبلغ أكبر",
+    routeExtraCost: "بالإضافة إلى رسوم {{amount}}",
     howItWorks:
       "تحرق Circle عملات USDC الخاصة بك على Arc وتسك العدد نفسه على {{chain}}: بلا مجمّع سيولة ولا رمز مغلّف.",
     review: "راجع الجسر",
@@ -821,6 +823,7 @@ export const ar: Catalog = {
     circleGuarded: "تراقبها Circle",
     available: "يمكن سحب {{amount}} الآن",
     lowLiquidity: "سيولة منخفضة: قد يتأخر السحب",
+    stuckHidden: "{{count}} أخرى لا تستطيع الدفع الآن، لذلك أخفيناها",
     deposit: "أودِع",
     withdraw: "اسحب",
     into: "إلى",
@@ -887,6 +890,7 @@ export const ar: Catalog = {
     OVER_POSITION: "هذا أكثر مما لديك في هذه الخزنة ({{position}}).",
     VAULT_LIQUIDITY_SHORT: "لا تستطيع الخزنة دفع أكثر من {{available}} الآن؛ الباقي مُقرَض. جرّب أقل أو لاحقًا.",
     VAULT_LOW_LIQUIDITY: "سيولة منخفضة: قد يتأخر السحب",
+    VAULT_LIQUIDITY_STUCK: "هذه الخزنة لا تستطيع دفع سوى {{available}} الآن، لذلك لن يودع Kawase فيها. اختر خزنة ذات سيولة.",
     VAULT_RISK_WARNING: "يشير App Kit إلى هذه الخزنة: {{warnings}}",
   },
   automation: {

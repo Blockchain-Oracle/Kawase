@@ -362,7 +362,15 @@ export type BridgeDraftView = {
   /** Who moves it ("Circle CCTP · App Kit") and the routes considered with why this one. */
   provider: string;
   /** `reason`: quote_only (Kawase does not execute this provider yet), no_quote, timeout, not_on_arc_testnet, not_on_arc. */
-  routes: { provider: string; status: "chosen" | "quoted" | "unavailable"; received: string | null; reason: "quote_only" | "no_quote" | "timeout" | "not_on_arc_testnet" | "not_on_arc" | null }[];
+  routes: {
+    provider: string;
+    status: "chosen" | "quoted" | "unavailable";
+    received: string | null;
+    /** USDC base units paid on top of the amount (deBridge's flat fee); ranking counts it against `received`. */
+    extraCost?: string;
+    etaSeconds?: number | null;
+    reason: "quote_only" | "no_quote" | "timeout" | "not_on_arc_testnet" | "not_on_arc" | "amount_too_low" | null;
+  }[];
   quotedAt: string;
 };
 
@@ -414,6 +422,8 @@ export type EarnVaultView = {
   curator: string | null;
   circleGuarded: boolean;
   warnings: string[];
+  /** Ranked by: "stuck" vaults (almost nothing withdrawable now) are hidden from deposits; "low" carries a warning. */
+  liquidity: "liquid" | "low" | "stuck";
 };
 
 /** What the person holds in one vault: base units of USDC it is worth now. */

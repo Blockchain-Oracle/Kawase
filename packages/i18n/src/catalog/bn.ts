@@ -772,6 +772,8 @@ export const bn: Catalog = {
     reason_timeout: "সময়মতো সাড়া দেয়নি",
     reason_not_on_arc_testnet: "Arc Testnet-এ কাজ করে না",
     reason_not_on_arc: "Arc-এ কাজ করে না",
+    reason_amount_too_low: "আরও বড় পরিমাণ লাগবে",
+    routeExtraCost: "সাথে {{amount}} ফি",
     howItWorks:
       "Circle আপনার USDC Arc-এ বার্ন করে আর {{chain}}-এ একই USDC মিন্ট করে: কোনো পুল নেই, কোনো র‍্যাপড টোকেন নেই।",
     review: "ব্রিজ দেখুন",
@@ -833,6 +835,7 @@ export const bn: Catalog = {
     circleGuarded: "Circle নজর রাখে",
     available: "এখন {{amount}} তোলা যাবে",
     lowLiquidity: "তারল্য কম: তোলায় দেরি হতে পারে",
+    stuckHidden: "আরও {{count}}টি এখন ফেরত দিতে পারে না, তাই লুকানো আছে",
     deposit: "জমা",
     withdraw: "তুলুন",
     into: "কোথায়",
@@ -899,6 +902,7 @@ export const bn: Catalog = {
     OVER_POSITION: "এই ভল্টে আপনার যা আছে ({{position}}) তার চেয়ে বেশি।",
     VAULT_LIQUIDITY_SHORT: "ভল্ট এখন শুধু {{available}} দিতে পারে; বাকিটা ধার দেওয়া। কম বা পরে চেষ্টা করুন।",
     VAULT_LOW_LIQUIDITY: "তারল্য কম: তোলায় অপেক্ষা করতে হতে পারে",
+    VAULT_LIQUIDITY_STUCK: "এই ভল্ট এখন মাত্র {{available}} ফেরত দিতে পারে, তাই Kawase এতে টাকা রাখবে না। তারল্য আছে এমন একটি বেছে নিন।",
     VAULT_RISK_WARNING: "App Kit এই ভল্ট চিহ্নিত করেছে: {{warnings}}",
   },
   automation: {

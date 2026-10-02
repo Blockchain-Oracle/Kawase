@@ -779,6 +779,8 @@ export const es: Catalog = {
     reason_timeout: "No respondió a tiempo",
     reason_not_on_arc_testnet: "No opera en Arc Testnet",
     reason_not_on_arc: "No opera en Arc",
+    reason_amount_too_low: "Necesita un monto mayor",
+    routeExtraCost: "más {{amount}} de comisión",
     howItWorks:
       "Circle quema tus USDC en Arc y emite los mismos USDC en {{chain}}: sin fondos de liquidez ni tokens envueltos.",
     review: "Revisar puente",
@@ -840,6 +842,7 @@ export const es: Catalog = {
     circleGuarded: "Supervisado por Circle",
     available: "Se pueden retirar {{amount}} ahora",
     lowLiquidity: "Liquidez baja: los retiros pueden esperar",
+    stuckHidden: "{{count}} más no pueden pagar ahora, por eso están ocultas",
     deposit: "Depositar",
     withdraw: "Retirar",
     into: "En",
@@ -907,6 +910,7 @@ export const es: Catalog = {
     VAULT_LIQUIDITY_SHORT:
       "El fondo solo puede pagar {{available}} ahora; el resto está prestado. Prueba con menos o más tarde.",
     VAULT_LOW_LIQUIDITY: "Liquidez baja: los retiros pueden tener que esperar",
+    VAULT_LIQUIDITY_STUCK: "Esta bóveda solo puede pagar {{available}} ahora, así que Kawase no depositará en ella. Elige una con liquidez.",
     VAULT_RISK_WARNING: "App Kit marca este fondo: {{warnings}}",
   },
   automation: {
