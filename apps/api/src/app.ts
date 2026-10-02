@@ -198,7 +198,7 @@ export function createApp(deps: AppDeps) {
     assets,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);

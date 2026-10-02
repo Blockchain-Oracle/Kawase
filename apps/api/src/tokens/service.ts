@@ -416,6 +416,31 @@ export class AssetService {
     return [...points, { t: new Date().toISOString(), usd: totalUsd }];
   }
 
+  /**
+   * Whether a token that just arrived is news (R1): the same rules as Hidden decide — the person's own choice, the
+   * copycat rule, spam (unverified with no price) and dust stay quiet; anything else is announced with its symbol
+   * and decimals. Null = keep it silent.
+   */
+  async arrivalNotice(userId: string, network: NetworkId, token: string, amount: bigint): Promise<{ symbol: string; decimals: number } | null> {
+    const clients = this.chains.get(network);
+    if (!clients) return null;
+    const address = token.toLowerCase();
+    const [described, rows] = await Promise.all([
+      this.directory.describe(network, clients.network.chainId, clients.client, [address]),
+      this.db
+        .select({ visibility: walletTokens.visibility })
+        .from(walletTokens)
+        .where(and(eq(walletTokens.userId, userId), eq(walletTokens.chainId, clients.network.chainId), eq(walletTokens.tokenAddress, address))),
+    ]);
+    const view = described.get(address);
+    if (!view) return null;
+    const { prices } = await this.prices(network, [address]).catch(() => ({ prices: new Map<string, { priceUsd: number | null }>() }));
+    const priceUsd = prices.get(address)?.priceUsd ?? null;
+    const valueUsd = priceUsd === null ? null : Number(formatUnits(amount, view.decimals)) * priceUsd;
+    if (hideReason(view, valueUsd, rows[0]?.visibility) !== null) return null;
+    return { symbol: view.symbol, decimals: view.decimals };
+  }
+
   async setVisibility(user: SessionUser, address: string, visibility: "auto" | "shown" | "hidden") {
     if (!isAddress(address)) throw problem(HTTP.badRequest, "validation", "expected a token address");
     const wallet = (await this.wallets.userWallet(user.id))?.address;
