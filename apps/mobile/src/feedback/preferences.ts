@@ -4,7 +4,8 @@ import { orderedWrite } from "@/session/write-queue";
 
 type Preferences = { sounds: boolean; haptics: boolean; narration: boolean };
 const STORAGE_KEY = "kawase.feedback.v1";
-let preferences: Preferences = { sounds: false, haptics: true, narration: false };
+// Sounds start on (decision X18): they follow the silent switch, as iOS apps do, and play only on confirmed outcomes.
+let preferences: Preferences = { sounds: true, haptics: true, narration: false };
 const changed = new Set<keyof Preferences>();
 const listeners = new Set<() => void>();
 let loading: Promise<void> | undefined;

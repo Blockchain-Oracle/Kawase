@@ -297,7 +297,6 @@ export function GalleryScreen({ initialLocale = "en", initialScroll = 0 }: Galle
               setLog(`sent: ${message}`);
               setMessage("");
             }}
-            onAttach={() => setLog("attach pressed")}
             onTalk={() => setLog("talk pressed")}
             labels={t.composer}
           />
