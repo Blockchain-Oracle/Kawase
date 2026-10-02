@@ -60,6 +60,8 @@ import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
+import { move } from "./move";
+import { movePolicy } from "./move-policy";
 
 export const en = {
   common,
@@ -121,6 +123,8 @@ export const en = {
   report,
   history,
   privacy,
+  move,
+  movePolicy,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

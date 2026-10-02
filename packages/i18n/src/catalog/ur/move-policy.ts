@@ -1,0 +1,22 @@
+import type { Catalog } from "../en/index";
+
+export const movePolicy: Catalog["movePolicy"] = {
+  SIGN_IN_REQUIRED: "نیٹ ورکس کے درمیان رقم منتقل کرنے کے لیے سائن ان کریں۔",
+  ON_OTHER_NETWORK: "یہ دوسرے نیٹ ورک پر چلتا ہے۔",
+  NOT_AVAILABLE_YET: "نیٹ ورکس کے درمیان منتقلی ابھی دستیاب نہیں۔",
+  PAUSED_ALL: "آپ نے رقم کی ہر منتقلی روک دی ہے۔ جاری رکھنے کے لیے سیٹنگز میں دوبارہ شروع کریں۔",
+  WALLET_NOT_READY: "پہلے اپنا والیٹ سیٹ اپ کریں۔",
+  WALLET_NOT_SET_UP: "پہلے اس نیٹ ورک پر اپنا والیٹ سیٹ اپ کریں۔",
+  DESTINATION_MISSING: "کون سا نیٹ ورک؟",
+  RECIPIENT_INVALID: "{{query}} درست پتہ نہیں۔",
+  RECIPIENT_UNKNOWN: "{{query}} کون ہے؟ محفوظ رابطہ، @ہینڈل یا پتہ استعمال کریں۔",
+  RECIPIENT_NO_WALLET: "@{{handle}} کا ابھی Kawase والیٹ نہیں۔",
+  RECIPIENT_AMBIGUOUS: "ایک سے زیادہ رابطے ملتے ہیں۔ کون سا؟",
+  LOOKALIKE_ADDRESS: "یہ {{name}} کے پتے جیسا لگتا ہے مگر وہ نہیں۔ جانچ لیں۔",
+  FIRST_TIME_RECIPIENT: "اس پتے پر پہلی ادائیگی۔ بھیجنے سے پہلے جانچ لیں۔",
+  AMOUNT_MISSING: "کتنا؟",
+  AMOUNT_INVALID: "یہ رقم درست نہیں۔",
+  INSUFFICIENT_BALANCE: "وہاں USDC کافی نہیں۔ آپ کے پاس {{balance}} ہیں۔",
+  INSUFFICIENT_GAS: "نیٹ ورک فیس کے لیے Arc پر تقریباً {{needed}} رکھیں۔",
+  QUOTE_UNAVAILABLE: "ابھی کوئی راستہ اسے نہیں لے جا سکتا۔",
+};

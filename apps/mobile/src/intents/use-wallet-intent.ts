@@ -12,6 +12,8 @@ import { toast } from "sonner-native";
 
 import { ApiError, type IntentState, type UnsignedTransaction } from "@kawase/api-client";
 
+import type { TypedDataDefinition } from "viem";
+
 import { useT } from "@/i18n";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
@@ -23,7 +25,11 @@ const MOVING: ReadonlySet<IntentState> = new Set(["approved", "executing", "unkn
 const OPEN: ReadonlySet<IntentState> = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
 
 type Intent = { id: string; state: IntentState; version: number };
-type Approve<T> = { status: "executing" | "changed" | "final"; intent: T } | { status: "sign"; intent: T; approvalId: string; transaction: UnsignedTransaction };
+type Approve<T> =
+  | { status: "executing" | "changed" | "final"; intent: T }
+  | { status: "sign"; intent: T; approvalId: string; transaction: UnsignedTransaction }
+  // A gasless move (Bring to Arc): one EIP-712 signature instead of a transaction; the api hands it on.
+  | { status: "sign_typed"; intent: T; approvalId: string; typedData: Record<string, unknown> };
 
 /** The api calls one kind of wallet intent needs. */
 export type WalletIntentApi<T extends Intent, R> = {
@@ -31,7 +37,7 @@ export type WalletIntentApi<T extends Intent, R> = {
   revise: (id: string, patch: R) => Promise<{ intent: T }>;
   cancel: (id: string) => Promise<{ intent: T }>;
   approve: (id: string, version: number, idempotencyKey?: string) => Promise<Approve<T>>;
-  signature: (id: string, approvalId: string, signedTransaction: string) => Promise<Approve<T>>;
+  signature: (id: string, approvalId: string, signed: string, kind?: "transaction" | "typed") => Promise<Approve<T>>;
 };
 
 export const isIntentMoving = (intent: Intent) => MOVING.has(intent.state);
@@ -148,7 +154,7 @@ export function useWalletIntent<T extends Intent, R>(
     if (!intent) return;
     await act(async () => {
       const answer = await calls.approve(intent.id, intent.version, randomUUID());
-      if (answer.status !== "sign") {
+      if (answer.status !== "sign" && answer.status !== "sign_typed") {
         if (answer.status === "changed") toast(messages.changed);
         show(answer.intent);
         return;
@@ -165,8 +171,9 @@ export function useWalletIntent<T extends Intent, R>(
         show(answer.intent);
         return;
       }
-      const signed = await signer.signTransaction(toSerializable(answer.transaction));
-      const submitted = await calls.signature(intent.id, answer.approvalId, signed);
+      const typed = answer.status === "sign_typed";
+      const signed = typed ? await signer.signTypedData(answer.typedData as unknown as TypedDataDefinition) : await signer.signTransaction(toSerializable(answer.transaction));
+      const submitted = await calls.signature(intent.id, answer.approvalId, signed, typed ? "typed" : "transaction");
       if (submitted.status === "changed") toast(messages.changed);
       show(submitted.intent);
     });

@@ -59,6 +59,8 @@ import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
+import { move } from "./move";
+import { movePolicy } from "./move-policy";
 
 export const pt: Catalog = {
   common,
@@ -120,4 +122,6 @@ export const pt: Catalog = {
   report,
   history,
   privacy,
+  move,
+  movePolicy,
 };
