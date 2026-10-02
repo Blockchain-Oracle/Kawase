@@ -39,6 +39,23 @@ Last updated: 2026-10-02 (mobile quality repair; deployment and acceptance track
 | Docs, landing, judge kit | D25 | — | — | — | Docs site, showcase, judge journeys | planned (14–15) |
 | Production hardening, submission | — | api + web on Coolify | — | Deploys | Mainnet runs per area, security review, performance, submission by 2026-10-10 | planned (16) |
 
+## 2026-10-02 afternoon: flows defined, build lanes running (product definition: `plan/product/`)
+
+| Area | Landed on main (evidence) | Running in a lane |
+|---|---|---|
+| A access | Release sign-in fixed (`aff2220`: getRandomValues polyfill first; verified on the Release simulator through home); client-event beacon `/client-events`; OTP countdown. B2: sign-in methods, devices, export (capture blocked), delete account, minimum version (`a977261`) | — |
+| B/D assets, trading | — | A: registry + discovery + portfolio + token pages + Markets (slice 1 `a84df90`, live mainnet round trip, fake-USDC blocked), picker, Home/dock, any-pair swap |
+| D long/short | — | B1: Kawase Margin on Aave V4 (spike: USDC/cirBTC/WETH collateral, EURC short-only); slide/ruler twins `a4560f1` |
+| C/A money in/out | — | B1: Onramp Kit (top-level widgetUrl), executed bridges; Withdraw hub next |
+| F/N yield, borrow | Earn liquidity filter + Across/deBridge fixes (B1 `15c05b8`, not merged yet) | B1 |
+| G marketplace | x402 Agent wallet (per-user DCW, capped grant, Gateway + EIP-3009), demo seller, real testnet round trip (`a977261`) | — |
+| H/J/N/S safety, automations | — | A3: editable per-token allowance, pause all, risk dial, practice, exit kit, Needs-you, new rule kinds, Activity rows + why |
+| K voice | Sound kit + cue haptics (`197b241`) | C: GPT-Live worker, captions, web voice, narration, Settings → Voice |
+| L/M intelligence | Chat redesign (`59feaf8`), capability grid + tool-step chips (`bc82703`) | A5: memory, rolling summary, search, For-you, Arc knowledge, quarantine, chart/decision cards |
+| U onboarding | Smooth story swipe (`f28f9d5`) | narration wiring after C |
+| Docs, landing, PWA | docs (10 locales, availability matrix, llms.txt), landing (`/demo` 34 hashes, `/live`), PWA; domain getkawase.xyz | deploying (docs.getkawase.xyz, getkawase.xyz) |
+| Delivery | TestFlight 1.0.0 (7) built and submitted (`d1db81a`); Android APK `1def76af` queued | — |
+
 ## 2026-10-02 mobile quality repair — current verification
 
 The approved full scope is in `design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md`. Every remaining row above stays required. Abu’s TestFlight 1.0.0 (4) recording reopens native access (R08) and swipe quality (R11). Build/source/API evidence is `design/review-evidence/2026-10-02/build-and-api.json`; the signed build artifact returned 403, so its embedded configuration is **unverified**. No physical phone is connected to this workspace.
