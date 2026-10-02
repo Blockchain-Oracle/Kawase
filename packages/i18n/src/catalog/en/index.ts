@@ -61,6 +61,7 @@ import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
 import { alerts } from "./alerts";
+import { chatCards } from "./chat-cards";
 
 export const en = {
   common,
@@ -123,6 +124,7 @@ export const en = {
   history,
   privacy,
   alerts,
+  chatCards,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

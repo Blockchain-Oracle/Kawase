@@ -60,6 +60,7 @@ import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
 import { alerts } from "./alerts";
+import { chatCards } from "./chat-cards";
 
 export const bn: Catalog = {
   common,
@@ -122,4 +123,5 @@ export const bn: Catalog = {
   history,
   privacy,
   alerts,
+  chatCards,
 };

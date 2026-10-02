@@ -82,6 +82,7 @@ import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margi
 import { OnrampBuyCard } from "./buy-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
+import { BUSINESS_LOADING_LABELS, BusinessToolCard } from "./business-cards";
 import { ReportCard } from "@/history/report-card";
 import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
@@ -587,6 +588,7 @@ const LOADING_LABELS: Record<string, string> = {
   top_up_agent_wallet: "market.loadingWallet",
   create_invoice: "business.loadingInvoice",
   get_report: "report.loading",
+  ...BUSINESS_LOADING_LABELS,
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -685,6 +687,7 @@ export function ToolCard({
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
     case "create_invoice":
       return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
+    // Cards stored before the tool became weekly_report.
     case "get_report": {
       const report = (part.output as { report: ReportView | null }).report;
       return report ? (
@@ -694,6 +697,6 @@ export function ToolCard({
       ) : null;
     }
     default:
-      return null;
+      return <BusinessToolCard tool={tool} output={part.output} />;
   }
 }

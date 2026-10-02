@@ -4,7 +4,7 @@
 import { View } from "react-native";
 
 import type { ReportView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -14,13 +14,15 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { usePrice } from "@/marketplace/use-agent-wallet";
 
+const STABLE_DECIMALS = 6;
+
 export function ReportCard({ report, compact }: { report: ReportView; compact?: boolean }) {
   const { t } = useT();
   const { locale } = useLocale();
   const price = usePrice();
   const sums = (bucket: Record<string, string>) =>
     Object.entries(bucket)
-      .map(([asset, baseUnits]) => formatAmount(toAmount(asset as AssetId, BigInt(baseUnits)), locale))
+      .map(([asset, baseUnits]) => formatTokenAmount(BigInt(baseUnits), report.decimals?.[asset] ?? STABLE_DECIMALS, asset, locale))
       .join(" · ") || "—";
   const lines = [
     report.counts.swaps > 0 ? t("report.swaps", { count: String(report.counts.swaps) }) : null,

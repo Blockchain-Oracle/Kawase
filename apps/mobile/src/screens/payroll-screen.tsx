@@ -33,7 +33,7 @@ import { useWalletSigner } from "@/wallet/use-wallet-signer";
 const DAYS = PAYROLL_MONTHDAYS;
 const TEXTAREA_LINES = 5;
 
-function PayrollCard({ payroll, onChange }: { payroll: PayrollView; onChange: (next: PayrollView) => void }) {
+export function PayrollCard({ payroll, onChange }: { payroll: PayrollView; onChange: (next: PayrollView) => void }) {
   const { t } = useT();
   const router = useRouter();
   const { locale } = useLocale();

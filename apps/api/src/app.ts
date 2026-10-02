@@ -73,7 +73,8 @@ import { tokenResolver } from "./business/tokens";
 import { PayrollService } from "./business/payroll";
 import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { PrivacyService } from "./history/privacy";
-import { historyRoutes, privacyRoutes } from "./history/routes";
+import { ExportLinks } from "./history/export-link";
+import { exportFileRoutes, historyRoutes, privacyRoutes } from "./history/routes";
 import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
@@ -294,12 +295,15 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  const exportLinks = new ExportLinks(deps.approvalSecret);
+  app.route("/files/export", exportFileRoutes(history, exportLinks));
   app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, account));
   const agentDeps = {
     marketplace,
     invoices,
     history,
+    business: { payouts, account, exportLinks },
     db: deps.db,
     chains: deps.chains,
     wallets,

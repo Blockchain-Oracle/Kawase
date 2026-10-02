@@ -92,6 +92,7 @@ export * from "./account";
 export * from "./rails";
 export * from "./business";
 export * from "./history";
+export * from "./chat-cards";
 
 export class ApiError extends Error {
   readonly status: number;
