@@ -1,0 +1,98 @@
+---
+title: "Arquitectura"
+description: "Cómo está construido Kawase: un solo cerebro de agente para chat y voz, un motor de políticas puro, límites en la cadena, Postgres como único bus y Coolify para el alojamiento."
+sourceHash: 626fba33e352db9a
+---
+
+## La estructura
+
+```text
+ iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
+        │  chat, pantallas                         │ audio
+        ▼                                          ▼
+ ┌──────────────────────────────┐        ┌───────────────────────┐
+ │ apps/api — Hono en Node      │◀──────▶│ apps/voice-agent      │
+ │  turno del agente (AI SDK 7) │  turno │  trabajador de LiveKit Agents │
+ │  política · intenciones ·    │        │  STT → turno → TTS    │
+ │  ejecutores                  │        └───────────────────────┘
+ └──────┬───────────┬───────────┘
+        │           │
+        ▼           ▼
+   Postgres     Arc (Red principal / Red de pruebas) · Circle (App Kit, CCTP, wallets, faucet) · Turnkey
+```
+
+## Un solo cerebro
+
+`agentTurn()` en `packages/agent` sirve tanto para el **chat** como para la **voz**: el trabajador de voz envía lo que ha oído al mismo turno,
+con las mismas herramientas, límites e hilo. El modelo (OpenAI `gpt-5.6-luna` por defecto, elegido mediante un registro de modelos) solo
+**propone**: ninguna herramienta recibe una red, una dirección o una bandera de «aprobar». El código resuelve el destinatario, ejecuta la política, crea
+la transacción y la ejecuta.
+
+## Política pura e intenciones explícitas
+
+- `packages/policy` es una función pura que transforma datos en resultados (errores, rechazos, condiciones previas, aclaraciones y advertencias),
+  además de la **ruta**: la autorización o una firma de wallet. Se ejecuta cuando se prepara una tarjeta, de nuevo al aprobarla con datos
+  actualizados y otra vez al ejecutarla.
+- `packages/intents` define cada acción como un **borrador** versionado y con hash EIP-712 (`SendDraft`, `SwapDraft`, `BridgeDraft`,
+  `EarnDraft`). Una aprobación indica la versión exacta que aprueba; cualquier cambio crea una nueva versión.
+- **Resolver y continuar**: cuando falta algo (un contacto, una moneda o iniciar sesión), la solución continúa la misma intención
+  en lugar de empezar de nuevo.
+
+## Flujos del dinero
+
+- **Envíos con autorización**: se reserva el gasto en el registro de gastos bajo un bloqueo por usuario; después, la wallet del agente de Kawase
+  (una wallet controlada por Circle) canjea tu delegación. El registro de la transacción incluye un log `Transfer`, que se compara con el borrador.
+- **Acciones firmadas con la wallet** (por encima de la autorización, cambios, puentes y generación de rendimiento): la API crea la transacción exacta; para las operaciones de App
+  Kit, se capturan y comprueban las llamadas del kit, que después se agrupan en un único lote propio EIP-7702. El dispositivo la firma
+  con Face ID y la API comprueba los bytes firmados comparándolos con el borrador antes de transmitirla.
+- Los **puentes** se siguen en tres etapas: la quema en Arc, la atestación de Circle y la emisión en la cadena de destino.
+- Las **Automatizaciones** se ejecutan en el ejecutor de la API cada 30 segundos: cada ocurrencia se reclama exactamente una vez, se vuelve a comprobar con
+  datos actualizados y se paga mediante el mismo flujo de envío, generación de rendimiento o puente, usando la autorización propia de la automatización.
+- **Idempotencia en todas partes**: la clave de idempotencia de Circle se guarda antes de llamar a Circle; las transacciones sin procesar guardan su hash
+  antes de transmitirse; los resultados ambiguos se convierten en `unknown_outcome` y solo se vuelven a comprobar, nunca se reenvían.
+
+## Datos
+
+**Postgres 17 con Drizzle** es el único almacén y el único bus de mensajes: un buzón de salida escrito en la misma transacción que cada
+cambio, `pg_notify` para distribuir los eventos mediante eventos enviados por el servidor y una tabla de buzón de entrada como fuente de verdad para
+las notificaciones. El dinero se guarda como unidades base exactas (`numeric(78,0)`, `bigint` en TypeScript); los identificadores son UUIDv7.
+
+## Monorepo
+
+| Parte | Qué es |
+|---|---|
+| `apps/api` | API de Hono: autenticación, flujo de chat del agente, intenciones y aprobaciones, ejecutores y webhooks |
+| `apps/mobile` | Expo 57 / React Native 0.86: la app para iOS, Android y web |
+| `apps/voice-agent` | Trabajador de LiveKit Agents (Node) |
+| `apps/docs` | este sitio (Fumadocs 16, Next 16) |
+| `apps/landing` | la página de presentación y el kit para jueces |
+| `packages/config` | todas las constantes: límites, registro de capacidades, idiomas, voz y tiempos de espera |
+| `packages/policy`, `packages/intents` | el motor de políticas puro y los borradores EIP-712 |
+| `packages/integrations/*` | delegaciones (MetaMask Delegation Framework), Circle App Kit |
+| `packages/networks`, `packages/money` | las dos redes de Arc y las direcciones verificadas; tipos exactos para el dinero |
+| `packages/identity` | logotipos reales con su procedencia |
+
+## API pública
+
+La API está en `https://kawase-api.84.46.247.92.sslip.io`. Endpoints públicos sin autenticación:
+
+| Endpoint | Devuelve |
+|---|---|
+| `GET /health` | `{ ok, networks }` |
+| `GET /capabilities` | el registro de capacidades con anulaciones en tiempo de ejecución, por red |
+| `GET /public/stats` | solo recuentos agregados (envíos completados, cambios, puentes, operaciones de generación de rendimiento, ejecuciones de automatizaciones y cuentas) |
+
+Todo lo demás necesita una sesión (un token bearer de la app o una cookie en la web).
+
+## Alojamiento
+
+Todo se ejecuta en un servidor de **Coolify** detrás de Traefik con Let's Encrypt: la API, la app web, el trabajador de voz, esta documentación
+y la página de presentación, además de Postgres. Cada servicio se construye con un Dockerfile desde la raíz del monorepo; los servicios escuchan en `::`
+(las comprobaciones de estado de Coolify resuelven `localhost` mediante IPv6).
+
+## Pruebas que lo demuestran
+
+Se ejecutan contra la red de pruebas de Arc con transacciones reales (`pnpm --filter @kawase/api test`): envíos (con autorización y firmados con wallet,
+doble toque → un solo envío, firmas manipuladas rechazadas), cambios, puentes (quema → atestación → emisión), depósitos y
+retiros de generación de rendimiento, automatizaciones programadas, Auto-save, reglas y recuperación después de ejecuciones interrumpidas. El paquete de delegación demuestra
+por sí solo los límites en la cadena (`pnpm --filter @kawase/integrations-delegation test:arc-testnet`).

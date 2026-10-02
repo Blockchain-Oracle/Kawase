@@ -1,0 +1,29 @@
+---
+title: "Voz"
+description: "Habla con Kawase en iPhone y Android en tu idioma; responde en voz alta y muestra las mismas tarjetas que el chat. Los pagos por voz siempre esperan que toques la pantalla."
+sourceHash: ea6ecb886fce0c64
+---
+
+<Status ids="voice" />
+
+Toca el orbe en el menú inferior y habla. La página se desenfoca, el orbe sube y empieza a escuchar; muestra las palabras que
+entendió, responde en voz alta y pone en pantalla las mismas **tarjetas** que el chat.
+
+- **Una sola conversación.** Lo que dijiste por voz aparece en tu conversación, y al escribir puedes continuar donde lo dejaste.
+- **Lo que entendió siempre se muestra** antes de confirmar cualquier cosa.
+- **Decir «sí» nunca aprueba un pago.** Un envío por voz se prepara en su tarjeta y espera a que toques la pantalla y uses Face ID
+  (huella digital o bloqueo de pantalla en Android), incluso dentro de tu límite diario.
+- **El orbe muestra la red**: verde lima en la Red principal y azul celeste en la Red de pruebas.
+
+## Idiomas y voces
+
+Kawase reconoce los diez idiomas con ElevenLabs Scribe v2 (en tiempo real). Habla en inglés,
+español, francés, portugués, ruso, chino, hindi y árabe con ElevenLabs Flash v2.5, y usa el modelo de voz de OpenAI para bengalí y urdu, idiomas que
+Flash v2.5 no admite.
+
+## Cómo funciona
+
+El teléfono se conecta a una sala de LiveKit mediante WebRTC. El trabajador de voz de Kawase convierte el habla en texto, ejecuta **el mismo turno del agente que
+en el chat** (las mismas herramientas, los mismos límites y la misma conversación) y dice la respuesta mientras las tarjetas aparecen en tu pantalla.
+
+<ScopeList ids="voice" />

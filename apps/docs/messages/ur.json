@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "webApp": "ویب ایپ کھولیں",
+    "showcase": "نمائش",
+    "docs": "دستاویزات"
+  },
+  "home": {
+    "eyebrow": "Kawase کی دستاویزات",
+    "title": "پیسہ جو آپ کے بولتے ہی حرکت کرے",
+    "body": "Kawase، Arc پر ہر کام کے لیے AI منی ایپ ہے۔ اپنی زبان میں، آواز یا تحریر کے ذریعے کہیں: یہ آپ کے لیے تجویز پیش کرتی ہے، آپ منظوری دیتے ہیں، اور بلاک چین آپ کی مقررہ حدود نافذ کرتا ہے۔",
+    "start": "شروع کریں",
+    "safety": "یہ آپ کو کیسے محفوظ رکھتی ہے",
+    "cards": {
+      "gettingStarted": {
+        "title": "شروع کریں",
+        "body": "چند سیکنڈ میں بطور مہمان ویب ایپ کھولیں، یا اسے iPhone یا Android پر انسٹال کریں۔"
+      },
+      "safety": {
+        "title": "حفاظتی ماڈل",
+        "body": "ایجنٹ آپ سے پوچھے بغیر کیا کر سکتا ہے، اسے آپ کی Face ID کب درکار ہوتی ہے، اور وہ کیا کبھی نہیں کر سکتا۔"
+      },
+      "availability": {
+        "title": "آج کیا کام کرتا ہے",
+        "body": "مین نیٹ اور ٹیسٹ نیٹ کی ہر سہولت، جو ایپ کی اپنی رجسٹری سے تیار کی گئی ہے۔"
+      },
+      "architecture": {
+        "title": "آرکیٹیکچر",
+        "body": "ججز اور بلڈرز کے لیے، چیٹ، آواز، پالیسی انجن اور Arc ایک ساتھ کیسے کام کرتے ہیں۔"
+      }
+    }
+  },
+  "matrix": {
+    "capability": "سہولت",
+    "mainnet": "Arc مین نیٹ",
+    "testnet": "Arc ٹیسٹ نیٹ",
+    "caption": "یہ سائٹ بناتے وقت ایپ اور ایجنٹ کی پڑھی ہوئی سہولتوں کی رجسٹری سے تیار کیا جاتا ہے۔ \"Coming\" کا مطلب ہے کہ یہ ابھی جاری نہیں کی گئی۔"
+  },
+  "state": {
+    "available": "دستیاب",
+    "coming": "آ رہی ہے",
+    "unavailable": "اس نیٹ ورک پر دستیاب نہیں"
+  },
+  "scope": {
+    "supports": "آج کیا چلتا ہے",
+    "notYet": "ابھی نہیں"
+  },
+  "areas": {
+    "tokens": "Arc پر کوئی بھی ٹوکن",
+    "meme_coins": "میم کوائنز",
+    "perps": "لانگ اور شارٹ (perps)",
+    "buy": "Apple Pay یا کارڈ سے خریدیں",
+    "borrow": "قرض لیں",
+    "withdraw": "کہیں بھی رقم نکالیں",
+    "export_wallet": "اپنا والیٹ ایکسپورٹ کریں"
+  },
+  "limits": {
+    "rule": "پہلے سے طے شدہ",
+    "mainnet": "مین نیٹ",
+    "testnet": "ٹیسٹ نیٹ",
+    "daily": "روزانہ کی حد: ایک بار میں بھیجی جاتی ہے، کوئی پرامپٹ نہیں",
+    "perTransaction": "ایک بار میں سب سے بڑی ادائیگی",
+    "weekly": "فی ہفتہ کل",
+    "monthly": "فی ماہ کل",
+    "perRecipientWeekly": "ایک شخص کو فی ہفتہ",
+    "firstTime": "نئے پتے پر پہلی ادائیگی: اوپر Face ID درکار ہے",
+    "caption": "ایپ کی اپنی کنفیگریشن سے لی گئی پہلے سے طے شدہ حدود۔ ٹیسٹ نیٹ کی حدود زیادہ ہیں کیونکہ اصلی پیسہ خطرے میں نہیں ہے۔"
+  },
+  "status": {
+    "label": "حیثیت"
+  },
+  "fumadocs": {
+    "Ask AI(AI chat button)": "AI سے پوچھیں",
+    "Back to Home(404 not found page)": "ہوم پر واپس جائیں",
+    "Choose a language(language switcher)": "زبان منتخب کریں",
+    "Choose a language(language switcher)(aria-label)": "زبان منتخب کریں",
+    "Close Banner(banner)(aria-label)": "بینر بند کریں",
+    "Close Search(search dialog)(aria-label)": "تلاش بند کریں",
+    "Close Sidebar(aria-label)": "سائیڈ بار بند کریں",
+    "Close Sidebar(sidebar)(aria-label)": "سائیڈ بار بند کریں",
+    "Collapse Sidebar(sidebar)(aria-label)": "سائیڈ بار سکیڑیں",
+    "Copied Anchor Link(heading anchor)(aria-label)": "اینکر لنک کاپی ہو گیا",
+    "Copied Link(accordion)(aria-label)": "لنک کاپی ہو گیا",
+    "Copied Markdown(page actions)": "Markdown کاپی ہو گیا",
+    "Copied Text(code block)(aria-label)": "متن کاپی ہو گیا",
+    "Copy Anchor Link(heading anchor)(aria-label)": "اینکر لنک کاپی کریں",
+    "Copy Link(accordion)(aria-label)": "لنک کاپی کریں",
+    "Copy Markdown(page actions)": "Markdown کاپی کریں",
+    "Copy Text(code block)(aria-label)": "متن کاپی کریں",
+    "Dark(theme switcher)(aria-label)": "ڈارک",
+    "Default(type table)": "پہلے سے طے شدہ",
+    "Edit on GitHub(edit page)": "GitHub پر ترمیم کریں",
+    "Hide Sidebar(sidebar)": "سائیڈ بار چھپائیں",
+    "Last updated on(page footer)": "آخری بار اپ ڈیٹ کیا گیا",
+    "Layout Tab(layout tab trigger)": "لے آؤٹ ٹیب",
+    "Light(theme switcher)(aria-label)": "لائٹ",
+    "Next Page(pagination)": "اگلا صفحہ",
+    "No Headings(table of contents)": "کوئی سرخیاں نہیں",
+    "No results found(search dialog)": "کوئی نتیجہ نہیں ملا",
+    "On this page(table of contents)": "اس صفحے پر",
+    "Open Search(search trigger)(aria-label)": "تلاش کھولیں",
+    "Open Sidebar(aria-label)": "سائیڈ بار کھولیں",
+    "Open Sidebar(sidebar)(aria-label)": "سائیڈ بار کھولیں",
+    "Open in ChatGPT(page actions)": "ChatGPT میں کھولیں",
+    "Open in Claude(page actions)": "Claude میں کھولیں",
+    "Open in Cursor(page actions)": "Cursor میں کھولیں",
+    "Open in GitHub(page actions)": "GitHub میں کھولیں",
+    "Open in Scira AI(page actions)": "Scira AI میں کھولیں",
+    "Open(page actions)": "کھولیں",
+    "Page Not Found(404 not found page)": "صفحہ نہیں ملا",
+    "Parameters(type table)": "پیرامیٹرز",
+    "Previous Page(pagination)": "پچھلا صفحہ",
+    "Prop(type table)": "پراپ",
+    "Read {url}, I want to ask questions about it.(page actions)": "{url} پڑھیں، میں اس کے بارے میں سوالات پوچھنا چاہتا ہوں۔",
+    "Returns(type table)": "واپسی کی قدریں",
+    "Search(search dialog)": "تلاش",
+    "Search(search trigger)": "تلاش",
+    "Show Sidebar(sidebar)": "سائیڈ بار دکھائیں",
+    "System(theme switcher)(aria-label)": "سسٹم",
+    "Table of Contents(inline table of contents)": "فہرست مضامین",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "آپ جس صفحے کو تلاش کر رہے ہیں، ممکن ہے وہ ہٹا دیا گیا ہو، اس کا نام تبدیل کر دیا گیا ہو، یا عارضی طور پر دستیاب نہ ہو۔",
+    "Toggle Menu(home layout header)(aria-label)": "مینو ٹوگل کریں",
+    "Toggle Theme(theme switcher)(aria-label)": "تھیم ٹوگل کریں",
+    "Type(type table)": "قسم",
+    "View as Markdown(page actions)": "Markdown کے طور پر دیکھیں"
+  }
+}

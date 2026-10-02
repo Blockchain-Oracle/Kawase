@@ -1,0 +1,46 @@
+---
+title: "Enviar, receber e pedir"
+description: "Pague qualquer pessoa em USDC ou EURC pelo nome, @handle ou endereço; receba com um endereço nas duas redes; peça dinheiro com um link compartilhável."
+sourceHash: 814950d41908cee4
+---
+
+<Status ids="send request payment_links" />
+
+<Marks names="usdc eurc arc" />
+
+## Enviar
+
+Diga ou digite para quem e quanto — “envie 20 dólares para Alex”, “pague 5 euros para @mira” — ou use a tela Enviar. O Kawase:
+
+1. **Encontra o destinatário**: um contato salvo, um `@handle` do Kawase ou um endereço `0x…` que você mesmo digitou. O agente só pode
+   usar um endereço que veio dos seus contatos ou aparece exatamente na sua própria mensagem.
+2. **Escolhe a moeda** que você tem ou pergunta se não estiver claro.
+3. **Confere tudo de uma vez**: seu saldo, seus limites, se este é o primeiro pagamento para esse endereço, se o
+   endereço parece ser de um dos seus contatos (um endereço parecido) e se o endereço de um contato mudou recentemente.
+4. **Mostra o cartão de pagamento** com o valor exato, a moeda, o destinatário e a rede.
+
+Depois, uma de duas coisas acontece:
+
+| Situação | O que você faz |
+|---|---|
+| USDC, dentro do que ainda resta do limite de hoje, para alguém que você já pagou ou mencionou neste pedido | Nada. O pagamento é enviado na hora, e o Kawase avisa você. |
+| Acima do limite, qualquer pagamento em EURC, um primeiro pagamento para um novo endereço acima do limite definido ou um endereço parecido | Confirme com o Face ID (impressão digital ou bloqueio de tela no Android, um código enviado por e-mail na web). |
+
+Um pagamento só é marcado como **pago** quando o comprovante da rede mostra a transferência exata. Se a resposta não estiver
+clara, o cartão mostra “ainda verificando” e o Kawase continua procurando; ele nunca envia duas vezes.
+
+## Receber
+
+Sua carteira tem **um endereço nas duas redes**. Abra Receber para ver o endereço e o código QR. O Kawase percebe os pagamentos
+recebidos por meio do seu monitoramento. Eles aparecem em Atividade e na caixa de entrada, e podem ativar suas
+[Automações](./automations.mdx).
+
+## Pedir dinheiro
+
+Diga “peça 15 dólares ao Sam pelo jantar” ou abra Pedir dinheiro. O Kawase cria um **pedido de pagamento** em USDC ou EURC com um
+link compartilhável. A pessoa que vai pagar pode abri-lo no app web. O pedido é marcado como pago quando chega um pagamento do
+Kawase ou uma transferência comum correspondente.
+
+## O que ainda não foi criado
+
+<ScopeList ids="send request" />

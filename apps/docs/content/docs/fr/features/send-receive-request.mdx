@@ -1,0 +1,45 @@
+---
+title: "Envoyer, recevoir et demander"
+description: "Payez n'importe qui en USDC ou EURC par nom, @handle ou adresse ; recevez de l'argent avec une seule adresse sur les deux réseaux ; demandez de l'argent avec un lien à partager."
+sourceHash: 814950d41908cee4
+---
+
+<Status ids="send request payment_links" />
+
+<Marks names="usdc eurc arc" />
+
+## Envoyer de l'argent
+
+Dites ou écrivez à qui envoyer de l'argent et combien — « envoyer 20 dollars à Alex », « payer @mira 5 euros » — ou utilisez l'écran Envoyer de l'argent. Kawase :
+
+1. **Trouve le destinataire** : un contact enregistré, un `@handle` Kawase ou une adresse `0x…` que vous avez saisie vous-même. L'agent peut uniquement
+   utiliser une adresse provenant de vos contacts ou apparaissant mot pour mot dans votre propre message.
+2. **Choisit la devise** que vous détenez ou vous pose la question si ce n'est pas clair.
+3. **Vérifie tout en même temps** : votre solde, vos limites, s'il s'agit d'un premier paiement vers cette adresse, si
+   l'adresse ressemble à celle de l'un de vos contacts (une adresse similaire) et si l'adresse d'un contact a changé récemment.
+4. **Affiche la carte de paiement** avec le montant exact, la devise, le destinataire et le réseau.
+
+Ensuite, l'une de ces deux situations se présente :
+
+| Situation | Ce que vous faites |
+|---|---|
+| USDC, dans la limite restante de l'allocation du jour, vers une personne que vous avez déjà payée ou que vous avez nommée dans cette demande | Rien. Le paiement est envoyé immédiatement et Kawase vous le confirme. |
+| Au-delà de l'allocation, tout paiement en EURC, un premier paiement vers une nouvelle adresse au-delà du seuil ou une adresse similaire | Confirmez avec Face ID (empreinte digitale ou verrouillage de l'écran sur Android, code reçu par e-mail sur le Web). |
+
+Un paiement est marqué **payé** uniquement lorsque le reçu du réseau confirme le transfert exact. Si la réponse n'est pas claire, la carte
+indique « vérification en cours » et Kawase continue ses vérifications ; l'envoi n'est jamais effectué deux fois.
+
+## Recevoir
+
+Votre portefeuille possède **une seule adresse sur les deux réseaux**. Ouvrez Recevoir pour afficher l'adresse et son code QR. Kawase
+détecte les paiements reçus grâce à son système de surveillance. Ils apparaissent dans Activité et dans la boîte de réception, et peuvent déclencher vos [Automatisations](./automations.mdx).
+
+## Demander de l'argent
+
+Dites « demander 15 dollars à Sam pour le dîner » ou ouvrez Demander de l'argent. Kawase crée une **demande de paiement** en USDC ou EURC avec un
+lien à partager. La personne qui paie peut l'ouvrir dans l'application Web. La demande est marquée comme payée lorsqu'un paiement Kawase ou un
+virement correspondant arrive.
+
+## Ce qui n'est pas encore disponible
+
+<ScopeList ids="send request" />

@@ -1,0 +1,94 @@
+---
+title: "架构"
+description: "Kawase 的构建方式——聊天和语音共用一个智能代理大脑，纯策略引擎，链上限额，以 Postgres 作为唯一消息总线，并使用 Coolify 托管。"
+sourceHash: 626fba33e352db9a
+---
+
+## 整体结构
+
+```text
+ iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
+        │  聊天（SSE）、界面                         │ 音频
+        ▼                                          ▼
+ ┌──────────────────────────────┐        ┌───────────────────────┐
+ │ apps/api — Node 上的 Hono    │◀──────▶│ apps/voice-agent      │
+ │  智能代理回合（AI SDK 7）     │  回合  │  LiveKit Agents 工作进程 │
+ │  策略 · 意图 · 执行器         │        │  STT → 回合 → TTS      │
+ └──────┬───────────┬───────────┘        └───────────────────────┘
+        │           │
+        ▼           ▼
+   Postgres     Arc（主网 / 测试网）· Circle（App Kit、CCTP、钱包、水龙头）· Turnkey
+```
+
+## 一个大脑
+
+`packages/agent` 中的 `agentTurn()` 同时服务于**聊天**和**语音**：语音工作进程会把听到的内容发送到同一个回合中，
+使用相同的工具、限额和线程。模型（默认使用 OpenAI 的 `gpt-5.6-luna`，通过模型注册表选择）只能
+**提出建议**：没有任何工具可以直接指定网络、地址或“批准”标记。代码会解析收款人，执行策略，构建交易并执行。
+
+## 纯策略，明确意图
+
+- `packages/policy` 是一个根据事实生成结果的纯函数（错误、拒绝、前置条件、澄清和警告），
+  以及**路径**：授权额度或钱包签名。卡片起草时会运行一次，批准时基于最新事实再次运行，执行时还会再运行一次。
+- `packages/intents` 将每个操作定义为带版本、经过 EIP-712 哈希的**草稿**（`SendDraft`、`SwapDraft`、`BridgeDraft`、
+  `EarnDraft`）。批准会指明确切的批准版本；任何变更都会生成新版本。
+- **解析并继续**：当缺少某项内容（联系人、货币或登录状态）时，修复后会继续处理同一个意图，而不是从头开始。
+
+## 资金路径
+
+- **授权额度转账**：在每个用户的锁下预留支出账本额度，然后由 Kawase 的智能代理钱包（由 Circle 开发者控制的钱包）
+  兑换你的授权；系统会将收据中的 `Transfer` 日志与草稿进行比对。
+- **钱包签名操作**（超出授权额度、兑换、跨链、赚取收益）：api 会构建确切的交易——对于 App
+  Kit 操作，会捕获并检查 kit 的调用，然后将其封装为一个 EIP-7702 自批处理——设备使用 Face ID 对其签名，
+  api 会在广播前验证签名字节是否与草稿一致。
+- **跨链**分为三步跟踪：Arc 上的销毁、Circle 的证明，以及目标链上的铸造。
+- **自动化**每 30 秒在 api 的执行器中运行一次：每次执行都会被准确领取一次，基于最新事实重新检查，
+  并在自动化自己的授权额度下，通过相同的转账、赚取收益或跨链路径完成支付。
+- **所有环节都支持幂等**：调用 Circle 前会先存储 Circle 幂等键；原始交易会在广播前存储其哈希；
+  结果不明确时会标记为 `unknown_outcome`，只会重新检查，绝不会重新发送。
+
+## 数据
+
+**Postgres 17 和 Drizzle** 是唯一的数据存储，也是唯一的消息总线：每次变更都会在同一个事务中写入 outbox，
+通过 `pg_notify` 将事件分发到服务器发送事件中，并以 inbox 表作为通知的事实来源。资金以精确的基础单位存储
+（`numeric(78,0)`，TypeScript 中为 `bigint`）；ID 使用 UUIDv7。
+
+## Monorepo
+
+| 部分 | 说明 |
+|---|---|
+| `apps/api` | Hono API：身份验证、智能代理聊天流、意图和批准、执行器、webhook |
+| `apps/mobile` | Expo 57 / React Native 0.86：iOS、Android 和 Web 应用 |
+| `apps/voice-agent` | LiveKit Agents 工作进程（Node） |
+| `apps/docs` | 本文档网站（Fumadocs 16、Next 16） |
+| `apps/landing` | 展示页和评审工具包 |
+| `packages/config` | 所有常量：限额、能力注册表、本地化配置、语音、超时设置 |
+| `packages/policy`、`packages/intents` | 纯策略引擎和 EIP-712 草稿 |
+| `packages/integrations/*` | 授权（MetaMask Delegation Framework）、Circle App Kit |
+| `packages/networks`、`packages/money` | 两个 Arc 网络和经过验证的地址；精确的资金类型 |
+| `packages/identity` | 具有来源记录的真实 Logo |
+
+## 公共 API
+
+api 地址为 `https://kawase-api.84.46.247.92.sslip.io`。公开且无需身份验证的端点：
+
+| 端点 | 返回内容 |
+|---|---|
+| `GET /health` | `{ ok, networks }` |
+| `GET /capabilities` | 按网络返回包含运行时覆盖项的能力注册表 |
+| `GET /public/stats` | 仅返回汇总数量（已完成的转账、兑换、跨链、赚取收益操作、自动化运行次数、账户数） |
+
+其他所有接口都需要会话（应用提供的 bearer token，或 Web 端的 cookie）。
+
+## 托管
+
+所有服务都运行在 Traefik 和 Let's Encrypt 保护的 **Coolify** 服务器上：api、Web 应用、语音工作进程、本文档、
+展示页以及 Postgres。每个服务都从 monorepo 根目录通过 Dockerfile 构建；服务监听 `::`
+（Coolify 的健康检查会将 `localhost` 解析为 IPv6）。
+
+## 证明系统可靠性的测试
+
+在 Arc 测试网上使用真实交易运行（`pnpm --filter @kawase/api test`）：转账（授权额度和钱包签名、
+双击 → 一次转账、拒绝被篡改的签名）、兑换、跨链（销毁 → 证明 → 铸造）、赚取收益的存入和提取、
+定时自动化、自动存钱、规则，以及中断运行后的恢复。授权包会独立证明链上限额
+（`pnpm --filter @kawase/integrations-delegation test:arc-testnet`）。

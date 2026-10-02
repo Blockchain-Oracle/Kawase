@@ -1,0 +1,126 @@
+{
+  "nav": {
+    "webApp": "Abrir la aplicación web",
+    "showcase": "Presentación",
+    "docs": "Documentación"
+  },
+  "home": {
+    "eyebrow": "Documentación de Kawase",
+    "title": "Dinero que se mueve cuando hablas",
+    "body": "Kawase es una aplicación de dinero con IA para todo lo que puedes hacer en Arc. Pide lo que necesitas en tu idioma, por voz o texto: la aplicación lo propone, tú lo apruebas y la cadena hace cumplir tus límites.",
+    "start": "Comenzar",
+    "safety": "Cómo te mantiene seguro",
+    "cards": {
+      "gettingStarted": {
+        "title": "Comenzar",
+        "body": "Abre la aplicación web como invitado en segundos o instálala en iPhone o Android."
+      },
+      "safety": {
+        "title": "Modelo de seguridad",
+        "body": "Qué puede hacer el agente sin preguntarte, cuándo necesita tu Face ID y qué nunca puede hacer."
+      },
+      "availability": {
+        "title": "Qué funciona hoy",
+        "body": "Todas las funciones disponibles en la red principal y la red de pruebas, generadas a partir del registro de la propia aplicación."
+      },
+      "architecture": {
+        "title": "Arquitectura",
+        "body": "Cómo encajan el chat, la voz, el motor de políticas y Arc, para jueces y desarrolladores."
+      }
+    }
+  },
+  "matrix": {
+    "capability": "Función",
+    "mainnet": "Red principal de Arc",
+    "testnet": "Red de pruebas de Arc",
+    "caption": "Se genera al crear el sitio, a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que todavía no está disponible."
+  },
+  "state": {
+    "available": "Disponible",
+    "coming": "Próximamente",
+    "unavailable": "No disponible en esta red"
+  },
+  "scope": {
+    "supports": "Lo que funciona hoy",
+    "notYet": "Todavía no"
+  },
+  "areas": {
+    "tokens": "Cualquier token en Arc",
+    "meme_coins": "Memecoins",
+    "perps": "Posiciones largas y cortas (perpetuos)",
+    "buy": "Comprar con Apple Pay o tarjeta",
+    "borrow": "Pedir prestado",
+    "withdraw": "Retirar en cualquier lugar",
+    "export_wallet": "Exportar tu billetera"
+  },
+  "limits": {
+    "rule": "Predeterminado",
+    "mainnet": "Red principal",
+    "testnet": "Red de pruebas",
+    "daily": "Límite diario: se envía de una vez, sin confirmación",
+    "perTransaction": "Pago individual más grande",
+    "weekly": "Total por semana",
+    "monthly": "Total por mes",
+    "perRecipientWeekly": "A una persona por semana",
+    "firstTime": "Primer pago a una dirección nueva: Face ID por encima de este límite",
+    "caption": "Valores predeterminados de la configuración de la propia aplicación. Los límites de la red de pruebas son más altos porque no hay dinero real en riesgo."
+  },
+  "status": {
+    "label": "Estado"
+  },
+  "fumadocs": {
+    "Ask AI(AI chat button)": "Preguntar a la IA",
+    "Back to Home(404 not found page)": "Volver al inicio",
+    "Choose a language(language switcher)": "Elegir un idioma",
+    "Choose a language(language switcher)(aria-label)": "Elegir un idioma",
+    "Close Banner(banner)(aria-label)": "Cerrar banner",
+    "Close Search(search dialog)(aria-label)": "Cerrar búsqueda",
+    "Close Sidebar(aria-label)": "Cerrar barra lateral",
+    "Close Sidebar(sidebar)(aria-label)": "Cerrar barra lateral",
+    "Collapse Sidebar(sidebar)(aria-label)": "Contraer barra lateral",
+    "Copied Anchor Link(heading anchor)(aria-label)": "Enlace de anclaje copiado",
+    "Copied Link(accordion)(aria-label)": "Enlace copiado",
+    "Copied Markdown(page actions)": "Markdown copiado",
+    "Copied Text(code block)(aria-label)": "Texto copiado",
+    "Copy Anchor Link(heading anchor)(aria-label)": "Copiar enlace de anclaje",
+    "Copy Link(accordion)(aria-label)": "Copiar enlace",
+    "Copy Markdown(page actions)": "Copiar Markdown",
+    "Copy Text(code block)(aria-label)": "Copiar texto",
+    "Dark(theme switcher)(aria-label)": "Oscuro",
+    "Default(type table)": "Predeterminado",
+    "Edit on GitHub(edit page)": "Editar en GitHub",
+    "Hide Sidebar(sidebar)": "Ocultar barra lateral",
+    "Last updated on(page footer)": "Última actualización",
+    "Layout Tab(layout tab trigger)": "Pestaña de diseño",
+    "Light(theme switcher)(aria-label)": "Claro",
+    "Next Page(pagination)": "Página siguiente",
+    "No Headings(table of contents)": "Sin encabezados",
+    "No results found(search dialog)": "No se encontraron resultados",
+    "On this page(table of contents)": "En esta página",
+    "Open Search(search trigger)(aria-label)": "Abrir búsqueda",
+    "Open Sidebar(aria-label)": "Abrir barra lateral",
+    "Open Sidebar(sidebar)(aria-label)": "Abrir barra lateral",
+    "Open in ChatGPT(page actions)": "Abrir en ChatGPT",
+    "Open in Claude(page actions)": "Abrir en Claude",
+    "Open in Cursor(page actions)": "Abrir en Cursor",
+    "Open in GitHub(page actions)": "Abrir en GitHub",
+    "Open in Scira AI(page actions)": "Abrir en Scira AI",
+    "Open(page actions)": "Abrir",
+    "Page Not Found(404 not found page)": "Página no encontrada",
+    "Parameters(type table)": "Parámetros",
+    "Previous Page(pagination)": "Página anterior",
+    "Prop(type table)": "Propiedad",
+    "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre esto.",
+    "Returns(type table)": "Valores devueltos",
+    "Search(search dialog)": "Buscar",
+    "Search(search trigger)": "Buscar",
+    "Show Sidebar(sidebar)": "Mostrar barra lateral",
+    "System(theme switcher)(aria-label)": "Sistema",
+    "Table of Contents(inline table of contents)": "Índice",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Es posible que la página que buscas se haya eliminado, que haya cambiado de nombre o que no esté disponible temporalmente.",
+    "Toggle Menu(home layout header)(aria-label)": "Alternar menú",
+    "Toggle Theme(theme switcher)(aria-label)": "Cambiar tema",
+    "Type(type table)": "Tipo",
+    "View as Markdown(page actions)": "Ver como Markdown"
+  }
+}

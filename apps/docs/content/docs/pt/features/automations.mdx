@@ -1,0 +1,46 @@
+---
+title: "Automações"
+description: "Pagamentos programados, poupança automática e regras que funcionam sozinhas, cada uma limitada na rede por uma permissão que você assina uma vez com o Face ID."
+sourceHash: ac77249124998350
+---
+
+<Status ids="automations" />
+
+As Automações fazem o trabalho por você: são tarefas que devem acontecer sem precisar abrir o app. Cada automação
+funciona **sem supervisão**, mas dentro de uma permissão na rede que você assina uma vez — assim, nem o próprio Kawase pode fazer mais do que isso.
+
+## Pagamentos programados
+
+"Toda sexta-feira, às 9h, envie 10 dólares para Alex." O Kawase mostra a confirmação com as próximas execuções e o valor máximo que poderia movimentar,
+e você ativa tudo com **um Face ID**. Isso assina a própria **permissão** da automação: ela só pode transferir esse token, apenas
+para o endereço de Alex (fixado na rede) e somente até o valor permitido por período. Você pode programar: todos os dias, toda semana em um dia da semana,
+ou todo mês do dia 1 ao 28, no seu próprio fuso horário.
+
+Cada execução acontece **exatamente uma vez**: se o servidor do Kawase reiniciar no meio da execução, ela será recuperada com o mesmo ID e nunca
+será paga duas vezes. Uma execução que não puder acontecer (por falta de dinheiro ou por ultrapassar um limite) será **ignorada com um motivo** na sua caixa de entrada.
+
+## Poupança automática
+
+"Mantenha 100 dólares na minha carteira e guarde o restante." A poupança automática mantém esse valor disponível e transfere tudo que passar dele para a sua
+poupança no cofre (veja [Render](./earn-and-borrow.mdx)); quando sua carteira fica abaixo desse valor, ela repõe a diferença usando a
+poupança. Ela verifica todos os dias e sempre que chega dinheiro. As permissões permitem apenas movimentar USDC **entre a sua carteira e a sua própria
+poupança** — nunca para outro lugar.
+
+## Regras
+
+"Quando meu saldo passar de 500, faça uma ponte com o que passar de 400 para o meu endereço na Base." As regras têm:
+
+- um **gatilho**: o saldo passa de um valor ou fica abaixo dele, ou chega dinheiro (opcionalmente de alguém ou de pelo menos um
+  determinado valor);
+- uma **ação**: fazer uma ponte com USDC para o seu próprio endereço em outra rede (a taxa da rota tem um limite definido na rede), guardar o valor no seu
+  cofre ou apenas avisar você;
+- um **valor**: o que passar de um limite, uma parte do dinheiro recebido ou um valor fixo.
+
+Uma regra de saldo é acionada **uma vez a cada cruzamento** e fica pronta para ser acionada novamente quando o saldo voltar.
+
+## Gerenciando suas automações
+
+Na tela de Automações ou no chat: liste, **pause**, **retome**, **ignore a próxima execução** e **cancele**. Cancelar
+também **revoga a permissão na rede**, então o acesso é removido, não apenas ocultado.
+
+<ScopeList ids="automations" />

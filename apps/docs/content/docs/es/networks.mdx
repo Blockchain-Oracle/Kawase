@@ -1,0 +1,32 @@
+---
+title: "Redes"
+description: "La Red principal de Arc y la Red de pruebas de Arc, lado a lado: qué cambia, qué está disponible solo en una de ellas y cómo Kawase las mantiene separadas."
+sourceHash: 23465b593fd86e92
+---
+
+<Marks names="arc usdc eurc" />
+
+**Arc** es la red de stablecoins de Circle: USDC es su token de gas, así que las comisiones se pagan en dólares y las transacciones se liquidan en menos de un segundo. Kawase admite exactamente dos redes de Arc.
+
+| | Red principal de Arc | Red de pruebas de Arc |
+|---|---|---|
+| Dinero | Dinero real | Dinero de prueba sin valor |
+| ID de cadena | `5042` | `5042002` |
+| Explorador | `explorer.arc.io` | `testnet.arcscan.app` |
+| Cómo conseguir dinero | Recibe dinero de cualquier billetera o exchange que envíe a Arc; próximamente podrás comprar con Apple Pay o tarjeta | El faucet integrado (aproximadamente 20 USDC + 20 EURC al día) |
+| Rendimiento | Bóvedas de Morpho incluidas en App Kit Earn de Circle | Bóvedas de Morpho de prueba de Arc Testnet |
+| Destinos del puente | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | Sus redes de prueba (Base Sepolia, Ethereum Sepolia, …) |
+| Mercado x402 | Planeado (el catálogo de Circle solo está disponible en la red principal) | No disponible |
+| Límites predeterminados | Más bajos | Diez veces más altos (sin riesgo de perder dinero real) |
+| Dónde empiezan las cuentas nuevas | | ✓ |
+
+Todos los flujos de Kawase se han probado de principio a fin con transacciones reales en **Arc Testnet**; la evidencia está enlazada desde la página de demostración del showcase. La disponibilidad de abajo muestra lo que ofrece la app en cada red:
+
+<AvailabilityMatrix />
+
+## Cómo Kawase mantiene separadas las redes
+
+- **Puedes cambiar con un toque**, en ambos sentidos: consulta [el selector de red](./features/network-toggle.mdx).
+- **La red se muestra de tres formas**: la pastilla del encabezado, la franja de red de pruebas o la etiqueta DINERO REAL, y el color de la esfera.
+- **El servidor controla la elección.** Cada pago se prepara para una red y se mantiene en ella hasta el final; si la red cambia mientras tanto, el pago se detiene en lugar de pasar a la otra red.
+- **Una sola dirección de billetera en ambas redes**, con saldos, actividad y límites independientes para cada red.
