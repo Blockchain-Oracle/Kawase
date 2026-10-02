@@ -153,6 +153,20 @@
       "idx": 21,
       "version": "7",
       "when": 1791000043000,
+      "tag": "0020_wallet_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791000050000,
+      "tag": "0050_voice_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791000060000,
       "tag": "0031_onramp",
       "breakpoints": true
     }

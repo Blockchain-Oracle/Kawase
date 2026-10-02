@@ -3,24 +3,24 @@
 // arrow: what leaves (exact), what comes back (about, and the least it may be, which the chain enforces). Then the
 // rate next to Circle's market rate, with the gap said in words (a warning row when it is wide, never colour alone),
 // the route and network fees, who priced it, and when. One quiet line says approve + swap are one transaction.
-import { ArrowDown, CircleAlert, Info, RefreshCw } from "lucide-react-native";
+// Any pair (R1): each side carries its token's own mark and decimals; the venues asked (R3) are listed under a
+// "N routes" disclosure, the recommended one first, the others with what they would have given or why they could not.
+import { ArrowDown, ChevronDown, CircleAlert, Info, RefreshCw } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 
 import type { SwapIntent } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { amount as toAmount, formatAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { useMoney } from "@/send/copy";
 
 import { useRateLines, useSwapPolicyText } from "./copy";
+import { SwapTokenMark, useSwapMoney } from "./swap-tokens";
 
 const MARK = 36;
 const MARK_COMPACT = 28;
@@ -28,6 +28,8 @@ const ARROW = 32;
 const ZERO = 0n;
 /** Fees on Arc are fractions of a cent, so they get four places instead of two. */
 const FEE_DIGITS = 4;
+const PERCENT_BPS = 100;
+const IMPACT_DIGITS = 2;
 
 function DetailRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
@@ -56,26 +58,26 @@ function Side({ label, mark, amount, sub, compact }: { label: string; mark: Reac
 export function SwapReview({ intent, compact, onRefresh, refreshing }: { intent: SwapIntent; compact?: boolean; onRefresh?: () => void; refreshing?: boolean }) {
   const { t } = useT();
   const { locale } = useLocale();
-  const money = useMoney();
+  const tokenMoney = useSwapMoney();
   const rateLines = useRateLines();
   const policyText = useSwapPolicyText();
+  const [routesOpen, setRoutesOpen] = React.useState(false);
   const draft = intent.draft;
   if (!draft) return null;
-  const ids = arcIdentity(intent.network);
-  const markOf = (asset: "USDC" | "EURC") => (
-    <Mark entity={asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={compact ? MARK_COMPACT : MARK} />
-  );
+  const markOf = (side: "in" | "out") => <SwapTokenMark draft={draft} side={side} network={intent.network} size={compact ? MARK_COMPACT : MARK} />;
   const lines = rateLines(draft);
-  const wide = intent.results.find((entry) => entry.code === "RATE_BELOW_REFERENCE");
+  const wide = intent.results.find((entry) => entry.code === "RATE_BELOW_REFERENCE" || entry.code === "TOKEN_UNVERIFIED");
+  const routes = draft.routes ?? [];
+  const impact = draft.rateGapBps !== null && draft.tokens ? `${(Math.max(0, draft.rateGapBps) / PERCENT_BPS).toFixed(IMPACT_DIGITS)}%` : null;
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const quotedAt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(draft.quotedAt));
-  const fee = (asset: AssetId, baseUnits: string) => formatAmount(toAmount(asset, BigInt(baseUnits)), locale, { fractionDigits: FEE_DIGITS });
-  const routeFee = BigInt(draft.fees.route) > ZERO ? fee(draft.tokenIn, draft.fees.route) : null;
+  const fee = (baseUnits: string) => formatAmount(toAmount("USDC", BigInt(baseUnits)), locale, { fractionDigits: FEE_DIGITS });
+  const routeFee = BigInt(draft.fees.route) > ZERO ? tokenMoney(draft, "in", draft.fees.route, intent.network) : null;
 
   return (
     <View className="gap-4">
       <View className="bg-muted gap-3 rounded-3xl p-4">
-        <Side label={t("swap.youPay")} mark={markOf(draft.tokenIn)} amount={money(draft.tokenIn, draft.amountIn)} compact={compact} />
+        <Side label={t("swap.youPay")} mark={markOf("in")} amount={tokenMoney(draft, "in", draft.amountIn, intent.network)} compact={compact} />
         <View className="flex-row items-center gap-3">
           <View className="bg-border h-px flex-1" />
           <View className="bg-card border-border items-center justify-center rounded-full border" style={{ width: ARROW, height: ARROW }}>
@@ -85,9 +87,9 @@ export function SwapReview({ intent, compact, onRefresh, refreshing }: { intent:
         </View>
         <Side
           label={t("swap.youGet")}
-          mark={markOf(draft.tokenOut)}
-          amount={money(draft.tokenOut, draft.estimatedOut)}
-          sub={t("swap.atLeast", { amount: money(draft.tokenOut, draft.minOut) })}
+          mark={markOf("out")}
+          amount={tokenMoney(draft, "out", draft.estimatedOut, intent.network)}
+          sub={t("swap.atLeast", { amount: tokenMoney(draft, "out", draft.minOut, intent.network) })}
           compact={compact}
         />
       </View>
@@ -106,9 +108,36 @@ export function SwapReview({ intent, compact, onRefresh, refreshing }: { intent:
         <DetailRow label={t("swap.rate")} value={lines.rate} />
         {lines.market ? <DetailRow label={t("swap.market")} value={lines.gap && !wide ? `${lines.market} · ${lines.gap}` : lines.market} /> : null}
         {routeFee ? <DetailRow label={t("swap.routeFee")} value={routeFee} /> : null}
-        {draft.fees.network ? <DetailRow label={t("swap.networkFee")} value={t("swap.networkFeeValue", { amount: fee("USDC", draft.fees.network) })} /> : null}
-        <DetailRow label={t("swap.provider")} value={`${draft.provider} · ${networkName}`} />
+        {impact ? <DetailRow label={t("ticket.impact")} value={impact} /> : null}
+        {draft.fees.network ? <DetailRow label={t("swap.networkFee")} value={t("swap.networkFeeValue", { amount: fee(draft.fees.network) })} /> : null}
+        <DetailRow label={t("swap.provider")} value={`${draft.provider} · ${networkName}`} strong />
       </View>
+
+      {routes.length > 1 ? (
+        <View className="gap-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: routesOpen }}
+            onPress={() => setRoutesOpen((open) => !open)}
+            className="flex-row items-center justify-between py-1 active:opacity-70"
+          >
+            <Text className="text-muted-foreground text-sm">{t("ticket.routes", { count: routes.length })}</Text>
+            <Icon as={ChevronDown} className={cn("text-muted-foreground size-4", routesOpen && "rotate-180")} />
+          </Pressable>
+          {routesOpen
+            ? routes.map((route) => (
+                <View key={route.venue} className="flex-row items-baseline justify-between gap-4">
+                  <Text className={cn("text-sm", route.status === "chosen" ? "text-foreground font-semibold" : "text-muted-foreground")}>
+                    {route.status === "chosen" ? `${route.label} · ${t("ticket.recommended")}` : route.label}
+                  </Text>
+                  <Text className="text-muted-foreground shrink text-end text-sm">
+                    {route.estimatedOut ? tokenMoney(draft, "out", route.estimatedOut, intent.network) : t(`ticket.reason_${route.reason ?? "failed"}`, { defaultValue: route.reason ?? "" })}
+                  </Text>
+                </View>
+              ))
+            : null}
+        </View>
+      ) : null}
 
       <View className="flex-row items-center justify-between gap-3">
         <View className="flex-1 flex-row items-start gap-2">

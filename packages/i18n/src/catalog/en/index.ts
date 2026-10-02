@@ -49,6 +49,10 @@ import { update } from "./update";
 import { chatHome } from "./chat-home";
 import { margin } from "./margin";
 import { marginPolicy } from "./margin-policy";
+import { assets } from "./assets";
+import { markets } from "./markets";
+import { tokenPage } from "./token-page";
+import { ticket } from "./ticket";
 
 export const en = {
   common,
@@ -99,6 +103,10 @@ export const en = {
   chatHome,
   margin,
   marginPolicy,
+  assets,
+  markets,
+  tokenPage,
+  ticket,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

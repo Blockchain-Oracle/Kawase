@@ -25,3 +25,25 @@ Status: in progress — the pipeline runs end to end and is deployed (Coolify `k
   - **Not done:** deploying the worker; web voice (livekit-client); barge-in/turn-detector tuning; the language matrix (fr/es/ar …); voice settings; the Stage exit flow (French, unknown contact → form → confirm) on a device.
 - **2026-10-01 — deployed.** Coolify app `kawase-voice` (`vly0o2rxwzbhtl5gepcaynpj`, Dockerfile `/apps/voice-agent/Dockerfile`, Debian slim + curl for the in-container health check, port 8081, no public domain needed), env runtime-only (LiveKit, ElevenLabs, OpenAI, `KAWASE_API_URL`); the api got the LiveKit variables. The worker registers as `kawase-voice`; a local worker uses `KAWASE_VOICE_AGENT=kawase-voice-dev` so LiveKit never hands a production session to a laptop. Proof: the scripted participant against `https://kawase-api.84.46.247.92.sslip.io` — greeting 1.7 s after joining, "What can you do for me on Arc?" answered correctly in speech, the `get_capabilities` card over RPC, the turn saved in the thread (answer began 8.2 s after the question).
 - **2026-10-01 — latency: the wallet up front.** A voice turn reads the person's wallet on the active network while the thread loads (capped at 600 ms, never fatal) and gives the model one line with balances and allowance; guests get "no wallet — sign in first". Balance and allowance questions are answered in one model step instead of `get_wallet` + a second step. Measured on the api's `/voice/turn` (`walletMs`/`walletLine` are in the turn log): signed-in, warm: first words **1.2 s** (was 4.8 s); guest: **1.0–1.5 s** (was ~6 s on production). The wallet read itself went from ~530 ms to ~200 ms warm (allowance revoke check alongside the balance reads; only the active network). A cold RPC connection (> 600 ms) falls back to the tool path; a longer HTTP keep-alive was tested and made it worse (the RPC drops idle sockets: 3.2 s after 10 s idle), so Node's default stays. Android voice needs no audio change: LiveKit's Android default is the communication preset (echo cancellation on; speaker before earpiece).
+- **2026-10-02 — GPT-Live, both-side captions, web voice, narration, Settings → Voice (Lane C, branch `lane-c/voice`).**
+  - **Worker:** GPT-Live (`gpt-live-1`, voice from Settings, default marin, client delegation) talks; every request and
+    question is delegated to the same `/voice/turn` agent turn and thread as chat, after the person's speech settles
+    (GPT-Live can delegate mid-sentence and split one question into several segments: the worker joins them). Cards go
+    over RPC as they arrive; tool summaries go in as silent canonical facts (`appendThinking`), Kawase's line as
+    commentary. Readback guard (amounts, assets, @handles, network vs. the facts) appends a correction on a mismatch
+    (unit-tested). Fallback to Scribe → agent → TTS when GPT-Live can't start in 8 s or fails for good, now with an
+    explicit ElevenLabs voice (premade "Sarah") and settings, and OpenAI marin for bn/ur. Stable turn ids, Stop RPC and
+    `record: false` kept. `KAWASE_VOICE_ENGINE=cascade` forces the fallback; `KAWASE_VOICE_DEBUG=1` traces locally.
+  - **Evidence (local api + worker, `pnpm --filter @kawase/voice-agent e2e`):** GPT-Live: greeting, full question
+    delegated, `get_capabilities` card delivered, answer in the thread 12–21 s after the question (first sound, an
+    acknowledgement, 5–14 s; the api turn itself took 5–13 s that afternoon); the chosen voice (cinder) reached the
+    worker from Settings. Fallback forced and automatic (GPT-Live unreachable → switched in 8 s) both answered in the
+    thread. Not measured on a phone; acceptance is Abu's listening session on TestFlight.
+  - **App:** captions of both sides word by word (LiveKit transcriptions), the orb driven from native volume events (Web
+    Audio on the web) into its shared value, cards fading up, Stop/Mute/Type instead; start/end cues around the audio
+    claim. **Web voice** joins the same room with LiveKit's web client (`expo export -p web` builds).
+  - **Narration:** 70 clips (5 panels × 10 languages + panel 2's web/Android wording), gpt-4o-mini-tts marin, mono AAC
+    48 kbps, 5.6 MB; `src/narration` → `narrationClip(locale, panel)`; the story screen wiring is the lead's.
+  - **Settings → Voice:** voice, speed, "Kawase speaks first"; `users.voice_prefs` (migration 0050), `PATCH /me`, worker
+    metadata. Its strings ship in `src/voice/settings-strings.ts` (10 languages, added to i18next without overwriting)
+    until they move into the shared catalogs.
