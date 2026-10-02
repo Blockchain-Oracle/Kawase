@@ -1,0 +1,28 @@
+{
+  "name": "@kawase/x402-seller",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Kawase's testnet x402 demo seller: a few paid money-data endpoints on Arc Testnet (Circle's catalog has no testnet listings). Express + @x402/express with Circle Gateway nanopayments.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@circle-fin/x402-batching": "catalog:",
+    "@x402/core": "catalog:",
+    "@x402/evm": "catalog:",
+    "@x402/express": "catalog:",
+    "dotenv": "catalog:",
+    "express": "catalog:",
+    "tsx": "catalog:",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,0 +1,7 @@
+import type { Catalog } from "../en/index";
+
+export const approval: Catalog["approval"] = {
+  title: "أكّد أنك أنت",
+  body: "‏على الويب، يحلّ رمز يُرسَل إلى {{email}} محلّ بصمة الوجه. لا يُوقَّع شيء قبل أن تُدخله.",
+  confirm: "تأكيد",
+};

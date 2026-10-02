@@ -1,0 +1,20 @@
+export const swapPolicy = {
+  NOT_AVAILABLE_YET: "Swapping isn't available on this network yet.",
+  ON_OTHER_NETWORK: "Swapping works on {{network}}.",
+  PAUSED_ALL: "You paused all money movement. Resume it in Settings to continue.",
+  SIGN_IN_REQUIRED: "Sign in to swap.",
+  WALLET_NOT_READY: "Set up your wallet first.",
+  WALLET_NOT_SET_UP: "Set up your wallet on this network first.",
+  INSUFFICIENT_BALANCE: "Not enough money. You have {{balance}}.",
+  INSUFFICIENT_GAS: "Keep about {{needed}} for the network fee.",
+  AMOUNT_MISSING: "How much?",
+  AMOUNT_INVALID: "That amount isn't valid.",
+  ASSET_UNCLEAR: "Swap from USDC or EURC?",
+  SWAP_SAME_TOKEN: "Pick two different currencies.",
+  SWAP_PAIR_UNSUPPORTED: "Kawase can't swap these here.",
+  QUOTE_UNAVAILABLE: "No price right now.",
+  PRICE_IMPACT_HIGH:
+    "This price is {{gap}}% below the market, more than the {{max}}% Kawase allows. Try a smaller amount or wait.",
+  RATE_BELOW_REFERENCE: "This price is {{gap}}% below the market rate.",
+  fixTryAgain: "Try again",
+} as const;

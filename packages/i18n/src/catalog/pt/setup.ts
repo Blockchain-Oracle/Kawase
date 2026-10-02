@@ -1,0 +1,33 @@
+import type { Catalog } from "../en/index";
+
+export const setup: Catalog["setup"] = {
+  title: "Preparando sua carteira",
+  subtitle: "Na {{network}}. Leva alguns segundos, e o Kawase paga a taxa de rede.",
+  stepWallet: "Criar sua carteira",
+  stepNetwork: "Configurá-la na {{network}}",
+  settingUpDetail: "Assinando e enviando pelo relayer do Kawase…",
+  failed: "Não deu certo. Tente de novo.",
+  primerTitle: "Um Face ID para o seu limite diário",
+  primerTitleAndroid: "Uma aprovação para o seu limite diário",
+  primerBody:
+    "O Kawase pode enviar até {{amount}} por dia por você sem perguntar. Para mais que isso, ele precisa do seu Face ID de novo, e você pode desativar quando quiser.",
+  primerBodyAndroid:
+    "O Kawase pode enviar até {{amount}} por dia por você sem perguntar. Para mais que isso, ele precisa de novo da sua digital ou do bloqueio de tela, e você pode desativar quando quiser.",
+  acceptFaceId: "Aceitar com Face ID",
+  acceptTouchId: "Aceitar com Touch ID",
+  acceptFingerprint: "Aceitar com sua digital",
+  scopeTitle: "O que você está permitindo",
+  scopeBody:
+    "Leia uma vez. É exatamente o que você aprova, tirado da própria permissão, e você pode desligar quando quiser.",
+  acceptFace: "Aceitar com desbloqueio facial",
+  acceptPasscode: "Aceitar com seu código",
+  acceptEmailCode: "Aceitar com um código por email",
+  faceIdPrompt: "Permitir que o Kawase envie até {{amount}} por dia",
+  approving: "Aprovando…",
+  notNow: "Agora não",
+  doneTitle: "Tudo pronto",
+  doneBody: "Sua carteira está pronta na {{network}}. Veja exatamente o que o Kawase pode fazer com ela.",
+  terms: "Ao continuar, você concorda com os termos de uso do Kawase.",
+  readTerms: "Ler os termos",
+  termsFailed: "Não foi possível salvar sua concordância. Verifique sua conexão e tente de novo.",
+};

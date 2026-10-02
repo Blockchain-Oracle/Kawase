@@ -1,1 +1,1 @@
-ALTER TABLE "users" ADD COLUMN "voice_prefs" jsonb DEFAULT '{}'::jsonb NOT NULL;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "voice_prefs" jsonb DEFAULT '{}'::jsonb NOT NULL;

@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const fund: Catalog["fund"] = {
+  title: "Adicionar dinheiro",
+  subtitle: "Para sua carteira na {{network}}",
+  testTitle: "Pegar USDC de teste",
+  testBody: "{{usdc}} USDC e {{eurc}} EURC do faucet da Circle, uma vez por dia",
+  testClaim: "Me enviar dinheiro de teste",
+  testSending: "Enviando dinheiro de teste…",
+  testSent: "Enviado — chega em alguns segundos",
+  testClaimed: "Já pego hoje · o próximo a partir de {{time}}",
+  testFailed: "O faucet da Circle não enviou desta vez. Tente de novo ou peça direto à Circle.",
+  testSignIn: "Entre primeiro para ter seu próprio endereço",
+  testSetUpFirst: "Configure sua carteira primeiro",
+  openCircle: "Faucet da Circle",
+  receiveTitle: "Receber na Arc",
+  receiveBody: "Seu QR code e endereço",
+  walletTitle: "De outra carteira ou corretora",
+  walletBody: "Envie USDC ou EURC na Arc para o seu endereço",
+  bridgeTitle: "Ponte de outra rede",
+  bridgeBody: "Ethereum, Base, Arbitrum e mais",
+  bridgeSubtitle: "Onde seu dinheiro está agora",
+  bridgeComingBody: "A ponte para a Arc está sendo construída. Por enquanto, envie USDC para o seu endereço na Arc.",
+  coming: "Em breve",
+};

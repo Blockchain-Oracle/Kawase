@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "Terminez la connexion de votre compte. Réessayez sans nouveau code.",
+  accountFailed: "Vous êtes connecté. Votre compte ne peut pas être chargé. Réessayez.",
+  recoveryRequired:
+    "Cet e-mail est lié à un portefeuille existant. Utilisez sa méthode de connexion d’origine. Votre conversation invitée est conservée.",
+  title: "Se connecter",
+  subtitle: "Un code par e-mail. Ni mot de passe, ni code PIN.",
+  email: "E-mail",
+  emailPlaceholder: "vous@exemple.com",
+  sendCode: "M'envoyer un code",
+  codeSent: "Nous avons envoyé un code à {{email}}",
+  code: "Code à 6 chiffres",
+  verify: "Se connecter",
+  apple: "Continuer avec Apple",
+  google: "Continuer avec Google",
+  or: "ou",
+  continueAs: "Continuer en tant que {{email}}",
+  invalidCode: "Ce code n'a pas fonctionné. Réessayez.",
+  sheetTitle: "Connectez-vous ou créez un compte",
+  codeTitle: "Consultez vos e-mails",
+  resend: "Envoyer un nouveau code",
+  signingIn: "Connexion…",
+  webUnavailable: "La connexion sur le web arrive bientôt. Pour l'instant, utilisez l'app Kawase sur votre téléphone.",
+};

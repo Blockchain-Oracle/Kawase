@@ -54,10 +54,24 @@ import type {
   NotificationSettingsChange,
 } from "./types";
 import type { ClientEvent } from "./client-events";
+import type {
+  AgentWalletSettings,
+  AgentWalletSettingsChange,
+  AgentWalletView,
+  MarketplaceCategory,
+  MarketplaceGrantRequest,
+  PurchaseView,
+  ReturnResult,
+  ServiceSearchResult,
+  TopUpResult,
+} from "./marketplace";
+import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./client-events";
+export * from "./marketplace";
+export * from "./account";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -113,7 +127,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
   }
 
   return {
-    health: () => call<{ ok: boolean; networks: NetworkId[] }>("GET", "/health"),
+    /** `minAppVersion`: older apps must update (cards/access.md). */
+    health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
 
     auth: {
@@ -321,6 +336,40 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       list: () => call<{ items: InboxItem[]; unread: number }>("GET", "/inbox"),
       read: (id: string) => call<void>("POST", `/inbox/${id}/read`),
       readAll: () => call<void>("POST", "/inbox/read-all"),
+    },
+
+    /** Settings → Account: devices, email, export record, deleting the account. */
+    account: {
+      devices: () => call<{ devices: DeviceView[] }>("GET", "/account/devices"),
+      touchDevice: (input: { name?: string; appVersion?: string }) => call<void>("PATCH", "/account/devices/current", input),
+      signOutDevice: (id: string) => call<{ turnkeyPublicKey: string | null }>("POST", `/account/devices/${id}/sign-out`),
+      signOutEverywhere: () => call<{ turnkeyPublicKeys: string[] }>("POST", "/account/sign-out-everywhere"),
+      syncEmail: () => call<{ email: string | null }>("POST", "/account/email/sync"),
+      exportRecorded: () => call<void>("POST", "/account/export/recorded"),
+      holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
+      revokeAllRequest: (network: NetworkId) =>
+        call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
+      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
+    } satisfies AccountApi,
+
+    /** The x402 marketplace and the Agent wallet page (on the active network). */
+    marketplace: {
+      services: (query: string, category?: MarketplaceCategory) =>
+        call<ServiceSearchResult>("GET", `/marketplace/services?q=${encodeURIComponent(query)}${category ? `&category=${category}` : ""}`),
+      wallet: () => call<AgentWalletView>("GET", "/marketplace/agent-wallet"),
+      updateSettings: (change: AgentWalletSettingsChange) =>
+        call<{ settings: AgentWalletSettings }>("PATCH", "/marketplace/agent-wallet/settings", change),
+      /** The marketplace grant to sign once (Face ID): USDC only to the agent wallet, capped per day. */
+      grant: () => call<MarketplaceGrantRequest>("POST", "/marketplace/agent-wallet/grant"),
+      grantSubmit: (grantId: string, signature: string) =>
+        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", { grantId, signature }),
+      topUp: (amount: string, idempotencyKey?: string) =>
+        call<TopUpResult>("POST", "/marketplace/agent-wallet/top-up", { amount }, { idempotencyKey }),
+      /** Everything in the agent wallet back to the person's wallet. */
+      returnAll: (idempotencyKey?: string) => call<ReturnResult>("POST", "/marketplace/agent-wallet/return", {}, { idempotencyKey }),
+      purchases: () => call<{ purchases: PurchaseView[] }>("GET", "/marketplace/purchases"),
+      decide: (id: string, decision: "approve" | "decline") =>
+        call<{ purchase: PurchaseView }>("POST", `/marketplace/purchases/${id}/decision`, { decision }),
     },
 
     faucet: {

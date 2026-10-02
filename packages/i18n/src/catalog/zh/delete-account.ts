@@ -1,0 +1,23 @@
+import type { Catalog } from "../en/index";
+
+export const deleteAccount: Catalog["deleteAccount"] = {
+  title: "删除账户",
+  body: "钱包仍归你所有。Kawase 会删除它保存的关于你的信息：联系人、对话、收件箱和设置。",
+  holdings: "你的账户中有什么",
+  agentWallet: "代理钱包：{{amount}}（会先退回你的钱包）",
+  revoke: "关闭 Kawase 的各项权限",
+  revokeOn: "在 {{network}} 上撤销（{{count}}）",
+  revokePrompt: "撤销 Kawase 的权限",
+  revoked: "已在链上撤销",
+  revokeFailed: "撤销没有完成，请重试。",
+  noGrants: "没有需要撤销的权限。",
+  revokeNote: "撤销需要少量 USDC 支付手续费，所以请在转走资金之前完成。账户删除后，未撤销的权限也无法再被使用。",
+  takeOut: "取出你的资金",
+  takeOutBody: "把资金转到别处，或导出钱包在其他应用中使用。也可以留着不动：钱包仍归你所有。",
+  send: "转账",
+  confirm: "输入 {{handle}} 以确认",
+  delete: "删除我的账户",
+  done: "你的账户已删除",
+  failed: "删除没有成功，没有删除任何内容。",
+  after: "你的 @用户名 会保留 30 天，其他人无法占用。之后再次登录，会用同一个钱包开始一个新账户。",
+};

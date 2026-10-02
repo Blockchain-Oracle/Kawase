@@ -73,6 +73,10 @@ export const devices = pgTable(
     appVersion: text(),
     locale: text(),
     biometricEnrolled: boolean().notNull().default(false),
+    /** The device's own name ("Abu's iPhone"), as the app reports it, for Settings → Devices. */
+    name: text(),
+    /** The Turnkey session key that proved the latest sign-in here: the API key "sign out this device" deletes. */
+    turnkeyPublicKey: text(),
     lastSeenAt: timestampTz().defaultNow().notNull(),
     revokedAt: timestampTz(),
     createdAt: createdAt(),

@@ -1,0 +1,42 @@
+export const story = {
+  haveAccount: "I already have an account",
+  panelOf: "Step {{n}} of {{total}}",
+  requestTitle: "Tell Kawase what you need.",
+  requestBody:
+    "Type it the way you'd say it. Kawase turns it into an exact payment you can check before anything moves.",
+  boundsTitle: "You set what it can spend.",
+  boundsBody:
+    "One Face ID sets a daily allowance. Inside it, sends go without asking; anything more needs your Face ID. Turn it off any time.",
+  boundsBodyWeb:
+    "One confirmation sets a daily allowance. Inside it, sends go without asking; anything more needs a code from your email. Turn it off any time.",
+  boundsBodyAndroid:
+    "One approval sets a daily allowance. Inside it, sends go without asking; anything more needs your fingerprint or screen lock. Turn it off any time.",
+  practiceTitle: "Practice with test money.",
+  practiceBody:
+    "Arc Testnet works like the real thing, with free test USDC from Circle. Real money is one tap away, and Kawase always shows which one you're on.",
+  languageTitle: "In your language.",
+  languageBody:
+    "Ten languages, read and written. Change it with the button above — everything follows, right-to-left included.",
+  firstTitle: "Try it in a minute.",
+  firstBody: "Get free test USDC, then send some to a friend. No real money until you choose it.",
+  example: "Example",
+  exampleRequest: "Send 10 USDC to @amina",
+  fieldAmount: "Amount",
+  fieldTo: "To",
+  fieldNetwork: "Network",
+  typingNow: "Typing works now · voice is coming",
+  perDay: "a day",
+  boundsInside: "Sends inside it go without asking",
+  boundsAbove: "More than that: your Face ID",
+  boundsAboveWeb: "More than that: a code from your email",
+  boundsAboveAndroid: "More than that: your fingerprint or screen lock",
+  boundsNever: "Never other tokens, never your limits",
+  testMoney: "test money",
+  realMoney: "real money",
+  faucetLine: "Free test USDC from Circle",
+  sameMeaning: "Same request, same payment",
+  firstStep1: "Get free test USDC",
+  firstStep2: "Send some to a friend's @handle",
+  goTo: "Go to step {{n}}",
+  canvasHint: "Swipe up or down to change step",
+} as const;

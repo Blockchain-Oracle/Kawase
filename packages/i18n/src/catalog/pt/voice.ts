@@ -1,0 +1,17 @@
+import type { Catalog } from "../en/index";
+
+export const voice: Catalog["voice"] = {
+  soon: "A voz está a caminho",
+  soonBody: "Até lá, digite o que você precisa.",
+  title: "Fale com a Kawase",
+  connecting: "Conectando…",
+  listening: "Ouvindo",
+  thinking: "Pensando",
+  speaking: "Falando",
+  failed: "A voz não iniciou. Tente de novo ou digite.",
+  micDenied: "A Kawase não te ouve: permita o microfone nos Ajustes.",
+  openSettings: "Abrir Ajustes",
+  mute: "Silenciar",
+  unmute: "Ativar microfone",
+  muted: "Silenciado",
+};

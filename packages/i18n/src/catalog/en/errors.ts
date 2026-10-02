@@ -1,0 +1,22 @@
+export const errors = {
+  offline: "You're offline. Showing what Kawase knew last.",
+  serverTrouble: "Kawase can't be reached right now. Showing what it knew last.",
+  storageUnavailable:
+    "Secure storage is unavailable. Unlock your device and try again. Your account has not been reset.",
+  offlineAction: "No connection. Check your internet and try again.",
+  expiredCode: "That code has expired. Send a new one.",
+  rateLimited: "Too many codes were sent. Wait a few minutes, then try again.",
+  signInFailed: "Signing in didn't work. Try again.",
+  walletFailed: "You're signed in, but your wallet wasn't created. Try again — nothing is lost.",
+  resendIn: "Send a new code in {{seconds}} s",
+  startFailed: "Kawase couldn't start. Check your connection and try again.",
+  walletLoadFailed: "Couldn't load your wallet.",
+  scopeLoadFailed: "Couldn't prepare your allowance.",
+  scopeRefreshed: "The allowance was updated. Read it again, then approve.",
+  notSigned: "Nothing was signed.",
+  biometricUnavailable: "Turn on Face ID, Touch ID, a fingerprint or a passcode in your phone's Settings to approve.",
+  biometricUnavailableWeb: "Approving on the web needs the email on your account. Sign in with your email to continue.",
+  biometricUnavailableAndroid: "Set up a fingerprint or a screen lock in your phone's Settings to approve.",
+  biometricFailed: "That didn't match. Nothing was signed. Try again.",
+  tryAgainIn: "Try again in {{time}}",
+} as const;
