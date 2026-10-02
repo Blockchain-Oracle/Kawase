@@ -7,7 +7,7 @@
 import { useRouter } from "expo-router";
 import { ChevronLeft, ScanFace, Send } from "lucide-react-native";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -22,6 +22,7 @@ import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
@@ -153,6 +154,17 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     leave();
   };
 
+  // The recipient's wallet is on another chain (money-out.md "From → To"): USDC goes by a bridge with route options
+  // (the Move screen, same amount and recipient); any other token converts to USDC first.
+  const isUsdc = token.address.toLowerCase() === stableToken(network, "USDC").address.toLowerCase();
+  const otherChain = async () => {
+    if (!recipient) return;
+    if (intent && isOpen(intent)) await controller.cancel();
+    if (isUsdc)
+      router.push({ pathname: "/move", params: { direction: "out", amount: value, recipient: recipient.text } });
+    else router.push({ pathname: "/swap", params: { sell: token.address } });
+  };
+
   const header = (
     <>
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
@@ -232,6 +244,12 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
           {!testnet ? <Eyebrow className="text-foreground">{t("network.realMoney")}</Eyebrow> : null}
           <SendReview intent={intent} />
           {blocking ? <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} /> : null}
+          {!blocking && draft ? (
+            <Pressable accessibilityRole="button" onPress={() => void otherChain()} className="active:bg-muted gap-0.5 rounded-2xl px-1 py-2">
+              <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("send.otherChain")}</Text>
+              <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>{isUsdc ? t("send.otherChainBridge") : t("send.otherChainConvert", { asset: token.symbol })}</Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
         <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
           <Button size="lg" disabled={Boolean(blocking) || controller.busy} onPress={() => void controller.approve(prompt)}>

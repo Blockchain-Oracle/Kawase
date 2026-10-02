@@ -66,6 +66,8 @@ import { lendRoutes } from "./lend/routes";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
+import { tokenRulesRoutes } from "./tokens/rules-routes";
+import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
@@ -227,6 +229,7 @@ export function createApp(deps: AppDeps) {
   needsYou.setAudit(audit);
   automations.setAudit(audit);
   const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
+  const tokenRules = new TokenRulesService(deps.db, deps.chains, wallets, audit, (userId, network) => swaps.unverifiedSpentToday(userId, network, ""));
   const marketplace =
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
@@ -325,6 +328,7 @@ export function createApp(deps: AppDeps) {
   app.route("/lend", lendRoutes(lend));
   app.route("/withdrawals", withdrawRoutes(withdraw));
   app.route("/places", placeRoutes(withdraw));
+  app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));

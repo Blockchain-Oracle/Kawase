@@ -52,6 +52,8 @@ export const REASONS = {
   TOKEN_RULE_TRADE: "policy",
   /** Over the token rules' daily limit for unverified tokens (D12: $200 by default). */
   TOKEN_RULE_DAY: "policy",
+  /** The person's token rules allow only tokens Kawase vouches for (D12 access level "verified only"). */
+  TOKEN_RULE_ACCESS: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",

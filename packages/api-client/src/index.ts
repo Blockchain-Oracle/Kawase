@@ -72,6 +72,7 @@ import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, Sa
 import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
 import { withdrawEndpoints } from "./withdraw";
+import { tokenRulesEndpoints } from "./token-rules";
 import type {
   BusinessProfile,
   BusinessProfileInput,
@@ -99,6 +100,7 @@ export * from "./automations-8c";
 export * from "./activity-feed";
 export * from "./rails";
 export * from "./withdraw";
+export * from "./token-rules";
 export * from "./business";
 export * from "./history";
 export * from "./intelligence";
@@ -159,6 +161,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
   return {
     ...railsEndpoints(call),
     ...withdrawEndpoints(call),
+    ...tokenRulesEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),

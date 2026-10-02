@@ -71,6 +71,7 @@ import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
 
 export const ur: Catalog = {
   common,
@@ -144,4 +145,5 @@ export const ur: Catalog = {
   insight,
   forYou,
   withdraw,
+  tokenRules,
 };

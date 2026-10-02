@@ -22,6 +22,7 @@ import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
 import { portfolioSnapshots, walletTokens } from "./schema/assets";
 import { places } from "./schema/places";
+import { tokenRules } from "./schema/token-rules";
 
 type UserOwned = {
   table: PgTable;
@@ -86,6 +87,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   portfolio_snapshots: { table: portfolioSnapshots, userId: portfolioSnapshots.userId, perUserKey: ["network", "takenAt"] },
   // My places (Withdraw): the account's own saved place for the same address wins.
   places: { table: places, userId: places.userId, perUserKey: ["network", "chain", "address"] },
+  // Token rules (D12): one row per network; the account's own rules win.
+  token_rules: { table: tokenRules, userId: tokenRules.userId, perUserKey: ["network"] },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

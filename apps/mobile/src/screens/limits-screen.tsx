@@ -239,6 +239,7 @@ export function LimitsScreen() {
                 onPress={() => setEditor({ kind: "allowlist" })}
               />
               <ListRow title={t("safety.raise")} subtitle={t("safety.raiseRow")} chevron onPress={() => setEditor({ kind: "raise" })} />
+              <ListRow title={t("tokenRules.title")} subtitle={t("tokenRules.row")} chevron onPress={() => router.push("/token-rules")} />
             </ListGroup>
           </Section>
 

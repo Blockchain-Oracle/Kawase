@@ -71,6 +71,7 @@ import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
 
 export const zh: Catalog = {
   common,
@@ -144,4 +145,5 @@ export const zh: Catalog = {
   insight,
   forYou,
   withdraw,
+  tokenRules,
 };

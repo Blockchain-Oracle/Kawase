@@ -128,8 +128,11 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   const run = useWithdrawRun(plan, plan?.destination?.address ? { chainKey: plan.destination.chain.key, address: plan.destination.address } : undefined);
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
-  const setLine = (index: number, patch: Partial<Line>) => setLines((current) => current.map((line, at) => (at === index ? { ...line, ...patch } : line)));
-  const removeLine = (index: number) => setLines((current) => current.filter((_, at) => at !== index));
+  // A line is found by its token (an address, or the symbol it was asked by), never by position: the plan leaves out
+  // what it cannot resolve.
+  const lineOf = (leg: WithdrawLegView) => (line: Line) => line.asset.toLowerCase() === leg.token.address.toLowerCase() || line.asset.toLowerCase() === leg.token.symbol.toLowerCase();
+  const setLine = (leg: WithdrawLegView, patch: Partial<Line>) => setLines((current) => current.map((line) => (lineOf(leg)(line) ? { ...line, ...patch } : line)));
+  const removeLine = (leg: WithdrawLegView) => setLines((current) => current.filter((line) => !lineOf(leg)(line)));
 
   const legs = plan?.legs ?? [];
   const blockedLine = legs.some((leg) => leg.status === "blocked");
@@ -240,18 +243,18 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
               {legs.length === 0 ? (
                 <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{planning ? t("common.loading") : t("withdraw.nothingChosen")}</Text>
               ) : (
-                legs.map((leg, index) => (
+                legs.map((leg) => (
                   <LegRow
                     key={leg.token.address}
                     leg={leg}
-                    amount={lines[index]?.amount ?? null}
+                    amount={lines.find(lineOf(leg))?.amount ?? null}
                     route={legRoute(leg)}
                     reason={leg.reason ? reasonText(leg.reason, { exchange: plan?.destination?.exchange?.name, symbol: leg.token.symbol, chain: leg.receive.chain, network: plan?.destination?.exchange?.networkLabel }) : undefined}
                     value={leg.valueUsd !== null ? fiat(leg.valueUsd, fx, locale) : undefined}
                     locale={locale}
-                    onAmount={(text) => setLine(index, { amount: text === "" ? null : text })}
-                    onAs={(as) => setLine(index, { as })}
-                    onRemove={() => removeLine(index)}
+                    onAmount={(text) => setLine(leg, { amount: text === "" ? null : text })}
+                    onAs={(as) => setLine(leg, { as })}
+                    onRemove={() => removeLine(leg)}
                   />
                 ))
               )}
