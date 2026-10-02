@@ -61,6 +61,20 @@ export async function gatewayBalance(network: NetworkContext, depositor: Address
   return { available: units(entry?.balance), withdrawing: units(entry?.withdrawing), withdrawable: units(entry?.withdrawable) };
 }
 
+/** Where a batched x402 payment stands at Circle: received → batched → confirmed → completed, or failed (never taken). */
+export type GatewayTransferStatus = "received" | "batched" | "confirmed" | "completed" | "failed";
+
+/**
+ * One x402 transfer by its id (the seller's PAYMENT-RESPONSE carries it): Circle Gateway's `GET /x402/transfers/{id}`,
+ * as `@circle-fin/x402-batching`'s GatewayClient.getTransferById calls it. Undefined when Gateway does not know it.
+ */
+export async function x402TransferStatus(network: NetworkContext, id: string, fetchImpl: typeof fetch = fetch): Promise<{ status: GatewayTransferStatus; amount: string } | undefined> {
+  const response = await fetchImpl(`${GATEWAY_API[network.id]}/x402/transfers/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(X402_REQUEST_TIMEOUT_MS) });
+  if (!response.ok) return undefined;
+  const data = (await response.json()) as { status?: GatewayTransferStatus; amount?: string };
+  return data.status ? { status: data.status, amount: data.amount ?? "0" } : undefined;
+}
+
 /** `usdc.approve(gatewayWallet, amount)` then `gatewayWallet.deposit(usdc, amount)`, both sent by the depositor. */
 export function encodeGatewayDeposit(network: NetworkContext, amount: bigint): { approve: ContractCall; deposit: ContractCall } {
   const config = gatewayConfig(network);

@@ -5,12 +5,15 @@
 // to the open order by person, network, asset, time and amount. Circle's webhook is verified and recorded on the
 // order too (the README: "server-side webhooks are the source of truth"); the chain stays the witness of the money.
 // A "then buy" token is carried to the app, which opens the swap for what arrived (one more approval).
+// "Top up my agent wallet with Apple Pay" (B2-2) is the same purchase with the agent wallet as the destination: USDC
+// only, matched from the chain's USDC Transfer logs to that wallet from the block it started at (the watcher follows
+// people's own wallets only), never one of the agent wallet's own moves; once settled the marketplace puts it to work.
 import { createPublicKey, verify } from "node:crypto";
 import { and, asc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
-import { parseUnits, type Address } from "viem";
+import { parseAbiItem, parseUnits, type Address } from "viem";
 
 import { ONRAMP } from "@kawase/config";
-import type { OnrampAvailability, OnrampEventInput, OnrampOrderView, OnrampStartRequest, OnrampStartResponse, OnrampStatus } from "@kawase/api-client";
+import type { OnrampAvailability, OnrampDestination, OnrampEventInput, OnrampOrderView, OnrampStartRequest, OnrampStartResponse, OnrampStatus } from "@kawase/api-client";
 import { chainEvents, onrampOrders, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
@@ -29,11 +32,24 @@ const BPS = 10_000n;
 const AMOUNT_MAX_DIGITS = 12;
 const EVENTS_KEPT = 20;
 const CIRCLE_KEY_URL = "https://api.circle.com/v2/notifications/publicKey/";
+const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
+/** Public Arc RPC: at most 9,999 blocks per getLogs. */
+const LOG_BLOCKS_MAX = 9_000n;
+
+/** The agent wallet, for "top up with Apple Pay" (the marketplace answers; buying for it is off without one). */
+export type AgentWalletPort = {
+  address(user: SessionUser): Promise<Address>;
+  /** The agent wallet's own transactions (top-ups, refills), never taken for a card purchase. */
+  ownMoves(userId: string, network: NetworkId): Promise<Set<string>>;
+  /** The purchase landed: put it to work (Gateway, less what stays on hand). */
+  arrived(userId: string, network: NetworkId): Promise<void>;
+};
 
 const decimal = (value: string | null | undefined) => (value && /^\d+(\.\d{1,2})?$/.test(value.trim()) && value.trim().length <= AMOUNT_MAX_DIGITS ? value.trim() : undefined);
 
 export class OnrampService {
   private readonly publicKeys = new Map<string, string>();
+  private agentWallets: AgentWalletPort | undefined;
 
   constructor(
     private readonly db: Db,
@@ -43,6 +59,11 @@ export class OnrampService {
     private readonly log: Logger,
     private readonly circleApiKey?: string | undefined,
   ) {}
+
+  /** Lets a purchase land on the person's agent wallet (set once the marketplace exists). */
+  setAgentWallets(port: AgentWalletPort) {
+    this.agentWallets = port;
+  }
 
   async availability(user: SessionUser | undefined): Promise<OnrampAvailability> {
     const network: NetworkId = user?.activeNetwork ?? "mainnet";
@@ -58,14 +79,19 @@ export class OnrampService {
     if (user.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to buy");
     const network = user.activeNetwork;
     if (!this.engine.configured(network)) throw problem(HTTP.unprocessable, "network_unavailable", "buying is not set up on this network");
-    const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
-    if (!wallet) throw problem(HTTP.conflict, "wallet_not_registered");
+    const own = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
+    if (!own) throw problem(HTTP.conflict, "wallet_not_registered");
+    const toAgent = request.destination === "agent_wallet";
+    if (toAgent && !this.agentWallets) throw problem(HTTP.unprocessable, "marketplace_unavailable", "the agent wallet is not available here");
+    const wallet = toAgent ? await this.agentWallets!.address(user) : own;
     // What arrives: the asset named if the provider delivers it; a "then" token it delivers itself; else USDC.
     const deliverable = ONRAMP.deliverable as readonly string[];
     const wanted = request.asset?.toUpperCase();
     const then = request.then?.trim() || null;
-    const asset = wanted && deliverable.includes(wanted) ? wanted : then && deliverable.includes(then.toUpperCase()) ? then.toUpperCase() : deliverable[0]!;
-    const thenToken = then && then.toUpperCase() !== asset ? then : null;
+    // The agent wallet pays services in USDC, so that is what lands there (and nothing is bought after).
+    const asset = toAgent ? "USDC" : wanted && deliverable.includes(wanted) ? wanted : then && deliverable.includes(then.toUpperCase()) ? then.toUpperCase() : deliverable[0]!;
+    const thenToken = !toAgent && then && then.toUpperCase() !== asset ? then : null;
+    const fromBlock = toAgent ? ((await this.chains.get(network)?.client.getBlockNumber()) ?? null) : null;
     const amount = decimal(request.amount) ?? null;
     const currency = request.currency?.trim().toUpperCase() || (asset === "EURC" ? "EUR" : "USD");
 
@@ -80,6 +106,8 @@ export class OnrampService {
         fiatCurrency: currency,
         thenToken,
         destination: wallet,
+        destinationKind: toAgent ? "agent_wallet" : "wallet",
+        fromBlock,
         expiresAt: new Date(Date.now() + ONRAMP.orderTtlMs),
       })
       .returning();
@@ -141,11 +169,14 @@ export class OnrampService {
       await this.db.update(onrampOrders).set({ status: "expired" }).where(and(eq(onrampOrders.id, row.id), inArray(onrampOrders.status, OPEN)));
       return;
     }
-    const arrivals = await this.db
-      .select()
-      .from(chainEvents)
-      .where(and(eq(chainEvents.userId, row.userId), eq(chainEvents.network, row.network), eq(chainEvents.asset, row.asset), gte(chainEvents.createdAt, row.createdAt)))
-      .orderBy(asc(chainEvents.createdAt));
+    const arrivals =
+      row.destinationKind === "agent_wallet"
+        ? await this.agentArrivals(row)
+        : await this.db
+            .select()
+            .from(chainEvents)
+            .where(and(eq(chainEvents.userId, row.userId), eq(chainEvents.network, row.network), eq(chainEvents.asset, row.asset), gte(chainEvents.createdAt, row.createdAt)))
+            .orderBy(asc(chainEvents.createdAt));
     const used = new Set(
       (
         await this.db
@@ -163,6 +194,27 @@ export class OnrampService {
       .set({ status: "settled", received: match.amount, receivedTx: match.txHash, receivedLogIndex: String(match.logIndex), settledAt: new Date() })
       .where(and(eq(onrampOrders.id, row.id), inArray(onrampOrders.status, OPEN), isNull(onrampOrders.receivedTx)));
     this.log.info({ orderId: row.id, tx: match.txHash }, "onramp settled on chain");
+    if (row.destinationKind === "agent_wallet") {
+      await this.agentWallets?.arrived(row.userId, row.network).catch((error: unknown) => this.log.warn({ err: error, orderId: row.id }, "agent wallet deposit after card purchase failed; it stays on hand"));
+    }
+  }
+
+  /** USDC that reached the agent wallet since the order started, leaving out its own moves and the person's top-ups. */
+  private async agentArrivals(row: OrderRow) {
+    const clients = this.chains.get(row.network);
+    if (!clients || row.fromBlock === null || !this.agentWallets) return [];
+    // The reconciler looks every few seconds, so the latest window always covers what arrived since its last look.
+    const latest = await clients.client.getBlockNumber();
+    const fromBlock = latest - row.fromBlock > LOG_BLOCKS_MAX ? latest - LOG_BLOCKS_MAX : row.fromBlock;
+    const [logs, own, mine] = await Promise.all([
+      clients.client.getLogs({ address: clients.network.addresses.usdc, event: TRANSFER, args: { to: row.destination as Address }, fromBlock, toBlock: latest }),
+      this.agentWallets.ownMoves(row.userId, row.network),
+      this.wallets.userWallet(row.userId),
+    ]);
+    const from = mine?.address.toLowerCase();
+    return logs
+      .filter((log) => log.transactionHash && !own.has(log.transactionHash.toLowerCase()) && log.args.from?.toLowerCase() !== from)
+      .map((log) => ({ txHash: log.transactionHash!, logIndex: log.logIndex ?? 0, amount: log.args.value ?? BigInt(0) }));
   }
 
   /** Every few seconds: open orders against what the watcher saw arrive; stale ones expire. */
@@ -233,6 +285,7 @@ export class OnrampService {
       fiatAmount: row.fiatAmount,
       fiatCurrency: row.fiatCurrency,
       thenToken: row.thenToken,
+      destination: row.destinationKind as OnrampDestination,
       received: row.received?.toString() ?? null,
       tx: row.receivedTx && explorer ? { hash: row.receivedTx, explorerUrl: `${explorer}/tx/${row.receivedTx}` } : null,
       settledAt: row.settledAt?.toISOString() ?? null,

@@ -82,9 +82,6 @@ import type {
   PayoutCreateResult,
   PayoutLineInput,
   PayoutView,
-  PayrollGrantRequest,
-  PayrollInput,
-  PayrollView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import { intelligenceApi } from "./intelligence";
@@ -106,6 +103,7 @@ export * from "./business";
 export * from "./history";
 export * from "./intelligence";
 export * from "./everyday";
+export * from "./chat-cards";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -445,7 +443,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       },
     },
 
-    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts, payroll. */
+    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts. */
     business: {
       profile: () => call<{ profile: BusinessProfile | null }>("GET", "/business/profile"),
       saveProfile: (input: BusinessProfileInput) => call<{ profile: BusinessProfile }>("PUT", "/business/profile", input),
@@ -458,17 +456,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** The printable invoice (HTML) for a PDF or a browser. */
       documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
       payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
-      createPayout: (input: { asset: "USDC" | "EURC"; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
+      createPayout: (input: { asset: string; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
       signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
       submitPayout: (id: string, requestId: string, signedTransaction: string) =>
         call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),
-      payrolls: () => call<{ payrolls: PayrollView[] }>("GET", "/business/payroll"),
-      createPayroll: (input: PayrollInput) => call<{ payroll: PayrollView }>("POST", "/business/payroll", input),
-      payrollGrant: (id: string) => call<PayrollGrantRequest>("POST", `/business/payroll/${id}/grant`),
-      activatePayroll: (id: string, lines: { automationId: string; signatures: { grantId: string; signature: string }[] }[]) =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/activate`, { lines }),
-      changePayroll: (id: string, change: "pause" | "resume" | "cancel") =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/change`, { change }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */

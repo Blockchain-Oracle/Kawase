@@ -9,7 +9,7 @@ import { toast } from "sonner-native";
 import { arc, arcTestnet } from "viem/chains";
 
 import type { InvoiceView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -59,7 +59,7 @@ export function InvoiceScreen() {
       </Page>
     );
   }
-  const money = (baseUnits: string) => formatAmount(toAmount(invoice.asset as AssetId, BigInt(baseUnits)), locale);
+  const money = (baseUnits: string) => formatTokenAmount(BigInt(baseUnits), invoice.decimals, invoice.asset, locale);
   const day = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
 
   const cancel = async () => {

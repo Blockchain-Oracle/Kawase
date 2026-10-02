@@ -37,6 +37,8 @@ The Phase D send / request / contacts screens were never built, and `policy`, `i
 - **Withdraw receipt**: Ticket Confirmation Card · ravikatiyar162 (6492) · the existing `ReceiptCard` twin.
 - **Withdraw lines**: Asset Card · ravikatiyar162 (7945) rows composed on the card base (mark, amount, as itself / as cash, route, what arrives, reason) — plan §C: "withdraw-destination cards are compositions of these".
 - **Add money methods and destination rows**: Item Action List · sean0205 (28284) · https://21st.dev/r/sean0205/item-action-list · through the existing `ListRow`/`ListGroup` twins, exchange tiles with real marks (web3icons, `packages/identity/PROVENANCE.md`).
+- Invoices list in chat (list_invoices): 27124 Trade Journal Table · ssychui · https://21st.dev/r/ssychui/trade-journal-table · the finance family's journal (count, range pills, column head, outcome pills) → `ui-native/journal-table.tsx`.
+- Payout receipt in chat: 6492 Ticket Confirmation Card · ravikatiyar162 · https://21st.dev/r/ravikatiyar162/ticket-confirmation-card · the plan's receipt pick (tear line, facts grid, barcode of the tx) without confetti → `ui-native/ticket-card.tsx`.
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
@@ -58,3 +60,5 @@ The Phase D send / request / contacts screens were never built, and `policy`, `i
   - Add money: Buy (Circle Onramp), Receive (any token, bare-address QR), From an exchange (logos → that exchange's steps, network "Arc"; Coinbase → Base then Bring to Arc), From another chain (Bring to Arc, the chains where USDC waits), test money; each row says when it is mainnet only.
   - Positions: Kawase Margin longs/shorts on Home's Positions and in Markets → Long/Short (positions, then each market with its side caps).
   - Found and fixed: the CCTP quote inside `/crosschain` timed out at 6 s while App Kit's estimate takes 6.2–6.8 s on Arc Testnet, so CCTP never quoted there (now 15 s for that quote).
+- 2026-10-02 (B2-2): invoices and payouts in any Arc token (A's registry; look-alikes refused; decimals per token); non-USDC/EURC invoices get their own `/r/` link paid by Memo. Invoice reminders (due tomorrow, overdue) through inbox/push/email. Testnet: 8-decimal KTB invoice paid by Memo 0x2795b67f…9668, KTB payout in one self-batch 0xb60149e0…959c.
+- 2026-10-02 (B2-2): chat tools propose_payout, list_invoices, create_invoice in any token; testnet chat payout 0x8dac2010…762b with the real model. Payroll moved to A3's automations `payroll` kind (decision X32); my payrolls table dropped (0047).

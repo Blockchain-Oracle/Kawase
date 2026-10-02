@@ -24,6 +24,7 @@ import {
   type Db,
 } from "@kawase/db";
 import { amount as toAmount, canonicalAmount, type AssetId } from "@kawase/money";
+import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import type { ContactService } from "../contacts/service";
@@ -65,6 +66,7 @@ export class HistoryService {
     private readonly chains: Chains,
     private readonly wallets: WalletService,
     private readonly contacts: ContactService,
+    private readonly log?: Logger | undefined,
   ) {}
 
   // ── Why ────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -104,7 +106,7 @@ export class HistoryService {
       .limit(1);
     if (payout) {
       view.kind = "payout";
-      view.facts = { people: payout.lines.length, total: payout.total.toString(), asset: payout.asset };
+      view.facts = { people: payout.lines.length, total: payout.total.toString(), asset: payout.asset, decimals: payout.decimals };
       view.steps.unshift({ step: "asked", at: iso(payout.createdAt), surface: "app", words: { payout: payout.lines.length } });
     }
     const [invoice] = await this.db
@@ -115,7 +117,7 @@ export class HistoryService {
     if (invoice) {
       view.kind = "invoice";
       const payment = invoice.payments.find((entry) => entry.txHash.toLowerCase() === hash);
-      view.facts = { invoice: invoice.number, client: invoice.clientName, amount: payment?.amount ?? null, asset: invoice.asset };
+      view.facts = { invoice: invoice.number, client: invoice.clientName, amount: payment?.amount ?? null, asset: invoice.asset, decimals: invoice.decimals };
       view.steps.push({ step: "matched", at: payment?.at ?? iso(invoice.updatedAt), what: "invoice", reference: payment?.via === "memo" ? invoice.memoId : null });
     }
     const [incoming] = await this.db
@@ -195,12 +197,16 @@ export class HistoryService {
 
   // ── Range: chain transfers plus off-chain service payments ────────────────────────────────────────────────────
 
-  private async range(user: SessionUser, network: NetworkId, from: Date, to: Date) {
+  private async range(user: Pick<SessionUser, "id">, network: NetworkId, from: Date, to: Date) {
     const wallet = await this.wallets.userWallet(user.id);
     const clients = this.chains.get(network);
     if (!wallet || !clients) return { items: [] as ActivityItem[], complete: true, purchases: [] as (typeof marketplacePurchases.$inferSelect)[] };
     const [chain, purchases] = await Promise.all([
-      fetchActivityRange(clients.network, wallet.address as Address, { agent: clients.ops.address, relayer: clients.relayerAddress }, { from, to }),
+      // The explorer can be slow or down: the file and the report still come, marked incomplete, never a failure.
+      fetchActivityRange(clients.network, wallet.address as Address, { agent: clients.ops.address, relayer: clients.relayerAddress }, { from, to }).catch((error: unknown) => {
+        this.log?.warn({ err: error, network }, "explorer history unread; export marked incomplete");
+        return { items: [] as ActivityItem[], complete: false };
+      }),
       this.db
         .select()
         .from(marketplacePurchases)
@@ -218,7 +224,7 @@ export class HistoryService {
   }
 
   /** One calendar month (UTC), as CSV or beancount. */
-  async export(user: SessionUser, network: NetworkId, month: string, format: "csv" | "beancount") {
+  async export(user: Pick<SessionUser, "id">, network: NetworkId, month: string, format: "csv" | "beancount") {
     const from = new Date(`${month}-01T00:00:00.000Z`);
     if (Number.isNaN(from.getTime())) throw problem(HTTP.badRequest, "validation", "month is YYYY-MM");
     const to = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + 1, 1));
@@ -332,7 +338,11 @@ export class HistoryService {
         .where(and(eq(invoices.userId, user.id), eq(invoices.network, network), eq(invoices.status, "paid"), gte(invoices.updatedAt, from))),
     ]);
     const invoiceAmount: Record<string, bigint> = {};
-    for (const invoice of paid) add(invoiceAmount, invoice.asset, invoice.total);
+    const decimals: Record<string, number> = {};
+    for (const invoice of paid) {
+      add(invoiceAmount, invoice.asset, invoice.total);
+      if (invoice.asset !== "USDC" && invoice.asset !== "EURC") decimals[invoice.asset] = invoice.decimals;
+    }
     return {
       network,
       from: iso(from),
@@ -346,6 +356,7 @@ export class HistoryService {
         skipped: runs.filter((row) => row.status === "skipped").reduce((sum, row) => sum + Number(row.count), 0),
       },
       invoices: { paid: paid.length, amount: strings(invoiceAmount) },
+      decimals,
       complete,
     };
   }

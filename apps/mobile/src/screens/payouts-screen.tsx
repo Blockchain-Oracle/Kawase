@@ -1,5 +1,5 @@
 // Batch payouts (cards/agent-business.md): paste or type "who, amount" lines (contacts, @handles or addresses; a CSV
-// works), pick the currency, check: every line is resolved and checked like a send; then one Face ID signs one
+// works), pick the token (USDC, EURC, or anything else the wallet holds on Arc — R1), check: every line is resolved and checked like a send; then one Face ID signs one
 // transaction that pays everyone, all or nothing. Past payouts below with their transaction.
 import { useFocusEffect } from "expo-router";
 import { ExternalLink } from "lucide-react-native";
@@ -9,7 +9,7 @@ import { toast } from "sonner-native";
 import { arc, arcTestnet } from "viem/chains";
 
 import type { PayoutProblem, PayoutView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -19,10 +19,10 @@ import { Textarea } from "@kawase/ui-native/components/ui/textarea";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { Page, Section } from "@/account/page";
+import { assetParam, TokenChoice, USDC_CHOICE, type TokenChoiceValue } from "@/business/token-choice";
 import { parseLines } from "@/business/lines";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { Chip } from "@/marketplace/parts";
 import { shortAddress } from "@/send/copy";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
@@ -37,7 +37,7 @@ export function PayoutsScreen() {
   const { t } = useT();
   const { locale } = useLocale();
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
-  const [asset, setAsset] = React.useState<"USDC" | "EURC">("USDC");
+  const [asset, setAsset] = React.useState<TokenChoiceValue>(USDC_CHOICE);
   const [text, setText] = React.useState("");
   const [draft, setDraft] = React.useState<PayoutView>();
   const [problems, setProblems] = React.useState<PayoutProblem[]>([]);
@@ -53,13 +53,13 @@ export function PayoutsScreen() {
     }, [load]),
   );
 
-  const money = (baseUnits: string, of: AssetId = asset) => formatAmount(toAmount(of, BigInt(baseUnits)), locale);
+  const money = (baseUnits: string, of: { asset: string; decimals: number } = { asset: asset.symbol, decimals: asset.decimals }) => formatTokenAmount(BigInt(baseUnits), of.decimals, of.asset, locale);
   const parsed = parseLines(text);
 
   const check = async () => {
     setBusy(true);
     try {
-      const result = await api.business.createPayout({ asset, lines: parsed.lines });
+      const result = await api.business.createPayout({ asset: assetParam(asset), lines: parsed.lines });
       setProblems(result.problems);
       setDraft(result.payout ?? undefined);
     } catch {
@@ -71,7 +71,7 @@ export function PayoutsScreen() {
 
   const pay = async () => {
     if (!draft || !signer) return;
-    const yes = await confirmWithBiometrics(t("business.payoutPrompt", { count: String(draft.lines.length), amount: money(draft.total) }), t("common.cancel"));
+    const yes = await confirmWithBiometrics(t("business.payoutPrompt", { count: String(draft.lines.length), amount: money(draft.total, draft) }), t("common.cancel"));
     if (yes !== "approved") return;
     setBusy(true);
     try {
@@ -92,11 +92,7 @@ export function PayoutsScreen() {
   return (
     <Page title={t("business.payouts")}>
       <Section title={t("business.newPayout")}>
-        <View className="flex-row gap-2">
-          {(["USDC", "EURC"] as const).map((entry) => (
-            <Chip key={entry} label={entry} selected={asset === entry} onPress={() => setAsset(entry)} />
-          ))}
-        </View>
+        <TokenChoice value={asset} onChange={setAsset} />
         <Textarea
           value={text}
           onChangeText={(value) => {
@@ -123,11 +119,11 @@ export function PayoutsScreen() {
           <View className="gap-3">
             <ListGroup>
               {draft.lines.map((line, index) => (
-                <ListRow key={`${index}-${line.address}`} title={line.name ?? shortAddress(line.address)} subtitle={line.name ? shortAddress(line.address) : undefined} trailing={<Amount className="text-foreground text-sm">{money(line.amount)}</Amount>} />
+                <ListRow key={`${index}-${line.address}`} title={line.name ?? shortAddress(line.address)} subtitle={line.name ? shortAddress(line.address) : undefined} trailing={<Amount className="text-foreground text-sm">{money(line.amount, draft)}</Amount>} />
               ))}
             </ListGroup>
             <Button disabled={busy} onPress={() => void pay()}>
-              <Text>{busy ? t("common.loading") : t("business.payAll", { count: String(draft.lines.length), amount: money(draft.total) })}</Text>
+              <Text>{busy ? t("common.loading") : t("business.payAll", { count: String(draft.lines.length), amount: money(draft.total, draft) })}</Text>
             </Button>
           </View>
         )}
@@ -138,7 +134,7 @@ export function PayoutsScreen() {
             {history.map((payout) => (
               <ListRow
                 key={payout.id}
-                title={t("business.payoutRow", { count: String(payout.lines.length), amount: money(payout.total, payout.asset) })}
+                title={t("business.payoutRow", { count: String(payout.lines.length), amount: money(payout.total, payout) })}
                 subtitle={payout.status === "confirmed" ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(payout.createdAt)) : t("business.payoutFailed")}
                 {...(payout.txHash ? { trailing: <Icon as={ExternalLink} className="text-muted-foreground size-4" />, onPress: () => void Linking.openURL(`${EXPLORER[payout.network]}${payout.txHash}`) } : {})}
               />

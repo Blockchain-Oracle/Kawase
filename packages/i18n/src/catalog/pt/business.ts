@@ -31,6 +31,8 @@ export const business: Catalog["business"] = {
   clientName: "Nome do cliente",
   clientEmail: "E-mail do cliente (opcional)",
   currency: "Moeda",
+  otherToken: "Outro token: nome, símbolo ou endereço",
+  tokenContract: "Contrato do token {{asset}} na Arc",
   lines: "Itens",
   lineDescription: "Referente a",
   removeLine: "Remover item",

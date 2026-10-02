@@ -123,7 +123,7 @@ export function DevicesScreen() {
                     key={device.id}
                     leading={<Icon as={device.platform === "web" || device.platform === "desktop" ? Laptop : Smartphone} className="text-muted-foreground size-5" />}
                     title={`${device.name ?? PLATFORM_NAMES[device.platform]}${device.current ? ` · ${t("devices.thisDevice")}` : ""}`}
-                    subtitle={`${PLATFORM_NAMES[device.platform]}${device.appVersion ? ` ${device.appVersion}` : ""} · ${t("devices.lastActive", { time: when(device.lastSeenAt) })}`}
+                    subtitle={[`${PLATFORM_NAMES[device.platform]}${device.appVersion ? ` ${device.appVersion}` : ""}`, device.location, t("devices.lastActive", { time: when(device.lastSeenAt) })].filter(Boolean).join(" · ")}
                     trailing={<Text className="text-destructive text-sm font-semibold">{busy === device.id ? t("common.loading") : t("devices.signOut")}</Text>}
                     {...(busy ? {} : { onPress: () => void signOut(device) })}
                   />

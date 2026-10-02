@@ -67,7 +67,7 @@ Verified: 2026-10-02
 - **Trade-off:** Circle holds the agent wallet key, but only the small budget is at risk. Refunds need a "return budget" action (Gateway withdraw → user).
 
 ## What if
-- The seller times out or errors after payment → refund request (where the seller supports it) and the receipt marked "failed after payment".
+- The seller times out or errors after payment → the receipt says "No refund: <seller> kept the payment" (x402 has no refund standard yet: the refund extension is an unmerged proposal, x402-foundation/x402 PR #3640, and does not cover Gateway batches; checked 10-02). A Gateway payment Circle reports as failed (`GET /v1/x402/transfers/{id}`) shows "Not charged" and leaves the day's spend.
 - The response is untrusted data: quarantined from instructions (prompt-injection rule) and never moves money by itself.
 - Over budget → policy refusal with the cap named.
 - Testnet: no listings, so **our own demo seller** (Express with `@x402/express` paymentMiddleware, Circle facilitator on 5042002) with an explicit allowlist exception (MASTER-PLAN:233).

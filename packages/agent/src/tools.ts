@@ -4,6 +4,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import { businessTools } from "./business-tools";
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
 import { safetyTools } from "./safety-tools";
@@ -37,7 +38,6 @@ const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
 const INVOICE_DUE_MAX = 365;
-const REPORT_DAYS_MAX = 31;
 
 export function buildTools(context: AgentContext) {
   // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
@@ -45,6 +45,7 @@ export function buildTools(context: AgentContext) {
     ...railsTools(context),
     ...safetyTools(context),
     ...automationTools(context),
+    ...businessTools(context),
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
@@ -390,22 +391,15 @@ export function buildTools(context: AgentContext) {
     }),
     create_invoice: tool({
       description:
-        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\"). Pass the client's name as said, the total as digits with a dot, the currency (USDC unless they said euros/EURC), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link.",
+        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\", \"bill Ben 0.01 cirBTC\"). Pass the client's name as said, the total as digits with a dot, the token (USDC unless they named another: EURC, cirBTC or any Arc token by symbol or address), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link; the business is reminded before it falls due and when it is overdue.",
       inputSchema: z.object({
         client: z.string().min(1).max(RECIPIENT_MAX),
         amount: z.string().regex(/^\d+(\.\d+)?$/),
-        asset: z.enum(["USDC", "EURC"]).optional(),
+        asset: z.string().max(TOKEN_QUERY_MAX).optional(),
         description: z.string().min(1).max(NOTE_MAX),
         dueInDays: z.number().int().min(0).max(INVOICE_DUE_MAX).optional(),
       }),
       execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
-    get_report: tool({
-      description:
-        "The person's report on the active network for the last week (or the days they say, up to 31): money received and sent, swaps, bridges, earn moves, what the agent spent on services, automations that ran or skipped, invoices paid. Use it for 'how did I do this week?', 'what did I spend?', 'weekly summary'.",
-      inputSchema: z.object({ days: z.number().int().min(1).max(REPORT_DAYS_MAX).optional() }),
-      execute: async (input) => context.report(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     // Memory, history search, Arc knowledge and the extra cards (A5).

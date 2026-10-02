@@ -7,7 +7,7 @@ import { View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { InvoicePublicView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -35,7 +35,7 @@ export function InvoicePanel({ token, payable }: { token: string; payable: boole
   }, [read]);
 
   if (!invoice) return null;
-  const money = (baseUnits: string) => formatAmount(toAmount(invoice.asset as AssetId, BigInt(baseUnits)), locale);
+  const money = (baseUnits: string) => formatTokenAmount(BigInt(baseUnits), invoice.decimals, invoice.asset, locale);
   const day = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(new Date(invoice.dueAt));
   const partial = BigInt(invoice.paid) > BigInt(0) && invoice.status !== "paid";
 

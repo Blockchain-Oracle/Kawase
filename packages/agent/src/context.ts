@@ -56,7 +56,14 @@ import type {
   AutomationEditResponse,
   SimulationView,
   InvoiceView,
-  ReportView,
+  PayoutProposal,
+  InvoiceFilter,
+  InvoiceListOutput,
+  ExportLinkOutput,
+  WeeklyReportOutput,
+  ExplainOutput,
+  DeviceSignOutProposal,
+  DeleteAccountProposal,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -125,10 +132,8 @@ export type AgentContext = {
   agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
   /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
-  /** Business mode: an invoice with a payment link and an on-chain reference (the card shares it). */
-  createInvoice(input: { client: string; amount: string; asset: "USDC" | "EURC"; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
-  /** The weekly report: money in and out, swaps, bridges, earn, services, automations, invoices. */
-  report(input: { days?: number | undefined }): Promise<{ report: ReportView | null; summary: ModelSummary }>;
+  /** Business mode: an invoice in any Arc token with a payment link and an on-chain reference (the card shares it). */
+  createInvoice(input: { client: string; amount: string; asset: string; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
@@ -184,4 +189,19 @@ export type AgentContext = {
   editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
   simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;
   automationRuns?(input: { automationId?: string | undefined; limit: number }): Promise<{ network: AgentNetwork; automations: ProposeAutomationOutput[]; summary: ModelSummary }>;
+  // Business, history and account from chat (builder B2). Optional so a context without them still builds.
+  /** A checked batch payout (any Arc token); one Face ID on the card pays everyone. */
+  proposePayout?(input: { asset: string | null; lines: { recipient: string; amount: string }[] }): Promise<{ proposal: PayoutProposal; summary: ModelSummary }>;
+  /** The business's invoices with their status, filtered; one by number or client. */
+  listInvoices?(input: { filter: InvoiceFilter; number: string | null; client: string | null }): Promise<{ list: InvoiceListOutput; summary: ModelSummary }>;
+  /** A short-lived download link for one month of history as CSV or beancount. */
+  exportHistory?(input: { month: string | null; format: "csv" | "beancount" }): Promise<{ link: ExportLinkOutput; summary: ModelSummary }>;
+  /** The weekly report card. */
+  weeklyReport?(input: { days: number | null }): Promise<{ output: WeeklyReportOutput; summary: ModelSummary }>;
+  /** Why one movement happened: the decision record (the latest movement, in or out, when not named). */
+  explainTransaction?(input: { txHash: string | null; which: "latest" | "latest_in" | "latest_out" }): Promise<{ output: ExplainOutput; summary: ModelSummary }>;
+  /** The devices, for the person to sign one out on the card. */
+  proposeDeviceSignOut?(input: { device: string | null }): Promise<{ proposal: DeviceSignOutProposal; summary: ModelSummary }>;
+  /** What deleting the account means; the person does it on the delete screen with their @handle typed. */
+  proposeDeleteAccount?(): Promise<{ proposal: DeleteAccountProposal; summary: ModelSummary }>;
 };

@@ -3,16 +3,16 @@
 // a client's browser wallet. Covers: the profile; an invoice with two lines, its link, public view and document; the
 // client sending exactly the `pay` call the link hands a browser wallet (Memo.memo → USDC.transfer), the watcher matching
 // it by memoId and the request closing; a two-line payout in one self-batch transaction (both transfers in its receipt);
-// payroll drafted per payee and turned on with every grant signed at once, then cancelled.
+// payroll is the automations `payroll` kind and is tested with the automations (A3).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { config } from "dotenv";
-import { createPublicClient, createWalletClient, erc20Abi, http, parseEventLogs, parseUnits, type Hex, type TransactionSerializable, type TypedDataDefinition } from "viem";
+import { createPublicClient, createWalletClient, erc20Abi, http, parseEventLogs, parseUnits, type Hex, type TransactionSerializable } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { InvoicePublicView, InvoiceView, PayoutCreateResult, PayoutView, PayrollGrantRequest, PayrollView, TransactionRequestResponse } from "@kawase/api-client";
+import type { InvoicePublicView, InvoiceView, PayoutCreateResult, PayoutView, TransactionRequestResponse } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
@@ -46,7 +46,7 @@ const toSerializable = (t: TransactionRequestResponse["transaction"]): Transacti
   maxPriorityFeePerGas: BigInt(t.maxPriorityFeePerGas),
 });
 
-test("business on Arc testnet: an invoice paid by its Memo reference, a batch payout, payroll", { skip: !live, timeout: 900_000 }, async () => {
+test("business on Arc testnet: an invoice paid by its Memo reference, a batch payout", { skip: !live, timeout: 900_000 }, async () => {
   const env = loadApiEnv();
   const chains = createChains(env);
   const network = getNetwork("testnet");
@@ -157,19 +157,4 @@ test("business on Arc testnet: an invoice paid by its Memo reference, a batch pa
   assert.deepEqual(transfers.map((entry) => [entry.args.to.toLowerCase(), entry.args.value]).sort(), [[one.toLowerCase(), usdc("0.01")], [two.toLowerCase(), usdc("0.02")]].sort());
   console.log("payout", sent.txHash);
 
-  // 5. Payroll: one scheduled send per payee, every grant signed in one go, all on; then cancelled.
-  const payroll = ((await (await call("POST", "/business/payroll", { name: "Contractors", asset: "USDC", every: "month", monthday: 28, payees: [{ recipient: one, amount: "0.01" }, { recipient: two, amount: "0.01" }] })).json()) as { payroll: PayrollView }).payroll;
-  assert.equal(payroll.lines.length, 2);
-  const grants = (await (await call("POST", `/business/payroll/${payroll.id}/grant`, {})).json()) as PayrollGrantRequest;
-  assert.equal(grants.lines.length, 2);
-  const lines = await Promise.all(
-    grants.lines.map(async (line) => ({
-      automationId: line.automationId,
-      signatures: await Promise.all(line.request.grants.map(async (grant) => ({ grantId: grant.grantId, signature: await business.signTypedData(grant.typedData as TypedDataDefinition) }))),
-    })),
-  );
-  const on = ((await (await call("POST", `/business/payroll/${payroll.id}/activate`, { lines })).json()) as { payroll: PayrollView }).payroll;
-  assert.deepEqual(on.lines.map((line) => line.status), ["active", "active"]);
-  const off = ((await (await call("POST", `/business/payroll/${payroll.id}/change`, { change: "cancel" })).json()) as { payroll: PayrollView }).payroll;
-  assert.ok(off.lines.every((line) => line.status === "canceled"));
 });

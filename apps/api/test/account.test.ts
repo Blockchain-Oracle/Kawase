@@ -11,9 +11,12 @@ import { auditLog, handleHolds } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
 import { AuditWriter } from "../src/audit/writer";
+import { renderNotification } from "../src/notify/render";
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 const AUDIT_ROWS_CHECKED = 50;
+const POLL_ATTEMPTS = 20;
+const POLL_MS = 500;
 
 test("devices, signing one out, and deleting the account with the handle held", async () => {
   const SUB_ORG = randomUUID();
@@ -34,15 +37,18 @@ test("devices, signing one out, and deleting the account with the handle held", 
     await close();
   });
 
-  const signIn = async (key: typeof phone, installationId: string) => {
+  const signIn = async (key: typeof phone, installationId: string, ip?: string) => {
     const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
     const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-    const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId } }));
+    const request = jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId } });
+    if (ip) request.headers = { ...(request.headers as Record<string, string>), "x-forwarded-for": ip };
+    const response = await app.request("/auth/turnkey", request);
     await expectStatus(response, 201, "sign-in");
     return ((await response.json()) as { token: string }).token;
   };
   const phoneToken = await signIn(phone, "acct-phone-0001");
-  const laptopToken = await signIn(laptop, "acct-laptop-0001");
+  // A second device signs in from a public address (Google's resolver, as Traefik would forward it).
+  const laptopToken = await signIn(laptop, "acct-laptop-0001", "8.8.8.8");
   const as = (token: string) => (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
   const fromPhone = as(phoneToken);
@@ -58,9 +64,27 @@ test("devices, signing one out, and deleting the account with the handle held", 
   assert.equal(mine.name, "Test iPhone");
   assert.equal(mine.turnkeyPublicKey, phone.publicKeyHex);
   assert.equal(other.turnkeyPublicKey, laptop.publicKeyHex);
+  assert.ok(devices.every((device) => device.signedIn), "both devices read as signed in");
+
+  // The new device got a place from its address (DB-IP's free API), and the account a "new sign-in" notice.
+  let located: { location: string | null } | undefined;
+  for (let attempt = 0; attempt < POLL_ATTEMPTS && !located?.location; attempt++) {
+    const list = (await (await fromPhone("GET", "/account/devices")).json()) as { devices: { id: string; location: string | null }[] };
+    located = list.devices.find((device) => device.id === other.id);
+    if (!located?.location) await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+  }
+  assert.match(located?.location ?? "", /United States/);
+  const notices = async () => ((await (await fromPhone("GET", "/inbox")).json()) as { items: { kind: string; params: Record<string, string> }[] }).items;
+  const signedIn = (await notices()).find((item) => item.kind === "device_signed_in");
+  assert.ok(signedIn, "a new sign-in notice");
+  assert.match(signedIn.params.location ?? "", /United States/);
 
   // 2. Sign the laptop out from the phone: its session dies at once; its Turnkey key comes back to delete.
   const out = (await (await fromPhone("POST", `/account/devices/${other.id}/sign-out`)).json()) as { turnkeyPublicKey: string };
+  assert.ok((await notices()).some((item) => item.kind === "device_signed_out"), "a signed-out notice");
+  const rendered = renderNotification({ kind: "device_signed_in", network: "testnet", params: signedIn.params }, "en");
+  assert.match(rendered.title, /^New sign-in on /);
+  assert.equal(rendered.path, "/account/devices");
   assert.equal(out.turnkeyPublicKey, laptop.publicKeyHex);
   assert.equal((await fromLaptop("GET", "/me")).status, 401, "the laptop's session is revoked");
   assert.equal((await fromPhone("GET", "/me")).status, 200, "the phone stays signed in");

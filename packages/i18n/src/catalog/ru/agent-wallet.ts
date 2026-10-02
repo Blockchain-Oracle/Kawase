@@ -66,4 +66,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "Оплачено наноплатежом Circle Gateway",
     eip3009: "Оплачено переводом USDC",
   },
+  cardTopUp: "Или купите USDC прямо в него",
+  expressPay: "Pay",
+  orCard: "или оплатите картой",
+  cardButton: "Дебетовая карта",
+  deliversAgent: "USDC поступят прямо в кошелёк агента в {{network}}.",
+  noRefund: "Без возврата: платёж остался у продавца {{seller}}. Оплаченные запросы пока нельзя вернуть.",
+  notCharged: "Не списано: платёж так и не прошёл.",
+  refundNone: "без возврата",
+  refundNotCharged: "не списано",
 };

@@ -179,6 +179,7 @@ export type OnrampOrderView = {
   fiatCurrency: string | null;
   /** The token to buy with it afterwards, when asked for. */
   thenToken: string | null;
+  destination: OnrampDestination;
   /** Base units that arrived, seen on chain. */
   received: string | null;
   tx: { hash: string; explorerUrl: string } | null;
@@ -197,7 +198,15 @@ export type OnrampAvailability = {
   defaultAmount: string;
 };
 
-export type OnrampStartRequest = { asset?: string | null | undefined; amount?: string | null | undefined; currency?: string | null | undefined; then?: string | null | undefined };
+export type OnrampDestination = "wallet" | "agent_wallet";
+export type OnrampStartRequest = {
+  asset?: string | null | undefined;
+  amount?: string | null | undefined;
+  currency?: string | null | undefined;
+  then?: string | null | undefined;
+  /** Where it lands: the person's own wallet (default), or their agent wallet that pays for services (USDC only). */
+  destination?: OnrampDestination | null | undefined;
+};
 export type OnrampStartResponse = { order: OnrampOrderView; widgetUrl: string; expiresAt: string };
 export type OnrampEventInput = { event: string; code?: string | null | undefined; payload?: Record<string, unknown> | undefined };
 
