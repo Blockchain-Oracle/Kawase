@@ -40,6 +40,8 @@ import type {
   InspectServiceResult,
   MarketplaceCategory,
   ServiceSearchResult,
+  SafetyChange,
+  SafetyToolOutput,
 } from "@kawase/api-client";
 
 export type {
@@ -125,4 +127,22 @@ export type AgentContext = {
   tokenDetail(address: string): Promise<TokenDetailView>;
   /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
   proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
+  // Wallet & limits (A3). Optional so a context without them still builds; the tools say so when one is missing.
+  /** The risk dial, practice mode and pause, read from the session for the instructions (X11). */
+  riskMode?: "careful" | "balanced" | "autonomous" | undefined;
+  practice?: boolean | undefined;
+  pausedAll?: boolean | undefined;
+  /** The person's limits now. */
+  safetyView?(): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  /** A change: tightening applies at once; loosening comes back as a card to approve with Face ID. */
+  changeSafety?(change: SafetyChange): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  proposeLimitChange?(input: {
+    limit: "allowance" | "per_payment" | "temporary_raise" | "cooldown" | "practice";
+    token?: string | undefined;
+    amount?: string | undefined;
+    hours?: number | undefined;
+    on?: boolean | undefined;
+  }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  proposeAllowlistChange?(input: { action: "add" | "remove" | "only_on" | "only_off"; contact?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  revokeGrant?(input: { what: "allowance" | "automation" | "everything"; token?: string | undefined; automationId?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
 };

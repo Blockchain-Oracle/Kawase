@@ -10,10 +10,10 @@ import { erc20Abi, getAddress, hashTypedData, isAddress, verifyTypedData, type A
 
 import { DEFAULT_LIMITS, MS_PER_SECOND, SECONDS_PER_DAY } from "@kawase/config";
 import type { ApiUser, LimitValue, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption, TransactionRequestResponse } from "@kawase/api-client";
-import { contactAddresses, contactAddressTrust, contacts, grants, limitChanges, limits, safetySettings, userWalletSetup, users, type Db, type LimitChange } from "@kawase/db";
+import { contactAddresses, contactAddressTrust, contacts, grants, limitChanges, limits, safetySettings, tokenMetadata, userWalletSetup, users, walletTokens, type Db, type LimitChange } from "@kawase/db";
 import { buildAllowanceGrant, describeGrant, grantTypedData, isWalletSetUp, withSignature } from "@kawase/integrations-delegation";
 import type { Logger } from "@kawase/log";
-import type { NetworkId } from "@kawase/networks";
+import { CANONICAL_TOKENS, type NetworkId } from "@kawase/networks";
 import { planLimitChange, type LimitSettings } from "@kawase/policy";
 
 import { publicUser } from "../auth/routes";
@@ -72,8 +72,13 @@ export class SafetyService {
     const known = this.tokenMeta.get(key);
     if (known) return known;
     const { client, network: context } = this.clients(network);
-    if (token.toLowerCase() === context.addresses.usdc.toLowerCase()) return { symbol: "USDC", decimals: KNOWN_DECIMALS };
-    if (token.toLowerCase() === context.addresses.eurc.toLowerCase()) return { symbol: "EURC", decimals: KNOWN_DECIMALS };
+    const canonical = CANONICAL_TOKENS[network].find((entry) => entry.address.toLowerCase() === token.toLowerCase());
+    if (canonical) return { symbol: canonical.symbol, decimals: canonical.decimals };
+    const [stored] = await this.db
+      .select({ symbol: tokenMetadata.symbol, decimals: tokenMetadata.decimals })
+      .from(tokenMetadata)
+      .where(and(eq(tokenMetadata.chainId, context.chainId), eq(tokenMetadata.address, token.toLowerCase())));
+    if (stored) return stored;
     const [symbol, decimals] = await Promise.all([
       client.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }),
       client.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
@@ -143,29 +148,42 @@ export class SafetyService {
   }
 
   /**
-   * Tokens an allowance can be added for: the network's own (USDC, EURC), any token that already has one, and an
-   * address the person pastes (checked on chain to be an ERC-20). Each with the wallet's balance.
+   * Tokens an allowance can be added for (R1, every asset first-class): the network's canonical tokens, every token the
+   * watcher found in the wallet, any token that already has one, and an address the person pastes (checked on chain to
+   * be an ERC-20). Each with the wallet's balance; permissioned tokens (USYC) are display-only and left out.
    */
   async tokens(user: SessionUser, address?: string): Promise<{ tokens: TokenOption[] }> {
     const network = user.activeNetwork;
     const { client, network: context } = this.clients(network);
     const wallet = await this.wallets.userWallet(user.id);
     const live = byToken(await liveAllowanceGrants(this.db, user.id, network));
-    const candidates = new Set<string>([context.addresses.usdc.toLowerCase(), context.addresses.eurc.toLowerCase(), ...live.keys()]);
+    const found = await this.db
+      .select({ token: walletTokens.tokenAddress })
+      .from(walletTokens)
+      .where(and(eq(walletTokens.userId, user.id), eq(walletTokens.network, network), eq(walletTokens.chainId, context.chainId)));
+    const canonical = CANONICAL_TOKENS[network].filter((entry) => entry.kind !== "permissioned" && entry.kind !== "position");
+    const candidates = new Set<string>([...canonical.map((entry) => entry.address.toLowerCase()), ...found.map((row) => row.token.toLowerCase()), ...live.keys()]);
     if (address) {
       if (!isAddress(address, { strict: false })) throw problem(HTTP.unprocessable, "token_invalid");
       candidates.add(address.toLowerCase());
     }
     const tokens = await Promise.all(
-      [...candidates].map(async (token) => {
-        const meta = await this.meta(network, token as Address);
+      [...candidates].map(async (token): Promise<TokenOption | undefined> => {
+        const meta = await this.meta(network, token as Address).catch(() => undefined);
+        if (!meta) return undefined;
         const balance = wallet
           ? await client.readContract({ address: token as Address, abi: erc20Abi, functionName: "balanceOf", args: [wallet.address as Address] }).catch(() => ZERO)
           : ZERO;
         return { token: getAddress(token), symbol: meta.symbol, decimals: meta.decimals, balance: balance.toString(), hasAllowance: live.has(token) };
       }),
     );
-    return { tokens: tokens.sort((a, b) => Number(BigInt(b.balance) > BigInt(a.balance)) - Number(BigInt(b.balance) < BigInt(a.balance))) };
+    const usdc = context.addresses.usdc.toLowerCase();
+    const asked = address?.toLowerCase();
+    const listed = tokens.filter(
+      (entry): entry is TokenOption =>
+        entry !== undefined && (BigInt(entry.balance) > ZERO || entry.hasAllowance || entry.token.toLowerCase() === usdc || entry.token.toLowerCase() === asked),
+    );
+    return { tokens: listed.sort((a, b) => Number(BigInt(b.balance) > BigInt(a.balance)) - Number(BigInt(b.balance) < BigInt(a.balance))) };
   }
 
   private async settings(userId: string, network: NetworkId): Promise<LimitSettings & { live: AllowanceGrant[] }> {

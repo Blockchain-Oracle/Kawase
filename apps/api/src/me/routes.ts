@@ -20,8 +20,6 @@ const settingsSchema = z
     displayCurrency: z.string().length(FIELD.currencyCodeLength),
     timezone: z.string().max(FIELD.timezoneMax),
     theme: z.enum(["system", "light", "dark"]),
-    riskMode: z.enum(["careful", "balanced", "autonomous"]),
-    practiceMode: z.boolean(),
     /** The @handle; null clears it. Checked against the shared rules and for uniqueness below. */
     handle: z.string().max(FIELD.handleInputMax).nullable(),
     /** The optional handle step was answered (Skip); onboarding does not ask again (review R07). */

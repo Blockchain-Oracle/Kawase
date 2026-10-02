@@ -67,6 +67,8 @@ import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
+import { safetyRoutes } from "./safety/routes";
+import { SafetyService } from "./safety/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -173,6 +175,7 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
+  const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
   const marketplace =
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
@@ -262,6 +265,7 @@ export function createApp(deps: AppDeps) {
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
+  app.route("/safety", safetyRoutes(safety));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
     marketplace,
@@ -279,6 +283,7 @@ export function createApp(deps: AppDeps) {
     assets,
     automations,
     requests,
+    safety,
     models: deps.models,
     approvalSecret: deps.approvalSecret,
   };

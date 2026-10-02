@@ -103,3 +103,19 @@ export type SafetyApi = {
   /** The exit kit's first two steps: pause, then the one transaction that revokes every grant on this network. */
   exitKit: () => Promise<ExitKitResponse>;
 };
+
+/** What the agent's safety tools return, for the chat card (cards/automate-safety.md). */
+export type SafetyToolOutput = {
+  network: NetworkId;
+  /**
+   * applied: a tightening, done now · unchanged · needs_approval: the card asks for Face ID · revoke: the card signs the
+   * on-chain revoke · view: the limits as they are · refused: with a reason the card says.
+   */
+  status: "applied" | "unchanged" | "needs_approval" | "revoke" | "view" | "refused";
+  /** The change asked for, or the revoke. */
+  change: SafetyChange | { kind: "revoke"; what: "allowance" | "automation" | "everything"; token?: string | undefined } | null;
+  response: SafetyChangeResponse | null;
+  revoke: TransactionRequestResponse | null;
+  safety: SafetyView | null;
+  reason?: string | undefined;
+};

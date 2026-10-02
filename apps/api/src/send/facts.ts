@@ -1,6 +1,6 @@
 // Gathers what the policy needs for one send, fresh each time: balances, the 7702 code and what is left of the
 // allowance from the chain; limits and what was already spent from the database; who the recipient is.
-import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { erc20Abi, type Address } from "viem";
 
 import {

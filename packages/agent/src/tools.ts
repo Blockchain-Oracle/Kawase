@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
+import { safetyTools } from "./safety-tools";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -35,6 +36,7 @@ const BODY_MAX = 4_000;
 export function buildTools(context: AgentContext) {
   return {
     ...railsTools(context),
+    ...safetyTools(context),
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",

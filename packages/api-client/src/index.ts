@@ -162,8 +162,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
             | "displayCurrency"
             | "timezone"
             | "theme"
-            | "riskMode"
-            | "practiceMode"
             | "handle"
           >
         > & { handlePrompted?: true },

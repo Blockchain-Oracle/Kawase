@@ -36,6 +36,8 @@ import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
+import { safetyContext } from "./safety-context";
+import type { SafetyService } from "../safety/service";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -79,6 +81,8 @@ export function buildAgentContext(input: {
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Wallet & limits (A3). */
+  safety?: SafetyService | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -107,6 +111,7 @@ export function buildAgentContext(input: {
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
     ...railsContext({ user, db, margin: input.margin, threadId }),
+    ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
@@ -121,7 +126,8 @@ export function buildAgentContext(input: {
       // address above the threshold or a lookalike all route to Face ID instead and wait on the card).
       // By voice it always waits for the tap on its card: a microphone can hear a request the person did not make
       // (seen on 2026-10-01: speech in the room became "10 usdc"), and a spoken yes never moves money.
-      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice") {
+      // Guard (X11) confirms everything, chat too: the card waits for the person's tap.
+      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
         const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
           log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
           return undefined;
