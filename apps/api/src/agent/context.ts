@@ -27,6 +27,7 @@ import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
 import type { CrossChainService } from "../crosschain/service";
+import type { LendService } from "../lend/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
@@ -78,6 +79,7 @@ export function buildAgentContext(input: {
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
+  lend?: LendService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -110,7 +112,7 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
-    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, threadId }),
+    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

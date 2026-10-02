@@ -285,8 +285,124 @@ export type ElsewhereView = { network: NetworkId; chains: { chainId: number; nam
 
 export type ProposeCrossChainOutput = { crosschain: true; intent: CrossChainIntent; summary: string };
 
+// ── Earn options and borrowing on Aave V4 (earn-borrow.md) ─────────────────────────────────────────────────
+
+export type YieldSourceKind = "aave_v4" | "morpho_vault" | "lp";
+
+/** One place an asset can earn, from live reads: Aave V4's Spoke, App Kit's Morpho vaults, Merkl's LP campaigns. */
+export type YieldOptionView = {
+  kind: YieldSourceKind;
+  id: string;
+  name: string;
+  /** "Aave", "Morpho", "Aero": the protocol, for its mark. */
+  protocol: string;
+  curator: string | null;
+  asset: string;
+  /** Yearly, as a fraction (APY for lending and vaults, APR for LP rewards). */
+  rate: number;
+  rateKind: "apy" | "apr";
+  /** USD that could be withdrawn now, and the source's size. */
+  withdrawableUsd: number | null;
+  tvlUsd: number | null;
+  risk: "blue_chip" | "curated" | "rwa_credit" | "advanced";
+  /** Kawase can deposit into it from here; LP is shown, read-only, as advanced. */
+  executable: boolean;
+  /** Why it is lower or not offered: low liquidity, too small for the amount, advanced (impermanent loss). */
+  note: "low_liquidity" | "small_for_amount" | "advanced" | null;
+};
+
+export type YieldOptionsView = { network: NetworkId; asset: string; amount: string | null; options: YieldOptionView[]; best: string | null };
+
+export type LendReserveView = {
+  reserveId: number;
+  asset: string;
+  address: string;
+  decimals: number;
+  price: string;
+  supplyApr: number;
+  borrowApr: number;
+  collateralFactor: number;
+  borrowable: boolean;
+  liquidity: string;
+};
+
+export type LendAccountView = {
+  network: NetworkId;
+  available: boolean;
+  reason: "mainnet_only" | null;
+  reserves: LendReserveView[];
+  /** What this person has on Aave V4 outside Kawase Margin positions: supplied (earning) and borrowed. */
+  supplied: { reserveId: number; asset: string; amount: string; decimals: number; collateral: boolean; usd: number }[];
+  borrowed: { reserveId: number; asset: string; amount: string; decimals: number; usd: number }[];
+  health: number | null;
+  /** USD more that could be borrowed against what is supplied, keeping health at the floor. */
+  borrowRoomUsd: number;
+  minBorrowHealth: number;
+};
+
+export type LendRequest = {
+  action?: "supply" | "withdraw" | "borrow" | "repay" | undefined;
+  /** The asset acted on (borrowed, repaid, supplied, withdrawn): a symbol ("USDC") or address. */
+  asset?: string | null | undefined;
+  /** Decimal amount, or "all" for a full withdraw or repay. */
+  amount?: string | null | undefined;
+  /** Borrow: collateral to put in with it, when the account does not have enough already. */
+  collateralAsset?: string | null | undefined;
+  collateralAmount?: string | null | undefined;
+};
+
+export type LendDraftView = {
+  action: "supply" | "withdraw" | "borrow" | "repay";
+  asset: string;
+  decimals: number;
+  amount: string;
+  all: boolean;
+  collateral: { asset: string; amount: string; decimals: number } | null;
+  healthBefore: number | null;
+  healthAfter: number | null;
+  /** The borrowed asset's price at which the account would be liquidated, when one asset dominates (USD, 8 decimals). */
+  liquidationPrice: string | null;
+  rate: number;
+  networkFee: string;
+  quotedAt: string;
+};
+
+export type LendIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  version: number;
+  request: Required<{ [K in keyof LendRequest]: Exclude<LendRequest[K], undefined> }>;
+  draft: LendDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  tx: { hash: string; explorerUrl: string } | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type LendApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: LendIntent }
+  | { status: "sign"; intent: LendIntent; approvalId: string; transaction: UnsignedTransaction };
+
+export type CompareYieldOutput = YieldOptionsView & { summary: string };
+export type ProposeLendOutput = { intent: LendIntent; summary: string };
+
 export function railsEndpoints(call: Call) {
   return {
+    lend: {
+      /** Every source an asset can earn in, ranked among those that could give the amount back now. */
+      options: (asset: string, amount?: string) => call<YieldOptionsView>("GET", `/lend/options?asset=${encodeURIComponent(asset)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}`),
+      account: () => call<LendAccountView>("GET", "/lend/account"),
+      create: (request: LendRequest) => call<{ intent: LendIntent }>("POST", "/lend/orders", request),
+      get: (id: string) => call<{ intent: LendIntent }>("GET", `/lend/orders/${id}`),
+      revise: (id: string, patch: LendRequest) => call<{ intent: LendIntent }>("PATCH", `/lend/orders/${id}`, patch),
+      cancel: (id: string) => call<{ intent: LendIntent }>("POST", `/lend/orders/${id}/cancel`),
+      approve: (id: string, version: number, idempotencyKey?: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signedTransaction: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/signature`, { approvalId, signedTransaction }),
+    },
     crosschain: {
       /** USDC the person holds at the same address on the CCTP chains ("Bring to Arc"). */
       elsewhere: () => call<ElsewhereView>("GET", "/crosschain/elsewhere"),

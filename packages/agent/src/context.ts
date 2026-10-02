@@ -33,6 +33,9 @@ import type {
   BuyProposalOutput,
   CrossChainRequest,
   ProposeCrossChainOutput,
+  CompareYieldOutput,
+  LendRequest,
+  ProposeLendOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -124,6 +127,10 @@ export type AgentContext = {
   proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
   /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */
   proposeCrossChain?(input: CrossChainRequest): Promise<ProposeCrossChainOutput>;
+  /** Where an asset can earn: Aave V4, Morpho vaults (liquid ones), LP shown as advanced; ranked by rate among liquid. */
+  compareYield?(input: { asset: string; amount: string | null }): Promise<CompareYieldOutput>;
+  /** Drafts an Aave V4 action: supply, withdraw, borrow (collateral in the same batch) or repay; approved on the card. */
+  proposeLend?(input: LendRequest): Promise<ProposeLendOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */

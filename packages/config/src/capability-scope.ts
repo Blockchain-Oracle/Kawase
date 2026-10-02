@@ -50,6 +50,14 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "editing an automation in place (cancel and set it up again for now)",
     ],
   },
+  lend: {
+    supports: [
+      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
+      "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
+      "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a health check (refused below 1.25) and the rate; repaying part or all",
+    ],
+    notYet: ["Morpho Blue markets directly", "LP deposits", "health alerts by push (shown on the position for now)", "Aave V4 on testnet (it is mainnet only)"],
+  },
   margin: {
     supports: [
       "Kawase Margin on Arc mainnet: a leveraged long or short through the person's own Aave V4 account, opened and closed as one batch they confirm by sliding; markets come from Aave V4's live reserves (today cirBTC and WETH both ways; EURC short only, because EURC cannot be collateral there)",

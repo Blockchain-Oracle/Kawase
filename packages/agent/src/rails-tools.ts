@@ -14,8 +14,43 @@ const UNAVAILABLE = { summary: "This is not available here." };
 const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
 const RECIPIENT_MAX = 80;
 
+const ASSET_MAX = 40;
+
 export function railsTools(context: AgentContext) {
   return {
+    compare_yield: tool({
+      description:
+        "Where an asset can earn now, compared: Aave V4 (supply rate, what it can pay out right now), Morpho vaults (only those that could give the money back; low liquidity flagged) and LP campaigns (shown as advanced: impermanent loss). Ranked by yield among sources that could return the amount. Pass the asset (USDC by default) and the amount if they said one. The card lets them deposit.",
+      inputSchema: z.object({ asset: z.string().max(ASSET_MAX).optional(), amount: z.string().regex(/^\d+(\.\d+)?$/).optional() }),
+      execute: async ({ asset, amount }) => (context.compareYield ? context.compareYield({ asset: asset ?? "USDC", amount: amount ?? null }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    propose_supply: tool({
+      description:
+        "Prepare putting an asset into Aave V4 to earn (or taking it back out with withdraw; 'all' for everything). Pass the asset and the amount as digits with a dot. Kawase checks the balance and, for a withdrawal, the account's health; the person confirms on the card.",
+      inputSchema: z.object({ action: z.enum(["supply", "withdraw"]), asset: z.string().max(ASSET_MAX), amount: z.string().max(ASSET_MAX).optional() }),
+      execute: async ({ action, asset, amount }) => (context.proposeLend ? context.proposeLend({ action, asset, amount: amount ?? null }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    propose_borrow: tool({
+      description:
+        "Prepare borrowing on Aave V4 (Arc mainnet): the asset to borrow (USDC, EURC, cirBTC, WETH) and how much, and, if they want to put collateral in now, which asset and how much (cirBTC, WETH or USDC; EURC cannot be collateral). Kawase computes the health after (refused below 1.25), the rate and shows a card; the person confirms with Face ID.",
+      inputSchema: z.object({
+        asset: z.string().max(ASSET_MAX).describe("What to borrow"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+        collateralAsset: z.string().max(ASSET_MAX).optional(),
+        collateralAmount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+      }),
+      execute: async ({ asset, amount, collateralAsset, collateralAmount }) =>
+        context.proposeLend ? context.proposeLend({ action: "borrow", asset, amount: amount ?? null, collateralAsset: collateralAsset ?? null, collateralAmount: collateralAmount ?? null }) : UNAVAILABLE,
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    propose_repay: tool({
+      description: "Prepare repaying an Aave V4 loan: the asset and the amount, or 'all' to repay everything owed (interest included). The person confirms on the card.",
+      inputSchema: z.object({ asset: z.string().max(ASSET_MAX), amount: z.string().max(ASSET_MAX).optional().describe("Digits with a dot, or all") }),
+      execute: async ({ asset, amount }) => (context.proposeLend ? context.proposeLend({ action: "repay", asset, amount: amount ?? "all" }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     propose_bridge: tool({
       description:
         "Prepare moving USDC from Arc to another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) for the person themselves or anyone else: pass the recipient only if they named one (a saved contact, a @handle or an address they gave). Kawase quotes every route that serves it (Circle CCTP, Across, Relay), ranks them by what arrives, and shows up to three on a card with the best chosen; the person can pick another and confirms with Face ID. Nothing moves from this call.",
