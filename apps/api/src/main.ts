@@ -49,6 +49,7 @@ const app = createApp({
   livekit: env.LIVEKIT_URL && env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET ? { url: env.LIVEKIT_URL, apiKey: env.LIVEKIT_API_KEY, apiSecret: env.LIVEKIT_API_SECRET } : undefined,
   ops: circleOps(env),
   agentWallets: circleAgentWallets(env),
+  minAppVersion: env.KAWASE_MIN_APP_VERSION,
   discovery: new Discovery({ demoSellerUrl: env.X402_DEMO_SELLER_URL }),
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),

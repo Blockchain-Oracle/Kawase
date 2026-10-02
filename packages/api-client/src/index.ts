@@ -63,10 +63,12 @@ import type {
   ServiceSearchResult,
   TopUpResult,
 } from "./marketplace";
+import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./marketplace";
+export * from "./account";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -122,7 +124,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
   }
 
   return {
-    health: () => call<{ ok: boolean; networks: NetworkId[] }>("GET", "/health"),
+    /** `minAppVersion`: older apps must update (cards/access.md). */
+    health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
 
     auth: {
@@ -331,6 +334,20 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       read: (id: string) => call<void>("POST", `/inbox/${id}/read`),
       readAll: () => call<void>("POST", "/inbox/read-all"),
     },
+
+    /** Settings → Account: devices, email, export record, deleting the account. */
+    account: {
+      devices: () => call<{ devices: DeviceView[] }>("GET", "/account/devices"),
+      touchDevice: (input: { name?: string; appVersion?: string }) => call<void>("PATCH", "/account/devices/current", input),
+      signOutDevice: (id: string) => call<{ turnkeyPublicKey: string | null }>("POST", `/account/devices/${id}/sign-out`),
+      signOutEverywhere: () => call<{ turnkeyPublicKeys: string[] }>("POST", "/account/sign-out-everywhere"),
+      syncEmail: () => call<{ email: string | null }>("POST", "/account/email/sync"),
+      exportRecorded: () => call<void>("POST", "/account/export/recorded"),
+      holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
+      revokeAllRequest: (network: NetworkId) =>
+        call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
+      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
+    } satisfies AccountApi,
 
     /** The x402 marketplace and the Agent wallet page (on the active network). */
     marketplace: {

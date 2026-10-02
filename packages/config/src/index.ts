@@ -16,3 +16,4 @@ export * from "./trading";
 export * from "./voice";
 export * from "./notifications";
 export * from "./marketplace";
+export * from "./account";
