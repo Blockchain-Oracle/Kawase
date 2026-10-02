@@ -12,6 +12,8 @@ import { amount, formatAmount } from "@kawase/money";
 import { SUGGESTION_KINDS, type Suggestion, type SuggestionKind, type SuggestionsView } from "@kawase/api-client";
 
 import type { EarnService } from "../earn/service";
+import type { MarginService } from "../margin/service";
+import type { AssetService } from "../tokens/service";
 import type { RequestService } from "../requests/service";
 import type { SessionUser } from "../types";
 import type { WalletService } from "../wallet/service";
@@ -37,6 +39,14 @@ const STUCK_AFTER_MS = 900_000;
 /** A daily move in a held currency worth a card, in percent, and the least held to care (10 EURC). */
 const BIG_MOVE_PERCENT = 0.5;
 const MOVE_MIN_HELD = 10_000_000n;
+/** Any other held token: a 5% day, worth at least $10. */
+const BIG_MOVE_TOKEN_PERCENT = 5;
+const MOVE_MIN_USD = 10;
+/** Margin: account health under 1.25, or liquidation within a 10% move; a dismissal holds per 0.25 of health. */
+const HEALTH_WARN = 1.25;
+const LIQUIDATION_NEAR = 0.1;
+const HEALTH_STEP = 0.25;
+const DATE_CHARS = 10;
 const PRIORITY = { stuck_bridge: 90, health_drop: 85, expiring_request: 70, idle_cash: 50, big_move: 40 } as const;
 const PCT_DIGITS = 1;
 const PCT_SCALE = 100;
@@ -54,6 +64,9 @@ export class SuggestionService {
     private readonly earn: EarnService,
     private readonly requests: RequestService,
     private readonly log: Logger,
+    /** The priced portfolio (builder A) and Kawase Margin (B1); each card kind stays silent without its source. */
+    private readonly assets?: AssetService | undefined,
+    private readonly margin?: MarginService | undefined,
   ) {}
 
   private async prefs(userId: string) {
@@ -155,14 +168,45 @@ export class SuggestionService {
     });
   }
 
-  /** A held currency that moved more than half a percent today (EURC follows the euro: ECB reference rates). */
+  /**
+   * A held token that moved a lot in 24 hours (the priced portfolio: GeckoTerminal via AssetService): 5% for most
+   * tokens, half a percent for a currency stablecoin (EURC follows the euro), never a dollar stablecoin. When the
+   * portfolio has no price change for EURC, the ECB's daily euro rate stands in.
+   */
   private async bigMoves(user: SessionUser, balances: Balances | undefined): Promise<Suggestion[]> {
-    if (!balances || balances.eurc < MOVE_MIN_HELD) return [];
+    const today = new Date().toISOString().slice(0, DATE_CHARS);
+    const moves: Suggestion[] = [];
+    let eurcPriced = false;
+    const portfolio = this.assets ? await this.assets.portfolio(user).catch(() => undefined) : undefined;
+    for (const holding of portfolio?.assets ?? []) {
+      const pct = holding.change24hPct;
+      if (holding.token.symbol.toUpperCase() === "EURC" && pct !== null) eurcPriced = true;
+      if (pct === null || holding.valueUsd === null || holding.valueUsd < MOVE_MIN_USD || holding.token.kind === "dollar") continue;
+      if (Math.abs(pct) < (holding.token.kind === "fiat" ? BIG_MOVE_PERCENT : BIG_MOVE_TOKEN_PERCENT)) continue;
+      const deltaUsd = holding.valueUsd - holding.valueUsd / (1 + pct / PCT_SCALE);
+      moves.push({
+        id: `big_move:${holding.token.address.toLowerCase()}:${today}`,
+        kind: "big_move",
+        network: user.activeNetwork,
+        facts: {
+          asset: holding.token.symbol,
+          change: `${pct > 0 ? "+" : ""}${pct.toFixed(PCT_DIGITS)}%`,
+          valueChange: `${deltaUsd >= 0 ? "+" : "−"}$${Math.abs(deltaUsd).toFixed(DECIMALS_SHOWN)}`,
+          held: Number(holding.amount).toFixed(DECIMALS_SHOWN),
+          price: `$${(holding.priceUsd ?? 0).toFixed(holding.priceUsd !== null && holding.priceUsd < 1 ? RATE_DIGITS : DECIMALS_SHOWN)}`,
+          date: today,
+        },
+        action: { type: "chat" },
+        priority: PRIORITY.big_move,
+      });
+    }
+    if (eurcPriced || !balances || balances.eurc < MOVE_MIN_HELD) return moves;
     const move = await eurUsdMove();
-    if (!move || Math.abs(move.changePct) < BIG_MOVE_PERCENT) return [];
+    if (!move || Math.abs(move.changePct) < BIG_MOVE_PERCENT) return moves;
     const heldEur = Number(balances.eurc) / Number(USDC_UNIT);
     const deltaUsd = heldEur * (move.rate - move.previousRate);
     return [
+      ...moves,
       {
         id: `big_move:EURC:${move.date}`,
         kind: "big_move",
@@ -172,13 +216,40 @@ export class SuggestionService {
           change: `${move.changePct > 0 ? "+" : ""}${move.changePct.toFixed(PCT_DIGITS)}%`,
           valueChange: `${deltaUsd >= 0 ? "+" : "−"}$${Math.abs(deltaUsd).toFixed(DECIMALS_SHOWN)}`,
           held: usd(balances.eurc, "EURC"),
-          rate: move.rate.toFixed(RATE_DIGITS),
+          price: `$${move.rate.toFixed(RATE_DIGITS)}`,
           date: move.date,
         },
         action: { type: "chat" },
         priority: PRIORITY.big_move,
       },
     ];
+  }
+
+  /** An open long or short (Kawase Margin) whose account health is low or whose liquidation price is close. */
+  private async healthDrops(user: SessionUser): Promise<Suggestion[]> {
+    if (!this.margin) return [];
+    const positions = await this.margin.positions(user);
+    return positions
+      .filter(
+        (position) =>
+          position.network === user.activeNetwork &&
+          position.status === "open" &&
+          ((position.health !== null && position.health < HEALTH_WARN) || (position.liquidationDistance !== null && position.liquidationDistance < LIQUIDATION_NEAR)),
+      )
+      .map((position) => ({
+        // A dismissal holds until the health falls another step.
+        id: `health_drop:${position.id}:${position.health === null ? "na" : Math.floor(position.health / HEALTH_STEP)}`,
+        kind: "health_drop" as const,
+        network: position.network,
+        facts: {
+          market: position.market,
+          side: position.side,
+          health: position.health === null ? "—" : position.health.toFixed(DECIMALS_SHOWN),
+          distance: position.liquidationDistance === null ? "—" : `${(position.liquidationDistance * PCT_SCALE).toFixed(PCT_DIGITS)}%`,
+        },
+        action: { type: "route" as const, path: `/position/${position.id}` },
+        priority: PRIORITY.health_drop,
+      }));
   }
 
   async list(user: SessionUser): Promise<SuggestionsView> {
@@ -197,6 +268,7 @@ export class SuggestionService {
         quiet("expiring_request", this.expiringRequests(user)),
         quiet("stuck_bridge", this.stuckBridges(user)),
         quiet("big_move", this.bigMoves(user, balances)),
+        quiet("health_drop", this.healthDrops(user)),
       ])
     ).flat();
     const dismissed = all.length

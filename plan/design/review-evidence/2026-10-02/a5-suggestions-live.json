@@ -1,13 +1,13 @@
 {
   "scenario": "suggestions",
   "model": "default (packages/config)",
-  "at": "2026-10-02T16:12:23.107Z",
+  "at": "2026-10-02T16:44:01.431Z",
   "result": {
     "first": {
       "network": "testnet",
       "suggestions": [
         {
-          "id": "stuck_bridge:01a0fd63-5ee5-7363-8e4a-9738a5140a46",
+          "id": "stuck_bridge:01a0fd80-570b-755b-9766-7b4d34354f2f",
           "kind": "stuck_bridge",
           "network": "testnet",
           "facts": {
@@ -22,7 +22,7 @@
           "priority": 90
         },
         {
-          "id": "expiring_request:01a0fd63-5ee1-7a61-abad-eb61c9e3e5c3",
+          "id": "expiring_request:01a0fd80-5698-7fa8-9d7c-091480a614e3",
           "kind": "expiring_request",
           "network": "testnet",
           "facts": {
@@ -33,31 +33,14 @@
           },
           "action": {
             "type": "share",
-            "url": "http://localhost:8081/r/a5e648861a"
+            "url": "http://localhost:8081/r/a52183d9e6"
           },
           "priority": 70
-        },
-        {
-          "id": "big_move:EURC:2026-10-02",
-          "kind": "big_move",
-          "network": "testnet",
-          "facts": {
-            "asset": "EURC",
-            "change": "-0.6%",
-            "valueChange": "−$0.32",
-            "held": "43.25",
-            "rate": "1.1225",
-            "date": "2026-10-02"
-          },
-          "action": {
-            "type": "chat"
-          },
-          "priority": 40
         }
       ],
       "muted": []
     },
-    "dismissed": "expiring_request:01a0fd63-5ee1-7a61-abad-eb61c9e3e5c3",
+    "dismissed": "expiring_request:01a0fd80-5698-7fa8-9d7c-091480a614e3",
     "muted": {
       "muted": [
         "big_move"
@@ -72,7 +55,7 @@
       ]
     },
     "agent": {
-      "reply": "On Arc Testnet, a 3 USDC bridge to Base has not arrived after 40 minutes. Your EURC holding also moved down about 0.6% (−$0.32); testnet money has no value.",
+      "reply": "Your 3 USDC bridge to Base has not arrived after 40 minutes. Check the card for its status and next steps.",
       "tools": [
         {
           "tool": "get_for_you",
@@ -82,7 +65,7 @@
             "network": "testnet",
             "suggestions": [
               {
-                "id": "stuck_bridge:01a0fd63-5ee5-7363-8e4a-9738a5140a46",
+                "id": "stuck_bridge:01a0fd80-570b-755b-9766-7b4d34354f2f",
                 "kind": "stuck_bridge",
                 "facts": {
                   "chain": "Base",
@@ -95,23 +78,6 @@
                 },
                 "network": "testnet",
                 "priority": 90
-              },
-              {
-                "id": "big_move:EURC:2026-10-02",
-                "kind": "big_move",
-                "facts": {
-                  "date": "2026-10-02",
-                  "held": "43.25",
-                  "rate": "1.1225",
-                  "asset": "EURC",
-                  "change": "-0.6%",
-                  "valueChange": "−$0.32"
-                },
-                "action": {
-                  "type": "chat"
-                },
-                "network": "testnet",
-                "priority": 40
               }
             ]
           }

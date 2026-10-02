@@ -306,7 +306,7 @@ export function createApp(deps: AppDeps) {
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
   app.route("/search", searchRoutes(new SearchService(deps.db)));
-  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log)));
+  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin)));
   // Dependency health, public (the status card, docs and landing), cached for half a minute.
   const status = new StatusService(deps.db, deps.chains);
   app.get("/status", async (c) => c.json(await status.view()));

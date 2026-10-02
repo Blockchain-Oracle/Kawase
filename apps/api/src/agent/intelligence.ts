@@ -13,6 +13,7 @@ import type { RequestService } from "../requests/service";
 import { SuggestionService } from "../suggestions/service";
 import type { WalletService } from "../wallet/service";
 import type { BridgeService } from "../bridge/service";
+import type { MarginService } from "../margin/service";
 import { StatusService } from "../status/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
@@ -36,6 +37,7 @@ export function buildIntelligence(input: {
   swaps: SwapService;
   bridges: BridgeService;
   chains: Chains;
+  margin?: MarginService | undefined;
 }): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
@@ -98,7 +100,7 @@ export function buildIntelligence(input: {
     },
 
     async forYou() {
-      return new SuggestionService(db, input.wallets, input.earn, input.requests, log).list(user);
+      return new SuggestionService(db, input.wallets, input.earn, input.requests, log, input.assets, input.margin).list(user);
     },
 
     async chart({ token, range }) {

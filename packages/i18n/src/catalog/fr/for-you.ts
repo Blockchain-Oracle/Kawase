@@ -19,13 +19,14 @@ export const forYou: Catalog["forYou"] = {
   bridgeTitle: "Votre transfert vers {{chain}} prend du temps",
   bridgeBody: "Cela fait {{minutes}} min ; il arrive d’habitude en une minute environ. Voyez où il en est.",
   bridgeAction: "Vérifier",
-  healthTitle: "La santé de votre prêt baisse",
-  healthBody: "Facteur de santé {{health}}. Ajouter du collatéral ou rembourser un peu le garde sûr.",
+  healthTitle: "Votre {{side}} sur {{market}} approche de la liquidation",
+  healthBody:
+    "Santé {{health}} ; liquidation si le prix bouge de {{distance}} contre vous. Ajouter de la marge ou fermer une partie la garde sûre.",
   healthAction: "Examiner",
-  healthPrompt: "Le facteur de santé de mon prêt est {{health}}. Quelles sont mes options ?",
-  moveTitle: "L’euro a bougé de {{change}} face au dollar",
-  moveBody: "Vos {{held}} EURC font {{valueChange}} en dollars (taux BCE {{rate}} USD pour 1 EUR, {{date}}).",
+  healthPrompt: "Mon {{side}} sur {{market}} a une santé de {{health}}. Quelles sont mes options ?",
+  moveTitle: "{{asset}} a bougé de {{change}} aujourd’hui",
+  moveBody: "Vos {{held}} {{asset}} font {{valueChange}} en dollars ({{price}} l’unité en ce moment).",
   moveAction: "Demander pourquoi",
   movePrompt:
-    "Pourquoi l’euro a-t-il bougé de {{change}} face au dollar, et qu’est-ce que cela change pour mes {{held}} EURC ?",
+    "Pourquoi {{asset}} a-t-il bougé de {{change}} aujourd’hui, et qu’est-ce que cela change pour mes {{held}} {{asset}} ?",
 };
