@@ -25,6 +25,9 @@ import type {
   SendRequest,
   SwapRequest,
   WalletSummary,
+  PortfolioView,
+  TokenDetailView,
+  TokenSearchResult,
 } from "@kawase/api-client";
 
 export type {
@@ -83,4 +86,10 @@ export type AgentContext = {
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
+  portfolio(): Promise<PortfolioView>;
+  /** Tokens on this network by name, symbol or address, with the copycat status of each. */
+  searchTokens(query: string): Promise<TokenSearchResult[]>;
+  /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
+  tokenDetail(address: string): Promise<TokenDetailView>;
 };

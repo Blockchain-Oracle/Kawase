@@ -26,6 +26,7 @@ import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
+import type { AssetService } from "../tokens/service";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -66,6 +67,7 @@ export type AgentDeps = {
   swaps: SwapService;
   bridges: BridgeService;
   earn: EarnService;
+  assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
   models: Models;
@@ -100,6 +102,7 @@ export function createTurnRunner(deps: AgentDeps) {
     swaps,
     bridges,
     earn,
+    assets,
     automations,
     requests,
     models,
@@ -153,6 +156,7 @@ export function createTurnRunner(deps: AgentDeps) {
       swaps,
       bridges,
       earn,
+      assets,
       automations,
       requests,
       threadId,

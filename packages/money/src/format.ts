@@ -19,10 +19,17 @@ export type FormatOptions = {
  * Formatting works from bigint strings, so large amounts never lose precision.
  */
 export function formatAmount(value: Amount, locale: string, options: FormatOptions = {}): string {
-  const decimals = decimalsOf(value.asset);
+  return formatTokenAmount(value.baseUnits, decimalsOf(value.asset), ASSETS[value.asset].symbol, locale, options);
+}
+
+/**
+ * The same, for any token (R1): base units with the token's own decimals and symbol, as read from its contract or
+ * the asset registry. USDC and EURC go through `formatAmount`; every other token comes here.
+ */
+export function formatTokenAmount(baseUnits: bigint, decimals: number, symbol: string, locale: string, options: FormatOptions = {}): string {
   const fractionDigits = Math.min(options.fractionDigits ?? DEFAULT_DISPLAY_FRACTION_DIGITS, decimals);
-  const negative = value.baseUnits < ZERO;
-  const abs = negative ? -value.baseUnits : value.baseUnits;
+  const negative = baseUnits < ZERO;
+  const abs = negative ? -baseUnits : baseUnits;
   const divisor = TEN ** BigInt(decimals);
   const whole = abs / divisor;
   const fraction = (abs % divisor).toString().padStart(decimals, "0").slice(0, fractionDigits);
@@ -34,7 +41,7 @@ export function formatAmount(value: Amount, locale: string, options: FormatOptio
   // Intl accepts decimal strings for exact formatting ("string" overload, ES2023 Intl.NumberFormat v3).
   const number = formatter.format(decimalString as unknown as number);
   const signed = negative ? `-${number}` : number;
-  return options.withSymbol === false ? signed : `${signed} ${ASSETS[value.asset].symbol}`;
+  return options.withSymbol === false ? signed : `${signed} ${symbol}`;
 }
 
 /** The canonical, locale-independent form (Latin digits, dot decimal) shown on confirmation cards next to the localized one. */

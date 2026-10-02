@@ -21,6 +21,7 @@ import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
+import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -66,6 +67,7 @@ export function buildAgentContext(input: {
   swaps: SwapService;
   bridges: BridgeService;
   earn: EarnService;
+  assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
   threadId: string;
@@ -74,7 +76,7 @@ export function buildAgentContext(input: {
   /** Where the person is: typing in chat, or talking (voice answers are spoken; the cards carry the details). */
   surface?: "chat" | "voice" | undefined;
 }): AgentContext {
-  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, threadId, log } = input;
+  const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
   const locale = (user.replyLanguage ?? user.locale) as CatalogLocale;
 
@@ -136,6 +138,10 @@ export function buildAgentContext(input: {
       const intent = await bridges.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeBridge(intent) };
     },
+
+    portfolio: () => assets.portfolio(user),
+    searchTokens: (query) => assets.search(user, network, query),
+    tokenDetail: (address) => assets.token(user, network, address),
 
     async earnOverview() {
       const view = await earn.overview(user);

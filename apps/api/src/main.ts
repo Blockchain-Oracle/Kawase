@@ -6,7 +6,7 @@ import { createModels } from "@kawase/agent";
 import { createDb } from "@kawase/db";
 import type { ModelRef } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
-import { AUTOMATION_TICK_MS, NOTIFY_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
+import { AUTOMATION_TICK_MS, MARKET_WARM_MS, NOTIFY_TICK_MS, RECONCILE_INTERVAL_MS, WATCH_INTERVAL_MS } from "@kawase/config";
 import { createLogger } from "@kawase/log";
 
 import { createApp } from "./app";
@@ -15,6 +15,7 @@ import { circleFaucet } from "./faucet/circle-faucet";
 import { circleOps } from "./send/ops";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
+import { liveMarketData } from "./market/sources";
 import { appKitSwaps } from "./swap/engine";
 import { ResendEmail } from "./notify/email";
 import { ExpoPush } from "./notify/expo";
@@ -49,6 +50,8 @@ const app = createApp({
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
+  market: liveMarketData(),
+  marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,
