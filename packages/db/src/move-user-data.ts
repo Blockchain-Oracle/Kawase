@@ -23,6 +23,7 @@ import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/me
 import { portfolioSnapshots, walletTokens } from "./schema/assets";
 import { places } from "./schema/places";
 import { tokenRules } from "./schema/token-rules";
+import { splitShares, splits } from "./schema/splits";
 
 type UserOwned = {
   table: PgTable;
@@ -89,6 +90,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   places: { table: places, userId: places.userId, perUserKey: ["network", "chain", "address"] },
   // Token rules (D12): one row per network; the account's own rules win.
   token_rules: { table: tokenRules, userId: tokenRules.userId, perUserKey: ["network"] },
+  splits: { table: splits, userId: splits.userId },
+  split_shares: { table: splitShares, userId: splitShares.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

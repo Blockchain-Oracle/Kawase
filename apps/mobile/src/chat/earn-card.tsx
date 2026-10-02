@@ -26,6 +26,8 @@ import { isIntentOpen } from "@/intents/use-wallet-intent";
 import { useMoney } from "@/send/copy";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
+import { useResumeWhenFixed } from "@/intents/use-resume";
+
 import { AgentCard } from "./card";
 
 const MAX_VAULTS = 4;
@@ -71,6 +73,8 @@ export function EarnCard({ output }: { output: ProposeEarnOutput }) {
   const intent = controller.intent ?? output.intent;
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("earn.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
+  // Fixed elsewhere (signed in, set up, money added): the same deposit or withdrawal is checked again (R12).
+  useResumeWhenFixed(isIntentOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
 
   if (!isIntentOpen(intent)) {
     return (

@@ -22,6 +22,8 @@ import { useT } from "@/i18n";
 import { isIntentOpen } from "@/intents/use-wallet-intent";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
+import { useResumeWhenFixed } from "@/intents/use-resume";
+
 import { AgentCard } from "./card";
 
 export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
@@ -36,6 +38,8 @@ export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
   const intent = controller.intent ?? output.intent;
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("bridge.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
+  // Fixed elsewhere (signed in, set up, money added): the same bridge is quoted and checked again (R12).
+  useResumeWhenFixed(isIntentOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
 
   if (!isIntentOpen(intent)) {
     return (

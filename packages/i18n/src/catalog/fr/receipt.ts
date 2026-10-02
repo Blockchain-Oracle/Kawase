@@ -1,0 +1,21 @@
+import type { Catalog } from "../en/index";
+
+export const receipt: Catalog["receipt"] = {
+  title: "Reçu",
+  sent: "Vous avez envoyé",
+  received: "Vous avez reçu",
+  to: "À",
+  from: "De",
+  when: "Quand",
+  network: "Réseau",
+  note: "Note",
+  transaction: "Transaction",
+  testMoney: "argent de test",
+  footer: "Payé sur Arc avec Kawase · getkawase.xyz",
+  share: "Partager le reçu",
+  shareImage: "Partager l’image",
+  sentLine: "J’ai envoyé {{amount}} à {{name}} avec Kawase.",
+  receivedLine: "J’ai reçu {{amount}} de {{name}} avec Kawase.",
+  saveSender: "Enregistrer l’expéditeur",
+  savedAs: "Enregistré comme {{name}}.",
+};
