@@ -161,7 +161,9 @@ export function Conversation({
         <View className="items-center gap-2">
           <View className="flex-row items-center gap-2">
             <Icon as={MicOff} className="text-foreground size-4" />
-            <Text className="text-foreground text-sm">{t("voice.micDenied")}</Text>
+            <Text className="text-foreground text-sm">
+              {t(Platform.OS === "web" ? "voice.micDeniedWeb" : "voice.micDenied")}
+            </Text>
           </View>
           {Platform.OS !== "web" ? (
             <Button variant="secondary" size="sm" onPress={() => void Linking.openSettings()}>

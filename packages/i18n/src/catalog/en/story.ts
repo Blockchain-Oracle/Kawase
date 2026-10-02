@@ -39,4 +39,5 @@ export const story = {
   firstStep2: "Send some to a friend's @handle",
   goTo: "Go to step {{n}}",
   canvasHint: "Swipe up or down to change step",
+  readAloud: "Read aloud",
 } as const;

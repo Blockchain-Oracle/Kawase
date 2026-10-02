@@ -40,4 +40,5 @@ export const story: Catalog["story"] = {
   firstStep2: "किसी दोस्त के @handle पर कुछ भेजें",
   goTo: "चरण {{n}} पर जाएँ",
   canvasHint: "चरण बदलने के लिए ऊपर या नीचे स्वाइप करें",
+  readAloud: "पढ़कर सुनाएँ",
 };

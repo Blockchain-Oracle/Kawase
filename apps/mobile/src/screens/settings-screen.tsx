@@ -96,7 +96,7 @@ export function SettingsScreen() {
   const [languageOpen, setLanguageOpen] = React.useState(false);
   const feedback = useFeedbackPreferences();
   const [feedbackError, setFeedbackError] = React.useState(false);
-  const changeFeedback = (key: "sounds" | "haptics", enabled: boolean) => {
+  const changeFeedback = (key: "sounds" | "haptics" | "narration", enabled: boolean) => {
     setFeedbackError(false);
     if (key === "sounds" && !enabled) stopInterfaceSounds();
     void setFeedbackPreference(key, enabled).catch(() => setFeedbackError(true));
@@ -322,7 +322,18 @@ export function SettingsScreen() {
                 />
               }
             />
-            <ListRow leading={<RowIcon icon={Mic} />} title={t("feedback.narration")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Mic} />}
+              title={t("feedback.narration")}
+              subtitle={t("feedback.narrationBody")}
+              trailing={
+                <Switch
+                  checked={feedback.narration}
+                  onCheckedChange={(enabled) => changeFeedback("narration", enabled)}
+                  accessibilityLabel={t("feedback.narration")}
+                />
+              }
+            />
           </ListGroup>
           {feedbackError ? (
             <Text accessibilityRole="alert" className="text-destructive text-sm">

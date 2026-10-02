@@ -7,5 +7,6 @@ export const feedback: Catalog["feedback"] = {
   haptics: "Vibração",
   hapticsBody: "Resposta tátil para resultados confirmados.",
   narration: "Narração de boas-vindas",
+  narrationBody: "Lê a história de boas-vindas em voz alta enquanto você desliza.",
   saveFailed: "Não foi possível salvar esta preferência. Tente novamente.",
 };
