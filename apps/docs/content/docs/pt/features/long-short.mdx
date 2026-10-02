@@ -1,0 +1,58 @@
+---
+title: "Comprado e vendido"
+description: "A Kawase Margin abre uma posição comprada ou vendida com alavancagem pela sua própria conta na Aave V4 na Arc, em uma única transação que você confirma deslizando, com o preço de liquidação exibido primeiro."
+sourceHash: c040ac083125c6c6
+---
+
+<Status ids="margin" />
+
+<Marks names="aave cirbtc weth eurc usdc kyberswap" />
+
+A **Kawase Margin** permite apostar na alta (**comprado**) ou na queda (**vendido**) de um preço com mais dinheiro do que você investiu. Ela funciona na
+**Aave V4** na Arc Rede principal, pela **sua própria** conta na Aave: sem conta em corretora, sem empréstimo relâmpago e sem nada sob
+a custódia da Kawase.
+
+## Como uma posição é criada
+
+- **Comprado em X**: sua margem em USDC é trocada por X e fornecida como garantia. Depois, a Kawase pega USDC emprestado usando essa garantia, troca por
+  mais X e fornece esse valor, repetindo o ciclo algumas vezes.
+- **Vendido em X**: seu USDC é fornecido como garantia. Depois, a Kawase pega X emprestado, troca por USDC e fornece esse valor, repetindo o ciclo.
+- O **fechamento** faz o caminho inverso: retirar, trocar, pagar o empréstimo e devolver o restante para sua carteira.
+
+A posição inteira é aberta ou fechada em **uma única transação** pela sua própria carteira (um lote EIP-7702). As etapas de troca vêm da
+KyberSwap, com os calldata verificados. Cada ciclo pega empréstimos apenas até um nível de segurança saudável, calculado pelos preços do oráculo, e a conta é aberta com uma
+**saúde de 1,10 ou mais**.
+
+## Mercados
+
+Os mercados vêm das reservas ativas da Aave V4 na Arc. Hoje:
+
+- **cirBTC** (Bitcoin da Circle) e **WETH**: comprado e vendido;
+- **EURC**: somente vendido, porque o EURC não pode ser usado como garantia na Aave V4.
+
+A alavancagem é limitada pelo fator de garantia de cada ativo. Com os fatores atuais, isso representa cerca de **3,4× comprado em cirBTC**, **4× comprado em
+WETH** e **2,4× vendido**. A margem é paga em **USDC**.
+
+## O ticket
+
+“Comprado em Bitcoin 2x com 10 dólares” ou a tela de **Comprado/vendido**. Ao escolher um lado, um plano real é criado na hora (US$ 10, 2×), e
+o ticket é aberto com números atualizados:
+
+- sua margem e o tamanho da posição com alavancagem, com opções predefinidas e Máx.;
+- uma **régua de alavancagem** limitada pelo mercado, com uma marca a cada meio passo;
+- o **preço de liquidação** e a distância até ele, a **saúde** da conta, a taxa de empréstimo e a tarifa de rede;
+- a rota e uma linha de risco.
+
+Você confirma **deslizando** (verde-menta para comprado, vermelho para vendido) e depois usando o Face ID. O ticket acompanha a transação, da
+verificação até a conclusão. Qualquer alteração no plano reinicia o deslize. Assim, você nunca confirma números que não viu.
+
+## Posições
+
+Cada posição tem sua própria página: lucro e prejuízo separados entre **preço** e **custo do empréstimo**, um **indicador de saúde**, seu
+preço de liquidação e as opções **Fechar 25% · 50% · 75% · Tudo**, que criam o encerramento no mesmo ticket. O cartão **Para você** na tela inicial avisa quando a saúde de uma posição aberta cai abaixo de 1,25 ou quando a liquidação está a menos de uma variação de 10%.
+
+## Não disponível na rede de testes
+
+Aave V4 está disponível somente na Arc Rede principal, então a Kawase Margin também. Na rede de testes, a tela explica isso e oferece a opção de mudar.
+
+<ScopeList ids="margin" />

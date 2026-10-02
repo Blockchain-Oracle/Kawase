@@ -1,38 +1,53 @@
 ---
 title: Bridge and withdraw
-description: Move USDC from Arc to your own address on six networks over Circle CCTP, with other bridges compared; withdrawing anywhere is coming.
+description: Send USDC from Arc to anyone on six networks over Circle CCTP, Across or Relay, ranked by what arrives; bring USDC to Arc with no gas on the other chain; follow each move until it lands.
 ---
 
 <Status ids="bridge withdraw" />
 
-<Marks names="arc base ethereum arbitrum optimism polygon avalanche circle" />
+<Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-## Bridge USDC out of Arc (today)
+Ask Kawase ("send 20 dollars to Alex on Base", "bring my USDC from Base to Arc") and it puts a **move card** in front of
+you, which also opens full screen as **Move to another chain**. It moves USDC between Arc and **Base, Ethereum, Arbitrum,
+Optimism, Polygon or Avalanche**.
 
-"Move 20 dollars to Base" or the Bridge screen. Kawase moves **USDC from Arc to your own address** on **Base, Ethereum,
-Arbitrum, Optimism, Polygon or Avalanche** through **Circle CCTP** with Circle's forwarder:
+## Out of Arc, to anyone
 
-- Your USDC is burned on Arc and minted on the destination network by Circle; you need no gas on the other side. The
-  fee comes out of the amount and is shown before you confirm.
-- It takes about a minute. The card follows three steps: the burn on Arc, Circle's attestation, and the mint on the
-  destination network — and it checks the money actually arrived at your address there.
-- You confirm with **one Face ID**. The approval and the burn go as one transaction from your wallet. The fee is capped:
-  if the route's fee rises above the cap you were shown, nothing is sent.
+The recipient can be **you**, a **contact**, an **@handle** or any **0x address**. Kawase asks three providers for a live
+quote:
 
-## Routes compared
+- **Circle CCTP**: Circle burns the USDC on Arc and mints it on the other network;
+- **Across** and **Relay**: a solver pays out on the other side, and is repaid from your deposit.
 
-Before you confirm, Kawase can compare the same transfer across providers and rank them by what actually arrives:
+They are ranked by **what arrives after fees**, with ties going to the faster one. Up to three routes are shown with the
+provider's mark, what arrives, the fee and the expected time. The best one is picked for you, and you can tap another.
 
-- **Circle CCTP** — the route Kawase executes today.
-- **LI.FI** (both networks), **Relay** and **deBridge** (mainnet) — quoted for comparison only today.
-- **Across** and **Relay** as executed routes, and bridging **into** Arc, are being added.
+Before your wallet is asked, Kawase builds the chosen provider's transaction and **checks it**: for Across it decodes the
+deposit (who pays, who receives, which token, the amount, the minimum, the destination, no extra message); for Relay it
+checks the approval and deposit into Relay's listed depository; for CCTP, Circle's own call checks. The transaction is
+simulated from your wallet, then sent as **one transaction** after you slide and confirm with Face ID.
+
+## Bring to Arc
+
+If you hold USDC at the same address on another network, Kawase finds it (the balances are shown, the largest picked) and
+brings it to Arc with **Relay's permit**: one signature, and **no gas needed on that network**. The permit is checked
+(your address, the amount, Relay's contract and that network's USDC) before you sign.
+
+## Following a move
+
+Every move is tracked: **Signed → Sent → Arriving → Delivered**, with explorer links. Kawase checks the amount that left
+your wallet on the receipt, then the fill through the provider's own status (Across deposit status, Relay request status
+or Circle's attestation). If a provider **refunds** instead, the card says so plainly. Nothing is ever sent twice.
+
+## On testnet
+
+Arc Testnet uses **CCTP only**; Across and Relay serve Arc mainnet. Bring to Arc is mainnet only.
 
 ## Withdraw anywhere (coming)
 
-Today you can already send USDC or EURC to **any address on Arc** — including an exchange's Arc deposit address — and
-bridge USDC to **your own** address on the six networks above. Withdrawing to any address on another network (a friend,
-an exchange elsewhere) in one step is **coming**.
+Today you can send USDC or EURC to **any address on Arc**, including an exchange's Arc deposit address, and USDC to anyone
+on the six networks above. A single **Withdraw** screen for every asset and destination is being built.
 
-If you ever need to leave without Kawase, see [Withdraw without Kawase](../withdraw-without-kawase.mdx).
+To take your money out without Kawase at all, follow [Withdraw without Kawase](../withdraw-without-kawase.mdx).
 
 <ScopeList ids="bridge" />

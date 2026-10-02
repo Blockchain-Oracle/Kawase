@@ -6,10 +6,10 @@
   },
   "home": {
     "eyebrow": "Documentation de Kawase",
-    "title": "L'argent bouge quand vous parlez",
-    "body": "Kawase est une application financière avec IA pour tout ce qui se passe sur Arc. Demandez ce que vous voulez dans votre langue, à la voix ou par écrit : l'application vous propose une action, vous l'approuvez et la blockchain respecte vos limites.",
+    "title": "L'argent qui bouge quand vous parlez",
+    "body": "Kawase est une application financière avec IA pour tout faire sur Arc. Demandez ce que vous voulez dans votre langue, à la voix ou par écrit : l'application vous fait une proposition, vous l'approuvez et la blockchain fait respecter vos limites.",
     "start": "Commencer",
-    "safety": "Comment votre sécurité est assurée",
+    "safety": "Comment votre argent reste protégé",
     "cards": {
       "gettingStarted": {
         "title": "Commencer",
@@ -17,15 +17,15 @@
       },
       "safety": {
         "title": "Modèle de sécurité",
-        "body": "Ce que l'agent peut faire sans vous demander, quand il a besoin de votre Face ID et ce qu'il ne pourra jamais faire."
+        "body": "Découvrez ce que l'agent peut faire sans vous demander confirmation, quand il a besoin de votre Face ID et ce qu'il ne peut jamais faire."
       },
       "availability": {
         "title": "Ce qui fonctionne aujourd'hui",
-        "body": "Toutes les fonctionnalités disponibles sur le réseau principal et le réseau de test, générées à partir du registre de l'application."
+        "body": "Toutes les fonctionnalités disponibles sur le réseau principal et le réseau de test, à partir du registre de l'application."
       },
       "architecture": {
         "title": "Architecture",
-        "body": "Comment le chat, la voix, le moteur de règles et Arc s'intègrent, pour les membres du jury et les développeurs."
+        "body": "Comment le chat, la voix, le moteur de règles et Arc fonctionnent ensemble, pour les juges et les développeurs."
       }
     }
   },
@@ -33,21 +33,21 @@
     "capability": "Fonctionnalité",
     "mainnet": "Réseau principal Arc",
     "testnet": "Réseau de test Arc",
-    "caption": "Généré lors de la création du site à partir du registre des fonctionnalités, consulté par l'application et l'agent. « Bientôt » signifie que la fonctionnalité n'est pas encore disponible."
+    "caption": "Généré lors de la création du site à partir du registre des fonctionnalités lu par l'application et l'agent. « Bientôt disponible » signifie que la fonctionnalité n'est pas encore disponible."
   },
   "state": {
     "available": "Disponible",
     "coming": "Bientôt disponible",
-    "unavailable": "Indisponible sur ce réseau"
+    "unavailable": "Pas sur ce réseau"
   },
   "scope": {
     "supports": "Ce qui fonctionne aujourd'hui",
     "notYet": "Pas encore"
   },
   "areas": {
-    "tokens": "Tous les tokens sur Arc",
+    "tokens": "N'importe quel jeton sur Arc",
     "meme_coins": "Meme coins",
-    "perps": "Positions longues et courtes (perps)",
+    "perps": "Long et short (perps)",
     "buy": "Acheter avec Apple Pay ou une carte",
     "borrow": "Emprunter",
     "withdraw": "Retirer n'importe où",
@@ -57,12 +57,12 @@
     "rule": "Par défaut",
     "mainnet": "Réseau principal",
     "testnet": "Réseau de test",
-    "daily": "Plafond quotidien : envoyé en une fois, sans demande",
-    "perTransaction": "Paiement unique maximal",
+    "daily": "Plafond quotidien : envoyé en une fois, sans demande de confirmation",
+    "perTransaction": "Plus gros paiement unique",
     "weekly": "Total par semaine",
     "monthly": "Total par mois",
     "perRecipientWeekly": "À une personne par semaine",
-    "firstTime": "Premier paiement vers une nouvelle adresse : Face ID requis au-delà de ce montant",
+    "firstTime": "Premier paiement vers une nouvelle adresse : Face ID au-delà de cette limite",
     "caption": "Valeurs par défaut de la configuration de l'application. Les limites du réseau de test sont plus élevées, car aucun argent réel n'est en jeu."
   },
   "status": {
@@ -78,11 +78,11 @@
     "Close Sidebar(aria-label)": "Fermer la barre latérale",
     "Close Sidebar(sidebar)(aria-label)": "Fermer la barre latérale",
     "Collapse Sidebar(sidebar)(aria-label)": "Réduire la barre latérale",
-    "Copied Anchor Link(heading anchor)(aria-label)": "Lien d'ancre copié",
+    "Copied Anchor Link(heading anchor)(aria-label)": "Lien d'ancrage copié",
     "Copied Link(accordion)(aria-label)": "Lien copié",
     "Copied Markdown(page actions)": "Markdown copié",
     "Copied Text(code block)(aria-label)": "Texte copié",
-    "Copy Anchor Link(heading anchor)(aria-label)": "Copier le lien d'ancre",
+    "Copy Anchor Link(heading anchor)(aria-label)": "Copier le lien d'ancrage",
     "Copy Link(accordion)(aria-label)": "Copier le lien",
     "Copy Markdown(page actions)": "Copier le Markdown",
     "Copy Text(code block)(aria-label)": "Copier le texte",
@@ -95,7 +95,7 @@
     "Light(theme switcher)(aria-label)": "Clair",
     "Next Page(pagination)": "Page suivante",
     "No Headings(table of contents)": "Aucun titre",
-    "No results found(search dialog)": "Aucun résultat",
+    "No results found(search dialog)": "Aucun résultat trouvé",
     "On this page(table of contents)": "Sur cette page",
     "Open Search(search trigger)(aria-label)": "Ouvrir la recherche",
     "Open Sidebar(aria-label)": "Ouvrir la barre latérale",
@@ -111,7 +111,7 @@
     "Previous Page(pagination)": "Page précédente",
     "Prop(type table)": "Propriété",
     "Read {url}, I want to ask questions about it.(page actions)": "Lisez {url}, je veux poser des questions à son sujet.",
-    "Returns(type table)": "Valeur retournée",
+    "Returns(type table)": "Valeurs renvoyées",
     "Search(search dialog)": "Rechercher",
     "Search(search trigger)": "Rechercher",
     "Show Sidebar(sidebar)": "Afficher la barre latérale",

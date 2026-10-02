@@ -7,17 +7,17 @@
   "home": {
     "eyebrow": "Documentación de Kawase",
     "title": "Dinero que se mueve cuando hablas",
-    "body": "Kawase es una aplicación de dinero con IA para todo lo que puedes hacer en Arc. Pide lo que necesitas en tu idioma, por voz o texto: la aplicación lo propone, tú lo apruebas y la cadena hace cumplir tus límites.",
+    "body": "Kawase es una aplicación de dinero con IA para todo lo que puedes hacer en Arc. Pregunta en tu idioma, por voz o por texto: la aplicación propone, tú apruebas y la cadena hace cumplir tus límites.",
     "start": "Comenzar",
-    "safety": "Cómo te mantiene seguro",
+    "safety": "Cómo te mantiene a salvo",
     "cards": {
       "gettingStarted": {
         "title": "Comenzar",
-        "body": "Abre la aplicación web como invitado en segundos o instálala en iPhone o Android."
+        "body": "Abre la aplicación web como invitado en unos segundos o instálala en iPhone o Android."
       },
       "safety": {
         "title": "Modelo de seguridad",
-        "body": "Qué puede hacer el agente sin preguntarte, cuándo necesita tu Face ID y qué nunca puede hacer."
+        "body": "Qué puede hacer el agente sin preguntar, cuándo necesita tu Face ID y qué nunca puede hacer."
       },
       "availability": {
         "title": "Qué funciona hoy",
@@ -33,7 +33,7 @@
     "capability": "Función",
     "mainnet": "Red principal de Arc",
     "testnet": "Red de pruebas de Arc",
-    "caption": "Se genera al crear el sitio, a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que todavía no está disponible."
+    "caption": "Se genera al crear el sitio a partir del registro de funciones que leen la aplicación y el agente. \"Próximamente\" significa que aún no se ha publicado."
   },
   "state": {
     "available": "Disponible",
@@ -42,23 +42,23 @@
   },
   "scope": {
     "supports": "Lo que funciona hoy",
-    "notYet": "Todavía no"
+    "notYet": "Aún no"
   },
   "areas": {
     "tokens": "Cualquier token en Arc",
     "meme_coins": "Memecoins",
-    "perps": "Posiciones largas y cortas (perpetuos)",
+    "perps": "Largo y corto (perpetuos)",
     "buy": "Comprar con Apple Pay o tarjeta",
     "borrow": "Pedir prestado",
-    "withdraw": "Retirar en cualquier lugar",
-    "export_wallet": "Exportar tu billetera"
+    "withdraw": "Retirar a cualquier lugar",
+    "export_wallet": "Exportar tu cartera"
   },
   "limits": {
     "rule": "Predeterminado",
     "mainnet": "Red principal",
     "testnet": "Red de pruebas",
     "daily": "Límite diario: se envía de una vez, sin confirmación",
-    "perTransaction": "Pago individual más grande",
+    "perTransaction": "Pago único máximo",
     "weekly": "Total por semana",
     "monthly": "Total por mes",
     "perRecipientWeekly": "A una persona por semana",
@@ -90,7 +90,7 @@
     "Default(type table)": "Predeterminado",
     "Edit on GitHub(edit page)": "Editar en GitHub",
     "Hide Sidebar(sidebar)": "Ocultar barra lateral",
-    "Last updated on(page footer)": "Última actualización",
+    "Last updated on(page footer)": "Última actualización:",
     "Layout Tab(layout tab trigger)": "Pestaña de diseño",
     "Light(theme switcher)(aria-label)": "Claro",
     "Next Page(pagination)": "Página siguiente",
@@ -110,15 +110,15 @@
     "Parameters(type table)": "Parámetros",
     "Previous Page(pagination)": "Página anterior",
     "Prop(type table)": "Propiedad",
-    "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre esto.",
-    "Returns(type table)": "Valores devueltos",
+    "Read {url}, I want to ask questions about it.(page actions)": "Lee {url}; quiero hacer preguntas sobre ella.",
+    "Returns(type table)": "Resultados",
     "Search(search dialog)": "Buscar",
     "Search(search trigger)": "Buscar",
     "Show Sidebar(sidebar)": "Mostrar barra lateral",
     "System(theme switcher)(aria-label)": "Sistema",
     "Table of Contents(inline table of contents)": "Índice",
-    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Es posible que la página que buscas se haya eliminado, que haya cambiado de nombre o que no esté disponible temporalmente.",
-    "Toggle Menu(home layout header)(aria-label)": "Alternar menú",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Es posible que la página que buscas se haya eliminado, haya cambiado de nombre o no esté disponible temporalmente.",
+    "Toggle Menu(home layout header)(aria-label)": "Mostrar u ocultar el menú",
     "Toggle Theme(theme switcher)(aria-label)": "Cambiar tema",
     "Type(type table)": "Tipo",
     "View as Markdown(page actions)": "Ver como Markdown"

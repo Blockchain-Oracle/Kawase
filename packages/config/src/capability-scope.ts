@@ -15,7 +15,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "USDC and EURC on Arc to a saved contact, a Kawase @handle or an address the person types",
       "inside the daily allowance it goes at once; above it, to a new address over the threshold or to a look-alike address, the person confirms with Face ID (an email code on the web)",
     ],
-    notYet: ["sending to someone on another chain", "split bills and batch payouts", "scanning a QR code to pay"],
+    notYet: [
+      "sending tokens other than USDC and EURC",
+      "sending to someone on another chain in anything but USDC (USDC goes through bridge)",
+      "split bills (batch payouts are in business mode, under request)",
+      "scanning a QR code to pay",
+    ],
   },
   request: {
     supports: [
@@ -71,14 +76,18 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "scheduled sends of a fixed amount of USDC or EURC to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
       "Auto-save: keep an amount ready in the wallet and move the rest into the person's own vault savings, topping the wallet up when it drops below; checked daily and whenever money arrives, bounded on chain to the wallet and its own savings",
-      "rules: when the balance goes above or drops below an amount, or when money arrives (optionally from someone, or at least an amount) — bridge USDC to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (route fee bounded on chain), save it into their own vault, or alert them; amounts: what is above a line, a share of the money that arrived, or a fixed amount; balance rules fire once per crossing",
-      "listing, pausing, resuming, skipping the next run and cancelling (with a revoke on chain)",
+      "rules: when the balance goes above or drops below an amount, when money arrives (optionally from someone, or at least an amount), when money goes out (round-ups), or when a token's executable price crosses a level (checked every 2 minutes, once per crossing) — bridge USDC to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche (route fee bounded on chain), save into their own vault, send to someone (bounded on chain), swap, or alert them; amounts: what is above a line, a share of the money that arrived, or a fixed amount",
+      "payroll: one scheduled payment per payee, each bounded on chain to that payee and amount, all signed with one Face ID; a payee whose address changes is paused alone",
+      "DCA: buying a token with a fixed amount on a schedule; each run waits for the person with a fresh executable quote",
+      "Needs you: a step an automation may not take alone (every swap, a payment above its grant, one held by the person's allowlist or new-recipient cooldown) waits in the inbox and in Automations (with a push where notifications are set up), answered once from anywhere, reminded after 12 hours and expired after 24",
+      "practice first: an automation can run without a grant as exact dry runs on Arc ('would have'), then go live by signing its grant; a dry run on demand",
+      "editing in place: less applies at once; more signs a new grant together with the old one's revoke",
+      "listing, pausing, resuming, skipping the next run and cancelling (with a revoke on chain); an underfunded run is retried once when money arrives; weekly and monthly runs get a reminder a day before",
     ],
     notYet: [
-      "rules that send to someone else, swap, or act on a price (price-triggered swaps, DCA)",
-      "payroll and multi-step rules",
-      "practice mode (what a rule would have done)",
-      "editing an automation in place (cancel and set it up again for now)",
+      "swaps that run without the person's tap (every automated swap waits in Needs you)",
+      "rules with several steps in a row",
+      "bridging to someone else, or anything but USDC, from a rule",
     ],
   },
   lend: {
@@ -109,10 +118,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   voice: {
     supports: [
       "talking to Kawase on iPhone and Android in your language: it hears you, answers aloud, and puts the same cards on your screen as chat",
+      "voice in the web app too, through the browser's microphone; if the microphone is refused, Kawase says how to allow it and typing stays beside it",
       "one conversation: what you said by voice is in the chat thread, and typing picks it up",
       "a send by voice is ready on its card and waits for your tap (Face ID / fingerprint), even inside the daily allowance",
+      "Settings → Voice: Kawase's voice (six voices), speaking speed (relaxed, normal, brisk) and whether it speaks first",
     ],
-    notYet: ["voice in the web app (typing works there)", "choosing Kawase's voice or speed"],
+    notYet: ["voice inside the desktop app (not checked yet; use the web app in a browser)", "interrupting Kawase mid-sentence reliably on every device (being tuned)"],
   },
   memory: {
     supports: [

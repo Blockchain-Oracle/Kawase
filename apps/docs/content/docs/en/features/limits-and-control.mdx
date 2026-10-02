@@ -1,0 +1,75 @@
+---
+title: Limits and control
+description: Your allowance per token, Kawase's own checks, Pause all, the risk dial, practice mode, the exit kit, Needs you, and a why behind every movement.
+---
+
+<Marks names="usdc eurc arc" />
+
+Everything the agent may do without asking is written down in **Settings → Wallet & limits**, and most of it is enforced
+by Arc itself. This page shows what you can change there. The model behind it is on the [safety page](../safety.mdx).
+
+## Your allowance, per token
+
+The **authority receipt** shows, for each token, what Arc enforces (the grant you signed) and Kawase's own lower cap, what
+is left today, and any temporary raise.
+
+- **Add a token**: any token you hold, or an address you paste, checked on chain.
+- **Lower** a number and it saves at once.
+- **Raise** one and you see **Now → After**: one approval signs the new on-chain grant **together with** the revoke of the
+  old one, so two grants are never live at the same time.
+
+## What Kawase checks on its own
+
+On top of the chain's limit, Kawase applies rules of its own:
+
+- a **per-payment** cap;
+- **new recipients**: for the first hours after you add someone, the agent may pay them only a small amount at a time;
+- **allowlist only**: the agent pays only people on your list;
+- a **temporary raise**: more for a while, then back by itself.
+
+## Pause all
+
+One switch turns off everything the agent does **without asking**. Payments you approve with Face ID still work, so you can
+still move your money out while paused. While paused, a strip sits above every screen.
+
+## The risk dial
+
+**Guard · Balanced · Autonomous**:
+
+- **Guard**: every payment waits for your confirmation, chat too.
+- **Balanced**: inside your allowance, a typed request goes at once.
+- **Autonomous**: Kawase may act on its own suggestions inside your limits, then tells you.
+
+## Practice mode
+
+With practice on, Kawase runs **the exact transaction** you asked for as a dry run on Arc, from your own address, and shows
+**"Would have sent"** with the chain's answer. **Nothing moves.** Practice also covers automations, and swaps, bridges,
+savings moves and margin orders are refused before anything is signed, so the PRACTICE strip never hides a real payment.
+
+## The exit kit
+
+If something feels wrong: **pause**, then **hold to revoke** every permission on the network with **one Face ID** (one
+transaction), then **move the money out**. Automations whose grants are revoked end.
+
+## Needs you
+
+Some steps an automation may never take alone: **every swap**, a payment **above its grant**, or one your **allowlist** or
+**cooldown** holds back. They wait in **Needs you**, in the inbox and in Automations, with a push notification where
+notifications are set up. Answer from anywhere, once: a second answer finds it already answered and says when and where.
+Approving opens the very send or swap you would make by hand, re-checked. Unanswered items are reminded after **12
+hours** and expire after **24**.
+
+## Activity and why
+
+**Activity** is one feed of every token in and out: sends, receives, swaps with both legs, bridges, savings, margin,
+automation runs, requests paid, the faucet and practice runs. Each row says where it stands (checking, skipped and why,
+practice, waiting). Filters: **All · In · Out · Trades · Automations · Needs you**, the last with its count.
+
+Tap a row for its receipt (amount, time, network, the other side, the transaction), then **Why**: the decision record
+behind it, or for a run that never reached the chain, what stopped it and how you answered. From Activity you can also
+read **the week's report** and **export** your history as CSV or beancount.
+
+## From chat
+
+Ask "what are my limits?", "pause everything", "set the dial to guard", "raise my USDC allowance to 50" or "revoke
+everything". Each answer is a card, and changes are approved on the card.

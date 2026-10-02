@@ -1,0 +1,48 @@
+---
+title: Business
+description: Invoices with a payment link, a PDF and an on-chain reference that marks them paid; batch payouts signed once; payroll bounded on chain per person.
+---
+
+<Status ids="request" />
+
+<Marks names="usdc eurc arc" />
+
+Settings → **Business** turns Kawase into a small business tool. Your **business profile** (name and details) is printed
+on every invoice.
+
+## Invoices
+
+"Invoice Acme 500 USDC for the logo", or **New invoice**: the client, the currency (USDC or EURC), line items, due in 7, 14
+or 30 days, and a note, with a live total. Each invoice gets a number (`INV-0001`, …) and:
+
+- a **payment link** (`/r/…`) to send to the client;
+- a **PDF** you can share;
+- an **on-chain reference** for Arc's **Memo** contract. It is an opaque id: no names or amounts go on chain.
+
+The client opens the link and sees the invoice: your business, the number, the items, the due date and what is already
+paid. They can pay with Kawase, or in any browser with a wallet: **Pay with your wallet** switches it to Arc (adding Arc if
+needed) and sends the exact payment the invoice hands over, carrying its reference.
+
+Kawase watches Arc for that reference and records each payment as **partly paid**, **paid** or **overpaid**, with its
+transaction. A Kawase send or an exact plain transfer through the link counts too. The invoice page shows the total, what
+is paid and what is left, and lets you send the link again, share the PDF or cancel.
+
+## Payouts
+
+Pay many people at once: paste or type "who, amount" lines (a CSV works), for contacts, @handles or addresses. Each line is
+**checked like a send** (your own address, a token contract, a look-alike, an address on hold) and your balance is
+checked. Then **one Face ID** signs **one transaction** that pays everyone: all or nothing. Past payouts list their
+transaction.
+
+## Payroll
+
+Name it, pick the day of the month and add the payees. **Turn on** signs every payee's limit with **one Face ID**: each
+payee gets their own grant on chain, pinned to them and to their amount per month, so a run can never pay anyone else or
+more. Pause, resume or cancel the whole payroll. If a payee's saved address changes, only that line pauses until you
+check it; every other line still runs. Each line has its own id, so a run never pays a line twice.
+
+## Not yet
+
+Invoices are in USDC or EURC only, and reminders by email aren't sent yet.
+
+<ScopeList ids="request" />

@@ -1,0 +1,63 @@
+---
+title: "Limites et contrôle"
+description: "Votre allocation par jeton, les propres contrôles de Kawase, Tout mettre en pause, le cadran de risque, le mode entraînement, le kit de sortie, Besoin de vous et une explication pour chaque mouvement."
+sourceHash: 0bb308d278c0c7f7
+---
+
+<Marks names="usdc eurc arc" />
+
+Tout ce que l’agent peut faire sans vous demander votre accord est indiqué dans **Paramètres → Portefeuille et limites**. La plupart de ces règles sont aussi appliquées
+par Arc lui-même. Cette page vous montre ce que vous pouvez y modifier. Le modèle utilisé est expliqué sur la [page sur la sécurité](../safety.mdx).
+
+## Votre allocation, par jeton
+
+Le **reçu d’autorisation** indique, pour chaque jeton, ce qu’Arc applique (l’autorisation que vous avez signée) et la limite inférieure définie par Kawase, ce
+qu’il vous reste pour aujourd’hui et toute augmentation temporaire.
+
+- **Ajouter un jeton** : n’importe quel jeton que vous détenez, ou une adresse que vous collez, vérifiée sur le réseau.
+- **Réduisez** un montant : il est enregistré immédiatement.
+- **Augmentez** un montant : vous voyez **Maintenant → Après**. Une seule approbation signe la nouvelle autorisation sur le réseau **avec** la révocation de l’ancienne. Ainsi, deux autorisations ne sont jamais actives en même temps.
+
+## Les contrôles propres à Kawase
+
+En plus de la limite du réseau, Kawase applique ses propres règles :
+
+- une limite **par paiement** ;
+- les **nouveaux bénéficiaires** : pendant les premières heures après l’ajout d’une personne, l’agent ne peut lui envoyer qu’un petit montant à la fois ;
+- **liste autorisée uniquement** : l’agent paie uniquement les personnes de votre liste ;
+- une **augmentation temporaire** : la limite augmente pendant un certain temps, puis revient automatiquement à son niveau précédent.
+
+## Tout mettre en pause
+
+Un seul bouton désactive tout ce que l’agent fait **sans vous demander votre accord**. Les paiements que vous approuvez avec Face ID continuent de fonctionner. Vous pouvez donc toujours sortir votre argent pendant la pause. Pendant la pause, une barre s’affiche en haut de chaque écran.
+
+## Le cadran de risque
+
+**Protection · Équilibré · Autonome** :
+
+- **Protection** : chaque paiement attend votre confirmation, y compris dans le chat.
+- **Équilibré** : dans les limites de votre allocation, une demande écrite est exécutée immédiatement.
+- **Autonome** : Kawase peut agir de lui-même selon ses suggestions, dans les limites que vous avez définies, puis vous en informe.
+
+## Mode entraînement
+
+Lorsque le mode entraînement est activé, Kawase exécute **la transaction exacte** que vous avez demandée en simulation sur Arc, depuis votre propre adresse, et affiche **« Aurait envoyé »** avec la réponse du réseau. **Rien ne bouge.** Le mode entraînement couvre aussi les automatisations. Les échanges, ponts, opérations d’épargne et ordres sur marge sont refusés avant toute signature. Ainsi, la barre MODE ENTRAÎNEMENT ne peut jamais masquer un vrai paiement.
+
+## Le kit de sortie
+
+Si quelque chose vous semble anormal : **mettez tout en pause**, puis **maintenez le bouton pour révoquer** toutes les autorisations sur le réseau avec **un seul Face ID** (une transaction), puis **sortez votre argent**. Les automatisations dont les autorisations sont révoquées prennent fin.
+
+## Besoin de vous
+
+Certaines actions ne peuvent jamais être effectuées seules par une automatisation : **chaque échange**, un paiement **au-dessus de son autorisation**, ou une action bloquée par votre **liste autorisée** ou votre **délai d’attente**. Elles apparaissent dans **Besoin de vous**, dans la boîte de réception et dans les Automatisations, avec une notification push si les notifications sont configurées. Répondez depuis n’importe où, une seule fois : une deuxième réponse détecte que l’action a déjà reçu une réponse et indique quand et où. L’approbation ouvre exactement l’envoi ou l’échange que vous feriez manuellement, après une nouvelle vérification. Les éléments sans réponse font l’objet d’un rappel après **12
+heures** et expirent après **24**.
+
+## Activité et explications
+
+**Activité** est un flux unique qui regroupe tous les jetons entrants et sortants : envois, réceptions, échanges avec leurs deux mouvements, ponts, opérations d’épargne, marge, exécutions d’automatisations, demandes payées, distributions du robinet et exécutions en mode entraînement. Chaque ligne indique son état (vérification, ignorée et pourquoi, entraînement, en attente). Filtres : **Tout · Entrées · Sorties · Échanges · Automatisations · Besoin de vous**, ce dernier affichant son nombre.
+
+Touchez une ligne pour voir son reçu (montant, heure, réseau, autre partie, transaction), puis **Pourquoi** : le détail de la décision, ou, pour une exécution qui n’a jamais atteint le réseau, ce qui l’a arrêtée et la façon dont vous avez répondu. Depuis Activité, vous pouvez aussi consulter **le rapport de la semaine** et **exporter** votre historique au format CSV ou beancount.
+
+## Depuis le chat
+
+Demandez « quelles sont mes limites ? », « mets tout en pause », « règle le cadran sur protection », « augmente mon allocation USDC à 50 » ou « révoque tout ». Chaque réponse apparaît sous forme de carte, et les modifications sont approuvées depuis cette carte.

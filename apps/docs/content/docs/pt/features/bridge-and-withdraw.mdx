@@ -1,39 +1,53 @@
 ---
 title: "Fazer ponte e sacar"
-description: "Mova USDC da Arc para seu próprio endereço em seis redes usando o Circle CCTP, com comparação com outras pontes; sacar para qualquer lugar estará disponível em breve."
-sourceHash: 6e5133b4d0f03047
+description: "Envie USDC da Arc para qualquer pessoa em seis redes usando Circle CCTP, Across ou Relay, classificados pelo valor recebido; traga USDC para a Arc sem pagar gas na outra rede; acompanhe cada movimentação até a conclusão."
+sourceHash: 7d6adac00ab78af3
 ---
 
 <Status ids="bridge withdraw" />
 
-<Marks names="arc base ethereum arbitrum optimism polygon avalanche circle" />
+<Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-## Fazer ponte de USDC para fora da Arc (hoje)
+Peça ao Kawase ("enviar 20 dólares para Alex na Base", "trazer meu USDC da Base para a Arc") e ele mostrará um **cartão de movimentação**,
+que também abre em tela cheia como **Mover para outra rede**. Ele movimenta USDC entre a Arc e **Base, Ethereum, Arbitrum,
+Optimism, Polygon ou Avalanche**.
 
-“Enviar 20 dólares para a Base” ou usar a tela de Ponte. A Kawase move **USDC da Arc para seu próprio endereço** na **Base, Ethereum,
-Arbitrum, Optimism, Polygon ou Avalanche** por meio do **Circle CCTP**, com o encaminhador da Circle:
+## Saindo da Arc, para qualquer pessoa
 
-- Seu USDC é queimado na Arc e criado na rede de destino pela Circle. Você não precisa de gas do outro lado. A
-  taxa é descontada do valor e aparece antes da confirmação.
-- O processo leva cerca de um minuto. O cartão acompanha três etapas: a queima na Arc, o atestado da Circle e a criação na
-  rede de destino — além de verificar se o dinheiro realmente chegou ao seu endereço lá.
-- Você confirma com **um único Face ID**. A aprovação e a queima acontecem em uma só transação da sua carteira. A taxa tem um limite:
-  se a taxa da rota ficar acima do limite mostrado, nada será enviado.
+O destinatário pode ser **você**, um **contato**, um **@handle** ou qualquer **endereço 0x**. O Kawase pede uma cotação atualizada a três provedores:
 
-## Comparação das rotas
+- **Circle CCTP**: a Circle queima o USDC na Arc e cria a mesma quantia na outra rede;
+- **Across** e **Relay**: um solver paga do outro lado e recebe de volta usando o seu depósito.
 
-Antes da confirmação, a Kawase pode comparar a mesma transferência entre provedores e classificá-los pelo valor que realmente chega:
+Eles são classificados pelo **valor recebido depois das taxas**. Em caso de empate, o mais rápido fica na frente. Até três rotas são mostradas com a
+marca do provedor, o valor recebido, a taxa e o tempo estimado. A melhor opção é escolhida para você, mas você pode tocar em outra.
 
-- **Circle CCTP** — a rota que a Kawase executa hoje.
-- **LI.FI** (nas duas redes), **Relay** e **deBridge** (na rede principal) — hoje, apenas para comparação de cotações.
-- **Across** e **Relay** como rotas executadas, além da ponte **para a Arc**, serão adicionados.
+Antes de pedir sua assinatura, o Kawase cria a transação do provedor escolhido e **confere tudo**: na Across, ele decodifica o
+depósito (quem paga, quem recebe, qual token, o valor, o mínimo, o destino e nenhuma mensagem extra); na Relay, ele
+confere a aprovação e o depósito no depositário indicado pela Relay; na CCTP, ele confere a chamada da própria Circle. A transação é
+simulada na sua carteira e enviada como **uma única transação** depois que você desliza e confirma com Face ID.
+
+## Trazer para a Arc
+
+Se você tiver USDC no mesmo endereço em outra rede, o Kawase encontra esse saldo (os saldos são mostrados, e o maior é escolhido) e
+o traz para a Arc usando a **permissão da Relay**: uma assinatura e **nenhum gas necessário nessa rede**. A permissão é conferida
+(seu endereço, o valor, o contrato da Relay e o USDC dessa rede) antes da assinatura.
+
+## Acompanhar uma movimentação
+
+Toda movimentação é acompanhada: **Assinado → Enviado → Chegando → Entregue**, com links para o explorador. O Kawase confere o valor que saiu
+da sua carteira no recibo e depois acompanha a conclusão pelo status do próprio provedor (status do depósito da Across, status da solicitação da Relay
+ou atestado da Circle). Se um provedor **fizer um reembolso**, o cartão informa isso claramente. Nada é enviado duas vezes.
+
+## Na rede de testes
+
+A Rede de testes da Arc usa **apenas CCTP**; Across e Relay atendem à rede principal da Arc. Trazer para a Arc funciona apenas na rede principal.
 
 ## Sacar para qualquer lugar (em breve)
 
-Hoje, você já pode enviar USDC ou EURC para **qualquer endereço na Arc** — inclusive o endereço de depósito na Arc de uma corretora — e
-fazer uma ponte de USDC para o seu próprio endereço nas seis redes acima. Sacar para qualquer endereço em outra rede (para um amigo
-ou uma corretora em outra rede) em uma só etapa estará disponível **em breve**.
+Hoje, você pode enviar USDC ou EURC para **qualquer endereço na Arc**, inclusive o endereço de depósito na Arc de uma corretora, e USDC para qualquer pessoa
+nas seis redes acima. Uma única tela de **Sacar** para todos os ativos e destinos está sendo criada.
 
-Se algum dia precisar sair sem usar a Kawase, veja [Sacar sem a Kawase](../withdraw-without-kawase.mdx).
+Para retirar seu dinheiro sem usar o Kawase, siga [Sacar sem o Kawase](../withdraw-without-kawase.mdx).
 
 <ScopeList ids="bridge" />

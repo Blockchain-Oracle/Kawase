@@ -1,36 +1,82 @@
 ---
 title: Withdraw without Kawase
-description: Your money is in your own account on Arc. How to move it out, check it on the explorer, and what the export option will give you.
+description: A step-by-step guide to taking your money out, with Kawase's exit kit or entirely without Kawase by exporting your wallet, and checking it all on the explorer.
 ---
 
-Kawase never holds your money. Your USDC and EURC sit in **your own account** on Arc, and the permissions you gave the agent
-are narrow and expire on their own. This page explains how to get your money out — with Kawase's help, and without it.
+Kawase never holds your money. Your tokens sit in **your own account** on Arc, and the permissions you gave the agent are
+narrow and expire on their own. This guide takes you out step by step: first with Kawase's help, then without it.
 
 <Status ids="export_wallet" />
 
-## While Kawase is running: send it out
+## Before you start
 
-The quickest exit is a normal payment:
+Gather what isn't plain money in your wallet yet:
+
+- **Savings** in a vault: withdraw them on the Earn screen.
+- **Aave V4** supply or a loan: repay and withdraw on the Borrow screen.
+- **Long or short** positions: close them (Close · All) on each position's page.
+- **The agent wallet**: Settings → Agent wallet → **Return to my wallet**.
+- Tokens other than USDC and EURC: trade them to USDC, or export your wallet (part 2) and move them from any wallet.
+
+## Part 1: with Kawase (the exit kit)
 
 <Steps>
 <Step>
-### Pick where it goes
-An address you control in another wallet (MetaMask, Rabby, …) that has **Arc** added, or an exchange's **Arc** deposit
-address. Check the network is Arc; sending to an address on another network is not the same thing.
+### Pause the agent
+Settings → **Wallet & limits** → **Pause all**. Everything the agent does without asking stops at once. Your own Face ID
+payments still work.
+</Step>
+<Step>
+### Revoke every permission
+In the exit kit, **hold to revoke**. One Face ID sends one transaction that revokes every grant on that network: your
+allowance and every automation's grant. Automations end. Repeat on the other network if you used it.
+</Step>
+<Step>
+### Pick where the money goes
+An address you control in another wallet (MetaMask, Rabby, …) with **Arc** added, or an exchange's **Arc** deposit address.
+Check the network is Arc; an address on another network is not the same thing.
 </Step>
 <Step>
 ### Send everything
-Say "send all my USDC to 0x…" (paste the address in the same message) or use the Send screen. Larger amounts ask for your
-Face ID. Repeat for EURC.
+Say "send all my USDC to 0x…" (paste the address in the same message) or use the Send screen, and confirm with Face ID.
+Repeat for EURC. To land on another network instead, [bridge](./features/bridge-and-withdraw.mdx) USDC to your own
+address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche.
 </Step>
 <Step>
-### Revoke the agent
-Wallet & limits → **Revoke** (press and hold). Cancel any automations; each cancel revokes its grant on chain.
+### Check the explorer
+Open your address on the explorer (below) and confirm the balances are where you sent them.
 </Step>
 </Steps>
 
-USDC can also go straight to **your own address** on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche with a
-[bridge](./features/bridge-and-withdraw.mdx).
+## Part 2: without Kawase (export your wallet)
+
+Your wallet's key is held for you by **Turnkey**. Exporting gives you your own copy, so you can use the same account in any
+wallet.
+
+<Steps>
+<Step>
+### Export
+Settings → **Account** → **Export wallet**. Read the warnings, confirm with Face ID, and Turnkey decrypts your **recovery
+phrase** on your device. Screenshots and screen recording are blocked while it shows, and it hides when you leave. Write
+it down somewhere safe offline. Anyone with it controls your money.
+</Step>
+<Step>
+### Import it into another wallet
+In MetaMask, Rabby or another wallet that allows custom networks, choose to import a recovery phrase. You get **the same
+address** as in Kawase.
+</Step>
+<Step>
+### Add Arc
+Add the network with the details in the table below. Your balances appear as they are on chain.
+</Step>
+<Step>
+### Move your money
+Send from that wallet as you would from any other. Vault, Aave and margin positions live in your own account at those
+protocols, so any interface for them on Arc can manage them.
+</Step>
+</Steps>
+
+Export while Kawase is running if you want a copy you control: the export goes through the app.
 
 ## Check everything on the explorer
 
@@ -41,9 +87,9 @@ You don't need Kawase to see your money. Open your address on Arc's block explor
 
 There you can see:
 
-- your **USDC** and **EURC** balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native
-  coin and as the USDC token),
-- every transaction, including the payments the agent made under your allowance,
+- your balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native coin and as the USDC
+  token);
+- every transaction, including the payments the agent made under your allowance;
 - your account's **code**: after setup it is `0xef0100` followed by the `EIP7702StatelessDeleGator` address. That is the
   EIP-7702 upgrade; your account still works as a normal account.
 
@@ -52,11 +98,9 @@ Kawase's receipts link to these same pages.
 ## If Kawase disappears
 
 - **The agent's permissions stop being useful.** Your allowance and automation grants can only be used by Kawase's own agent
-  wallet, and they expire (the allowance after 90 days, each automation at its end date).
-- **Your money stays in your account.** It is an ordinary account on Arc whose key is held for you by Turnkey.
-- **Export wallet (coming).** Settings → Account → Export wallet will show your wallet's key through Turnkey's secure export,
-  after Face ID and clear warnings. With it you can import the account into any wallet that supports Arc and move your
-  money without Kawase. This option is **not available yet**; until it is, the steps above are the way out.
+  wallet, and they expire: the allowance after 90 days, each automation at its end date.
+- **Your money stays in your account.** It is an ordinary account on Arc.
+- **With an exported recovery phrase** (part 2), you can move everything from any wallet that supports Arc.
 
 ## Adding Arc to another wallet
 
@@ -66,7 +110,7 @@ Kawase's receipts link to these same pages.
 | Chain ID | `5042` | `5042002` |
 | RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
 | Currency symbol | USDC | USDC |
-| Explorer | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+| Explorer | `https://explorer.arc.io` | `https://testnet.arcscan.app` |
 
 Some wallets label the gas balance "ETH" on custom networks; on Arc it is USDC. The USDC token address is
 `0x3600000000000000000000000000000000000000` on both networks; EURC is

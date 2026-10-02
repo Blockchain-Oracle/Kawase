@@ -1,0 +1,49 @@
+---
+title: "Empresa"
+description: "Faturas com um link de pagamento, um PDF e uma referência on-chain que as marca como pagas; pagamentos em lote assinados uma vez; folha de pagamento limitada on-chain por pessoa."
+sourceHash: 853e9da7aa51cec7
+---
+
+<Status ids="request" />
+
+<Marks names="usdc eurc arc" />
+
+Configurações → **Empresa** transforma o Kawase em uma ferramenta para pequenas empresas. Seu **perfil da empresa** (nome e dados) é impresso
+em todas as faturas.
+
+## Faturas
+
+"Faturar 500 USDC da Acme pelo logo" ou **Nova fatura**: o cliente, a moeda (USDC ou EURC), os itens, o vencimento em 7, 14
+ou 30 dias e uma observação, com o total atualizado. Cada fatura recebe um número (`INV-0001`, …) e:
+
+- um **link de pagamento** (`/r/…`) para enviar ao cliente;
+- um **PDF** que você pode compartilhar;
+- uma **referência on-chain** para o contrato **Memo** da Arc. É um identificador opaco: nenhum nome ou valor vai para a blockchain.
+
+O cliente abre o link e vê a fatura: sua empresa, o número, os itens, a data de vencimento e o que já foi
+pago. Ele pode pagar pelo Kawase ou em qualquer navegador com uma carteira: **Pagar com sua carteira** muda a rede para a Arc (adicionando a Arc se
+necessário) e envia exatamente o pagamento indicado na fatura, levando a referência.
+
+O Kawase monitora a Arc em busca dessa referência e registra cada pagamento como **parcialmente pago**, **pago** ou **pago a mais**, com sua
+transação. Um envio pelo Kawase ou uma transferência simples e exata pelo link também conta. A página da fatura mostra o total, o que
+foi pago e o que falta, além de permitir reenviar o link, compartilhar o PDF ou cancelar.
+
+## Pagamentos
+
+Pague várias pessoas de uma vez: cole ou digite linhas no formato "quem, valor" (um CSV também funciona), para contatos,
+@handles ou endereços. Cada linha é **verificada como um envio** (seu próprio endereço, um contrato de token, um endereço parecido, um endereço
+em espera) e seu saldo é verificado. Depois, **um Face ID** assina **uma transação** que paga todo mundo: tudo ou nada. Os pagamentos anteriores mostram sua
+transação.
+
+## Folha de pagamento
+
+Dê um nome, escolha o dia do mês e adicione os beneficiários. **Ativar** assina o limite de cada beneficiário com **um Face ID**: cada
+beneficiário recebe sua própria concessão na blockchain, vinculada a ele e ao seu valor mensal, para que uma execução nunca possa pagar outra pessoa ou
+um valor maior. Pause, retome ou cancele toda a folha de pagamento. Se o endereço salvo de um beneficiário mudar, apenas aquela linha pausa até que você
+a verifique; todas as outras continuam funcionando. Cada linha tem seu próprio identificador, para que uma execução nunca pague uma linha duas vezes.
+
+## Ainda não disponível
+
+As faturas estão disponíveis apenas em USDC ou EURC, e os lembretes por e-mail ainda não são enviados.
+
+<ScopeList ids="request" />
