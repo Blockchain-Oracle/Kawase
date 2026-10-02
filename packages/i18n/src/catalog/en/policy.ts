@@ -1,7 +1,7 @@
 export const policy = {
   NOT_AVAILABLE_YET: "Sending isn't available on this network yet.",
   ON_OTHER_NETWORK: "Sending works on {{network}}.",
-  PAUSED_ALL: "You paused all sending. Resume it in Settings to continue.",
+  PAUSED_ALL: "Paused: Kawase and automations do nothing without you. Resume it in Wallet & limits.",
   OVER_PER_TX_LIMIT: "That's above your limit of {{limit}} per send.",
   OVER_DAILY_LIMIT: "That's over your daily limit of {{limit}} ({{used}} used today).",
   OVER_WEEKLY_LIMIT: "That's over your weekly limit of {{limit}} ({{used}} used this week).",
@@ -43,5 +43,10 @@ export const policy = {
   fixOpenContact: "Open contact",
   AGENT_PAUSED: "Paused: this one needs your approval",
   NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
-  NEW_RECIPIENT_COOLDOWN: "New recipients can get up to {{cap}} per payment until {{until}}. Change it in Wallet & limits.",
+  NEW_RECIPIENT_COOLDOWN:
+    "New to you: until {{until}}, more than {{cap}} to them needs your own approval. Change it in Wallet & limits.",
+  TEST_AMOUNT_SUGGESTED: "First payment here. Send {{test}} first to check it arrives?",
+  BRAKE_HALF_BALANCE: "That's more than half of what you hold, going to someone you haven't paid before.",
+  BRAKE_PRICE_IMPACT: "This price is {{gap}}% below the market, over your {{max}}% rule.",
+  BRAKE_LEVERAGE: "{{leverage}}× is above 5×: a small move against you can wipe out the margin.",
 } as const;

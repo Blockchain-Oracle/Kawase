@@ -32,8 +32,7 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
-  /** A new address can get only a small amount per payment until its cooldown ends (Wallet & limits). */
-  NEW_RECIPIENT_COOLDOWN: "policy",
+
   /** More leverage than the venue's collateral factor allows at the opening health floor. */
   LEVERAGE_TOO_HIGH: "policy",
   /** The account would be too close to liquidation after this borrow or withdrawal. */
@@ -99,8 +98,22 @@ export const REASONS = {
   /** A run skipped because this period's amount was already sent (the grant's cap). */
   AUTOMATION_PERIOD_USED: "warning",
   VAULT_RISK_WARNING: "warning",
-  /** Paused: the agent and automations stand still; the person's own Face ID still works. */
+  /** Paused: the agent and automations stand still; the person's own Face ID still works (D-pause). */
   AGENT_PAUSED: "warning",
+  /**
+   * A new address is still in its cooldown and this is above what it may get without the person: nothing goes on the
+   * allowance or by an automation (it waits in Needs you); the person's own Face ID send is never blocked (D-cooldown).
+   */
+  NEW_RECIPIENT_COOLDOWN: "warning",
+  /** First payment to this address: offer a small test amount first. */
+  TEST_AMOUNT_SUGGESTED: "warning",
+  /**
+   * The brake (cards/automate-safety.md): a risky action warns and needs the person's explicit override (Face ID on
+   * the card) — over half the balance to someone new, a price impact over the rule, leverage above 5×.
+   */
+  BRAKE_HALF_BALANCE: "warning",
+  BRAKE_PRICE_IMPACT: "warning",
+  BRAKE_LEVERAGE: "warning",
   /** Only allowlisted recipients go without the person; this one needs their Face ID. */
   NOT_ON_ALLOWLIST: "warning",
   /** Leverage: the margin can be lost; the card names the liquidation price. */
@@ -129,3 +142,7 @@ export function blockingResult(results: readonly PolicyResult[]): PolicyResult |
   }
   return undefined;
 }
+
+/** The brake codes: an approval while one is present must carry the person's explicit override. */
+export const BRAKE_CODES: ReadonlySet<ReasonCode> = new Set(["BRAKE_HALF_BALANCE", "BRAKE_PRICE_IMPACT", "BRAKE_LEVERAGE"]);
+export const hasBrake = (results: readonly { code: string }[]) => results.some((entry) => BRAKE_CODES.has(entry.code as ReasonCode));

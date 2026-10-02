@@ -201,7 +201,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
       <View className="flex-1">
         <ScrollView className="flex-1" contentContainerClassName="gap-4 px-5 pt-4 pb-4">
           {!testnet ? <Eyebrow className="text-foreground">{t("network.realMoney")}</Eyebrow> : null}
-          <SendReview intent={intent} />
+          <SendReview intent={intent} onRevise={(patch) => void controller.revise(patch)} />
           {blocking ? <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} /> : null}
         </ScrollView>
         <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>

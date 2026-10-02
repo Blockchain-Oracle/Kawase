@@ -182,6 +182,7 @@ export async function gatherFacts(input: {
       spent: spentValues,
       thresholds: {
         firstTimeStepUp: DEFAULT_LIMITS[network].firstTimeRecipientApprovalThreshold,
+        testAmount: DEFAULT_LIMITS[network].testAmount,
         gasFloat: GAS_FLOAT_USDC_BASE_UNITS,
       },
     },

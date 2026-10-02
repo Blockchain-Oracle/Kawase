@@ -19,4 +19,5 @@ export const swapPolicy: Catalog["swapPolicy"] = {
     "Эта цена на {{gap}}% ниже рынка — больше допустимых в Kawase {{max}}%. Попробуйте меньшую сумму или подождите.",
   RATE_BELOW_REFERENCE: "Эта цена на {{gap}}% ниже рыночного курса.",
   fixTryAgain: "Повторить",
+  BRAKE_PRICE_IMPACT: "Эта цена на {{gap}}% ниже рынка — больше вашего правила в {{max}}%.",
 };

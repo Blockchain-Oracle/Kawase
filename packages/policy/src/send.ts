@@ -78,6 +78,8 @@ export type SendFacts = {
     firstTimeStepUp: bigint;
     /** USDC kept for network fees when the wallet pays them itself. */
     gasFloat: bigint;
+    /** A first payment above a few times this offers sending this much first (base units of the asset). */
+    testAmount?: bigint | undefined;
   };
 };
 
@@ -92,6 +94,9 @@ export type SendEvaluation = {
 
 const ZERO = 0n;
 const MS_PER_SECOND = 1000;
+const HALF = 2n;
+/** A test amount is offered when the payment is at least this many times it. */
+const TEST_FACTOR = 5n;
 const s = (value: bigint) => value.toString();
 
 function chooseAsset(named: AssetId | undefined, balances: Record<AssetId, bigint>): AssetId | "unclear" {
@@ -169,14 +174,19 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const balance = facts.wallet.balances[asset];
   if (amount > balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(balance), asset }));
 
-  // The new-recipient cooldown: an address first known less than `seconds` ago gets at most `cap` per payment.
+  // The new-recipient cooldown (D-cooldown): an address first known less than `seconds` ago gets at most `cap` per
+  // payment without the person — so above it nothing goes on the allowance or by an automation. The person's own Face ID
+  // send is never blocked by it.
   const cooldown = facts.cooldown;
+  let cooling = false;
   if (cooldown && cooldown.seconds > 0) {
     const now = Date.parse(cooldown.now);
     const since = recipient.knownSince ? Date.parse(recipient.knownSince) : now;
     const endsAt = since + cooldown.seconds * MS_PER_SECOND;
-    if (endsAt > now && amount > cooldown.cap)
+    if (endsAt > now && amount > cooldown.cap) {
+      cooling = true;
       results.push(result("NEW_RECIPIENT_COOLDOWN", { cap: s(cooldown.cap), asset, until: new Date(endsAt).toISOString() }));
+    }
   }
 
   // The route: the allowance only covers USDC, up to what the chain says is left, to a recipient that needs no
@@ -184,13 +194,19 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const firstTime = !recipient.paidBefore;
   const lookalike = Boolean(recipient.lookalikeOf);
   if (firstTime) results.push(result("FIRST_TIME_RECIPIENT"));
+  // A first payment: offer a small test amount first, when this one is well above it.
+  const test = facts.thresholds.testAmount ?? ZERO;
+  if (firstTime && test > ZERO && amount > test * TEST_FACTOR) results.push(result("TEST_AMOUNT_SUGGESTED", { test: s(test), asset }));
+  // The brake: more than half of what the wallet holds of this token, to someone new.
+  const brake = firstTime && amount * HALF > balance && amount <= balance;
+  if (brake) results.push(result("BRAKE_HALF_BALANCE", { name: recipient.name ?? "" }));
   if (lookalike) results.push(result("LOOKALIKE_ADDRESS", { name: recipient.lookalikeOf ?? "" }));
   if (recipient.via === "address") results.push(result("UNSAVED_ADDRESS"));
 
   const offAllowlist = Boolean(facts.allowlistOnly) && !recipient.allowlisted;
   if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   if (offAllowlist) results.push(result("NOT_ON_ALLOWLIST", { name: recipient.name ?? "" }));
-  const allowanceCovers = facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist;
+  const allowanceCovers = facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake;
   if (!facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
   if (allowanceCovers && amount > facts.allowance.available)
     results.push(result("ABOVE_ALLOWANCE", { available: s(facts.allowance.available), asset }));

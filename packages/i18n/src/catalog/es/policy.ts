@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "Los envíos aún no están disponibles en esta red.",
   ON_OTHER_NETWORK: "Los envíos funcionan en {{network}}.",
-  PAUSED_ALL: "Pausaste todos los envíos. Reanúdalos en Ajustes para continuar.",
+  PAUSED_ALL: "En pausa: Kawase y las automatizaciones no hacen nada sin ti. Reanúdalo en Cartera y límites.",
   OVER_PER_TX_LIMIT: "Supera tu límite de {{limit}} por envío.",
   OVER_DAILY_LIMIT: "Supera tu límite diario de {{limit}} (hoy usaste {{used}}).",
   OVER_WEEKLY_LIMIT: "Supera tu límite semanal de {{limit}} (esta semana usaste {{used}}).",
@@ -46,5 +46,10 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "Abrir contacto",
   AGENT_PAUSED: "En pausa: este necesita tu aprobación",
   NOT_ON_ALLOWLIST: "No está en tu lista permitida: este necesita tu aprobación",
-  NEW_RECIPIENT_COOLDOWN: "Los destinatarios nuevos pueden recibir hasta {{cap}} por pago hasta {{until}}. Cámbialo en Cartera y límites.",
+  NEW_RECIPIENT_COOLDOWN:
+    "Destinatario nuevo: hasta {{until}}, más de {{cap}} para esta persona necesita tu aprobación. Cámbialo en Cartera y límites.",
+  TEST_AMOUNT_SUGGESTED: "Primer pago aquí. ¿Envías {{test}} primero para comprobar que llega?",
+  BRAKE_HALF_BALANCE: "Es más de la mitad de lo que tienes, para alguien a quien nunca has pagado.",
+  BRAKE_PRICE_IMPACT: "Este precio está un {{gap}} % por debajo del mercado, más que tu regla del {{max}} %.",
+  BRAKE_LEVERAGE: "{{leverage}}× supera 5×: un pequeño movimiento en contra puede borrar el margen.",
 };

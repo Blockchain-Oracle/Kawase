@@ -3,7 +3,7 @@
 // per-call cap, the "Top up your agent wallet" card when it is short (R12: after the tap the same request carries on),
 // refusals that name the rule, and the agent wallet itself. A seller's answer shown here is labelled as the seller's.
 import { useRouter } from "expo-router";
-import { Bot, ShieldAlert } from "lucide-react-native";
+import { Bot, FlaskConical, ShieldAlert } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
 import { toast } from "sonner-native";
@@ -242,6 +242,24 @@ export function BuyCard({ output, onSend }: { output: { outcome: BuyOutcome }; o
           <Text className={cn("text-destructive text-sm", TEXT_START)}>
             {t(`market.failed.${outcome.reason}`, { amount: outcome.purchase ? price(outcome.purchase.amount) : "" })}
           </Text>
+        </AgentCard>
+      );
+    case "practiced":
+      // Practice mode: the live price and every rule, nothing paid (cards/automate-safety.md).
+      return (
+        <AgentCard eyebrow={eyebrow(t("safety.stripPractice"), outcome.network)}>
+          <ServiceLine service={outcome.service} />
+          <View className="flex-row items-start gap-3">
+            <Icon as={FlaskConical} className="text-network mt-0.5 size-5" />
+            <View className="flex-1 gap-1">
+              <Text className={cn("text-foreground text-sm font-semibold leading-5", TEXT_START)}>
+                {t("safety.practiceBuy", { amount: price(outcome.price), seller: outcome.service.provider.name })}
+              </Text>
+              <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
+                {outcome.wouldAsk ? t("safety.practiceBuyAsk") : !outcome.funded ? t("safety.practiceBuyTopUp") : t("safety.practiceBuyNothing")}
+              </Text>
+            </View>
+          </View>
         </AgentCard>
       );
     case "free":

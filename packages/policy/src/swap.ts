@@ -36,6 +36,7 @@ export type SwapFacts = {
   network: NetworkId;
   capability: { here: CapabilityState; other: CapabilityState };
   signedIn: boolean;
+  /** Pause all stops the agent and automations only; a swap is always the person's own yes, so it never blocks (D-pause). */
   pausedAll: boolean;
   wallet: {
     registered: boolean;
@@ -74,6 +75,8 @@ export type SwapEvaluation = {
 
 const ZERO = 0n;
 const PERCENT_BPS = 100;
+/** A price this many times over the rule is refused, not braked. */
+const BRAKE_HARD_FACTOR = 3;
 const s = (value: bigint) => value.toString();
 const percent = (bps: number) => (bps / PERCENT_BPS).toFixed(1);
 const usd = (value: number) => value.toFixed(0);
@@ -101,7 +104,6 @@ export function evaluateSwap(facts: SwapFacts): SwapEvaluation {
     const elsewhere = facts.capability.other === "available";
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "swap" })], tokenIn, tokenOut);
   }
-  if (facts.pausedAll) return done([result("PAUSED_ALL")], tokenIn, tokenOut);
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")], tokenIn, tokenOut);
   // Approve + swap go out as one batch from the wallet's own EIP-7702 code.
   if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
@@ -135,8 +137,12 @@ export function evaluateSwap(facts: SwapFacts): SwapEvaluation {
   const quote = facts.quote;
   if (quote.status === "unavailable") results.push(result("QUOTE_UNAVAILABLE"));
   if (quote.status === "ok" && quote.rateGapBps !== undefined) {
-    if (quote.rateGapBps > facts.thresholds.maxRateGapBps)
-      results.push(result("PRICE_IMPACT_HIGH", { gap: percent(quote.rateGapBps), max: percent(facts.thresholds.maxRateGapBps) }));
+    // The brake (cards/automate-safety.md): over the rule it warns and needs the person's explicit override; only a
+    // price far beyond it is refused outright.
+    if (quote.rateGapBps > facts.thresholds.maxRateGapBps * BRAKE_HARD_FACTOR)
+      results.push(result("PRICE_IMPACT_HIGH", { gap: percent(quote.rateGapBps), max: percent(facts.thresholds.maxRateGapBps * BRAKE_HARD_FACTOR) }));
+    else if (quote.rateGapBps > facts.thresholds.maxRateGapBps)
+      results.push(result("BRAKE_PRICE_IMPACT", { gap: percent(quote.rateGapBps), max: percent(facts.thresholds.maxRateGapBps) }));
     else if (quote.rateGapBps > facts.thresholds.warnRateGapBps) results.push(result("RATE_BELOW_REFERENCE", { gap: percent(quote.rateGapBps) }));
   }
   return done(results, tokenIn, tokenOut);

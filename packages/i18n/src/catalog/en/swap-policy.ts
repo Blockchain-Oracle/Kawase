@@ -17,4 +17,5 @@ export const swapPolicy = {
     "This price is {{gap}}% below the market, more than the {{max}}% Kawase allows. Try a smaller amount or wait.",
   RATE_BELOW_REFERENCE: "This price is {{gap}}% below the market rate.",
   fixTryAgain: "Try again",
+  BRAKE_PRICE_IMPACT: "This price is {{gap}}% below the market, over your {{max}}% rule.",
 } as const;

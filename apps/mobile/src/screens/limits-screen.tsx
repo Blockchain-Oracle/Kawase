@@ -34,6 +34,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { ApprovalPanel } from "@/safety/approval-panel";
+import { useExitRoute } from "@/safety/exit-route";
 import { LimitSheet, type Editor } from "@/safety/limit-sheet";
 import { useChangeRunner } from "@/safety/use-change-runner";
 import { ARC_CHAIN_IDS, useSafetyChange, useSafetyFormat, useSafetyView } from "@/safety/use-safety";
@@ -50,8 +51,6 @@ const SKELETON_HEIGHT = 220;
 const REVOKE_HOLD_MS = 1_800;
 const MS_PER_TENTH = 100;
 const TENTHS_PER_SECOND = 10;
-/** Where "move my money out" goes. The Withdraw hub (another lane) replaces Send here once it exists. */
-const SWEEP_ROUTE = "/send";
 const RISK_MODES: RiskMode[] = ["careful", "balanced", "autonomous"];
 
 function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
@@ -87,6 +86,7 @@ function useReceipt(safety: SafetyView | undefined) {
 export function LimitsScreen() {
   const { t } = useT();
   const router = useRouter();
+  const exitRoute = useExitRoute();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const format = useSafetyFormat();
@@ -291,7 +291,7 @@ export function LimitsScreen() {
               ) : (
                 <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("safety.exitNothing")}</Text>
               )}
-              <Button onPress={() => router.push(SWEEP_ROUTE)}>
+              <Button onPress={() => router.push(exitRoute)}>
                 <Text>{t("safety.exitMove")}</Text>
               </Button>
             </View>

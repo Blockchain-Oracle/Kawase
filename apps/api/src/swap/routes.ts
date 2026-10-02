@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { requireBrakeOverride } from "../safety/brake";
 import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
@@ -15,7 +16,8 @@ const asset = z
   .nullable()
   .optional();
 const requestSchema = z.object({ tokenIn: asset, tokenOut: asset, amount: z.string().max(AMOUNT_MAX).nullable().optional() });
-const approveSchema = z.object({ version: z.number().int().positive() });
+/** `override`: the person confirmed a braked (risky) action on its card. */
+const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
@@ -40,6 +42,8 @@ export function swapRoutes(swaps: SwapService) {
   app.post("/:id/cancel", async (c) => c.json({ intent: await swaps.cancel(c.get("userId")!, c.req.param("id")) }));
   app.post("/:id/approve", requireAccount, async (c) => {
     const input = await parse(approveSchema, await c.req.json());
+    // The brake: a risky draft goes ahead only with the person's explicit override.
+    requireBrakeOverride((await swaps.get(c.get("userId")!, c.req.param("id"))).results, input.override);
     return c.json(await swaps.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));
   });
   app.post("/:id/signature", requireAccount, async (c) => {

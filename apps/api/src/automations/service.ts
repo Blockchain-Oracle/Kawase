@@ -135,7 +135,7 @@ const FINAL_INTENT_STATES: ReadonlySet<string> = new Set(["completed", "failed",
 /** A payment the person never confirmed (an approved Needs-you step left on its card) ends as not done, not failed. */
 const UNCONFIRMED_STATES: ReadonlySet<string> = new Set(["canceled", "expired"]);
 /** Run stops that wait for the person instead of skipping (Needs you): their safety rules held the step back. */
-const ATTENDED_REASONS: ReadonlySet<string> = new Set(["NOT_ON_ALLOWLIST", "NEW_RECIPIENT_COOLDOWN", "OVER_GRANT"]);
+const ATTENDED_REASONS: ReadonlySet<string> = new Set(["NOT_ON_ALLOWLIST", "NEW_RECIPIENT_COOLDOWN", "OVER_GRANT", "BRAKE_HALF_BALANCE"]);
 /** A price rule looks at the executable quote this often (and the 10-minute balance look stays for the rest). */
 const PRICE_CHECK_MS = 120_000;
 /** The 24 h reminder: weekly and monthly runs are announced a day ahead. */
@@ -1393,7 +1393,9 @@ export class AutomationService {
   /** Does one claimed run's work. Safe to call again for the same run: the money intent's id is the run's. */
   private async drive(row: AutomationRow, run: RunRow): Promise<void> {
     // Practice (the automation's own, or the person's practice mode): "would have", nothing moves.
-    const [owner] = await this.db.select({ practice: users.practiceMode }).from(users).where(eq(users.id, row.userId));
+    const [owner] = await this.db.select({ practice: users.practiceMode, pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, row.userId));
+    // Pause all stops every automation at once (D-pause); the person resumes it in Wallet & limits.
+    if (owner?.pausedAllAt) return this.skipRun(row, run.id, "PAUSED_ALL");
     if (row.practice || owner?.practice) return this.drivePractice(row, run);
     if (row.kind === "auto_save") return this.driveSave(row, run);
     if (row.kind === "rule") return this.driveRule(row, run);

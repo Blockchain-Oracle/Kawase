@@ -108,7 +108,8 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Тренировка: был бы выполнен (ничего не отправлено)",
   reason_PRACTICE_RUN_REFUSED: "Тренировка: Arc отклонил бы его",
   reason_PAUSED_ALL: "Пауза: вы поставили всё на паузу",
-  practiceBody: "Тренировка: запуски проверяются в Arc вхолостую и показываются как «было бы». Ничего не движется, пока вы не включите по-настоящему.",
+  practiceBody:
+    "Тренировка: запуски проверяются в Arc вхолостую и показываются как «было бы». Ничего не движется, пока вы не включите по-настоящему.",
   practising: "Тренировка",
   practiceFirst: "Сначала потренироваться",
   goLive: "Включить по-настоящему",
@@ -127,7 +128,8 @@ export const automation: Catalog["automation"] = {
   edited: "Изменено",
   payroll: "Заплатить {{count}} людям",
   payrollLine: "{{amount}} — {{name}}",
-  payrollBound: "Каждый получит не больше своей суммы {{per}} и только на свой адрес — это гарантирует Arc; до {{date}}.",
+  payrollBound:
+    "Каждый получит не больше своей суммы {{per}} и только на свой адрес — это гарантирует Arc; до {{date}}.",
   dca: "Обменивать {{amount}} на {{symbolOut}}",
   dcaBound: "Не держит разрешений: каждый обмен ждёт вашего согласия в «Ждёт вас».",
   rulePrice: "Когда {{amountIn}} купит не меньше {{minOut}}",
@@ -152,4 +154,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} сейчас покупает {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Завтрашняя автоматизация",
   reason_INSUFFICIENT_BALANCE: "В кошельке тогда не хватало денег",
+  reason_BRAKE_HALF_BALANCE: "Больше половины баланса новому получателю: ждёт вас",
 };
