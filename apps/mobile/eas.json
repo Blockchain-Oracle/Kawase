@@ -39,7 +39,8 @@
         "appleTeamId": "86C6ZFJ6V6",
         "ascApiKeyPath": "/Users/abu/.config/kawase/apple/AuthKey_852363VPL4.p8",
         "ascApiKeyId": "852363VPL4",
-        "ascApiKeyIssuerId": "911e920f-cd28-49bb-b3fb-37e38abdb43e"
+        "ascApiKeyIssuerId": "911e920f-cd28-49bb-b3fb-37e38abdb43e",
+        "ascAppId": "6818428196"
       }
     }
   }
