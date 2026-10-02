@@ -3,11 +3,9 @@
 // plays through an audio element, and the shared Conversation shows both sides as captions, moves the orb and puts
 // Kawase's cards on screen over RPC, exactly as on the phone. Typing is always one tap away.
 //
-// A microphone the browser refuses (or doesn't have) is not a failed session: LiveKitRoom reports it through
-// `onError`, but the room stays connected and the conversation says how to allow the microphone, with typing beside
-// it. Only a real connection error ends the session with "try again".
+// A microphone the browser refuses (or doesn't have) is not a failed session (see ./mic-failure): the room stays and
+// the conversation says how to allow it, with typing beside it. Only a real connection error ends it with "try again".
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
-import { MediaDeviceFailure } from "livekit-client";
 import * as React from "react";
 import { View } from "react-native";
 import { type SharedValue } from "react-native-reanimated";
@@ -21,19 +19,9 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
 import { Conversation, TypeInstead } from "./conversation";
+import { isMicrophoneFailure } from "./mic-failure";
 
 export type VoiceSessionProps = { level: SharedValue<number>; onTypeInstead: (threadId: string | undefined) => void };
-
-/** getUserMedia's refusals; `getFailure` calls every other named error "Other", so those stay session failures. */
-const MIC_FAILURES: ReadonlySet<MediaDeviceFailure> = new Set([
-  MediaDeviceFailure.PermissionDenied,
-  MediaDeviceFailure.NotFound,
-  MediaDeviceFailure.DeviceInUse,
-]);
-const isMicFailure = (error: Error) => {
-  const failure = MediaDeviceFailure.getFailure(error);
-  return failure !== undefined && MIC_FAILURES.has(failure);
-};
 
 export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
   const { t } = useT();
@@ -74,7 +62,7 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
       audio
       video={false}
       onError={(error) => {
-        if (!isMicFailure(error)) setFailed(true);
+        if (!isMicrophoneFailure(error)) setFailed(true);
       }}
       style={{ display: "contents" }}
     >
