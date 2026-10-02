@@ -8,6 +8,7 @@ import {
   AtSign,
   Bell,
   BookUser,
+  Bot,
   Brain,
   CalendarClock,
   Coins,
@@ -207,6 +208,13 @@ export function SettingsScreen() {
               title={t("settings.automations")}
               chevron
               onPress={() => router.push("/automations")}
+            />
+            <ListRow
+              leading={<RowIcon icon={Bot} />}
+              title={t("agentWallet.title")}
+              subtitle={t("agentWallet.settingsBody")}
+              chevron
+              onPress={() => router.push("/agent-wallet")}
             />
             <ListRow
               leading={<RowIcon icon={Coins} />}

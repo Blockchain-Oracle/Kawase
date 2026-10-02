@@ -55,6 +55,9 @@ import { AutomationCard } from "./automation-card";
 import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
+import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
+import { useChatResume } from "./resume";
+import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -509,6 +512,11 @@ const LOADING_LABELS: Record<string, string> = {
   change_automation: "chat.loadingAutomationChange",
   find_contacts: "chat.loadingContacts",
   create_payment_request: "chat.loadingRequest",
+  search_services: "market.loadingSearch",
+  inspect_service: "market.loadingSearch",
+  buy_service: "market.loadingBuy",
+  get_agent_wallet: "market.loadingWallet",
+  top_up_agent_wallet: "market.loadingWallet",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -522,6 +530,7 @@ export function ToolCard({
   const { t } = useT();
   const { user } = useSession();
   const tool = part.type.replace(/^tool-/, "");
+  const resume = useChatResume();
   // The network the person is on now: only for whether a stored card's actions apply, never for its contents.
   const active: Network = user?.activeNetwork ?? "testnet";
 
@@ -584,6 +593,16 @@ export function ToolCard({
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":
       return <RequestCard output={part.output as Parameters<typeof RequestCard>[0]["output"]} />;
+    case "search_services":
+      return <ServicesCard output={part.output as ServiceSearchResult} />;
+    case "inspect_service":
+      return <ServiceCard output={part.output as { result: InspectServiceResult }} />;
+    case "buy_service":
+      return <BuyCard output={part.output as { outcome: BuyOutcome }} onSend={resume} />;
+    case "get_agent_wallet":
+      return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
+    case "top_up_agent_wallet":
+      return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
     default:
       return null;
   }

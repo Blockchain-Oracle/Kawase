@@ -37,6 +37,7 @@ import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 import { draftKey, readDraft, saveDraft } from "./drafts";
+import { ChatResumeProvider } from "./resume";
 import { storedThread } from "./stored-thread";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
@@ -208,9 +209,11 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
             scrollEventThrottle={SCROLL_THROTTLE_MS}
             keyboardDismissMode="interactive"
           >
-            {chat.messages.map((message) => (
-              <MessageView key={message.id} message={message} onToolOutput={onToolOutput} />
-            ))}
+            <ChatResumeProvider send={send}>
+              {chat.messages.map((message) => (
+                <MessageView key={message.id} message={message} onToolOutput={onToolOutput} />
+              ))}
+            </ChatResumeProvider>
             {thinking ? (
               <Animated.View entering={FadeIn} className="flex-row items-center gap-2 py-1">
                 <KawaseMark size={20} />
