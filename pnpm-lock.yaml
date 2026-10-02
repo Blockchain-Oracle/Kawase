@@ -150,6 +150,9 @@ importers:
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation
+      '@kawase/integrations-kyberswap':
+        specifier: workspace:*
+        version: link:../../packages/integrations/kyberswap
       '@kawase/intents':
         specifier: workspace:*
         version: link:../../packages/intents

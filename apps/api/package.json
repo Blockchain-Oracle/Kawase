@@ -27,6 +27,7 @@
     "@kawase/identity": "workspace:*",
     "@kawase/integrations-app-kit": "workspace:*",
     "@kawase/integrations-delegation": "workspace:*",
+    "@kawase/integrations-kyberswap": "workspace:*",
     "@kawase/intents": "workspace:*",
     "@kawase/log": "workspace:*",
     "@kawase/money": "workspace:*",
