@@ -37,6 +37,7 @@ import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
+import { LongShortSegment } from "@/markets/long-short-segment";
 
 const SEGMENTS: readonly MarketSegment[] = ["trending", "meme", "perps", "fx", "new"];
 const SEGMENT_KEYS: Record<MarketSegment, string> = { trending: "markets.trending", meme: "markets.meme", perps: "markets.perps", fx: "markets.fx", new: "markets.new" };
@@ -185,9 +186,7 @@ export function MarketsScreen() {
             {market?.stale ? <Text className="text-muted-foreground text-xs">{t("markets.stale", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}</Text> : null}
 
             {segment === "perps" ? (
-              <View className="bg-card border-border rounded-2xl border">
-                <EmptyState layout="section" title={t("markets.perps")} body={t("markets.perpsBody")} />
-              </View>
+              <LongShortSegment />
             ) : loading && rows.length === 0 ? (
               <SkeletonRows />
             ) : error && rows.length === 0 ? (

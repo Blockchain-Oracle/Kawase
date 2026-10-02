@@ -3,12 +3,13 @@
 // catalogs are shared with the app), testnet prefixed so test money never reads as real, and the app screen it opens.
 import type { InboxKind } from "@kawase/api-client";
 import { CATALOGS, type CatalogLocale } from "@kawase/i18n";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { ASSETS, amount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const TEN = 10n;
+const TOKEN_DIGITS = 6;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
@@ -26,8 +27,12 @@ const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${addres
 
 export function renderNotification(item: Item, locale: CatalogLocale): RenderedNotification {
   const p = item.params;
-  const money = (asset: string | undefined, baseUnits: string | undefined) =>
-    asset && baseUnits ? formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale) : "";
+  // Any token (R1): USDC/EURC by their ids, others by the decimals the item carries.
+  const money = (asset: string | undefined, baseUnits: string | undefined) => {
+    if (!asset || !baseUnits) return "";
+    if (asset in ASSETS) return formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale);
+    return p.decimals ? formatTokenAmount(BigInt(baseUnits), Number(p.decimals), asset, locale, { fractionDigits: TOKEN_DIGITS, trimZeros: true }) : `${baseUnits} ${asset}`;
+  };
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? short(counterparty) : "");
   const sum = money(p.asset, p.amount);

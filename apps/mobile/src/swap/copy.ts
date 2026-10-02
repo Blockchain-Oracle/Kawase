@@ -29,6 +29,7 @@ export function useSwapPolicyText() {
     if (result.code === "TOKEN_BLOCKED") return t("ticket.blocked", { reason: t(`tokenPage.r_${p.reason ?? "impersonator"}`, { defaultValue: p.reason ?? "" }) });
     if (result.code === "TOKEN_RULE_TRADE") return t("ticket.ruleUnverified", { amount: `$${p.limit}` });
     if (result.code === "TOKEN_RULE_DAY") return t("ticket.ruleDaily", { amount: `$${p.limit}` });
+    if (result.code === "TOKEN_RULE_ACCESS") return t("ticket.ruleVerifiedOnly");
     if (result.code === "TOKEN_UNVERIFIED") return t(`tokenPage.r_${p.reason ?? "unverified"}`, { defaultValue: t("tokenPage.r_unverified") });
     return t(`swapPolicy.${result.code}`, {
       ...p,

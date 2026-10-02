@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { Path } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkKucoinMono = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><Path fill="currentColor" fillRule="evenodd" d="m8.978 12.002 5.331 5.332 3.365-3.365a1.522 1.522 0 0 1 2.15 2.15l-4.44 4.441a1.533 1.533 0 0 1-2.15 0l-6.407-6.408v3.809a1.522 1.522 0 0 1-3.045 0V6.038a1.522 1.522 0 0 1 3.045 0v3.81l6.406-6.408a1.53 1.53 0 0 1 2.15 0l4.444 4.441a1.522 1.522 0 0 1-2.15 2.15l-3.365-3.365zm5.334-1.524a1.524 1.524 0 1 0-.002 3.05 1.524 1.524 0 0 0 .002-3.05" clipRule="evenodd" /></Svg>;
+export default MarkKucoinMono;

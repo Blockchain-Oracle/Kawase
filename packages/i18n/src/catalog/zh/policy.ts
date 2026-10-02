@@ -24,7 +24,7 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "这个金额无效。",
   ASSET_UNCLEAR: "USDC 还是 EURC？",
   FIRST_TIME_RECIPIENT: "首次向这个地址付款",
-  LOOKALIKE_ADDRESS: "这个地址看起来像 {{name}} 的地址，但并不相同。请逐个字符核对。",
+  LOOKALIKE_ADDRESS: "这个地址看起来像 {{name}} 的地址，但并不相同，Kawase 不会转账。请与 {{name}} 核对。",
   UNSAVED_ADDRESS: "这个地址不在你的联系人中",
   ABOVE_ALLOWANCE: "超出你剩余的额度（{{available}}）",
   NO_ALLOWANCE: "你的每日额度已关闭",
@@ -49,4 +49,7 @@ export const policy: Catalog["policy"] = {
   BRAKE_HALF_BALANCE: "这超过你持有的一半，而且是付给你从未付过款的人。",
   BRAKE_PRICE_IMPACT: "此价格比市场低 {{gap}}%，超过你设定的 {{max}}% 规则。",
   BRAKE_LEVERAGE: "{{leverage}}× 高于 5×：一个小小的反向波动就可能亏光保证金。",
+  RECIPIENT_TOKEN_CONTRACT: "该地址是一个代币合约。转到那里的钱会丢失，所以 Kawase 不会转账。",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}} 的发行方已封禁此地址，它无法接收 {{asset}}。",
+  RECIPIENT_CONTRACT: "该地址是合约而不是钱包，可能无法转出收到的资金。",
 };

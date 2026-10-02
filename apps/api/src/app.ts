@@ -64,7 +64,12 @@ import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
 import { LendService } from "./lend/service";
+import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
+import { WithdrawService } from "./withdraw/service";
+import { tokenRulesRoutes } from "./tokens/rules-routes";
+import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
+import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
 import type { Discovery } from "@kawase/integrations-x402";
@@ -174,7 +179,12 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
-  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
+  // Requests describe any token through the asset registry, created just below (the lookup is read lazily).
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value));
+  // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
+  // for (earn is created further down).
+  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
+  if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(
     deps.db,
     deps.chains,
@@ -185,12 +195,10 @@ export function createApp(deps: AppDeps) {
     deps.log,
     requests,
     inbox,
+    assets,
   );
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
-  // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
-  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
-  if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
@@ -199,6 +207,7 @@ export function createApp(deps: AppDeps) {
   needsYou.bind({ sends, swaps });
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
+  const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -220,6 +229,7 @@ export function createApp(deps: AppDeps) {
   needsYou.setAudit(audit);
   automations.setAudit(audit);
   const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
+  const tokenRules = new TokenRulesService(deps.db, deps.chains, wallets, audit, (userId, network) => swaps.unverifiedSpentToday(userId, network, ""));
   const marketplace =
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
@@ -316,6 +326,9 @@ export function createApp(deps: AppDeps) {
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
+  app.route("/withdrawals", withdrawRoutes(withdraw));
+  app.route("/places", placeRoutes(withdraw));
+  app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -357,6 +370,7 @@ export function createApp(deps: AppDeps) {
     onramp,
     crosschain,
     lend,
+    withdraw,
     assets,
     automations,
     requests,

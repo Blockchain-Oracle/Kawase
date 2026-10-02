@@ -30,6 +30,8 @@ export type TokenRuleFacts = {
   spentTodayUsd: number;
   perTradeUsd: number;
   perDayUsd: number;
+  /** verified = only tokens Kawase vouches for may be bought; warned (default) = unverified ones too, inside the caps. */
+  access?: "verified" | "warned" | undefined;
 };
 
 export type SwapFacts = {
@@ -128,7 +130,8 @@ export function evaluateSwap(facts: SwapFacts): SwapEvaluation {
 
   // The token rules (D12) for tokens Kawase does not vouch for.
   if (rules && rules.safety !== "block" && rules.unverified) {
-    if (rules.tradeUsd !== null && rules.tradeUsd > rules.perTradeUsd) results.push(result("TOKEN_RULE_TRADE", { limit: usd(rules.perTradeUsd), value: usd(rules.tradeUsd) }));
+    if (rules.access === "verified") results.push(result("TOKEN_RULE_ACCESS"));
+    else if (rules.tradeUsd !== null && rules.tradeUsd > rules.perTradeUsd) results.push(result("TOKEN_RULE_TRADE", { limit: usd(rules.perTradeUsd), value: usd(rules.tradeUsd) }));
     else if (rules.tradeUsd !== null && rules.spentTodayUsd + rules.tradeUsd > rules.perDayUsd)
       results.push(result("TOKEN_RULE_DAY", { limit: usd(rules.perDayUsd), spent: usd(rules.spentTodayUsd) }));
     else results.push(result("TOKEN_UNVERIFIED", { reason: rules.reasons[0] ?? "unverified" }));

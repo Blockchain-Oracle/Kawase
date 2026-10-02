@@ -70,6 +70,8 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
 
 export const ru: Catalog = {
   common,
@@ -142,4 +144,6 @@ export const ru: Catalog = {
   memory,
   insight,
   forYou,
+  withdraw,
+  tokenRules,
 };

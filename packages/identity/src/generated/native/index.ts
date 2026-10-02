@@ -17,12 +17,20 @@ import MarkAvalanche from "./avalanche";
 import MarkAvalancheMono from "./avalanche-mono";
 import MarkBase from "./base";
 import MarkBaseMono from "./base-mono";
+import MarkBinance from "./binance";
+import MarkBinanceMono from "./binance-mono";
+import MarkBitget from "./bitget";
+import MarkBitgetMono from "./bitget-mono";
 import MarkBlockrun from "./blockrun";
 import MarkBlockrunMono from "./blockrun-mono";
 import MarkBtc from "./btc";
 import MarkBtcMono from "./btc-mono";
+import MarkBybit from "./bybit";
+import MarkBybitMono from "./bybit-mono";
 import MarkCircle from "./circle";
 import MarkCircleMono from "./circle-mono";
+import MarkCoinbase from "./coinbase";
+import MarkCoinbaseMono from "./coinbase-mono";
 import MarkDebridge from "./debridge";
 import MarkDebridgeMono from "./debridge-mono";
 import MarkDefillama from "./defillama";
@@ -37,16 +45,29 @@ import MarkGoogle from "./google";
 import MarkGoogleMono from "./google-mono";
 import MarkKawase from "./kawase";
 import MarkKawaseMono from "./kawase-mono";
+import MarkKraken from "./kraken";
+import MarkKrakenMono from "./kraken-mono";
+import MarkKucoin from "./kucoin";
+import MarkKucoinMono from "./kucoin-mono";
 import MarkKyberswap from "./kyberswap";
 import MarkKyberswapMono from "./kyberswap-mono";
+import MarkLedger from "./ledger";
+import MarkLedgerMono from "./ledger-mono";
+import MarkMetamask from "./metamask";
 import MarkMorpho from "./morpho";
 import MarkMorphoMono from "./morpho-mono";
+import MarkOkx from "./okx";
+import MarkOkxMono from "./okx-mono";
 import MarkOptimism from "./optimism";
 import MarkOptimismMono from "./optimism-mono";
+import MarkPhantom from "./phantom";
+import MarkPhantomMono from "./phantom-mono";
 import MarkPolygon from "./polygon";
 import MarkPolygonMono from "./polygon-mono";
 import MarkQuicknode from "./quicknode";
 import MarkQuicknodeMono from "./quicknode-mono";
+import MarkRabby from "./rabby";
+import MarkRabbyMono from "./rabby-mono";
 import MarkSolana from "./solana";
 import MarkSolanaMono from "./solana-mono";
 import MarkUnichain from "./unichain";
@@ -78,12 +99,20 @@ export const MARKS = {
   "avalanche-mono": MarkAvalancheMono,
   "base": MarkBase,
   "base-mono": MarkBaseMono,
+  "binance": MarkBinance,
+  "binance-mono": MarkBinanceMono,
+  "bitget": MarkBitget,
+  "bitget-mono": MarkBitgetMono,
   "blockrun": MarkBlockrun,
   "blockrun-mono": MarkBlockrunMono,
   "btc": MarkBtc,
   "btc-mono": MarkBtcMono,
+  "bybit": MarkBybit,
+  "bybit-mono": MarkBybitMono,
   "circle": MarkCircle,
   "circle-mono": MarkCircleMono,
+  "coinbase": MarkCoinbase,
+  "coinbase-mono": MarkCoinbaseMono,
   "debridge": MarkDebridge,
   "debridge-mono": MarkDebridgeMono,
   "defillama": MarkDefillama,
@@ -98,16 +127,29 @@ export const MARKS = {
   "google-mono": MarkGoogleMono,
   "kawase": MarkKawase,
   "kawase-mono": MarkKawaseMono,
+  "kraken": MarkKraken,
+  "kraken-mono": MarkKrakenMono,
+  "kucoin": MarkKucoin,
+  "kucoin-mono": MarkKucoinMono,
   "kyberswap": MarkKyberswap,
   "kyberswap-mono": MarkKyberswapMono,
+  "ledger": MarkLedger,
+  "ledger-mono": MarkLedgerMono,
+  "metamask": MarkMetamask,
   "morpho": MarkMorpho,
   "morpho-mono": MarkMorphoMono,
+  "okx": MarkOkx,
+  "okx-mono": MarkOkxMono,
   "optimism": MarkOptimism,
   "optimism-mono": MarkOptimismMono,
+  "phantom": MarkPhantom,
+  "phantom-mono": MarkPhantomMono,
   "polygon": MarkPolygon,
   "polygon-mono": MarkPolygonMono,
   "quicknode": MarkQuicknode,
   "quicknode-mono": MarkQuicknodeMono,
+  "rabby": MarkRabby,
+  "rabby-mono": MarkRabbyMono,
   "solana": MarkSolana,
   "solana-mono": MarkSolanaMono,
   "unichain": MarkUnichain,

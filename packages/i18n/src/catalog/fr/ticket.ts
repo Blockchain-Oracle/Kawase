@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "Aucune route",
   reason_timeout: "Pas de réponse à temps",
   reason_failed: "Pas de cotation",
+  ruleVerifiedOnly: "Vos règles n'autorisent que les jetons vérifiés",
 };

@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "Esse valor não é válido.",
   ASSET_UNCLEAR: "USDC ou EURC?",
   FIRST_TIME_RECIPIENT: "Primeiro pagamento para este endereço",
-  LOOKALIKE_ADDRESS: "Parece o endereço de {{name}}, mas é diferente. Confira cada caractere.",
+  LOOKALIKE_ADDRESS:
+    "Parece o endereço de {{name}}, mas é diferente, então o Kawase não vai enviar. Confirme com {{name}}.",
   UNSAVED_ADDRESS: "Este endereço não está nos seus contatos",
   ABOVE_ALLOWANCE: "Acima do que resta do seu limite ({{available}})",
   NO_ALLOWANCE: "Seu limite diário está desligado",
@@ -52,4 +53,8 @@ export const policy: Catalog["policy"] = {
   BRAKE_HALF_BALANCE: "É mais da metade do que você tem, para alguém a quem você nunca pagou.",
   BRAKE_PRICE_IMPACT: "Este preço está {{gap}}% abaixo do mercado, acima da sua regra de {{max}}%.",
   BRAKE_LEVERAGE: "{{leverage}}× passa de 5×: um pequeno movimento contra você pode zerar a margem.",
+  RECIPIENT_TOKEN_CONTRACT:
+    "Esse endereço é o contrato de um token. O dinheiro enviado ali se perde, então o Kawase não vai enviar.",
+  RECIPIENT_ISSUER_BLOCKED: "O emissor de {{asset}} bloqueou este endereço, então ele não pode receber {{asset}}.",
+  RECIPIENT_CONTRACT: "Este endereço é um contrato, não uma carteira. Talvez ele não consiga mover o que receber.",
 };

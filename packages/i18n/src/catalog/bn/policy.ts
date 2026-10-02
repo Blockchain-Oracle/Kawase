@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "এই পরিমাণটি বৈধ নয়।",
   ASSET_UNCLEAR: "USDC না EURC?",
   FIRST_TIME_RECIPIENT: "এই ঠিকানায় প্রথম পেমেন্ট",
-  LOOKALIKE_ADDRESS: "{{name}}-এর ঠিকানার মতো দেখায়, কিন্তু আলাদা। প্রতিটি অক্ষর মিলিয়ে দেখুন।",
+  LOOKALIKE_ADDRESS:
+    "এটি {{name}}-এর ঠিকানার মতো দেখায় কিন্তু আলাদা, তাই Kawase পাঠাবে না। {{name}}-এর সাথে মিলিয়ে নিন।",
   UNSAVED_ADDRESS: "এই ঠিকানা আপনার পরিচিতিতে নেই",
   ABOVE_ALLOWANCE: "আপনার বাকি সীমার ({{available}}) চেয়ে বেশি",
   NO_ALLOWANCE: "আপনার দৈনিক সীমা বন্ধ",
@@ -51,4 +52,8 @@ export const policy: Catalog["policy"] = {
   BRAKE_HALF_BALANCE: "এটা আপনার যা আছে তার অর্ধেকের বেশি, এমন কাউকে যাকে আগে কখনো পেমেন্ট করেননি।",
   BRAKE_PRICE_IMPACT: "এই দাম বাজারের চেয়ে {{gap}}% কম, আপনার {{max}}% নিয়মের বেশি।",
   BRAKE_LEVERAGE: "{{leverage}}× পাঁচ গুণের বেশি: আপনার বিপক্ষে ছোট একটা নড়াচড়াও মার্জিন মুছে দিতে পারে।",
+  RECIPIENT_TOKEN_CONTRACT:
+    "এই ঠিকানাটি একটি টোকেন কন্ট্র্যাক্ট। সেখানে পাঠানো টাকা হারিয়ে যায়, তাই Kawase পাঠাবে না।",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}}-এর ইস্যুকারী এই ঠিকানা ব্লক করেছে, তাই এটি {{asset}} পেতে পারে না।",
+  RECIPIENT_CONTRACT: "এই ঠিকানাটি ওয়ালেট নয়, একটি কন্ট্র্যাক্ট। পাওয়া অর্থ হয়তো এটি সরাতে পারবে না।",
 };

@@ -5,6 +5,7 @@
 // arrived, a move in a currency the person holds) and offer the next step. Dismissed cards stay hidden for a week (or
 // for good once their subject is done); a muted kind never shows.
 import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { formatUnits } from "viem";
 
 import { agentPreferences, automations, intents, suggestionDismissals, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
@@ -127,7 +128,8 @@ export class SuggestionService {
         kind: "expiring_request" as const,
         network: request.network,
         facts: {
-          amount: usd(BigInt(request.amount), request.asset),
+          // Requests can ask for any token (R1): USDC/EURC as money, any other in its own decimals.
+          amount: request.asset === "USDC" || request.asset === "EURC" ? usd(BigInt(request.amount), request.asset) : formatUnits(BigInt(request.amount), request.assetToken.decimals),
           asset: request.asset,
           note: request.note ?? "",
           hours: String(Math.max(1, Math.round((new Date(request.expiresAt).getTime() - Date.now()) / MS_PER_HOUR))),

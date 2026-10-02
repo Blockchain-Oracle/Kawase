@@ -9,8 +9,9 @@ import * as React from "react";
 import { Pressable, View } from "react-native";
 
 import type { SendIntent, SendRequest } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { arcIdentity, CHAIN_IDS } from "@kawase/identity";
+import { amount as toAmount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";
@@ -33,8 +34,11 @@ const PERCENT = 100;
 const METER_HEIGHT = 6;
 
 /** Warnings shown as rows; the allowance ones are said by the meter instead. */
+const TOKEN_DIGITS = 6;
+const DEFAULT_TOKEN_DECIMALS = 18;
 const ROW_WARNINGS = new Set([
   "LOOKALIKE_ADDRESS",
+  "RECIPIENT_CONTRACT",
   "FIRST_TIME_RECIPIENT",
   "UNSAVED_ADDRESS",
   "LEAVES_LITTLE_FOR_FEES",
@@ -130,18 +134,24 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
   const secondary = recipient.name && recipient.handle ? `@${recipient.handle}` : shortAddress(recipient.address);
   const warnings = intent.results.filter((entry) => ROW_WARNINGS.has(entry.code));
   const test = intent.results.find((entry) => entry.code === "TEST_AMOUNT_SUGGESTED");
-  const figures = formatAmount(toAmount(draft.asset as AssetId, BigInt(draft.amount)), locale, { withSymbol: false });
+  // Any token (R1): its own decimals and mark; drafts from before any-asset sends are USDC/EURC.
+  const decimals = draft.token?.decimals ?? (draft.asset === "USDC" || draft.asset === "EURC" ? undefined : DEFAULT_TOKEN_DECIMALS);
+  const figures =
+    decimals === undefined
+      ? formatAmount(toAmount(draft.asset as AssetId, BigInt(draft.amount)), locale, { withSymbol: false })
+      : formatTokenAmount(BigInt(draft.amount), decimals, draft.asset, locale, { withSymbol: false, fractionDigits: TOKEN_DIGITS, trimZeros: true });
+  const chainId = intent.network === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
 
   return (
     <View className="gap-4">
       <View className={cn("items-center gap-2", compact ? "py-1" : "py-3")}>
         <Text className="text-muted-foreground text-sm">{t("send.youSend")}</Text>
         <View className="flex-row items-center gap-3">
-          <Mark
-            entity={draft.asset === "USDC" ? ids.usdc : ids.eurc}
-            chainBadge={ids.chain}
-            size={compact ? ASSET_MARK_COMPACT : ASSET_MARK}
-          />
+          {draft.token ? (
+            <TokenMark token={{ chainId, address: draft.token.address, symbol: draft.token.symbol }} chainBadge={ids.chain} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
+          ) : (
+            <Mark entity={draft.asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
+          )}
           <Text
             accessibilityLabel={`${figures} ${draft.asset}`}
             className={cn("font-display text-foreground font-bold", compact ? "text-[32px]" : "text-5xl")}

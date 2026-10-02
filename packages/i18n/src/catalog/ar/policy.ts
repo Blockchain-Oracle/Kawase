@@ -24,7 +24,7 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "هذا المبلغ غير صالح.",
   ASSET_UNCLEAR: "‏USDC أم EURC؟",
   FIRST_TIME_RECIPIENT: "أول دفعة إلى هذا العنوان",
-  LOOKALIKE_ADDRESS: "يشبه عنوان {{name}} لكنه مختلف. تحقّق من كل حرف.",
+  LOOKALIKE_ADDRESS: "يشبه عنوان {{name}} لكنه مختلف، لذا لن يرسل Kawase إليه. تحقّق منه مع {{name}}.",
   UNSAVED_ADDRESS: "هذا العنوان ليس ضمن جهات اتصالك",
   ABOVE_ALLOWANCE: "أكثر مما تبقّى من حدّك ({{available}})",
   NO_ALLOWANCE: "حدّك اليومي متوقف",
@@ -50,4 +50,7 @@ export const policy: Catalog["policy"] = {
   BRAKE_HALF_BALANCE: "هذا أكثر من نصف ما تملكه، إلى شخص لم تدفع له من قبل.",
   BRAKE_PRICE_IMPACT: "هذا السعر أقل من السوق بـ{{gap}}%، أكثر من قاعدتك البالغة {{max}}%.",
   BRAKE_LEVERAGE: "{{leverage}}× أعلى من 5×: حركة صغيرة ضدك قد تمحو الهامش.",
+  RECIPIENT_TOKEN_CONTRACT: "هذا العنوان عقد رمز. المال المرسل إليه يضيع، لذا لن يرسله Kawase.",
+  RECIPIENT_ISSUER_BLOCKED: "حظر مُصدِر {{asset}} هذا العنوان، فلا يمكنه استلام {{asset}}.",
+  RECIPIENT_CONTRACT: "هذا العنوان عقد وليس محفظة، وقد لا يستطيع تحريك ما يستلمه.",
 };
