@@ -102,6 +102,12 @@ import { SearchService } from "./search/service";
 import { suggestionRoutes } from "./suggestions/routes";
 import { SuggestionService } from "./suggestions/service";
 import { StatusService } from "./status/service";
+import { payCodeRoutes } from "./paycodes/routes";
+import { PayCodeService } from "./paycodes/service";
+import { splitRoutes } from "./splits/routes";
+import { SplitService } from "./splits/service";
+import { intentRoutes } from "./intents/routes";
+import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -355,6 +361,11 @@ export function createApp(deps: AppDeps) {
   const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
+  // Everyday money (A5-2): scan to pay.
+  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
+  app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
+  app.route("/contacts-discovery", discoveryRoutes(deps.db));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);

@@ -188,6 +188,9 @@ export function InboxScreen() {
     else if ((item.kind === "invoice_due" || item.kind === "invoice_overdue") && item.params.invoiceId) router.push({ pathname: "/business/invoice/[id]", params: { id: item.params.invoiceId } });
     else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
+    // The action's own card by id (A5-2), or why money arrived; the explorer only when there is neither.
+    else if (item.intentId) router.push({ pathname: "/i/[id]", params: { id: item.intentId } });
+    else if (item.txHash) router.push({ pathname: "/why/[tx]", params: { tx: item.txHash, network: item.network } });
     else if (item.explorerUrl) void Linking.openURL(item.explorerUrl);
   };
   const pull = async () => {

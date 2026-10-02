@@ -15,8 +15,10 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useBuy } from "@/onramp/buy-provider";
+import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
+import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 import { AgentCard } from "./card";
 
@@ -31,6 +33,11 @@ export function OnrampBuyCard({ output }: { output: BuyProposalOutput }) {
   const signIn = useSignIn();
   const fiat = new Intl.NumberFormat(locale, { style: "currency", currency: output.currency, maximumFractionDigits: 2 }).format(Number(output.amount));
   const eyebrow = `${t("buy.title")} · ${output.network === "mainnet" ? t("network.realMoney") : t("network.arcTestnet")}`;
+  // Resolve and resume (R12): the card was drawn when the person was a guest or had no wallet; once that is fixed,
+  // the same buy opens from here (the Buy flow checks the session again itself).
+  const { status } = useSession();
+  const { wallet } = useWalletStatus();
+  const available = output.available || ((output.reason === "sign_in" || output.reason === "no_wallet") && status === "account" && Boolean(wallet?.address));
   return (
     <AgentCard eyebrow={eyebrow}>
       <View className="flex-row items-center gap-3">
@@ -40,15 +47,15 @@ export function OnrampBuyCard({ output }: { output: BuyProposalOutput }) {
       <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>
         {[output.sandbox ? t("buy.sandbox") : t("buy.realMoney"), output.then ? t("buy.thenNote", { token: output.then }) : null].filter(Boolean).join(" ")}
       </Text>
-      {output.available ? (
+      {available ? (
         <Button onPress={() => buy.open({ asset: output.asset, amount: output.amount, currency: output.currency, then: output.then })}>
           <Text>{t("buy.cardOpen")}</Text>
         </Button>
-      ) : output.reason === "sign_in" ? (
+      ) : output.reason === "sign_in" && status !== "account" ? (
         <Button onPress={() => signIn.open()}>
           <Text>{t("policy.fixSignIn")}</Text>
         </Button>
-      ) : output.reason === "no_wallet" ? (
+      ) : output.reason === "no_wallet" || output.reason === "sign_in" ? (
         <Button onPress={() => router.push("/wallet")}>
           <Text>{t("policy.fixSetUp")}</Text>
         </Button>
