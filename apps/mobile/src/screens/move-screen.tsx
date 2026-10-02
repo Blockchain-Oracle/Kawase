@@ -1,7 +1,8 @@
-// Move between chains (surfaces.md "Bridge"; routes.md): out of Arc to anyone on another chain, or Bring to Arc.
-// The form asks only what it cannot infer: the chain (marks; for Bring to Arc the chains where USDC is waiting at the
-// person's address, with how much), the amount (Max for Bring to Arc), and for a move out who receives it (themselves
-// unless they say a contact, @handle or address). Review is the bridge card: route options, the slide, the tracker.
+// Move between chains (surfaces.md "Bridge"; routes.md): any asset out of Arc to anyone on another chain, or Bring to
+// Arc. The form asks only what it cannot infer: the asset (what they hold on Arc, USDC first; for Bring to Arc what is
+// waiting at their address on the chosen chain), the chain (marks; for Bring to Arc the chains holding something, with
+// how much), the amount (Max from what is held), and for a move out who receives it (themselves unless they say a
+// contact, @handle or address). Review is the bridge card: route options, the slide, the tracker.
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import * as React from "react";
@@ -10,8 +11,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { CrossChainRequest } from "@kawase/api-client";
+import { formatUnits } from "viem";
 import { CHAIN_IDS, chainKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -22,6 +25,8 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { MoveTicket } from "@/crosschain/move-ticket";
 import { useCrossChain, useElsewhere } from "@/crosschain/use-crosschain";
 import { useT } from "@/i18n";
+import { useMarginFormat } from "@/margin/copy";
+import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
@@ -32,7 +37,11 @@ const STRIP_INSET = 6;
 const EDGE_INSET = 12;
 const FOOTER_GAP = 24;
 const CHAIN_MARK = 32;
-const USDC_UNIT = 1_000_000;
+const TOKEN_MARK = 24;
+/** Assets offered for a move out: the largest holdings on Arc. */
+const ASSET_CHOICES = 6;
+const USDC_DECIMALS = 6;
+const NOTHING = 0n;
 const CHAINS = [
   { key: "base", chainId: CHAIN_IDS.base },
   { key: "ethereum", chainId: CHAIN_IDS.ethereum },
@@ -42,7 +51,7 @@ const CHAINS = [
   { key: "avalanche", chainId: CHAIN_IDS.avalanche },
 ] as const;
 
-export type MovePrefill = { direction?: "out" | "in" | undefined; chain?: string | undefined; amount?: string | undefined; recipient?: string | undefined };
+export type MovePrefill = { direction?: "out" | "in" | undefined; chain?: string | undefined; amount?: string | undefined; recipient?: string | undefined; asset?: string | undefined };
 
 export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const { t } = useT();
@@ -50,6 +59,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const money = useMoney();
+  const format = useMarginFormat();
+  const { portfolio } = usePortfolio();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const elsewhere = useElsewhere();
@@ -59,8 +70,12 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const [chain, setChain] = React.useState<string | undefined>(prefill.chain);
   const [amount, setAmount] = React.useState(prefill.amount ?? "");
   const [recipient, setRecipient] = React.useState(prefill.recipient ?? "");
+  // The asset as its symbol (what the api resolves), with the decimals the amount is typed in.
+  const [asset, setAsset] = React.useState<{ symbol: string; decimals: number }>({ symbol: prefill.asset ?? "USDC", decimals: USDC_DECIMALS });
   const [creating, setCreating] = React.useState(false);
   const waiting = elsewhere?.chains ?? [];
+  const onChain = waiting.filter((row) => row.key === chain);
+  const held = (portfolio?.assets ?? []).filter((holding) => !holding.hidden && BigInt(holding.balance) > NOTHING).slice(0, ASSET_CHOICES);
   // Bring to Arc from where the money is: the chain holding the most, unless one was named.
   React.useEffect(() => {
     if (direction === "in" && !chain && waiting[0]) setChain(waiting[0].key);
@@ -72,7 +87,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
       signIn.open();
       return;
     }
-    const request: CrossChainRequest = direction === "in" ? { direction, source: chain ?? null, amount } : { direction, destination: chain ?? null, amount, recipient: recipient.trim() || null };
+    const request: CrossChainRequest =
+      direction === "in" ? { direction, source: chain ?? null, asset: asset.symbol, amount } : { direction, destination: chain ?? null, asset: asset.symbol, amount, recipient: recipient.trim() || null };
     setCreating(true);
     try {
       const { intent } = await api.crosschain.create(request);
@@ -85,7 +101,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   };
 
   const intent = controller.intent;
-  const valid = /^\d+(\.\d{1,6})?$/.test(amount) && Number(amount) > 0 && Boolean(chain);
+  const decimalsOk = (amount.split(".")[1]?.length ?? 0) <= asset.decimals;
+  const valid = /^\d+(\.\d+)?$/.test(amount) && decimalsOk && Number(amount) > 0 && Boolean(chain);
   return (
     <View className="bg-background flex-1">
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
@@ -108,6 +125,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
               onValueChange={(value) => {
                 setDirection(value as "out" | "in");
                 setChain(undefined);
+                setAsset({ symbol: "USDC", decimals: USDC_DECIMALS });
+                setAmount("");
               }}
               options={[
                 { value: "out", label: t("move.directionOut") },
@@ -118,8 +137,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
               <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{direction === "in" ? t("move.from") : t("move.to")}</Text>
               <View className="flex-row flex-wrap gap-2">
                 {CHAINS.map((entry) => {
-                  const held = waiting.find((row) => row.key === entry.key);
-                  const dim = direction === "in" && !held;
+                  const there = waiting.find((row) => row.key === entry.key && row.asset === "USDC") ?? waiting.find((row) => row.key === entry.key);
+                  const dim = direction === "in" && !there;
                   return (
                     <Pressable
                       key={entry.key}
@@ -127,21 +146,60 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
                       accessibilityState={{ checked: chain === entry.key }}
                       onPress={() => {
                         setChain(entry.key);
-                        if (direction === "in" && held && !amount) setAmount((Number(held.balance) / USDC_UNIT).toString());
+                        if (direction === "in" && there && !amount) {
+                          setAsset({ symbol: there.asset, decimals: there.decimals ?? USDC_DECIMALS });
+                          setAmount(formatUnits(BigInt(there.balance), there.decimals ?? USDC_DECIMALS));
+                        }
                       }}
                       className={cn("flex-row items-center gap-2 rounded-full border px-3 py-2", chain === entry.key ? "border-foreground bg-secondary" : "border-border", dim && "opacity-50")}
                     >
                       <Mark entity={chainKey(entry.chainId)} size={CHAIN_MARK} />
                       <Text className="text-foreground text-sm font-semibold">{t(`move.chain_${entry.key}`)}</Text>
-                      {held ? <Text className="text-muted-foreground text-xs">{money("USDC", held.balance)}</Text> : null}
+                      {there ? <Text className="text-muted-foreground text-xs">{there.asset === "USDC" ? money("USDC", there.balance) : format.amount(there.balance, there.decimals ?? USDC_DECIMALS, there.asset)}</Text> : null}
                     </Pressable>
                   );
                 })}
               </View>
               {direction === "in" && elsewhere && waiting.length === 0 ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("move.nothingElsewhere")}</Text> : null}
             </View>
+            {/* What moves: out, what they hold on Arc; in, what is waiting on the chosen chain. */}
+            {(direction === "out" ? held.length > 1 : onChain.length > 1) ? (
+              <View className="gap-2">
+                <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.asset")}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {direction === "out"
+                    ? held.map((holding) => (
+                        <Pressable
+                          key={holding.token.address}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: asset.symbol === holding.token.symbol }}
+                          onPress={() => setAsset({ symbol: holding.token.symbol === "USDC" ? "USDC" : holding.token.address, decimals: holding.token.decimals })}
+                          className={cn("flex-row items-center gap-2 rounded-full border px-3 py-2", asset.symbol === holding.token.symbol || asset.symbol === holding.token.address ? "border-foreground bg-secondary" : "border-border")}
+                        >
+                          <TokenMark token={holding.token} size={TOKEN_MARK} />
+                          <Text className="text-foreground text-sm font-semibold">{holding.token.symbol}</Text>
+                          <Text className="text-muted-foreground text-xs">{format.amount(holding.balance, holding.token.decimals, "")}</Text>
+                        </Pressable>
+                      ))
+                    : onChain.map((row) => (
+                        <Pressable
+                          key={`${row.key}:${row.asset}`}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: asset.symbol === row.asset }}
+                          onPress={() => {
+                            setAsset({ symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS });
+                            setAmount(formatUnits(BigInt(row.balance), row.decimals ?? USDC_DECIMALS));
+                          }}
+                          className={cn("rounded-full border px-3 py-2", asset.symbol === row.asset ? "border-foreground bg-secondary" : "border-border")}
+                        >
+                          <Text className="text-foreground text-sm font-semibold">{`${row.asset} · ${format.amount(row.balance, row.decimals ?? USDC_DECIMALS, "")}`}</Text>
+                        </Pressable>
+                      ))}
+                </View>
+              </View>
+            ) : null}
             <View className="gap-2">
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.amount")}</Text>
+              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.amountOf", { asset: asset.symbol.startsWith("0x") ? (held.find((holding) => holding.token.address === asset.symbol)?.token.symbol ?? "") : asset.symbol })}</Text>
               <TextInput
                 accessibilityLabel={t("move.amount")}
                 value={amount}

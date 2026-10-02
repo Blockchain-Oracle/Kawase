@@ -14,7 +14,9 @@ export const movePolicy = {
   FIRST_TIME_RECIPIENT: "First time paying this address. Check it before you send.",
   AMOUNT_MISSING: "How much?",
   AMOUNT_INVALID: "That amount isn't valid.",
-  INSUFFICIENT_BALANCE: "Not enough USDC there. You have {{balance}}.",
-  INSUFFICIENT_GAS: "Keep about {{needed}} on Arc for the network fee.",
+  INSUFFICIENT_BALANCE: "Not enough {{asset}} there. You have {{balance}}.",
+  INSUFFICIENT_GAS: "Keep about {{needed}} for the network fee.",
   QUOTE_UNAVAILABLE: "No route can carry it right now.",
+  MOVE_ASSET_UNKNOWN: "Kawase can't find {{asset}} there. Which asset do you mean?",
+  TOKEN_BLOCKED: "{{symbol}} imitates another token, so Kawase won't move it.",
 } as const;

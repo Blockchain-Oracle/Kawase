@@ -39,6 +39,8 @@ import MarkKawase from "./kawase";
 import MarkKawaseMono from "./kawase-mono";
 import MarkKyberswap from "./kyberswap";
 import MarkKyberswapMono from "./kyberswap-mono";
+import MarkLifi from "./lifi";
+import MarkLifiMono from "./lifi-mono";
 import MarkMorpho from "./morpho";
 import MarkMorphoMono from "./morpho-mono";
 import MarkOptimism from "./optimism";
@@ -47,6 +49,8 @@ import MarkPolygon from "./polygon";
 import MarkPolygonMono from "./polygon-mono";
 import MarkQuicknode from "./quicknode";
 import MarkQuicknodeMono from "./quicknode-mono";
+import MarkRelay from "./relay";
+import MarkRelayMono from "./relay-mono";
 import MarkSolana from "./solana";
 import MarkSolanaMono from "./solana-mono";
 import MarkUnichain from "./unichain";
@@ -100,6 +104,8 @@ export const MARKS = {
   "kawase-mono": MarkKawaseMono,
   "kyberswap": MarkKyberswap,
   "kyberswap-mono": MarkKyberswapMono,
+  "lifi": MarkLifi,
+  "lifi-mono": MarkLifiMono,
   "morpho": MarkMorpho,
   "morpho-mono": MarkMorphoMono,
   "optimism": MarkOptimism,
@@ -108,6 +114,8 @@ export const MARKS = {
   "polygon-mono": MarkPolygonMono,
   "quicknode": MarkQuicknode,
   "quicknode-mono": MarkQuicknodeMono,
+  "relay": MarkRelay,
+  "relay-mono": MarkRelayMono,
   "solana": MarkSolana,
   "solana-mono": MarkSolanaMono,
   "unichain": MarkUnichain,

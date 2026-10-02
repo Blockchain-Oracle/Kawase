@@ -53,4 +53,13 @@ export const move = {
   slideBring: "Slide to bring to Arc",
   slideSend: "Slide to send",
   cancel: "Cancel",
+  provider_lifi: "LI.FI",
+  provider_debridge: "deBridge",
+  via: "via {{bridge}}",
+  convertFirst: "swapped to USDC on {{venue}} first",
+  feeOnTop: "+ {{amount}} fee",
+  arrivesAs: "Arrives as {{asset}}",
+  gasThere: "Paid on {{chain}}",
+  asset: "What to move",
+  amountOf: "Amount ({{asset}})",
 } as const;
