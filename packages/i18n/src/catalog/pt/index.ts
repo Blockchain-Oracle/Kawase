@@ -46,12 +46,14 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
 import { marginPolicy } from "./margin-policy";
 import { assets } from "./assets";
 import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
+import { buy } from "./buy";
 import { business } from "./business";
 import { why } from "./why";
 import { report } from "./report";
@@ -105,12 +107,14 @@ export const pt: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  voiceSettings,
   margin,
   marginPolicy,
   assets,
   markets,
   tokenPage,
   ticket,
+  buy,
   business,
   why,
   report,

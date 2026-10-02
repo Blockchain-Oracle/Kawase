@@ -56,3 +56,25 @@ export const MARGIN_MARKET_ALIASES = {
   euro: "EURC",
   euros: "EURC",
 } as const;
+
+/**
+ * Buy with Apple Pay / Google Pay / debit through Circle's Onramp (money-in.md). The widget runs top level in the
+ * system browser sheet (Apple Pay is restricted in WebViews; the kit says omit `referrerDomain` then). Mainnet uses
+ * production with the LIVE key; testnet uses Circle's Onramp sandbox with the TEST key (docs.arc.io "Onramp hosting
+ * requirements": onramp-sandbox.arc.io + api-test.circle.com; a sandbox session minted live 2026-10-02).
+ */
+export const ONRAMP = {
+  sandbox: { apiBaseUrl: "https://api-test.circle.com", widgetBaseUrl: "https://onramp-sandbox.arc.io" },
+  /** What the provider delivers on Arc (a protocol fact); any other token is bought with what arrives. */
+  deliverable: ["USDC", "EURC"],
+  chain: "arc",
+  /** Circle's sessions live 30 minutes; an order waits this long for its money before it closes as not completed. */
+  orderTtlMs: 2 * 60 * 60 * 1000,
+  /** A delivery matches an order when it is at least this share of the fiat asked for (fees) and at most the max. */
+  matchShareMinBps: 8_000,
+  matchShareMaxBps: 10_500,
+  /** How often open orders are matched against what the watcher saw arrive. */
+  reconcileMs: 10_000,
+  /** The amount suggested when the person did not say one. */
+  defaultAmount: "20",
+} as const;

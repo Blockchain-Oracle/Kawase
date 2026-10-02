@@ -163,8 +163,57 @@ export type ProposeMarginOutput = { intent: MarginIntent; summary: MarginSummary
 export type MarginMarketsOutput = MarginMarketsView & { summary: string };
 export type MarginPositionsOutput = { network: NetworkId; positions: MarginPositionView[]; summary: string };
 
+// ── Buy with Apple Pay / Google Pay / debit (Circle Onramp) ──────────────────────────────────────────────────
+
+export type OnrampStatus = "created" | "opened" | "submitted" | "settled" | "not_completed" | "expired";
+
+export type OnrampOrderView = {
+  id: string;
+  network: NetworkId;
+  status: OnrampStatus;
+  /** The provider's reason when it did not complete (SESSION_TIMEOUT, CANCELED_BY_CUSTOMER, NO_PAYMENT_OPTIONS…). */
+  reason: string | null;
+  /** What arrives (USDC or EURC) and the fiat asked for. */
+  asset: string;
+  fiatAmount: string | null;
+  fiatCurrency: string | null;
+  /** The token to buy with it afterwards, when asked for. */
+  thenToken: string | null;
+  /** Base units that arrived, seen on chain. */
+  received: string | null;
+  tx: { hash: string; explorerUrl: string } | null;
+  settledAt: string | null;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type OnrampAvailability = {
+  network: NetworkId;
+  available: boolean;
+  /** Testnet runs on Circle's Onramp sandbox (test cards, test money). */
+  sandbox: boolean;
+  reason: "sign_in" | "no_wallet" | "not_configured" | null;
+  deliverable: readonly string[];
+  defaultAmount: string;
+};
+
+export type OnrampStartRequest = { asset?: string | null | undefined; amount?: string | null | undefined; currency?: string | null | undefined; then?: string | null | undefined };
+export type OnrampStartResponse = { order: OnrampOrderView; widgetUrl: string; expiresAt: string };
+export type OnrampEventInput = { event: string; code?: string | null | undefined; payload?: Record<string, unknown> | undefined };
+
+/** What start_buy proposes: the card's button mints the session when tapped (sessions live 30 minutes). */
+export type BuyProposalOutput = OnrampAvailability & { asset: string; amount: string; currency: string; then: string | null; summary: string };
+
 export function railsEndpoints(call: Call) {
   return {
+    onramp: {
+      status: () => call<OnrampAvailability>("GET", "/onramp"),
+      /** Mints a Circle Onramp session for the person's own address; open `widgetUrl` top level (system browser). */
+      start: (request: OnrampStartRequest) => call<OnrampStartResponse>("POST", "/onramp/orders", request),
+      get: (id: string) => call<{ order: OnrampOrderView }>("GET", `/onramp/orders/${id}`),
+      /** The widget's lifecycle hints (UX only; settlement comes from the chain). */
+      event: (id: string, input: OnrampEventInput) => call<{ order: OnrampOrderView }>("POST", `/onramp/orders/${id}/events`, input),
+    },
     margin: {
       /** Markets, sides and leverage caps from the venue's live reserves; no account needed (R13). */
       markets: () => call<MarginMarketsView>("GET", "/margin/markets"),
