@@ -49,3 +49,16 @@ After step 2, every release is `production` build → `submit` (track `internal`
 
 Privacy policy URL, account deletion (in app and a web link), Data safety, content rating, target audience, financial
 features declaration, store listing with screenshots — tracked in `plan/COVERAGE.md` (Q, U).
+
+## Local builds and the emulator (2026-10-02)
+
+- The free EAS queue left two builds unqueued for ~2 h (no queue position, never enqueued); cancelling and
+  resubmitting went through at once. `eas build --local` works on this Mac with the existing SDK at
+  `/opt/homebrew/share/android-commandlinetools` (build-tools 36.0.0, NDK 27.1.12297006, CMake 3.22.1) and a
+  user-local JDK 17 (`~/.local/jdk`): `JAVA_HOME=… ANDROID_HOME=/opt/homebrew/share/android-commandlinetools npx eas-cli build -p android --profile preview --local`.
+- Emulator: AVD `kawase36` (Android 16, Google APIs image, 4 GB), started with `-no-audio -dns-server 8.8.8.8,1.1.1.1`
+  (no audio, so a voice session never hears the room; the DNS flag fixed "no network"). This Mac has 16 GB: shut the iOS
+  simulator down first, or the emulator's system process stalls. The universal APK is 220 MB; install with
+  `adb install --no-streaming`.
+- Found and fixed on the first run: blur on Android needs a BlurTargetView (SDK 57), the segmented control's thumb,
+  the dock showing rows through it, "Voice: coming" in the capability view, and "On" for push without a token.
