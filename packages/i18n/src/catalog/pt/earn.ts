@@ -64,4 +64,5 @@ export const earn: Catalog["earn"] = {
   homeCta: "Renda cerca de {{apy}} ao ano",
   homePosition: "{{amount}} rendendo em cofres",
   yourPosition: "Sua posição",
+  stuckHidden: "Mais {{count}} não podem pagar agora, por isso estão ocultos",
 };

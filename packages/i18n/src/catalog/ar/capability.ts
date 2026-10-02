@@ -12,4 +12,5 @@ export const capability: Catalog["capability"] = {
   voice: "الصوت",
   faucet: "أموال تجريبية",
   payment_links: "روابط الدفع",
+  margin: "شراء وبيع على المكشوف",
 };

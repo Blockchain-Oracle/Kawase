@@ -146,13 +146,34 @@
       "idx": 20,
       "version": "7",
       "when": 1791000042000,
-      "tag": "0042_business",
+      "tag": "0030_margin",
       "breakpoints": true
     },
     {
       "idx": 21,
       "version": "7",
       "when": 1791000043000,
+      "tag": "0020_wallet_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791000050000,
+      "tag": "0050_voice_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791000051000,
+      "tag": "0042_business",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791000052000,
       "tag": "0043_privacy",
       "breakpoints": true
     }

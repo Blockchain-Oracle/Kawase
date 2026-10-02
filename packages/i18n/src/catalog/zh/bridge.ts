@@ -47,4 +47,6 @@ export const bridge: Catalog["bridge"] = {
   changed: "路由费有变动。请查看新的数字。",
   routeUnavailable: "暂时没有路由，请稍后再试。",
   viewArrival: "查看到账",
+  reason_amount_too_low: "需要更大的金额",
+  routeExtraCost: "另加 {{amount}} 费用",
 };

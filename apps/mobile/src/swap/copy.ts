@@ -2,24 +2,37 @@
 // approve button named after the device's real check, and the rate lines.
 import * as React from "react";
 
-import type { PolicyResultView, SwapDraftView, SwapIntent } from "@kawase/api-client";
+import type { NetworkId, PolicyResultView, SwapDraftView, SwapIntent } from "@kawase/api-client";
+import { formatTokenAmount } from "@kawase/money";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useMoney } from "@/send/copy";
 import { biometricKind, type BiometricKind } from "@/wallet/biometric";
 
+import { useSwapMoney } from "./swap-tokens";
+
 const PERCENT_BPS = 100;
 const RATE_DIGITS = 4;
 
+const BALANCE_DIGITS = 6;
+
 export function useSwapPolicyText() {
   const { t } = useT();
+  const { locale } = useLocale();
   const money = useMoney();
   return (result: PolicyResultView, network: SwapIntent["network"]) => {
     const p = result.params ?? {};
     const other = network === "testnet" ? t("network.arc") : t("network.arcTestnet");
+    // Any token's balance in its own decimals (the policy says them); USDC/EURC as before.
+    const balance = p.decimals && p.balance ? formatTokenAmount(BigInt(p.balance), Number(p.decimals), p.asset ?? "", locale, { fractionDigits: BALANCE_DIGITS, trimZeros: true }) : money(p.asset, p.balance);
+    // The token rules and the copycat rule speak in the ticket's words.
+    if (result.code === "TOKEN_BLOCKED") return t("ticket.blocked", { reason: t(`tokenPage.r_${p.reason ?? "impersonator"}`, { defaultValue: p.reason ?? "" }) });
+    if (result.code === "TOKEN_RULE_TRADE") return t("ticket.ruleUnverified", { amount: `$${p.limit}` });
+    if (result.code === "TOKEN_RULE_DAY") return t("ticket.ruleDaily", { amount: `$${p.limit}` });
+    if (result.code === "TOKEN_UNVERIFIED") return t(`tokenPage.r_${p.reason ?? "unverified"}`, { defaultValue: t("tokenPage.r_unverified") });
     return t(`swapPolicy.${result.code}`, {
       ...p,
-      balance: money(p.asset, p.balance),
+      balance,
       needed: money("USDC", p.needed),
       network: other,
       defaultValue: t(`policy.${result.code}`, { defaultValue: result.code }),
@@ -68,7 +81,7 @@ export function useRateLines() {
 /** The confirm prompt (Face ID's reason line, the email-code sheet's subtitle). */
 export function useSwapPrompt() {
   const { t } = useT();
-  const money = useMoney();
-  return (draft: SwapDraftView | null) =>
-    draft ? t("swap.signPrompt", { paid: money(draft.tokenIn, draft.amountIn), min: money(draft.tokenOut, draft.minOut) }) : t("swap.title");
+  const money = useSwapMoney();
+  return (draft: SwapDraftView | null, network: NetworkId) =>
+    draft ? t("swap.signPrompt", { paid: money(draft, "in", draft.amountIn, network), min: money(draft, "out", draft.minOut, network) }) : t("swap.title");
 }

@@ -17,4 +17,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
     "Le coffre ne peut verser que {{available}} pour l'instant ; le reste est prêté. Essayez moins ou plus tard.",
   VAULT_LOW_LIQUIDITY: "Liquidité faible : les retraits peuvent devoir attendre",
   VAULT_RISK_WARNING: "App Kit signale ce coffre : {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "Ce coffre ne peut verser que {{available}} pour l'instant, donc Kawase n'y dépose rien. Choisissez-en un liquide.",
 };

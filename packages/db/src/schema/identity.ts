@@ -2,7 +2,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import type { NotificationPrefs, QuietHours } from "@kawase/config";
+import type { NotificationPrefs, QuietHours, VoicePrefs } from "@kawase/config";
 
 import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 
@@ -41,6 +41,8 @@ export const users = pgTable(
     notificationPrefs: jsonb().$type<NotificationPrefs>().notNull().default({}),
     /** Push waits during these hours (the person's time zone); null = off. */
     quietHours: jsonb().$type<QuietHours>(),
+    /** Settings → Voice; what is not set follows DEFAULT_VOICE_PREFS (read with `voicePrefs`). */
+    voicePrefs: jsonb().$type<Partial<VoicePrefs>>().notNull().default({}),
     /** Conversations (chat and voice transcripts) older than this many days are deleted; null = kept until deleted. */
     transcriptRetentionDays: integer(),
     createdAt: createdAt(),

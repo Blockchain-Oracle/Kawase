@@ -49,4 +49,6 @@ export const bridge: Catalog["bridge"] = {
   changed: "روٹ فیس بدل گئی۔ نئے اعداد دیکھیں۔",
   routeUnavailable: "ابھی کوئی روٹ نہیں۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
   viewArrival: "پہنچنا دیکھیں",
+  reason_amount_too_low: "زیادہ رقم درکار ہے",
+  routeExtraCost: "ساتھ {{amount}} فیس",
 };

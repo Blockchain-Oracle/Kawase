@@ -45,4 +45,6 @@ export const bridge = {
   changed: "The route's fee changed. Check the new numbers.",
   routeUnavailable: "No route right now. Try again in a moment.",
   viewArrival: "See it arrive",
+  reason_amount_too_low: "Needs a larger amount",
+  routeExtraCost: "plus {{amount}} fee",
 } as const;

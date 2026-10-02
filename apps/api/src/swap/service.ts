@@ -1,19 +1,23 @@
-// Swaps between the person's currencies (Stage 6; ARCHITECTURE §8 `propose_swap`), built like sends (§3–§5).
+// Swaps of any pair on Arc (R1, R3; ARCHITECTURE §8 `propose_swap`/`propose_trade`), built like sends (§3–§5).
 //
-// Drafting: complete the pair from what was said, read balances, get a fresh App Kit quote and Circle's market
-// prices, run the policy, and store an immutable version whose EIP-712 hash covers what moves money (exactly
-// `amountIn` out, at least `minOut` back). Approving: quote again on fresh facts; if the route can no longer
-// guarantee the version's `minOut`, a new version shows the new numbers. Otherwise App Kit builds the calls with
-// `minOut` as its on-chain stop limit, Kawase checks them (only the App Kit adapter, an approval of exactly the
-// amount, no native value) and wraps them into one transaction the wallet sends to itself, so approve + swap is
-// one Face ID and all-or-nothing. Tracking: done only when the receipt shows exactly `amountIn` leaving and at
-// least `minOut` arriving.
+// Drafting: resolve both tokens (a verified symbol or any address) and describe them from the asset registry,
+// read balances, ask every venue (KyberSwap, Circle App Kit, LI.FI) for a fresh quote and take the most delivered,
+// price it against the market (the price impact), apply the token rules (impersonators and honeypots are never
+// bought; unverified tokens have a per-trade and per-day limit), run the policy, and store an immutable version
+// whose EIP-712 hash covers what moves money (exactly `amountIn` out, at least `minOut` back). Approving: quote
+// again; if the chosen venue can no longer guarantee the version's `minOut`, a new version shows the new numbers.
+// Otherwise that venue builds the calls at half the shown slippage, Kawase checks them (the venue's own contract,
+// an approval of exactly the amount, the wallet as the only recipient, the on-chain minimum, no native value) and
+// wraps them into one transaction the wallet sends to itself, so approve + swap is one approval and
+// all-or-nothing. Tracking: done only when the receipt shows exactly `amountIn` leaving and at least `minOut`
+// arriving.
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   decodeEventLog,
   erc20Abi,
   formatUnits,
+  isAddress,
   keccak256,
   parseTransaction,
   parseUnits,
@@ -31,14 +35,17 @@ import {
   INTENT_TTL_S,
   MAX_FEE_DRAFT_MULTIPLIER,
   MS_PER_SECOND,
+  AGGREGATOR_BATCH_GAS_ESTIMATE,
   SEND_UNKNOWN_AFTER_S,
   SWAP_BATCH_GAS_ESTIMATE,
-  SWAP_PROVIDER_LABEL,
   SWAP_ROUTE_SLIPPAGE_DIVISOR,
+  SWAP_VENUE_LABELS,
+  TOKEN_RULES,
+  type SwapVenueId,
 } from "@kawase/config";
-import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, UnsignedTransaction } from "@kawase/api-client";
+import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, SwapRouteView, TokenView, UnsignedTransaction } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
-import { checkSwapCalls, type SwapCall } from "@kawase/integrations-app-kit";
+import type { SwapCall } from "@kawase/integrations-app-kit";
 import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
 import {
   DRAFTABLE_STATES,
@@ -50,28 +57,29 @@ import {
   type SwapDraft,
 } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
-import { USDC_NATIVE_DECIMALS, decimalsOf, rescale, type AssetId } from "@kawase/money";
-import type { NetworkContext, NetworkId } from "@kawase/networks";
-import { completePair, evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFacts } from "@kawase/policy";
+import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
+import { CANONICAL_TOKENS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
+import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFacts, type TokenRuleFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
-import { parseRequestAmount } from "../send/facts";
+import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import type { SwapEngine } from "./engine";
+import { createSwapVenues, VenueRefused, type SwapVenues, type VenueFailure, type VenueQuote } from "./venues";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
 type AttemptRow = typeof txAttempts.$inferSelect;
 
-type StoredSwapRequest = { tokenIn: AssetId | null; tokenOut: AssetId | null; amount: string | null };
-type DraftPayload = { draft: StoredSwapDraft | null; view: SwapDraftView | null };
+/** As asked: "USDC"/"EURC" (older swaps), a verified symbol, or a lower-case token address. */
+type StoredSwapRequest = { tokenIn: string | null; tokenOut: string | null; amount: string | null };
+type DraftPayload = { draft: StoredSwapDraft | null; view: SwapDraftView | null; venue?: SwapVenueId };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 
-const ASSETS: readonly AssetId[] = ["USDC", "EURC"];
 const ZERO = 0n;
 const ONE = 1n;
 const PERCENT = 100n;
@@ -85,9 +93,27 @@ const ms = (seconds: number) => seconds * MS_PER_SECOND;
 const later = (seconds: number) => new Date(Date.now() + ms(seconds));
 const sleep = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 
-const tokenAddress = (network: NetworkContext, asset: AssetId): Address => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
-const assetOf = (network: NetworkContext, token: Address): AssetId =>
-  token.toLowerCase() === network.addresses.eurc.toLowerCase() ? "EURC" : "USDC";
+const DECIMAL = /^\d+(\.\d+)?$/;
+const STABLE_KINDS = new Set(["dollar", "fiat"]);
+const BLOCKING_STATES = ["executing", "completed", "unknown_outcome"] as const;
+const MS_PER_DAY = 86_400_000;
+
+/** A token as asked: an address, or a symbol on this network's verified list ("USDC", "EURC", "cirBTC"…). */
+function resolveToken(network: NetworkContext, value: string | null): string | undefined {
+  if (!value) return undefined;
+  const text = value.trim();
+  if (isAddress(text)) return text.toLowerCase();
+  const symbol = normalizeSymbol(text);
+  return CANONICAL_TOKENS[network.id].find((token) => normalizeSymbol(token.symbol) === symbol)?.address.toLowerCase();
+}
+
+/** "10.5" in a token's own decimals; more decimals than the token has is not an amount. */
+function parseTokenAmount(text: string | null, decimals: number | undefined) {
+  if (!text || !text.trim()) return { status: "missing" as const };
+  const value = text.trim();
+  if (!DECIMAL.test(value) || decimals === undefined || (value.split(".")[1]?.length ?? 0) > decimals) return { status: "invalid" as const };
+  return { status: "ok" as const, baseUnits: parseUnits(value, decimals) };
+}
 
 /** 18-decimal native fee → USDC base units, rounded up. */
 const feeInUsdc = (nativeWei: bigint) => {
@@ -105,6 +131,7 @@ function restingState(evaluation: SwapEvaluation): IntentState {
 
 export class SwapService {
   private readonly tracking = new Set<string>();
+  private readonly venues: SwapVenues;
 
   constructor(
     private readonly db: Db,
@@ -112,7 +139,10 @@ export class SwapService {
     private readonly wallets: WalletService,
     private readonly engine: SwapEngine,
     private readonly log: Logger,
-  ) {}
+    private readonly assets?: AssetService,
+  ) {
+    this.venues = createSwapVenues(engine);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -150,61 +180,101 @@ export class SwapService {
     return this.draft(user, { ...intent, request: stored }, stored, "user");
   }
 
-  /** Everything the policy needs, fresh: balances and the 7702 code from the chain, a quote, market prices. */
-  private async evaluate(user: SessionUser, intent: IntentRow, request: StoredSwapRequest) {
+  /** Everything the policy needs, fresh: both tokens, balances and the 7702 code, every venue's quote, prices, token rules. */
+  private async evaluate(user: SessionUser, intent: IntentRow, request: StoredSwapRequest, onlyVenue?: SwapVenueId) {
     const network: NetworkId = intent.network;
     const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
     const clients = this.chains.get(network);
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     const view = await capabilityView(this.db, this.chains.available);
-    const pair = completePair(request.tokenIn ?? undefined, request.tokenOut ?? undefined, ASSETS);
-    const amount = parseRequestAmount(request.amount, pair.tokenIn);
+    const context = clients?.network;
 
-    let balances: Record<AssetId, bigint> = { USDC: ZERO, EURC: ZERO };
+    // The pair, completed from what was said: a buy pays with dollars, a sale is for dollars; on testnet, with
+    // only USDC and EURC, naming one side names the other.
+    let tokenIn = context ? resolveToken(context, request.tokenIn) : undefined;
+    let tokenOut = context ? resolveToken(context, request.tokenOut) : undefined;
+    if (context) {
+      const usdc = context.addresses.usdc.toLowerCase();
+      const pairOf = (side: string) => (side !== usdc ? usdc : network === "testnet" ? context.addresses.eurc.toLowerCase() : undefined);
+      if (tokenOut && !tokenIn && !request.tokenIn) tokenIn = pairOf(tokenOut);
+      if (tokenIn && !tokenOut && !request.tokenOut) tokenOut = pairOf(tokenIn);
+    }
+    const described = clients && this.assets ? await this.assets.directory.describe(network, clients.network.chainId, clients.client, [tokenIn, tokenOut].filter((token): token is string => Boolean(token))) : new Map<string, TokenView>();
+    const viewIn = tokenIn ? described.get(tokenIn) : undefined;
+    const viewOut = tokenOut ? described.get(tokenOut) : undefined;
+    if (!viewIn) tokenIn = undefined;
+    if (!viewOut) tokenOut = undefined;
+    const amount = parseTokenAmount(request.amount, viewIn?.decimals);
+
+    let balanceIn = ZERO;
+    let usdcBalance = ZERO;
     let setUp = false;
     if (clients && wallet) {
       const balanceOf = (token: Address) => clients.client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
-      const [usdc, eurc, code] = await Promise.all([
+      const [held, usdc, code] = await Promise.all([
+        tokenIn ? balanceOf(tokenIn as Address) : Promise.resolve(ZERO),
         balanceOf(clients.network.addresses.usdc),
-        balanceOf(clients.network.addresses.eurc),
         clients.client.getCode({ address: wallet }),
       ]);
-      balances = { USDC: usdc, EURC: eurc };
+      balanceIn = held;
+      usdcBalance = usdc;
       setUp = isWalletSetUp(code);
     }
 
     const limits = DEFAULT_LIMITS[network];
-    const slippageBps = limits.maxSlippageStableBps;
+    const stablePair = Boolean(viewIn && viewOut && viewIn.status === "canonical" && viewOut.status === "canonical" && STABLE_KINDS.has(viewIn.kind) && STABLE_KINDS.has(viewOut.kind));
+    const slippageBps = stablePair ? limits.maxSlippageStableBps : limits.maxSlippageOtherBps;
     let quote: SwapQuoteFacts = { status: "not_requested" };
     let marketRate: number | undefined;
-    let routeFees = ZERO;
-    const canQuote =
-      clients && wallet && pair.tokenIn && pair.tokenOut && pair.tokenIn !== pair.tokenOut && amount.status === "ok" && amount.baseUnits > ZERO;
+    let valueUsd: number | null = null;
+    let best: VenueQuote | undefined;
+    let quotes: VenueQuote[] = [];
+    let failures: VenueFailure[] = [];
+    const canQuote = clients && wallet && viewIn && viewOut && tokenIn !== tokenOut && amount.status === "ok" && amount.baseUnits > ZERO;
     if (canQuote) {
-      const tokenIn = tokenAddress(clients.network, pair.tokenIn!);
-      const tokenOut = tokenAddress(clients.network, pair.tokenOut!);
-      const amountIn = formatUnits(amount.baseUnits, decimalsOf(pair.tokenIn!));
-      const [quoted, prices] = await Promise.all([
-        this.engine
-          .quote({ network: clients.network, client: clients.client, from: wallet, tokenIn, tokenOut, amountIn, slippageBps, decimalsOut: decimalsOf(pair.tokenOut!) })
-          .catch((error: unknown) => {
-            this.log.warn({ err: error, intentId: intent.id }, "swap quote failed");
-            return undefined;
-          }),
-        this.engine.prices(clients.network, [tokenIn, tokenOut]).catch(() => new Map<string, number>()),
+      const [fanned, priced] = await Promise.all([
+        this.venues.quoteAll({ network: clients.network, client: clients.client, from: wallet, tokenIn: viewIn.address as Address, tokenOut: viewOut.address as Address, amountIn: amount.baseUnits, decimalsIn: viewIn.decimals, decimalsOut: viewOut.decimals, slippageBps }, onlyVenue ? [onlyVenue] : undefined),
+        this.assets ? this.assets.prices(network, [viewIn.address, viewOut.address]).catch(() => undefined) : Promise.resolve(undefined),
       ]);
-      const priceIn = prices.get(tokenIn.toLowerCase());
-      const priceOut = prices.get(tokenOut.toLowerCase());
+      quotes = fanned.quotes;
+      failures = fanned.failures;
+      best = quotes[0];
+      let priceIn = priced?.prices.get(viewIn.address.toLowerCase())?.priceUsd ?? null;
+      let priceOut = priced?.prices.get(viewOut.address.toLowerCase())?.priceUsd ?? null;
+      // Circle's own token rates when the market sources have no price (test networks, tokens they do not list).
+      if (!priceIn || !priceOut) {
+        const circle = await this.engine.prices(clients.network, [viewIn.address as Address, viewOut.address as Address]).catch(() => new Map<string, number>());
+        priceIn ??= circle.get(viewIn.address.toLowerCase()) ?? null;
+        priceOut ??= circle.get(viewOut.address.toLowerCase()) ?? null;
+      }
+      const inUnits = Number(formatUnits(amount.baseUnits, viewIn.decimals));
+      if (priceIn) valueUsd = inUnits * priceIn;
       if (priceIn && priceOut) marketRate = priceIn / priceOut;
-      if (quoted) {
-        const marketOut = marketRate ? Number(amountIn) * marketRate : undefined;
-        const estimated = Number(formatUnits(quoted.estimatedOut, decimalsOf(pair.tokenOut!)));
-        const rateGapBps = marketOut ? Math.round(((marketOut - estimated) / marketOut) * BPS) : undefined;
-        quote = { status: "ok", estimatedOut: quoted.estimatedOut, minOut: quoted.minOut, slippageBps, rateGapBps };
-        routeFees = quoted.fees
-          .filter((fee) => fee.type !== "gas" && fee.token === pair.tokenIn)
-          .reduce((sum, fee) => sum + parseUnits(fee.amount, decimalsOf(pair.tokenIn!)), ZERO);
-      } else quote = { status: "unavailable" };
+      if (best) {
+        const outUnits = Number(formatUnits(best.estimatedOut, viewOut.decimals));
+        // The price impact: what arrives against what leaves, both at market prices.
+        const rateGapBps = priceIn && priceOut ? Math.round(((inUnits * priceIn - outUnits * priceOut) / (inUnits * priceIn)) * BPS) : undefined;
+        quote = { status: "ok", estimatedOut: best.estimatedOut, minOut: best.minOut, slippageBps, rateGapBps };
+      } else {
+        this.log.warn({ intentId: intent.id, failures }, "no swap venue quoted");
+        quote = { status: "unavailable" };
+      }
+    }
+
+    // The token rules (D12) for what is bought.
+    let tokenRules: TokenRuleFacts | undefined;
+    if (viewOut && this.assets) {
+      const safety = await this.assets.safety(network, viewOut).catch(() => undefined);
+      const unverified = viewOut.status === "unverified" || viewOut.status === "lookalike";
+      tokenRules = {
+        safety: safety?.level ?? (viewOut.status === "impersonator" ? "block" : "ok"),
+        reasons: safety?.reasons ?? [],
+        unverified,
+        tradeUsd: valueUsd,
+        spentTodayUsd: unverified ? await this.unverifiedSpentToday(user.id, network, intent.id) : 0,
+        perTradeUsd: TOKEN_RULES.unverifiedPerTradeUsd,
+        perDayUsd: TOKEN_RULES.unverifiedPerDayUsd,
+      };
     }
 
     const evaluation = evaluateSwap({
@@ -212,54 +282,80 @@ export class SwapService {
       capability: { here: view.swap[network].state, other: view.swap[other].state },
       signedIn: !user.isAnonymous,
       pausedAll: false,
-      wallet: { registered: Boolean(wallet), setUp, balances },
-      tokenIn: pair.tokenIn,
-      tokenOut: pair.tokenOut,
+      wallet: { registered: Boolean(wallet), setUp, balanceIn, usdc: usdcBalance },
+      tokenIn,
+      tokenOut,
+      symbolIn: viewIn?.symbol,
+      decimalsIn: viewIn?.decimals,
+      tokenInIsUsdc: Boolean(tokenIn && context && tokenIn === context.addresses.usdc.toLowerCase()),
       amount,
       quote,
-      thresholds: { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: limits.maxRateGapBps, warnRateGapBps: limits.warnRateGapBps },
+      thresholds: stablePair
+        ? { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: limits.maxRateGapBps, warnRateGapBps: limits.warnRateGapBps }
+        : { gasFloat: GAS_FLOAT_USDC_BASE_UNITS, maxRateGapBps: TOKEN_RULES.maxPriceImpactBps, warnRateGapBps: TOKEN_RULES.warnPriceImpactBps },
+      tokenRules,
     });
-    return { wallet, evaluation, quote, marketRate, routeFees, amount };
+    return { wallet, evaluation, quote, marketRate, amount, viewIn, viewOut, best, quotes, failures, valueUsd, unverifiedOut: tokenRules?.unverified ?? false };
+  }
+
+  /** US dollars bought today in tokens Kawase does not vouch for (the token rules' daily limit). */
+  private async unverifiedSpentToday(userId: string, network: NetworkId, exclude: string): Promise<number> {
+    const since = new Date(Date.now() - MS_PER_DAY);
+    const rows = await this.db
+      .select({ id: intents.id, payload: intentDrafts.payload })
+      .from(intents)
+      .innerJoin(intentDrafts, and(eq(intentDrafts.intentId, intents.id), eq(intentDrafts.version, intents.currentDraftVersion)))
+      .where(and(eq(intents.userId, userId), eq(intents.network, network), eq(intents.kind, "swap"), inArray(intents.state, [...BLOCKING_STATES]), sql`${intents.createdAt} > ${since}`));
+    return rows
+      .filter((row) => row.id !== exclude)
+      .map((row) => (row.payload as DraftPayload).view)
+      .filter((draft) => draft?.unverifiedOut)
+      .reduce((sum, draft) => sum + (draft?.valueUsd ?? 0), 0);
   }
 
   private async draft(user: SessionUser, intent: IntentRow, request: StoredSwapRequest, createdBy: "user" | "agent" | "system") {
-    const { wallet, evaluation, quote, marketRate, routeFees, amount } = await this.evaluate(user, intent, request);
-    const { tokenIn, tokenOut } = evaluation;
+    const fresh = await this.evaluate(user, intent, request);
+    const { wallet, evaluation, quote, marketRate, amount, viewIn, viewOut, best } = fresh;
     const clients = this.chains.get(intent.network);
 
     let draft: SwapDraft | null = null;
     let view: SwapDraftView | null = null;
-    if (clients && wallet && tokenIn && tokenOut && quote.status === "ok" && amount.status === "ok") {
+    if (clients && wallet && viewIn && viewOut && best && quote.status === "ok" && amount.status === "ok") {
       const { maxFeePerGas } = await walletGasPrice(clients.client);
-      const fee = ((SWAP_BATCH_GAS_ESTIMATE * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
+      const fee = ((gasEstimate(best.venue) * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
       draft = {
         chainId: clients.network.chainId,
         from: wallet,
-        tokenIn: tokenAddress(clients.network, tokenIn),
-        tokenOut: tokenAddress(clients.network, tokenOut),
+        tokenIn: viewIn.address as Address,
+        tokenOut: viewOut.address as Address,
         amountIn: amount.baseUnits,
         minOut: quote.minOut,
         maxFee: fee * MAX_FEE_DRAFT_MULTIPLIER,
       };
-      const inUnits = Number(formatUnits(amount.baseUnits, decimalsOf(tokenIn)));
-      const outUnits = Number(formatUnits(quote.estimatedOut, decimalsOf(tokenOut)));
+      const inUnits = Number(formatUnits(amount.baseUnits, viewIn.decimals));
+      const outUnits = Number(formatUnits(quote.estimatedOut, viewOut.decimals));
       view = {
-        tokenIn,
-        tokenOut,
+        tokenIn: viewIn.symbol,
+        tokenOut: viewOut.symbol,
         amountIn: amount.baseUnits.toString(),
         estimatedOut: quote.estimatedOut.toString(),
         minOut: quote.minOut.toString(),
         slippageBps: quote.slippageBps,
-        rate: (outUnits / inUnits).toFixed(RATE_DIGITS),
-        marketRate: marketRate ? marketRate.toFixed(RATE_DIGITS) : null,
+        rate: (outUnits / inUnits).toPrecision(RATE_DIGITS),
+        marketRate: marketRate ? marketRate.toPrecision(RATE_DIGITS) : null,
         rateGapBps: quote.rateGapBps ?? null,
-        fees: { route: routeFees.toString(), network: feeInUsdc(fee).toString() },
-        provider: SWAP_PROVIDER_LABEL,
+        fees: { route: "0", network: feeInUsdc(fee).toString() },
+        provider: SWAP_VENUE_LABELS[best.venue],
         quotedAt: new Date().toISOString(),
+        tokens: { in: viewIn, out: viewOut },
+        venue: best.venue,
+        routes: routeViews(fresh.quotes, fresh.failures),
+        valueUsd: fresh.valueUsd,
+        unverifiedOut: fresh.unverifiedOut,
       };
     }
 
-    const payload: DraftPayload = { draft: draft ? storeSwapDraft(draft) : null, view };
+    const payload: DraftPayload = { draft: draft ? storeSwapDraft(draft) : null, view, ...(best ? { venue: best.venue } : {}) };
     const report: PolicyReport = { results: evaluation.results, blocking: evaluation.blocking ?? null };
     const version = intent.currentDraftVersion + 1;
     const state = draft || evaluation.blocking ? restingState(evaluation) : "input_required";
@@ -374,34 +470,40 @@ export class SwapService {
     if (swapDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
     // The version's stop limit stands as long as the route still expects to deliver it; when the price has moved
     // below it, the person sees a new version with the new numbers.
-    const fresh = await this.evaluate(user, before, before.request as StoredSwapRequest);
+    // Re-check everything on fresh facts, asking only the venue the person saw recommended.
+    const venue = (current.payload as DraftPayload).venue ?? "app_kit";
+    const fresh = await this.evaluate(user, before, before.request as StoredSwapRequest, venue);
     // No price for a moment is not a change: the person tries again, the version stands.
     if (fresh.quote.status === "unavailable") throw problem(HTTP.badGateway, "quote_unavailable");
-    if (fresh.evaluation.blocking || fresh.quote.status !== "ok" || fresh.quote.estimatedOut < draft.minOut) return this.redraft(user, intentId);
+    const still = fresh.quotes.find((entry) => entry.venue === venue);
+    if (fresh.evaluation.blocking || !still || still.estimatedOut < draft.minOut || !fresh.viewIn || !fresh.viewOut) return this.redraft(user, intentId);
 
     const { network, client } = this.clients(before.network);
     let calls: SwapCall[];
     try {
-      calls = await this.engine.prepare({
+      const prepared = await this.venues.prepare(venue, {
         network,
         client,
         from: draft.from,
         tokenIn: draft.tokenIn,
         tokenOut: draft.tokenOut,
-        amountIn: formatUnits(draft.amountIn, decimalsOf(assetOf(network, draft.tokenIn))),
-        slippageBps: DEFAULT_LIMITS[before.network].maxSlippageStableBps / SWAP_ROUTE_SLIPPAGE_DIVISOR,
+        amountIn: draft.amountIn,
+        decimalsIn: fresh.viewIn.decimals,
+        decimalsOut: fresh.viewOut.decimals,
+        slippageBps: (fresh.quote.status === "ok" ? fresh.quote.slippageBps : DEFAULT_LIMITS[before.network].maxSlippageOtherBps) / SWAP_ROUTE_SLIPPAGE_DIVISOR,
+        minOut: draft.minOut,
       });
+      calls = prepared.calls;
     } catch (error) {
+      // The price moved enough that the calls no longer guarantee what the person was shown: a new version.
+      if (error instanceof VenueRefused && error.reason === "below_minimum") return this.redraft(user, intentId);
+      if (error instanceof VenueRefused) {
+        this.log.error({ intentId, venue, reason: error.reason }, "security.swap_calls_refused");
+        throw problem(HTTP.badGateway, "quote_unavailable", "the swap route returned calls Kawase does not accept");
+      }
       // Not a new version: the price check above passed, so a new quote would most likely fail the same way.
-      this.log.warn({ err: error, intentId }, "swap prepare failed");
+      this.log.warn({ err: error, intentId, venue }, "swap prepare failed");
       throw problem(HTTP.badGateway, "quote_unavailable");
-    }
-    const check = checkSwapCalls(network, calls, draft);
-    // The price moved enough that the calls no longer guarantee what the person was shown: a new version.
-    if (!check.ok && check.reason === "below_minimum") return this.redraft(user, intentId);
-    if (!check.ok) {
-      this.log.error({ intentId, reason: check.reason }, "security.swap_calls_refused");
-      throw problem(HTTP.badGateway, "quote_unavailable", "the swap route returned calls Kawase does not accept");
     }
 
     // Lower-case, as a parsed signed transaction reads it back (App Kit's calldata can carry upper-case hex).
@@ -411,7 +513,7 @@ export class SwapService {
       walletGasPrice(client),
       client.estimateGas({ account: draft.from, to: draft.from, data }).catch((error: unknown) => {
         this.log.warn({ err: error, intentId }, "swap gas estimate failed");
-        return SWAP_BATCH_GAS_ESTIMATE;
+        return gasEstimate(venue);
       }),
     ]);
     const gas = (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT;
@@ -695,4 +797,24 @@ function outcomeOf(state: IntentState, attempt: AttemptRow | undefined) {
     default:
       return null;
   }
+}
+
+/** Gas for approve + swap before an estimate is possible: Circle's adapter is lighter than an aggregator route. */
+const gasEstimate = (venue: SwapVenueId) => (venue === "app_kit" ? SWAP_BATCH_GAS_ESTIMATE : AGGREGATOR_BATCH_GAS_ESTIMATE);
+
+/** Every venue asked, best first: the chosen one, the others that quoted, then those that could not (R3). */
+function routeViews(quotes: readonly VenueQuote[], failures: readonly VenueFailure[]): SwapRouteView[] {
+  return [
+    ...quotes.map((entry, index) => ({
+      venue: entry.venue,
+      label: SWAP_VENUE_LABELS[entry.venue],
+      status: index === 0 ? ("chosen" as const) : ("quoted" as const),
+      estimatedOut: entry.estimatedOut.toString(),
+      minOut: entry.minOut.toString(),
+      via: entry.via,
+      feeUsd: entry.feeUsd,
+      reason: index === 0 ? null : "less_out",
+    })),
+    ...failures.map((entry) => ({ venue: entry.venue, label: SWAP_VENUE_LABELS[entry.venue], status: "unavailable" as const, estimatedOut: null, minOut: null, via: [], feeUsd: null, reason: entry.reason })),
+  ];
 }

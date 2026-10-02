@@ -17,4 +17,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
     "Хранилище сейчас может выплатить только {{available}}; остальное выдано в долг. Попробуйте меньше или позже.",
   VAULT_LOW_LIQUIDITY: "Низкая ликвидность: вывод может подождать",
   VAULT_RISK_WARNING: "App Kit отмечает это хранилище: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "Этот сейф сейчас может выплатить только {{available}}, поэтому Kawase не будет вносить в него деньги. Выберите ликвидный.",
 };

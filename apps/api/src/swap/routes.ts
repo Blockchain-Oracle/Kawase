@@ -8,7 +8,12 @@ import type { SwapService } from "./service";
 
 const AMOUNT_MAX = 40;
 
-const asset = z.enum(["USDC", "EURC"]).nullable().optional();
+/** A verified symbol ("USDC", "cirBTC") or any token address on the active network. */
+const asset = z
+  .string()
+  .regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/)
+  .nullable()
+  .optional();
 const requestSchema = z.object({ tokenIn: asset, tokenOut: asset, amount: z.string().max(AMOUNT_MAX).nullable().optional() });
 const approveSchema = z.object({ version: z.number().int().positive() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });

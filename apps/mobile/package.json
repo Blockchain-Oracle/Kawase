@@ -21,6 +21,7 @@
     "@kawase/ui-tokens": "workspace:*",
     "@kawase/ui-web": "workspace:*",
     "@kawase/wallet": "workspace:*",
+    "@livekit/components-react": "2.9.24",
     "@livekit/react-native": "3.0.0",
     "@livekit/react-native-expo-plugin": "1.0.3",
     "@livekit/react-native-webrtc": "144.2.0",
@@ -96,6 +97,8 @@
   "devDependencies": {
     "@types/qrcode": "^1.5.6",
     "@types/react": "~19.2.2",
+    "dotenv": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:"
   },
   "scripts": {
@@ -105,7 +108,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "phone:ios": "EXPO_PUBLIC_API_URL=https://kawase-api.84.46.247.92.sslip.io expo run:ios --device --configuration Release"
+    "phone:ios": "EXPO_PUBLIC_API_URL=https://kawase-api.84.46.247.92.sslip.io expo run:ios --device --configuration Release",
+    "narration": "tsx scripts/narration.mts"
   },
   "private": true
 }

@@ -140,7 +140,10 @@ const ROUTE_ATTEMPTS = 4;
 const ROUTE_RETRY_MS = 600;
 const noRouteYet = (error: unknown) => {
   const body = (error as { cause?: { trace?: { responseBody?: { code?: number } } } }).cause?.trace?.responseBody;
-  return body?.code === NO_ROUTE_CODE || /No route available/i.test(error instanceof Error ? error.message : "");
+  // Circle's Stablecoin Service also answers a passing 500 ("SERVICE_INTERNAL_ERROR", marked RETRYABLE by the kit;
+  // seen on Arc testnet's createSwap, 2026-10-02) that succeeds on the next try.
+  const retryable = (error as { recoverability?: string }).recoverability === "RETRYABLE";
+  return retryable || body?.code === NO_ROUTE_CODE || /No route available/i.test(error instanceof Error ? error.message : "");
 };
 const NO_ROUTE_CODE = 331001;
 

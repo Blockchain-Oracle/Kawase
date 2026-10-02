@@ -242,7 +242,7 @@ export class BridgeService {
       const routes = await compareRoutes(
         { network: clients.network, from: wallet, recipient: wallet, amount: amount.baseUnits, destinationChainId: destination.chainId, destinationUsdc: destination.usdc },
         minReceived,
-      ).catch(() => [{ provider: BRIDGE_PROVIDER_LABEL, received: minReceived, status: "chosen" as const, reason: null }]);
+      ).catch(() => [{ provider: BRIDGE_PROVIDER_LABEL, received: minReceived, extraCost: ZERO, etaSeconds: null, status: "chosen" as const, reason: null }]);
       view = {
         destination: destination.id,
         chainId: destination.chainId,
@@ -252,7 +252,14 @@ export class BridgeService {
         networkFee: feeInUsdc(fee).toString(),
         recipient: wallet,
         provider: BRIDGE_PROVIDER_LABEL,
-        routes: routes.map((entry) => ({ provider: entry.provider, status: entry.status, received: entry.received?.toString() ?? null, reason: entry.reason })),
+        routes: routes.map((entry) => ({
+          provider: entry.provider,
+          status: entry.status,
+          received: entry.received?.toString() ?? null,
+          extraCost: entry.extraCost.toString(),
+          etaSeconds: entry.etaSeconds,
+          reason: entry.reason,
+        })),
         quotedAt: new Date().toISOString(),
       };
     }

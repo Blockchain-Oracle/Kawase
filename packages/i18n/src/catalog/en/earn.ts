@@ -62,4 +62,5 @@ export const earn = {
   homeCta: "Earn about {{apy}} a year",
   homePosition: "{{amount}} earning in vaults",
   yourPosition: "Your position",
+  stuckHidden: "{{count}} more can't pay out now, so they're hidden",
 } as const;

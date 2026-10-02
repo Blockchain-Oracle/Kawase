@@ -49,4 +49,6 @@ export const bridge: Catalog["bridge"] = {
   changed: "রুট ফি বদলেছে। নতুন সংখ্যাগুলো দেখুন।",
   routeUnavailable: "এখন কোনো রুট নেই। একটু পরে আবার চেষ্টা করুন।",
   viewArrival: "পৌঁছানো দেখুন",
+  reason_amount_too_low: "আরও বড় পরিমাণ লাগবে",
+  routeExtraCost: "সাথে {{amount}} ফি",
 };

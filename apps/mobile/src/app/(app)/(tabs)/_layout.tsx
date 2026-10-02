@@ -1,4 +1,4 @@
-// The tab pages under the glass dock: Home · Chat · Activity · Profile (settings). The dock is the tab bar; the
+// The tab pages under the glass dock: Home · Markets · Chat · Activity; Settings is a tab reached from the header avatar. The dock is the tab bar; the
 // overlay host (voice, fan) sits above the pages and the dock so the blur sees the live page, and while an overlay
 // is open the pages and the dock are hidden from assistive tech (review R13). Pages pad their bottom with
 // `useDockClearance` because the dock floats over them.
@@ -16,6 +16,7 @@ export default function TabsLayout() {
         <OverlayUnderlay className="flex-1">
           <Tabs tabBar={(props) => <DockTabBar {...props} />} screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: "transparent" } }}>
             <Tabs.Screen name="index" />
+            <Tabs.Screen name="markets" />
             <Tabs.Screen name="chat" />
             <Tabs.Screen name="activity" />
             <Tabs.Screen name="settings" />

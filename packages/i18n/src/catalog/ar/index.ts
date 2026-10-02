@@ -46,6 +46,12 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { margin } from "./margin";
+import { marginPolicy } from "./margin-policy";
+import { assets } from "./assets";
+import { markets } from "./markets";
+import { tokenPage } from "./token-page";
+import { ticket } from "./ticket";
 import { business } from "./business";
 
 export const ar: Catalog = {
@@ -95,5 +101,11 @@ export const ar: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  margin,
+  marginPolicy,
+  assets,
+  markets,
+  tokenPage,
+  ticket,
   business,
 };

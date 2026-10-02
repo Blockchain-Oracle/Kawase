@@ -12,4 +12,5 @@ export const capability: Catalog["capability"] = {
   voice: "Voz",
   faucet: "Dinero de prueba",
   payment_links: "Enlaces de pago",
+  margin: "Largo y corto",
 };

@@ -53,6 +53,14 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "editing an automation in place (cancel and set it up again for now)",
     ],
   },
+  margin: {
+    supports: [
+      "Kawase Margin on Arc mainnet: a leveraged long or short through the person's own Aave V4 account, opened and closed as one batch they confirm by sliding; markets come from Aave V4's live reserves (today cirBTC and WETH both ways; EURC short only, because EURC cannot be collateral there)",
+      "margin is paid in USDC; leverage is capped by the asset's collateral factor so the account opens at health 1.10 or more (about 3.4× long cirBTC, 4× long WETH, 2.4× any short at today's factors); the card shows the liquidation price and borrow rate",
+      "positions with live P&L, health and liquidation price; closing 25%, 50%, 75% or all",
+    ],
+    notYet: ["take-profit and stop-loss orders", "paying margin in a token other than USDC", "Hibachi perps", "practice on testnet (Aave V4 is mainnet only)", "meme coins (no lending market lets you short them)"],
+  },
   marketplace: {
     supports: [
       "finding paid services in Circle's x402 catalog on Arc (web search and news, prediction-market odds, DefiLlama yields and prices, stock prices, data enrichment) and paying for one call from the person's own agent wallet, within a daily budget and a per-call cap they set",
