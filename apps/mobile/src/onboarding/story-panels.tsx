@@ -90,12 +90,12 @@ function Drift({
   phase?: number;
   children: React.ReactNode;
 }) {
-  return on ? (
-    <Float amplitude={6} tilt={2} phase={phase} {...(style ? { style } : {})}>
+  // Always the same component: toggling Float for a View would remount the art (Skia canvases, stipple SVGs)
+  // every time a panel lands, which shows up as a hitch at the end of a swipe.
+  return (
+    <Float amplitude={6} tilt={2} phase={phase} paused={!on} {...(style ? { style } : {})}>
       {children}
     </Float>
-  ) : (
-    <View style={style}>{children}</View>
   );
 }
 
@@ -233,7 +233,7 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
                 style={{ width: ORB_SIZE, height: ORB_SIZE, backgroundColor: STORY_INK }}
               >
                 <View style={{ width: ORB_INNER, height: ORB_INNER }}>
-                  <Orb colors={tokens.orb.testnet} level={ORB_LEVEL} />
+                  <Orb colors={tokens.orb.testnet} level={ORB_LEVEL} paused={!on(PANEL.request)} />
                 </View>
               </View>
             </Drift>
@@ -243,8 +243,7 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
           </View>
           <RequestBubble text={copy.request} />
           <Animated.View
-            key={on(PANEL.request) ? "playing" : "still"}
-            entering={on(PANEL.request) ? FadeInDown.delay(FIELDS_DELAY_MS).duration(FIELDS_MS) : undefined}
+            entering={motion.animate ? FadeInDown.delay(FIELDS_DELAY_MS).duration(FIELDS_MS) : undefined}
             className="items-center gap-2"
           >
             <Icon as={ArrowDown} className="size-5" color={STORY_INK} />

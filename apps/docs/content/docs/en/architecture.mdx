@@ -1,0 +1,96 @@
+---
+title: Architecture
+description: How Kawase is built — one agent brain for chat and voice, a pure policy engine, on-chain limits, Postgres as the only bus, and Coolify for hosting.
+---
+
+## The shape
+
+```text
+ iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
+        │  chat (SSE), screens                    │ audio
+        ▼                                          ▼
+ ┌──────────────────────────────┐        ┌───────────────────────┐
+ │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
+ │  agent turn (AI SDK 7)       │  turn  │  LiveKit Agents worker │
+ │  policy · intents · runners  │        │  STT → turn → TTS      │
+ └──────┬───────────┬───────────┘        └───────────────────────┘
+        │           │
+        ▼           ▼
+   Postgres     Arc (mainnet / testnet) · Circle (App Kit, CCTP, wallets, faucet) · Turnkey
+```
+
+## One brain
+
+`agentTurn()` in `packages/agent` serves **chat** and **voice** alike: the voice worker sends what it heard to the same turn,
+with the same tools, limits and thread. The model (OpenAI `gpt-5.6-luna` by default, chosen through a model registry) only
+**proposes**: no tool takes a network, an address or an "approve" flag. Code resolves the recipient, runs the policy, builds
+the transaction and executes it.
+
+## Pure policy, explicit intents
+
+- `packages/policy` is a pure function from facts to results (errors, refusals, preconditions, clarifications, warnings)
+  plus the **route**: the allowance or a wallet signature. It runs when a card is drafted, again on approval with fresh
+  facts, and again at execution.
+- `packages/intents` defines each action as a versioned, EIP-712-hashed **draft** (`SendDraft`, `SwapDraft`, `BridgeDraft`,
+  `EarnDraft`). An approval names the exact version it approves; a change makes a new version.
+- **Resolve and resume**: when something is missing (a contact, a currency, a sign-in), the fix continues the same intent
+  instead of starting over.
+
+## Money paths
+
+- **Allowance sends**: a spend-ledger reservation under a per-user lock, then Kawase's agent wallet (a Circle
+  developer-controlled wallet) redeems your delegation; the receipt's `Transfer` log is compared with the draft.
+- **Wallet-signed actions** (above the allowance, swaps, bridges, earn): the api builds the exact transaction — for App
+  Kit operations, the kit's calls are captured and checked, then wrapped into one EIP-7702 self-batch — the device signs
+  it with Face ID, and the api verifies the signed bytes against the draft before broadcasting.
+- **Bridges** are tracked in three legs: the burn on Arc, Circle's attestation, and the mint on the destination chain.
+- **Automations** run in the api's runner every 30 seconds: each occurrence is claimed exactly once, re-checked on fresh
+  facts and paid through the same send, earn or bridge path under the automation's own grant.
+- **Idempotency everywhere**: a Circle idempotency key is stored before calling Circle; raw transactions store their hash
+  before broadcast; ambiguous outcomes become `unknown_outcome` and are only re-checked, never re-sent.
+
+## Data
+
+**Postgres 17 with Drizzle** is the only store and the only message bus: an outbox written in the same transaction as each
+change, `pg_notify` to fan events out over server-sent events, and an inbox table as the source of truth for
+notifications. Money is stored as exact base units (`numeric(78,0)`, `bigint` in TypeScript); ids are UUIDv7.
+
+## Monorepo
+
+| Part | What it is |
+|---|---|
+| `apps/api` | Hono API: auth, agent chat stream, intents and approvals, runners, webhooks |
+| `apps/mobile` | Expo 57 / React Native 0.86: the iOS, Android and web app |
+| `apps/voice-agent` | LiveKit Agents worker (Node) |
+| `apps/docs` | this site (Fumadocs 16, Next 16) |
+| `apps/landing` | the showcase and judge kit |
+| `packages/config` | every constant: limits, the capability registry, locales, voice, timeouts |
+| `packages/policy`, `packages/intents` | the pure policy engine and the EIP-712 drafts |
+| `packages/integrations/*` | delegations (MetaMask Delegation Framework), Circle App Kit |
+| `packages/networks`, `packages/money` | the two Arc networks and verified addresses; exact money types |
+| `packages/identity` | real logos with provenance |
+
+## Public API
+
+The api is at `https://kawase-api.84.46.247.92.sslip.io`. Public, unauthenticated endpoints:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /health` | `{ ok, networks }` |
+| `GET /capabilities` | the capability registry with runtime overrides, per network |
+| `GET /public/stats` | aggregate counts only (completed sends, swaps, bridges, earn moves, automation runs, accounts) |
+
+Everything else needs a session (a bearer token from the app, a cookie on the web).
+
+## Hosting
+
+Everything runs on a **Coolify** server behind Traefik with Let's Encrypt: the api, the web app, the voice worker, these docs
+and the showcase, plus Postgres. Each service is a Dockerfile built from the monorepo root; services listen on `::`
+(Coolify's health checks resolve `localhost` to IPv6).
+
+## Tests that prove it
+
+Run against Arc testnet with real transactions (`pnpm --filter @kawase/api test`): sends (allowance and wallet-signed,
+double tap → one send, tampered signatures refused), swaps, bridges (burn → attestation → mint), earn deposits and
+withdrawals, scheduled automations, Auto-save, rules, and recovery after interrupted runs. The delegation package proves
+the on-chain limits on its own (`pnpm --filter @kawase/integrations-delegation test:arc-testnet`).

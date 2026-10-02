@@ -1,0 +1,29 @@
+---
+title: "Échanger et trader"
+description: "Échangez USDC et EURC dès aujourd'hui avec un minimum garanti et un seul Face ID ; tous les tokens sur Arc, les meme coins et les positions longues/courtes arrivent bientôt."
+sourceHash: 65c2ca9143c4cfd4
+---
+
+<Status ids="swap tokens meme_coins perps" />
+
+<Marks names="usdc eurc circle" />
+
+## Échanger USDC ↔ EURC (aujourd'hui)
+
+« Échanger 10 dollars en euros » ou utilisez l'écran Échanger. Kawase obtient un cours via **l'App Kit de Circle** et affiche :
+
+- le montant que vous donnez et le montant que vous recevez, au minimum ;
+- le cours du marché de Circle à côté du cours proposé, ainsi que les frais ;
+- un avertissement si le cours proposé est sensiblement moins avantageux que le cours du marché ; un cours nettement moins avantageux est refusé.
+
+Sur le Réseau principal, le minimum garanti est inférieur de 1 % au cours proposé (2 % sur le Réseau de test, où les pools sont peu fournis). Le chemin d'échange est lui-même configuré avec la moitié de cette marge. Ainsi, un petit changement entre le cours proposé et votre confirmation reste tout de même au-dessus du minimum.
+
+Vous confirmez vous-même chaque échange avec **un seul Face ID** : les échanges ne sont jamais couverts par le plafond quotidien. L'autorisation et l'échange sont envoyés au réseau en **une seule transaction** (un lot EIP-7702 depuis votre propre portefeuille). Les deux opérations sont donc exécutées, ou aucune ne l'est. Kawase marque l'échange comme terminé uniquement lorsque le reçu indique le montant exact sorti de votre portefeuille et au moins le montant minimum reçu.
+
+## Tous les tokens, meme coins, positions longues et courtes (à venir)
+
+L'objectif est de traiter **tous les tokens sur Arc** comme des actifs à part entière : voir tout ce que contient votre adresse, échanger n'importe quel token proposé avec des cours comparés entre plusieurs agrégateurs, et trader des **meme coins** avec des contrôles de sécurité (détection des copies, données sur les risques du token et vos propres règles pour limiter ces risques). Les **positions longues et courtes** (contrats à terme perpétuels) sur les plateformes de perps d'Arc sont prévues de la même manière : un ticket clair avec l'effet de levier, le prix de liquidation et les niveaux de prise de bénéfices/stop-loss, confirmé avec Face ID.
+
+Ces fonctionnalités sont indiquées comme **à venir** dans la matrice ci-dessus, jusqu'à leur lancement. Rien de ce qui est présenté ici n'est disponible avant cela.
+
+<ScopeList ids="swap" />

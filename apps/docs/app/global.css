@@ -1,0 +1,70 @@
+@import "tailwindcss";
+/* Lime on Ink tokens (DESIGN.md): :root is paper (light), .dark is ink. Fumadocs' colours (neutral preset for the
+   full set) are re-pointed at them below; the rule comes last, so it wins in both themes. */
+@import "@kawase/ui-tokens/web.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* ui-web's Mark (real logos) is rendered in MDX pages. */
+@source "../../../packages/ui-web/src/components";
+
+:root,
+.dark {
+  --color-fd-background: var(--background);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-muted: var(--muted);
+  --color-fd-muted-foreground: var(--muted-foreground);
+  --color-fd-popover: var(--popover);
+  --color-fd-popover-foreground: var(--popover-foreground);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--card-foreground);
+  --color-fd-border: var(--border);
+  /* Fumadocs uses "primary" for links and the active sidebar item: the accent (lime on ink, olive on paper). */
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--accent-foreground);
+  --color-fd-secondary: var(--secondary);
+  --color-fd-secondary-foreground: var(--secondary-foreground);
+  --color-fd-accent: var(--muted);
+  --color-fd-accent-foreground: var(--foreground);
+  --color-fd-ring: var(--ring);
+  --color-fd-overlay: var(--scrim);
+  --color-fd-success: var(--success);
+  --color-fd-error: var(--destructive);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+}
+
+code,
+kbd,
+pre {
+  font-family: var(--font-mono);
+}
+
+/* Letter-spacing is for scripts with capitals only (DESIGN.md). */
+[lang="ar"],
+[lang="ur"],
+[lang="hi"],
+[lang="bn"],
+[lang="zh"] {
+  letter-spacing: normal;
+}

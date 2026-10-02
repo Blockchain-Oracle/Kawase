@@ -1,0 +1,23 @@
+---
+title: "O que funciona hoje"
+description: "Todos os recursos disponíveis na Rede principal da Arc e na Rede de testes da Arc, gerados a partir do registro de recursos do Kawase quando este site é compilado."
+sourceHash: 76834927ef0421e8
+---
+
+Esta página é **gerada a partir do código**. O Kawase mantém um registro de recursos (`packages/config/src/capabilities.ts`): o
+app o consulta para decidir o que oferecer, e o agente o consulta antes de propor qualquer coisa. A documentação importa o mesmo
+registro durante a compilação do site. Assim, ela não promete mais do que o app oferece.
+
+- **Disponível**: lançado e oferecido nessa rede.
+- **Em breve**: faz parte do plano do produto, mas ainda não foi lançado. As áreas do plano que o registro ainda não lista também são
+  mostradas como em breve.
+- **Não disponível nesta rede**: não está disponível por decisão de design (por exemplo, o dinheiro de teste existe apenas na rede de testes).
+
+<AvailabilityMatrix />
+
+## O que cada recurso inclui
+
+Um recurso estar disponível não significa que todas as suas variações funcionem. O registro também informa, com precisão, o que funciona hoje
+e o que ainda não funciona — o agente usa o mesmo texto para responder com honestidade a perguntas como “você consegue...?”.
+
+<ScopeList />

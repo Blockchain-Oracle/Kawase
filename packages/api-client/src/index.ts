@@ -53,10 +53,12 @@ import type {
   NotificationSettingsChange,
 } from "./types";
 import type { Candle, ChartRange, MarketListView, MarketSegment, PortfolioView, TokenDetailView, TokenSearchResult } from "./assets";
+import type { ClientEvent } from "./client-events";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./assets";
+export * from "./client-events";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -345,6 +347,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       status: () => call<FaucetStatus>("GET", "/faucet"),
       /** Sends test USDC and EURC to the user's own address on Arc Testnet; once a day. */
       claim: (idempotencyKey?: string) => call<FaucetClaim>("POST", "/faucet/claim", {}, { idempotencyKey }),
+    },
+
+    clientEvents: {
+      /** A failure seen on the phone, for the api's logs; no account needed. */
+      report: (event: ClientEvent) => call<void>("POST", "/client-events", event, { token: "" }),
     },
   };
 }

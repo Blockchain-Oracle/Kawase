@@ -1,0 +1,35 @@
+---
+title: Swap and trade
+description: Swap USDC and EURC today with a guaranteed minimum and one Face ID; any token on Arc, meme coins and long/short positions are coming.
+---
+
+<Status ids="swap tokens meme_coins perps" />
+
+<Marks names="usdc eurc circle" />
+
+## Swap USDC ↔ EURC (today)
+
+"Swap 10 dollars to euros" or the Swap screen. Kawase gets a quote through **Circle's App Kit** and shows:
+
+- the amount you give and the amount you get, at least,
+- Circle's market rate next to the quoted rate, and the fees,
+- a warning if the quote is noticeably worse than the market rate; a quote far worse is refused.
+
+On mainnet the guaranteed minimum is 1% under the quote (2% on testnet, where pools are thin). The route itself is built
+at half that tolerance, so a small move between the quote and your confirmation still clears the minimum.
+
+You confirm every swap yourself with **one Face ID** — swaps are never covered by the everyday allowance. The approval and
+the swap go to the network as **one transaction** (an EIP-7702 batch from your own wallet), so either both happen or
+neither does. Kawase marks the swap complete only when the receipt shows the exact amount leaving your wallet and at least
+the minimum arriving.
+
+## Any token, meme coins, long and short (coming)
+
+The plan is to make **every token on Arc** first-class: see everything your address holds, swap any listed token with quotes
+compared across aggregators, and trade **meme coins** with safety checks (copycat detection, token risk data and your own
+token rules capping the risk). **Long and short positions** (perpetual futures) on Arc's perps venues are planned the same
+way: a clear ticket with leverage, liquidation price and take-profit/stop-loss, confirmed with Face ID.
+
+These are marked **coming** in the matrix above until they ship; nothing here is presented as available before it is.
+
+<ScopeList ids="swap" />

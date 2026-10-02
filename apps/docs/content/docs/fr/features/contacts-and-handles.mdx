@@ -1,0 +1,27 @@
+---
+title: "Contacts et @handles"
+description: "Enregistrez des personnes par leur nom, payez-les par leur nom ou leur @handle, et soyez averti en cas de changement d'adresse ou d'adresse ressemblante."
+sourceHash: 4bd90c8b9e0cc168
+---
+
+<Status ids="contacts" />
+
+## Contacts
+
+Un contact est un nom (et des surnoms) associé à une ou plusieurs adresses. Kawase utilise les contacts pour comprendre « envoyer à Alex » et pour vous protéger :
+
+- **Les changements d'adresse sont mis en attente.** Lorsqu'une adresse de contact change, la nouvelle adresse attend **24 heures** avant de pouvoir recevoir de l'argent. Le contact est également bloqué pendant ce temps. Une adresse modifiée est un moyen classique de voler un paiement.
+- **Les adresses ressemblantes sont signalées.** Si les quatre premiers et les quatre derniers caractères d'une adresse correspondent à ceux d'un de vos contacts, elle est considérée comme ressemblante. Kawase s'arrête et vous demande d'utiliser Face ID.
+- **L'historique des paiements** renforce la confiance pour chaque adresse et chaque réseau. Un premier paiement vers une adresse est traité avec plus de précautions qu'un paiement récurrent.
+
+Si vous mentionnez une personne que Kawase ne connaît pas, l'application vous demande de l'enregistrer, puis continue le même paiement. Vous n'avez pas besoin de recommencer.
+
+## @handles
+
+Un `@handle` est un nom public facultatif que vous pouvez utiliser pour recevoir de l'argent : « envoyer 10 à @abu ». Règles :
+
+- De 3 à 20 caractères : lettres minuscules, chiffres et underscore.
+- Unique, quelle que soit la casse. Les noms susceptibles d'usurper l'identité de Kawase, Arc, Circle ou de membres de l'équipe sont réservés.
+- Vous le choisissez lors de la création de votre compte (ou vous pouvez passer cette étape) et vous pouvez le modifier dans les Paramètres.
+
+Un handle renvoie vers l'adresse du portefeuille Kawase de la personne. Si cette personne n'a pas encore configuré de portefeuille, Kawase vous le signale au lieu de deviner.

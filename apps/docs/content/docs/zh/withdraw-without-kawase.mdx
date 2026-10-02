@@ -1,0 +1,78 @@
+---
+title: "不使用 Kawase 取出资金"
+description: "你的资金在 Arc 上属于你自己的账户。了解如何将资金转出、在区块浏览器中查看，以及导出钱包选项将提供什么。"
+sourceHash: 8f08c09f57888ea0
+---
+
+Kawase 从不持有你的资金。你的 USDC 和 EURC 存放在 Arc 上的**你自己的账户**中。你授予代理的权限范围很小，而且会自动过期。本页面介绍如何取出资金——可以借助 Kawase，也可以不借助它。
+
+<Status ids="export_wallet" />
+
+## Kawase 运行期间：转出资金
+
+最快的退出方式是进行普通转账：
+
+<Steps>
+<Step>
+### 选择转入地址
+选择你在其他钱包（MetaMask、Rabby 等）中控制的地址。该钱包需要已添加 **Arc**。你也可以使用交易所的 **Arc** 充值地址。请确认网络是 Arc；向其他网络的地址转账并不是同一回事。
+</Step>
+<Step>
+### 转出全部资金
+说“把我的全部 USDC 转到 0x……”，并在同一条消息中粘贴地址；或者使用转账页面。较大金额会要求进行 Face ID 验证。EURC 也重复此操作。
+</Step>
+<Step>
+### 撤销代理权限
+进入“钱包和限额”→ **撤销**（长按）。取消所有自动化；每次取消都会在链上撤销对应的授权。
+</Step>
+</Steps>
+
+USDC 也可以通过[跨链桥](./features/bridge-and-withdraw.mdx)，直接转到你在 Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche 上的**自己的地址**。
+
+## 在区块浏览器中查看全部信息
+
+不需要 Kawase，你也能查看资金。打开你在 Arc 区块浏览器上的地址：
+
+- 主网：`https://explorer.arc.io/address/<your address>`
+- 测试网：`https://testnet.arcscan.app/address/<your address>`
+
+你可以在这里查看：
+
+- 你的 **USDC** 和 **EURC** 余额（在 Arc 上，USDC 同时也是网络的 gas 代币：同一个余额会同时显示为原生币和 USDC 代币）；
+- 每笔交易，包括代理在你的额度范围内发起的转账；
+- 账户的**代码**：设置完成后，代码为 `0xef0100`，后面跟着 `EIP7702StatelessDeleGator` 地址。这就是 EIP-7702 升级；你的账户仍可像普通账户一样使用。
+
+Kawase 的交易回执也会链接到这些页面。
+
+## 如果 Kawase 停止服务
+
+- **代理权限将无法继续使用。** 你的额度和自动化授权只能由 Kawase 自己的代理钱包使用，并且会过期（额度在 90 天后过期，每项自动化会在其结束日期过期）。
+- **你的资金仍在自己的账户中。** 这是 Arc 上的普通账户，账户密钥由 Turnkey 代你保管。
+- **导出钱包（即将推出）。** 进入“设置”→“账户”→“导出钱包”，通过 Turnkey 的安全导出功能查看钱包密钥。操作前需要完成 Face ID 验证，并阅读明确的风险提示。之后，你可以将账户导入任何支持 Arc 的钱包，在不使用 Kawase 的情况下转出资金。此选项**目前还不可用**；在此之前，请使用上面的步骤转出资金。
+
+## 将 Arc 添加到其他钱包
+
+| | 主网 | 测试网 |
+|---|---|---|
+| 网络名称 | Arc | Arc Testnet |
+| 链 ID | `5042` | `5042002` |
+| RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
+| 货币符号 | USDC | USDC |
+| 区块浏览器 | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+
+部分钱包会在自定义网络中将 gas 余额标记为“ETH”；但在 Arc 上，它是 USDC。两个网络上的 USDC 代币地址都是
+`0x3600000000000000000000000000000000000000`；主网上的 EURC 地址是
+`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1`，测试网上的地址是 `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a`。
+
+## 移除 EIP-7702 升级（可选）
+
+你不需要撤销升级即可转出资金。如果导出钱包后想恢复为普通账户，可以签署一份指向零地址的 EIP-7702 授权，并从账户本身发送。以下是使用 viem 的示例：
+
+```ts
+import { zeroAddress } from "viem";
+
+const authorization = await walletClient.signAuthorization({ contractAddress: zeroAddress, executor: "self" });
+await walletClient.sendTransaction({ to: walletClient.account.address, authorizationList: [authorization] });
+```
+
+之后，区块浏览器会显示你的地址没有代码。

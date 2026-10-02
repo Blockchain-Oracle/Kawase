@@ -76,7 +76,10 @@ export function StoryScreen() {
   const screenReader = useScreenReader();
   const [focused, setFocused] = React.useState(true);
   const [index, setIndex] = React.useState(0);
-  const [dragging, setDragging] = React.useState(false);
+  // A drag is tracked in a ref, never state: starting a swipe must not re-render the screen (and rebuild every
+  // panel's art) while the finger moves. Release restarts the dwell through `interactions`.
+  const dragging = React.useRef(false);
+  const dwell = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [interactions, setInteractions] = React.useState(0);
   const [languageOpen, setLanguageOpen] = React.useState(false);
   const [starting, setStarting] = React.useState(false);
@@ -91,18 +94,25 @@ export function StoryScreen() {
 
   const covered = languageOpen || signIn.isOpen;
   const visible = focused && appActive && !covered;
-  const paused = reduced || screenReader || dragging || !visible;
+  const paused = reduced || screenReader || !visible;
 
   // One panel's dwell, restarted by every change and every interaction; the story rests on its last panel.
   React.useEffect(() => {
     if (paused || index >= LAST_PANEL) return undefined;
-    const timer = setTimeout(() => setIndex((i) => Math.min(LAST_PANEL, i + 1)), MOTION.storyDwellMs);
-    return () => clearTimeout(timer);
+    dwell.current = setTimeout(() => {
+      if (!dragging.current) setIndex((i) => Math.min(LAST_PANEL, i + 1));
+    }, MOTION.storyDwellMs);
+    return () => clearTimeout(dwell.current);
   }, [index, paused, interactions]);
 
   const onInteraction = React.useCallback((phase: "start" | "end") => {
-    setDragging(phase === "start");
-    if (phase === "end") setInteractions((n) => n + 1);
+    if (phase === "start") {
+      dragging.current = true;
+      clearTimeout(dwell.current);
+      return;
+    }
+    dragging.current = false;
+    setInteractions((n) => n + 1);
   }, []);
   const goTo = (next: number) => {
     setIndex(next);

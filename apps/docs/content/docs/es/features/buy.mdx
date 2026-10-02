@@ -1,0 +1,20 @@
+---
+title: "Comprar con Apple Pay o tarjeta"
+description: "Compra USDC o EURC con Apple Pay, Google Pay o una tarjeta de débito mediante Onramp Kit de Circle, directamente en tu billetera de Kawase en Arc."
+sourceHash: 361d72332dc37a35
+---
+
+<Status ids="buy" />
+
+<Marks names="circle apple google usdc eurc" />
+
+Las compras están previstas mediante **Onramp Kit de Circle**: paga con una tarjeta de débito, Apple Pay o Google Pay y recibe USDC o EURC
+directamente en tu billetera de Kawase en Arc. El servidor de Kawase crea la sesión y la abre en una ventana segura del navegador;
+Kawase marca la compra como completada solo cuando el dinero se confirma en la cadena.
+
+Para comprar cualquier otro token con Apple Pay, el plan es comprar primero USDC y después cambiarlo en una sola aprobación. Verás ambas comisiones
+antes de pagar.
+
+Esta función **está en camino**: todavía no está disponible en la app. Mientras tanto, en la red de pruebas puedes usar el
+[grifo](../getting-started.mdx#4-get-test-money) gratuito; en la red principal puedes recibir USDC desde cualquier billetera o exchange que envíe a
+Arc.

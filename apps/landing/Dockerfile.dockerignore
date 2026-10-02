@@ -1,0 +1,23 @@
+# Build context for the landing image (root of the workspace). Replaces the root .dockerignore for this Dockerfile,
+# which excludes apps/landing; this one keeps it and leaves out everything the landing does not need.
+**/node_modules
+**/.next
+**/.expo
+**/.turbo
+**/ios
+**/android
+**/dist
+.git
+.firecrawl
+.pnpm-store
+.claude
+refs
+context
+plan
+deploy
+apps/docs
+apps/mobile/plan
+**/*.md
+.env
+.env.*
+!.env.example

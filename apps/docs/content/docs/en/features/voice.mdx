@@ -1,0 +1,28 @@
+---
+title: Voice
+description: Talk to Kawase on iPhone and Android in your language; it answers aloud and shows the same cards as chat. Payments by voice always wait for your tap.
+---
+
+<Status ids="voice" />
+
+Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it shows the words it heard, answers aloud,
+and puts the same **cards** on screen as chat does.
+
+- **One conversation.** What you said by voice is in your chat thread, and typing picks it up where you left off.
+- **What was heard is always shown** before anything is confirmed.
+- **A spoken "yes" never approves a payment.** A send by voice is prepared on its card and waits for your tap and Face ID
+  (fingerprint or screen lock on Android) — even inside your daily allowance.
+- **The orb shows the network**: lime on mainnet, sky blue on testnet.
+
+## Languages and voices
+
+Kawase hears all ten languages with ElevenLabs Scribe v2 (realtime). It speaks with ElevenLabs Flash v2.5 in English,
+Spanish, French, Portuguese, Russian, Chinese, Hindi and Arabic, and with OpenAI's speech model in Bengali and Urdu, which
+Flash v2.5 does not cover.
+
+## How it works
+
+The phone joins a LiveKit room over WebRTC. Kawase's voice worker turns speech into text, runs **the same agent turn as
+chat** (same tools, same limits, same thread), and speaks the answer while the cards arrive on your screen.
+
+<ScopeList ids="voice" />

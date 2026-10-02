@@ -1,0 +1,35 @@
+---
+title: "Cambiar y operar"
+description: "Cambia USDC y EURC hoy con un mínimo garantizado y un solo Face ID; cualquier token en Arc, las memecoins y las posiciones largas y cortas llegarán próximamente."
+sourceHash: 65c2ca9143c4cfd4
+---
+
+<Status ids="swap tokens meme_coins perps" />
+
+<Marks names="usdc eurc circle" />
+
+## Cambiar USDC ↔ EURC (hoy)
+
+«Cambiar 10 dólares por euros» o la pantalla Cambiar. Kawase obtiene una cotización a través de **App Kit de Circle** y muestra:
+
+- el importe que das y el importe que recibes, como mínimo;
+- el tipo de cambio de mercado de Circle junto al tipo cotizado y las comisiones;
+- un aviso si la cotización es claramente peor que el tipo de cambio de mercado; si es mucho peor, se rechaza.
+
+En la red principal, el mínimo garantizado está un 1 % por debajo de la cotización (un 2 % en la red de pruebas, donde hay poca liquidez). La ruta se crea con la mitad de esa tolerancia, para que un pequeño cambio entre la cotización y tu confirmación siga cumpliendo el mínimo.
+
+Confirmas cada cambio tú mismo con **un solo Face ID**: los cambios nunca están cubiertos por el límite diario. La aprobación y
+el cambio se envían a la red como **una sola transacción** (un lote EIP-7702 desde tu propia cartera), así que ambas cosas ocurren o
+no ocurre ninguna. Kawase marca el cambio como completado solo cuando el comprobante muestra el importe exacto que sale de tu cartera y, como mínimo,
+el importe mínimo que llega.
+
+## Cualquier token, memecoins, posiciones largas y cortas (próximamente)
+
+El plan es que **todos los tokens en Arc** sean compatibles desde el principio: ver todo lo que tiene tu dirección, cambiar cualquier token disponible con cotizaciones
+comparadas entre distintos agregadores y operar con **memecoins** mediante controles de seguridad (detección de imitaciones, datos de riesgo del token y tus propias
+reglas para limitar el riesgo). Las **posiciones largas y cortas** (futuros perpetuos) en las plataformas de futuros perpetuos de Arc también están previstas de la misma
+forma: un ticket claro con el apalancamiento, el precio de liquidación y la toma de ganancias/stop-loss, confirmado con Face ID.
+
+Estas funciones aparecen como **próximamente** en la tabla anterior hasta que estén disponibles; no presentamos nada de esto como disponible antes de ese momento.
+
+<ScopeList ids="swap" />

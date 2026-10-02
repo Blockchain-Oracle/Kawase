@@ -1,0 +1,88 @@
+---
+title: "Retirar sin Kawase"
+description: "Tu dinero está en tu propia cuenta en Arc. Aprende a retirarlo, consultarlo en el explorador y saber qué te dará la opción de exportación."
+sourceHash: 8f08c09f57888ea0
+---
+
+Kawase nunca guarda tu dinero. Tus USDC y EURC están en **tu propia cuenta** en Arc, y los permisos que le diste al agente
+son limitados y caducan por sí solos. En esta página se explica cómo retirar tu dinero, con ayuda de Kawase o sin ella.
+
+<Status ids="export_wallet" />
+
+## Mientras Kawase está funcionando: envíalo fuera
+
+La salida más rápida es hacer un pago normal:
+
+<Steps>
+<Step>
+### Elige adónde enviarlo
+Una dirección que controles en otra cartera (MetaMask, Rabby, …) que tenga **Arc** añadido, o la dirección de depósito en **Arc**
+de un exchange. Comprueba que la red sea Arc; enviar dinero a una dirección de otra red no es lo mismo.
+</Step>
+<Step>
+### Envíalo todo
+Di «envía todos mis USDC a 0x…» (pega la dirección en el mismo mensaje) o usa la pantalla Enviar. Para cantidades grandes se te pedirá
+Face ID. Repite el proceso con EURC.
+</Step>
+<Step>
+### Revoca el agente
+Cartera y límites → **Revocar** (mantén pulsado). Cancela todas las automatizaciones; cada cancelación revoca su autorización en la cadena.
+</Step>
+</Steps>
+
+También puedes enviar USDC directamente a **tu propia dirección** en Base, Ethereum, Arbitrum, Optimism, Polygon o Avalanche mediante un
+[puente](./features/bridge-and-withdraw.mdx).
+
+## Consulta todo en el explorador
+
+No necesitas Kawase para ver tu dinero. Abre tu dirección en el explorador de bloques de Arc:
+
+- Red principal: `https://explorer.arc.io/address/<your address>`
+- Red de pruebas: `https://testnet.arcscan.app/address/<your address>`
+
+Allí puedes ver:
+
+- tus saldos de **USDC** y **EURC** (en Arc, USDC también es el token de gas de la red: hay un solo saldo, que se muestra tanto como
+  moneda nativa como token USDC),
+- todas las transacciones, incluidos los pagos que el agente hizo usando tu autorización,
+- el **código** de tu cuenta: después de configurarla, es `0xef0100` seguido de la dirección de `EIP7702StatelessDeleGator`. Esa es la
+  actualización EIP-7702; tu cuenta sigue funcionando como una cuenta normal.
+
+Los comprobantes de Kawase enlazan a estas mismas páginas.
+
+## Si Kawase desaparece
+
+- **Los permisos del agente dejan de ser útiles.** Tu autorización y las autorizaciones de las automatizaciones solo pueden usarlas la propia
+  cartera del agente de Kawase, y caducan (la autorización después de 90 días y cada automatización en su fecha de finalización).
+- **Tu dinero sigue en tu cuenta.** Es una cuenta normal en Arc cuya clave Turnkey guarda por ti.
+- **Exportar la cartera (próximamente).** Ajustes → Cuenta → Exportar cartera mostrará la clave de tu cartera mediante la exportación segura de
+  Turnkey, después de Face ID y de mostrarte advertencias claras. Con ella puedes importar la cuenta en cualquier cartera compatible con Arc y mover tu
+  dinero sin Kawase. Esta opción **todavía no está disponible**; hasta entonces, los pasos anteriores son la forma de retirar tu dinero.
+
+## Añadir Arc a otra cartera
+
+| | Red principal | Red de pruebas |
+|---|---|---|
+| Nombre de la red | Arc | Arc Testnet |
+| ID de cadena | `5042` | `5042002` |
+| RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
+| Símbolo de moneda | USDC | USDC |
+| Explorador | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+
+Algunas carteras muestran el saldo de gas como «ETH» en redes personalizadas; en Arc es USDC. La dirección del token USDC es
+`0x3600000000000000000000000000000000000000` en ambas redes; EURC es
+`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` en la red principal y `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` en la red de pruebas.
+
+## Eliminar la actualización EIP-7702 (opcional)
+
+No necesitas deshacer la actualización para mover tu dinero. Si quieres volver a tener una cuenta normal después de exportarla, firma una
+autorización EIP-7702 que apunte a la dirección cero y envíala desde la propia cuenta, por ejemplo con viem:
+
+```ts
+import { zeroAddress } from "viem";
+
+const authorization = await walletClient.signAuthorization({ contractAddress: zeroAddress, executor: "self" });
+await walletClient.sendTransaction({ to: walletClient.account.address, authorizationList: [authorization] });
+```
+
+Después, el explorador no mostrará ningún código en tu dirección.

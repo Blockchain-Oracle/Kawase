@@ -1,0 +1,19 @@
+---
+title: The network toggle
+description: Switch between Arc mainnet (real money) and Arc testnet (test money) in one tap, with the network shown three ways at all times.
+---
+
+Kawase works on two networks: **Arc mainnet**, where money is real, and **Arc testnet**, where it is not. The **network
+pill** in the header switches between them in one tap, both ways, like dark mode.
+
+- **New accounts start on testnet**, and anything missing or unreadable falls back to testnet: the safe direction.
+- **The first switch to mainnet** shows a short "Real money" consent; after that it is instant.
+- **Always visible, never colour alone.** On testnet a strip says "Testnet · no real money"; on mainnet, money cards carry a
+  **REAL MONEY** label. The pill names the network, and the voice orb changes colour (lime on mainnet, sky blue on
+  testnet).
+- **Your wallet is the same** on both: one address, the same contacts and settings. Balances and activity are per network.
+- **The server decides.** The network is part of your session on the server, never chosen by the AI model; every payment
+  carries the network it was prepared for, and a mismatch stops it.
+
+When something exists on only one network — the faucet on testnet, the x402 marketplace on mainnet — Kawase says so and
+offers to switch rather than failing. See [networks](../networks.mdx) for the full comparison.

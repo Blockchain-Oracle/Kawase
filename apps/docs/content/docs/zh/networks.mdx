@@ -1,0 +1,34 @@
+---
+title: "网络"
+description: "Arc 主网和 Arc 测试网对比 — 两者有什么不同，哪些功能只在其中一个网络上提供，以及 Kawase 如何将它们分开。"
+sourceHash: 23465b593fd86e92
+---
+
+<Marks names="arc usdc eurc" />
+
+**Arc** 是 Circle 的稳定币网络：USDC 是它的 Gas 代币，因此手续费以美元支付，交易可在不到
+一秒内完成。Kawase 支持且仅支持两个 Arc 网络。
+
+| | Arc 主网 | Arc 测试网 |
+|---|---|---|
+| 资金 | 真实资金 | 没有价值的测试币 |
+| Chain ID | `5042` | `5042002` |
+| 浏览器 | `explorer.arc.io` | `testnet.arcscan.app` |
+| 获取资金 | 从任何向 Arc 转账的钱包或交易所收款；使用 Apple Pay 或银行卡购买的功能即将推出 | 应用内水龙头（每天约 20 USDC + 20 EURC） |
+| 赚取收益 | Circle 的 App Kit 赚取收益中列出的 Morpho 金库 | Arc 测试网的模拟 Morpho 金库 |
+| 跨链目的地 | Base、Ethereum、Arbitrum、Optimism、Polygon、Avalanche | 它们的测试网络（Base Sepolia、Ethereum Sepolia、…） |
+| x402 市场 | 计划中（Circle 的目录仅支持主网） | 不可用 |
+| 默认限额 | 较低 | 高 10 倍（没有真实资金风险） |
+| 新账户起始网络 | | ✓ |
+
+Kawase 的每项流程都已在 **Arc 测试网** 上通过真实交易完成端到端测试；相关证据已链接到
+展示页的演示页面。以下是应用在每个网络上提供的功能：
+
+<AvailabilityMatrix />
+
+## Kawase 如何将它们分开
+
+- **点一下即可切换**，双向都可以：查看[网络切换](./features/network-toggle.mdx)。
+- **网络会以三种方式显示**：顶部标签、测试网提示条或真实资金标签，以及光球的颜色。
+- **由服务器决定网络。** 每笔付款都会针对一个网络准备，并在整个流程中保持该网络；如果中途切换网络，付款会停止，不会跨到另一个网络。
+- **两个网络使用同一个钱包地址**，但余额、活动记录和限额分别按网络保存。

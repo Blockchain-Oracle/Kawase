@@ -1,0 +1,88 @@
+---
+title: "Kawase के बिना पैसे निकालना"
+description: "आपका पैसा Arc पर आपके अपने खाते में है। इसे बाहर कैसे भेजें, explorer पर कैसे देखें, और export विकल्प से आपको क्या मिलेगा।"
+sourceHash: 8f08c09f57888ea0
+---
+
+Kawase आपका पैसा कभी अपने पास नहीं रखता। आपके USDC और EURC **आपके अपने खाते** में Arc पर रहते हैं, और आपने agent को दी गई permissions सीमित हैं
+और अपने-आप खत्म हो जाती हैं। यह पेज बताता है कि अपना पैसा कैसे निकालें — Kawase की मदद से और उसके बिना।
+
+<Status ids="export_wallet" />
+
+## Kawase चल रहा हो: पैसे बाहर भेजें
+
+सबसे तेज़ तरीका सामान्य भुगतान करना है:
+
+<Steps>
+<Step>
+### पैसा कहाँ भेजना है, चुनें
+किसी दूसरे वॉलेट (MetaMask, Rabby, …) में मौजूद वह पता जिसे आप नियंत्रित करते हैं और जिसमें **Arc** जोड़ा गया हो, या किसी exchange का **Arc** deposit
+address। नेटवर्क Arc है या नहीं, यह जाँच लें; किसी दूसरे नेटवर्क के पते पर भेजना अलग बात है।
+</Step>
+<Step>
+### सब कुछ भेजें
+कहें, "मेरे सारे USDC को 0x… पर भेजो" (उसी संदेश में पता पेस्ट करें) या Send screen का इस्तेमाल करें। बड़ी रकम के लिए आपका
+Face ID माँगा जाएगा। EURC के लिए भी यही करें।
+</Step>
+<Step>
+### agent की अनुमति रद्द करें
+Wallet & limits → **Revoke** (दबाकर रखें)। सभी ऑटोमेशन रद्द करें; हर रद्द करने पर उसका grant on chain रद्द हो जाता है।
+</Step>
+</Steps>
+
+USDC को Base, Ethereum, Arbitrum, Optimism, Polygon या Avalanche पर मौजूद **आपके अपने पते** पर भी सीधे
+[bridge](./features/bridge-and-withdraw.mdx) से भेजा जा सकता है।
+
+## Explorer पर सब कुछ देखें
+
+अपना पैसा देखने के लिए आपको Kawase की ज़रूरत नहीं है। Arc के block explorer पर अपना पता खोलें:
+
+- मेननेट: `https://explorer.arc.io/address/<your address>`
+- टेस्टनेट: `https://testnet.arcscan.app/address/<your address>`
+
+वहाँ आप देख सकते हैं:
+
+- अपने **USDC** और **EURC** के balance (Arc पर USDC नेटवर्क का gas token भी है: एक ही balance native
+  coin और USDC token, दोनों के रूप में दिखता है),
+- हर transaction, जिसमें agent द्वारा आपकी allowance के तहत किए गए payments भी शामिल हैं,
+- आपके account का **code**: setup के बाद यह `0xef0100` और उसके बाद `EIP7702StatelessDeleGator` address होता है। यह
+  EIP-7702 upgrade है; आपका account अभी भी सामान्य account की तरह काम करता है।
+
+Kawase की receipts इन्हीं pages से link होती हैं।
+
+## अगर Kawase बंद हो जाए
+
+- **Agent की permissions काम की नहीं रहेंगी।** आपकी allowance और automation grants का इस्तेमाल केवल Kawase के अपने agent
+  wallet से किया जा सकता है, और वे expire हो जाती हैं (allowance 90 दिनों के बाद, और हर automation अपनी end date पर)।
+- **आपका पैसा आपके account में ही रहेगा।** यह Arc पर मौजूद एक सामान्य account है, जिसकी key आपके लिए Turnkey के पास सुरक्षित है।
+- **Export wallet (जल्द आ रहा है)।** Settings → Account → Export wallet में Turnkey के secure export के ज़रिए आपके wallet की key दिखाई जाएगी,
+  इसके लिए Face ID और साफ़ चेतावनियों की पुष्टि ज़रूरी होगी। इससे आप account को Arc को support करने वाले किसी भी wallet में import करके अपना
+  पैसा Kawase के बिना भेज सकेंगे। यह विकल्प **अभी उपलब्ध नहीं है**; तब तक ऊपर दिए गए steps ही बाहर निकलने का तरीका हैं।
+
+## किसी दूसरे wallet में Arc जोड़ना
+
+| | मेननेट | टेस्टनेट |
+|---|---|---|
+| Network name | Arc | Arc Testnet |
+| Chain ID | `5042` | `5042002` |
+| RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
+| Currency symbol | USDC | USDC |
+| Explorer | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+
+कुछ wallets custom networks पर gas balance को "ETH" नाम से दिखाते हैं; Arc पर यह USDC है। USDC token address दोनों networks पर
+`0x3600000000000000000000000000000000000000` है; mainnet पर EURC
+`0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` और testnet पर `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` है।
+
+## EIP-7702 upgrade हटाना (वैकल्पिक)
+
+पैसा भेजने के लिए upgrade हटाना ज़रूरी नहीं है। अगर export करने के बाद आप फिर से सामान्य account चाहते हैं, तो zero address की ओर संकेत करने वाला
+EIP-7702 authorization sign करें और उसे account से ही भेजें, जैसे viem के साथ:
+
+```ts
+import { zeroAddress } from "viem";
+
+const authorization = await walletClient.signAuthorization({ contractAddress: zeroAddress, executor: "self" });
+await walletClient.sendTransaction({ to: walletClient.account.address, authorizationList: [authorization] });
+```
+
+इसके बाद explorer आपके address पर कोई code नहीं दिखाएगा.

@@ -1,0 +1,23 @@
+---
+title: "Ce qui fonctionne aujourd'hui"
+description: "Toutes les fonctionnalités disponibles sur le réseau principal Arc et le réseau de test Arc, générées à partir du registre des fonctionnalités de Kawase lors de la création de ce site."
+sourceHash: 76834927ef0421e8
+---
+
+Cette page est **générée à partir du code**. Kawase conserve un registre unique des fonctionnalités (`packages/config/src/capabilities.ts`) : l'application
+le lit pour décider de ce qu'elle peut proposer, et l'agent le consulte avant de faire une proposition. La documentation importe le même
+registre lors de la création du site. Elle ne peut donc pas promettre plus que l'application.
+
+- **Disponible** : déployé et proposé sur ce réseau.
+- **À venir** : prévu dans le produit, mais pas encore déployé. Les éléments prévus que le registre ne répertorie pas encore sont également
+  indiqués comme à venir.
+- **Pas sur ce réseau** : indisponible par choix de conception (par exemple, l'Argent de test existe uniquement sur le réseau de test).
+
+<AvailabilityMatrix />
+
+## Ce que couvre chaque fonctionnalité
+
+Lorsqu'une fonctionnalité est disponible, cela ne signifie pas que toutes ses variantes fonctionnent. Le registre indique aussi précisément ce qui fonctionne aujourd'hui
+et ce qui ne fonctionne pas encore. L'agent utilise le même texte pour répondre honnêtement à la question « est-ce que tu peux… ? ».
+
+<ScopeList />
