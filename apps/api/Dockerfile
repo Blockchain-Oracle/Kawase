@@ -8,5 +8,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile --filter @kawase/api... --prod
 USER node
 EXPOSE 3000
-# Migrations run first; the api starts only if they applied.
-CMD ["sh", "-c", "pnpm --filter @kawase/db db:migrate && pnpm --filter @kawase/api start"]
+# Migrations run first; the api starts only if they applied. tsx is called directly: through pnpm, corepack
+# re-downloaded pnpm on every start (the node user has no cache), which pushed startup past the health check.
+CMD ["sh", "-c", "cd /app/packages/db && ./node_modules/.bin/tsx src/migrate.ts && cd /app/apps/api && exec ./node_modules/.bin/tsx src/main.ts"]

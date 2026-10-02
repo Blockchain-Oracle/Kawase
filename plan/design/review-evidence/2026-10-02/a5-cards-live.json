@@ -1,0 +1,237 @@
+{
+  "scenario": "cards",
+  "model": "default (packages/config)",
+  "at": "2026-10-02T16:38:55.366Z",
+  "result": {
+    "tokenChart": {
+      "asked": "Show me a chart of EURC over the last month.",
+      "reply": "Here’s the EURC price chart for the last month on Arc Testnet.",
+      "tools": [
+        {
+          "tool": "show_chart",
+          "state": "output-available",
+          "input": {
+            "range": "1M",
+            "token": "EURC"
+          },
+          "output": "{\"kind\":\"token\",\"last\":1.12499543313519,\"range\":\"1M\",\"title\":\"EURC\",\"token\":{\"name\":\"Euro Coin\",\"symbol\":\"EURC\",\"address\":\"0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a\",\"chainId\":5042002,\"logoUrl\":\"https://coin-images.coingecko.com/coins/images/26045/large/EURC.png?1769615705\"},\"points\":[{\"t\":1789516800000,\"v\":1.15407897594279},{\"t\":1789560000000,\"v\":1.14623616722661},{\"t\":1789603200000,\"v\":1.14720545366906},{\"t\":1789646400000,\"v\":1.14762678089962},{\"t\":1789689600000,\"v\":1.14593592521783},{\"t\":1789732800000,\"v\":1.14899317416671},{\"t\":1789776000000,\"v\":1.14984999300288},{\"t\":1789819200000,\"v\":1.14926570850334},{\"t\":1789862400000,\"v\":1.14857859002011},{\"t\":1789905600000,\"v\":1.14873355673408},{\"t\":1789948800000,\"v\":1.14795123600694},{\"t\":1789992000000,\"v\":1.14638171192219},{\"t\":1790035200000,\"v\":1.14622404640978},{\"t\":1790078400000,\"v\":1.14435797090267},{\"t\":1790121600000,\"v\":1.14125935302002},{\"t\":1790164800000,\"v\":1.13823045546536},{\"t\":1790208000000,\"v\":1.13651326411585},{\"t\":1790251200000,\"v\":1.13756730733308},{\"t\":1790294400000,\"v\":1.14035004699836},{\"t\":1790337600000,\"v\":1.13924815240337},{\"t\":1790380800000,\"v\":1.13889569881013},{\"t\":1790424000000,\"v\":1.13700131244708},{\"t\":1790467200000,\"v\":1.13853461839166},{\"t\":1790510400000,\"v\":1.13755163621954},{\"t\":1790553600000,\"v\":1.13732638672939},{\"t\":1790596800000,\"v\":1.13660251747391},{\"t\":1790640000000,\"v\":1.13510314416708},{\"t\":1790683200000,\"v\":1.13409188125157},{\"t\":1790726400000,\"v\":1.13474624601059},{\"t\":1790769600000,\"v\":1.13255078334051},{\"t\":1790812800000,\"v\":1.12987775251939},{\"t\":1790856000000,\"v\":1.12479037163109},{…"
+        }
+      ]
+    },
+    "portfolio": {
+      "asked": "Chart my portfolio over the week.",
+      "reply": "There isn’t enough portfolio history on Arc Testnet to show a one-week chart.",
+      "tools": [
+        {
+          "tool": "show_chart",
+          "state": "output-available",
+          "input": {
+            "range": "1W"
+          },
+          "output": {
+            "kind": "portfolio",
+            "range": "1W",
+            "title": "Portfolio",
+            "status": "empty",
+            "network": "testnet"
+          }
+        }
+      ]
+    },
+    "status": {
+      "asked": "Is Arc down? Check if everything is working.",
+      "reply": "Arc is working normally: the testnet is up and processing recent blocks. Kawase overall is slow because price data is rate-limited.",
+      "tools": [
+        {
+          "tool": "get_status",
+          "state": "output-available",
+          "input": {},
+          "output": {
+            "items": [
+              {
+                "id": "kawase_api",
+                "ms": 1021,
+                "state": "ok",
+                "detail": null
+              },
+              {
+                "id": "database",
+                "ms": 2,
+                "state": "ok",
+                "detail": null
+              },
+              {
+                "id": "arc_testnet",
+                "ms": 1001,
+                "state": "ok",
+                "detail": "block 65,145,252 · 2 s old"
+              },
+              {
+                "id": "circle",
+                "ms": 354,
+                "state": "ok",
+                "detail": null
+              },
+              {
+                "id": "prices",
+                "ms": 991,
+                "state": "slow",
+                "detail": "rate limited"
+              },
+              {
+                "id": "fx",
+                "ms": 1020,
+                "state": "ok",
+                "detail": null
+              }
+            ],
+            "overall": "slow",
+            "checkedAt": "2026-10-02T16:39:19.822Z"
+          }
+        }
+      ]
+    },
+    "setting": {
+      "asked": "From now on reply to me in French.",
+      "reply": "La modification est prête. Appuyez sur « Appliquer » pour recevoir mes prochaines réponses en français.",
+      "tools": [
+        {
+          "tool": "propose_setting_change",
+          "state": "output-available",
+          "input": {
+            "value": "fr",
+            "reason": "Répondre en français à partir de maintenant.",
+            "setting": "replyLanguage"
+          },
+          "output": {
+            "now": "same",
+            "after": "fr",
+            "reason": "Répondre en français à partir de maintenant.",
+            "status": "proposed",
+            "setting": "replyLanguage"
+          }
+        }
+      ]
+    },
+    "bridge": {
+      "asked": "Bridge 1 USDC to Base.",
+      "reply": "The bridge needs your Arc Testnet wallet set up first. Use the setup option on the card; nothing has moved yet.",
+      "tools": [
+        {
+          "tool": "propose_bridge",
+          "state": "output-available",
+          "input": {
+            "amount": "1",
+            "destination": "base"
+          },
+          "output": "{\"intent\":{\"id\":\"01a0fd7c-9b2b-7ebe-9248-6e3809226841\",\"tx\":null,\"draft\":{\"amount\":\"1000000\",\"routes\":[{\"reason\":null,\"status\":\"chosen\",\"provider\":\"Circle CCTP · App Kit\",\"received\":\"934456\",\"extraCost\":\"0\",\"etaSeconds\":null},{\"reason\":\"no_quote\",\"status\":\"unavailable\",\"provider\":\"LI.FI\",\"received\":null,\"extraCost\":\"0\",\"etaSeconds\":null},{\"reason\":\"not_on_arc_testnet\",\"status\":\"unavailable\",\"provider\":\"Relay\",\"received\":null,\"extraCost\":\"0\",\"etaSeconds\":null},{\"reason\":\"not_on_arc_testnet\",\"status\":\"unavailable\",\"provider\":\"deBridge\",\"received\":null,\"extraCost\":\"0\",\"etaSeconds\":null},{\"reason\":\"not_on_arc_testnet\",\"status\":\"unavailable\",\"provider\":\"Across\",\"received\":null,\"extraCost\":\"0\",\"etaSeconds\":null}],\"chainId\":84532,\"provider\":\"Circle CCTP · App Kit\",\"quotedAt\":\"2026-10-02T16:40:09.339Z\",\"recipient\":\"0x2d9b5452178316e064d10e1424e8acf65a71b6b9\",\"networkFee\":\"13715\",\"destination\":\"base\",\"maxRouteFee\":\"65544\",\"minReceived\":\"934456\"},\"stage\":null,\"state\":\"input_required\",\"mintTx\":null,\"network\":\"testnet\",\"outcome\":null,\"request\":{\"amount\":\"1\",\"destination\":\"base\"},\"results\":[{\"code\":\"WALLET_NOT_SET_UP\",\"kind\":\"precondition\"}],\"version\":1,\"blocking\":{\"code\":\"WALLET_NOT_SET_UP\",\"kind\":\"precondition\"},\"received\":null,\"createdAt\":\"2026-10-02T16:39:56.972Z\",\"expiresAt\":\"2026-10-02T16:54:56.971Z\",\"completedAt\":null},\"summary\":{\"route\":\"Circle CCTP through App Kit: native USDC burned on Arc and minted on Base Sepolia by Circle's forwarder. Also checked: LI.FI: no quote right now; Relay: does not serve Arc Testnet; deBridge: does not serve Arc Testnet; Across: does not serve Arc…"
+        }
+      ]
+    },
+    "why": {
+      "asked": "Why did you pick that route? What else did you check?",
+      "reply": "Circle CCTP was picked because it was the only available route and quoted at least 0.93 USDC on Base Sepolia. Kawase also checked LI.FI (no quote), Relay, deBridge, and Across (not available on Arc Testnet).",
+      "tools": [
+        {
+          "tool": "explain_choice",
+          "state": "output-available",
+          "input": {
+            "about": "bridge"
+          },
+          "output": {
+            "about": "bridge",
+            "basis": "most_received",
+            "status": "ready",
+            "network": "testnet",
+            "options": [
+              {
+                "eta": null,
+                "fee": null,
+                "name": "Circle CCTP · App Kit",
+                "value": "0.93 USDC",
+                "reason": null,
+                "status": "chosen"
+              },
+              {
+                "eta": null,
+                "fee": null,
+                "name": "LI.FI",
+                "value": null,
+                "reason": "no_quote",
+                "status": "unavailable"
+              },
+              {
+                "eta": null,
+                "fee": null,
+                "name": "Relay",
+                "value": null,
+                "reason": "not_on_arc_testnet",
+                "status": "unavailable"
+              },
+              {
+                "eta": null,
+                "fee": null,
+                "name": "deBridge",
+                "value": null,
+                "reason": "not_on_arc_testnet",
+                "status": "unavailable"
+              },
+              {
+                "eta": null,
+                "fee": null,
+                "name": "Across",
+                "value": null,
+                "reason": "not_on_arc_testnet",
+                "status": "unavailable"
+              }
+            ],
+            "subject": "1.00 USDC → base",
+            "quotedAt": "2026-10-02T16:40:09.339Z"
+          }
+        }
+      ]
+    },
+    "publicStatus": {
+      "checkedAt": "2026-10-02T16:40:19.889Z",
+      "overall": "ok",
+      "items": [
+        {
+          "id": "kawase_api",
+          "state": "ok",
+          "ms": 943,
+          "detail": null
+        },
+        {
+          "id": "database",
+          "state": "ok",
+          "ms": 83,
+          "detail": null
+        },
+        {
+          "id": "arc_testnet",
+          "state": "ok",
+          "ms": 800,
+          "detail": "block 65,145,371 · 1 s old"
+        },
+        {
+          "id": "circle",
+          "state": "ok",
+          "ms": 925,
+          "detail": null
+        },
+        {
+          "id": "prices",
+          "state": "ok",
+          "ms": 772,
+          "detail": null
+        },
+        {
+          "id": "fx",
+          "state": "ok",
+          "ms": 786,
+          "detail": null
+        }
+      ]
+    }
+  }
+}

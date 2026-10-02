@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
+import { intelligenceTools } from "./intelligence-tools";
+import { withQuarantine } from "./quarantine";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -35,7 +37,8 @@ const INVOICE_DUE_MAX = 365;
 const REPORT_DAYS_MAX = 31;
 
 export function buildTools(context: AgentContext) {
-  return {
+  // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
+  return withQuarantine({
     ...railsTools(context),
     get_wallet: tool({
       description:
@@ -119,16 +122,7 @@ export function buildTools(context: AgentContext) {
       execute: async ({ amount, from, to }) => context.proposeSwap({ amount: amount ?? null, tokenIn: from ?? null, tokenOut: to ?? null }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-    propose_bridge: tool({
-      description:
-        "Prepare moving the person's USDC from Arc to their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche; the testnet versions on testnet). Pass the chain and the amount as digits with a dot. Kawase quotes Circle's CCTP route (native USDC burned on Arc, minted there by Circle's forwarder, no gas needed on the other chain), compares the other routes that serve Arc, runs every check and shows a card. The person confirms on the card with Face ID (an email code on the web); nothing moves from this call.",
-      inputSchema: z.object({
-        destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("The chain they named; omit if they did not say"),
-        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say how much"),
-      }),
-      execute: async ({ destination, amount }) => context.proposeBridge({ destination: destination ?? null, amount: amount ?? null }),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
+    // propose_bridge lives in rails-tools.ts (any recipient, route options; B1).
     get_earn: tool({
       description:
         "The USDC vaults the person can earn yield in on the active network (Morpho vaults through Circle App Kit; mock vaults on testnet): name, yearly yield now, how much can be paid out, whether Circle monitors it, and what the person already holds in each.",
@@ -398,7 +392,9 @@ export function buildTools(context: AgentContext) {
       execute: async (input) => context.report(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-  };
+    // Memory, history search, Arc knowledge and the extra cards (A5).
+    ...intelligenceTools(context),
+  });
 }
 
 export type AgentTools = ReturnType<typeof buildTools>;

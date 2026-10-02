@@ -82,6 +82,7 @@ import type {
   PayrollView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
+import { intelligenceApi } from "./intelligence";
 
 export * from "./types";
 export * from "./agent-types";
@@ -92,6 +93,7 @@ export * from "./account";
 export * from "./rails";
 export * from "./business";
 export * from "./history";
+export * from "./intelligence";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -477,6 +479,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** A failure seen on the phone, for the api's logs; no account needed. */
       report: (event: ClientEvent) => call<void>("POST", "/client-events", event, { token: "" }),
     },
+
+    ...intelligenceApi(call),
   };
 }
 

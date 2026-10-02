@@ -48,6 +48,8 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 import { vaultTitle } from "@/earn/vault-title";
+import { useYieldOptions } from "@/lend/use-lend";
+import { useChooseYield, YieldOptionRow } from "@/lend/yield-options";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
@@ -64,7 +66,10 @@ const TICKET_MIN_SCALE = 0.5;
 type Step = "overview" | "amount" | "review";
 type Action = "deposit" | "withdraw";
 
-export function EarnScreen() {
+/** `/earn?vault=0x…&amount=20` (the yield options card) opens that vault's deposit ticket. */
+export type EarnPrefill = { vault?: string | undefined; amount?: string | undefined };
+
+export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -117,6 +122,21 @@ export function EarnScreen() {
     setValue("");
     setStep("amount");
   };
+
+  // Other places USDC earns (Aave V4, LP campaigns as advanced) beside the vaults; each opens its own ticket.
+  const others = useYieldOptions("USDC");
+  const chooseYield = useChooseYield();
+  const elsewhere = (others.view?.options ?? []).filter((option) => option.kind !== "morpho_vault");
+
+  const prefilled = React.useRef(false);
+  React.useEffect(() => {
+    if (prefilled.current || !prefill.vault || !overview.vaults) return;
+    const wanted = overview.vaults.find((entry) => entry.address.toLowerCase() === prefill.vault!.toLowerCase());
+    if (!wanted || wanted.liquidity === "stuck") return;
+    prefilled.current = true;
+    choose(wanted, "deposit");
+    if (prefill.amount) setValue(prefill.amount);
+  }, [overview.vaults]);
 
   const review = async () => {
     if (!vault) return;
@@ -413,6 +433,27 @@ export function EarnScreen() {
             </>
           )}
         </View>
+
+        {elsewhere.length > 0 ? (
+          <View className="gap-2">
+            <Eyebrow>{t("yieldOptions.moreWays")}</Eyebrow>
+            <ListGroup>
+              {elsewhere.map((option) => (
+                <YieldOptionRow key={option.id} option={option} best={false} onPress={option.executable ? () => chooseYield(option, null) : undefined} />
+              ))}
+            </ListGroup>
+          </View>
+        ) : null}
+
+        {!testnet ? (
+          <Pressable accessibilityRole="button" onPress={() => router.push("/borrow")} className="bg-card border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border px-4 py-3">
+            <Mark entity="provider:aave" size={MARK} />
+            <View className="min-w-0 flex-1">
+              <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("lend.borrowTitle")}</Text>
+              <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("lend.borrowEntry")}</Text>
+            </View>
+          </Pressable>
+        ) : null}
       </ScrollView>
     );
   }

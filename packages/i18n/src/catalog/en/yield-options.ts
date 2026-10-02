@@ -1,0 +1,21 @@
+export const yieldOptions = {
+  title: "Where {{asset}} earns",
+  best: "Best",
+  outNow: "{{now}} out now · {{size}} size",
+  poolSize: "Pool {{size}}",
+  apy: "APY",
+  apr: "APR rewards",
+  risk_blue_chip: "Blue-chip lending",
+  risk_curated: "Curated vault",
+  risk_rwa_credit: "RWA credit",
+  risk_advanced: "Advanced",
+  note_low_liquidity: "Little can be withdrawn right now",
+  note_small_for_amount: "Can't pay this amount back right now",
+  note_advanced: "Price swings can leave you with less (impermanent loss)",
+  advanced: "Advanced",
+  advancedBody:
+    "LP rewards are shown for reference: earning them means holding both assets in a pool, where price swings can leave you with less. Kawase doesn't deposit into these.",
+  none: "Nothing on Arc pays yield on {{asset}} right now.",
+  chooseHint: "Opens the deposit",
+  moreWays: "More ways to earn",
+} as const;

@@ -29,6 +29,8 @@ import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
+import type { CrossChainService } from "../crosschain/service";
+import type { LendService } from "../lend/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
@@ -40,6 +42,7 @@ import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
+import { buildIntelligence } from "./intelligence";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -81,6 +84,8 @@ export function buildAgentContext(input: {
   earn: EarnService;
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
+  crosschain?: CrossChainService | undefined;
+  lend?: LendService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -117,7 +122,8 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
-    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, threadId }),
+    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

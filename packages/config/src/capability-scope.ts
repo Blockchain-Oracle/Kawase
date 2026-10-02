@@ -25,19 +25,47 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     notYet: ["invoice reminders by email", "invoices in tokens other than USDC and EURC"],
   },
   swap: {
-    supports: ["USDC ↔ EURC on Arc through Circle's App Kit, with a quote, a guaranteed minimum and one Face ID"],
-    notYet: ["other tokens", "token safety checks and the person's own token rules", "limit orders, DCA and price-triggered swaps", "charts"],
+    supports: [
+      "buying, selling or swapping any token on Arc mainnet, meme coins included, at the best quote of KyberSwap, Circle App Kit and LI.FI (the others shown), paid with any token the person holds and confirmed by a slide on the card",
+      "on Arc Testnet only USDC ↔ EURC exists to trade; other tokens and meme coins are mainnet only",
+      "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%)",
+      "price, 24-hour change, a price chart and safety for any token on Arc; the Markets tab (trending, new, heatmap) and search by name, symbol or address",
+    ],
+    notYet: [
+      "limit orders, DCA and price-triggered swaps",
+      "buying on a launchpad's curve before the token graduates (the token page shows it and links the launchpad)",
+      "candlestick charts and profit and loss from the person's own trades",
+      "changing the token rules on a screen (being built)",
+    ],
+  },
+  buy: {
+    supports: [
+      "buying USDC or EURC with a debit card, Apple Pay or Google Pay through Circle's Onramp, delivered to the person's own wallet on Arc and confirmed when it lands on chain",
+      "buying another token with a card: the USDC that arrives is swapped with one more approval (both fees shown first)",
+      "on Arc Testnet: Circle's sandbox with test cards, no real money",
+    ],
+    notYet: [
+      "Apple Pay and Google Pay on mainnet until Circle finishes its business check of Kawase's domain (the checkout shows which methods it offers)",
+      "selling to a bank account (cash out goes through an exchange that takes Arc deposits)",
+      "buying straight into the agent wallet",
+    ],
   },
   bridge: {
     supports: [
-      "USDC from Arc to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche, through Circle CCTP with Circle's forwarder (about a minute)",
-      "other providers (LI.FI on both networks; Relay and deBridge on mainnet) are quoted for comparison only; CCTP is the route Kawase executes",
+      "USDC from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche (the person's own address, a contact, an @handle or a 0x address): Kawase quotes Circle CCTP, Across and Relay, ranks them by what arrives after fees, shows up to three, and executes the chosen route as one batch confirmed with Face ID",
+      "Bring to Arc: USDC the person holds at the same address on another chain is found and brought to Arc with Relay's permit — one signature, no gas needed on that chain",
+      "following each move until it is delivered (Across deposit status, Relay request status, CCTP attestation), and saying plainly when a provider refunds instead",
+      "on Arc Testnet: CCTP only (Across and Relay serve Arc mainnet only)",
     ],
-    notYet: ["executing another provider's route even when it is cheaper", "bridging into Arc", "sending to someone else on another chain", "recovering a stuck transfer"],
+    notYet: ["assets other than USDC across chains (convert to USDC first)", "deBridge and LI.FI routes (quoted, not executed)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
   },
   yield: {
-    supports: ["depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc (mock vaults on Arc Testnet)"],
-    notYet: ["other yield protocols", "rewards", "depositing from another chain"],
+    supports: [
+      "depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc, ranked by what they could give back now; vaults that could not are hidden (mock vaults on Arc Testnet)",
+      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP campaigns from Merkl (advanced, shown only), ranked by rate among sources that could return the amount",
+      "supplying to and withdrawing from Aave V4 on Arc mainnet (see lend)",
+    ],
+    notYet: ["LP deposits and claiming rewards", "Morpho Blue markets directly", "depositing from another chain"],
   },
   automations: {
     supports: [
@@ -52,6 +80,14 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "practice mode (what a rule would have done)",
       "editing an automation in place (cancel and set it up again for now)",
     ],
+  },
+  lend: {
+    supports: [
+      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
+      "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
+      "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a live health gauge, the liquidation price when the collateral is one asset, a health check (refused below 1.25, warned below 1.5) and the rate; repaying part or all",
+    ],
+    notYet: ["Morpho Blue markets directly", "LP deposits", "health alerts by push (shown on the position for now)", "Aave V4 on testnet (it is mainnet only)"],
   },
   margin: {
     supports: [
@@ -77,5 +113,16 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "a send by voice is ready on its card and waits for your tap (Face ID / fingerprint), even inside the daily allowance",
     ],
     notYet: ["voice in the web app (typing works there)", "choosing Kawase's voice or speed"],
+  },
+  memory: {
+    supports: [
+      "remembering facts the person asks it to (people, @handles, preferences), shown, editable and forgettable in Settings → Memory, or switched off; it says when it uses one",
+      "searching every past conversation (words, cards and who they were for)",
+      "long conversations stay coherent: older parts are summarized, the cards' own results are kept as they were",
+      "For you cards on Home: idle USDC next to a vault that can pay it back, a request about to expire, a bridge that has not arrived, a big move in a held token, a margin position near liquidation",
+      "answering questions about Arc and Kawase from its curated notes and docs, with sources",
+      "charts of the portfolio or any token, why a route, venue or vault was chosen, a setting's now and after, and whether Arc, Circle and prices are up",
+    ],
+    notYet: ["remembering things it was not asked to remember", "push notifications for For you cards"],
   },
 };

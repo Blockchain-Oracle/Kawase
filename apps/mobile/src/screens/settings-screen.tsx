@@ -270,7 +270,13 @@ export function SettingsScreen() {
               chevron
               onPress={() => router.push("/voice-settings")}
             />
-            <ListRow leading={<RowIcon icon={Brain} />} title={t("settings.memory")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Brain} />}
+              title={t("settings.memory")}
+              subtitle={t("memory.settingsBody")}
+              chevron
+              onPress={() => router.push("/memory")}
+            />
           </ListGroup>
           <View className="gap-2">
             <View className="flex-row items-center gap-2 px-1">

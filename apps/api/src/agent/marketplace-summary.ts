@@ -2,16 +2,19 @@
 // quarantined as untrusted data (MASTER-PLAN §Security: x402 bodies are wrapped and never instructions). The card
 // renders the full result; this stays small.
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceListing } from "@kawase/api-client";
+import { untrusted } from "@kawase/agent";
 import { amount, formatPrice } from "@kawase/money";
 
 const DISPLAY_LOCALE = "en";
 const RECENT_PURCHASES = 5;
 const usd = (baseUnits: string) => formatPrice(amount("USDC", BigInt(baseUnits)), DISPLAY_LOCALE);
 
-/** A seller's text, fenced so the model treats it as data. Any closing tag inside it is defused. */
+/**
+ * A seller's text, fenced so the model treats it as data (the shared quarantine: tags inside are defused, and text
+ * that reads like instructions to the model is flagged).
+ */
 export function quarantine(seller: string, text: string): string {
-  const safe = text.replace(/<\/?untrusted[^>]*>/gi, "");
-  return `<untrusted source="x402:${seller.replace(/"/g, "")}">\n${safe}\n</untrusted>`;
+  return untrusted(`x402:${seller}`, text);
 }
 
 const UNTRUSTED_NOTE =
