@@ -46,6 +46,7 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
 import { marginPolicy } from "./margin-policy";
 import { assets } from "./assets";
@@ -54,6 +55,15 @@ import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { safety } from "./safety";
 import { needsYou } from "./needs-you";
+import { buy } from "./buy";
+import { business } from "./business";
+import { why } from "./why";
+import { report } from "./report";
+import { history } from "./history";
+import { privacy } from "./privacy";
+import { memory } from "./memory";
+import { insight } from "./insight";
+import { forYou } from "./for-you";
 
 export const zh: Catalog = {
   common,
@@ -102,6 +112,7 @@ export const zh: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  voiceSettings,
   margin,
   marginPolicy,
   assets,
@@ -110,4 +121,13 @@ export const zh: Catalog = {
   ticket,
   safety,
   needsYou,
+  buy,
+  business,
+  why,
+  report,
+  history,
+  privacy,
+  memory,
+  insight,
+  forYou,
 };

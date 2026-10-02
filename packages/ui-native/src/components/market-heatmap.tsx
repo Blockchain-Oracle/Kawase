@@ -114,7 +114,7 @@ function MarketHeatmap({ tiles, height = DEFAULT_HEIGHT, colors, className }: Ma
             accessibilityRole="button"
             accessibilityLabel={tile.accessibilityLabel}
             onPress={tile.onPress}
-            className="absolute items-center justify-center overflow-hidden rounded-md active:opacity-80"
+            className="absolute items-center justify-center overflow-hidden rounded-sm active:opacity-80"
             style={{ left: x + HALF_GAP, top: y + HALF_GAP, width: Math.max(0, w - GAP), height: Math.max(0, h - GAP), backgroundColor: tint(base, tile.change) }}
           >
             {w >= LABEL_MIN_WIDTH && h >= LABEL_MIN_HEIGHT ? (

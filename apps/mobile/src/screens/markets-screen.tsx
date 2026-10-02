@@ -72,6 +72,8 @@ export function MarketsScreen() {
   const fx = USD_FX;
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
   const rows = market?.rows ?? [];
+  // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel or the map.
+  const promoted = rows.filter((row) => row.token.status !== "impersonator");
 
   const rowProps = (row: MarketRow) => {
     const chip = tokenChip(row.token, t);
@@ -204,7 +206,7 @@ export function MarketsScreen() {
                 <View className="gap-2">
                   <Eyebrow className="px-1">{t("markets.hot")}</Eyebrow>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
-                    {rows.slice(0, HOT_COUNT).map((row) => {
+                    {promoted.slice(0, HOT_COUNT).map((row) => {
                       const changeLabel = change(row.change24hPct, locale);
                       return (
                         <Pressable
@@ -233,7 +235,7 @@ export function MarketsScreen() {
                   <Eyebrow className="px-1">{t("markets.heatmap")}</Eyebrow>
                   <MarketHeatmap
                     colors={{ up: colors.success, down: colors.destructive, flat: colors.muted, text: colors.foreground }}
-                    tiles={rows.slice(0, HEAT_COUNT).map((row) => ({
+                    tiles={promoted.slice(0, HEAT_COUNT).map((row) => ({
                       key: row.token.address,
                       label: row.token.symbol,
                       weight: row.volume24hUsd ?? row.liquidityUsd ?? 0,

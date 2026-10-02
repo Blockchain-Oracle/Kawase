@@ -28,6 +28,17 @@ export const GECKOTERMINAL_MULTI_MAX = 30;
 /** An external call that takes longer than this is treated as down (the cache answers instead). */
 export const MARKET_FETCH_TIMEOUT_MS = 8 * MS_PER_SECOND;
 
+/**
+ * Alchemy's Portfolio API (primary discovery on Arc + the six bridge chains, live-checked 2026-10-02: 0.8–6.4 s per
+ * call): one wallet's holdings are cached this long, fetched in at most this many pages of 100.
+ */
+export const ALCHEMY_HOLDINGS_TTL_MS = 30 * MS_PER_SECOND;
+export const ALCHEMY_MAX_PAGES = 5;
+/** The API takes at most five networks per address (and two addresses) per request. */
+export const ALCHEMY_NETWORKS_PER_ADDRESS = 5;
+/** Alchemy's Prices API takes at most this many {network, address} pairs per request. */
+export const ALCHEMY_PRICES_MAX = 25;
+
 /** Below this many US dollars a holding of an unlisted token counts as dust and is hidden by default. */
 export const DUST_USD = 0.01;
 /** A holding of a listed token worth less than this is still shown (the person bought it), sorted last. */
@@ -39,10 +50,11 @@ export const PORTFOLIO_SNAPSHOT_EVERY_MS = 15 * SECONDS_PER_MINUTE * MS_PER_SECO
 export const PORTFOLIO_HISTORY_DAYS = 365;
 
 /**
- * Discovery: the watcher reads every ERC-20 Transfer to a Kawase wallet. Each new wallet is also read backwards
- * from when it was registered, at most this far, so tokens that arrived before Kawase watched are found.
+ * Discovery: the watcher reads every ERC-20 Transfer to a Kawase wallet (real time). Without Alchemy, each new
+ * wallet is also read backwards from when it was registered, at most this far (with Alchemy, cold start is one
+ * Portfolio call and there is no backfill).
  */
-export const TOKEN_BACKFILL_MAX_S = 30 * SECONDS_PER_DAY;
+export const TOKEN_BACKFILL_MAX_S = 7 * SECONDS_PER_DAY;
 /** Arc's RPCs answer `eth_getLogs` for at most 10,000 blocks per call (measured 2026-10-02: 10,000 → "range too large"). */
 export const TOKEN_BACKFILL_WINDOW_BLOCKS = 9_999n;
 /** Backfill windows read per watcher tick, so a long backfill never delays live payments. */

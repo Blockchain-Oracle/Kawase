@@ -17,3 +17,10 @@ export function compareVersions(a: string, b: string): number {
   }
   return 0;
 }
+
+/** How often conversations past their retention are looked for. */
+export const RETENTION_SWEEP_MS = 60 * 60 * 1000;
+/** Retention choices offered (days); null keeps conversations until deleted. */
+export const TRANSCRIPT_RETENTION_CHOICES = [30, 90, 365] as const;
+/** The report card covers this many days. */
+export const REPORT_DAYS = 7;

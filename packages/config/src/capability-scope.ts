@@ -18,12 +18,37 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     notYet: ["sending to someone on another chain", "split bills and batch payouts", "scanning a QR code to pay"],
   },
   request: {
-    supports: ["a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer"],
-    notYet: ["invoices with reference matching", "business profiles"],
+    supports: [
+      "a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer",
+      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll (scheduled payments to several people, each bounded on chain)",
+    ],
+    notYet: ["invoice reminders by email", "invoices in tokens other than USDC and EURC"],
   },
   swap: {
-    supports: ["USDC ↔ EURC on Arc through Circle's App Kit, with a quote, a guaranteed minimum and one Face ID"],
-    notYet: ["other tokens", "token safety checks and the person's own token rules", "limit orders, DCA and price-triggered swaps", "charts"],
+    supports: [
+      "buying, selling or swapping any token on Arc mainnet, meme coins included, at the best quote of KyberSwap, Circle App Kit and LI.FI (the others shown), paid with any token the person holds and confirmed by a slide on the card",
+      "on Arc Testnet only USDC ↔ EURC exists to trade; other tokens and meme coins are mainnet only",
+      "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%)",
+      "price, 24-hour change, a price chart and safety for any token on Arc; the Markets tab (trending, new, heatmap) and search by name, symbol or address",
+    ],
+    notYet: [
+      "limit orders, DCA and price-triggered swaps",
+      "buying on a launchpad's curve before the token graduates (the token page shows it and links the launchpad)",
+      "candlestick charts and profit and loss from the person's own trades",
+      "changing the token rules on a screen (being built)",
+    ],
+  },
+  buy: {
+    supports: [
+      "buying USDC or EURC with a debit card, Apple Pay or Google Pay through Circle's Onramp, delivered to the person's own wallet on Arc and confirmed when it lands on chain",
+      "buying another token with a card: the USDC that arrives is swapped with one more approval (both fees shown first)",
+      "on Arc Testnet: Circle's sandbox with test cards, no real money",
+    ],
+    notYet: [
+      "Apple Pay and Google Pay on mainnet until Circle finishes its business check of Kawase's domain (the checkout shows which methods it offers)",
+      "selling to a bank account (cash out goes through an exchange that takes Arc deposits)",
+      "buying straight into the agent wallet",
+    ],
   },
   bridge: {
     supports: [
@@ -74,5 +99,16 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "a send by voice is ready on its card and waits for your tap (Face ID / fingerprint), even inside the daily allowance",
     ],
     notYet: ["voice in the web app (typing works there)", "choosing Kawase's voice or speed"],
+  },
+  memory: {
+    supports: [
+      "remembering facts the person asks it to (people, @handles, preferences), shown, editable and forgettable in Settings → Memory, or switched off; it says when it uses one",
+      "searching every past conversation (words, cards and who they were for)",
+      "long conversations stay coherent: older parts are summarized, the cards' own results are kept as they were",
+      "For you cards on Home: idle USDC next to a vault that can pay it back, a request about to expire, a bridge that has not arrived, a big move in a held token, a margin position near liquidation",
+      "answering questions about Arc and Kawase from its curated notes and docs, with sources",
+      "charts of the portfolio or any token, why a route, venue or vault was chosen, a setting's now and after, and whether Arc, Circle and prices are up",
+    ],
+    notYet: ["remembering things it was not asked to remember", "push notifications for For you cards"],
   },
 };

@@ -22,6 +22,15 @@ export type ApiUser = {
   /** Set while the person has paused all agent and automation spending (Wallet & limits). */
   pausedAllAt?: string | null;
   turnkeySubOrganizationId: string | null;
+  /** Settings → Voice (defaults filled in by the api); absent on users cached before it existed. */
+  voicePrefs?: VoicePrefs;
+};
+
+/** GPT-Live's voices, the speaking pace and whether Kawase greets first (the same shape as @kawase/config's). */
+export type VoicePrefs = {
+  voice: "marin" | "aster" | "beacon" | "cinder" | "stone" | "vesper";
+  speed: "relaxed" | "normal" | "brisk";
+  autoSpeak: boolean;
 };
 
 export type DeviceInfo = {
@@ -586,7 +595,7 @@ export type AutomationView = {
   /** Practice: runs are dry-run and recorded as "would have"; no grant is held. */
   practice?: boolean;
   /** Payroll only. */
-  payroll?: import("./automations-8c").PayrollView | null;
+  payroll?: import("./automations-8c").PayrollAutomationView | null;
   /** DCA only. */
   dca?: import("./automations-8c").DcaView | null;
   schedule: AutomationSchedule;

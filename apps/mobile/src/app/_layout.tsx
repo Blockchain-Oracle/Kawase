@@ -15,6 +15,7 @@ import { Toaster } from "sonner-native";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
 import { FundProvider } from "@/fund/fund-provider";
+import { BuyProvider } from "@/onramp/buy-provider";
 import { SessionProvider } from "@/session/session-provider";
 import { SignInProvider } from "@/sign-in/sign-in-provider";
 import { ThemeProvider } from "@/theme/theme-provider";
@@ -35,9 +36,11 @@ export default function RootLayout() {
               <LocaleProvider>
                 <BottomSheetModalProvider>
                   <SignInProvider>
-                    <FundProvider>
-                      <Stack screenOptions={{ headerShown: false }} />
-                    </FundProvider>
+                    <BuyProvider>
+                      <FundProvider>
+                        <Stack screenOptions={{ headerShown: false }} />
+                      </FundProvider>
+                    </BuyProvider>
                   </SignInProvider>
                   <PortalHost />
                   <WebApprovalHost />

@@ -11,7 +11,7 @@ import { tokenMetadata, type Db } from "@kawase/db";
 import {
   CANONICAL_TOKENS,
   canonicalToken,
-  impersonatesStablecoin,
+  isImpostor,
   normalizeSymbol,
   type NetworkId,
   type TokenKind,
@@ -58,7 +58,7 @@ export class TokenDirectory {
         decimals,
         logoUrl: list?.logoUrl ?? market?.logoUrl ?? null,
         kind,
-        status: this.status(network, address, symbol, Boolean(canonical), Boolean(list) || Boolean(market?.coingeckoId), listedSymbols),
+        status: this.status(network, address, symbol, Boolean(canonical), Boolean(list) || Boolean(market?.coingeckoId), listedSymbols, decimals),
         isTest: network === "testnet",
       });
     }
@@ -73,9 +73,9 @@ export class TokenDirectory {
     return bySymbol;
   }
 
-  status(network: NetworkId, address: string, symbol: string, canonical: boolean, listed: boolean, listedSymbols: Map<string, string>): TokenStatus {
+  status(network: NetworkId, address: string, symbol: string, canonical: boolean, listed: boolean, listedSymbols: Map<string, string>, decimals?: number): TokenStatus {
     if (canonical) return "canonical";
-    if (impersonatesStablecoin(network, symbol, address)) return "impersonator";
+    if (isImpostor(network, symbol, address, decimals)) return "impersonator";
     const owner = listedSymbols.get(normalizeSymbol(symbol));
     if (owner && owner !== address.toLowerCase()) return "lookalike";
     return listed ? "listed" : "unverified";

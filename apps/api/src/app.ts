@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS } from "@kawase/config";
+import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -57,6 +57,9 @@ import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
+import { noOnramp, type OnrampEngine } from "./onramp/engine";
+import { onrampRoutes } from "./onramp/routes";
+import { OnrampService } from "./onramp/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
@@ -66,12 +69,27 @@ import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
+import { auditWrites } from "./audit/middleware";
+import { InvoiceService } from "./business/invoices";
+import { PayoutService } from "./business/payouts";
+import { PayrollService } from "./business/payroll";
+import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
+import { PrivacyService } from "./history/privacy";
+import { historyRoutes, privacyRoutes } from "./history/routes";
+import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
 import { safetyRoutes } from "./safety/routes";
 import { SafetyService } from "./safety/service";
+import { memoryRoutes } from "./memory/routes";
+import { MemoryService } from "./memory/service";
+import { searchRoutes } from "./search/routes";
+import { SearchService } from "./search/service";
+import { suggestionRoutes } from "./suggestions/routes";
+import { SuggestionService } from "./suggestions/service";
+import { StatusService } from "./status/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -99,6 +117,10 @@ export type AppDeps = {
   bridges?: BridgeEngine | undefined;
   /** Earn vaults (Circle App Kit Earn in production); earning is refused when unset. */
   earn?: EarnEngine | undefined;
+  /** Buy with Apple Pay / card (Circle Onramp Kit in production); buying is refused when unset. */
+  onramp?: OnrampEngine | undefined;
+  /** Circle's API key for verifying its webhook signatures (the LIVE key in production). */
+  circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
   market?: MarketData | undefined;
   /** Refreshes the shared market cache this often; off when unset. */
@@ -157,7 +179,7 @@ export function createApp(deps: AppDeps) {
     inbox,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
   // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
@@ -167,6 +189,7 @@ export function createApp(deps: AppDeps) {
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
+  const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -195,6 +218,7 @@ export function createApp(deps: AppDeps) {
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
+    onramp.startReconciler(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -238,6 +262,7 @@ export function createApp(deps: AppDeps) {
   app.use("*", general.middleware);
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
+  app.use("*", auditWrites(audit));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -266,6 +291,7 @@ export function createApp(deps: AppDeps) {
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
   app.route("/margin", marginRoutes(margin));
+  app.route("/onramp", onrampRoutes(onramp));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -276,9 +302,22 @@ export function createApp(deps: AppDeps) {
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
   app.route("/safety", safetyRoutes(safety));
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
+  const payroll = new PayrollService(deps.db, automations, audit);
+  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  app.route("/invoices/public", publicInvoiceRoutes(invoices));
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  const privacy = new PrivacyService(deps.db, audit, deps.log);
+  if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
+  app.route("/history", historyRoutes(history));
+  app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
     marketplace,
+    invoices,
+    history,
     db: deps.db,
     chains: deps.chains,
     wallets,
@@ -290,6 +329,7 @@ export function createApp(deps: AppDeps) {
     bridges,
     earn,
     margin,
+    onramp,
     assets,
     automations,
     requests,
@@ -301,6 +341,12 @@ export function createApp(deps: AppDeps) {
   const runner = createTurnRunner(agentDeps);
   app.route("/agent", agentRoutes(agentDeps, runner));
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
+  app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
+  app.route("/search", searchRoutes(new SearchService(deps.db)));
+  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin)));
+  // Dependency health, public (the status card, docs and landing), cached for half a minute.
+  const status = new StatusService(deps.db, deps.chains);
+  app.get("/status", async (c) => c.json(await status.view()));
 
   return app;
 }

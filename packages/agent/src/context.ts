@@ -30,6 +30,7 @@ import type {
   MarginPositionsOutput,
   MarginRequest,
   ProposeMarginOutput,
+  BuyProposalOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -42,12 +43,16 @@ import type {
   ServiceSearchResult,
   SafetyChange,
   SafetyToolOutput,
-  PayrollInput,
+  PayrollAutomationInput,
   DcaInput,
   AutomationEdit,
   AutomationEditResponse,
   SimulationView,
+  InvoiceView,
+  ReportView,
 } from "@kawase/api-client";
+
+import type { IntelligenceContext } from "./intelligence";
 
 export type {
   ActivityLine,
@@ -113,10 +118,16 @@ export type AgentContext = {
   agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
   /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
+  /** Business mode: an invoice with a payment link and an on-chain reference (the card shares it). */
+  createInvoice(input: { client: string; amount: string; asset: "USDC" | "EURC"; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
+  /** The weekly report: money in and out, swaps, bridges, earn, services, automations, invoices. */
+  report(input: { days?: number | undefined }): Promise<{ report: ReportView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  /** Memory, history search, Arc knowledge and the extra cards (A5). */
+  intelligence: IntelligenceContext;
   // Money rails (B1). Optional so a context without them still builds; the tools say so when one is missing.
   /** Kawase Margin markets from the venue's live reserves, with each side's leverage cap. */
   marginMarkets?(): Promise<MarginMarketsOutput>;
@@ -124,6 +135,8 @@ export type AgentContext = {
   marginPositions?(): Promise<MarginPositionsOutput>;
   /** Drafts a margin order (open or close); the person slides to confirm on the card. */
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Buy with Apple Pay / Google Pay / debit (Circle Onramp): the card's button starts it; nothing is charged here. */
+  proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */
@@ -151,7 +164,7 @@ export type AgentContext = {
   proposeAllowlistChange?(input: { action: "add" | "remove" | "only_on" | "only_off"; contact?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   revokeGrant?(input: { what: "allowance" | "automation" | "everything"; token?: string | undefined; automationId?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   // Automations 8c (A3).
-  draftPayroll?(input: PayrollInput): Promise<ProposeAutomationOutput>;
+  draftPayroll?(input: PayrollAutomationInput): Promise<ProposeAutomationOutput>;
   draftDca?(input: DcaInput): Promise<ProposeAutomationOutput>;
   editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
   simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;

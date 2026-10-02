@@ -35,3 +35,57 @@ export const VOICE_SPEECH: Record<SupportedLocale, VoiceSpeech> = {
   bn: openai("bn"),
   ur: openai("ur"),
 };
+
+/**
+ * GPT-Live (plan §1.4): OpenAI's full-duplex voice model speaks for Kawase, and every question about money or the
+ * account is delegated to Kawase's own agent turn ("client" delegation). The voice names are the ones the installed
+ * @livekit/agents-plugin-openai 1.9.1 lists (`GPTLiveVoices`); marin is its default and the narration's voice.
+ */
+export const GPT_LIVE_VOICES = ["marin", "aster", "beacon", "cinder", "stone", "vesper"] as const;
+export type GptLiveVoice = (typeof GPT_LIVE_VOICES)[number];
+
+/** Speaking pace: a TTS speed factor for the fallback pipeline, and a pace hint in GPT-Live's persona. */
+export const VOICE_SPEEDS = { relaxed: 0.9, normal: 1, brisk: 1.1 } as const;
+export type VoiceSpeed = keyof typeof VOICE_SPEEDS;
+
+/** Settings → Voice. `autoSpeak`: Kawase says hello as soon as voice opens; off, it waits for the person. */
+export type VoicePrefs = { voice: GptLiveVoice; speed: VoiceSpeed; autoSpeak: boolean };
+export const DEFAULT_VOICE_PREFS: VoicePrefs = { voice: "marin", speed: "normal", autoSpeak: true };
+
+/** Reads stored or received preferences, keeping the default for anything missing or unknown. */
+export function voicePrefs(raw: unknown): VoicePrefs {
+  const value = (typeof raw === "object" && raw !== null ? raw : {}) as Partial<Record<keyof VoicePrefs, unknown>>;
+  return {
+    voice: (GPT_LIVE_VOICES as readonly unknown[]).includes(value.voice) ? (value.voice as GptLiveVoice) : DEFAULT_VOICE_PREFS.voice,
+    speed: typeof value.speed === "string" && value.speed in VOICE_SPEEDS ? (value.speed as VoiceSpeed) : DEFAULT_VOICE_PREFS.speed,
+    autoSpeak: typeof value.autoSpeak === "boolean" ? value.autoSpeak : DEFAULT_VOICE_PREFS.autoSpeak,
+  };
+}
+
+/**
+ * The fallback pipeline's voices (Scribe → agent → TTS, used when GPT-Live is unavailable): an explicit ElevenLabs
+ * premade voice with chosen settings instead of the plugin default (`bIHbv24MWmeRgasZH58o`), and OpenAI's marin
+ * (GPT-Live's default voice family) instead of "alloy" for Bengali and Urdu.
+ */
+export const FALLBACK_ELEVENLABS_VOICE = {
+  /** "Sarah", an ElevenLabs premade voice; multilingual with Flash v2.5. */
+  id: "EXAVITQu4vr4xnSDxMaL",
+  settings: { stability: 0.5, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
+} as const;
+export const FALLBACK_OPENAI_VOICE = "marin";
+
+/** GPT-Live must have its session within this time, or the worker falls back to the pipeline. */
+export const GPT_LIVE_READY_TIMEOUT_MS = 8000;
+/** The readback guard checks what GPT-Live said once its speech has been quiet this long. */
+export const READBACK_SETTLE_MS = 1500;
+/** GPT-Live caps each appended text at 500 tokens; Kawase keeps its texts well under that. */
+export const GPT_LIVE_APPEND_MAX_CHARS = 1500;
+/**
+ * GPT-Live can hand a request over before the person has finished speaking (observed 2026-10-02: "How much is…"). Kawase
+ * waits for the end of their speech, at most this long, then this much more for the last words of the transcript.
+ */
+export const GPT_LIVE_TRANSCRIPT_SETTLE_MAX_MS = 3000;
+export const GPT_LIVE_TRANSCRIPT_TAIL_MS = 300;
+
+/** The voice-start cue (assets/audio/voice-start.mp3, 0.52 s) plays out before LiveKit takes the audio route. */
+export const VOICE_START_CUE_MS = 550;

@@ -1,0 +1,16 @@
+export const privacy = {
+  title: "Data & privacy",
+  conversations: "Conversations",
+  count: "{{count}} conversations, chat and voice",
+  keep: "Keep them for",
+  keepForever: "Until I delete them",
+  keepDays: "{{days}} days",
+  keepBody: "Older conversations are deleted automatically. Your money history is on Arc and isn't affected.",
+  exportConversations: "Export conversations",
+  deleteConversations: "Delete all conversations",
+  deleteConfirm: "Delete all {{count}} conversations? This can't be undone.",
+  delete: "Delete",
+  deleted: "Conversations deleted",
+  money: "Money history",
+  moneyBody: "Your transactions are on Arc; export them by month.",
+} as const;

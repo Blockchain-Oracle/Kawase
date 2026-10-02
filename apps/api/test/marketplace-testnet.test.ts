@@ -126,7 +126,9 @@ test("x402 on Arc testnet: top up under the grant, pay the demo seller through G
   if (topped.status !== "topped_up") return;
   console.log("agent wallet", topped.wallet.address, "balances", topped.wallet.balances, "top-up tx", topped.move.txHashes);
   assert.equal(topped.wallet.address?.toLowerCase(), receipt.recipient!.toLowerCase());
-  assert.ok(BigInt(topped.wallet.balances.inGateway) > usdc("0.9"), "deposited into Gateway");
+  // 80% into Gateway (most sellers), 20% kept on hand for plain EIP-3009 sellers.
+  assert.ok(BigInt(topped.wallet.balances.inGateway) > usdc("0.75"), "deposited into Gateway");
+  assert.ok(BigInt(topped.wallet.balances.onHand) >= usdc("0.2"), "a share kept on hand");
 
   // 3. The agent buys from the demo seller (the same service the agent tool calls).
   const [row] = await db.select().from(users).where(eq(users.id, userId));

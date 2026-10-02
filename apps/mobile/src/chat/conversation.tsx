@@ -36,6 +36,7 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 
 import { draftKey, readDraft, saveDraft } from "./drafts";
 import { EmptyThread } from "./empty-thread";
+import { MemoryNote } from "./memory-card";
 import { MessageText } from "./message-text";
 import { ChatResumeProvider } from "./resume";
 import { storedThread } from "./stored-thread";
@@ -329,6 +330,7 @@ function MessageView({
             );
           return null;
         })}
+        <MemoryNote metadata={message.metadata} />
       </Pressable>
     </Animated.View>
   );

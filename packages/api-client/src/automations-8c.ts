@@ -12,7 +12,7 @@ type ScheduleFields = {
 };
 
 /** Payroll: several people on one schedule; each line is its own grant pinned to that person. */
-export type PayrollInput = ScheduleFields & {
+export type PayrollAutomationInput = ScheduleFields & {
   lines: { recipient: string; amount: string; asset?: "USDC" | "EURC" | undefined }[];
   note?: string | null | undefined;
 };
@@ -20,7 +20,7 @@ export type PayrollInput = ScheduleFields & {
 /** DCA: "buy $10 of ARGUS every day". Tokens as the person said them (a symbol, USDC/EURC, or an address). */
 export type DcaInput = ScheduleFields & { from: string; to: string; amount: string };
 
-export type PayrollView = {
+export type PayrollAutomationView = {
   lines: { recipientWords: string; recipientName: string | null; recipientAddress: string | null; asset: "USDC" | "EURC"; amount: string }[];
   note: string | null;
 };
@@ -86,7 +86,7 @@ export type NeedsYouApi = {
 };
 
 export type AutomationsMoreApi = {
-  payroll: (input: PayrollInput) => Promise<{ automation: import("./types").AutomationView }>;
+  payroll: (input: PayrollAutomationInput) => Promise<{ automation: import("./types").AutomationView }>;
   dca: (input: DcaInput) => Promise<{ automation: import("./types").AutomationView }>;
   /** Turn a draft on in practice: no grant; runs are "would have". */
   practice: (id: string) => Promise<{ automation: import("./types").AutomationView }>;

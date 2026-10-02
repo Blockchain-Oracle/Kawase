@@ -10,7 +10,7 @@ import { createUIMessageStreamResponse, type UIMessage } from "ai";
 import { AccessToken, RoomAgentDispatch, RoomConfiguration } from "livekit-server-sdk";
 import { z } from "zod";
 
-import { MS_PER_SECOND, VOICE_SESSION_TTL_S, voiceAgentName } from "@kawase/config";
+import { MS_PER_SECOND, VOICE_SESSION_TTL_S, voiceAgentName, voicePrefs } from "@kawase/config";
 import type { Models } from "@kawase/agent";
 import { threads, users, type Db } from "@kawase/db";
 
@@ -75,6 +75,8 @@ export function voiceRoutes(deps: {
             locale: user.replyLanguage ?? user.locale,
             network: user.activeNetwork,
             turnNamespace: room,
+            // Settings → Voice: the worker picks GPT-Live's voice, the pace and whether to greet first.
+            voice: voicePrefs(user.voicePrefs),
           }),
         }),
       ],

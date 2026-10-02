@@ -29,4 +29,6 @@ export type SessionUser = {
   pausedAllAt?: Date | null;
   turnkeySubOrganizationId: string | null;
   turnkeyUserId: string | null;
+  /** Settings → Voice as stored (read with `voicePrefs`). */
+  voicePrefs?: unknown;
 };

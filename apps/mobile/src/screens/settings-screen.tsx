@@ -9,6 +9,7 @@ import {
   Bell,
   BookUser,
   Bot,
+  Briefcase,
   Brain,
   CalendarClock,
   Coins,
@@ -36,6 +37,8 @@ import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
+import { voiceName } from "@/screens/voice-settings-screen";
+import { DEFAULT_VOICE_PREFS } from "@kawase/config";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Switch } from "@kawase/ui-native/components/ui/switch";
@@ -226,6 +229,13 @@ export function SettingsScreen() {
               onPress={() => router.push("/agent-wallet")}
             />
             <ListRow
+              leading={<RowIcon icon={Briefcase} />}
+              title={t("business.title")}
+              subtitle={t("business.settingsBody")}
+              chevron
+              onPress={() => (account ? router.push("/business") : signIn.open())}
+            />
+            <ListRow
               leading={<RowIcon icon={Coins} />}
               title={t("settings.displayCurrency")}
               trailing={coming}
@@ -249,8 +259,24 @@ export function SettingsScreen() {
               chevron
               onPress={() => router.push("/notifications")}
             />
-            <ListRow leading={<RowIcon icon={Mic} />} title={t("settings.voice")} trailing={coming} disabled />
-            <ListRow leading={<RowIcon icon={Brain} />} title={t("settings.memory")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Mic} />}
+              title={t("settings.voice")}
+              trailing={
+                <Text className="text-muted-foreground text-base">
+                  {voiceName(user?.voicePrefs?.voice ?? DEFAULT_VOICE_PREFS.voice)}
+                </Text>
+              }
+              chevron
+              onPress={() => router.push("/voice-settings")}
+            />
+            <ListRow
+              leading={<RowIcon icon={Brain} />}
+              title={t("settings.memory")}
+              subtitle={t("memory.settingsBody")}
+              chevron
+              onPress={() => router.push("/memory")}
+            />
           </ListGroup>
           <View className="gap-2">
             <View className="flex-row items-center gap-2 px-1">
@@ -313,7 +339,12 @@ export function SettingsScreen() {
               chevron
               {...(account ? { onPress: () => router.push("/account/devices") } : { onPress: signIn.open })}
             />
-            <ListRow leading={<RowIcon icon={Database} />} title={t("settings.privacy")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Database} />}
+              title={t("settings.privacy")}
+              chevron
+              onPress={() => (account ? router.push("/privacy") : signIn.open())}
+            />
           </ListGroup>
         </Section>
 

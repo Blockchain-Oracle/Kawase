@@ -31,7 +31,7 @@ import type {
   AutomationEdit,
   AutomationEditResponse,
   DcaInput,
-  PayrollInput,
+  PayrollAutomationInput,
   RuleInput,
   RuleView,
   SimulatedRun,
@@ -358,7 +358,7 @@ export class AutomationService {
         : row.kind === "rule"
           ? await this.draftRule(user, row.network, row.request as unknown as RuleInput)
           : row.kind === "payroll"
-            ? await this.draftPayroll(user, row.network, row.request as unknown as PayrollInput)
+            ? await this.draftPayroll(user, row.network, row.request as unknown as PayrollAutomationInput)
             : row.kind === "dca"
               ? await this.draftDca(user, row.network, row.request as unknown as DcaInput)
               : await this.draftSend(user, row.network, row.request as AutomationInput);
@@ -495,7 +495,7 @@ export class AutomationService {
    * like a scheduled send of its own and becomes its own grant pinned to that person, so one Face ID covers them all
    * and no line can ever pay more, or anyone else, than it says.
    */
-  private async draftPayroll(user: SessionUser, network: NetworkId, input: PayrollInput) {
+  private async draftPayroll(user: SessionUser, network: NetworkId, input: PayrollAutomationInput) {
     const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     const { schedule, valid } = this.schedule(user, input);
@@ -558,7 +558,7 @@ export class AutomationService {
     return { schedule, action, report: { results, blocking } };
   }
 
-  async createPayroll(user: SessionUser, input: PayrollInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
+  async createPayroll(user: SessionUser, input: PayrollAutomationInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
     const network = user.activeNetwork;
     const drafted = await this.draftPayroll(user, network, input);
     const [row] = await this.db
@@ -1135,7 +1135,7 @@ export class AutomationService {
       const request = { ...(row.request ?? {}), ...Object.fromEntries(Object.entries(edit).filter(([, value]) => value !== undefined)) };
       const drafted =
         row.kind === "payroll"
-          ? await this.draftPayroll(user, row.network, request as unknown as PayrollInput)
+          ? await this.draftPayroll(user, row.network, request as unknown as PayrollAutomationInput)
           : row.kind === "dca"
             ? await this.draftDca(user, row.network, request as unknown as DcaInput)
             : await this.draftSend(user, row.network, request as unknown as AutomationInput);
