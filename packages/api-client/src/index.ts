@@ -65,12 +65,14 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./safety";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -350,6 +352,16 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
       deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
     } satisfies AccountApi,
+
+    /** Wallet & limits on the active network: tightening applies at once; loosening returns what to sign. */
+    safety: {
+      get: () => call<SafetyView>("GET", "/safety"),
+      tokens: (address?: string) => call<{ tokens: TokenOption[] }>("GET", `/safety/tokens${address ? `?address=${encodeURIComponent(address)}` : ""}`),
+      change: (change: SafetyChange, via?: "app" | "chat" | "voice") => call<SafetyChangeResponse>("POST", "/safety/changes", { change, via }),
+      approve: (changeId: string, signature: string) => call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature }),
+      pause: () => call<SafetyChangeResponse>("POST", "/safety/changes", { change: { kind: "pause", on: true } }),
+      exitKit: () => call<ExitKitResponse>("POST", "/safety/exit-kit"),
+    } satisfies SafetyApi,
 
     /** The x402 marketplace and the Agent wallet page (on the active network). */
     marketplace: {

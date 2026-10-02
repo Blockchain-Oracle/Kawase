@@ -17,6 +17,8 @@ export type ApiUser = {
   activeNetwork: NetworkId;
   riskMode: "careful" | "balanced" | "autonomous";
   practiceMode: boolean;
+  /** Set while the person has paused all agent and automation spending (Wallet & limits). */
+  pausedAllAt?: string | null;
   turnkeySubOrganizationId: string | null;
 };
 
@@ -229,7 +231,7 @@ export type IntentState =
  * wallet); reverted (on chain but undone; only a fee may have been paid); checking (the outcome is not known yet
  * and nothing is retried); canceled; expired.
  */
-export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired";
+export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired" | "practiced";
 
 export type SendRecipientView = {
   via: "contact" | "handle" | "address";
@@ -258,6 +260,8 @@ export type SendIntent = {
   network: NetworkId;
   state: IntentState;
   outcome: SendOutcome | null;
+  /** Practice mode: what the chain said to the exact transaction, dry-run (nothing was sent). */
+  practice?: { ok: boolean; error: string | null } | null;
   version: number;
   /** The person's own words for each field. */
   request: { recipient: string | null; amount: string | null; asset: "USDC" | "EURC" | null; note: string | null };

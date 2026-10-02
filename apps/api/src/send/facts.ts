@@ -10,13 +10,15 @@ import {
   SECONDS_PER_DAY,
   SECONDS_PER_WEEK,
 } from "@kawase/config";
-import { grants, limits as limitsTable, spendLedger, type Db } from "@kawase/db";
-import { allowanceAvailable, isWalletSetUp } from "@kawase/integrations-delegation";
+import { limits as limitsTable, spendLedger, type Db } from "@kawase/db";
+import { isWalletSetUp } from "@kawase/integrations-delegation";
 import { AmountParseError, parseAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 import type { AmountFacts, SendFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
+import { allowanceRoom, tokenAllowance, type AllowanceRoom } from "../safety/allowances";
+import { recipientTrust, safetySettingsOf } from "../safety/settings";
 import type { Chains } from "../wallet/chain";
 import type { Resolution } from "./recipients";
 
@@ -28,6 +30,7 @@ export type StoredRequest = {
 };
 
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
+export const assetToken = (network: { addresses: { usdc: Address; eurc: Address } }, asset: AssetId) => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 /** The pool or one transaction's connection: checks made under a lock must use the locked connection. */
@@ -47,22 +50,16 @@ export function parseRequestAmount(text: string | null, asset: AssetId | undefin
   }
 }
 
-export async function activeAllowance(db: Db, userId: string, network: NetworkId): Promise<ActiveAllowance | undefined> {
-  const [row] = await db
-    .select()
-    .from(grants)
-    .where(
-      and(
-        eq(grants.userId, userId),
-        eq(grants.network, network),
-        eq(grants.kind, "allowance"),
-        eq(grants.status, "active"),
-        gt(grants.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(desc(grants.createdAt))
-    .limit(1);
-  return row ? { id: row.id, delegation: row.delegation, perPeriod: row.periodAmount } : undefined;
+/**
+ * The allowance for one token on one network, with what is left of it now (the chain's room under the person's own
+ * cap). Sends of USDC and EURC each use their own token's allowance (cards/automate-safety.md).
+ */
+export async function activeAllowance(db: Db, chains: Chains, userId: string, network: NetworkId, token: Address): Promise<AllowanceRoom | undefined> {
+  const clients = chains.get(network);
+  if (!clients) return undefined;
+  const allowance = await tokenAllowance(db, userId, network, token);
+  if (!allowance.base && !allowance.boost) return undefined;
+  return allowanceRoom(clients, allowance);
 }
 
 /** Reserved and committed spend of one asset in the last day and week, leaving out one intent (the one being checked). */
@@ -116,7 +113,7 @@ export async function fitsLimits(executor: Executor, userId: string, network: Ne
   return amount <= limitValues.perTx && used.day + amount <= limitValues.daily && used.week + amount <= limitValues.weekly;
 }
 
-export type GatheredFacts = { facts: SendFacts; allowance: ActiveAllowance | undefined };
+export type GatheredFacts = { facts: SendFacts; allowance: ActiveAllowance | undefined; practice: boolean };
 
 export async function gatherFacts(input: {
   db: Db;
@@ -139,46 +136,48 @@ export async function gatherFacts(input: {
   const empty = { USDC: ZERO, EURC: ZERO } satisfies Record<AssetId, bigint>;
   let balances: Record<AssetId, bigint> = empty;
   let setUp = false;
-  let allowance: ActiveAllowance | undefined;
-  let available = ZERO;
   if (clients && wallet) {
     const balanceOf = (token: Address) =>
       clients.client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
-    const [usdc, eurc, code, grant] = await Promise.all([
+    const [usdc, eurc, code] = await Promise.all([
       balanceOf(clients.network.addresses.usdc),
       balanceOf(clients.network.addresses.eurc),
       clients.client.getCode({ address: wallet }),
-      activeAllowance(db, userId, network),
     ]);
     balances = { USDC: usdc, EURC: eurc };
     setUp = isWalletSetUp(code);
-    allowance = grant;
-    if (grant && setUp) {
-      // A failed read leaves nothing available, so the send asks for Face ID instead of trusting a guess.
-      available = await allowanceAvailable(clients.client, clients.network, grant.delegation as never)
-        .then((result) => result.available)
-        .catch(() => ZERO);
-    }
   }
 
   const chosenAsset = asset ?? (balances.EURC > ZERO && balances.USDC === ZERO ? "EURC" : "USDC");
-  const [limitValues, spentValues] = await Promise.all([
+  const recipientAddress = input.resolution.facts.status === "resolved" ? input.resolution.facts.address : undefined;
+  const [limitValues, spentValues, settings, room, trust] = await Promise.all([
     userLimits(db, userId, network),
     spent(db, userId, network, chosenAsset, input.exceptIntentId),
+    safetySettingsOf(db, userId, network),
+    // The chosen token's own allowance; without a wallet set up there is nothing to spend from.
+    clients && wallet && setUp ? activeAllowance(db, chains, userId, network, assetToken(clients.network, chosenAsset)) : Promise.resolve(undefined),
+    recipientAddress ? recipientTrust(db, userId, network, recipientAddress) : Promise.resolve(undefined),
   ]);
+  const grant = room?.base?.grant ?? room?.boost?.grant;
+  const allowance: ActiveAllowance | undefined = grant && room ? { id: grant.id, delegation: grant.delegation, perPeriod: room.perPeriod } : undefined;
+  const recipient = input.resolution.facts.status === "resolved" && trust ? { ...input.resolution.facts, knownSince: trust.knownSince, allowlisted: trust.allowlisted } : input.resolution.facts;
 
   return {
     allowance,
+    practice: settings.practice,
     facts: {
       network,
       capability: { here: view.send[network].state, other: view.send[other].state },
       signedIn: input.signedIn,
-      pausedAll: input.pausedAll,
+      pausedAll: input.pausedAll || Boolean(settings.pausedAt),
       wallet: { registered: Boolean(wallet), setUp, balances },
-      recipient: input.resolution.facts,
+      recipient,
       asset,
       amount: parseRequestAmount(request.amount, asset),
-      allowance: { active: Boolean(allowance), available },
+      allowance: { active: Boolean(room?.active), available: room?.available ?? ZERO },
+      riskMode: settings.riskMode,
+      cooldown: { seconds: settings.cooldown.seconds, cap: settings.cooldown.cap, now: new Date().toISOString() },
+      allowlistOnly: settings.allowlistOnly,
       limits: limitValues,
       spent: spentValues,
       thresholds: {

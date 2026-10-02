@@ -61,6 +61,8 @@ export type ProblemCode =
   | "quote_unavailable"
   | "marketplace_unavailable"
   | "agent_wallet_short"
+  | "change_not_pending"
+  | "token_invalid"
   | "upstream"
   | "internal";
 
@@ -128,6 +130,8 @@ const TITLES: Record<ProblemCode, string> = {
   quote_unavailable: "No swap price right now; try again in a moment",
   marketplace_unavailable: "Paying for services is not available here",
   agent_wallet_short: "The agent wallet does not hold enough",
+  change_not_pending: "That change is no longer waiting for approval",
+  token_invalid: "Not a token on this network",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

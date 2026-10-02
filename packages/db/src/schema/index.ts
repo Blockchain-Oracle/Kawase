@@ -10,3 +10,4 @@ export * from "./automations";
 export * from "./notifications";
 export * from "./marketplace";
 export * from "./account";
+export * from "./safety";

@@ -77,6 +77,7 @@ export function publicUser(user: {
   activeNetwork: string;
   riskMode: string;
   practiceMode: boolean;
+  pausedAllAt?: Date | null;
   turnkeySubOrganizationId: string | null;
 }) {
   return {
@@ -94,6 +95,7 @@ export function publicUser(user: {
     activeNetwork: user.activeNetwork,
     riskMode: user.riskMode,
     practiceMode: user.practiceMode,
+    pausedAllAt: user.pausedAllAt?.toISOString() ?? null,
     turnkeySubOrganizationId: user.turnkeySubOrganizationId,
   };
 }

@@ -15,6 +15,7 @@ import { automationRuns, automations } from "./schema/automations";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
+import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 
 type UserOwned = {
   table: PgTable;
@@ -60,6 +61,9 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
   agent_wallet_moves: { table: agentWalletMoves, userId: agentWalletMoves.userId },
+  safety_settings: { table: safetySettings, userId: safetySettings.userId, perUserKey: ["network"] },
+  limit_changes: { table: limitChanges, userId: limitChanges.userId },
+  practice_runs: { table: practiceRuns, userId: practiceRuns.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

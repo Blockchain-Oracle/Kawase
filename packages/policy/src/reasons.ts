@@ -21,6 +21,8 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** A new address can get only a small amount per payment until its cooldown ends (Wallet & limits). */
+  NEW_RECIPIENT_COOLDOWN: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",
@@ -70,6 +72,10 @@ export const REASONS = {
   /** A run skipped because this period's amount was already sent (the grant's cap). */
   AUTOMATION_PERIOD_USED: "warning",
   VAULT_RISK_WARNING: "warning",
+  /** Paused: the agent and automations stand still; the person's own Face ID still works. */
+  AGENT_PAUSED: "warning",
+  /** Only allowlisted recipients go without the person; this one needs their Face ID. */
+  NOT_ON_ALLOWLIST: "warning",
 } as const satisfies Record<string, PolicyKind>;
 
 export type ReasonCode = keyof typeof REASONS;
