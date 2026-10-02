@@ -36,6 +36,8 @@ import type {
   CompareYieldOutput,
   LendRequest,
   ProposeLendOutput,
+  WithdrawPlanInput,
+  WithdrawProposalOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -148,6 +150,8 @@ export type AgentContext = {
   compareYield?(input: { asset: string; amount: string | null }): Promise<CompareYieldOutput>;
   /** Drafts an Aave V4 action: supply, withdraw, borrow (collateral in the same batch) or repay; approved on the card. */
   proposeLend?(input: LendRequest): Promise<ProposeLendOutput>;
+  /** Plans a withdrawal (any assets, to an exchange, a saved place or an own wallet); the card opens Withdraw. */
+  proposeWithdraw?(input: WithdrawPlanInput): Promise<WithdrawProposalOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */

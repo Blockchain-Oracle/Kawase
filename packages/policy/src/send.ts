@@ -1,9 +1,8 @@
-// The checks for one send, as a pure function of facts the caller gathered (balances and the remaining allowance
+// The checks for one send of any asset (R1), as a pure function of facts the caller gathered (balances and the remaining allowance
 // read from the chain, limits and what was already spent from the database, who the recipient resolved to).
 // The same function runs when the agent drafts, when the person approves (with fresh facts), and before
 // anything is sent, so the three can never disagree (ARCHITECTURE §2, §8).
 import type { CapabilityState } from "@kawase/config";
-import type { AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 
 import { blockingResult, result, type PolicyResult } from "./reasons";
@@ -34,6 +33,10 @@ export type RecipientFacts =
       knownSince?: string | undefined;
       /** On the person's allowlist on this network. */
       allowlisted?: boolean | undefined;
+      /** What the address is on chain (R6): a token contract is never paid; another contract gets a warning. */
+      contract?: "token" | "smart_wallet" | "contract" | undefined;
+      /** The token's issuer has blocked this address (USDC/EURC `isBlacklisted`). */
+      issuerBlocked?: boolean | undefined;
     };
 
 /** The risk dial (X11): careful (Guard) confirms everything; balanced is D33; autonomous may act on its own suggestions inside grants. */
@@ -51,13 +54,27 @@ export type SendFacts = {
     registered: boolean;
     /** The 7702 code is on the address (needed for the allowance only). */
     setUp: boolean;
-    /** ERC-20 balances in each asset's base units. USDC also pays the network fee on Arc. */
-    balances: Record<AssetId, bigint>;
+    /** Base units of the asset being sent, and of USDC, which also pays the network fee on Arc. */
+    balance: bigint;
+    usdc: bigint;
   };
   recipient: RecipientFacts;
-  /** What the person said; undefined when they did not name one. */
-  asset: AssetId | undefined;
+  /** The asset's symbol (the one named, or the one chosen); undefined when it is not known. */
+  asset: string | undefined;
+  /** Nothing was named and more than one stablecoin is held: ask which. */
+  assetUnclear: boolean;
+  /** The asset is Arc's USDC: it also pays the network fee. */
+  isUsdc: boolean;
+  /** The asset can have an everyday allowance (USDC and EURC, one each). */
+  allowable: boolean;
+  /** The asset's decimals, for the words of a message about it. */
+  decimals?: number | undefined;
   amount: AmountFacts;
+  /**
+   * The amount in the units the limits are kept in: the asset's own for USDC and EURC, its value in US dollars (USDC
+   * base units) for any other token. Null when a token has no price: the per-asset limits cannot apply to it.
+   */
+  limitAmount?: bigint | null | undefined;
   /**
    * The everyday allowance for this send's token (one per token, cards/automate-safety.md): whether one is on, and what
    * is left this period — the chain's room, never more than the person's own tighter cap.
@@ -78,6 +95,8 @@ export type SendFacts = {
     firstTimeStepUp: bigint;
     /** USDC kept for network fees when the wallet pays them itself. */
     gasFloat: bigint;
+    /** A first payment above a few times this offers sending this much first (base units of the asset). */
+    testAmount?: bigint | undefined;
   };
 };
 
@@ -87,21 +106,17 @@ export type SendEvaluation = {
   /** Set only when nothing blocks. */
   route: SendRoute | undefined;
   /** The asset the send will use (the one named, or the only one held). */
-  asset: AssetId | undefined;
+  asset: string | undefined;
 };
 
 const ZERO = 0n;
 const MS_PER_SECOND = 1000;
+const HALF = 2n;
+/** A test amount is offered when the payment is at least this many times it. */
+const TEST_FACTOR = 5n;
 const s = (value: bigint) => value.toString();
 
-function chooseAsset(named: AssetId | undefined, balances: Record<AssetId, bigint>): AssetId | "unclear" {
-  if (named) return named;
-  const held = (Object.keys(balances) as AssetId[]).filter((asset) => balances[asset] > ZERO);
-  if (held.length > 1) return "unclear";
-  return held[0] ?? "USDC";
-}
-
-function done(results: PolicyResult[], asset: AssetId | undefined, route?: SendRoute): SendEvaluation {
+function done(results: PolicyResult[], asset: string | undefined, route?: SendRoute): SendEvaluation {
   const blocking = blockingResult(results);
   return { results, blocking, route: blocking ? undefined : route, asset };
 }
@@ -144,13 +159,18 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
       if (recipient.blocked) results.push(result("RECIPIENT_BLOCKED", { name: recipient.name ?? "" }));
       if (recipient.holdUntil)
         results.push(result("ADDRESS_CHANGE_HOLD", { name: recipient.name ?? "", until: recipient.holdUntil }));
+      // R6: a token contract never receives a payment; neither does an address the token's issuer blocked, nor a
+      // look-alike of a saved contact's address.
+      if (recipient.contract === "token") results.push(result("RECIPIENT_TOKEN_CONTRACT"));
+      if (recipient.issuerBlocked) results.push(result("RECIPIENT_ISSUER_BLOCKED", { asset: facts.asset ?? "" }));
+      if (recipient.contract === "contract") results.push(result("RECIPIENT_CONTRACT"));
+      if (recipient.lookalikeOf) results.push(result("LOOKALIKE_ADDRESS", { name: recipient.lookalikeOf }));
       break;
   }
 
   // What and how much.
-  const chosen = chooseAsset(facts.asset, facts.wallet.balances);
-  if (chosen === "unclear") results.push(result("ASSET_UNCLEAR"));
-  const asset = chosen === "unclear" ? undefined : chosen;
+  if (facts.assetUnclear) results.push(result("ASSET_UNCLEAR"));
+  const asset = facts.assetUnclear ? undefined : facts.asset;
   if (facts.amount.status === "missing") results.push(result("AMOUNT_MISSING"));
   if (facts.amount.status === "invalid" || (facts.amount.status === "ok" && facts.amount.baseUnits <= ZERO))
     results.push(result("AMOUNT_INVALID"));
@@ -158,40 +178,56 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const amount = facts.amount.status === "ok" && facts.amount.baseUnits > ZERO ? facts.amount.baseUnits : undefined;
   if (!asset || amount === undefined || recipient.status !== "resolved") return done(results, asset);
 
-  // The person's own limits: refusals, with the numbers.
+  // The person's own limits: refusals, with the numbers (in US dollars for tokens other than USDC and EURC).
   const { limits, spent } = facts;
-  if (amount > limits.perTx) results.push(result("OVER_PER_TX_LIMIT", { limit: s(limits.perTx), asset }));
-  if (spent.day + amount > limits.daily)
-    results.push(result("OVER_DAILY_LIMIT", { limit: s(limits.daily), used: s(spent.day), asset }));
-  if (spent.week + amount > limits.weekly)
-    results.push(result("OVER_WEEKLY_LIMIT", { limit: s(limits.weekly), used: s(spent.week), asset }));
+  const limitAmount = facts.limitAmount === undefined ? amount : facts.limitAmount;
+  const limitAsset = facts.limitAmount === undefined ? asset : "USDC";
+  if (limitAmount !== null) {
+    if (limitAmount > limits.perTx) results.push(result("OVER_PER_TX_LIMIT", { limit: s(limits.perTx), asset: limitAsset }));
+    if (spent.day + limitAmount > limits.daily)
+      results.push(result("OVER_DAILY_LIMIT", { limit: s(limits.daily), used: s(spent.day), asset: limitAsset }));
+    if (spent.week + limitAmount > limits.weekly)
+      results.push(result("OVER_WEEKLY_LIMIT", { limit: s(limits.weekly), used: s(spent.week), asset: limitAsset }));
+  }
 
-  const balance = facts.wallet.balances[asset];
-  if (amount > balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(balance), asset }));
+  const balance = facts.wallet.balance;
+  if (amount > balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(balance), asset, ...(facts.decimals !== undefined ? { decimals: String(facts.decimals) } : {}) }));
 
-  // The new-recipient cooldown: an address first known less than `seconds` ago gets at most `cap` per payment.
+  // The new-recipient cooldown (D-cooldown): an address first known less than `seconds` ago gets at most `cap` per
+  // payment without the person — so above it nothing goes on the allowance or by an automation. The person's own Face ID
+  // send is never blocked by it.
   const cooldown = facts.cooldown;
+  let cooling = false;
   if (cooldown && cooldown.seconds > 0) {
     const now = Date.parse(cooldown.now);
     const since = recipient.knownSince ? Date.parse(recipient.knownSince) : now;
     const endsAt = since + cooldown.seconds * MS_PER_SECOND;
-    if (endsAt > now && amount > cooldown.cap)
-      results.push(result("NEW_RECIPIENT_COOLDOWN", { cap: s(cooldown.cap), asset, until: new Date(endsAt).toISOString() }));
+    // In the limits' units: a token without a price is not capped here (it always takes the wallet's signature).
+    if (endsAt > now && limitAmount !== null && limitAmount > cooldown.cap) {
+      cooling = true;
+      results.push(result("NEW_RECIPIENT_COOLDOWN", { cap: s(cooldown.cap), asset: limitAsset, until: new Date(endsAt).toISOString() }));
+    }
   }
 
-  // The route: the allowance only covers USDC, up to what the chain says is left, to a recipient that needs no
-  // second look. Everything else is a wallet signature (Face ID).
+  // The route: the token's own allowance (USDC and EURC each have one), up to what the chain says is left, to a
+  // recipient that needs no second look. Everything else is a wallet signature (Face ID).
   const firstTime = !recipient.paidBefore;
   const lookalike = Boolean(recipient.lookalikeOf);
   if (firstTime) results.push(result("FIRST_TIME_RECIPIENT"));
-  if (lookalike) results.push(result("LOOKALIKE_ADDRESS", { name: recipient.lookalikeOf ?? "" }));
+  // A first payment in USDC or EURC: offer a small test amount first, when this one is well above it.
+  const test = facts.thresholds.testAmount ?? ZERO;
+  if (firstTime && facts.limitAmount === undefined && test > ZERO && amount > test * TEST_FACTOR)
+    results.push(result("TEST_AMOUNT_SUGGESTED", { test: s(test), asset }));
+  // The brake: more than half of what the wallet holds of this token, to someone new.
+  const brake = firstTime && amount * HALF > balance && amount <= balance;
+  if (brake) results.push(result("BRAKE_HALF_BALANCE", { name: recipient.name ?? "" }));
   if (recipient.via === "address") results.push(result("UNSAVED_ADDRESS"));
 
   const offAllowlist = Boolean(facts.allowlistOnly) && !recipient.allowlisted;
   if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   if (offAllowlist) results.push(result("NOT_ON_ALLOWLIST", { name: recipient.name ?? "" }));
-  const allowanceCovers = facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist;
-  if (!facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
+  const allowanceCovers = facts.allowable && facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake;
+  if (facts.allowable && !facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
   if (allowanceCovers && amount > facts.allowance.available)
     results.push(result("ABOVE_ALLOWANCE", { available: s(facts.allowance.available), asset }));
 
@@ -202,7 +238,7 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
     allowanceCovers && amount <= facts.allowance.available && !stepUp ? "allowance" : "wallet_signature";
 
   // Fees: on the wallet route the wallet pays them in USDC; on the allowance route Kawase does.
-  const usdcLeft = facts.wallet.balances.USDC - (asset === "USDC" ? amount : ZERO);
+  const usdcLeft = facts.wallet.usdc - (facts.isUsdc ? amount : ZERO);
   if (route === "wallet_signature" && usdcLeft < facts.thresholds.gasFloat && amount <= balance)
     results.push(result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
   if (route === "allowance" && usdcLeft < facts.thresholds.gasFloat) results.push(result("LEAVES_LITTLE_FOR_FEES"));

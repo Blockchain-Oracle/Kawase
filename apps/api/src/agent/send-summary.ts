@@ -1,15 +1,21 @@
 // What the model is told about a proposed send: plain English, with amounts already formatted, so it only has to
 // say it again in the person's language. The card on the screen carries the exact numbers and the buttons.
 import type { PolicyResultView, SendIntent, SendSummary } from "@kawase/api-client";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { ASSETS, formatTokenAmount, type AssetId } from "@kawase/money";
 
 const DISPLAY_LOCALE = "en";
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
-const money = (asset: string | undefined, baseUnits: string | undefined) =>
-  baseUnits && asset ? formatAmount(amount(asset as AssetId, BigInt(baseUnits)), DISPLAY_LOCALE) : "";
+const SHOWN_DIGITS = 6;
+/** Decimals of the token in the draft being summarised (any asset, R1); USDC/EURC otherwise. */
+let draftDecimals: { symbol: string; decimals: number } | null = null;
+const money = (asset: string | undefined, baseUnits: string | undefined, decimals?: string) => {
+  if (!baseUnits || !asset) return "";
+  const known = decimals ? Number(decimals) : draftDecimals?.symbol === asset ? draftDecimals.decimals : ASSETS[asset as AssetId]?.decimals;
+  return known === undefined ? `${baseUnits} base units of ${asset}` : formatTokenAmount(BigInt(baseUnits), known, asset, DISPLAY_LOCALE, { fractionDigits: SHOWN_DIGITS, trimZeros: true });
+};
 
 /** One sentence per reason, for the model (the app has its own translated copy). */
 function describe(result: PolicyResultView): string {
@@ -38,7 +44,7 @@ function describe(result: PolicyResultView): string {
     case "WALLET_NOT_SET_UP":
       return "The wallet is not set up on this network yet.";
     case "INSUFFICIENT_BALANCE":
-      return `Not enough money: the balance is ${money(p.asset, p.balance)}. The card offers to add money.`;
+      return `Not enough money: the balance is ${money(p.asset, p.balance, p.decimals)}. The card offers to add money.`;
     case "INSUFFICIENT_GAS":
       return `This send needs a little USDC left over for the network fee (about ${money("USDC", p.needed)}).`;
     case "RECIPIENT_MISSING":
@@ -61,8 +67,14 @@ function describe(result: PolicyResultView): string {
       return "They hold both USDC and EURC: which one? The card shows both.";
     case "FIRST_TIME_RECIPIENT":
       return "First payment to this address.";
+    case "RECIPIENT_TOKEN_CONTRACT":
+      return "That address is a token contract: money sent there is lost, so Kawase will not send it. Ask for the person's own wallet address.";
+    case "RECIPIENT_ISSUER_BLOCKED":
+      return `The issuer of ${p.asset} has blocked that address, so it cannot receive ${p.asset}. Kawase will not send it.`;
+    case "RECIPIENT_CONTRACT":
+      return "That address is a contract, not a person's wallet; it may not be able to move what it receives. The card warns them.";
     case "LOOKALIKE_ADDRESS":
-      return `This address looks like ${p.name}'s but is different. Ask them to check it carefully.`;
+      return `This address looks like ${p.name}'s but is different: a lookalike. Kawase will not send to it; ask them to check the address with ${p.name}.`;
     case "UNSAVED_ADDRESS":
       return "The address is not a saved contact.";
     case "ABOVE_ALLOWANCE":
@@ -79,6 +91,7 @@ function describe(result: PolicyResultView): string {
 export function summarizeSend(intent: SendIntent): SendSummary {
   const blocking = intent.blocking;
   const draft = intent.draft;
+  draftDecimals = draft?.token ? { symbol: draft.token.symbol, decimals: draft.token.decimals } : null;
   const recipient = draft
     ? draft.recipient.name
       ? `${draft.recipient.name}${draft.recipient.handle ? ` (@${draft.recipient.handle})` : ""}`

@@ -64,6 +64,7 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   get_for_you: { source: "vault curator", keys: ["vault"] },
   explain_choice: { source: "vault curator", keys: ["name"] },
   show_chart: { source: "token contract", keys: ["chart"] },
+  pay_from_code: { source: "payment request", keys: ["note"] },
   get_portfolio: { source: "token contract", keys: ["name", "symbol", "description"] },
   search_tokens: { source: "token contract", keys: ["name", "symbol", "description"] },
   get_token_safety: { source: "token contract", keys: ["name", "symbol", "description"] },

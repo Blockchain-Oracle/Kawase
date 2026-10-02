@@ -12,11 +12,15 @@ const NO_VALUE = 0n;
 
 export type BatchCall = { to: Address; data?: Hex | undefined; value?: bigint | undefined };
 
-/** The calldata the wallet sends to itself to run `calls` in order, all or nothing. */
+/**
+ * The calldata the wallet sends to itself to run `calls` in order, all or nothing. One call goes in single mode: the
+ * kit writes a lone execution in the single (packed) layout whatever mode it is given, and the DeleGator refuses that
+ * layout under the batch mode with `DecodingError()` (seen 10-02: an Aave withdraw alone, a native transfer alone).
+ */
 export function encodeSelfBatch(calls: readonly BatchCall[]): Hex {
   if (calls.length === 0) throw new Error("a batch needs at least one call");
   return DeleGatorCore.encode.executeWithMode({
-    mode: ExecutionMode.BatchDefault,
+    mode: calls.length === 1 ? ExecutionMode.SingleDefault : ExecutionMode.BatchDefault,
     executions: calls.map((call) => createExecution({ target: call.to, callData: call.data ?? "0x", value: call.value ?? NO_VALUE })),
   });
 }

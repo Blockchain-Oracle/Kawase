@@ -71,6 +71,13 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
+import { scan } from "./scan";
+import { split } from "./split";
+import { resume } from "./resume";
+import { receipt } from "./receipt";
+import { importContacts } from "./import-contacts";
 
 export const en = {
   common,
@@ -143,6 +150,13 @@ export const en = {
   memory,
   insight,
   forYou,
+  withdraw,
+  tokenRules,
+  scan,
+  split,
+  resume,
+  receipt,
+  importContacts,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

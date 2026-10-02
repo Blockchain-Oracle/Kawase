@@ -71,6 +71,8 @@ import type { ActivityFeedApi, FeedPage } from "./activity-feed";
 import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
 import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
+import { withdrawEndpoints } from "./withdraw";
+import { tokenRulesEndpoints } from "./token-rules";
 import type {
   BusinessProfile,
   BusinessProfileInput,
@@ -86,6 +88,7 @@ import type {
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import { intelligenceApi } from "./intelligence";
+import { everydayApi } from "./everyday";
 
 export * from "./types";
 export * from "./agent-types";
@@ -97,9 +100,12 @@ export * from "./safety";
 export * from "./automations-8c";
 export * from "./activity-feed";
 export * from "./rails";
+export * from "./withdraw";
+export * from "./token-rules";
 export * from "./business";
 export * from "./history";
 export * from "./intelligence";
+export * from "./everyday";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -156,6 +162,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
   return {
     ...railsEndpoints(call),
+    ...withdrawEndpoints(call),
+    ...tokenRulesEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
@@ -264,8 +272,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SendRequest) => call<{ intent: SendIntent }>("PATCH", `/sends/${id}`, patch),
       cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
     },
@@ -296,8 +304,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SwapRequest) => call<{ intent: SwapIntent }>("PATCH", `/swaps/${id}`, patch),
       cancel: (id: string) => call<{ intent: SwapIntent }>("POST", `/swaps/${id}/cancel`),
       /** Approve one version: the answer carries the one transaction (approve + swap) for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
     },
@@ -520,6 +528,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     },
 
     ...intelligenceApi(call),
+    ...everydayApi(call),
   };
 }
 

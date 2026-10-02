@@ -46,6 +46,8 @@ import { safetyContext } from "./safety-context";
 import { automationsContext } from "./automations-context";
 import type { SafetyService } from "../safety/service";
 import { buildIntelligence } from "./intelligence";
+import { moneyOutContext } from "./money-out-context";
+import type { WithdrawService } from "../withdraw/service";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -89,6 +91,7 @@ export function buildAgentContext(input: {
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
   lend?: LendService | undefined;
+  withdraw?: WithdrawService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -130,7 +133,8 @@ export function buildAgentContext(input: {
     ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
     ...automationsContext({ user, automations, threadId }),
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
-    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, invoices: input.invoices, recipients }),
+    ...moneyOutContext({ user, withdraw: input.withdraw }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
@@ -139,7 +143,11 @@ export function buildAgentContext(input: {
         .update(intents)
         .set({ state: "canceled" })
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "send"), inArray(intents.state, [...DRAFTABLE])));
-      let intent = await sends.create(user, request, { surface: "chat", threadId });
+      // A token named by its name or symbol (not USDC/EURC) is found like a trade's: held and verified first.
+      const asked = request.asset?.trim();
+      const asset =
+        asked && !/^(usdc|eurc|0x[0-9a-fA-F]{40})$/i.test(asked) ? ((await assets.search(user, network, asked).catch(() => []))[0]?.token.address ?? asked) : asked ? asked.replace(/^(usdc|eurc)$/i, (symbol) => symbol.toUpperCase()) : request.asset;
+      let intent = await sends.create(user, { ...request, asset }, { surface: "chat", threadId });
       // D33 / DESIGN.md: inside the allowance the agent just sends and says so. The person's own request is the
       // instruction; the policy has already decided that no second look is needed (above the allowance, a new
       // address above the threshold or a lookalike all route to Face ID instead and wait on the card).
@@ -257,7 +265,10 @@ export function buildAgentContext(input: {
     async createPaymentRequest(request) {
       if (user.isAnonymous) return { status: "needs_sign_in" as const };
       if (!(await wallets.userWallet(user.id))) return { status: "needs_wallet" as const };
-      return { request: await requests.create(user, request) };
+      // "euros" is EURC; any other name is found like a send's token (held and verified first).
+      const asked = request.asset.trim().replace(/^euros?$/i, "EURC").replace(/^dollars?$/i, "USDC");
+      const asset = /^(usdc|eurc|0x[0-9a-fA-F]{40})$/i.test(asked) ? asked.replace(/^(usdc|eurc)$/i, (symbol) => symbol.toUpperCase()) : ((await assets.search(user, network, asked).catch(() => []))[0]?.token.address ?? asked);
+      return { request: await requests.create(user, { ...request, asset }) };
     },
 
     async searchServices({ query, category }) {

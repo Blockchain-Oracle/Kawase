@@ -21,4 +21,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "杠杆可能让你损失全部保证金。",
   fixTryAgain: "重试",
   fixSwitch: "切换到 Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× 高于 5×：一个小小的反向波动就可能亏光保证金。",
 };

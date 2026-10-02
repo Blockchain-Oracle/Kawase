@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "لیوریج سے آپ کا پورا مارجن جا سکتا ہے۔",
   fixTryAgain: "دوبارہ کوشش کریں",
   fixSwitch: "Arc پر جائیں",
+  BRAKE_LEVERAGE: "{{leverage}}× پانچ گنا سے زیادہ ہے: آپ کے خلاف چھوٹی سی حرکت مارجن ختم کر سکتی ہے۔",
 };

@@ -108,7 +108,8 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Práctica: se habría ejecutado (no se envió nada)",
   reason_PRACTICE_RUN_REFUSED: "Práctica: Arc lo habría rechazado",
   reason_PAUSED_ALL: "En pausa: pausaste todo",
-  practiceBody: "Práctica: las ejecuciones se simulan en Arc y se muestran como «habría». Nada se mueve hasta que lo actives.",
+  practiceBody:
+    "Práctica: las ejecuciones se simulan en Arc y se muestran como «habría». Nada se mueve hasta que lo actives.",
   practising: "Práctica",
   practiceFirst: "Practicar primero",
   goLive: "Activar de verdad",
@@ -127,7 +128,8 @@ export const automation: Catalog["automation"] = {
   edited: "Cambiado",
   payroll: "Pagar a {{count}} personas",
   payrollLine: "{{amount}} a {{name}}",
-  payrollBound: "Cada persona puede recibir como máximo su propio importe {{per}}, solo en su dirección, impuesto por Arc; hasta el {{date}}.",
+  payrollBound:
+    "Cada persona puede recibir como máximo su propio importe {{per}}, solo en su dirección, impuesto por Arc; hasta el {{date}}.",
   dca: "Cambiar {{amount}} a {{symbolOut}}",
   dcaBound: "No guarda ningún permiso: cada cambio espera tu sí en «Te espera».",
   rulePrice: "Cuando {{amountIn}} compre al menos {{minOut}}",
@@ -152,4 +154,5 @@ export const automation: Catalog["automation"] = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} ahora compra {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Automatización de mañana",
   reason_INSUFFICIENT_BALANCE: "No había suficiente dinero en la cartera",
+  reason_BRAKE_HALF_BALANCE: "Más de la mitad del saldo a alguien nuevo: te espera",
 };

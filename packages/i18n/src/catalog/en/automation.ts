@@ -123,7 +123,8 @@ export const automation = {
   edited: "Changed",
   payroll: "Pay {{count}} people",
   payrollLine: "{{amount}} to {{name}}",
-  payrollBound: "Each person can get at most their own amount {{per}}, only at their own address, enforced on Arc; until {{date}}.",
+  payrollBound:
+    "Each person can get at most their own amount {{per}}, only at their own address, enforced on Arc; until {{date}}.",
   dca: "Swap {{amount}} to {{symbolOut}}",
   dcaBound: "Holds no permission: each swap waits for your yes in Needs you.",
   rulePrice: "When {{amountIn}} buys at least {{minOut}}",
@@ -148,4 +149,5 @@ export const automation = {
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} now buys {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Tomorrow's automation",
   reason_INSUFFICIENT_BALANCE: "Not enough money in the wallet then",
+  reason_BRAKE_HALF_BALANCE: "Over half the balance to someone new: waiting for you",
 } as const;

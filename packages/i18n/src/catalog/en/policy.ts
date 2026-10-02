@@ -1,7 +1,7 @@
 export const policy = {
   NOT_AVAILABLE_YET: "Sending isn't available on this network yet.",
   ON_OTHER_NETWORK: "Sending works on {{network}}.",
-  PAUSED_ALL: "You paused all sending. Resume it in Settings to continue.",
+  PAUSED_ALL: "Paused: Kawase and automations do nothing without you. Resume it in Wallet & limits.",
   OVER_PER_TX_LIMIT: "That's above your limit of {{limit}} per send.",
   OVER_DAILY_LIMIT: "That's over your daily limit of {{limit}} ({{used}} used today).",
   OVER_WEEKLY_LIMIT: "That's over your weekly limit of {{limit}} ({{used}} used this week).",
@@ -23,7 +23,8 @@ export const policy = {
   AMOUNT_INVALID: "That amount isn't valid.",
   ASSET_UNCLEAR: "USDC or EURC?",
   FIRST_TIME_RECIPIENT: "First payment to this address",
-  LOOKALIKE_ADDRESS: "Looks like {{name}}'s address, but it is different. Check every character.",
+  LOOKALIKE_ADDRESS:
+    "This looks like {{name}}'s address but is different, so Kawase won't send to it. Check it with {{name}}.",
   UNSAVED_ADDRESS: "This address isn't in your contacts",
   ABOVE_ALLOWANCE: "Above what's left of your allowance ({{available}})",
   NO_ALLOWANCE: "Your daily allowance is off",
@@ -43,5 +44,13 @@ export const policy = {
   fixOpenContact: "Open contact",
   AGENT_PAUSED: "Paused: this one needs your approval",
   NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
-  NEW_RECIPIENT_COOLDOWN: "New recipients can get up to {{cap}} per payment until {{until}}. Change it in Wallet & limits.",
+  NEW_RECIPIENT_COOLDOWN:
+    "New to you: until {{until}}, more than {{cap}} to them needs your own approval. Change it in Wallet & limits.",
+  TEST_AMOUNT_SUGGESTED: "First payment here. Send {{test}} first to check it arrives?",
+  BRAKE_HALF_BALANCE: "That's more than half of what you hold, going to someone you haven't paid before.",
+  BRAKE_PRICE_IMPACT: "This price is {{gap}}% below the market, over your {{max}}% rule.",
+  BRAKE_LEVERAGE: "{{leverage}}× is above 5×: a small move against you can wipe out the margin.",
+  RECIPIENT_TOKEN_CONTRACT: "That address is a token contract. Money sent there is lost, so Kawase won't send it.",
+  RECIPIENT_ISSUER_BLOCKED: "The issuer of {{asset}} has blocked this address, so it can't receive {{asset}}.",
+  RECIPIENT_CONTRACT: "This address is a contract, not a wallet. It may not be able to move what it receives.",
 } as const;

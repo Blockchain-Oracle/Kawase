@@ -10,7 +10,7 @@ import { randomUUID } from "expo-crypto";
 import * as React from "react";
 import { toast } from "sonner-native";
 
-import { ApiError, type IntentState, type UnsignedTransaction } from "@kawase/api-client";
+import { ApiError, hasBrake, type IntentState, type UnsignedTransaction } from "@kawase/api-client";
 
 import type { TypedDataDefinition } from "viem";
 
@@ -24,7 +24,7 @@ const POLL_MS = 2_000;
 const MOVING: ReadonlySet<IntentState> = new Set(["approved", "executing", "unknown_outcome"]);
 const OPEN: ReadonlySet<IntentState> = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
 
-type Intent = { id: string; state: IntentState; version: number };
+type Intent = { id: string; state: IntentState; version: number; results?: readonly { code: string }[] };
 type Approve<T> =
   | { status: "executing" | "changed" | "final"; intent: T }
   | { status: "sign"; intent: T; approvalId: string; transaction: UnsignedTransaction }
@@ -36,7 +36,8 @@ export type WalletIntentApi<T extends Intent, R> = {
   get: (id: string) => Promise<{ intent: T }>;
   revise: (id: string, patch: R) => Promise<{ intent: T }>;
   cancel: (id: string) => Promise<{ intent: T }>;
-  approve: (id: string, version: number, idempotencyKey?: string) => Promise<Approve<T>>;
+  /** `override`: the person goes ahead past the brake shown on the card (swaps, margin). */
+  approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) => Promise<Approve<T>>;
   signature: (id: string, approvalId: string, signed: string, kind?: "transaction" | "typed") => Promise<Approve<T>>;
 };
 
@@ -153,7 +154,8 @@ export function useWalletIntent<T extends Intent, R>(
   const approve = async (prompt: string) => {
     if (!intent) return;
     await act(async () => {
-      const answer = await calls.approve(intent.id, intent.version, randomUUID());
+      // The brake's warning is on the card the person just tapped through; Face ID below is their override.
+      const answer = await calls.approve(intent.id, intent.version, randomUUID(), hasBrake(intent.results));
       if (answer.status !== "sign" && answer.status !== "sign_typed") {
         if (answer.status === "changed") toast(messages.changed);
         show(answer.intent);

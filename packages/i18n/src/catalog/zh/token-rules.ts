@@ -1,0 +1,28 @@
+import type { Catalog } from "../en/index";
+
+export const tokenRules: Catalog["tokenRules"] = {
+  title: "代币规则",
+  row: "可买哪些代币、上限、价格影响",
+  intro: "适用于每一次买入：页面上、聊天中、语音里和自动化中。",
+  accessTitle: "哪些代币",
+  access_verified: "仅已验证",
+  access_verifiedBody: "仅限 Kawase 担保的代币",
+  access_warned: "已验证和热门代币，附带警告",
+  access_warnedBody: "也可买未验证代币，但不超过下方上限",
+  capsTitle: "未验证代币",
+  perTrade: "每笔最多",
+  perDay: "每天最多",
+  usedToday: "今天已用 {{used}}，上限 {{cap}}",
+  capsOff: "只允许买入已验证代币时关闭。",
+  impactTitle: "价格影响",
+  impactBody: "因价格影响损失超过此值的兑换会被拒绝。",
+  always: "无论这些规则怎么设，仿冒代币、貔貅盘和无法卖出的代币都绝不会买入。",
+  save: "保存",
+  saveLoosen: "用面容 ID 保存",
+  how: "收紧规则立即生效。放宽规则需要面容 ID，并由你的钱包签署新规则。",
+  faceId: "放宽你的代币规则",
+  notChanged: "未更改。",
+  saved: "代币规则已保存",
+  failed: "无法保存规则，请重试。",
+  change: "更改代币规则",
+};

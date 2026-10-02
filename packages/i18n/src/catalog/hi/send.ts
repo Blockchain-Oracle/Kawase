@@ -95,4 +95,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "ईमेल कोड से भेजें",
   showFullAddress: "पूरा पता दिखाता है",
   youWrote: "आपने लिखा “{{words}}”",
+  otherChain: "उनका वॉलेट किसी दूसरी चेन पर है?",
+  otherChainBridge: "ब्रिज से वहाँ USDC भेजें: चेन और रूट आप चुनें।",
+  otherChainConvert: "सिर्फ़ USDC चेन पार करता है। पहले अपना {{asset}} USDC में बदलें।",
 };

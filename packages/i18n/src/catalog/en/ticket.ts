@@ -43,4 +43,5 @@ export const ticket = {
   reason_no_route: "No route",
   reason_timeout: "No answer in time",
   reason_failed: "Couldn't quote",
+  ruleVerifiedOnly: "Your rules allow only verified tokens",
 } as const;

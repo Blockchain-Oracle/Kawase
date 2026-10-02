@@ -4,15 +4,14 @@
 import { Pressable, View } from "react-native";
 
 import type { PaymentRequest } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
-import { useMoney } from "@/send/copy";
+import { useLocale } from "@/i18n/locale-provider";
+import { RequestTokenMark, requestFigures } from "@/request/request-token";
 
 import { effectiveStatus, useRequestDates, useRequestStatusLabel } from "./copy";
 
@@ -20,22 +19,21 @@ const MARK = 36;
 
 export function RequestRow({ request, onPress, onCancel }: { request: PaymentRequest; onPress: () => void; onCancel?: (() => void) | undefined }) {
   const { t } = useT();
-  const money = useMoney();
+  const { locale } = useLocale();
   const label = useRequestStatusLabel();
   const dates = useRequestDates();
-  const ids = arcIdentity(request.network);
   const status = effectiveStatus(request);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${money(request.asset, request.amount)}, ${label(status)}`}
+      accessibilityLabel={`${requestFigures(request, locale, true)}, ${label(status)}`}
       onPress={onPress}
       className="active:bg-muted flex-row items-center gap-3 px-4 py-3"
     >
-      <Mark entity={request.asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={MARK} />
+      <RequestTokenMark request={request} size={MARK} />
       <View className="min-w-0 flex-1 gap-0.5">
         <Amount numberOfLines={1} className="text-foreground text-base font-semibold">
-          {money(request.asset, request.amount)}
+          {requestFigures(request, locale, true)}
         </Amount>
         <Text numberOfLines={1} className={cn("text-muted-foreground text-sm", TEXT_START)}>
           {request.note ? `“${request.note}” · ${dates.day(request.createdAt)}` : dates.day(request.createdAt)}

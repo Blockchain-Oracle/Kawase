@@ -1,0 +1,21 @@
+import type { Catalog } from "../en/index";
+
+export const receipt: Catalog["receipt"] = {
+  title: "Квитанция",
+  sent: "Вы отправили",
+  received: "Вы получили",
+  to: "Кому",
+  from: "От кого",
+  when: "Когда",
+  network: "Сеть",
+  note: "Заметка",
+  transaction: "Транзакция",
+  testMoney: "тестовые деньги",
+  footer: "Оплачено в Arc через Kawase · getkawase.xyz",
+  share: "Поделиться квитанцией",
+  shareImage: "Поделиться картинкой",
+  sentLine: "Я отправил(а) {{amount}} получателю {{name}} через Kawase.",
+  receivedLine: "Я получил(а) {{amount}} от {{name}} через Kawase.",
+  saveSender: "Сохранить отправителя в контакты",
+  savedAs: "Сохранено как {{name}}.",
+};

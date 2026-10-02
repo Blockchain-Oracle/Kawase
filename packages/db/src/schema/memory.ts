@@ -53,6 +53,8 @@ export const agentPreferences = pgTable("agent_preferences", {
   memoryEnabled: boolean().notNull().default(true),
   /** "For you" suggestion kinds the person said not to show again. */
   mutedSuggestions: text().array().notNull().default([]),
+  /** Whether someone who has this person's email in their phone's contacts can find their @handle (A5-2, I7). */
+  discoverable: boolean().notNull().default(true),
   updatedAt: updatedAt(),
 });
 

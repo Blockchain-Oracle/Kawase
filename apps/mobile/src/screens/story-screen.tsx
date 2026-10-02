@@ -12,7 +12,8 @@
 //
 // Narration (plan §1.5): the speaker beside the language pill turns it on; then each panel speaks as it lands, the
 // dwell waits for the clip, a swipe cuts it, and a language change speaks the panel again in the new language.
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { takeDeepLink } from "@/onboarding/continuation";
 import * as React from "react";
 import { AccessibilityInfo, ActivityIndicator, AppState, Platform, useWindowDimensions, View } from "react-native";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
@@ -146,7 +147,8 @@ export function StoryScreen() {
     setStartFailed(false);
     try {
       await ensureGuest(locale);
-      router.replace("/");
+      // A link opened while signed out (a push, an email) is where the person was going (A5-2).
+      router.replace((takeDeepLink() ?? "/") as Href);
     } catch {
       setStartFailed(true);
     } finally {

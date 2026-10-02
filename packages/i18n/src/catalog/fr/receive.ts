@@ -11,4 +11,6 @@ export const receive: Catalog["receive"] = {
   noWalletBody: "Votre adresse est créée avec votre compte.",
   setUpFirst: "Configurez d’abord votre portefeuille",
   setUpFirstBody: "Une étape, et votre adresse est prête à recevoir.",
+  anyToken:
+    "Tout jeton sur Arc arrive ici. Envoyé sur une autre chaîne ? Il arrive à cette même adresse là-bas : ramenez-le sur Arc depuis Ajouter de l'argent.",
 };

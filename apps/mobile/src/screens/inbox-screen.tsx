@@ -51,7 +51,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const p = item.params;
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
-  const amount = money(p.asset, p.amount);
+  const amount = money(p.asset, p.amount, p.decimals);
   const skipped = item.kind === "automation_skipped";
   const alert = item.kind === "rule_alert";
   // 8c: a step waiting for the person, and the 24 h reminder; neither moved money.
@@ -139,6 +139,9 @@ export function InboxScreen() {
     if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
     else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
+    // The action's own card by id (A5-2), or why money arrived; the explorer only when there is neither.
+    else if (item.intentId) router.push({ pathname: "/i/[id]", params: { id: item.intentId } });
+    else if (item.txHash) router.push({ pathname: "/why/[tx]", params: { tx: item.txHash, network: item.network } });
     else if (item.explorerUrl) void Linking.openURL(item.explorerUrl);
   };
   const pull = async () => {
