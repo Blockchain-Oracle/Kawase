@@ -67,6 +67,7 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type { ActivityFeedApi, FeedPage } from "./activity-feed";
 import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
 import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
@@ -94,6 +95,7 @@ export * from "./marketplace";
 export * from "./account";
 export * from "./safety";
 export * from "./automations-8c";
+export * from "./activity-feed";
 export * from "./rails";
 export * from "./business";
 export * from "./history";
@@ -363,6 +365,12 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
         call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
     } satisfies AutomationsMoreApi,
+
+    /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
+    activityFeed: {
+      list: (network: NetworkId) => call<FeedPage>("GET", `/activity?network=${network}`),
+      runWhy: (runId: string) => call<{ why: WhyView }>("GET", `/activity/why/run/${runId}`),
+    } satisfies ActivityFeedApi,
 
     /** The Needs-you queue: steps automations may not take alone, answered once from anywhere. */
     needsYou: {

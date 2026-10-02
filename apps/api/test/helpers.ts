@@ -77,7 +77,7 @@ export function testApp(
   swaps: SwapEngine = noSwaps,
   bridges: BridgeEngine = noBridges,
   earn: EarnEngine = noEarn,
-  options: { automationTickMs?: number; reconcileIntervalMs?: number; agentWallets?: AppDeps["agentWallets"]; discovery?: AppDeps["discovery"]; onramp?: AppDeps["onramp"] } = {},
+  options: { automationTickMs?: number; reconcileIntervalMs?: number; agentWallets?: AppDeps["agentWallets"]; discovery?: AppDeps["discovery"]; onramp?: AppDeps["onramp"]; alchemyApiKey?: string | undefined } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");

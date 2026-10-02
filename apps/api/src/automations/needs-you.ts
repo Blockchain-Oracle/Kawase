@@ -15,6 +15,7 @@ import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import type { AuditWriter } from "../audit/writer";
 import type { InboxService } from "../inbox/service";
 import type { Executor } from "../send/facts";
 import type { SendService } from "../send/service";
@@ -51,6 +52,12 @@ function inboxParams(item: { id: string; reason: string; request: AttentionReque
 export class NeedsYouService {
   private sends: SendService | undefined;
   private swaps: SwapService | undefined;
+  private audit: AuditWriter | undefined;
+
+  /** Every answer is recorded (G9); the why page reads it back. */
+  setAudit(audit: AuditWriter) {
+    this.audit = audit;
+  }
 
   constructor(
     private readonly db: Db,
@@ -107,7 +114,10 @@ export class NeedsYouService {
       return row;
     };
     const row = executor === this.db ? await this.db.transaction((tx) => run(tx)) : await run(executor);
-    if (row) this.log.info({ itemId: row.id, automationId: input.automationId, reason: input.reason }, "needs you");
+    if (row) {
+      this.log.info({ itemId: row.id, automationId: input.automationId, reason: input.reason }, "needs you");
+      void this.audit?.write({ userId: input.userId, actor: "system", action: "needs_you.opened", subjectType: "attention_item", subjectId: row.id, network: input.network, checks: { automationId: input.automationId, runId: input.runId }, reasonCode: input.reason, decision: "waiting" });
+    }
     return row;
   }
 
@@ -187,6 +197,7 @@ export class NeedsYouService {
       if (row.runId) await tx.update(automationRuns).set({ status: "executing", intentId: opened.intent.id, updatedAt: new Date() }).where(eq(automationRuns.id, row.runId));
     });
     this.log.info({ itemId: id, via, intentId: opened.intent.id }, "needs you approved");
+    void this.audit?.write({ userId: user.id, actor: "user", action: "needs_you.approved", subjectType: "attention_item", subjectId: id, network: row.network, intentId: opened.intent.id, checks: { reason: row.reason, via }, decision: "opened" });
     const item = this.view({ ...claimed, intentId: opened.intent.id, intentKind: opened.kind }, kind);
     return opened.kind === "send" ? { status: "opened", item, kind: "send", intent: opened.intent } : { status: "opened", item, kind: "swap", intent: opened.intent };
   }
@@ -200,6 +211,7 @@ export class NeedsYouService {
       .returning();
     if (!declined) return this.view(this.fresh(row), kind);
     if (row.runId) await this.db.update(automationRuns).set({ status: "skipped", reason: "DECLINED_BY_YOU", updatedAt: new Date() }).where(eq(automationRuns.id, row.runId));
+    void this.audit?.write({ userId: user.id, actor: "user", action: "needs_you.declined", subjectType: "attention_item", subjectId: id, network: row.network, checks: { reason: row.reason, via }, decision: "declined" });
     return this.view(declined, kind);
   }
 

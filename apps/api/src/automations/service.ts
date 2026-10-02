@@ -88,6 +88,7 @@ import type { InboxService } from "../inbox/service";
 import { planRule } from "./rules";
 import type { AutomationMarket, MarketToken } from "./market";
 import type { NeedsYouService } from "./needs-you";
+import type { AuditWriter } from "../audit/writer";
 import { recordPractice, simulateCall } from "../safety/practice";
 import { safetySettingsOf } from "../safety/settings";
 import { jsonSafe } from "../intents/chain";
@@ -186,6 +187,12 @@ export class AutomationService {
     /** Tokens by name and executable quotes, for DCA and price rules. */
     private readonly market?: AutomationMarket,
   ) {}
+
+  private audit: AuditWriter | undefined;
+  /** Each run's outcome is recorded (G9), so its why page can say what happened. */
+  setAudit(audit: AuditWriter) {
+    this.audit = audit;
+  }
 
   private clients(network: NetworkId) {
     const clients = this.chains.get(network);
@@ -1545,6 +1552,7 @@ export class AutomationService {
     }
     await recordPractice(this.db, { userId: row.userId, network: row.network, kind: "automation_run", automationId: row.id, summary: { ...summary, runId: run.id }, result });
     await this.db.update(automationRuns).set({ status: "practiced", reasonParams: summary, updatedAt: new Date() }).where(eq(automationRuns.id, run.id));
+    void this.audit?.write({ userId: row.userId, actor: "system", action: "automation.run_practiced", subjectType: "automation_run", subjectId: run.id, network: row.network, checks: { automationId: row.id, kind: row.kind, chainOk: result.ok, error: result.error }, decision: "practiced" });
     this.log.info({ automationId: row.id, runId: run.id, ok: result.ok }, "practice run");
   }
 
@@ -1723,6 +1731,8 @@ export class AutomationService {
 
   private async skipRun(row: AutomationRow, runId: string, reason: string, params?: Record<string, string>, move?: AutomationMove) {
     await this.db.update(automationRuns).set({ status: "skipped", reason, reasonParams: params ?? null, move: move ?? null }).where(eq(automationRuns.id, runId));
+    if (reason !== NOTHING_TO_MOVE)
+      void this.audit?.write({ userId: row.userId, actor: "system", action: "automation.run_skipped", subjectType: "automation_run", subjectId: runId, network: row.network, checks: { automationId: row.id, kind: row.kind, ...(params ?? {}) }, reasonCode: reason, decision: "skipped" });
     if (row.kind !== "scheduled_send" && QUIET_REASONS.has(reason)) return;
     const shown = this.shownFor(row, move);
     await this.inbox.add(this.db, {

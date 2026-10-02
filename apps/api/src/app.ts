@@ -82,6 +82,8 @@ import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
 import { safetyRoutes } from "./safety/routes";
+import { activityRoutes } from "./activity/routes";
+import { ActivityFeedService } from "./activity/service";
 import { SafetyService } from "./safety/service";
 import { memoryRoutes } from "./memory/routes";
 import { MemoryService } from "./memory/service";
@@ -123,6 +125,8 @@ export type AppDeps = {
   circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
   market?: MarketData | undefined;
+  /** Alchemy's Transfers API for Activity (every token, in and out); the explorer's USDC/EURC page without it. */
+  alchemyApiKey?: string | undefined;
   /** Refreshes the shared market cache this often; off when unset. */
   marketWarmMs?: number | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
@@ -207,6 +211,8 @@ export function createApp(deps: AppDeps) {
   sends.onSent((sent) => automations.queueRoundUps(sent));
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
+  needsYou.setAudit(audit);
+  automations.setAudit(audit);
   const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
   const marketplace =
     deps.agentWallets && deps.discovery
@@ -312,6 +318,7 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
   app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
