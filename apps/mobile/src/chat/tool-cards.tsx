@@ -11,7 +11,9 @@ import {
   ArrowUpRight,
   AudioLines,
   CalendarClock,
+  CandlestickChart,
   Copy,
+  CreditCard,
   Droplets,
   ExternalLink,
   HandCoins,
@@ -298,6 +300,8 @@ const CAPABILITY_ICON: Record<string, LucideIcon> = {
   voice: AudioLines,
   faucet: Droplets,
   payment_links: Link2,
+  margin: CandlestickChart,
+  buy: CreditCard,
 };
 /** How many tiles show before "See all": three rows of two. */
 const CAPABILITY_PREVIEW = 6;
