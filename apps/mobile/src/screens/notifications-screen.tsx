@@ -11,7 +11,6 @@ import { toast } from "sonner-native";
 import type { NotificationSettings, QuietHours } from "@kawase/api-client";
 import { NOTIFICATION_KINDS, notificationOn, type NotificationChannel, type NotificationKind } from "@kawase/config";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
-import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { Badge } from "@kawase/ui-native/components/ui/badge";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -21,7 +20,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
-import { pushState, turnOnPush, type PushState } from "@/notifications/push";
+import { pushState, registerPushToken, turnOnPush, type PushState } from "@/notifications/push";
 import { api } from "@/session/api";
 
 const EDGE_INSET = 12;
@@ -45,18 +44,26 @@ export function NotificationsScreen() {
   const native = Platform.OS !== "web";
 
   const load = React.useCallback(() => {
-    void api.notifications
-      .get()
-      .then(setSettings)
-      .catch(() => undefined);
-    void pushState().then(setPhone);
+    void (async () => {
+      const [next, state] = await Promise.all([api.notifications.get().catch(() => undefined), pushState()]);
+      if (next) setSettings(next);
+      // "On" means Kawase can reach this phone, not only that the phone allows it: allowed but not registered is
+      // tried once, and a phone that cannot get a push token (no push service) says so.
+      if (state === "on" && next && !next.pushRegistered) {
+        const registered = await registerPushToken();
+        setPhone(registered ? "on" : "unavailable");
+        if (registered) setSettings({ ...next, pushRegistered: true });
+        return;
+      }
+      setPhone(state);
+    })();
   }, []);
   useFocusEffect(load);
-  // Coming back from the phone's Settings: read the permission again.
+  // Coming back from the phone's Settings: read everything again.
   React.useEffect(() => {
-    const subscription = AppState.addEventListener("change", (state) => state === "active" && void pushState().then(setPhone));
+    const subscription = AppState.addEventListener("change", (state) => state === "active" && load());
     return () => subscription.remove();
-  }, []);
+  }, [load]);
 
   const save = async (change: Parameters<typeof api.notifications.update>[0], optimistic: NotificationSettings) => {
     const before = settings;
@@ -173,18 +180,20 @@ export function NotificationsScreen() {
             <Text accessibilityRole="header" className={cn("text-foreground text-lg font-semibold", TEXT_START)}>
               {t("notifications.quietTitle")}
             </Text>
-            <SegmentedControl
-              label={t("notifications.quietTitle")}
-              value={quietKey(settings.quietHours)}
-              options={QUIET_CHOICES.map((choice) => ({
-                value: quietKey(choice),
-                label: choice ? t("notifications.quietRange", { start: choice.start, end: choice.end }) : t("notifications.quietOff"),
-              }))}
-              onValueChange={(value) => {
-                const quietHours = QUIET_CHOICES.find((choice) => quietKey(choice) === value) ?? null;
-                void save({ quietHours }, { ...settings, quietHours });
-              }}
-            />
+            <ListGroup>
+              {QUIET_CHOICES.map((choice) => {
+                const selected = quietKey(choice) === quietKey(settings.quietHours);
+                return (
+                  <ListRow
+                    key={quietKey(choice)}
+                    title={choice ? t("notifications.quietRange", { start: choice.start, end: choice.end }) : t("notifications.quietOff")}
+                    selected={selected}
+                    accessibilityRole="radio"
+                    onPress={() => void save({ quietHours: choice }, { ...settings, quietHours: choice })}
+                  />
+                );
+              })}
+            </ListGroup>
             <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("notifications.quietBody")}</Text>
           </View>
         ) : null}

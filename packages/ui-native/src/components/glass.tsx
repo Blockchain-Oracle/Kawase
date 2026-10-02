@@ -24,6 +24,11 @@ type GlassProps = ViewProps & {
 
 const liquid = isLiquidGlassAvailable();
 
+/** Android without a blur target has no blur at all: the tint is made nearly opaque so text behind never shows through. */
+const SOLID_ALPHA = "F2";
+const HEX_RGB = 7;
+const solid = (hex: string) => (hex.startsWith("#") && hex.length >= HEX_RGB ? `${hex.slice(0, HEX_RGB)}${SOLID_ALPHA}` : hex);
+
 function Glass({ scheme, intensity = BLUR.dock, tint, radius, className, style, children, ...props }: GlassProps) {
   const blurTint: BlurTint = scheme === "dark" ? "dark" : "light";
   const android = useAndroidBlur();
@@ -40,7 +45,7 @@ function Glass({ scheme, intensity = BLUR.dock, tint, radius, className, style, 
             {...android}
             style={StyleSheet.absoluteFill}
           />
-          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+          <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: android.blurMethod === "none" ? solid(tint) : tint }]} />
         </>
       )}
       {children}
