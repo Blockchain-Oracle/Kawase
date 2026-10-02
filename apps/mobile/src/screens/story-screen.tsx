@@ -14,7 +14,7 @@
 // dwell waits for the clip, a swipe cuts it, and a language change speaks the panel again in the new language.
 import { useFocusEffect, useRouter } from "expo-router";
 import * as React from "react";
-import { AccessibilityInfo, ActivityIndicator, AppState, useWindowDimensions, View } from "react-native";
+import { AccessibilityInfo, ActivityIndicator, AppState, Platform, useWindowDimensions, View } from "react-native";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -45,6 +45,12 @@ const SHOWCASE_LOCALES: readonly SupportedLocale[] = ["es", "ar", "zh", "fr", "h
 const OTHER_REQUESTS = 2;
 const EXAMPLE_SEND = "10";
 const EXAMPLE_RECIPIENT = "@amina";
+/** Panel 2 names the approval this platform really uses (its narration clip does the same). */
+const BOUNDS_COPY = Platform.select({
+  web: { body: "story.boundsBodyWeb", above: "story.boundsAboveWeb" },
+  android: { body: "story.boundsBodyAndroid", above: "story.boundsAboveAndroid" },
+  default: { body: "story.boundsBody", above: "story.boundsAbove" },
+} as const);
 
 /** True while the app is in the foreground. */
 function useAppActive() {
@@ -157,7 +163,7 @@ export function StoryScreen() {
     {
       panels: [
         { title: t("story.requestTitle"), body: t("story.requestBody") },
-        { title: t("story.boundsTitle"), body: t("story.boundsBody") },
+        { title: t("story.boundsTitle"), body: t(BOUNDS_COPY.body) },
         { title: t("story.practiceTitle"), body: t("story.practiceBody") },
         { title: t("story.languageTitle"), body: t("story.languageBody") },
         { title: t("story.firstTitle"), body: t("story.firstBody") },
@@ -176,7 +182,7 @@ export function StoryScreen() {
         amount: money(DEFAULT_LIMITS.testnet.daily),
         perDay: t("story.perDay"),
         inside: t("story.boundsInside"),
-        above: t("story.boundsAbove"),
+        above: t(BOUNDS_COPY.above),
         never: t("story.boundsNever"),
       },
       practice: {
