@@ -14,6 +14,8 @@ import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/ap
 
 import type { MarketplaceService } from "../marketplace/service";
 import type { InvoiceService } from "../business/invoices";
+import type { HistoryService } from "../history/service";
+import { REPORT_DAYS } from "@kawase/config";
 import { summarizeAgentWallet, summarizeBuy, summarizeInspect, summarizeServices, summarizeTopUp } from "./marketplace-summary";
 
 import { capabilityView } from "../capabilities/service";
@@ -84,6 +86,8 @@ export function buildAgentContext(input: {
   marketplace?: MarketplaceService | undefined;
   /** Business mode's invoices. */
   invoices?: InvoiceService | undefined;
+  /** Looking back: the weekly report. */
+  history?: HistoryService | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -296,6 +300,29 @@ export function buildAgentContext(input: {
       return {
         invoice,
         summary: { status: "created", number: invoice.number, client: invoice.clientName, total: `${total} ${asset}`, due: invoice.dueAt.slice(0, DATE_CHARS), link: invoice.link, network },
+      };
+    },
+
+    async report({ days }) {
+      if (user.isAnonymous || !input.history) return { report: null, summary: { status: user.isAnonymous ? "needs_sign_in" : "unavailable" } };
+      const report = await input.history.report(user, network, days ?? REPORT_DAYS);
+      const sums = (bucket: Record<string, string>) => Object.entries(bucket).map(([asset, baseUnits]) => money(asset as AssetId, baseUnits).display);
+      return {
+        report,
+        summary: {
+          network,
+          days: days ?? REPORT_DAYS,
+          received: sums(report.received),
+          sent: sums(report.sent),
+          swaps: report.counts.swaps,
+          bridges: report.counts.bridges,
+          earnMoves: report.counts.earn,
+          servicesSpent: money("USDC", report.services.spent).display,
+          automationsRan: report.automations.ran,
+          automationsSkipped: report.automations.skipped,
+          invoicesPaid: report.invoices.paid,
+          complete: report.complete,
+        },
       };
     },
 

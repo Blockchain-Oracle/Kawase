@@ -41,6 +41,7 @@ import type {
   MarketplaceCategory,
   ServiceSearchResult,
   InvoiceView,
+  ReportView,
 } from "@kawase/api-client";
 
 export type {
@@ -109,6 +110,8 @@ export type AgentContext = {
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
   /** Business mode: an invoice with a payment link and an on-chain reference (the card shares it). */
   createInvoice(input: { client: string; amount: string; asset: "USDC" | "EURC"; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
+  /** The weekly report: money in and out, swaps, bridges, earn, services, automations, invoices. */
+  report(input: { days?: number | undefined }): Promise<{ report: ReportView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */

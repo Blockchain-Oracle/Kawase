@@ -30,6 +30,7 @@ import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
 import type { InvoiceService } from "../business/invoices";
+import type { HistoryService } from "../history/service";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -80,6 +81,7 @@ export type AgentDeps = {
   marketplace?: MarketplaceService | undefined;
   /** Business mode: invoices from chat. */
   invoices?: InvoiceService | undefined;
+  history?: HistoryService | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -118,6 +120,7 @@ export function createTurnRunner(deps: AgentDeps) {
     approvalSecret,
     marketplace,
     invoices,
+    history: historyService,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const conversations = new ConversationStore(db);
@@ -173,6 +176,7 @@ export function createTurnRunner(deps: AgentDeps) {
       requests,
       marketplace,
       invoices,
+      history: historyService,
       threadId,
       lastUserText,
       log,

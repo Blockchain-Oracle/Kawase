@@ -32,6 +32,7 @@ const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
 const INVOICE_DUE_MAX = 365;
+const REPORT_DAYS_MAX = 31;
 
 export function buildTools(context: AgentContext) {
   return {
@@ -388,6 +389,13 @@ export function buildTools(context: AgentContext) {
         dueInDays: z.number().int().min(0).max(INVOICE_DUE_MAX).optional(),
       }),
       execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    get_report: tool({
+      description:
+        "The person's report on the active network for the last week (or the days they say, up to 31): money received and sent, swaps, bridges, earn moves, what the agent spent on services, automations that ran or skipped, invoices paid. Use it for 'how did I do this week?', 'what did I spend?', 'weekly summary'.",
+      inputSchema: z.object({ days: z.number().int().min(1).max(REPORT_DAYS_MAX).optional() }),
+      execute: async (input) => context.report(input),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
   };
