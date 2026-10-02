@@ -3,6 +3,7 @@
 // "USDC" that trended on 2026-10-02, the Markets list and search, and the watcher finding tokens by itself.
 // Read-only: nothing is signed or sent. Run: pnpm --filter @kawase/api exec tsx --test test/assets-live.test.ts
 import assert from "node:assert/strict";
+import { config } from "dotenv";
 import { after, before, test } from "node:test";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -33,6 +34,8 @@ const POOL_MANAGER = "0x8366a39CC670B4001A1121B8F6A443A643e40951";
 /** The fake "USDC" whose USDC/USDC pool trended on GeckoTerminal on 2026-10-02. */
 const FAKE_USDC = "0x8e98a62a995a50eca9979bfa016f91bf36a8f9d9";
 
+config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
+
 const mainnet = getNetwork("mainnet");
 const account = privateKeyToAccount(generatePrivateKey());
 const readOnly: NetworkClients = {
@@ -47,7 +50,7 @@ const chains: Chains = { available: ["mainnet"], get: (network) => (network === 
 const url = process.env.DATABASE_URL!;
 const { db, pool } = createDb(url, { poolSize: 2 });
 const log = createLogger({ service: "assets-live", level: "silent" });
-const app = createApp({ db, log, turnkey: fakeTurnkey({}), chains, faucet: okFaucet, ops: noOps, models: createModels({}), market: liveMarketData(), rateLimitPerMinute: 10_000 });
+const app = createApp({ db, log, turnkey: fakeTurnkey({}), chains, faucet: okFaucet, ops: noOps, models: createModels({}), market: liveMarketData({ alchemyApiKey: process.env.ALCHEMY_API_KEY }), rateLimitPerMinute: 10_000 });
 let userId = "";
 const token = `assets-live-${Date.now()}`;
 

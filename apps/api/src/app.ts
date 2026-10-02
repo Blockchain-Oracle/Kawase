@@ -152,7 +152,7 @@ export function createApp(deps: AppDeps) {
     inbox,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
   // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);

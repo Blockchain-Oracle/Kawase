@@ -23,6 +23,7 @@ import {
 } from "@kawase/config";
 import type { Candle, ChartRange } from "@kawase/api-client";
 
+import { alchemyIndex, type WalletIndex } from "./alchemy";
 import { CallBudget, MarketCache, OutOfBudget, getJson, type Cached } from "./cache";
 
 const LIFI = "https://li.quest/v1";
@@ -128,6 +129,8 @@ export type MarketData = {
   chains(): Promise<Map<number, { name: string; logoUrl: string | null }>>;
   /** Units of `currency` per US dollar; 1 for USD; null when unknown. */
   fx(currency: string): Promise<number | null>;
+  /** A wallet's holdings across Arc and the bridge chains (Alchemy), when configured. */
+  wallets?: WalletIndex | undefined;
 };
 
 const num = (value: unknown): number | null => {
@@ -186,7 +189,7 @@ const CHART_SHAPE: Record<ChartRange, { timeframe: "minute" | "hour" | "day"; ag
   ALL: { timeframe: "day", aggregate: 1, limit: 1000 },
 };
 
-export function liveMarketData(): MarketData {
+export function liveMarketData(options: { alchemyApiKey?: string | undefined } = {}): MarketData {
   const cache = new MarketCache();
   const gecko = new CallBudget("GeckoTerminal", GECKOTERMINAL_CALLS_PER_MINUTE);
 
@@ -352,6 +355,7 @@ export function liveMarketData(): MarketData {
   };
 
   return {
+    ...(options.alchemyApiKey ? { wallets: alchemyIndex(options.alchemyApiKey, cache) } : {}),
     listed,
     markets,
     pools: (kind) =>
