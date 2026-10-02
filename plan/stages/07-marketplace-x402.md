@@ -13,7 +13,9 @@ Status: not started
 - (fill in before starting: every library touched in this stage)
 
 ## 21st.dev sourcing (surfaces, queries, picks: component · author · URL · why)
-- (fill in when the stage touches UI)
+- Top up with Apple Pay: 25102 Express Wallets · felipemenezes098 · https://21st.dev/r/felipemenezes098/payment-3 · Apple Pay / Google Pay pills and the card fallback → `ui-native/express-pay.tsx`.
 
 ## Progress log
 - (dated entries: what was done, evidence such as tx hashes and URLs, blockers)
+- 2026-10-02 (B2-2): agent wallet top-up by Apple Pay/card through B1's onramp (destination agent_wallet, settled from Transfer logs; 0048). Testnet: sandbox session for agent wallet 0xD6BA…b819, settled by 0x0514f0f5…518d; the person's own transfer did not settle it.
+- 2026-10-02 (B2-2): refunds — x402 has none (refund extension is an open proposal, x402-foundation PR 3640); failed-after-payment receipts say "No refund"; a Gateway transfer Circle reports failed becomes "not charged". BlockRun mainnet call skipped: mainnet ops wallet 0 USDC.
