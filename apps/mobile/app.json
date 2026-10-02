@@ -40,7 +40,12 @@
     },
     "web": {
       "output": "server",
-      "favicon": "./assets/brand/favicon.png"
+      "favicon": "./assets/brand/favicon.png",
+      "name": "Kawase",
+      "shortName": "Kawase",
+      "description": "An AI money app for everything on Arc.",
+      "themeColor": "#0B0C10",
+      "backgroundColor": "#0B0C10"
     },
     "plugins": [
       "expo-router",
