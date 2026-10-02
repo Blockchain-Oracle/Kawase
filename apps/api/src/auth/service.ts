@@ -109,8 +109,8 @@ export class AuthService {
       throw problem(HTTP.unauthorized, "session_key_unknown");
 
     const user = await this.db.transaction(async (tx) => {
-      // The sub-organization is the identity. The same verified email on a row without one (a re-created
-      // sub-organization) is the same person, so that row is linked rather than duplicated.
+      // The proved sub-organization is the identity. Email is mutable provider metadata and cannot rebind
+      // another account or its wallet. A different identity needs an explicit recovery ceremony.
       const [bySubOrg] = await tx.select().from(users).where(eq(users.turnkeySubOrganizationId, claims.organizationId));
       const [byEmail] =
         bySubOrg || !turnkeyUser.email
@@ -119,7 +119,8 @@ export class AuthService {
               .select()
               .from(users)
               .where(sql`lower(${users.email}) = lower(${turnkeyUser.email})`);
-      const existing = bySubOrg ?? byEmail;
+      if (byEmail) throw problem(HTTP.conflict, "account_recovery_required");
+      const existing = bySubOrg;
       if (existing) {
         if (input.guestUserId && input.guestUserId !== existing.id) {
           await moveUserData(tx, input.guestUserId, existing.id);

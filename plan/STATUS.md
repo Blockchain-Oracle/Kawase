@@ -3,6 +3,10 @@
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
 Last updated: 2026-10-01 night (Stage 6, 8a/8b with rules, J10's K01–K04/K06, Stage 10 voice deployed, Android/EAS set up; current state per area in `plan/COVERAGE.md`)
 
+## Active repair — 2026-10-02
+
+Implementing Abu’s approved full product/mobile-quality plan (`design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md`); all A–U deliverables remain required. TestFlight recording is 1.0.0 (4), source 301389e; embedded config unverified (artifact 403). Native access and swipe acceptance reopened. Current unshipped work: auth stage tracing/retries/fresh session, guest button/Automations, UI-thread settling, growing composer/keyboard/Stop/history search, leased durable conversation claims and incremental history, stable voice IDs/Stop/no raw audio recording. Targeted local integration checks pass; local release runtime rebuild is underway after stale generated pods caused a missing ExpoPushTokenManager crash. Next: release runtime journeys, API-compatible deploy first, then worker/mobile; physical access and measured voice acceptance remain pending. See COVERAGE.md for slice states.
+
 ## Current stage
 **Stage 6 — trading, tokens, bridge, yield** (`stages/06-trading-tokens-bridge-yield.md`): 6a swap, 6b bridge, 6c earn done on testnet; arbitrary tokens/token rules, executing non-CCTP routes and mainnet runs stay open. **Stage 8a (scheduled automations, grant-bounded, unattended) done too; next 8b.** Stages 4–5 are live (agent, sends, requests, inbox); the Lime on Ink revamp (D34/D35) is the design system every new surface uses.
 

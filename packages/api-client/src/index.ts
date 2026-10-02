@@ -87,13 +87,18 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     method: string,
     path: string,
     body?: unknown,
-    options: { idempotencyKey?: string | undefined; token?: string | undefined } = {},
+    options: {
+      idempotencyKey?: string | undefined;
+      token?: string | undefined;
+      authAttemptId?: string | undefined;
+    } = {},
   ): Promise<T> {
     const token = options.token ?? (await getToken());
     const headers: Record<string, string> = { accept: "application/json" };
     if (body !== undefined) headers["content-type"] = "application/json";
     if (token) headers.authorization = `Bearer ${token}`;
     if (options.idempotencyKey) headers["idempotency-key"] = options.idempotencyKey;
+    if (options.authAttemptId) headers["x-kawase-auth-attempt"] = options.authAttemptId;
     const init: RequestInit = { method, headers };
     if (body !== undefined) init.body = JSON.stringify(body);
     const response = await fetchImpl(`${base}${path}`, init);
@@ -109,21 +114,33 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
 
     auth: {
-      nonce: () => call<{ nonce: string; expiresAt: string }>("POST", "/auth/nonce"),
+      nonce: (authAttemptId?: string) =>
+        call<{ nonce: string; expiresAt: string }>("POST", "/auth/nonce", undefined, { authAttemptId }),
       guest: (input: { device: DeviceInfo; locale?: string }) => call<SignInResponse>("POST", "/auth/guest", input),
       /** With a guest token, the guest is upgraded or merged into the account. */
-      turnkey: (input: { proof: StampedProof; turnkeyUserId: string; device: DeviceInfo }, guestToken?: string) =>
-        call<SignInResponse>("POST", "/auth/turnkey", input, guestToken ? { token: guestToken } : {}),
+      turnkey: (
+        input: { proof: StampedProof; turnkeyUserId: string; device: DeviceInfo },
+        guestToken?: string,
+        authAttemptId?: string,
+      ) => call<SignInResponse>("POST", "/auth/turnkey", input, { token: guestToken, authAttemptId }),
       signOut: () => call<void>("POST", "/auth/sign-out"),
     },
 
     me: {
-      get: () => call<{ user: ApiUser; availableNetworks: NetworkId[] }>("GET", "/me"),
+      get: (authAttemptId?: string) =>
+        call<{ user: ApiUser; availableNetworks: NetworkId[] }>("GET", "/me", undefined, { authAttemptId }),
       update: (
         settings: Partial<
           Pick<
             ApiUser,
-            "locale" | "replyLanguage" | "displayCurrency" | "timezone" | "theme" | "riskMode" | "practiceMode" | "handle"
+            | "locale"
+            | "replyLanguage"
+            | "displayCurrency"
+            | "timezone"
+            | "theme"
+            | "riskMode"
+            | "practiceMode"
+            | "handle"
           >
         > & { handlePrompted?: true },
       ) => call<{ user: ApiUser }>("PATCH", "/me", settings),
@@ -140,8 +157,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       status: () => call<WalletStatus>("GET", "/wallet"),
       /** USDC and EURC transfers in and out on one network, newest first. */
       activity: (network: NetworkId) => call<ActivityPage>("GET", `/wallet/activity?network=${network}`),
-      register: (input: { address: string; walletId: string }) =>
-        call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input),
+      register: (input: { address: string; walletId: string }, authAttemptId?: string) =>
+        call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input, { authAttemptId }),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
       setupSubmit: (network: NetworkId, authorization: SignedAuthorizationInput, idempotencyKey?: string) =>
         call<{ tx: string; setUp: boolean }>(
@@ -178,8 +195,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       list: () => call<{ contacts: Contact[] }>("GET", "/contacts"),
       get: (id: string) => call<{ contact: Contact }>("GET", `/contacts/${id}`),
       create: (input: ContactInput) => call<{ contact: Contact }>("POST", "/contacts", input),
-      update: (id: string, patch: Partial<Pick<ContactInput, "displayName" | "aliases" | "notes" | "label" | "kind">>) =>
-        call<{ contact: Contact }>("PATCH", `/contacts/${id}`, patch),
+      update: (
+        id: string,
+        patch: Partial<Pick<ContactInput, "displayName" | "aliases" | "notes" | "label" | "kind">>,
+      ) => call<{ contact: Contact }>("PATCH", `/contacts/${id}`, patch),
       /** The new address waits out a cooldown; the contact cannot be paid until then. */
       changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
         call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
@@ -189,7 +208,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
     /** The send screen's search: contacts by name, alias or handle, then an exact Kawase @handle. */
     recipients: {
-      search: (query: string) => call<{ matches: RecipientMatch[] }>("GET", `/recipients?q=${encodeURIComponent(query)}`),
+      search: (query: string) =>
+        call<{ matches: RecipientMatch[] }>("GET", `/recipients?q=${encodeURIComponent(query)}`),
     },
 
     sends: {
@@ -266,7 +286,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       skip: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/skip`),
       /** Stops it at once; the answer carries the revoke transaction for the wallet to sign (the grant on chain). */
       cancel: (id: string) =>
-        call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>("POST", `/automations/${id}/cancel`),
+        call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>(
+          "POST",
+          `/automations/${id}/cancel`,
+        ),
     },
 
     voice: {

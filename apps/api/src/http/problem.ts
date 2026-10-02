@@ -29,6 +29,7 @@ export type ProblemCode =
   | "nonce_invalid"
   | "proof_invalid"
   | "session_key_unknown"
+  | "account_recovery_required"
   | "wallet_not_registered"
   | "wallet_not_set_up"
   | "grant_not_pending"
@@ -45,6 +46,8 @@ export type ProblemCode =
   | "faucet_testnet_only"
   | "agent_unavailable"
   | "voice_unavailable"
+  | "turn_in_progress"
+  | "turn_already_processed"
   | "recipient_unknown"
   | "recipient_no_wallet"
   | "recipient_is_self"
@@ -91,6 +94,7 @@ const TITLES: Record<ProblemCode, string> = {
   nonce_invalid: "The sign-in challenge is unknown, used or expired",
   proof_invalid: "The sign-in proof does not verify",
   session_key_unknown: "The session key is not registered on this user",
+  account_recovery_required: "Use the original sign-in method to recover this account",
   wallet_not_registered: "No wallet is registered for this account",
   wallet_not_set_up: "The wallet is not set up on this network",
   grant_not_pending: "There is no allowance waiting for a signature",
@@ -107,6 +111,8 @@ const TITLES: Record<ProblemCode, string> = {
   faucet_testnet_only: "The faucet only sends test money on testnet",
   agent_unavailable: "The agent is not available on this server",
   voice_unavailable: "Voice is not available on this server",
+  turn_in_progress: "This conversation is still working; check its current status",
+  turn_already_processed: "This request was already handled; reopen the conversation",
   recipient_unknown: "No one by that name or handle",
   recipient_no_wallet: "That person has no wallet yet",
   recipient_is_self: "That is your own address",

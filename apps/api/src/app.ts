@@ -108,16 +108,41 @@ export function createApp(deps: AppDeps) {
   const faucet = new FaucetService(deps.db, wallets, deps.faucet);
   const contacts = new ContactService(deps.db);
   const recipients = new Recipients(deps.db, contacts);
-  const notify = new NotifyService(deps.db, { push: deps.push, email: deps.email, webUrl: deps.webUrl ?? DEFAULT_WEB_URL }, deps.log);
+  const notify = new NotifyService(
+    deps.db,
+    { push: deps.push, email: deps.email, webUrl: deps.webUrl ?? DEFAULT_WEB_URL },
+    deps.log,
+  );
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
   const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
-  const sends = new SendService(deps.db, deps.chains, wallets, contacts, recipients, deps.ops, deps.log, requests, inbox);
-  if (deps.watchIntervalMs) new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
+  const sends = new SendService(
+    deps.db,
+    deps.chains,
+    wallets,
+    contacts,
+    recipients,
+    deps.ops,
+    deps.log,
+    requests,
+    inbox,
+  );
+  if (deps.watchIntervalMs)
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
-  const automations = new AutomationService(deps.db, deps.chains, wallets, recipients, sends, earn, bridges, inbox, deps.log);
+  const automations = new AutomationService(
+    deps.db,
+    deps.chains,
+    wallets,
+    recipients,
+    sends,
+    earn,
+    bridges,
+    inbox,
+    deps.log,
+  );
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
@@ -139,7 +164,7 @@ export function createApp(deps: AppDeps) {
     "*",
     cors({
       origin: (origin) => (deps.webOrigins?.includes(origin) ? origin : null),
-      allowHeaders: ["authorization", "content-type", "idempotency-key"],
+      allowHeaders: ["authorization", "content-type", "idempotency-key", "x-kawase-auth-attempt"],
       exposeHeaders: ["x-request-id", "idempotent-replayed"],
       credentials: true,
     }),
@@ -147,9 +172,19 @@ export function createApp(deps: AppDeps) {
   app.use("*", async (c, next) => {
     c.set("log", requestLogger(deps.log, c.get("requestId")));
     const startedAt = Date.now();
+    // Only bounded UUIDs are logged. Never trust an arbitrary header as diagnostic text.
+    const attempt = c.req.header("x-kawase-auth-attempt");
+    const authAttemptId =
+      attempt && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(attempt) ? attempt : undefined;
     await next();
     c.get("log").info(
-      { method: c.req.method, path: c.req.path, status: c.res.status, ms: Date.now() - startedAt },
+      {
+        method: c.req.method,
+        path: c.req.path,
+        status: c.res.status,
+        ms: Date.now() - startedAt,
+        ...(authAttemptId ? { authAttemptId } : {}),
+      },
       "request",
     );
   });
@@ -186,7 +221,22 @@ export function createApp(deps: AppDeps) {
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
-  const agentDeps = { db: deps.db, chains: deps.chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, automations, requests, models: deps.models, approvalSecret: deps.approvalSecret };
+  const agentDeps = {
+    db: deps.db,
+    chains: deps.chains,
+    wallets,
+    faucet,
+    contacts,
+    recipients,
+    sends,
+    swaps,
+    bridges,
+    earn,
+    automations,
+    requests,
+    models: deps.models,
+    approvalSecret: deps.approvalSecret,
+  };
   // One turn runner for chat and voice: the same brain, the same threads, the same approval key.
   const runner = createTurnRunner(agentDeps);
   app.route("/agent", agentRoutes(agentDeps, runner));

@@ -1,0 +1,26 @@
+{
+  "reportedInstallation": {
+    "version": "1.0.0",
+    "build": "4",
+    "sourceRevision": "301389e1f1a65f1020ad8a03cbffd911f9099117",
+    "easBuildId": "a524ea45-026e-44be-80bc-5d8ecfd339aa",
+    "easCompletedAt": "2026-10-02T06:28:23.730Z",
+    "evidence": "Abu confirmed 1.0.0 (4); EAS authenticated build record",
+    "embeddedConfiguration": "unverified: artifact requests returned HTTP 403"
+  },
+  "apiAtRecording": {
+    "sourceRevision": "4203e8de21ea4ac92cbdee3e84dc767b0bf88860",
+    "deploymentFinishedAt": "2026-10-02T04:30:51Z",
+    "evidence": "Coolify deployment history"
+  },
+  "recordingWindow": {
+    "utcStart": "2026-10-02T06:28:00Z",
+    "utcEnd": "2026-10-02T07:05:00Z",
+    "guestRequests": 4,
+    "meRequests": 3,
+    "nonceRequests": 0,
+    "turnkeyExchangeRequests": 0,
+    "inference": "Failure likely precedes API proof exchange if the installation used this deployment. Logs are not tied to a known installation/correlation ID."
+  },
+  "physicalDevicesConnected": 0
+}

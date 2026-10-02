@@ -11,7 +11,7 @@ States:
 
 Evidence is the revision or the transaction that proves *that branch* — never the whole area.
 
-Last updated: 2026-10-01 (after Stage 8b rules; Android builds; voice wallet line).
+Last updated: 2026-10-02 (mobile quality repair; deployment and acceptance tracked separately below).
 
 | Area (inventory) | Source | What runs today (network) | Recovery / truth | Evidence | Remaining (owner: Claude unless named) | State |
 |---|---|---|---|---|---|---|
@@ -38,3 +38,18 @@ Last updated: 2026-10-01 (after Stage 8b rules; Android builds; voice wallet lin
 | U Accessibility, privacy, x402 boundary | — | Labels in words (never colour alone), RTL | — | — | Assistive-tech proof, retention/delete/export, marketplace boundary | planned (7/12/16) |
 | Docs, landing, judge kit | D25 | — | — | — | Docs site, showcase, judge journeys | planned (14–15) |
 | Production hardening, submission | — | api + web on Coolify | — | Deploys | Mainnet runs per area, security review, performance, submission by 2026-10-10 | planned (16) |
+
+## 2026-10-02 mobile quality repair — current verification
+
+The approved full scope is in `design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md`. Every remaining row above stays required. Abu’s TestFlight 1.0.0 (4) recording reopens native access (R08) and swipe quality (R11). Build/source/API evidence is `design/review-evidence/2026-10-02/build-and-api.json`; the signed build artifact returned 403, so its embedded configuration is **unverified**. No physical phone is connected to this workspace.
+
+| Slice | Implemented | Local checks | Deployed | Device checked / accepted | Still required |
+|---|---|---|---|---|---|
+| A / T access | Stage/correlation tracing; fresh stored Turnkey session; one active attempt; preserve proof exchange/account and wallet retries; ignore obsolete routing completions; session-read epochs; email metadata cannot rebind a different wallet identity | API auth/proof integration; client correlation headers | Pending | No / no | Physical email/Apple/Google, exact provider errors, restart/outage/cancellation matrix; full recovery and sessions controls |
+| A / H guest | Primary guest button; Automations explanation before private data reads | Types/lint | Pending | No / no | Release runtime and originating-task continuation |
+| A / U motion | UI-thread swipe tracking/settling, shared art/copy/progress, 260/420/4500 ms shared configuration, live reduced-motion updates | Types/lint | Pending | No / no | Reversed/interrupted swipes, release profiling, RTL, large text/readers on supported devices |
+| K / M / T conversation integrity | Durable additive voice turn IDs, per-thread leased ownership, immediate input and incremental text/tool persistence; expired claims retain identity and cannot execute again | Real PostgreSQL concurrency/duplicate/stale-write/continuation/lease tests; HTTP stream test drains independently of UI | Pending (API before worker) | No / no | Reconnect and Stop after submitted payment, actual spoken transcript, financial readbacks and phone latency |
+| K / U audio retention | Updated worker explicitly disables LiveKit audio/transcript recording uploads; Stop RPC validates participant identity | Worker types/lint | Pending | No / no | Transcript retention/delete/export policy and controls, voice comparison, Bluetooth/interruptions |
+| L / M / P chat quality | Compact native input expands on focus/content, keyboard hides dock, Stop and safe history recovery, title search in loaded history sheet | Types/lint; 21st deterministic review (not visual acceptance) | Pending | No / no | Recorded runtime states, durable drafts, all-history search, complete generative UI |
+
+Local release build initially compiled but crashed because the generated native project lacked ExpoNotifications while JavaScript imported it. Regenerated iOS project and pods; rebuild/runtime verification is in progress. A successful build does not close any journey.

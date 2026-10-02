@@ -5,7 +5,7 @@ import { aliasedTable, and, eq, exists, getTableColumns, sql } from "drizzle-orm
 import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 
 import type { Db } from "./client";
-import { threadMessages, threads } from "./schema/chat";
+import { threadMessages, threads, threadTurns } from "./schema/chat";
 import { contactAddressEvents, contactAddresses, contactAddressTrust, contacts } from "./schema/contacts";
 import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
@@ -40,6 +40,7 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   faucet_claims: { table: faucetClaims, userId: faucetClaims.userId },
   threads: { table: threads, userId: threads.userId },
   thread_messages: { table: threadMessages, userId: threadMessages.userId },
+  thread_turns: { table: threadTurns, userId: threadTurns.userId },
   // Contacts keep their ids, so addresses, trust and events follow them; a guest contact whose name the account
   // already uses is dropped with its addresses (the account's own book wins).
   contacts: { table: contacts, userId: contacts.userId, perUserKey: ["displayName"] },

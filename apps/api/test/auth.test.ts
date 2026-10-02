@@ -10,6 +10,8 @@ import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp,
 
 const SUB_ORG = randomUUID();
 const TURNKEY_USER = randomUUID();
+const OTHER_ORG = randomUUID();
+const OTHER_USER = randomUUID();
 const sessionKey = turnkeyStyleKeyPair();
 const otherKey = turnkeyStyleKeyPair();
 const turnkey = fakeTurnkey({
@@ -18,6 +20,12 @@ const turnkey = fakeTurnkey({
     userName: "amina",
     email: "amina@example.test",
     sessionPublicKeys: [sessionKey.publicKeyHex],
+  },
+  [`${OTHER_ORG}/${OTHER_USER}`]: {
+    userId: OTHER_USER,
+    userName: "other identity",
+    email: "amina@example.test",
+    sessionPublicKeys: [otherKey.publicKeyHex],
   },
 });
 const { app, db, close } = testApp(turnkey);
@@ -166,6 +174,35 @@ test("a used or unknown nonce, a wrong key, and an unknown user are refused", as
     }),
   );
   assert.equal(bad.status, 401);
+});
+
+test("matching email metadata cannot rebind another Turnkey identity or move its guest data", async () => {
+  const [original] = await db.select().from(users).where(eq(users.turnkeySubOrganizationId, SUB_ORG));
+  assert.ok(original);
+  const guest = await app.request("/auth/guest", jsonRequest("POST", { device }));
+  const { token: guestToken, user: guestUser } = (await guest.json()) as { token: string; user: { id: string } };
+  created.push(guestUser.id);
+  const nonceResponse = await app.request("/auth/nonce", { method: "POST" });
+  const { nonce } = (await nonceResponse.json()) as { nonce: string };
+  const body = JSON.stringify({ organizationId: OTHER_ORG, activityId: nonce });
+  const response = await app.request(
+    "/auth/turnkey",
+    jsonRequest(
+      "POST",
+      {
+        proof: { body, stamp: await stampBody(body, otherKey) },
+        turnkeyUserId: OTHER_USER,
+        device,
+      },
+      guestToken,
+    ),
+  );
+  assert.equal(response.status, 409);
+  assert.match(((await response.json()) as { type: string }).type, /account_recovery_required$/);
+  const [unchanged] = await db.select().from(users).where(eq(users.id, original.id));
+  assert.equal(unchanged?.turnkeySubOrganizationId, SUB_ORG);
+  assert.equal(unchanged?.turnkeyUserId, TURNKEY_USER);
+  assert.equal((await app.request("/me", { headers: { authorization: `Bearer ${guestToken}` } })).status, 200);
 });
 
 test("mainnet needs the consent and a live mainnet; settings and idempotent consents work", async () => {
