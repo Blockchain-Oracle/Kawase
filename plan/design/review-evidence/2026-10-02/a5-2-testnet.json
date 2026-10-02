@@ -11,6 +11,13 @@
       "splitSharePaid": "https://testnet.arcscan.app/tx/0xc97cf2a7793dcc9a3632aa0fd05ca0796bc6694fa63efd3bcaf716cdb7d7e5f1",
       "openById": { "kind": "send", "network": "testnet", "state": "completed", "anotherPerson": 404 },
       "resume": "a swap asked for before setup waited on WALLET_*; after setup PATCH /swaps/:id {} gave the same id, a new version, and the next blocker (INSUFFICIENT_GAS: test money, no gas reserve)"
+    },
+    {
+      "after": "merged with main a557fe1 (request/send any asset, token rules, withdraw)",
+      "scanToPay": "https://testnet.arcscan.app/tx/0x3fb345636ac0b3aba853d435173ef831a04b60bb77208aff6fd2b3d7f27b6690",
+      "splitSharePaid": "https://testnet.arcscan.app/tx/0x0fe4d8a18fa8e7fab36e35c3872377aab2d56afb9dab9a532991c04296bd8196",
+      "openById": "ok",
+      "resume": "ok (WALLET_* → INSUFFICIENT_GAS on the same swap)"
     }
   ],
   "scanCode": "ethereum:<USDC>@5042002/transfer?address=<requester>&uint256=2e4 → send 0.02 USDC",
