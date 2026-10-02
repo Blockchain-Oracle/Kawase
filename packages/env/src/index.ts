@@ -53,6 +53,7 @@ export const apiEnvSchema = z.object({
   /** The agent's model keys (D29: provider-agnostic; OpenAI is the default role model). Chat is off without one. */
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
   /** Alchemy's Portfolio and Prices APIs: every token a wallet holds on Arc and the six bridge chains. Without it the
    * portfolio falls back to the Transfer-log watcher + Multicall3 (Arc) and LI.FI (other chains). */
   ALCHEMY_API_KEY: z.string().optional(),
