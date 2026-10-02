@@ -52,9 +52,11 @@ import type {
   NotificationSettings,
   NotificationSettingsChange,
 } from "./types";
+import { railsEndpoints } from "./rails";
 
 export * from "./types";
 export * from "./agent-types";
+export * from "./rails";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -110,6 +112,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
   }
 
   return {
+    ...railsEndpoints(call),
     health: () => call<{ ok: boolean; networks: NetworkId[] }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
 

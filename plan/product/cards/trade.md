@@ -51,10 +51,11 @@ Verified: 2026-10-02
 1. **Kawase Margin: long/short through Aave V4 on Arc** (non-custodial, one batch, real liquidity). This is the default.
    - **Long X with leverage:** supply X as collateral → borrow USDC → swap to X → supply (loop to the target leverage, within max LTV). Close = unwind in one batch.
    - **Short X:** supply USDC as collateral → **borrow X** → swap X to USDC → supply (repeat for leverage). Close = buy back X and repay.
-   - **Markets:** the assets Aave V4 lists on Arc (cirBTC, WETH, EURC; EURC short/long = euro vs dollar FX), widening as Aave or Morpho lists more.
+   - **Markets:** computed from the Main Spoke's live reserves (spike 10-02: USDC CF 78%, EURC CF **0**, cirBTC CF 78%, WETH CF 83%; all borrowable; target health 1.24). So cirBTC and WETH go both ways; **EURC is short-only** (it cannot be collateral, so "long EURC" is a spot buy). The list widens as Aave or Morpho lists more.
+   - **Leverage cap** (opening health ≥ 1.10): long ≤ H÷(H−CF), short ≤ CF_USDC÷(H−CF_USDC). At 10-02 factors that is cirBTC long 3.4×, WETH long 4.0×, any short 2.4×.
    - **Ticket (Senryo design):** margin hero, LeverageRuler capped by LTV, **liquidation price = the health-factor threshold**, TP/SL as automations on executable quotes, slide to confirm.
    - **Position:** P&L (price / borrow interest), health gauge, close 25/50/75/All.
-   - **Spike first:** confirm borrow is enabled for cirBTC/WETH/EURC on the Main Spoke (`getReserve(i)`), the max LTV and the flash-free loop (iterative within one 7702 batch).
+   - **Spike (done 10-02):** borrow is enabled on all four reserves; the flash-free loop works as one 7702 batch (eth_simulateV1 on mainnet state: $10 2× long cirBTC = 15 calls, 2 loops, health 1.55; $10 2× short WETH = 23 calls, 4 loops, health 1.17; both close to zero debt).
 2. **Connect Hibachi** (optional, for users who have an account in an allowed country):
    - the user creates a read-write API key in Hibachi (withdraw permission off) and pastes it; Kawase stores it encrypted;
    - markets (15 contracts), market/limit/stop/TWAP, **TP/SL**, positions, close;

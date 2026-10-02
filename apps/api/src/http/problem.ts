@@ -59,6 +59,7 @@ export type ProblemCode =
   | "network_mismatch"
   | "request_unavailable"
   | "quote_unavailable"
+  | "simulation_failed"
   | "upstream"
   | "internal";
 
@@ -124,6 +125,7 @@ const TITLES: Record<ProblemCode, string> = {
   network_mismatch: "This was made on the other network",
   request_unavailable: "This request is no longer open",
   quote_unavailable: "No swap price right now; try again in a moment",
+  simulation_failed: "This would not go through right now; nothing was sent",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

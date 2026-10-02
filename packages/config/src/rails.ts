@@ -40,3 +40,15 @@ export const MARGIN = {
   /** Presets for the margin hero (USD). */
   presets: [10, 50, 100],
 } as const;
+
+/** What people call a market, mapped to the symbol the venue lists (naming data, not flow logic; R1). */
+export const MARGIN_MARKET_ALIASES = {
+  btc: "cirBTC",
+  bitcoin: "cirBTC",
+  eth: "WETH",
+  ether: "WETH",
+  ethereum: "WETH",
+  eur: "EURC",
+  euro: "EURC",
+  euros: "EURC",
+} as const;

@@ -20,6 +20,7 @@ import type { SendService } from "../send/service";
 import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
+import type { MarginService } from "../margin/service";
 import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
@@ -29,6 +30,7 @@ import { summarizeAutomation } from "./automation-summary";
 import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
+import { railsContext } from "./rails-context";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -66,6 +68,7 @@ export function buildAgentContext(input: {
   swaps: SwapService;
   bridges: BridgeService;
   earn: EarnService;
+  margin?: MarginService | undefined;
   automations: AutomationService;
   requests: RequestService;
   threadId: string;
@@ -92,6 +95,7 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
+    ...railsContext({ user, db, margin: input.margin, threadId }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

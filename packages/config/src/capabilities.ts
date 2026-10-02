@@ -18,7 +18,8 @@ export type CapabilityId =
   | "marketplace"
   | "voice"
   | "faucet"
-  | "payment_links";
+  | "payment_links"
+  | "margin";
 
 /** Where each capability will exist once its stage has shipped (the product plan, not the current build). */
 const TARGET: Record<CapabilityId, Record<NetworkId, CapabilityState>> = {
@@ -36,6 +37,8 @@ const TARGET: Record<CapabilityId, Record<NetworkId, CapabilityState>> = {
   // Test money is a testnet thing by definition.
   faucet: { mainnet: "unavailable", testnet: "available" },
   payment_links: { mainnet: "available", testnet: "available" },
+  // Kawase Margin needs Aave V4, which is on Arc mainnet only (no testnet deployment, 2026-10-02).
+  margin: { mainnet: "available", testnet: "unavailable" },
 };
 
 /**
@@ -43,7 +46,7 @@ const TARGET: Record<CapabilityId, Record<NetworkId, CapabilityState>> = {
  * swap and bridge in Stage 6, …). Until then it reports "coming" wherever the target says "available", so
  * neither the app nor the agent is ever told that something unbuilt can be done.
  */
-export const SHIPPED_CAPABILITIES: ReadonlySet<CapabilityId> = new Set<CapabilityId>(["faucet", "send", "contacts", "request", "payment_links", "swap", "bridge", "yield", "automations", "voice"]);
+export const SHIPPED_CAPABILITIES: ReadonlySet<CapabilityId> = new Set<CapabilityId>(["faucet", "send", "contacts", "request", "payment_links", "swap", "bridge", "yield", "automations", "voice", "margin"]);
 
 const shippedState = (id: CapabilityId, state: CapabilityState): CapabilityState =>
   state === "available" && !SHIPPED_CAPABILITIES.has(id) ? "coming" : state;
