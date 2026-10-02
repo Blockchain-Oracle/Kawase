@@ -77,6 +77,8 @@ const OPENABLE = [
   /^\/i\/[0-9a-f-]{36}$/,
   /^\/request\?id=[0-9a-f-]{36}$/,
   /^\/why\/0x[0-9a-fA-F]{64}\?network=(testnet|mainnet)$/,
+  // A Needs-you item opens its own page (a uuid only, so a push can never point the app anywhere else).
+  /^\/needs-you\/[0-9a-f-]{36}\?from=push$/i,
 ];
 
 export function pathOf(response: Notifications.NotificationResponse | null | undefined): string | undefined {

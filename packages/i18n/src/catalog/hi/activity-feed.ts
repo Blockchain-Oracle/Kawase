@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const activityFeed: Catalog["activityFeed"] = {
+  requestPaid: "{{name}} ने अनुरोध चुकाया",
+  margin: "Kawase Margin",
+  automation: "ऑटोमेशन",
+  automationTo: "{{name}} को ऑटोमेशन",
+  practiceTo: "अभ्यास: {{name}} को",
+  other: "लेन-देन",
+  checking: "जाँच हो रही है…",
+  skipped: "छोड़ा गया · {{reason}}",
+  failed: "नहीं हो पाया",
+  failedWhy: "नहीं हो पाया · {{reason}}",
+  practiced: "अभ्यास · हो जाता",
+  practicedRefused: "अभ्यास · Arc मना कर देता",
+  waiting: "आपका इंतज़ार · {{reason}}",
+  filterIn: "आया",
+  filterOut: "गया",
+  filterTrades: "ट्रेड",
+  filterAutomations: "ऑटोमेशन",
+  emptyNeedsYou: "आपका कुछ इंतज़ार नहीं कर रहा",
+  emptyFilter: "यहाँ अभी कुछ नहीं",
+  latestOnly: "ये आपके सबसे नए लेन-देन हैं।",
+  network: "नेटवर्क",
+  paid: "चुकाया",
+};

@@ -29,7 +29,12 @@ const setupSubmitSchema = z.object({
   }),
 });
 const activitySchema = z.object({ network });
-const allowanceRequestSchema = z.object({ network, periodAmount: z.string().regex(/^\d+$/).optional() });
+const allowanceRequestSchema = z.object({
+  network,
+  periodAmount: z.string().regex(/^\d+$/).optional(),
+  /** The token; USDC when not named (one allowance per token). */
+  token: z.string().refine((value) => isAddress(value, { strict: false }), "expected a token address").optional(),
+});
 const allowanceSubmitSchema = z.object({ grantId: z.uuid(), signature: hex });
 const submitTransactionSchema = z.object({ requestId: z.uuid(), signedTransaction: hex });
 
@@ -89,6 +94,7 @@ export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
         c.get("userId")!,
         input.network,
         input.periodAmount ? BigInt(input.periodAmount) : undefined,
+        input.token as Address | undefined,
       ),
     );
   });

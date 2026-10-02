@@ -42,4 +42,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "‏{{network}} پر جائیں",
   fixEditAmount: "رقم بدلیں",
   fixOpenContact: "رابطہ کھولیں",
+  AGENT_PAUSED: "رکا ہوا: اس کے لیے آپ کی منظوری چاہیے",
+  NOT_ON_ALLOWLIST: "آپ کی اجازت فہرست میں نہیں: اس کے لیے آپ کی منظوری چاہیے",
+  NEW_RECIPIENT_COOLDOWN: "{{until}} تک نئے وصول کنندگان فی ادائیگی {{cap}} تک پا سکتے ہیں۔ اسے والیٹ اور حدود میں بدلیں۔",
 };

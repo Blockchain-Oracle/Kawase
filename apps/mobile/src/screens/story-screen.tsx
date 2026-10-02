@@ -9,10 +9,13 @@
 // sweeping back to the first; it holds while the person drags, while a sheet covers the story, while the screen is
 // not focused or the app is in the background, while a screen reader is on, and with reduced motion; after any
 // interaction the dwell starts again from zero. The art moves only while the story is actually on screen.
+//
+// Narration (plan §1.5): the speaker beside the language pill turns it on; then each panel speaks as it lands, the
+// dwell waits for the clip, a swipe cuts it, and a language change speaks the panel again in the new language.
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { takeDeepLink } from "@/onboarding/continuation";
 import * as React from "react";
-import { AccessibilityInfo, ActivityIndicator, AppState, useWindowDimensions, View } from "react-native";
+import { AccessibilityInfo, ActivityIndicator, AppState, Platform, useWindowDimensions, View } from "react-native";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,9 +27,11 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
 import { LanguageSheet } from "@/components/language-sheet";
+import { tapFeedback } from "@/feedback/feedback";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { STORY_INK, StoryLanguagePill, storyPanels } from "@/onboarding/story-panels";
+import { useStoryNarration } from "@/narration/use-story-narration";
+import { STORY_INK, StoryLanguagePill, StoryNarrationButton, storyPanels } from "@/onboarding/story-panels";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -41,6 +46,12 @@ const SHOWCASE_LOCALES: readonly SupportedLocale[] = ["es", "ar", "zh", "fr", "h
 const OTHER_REQUESTS = 2;
 const EXAMPLE_SEND = "10";
 const EXAMPLE_RECIPIENT = "@amina";
+/** Panel 2 names the approval this platform really uses (its narration clip does the same). */
+const BOUNDS_COPY = Platform.select({
+  web: { body: "story.boundsBodyWeb", above: "story.boundsAboveWeb" },
+  android: { body: "story.boundsBodyAndroid", above: "story.boundsAboveAndroid" },
+  default: { body: "story.boundsBody", above: "story.boundsAbove" },
+} as const);
 
 /** True while the app is in the foreground. */
 function useAppActive() {
@@ -96,25 +107,36 @@ export function StoryScreen() {
   const covered = languageOpen || signIn.isOpen;
   const visible = focused && appActive && !covered;
   const paused = reduced || screenReader || !visible;
+  const narration = useStoryNarration({ locale, index, active: visible });
+  const { holding, heard, cut, settle } = narration;
 
-  // One panel's dwell, restarted by every change and every interaction; the story rests on its last panel.
+  // One panel's dwell, restarted by every change and every interaction; the story rests on its last panel. With
+  // narration on, the dwell waits for the panel's clip and then moves on after a short pause.
   React.useEffect(() => {
-    if (paused || index >= LAST_PANEL) return undefined;
-    dwell.current = setTimeout(() => {
-      if (!dragging.current) setIndex((i) => Math.min(LAST_PANEL, i + 1));
-    }, MOTION.storyDwellMs);
+    if (paused || holding || index >= LAST_PANEL) return undefined;
+    dwell.current = setTimeout(
+      () => {
+        if (!dragging.current) setIndex((i) => Math.min(LAST_PANEL, i + 1));
+      },
+      heard ? MOTION.narrationTailMs : MOTION.storyDwellMs,
+    );
     return () => clearTimeout(dwell.current);
-  }, [index, paused, interactions]);
+  }, [index, paused, holding, heard, interactions]);
 
-  const onInteraction = React.useCallback((phase: "start" | "end") => {
-    if (phase === "start") {
-      dragging.current = true;
-      clearTimeout(dwell.current);
-      return;
-    }
-    dragging.current = false;
-    setInteractions((n) => n + 1);
-  }, []);
+  const onInteraction = React.useCallback(
+    (phase: "start" | "end") => {
+      if (phase === "start") {
+        dragging.current = true;
+        clearTimeout(dwell.current);
+        cut();
+        return;
+      }
+      dragging.current = false;
+      settle();
+      setInteractions((n) => n + 1);
+    },
+    [cut, settle],
+  );
   const goTo = (next: number) => {
     setIndex(next);
     setInteractions((n) => n + 1);
@@ -143,7 +165,7 @@ export function StoryScreen() {
     {
       panels: [
         { title: t("story.requestTitle"), body: t("story.requestBody") },
-        { title: t("story.boundsTitle"), body: t("story.boundsBody") },
+        { title: t("story.boundsTitle"), body: t(BOUNDS_COPY.body) },
         { title: t("story.practiceTitle"), body: t("story.practiceBody") },
         { title: t("story.languageTitle"), body: t("story.languageBody") },
         { title: t("story.firstTitle"), body: t("story.firstBody") },
@@ -162,7 +184,7 @@ export function StoryScreen() {
         amount: money(DEFAULT_LIMITS.testnet.daily),
         perDay: t("story.perDay"),
         inside: t("story.boundsInside"),
-        above: t("story.boundsAbove"),
+        above: t(BOUNDS_COPY.above),
         never: t("story.boundsNever"),
       },
       practice: {
@@ -191,11 +213,22 @@ export function StoryScreen() {
         canvasHeight={Math.round(height * CANVAS_RATIO)}
         ink={STORY_INK}
         topEnd={
-          <StoryLanguagePill
-            label={LANGUAGE_NAMES[locale]}
-            accessibilityLabel={t("settings.language")}
-            onPress={() => setLanguageOpen(true)}
-          />
+          <View className="ms-2 shrink flex-row items-center gap-2">
+            <StoryNarrationButton
+              on={narration.enabled}
+              level={narration.level}
+              label={t("story.readAloud")}
+              onPress={() => {
+                tapFeedback("selection");
+                narration.toggle();
+              }}
+            />
+            <StoryLanguagePill
+              label={LANGUAGE_NAMES[locale]}
+              accessibilityLabel={t("settings.language")}
+              onPress={() => setLanguageOpen(true)}
+            />
+          </View>
         }
         footer={
           <>

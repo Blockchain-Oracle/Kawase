@@ -30,7 +30,14 @@ export type RecipientFacts =
       paidBefore: boolean;
       /** The name of a saved contact whose address looks like this one but is not it. */
       lookalikeOf?: string | undefined;
+      /** When this address was first known (saved as a contact, or first paid): the new-recipient cooldown runs from here. */
+      knownSince?: string | undefined;
+      /** On the person's allowlist on this network. */
+      allowlisted?: boolean | undefined;
     };
+
+/** The risk dial (X11): careful (Guard) confirms everything; balanced is D33; autonomous may act on its own suggestions inside grants. */
+export type RiskMode = "careful" | "balanced" | "autonomous";
 
 export type AmountFacts = { status: "missing" } | { status: "invalid" } | { status: "ok"; baseUnits: bigint };
 
@@ -51,8 +58,17 @@ export type SendFacts = {
   /** What the person said; undefined when they did not name one. */
   asset: AssetId | undefined;
   amount: AmountFacts;
-  /** The everyday allowance (USDC only): whether one is signed and what the chain says is left this period. */
+  /**
+   * The everyday allowance for this send's token (one per token, cards/automate-safety.md): whether one is on, and what
+   * is left this period — the chain's room, never more than the person's own tighter cap.
+   */
   allowance: { active: boolean; available: bigint };
+  /** The risk dial; absent = balanced. */
+  riskMode?: RiskMode | undefined;
+  /** A new address can receive at most `cap` per payment until `seconds` after it was first known. */
+  cooldown?: { seconds: number; cap: bigint; now: string } | undefined;
+  /** Only allowlisted recipients may be paid inside the allowance (without the person). */
+  allowlistOnly?: boolean | undefined;
   /** The person's limits for this network, in the asset's own units. */
   limits: { perTx: bigint; daily: bigint; weekly: bigint };
   /** Reserved and committed sends of this asset in the last day and week. */
@@ -75,6 +91,7 @@ export type SendEvaluation = {
 };
 
 const ZERO = 0n;
+const MS_PER_SECOND = 1000;
 const s = (value: bigint) => value.toString();
 
 function chooseAsset(named: AssetId | undefined, balances: Record<AssetId, bigint>): AssetId | "unclear" {
@@ -98,7 +115,8 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
     const elsewhere = facts.capability.other === "available";
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "send" })], facts.asset);
   }
-  if (facts.pausedAll) return done([result("PAUSED_ALL")], facts.asset);
+  // Pause all stops the agent and automations (cards/automate-safety.md): nothing goes on the allowance, but the
+  // person's own Face ID still works, so the exit kit's "withdraw everything" can run while paused.
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")], facts.asset);
 
   // Who.
@@ -151,6 +169,16 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const balance = facts.wallet.balances[asset];
   if (amount > balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(balance), asset }));
 
+  // The new-recipient cooldown: an address first known less than `seconds` ago gets at most `cap` per payment.
+  const cooldown = facts.cooldown;
+  if (cooldown && cooldown.seconds > 0) {
+    const now = Date.parse(cooldown.now);
+    const since = recipient.knownSince ? Date.parse(recipient.knownSince) : now;
+    const endsAt = since + cooldown.seconds * MS_PER_SECOND;
+    if (endsAt > now && amount > cooldown.cap)
+      results.push(result("NEW_RECIPIENT_COOLDOWN", { cap: s(cooldown.cap), asset, until: new Date(endsAt).toISOString() }));
+  }
+
   // The route: the allowance only covers USDC, up to what the chain says is left, to a recipient that needs no
   // second look. Everything else is a wallet signature (Face ID).
   const firstTime = !recipient.paidBefore;
@@ -159,12 +187,17 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   if (lookalike) results.push(result("LOOKALIKE_ADDRESS", { name: recipient.lookalikeOf ?? "" }));
   if (recipient.via === "address") results.push(result("UNSAVED_ADDRESS"));
 
-  const allowanceCovers = asset === "USDC" && facts.wallet.setUp && facts.allowance.active;
-  if (asset === "USDC" && !allowanceCovers) results.push(result("NO_ALLOWANCE"));
+  const offAllowlist = Boolean(facts.allowlistOnly) && !recipient.allowlisted;
+  if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
+  if (offAllowlist) results.push(result("NOT_ON_ALLOWLIST", { name: recipient.name ?? "" }));
+  const allowanceCovers = facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist;
+  if (!facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
   if (allowanceCovers && amount > facts.allowance.available)
     results.push(result("ABOVE_ALLOWANCE", { available: s(facts.allowance.available), asset }));
 
-  const stepUp = lookalike || (firstTime && amount > facts.thresholds.firstTimeStepUp);
+  // Guard confirms every first payment to an address with Face ID, whatever the amount (X11).
+  const careful = facts.riskMode === "careful";
+  const stepUp = lookalike || (firstTime && (careful || amount > facts.thresholds.firstTimeStepUp));
   const route: SendRoute =
     allowanceCovers && amount <= facts.allowance.available && !stepUp ? "allowance" : "wallet_signature";
 

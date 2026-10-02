@@ -11,13 +11,14 @@ import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
-import { automationRuns, automations } from "./schema/automations";
+import { attentionItems, automationRuns, automations } from "./schema/automations";
 import { marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
 import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
+import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
 import { splitShares, splits } from "./schema/splits";
 
@@ -67,6 +68,10 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
   agent_wallet_moves: { table: agentWalletMoves, userId: agentWalletMoves.userId },
+  safety_settings: { table: safetySettings, userId: safetySettings.userId, perUserKey: ["network"] },
+  limit_changes: { table: limitChanges, userId: limitChanges.userId },
+  practice_runs: { table: practiceRuns, userId: practiceRuns.userId },
+  attention_items: { table: attentionItems, userId: attentionItems.userId },
   business_profiles: { table: businessProfiles, userId: businessProfiles.userId, perUserKey: [] },
   invoices: { table: invoices, userId: invoices.userId, perUserKey: ["number"] },
   payout_batches: { table: payoutBatches, userId: payoutBatches.userId },

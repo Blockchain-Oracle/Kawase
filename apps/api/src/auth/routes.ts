@@ -78,6 +78,7 @@ export function publicUser(user: {
   activeNetwork: string;
   riskMode: string;
   practiceMode: boolean;
+  pausedAllAt?: Date | null;
   turnkeySubOrganizationId: string | null;
   voicePrefs?: unknown;
 }) {
@@ -96,6 +97,7 @@ export function publicUser(user: {
     activeNetwork: user.activeNetwork,
     riskMode: user.riskMode,
     practiceMode: user.practiceMode,
+    pausedAllAt: user.pausedAllAt?.toISOString() ?? null,
     turnkeySubOrganizationId: user.turnkeySubOrganizationId,
     /** Settings → Voice, with the defaults filled in. */
     voicePrefs: voicePrefs(user.voicePrefs),

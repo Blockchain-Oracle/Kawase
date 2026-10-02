@@ -11,6 +11,8 @@ export const why = {
   },
   automation: "Your automation ran: {{kind}}",
   automationKind: {
+    payroll: "payroll",
+    dca: "a recurring buy",
     scheduled_send: "a scheduled payment",
     auto_save: "Auto-save",
     rule: "a rule",
@@ -27,6 +29,8 @@ export const why = {
   },
   compared: "Also compared: {{providers}}",
   approved: {
+    declined: "You declined it",
+    expired: "Not answered in time",
     allowance: "Approved by your daily allowance",
     wallet_signature: "You approved it",
     automation: "Approved by the automation's limit",
@@ -56,6 +60,15 @@ export const why = {
   byReference: "by its on-chain reference",
   recorded: "Recorded",
   audit: {
+    automation: {
+      run_skipped: "Kawase recorded the skip",
+      run_practiced: "Recorded as practice",
+    },
+    needs_you: {
+      opened: "Waited for you",
+      approved: "You approved it",
+      declined: "You declined it",
+    },
     payout: { sent: "Payout recorded" },
     invoice: { created: "Invoice created", paid: "Invoice marked paid", canceled: "Invoice cancelled" },
     payroll: { activated: "Payroll turned on" },

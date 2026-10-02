@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { InboxItem } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
@@ -24,6 +25,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
 import { useRunReason } from "@/automations/copy";
 import { useInbox } from "@/inbox/use-inbox";
 import { useRequestDates } from "@/request/copy";
@@ -44,6 +46,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const money = useMoney();
   const dates = useRequestDates();
   const reasonText = useRunReason();
+  const { locale } = useLocale();
   const ids = arcIdentity(item.network);
   const p = item.params;
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
@@ -51,9 +54,19 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const amount = money(p.asset, p.amount);
   const skipped = item.kind === "automation_skipped";
   const alert = item.kind === "rule_alert";
-  const incoming = item.kind !== "send_completed" && !skipped && !alert;
+  // 8c: a step waiting for the person, and the 24 h reminder; neither moved money.
+  const waiting = item.kind === "needs_you";
+  const reminder = item.kind === "automation_reminder";
+  const quiet = alert || waiting || reminder;
+  const incoming = item.kind !== "send_completed" && !skipped && !quiet;
   const title =
-    alert
+    waiting
+      ? t(p.reminder ? "notify.needsYouReminderTitle" : "notify.needsYouTitle")
+      : reminder
+        ? t("automation.inboxReminder")
+        : alert && p.trigger === "price"
+          ? t("automation.ruleAlertPrice", { amountIn: p.amountIn ?? "", symbolIn: p.symbolIn ?? "", quotedOut: p.quotedOut ?? "", symbolOut: p.symbolOut ?? "" })
+          : alert
       ? p.trigger === "money_in"
         ? t("automation.ruleAlertMoneyIn", { amount })
         : t(p.trigger === "balance_above" ? "automation.ruleAlertAbove" : "automation.ruleAlertBelow", { amount: money("USDC", p.threshold) })
@@ -65,7 +78,13 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           ? t("automation.inboxSkipped", { reason: reasonText(p.reason ?? null, p, item.network) })
           : t("inbox.sentTo", { name });
   const subtitle =
-    item.kind === "request_paid"
+    waiting
+      ? p.type === "swap"
+        ? t("notify.needsYouSwap", { amount: p.amount && p.decimalsIn ? formatTokenAmount(BigInt(p.amount), Number(p.decimalsIn), "", locale, { trimZeros: true, withSymbol: false }) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
+        : t("notify.needsYouSend", { amount, name })
+      : reminder
+        ? [p.automationKind === "payroll" ? t("notify.reminderPayroll", { people: p.people ?? "" }) : p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : `${amount} → ${name}`, p.short ? t("notify.reminderShort") : null, p.at ? dates.moment(p.at) : null].filter(Boolean).join(" · ")
+        : item.kind === "request_paid"
       ? t("inbox.requestPaidBy", { amount, name })
       : alert && p.balance
         ? `${t("automation.ruleAlertBalance", { amount: money("USDC", p.balance) })} · ${dates.moment(item.createdAt)}`
@@ -97,7 +116,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           {subtitle}
         </Text>
       </View>
-      {p.amount && !alert ? (
+      {p.amount && !quiet ? (
         <Amount className={cn("text-base", incoming ? "text-success" : skipped ? "text-muted-foreground" : "text-foreground")}>
           {skipped ? amount : `${incoming ? "+" : "−"}${amount}`}
         </Amount>
@@ -117,7 +136,8 @@ export function InboxScreen() {
 
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
-    if (item.kind === "automation_skipped" || item.kind === "rule_alert") router.push("/automations");
+    if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
+    else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
     // The action's own card by id (A5-2), or why money arrived; the explorer only when there is neither.
     else if (item.intentId) router.push({ pathname: "/i/[id]", params: { id: item.intentId } });

@@ -55,8 +55,8 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
   );
 }
 
-/** Checking → Signed → Submitted → Final, from the intent's state while the slide's yes runs. */
-export function MarginTrace({ intent, busy }: { intent: MarginIntent; busy: boolean }) {
+/** Checking → Signed → Submitted → Final, from the intent's state while the slide's yes runs (any wallet intent). */
+export function MarginTrace({ intent, busy }: { intent: Pick<MarginIntent, "state">; busy: boolean }) {
   const { t } = useT();
   const failed = intent.state === "failed" || intent.state === "rejected" || intent.state === "expired" || intent.state === "canceled";
   const reached =

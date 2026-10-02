@@ -8,6 +8,7 @@ import type { NetworkId } from "@kawase/networks";
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
+const TEN = 10n;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
@@ -52,7 +53,33 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
       body = text(locale, "notify", "skippedBody");
       path = "/automations";
       break;
+    // A step waiting for the person (Needs you): what, and a tap that opens it to approve or decline.
+    case "needs_you": {
+      const what =
+        p.type === "swap"
+          ? text(locale, "notify", "needsYouSwap", { amount: p.decimalsIn ? trimUnits(p.amount ?? "0", Number(p.decimalsIn)) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
+          : text(locale, "notify", "needsYouSend", { amount: sum, name });
+      title = text(locale, "notify", p.reminder ? "needsYouReminderTitle" : "needsYouTitle");
+      body = what;
+      path = p.itemId ? `/needs-you/${p.itemId}?from=push` : "/inbox";
+      break;
+    }
+    // The 24 h reminder: tomorrow's run, with a heads-up when the wallet is short.
+    case "automation_reminder": {
+      const at = p.at ? new Intl.DateTimeFormat(locale, { weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date(p.at)) : "";
+      const what = p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : p.automationKind === "payroll" ? text(locale, "notify", "reminderPayroll", { people: p.people ?? "" }) : `${sum} → ${name}`;
+      title = text(locale, "notify", "reminderTitle", { at });
+      body = [what, p.short ? text(locale, "notify", "reminderShort") : ""].filter(Boolean).join(" · ");
+      path = "/automations";
+      break;
+    }
     case "rule_alert":
+      if (p.trigger === "price") {
+        title = text(locale, "automation", "ruleAlertPrice", { amountIn: p.amountIn ?? "", symbolIn: p.symbolIn ?? "", quotedOut: p.quotedOut ?? "", symbolOut: p.symbolOut ?? "" });
+        body = "";
+        path = "/automations";
+        break;
+      }
       title =
         p.trigger === "money_in"
           ? text(locale, "automation", "ruleAlertMoneyIn", { amount: sum })
@@ -90,4 +117,12 @@ ${rendered.body ? `<p style="margin:0 0 16px">${escapeHtml(rendered.body)}</p>` 
 <p style="color:#5C6158;font-size:13px;margin-top:24px">${escapeHtml(never)}<br>${escapeHtml(why)}</p>
 </body></html>`,
   };
+}
+
+/** Base units in a token's own decimals as a plain number ("12.5"), for tokens the shared money formatter does not know. */
+function trimUnits(baseUnits: string, decimals: number): string {
+  const value = BigInt(baseUnits);
+  const divisor = TEN ** BigInt(decimals);
+  const fraction = (value % divisor).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return fraction ? `${value / divisor}.${fraction}` : `${value / divisor}`;
 }

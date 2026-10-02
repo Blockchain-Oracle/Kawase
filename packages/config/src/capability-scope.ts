@@ -52,14 +52,20 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   bridge: {
     supports: [
-      "USDC from Arc to the person's own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche, through Circle CCTP with Circle's forwarder (about a minute)",
-      "other providers (LI.FI on both networks; Relay and deBridge on mainnet) are quoted for comparison only; CCTP is the route Kawase executes",
+      "USDC from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche (the person's own address, a contact, an @handle or a 0x address): Kawase quotes Circle CCTP, Across and Relay, ranks them by what arrives after fees, shows up to three, and executes the chosen route as one batch confirmed with Face ID",
+      "Bring to Arc: USDC the person holds at the same address on another chain is found and brought to Arc with Relay's permit — one signature, no gas needed on that chain",
+      "following each move until it is delivered (Across deposit status, Relay request status, CCTP attestation), and saying plainly when a provider refunds instead",
+      "on Arc Testnet: CCTP only (Across and Relay serve Arc mainnet only)",
     ],
-    notYet: ["executing another provider's route even when it is cheaper", "bridging into Arc", "sending to someone else on another chain", "recovering a stuck transfer"],
+    notYet: ["assets other than USDC across chains (convert to USDC first)", "deBridge and LI.FI routes (quoted, not executed)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
   },
   yield: {
-    supports: ["depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc (mock vaults on Arc Testnet)"],
-    notYet: ["other yield protocols", "rewards", "depositing from another chain"],
+    supports: [
+      "depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc, ranked by what they could give back now; vaults that could not are hidden (mock vaults on Arc Testnet)",
+      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP campaigns from Merkl (advanced, shown only), ranked by rate among sources that could return the amount",
+      "supplying to and withdrawing from Aave V4 on Arc mainnet (see lend)",
+    ],
+    notYet: ["LP deposits and claiming rewards", "Morpho Blue markets directly", "depositing from another chain"],
   },
   automations: {
     supports: [
@@ -74,6 +80,14 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "practice mode (what a rule would have done)",
       "editing an automation in place (cancel and set it up again for now)",
     ],
+  },
+  lend: {
+    supports: [
+      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
+      "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
+      "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a live health gauge, the liquidation price when the collateral is one asset, a health check (refused below 1.25, warned below 1.5) and the rate; repaying part or all",
+    ],
+    notYet: ["Morpho Blue markets directly", "LP deposits", "health alerts by push (shown on the position for now)", "Aave V4 on testnet (it is mainnet only)"],
   },
   margin: {
     supports: [

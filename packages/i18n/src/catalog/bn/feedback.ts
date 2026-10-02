@@ -7,5 +7,6 @@ export const feedback: Catalog["feedback"] = {
   haptics: "স্পর্শ প্রতিক্রিয়া",
   hapticsBody: "নিশ্চিত ফলাফলের জন্য স্পর্শ প্রতিক্রিয়া।",
   narration: "শুরুর পরিচিতির বর্ণনা",
+  narrationBody: "সোয়াইপ করার সময় স্বাগত গল্পটি পড়ে শোনায়।",
   saveFailed: "এই পছন্দ সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
 };

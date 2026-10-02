@@ -53,6 +53,7 @@ export function usePolicyText() {
       balance: money(p.asset, p.balance),
       available: money(p.asset, p.available),
       needed: money("USDC", p.needed),
+      cap: money(p.asset, p.cap),
       until: p.until ? when(p.until) : "",
       network: other,
       defaultValue: result.code,
