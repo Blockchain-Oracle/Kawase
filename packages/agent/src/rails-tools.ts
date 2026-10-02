@@ -11,8 +11,33 @@ const LEVERAGE_MIN = 1;
 const LEVERAGE_MAX = 10;
 const UNAVAILABLE = { summary: "This is not available here." };
 
+const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
+const RECIPIENT_MAX = 80;
+
 export function railsTools(context: AgentContext) {
   return {
+    propose_bridge: tool({
+      description:
+        "Prepare moving USDC from Arc to another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) for the person themselves or anyone else: pass the recipient only if they named one (a saved contact, a @handle or an address they gave). Kawase quotes every route that serves it (Circle CCTP, Across, Relay), ranks them by what arrives, and shows up to three on a card with the best chosen; the person can pick another and confirms with Face ID. Nothing moves from this call.",
+      inputSchema: z.object({
+        destination: z.enum(CHAINS).optional().describe("The chain they named; omit if they did not say"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say"),
+        recipient: z.string().max(RECIPIENT_MAX).optional().describe("Only who they named: a contact, @handle or address; omit for themselves"),
+      }),
+      execute: async ({ destination, amount, recipient }) =>
+        context.proposeCrossChain ? context.proposeCrossChain({ direction: "out", destination: destination ?? null, amount: amount ?? null, recipient: recipient ?? null }) : UNAVAILABLE,
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    bring_to_arc: tool({
+      description:
+        "Bring USDC the person holds at their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) to Arc. Gasless: they sign one permit (no ETH needed there) and Relay delivers on Arc in seconds. Pass the chain only if they named one (else the chain holding the most), and the amount only if they said one. Shows a card; nothing moves from this call.",
+      inputSchema: z.object({
+        source: z.enum(CHAINS).optional(),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+      }),
+      execute: async ({ source, amount }) => (context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, amount: amount ?? null }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     start_buy: tool({
       description:
         "Buy with Apple Pay, Google Pay or a debit card (Circle's Onramp). It delivers USDC or EURC on Arc to the person's own wallet; for any other token, pass it as `then` and Kawase swaps what arrives (one more approval). Pass the amount in dollars or euros only if they said one. Shows a card: the person taps it to open Circle's checkout in the browser sheet; the money is confirmed when it arrives on chain. On testnet it is Circle's sandbox (test cards). Nothing is charged from this call.",

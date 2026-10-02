@@ -197,6 +197,13 @@
       "when": 1791000064000,
       "tag": "0021_request_any_asset",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791000065000,
+      "tag": "0032_crosschain",
+      "breakpoints": true
     }
   ]
 }

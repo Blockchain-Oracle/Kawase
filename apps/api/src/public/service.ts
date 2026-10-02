@@ -7,7 +7,7 @@ import { PUBLIC_STATS_CACHE_MS } from "@kawase/config";
 import { automationRuns, automations, intents, users, type Db } from "@kawase/db";
 import { NETWORK_IDS, type NetworkId } from "@kawase/networks";
 
-export const PUBLIC_ACTION_KINDS = ["send", "swap", "bridge", "earn", "margin"] as const;
+export const PUBLIC_ACTION_KINDS = ["send", "swap", "bridge", "earn", "margin", "crosschain"] as const;
 export type PublicActionKind = (typeof PUBLIC_ACTION_KINDS)[number];
 
 export type NetworkStats = {
@@ -29,7 +29,7 @@ export type PublicStats = {
 };
 
 const emptyNetwork = (): NetworkStats => ({
-  completed: { send: 0, swap: 0, bridge: 0, earn: 0, margin: 0 },
+  completed: { send: 0, swap: 0, bridge: 0, earn: 0, margin: 0, crosschain: 0 },
   automationRuns: 0,
   activeAutomations: 0,
 });
