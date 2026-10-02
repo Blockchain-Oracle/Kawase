@@ -34,6 +34,7 @@ const MEMO_ABI = parseAbi([
   "event Memo(address indexed sender, address indexed target, bytes32 callDataHash, bytes32 indexed memoId, bytes memo, uint256 memoIndex)",
 ]);
 const ZERO = 0n;
+const ONE_BLOCK = 1n;
 const DISPLAY_LOCALE = "en";
 
 type InvoiceRow = typeof invoices.$inferSelect;
@@ -287,7 +288,7 @@ ${view.note ? `<p>${escape(view.note)}</p>` : ""}
     const latest = await clients.client.getBlockNumber();
     const from = this.cursor.get(network) ?? latest - BigInt(MEMO_SCAN_BLOCKS);
     if (open.length === 0 || from > latest) {
-      this.cursor.set(network, latest + 1n);
+      this.cursor.set(network, latest + ONE_BLOCK);
       return 0;
     }
     const byMemo = new Map(open.map((row) => [row.memoId.toLowerCase(), row]));
@@ -295,7 +296,7 @@ ${view.note ? `<p>${escape(view.note)}</p>` : ""}
       address: clients.network.addresses.memo as Address,
       event: MEMO_ABI[1],
       args: { memoId: open.map((row) => row.memoId as Hex) },
-      fromBlock: from < 0n ? 0n : from,
+      fromBlock: from < ZERO ? ZERO : from,
       toBlock: latest,
     });
     let recorded = 0;
@@ -322,7 +323,7 @@ ${view.note ? `<p>${escape(view.note)}</p>` : ""}
       }
       recorded++;
     }
-    this.cursor.set(network, latest + 1n);
+    this.cursor.set(network, latest + ONE_BLOCK);
     return recorded;
   }
 

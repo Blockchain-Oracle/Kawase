@@ -46,7 +46,7 @@ export const invoices = pgTable(
     /** bytes32: the Memo contract's indexed memoId for this invoice (opaque; memo data is public). */
     memoId: text().notNull(),
     status: invoiceStatusEnum().notNull().default("open"),
-    paidAmount: money().notNull().default(0n),
+    paidAmount: money().notNull().default(BigInt(0)),
     payments: jsonb().$type<InvoicePayment[]>().notNull().default([]),
     note: text(),
     createdAt: createdAt(),
