@@ -24,6 +24,7 @@ export const pt: Catalog = {
     offlineAction: "Sem conexão. Verifique sua internet e tente de novo.",
     expiredCode: "Esse código expirou. Peça um novo.",
     rateLimited: "Foram enviados códigos demais. Espere alguns minutos e tente de novo.",
+    tryAgainIn: "Tente de novo em {{time}}",
     signInFailed: "Não foi possível entrar. Tente de novo.",
     walletFailed: "Você entrou, mas sua carteira não foi criada. Tente de novo — nada foi perdido.",
     resendIn: "Enviar um novo código em {{seconds}} s",

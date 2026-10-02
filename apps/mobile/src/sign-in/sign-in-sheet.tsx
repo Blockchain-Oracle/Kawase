@@ -8,6 +8,7 @@
 // Failures say what failed (Codex review R08): a wrong or expired code, too many codes, no connection, or "you're
 // signed in, but the wallet wasn't created" — which keeps the sign-in and retries only the wallet. A sheet closed
 // mid-request ignores the late answer instead of navigating, and a new code can be asked for after a short wait.
+// When Turnkey refuses more codes for an email, sending stays off with a countdown until it takes them again.
 import * as React from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,7 +32,21 @@ const CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** A new code can be asked for this long after the last one was sent. */
 const RESEND_COOLDOWN_S = 30;
+/**
+ * After Turnkey refuses a new code ("Max number of OTPs have been initiated"), how long the sheet waits before
+ * offering another: Turnkey keeps at most 3 active codes per user, each living 5 minutes
+ * (docs.turnkey.com/features/authentication/email, "OTP Rate Limits").
+ */
+const OTP_LIMIT_COOLDOWN_S = 300;
 const MS_PER_SECOND = 1_000;
+const SECONDS_PER_MINUTE = 60;
+const SECONDS_DIGITS = 2;
+
+/** Per email, until when Turnkey refuses new codes. Kept outside the sheet so closing and reopening it can't skip the wait. */
+const codesRefusedUntil = new Map<string, number>();
+const refusalKey = (address: string) => address.trim().toLowerCase();
+const minutesAndSeconds = (seconds: number) =>
+  `${Math.floor(seconds / SECONDS_PER_MINUTE)}:${String(seconds % SECONDS_PER_MINUTE).padStart(SECONDS_DIGITS, "0")}`;
 
 type Step = { name: "methods" } | { name: "code"; email: string; otpId: string; otpEncryptionTargetBundle: string };
 type Pending = "code" | "verify" | "resend" | "continue" | SocialProvider | "wallet" | undefined;
@@ -62,12 +77,16 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
   const activeAttempt = React.useRef(false);
   const [resendAt, setResendAt] = React.useState(0);
   const [now, setNow] = React.useState(() => Date.now());
+  // Render reads this copy of `codesRefusedUntil`, never the module's map (the React Compiler may cache reads).
+  const [refusals, setRefusals] = React.useState<Record<string, number>>({});
   // Every opening and closing starts a new generation; an answer from an older one is ignored.
   const generation = React.useRef(0);
 
   // A fresh sheet starts at the methods; the email typed last time stays.
   React.useEffect(() => {
     generation.current += 1;
+    setNow(Date.now());
+    setRefusals(Object.fromEntries(codesRefusedUntil));
     if (!open) {
       setStep({ name: "methods" });
       setCode("");
@@ -79,13 +98,16 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
     }
   }, [open]);
 
-  // The resend countdown ticks only while it runs.
+  const refusedUntil = refusals[refusalKey(step.name === "code" ? step.email : email)] ?? 0;
+  // The countdowns tick only while one runs.
   React.useEffect(() => {
-    if (resendAt <= now) return undefined;
+    if (Math.max(resendAt, refusedUntil) <= now) return undefined;
     const timer = setInterval(() => setNow(Date.now()), MS_PER_SECOND);
     return () => clearInterval(timer);
-  }, [resendAt, now]);
+  }, [resendAt, refusedUntil, now]);
   const resendIn = Math.max(0, Math.ceil((resendAt - now) / MS_PER_SECOND));
+  /** Seconds until Turnkey takes a new code for this email again; while it runs, sending is off. */
+  const refusedFor = Math.max(0, Math.ceil((refusedUntil - now) / MS_PER_SECOND));
 
   const busy = pending !== undefined;
 
@@ -185,7 +207,15 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
       setResendAt(Date.now() + RESEND_COOLDOWN_S * MS_PER_SECOND);
     } catch (problem) {
       if (started !== generation.current) return;
-      setError(message(classifySignInFailure(problem), false));
+      const failure = classifySignInFailure(problem);
+      if (failure === "rateLimited") {
+        // Said by the countdown on the button and the line under it, which both end when Turnkey takes codes again.
+        codesRefusedUntil.set(refusalKey(address), Date.now() + OTP_LIMIT_COOLDOWN_S * MS_PER_SECOND);
+        setRefusals(Object.fromEntries(codesRefusedUntil));
+        setNow(Date.now());
+        return;
+      }
+      setError(message(failure, false));
     } finally {
       if (started === generation.current) setPending(undefined);
     }
@@ -288,15 +318,19 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
               keyboardType="email-address"
               returnKeyType="send"
               editable={turnkey.available && !busy}
-              onSubmitEditing={() => (EMAIL_PATTERN.test(email.trim()) ? void sendCode() : undefined)}
+              onSubmitEditing={() => (EMAIL_PATTERN.test(email.trim()) && refusedFor === 0 ? void sendCode() : undefined)}
             />
             <Button
               size="lg"
-              disabled={busy || !turnkey.available || !EMAIL_PATTERN.test(email.trim())}
+              disabled={busy || !turnkey.available || !EMAIL_PATTERN.test(email.trim()) || refusedFor > 0}
               onPress={() => void sendCode()}
             >
               {pending === "code" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
-              <Text>{t("signIn.sendCode")}</Text>
+              <Text>
+                {refusedFor > 0
+                  ? t("errors.tryAgainIn", { time: minutesAndSeconds(refusedFor) })
+                  : t("signIn.sendCode")}
+              </Text>
             </Button>
 
             {turnkey.providers.length > 0 ? (
@@ -340,18 +374,26 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
               {pending === "verify" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
               <Text>{t("signIn.verify")}</Text>
             </Button>
-            <Button variant="ghost" disabled={busy || resendIn > 0} onPress={() => void sendCode(true)}>
+            <Button
+              variant="ghost"
+              disabled={busy || resendIn > 0 || refusedFor > 0}
+              onPress={() => void sendCode(true)}
+            >
               {pending === "resend" ? <ActivityIndicator color={colors["muted-foreground"]} /> : null}
               <Text className="text-muted-foreground">
-                {resendIn > 0 ? t("errors.resendIn", { seconds: resendIn }) : t("signIn.resend")}
+                {refusedFor > 0
+                  ? t("errors.tryAgainIn", { time: minutesAndSeconds(refusedFor) })
+                  : resendIn > 0
+                    ? t("errors.resendIn", { seconds: resendIn })
+                    : t("signIn.resend")}
               </Text>
             </Button>
           </>
         )}
         {working ? <StatusLine label={working} color={colors["muted-foreground"]} /> : null}
-        {error ? (
+        {error || refusedFor > 0 ? (
           <Text accessibilityRole="alert" className="text-destructive text-sm">
-            {error}
+            {error ?? t("errors.rateLimited")}
           </Text>
         ) : null}
       </Sheet>

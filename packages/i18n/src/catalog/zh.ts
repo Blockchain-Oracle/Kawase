@@ -23,6 +23,7 @@ export const zh: Catalog = {
     offlineAction: "没有网络连接。请检查网络后重试。",
     expiredCode: "验证码已过期，请重新发送。",
     rateLimited: "发送的验证码太多了。请等几分钟再试。",
+    tryAgainIn: "{{time}} 后再试",
     signInFailed: "登录没有成功，请重试。",
     walletFailed: "你已登录，但钱包没有创建成功。请重试，不会丢失任何内容。",
     resendIn: "{{seconds}} 秒后可重新发送",

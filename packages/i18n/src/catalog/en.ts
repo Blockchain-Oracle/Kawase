@@ -23,6 +23,8 @@ export const en = {
     offlineAction: "No connection. Check your internet and try again.",
     expiredCode: "That code has expired. Send a new one.",
     rateLimited: "Too many codes were sent. Wait a few minutes, then try again.",
+    /** Shown on the send button while Turnkey refuses new codes; {{time}} is m:ss. */
+    tryAgainIn: "Try again in {{time}}",
     signInFailed: "Signing in didn't work. Try again.",
     walletFailed: "You're signed in, but your wallet wasn't created. Try again — nothing is lost.",
     resendIn: "Send a new code in {{seconds}} s",
