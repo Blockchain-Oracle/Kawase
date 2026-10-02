@@ -169,6 +169,14 @@
       "reactCompiler": true
     },
     "owner": "abu.dev",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9dc112f0-be08-4556-8cb1-f6ad4bbefc70",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "extra": {
       "eas": {
         "projectId": "9dc112f0-be08-4556-8cb1-f6ad4bbefc70"

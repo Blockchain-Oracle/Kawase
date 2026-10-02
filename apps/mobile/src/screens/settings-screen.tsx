@@ -163,6 +163,15 @@ export function SettingsScreen() {
                     {user?.email ?? ""}
                   </Text>
                 }
+                chevron
+                onPress={() => router.push("/account")}
+              />
+              <ListRow
+                leading={<RowIcon icon={ShieldCheck} />}
+                title={t("account.title")}
+                subtitle={t("account.settingsBody")}
+                chevron
+                onPress={() => router.push("/account")}
               />
             </ListGroup>
           </Section>
@@ -298,7 +307,12 @@ export function SettingsScreen() {
 
         <Section title={t("settings.security")}>
           <ListGroup>
-            <ListRow leading={<RowIcon icon={KeyRound} />} title={t("settings.devices")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={KeyRound} />}
+              title={t("settings.devices")}
+              chevron
+              {...(account ? { onPress: () => router.push("/account/devices") } : { onPress: signIn.open })}
+            />
             <ListRow leading={<RowIcon icon={Database} />} title={t("settings.privacy")} trailing={coming} disabled />
           </ListGroup>
         </Section>
