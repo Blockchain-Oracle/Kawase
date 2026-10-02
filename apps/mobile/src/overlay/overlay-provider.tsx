@@ -11,6 +11,8 @@
 import * as React from "react";
 import { BackHandler, Platform, View, type ViewProps } from "react-native";
 
+import { BlurTarget, BlurTargetProvider } from "@kawase/ui-native/components/blur-target";
+
 type OverlayKind = "voice" | "fan";
 
 type OverlayState = {
@@ -25,6 +27,8 @@ type OverlayState = {
   exited: (kind: OverlayKind) => void;
   /** The dock's orb slot: where the voice overlay's orb rises from and where focus returns. */
   voiceTrigger: React.RefObject<View | null>;
+  /** The pages, as Android's blur target for the overlays. */
+  blurTarget: React.RefObject<View | null>;
 };
 
 const OverlayContext = React.createContext<OverlayState | null>(null);
@@ -33,6 +37,7 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = React.useState<OverlayKind | null>(null);
   const [leaving, setLeaving] = React.useState<OverlayKind | null>(null);
   const voiceTrigger = React.useRef<View>(null);
+  const blurTarget = React.useRef<View>(null);
 
   const value = React.useMemo<OverlayState>(() => {
     const close = () => {
@@ -48,6 +53,7 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       toggle: (kind) => (current === kind ? close() : setCurrent(kind)),
       exited: (kind) => setLeaving((was) => (was === kind ? null : was)),
       voiceTrigger,
+      blurTarget,
     };
   }, [current, leaving]);
 
@@ -68,7 +74,11 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, [current, value]);
 
-  return <OverlayContext.Provider value={value}>{children}</OverlayContext.Provider>;
+  return (
+    <OverlayContext.Provider value={value}>
+      <BlurTargetProvider target={blurTarget}>{children}</BlurTargetProvider>
+    </OverlayContext.Provider>
+  );
 }
 
 export function useOverlay(): OverlayState {
@@ -78,9 +88,10 @@ export function useOverlay(): OverlayState {
 }
 
 /** The pages and the dock: out of assistive tech's reach while an overlay is open. */
+/** The pages and the dock: hidden from assistive tech under an open overlay, and what the overlay blurs on Android. */
 export function OverlayUnderlay(props: ViewProps) {
-  const { current } = useOverlay();
-  return <View aria-hidden={current !== null} {...props} />;
+  const { current, blurTarget } = useOverlay();
+  return <BlurTarget target={blurTarget} aria-hidden={current !== null} {...props} />;
 }
 
 export type { OverlayKind };

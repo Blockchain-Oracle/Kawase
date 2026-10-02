@@ -16,8 +16,10 @@ import { cn } from "@kawase/ui-native/lib/utils";
 import { BlurView } from "expo-blur";
 import { X } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+
+import { useAndroidBlur } from "./blur-target";
 
 const AnimatedBlur = Animated.createAnimatedComponent(BlurView);
 
@@ -99,6 +101,7 @@ function BlurOverlay({
     return () => clearTimeout(timer);
   }, [open, mounted, modal, reduced, initialFocusRef]);
 
+  const android = useAndroidBlur();
   const blurProps = useAnimatedProps(() => ({ intensity: progress.value * BLUR.overlay }));
   const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
   const scrimFade = useAnimatedStyle(() => ({ opacity: progress.value * SCRIM_STRENGTH }));
@@ -119,7 +122,7 @@ function BlurOverlay({
       <AnimatedBlur
         animatedProps={blurProps}
         tint={scheme === "dark" ? "dark" : "light"}
-        experimentalBlurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
+        {...android}
         style={StyleSheet.absoluteFill}
       />
       <Animated.View aria-hidden style={[StyleSheet.absoluteFill, scrimFade, { backgroundColor: scrim }]}>

@@ -6,7 +6,9 @@ import { BLUR } from "@kawase/config";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { BlurView, type BlurTint } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { Platform, StyleSheet, View, type ViewProps } from "react-native";
+import { StyleSheet, View, type ViewProps } from "react-native";
+
+import { useAndroidBlur } from "./blur-target";
 
 type GlassProps = ViewProps & {
   /** Which base theme the page is on, so the blur tint matches. */
@@ -24,6 +26,7 @@ const liquid = isLiquidGlassAvailable();
 
 function Glass({ scheme, intensity = BLUR.dock, tint, radius, className, style, children, ...props }: GlassProps) {
   const blurTint: BlurTint = scheme === "dark" ? "dark" : "light";
+  const android = useAndroidBlur();
   return (
     <View className={cn("border-glass-border overflow-hidden border", className)} style={[{ borderRadius: radius }, style]} {...props}>
       {liquid ? (
@@ -34,7 +37,7 @@ function Glass({ scheme, intensity = BLUR.dock, tint, radius, className, style, 
             pointerEvents="none"
             intensity={intensity}
             tint={blurTint}
-            experimentalBlurMethod={Platform.OS === "android" ? "dimezisBlurView" : undefined}
+            {...android}
             style={StyleSheet.absoluteFill}
           />
           <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />

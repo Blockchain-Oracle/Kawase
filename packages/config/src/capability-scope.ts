@@ -51,5 +51,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     ],
   },
   marketplace: { supports: [], notYet: ["finding and paying for services over x402 within a budget"] },
-  voice: { supports: [], notYet: ["talking to Kawase by voice (typing works everywhere)"] },
+  voice: {
+    supports: [
+      "talking to Kawase on iPhone and Android in your language: it hears you, answers aloud, and puts the same cards on your screen as chat",
+      "one conversation: what you said by voice is in the chat thread, and typing picks it up",
+      "a send by voice is ready on its card and waits for your tap (Face ID / fingerprint), even inside the daily allowance",
+    ],
+    notYet: ["voice in the web app (typing works there)", "choosing Kawase's voice or speed"],
+  },
 };
