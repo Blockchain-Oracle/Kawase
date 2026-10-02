@@ -6,7 +6,16 @@
 import { getAddress, isAddress } from "viem";
 
 export type ParsedCode =
-  | { kind: "address"; address: string; chainId: number | null; token: string | null; native: boolean; amount: string | null }
+  | {
+      kind: "address";
+      address: string;
+      chainId: number | null;
+      token: string | null;
+      native: boolean;
+      amount: string | null;
+      /** An ERC-20 amount whose token's decimals were not known when parsing, as written (base units). */
+      rawAmount?: string | undefined;
+    }
   | { kind: "request"; token: string }
   | { kind: "unknown" };
 
@@ -49,7 +58,15 @@ function parseEip681(code: string, decimalsOf: (token: string) => number | null)
     if (!recipient || !token) return { kind: "unknown" };
     const raw = params.get("uint256");
     const decimals = decimalsOf(token);
-    return { kind: "address", address: recipient, chainId, token, native: false, amount: raw && decimals !== null ? scaledAmount(raw, decimals) : null };
+    return {
+      kind: "address",
+      address: recipient,
+      chainId,
+      token,
+      native: false,
+      amount: raw && decimals !== null ? scaledAmount(raw, decimals) : null,
+      ...(raw && decimals === null ? { rawAmount: raw } : {}),
+    };
   }
   if (fn) return { kind: "unknown" };
   const recipient = checksum(target!);

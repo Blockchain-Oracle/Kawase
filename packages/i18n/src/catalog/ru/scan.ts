@@ -16,7 +16,7 @@ export const scan: Catalog["scan"] = {
   otherNetwork: "Этот код для сети {{network}}. Переключитесь, чтобы оплатить там.",
   otherChain: "Этот код просит оплату в сети {{chain}}. Kawase платит в Arc; попросите адрес в Arc.",
   otherChainUnknown: "Этот код просит оплату в другой сети. Kawase платит в Arc; попросите адрес в Arc.",
-  unsupportedAsset: "Этот код просит токен, который Kawase здесь не отправляет. Он отправляет USDC и EURC.",
+  unsupportedAsset: "Этот код просит токен, которого нет в этой сети.",
   requestClosed: "Этот запрос уже оплачен, истёк или отменён.",
   notFound: "Нет запроса Kawase по этой ссылке.",
   notPayment: "Это не платёжный код.",

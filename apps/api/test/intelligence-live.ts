@@ -196,6 +196,7 @@ const scenarios: Record<string, () => Promise<unknown>> = {
       base: await resolve(`ethereum:${usdc}@8453/transfer?address=${person}&uint256=1e6`),
       otherToken: await resolve(`ethereum:0x1111111111111111111111111111111111111111@5042002/transfer?address=${person}&uint256=1e6`),
       lookalikeHost: await resolve(`https://kawase-pay.example/r/${request.token}`),
+      anyToken: await resolve(`ethereum:0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C@5042002/transfer?address=${person}&uint256=2500000`),
     };
     const threadId = randomUUID();
     const response = await real.request(

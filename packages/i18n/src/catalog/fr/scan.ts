@@ -17,7 +17,7 @@ export const scan: Catalog["scan"] = {
   otherChain: "Ce code demande un paiement sur {{chain}}. Kawase paie sur Arc ; demandez-leur une adresse Arc.",
   otherChainUnknown:
     "Ce code demande un paiement sur une autre chaîne. Kawase paie sur Arc ; demandez-leur une adresse Arc.",
-  unsupportedAsset: "Ce code demande un jeton que Kawase n’envoie pas ici. Il envoie de l’USDC et de l’EURC.",
+  unsupportedAsset: "Ce code demande un jeton qui n’existe pas sur ce réseau.",
   requestClosed: "Cette demande est déjà payée, expirée ou annulée.",
   notFound: "Aucune demande Kawase ne correspond à ce lien.",
   notPayment: "Ce n’est pas un code de paiement.",

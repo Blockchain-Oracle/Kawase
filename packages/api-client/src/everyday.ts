@@ -12,7 +12,8 @@ export type PayCodeView =
       to: string;
       /** Decimal, when the code carried one. */
       amount: string | null;
-      asset: "USDC" | "EURC" | null;
+      /** "USDC", "EURC", or any token's address on this network (R1); null when the code named none. */
+      asset: string | null;
     }
   | {
       status: "request";

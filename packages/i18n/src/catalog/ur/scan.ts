@@ -16,7 +16,7 @@ export const scan: Catalog["scan"] = {
   otherNetwork: "یہ کوڈ {{network}} کے لیے ہے۔ وہاں ادائیگی کے لیے نیٹ ورک بدلیں۔",
   otherChain: "یہ کوڈ {{chain}} پر ادائیگی مانگتا ہے۔ Kawase Arc پر ادائیگی کرتا ہے؛ ان سے Arc پتہ مانگیں۔",
   otherChainUnknown: "یہ کوڈ کسی دوسری چین پر ادائیگی مانگتا ہے۔ Kawase Arc پر ادائیگی کرتا ہے؛ ان سے Arc پتہ مانگیں۔",
-  unsupportedAsset: "یہ کوڈ ایسا ٹوکن مانگتا ہے جو Kawase یہاں نہیں بھیجتا۔ یہ USDC اور EURC بھیجتا ہے۔",
+  unsupportedAsset: "یہ کوڈ ایسا ٹوکن مانگتا ہے جو اس نیٹ ورک پر نہیں۔",
   requestClosed: "یہ درخواست پہلے ہی ادا، ختم یا منسوخ ہو چکی ہے۔",
   notFound: "اس لنک سے کوئی Kawase درخواست نہیں ملتی۔",
   notPayment: "یہ ادائیگی کوڈ نہیں ہے۔",

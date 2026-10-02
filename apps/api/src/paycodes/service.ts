@@ -3,7 +3,7 @@
 // where the recipient check runs as always —, a Kawase request or invoice link opens its pay page. What cannot be
 // paid here says why (R2): the other Arc network (switch first), another chain, a token Kawase does not send here,
 // a request that is paid, expired or cancelled.
-import { getAddress } from "viem";
+import { erc20Abi, getAddress } from "viem";
 
 import type { PayCodeView } from "@kawase/api-client";
 import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES, type NetworkId } from "@kawase/networks";
@@ -12,7 +12,8 @@ import { PUBLIC_LINKS } from "@kawase/config";
 import type { InvoiceService } from "../business/invoices";
 import type { RequestService } from "../requests/service";
 import type { SessionUser } from "../types";
-import { parsePayCode } from "./parse";
+import type { Chains } from "../wallet/chain";
+import { parsePayCode, scaledAmount } from "./parse";
 
 const STABLE_DECIMALS = 6;
 /** Chains people most often print codes for, by id, for the "this is for Base" line. */
@@ -47,6 +48,8 @@ export class PayCodeService {
     private readonly requests: RequestService,
     private readonly invoices: InvoiceService | undefined,
     webUrl: string | undefined,
+    /** For an unknown token's decimals (any ERC-20 on Arc). */
+    private readonly chains?: Chains | undefined,
   ) {
     this.hosts = [PUBLIC_LINKS.webApp, PUBLIC_LINKS.api, PUBLIC_LINKS.landing, webUrl, "https://kawase.84.46.247.92.sslip.io", "https://kawase-api.84.46.247.92.sslip.io"]
       .map(hostOf)
@@ -90,9 +93,25 @@ export class PayCodeService {
     if (!target)
       return { status: "unsupported", reason: "other_chain", chainId: parsed.chainId ?? undefined, chainName: parsed.chainId ? CHAIN_NAMES[parsed.chainId] : undefined };
     if (target !== network) return { status: "unsupported", reason: "other_network", network: target };
-    // Native value on Arc is USDC (Arc's gas token); a token must be USDC or EURC on this network.
-    const asset = parsed.native ? (parsed.amount ? "USDC" : null) : parsed.token ? this.assetOf(network, parsed.token) : null;
-    if (parsed.token && !asset) return { status: "unsupported", reason: "unsupported_asset", token: getAddress(parsed.token) };
-    return { status: "send", network, to: parsed.address, amount: parsed.amount, asset };
+    // Native value on Arc is USDC (Arc's gas token). A token is USDC, EURC, or any ERC-20 on this network (R1: every
+    // asset is first-class; Send runs the token rules and the recipient check on it).
+    if (parsed.native || !parsed.token) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: parsed.native && parsed.amount ? "USDC" : null };
+    const stable = this.assetOf(network, parsed.token);
+    if (stable) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: stable };
+    const decimals = await this.decimals(network, parsed.token);
+    if (decimals === undefined) return { status: "unsupported", reason: "unsupported_asset", token: getAddress(parsed.token) };
+    const amount = parsed.rawAmount ? scaledAmount(parsed.rawAmount, decimals) : parsed.amount;
+    return { status: "send", network, to: parsed.address, amount, asset: getAddress(parsed.token) };
+  }
+
+  /** An ERC-20's decimals on this network; undefined when the address is no token here. */
+  private async decimals(network: NetworkId, token: string): Promise<number | undefined> {
+    const client = this.chains?.get(network)?.client;
+    if (!client) return undefined;
+    try {
+      return Number(await client.readContract({ address: getAddress(token), abi: erc20Abi, functionName: "decimals" }));
+    } catch {
+      return undefined;
+    }
   }
 }

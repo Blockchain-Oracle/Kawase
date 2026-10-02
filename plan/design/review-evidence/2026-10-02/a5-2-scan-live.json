@@ -1,20 +1,25 @@
 {
   "scenario": "scan",
   "model": "default (packages/config)",
-  "at": "2026-10-02T19:27:46.980Z",
+  "at": "2026-10-02T20:40:42.312Z",
   "result": {
     "codes": {
       "requestLink": {
         "status": "request",
-        "token": "YXcX2KemTlB5VlWE",
+        "token": "tuocof1Wbb5D3gzN",
         "request": {
-          "token": "YXcX2KemTlB5VlWE",
+          "token": "tuocof1Wbb5D3gzN",
           "network": "testnet",
           "asset": "USDC",
+          "assetToken": {
+            "address": "0x3600000000000000000000000000000000000000",
+            "symbol": "USDC",
+            "decimals": 6
+          },
           "amount": "250000",
           "note": "Lunch",
           "status": "open",
-          "expiresAt": "2026-11-01T19:27:47.030Z",
+          "expiresAt": "2026-11-01T20:40:42.360Z",
           "requester": {
             "handle": null,
             "address": "0x2d9B5452178316E064d10e1424e8ACf65A71b6B9"
@@ -24,15 +29,20 @@
       },
       "appScheme": {
         "status": "request",
-        "token": "YXcX2KemTlB5VlWE",
+        "token": "tuocof1Wbb5D3gzN",
         "request": {
-          "token": "YXcX2KemTlB5VlWE",
+          "token": "tuocof1Wbb5D3gzN",
           "network": "testnet",
           "asset": "USDC",
+          "assetToken": {
+            "address": "0x3600000000000000000000000000000000000000",
+            "symbol": "USDC",
+            "decimals": 6
+          },
           "amount": "250000",
           "note": "Lunch",
           "status": "open",
-          "expiresAt": "2026-11-01T19:27:47.030Z",
+          "expiresAt": "2026-11-01T20:40:42.360Z",
           "requester": {
             "handle": null,
             "address": "0x2d9B5452178316E064d10e1424e8ACf65A71b6B9"
@@ -80,10 +90,17 @@
       "lookalikeHost": {
         "status": "unsupported",
         "reason": "not_a_payment"
+      },
+      "anyToken": {
+        "status": "send",
+        "network": "testnet",
+        "to": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+        "amount": "2.5",
+        "asset": "0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C"
       }
     },
     "agent": {
-      "reply": "The payment is ready for your confirmation on the card. It sends 1.50 USDC on Arc Testnet to the new address.",
+      "reply": "Ready: 1.5 USDC to 0x8ba1…BA72. It’s the first payment to this address, so confirm it on the card.",
       "code": {
         "to": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
         "asset": "USDC",
@@ -92,12 +109,12 @@
         "network": "testnet"
       },
       "send": {
-        "amount": "1.50 USDC",
+        "amount": "1.5 USDC",
         "status": "ready",
         "network": "testnet",
         "problem": null,
         "approval": "Needs their own confirmation: they tap Send on the card (Face ID on a phone, an email code on the web).",
-        "intentId": "01a0fe16-6038-77ca-866d-fdac4114c0d4",
+        "intentId": "01a0fe59-46b3-74ae-bfca-31ce286a84a6",
         "warnings": [
           "First payment to this address.",
           "The address is not a saved contact.",

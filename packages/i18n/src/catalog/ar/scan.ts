@@ -16,7 +16,7 @@ export const scan: Catalog["scan"] = {
   otherNetwork: "هذا الرمز لشبكة {{network}}. بدّل الشبكة للدفع هناك.",
   otherChain: "هذا الرمز يطلب الدفع على {{chain}}. يدفع Kawase على Arc؛ اطلب منهم عنوانًا على Arc.",
   otherChainUnknown: "هذا الرمز يطلب الدفع على سلسلة أخرى. يدفع Kawase على Arc؛ اطلب منهم عنوانًا على Arc.",
-  unsupportedAsset: "هذا الرمز يطلب رمزًا لا يرسله Kawase هنا. يرسل USDC وEURC.",
+  unsupportedAsset: "هذا الرمز يطلب رمزًا غير موجود على هذه الشبكة.",
   requestClosed: "هذا الطلب مدفوع أو منتهٍ أو ملغى بالفعل.",
   notFound: "لا يوجد طلب من Kawase يطابق هذا الرابط.",
   notPayment: "هذا ليس رمز دفع.",

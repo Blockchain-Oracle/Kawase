@@ -139,7 +139,7 @@ export function buildIntelligence(input: {
     },
 
     async payCode(code) {
-      return new PayCodeService(input.requests, input.invoices, undefined).resolve(user, code);
+      return new PayCodeService(input.requests, input.invoices, undefined, input.chains).resolve(user, code);
     },
 
     warn(error, what) {

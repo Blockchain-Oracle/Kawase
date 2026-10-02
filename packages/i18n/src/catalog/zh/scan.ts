@@ -16,7 +16,7 @@ export const scan: Catalog["scan"] = {
   otherNetwork: "该二维码用于 {{network}}。切换后即可在那里付款。",
   otherChain: "该二维码要求在 {{chain}} 上付款。Kawase 在 Arc 上付款；请向对方要一个 Arc 地址。",
   otherChainUnknown: "该二维码要求在其他链上付款。Kawase 在 Arc 上付款；请向对方要一个 Arc 地址。",
-  unsupportedAsset: "该二维码要求的代币 Kawase 在这里不支持发送。可发送 USDC 和 EURC。",
+  unsupportedAsset: "该二维码要求的代币不在此网络上。",
   requestClosed: "该请求已付款、已过期或已取消。",
   notFound: "没有与此链接匹配的 Kawase 请求。",
   notPayment: "这不是付款二维码。",

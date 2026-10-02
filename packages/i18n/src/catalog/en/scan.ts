@@ -14,7 +14,7 @@ export const scan = {
   otherNetwork: "This code is for {{network}}. Switch to pay it there.",
   otherChain: "This code asks for payment on {{chain}}. Kawase pays on Arc; ask them for an Arc address.",
   otherChainUnknown: "This code asks for payment on another chain. Kawase pays on Arc; ask them for an Arc address.",
-  unsupportedAsset: "This code asks for a token Kawase doesn't send here. It sends USDC and EURC.",
+  unsupportedAsset: "This code asks for a token that isn't on this network.",
   requestClosed: "This request is already paid, expired or cancelled.",
   notFound: "No Kawase request matches this link.",
   notPayment: "This isn't a payment code.",
