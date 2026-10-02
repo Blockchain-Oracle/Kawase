@@ -79,6 +79,7 @@ import { receipt } from "./receipt";
 import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
+import { places } from "./places";
 
 export const bn: Catalog = {
   common,
@@ -160,4 +161,5 @@ export const bn: Catalog = {
   importContacts,
   alerts,
   chatCards,
+  places,
 };

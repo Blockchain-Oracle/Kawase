@@ -151,4 +151,7 @@ export const automation: Catalog["automation"] = {
   inboxReminder: "明天的自动任务",
   reason_INSUFFICIENT_BALANCE: "当时钱包余额不足",
   reason_BRAKE_HALF_BALANCE: "超过一半余额付给新收款人：等你处理",
+  asset: "资产",
+  buys: "买入 {{asset}}",
+  stableOnly: "定时转账使用 USDC 或 EURC（你的每日额度）",
 };

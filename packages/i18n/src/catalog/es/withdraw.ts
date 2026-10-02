@@ -82,4 +82,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "Los exchanges y las redes se muestran aquí para todos. Para sacar dinero necesitas tu cuenta.",
   cardTo: "Retirar a {{to}}",
   cardOpen: "Revisar y retirar",
+  testFaceId: "Enviar una prueba de {{amount}} USDC a {{to}}",
+  finishFaceId: "Terminar de retirar a {{to}}",
+  testTo: "Prueba a",
+  testDoneTitle: "La prueba llegó",
+  testDoneBody: "Comprueba que {{to}} la muestra y luego retira el resto.",
+  testContinue: "Retirar el resto",
+  firstTimeTitle: "Primera vez que envías aquí",
+  firstTimeBody: "Envía primero una pequeña prueba de {{amount}} USDC, comprueba que llegó y luego retira el resto.",
+  sendTest: "Enviar primero una prueba de {{amount}} USDC",
 };

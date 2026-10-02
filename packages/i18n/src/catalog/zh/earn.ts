@@ -65,4 +65,8 @@ export const earn: Catalog["earn"] = {
   homePosition: "{{amount}} 正在金库中赚取收益",
   yourPosition: "你的持仓",
   stuckHidden: "另有 {{count}} 个目前无法支付，已隐藏",
+  earnOn: "用哪种资产赚取",
+  earnOnAsset: "用 {{asset}} 赚取收益",
+  waysFor: "用 {{asset}} 赚取收益的方式",
+  alreadyEarning: "已在赚取收益",
 };

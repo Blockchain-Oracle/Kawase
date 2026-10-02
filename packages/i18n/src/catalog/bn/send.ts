@@ -97,4 +97,11 @@ export const send: Catalog["send"] = {
   otherChain: "তাদের ওয়ালেট অন্য চেইনে?",
   otherChainBridge: "ব্রিজ দিয়ে সেখানে USDC পাঠান: চেইন আর রুট আপনি বেছে নেবেন।",
   otherChainConvert: "শুধু USDC চেইন পার হয়। আগে আপনার {{asset}} USDC-তে রূপান্তর করুন।",
+  referenceAdd: "চেইনে একটি রেফারেন্স যোগ করুন",
+  referencePlaceholder: "ইনভয়েস বা অর্ডার নম্বর",
+  referenceHint:
+    "পেমেন্টের সাথে চেইনে লেখা হয়, যাতে প্রাপক মিলিয়ে নিতে পারেন। এটি সবাই দেখতে পায়: ব্যক্তিগত কিছু লিখবেন না।",
+  referenceFromCode: "কোড থেকে রেফারেন্স: {{reference}}",
+  referenceRemove: "সরান",
+  referenceLabel: "চেইনে রেফারেন্স",
 };

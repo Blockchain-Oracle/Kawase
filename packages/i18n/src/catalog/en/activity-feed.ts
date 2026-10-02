@@ -21,4 +21,9 @@ export const activityFeed = {
   latestOnly: "These are your latest movements.",
   network: "Network",
   paid: "Paid",
+  withdrawnTo: "Withdrawn to {{name}}",
+  withdrawingTo: "Withdrawal to {{name}}",
+  withdrawSteps: "{{count}} step(s)",
+  withdrawCanceled: "Canceled",
+  withdrawUnfinished: "Not finished · Finish it",
 } as const;

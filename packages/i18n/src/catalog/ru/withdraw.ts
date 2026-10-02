@@ -83,4 +83,14 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "Биржи и сети видны здесь всем. Чтобы вывести деньги, нужен ваш аккаунт.",
   cardTo: "Вывести на {{to}}",
   cardOpen: "Проверить и вывести",
+  testFaceId: "Отправить тестовые {{amount}} USDC на {{to}}",
+  finishFaceId: "Завершить вывод на {{to}}",
+  testTo: "Тест на",
+  testDoneTitle: "Тест дошёл",
+  testDoneBody: "Проверьте, что сумма видна на {{to}}, затем выведите остальное.",
+  testContinue: "Вывести остальное",
+  firstTimeTitle: "Первая отправка сюда",
+  firstTimeBody:
+    "Сначала отправьте небольшую тестовую сумму {{amount}} USDC, проверьте, что она дошла, затем выведите остальное.",
+  sendTest: "Сначала отправить тестовые {{amount}} USDC",
 };
