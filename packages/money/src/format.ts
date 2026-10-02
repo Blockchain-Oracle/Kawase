@@ -37,6 +37,17 @@ export function formatAmount(value: Amount, locale: string, options: FormatOptio
   return options.withSymbol === false ? signed : `${signed} ${ASSETS[value.asset].symbol}`;
 }
 
+/**
+ * A price that can be a fraction of a cent (x402 services cost $0.002–$0.10): every digit that matters, at least two.
+ * "0.006 USDC", "0.10 USDC", "1.25 USDC".
+ */
+export function formatPrice(value: Amount, locale: string, options: Pick<FormatOptions, "withSymbol"> = {}): string {
+  const decimals = decimalsOf(value.asset);
+  const fraction = (value.baseUnits < ZERO ? -value.baseUnits : value.baseUnits) % TEN ** BigInt(decimals);
+  const significant = fraction.toString().padStart(decimals, "0").replace(/0+$/, "").length;
+  return formatAmount(value, locale, { fractionDigits: Math.max(significant, DEFAULT_DISPLAY_FRACTION_DIGITS), ...options });
+}
+
 /** The canonical, locale-independent form (Latin digits, dot decimal) shown on confirmation cards next to the localized one. */
 export function canonicalAmount(value: Amount): string {
   const decimals = decimalsOf(value.asset);

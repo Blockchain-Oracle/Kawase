@@ -13,6 +13,8 @@ import { createApp } from "./app";
 import { createTurnkeyReader } from "./auth/turnkey";
 import { circleFaucet } from "./faucet/circle-faucet";
 import { circleOps } from "./send/ops";
+import { Discovery } from "@kawase/integrations-x402";
+import { circleAgentWallets } from "./marketplace/agent-wallets";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
 import { appKitSwaps } from "./swap/engine";
@@ -46,6 +48,8 @@ const app = createApp({
   approvalSecret: env.AGENT_APPROVAL_SECRET,
   livekit: env.LIVEKIT_URL && env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET ? { url: env.LIVEKIT_URL, apiKey: env.LIVEKIT_API_KEY, apiSecret: env.LIVEKIT_API_SECRET } : undefined,
   ops: circleOps(env),
+  agentWallets: circleAgentWallets(env),
+  discovery: new Discovery({ demoSellerUrl: env.X402_DEMO_SELLER_URL }),
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),

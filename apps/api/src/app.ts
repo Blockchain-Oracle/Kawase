@@ -49,6 +49,10 @@ import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import type { AppEnv } from "./types";
+import type { Discovery } from "@kawase/integrations-x402";
+import type { AgentWalletProvider } from "./marketplace/agent-wallets";
+import { marketplaceRoutes } from "./marketplace/routes";
+import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
@@ -94,6 +98,9 @@ export type AppDeps = {
   email?: ResendEmail | undefined;
   /** Sends due notifications this often; off when unset (tests drive delivery themselves). */
   notifyTickMs?: number | undefined;
+  /** The x402 marketplace: per-user agent wallets (Circle DCW) and Circle's catalog; off when either is unset. */
+  agentWallets?: AgentWalletProvider | undefined;
+  discovery?: Discovery | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -144,6 +151,10 @@ export function createApp(deps: AppDeps) {
     deps.log,
   );
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
+  const marketplace =
+    deps.agentWallets && deps.discovery
+      ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
+      : undefined;
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
@@ -221,7 +232,9 @@ export function createApp(deps: AppDeps) {
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
+  if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
   const agentDeps = {
+    marketplace,
     db: deps.db,
     chains: deps.chains,
     wallets,

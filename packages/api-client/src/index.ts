@@ -52,9 +52,21 @@ import type {
   NotificationSettings,
   NotificationSettingsChange,
 } from "./types";
+import type {
+  AgentWalletSettings,
+  AgentWalletSettingsChange,
+  AgentWalletView,
+  MarketplaceCategory,
+  MarketplaceGrantRequest,
+  PurchaseView,
+  ReturnResult,
+  ServiceSearchResult,
+  TopUpResult,
+} from "./marketplace";
 
 export * from "./types";
 export * from "./agent-types";
+export * from "./marketplace";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -318,6 +330,26 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       list: () => call<{ items: InboxItem[]; unread: number }>("GET", "/inbox"),
       read: (id: string) => call<void>("POST", `/inbox/${id}/read`),
       readAll: () => call<void>("POST", "/inbox/read-all"),
+    },
+
+    /** The x402 marketplace and the Agent wallet page (on the active network). */
+    marketplace: {
+      services: (query: string, category?: MarketplaceCategory) =>
+        call<ServiceSearchResult>("GET", `/marketplace/services?q=${encodeURIComponent(query)}${category ? `&category=${category}` : ""}`),
+      wallet: () => call<AgentWalletView>("GET", "/marketplace/agent-wallet"),
+      updateSettings: (change: AgentWalletSettingsChange) =>
+        call<{ settings: AgentWalletSettings }>("PATCH", "/marketplace/agent-wallet/settings", change),
+      /** The marketplace grant to sign once (Face ID): USDC only to the agent wallet, capped per day. */
+      grant: () => call<MarketplaceGrantRequest>("POST", "/marketplace/agent-wallet/grant"),
+      grantSubmit: (grantId: string, signature: string) =>
+        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", { grantId, signature }),
+      topUp: (amount: string, idempotencyKey?: string) =>
+        call<TopUpResult>("POST", "/marketplace/agent-wallet/top-up", { amount }, { idempotencyKey }),
+      /** Everything in the agent wallet back to the person's wallet. */
+      returnAll: (idempotencyKey?: string) => call<ReturnResult>("POST", "/marketplace/agent-wallet/return", {}, { idempotencyKey }),
+      purchases: () => call<{ purchases: PurchaseView[] }>("GET", "/marketplace/purchases"),
+      decide: (id: string, decision: "approve" | "decline") =>
+        call<{ purchase: PurchaseView }>("POST", `/marketplace/purchases/${id}/decision`, { decision }),
     },
 
     faucet: {

@@ -13,6 +13,7 @@ import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
 import { automationRuns, automations } from "./schema/automations";
 import { notificationDeliveries } from "./schema/notifications";
+import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 
 type UserOwned = {
@@ -56,6 +57,9 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   automations: { table: automations, userId: automations.userId },
   automation_runs: { table: automationRuns, userId: automationRuns.userId },
   notification_deliveries: { table: notificationDeliveries, userId: notificationDeliveries.userId },
+  marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
+  marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
+  agent_wallet_moves: { table: agentWalletMoves, userId: agentWalletMoves.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
