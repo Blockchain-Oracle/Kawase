@@ -18,8 +18,11 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     notYet: ["sending to someone on another chain", "split bills and batch payouts", "scanning a QR code to pay"],
   },
   request: {
-    supports: ["a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer"],
-    notYet: ["invoices with reference matching", "business profiles"],
+    supports: [
+      "a payment request with a shareable link, in USDC or EURC; marked paid by a Kawase send or a matching plain transfer",
+      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll (scheduled payments to several people, each bounded on chain)",
+    ],
+    notYet: ["invoice reminders by email", "invoices in tokens other than USDC and EURC"],
   },
   swap: {
     supports: ["USDC ↔ EURC on Arc through Circle's App Kit, with a quote, a guaranteed minimum and one Face ID"],

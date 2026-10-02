@@ -13,6 +13,7 @@ import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/api-client";
 
 import type { MarketplaceService } from "../marketplace/service";
+import type { InvoiceService } from "../business/invoices";
 import { summarizeAgentWallet, summarizeBuy, summarizeInspect, summarizeServices, summarizeTopUp } from "./marketplace-summary";
 
 import { capabilityView } from "../capabilities/service";
@@ -38,6 +39,8 @@ import { summarizeSwap } from "./swap-summary";
 const DISPLAY_LOCALE = "en";
 const SECONDS_PER_DAY = 86_400;
 const ZERO = 0n;
+/** "YYYY-MM-DD" from an ISO timestamp. */
+const DATE_CHARS = 10;
 
 type NetworkState = {
   setUp: boolean;
@@ -74,6 +77,8 @@ export function buildAgentContext(input: {
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Business mode's invoices. */
+  invoices?: InvoiceService | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -254,6 +259,16 @@ export function buildAgentContext(input: {
         };
       }
       return { proposal, summary: summarizeTopUp(proposal) };
+    },
+
+    async createInvoice({ client, amount: total, asset, description, dueInDays }) {
+      if (user.isAnonymous) return { invoice: null, summary: { status: "needs_sign_in" } };
+      if (!input.invoices || !(await wallets.userWallet(user.id))) return { invoice: null, summary: { status: "needs_wallet" } };
+      const invoice = await input.invoices.create(user, { clientName: client, asset, lines: [{ description, quantity: 1, unitPrice: total }], dueInDays });
+      return {
+        invoice,
+        summary: { status: "created", number: invoice.number, client: invoice.clientName, total: `${total} ${asset}`, due: invoice.dueAt.slice(0, DATE_CHARS), link: invoice.link, network },
+      };
     },
 
     async findContacts(query) {

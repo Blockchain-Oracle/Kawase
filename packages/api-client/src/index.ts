@@ -65,12 +65,26 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type {
+  BusinessProfile,
+  BusinessProfileInput,
+  InvoiceInput,
+  InvoicePublicView,
+  InvoiceView,
+  PayoutCreateResult,
+  PayoutLineInput,
+  PayoutView,
+  PayrollGrantRequest,
+  PayrollInput,
+  PayrollView,
+} from "./business";
 
 export * from "./types";
 export * from "./agent-types";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./business";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -335,6 +349,32 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       list: () => call<{ items: InboxItem[]; unread: number }>("GET", "/inbox"),
       read: (id: string) => call<void>("POST", `/inbox/${id}/read`),
       readAll: () => call<void>("POST", "/inbox/read-all"),
+    },
+
+    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts, payroll. */
+    business: {
+      profile: () => call<{ profile: BusinessProfile | null }>("GET", "/business/profile"),
+      saveProfile: (input: BusinessProfileInput) => call<{ profile: BusinessProfile }>("PUT", "/business/profile", input),
+      invoices: () => call<{ invoices: InvoiceView[] }>("GET", "/business/invoices"),
+      createInvoice: (input: InvoiceInput) => call<{ invoice: InvoiceView }>("POST", "/business/invoices", input),
+      invoice: (id: string) => call<{ invoice: InvoiceView }>("GET", `/business/invoices/${id}`),
+      cancelInvoice: (id: string) => call<{ invoice: InvoiceView }>("POST", `/business/invoices/${id}/cancel`),
+      /** No account needed: what the client sees on the link. */
+      publicInvoice: (token: string) => call<{ invoice: InvoicePublicView }>("GET", `/invoices/public/${encodeURIComponent(token)}`),
+      /** The printable invoice (HTML) for a PDF or a browser. */
+      documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
+      payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
+      createPayout: (input: { asset: "USDC" | "EURC"; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
+      signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
+      submitPayout: (id: string, requestId: string, signedTransaction: string) =>
+        call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),
+      payrolls: () => call<{ payrolls: PayrollView[] }>("GET", "/business/payroll"),
+      createPayroll: (input: PayrollInput) => call<{ payroll: PayrollView }>("POST", "/business/payroll", input),
+      payrollGrant: (id: string) => call<PayrollGrantRequest>("POST", `/business/payroll/${id}/grant`),
+      activatePayroll: (id: string, lines: { automationId: string; signatures: { grantId: string; signature: string }[] }[]) =>
+        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/activate`, { lines }),
+      changePayroll: (id: string, change: "pause" | "resume" | "cancel") =>
+        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/change`, { change }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */

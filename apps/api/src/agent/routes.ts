@@ -27,6 +27,7 @@ import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { SwapService } from "../swap/service";
 import type { MarketplaceService } from "../marketplace/service";
+import type { InvoiceService } from "../business/invoices";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -73,6 +74,8 @@ export type AgentDeps = {
   approvalSecret?: string | undefined;
   /** The x402 marketplace; paid services are off without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Business mode: invoices from chat. */
+  invoices?: InvoiceService | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -108,6 +111,7 @@ export function createTurnRunner(deps: AgentDeps) {
     models,
     approvalSecret,
     marketplace,
+    invoices,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const conversations = new ConversationStore(db);
@@ -160,6 +164,7 @@ export function createTurnRunner(deps: AgentDeps) {
       automations,
       requests,
       marketplace,
+      invoices,
       threadId,
       lastUserText,
       log,

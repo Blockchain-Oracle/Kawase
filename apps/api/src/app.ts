@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS } from "@kawase/config";
+import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -58,6 +58,10 @@ import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
+import { InvoiceService } from "./business/invoices";
+import { PayoutService } from "./business/payouts";
+import { PayrollService } from "./business/payroll";
+import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
@@ -244,9 +248,16 @@ export function createApp(deps: AppDeps) {
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
+  const payroll = new PayrollService(deps.db, automations, audit);
+  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  app.route("/invoices/public", publicInvoiceRoutes(invoices));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
     marketplace,
+    invoices,
     db: deps.db,
     chains: deps.chains,
     wallets,
