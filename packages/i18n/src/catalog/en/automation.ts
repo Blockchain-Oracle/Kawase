@@ -147,4 +147,5 @@ export const automation = {
   reason_PRICE_REACHED: "Price reached: waiting for your yes",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} now buys {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Tomorrow's automation",
+  reason_INSUFFICIENT_BALANCE: "Not enough money in the wallet then",
 } as const;

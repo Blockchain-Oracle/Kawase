@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "Sua automação foi executada: {{kind}}",
   automationKind: {
+    payroll: "a folha de pagamento",
+    dca: "uma compra recorrente",
     scheduled_send: "um pagamento agendado",
     auto_save: "Poupança automática",
     rule: "uma regra",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "Também comparados: {{providers}}",
   approved: {
+    declined: "Você recusou",
+    expired: "Sem resposta a tempo",
     allowance: "Aprovado pelo seu limite diário",
     wallet_signature: "Você aprovou",
     automation: "Aprovado pelo limite da automação",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "pela referência na blockchain",
   recorded: "Registrado",
   audit: {
+    automation: {
+      run_skipped: "A Kawase registrou o pulo",
+      run_practiced: "Registrado como treino",
+    },
+    needs_you: {
+      opened: "Esperou por você",
+      approved: "Você aprovou",
+      declined: "Você recusou",
+    },
     payout: { sent: "Pagamento em lote registrado" },
     invoice: { created: "Fatura criada", paid: "Fatura marcada como paga", canceled: "Fatura cancelada" },
     payroll: { activated: "Folha de pagamento ativada" },

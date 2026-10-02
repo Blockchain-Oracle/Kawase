@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const activityFeed: Catalog["activityFeed"] = {
+  requestPaid: "دفع {{name}} الطلب",
+  margin: "Kawase Margin",
+  automation: "أتمتة",
+  automationTo: "أتمتة إلى {{name}}",
+  practiceTo: "تدريب: إلى {{name}}",
+  other: "حركة",
+  checking: "جارٍ التحقق…",
+  skipped: "تم التخطي · {{reason}}",
+  failed: "لم يكتمل",
+  failedWhy: "لم يكتمل · {{reason}}",
+  practiced: "تدريب · كان سينجح",
+  practicedRefused: "تدريب · كانت Arc سترفضه",
+  waiting: "بانتظارك · {{reason}}",
+  filterIn: "وارد",
+  filterOut: "صادر",
+  filterTrades: "التداولات",
+  filterAutomations: "الأتمتة",
+  emptyNeedsYou: "لا شيء بانتظارك",
+  emptyFilter: "لا شيء هنا بعد",
+  latestOnly: "هذه أحدث حركاتك.",
+  network: "الشبكة",
+  paid: "المدفوع",
+};

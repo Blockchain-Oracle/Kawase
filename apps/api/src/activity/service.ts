@@ -399,7 +399,7 @@ export class ActivityFeedService {
       },
     ];
     if (item?.decidedAt && item.status !== "pending") steps.push({ step: "approved", at: item.decidedAt.toISOString(), route: item.status === "approved" ? "wallet_signature" : item.status, via: item.decidedVia === "push" || item.decidedVia === "web" ? "app" : (item.decidedVia as "app" | "chat") ?? "app" });
-    if (attempt?.txHash) steps.push({ step: "sent", at: run.updatedAt.toISOString(), by: "automation", txHash: attempt.txHash, status: run.status });
+    if (attempt?.txHash) steps.push({ step: "sent", at: run.updatedAt.toISOString(), by: "circle_dcw", txHash: attempt.txHash, status: run.status === "succeeded" ? "confirmed" : run.status === "failed" ? "failed" : "pending" });
     for (const entry of [...audits].reverse()) steps.push({ step: "audit", at: entry.createdAt.toISOString(), action: entry.action, decision: entry.decision });
     const explorer = this.chains.get(automation.network)?.network.viemChain.blockExplorers?.default.url;
     return {

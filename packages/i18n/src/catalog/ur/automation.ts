@@ -150,4 +150,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "قیمت آ گئی: آپ کی ہاں کا انتظار",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} سے اب {{quotedOut}} {{symbolOut}} ملتا ہے",
   inboxReminder: "کل کا آٹومیشن",
+  reason_INSUFFICIENT_BALANCE: "تب والیٹ میں کافی رقم نہیں تھی",
 };

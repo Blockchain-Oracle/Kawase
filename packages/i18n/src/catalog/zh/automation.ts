@@ -149,4 +149,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "已达到价格：等你同意",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} 现在可买到 {{quotedOut}} {{symbolOut}}",
   inboxReminder: "明天的自动任务",
+  reason_INSUFFICIENT_BALANCE: "当时钱包余额不足",
 };

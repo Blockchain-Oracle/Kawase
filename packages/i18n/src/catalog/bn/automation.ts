@@ -149,4 +149,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "দাম এসেছে: আপনার হ্যাঁর অপেক্ষায়",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}}-এ এখন {{quotedOut}} {{symbolOut}} পাওয়া যায়",
   inboxReminder: "আগামীকালের অটোমেশন",
+  reason_INSUFFICIENT_BALANCE: "তখন ওয়ালেটে যথেষ্ট টাকা ছিল না",
 };

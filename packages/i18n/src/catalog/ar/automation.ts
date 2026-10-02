@@ -149,4 +149,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "تم بلوغ السعر: بانتظار موافقتك",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} يشتري الآن {{quotedOut}} {{symbolOut}}",
   inboxReminder: "أتمتة الغد",
+  reason_INSUFFICIENT_BALANCE: "لم يكن في المحفظة ما يكفي حينها",
 };

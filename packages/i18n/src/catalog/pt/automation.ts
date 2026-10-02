@@ -151,4 +151,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "Preço atingido: aguardando seu sim",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} agora compra {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Automação de amanhã",
+  reason_INSUFFICIENT_BALANCE: "Não havia dinheiro suficiente na carteira",
 };

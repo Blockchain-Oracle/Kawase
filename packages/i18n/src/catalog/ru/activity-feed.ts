@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const activityFeed: Catalog["activityFeed"] = {
+  requestPaid: "Запрос оплатил {{name}}",
+  margin: "Kawase Margin",
+  automation: "Автоматизация",
+  automationTo: "Автоматизация: {{name}}",
+  practiceTo: "Тренировка: {{name}}",
+  other: "Движение",
+  checking: "Проверяем…",
+  skipped: "Пропущено · {{reason}}",
+  failed: "Не прошло",
+  failedWhy: "Не прошло · {{reason}}",
+  practiced: "Тренировка · прошло бы",
+  practicedRefused: "Тренировка · Arc отклонил бы",
+  waiting: "Ждёт вас · {{reason}}",
+  filterIn: "Входящие",
+  filterOut: "Исходящие",
+  filterTrades: "Сделки",
+  filterAutomations: "Автоматизации",
+  emptyNeedsYou: "Ничего не ждёт вас",
+  emptyFilter: "Здесь пока пусто",
+  latestOnly: "Это ваши последние движения.",
+  network: "Сеть",
+  paid: "Оплачено",
+};

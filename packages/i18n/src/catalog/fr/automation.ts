@@ -154,4 +154,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "Prix atteint : attend votre accord",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} achète maintenant {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Automatisation de demain",
+  reason_INSUFFICIENT_BALANCE: "Pas assez d'argent dans le portefeuille à ce moment",
 };

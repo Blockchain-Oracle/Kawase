@@ -56,6 +56,7 @@ import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { safety } from "./safety";
 import { needsYou } from "./needs-you";
+import { activityFeed } from "./activity-feed";
 import { buy } from "./buy";
 import { business } from "./business";
 import { why } from "./why";
@@ -122,6 +123,7 @@ export const en = {
   ticket,
   safety,
   needsYou,
+  activityFeed,
   buy,
   business,
   why,

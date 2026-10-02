@@ -151,4 +151,5 @@ export const automation: Catalog["automation"] = {
   reason_PRICE_REACHED: "Цена достигнута: ждёт вашего согласия",
   ruleAlertPrice: "{{amountIn}} {{symbolIn}} сейчас покупает {{quotedOut}} {{symbolOut}}",
   inboxReminder: "Завтрашняя автоматизация",
+  reason_INSUFFICIENT_BALANCE: "В кошельке тогда не хватало денег",
 };
