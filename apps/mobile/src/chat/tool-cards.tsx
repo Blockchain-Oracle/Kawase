@@ -50,6 +50,7 @@ import type {
   MarginPositionsOutput,
   ProposeMarginOutput,
   BuyProposalOutput,
+  ProposeCrossChainOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -80,6 +81,7 @@ import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { OnrampBuyCard } from "./buy-card";
+import { MoveCard } from "./move-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
@@ -631,7 +633,10 @@ export function ToolCard({
     case "propose_trade":
       return <SwapCard output={part.output as ProposeSwapOutput} />;
     case "propose_bridge":
-      return <BridgeCard output={part.output as ProposeBridgeOutput} />;
+      // Threads from before route options keep their CCTP card; new ones carry `crosschain`.
+      return (part.output as { crosschain?: boolean }).crosschain ? <MoveCard output={part.output as ProposeCrossChainOutput} /> : <BridgeCard output={part.output as ProposeBridgeOutput} />;
+    case "bring_to_arc":
+      return (part.output as { crosschain?: boolean }).crosschain ? <MoveCard output={part.output as ProposeCrossChainOutput} /> : null;
     case "get_earn":
       return <EarnOverviewCard output={part.output as EarnOverviewLine} />;
     case "propose_earn":

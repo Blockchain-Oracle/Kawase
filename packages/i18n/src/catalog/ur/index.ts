@@ -53,6 +53,8 @@ import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { buy } from "./buy";
+import { move } from "./move";
+import { movePolicy } from "./move-policy";
 
 export const ur: Catalog = {
   common,
@@ -108,4 +110,6 @@ export const ur: Catalog = {
   tokenPage,
   ticket,
   buy,
+  move,
+  movePolicy,
 };
