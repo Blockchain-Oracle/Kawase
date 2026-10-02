@@ -61,6 +61,32 @@ export const MARGIN_MARKET_ALIASES = {
  * Earn and borrow on Aave V4 directly (earn-borrow.md): supply through the Main Spoke by reserve id (not the shallow
  * ERC-4626 wrapper, G22), and borrow against any reserve that counts as collateral. Health in basis points of 1.0.
  */
+/**
+ * Margin protection (trade.md "Long / short" → take-profit, stop-loss, alerts): closes Kawase runs for the person
+ * under grants signed once, through Uniswap v3 on Arc (its router's recipient can be pinned to the wallet; addresses
+ * from Uniswap's sdk-core ARC_ADDRESSES, pools read live 10-02: cirBTC/USDC 0.01% deep, EURC/USDC 0.05%, WETH/USDC
+ * 0.3% thin), and the account-health alerts both margin and borrowing share.
+ */
+export const MARGIN_PROTECTION = {
+  uniswap: {
+    factory: "0xf0db7b58379503491d857db50ac9ece64c653918",
+    router: "0x53bf6b0684ec7ef91e1387da3d1a1769bc5a6f77",
+    quoter: "0x7dfd4f31be6814d2906bde155c3e1b146eac1468",
+  },
+  feeTiers: [100, 500, 3000, 10000],
+  /** A take-profit closes only when the executable price is within this of the oracle (and still past the target). */
+  takeProfitSlippageBps: 100,
+  /** A stop-loss accepts more, since waiting costs more; worse than this and Kawase alerts instead of selling. */
+  stopLossSlippageBps: 300,
+  /** How long the grants live once signed. */
+  grantDays: 180,
+  tickMs: 30_000,
+  healthTickMs: 60_000,
+  /** Account health below these is told: a warning, then danger (liquidation starts at 1). */
+  warnHealthBps: 15_000,
+  dangerHealthBps: 12_000,
+} as const;
+
 /** Cross-chain moves of any asset (routes.md): slippage asked of aggregators, and room kept for gas on another chain. */
 export const CROSSCHAIN = {
   /** USDC and other stables. */

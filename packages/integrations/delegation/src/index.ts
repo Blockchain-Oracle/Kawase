@@ -6,3 +6,4 @@ export * from "./available";
 export * from "./batch";
 export * from "./save";
 export * from "./bridge-grants";
+export * from "./protect";
