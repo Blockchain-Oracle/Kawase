@@ -15,8 +15,10 @@ import {
   erc20Abi,
   formatUnits,
   keccak256,
+  parseAbi,
   parseTransaction,
   recoverTransactionAddress,
+  stringToHex,
   type Address,
   type Hex,
   type TransactionReceipt,
@@ -42,21 +44,25 @@ import type {
 } from "@kawase/api-client";
 import {
   approvals,
+  type Db,
   intentDrafts,
   intents,
+  invoices,
   newId,
   practiceRuns,
   spendLedger,
-  txAttempts,
   users,
   withOutbox,
-  type Db,
+  txAttempts,
 } from "@kawase/db";
 import { allowanceAvailable, encodeRedeemTransfer } from "@kawase/integrations-delegation";
 import {
   DRAFTABLE_STATES,
   loadSendDraft,
   memoHash,
+  memoIdFor,
+  memoReference,
+  type SendMemo,
   sendDraftHash,
   storeSendDraft,
   type IntentState,
@@ -99,6 +105,8 @@ type DraftPayload = {
   token?: { address: string; symbol: string; decimals: number } | null;
   /** What the spend counts as against the limits (USDC/EURC in their units, other tokens in dollars). */
   ledger?: { asset: string; amount: string | null } | null;
+  /** The on-chain reference this version writes (Arc Memo), when it has one. */
+  memo?: SendMemo | null;
   amount: string | null;
   note: string | null;
   fee: { payer: "kawase" | "wallet"; estimate: string | null };
@@ -202,11 +210,16 @@ export class SendService {
       const asked = payable.request;
       // USDC/EURC by name; any other token by its address, in its own decimals (R1).
       const stableAsk = asked.asset === "USDC" || asked.asset === "EURC";
+      // An invoice's request is paid with the invoice's own on-chain reference (Arc Memo), so the business's books
+      // match it by memoId too, in any token and for part payments (B2's invoice watcher).
+      const [invoice] = await this.db.select({ memoId: invoices.memoId, number: invoices.number }).from(invoices).where(eq(invoices.requestId, asked.id)).limit(1);
       stored = {
         recipient: payable.handle ? `@${payable.handle}` : asked.payTo,
         amount: stableAsk ? canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, "") : formatUnits(asked.amount, asked.assetDecimals ?? 0),
         asset: asked.asset,
         note: stored.note,
+        memo: invoice ? invoice.number : (stored.memo ?? null),
+        memoId: invoice ? invoice.memoId.toLowerCase() : (stored.memoId ?? null),
       };
       paymentRequestId = asked.id;
     }
@@ -285,7 +298,7 @@ export class SendService {
       const route = evaluation.route ?? "wallet_signature";
       let maxFee = ZERO;
       if (route === "wallet_signature") {
-        const fee = await this.estimateTransferFee(intent.network, walletAddress, token.address, resolution.facts.address as Address, amount);
+        const fee = await this.estimateTransferFee(intent.network, walletAddress, token.address, resolution.facts.address as Address, amount, memoOf(request));
         maxFee = fee * MAX_FEE_DRAFT_MULTIPLIER;
         feeEstimate = feeInUsdc(fee);
       }
@@ -297,6 +310,7 @@ export class SendService {
         amount,
         memoHash: memoHash(request.note),
         maxFee,
+        reference: memoReference(memoOf(request)),
       };
     }
 
@@ -305,6 +319,7 @@ export class SendService {
       recipient: resolution.view,
       asset: asset ?? null,
       token: token ? { address: token.address, symbol: token.symbol, decimals: token.decimals } : null,
+      memo: memoOf(request),
       ledger: gathered.ledger ? { asset: gathered.ledger.asset, amount: gathered.ledger.amount?.toString() ?? null } : null,
       amount: amount?.toString() ?? null,
       note: request.note,
@@ -339,11 +354,11 @@ export class SendService {
     return this.view(user.id, intent.id);
   }
 
-  private async estimateTransferFee(network: NetworkId, from: Address, token: Address, to: Address, amount: bigint) {
-    const { client } = this.clients(network);
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [to, amount] });
+  private async estimateTransferFee(network: NetworkId, from: Address, token: Address, to: Address, amount: bigint, memo: SendMemo | null = null) {
+    const { client, network: context } = this.clients(network);
+    const call = sendCall(context, { asset: token, to, amount }, memo);
     const [gas, fees] = await Promise.all([
-      client.estimateGas({ account: from, to: token, data }).catch(() => FALLBACK_TRANSFER_GAS),
+      client.estimateGas({ account: from, to: call.to, data: call.data }).catch(() => (memo ? FALLBACK_TRANSFER_GAS * MEMO_GAS_FACTOR : FALLBACK_TRANSFER_GAS)),
       client.estimateFeesPerGas(),
     ]);
     const maxFeePerGas = fees.maxFeePerGas > MIN_MAX_FEE_PER_GAS_GWEI * GWEI ? fees.maxFeePerGas : MIN_MAX_FEE_PER_GAS_GWEI * GWEI;
@@ -416,6 +431,7 @@ export class SendService {
               recipient: payload.recipient,
               asset: payload.asset,
               token: payload.token ?? null,
+              memo: payload.memo ?? null,
               amount: payload.amount,
               note: payload.note ?? null,
               fee: payload.fee ?? { payer: "wallet", estimate: null },
@@ -640,7 +656,7 @@ export class SendService {
     if (room < input.amount) return { status: "skipped", reason: "OVER_GRANT", params: { room: room.toString(), asset: input.asset } };
 
     const token = assetAddress(context.network, input.asset);
-    const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO };
+    const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO, reference: memoReference(null) };
     const draftHash = sendDraftHash(draft);
     const payload: DraftPayload = {
       draft: storeSendDraft(draft),
@@ -785,12 +801,14 @@ export class SendService {
       return { approvalId: existing.id, transaction: existing.unsignedTransaction as unknown as UnsignedTransaction };
     if (existing) await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, existing.id));
 
-    const { client } = this.clients(intent.network);
-    const data = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [draft.to, draft.amount] });
+    const { client, network: context } = this.clients(intent.network);
+    const memo = ((await this.currentDraft(intent))?.payload as DraftPayload | undefined)?.memo ?? null;
+    if (memoReference(memo) !== draft.reference) throw problem(HTTP.conflict, "intent_stale", "the reference changed; review again");
+    const { to: target, data } = sendCall(context, draft, memo);
     const [nonce, fees, estimate] = await Promise.all([
       client.getTransactionCount({ address: draft.from, blockTag: "pending" }),
       client.estimateFeesPerGas(),
-      client.estimateGas({ account: draft.from, to: draft.asset, data }).catch(() => FALLBACK_TRANSFER_GAS),
+      client.estimateGas({ account: draft.from, to: target, data }).catch(() => (memo ? FALLBACK_TRANSFER_GAS * MEMO_GAS_FACTOR : FALLBACK_TRANSFER_GAS)),
     ]);
     const floor = MIN_MAX_FEE_PER_GAS_GWEI * GWEI;
     const maxFeePerGas = fees.maxFeePerGas > floor ? fees.maxFeePerGas : floor;
@@ -800,7 +818,7 @@ export class SendService {
       type: "eip1559",
       chainId: draft.chainId,
       nonce,
-      to: draft.asset,
+      to: target,
       data,
       value: "0",
       gas: gas.toString(),
@@ -849,12 +867,15 @@ export class SendService {
 
       const parsed = parseTransaction(input.signedTransaction);
       const signer = await recoverTransactionAddress({ serializedTransaction: input.signedTransaction as never }).catch(() => undefined);
-      const expectedData = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [draft.to, draft.amount] });
+      // The exact call this version names: the transfer itself, or the transfer inside Memo with its reference.
+      const memo = ((await this.currentDraft(intent))?.payload as DraftPayload | undefined)?.memo ?? null;
+      const expected = sendCall(context.network, draft, memoReference(memo) === draft.reference ? memo : null);
       const matches =
+        memoReference(memo) === draft.reference &&
         signer?.toLowerCase() === draft.from.toLowerCase() &&
         parsed.chainId === draft.chainId &&
-        parsed.to?.toLowerCase() === draft.asset.toLowerCase() &&
-        parsed.data === expectedData &&
+        parsed.to?.toLowerCase() === expected.to.toLowerCase() &&
+        parsed.data === expected.data &&
         (parsed.value ?? ZERO) === ZERO &&
         parsed.nonce === unsigned.nonce &&
         (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= draft.maxFee;
@@ -1127,11 +1148,14 @@ function normaliseRequest(base: Partial<StoredRequest>, patch: SendRequest): Sto
   const pick = <K extends keyof StoredRequest>(key: K): StoredRequest[K] =>
     (patch[key] !== undefined ? patch[key] : (base[key] ?? null)) as StoredRequest[K];
   const note = pick("note");
+  const memo = pick("memo");
   return {
     recipient: pick("recipient")?.trim() || null,
     amount: pick("amount")?.trim() || null,
     asset: pick("asset"),
     note: note ? note.trim().slice(0, NOTE_MAX) || null : null,
+    memo: memo?.trim() || null,
+    memoId: pick("memoId")?.toLowerCase() ?? null,
   };
 }
 
@@ -1199,4 +1223,28 @@ function tokenParams(payload: DraftPayload | undefined, network: NetworkContext,
 /** The name a run's recipient shows under, for its practice record. */
 function resolutionName(resolution: { view: SendRecipientView | null }): string {
   return resolution.view?.name ?? (resolution.view?.handle ? `@${resolution.view.handle}` : "");
+}
+
+const MEMO_ABI = parseAbi(["function memo(address target, bytes data, bytes32 memoId, bytes memoData)"]);
+/** A memo call runs the transfer through CallFrom and logs the reference: more gas than a bare transfer. */
+const MEMO_GAS_FACTOR = 3n;
+
+/** The reference a request asks to write on chain, or none. */
+function memoOf(request: StoredRequest): SendMemo | null {
+  const text = request.memo?.trim() ?? "";
+  if (!text && !request.memoId) return null;
+  return { memoId: (request.memoId ?? memoIdFor(text)) as Hex, memoData: text };
+}
+
+/**
+ * The call the wallet sends: the ERC-20 transfer, or — with a reference — Arc's Memo contract forwarding that same
+ * transfer from the wallet (CallFrom) and logging the memoId and text with it.
+ */
+function sendCall(network: NetworkContext, draft: { asset: Address; to: Address; amount: bigint }, memo: SendMemo | null): { to: Address; data: Hex } {
+  const transfer = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [draft.to, draft.amount] });
+  if (!memo) return { to: draft.asset, data: transfer };
+  return {
+    to: network.addresses.memo as Address,
+    data: encodeFunctionData({ abi: MEMO_ABI, functionName: "memo", args: [draft.asset, transfer, memo.memoId, stringToHex(memo.memoData)] }),
+  };
 }
