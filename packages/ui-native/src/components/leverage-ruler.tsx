@@ -44,7 +44,8 @@ type LeverageRulerProps = {
   format?: (multiple: number) => string;
   /** The caption under the ruler and the screen-reader name ("Leverage"). */
   label: string;
-  scheme?: "light" | "dark";
+  /** The active theme (its primary, muted and border tokens colour the strip). */
+  scheme?: keyof typeof tokens.themes;
   rtl?: boolean;
   disabled?: boolean;
   className?: string;

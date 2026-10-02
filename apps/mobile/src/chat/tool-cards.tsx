@@ -27,6 +27,9 @@ import type {
   ProposeEarnOutput,
   ProposeSwapOutput,
   WalletSummary,
+  MarginMarketsOutput,
+  MarginPositionsOutput,
+  ProposeMarginOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -55,6 +58,7 @@ import { AutomationCard } from "./automation-card";
 import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
+import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -584,6 +588,13 @@ export function ToolCard({
       return <ContactsCard output={part.output as { contacts: ContactLine[] }} />;
     case "create_payment_request":
       return <RequestCard output={part.output as Parameters<typeof RequestCard>[0]["output"]} />;
+    case "propose_perp_order":
+    case "close_position":
+      return (part.output as Partial<ProposeMarginOutput>).intent ? <MarginOrderCard output={part.output as ProposeMarginOutput} /> : null;
+    case "get_markets":
+      return (part.output as Partial<MarginMarketsOutput>).markets ? <MarginMarketsCard output={part.output as MarginMarketsOutput} /> : null;
+    case "get_positions":
+      return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
     default:
       return null;
   }

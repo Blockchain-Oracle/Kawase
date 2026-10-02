@@ -39,6 +39,10 @@ export const MARGIN = {
   warnHealthBps: [15_000, 12_000],
   /** Presets for the margin hero (USD). */
   presets: [10, 50, 100],
+  /** Close a quarter, half, three quarters or all of a position (surfaces.md "Close 25/50/75/All"). */
+  closeShares: [0.25, 0.5, 0.75, 1],
+  /** The ticket opens at this leverage when the person did not say one. */
+  defaultLeverage: 2,
 } as const;
 
 /** What people call a market, mapped to the symbol the venue lists (naming data, not flow logic; R1). */
