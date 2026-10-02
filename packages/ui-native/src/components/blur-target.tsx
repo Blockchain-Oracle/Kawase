@@ -5,7 +5,7 @@
 // them and ignore all of this.
 import { BlurTargetView, type BlurMethod } from "expo-blur";
 import * as React from "react";
-import { Platform, type View, type ViewProps } from "react-native";
+import { Platform, StyleSheet, View, type ViewProps } from "react-native";
 
 type Target = React.RefObject<View | null>;
 
@@ -16,14 +16,22 @@ function BlurTargetProvider({ target, children }: { target: Target; children: Re
   return <BlurTargetContext.Provider value={target}>{children}</BlurTargetContext.Provider>;
 }
 
-/** Wraps what overlays blur. Inside it, nothing may blur it, so its children see no target. */
+/**
+ * Wraps what overlays blur. Inside it, nothing may blur it, so its children see no target. On Android the target is a
+ * native view that takes no `className`, so a plain View carries the classes and accessibility props and the target
+ * fills it with a style (with the classes on the target itself the pages collapsed to nothing on Android).
+ */
 function BlurTarget({ target, children, ...props }: ViewProps & { target: Target }) {
   return (
-    <BlurTargetView ref={target} {...props}>
-      <BlurTargetContext.Provider value={null}>{children}</BlurTargetContext.Provider>
-    </BlurTargetView>
+    <View {...props}>
+      <BlurTargetView ref={target} style={styles.fill}>
+        <BlurTargetContext.Provider value={null}>{children}</BlurTargetContext.Provider>
+      </BlurTargetView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });
 
 /**
  * The Android props for a BlurView here: a real blur on Android 12+ when a target is in reach (RenderNode; the
