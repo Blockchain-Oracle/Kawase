@@ -46,6 +46,7 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { chatHome } from "./chat-home";
+import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
 import { marginPolicy } from "./margin-policy";
 import { assets } from "./assets";
@@ -100,6 +101,7 @@ export const bn: Catalog = {
   deleteAccount,
   update,
   chatHome,
+  voiceSettings,
   margin,
   marginPolicy,
   assets,
