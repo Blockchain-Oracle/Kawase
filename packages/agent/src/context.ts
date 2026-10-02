@@ -46,7 +46,11 @@ import type {
   InspectServiceResult,
   MarketplaceCategory,
   ServiceSearchResult,
+  InvoiceView,
+  ReportView,
 } from "@kawase/api-client";
+
+import type { IntelligenceContext } from "./intelligence";
 
 export type {
   ActivityLine,
@@ -112,10 +116,16 @@ export type AgentContext = {
   agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
   /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
+  /** Business mode: an invoice with a payment link and an on-chain reference (the card shares it). */
+  createInvoice(input: { client: string; amount: string; asset: "USDC" | "EURC"; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
+  /** The weekly report: money in and out, swaps, bridges, earn, services, automations, invoices. */
+  report(input: { days?: number | undefined }): Promise<{ report: ReportView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
   surface: "chat" | "voice";
+  /** Memory, history search, Arc knowledge and the extra cards (A5). */
+  intelligence: IntelligenceContext;
   // Money rails (B1). Optional so a context without them still builds; the tools say so when one is missing.
   /** Kawase Margin markets from the venue's live reserves, with each side's leverage cap. */
   marginMarkets?(): Promise<MarginMarketsOutput>;

@@ -36,6 +36,7 @@ export const agentWallet = {
   failed: "Couldn't load the agent wallet.",
   moveTopUp: "Top-up",
   moveDeposit: "Made ready to pay",
+  moveRefill: "Moved back on hand",
   moveReturn: "Returned to your wallet",
   pending: "Pending",
   failedRow: "Failed",

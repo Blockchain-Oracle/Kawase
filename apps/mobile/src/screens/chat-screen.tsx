@@ -22,6 +22,8 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { Conversation } from "@/chat/conversation";
+import { HistoryHitRow } from "@/chat/insight-cards";
+import { useHistorySearch } from "@/chat/use-history-search";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -55,6 +57,8 @@ export function ChatScreen() {
   const matches = threads.filter((entry) =>
     (entry.title ?? t("chat.untitled")).toLocaleLowerCase(locale).includes(search.trim().toLocaleLowerCase(locale)),
   );
+  // Every conversation's words are searched on the server; until it answers, the loaded titles stand in.
+  const found = useHistorySearch(search);
   // Every open bumps this; a read that finishes after a newer open is dropped.
   const latestOpen = React.useRef(0);
 
@@ -227,7 +231,29 @@ export function ChatScreen() {
             </Button>
           </View>
         ) : null}
-        {matches.length > 0 ? (
+        {found.failed ? (
+          <Text accessibilityRole="alert" className={cn("text-muted-foreground px-1 text-sm", TEXT_START)}>
+            {t("insight.searchOffline")}
+          </Text>
+        ) : null}
+        {found.hits ? (
+          found.hits.length > 0 ? (
+            <ListGroup>
+              {found.hits.map((hit) => (
+                <HistoryHitRow
+                  key={hit.threadId}
+                  hit={hit}
+                  onOpen={(id) => {
+                    setHistoryOpen(false);
+                    void openThread(id);
+                  }}
+                />
+              ))}
+            </ListGroup>
+          ) : (
+            <Text className="text-muted-foreground py-2 text-center text-sm">{t("chat.noMatches")}</Text>
+          )
+        ) : matches.length > 0 ? (
           <ListGroup>
             {matches.map((thread) => (
               <ListRow

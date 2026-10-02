@@ -58,6 +58,8 @@ export class IncomingWatcher {
     private readonly requests: RequestService,
     private readonly inbox: InboxService,
     private readonly log: Logger,
+    /** Read new wallets backwards for tokens that arrived earlier; off when Alchemy does cold start in one call. */
+    private readonly options: { backfill: boolean } = { backfill: true },
   ) {}
 
   start(intervalMs: number) {
@@ -73,7 +75,7 @@ export class IncomingWatcher {
     try {
       for (const network of this.chains.available) {
         await this.scan(network).catch((error: unknown) => this.log.warn({ err: error, network }, "incoming watch failed"));
-        await this.backfill(network).catch((error: unknown) => this.log.warn({ err: error, network }, "token backfill failed"));
+        if (this.options.backfill) await this.backfill(network).catch((error: unknown) => this.log.warn({ err: error, network }, "token backfill failed"));
       }
     } finally {
       this.running = false;

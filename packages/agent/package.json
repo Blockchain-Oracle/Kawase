@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "knowledge:build": "node scripts/build-arc-knowledge.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

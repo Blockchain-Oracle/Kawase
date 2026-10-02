@@ -59,12 +59,55 @@ export async function fetchActivity(network: NetworkContext, address: Address, k
 
   const explorer = network.viemChain.blockExplorers?.default.url;
   if (!explorer) return { items: [], more: false, historyUrl: null };
-  const response = await fetch(`${explorer}/api/v2/addresses/${address}/token-transfers?type=ERC-20`, {
+  const { items, next } = await transferPage(explorer, address, undefined);
+  const page: ActivityPage = { items: foldSwaps(toItems(network, explorer, address, known, items)), more: Boolean(next), historyUrl: `${explorer}/address/${address}` };
+  cache.set(key, { at: Date.now(), page });
+  return page;
+}
+
+type Cursor = Record<string, string | number | null>;
+
+async function transferPage(explorer: string, address: Address, cursor: Cursor | undefined) {
+  const query = new URLSearchParams({ type: "ERC-20" });
+  for (const [name, value] of Object.entries(cursor ?? {})) if (value !== null) query.set(name, String(value));
+  const response = await fetch(`${explorer}/api/v2/addresses/${address}/token-transfers?${query.toString()}`, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`explorer ${response.status}`);
-  const { items = [], next_page_params: next } = (await response.json()) as { items?: BlockscoutTransfer[]; next_page_params?: unknown };
+  const body = (await response.json()) as { items?: BlockscoutTransfer[]; next_page_params?: Cursor | null };
+  return { items: body.items ?? [], next: body.next_page_params ?? undefined };
+}
 
+/** At most this many explorer pages for one range (50 transfers each). */
+const RANGE_PAGES_MAX = 40;
+
+/**
+ * Every USDC and EURC transfer between `from` and `to` (newest first), following the explorer's pages until it is
+ * older than `from` — for exports and reports. `complete` is false when the page cap stopped it first.
+ */
+export async function fetchActivityRange(network: NetworkContext, address: Address, known: KnownWallets, range: { from: Date; to: Date }) {
+  const explorer = network.viemChain.blockExplorers?.default.url;
+  if (!explorer) return { items: [] as ActivityItem[], complete: true };
+  const collected: BlockscoutTransfer[] = [];
+  let cursor: Cursor | undefined;
+  for (let page = 0; page < RANGE_PAGES_MAX; page++) {
+    const { items, next } = await transferPage(explorer, address, cursor);
+    collected.push(...items);
+    const oldest = items.at(-1);
+    if (!next || !oldest || new Date(oldest.timestamp) < range.from) {
+      const inRange = collected.filter((transfer) => {
+        const at = new Date(transfer.timestamp);
+        return at >= range.from && at < range.to;
+      });
+      return { items: foldSwaps(toItems(network, explorer, address, known, inRange)), complete: true };
+    }
+    cursor = next;
+  }
+  const inRange = collected.filter((transfer) => new Date(transfer.timestamp) >= range.from && new Date(transfer.timestamp) < range.to);
+  return { items: foldSwaps(toItems(network, explorer, address, known, inRange)), complete: false };
+}
+
+function toItems(network: NetworkContext, explorer: string, address: Address, known: KnownWallets, items: BlockscoutTransfer[]): ActivityItem[] {
   const assets: Record<string, ActivityAsset> = {
     [network.addresses.usdc.toLowerCase()]: "USDC",
     [network.addresses.eurc.toLowerCase()]: "EURC",
@@ -89,9 +132,7 @@ export async function fetchActivity(network: NetworkContext, address: Address, k
       explorerUrl: `${explorer}/tx/${transfer.transaction_hash}`,
     });
   }
-  const page: ActivityPage = { items: foldSwaps(result), more: Boolean(next), historyUrl: `${explorer}/address/${address}` };
-  cache.set(key, { at: Date.now(), page });
-  return page;
+  return result;
 }
 
 function label(network: NetworkId, counterparty: Address, known: KnownWallets, self: string, inbound: boolean): CounterpartyLabel | null {

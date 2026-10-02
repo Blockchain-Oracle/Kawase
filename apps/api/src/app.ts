@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS } from "@kawase/config";
+import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -70,10 +70,25 @@ import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
+import { auditWrites } from "./audit/middleware";
+import { InvoiceService } from "./business/invoices";
+import { PayoutService } from "./business/payouts";
+import { PayrollService } from "./business/payroll";
+import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
+import { PrivacyService } from "./history/privacy";
+import { historyRoutes, privacyRoutes } from "./history/routes";
+import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
+import { memoryRoutes } from "./memory/routes";
+import { MemoryService } from "./memory/service";
+import { searchRoutes } from "./search/routes";
+import { SearchService } from "./search/service";
+import { suggestionRoutes } from "./suggestions/routes";
+import { SuggestionService } from "./suggestions/service";
+import { StatusService } from "./status/service";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -163,7 +178,7 @@ export function createApp(deps: AppDeps) {
     inbox,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
   // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
@@ -243,6 +258,7 @@ export function createApp(deps: AppDeps) {
   app.use("*", general.middleware);
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
+  app.use("*", auditWrites(audit));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -282,9 +298,22 @@ export function createApp(deps: AppDeps) {
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
+  const payroll = new PayrollService(deps.db, automations, audit);
+  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  app.route("/invoices/public", publicInvoiceRoutes(invoices));
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  const privacy = new PrivacyService(deps.db, audit, deps.log);
+  if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
+  app.route("/history", historyRoutes(history));
+  app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
   const agentDeps = {
     marketplace,
+    invoices,
+    history,
     db: deps.db,
     chains: deps.chains,
     wallets,
@@ -309,6 +338,12 @@ export function createApp(deps: AppDeps) {
   const runner = createTurnRunner(agentDeps);
   app.route("/agent", agentRoutes(agentDeps, runner));
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
+  app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
+  app.route("/search", searchRoutes(new SearchService(deps.db)));
+  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin)));
+  // Dependency health, public (the status card, docs and landing), cached for half a minute.
+  const status = new StatusService(deps.db, deps.chains);
+  app.get("/status", async (c) => c.json(await status.view()));
 
   return app;
 }

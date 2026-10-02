@@ -4,7 +4,7 @@ export const capability: Catalog["capability"] = {
   send: "पैसे भेजना",
   request: "पैसे माँगना",
   contacts: "संपर्क",
-  swap: "USDC और EURC बदलना",
+  swap: "कोई भी टोकन ट्रेड करें",
   bridge: "Arc में और Arc से ब्रिज",
   yield: "कमाई (यील्ड)",
   automations: "ऑटोमेशन",
@@ -14,4 +14,6 @@ export const capability: Catalog["capability"] = {
   payment_links: "भुगतान लिंक",
   margin: "लॉन्ग और शॉर्ट",
   lend: "उधार लेना और देना",
+  buy: "कार्ड से खरीदें",
+  memory: "मेमोरी और सुझाव",
 };

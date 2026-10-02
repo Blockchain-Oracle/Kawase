@@ -39,6 +39,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   failed: "Não foi possível carregar a carteira do agente.",
   moveTopUp: "Recarga",
   moveDeposit: "Preparado para pagar",
+  moveRefill: "Devolvido para disponível",
   moveReturn: "Devolvido para sua carteira",
   pending: "Pendente",
   failedRow: "Falhou",

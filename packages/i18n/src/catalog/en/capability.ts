@@ -2,7 +2,7 @@ export const capability = {
   send: "Send money",
   request: "Request money",
   contacts: "Contacts",
-  swap: "Swap USDC and EURC",
+  swap: "Trade any token",
   bridge: "Bridge to and from Arc",
   yield: "Earn yield",
   automations: "Automations",
@@ -12,4 +12,6 @@ export const capability = {
   payment_links: "Payment links",
   margin: "Long and short",
   lend: "Borrow and lend",
+  buy: "Buy with card",
+  memory: "Memory and suggestions",
 } as const;

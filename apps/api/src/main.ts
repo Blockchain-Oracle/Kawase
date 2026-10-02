@@ -58,7 +58,7 @@ const app = createApp({
   earn: appKitEarn(env),
   onramp: circleOnramp(env),
   circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
-  market: liveMarketData(),
+  market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,

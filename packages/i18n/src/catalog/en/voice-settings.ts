@@ -1,0 +1,13 @@
+export const voiceSettings = {
+  title: "Voice",
+  subtitle: "How Kawase sounds when you talk to it, on your phone and on the web.",
+  voiceTitle: "Kawase's voice",
+  speedTitle: "Speaking speed",
+  speedRelaxed: "Relaxed",
+  speedNormal: "Normal",
+  speedBrisk: "Brisk",
+  autoSpeakTitle: "Kawase speaks first",
+  autoSpeakBody: "Says hello as soon as voice opens. Off: it waits for you to speak.",
+  note: "Changes apply the next time you start talking to Kawase.",
+  saveFailed: "Couldn't save that. Try again.",
+};

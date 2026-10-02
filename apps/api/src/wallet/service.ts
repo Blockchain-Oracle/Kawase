@@ -440,6 +440,16 @@ export class WalletService {
     return this.unsignedTransaction(userId, first.network, "revoke_grant", wallet.address, data, gas, { grantIds: ids });
   }
 
+  /**
+   * Several calls from the wallet in one transaction the wallet sends to itself (its 7702 DeleGator runs them in order,
+   * all or nothing): one signature, one Face ID. Used by batch payouts.
+   */
+  async selfBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex }[], gas: bigint) {
+    const wallet = await this.requireWallet(userId);
+    const data = encodeSelfBatch(calls.map((call) => ({ ...call, value: ZERO })));
+    return this.unsignedTransaction(userId, network, kind, wallet.address, data, gas);
+  }
+
   private async unsignedTransaction(
     userId: string,
     network: NetworkId,

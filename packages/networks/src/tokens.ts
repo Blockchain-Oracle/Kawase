@@ -110,6 +110,28 @@ export function impersonatesStablecoin(network: NetworkId, symbol: string, addre
   return !real || real.address.toLowerCase() !== address.toLowerCase();
 }
 
+/**
+ * The copycat rule as approved on 2026-10-02: a token is an impostor when it uses a stablecoin's symbol or any
+ * canonical token's symbol at an address that is not that token's, or the right symbol with other decimals (a fake
+ * 18-decimal "USDC" was seen). Impostors are hidden and never bought.
+ */
+export function isImpostor(network: NetworkId, symbol: string, address: string, decimals?: number): boolean {
+  if (impersonatesStablecoin(network, symbol, address)) return true;
+  const normalized = normalizeSymbol(symbol);
+  const real = CANONICAL_TOKENS[network].find((token) => normalizeSymbol(token.symbol) === normalized);
+  if (!real) return false;
+  return real.address.toLowerCase() !== address.toLowerCase() || (decimals !== undefined && decimals !== real.decimals);
+}
+
+/** The decimals a stablecoin has everywhere Circle and Tether issue it; another number under that symbol is a fake. */
+export const STABLECOIN_DECIMALS: Readonly<Record<string, number>> = { USDC: 6, EURC: 6, USDT: 6, PYUSD: 6, USDP: 18, DAI: 18, USDS: 18, USDE: 18 };
+
+/** On a chain Kawase has no canonical list for: a stablecoin symbol with the wrong decimals is a fake. */
+export function isForeignImpostor(symbol: string, decimals: number): boolean {
+  const expected = STABLECOIN_DECIMALS[normalizeSymbol(symbol)];
+  return expected !== undefined && expected !== decimals;
+}
+
 /** The two USDC interfaces on Arc are one asset: the ERC-20 view at 0x3600… (6 decimals) is what Kawase shows. */
 export function isArcUsdc(address: string): boolean {
   return address.toLowerCase() === SHARED_ADDRESSES.usdc.toLowerCase();

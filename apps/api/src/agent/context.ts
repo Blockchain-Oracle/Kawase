@@ -13,6 +13,9 @@ import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/api-client";
 
 import type { MarketplaceService } from "../marketplace/service";
+import type { InvoiceService } from "../business/invoices";
+import type { HistoryService } from "../history/service";
+import { REPORT_DAYS } from "@kawase/config";
 import { summarizeAgentWallet, summarizeBuy, summarizeInspect, summarizeServices, summarizeTopUp } from "./marketplace-summary";
 
 import { capabilityView } from "../capabilities/service";
@@ -39,11 +42,14 @@ import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
+import { buildIntelligence } from "./intelligence";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
 const SECONDS_PER_DAY = 86_400;
 const ZERO = 0n;
+/** "YYYY-MM-DD" from an ISO timestamp. */
+const DATE_CHARS = 10;
 
 type NetworkState = {
   setUp: boolean;
@@ -85,6 +91,10 @@ export function buildAgentContext(input: {
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Business mode's invoices. */
+  invoices?: InvoiceService | undefined;
+  /** Looking back: the weekly report. */
+  history?: HistoryService | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -113,6 +123,7 @@ export function buildAgentContext(input: {
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
@@ -288,6 +299,39 @@ export function buildAgentContext(input: {
         };
       }
       return { proposal, summary: summarizeTopUp(proposal) };
+    },
+
+    async createInvoice({ client, amount: total, asset, description, dueInDays }) {
+      if (user.isAnonymous) return { invoice: null, summary: { status: "needs_sign_in" } };
+      if (!input.invoices || !(await wallets.userWallet(user.id))) return { invoice: null, summary: { status: "needs_wallet" } };
+      const invoice = await input.invoices.create(user, { clientName: client, asset, lines: [{ description, quantity: 1, unitPrice: total }], dueInDays });
+      return {
+        invoice,
+        summary: { status: "created", number: invoice.number, client: invoice.clientName, total: `${total} ${asset}`, due: invoice.dueAt.slice(0, DATE_CHARS), link: invoice.link, network },
+      };
+    },
+
+    async report({ days }) {
+      if (user.isAnonymous || !input.history) return { report: null, summary: { status: user.isAnonymous ? "needs_sign_in" : "unavailable" } };
+      const report = await input.history.report(user, network, days ?? REPORT_DAYS);
+      const sums = (bucket: Record<string, string>) => Object.entries(bucket).map(([asset, baseUnits]) => money(asset as AssetId, baseUnits).display);
+      return {
+        report,
+        summary: {
+          network,
+          days: days ?? REPORT_DAYS,
+          received: sums(report.received),
+          sent: sums(report.sent),
+          swaps: report.counts.swaps,
+          bridges: report.counts.bridges,
+          earnMoves: report.counts.earn,
+          servicesSpent: money("USDC", report.services.spent).display,
+          automationsRan: report.automations.ran,
+          automationsSkipped: report.automations.skipped,
+          invoicesPaid: report.invoices.paid,
+          complete: report.complete,
+        },
+      };
     },
 
     async findContacts(query) {

@@ -9,6 +9,7 @@ import {
   Bell,
   BookUser,
   Bot,
+  Briefcase,
   Brain,
   CalendarClock,
   Coins,
@@ -228,6 +229,13 @@ export function SettingsScreen() {
               onPress={() => router.push("/agent-wallet")}
             />
             <ListRow
+              leading={<RowIcon icon={Briefcase} />}
+              title={t("business.title")}
+              subtitle={t("business.settingsBody")}
+              chevron
+              onPress={() => (account ? router.push("/business") : signIn.open())}
+            />
+            <ListRow
               leading={<RowIcon icon={Coins} />}
               title={t("settings.displayCurrency")}
               trailing={coming}
@@ -262,7 +270,13 @@ export function SettingsScreen() {
               chevron
               onPress={() => router.push("/voice-settings")}
             />
-            <ListRow leading={<RowIcon icon={Brain} />} title={t("settings.memory")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Brain} />}
+              title={t("settings.memory")}
+              subtitle={t("memory.settingsBody")}
+              chevron
+              onPress={() => router.push("/memory")}
+            />
           </ListGroup>
           <View className="gap-2">
             <View className="flex-row items-center gap-2 px-1">
@@ -325,7 +339,12 @@ export function SettingsScreen() {
               chevron
               {...(account ? { onPress: () => router.push("/account/devices") } : { onPress: signIn.open })}
             />
-            <ListRow leading={<RowIcon icon={Database} />} title={t("settings.privacy")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={Database} />}
+              title={t("settings.privacy")}
+              chevron
+              onPress={() => (account ? router.push("/privacy") : signIn.open())}
+            />
           </ListGroup>
         </Section>
 

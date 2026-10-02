@@ -20,9 +20,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
-import { registerVoiceSettingsStrings } from "@/voice/settings-strings";
 
-registerVoiceSettingsStrings();
 
 const EDGE_INSET = 12;
 const SPEED_LABEL: Record<VoiceSpeed, string> = {

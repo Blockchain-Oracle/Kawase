@@ -1,6 +1,6 @@
 // Kawase owns the user, the device sessions and the sign-in nonces. Turnkey owns the credentials.
 import { sql } from "drizzle-orm";
-import { boolean, index, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import type { NotificationPrefs, QuietHours, VoicePrefs } from "@kawase/config";
 
@@ -43,6 +43,8 @@ export const users = pgTable(
     quietHours: jsonb().$type<QuietHours>(),
     /** Settings → Voice; what is not set follows DEFAULT_VOICE_PREFS (read with `voicePrefs`). */
     voicePrefs: jsonb().$type<Partial<VoicePrefs>>().notNull().default({}),
+    /** Conversations (chat and voice transcripts) older than this many days are deleted; null = kept until deleted. */
+    transcriptRetentionDays: integer(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

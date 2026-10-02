@@ -56,6 +56,18 @@ Last updated: 2026-10-02 (mobile quality repair; deployment and acceptance track
 | Docs, landing, PWA | docs (10 locales, availability matrix, llms.txt), landing (`/demo` 34 hashes, `/live`), PWA; domain getkawase.xyz | deploying (docs.getkawase.xyz, getkawase.xyz) |
 | Delivery | TestFlight 1.0.0 (7) built and submitted (`d1db81a`); Android APK `1def76af` queued | — |
 
+## 2026-10-02 evening: merged and deployed
+
+| Area | Landed on main (evidence) | Running in a lane |
+|---|---|---|
+| B/D assets, trading | **A done (slices 1–5 + Alchemy, `a48c08e`, `c31f189`):** registry + `wallet_tokens` (0020); `/portfolio` across Arc + 6 chains via Alchemy Portfolio (~1.9 s, the watcher is the fallback); token pages for any token (price, chart, GoPlus, copycat/lookalike); Markets tab (segments, hot cards, heatmap); dock Home · Markets · orb · Chat · Activity; picker (in Swap); any-pair ticket (Kyber/App Kit/LI.FI fan-out, token rules) with a real testnet swap `0x3e51…2604` and mainnet quote+build checks; agent tools get_portfolio, search_tokens, get_token_safety, get_price, propose_trade | A2: send/withdraw/add money for every asset, token-rules screen, margin positions on Home |
+| C/A money in | **B1 Onramp (`8e18523`, migration 0031):** Buy with Apple Pay / card through the Circle Onramp Kit (top-level widgetUrl), the `start_buy` tool and card, a sandbox session on TEST with test cards, settlement on the watcher's delivery row; Circle webhook subscriptions (LIVE `7792922f…`, TEST `4f2b0a87…`) → `/onramp/webhooks/circle`, signature verified (204) | B1: slice 4 bridging with options |
+| G/A/R/O B2 | **B2 done (`9ca13c7`, migrations 0042–0044):** x402 Agent wallet hardened (20% outside Gateway for EIP-3009 sellers), account (link methods, devices, export, delete with handle hold), business (invoices with Arc Memo reference matched on payment `0xefcc…1afa`, batch payout `0x8ebd…6b9a`, payroll), audit writer on every write, Why pages, weekly report, CSV/beancount export, privacy (retention, export, delete); demo seller on Coolify `seller.getkawase.xyz` | B2-2: business/account/history from chat, invoices in any asset, Apple Pay → agent wallet, refunds, device sign-out alert |
+| M agent speed | `ddac3ad`: OpenAI Fast mode (first word 3.4 → 2.5 s median; turns 2.5–7.8 → 1.7–4.1 s); voice gets the capability view up front (one step, "what can you do?" by voice 5.3–7.6 → 1.8–3.9 s); first-visible timing in logs | — |
+| M capabilities | `8ac1124`: swap scope = any-token trading (testnet USDC/EURC only); new `buy` capability; labels in 10 languages; icons for margin and buy | — |
+| Mainnet | Circle LIVE entity secret registered (recovery file in `~/.kawase-secrets`), ops wallet `0x2afa…8b3b` and relayer `0x18fb…6b78` on ARC, `MAINNET_ENABLED=true` on Coolify, `/health` lists both networks, capabilities show mainnet available | Gas USDC for both wallets (Abu), then the mainnet runs |
+| K/U/Q apps | — | C2: narration while swiping, Tauri desktop shell, PWA check, web voice check |
+
 ## 2026-10-02 mobile quality repair — current verification
 
 The approved full scope is in `design/MOBILE-QUALITY-IMPLEMENTATION-2026-10-02.md`. Every remaining row above stays required. Abu’s TestFlight 1.0.0 (4) recording reopens native access (R08) and swipe quality (R11). Build/source/API evidence is `design/review-evidence/2026-10-02/build-and-api.json`; the signed build artifact returned 403, so its embedded configuration is **unverified**. No physical phone is connected to this workspace.

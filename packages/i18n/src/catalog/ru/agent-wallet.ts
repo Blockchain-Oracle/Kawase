@@ -39,6 +39,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   failed: "Не удалось загрузить кошелёк агента.",
   moveTopUp: "Пополнение",
   moveDeposit: "Подготовлено к оплате",
+  moveRefill: "Возвращено в доступные",
   moveReturn: "Возвращено в ваш кошелёк",
   pending: "В обработке",
   failedRow: "Ошибка",

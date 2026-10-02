@@ -4,7 +4,7 @@ export const capability: Catalog["capability"] = {
   send: "Отправка денег",
   request: "Запрос денег",
   contacts: "Контакты",
-  swap: "Обмен USDC и EURC",
+  swap: "Торговля любыми токенами",
   bridge: "Мост в Arc и из Arc",
   yield: "Доходность",
   automations: "Автоматизации",
@@ -14,4 +14,6 @@ export const capability: Catalog["capability"] = {
   payment_links: "Платёжные ссылки",
   margin: "Лонг и шорт",
   lend: "Займы и кредитование",
+  buy: "Купить картой",
+  memory: "Память и подсказки",
 };

@@ -37,6 +37,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   failed: "无法加载代理钱包。",
   moveTopUp: "充值",
   moveDeposit: "已转为可付款",
+  moveRefill: "已转回可直接使用",
   moveReturn: "已退回你的钱包",
   pending: "处理中",
   failedRow: "失败",
