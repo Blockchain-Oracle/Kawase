@@ -16,4 +16,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
   VAULT_LIQUIDITY_SHORT: "ভল্ট এখন শুধু {{available}} দিতে পারে; বাকিটা ধার দেওয়া। কম বা পরে চেষ্টা করুন।",
   VAULT_LOW_LIQUIDITY: "তারল্য কম: তোলায় অপেক্ষা করতে হতে পারে",
   VAULT_RISK_WARNING: "App Kit এই ভল্ট চিহ্নিত করেছে: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "এই ভল্ট এখন মাত্র {{available}} ফেরত দিতে পারে, তাই Kawase এতে টাকা রাখবে না। তারল্য আছে এমন একটি বেছে নিন।",
 };

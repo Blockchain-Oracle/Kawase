@@ -1,0 +1,6 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import Svg, { G, Path, Defs, ClipPath } from "react-native-svg";
+import type { SvgProps } from "react-native-svg";
+const MarkWeth = (props: SvgProps) => <Svg width="100%" height="100%" fill="none" viewBox="0 0 24 24" {...props}><G clipPath="url(#weth-a)"><Path fill="#000" d="M24 0H0v24h24z" /><Path fill="#8FFCF3" d="M12 4v5.912l5 2.236z" /><Path fill="#CABCF8" d="m12 4-5 8.148 5-2.236z" /><Path fill="#CBA7F5" d="M12 15.98V20l5-6.92z" /><Path fill="#74A0F3" d="M12 20v-4.02l-5-2.9z" /><Path fill="#CBA7F5" d="m12 15.048 5-2.9-5-2.236z" /><Path fill="#74A0F3" d="m7 12.148 5 2.9V9.912z" /><Path fill="#202699" fillRule="evenodd" d="m12 15.048-5-2.9L12 4l5 8.148zm-4.668-3.136 4.588-7.476v5.436zm-.068.204 4.656-2.068v4.768zm4.816-2.068v4.768l4.652-2.7zm0-.176 4.588 2.04-4.588-7.476z" clipRule="evenodd" /><Path fill="#202699" fillRule="evenodd" d="m12 15.916-5-2.84L12 20l5-6.924zm-4.44-2.34 4.36 2.48v3.56zm4.52 2.48v3.56l4.36-6.04z" clipRule="evenodd" /></G><Defs><ClipPath id="weth-a"><Path fill="#fff" d="M0 0h24v24H0z" /></ClipPath></Defs></Svg>;
+export default MarkWeth;

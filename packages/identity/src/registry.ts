@@ -43,6 +43,14 @@ export const venueKey = (slug: string) => `venue:${slug}`;
 
 const USDC_DECIMALS = 6;
 const EURC_DECIMALS = 6;
+const CIRBTC_DECIMALS = 8;
+const WETH_DECIMALS = 18;
+
+/** Token addresses on Arc mainnet that have marks (Aave V4 Main Spoke reserves, read 2026-10-02). */
+export const ARC_MAINNET_TOKENS = {
+  cirBTC: "0x171A4217b86A807A64eB94757Db6849fb4bDbAA0",
+  WETH: "0x128cC466B61f542da60c70e3aA11c10e19B84EDB",
+} as const;
 
 const chain = (
   chainId: number,
@@ -182,6 +190,36 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("circle"), kind: "provider", name: "Circle", brandColor: "#00E599", shape: "uncontained", marks: { color: "circle", mono: "circle-mono" } },
   { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
   { id: providerKey("morpho"), kind: "provider", name: "Morpho", brandColor: "#15181A", shape: "tile", marks: { color: "morpho", mono: "morpho-mono" } },
+  { id: providerKey("aave"), kind: "provider", name: "Aave", brandColor: "#9391F7", shape: "disc", marks: { color: "aave", mono: "aave-mono" } },
+
+  // Assets Aave V4 lists on Arc mainnet (reserves read from the Main Spoke, 2026-10-02). cirBTC shows the Bitcoin
+  // mark and WETH the Ether mark (web3icons, MIT); the symbol beside them says which token it is.
+  {
+    id: tokenKey(ARC_MAINNET, ARC_MAINNET_TOKENS.cirBTC),
+    kind: "token",
+    name: "Circle Bitcoin",
+    symbol: "cirBTC",
+    chainId: ARC_MAINNET,
+    address: ARC_MAINNET_TOKENS.cirBTC,
+    decimals: CIRBTC_DECIMALS,
+    brandColor: "#F7931A",
+    shape: "disc",
+    marks: { color: "btc", mono: "btc-mono" },
+    environment: "mainnet",
+  },
+  {
+    id: tokenKey(ARC_MAINNET, ARC_MAINNET_TOKENS.WETH),
+    kind: "token",
+    name: "Wrapped Ether",
+    symbol: "WETH",
+    chainId: ARC_MAINNET,
+    address: ARC_MAINNET_TOKENS.WETH,
+    decimals: WETH_DECIMALS,
+    brandColor: "#627EEA",
+    shape: "disc",
+    marks: { color: "weth", mono: "weth-mono" },
+    environment: "mainnet",
+  },
 
   // x402 services the agent buys from (sources and kit rules in PROVENANCE.md).
   { id: providerKey("blockrun"), kind: "provider", name: "BlockRun", brandColor: "#000000", shape: "uncontained", marks: { color: "blockrun", mono: "blockrun-mono" } },
@@ -198,9 +236,10 @@ export const ENTITIES: readonly Entity[] = [
   // Registered now, marks later (Stage 6 routes and names).
   { id: venueKey("cctp"), kind: "venue", name: "Circle CCTP", brandColor: "#00E599", shape: "uncontained", marks: {} },
   { id: venueKey("lifi"), kind: "venue", name: "LI.FI", brandColor: "#5F2FEA", shape: "uncontained", marks: {} },
-  { id: venueKey("across"), kind: "venue", name: "Across", brandColor: "#6CF9D8", shape: "uncontained", marks: {} },
+  { id: venueKey("across"), kind: "venue", name: "Across", brandColor: "#6CF9D8", shape: "disc", marks: { color: "across", mono: "across-mono" } },
   { id: venueKey("relay"), kind: "venue", name: "Relay", brandColor: "#7C3AED", shape: "uncontained", marks: {} },
-  { id: venueKey("debridge"), kind: "venue", name: "deBridge", brandColor: "#FBFF3A", shape: "uncontained", marks: {} },
+  { id: venueKey("debridge"), kind: "venue", name: "deBridge", brandColor: "#FBFF3A", shape: "disc", marks: { color: "debridge", mono: "debridge-mono" } },
+  { id: venueKey("kyberswap"), kind: "venue", name: "KyberSwap", brandColor: "#31CB9E", shape: "disc", marks: { color: "kyberswap", mono: "kyberswap-mono" } },
   { id: venueKey("socket"), kind: "venue", name: "Socket", brandColor: "#FF6B6B", shape: "uncontained", marks: {} },
   { id: "name-service:ens", kind: "name-service", name: "ENS", brandColor: "#5298FF", shape: "uncontained", marks: {} },
   { id: "name-service:basenames", kind: "name-service", name: "Basenames", brandColor: "#0052FF", shape: "uncontained", marks: {} },

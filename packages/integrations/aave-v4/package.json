@@ -1,0 +1,24 @@
+{
+  "name": "@kawase/integrations-aave-v4",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aave V4 on Arc: the Main Spoke's reserves, prices, rates and a wallet's account, and the supply / withdraw / borrow / repay / collateral calls a wallet sends itself in one 7702 batch. Generic: no product logic inside.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "tsx --test test/*.test.ts",
+    "test:live": "tsx test/live.integration.ts"
+  },
+  "dependencies": {
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

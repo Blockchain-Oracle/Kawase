@@ -1,6 +1,7 @@
 // A small, explicit client: one function per route, problem+json turned into `ApiError`, the session token
 // supplied by the caller (secure storage on native, a cookie or storage on web).
 import type {
+  VoicePrefs,
   ActivityPage,
   AllowanceRequestResponse,
   ApiUser,
@@ -66,6 +67,7 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import { railsEndpoints } from "./rails";
 
 export * from "./types";
 export * from "./agent-types";
@@ -73,6 +75,7 @@ export * from "./assets";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./rails";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -128,6 +131,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
   }
 
   return {
+    ...railsEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
@@ -161,7 +165,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
             | "practiceMode"
             | "handle"
           >
-        > & { handlePrompted?: true },
+        > & { handlePrompted?: true; voicePrefs?: Partial<VoicePrefs> },
       ) => call<{ user: ApiUser }>("PATCH", "/me", settings),
       /** The handle field's live check: which rule it breaks, or whether someone has it. */
       handleAvailability: (handle: string) =>

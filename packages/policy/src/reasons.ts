@@ -11,6 +11,11 @@ export const REASONS = {
   // Errors: nothing the person can fix here.
   NOT_AVAILABLE_YET: "error",
   SWAP_PAIR_UNSUPPORTED: "error",
+  /** No venue lists this market, or this side of it (R2: the reason and the nearest path are shown). */
+  MARGIN_MARKET_UNAVAILABLE: "error",
+  MARGIN_SIDE_UNAVAILABLE: "error",
+  /** A close names a position the person does not hold. */
+  POSITION_MISSING: "error",
   /** The vault is not listed here, or not taking deposits. */
   VAULT_UNAVAILABLE: "error",
   // Policy refusals: terminal for this version.
@@ -21,6 +26,10 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** More leverage than the venue's collateral factor allows at the opening health floor. */
+  LEVERAGE_TOO_HIGH: "policy",
+  /** The source can pay out almost nothing right now: Kawase does not deposit into it (gaps.md G1). */
+  VAULT_LIQUIDITY_STUCK: "policy",
   /** The token is an impersonator, a honeypot or cannot be sold: Kawase never buys it (copycat rule, GoPlus). */
   TOKEN_BLOCKED: "policy",
   /** Over the token rules' per-trade limit for unverified tokens (D12: $50 by default). */
@@ -58,6 +67,8 @@ export const REASONS = {
   ASSET_UNCLEAR: "clarification",
   SWAP_SAME_TOKEN: "clarification",
   DESTINATION_MISSING: "clarification",
+  MARKET_MISSING: "clarification",
+  SIDE_MISSING: "clarification",
   /** A schedule Kawase cannot keep (an unknown time zone, a day out of range). */
   SCHEDULE_INVALID: "clarification",
   /** A rule without the number it needs: the balance line, the share, or the amount. */
@@ -78,6 +89,8 @@ export const REASONS = {
   /** A run skipped because this period's amount was already sent (the grant's cap). */
   AUTOMATION_PERIOD_USED: "warning",
   VAULT_RISK_WARNING: "warning",
+  /** Leverage: the margin can be lost; the card names the liquidation price. */
+  MARGIN_RISK: "warning",
 } as const satisfies Record<string, PolicyKind>;
 
 export type ReasonCode = keyof typeof REASONS;

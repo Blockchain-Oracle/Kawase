@@ -16,4 +16,6 @@ export const earnPolicy: Catalog["earnPolicy"] = {
   VAULT_LIQUIDITY_SHORT: "والٹ ابھی صرف {{available}} دے سکتا ہے؛ باقی قرض پر ہے۔ کم رقم یا بعد میں آزمائیں۔",
   VAULT_LOW_LIQUIDITY: "کم لیکویڈیٹی: نکاسی میں انتظار کرنا پڑ سکتا ہے",
   VAULT_RISK_WARNING: "‏App Kit اس والٹ کو نشان زد کرتا ہے: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "یہ والٹ ابھی صرف {{available}} واپس دے سکتا ہے، اس لیے Kawase اس میں رقم نہیں ڈالے گا۔ لیکویڈیٹی والا چنیں۔",
 };

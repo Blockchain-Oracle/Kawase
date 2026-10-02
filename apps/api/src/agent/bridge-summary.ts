@@ -11,6 +11,7 @@ const REASONS = {
   timeout: "did not answer in time",
   not_on_arc_testnet: "does not serve Arc Testnet",
   not_on_arc: "does not serve Arc",
+  amount_too_low: "needs a larger amount",
 } as const;
 const usdc = (baseUnits: string | null | undefined) => (baseUnits ? formatAmount(amount("USDC", BigInt(baseUnits)), DISPLAY_LOCALE) : "");
 

@@ -52,6 +52,8 @@ import { noMarketData, type MarketData } from "./market/sources";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { marginRoutes } from "./margin/routes";
+import { MarginService } from "./margin/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
@@ -157,6 +159,7 @@ export function createApp(deps: AppDeps) {
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
+  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -179,6 +182,7 @@ export function createApp(deps: AppDeps) {
     swaps.startSweeper(deps.reconcileIntervalMs);
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
+    margin.startSweeper(deps.reconcileIntervalMs);
   }
   const general = createRateLimit({
     limit: deps.rateLimitPerMinute ?? DEFAULT_RATE_LIMIT_PER_MINUTE,
@@ -249,6 +253,7 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
+  app.route("/margin", marginRoutes(margin));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
@@ -270,6 +275,7 @@ export function createApp(deps: AppDeps) {
     swaps,
     bridges,
     earn,
+    margin,
     assets,
     automations,
     requests,

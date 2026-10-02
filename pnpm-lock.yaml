@@ -162,6 +162,9 @@ importers:
       '@kawase/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@kawase/integrations-aave-v4':
+        specifier: workspace:*
+        version: link:../../packages/integrations/aave-v4
       '@kawase/integrations-app-kit':
         specifier: workspace:*
         version: link:../../packages/integrations/app-kit
@@ -456,6 +459,9 @@ importers:
       '@kawase/wallet':
         specifier: workspace:*
         version: link:../../packages/wallet
+      '@livekit/components-react':
+        specifier: 2.9.24
+        version: 2.9.24(livekit-client@2.22.3(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(tslib@2.8.1)
       '@livekit/react-native':
         specifier: 3.0.0
         version: 3.0.0(@livekit/react-native-webrtc@144.2.0(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(supports-color@8.1.1))(livekit-client@2.22.3(@types/dom-mediacapture-record@1.0.22))(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(tslib@2.8.1)
@@ -670,6 +676,12 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
+      dotenv:
+        specifier: 'catalog:'
+        version: 18.0.4
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -887,6 +899,22 @@ importers:
       react-native-svg:
         specifier: 15.15.4
         version: 15.15.4(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/integrations/aave-v4:
+    dependencies:
+      viem:
+        specifier: 'catalog:'
+        version: 2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

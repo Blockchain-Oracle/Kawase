@@ -14,4 +14,6 @@ export const earnPolicy = {
   VAULT_LIQUIDITY_SHORT: "The vault can pay out only {{available}} right now; the rest is lent out. Try less or later.",
   VAULT_LOW_LIQUIDITY: "Low liquidity: withdrawals may have to wait",
   VAULT_RISK_WARNING: "App Kit flags this vault: {{warnings}}",
+  VAULT_LIQUIDITY_STUCK:
+    "This vault can pay out only {{available}} right now, so Kawase won't put money in. Pick a liquid one.",
 } as const;

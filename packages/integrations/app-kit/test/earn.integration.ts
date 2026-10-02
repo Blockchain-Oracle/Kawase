@@ -37,7 +37,7 @@ const show = (label: string, calls: { to: Hex; data: Hex }[]) => {
   console.log(label, JSON.stringify({ calls: calls.map((c) => [c.to, c.data.slice(0, 10)]), instructions: p.instructions.map((i) => ({ target: i.target, tokenIn: i.tokenIn, amountToApprove: i.amountToApprove, tokenOut: i.tokenOut, minTokenOut: i.minTokenOut })), tokens: p.tokens, inputs: inputs.map((i) => ({ token: i.token, amount: i.amount })) }, (_, v) => (typeof v === "bigint" ? v.toString() : v)));
 };
 
-const vaults = await exploreVaults(network, apiKey);
+const vaults = await exploreVaults(network, apiKey, { stuckBelowUsd: 1_000, lowShare: 0.1 });
 console.log("vaults", vaults.map((v) => `${v.name} ${v.address} ${(v.apy * 100).toFixed(2)}% ${v.status}`));
 const vault = vaults[0]!.address;
 
