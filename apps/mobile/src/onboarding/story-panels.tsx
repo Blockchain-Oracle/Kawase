@@ -8,10 +8,10 @@
 // Amounts are labelled examples on Arc Testnet, never a finished transaction. Only the visible panel moves (its
 // objects float; panel 1's fields arrive after the request), and with reduced motion every panel still shows its
 // whole event. Shared by the real story (copy from the catalogs) and the direction board.
-import { ArrowDown, Check, ChevronDown, Globe, ScanFace, Send, ShieldX } from "lucide-react-native";
+import { ArrowDown, Check, ChevronDown, Globe, ScanFace, Send, ShieldX, Volume2, VolumeOff } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, View, type ViewStyle } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
+import Animated, { FadeInDown, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 
 import { MOTION } from "@kawase/config";
 import { arcIdentity } from "@kawase/identity";
@@ -19,6 +19,7 @@ import { Float } from "@kawase/ui-native/components/art/float";
 import { Hanko } from "@kawase/ui-native/components/art/hanko";
 import { PaperPlane, PLANE_VIEWBOX } from "@kawase/ui-native/components/art/paper-plane";
 import { Mark } from "@kawase/ui-native/components/mark";
+import { SignalBars } from "@kawase/ui-native/components/signal-bars";
 import type { StoryPanel } from "@kawase/ui-native/components/story-shell";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -50,6 +51,7 @@ const ORB_INNER = 44;
 /** The panels, in order, for "only the visible one moves". */
 const PANEL = { request: 0, bounds: 1, practice: 2, language: 3, first: 4 } as const;
 const ADDRESS_STYLE = { writingDirection: "ltr", textAlign: "left" } as const;
+const CENTERED = { alignItems: "center", justifyContent: "center" } as const;
 
 export type StoryCopy = {
   panels: readonly { title: string; body: string }[];
@@ -442,14 +444,59 @@ export function StoryLanguagePill({
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
       hitSlop={8}
-      className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
+      className="shrink flex-row items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
       style={{ backgroundColor: CHIP_TINT }}
     >
       <Icon as={Globe} className="size-4" color={STORY_INK} />
-      <Text className="text-sm font-semibold" style={{ color: STORY_INK }}>
+      <Text numberOfLines={1} className="shrink text-sm font-semibold" style={{ color: STORY_INK }}>
         {label}
       </Text>
       <Icon as={ChevronDown} className="size-4" color={STORY_INK} />
+    </Pressable>
+  );
+}
+
+/**
+ * The narration switch beside the language pill (plan §1.5), after 21st.dev 29845 Mute Toggle Button · sean0205: a
+ * pressed-state toggle that swaps a speaker for a muted speaker. Ours is a round chip in the pill's tint; while a
+ * clip is speaking the speaker turns into pulsing bars (21st.dev 24461 Signal Bars Loader · elements-), driven by
+ * `level` on the UI thread so a swipe that cuts the clip never re-renders the story.
+ */
+export function StoryNarrationButton({
+  on,
+  level,
+  label,
+  onPress,
+}: {
+  on: boolean;
+  level: SharedValue<number>;
+  label: string;
+  onPress: () => void;
+}) {
+  const speaker = useAnimatedStyle(() => ({ opacity: 1 - level.value }));
+  const bars = useAnimatedStyle(() => ({ opacity: level.value }));
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: on }}
+      onPress={onPress}
+      hitSlop={8}
+      className="size-8 items-center justify-center rounded-full active:opacity-70"
+      style={{ backgroundColor: CHIP_TINT }}
+    >
+      {on ? (
+        <>
+          <Animated.View style={speaker}>
+            <Icon as={Volume2} className="size-4" color={STORY_INK} />
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, CENTERED, bars]}>
+            <SignalBars color={STORY_INK} level={level} />
+          </Animated.View>
+        </>
+      ) : (
+        <Icon as={VolumeOff} className="size-4" color={STORY_INK} />
+      )}
     </Pressable>
   );
 }

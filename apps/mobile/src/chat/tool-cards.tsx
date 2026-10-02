@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   ArrowUpRight,
   AudioLines,
+  Brain,
   CalendarClock,
   CandlestickChart,
   Copy,
@@ -52,8 +53,10 @@ import type {
   MarginPositionsOutput,
   ProposeMarginOutput,
   BuyProposalOutput,
-  WithdrawProposalOutput,
   ProposeCrossChainOutput,
+  CompareYieldOutput,
+  ProposeLendOutput,
+  WithdrawProposalOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -84,14 +87,20 @@ import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { OnrampBuyCard } from "./buy-card";
-import { WithdrawCard } from "./withdraw-card";
 import { MoveCard } from "./move-card";
+import { LendOrderCard, YieldOptionsCard } from "./lend-card";
+import { WithdrawCard } from "./withdraw-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
 import { ReportCard } from "@/history/report-card";
 import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
+import { SafetyCard } from "./safety-card";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
+import type { SafetyToolOutput } from "@kawase/api-client";
+import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
+import { MemoryCard } from "./memory-card";
+import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -306,6 +315,7 @@ const CAPABILITY_ICON: Record<string, LucideIcon> = {
   payment_links: Link2,
   margin: CandlestickChart,
   buy: CreditCard,
+  memory: Brain,
 };
 /** How many tiles show before "See all": three rows of two. */
 const CAPABILITY_PREVIEW = 6;
@@ -569,6 +579,12 @@ function NetworkSwitchCard({
 }
 
 const LOADING_LABELS: Record<string, string> = {
+  get_limits: "safety.loading",
+  pause_all: "safety.loading",
+  set_risk_mode: "safety.loading",
+  propose_limit_change: "safety.loading",
+  propose_allowlist_change: "safety.loading",
+  revoke_grant: "safety.loading",
   get_wallet: "chat.loadingWallet",
   get_activity: "chat.loadingActivity",
   get_capabilities: "chat.loadingCapabilities",
@@ -595,6 +611,15 @@ const LOADING_LABELS: Record<string, string> = {
   top_up_agent_wallet: "market.loadingWallet",
   create_invoice: "business.loadingInvoice",
   get_report: "report.loading",
+  remember_fact: "memory.loadingRemember",
+  forget_fact: "memory.loadingForget",
+  search_history: "insight.searching",
+  get_for_you: "forYou.loading",
+  arc_knowledge: "insight.lookingUp",
+  show_chart: "insight.loadingChart",
+  explain_choice: "insight.loadingDecision",
+  propose_setting_change: "insight.loadingSetting",
+  get_status: "insight.loadingStatus",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -686,6 +711,12 @@ export function ToolCard({
       return (part.output as Partial<WithdrawProposalOutput>).withdraw ? <WithdrawCard output={part.output as WithdrawProposalOutput} /> : null;
     case "get_positions":
       return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
+    case "compare_yield":
+      return (part.output as Partial<CompareYieldOutput>).options ? <YieldOptionsCard output={part.output as CompareYieldOutput} /> : null;
+    case "propose_supply":
+    case "propose_borrow":
+    case "propose_repay":
+      return (part.output as Partial<ProposeLendOutput>).intent ? <LendOrderCard output={part.output as ProposeLendOutput} /> : null;
     case "search_services":
       return <ServicesCard output={part.output as ServiceSearchResult} />;
     case "inspect_service":
@@ -696,6 +727,13 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "get_limits":
+    case "pause_all":
+    case "set_risk_mode":
+    case "propose_limit_change":
+    case "propose_allowlist_change":
+    case "revoke_grant":
+      return <SafetyCard output={part.output as SafetyToolOutput} />;
     case "create_invoice":
       return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
     case "get_report": {
@@ -706,6 +744,23 @@ export function ToolCard({
         </AgentCard>
       ) : null;
     }
+    case "remember_fact":
+    case "forget_fact":
+      return <MemoryCard output={part.output as MemoryToolOutput} />;
+    case "search_history":
+      return <HistorySearchCard output={part.output as HistorySearchOutput} />;
+    case "get_for_you":
+      return <ForYouChatCard output={part.output as SuggestionsView} />;
+    case "arc_knowledge":
+      return <KnowledgeCard output={part.output as { passages: { title: string; source: string }[] }} />;
+    case "show_chart":
+      return <ChartCard output={part.output as ChartOutput} />;
+    case "explain_choice":
+      return <DecisionCard output={part.output as DecisionView} />;
+    case "propose_setting_change":
+      return <SettingDiffCard output={part.output as SettingDiff} />;
+    case "get_status":
+      return <StatusCard output={part.output as StatusView} />;
     default:
       return null;
   }

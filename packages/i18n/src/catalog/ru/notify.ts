@@ -14,4 +14,11 @@ export const notify: Catalog["notify"] = {
   emailNeverApprove: "Kawase никогда не просит ничего подтверждать или подписывать по почте.",
   emailWhy:
     "Вы получили это письмо, потому что это включено в Kawase. Изменить можно в разделе Настройки → Уведомления.",
+  needsYouTitle: "Ждёт вас",
+  needsYouReminderTitle: "Всё ещё ждёт вас",
+  needsYouSend: "Отправить {{amount}} получателю {{name}}",
+  needsYouSwap: "Обменять {{amount}} {{symbolIn}} на {{symbolOut}}",
+  reminderTitle: "Завтра, {{at}}",
+  reminderPayroll: "Выплаты {{people}} людям",
+  reminderShort: "В кошельке меньше, чем нужно для запуска",
 };

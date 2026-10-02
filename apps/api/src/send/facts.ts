@@ -1,8 +1,8 @@
 // Gathers what the policy needs for one send of any asset (R1), fresh each time: the token, balances, the 7702 code
-// and what is left of the allowance from the chain; limits and what was already spent from the database; who the
-// recipient is, and what that address is on chain (R6: a token contract, a smart wallet, another contract, blocked by
-// the token's issuer, a Kawase user).
-import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+// and what is left of the token's allowance from the chain; limits and what was already spent from the database; who
+// the recipient is, and what that address is on chain (R6: a token contract, a smart wallet, another contract, blocked
+// by the token's issuer, a Kawase user).
+import { and, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { erc20Abi, formatUnits, parseUnits, type Address } from "viem";
 
 import {
@@ -12,13 +12,15 @@ import {
   SECONDS_PER_DAY,
   SECONDS_PER_WEEK,
 } from "@kawase/config";
-import { grants, limits as limitsTable, spendLedger, type Db } from "@kawase/db";
-import { allowanceAvailable, isWalletSetUp } from "@kawase/integrations-delegation";
+import { limits as limitsTable, spendLedger, type Db } from "@kawase/db";
+import { isWalletSetUp } from "@kawase/integrations-delegation";
 import { AmountParseError, decimalsOf, parseAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 import type { AmountFacts, SendFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
+import { allowanceRoom, tokenAllowance, type AllowanceRoom } from "../safety/allowances";
+import { recipientTrust, safetySettingsOf } from "../safety/settings";
 import type { Chains } from "../wallet/chain";
 import { inspectRecipient, type Resolution, type RecipientInspection } from "./recipients";
 
@@ -52,6 +54,7 @@ export function parseTokenAmount(text: string | null, decimals: number): AmountF
 export const ledgerAsset = (symbol: string): string => (symbol === "USDC" || symbol === "EURC" ? symbol : USD_LEDGER_ASSET);
 
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
+export const assetToken = (network: { addresses: { usdc: Address; eurc: Address } }, asset: AssetId) => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 /** The pool or one transaction's connection: checks made under a lock must use the locked connection. */
@@ -71,22 +74,16 @@ export function parseRequestAmount(text: string | null, asset: AssetId | undefin
   }
 }
 
-export async function activeAllowance(db: Db, userId: string, network: NetworkId): Promise<ActiveAllowance | undefined> {
-  const [row] = await db
-    .select()
-    .from(grants)
-    .where(
-      and(
-        eq(grants.userId, userId),
-        eq(grants.network, network),
-        eq(grants.kind, "allowance"),
-        eq(grants.status, "active"),
-        gt(grants.expiresAt, new Date()),
-      ),
-    )
-    .orderBy(desc(grants.createdAt))
-    .limit(1);
-  return row ? { id: row.id, delegation: row.delegation, perPeriod: row.periodAmount } : undefined;
+/**
+ * The allowance for one token on one network, with what is left of it now (the chain's room under the person's own
+ * cap). Sends of USDC and EURC each use their own token's allowance (cards/automate-safety.md).
+ */
+export async function activeAllowance(db: Db, chains: Chains, userId: string, network: NetworkId, token: Address): Promise<AllowanceRoom | undefined> {
+  const clients = chains.get(network);
+  if (!clients) return undefined;
+  const allowance = await tokenAllowance(db, userId, network, token);
+  if (!allowance.base && !allowance.boost) return undefined;
+  return allowanceRoom(clients, allowance);
 }
 
 /** Reserved and committed spend of one ledger asset in the last day and week, leaving out one intent (the one being checked). */
@@ -143,6 +140,7 @@ export async function fitsLimits(executor: Executor, userId: string, network: Ne
 export type GatheredFacts = {
   facts: SendFacts;
   allowance: ActiveAllowance | undefined;
+  practice: boolean;
   /** The token the send uses, once known. */
   token: SendToken | undefined;
   /** The amount in the ledger's units (see `ledgerAsset`), for reserving the spend; null when unpriced. */
@@ -171,67 +169,72 @@ export async function gatherFacts(input: {
   const clients = chains.get(network);
   const named = request.asset ?? undefined;
 
-  let usdc = ZERO;
-  let eurc = ZERO;
+  const empty = { USDC: ZERO, EURC: ZERO } satisfies Record<AssetId, bigint>;
+  let balances: Record<AssetId, bigint> = empty;
   let setUp = false;
-  let allowance: ActiveAllowance | undefined;
-  let available = ZERO;
   if (clients && wallet) {
     const balanceOf = (token: Address) =>
       clients.client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
-    const [usdcBalance, eurcBalance, code, grant] = await Promise.all([
+    const [usdc, eurc, code] = await Promise.all([
       balanceOf(clients.network.addresses.usdc),
       balanceOf(clients.network.addresses.eurc),
       clients.client.getCode({ address: wallet }),
-      activeAllowance(db, userId, network),
     ]);
-    usdc = usdcBalance;
-    eurc = eurcBalance;
+    balances = { USDC: usdc, EURC: eurc };
     setUp = isWalletSetUp(code);
-    allowance = grant;
-    if (grant && setUp) {
-      // A failed read leaves nothing available, so the send asks for Face ID instead of trusting a guess.
-      available = await allowanceAvailable(clients.client, clients.network, grant.delegation as never)
-        .then((result) => result.available)
-        .catch(() => ZERO);
-    }
   }
 
   // The token: the one named, else the stablecoin held (both held and none named: ask which).
-  const assetUnclear = !named && usdc > ZERO && eurc > ZERO;
-  const chosen = named ?? (eurc > ZERO && usdc === ZERO ? "EURC" : "USDC");
-  const stable = (symbol: "USDC" | "EURC"): SendToken | undefined =>
-    clients ? { address: symbol === "USDC" ? clients.network.addresses.usdc : clients.network.addresses.eurc, symbol, decimals: decimalsOfStable(symbol), priceUsd: null } : undefined;
+  const assetUnclear = !named && balances.USDC > ZERO && balances.EURC > ZERO;
+  const chosen = named ?? (balances.EURC > ZERO && balances.USDC === ZERO ? "EURC" : "USDC");
+  const stable = (symbol: AssetId): SendToken | undefined => (clients ? { address: assetToken(clients.network, symbol), symbol, decimals: decimalsOf(symbol), priceUsd: null } : undefined);
   const upper = chosen.toUpperCase();
   const token: SendToken | undefined =
     upper === "USDC" || upper === "EURC" ? stable(upper) : input.lookup ? await input.lookup(network, chosen).catch(() => undefined) : undefined;
-  const isUsdc = Boolean(token && clients && token.address.toLowerCase() === clients.network.addresses.usdc.toLowerCase());
-  const isEurc = Boolean(token && clients && token.address.toLowerCase() === clients.network.addresses.eurc.toLowerCase());
-  const balance = !token || !clients || !wallet ? ZERO : isUsdc ? usdc : isEurc ? eurc : await clients.client.readContract({ address: token.address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }).catch(() => ZERO);
+  const same = (address: Address) => Boolean(token && token.address.toLowerCase() === address.toLowerCase());
+  const isUsdc = Boolean(clients && same(clients.network.addresses.usdc));
+  const isEurc = Boolean(clients && same(clients.network.addresses.eurc));
+  const stableSymbol: AssetId | undefined = isUsdc ? "USDC" : isEurc ? "EURC" : undefined;
+  const balance =
+    !token || !clients || !wallet
+      ? ZERO
+      : stableSymbol
+        ? balances[stableSymbol]
+        : await clients.client.readContract({ address: token.address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }).catch(() => ZERO);
   const amount: AmountFacts = token ? parseTokenAmount(request.amount, token.decimals) : parseRequestAmount(request.amount, undefined);
 
   // Limits: USDC and EURC in their own units; any other token by its value in dollars (none when it has no price).
-  const ledgerSymbol = token ? ledgerAsset(isUsdc ? "USDC" : isEurc ? "EURC" : token.symbol) : "USDC";
+  const ledgerSymbol = token ? ledgerAsset(stableSymbol ?? token.symbol) : "USDC";
   const valued =
     amount.status === "ok" && token && ledgerSymbol === USD_LEDGER_ASSET
       ? token.priceUsd !== null
         ? parseUnits((Number(formatUnits(amount.baseUnits, token.decimals)) * token.priceUsd).toFixed(USD_DECIMALS), USD_DECIMALS)
         : null
       : undefined;
-  const [limitValues, spentValues, inspection] = await Promise.all([
+  const recipientAddress = input.resolution.facts.status === "resolved" ? input.resolution.facts.address : undefined;
+  const [limitValues, spentValues, settings, room, trust, inspection] = await Promise.all([
     userLimits(db, userId, network),
     spent(db, userId, network, ledgerSymbol, input.exceptIntentId),
-    clients && input.resolution.facts.status === "resolved"
-      ? inspectRecipient(db, clients.client, input.resolution.facts.address as Address, token && (isUsdc || isEurc) ? token.address : undefined)
-      : Promise.resolve(undefined),
+    safetySettingsOf(db, userId, network),
+    // The chosen token's own allowance (USDC and EURC each); without a wallet set up there is nothing to spend from.
+    clients && wallet && setUp && stableSymbol ? activeAllowance(db, chains, userId, network, assetToken(clients.network, stableSymbol)) : Promise.resolve(undefined),
+    recipientAddress ? recipientTrust(db, userId, network, recipientAddress) : Promise.resolve(undefined),
+    clients && recipientAddress ? inspectRecipient(db, clients.client, recipientAddress as Address, stableSymbol && token ? token.address : undefined) : Promise.resolve(undefined),
   ]);
+  const grant = room?.base?.grant ?? room?.boost?.grant;
+  const allowance: ActiveAllowance | undefined = grant && room ? { id: grant.id, delegation: grant.delegation, perPeriod: room.perPeriod } : undefined;
   const recipient =
-    input.resolution.facts.status === "resolved" && inspection
-      ? { ...input.resolution.facts, contract: inspection.contract ?? undefined, issuerBlocked: inspection.issuerBlocked }
+    input.resolution.facts.status === "resolved"
+      ? {
+          ...input.resolution.facts,
+          ...(trust ? { knownSince: trust.knownSince, allowlisted: trust.allowlisted } : {}),
+          ...(inspection ? { contract: inspection.contract ?? undefined, issuerBlocked: inspection.issuerBlocked } : {}),
+        }
       : input.resolution.facts;
 
   return {
     allowance,
+    practice: settings.practice,
     token,
     ledger: amount.status === "ok" ? { asset: ledgerSymbol, amount: valued === undefined ? amount.baseUnits : valued } : undefined,
     inspection,
@@ -239,16 +242,20 @@ export async function gatherFacts(input: {
       network,
       capability: { here: view.send[network].state, other: view.send[other].state },
       signedIn: input.signedIn,
-      pausedAll: input.pausedAll,
-      wallet: { registered: Boolean(wallet), setUp, balance, usdc },
+      pausedAll: input.pausedAll || Boolean(settings.pausedAt),
+      wallet: { registered: Boolean(wallet), setUp, balance, usdc: balances.USDC },
       recipient,
       asset: token?.symbol ?? (named || undefined),
       assetUnclear,
       isUsdc,
+      allowable: Boolean(stableSymbol),
       decimals: token?.decimals,
       amount,
       limitAmount: valued,
-      allowance: { active: Boolean(allowance), available },
+      allowance: { active: Boolean(room?.active), available: room?.available ?? ZERO },
+      riskMode: settings.riskMode,
+      cooldown: { seconds: settings.cooldown.seconds, cap: settings.cooldown.cap, now: new Date().toISOString() },
+      allowlistOnly: settings.allowlistOnly,
       limits: limitValues,
       spent: spentValues,
       thresholds: {
@@ -258,5 +265,3 @@ export async function gatherFacts(input: {
     },
   };
 }
-
-const decimalsOfStable = (symbol: "USDC" | "EURC") => decimalsOf(symbol);

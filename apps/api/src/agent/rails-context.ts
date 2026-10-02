@@ -4,12 +4,13 @@ import { and, eq, inArray } from "drizzle-orm";
 import { formatUnits } from "viem";
 
 import type { AgentContext } from "@kawase/agent";
-import type { CrossChainIntent, MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
+import type { CrossChainIntent, LendIntent, YieldOptionsView, MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
 import { intents, type Db } from "@kawase/db";
 
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
 import type { CrossChainService } from "../crosschain/service";
+import type { LendService } from "../lend/service";
 import type { SessionUser } from "../types";
 
 const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
@@ -113,6 +114,39 @@ function summarizeCrossChain(intent: CrossChainIntent): string {
   return blocking ? `${line} Blocked: ${MOVE_REASONS[blocking.code] ?? blocking.code}` : line;
 }
 
+function summarizeOptions(view: YieldOptionsView): string {
+  if (view.options.length === 0) return `Nothing to earn on ${view.asset} here right now.`;
+  return view.options
+    .map((option) => `${option.name} (${option.protocol}): ${pct(option.rate)} ${option.rateKind}${option.withdrawableUsd !== null ? `, ${dollars(option.withdrawableUsd)} withdrawable now` : ""}${option.note ? ` [${option.note}]` : ""}${option.executable ? "" : " (shown only)"}`)
+    .join("; ")
+    .concat(view.best ? `. Best liquid: ${view.options.find((option) => option.id === view.best)?.name}.` : ".");
+}
+
+const LEND_REASONS: Record<string, string> = {
+  SIGN_IN_REQUIRED: "The person must sign in first.",
+  ON_OTHER_NETWORK: "Aave V4 is on Arc mainnet only; offer to switch.",
+  ASSET_UNCLEAR: "Which asset?",
+  LEND_ASSET_UNAVAILABLE: "Aave V4 does not list that asset here (or not for borrowing).",
+  LEND_NOT_COLLATERAL: "That asset cannot back a loan (EURC's collateral factor is 0); suggest cirBTC, WETH or USDC.",
+  LEND_NOTHING_OWED: "There is nothing owed in that asset.",
+  AMOUNT_MISSING: "How much?",
+  INSUFFICIENT_BALANCE: "Not enough in the wallet for that.",
+  OVER_POSITION: "That is more than what is supplied.",
+  HEALTH_TOO_LOW: "That would put the account too close to liquidation; suggest less, or more collateral.",
+};
+
+function summarizeLend(intent: LendIntent): string {
+  const draft = intent.draft;
+  const blocking = intent.blocking ? (LEND_REASONS[intent.blocking.code] ?? intent.blocking.code) : null;
+  if (!draft) return blocking ?? "Needs more details.";
+  const amount = `${formatUnits(BigInt(draft.amount), draft.decimals)} ${draft.asset}`;
+  const extra = draft.collateral ? ` with ${formatUnits(BigInt(draft.collateral.amount), draft.collateral.decimals)} ${draft.collateral.asset} as collateral` : "";
+  const liquidation = draft.liquidation ? ` (liquidated if ${draft.liquidation.asset} falls to ${price(draft.liquidation.price)})` : "";
+  const health = draft.healthAfter !== null ? `, health after ${draft.healthAfter.toFixed(MONEY_DIGITS)}${liquidation}` : "";
+  const line = `${draft.action} ${draft.all ? `all (${amount})` : amount}${extra} on Aave V4 at ${pct(draft.rate)} a year${health}. The person confirms on the card.`;
+  return blocking ? `${line} Blocked: ${blocking}` : line;
+}
+
 const BUY_REASONS = {
   sign_in: "The person must sign in first; the card opens sign-in and comes back.",
   no_wallet: "The wallet is not set up yet.",
@@ -125,9 +159,10 @@ export function railsContext(input: {
   margin: MarginService | undefined;
   onramp: OnrampService | undefined;
   crosschain: CrossChainService | undefined;
+  lend: LendService | undefined;
   threadId: string;
 }): Partial<AgentContext> {
-  const { user, db, margin, onramp, crosschain, threadId } = input;
+  const { user, db, margin, onramp, crosschain, lend, threadId } = input;
   const network = user.activeNetwork;
   const buy: Partial<AgentContext> = onramp
     ? {
@@ -160,10 +195,27 @@ export function railsContext(input: {
         },
       }
     : {};
-  if (!margin) return { ...buy, ...moves };
+  const lending: Partial<AgentContext> = lend
+    ? {
+        async compareYield(request) {
+          const view = await lend.options(user, request.asset, request.amount);
+          return { ...view, summary: summarizeOptions(view) };
+        },
+        async proposeLend(request) {
+          await db
+            .update(intents)
+            .set({ state: "canceled" })
+            .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "lend"), inArray(intents.state, [...DRAFTABLE])));
+          const intent = await lend.create(user, request, { surface: "chat", threadId });
+          return { intent, summary: summarizeLend(intent) };
+        },
+      }
+    : {};
+  if (!margin) return { ...buy, ...moves, ...lending };
   return {
     ...buy,
     ...moves,
+    ...lending,
     async marginMarkets() {
       const view = await margin.markets(network);
       return { ...view, summary: marketsSummary(view) };

@@ -24,8 +24,9 @@ const SKELETON_HEIGHT = 220;
 const HTTP_NOT_FOUND = 404;
 
 function useStepText() {
-  const { t } = useT();
-  const policy = (code: string) => t(`policy.${code}`, { defaultValue: code });
+  const { t, i18n } = useT();
+  // An automation run's own reasons (not answered, declined, practice…) read from the automation words first.
+  const policy = (code: string) => (i18n.exists(`automation.reason_${code}`) ? t(`automation.reason_${code}`) : t(`policy.${code}`, { defaultValue: code }));
   return (step: WhyStep): { title: string; detail?: string } => {
     switch (step.step) {
       case "asked":
@@ -54,7 +55,7 @@ function useStepText() {
   };
 }
 
-export function WhyScreen() {
+export function WhyScreen({ runId }: { runId?: string | undefined } = {}) {
   const { t } = useT();
   const { locale } = useLocale();
   const text = useStepText();
@@ -62,11 +63,12 @@ export function WhyScreen() {
   const [why, setWhy] = React.useState<WhyView | null>();
 
   React.useEffect(() => {
-    void api.history
-      .why(tx, network === "mainnet" ? "mainnet" : "testnet")
+    // A transaction's decision record, or (an automation run that needed none) the run's own (A3).
+    const read = runId ? api.activityFeed.runWhy(runId) : api.history.why(tx, network === "mainnet" ? "mainnet" : "testnet");
+    void read
       .then((result) => setWhy(result.why))
       .catch((error: unknown) => setWhy(error instanceof ApiError && error.status === HTTP_NOT_FOUND ? null : undefined));
-  }, [tx, network]);
+  }, [tx, network, runId]);
 
   const time = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(iso));
 

@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "Esse valor não é válido.",
   ASSET_UNCLEAR: "USDC ou EURC?",
   FIRST_TIME_RECIPIENT: "Primeiro pagamento para este endereço",
-  LOOKALIKE_ADDRESS: "Parece o endereço de {{name}}, mas é diferente, então o Kawase não vai enviar. Confirme com {{name}}.",
+  LOOKALIKE_ADDRESS:
+    "Parece o endereço de {{name}}, mas é diferente, então o Kawase não vai enviar. Confirme com {{name}}.",
   UNSAVED_ADDRESS: "Este endereço não está nos seus contatos",
   ABOVE_ALLOWANCE: "Acima do que resta do seu limite ({{available}})",
   NO_ALLOWANCE: "Seu limite diário está desligado",
@@ -44,7 +45,12 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "Mudar para {{network}}",
   fixEditAmount: "Mudar o valor",
   fixOpenContact: "Abrir contato",
-  RECIPIENT_TOKEN_CONTRACT: "Esse endereço é o contrato de um token. O dinheiro enviado ali se perde, então o Kawase não vai enviar.",
+  AGENT_PAUSED: "Em pausa: este precisa da sua aprovação",
+  NOT_ON_ALLOWLIST: "Fora da sua lista permitida: este precisa da sua aprovação",
+  NEW_RECIPIENT_COOLDOWN:
+    "Novos destinatários podem receber até {{cap}} por pagamento até {{until}}. Mude isso em Carteira e limites.",
+  RECIPIENT_TOKEN_CONTRACT:
+    "Esse endereço é o contrato de um token. O dinheiro enviado ali se perde, então o Kawase não vai enviar.",
   RECIPIENT_ISSUER_BLOCKED: "O emissor de {{asset}} bloqueou este endereço, então ele não pode receber {{asset}}.",
   RECIPIENT_CONTRACT: "Este endereço é um contrato, não uma carteira. Talvez ele não consiga mover o que receber.",
 };

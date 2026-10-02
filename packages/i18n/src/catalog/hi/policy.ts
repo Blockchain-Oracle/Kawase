@@ -42,6 +42,10 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "{{network}} पर जाएँ",
   fixEditAmount: "राशि बदलें",
   fixOpenContact: "संपर्क खोलें",
+  AGENT_PAUSED: "रुका हुआ: इसके लिए आपकी मंज़ूरी चाहिए",
+  NOT_ON_ALLOWLIST: "आपकी अनुमत सूची में नहीं: इसके लिए आपकी मंज़ूरी चाहिए",
+  NEW_RECIPIENT_COOLDOWN:
+    "{{until}} तक नए प्राप्तकर्ता प्रति भुगतान {{cap}} तक पा सकते हैं। इसे वॉलेट और सीमाएँ में बदलें।",
   RECIPIENT_TOKEN_CONTRACT: "यह पता एक टोकन कॉन्ट्रैक्ट है। वहाँ भेजा पैसा खो जाता है, इसलिए Kawase नहीं भेजेगा।",
   RECIPIENT_ISSUER_BLOCKED: "{{asset}} के जारीकर्ता ने इस पते को ब्लॉक किया है, इसलिए यह {{asset}} नहीं पा सकता।",
   RECIPIENT_CONTRACT: "यह पता वॉलेट नहीं, कॉन्ट्रैक्ट है। हो सकता है यह मिली रक़म आगे न भेज सके।",

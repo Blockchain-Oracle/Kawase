@@ -10,6 +10,7 @@ export const voice: Catalog["voice"] = {
   speaking: "正在说",
   failed: "语音未能启动。请重试，或改为打字。",
   micDenied: "Kawase 听不到你：请在设置中允许麦克风。",
+  micDeniedWeb: "Kawase 听不到你：请在浏览器中允许此网站使用麦克风。",
   openSettings: "打开设置",
   mute: "静音",
   unmute: "取消静音",

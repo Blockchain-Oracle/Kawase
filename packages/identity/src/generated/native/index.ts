@@ -3,6 +3,8 @@ import MarkAave from "./aave";
 import MarkAaveMono from "./aave-mono";
 import MarkAcross from "./across";
 import MarkAcrossMono from "./across-mono";
+import MarkAero from "./aero";
+import MarkAeroMono from "./aero-mono";
 import MarkAisa from "./aisa";
 import MarkAisaMono from "./aisa-mono";
 import MarkApple from "./apple";
@@ -83,6 +85,8 @@ export const MARKS = {
   "aave-mono": MarkAaveMono,
   "across": MarkAcross,
   "across-mono": MarkAcrossMono,
+  "aero": MarkAero,
+  "aero-mono": MarkAeroMono,
   "aisa": MarkAisa,
   "aisa-mono": MarkAisaMono,
   "apple": MarkApple,

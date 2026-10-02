@@ -193,6 +193,7 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
   { id: providerKey("morpho"), kind: "provider", name: "Morpho", brandColor: "#15181A", shape: "tile", marks: { color: "morpho", mono: "morpho-mono" } },
   { id: providerKey("aave"), kind: "provider", name: "Aave", brandColor: "#9391F7", shape: "disc", marks: { color: "aave", mono: "aave-mono" } },
+  { id: providerKey("aero"), kind: "provider", name: "Aero", brandColor: "#154AFA", shape: "uncontained", marks: { color: "aero", mono: "aero-mono" } },
 
   // Assets Aave V4 lists on Arc mainnet (reserves read from the Main Spoke, 2026-10-02). cirBTC shows the Bitcoin
   // mark and WETH the Ether mark (web3icons, MIT); the symbol beside them says which token it is.

@@ -23,6 +23,12 @@ export const MOTION = {
   tileStaggerMs: 56,
   /** How long a story panel stays before the next one (auto-advance); swiping resets it. */
   storyDwellMs: 4_500,
+  /** With narration on, the pause after a panel's clip ends before the story moves on (plan §1.5). */
+  narrationTailMs: 900,
+  /** A narration clip that has not started by then (autoplay refused, a load that never ends) counts as done. */
+  narrationStartTimeoutMs: 3_000,
+  /** A started clip that never reports its end is let go this long after its duration. */
+  narrationSlackMs: 1_500,
   /** The blur behind an overlay reaching full strength (M06). */
   blurInMs: 180,
   blurOutMs: 140,
@@ -89,6 +95,20 @@ export const DOCK = {
   railBreakpointPt: 900,
 } as const;
 
+/**
+ * The speaking indicator (21st.dev 24461 Signal Bars Loader · elements-, its "equalizer" variant at size sm): thin
+ * bars pulsing between 30% and full height, each on its own period, a tenth of a second behind the one before.
+ */
+export const SIGNAL_BARS = {
+  count: 3,
+  heightPt: 16,
+  widthPt: 2,
+  gapPt: 2,
+  restScale: 0.3,
+  periodsMs: [800, 1_100, 900, 1_300, 1_000],
+  staggerMs: 100,
+} as const;
+
 /** Blur strength for overlays (expo-blur intensity, 0–100). */
 export const BLUR = {
   overlay: 80,
@@ -133,4 +153,15 @@ export const RULER = {
   failVerticalPt: 24,
   snap: SNAP_SPRING,
   reducedMotionMs: 100,
+} as const;
+
+/** The borrow health gauge: the needle easing to a new health as the amount changes, and its scale. */
+export const HEALTH_GAUGE = {
+  moveMs: 320,
+  trackPt: 8,
+  needlePt: 16,
+  /** Health shown at the right end of the track; anything higher (or no debt) sits there. */
+  scaleMax: 3,
+  /** Health at the left end: 1 is where liquidation starts. */
+  scaleMin: 1,
 } as const;

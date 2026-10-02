@@ -11,5 +11,7 @@ export const capability = {
   faucet: "Test money",
   payment_links: "Payment links",
   margin: "Long and short",
+  lend: "Borrow and lend",
   buy: "Buy with card",
+  memory: "Memory and suggestions",
 } as const;

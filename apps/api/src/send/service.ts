@@ -45,6 +45,7 @@ import {
   intentDrafts,
   intents,
   newId,
+  practiceRuns,
   spendLedger,
   txAttempts,
   users,
@@ -76,6 +77,8 @@ import type { WalletService } from "../wallet/service";
 import { tokenLookup } from "../tokens/lookup";
 import type { AssetService } from "../tokens/service";
 import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
+import { grantFor } from "../safety/allowances";
+import { recordPractice, simulateCall } from "../safety/practice";
 import type { OpsExecutor } from "./ops";
 import type { InboxService } from "../inbox/service";
 import type { RequestService } from "../requests/service";
@@ -119,6 +122,9 @@ const AUTOMATION_STOPS: ReadonlySet<string> = new Set([
   "INSUFFICIENT_BALANCE",
   "WALLET_NOT_READY",
   "WALLET_NOT_SET_UP",
+  // Unattended runs never pay a new address above its cooldown cap, nor anyone off the allowlist when it is on.
+  "NEW_RECIPIENT_COOLDOWN",
+  "NOT_ON_ALLOWLIST",
 ]);
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;
@@ -151,6 +157,12 @@ const feeInUsdc = (nativeWei: bigint) => {
 
 export class SendService {
   private readonly tracking = new Set<string>();
+  /** Told when a person's own send completes (round-up rules listen; wired by the app). */
+  private sentListener: ((sent: { userId: string; network: NetworkId; asset: AssetId; amount: bigint; intentId: string; surface: string }) => Promise<void>) | undefined;
+
+  onSent(listener: NonNullable<SendService["sentListener"]>) {
+    this.sentListener = listener;
+  }
 
   constructor(
     private readonly db: Db,
@@ -378,7 +390,11 @@ export class SendService {
 
   async view(userId: string, intentId: string): Promise<SendIntent> {
     const intent = await this.ownIntent(userId, intentId);
-    const [draft, attempt] = await Promise.all([this.currentDraft(intent), this.latestAttempt(intentId)]);
+    const [draft, attempt, [practiced]] = await Promise.all([
+      this.currentDraft(intent),
+      this.latestAttempt(intentId),
+      this.db.select({ result: practiceRuns.result }).from(practiceRuns).where(eq(practiceRuns.intentId, intentId)),
+    ]);
     const payload = (draft?.payload ?? {}) as Partial<DraftPayload>;
     const report = (draft?.policyReport ?? { results: [], blocking: null, route: null }) as PolicyReport;
     const network = this.chains.get(intent.network)?.network;
@@ -388,7 +404,8 @@ export class SendService {
       id: intent.id,
       network: intent.network,
       state: intent.state,
-      outcome: outcomeOf(intent.state, attempt),
+      outcome: practiced ? "practiced" : outcomeOf(intent.state, attempt),
+      practice: practiced ? { ok: practiced.result.ok, error: practiced.result.error } : null,
       version: intent.currentDraftVersion,
       request: { recipient: request.recipient, amount: request.amount, asset: request.asset, note: request.note },
       draft:
@@ -442,7 +459,11 @@ export class SendService {
     if (fresh.kind === "changed") return this.redraft(user, intentId);
     const { draft, route, draftHash } = fresh;
     const context = this.clients(before.network);
-    const allowance = route === "allowance" ? await activeAllowance(this.db, user.id, before.network) : undefined;
+    // Practice mode: the exact transaction is dry-run on the chain and recorded as "would have"; nothing is sent.
+    if (fresh.practice) return this.practice(user, before, draft, route);
+    // The grant this payment goes under: the token's everyday allowance, or its temporary raise.
+    const room = route === "allowance" ? await activeAllowance(this.db, this.chains, user.id, before.network, draft.asset) : undefined;
+    const allowance = room ? grantFor(room, draft.amount) : undefined;
     if (route === "allowance" && !allowance) return this.redraft(user, intentId);
 
     const outcome = await this.db.transaction(async (tx) => {
@@ -506,6 +527,44 @@ export class SendService {
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }
 
+  /**
+   * Practice: the same checks passed, so the exact call is run as an `eth_call` from the exact sender — the ops wallet
+   * redeeming the allowance, or the person's own wallet — and the answer is kept as this send's "would have". The
+   * intent closes without anything sent (no attempt, no spend, no Face ID).
+   */
+  private async practice(user: SessionUser, intent: IntentRow, draft: SendDraft, route: SendRoute): Promise<SendApproveResponse> {
+    const { client, ops, network } = this.clients(intent.network);
+    const room = route === "allowance" ? await activeAllowance(this.db, this.chains, user.id, intent.network, draft.asset) : undefined;
+    const grant = room ? grantFor(room, draft.amount) : undefined;
+    const call = grant
+      ? { from: ops.address, ...encodeRedeemTransfer(network, grant.delegation as never, { token: draft.asset, to: draft.to, amount: draft.amount }) }
+      : { from: draft.from, to: draft.asset, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [draft.to, draft.amount] }) };
+    const result = await simulateCall(client, call);
+    const current = await this.currentDraft(intent);
+    const payload = (current?.payload ?? {}) as Partial<DraftPayload>;
+    await this.db.transaction(async (tx) => {
+      const locked = await this.lockIntent(tx, user.id, intent.id);
+      if (locked.state !== "ready_for_approval") return;
+      await recordPractice(tx, {
+        userId: user.id,
+        network: intent.network,
+        kind: "send",
+        intentId: intent.id,
+        summary: {
+          amount: draft.amount.toString(),
+          asset: payload.asset ?? "",
+          to: draft.to,
+          name: payload.recipient?.name ?? (payload.recipient?.handle ? `@${payload.recipient.handle}` : ""),
+          route: grant ? "allowance" : "wallet_signature",
+        },
+        result,
+      });
+      await tx.update(intents).set({ state: "canceled" }).where(eq(intents.id, intent.id));
+    });
+    this.log.info({ intentId: intent.id, ok: result.ok, route }, "practice send");
+    return { status: "final", intent: await this.view(user.id, intent.id) };
+  }
+
   // ── Automations (Stage 8) ───────────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -532,6 +591,8 @@ export class SendService {
     if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
     const walletAddress = wallet.address as Address;
     const [owner] = await this.db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, input.userId));
+    // Pause all stops every automation at once (cards/automate-safety.md); the person resumes it.
+    if (owner?.pausedAllAt) return { status: "skipped", reason: "PAUSED_ALL" };
     const request: StoredRequest = {
       recipient: input.to,
       amount: canonicalAmount(amount(input.asset, input.amount)).replace(/ [A-Z]+$/, ""),
@@ -553,12 +614,28 @@ export class SendService {
     const evaluation = evaluateSend(gathered.facts);
     const stop = evaluation.results.find((entry) => AUTOMATION_STOPS.has(entry.code));
     if (stop) return { status: "skipped", reason: stop.code, ...(stop.params ? { params: stop.params } : {}) };
+    // Practice mode: the run's exact redeem is dry-run and recorded; nothing is sent (cards/automate-safety.md).
+    if (gathered.practice) {
+      const practiceCall = encodeRedeemTransfer(context.network, input.grant.delegation as never, { token: assetAddress(context.network, input.asset), to: input.to, amount: input.amount });
+      const result = await simulateCall(context.client, { from: context.ops.address, ...practiceCall });
+      await recordPractice(this.db, {
+        userId: input.userId,
+        network: input.network,
+        kind: "automation_run",
+        summary: { amount: input.amount.toString(), asset: input.asset, to: input.to, name: resolutionName(resolution) },
+        result,
+      });
+      return { status: "skipped", reason: result.ok ? "PRACTICE_RUN" : "PRACTICE_RUN_REFUSED" };
+    }
     if (resolution.facts.status !== "resolved" || resolution.facts.address.toLowerCase() !== input.to.toLowerCase())
       return { status: "skipped", reason: "RECIPIENT_INVALID", params: { query: input.to } };
     const room = await allowanceAvailable(context.client, context.network, input.grant.delegation as never)
       .then((result) => result.available)
       .catch(() => ZERO);
-    if (room < input.amount) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    // Nothing left this period: this period's run already went. Some left, but less than this run: over the grant,
+    // which waits for the person (Needs you) instead of squeezing through.
+    if (room === ZERO) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    if (room < input.amount) return { status: "skipped", reason: "OVER_GRANT", params: { room: room.toString(), asset: input.asset } };
 
     const token = assetAddress(context.network, input.asset);
     const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO };
@@ -667,13 +744,20 @@ export class SendService {
     const current = await this.currentDraft(intent);
     const stored = (current?.payload as DraftPayload | undefined)?.draft;
     if (!current || !stored || !current.draftHash) return { kind: "changed" as const };
-    const { resolution, evaluation } = await this.resolveAndEvaluate(user, intent, intent.request as StoredRequest);
+    const { resolution, evaluation, gathered } = await this.resolveAndEvaluate(user, intent, intent.request as StoredRequest);
     const draft = loadSendDraft(stored);
     const sameRecipient = resolution.facts.status === "resolved" && resolution.facts.address.toLowerCase() === draft.to.toLowerCase();
     const report = current.policyReport as unknown as PolicyReport;
     if (evaluation.blocking || !evaluation.route || !sameRecipient || evaluation.route !== report.route) return { kind: "changed" as const };
     if (sendDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
-    return { kind: "ok" as const, draft, route: evaluation.route, draftHash: current.draftHash as Hex, ledger: ledgerOf(current.payload as DraftPayload, this.clients(intent.network).network, draft) };
+    return {
+      kind: "ok" as const,
+      draft,
+      route: evaluation.route,
+      draftHash: current.draftHash as Hex,
+      practice: gathered.practice,
+      ledger: ledgerOf(current.payload as DraftPayload, this.clients(intent.network).network, draft),
+    };
   }
 
   /** Above the allowance: the exact transfer for the wallet to sign. Reuses a still-valid request for this version. */
@@ -941,7 +1025,7 @@ export class SendService {
       return;
     }
     const at = new Date();
-    await withOutbox(this.db, async (tx) => {
+    const done = await withOutbox<{ completed: true } | undefined>(this.db, async (tx) => {
       const [moved] = await tx
         .update(intents)
         .set({ state: "completed", completedAt: at })
@@ -966,7 +1050,7 @@ export class SendService {
         dedupeKey: `send_completed:${intent.id}`,
       });
       return {
-        result: undefined,
+        result: { completed: true },
         events: [
           {
             aggregateType: "intent",
@@ -980,6 +1064,14 @@ export class SendService {
         ],
       };
     });
+    // Round-ups and the like listen for the person's own completed sends of USDC and EURC (they count in those
+    // units); a failure there never touches the send.
+    const network = this.clients(intent.network).network;
+    const stable = [network.addresses.usdc, network.addresses.eurc].some((address) => address.toLowerCase() === draft.asset.toLowerCase());
+    if (done?.completed && this.sentListener && stable)
+      await this.sentListener({ userId: intent.userId, network: intent.network, asset: assetOf(this.clients(intent.network).network, draft.asset), amount: draft.amount, intentId: intent.id, surface: intent.originSurface }).catch((error: unknown) =>
+        this.log.warn({ err: error, intentId: intent.id }, "after-send listener failed"),
+      );
   }
 
   private async settleFailed(intentId: string, attemptId: string, how: "not_sent" | "reverted" | "mismatch", error: string | null, receipt?: TransactionReceipt) {
@@ -1100,4 +1192,9 @@ function tokenParams(payload: DraftPayload | undefined, network: NetworkContext,
   const token = payload?.token;
   if (!token || token.symbol === "USDC" || token.symbol === "EURC") return { asset: assetOf(network, draft.asset) };
   return { asset: token.symbol, decimals: String(token.decimals) };
+}
+
+/** The name a run's recipient shows under, for its practice record. */
+function resolutionName(resolution: { view: SendRecipientView | null }): string {
+  return resolution.view?.name ?? (resolution.view?.handle ? `@${resolution.view.handle}` : "");
 }

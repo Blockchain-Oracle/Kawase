@@ -30,6 +30,7 @@ import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
 import type { CrossChainService } from "../crosschain/service";
+import type { LendService } from "../lend/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
@@ -41,6 +42,10 @@ import { summarizeBridge } from "./bridge-summary";
 import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
+import { safetyContext } from "./safety-context";
+import { automationsContext } from "./automations-context";
+import type { SafetyService } from "../safety/service";
+import { buildIntelligence } from "./intelligence";
 import { moneyOutContext } from "./money-out-context";
 import type { WithdrawService } from "../withdraw/service";
 
@@ -85,12 +90,15 @@ export function buildAgentContext(input: {
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
+  lend?: LendService | undefined;
   withdraw?: WithdrawService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Wallet & limits (A3). */
+  safety?: SafetyService | undefined;
   /** Business mode's invoices. */
   invoices?: InvoiceService | undefined;
   /** Looking back: the weekly report. */
@@ -122,7 +130,10 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
-    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, threadId }),
+    ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
+    ...automationsContext({ user, automations, threadId }),
+    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin }),
     ...moneyOutContext({ user, withdraw: input.withdraw }),
 
     async proposeSend(request) {
@@ -142,7 +153,8 @@ export function buildAgentContext(input: {
       // address above the threshold or a lookalike all route to Face ID instead and wait on the card).
       // By voice it always waits for the tap on its card: a microphone can hear a request the person did not make
       // (seen on 2026-10-01: speech in the room became "10 usdc"), and a spoken yes never moves money.
-      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice") {
+      // Guard (X11) confirms everything, chat too: the card waits for the person's tap.
+      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
         const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
           log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
           return undefined;

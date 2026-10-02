@@ -108,6 +108,14 @@ function useEnding(intent: SendIntent): Ending | undefined {
       return { icon: Minus, tone: "muted", title: t("send.canceledTitle"), body: t("send.notSentBody") };
     case "expired":
       return { icon: Minus, tone: "muted", title: t("send.expiredTitle"), body: t("send.expiredBody") };
+    // Practice mode (cards/automate-safety.md): the exact payment was dry-run on Arc; nothing was sent.
+    case "practiced":
+      return {
+        icon: intent.practice?.ok ? Check : X,
+        tone: "muted",
+        title: `${t("safety.practiceEyebrow")} · ${t("safety.wouldHaveSent", { amount: sent, name })}`,
+        body: intent.practice?.ok ? t("safety.wouldHaveOk") : t("safety.wouldHaveRefused", { reason: intent.practice?.error ?? "" }),
+      };
     default:
       return undefined;
   }
