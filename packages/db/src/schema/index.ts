@@ -11,3 +11,4 @@ export * from "./notifications";
 export * from "./margin";
 export * from "./marketplace";
 export * from "./account";
+export * from "./onramp";

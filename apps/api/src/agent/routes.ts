@@ -26,6 +26,7 @@ import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
+import type { OnrampService } from "../onramp/service";
 import type { SwapService } from "../swap/service";
 import type { MarketplaceService } from "../marketplace/service";
 import { buildAgentContext } from "./context";
@@ -69,6 +70,7 @@ export type AgentDeps = {
   bridges: BridgeService;
   earn: EarnService;
   margin?: MarginService | undefined;
+  onramp?: OnrampService | undefined;
   automations: AutomationService;
   requests: RequestService;
   models: Models;
@@ -106,6 +108,7 @@ export function createTurnRunner(deps: AgentDeps) {
     bridges,
     earn,
     margin,
+    onramp,
     automations,
     requests,
     models,
@@ -161,6 +164,7 @@ export function createTurnRunner(deps: AgentDeps) {
       bridges,
       earn,
       margin,
+      onramp,
       automations,
       requests,
       marketplace,

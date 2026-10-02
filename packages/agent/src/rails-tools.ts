@@ -13,6 +13,17 @@ const UNAVAILABLE = { summary: "This is not available here." };
 
 export function railsTools(context: AgentContext) {
   return {
+    start_buy: tool({
+      description:
+        "Buy with Apple Pay, Google Pay or a debit card (Circle's Onramp). It delivers USDC or EURC on Arc to the person's own wallet; for any other token, pass it as `then` and Kawase swaps what arrives (one more approval). Pass the amount in dollars or euros only if they said one. Shows a card: the person taps it to open Circle's checkout in the browser sheet; the money is confirmed when it arrives on chain. On testnet it is Circle's sandbox (test cards). Nothing is charged from this call.",
+      inputSchema: z.object({
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Fiat amount as digits with a dot; omit if they did not say"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("Only if they asked for dollars or euros by name"),
+        then: z.string().max(MARKET_MAX).optional().describe("A token to end with (\"cirBTC\", \"ARGUS\"), when they want something other than USDC/EURC"),
+      }),
+      execute: async ({ amount, asset, then }) => (context.proposeBuy ? context.proposeBuy({ amount: amount ?? null, asset: asset ?? null, then: then ?? null }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     get_markets: tool({
       description:
         "Kawase Margin markets for going long or short with leverage (Aave V4 on Arc mainnet; computed from its live reserves): each market's price, whether long and short are possible and the highest leverage each allows, and borrow rates. Use before proposing an order when the person asks what they can trade long/short, or for a market's limits.",

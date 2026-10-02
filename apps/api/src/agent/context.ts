@@ -25,6 +25,7 @@ import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
+import type { OnrampService } from "../onramp/service";
 import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
@@ -73,6 +74,7 @@ export function buildAgentContext(input: {
   bridges: BridgeService;
   earn: EarnService;
   margin?: MarginService | undefined;
+  onramp?: OnrampService | undefined;
   automations: AutomationService;
   requests: RequestService;
   /** The x402 marketplace; paid services answer "unavailable" without it. */
@@ -104,7 +106,7 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
-    ...railsContext({ user, db, margin: input.margin, threadId }),
+    ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, threadId }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

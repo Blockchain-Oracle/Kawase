@@ -18,6 +18,7 @@ import { circleAgentWallets } from "./marketplace/agent-wallets";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
 import { appKitSwaps } from "./swap/engine";
+import { circleOnramp } from "./onramp/engine";
 import { ResendEmail } from "./notify/email";
 import { ExpoPush } from "./notify/expo";
 import { createChains } from "./wallet/chain";
@@ -54,6 +55,8 @@ const app = createApp({
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),
   earn: appKitEarn(env),
+  onramp: circleOnramp(env),
+  circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,

@@ -8,6 +8,7 @@ import type { MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary
 import { intents, type Db } from "@kawase/db";
 
 import type { MarginService } from "../margin/service";
+import type { OnrampService } from "../onramp/service";
 import type { SessionUser } from "../types";
 
 const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
@@ -84,11 +85,36 @@ const marketsSummary = (view: MarginMarketsView) =>
 const positionSummary = (p: MarginPositionView) =>
   `${p.side} ${p.market} ${p.leverage.toFixed(1)}×: P&L ${dollars(p.pnlUsd)} (${pct(p.pnlPercent)}), liquidation ${price(p.liquidationPrice)}, mark ${price(p.markPrice)}, id ${p.id}`;
 
-export function railsContext(input: { user: SessionUser; db: Db; margin: MarginService | undefined; threadId: string }): Partial<AgentContext> {
-  const { user, db, margin, threadId } = input;
-  if (!margin) return {};
+const BUY_REASONS = {
+  sign_in: "The person must sign in first; the card opens sign-in and comes back.",
+  no_wallet: "The wallet is not set up yet.",
+  not_configured: "Buying is not set up on this network.",
+} as const;
+
+export function railsContext(input: { user: SessionUser; db: Db; margin: MarginService | undefined; onramp: OnrampService | undefined; threadId: string }): Partial<AgentContext> {
+  const { user, db, margin, onramp, threadId } = input;
   const network = user.activeNetwork;
+  const buy: Partial<AgentContext> = onramp
+    ? {
+        async proposeBuy(request) {
+          const availability = await onramp.availability(user);
+          const deliverable = availability.deliverable as readonly string[];
+          const then = request.then?.trim() || null;
+          const asset = request.asset && deliverable.includes(request.asset.toUpperCase()) ? request.asset.toUpperCase() : then && deliverable.includes(then.toUpperCase()) ? then.toUpperCase() : deliverable[0]!;
+          const amount = request.amount ?? availability.defaultAmount;
+          const currency = asset === "EURC" ? "EUR" : "USD";
+          const extra = then && then.toUpperCase() !== asset ? `, then swap it to ${then} (one more approval; both fees shown)` : "";
+          const where = availability.sandbox ? " in Circle's sandbox (test cards, test money)" : " with real money";
+          const summary = availability.available
+            ? `Ready: buy about ${amount} ${currency} of ${asset} with Apple Pay, Google Pay or a debit card${where}${extra}. The person taps the card to open Circle's checkout; the money is confirmed when it arrives on chain.`
+            : BUY_REASONS[availability.reason ?? "not_configured"];
+          return { ...availability, asset, amount, currency, then: then && then.toUpperCase() !== asset ? then : null, summary };
+        },
+      }
+    : {};
+  if (!margin) return buy;
   return {
+    ...buy,
     async marginMarkets() {
       const view = await margin.markets(network);
       return { ...view, summary: marketsSummary(view) };

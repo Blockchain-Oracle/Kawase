@@ -30,6 +30,7 @@ import type {
   MarginPositionsOutput,
   MarginRequest,
   ProposeMarginOutput,
+  BuyProposalOutput,
   AgentTopUpProposal,
   AgentWalletLine,
   BuyOutcome,
@@ -114,4 +115,6 @@ export type AgentContext = {
   marginPositions?(): Promise<MarginPositionsOutput>;
   /** Drafts a margin order (open or close); the person slides to confirm on the card. */
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Buy with Apple Pay / Google Pay / debit (Circle Onramp): the card's button starts it; nothing is charged here. */
+  proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
 };

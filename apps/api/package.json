@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "catalog:",
+    "@circle-fin/onramp-kit": "1.0.3",
     "@circle-fin/x402-batching": "catalog:",
     "@hono/node-server": "catalog:",
     "@kawase/agent": "workspace:*",
