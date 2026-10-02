@@ -1,9 +1,9 @@
 // The intelligence layer's cards (A5): earlier conversations that match a search. Each card renders the tool's real
 // result; a row opens what it names.
 import { useRouter } from "expo-router";
-import { MessagesSquare } from "lucide-react-native";
+import { BookOpen, ExternalLink, MessagesSquare } from "lucide-react-native";
 import * as React from "react";
-import { View } from "react-native";
+import { Linking, View } from "react-native";
 
 import type { HistoryHit, HistorySearchOutput, SuggestionsView } from "@kawase/api-client";
 import { ListRow } from "@kawase/ui-native/components/list-row";
@@ -61,6 +61,29 @@ export function HistorySearchCard({ output }: { output: HistorySearchOutput }) {
 
 /** Conversations listed on the card (the history sheet shows all of them). */
 const CARD_HITS = 5;
+
+/** arc_knowledge: where the answer came from — each passage's title, opening its source. */
+export function KnowledgeCard({ output }: { output: { passages: { title: string; source: string }[] } }) {
+  const { t } = useT();
+  if (output.passages.length === 0) return null;
+  const host = (url: string) => url.replace(/^https?:\/\//, "").split("/")[0] ?? url;
+  return (
+    <AgentCard eyebrow={t("insight.sources")} className="pb-1">
+      <View className="-mx-4">
+        {output.passages.map((passage) => (
+          <ListRow
+            key={`${passage.source}:${passage.title}`}
+            leading={<Icon as={BookOpen} className="text-muted-foreground size-4" />}
+            title={passage.title}
+            subtitle={host(passage.source)}
+            trailing={<Icon as={ExternalLink} className="text-muted-foreground size-4" />}
+            onPress={() => void Linking.openURL(passage.source)}
+          />
+        ))}
+      </View>
+    </AgentCard>
+  );
+}
 
 /** get_for_you: the same cards as Home's "For you", or a calm line when nothing needs the person. */
 export function ForYouChatCard({ output }: { output: SuggestionsView }) {

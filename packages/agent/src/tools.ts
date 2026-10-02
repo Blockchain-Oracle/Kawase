@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import type { AgentContext } from "./context";
 import { intelligenceTools } from "./intelligence-tools";
+import { withQuarantine } from "./quarantine";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -22,7 +23,8 @@ const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
 
 export function buildTools(context: AgentContext) {
-  return {
+  // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
+  return withQuarantine({
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
@@ -295,7 +297,7 @@ export function buildTools(context: AgentContext) {
     }),
     // Memory, history search, Arc knowledge and the extra cards (A5).
     ...intelligenceTools(context),
-  };
+  });
 }
 
 export type AgentTools = ReturnType<typeof buildTools>;

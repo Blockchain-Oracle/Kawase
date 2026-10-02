@@ -2,6 +2,8 @@
 export * from "./context";
 export * from "./intelligence";
 export { windowFor, foldThread } from "./threads";
+export { looksLikeInstructions, untrusted, withQuarantine } from "./quarantine";
+export { searchKnowledge, type KnowledgeAnswer, type KnowledgePassage } from "./knowledge";
 export * from "./models";
 export { instructions } from "./prompt";
 export { buildTools, type AgentTools } from "./tools";

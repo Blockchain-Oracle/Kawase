@@ -1,0 +1,809 @@
+{
+ "builtAt": "2026-10-02",
+ "entries": [
+  {
+   "id": "context-01-arc-account-abstraction-relayers-paymasters-md-1",
+   "title": "Account abstraction, smart wallets, relayers, and paymasters on Arc: What Arc supports",
+   "source": "https://docs.arc.io/arc/tools/account-abstraction",
+   "text": "- ERC-4337 with EntryPoint v0.7 at 0x0000000071727De22E5E9d8BAf0edAc6f37da032 (code present on both networks; the docs say to \"verify before use\").\n- EIP-7702 set-code (type-4) transactions, from the Osaka baseline. EOAs can delegate to contract code, and paymasters can serve 7702-delegated accounts.\n- EIP-3009 transferWithAuthorization and receiveWithAuthorization on USDC (FiatToken v2 domain name \"USDC\", version \"2\").\n- Permit2 at the canonical address. Native Stablecoin Services paymasters and multi-token gas are *planned* and not live."
+  },
+  {
+   "id": "context-01-arc-account-abstraction-relayers-paymasters-md-2",
+   "title": "Account abstraction, smart wallets, relayers, and paymasters on Arc: Paths to gasless or sponsored transactions",
+   "source": "https://docs.arc.io/arc/tools/account-abstraction",
+   "text": "| Path | How | Notes |\n|---|---|---|\n| EIP-3009 relayer | User signs typed data offchain. Your EOA calls transferWithAuthorization and pays gas in USDC. | The simplest option. ~65k gas. Bill with gasUsed*effectiveGasPrice/1e12 for 6-dp USDC. |\n| ERC-4337 paymaster | Deploy a paymaster and call EntryPoint.depositTo(paymaster){value: X} | Deposit in 18-decimal native USDC: 10 USDC is 10n * 10n18n, not 10e6. Pimlico is the documented bundler for chain 5042002. Your own bundler must use maxFeePerGas ≥ 20 gwei. |\n| Circle Gas Station | Circle dev-controlled SCA wallets | Auto-sponsors fees on Arc Testnet (deploy-contracts tutorial). Mainnet policy is set in the Circle Console. |\n| Circle Paymaster (pay gas in USDC for 4337 accounts) | Circle product | On Arc gas is USDC anyway. Prior research found Circle's Paymaster overview omits Arc while its address page lists Arc Testnet. Treat it as unconfirmed. |\n| Provider AA | Alchemy (Wallet APIs, gas sponsorship), Biconomy, Pimlico, ZeroDev, Thirdweb, Privy, Dynamic, Crossmint, Para, Turnkey, Blockradar, MetaMask Embedded Wallets, Circle Wallets | Listed on account-abstraction. The listing is not a verified deployment matrix. |"
+  },
+  {
+   "id": "context-01-arc-account-abstraction-relayers-paymasters-md-3",
+   "title": "Account abstraction, smart wallets, relayers, and paymasters on Arc: Smart-account caveats specific to Arc",
+   "source": "https://docs.arc.io/arc/tools/account-abstraction",
+   "text": "- Memo and Multicall3From accept direct EOA callers only. A 4337 smart account, Safe, or Circle SCA or modular wallet calling them reverts (sender spoofing). Agents built on SCAs need an EOA side-wallet for memos, or must record references offchain.\n- Unified Balance: SCAs (Circle Wallets SCA, Privy server wallets) can't sign spends, so use an authorized EOA delegate. SCA deposits must use allowanceStrategy: \"approve\", because USDC permit uses ecrecover, not ERC-1271.\n- Spending policy must cover both USDC interfaces. An ERC-20 allowance, or an allowlist module scoped to ERC-20 transfer, does not stop a native-value send from the same balance. Constrain native value too, e.g. with a native-value policy module or by disallowing value calls. (Porting guide plus prior research.)"
+  },
+  {
+   "id": "context-01-arc-account-abstraction-relayers-paymasters-md-4",
+   "title": "Account abstraction, smart wallets, relayers, and paymasters on Arc: Policy-constrained agent wallets (from prior research, still relevant)",
+   "source": "https://docs.arc.io/arc/tools/account-abstraction",
+   "text": "Prior research in arc-agent (dated 2026-07-29) live-verified these on Arc Testnet. They are not re-run today and are not in Arc docs:\n- Biconomy Nexus + Smart Sessions (MEE 2.1.0 / Nexus 1.2.0): scoped, time-limited, revocable session keys with spending-limit, usage-limit, timeframe, and native-value policies. A full grant, use, deny, and revoke lifecycle was proven with USDC on testnet. Staging sponsorship via getDefaultMEENetworkUrl(true) needs no dashboard key.\n- ZeroDev Kernel permission modules had code on Arc testnet (call, gas, rate, and timestamp policies). The lifecycle was not executed.\n- Circle Address Book module 0x0000000d81083B16EA76dfab46B0315B0eDBF3d0 had code on Arc testnet. It covers ERC-20/721/1155 transfers only, not native USDC.\n- Circle Agent Wallets (@circle-fin/cli, agent-wallet-policy skill) offer per-tx, daily, weekly, and monthly USDC caps. Chain ids are ARC and ARC-TESTNET, and Circle's Agent Wallets table now lists both mainnet and testnet** for Arc. The prior note that \"Agent Wallet is Arc Testnet only\" is stale.\n\nFor a hackathon \"agent cannot quietly exceed budget\" story (slide: \"Contracts: budget rules and thresholds an agent cannot quietly exceed\"), the cheapest credible options are:\n1. Circle Agent Wallet spend caps, or\n2. a small custom Solidity \"treasury vault\" that the agent EOA calls, enforcing per-period limits and an allowlist, and holdin…"
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-1",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: Map",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "| Need | Arc surface | Where |\n|---|---|---|\n| Coding agent knows Arc docs | Arc MCP server https://docs.arc.io/mcp (search and get-page tools, no auth) | ai/mcp |\n| Coding agent knows Circle and Arc APIs | circlefin/skills (use-arc, use-gateway, use-circle-cli, agent-wallet-policy, ...) | ai/skills |\n| Generate and deploy contracts and apps | Arc Studio (web, CLI, ACP). Testnet only. | ai/arc-studio |\n| Agent identity and reputation onchain | ERC-8004 registries | tutorial below |\n| Agent-to-agent job escrow | ERC-8183 AgenticCommerce | tutorial below |\n| Agent pays per API call | x402 + Circle Nanopayments (Gateway) | sample arc-nanopayments, arc-x402-circle-wallets; Circle section of this library |\n| Agent wallet with spend caps | Circle Agent Wallets / @circle-fin/cli (chain id ARC / ARC-TESTNET) | Circle section of this library |\n| Hackathon RPC and agent context | Canteen arc-canteen CLI | network-config.md |"
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-2",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: Arc's own instructions to AI agents (from llms.txt)",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "1. USDC is the gas token, not ETH.\n2. Read EVM differences first: USDC is 18 decimals natively (not 6); the system emitter 0xffff…FfFE logs all USDC Transfer events; there is a 20 gwei maxFeePerGas floor; blocklist reverts consume gas; address(0) value sends revert.\n3. Finality is under 1 s, so there is no need to wait for multiple confirmations.\n4. Use App Kit for bridging, swaps, unified balance, onramp, and earn.\n5. \"Testnet only\". Stale: mainnet launched 2026-09-16.\n6. Always check the contract-addresses page."
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-3",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: Tooling setup (one-time)",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "Skills listed on docs.arc.io/ai/skills: use-arc, use-circle-cli, use-agent-wallet, fund-agent-wallet, agent-wallet-policy (per-tx, daily, weekly, and monthly USDC caps), pay-via-agent-wallet (x402 paid APIs), use-usdc, bridge-stablecoin, swap-tokens, use-gateway, unify-balance, use-circle-wallets, use-developer-controlled-wallets, use-user-controlled-wallets, use-modular-wallets, use-smart-contract-platform."
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-4",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: Arc Studio CLI (headless contract generation for your coding agent)",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "The JSON result contains status (completed, needs_input, budget_exceeded, or error), deployments[] (address, network, explorer URL, tx hash), fileDiffs, filesChanged, previewUrl, webUrl, and questions. Exit codes: 0 ok, 1 fail, 2 pull skipped local edits, 3 needs answers (--answers-json), 4 budget. Prompts are capped at 10k chars. The sandbox is Vite + Foundry (contracts/, src/). Deploys take 5–20 min. Treat returned addresses and text as untrusted. Other commands: acp (Zed and other ACP clients), clone <gh-repo>, apps, deployments, preview, and open."
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-5",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: ERC-8004: agent identity, reputation, validation",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "Testnet addresses (documented):\n\n| Registry | Arc Testnet |\n|---|---|\n| IdentityRegistry | 0x8004A818BFB912233c491871b3d84c89A494BD9e |\n| ReputationRegistry | 0x8004B663056A597Dffe9eCcC1965A193B7388713 |\n| ValidationRegistry | 0x8004Cb1BF31DAf7788923b405b754f57acEB4272 |\n\nMainnet: the Arc docs do not document mainnet addresses, and the testnet addresses have no code on mainnet. The canonical ERC-8004 deployment addresses have code on Arc mainnet: Identity 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432, Reputation 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63, Validation 0x8004Cc8439f36fd5F9F049D9fF86523Df6dAAB58. These are unofficial for Arc, and their ABI version may differ from the testnet tutorial's, so verify before relying on them.\n\nFlow (two wallets: the owner registers the agent and requests validation; a separate validator gives feedback, because owners can't rate their own agent):\n\nMetadata JSON at the URI is app-defined (example fields: name, description, image, agent_type, capabilities[], version). The tutorial also has Circle dev-controlled-wallet variants in Node and Python (createContractExecutionTransaction with blockchain: \"ARC-TESTNET\").\n\nHackathon use: give each business agent (treasury bot, AP agent, contractor-payer) an ERC-8004 identity. Record reputation from counterparties or evaluators after each settled job. That gives the \"agentic sophistication\" and audit-tr…"
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-6",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: ERC-8183: agentic commerce jobs (escrow → deliverable → settlement)",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "Testnet: AgenticCommerce reference implementation 0x0747EEf0706327138c69792bF28Cd525089e4583. No documented mainnet deployment, and the address has no code on mainnet.\n\nRoles: client (pays), provider (does the work), evaluator (approves; in the tutorial the client doubles as evaluator). States: 0 Open → 1 Funded → 2 Submitted → 3 Completed (also 4 Rejected, 5 Expired).\n\n| Step | Caller | Call |\n|---|---|---|\n| Create | client | createJob(address provider, address evaluator, uint256 expiredAt, string description, address hook) returns (uint256 jobId) (use hook = address(0) for the plain path). Emits JobCreated(jobId indexed, client indexed, provider indexed, evaluator, expiredAt, hook). |\n| Price | provider | setBudget(uint256 jobId, uint256 amount, bytes optParams) (amount in USDC 6-dp units) |\n| Fund | client | USDC.approve(AgenticCommerce, amount), then fund(uint256 jobId, bytes optParams) → Funded |\n| Deliver | provider | submit(uint256 jobId, bytes32 deliverable, bytes optParams) (deliverable = hash of the work) → Submitted |\n| Settle | evaluator | complete(uint256 jobId, bytes32 reason, bytes optParams) → Completed, escrow released to provider |\n| Read | anyone | getJob(jobId) → (id, client, provider, evaluator, description, budget, expiredAt, status, hook) |\n\nMaps directly to RFB 3 (contractor and vendor payouts on verified milestones) and RFB 4 (autonomous operator). The…"
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-7",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: x402 and nanopayments on Arc (pointers)",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "- x402 paymentRequirements on Arc: network: \"eip155:5042\" (mainnet) or \"eip155:5042002\" (testnet), asset: \"0x3600000000000000000000000000000000000000\" (Circle x402 table).\n- Circle Nanopayments (via Gateway) batch signed offchain authorizations into net onchain settlement. The minimum is $0.000001 and the buyer pays no per-payment gas. Gateway on Arc: domain 26, arc / arcTestnet (Circle docs).\n- Samples: circlefin/arc-nanopayments (agent pays paywalled APIs in USDC fractions) and circlefin/arc-x402-circle-wallets (agent pays x402 services from a Circle dev-controlled wallet on Arc testnet; referenced by the hackathon for RFB 4 but not in the docs.arc.io sample index).\n- TestMint (hackathon friend) offers up to $10k testnet USDC via x402: https://testmint.myproceeds.xyz.\n- Full x402 and Agent Wallet details live in the Circle section of this library."
+  },
+  {
+   "id": "context-01-arc-agentic-and-ai-md-8",
+   "title": "Arc for AI agents: MCP, skills, Arc Studio, ERC-8004, ERC-8183, x402: Why Arc for agents (per the docs), plus the builder takeaway",
+   "source": "https://docs.arc.io/build/agentic-economy",
+   "text": "| Arc property | Agent consequence |\n|---|---|\n| Sub-second deterministic finality | Close a job, pay, and log in one loop. No confirmation polling. |\n| USDC gas (~$0.001) | The agent holds one asset. Per-invoice or per-day contractor payouts are economical. |\n| Memo contract | Tie each payment to an invoice ID onchain for AP/AR reconciliation |\n| Multicall3From | Payroll or batch vendor payouts in one atomic tx from the agent's EOA |\n| ERC-8004/8183 | Verifiable identity, reputation, and escrowed work between agents and businesses |\n| Blocklist at runtime | Pre-screen counterparties (Elliptic, TRM, Chainalysis) or the agent burns gas on reverts |\n| Deterministic ordering | The docs claim ordering guarantees prevent front-running for payments |"
+  },
+  {
+   "id": "context-01-arc-app-kit-md-1",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Packages (npm, 2026-09-29)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "| Package | Version | What |\n|---|---|---|\n| @circle-fin/app-kit | 1.15.3 | All-in-one: AppKit class with send, bridge, swap, unifiedBalance.*, earn.*, onramp.* |\n| @circle-fin/bridge-kit | 1.15.1 | Bridge only (CCTP V2) |\n| @circle-fin/swap-kit | 1.7.0 | Swap only |\n| @circle-fin/unified-balance-kit | 1.7.0 | Gateway unified balance only |\n| @circle-fin/earn-kit | 1.8.0 | Earn vaults only |\n| @circle-fin/onramp-kit | 1.0.2 | Fiat onramp widget (no adapter needed) |\n| @circle-fin/adapter-viem-v2 | 1.18.0 | viem v2 adapter |\n| @circle-fin/adapter-ethers-v6 | 1.12.0 | ethers v6 adapter |\n| @circle-fin/adapter-solana-kit | 1.6.3 | Solana (@solana/kit + @solana/web3.js). The browser bridge quickstart uses @circle-fin/adapter-solana. |\n| @circle-fin/adapter-circle-wallets | 1.8.0 | Circle dev-controlled (and user-controlled via /ucw/server) wallets, server-side only |\n\nAPI key: a Circle Console API key (https://console.circle.com/api-keys; choose the \"App Kits\" permission for restricted keys) is required for Onramp and optional for Swap and Earn. Without it, requests share a rate limit. Keys are environment-specific (testnet vs mainnet). Keep them server-side; the SDK rejects an Earn key used from a browser. Kit keys are legacy: rename kitKey to apiKey in swap config."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-2",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Adapters",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Custom RPC (recommended so you don't hit the rate limits on shared defaults):\n\nOther signers documented: Turnkey (@turnkey/viem), Privy (ethers), MetaMask EIP-6963, and Circle user-controlled wallets (createCircleUserWalletAdapter from @circle-fin/adapter-circle-wallets/ucw/server). Circle Wallets are one wallet per chain (different addresses per chain for EOAs; one SCA per chain). The Circle Wallets adapter cannot gas-sponsor crosschain transfers originating on Solana."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-3",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Chain identifiers and support",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Identifiers are case-sensitive: Arc, Arc_Testnet, Ethereum_Sepolia, Base_Sepolia, Arbitrum_Sepolia, Avalanche_Fuji, Solana_Devnet, Optimism_Sepolia, Polygon_Amoy_Testnet, Edge_Testnet, Pharos_Testnet, and so on. Enums BridgeChain, SwapChain, UnifiedBalanceChain, and EarnChain are exported from @circle-fin/app-kit. Use kit.getSupportedChains(\"bridge\" | \"swap\" | \"unifiedBalance\" | \"earn\") to check at runtime.\n\n| Chain | Capabilities | Adapters |\n|---|---|---|\n| Arc | Send, Bridge, Swap, Unified Balance, Onramp, Earn (only chain with all six) | Viem, Ethers, Circle Wallets |\n| Arbitrum, Avalanche, Base, Ethereum, OP, Polygon PoS, Unichain | Send, Bridge, Swap, Unified Balance | Viem, Ethers, Circle Wallets |\n| HyperEVM, Sei, Sonic, World Chain | Send, Bridge, Swap, Unified Balance | Viem, Ethers |\n| Solana | Send, Bridge, Swap, Unified Balance | Solana, Circle Wallets |\n| Ink, Linea, Monad, Plume, XDC | Send, Bridge, Swap | Viem, Ethers |\n| Codex, EDGE, Injective, Morph, Pharos, X Layer | Send, Bridge | Viem, Ethers |\n| Cronos, Plasma | Send, Bridge | Viem, Ethers, Circle Wallets |\n\nSwap works on mainnets only, except Arc Testnet. On Arc, Swap accepts USDC, EURC, and cirBTC only.\n\nTokens per capability: Send takes any token (alias or address). Bridge takes USDC, EURC, WETH, cirBTC, and CCTPx-registered assets. Swap takes liquid tokens. Unified Balance takes USDC only. Onramp and E…"
+  },
+  {
+   "id": "context-01-arc-app-kit-md-4",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Send (same chain)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Send is the simplest way for an agent to pay a vendor. For invoice reconciliation, use the raw Memo contract instead (transactions-memo-batching.md). App Kit Send has no memo field."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-5",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Bridge (CCTP V2 burn → attest → mint)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "- Pre-flight: const est = await kit.estimateBridge(params); est.fees // [{type:\"provider\", amount}, ...].\n- Forwarding Service (useForwarder: true): Circle submits the destination mint, so you need no gas or wallet on the destination. The mint step's data is undefined (confirmation comes from the Iris API). A fee is deducted from the mint unless you set config.feePayment: \"source\", which is incompatible with custom fees.\n- Default speed is FAST. Bridging out of Arc: the amount must exceed the CCTPv2 max fee (~1.4 USDC on testnet) or the burn reverts with \"Max fee must be less than amount\".\n- Recovery guide: https://docs.arc.io/app-kit/references/bridge-error-recovery.\n- Arc attestations take about 1 block (~0.5 s). Ethereum, Base, and Arbitrum as sources take 13–19 min on Standard."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-6",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Swap (same chain or crosschain)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Fees: 2 bps provider fee plus an optional custom fee (90/10 split with Arc). The arc-stablecoin-fx sample is built on this."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-7",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Unified Balance (Circle Gateway under the hood)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "- Standard deposits wait for source-chain finality (≥15 min on Ethereum L2s). Wait until totalConfirmedBalance covers the spend.\n- Fast deposits (config: { transferSpeed: \"FAST\" } with to) use CCTP Fast plus TokenMessengerWithFees. Sources: Arbitrum, Codex, Ethereum, Ink, Linea, OP, Plume, Unichain, World Chain. Destinations: Arc, Avalanche, Polygon PoS.\n- Once confirmed, spends are near-instant (Gateway docs quote under 500 ms). Fee: 0.5 bps crosschain, plus source gas per burn intent (Arc $0.0035).\n- Delegates: Circle Wallets SCAs and Privy server wallets can't sign spends. Add an EOA delegate with kit.unifiedBalance.addDelegate, then depositFor and spend (see the delegate quickstart). SCA deposits need allowanceStrategy: \"approve\" because permit uses ecrecover, not ERC-1271.\n- Trustless exit: initiateRemoveFund, then a 7-day wait, then removeFund. One pending removal per chain and address.\n- Other methods: estimateDeposit, estimateSpend, getDelegateStatus, removeDelegate, setFeeRecipients, and setCustomFeePolicy.\n- For a treasury agent this is the \"one balance across chains\" primitive the hackathon brief describes."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-8",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Earn (vaults on Arc; USDC and EURC)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Earn is non-custodial and runs over third-party lending vaults (Morpho is named in the fee docs). Fees come out of returns. Principal can fall in extreme conditions. It is a natural fit for the \"idle treasury cash earns yield\" RFB. USYC is the institutional alternative (allowlisted)."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-9",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Onramp (fiat to USDC/EURC on Arc)",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "Server mints a session (valid 30 min, needs an API key) → client runs kit.onramp.fetchSession({ url: \"/api/onramp/sessions\", body: { appUserId, destinationAddress } }) → kit.onramp.mountIframe({ session, container, onDepositSettled }) or openWindow(...). Debit card, Apple Pay, and Google Pay need KYB in the Circle Console plus referrerDomain. Bank transfer covers select US states and the EU. No credit cards. Demo: https://onramp-demo.arc.io/. Sandbox and hosting rules (CSP, container sizing): https://docs.arc.io/app-kit/references/onramp-hosting-requirements."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-10",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Monetization: custom fees",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "90% to you, 10% to Arc. Use a fee recipient on the source chain. Show the full breakdown before the user confirms."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-11",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Events and observability",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "kit.on(\"*\" | action, handler) and kit.off(...). Bridge events carry { protocol: \"cctp\", version: \"v2\", traceId, values: { name, state, txHash, data, explorerUrl } }. Persist traceId and step tx hashes in your agent's audit log. Partial bridges are recoverable with retryBridge."
+  },
+  {
+   "id": "context-01-arc-app-kit-md-12",
+   "title": "App Kit (Send, Bridge, Swap, Unified Balance, Onramp, Earn): Gotchas specific to App Kit",
+   "source": "https://docs.arc.io/app-kit",
+   "text": "- Amounts are decimal strings, not base units. Don't pass \"10000000\" for 10 USDC.\n- On Arc, App Kit's \"USDC\" means the ERC-20 interface (6 dp). Your own native-balance reads are 18 dp.\n- Swap needs liquidity. On Arc testnet only the USDC/EURC/cirBTC pairs exist.\n- The earlier (2026-07) note that \"CCTP Fast Transfer is unavailable on Arc Testnet\" is superseded. Circle's table now lists Arc's Fast source as \"N/A\" (already fast), and App Kit defaults to FAST for inbound routes.\n- The Circle Wallets adapter requires an explicit address in each from/to."
+  },
+  {
+   "id": "context-01-arc-ecosystem-and-infrastructure-md-1",
+   "title": "Arc ecosystem tools and node operation: Providers listed in the docs",
+   "source": "https://docs.arc.io/arc/tools/node-providers",
+   "text": "| Category | Providers | Notes for agents |\n|---|---|---|\n| Node / RPC | Alchemy, Blockdaemon, dRPC, QuickNode (and Circle's public RPC) | Circle's public endpoints need no key. Alchemy adds Data APIs, webhooks, and Wallet APIs. See network-config.md. |\n| Data indexers | Alchemy (Data APIs, webhooks), Envio (HyperIndex), Goldsky (subgraphs, Mirror streaming to a DB), Pinax (RPC archive, Firehose, Substreams), The Graph (subgraphs, Substreams), Thirdweb Insight, Zerion API (portfolio, PnL, wallet-activity subscriptions) | Use Zerion or Alchemy webhooks for \"notify me when a customer pays\". Use Goldsky Mirror to stream into Postgres for a ledger. |\n| Oracles | Chainlink (Data Feeds, Data Streams), Chronicle (DeFi feeds, Proof of Asset), Pyth (pull/push; crypto, FX, equities), RedStone (push/pull), Stork (low-latency pull; addresses at docs.stork.network … #arc) | You need an oracle for FX (EUR/USD) or randomness, since PREVRANDAO is 0. Look up per-feed addresses on each provider's site. |\n| Compliance | Chainalysis, Elliptic, TRM Labs | Screening before payment avoids gas-burning blocklist reverts. Fits RFB 5. |\n| Account abstraction | Alchemy, Biconomy, Blockradar, Circle Wallets, Crossmint, Dynamic, MetaMask Embedded Wallets, Para, Pimlico, Privy, Thirdweb, Turnkey, ZeroDev | See account-abstraction-relayers-paymasters.md |\n| Launch-day DeFi (press) | Uniswap, Aave, Morpho, Cha…"
+  },
+  {
+   "id": "context-01-arc-ecosystem-and-infrastructure-md-2",
+   "title": "Arc ecosystem tools and node operation: Integration guides (docs.arc.io/integrate)",
+   "source": "https://docs.arc.io/arc/tools/node-providers",
+   "text": "| Guide | Useful for |\n|---|---|\n| Wallets: add Arc, fee display, transaction lifecycle | Show one USDC balance (never native and ERC-20 as two rows). Fees in USD. Two-state lifecycle (pending or final). |\n| Exchanges: deposits, withdrawals, custody, CCTP bridging | Payment-receiving agents: HD deposit addresses, system-emitter detection, sweeping, raw CCTP depositForBurn with domain 26 |\n| On/off-ramps | Single-asset USDC config for ramp providers |\n| DeFi: AMM and pools | Use 0x3600… as the pool token. Decimal conversion factor 1e12. |\n| Infrastructure: bridges, indexing events, compliance | Confirmations = 1. Index EIP-7708 plus Memo, blocklist, and CCTP events. Attribute Memo and Multicall3From calls. |\n| Relayers and paymasters | EIP-3009 relayer, ERC-4337 paymaster |"
+  },
+  {
+   "id": "context-01-arc-ecosystem-and-infrastructure-md-3",
+   "title": "Arc ecosystem tools and node operation: Running a node (only if you need an unmetered RPC or independent verification)",
+   "source": "https://docs.arc.io/arc/tools/node-providers",
+   "text": "Anyone can run a full node (not a validator). It verifies validator signatures on each block, re-executes every transaction, and serves JSON-RPC on localhost:8545. It does not participate in consensus.\n\n| Item | Value |\n|---|---|\n| OS | Linux (Ubuntu 22.04+, Debian 12+). macOS works for the binaries. |\n| CPU / RAM / Disk / Net | High clock speed / 64 GB+ / 1 TB+ NVMe (TLC) / 24 Mbps+ |\n| Binaries | arc-node-execution (Reth), arc-node-consensus (Malachite), arc-snapshots |\n| Version | v0.8.0 on both networks. Zero7/Zero8 activated on mainnet 2026-09-10 15:00 UTC. |\n| Sync | Snapshot only, since syncing from genesis is unsupported. Testnet: ~68 GB EL + 16 GB CL compressed (→ ~103 GB + 36 GB). Keep ≥150 GB free. |\n| Ports | 8545 JSON-RPC, 8551 Engine API (RPC mode), 9001 EL metrics, 29000 CL metrics, 31000 CL RPC |\n| EL↔CL | IPC (default) at /run/arc/reth.ipc and /run/arc/auth.ipc. RPC+JWT mode is deprecated and will be removed in v0.9.0. |\n| Public node flags | --public-api (hides pending-tx RPCs, restricts to eth/net/web3/rpc). --full enables pruning and is required on first start from a pruned snapshot. |\n| Relay endpoints (CL fetches blocks) | Mainnet: rpc.mainnet.arc.io, rpc.drpc.mainnet.arc.io, rpc.blockdaemon.mainnet.arc.io, rpc.quicknode.mainnet.arc.io. Testnet: rpc.testnet.arc.io, rpc.drpc.testnet.arc.io, rpc.blockdaemon.testnet.arc.io. |\n\nOther paths: build from source, …"
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-1",
+   "title": "Arc gas and fees: Parameters",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "| Parameter | Value |\n|---|---|\n| Gas unit | USDC, native, 18 decimals. 1 gwei = 1e-9 USDC. |\n| Model | EIP-1559, with the per-block base fee recalculation replaced by an EWMA of block utilization |\n| Base fee target | ~$0.001 per ERC-20 transfer (design target) |\n| Minimum base fee | 20 gwei. maxFeePerGas below this is *silently dropped* by the mempool: no error receipt, never mined. Some RPCs return transaction underpriced. |\n| Max base fee | 20,000 gwei (hard ceiling) |\n| Capacity | 30M gas/block, ~60M gas/s at 0.5 s blocks |\n| Base fee destination | Not burned. Base fee and tip both go to the block beneficiary. |\n| Next block's base fee | Published in the parent header's extraData as 8-byte big-endian. Live: 0x00000004a817c800 = 20,000,000,000 wei = 20 gwei. |\n| Priority fee | 0 is accepted and usually enough; use 1 gwei under load. eth_maxPriorityFeePerGas returns 1 wei. |\n\nEWMA formula (conceptual):"
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-2",
+   "title": "Arc gas and fees: What things cost (at the 20 gwei floor)",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "| Action | Gas | USDC cost |\n|---|---|---|\n| Native USDC send | 21,000 | 21,000 × 20e9 = 4.2e14 wei = $0.00042 |\n| ERC-20 transfer (~40–65k) | ~50,000 | ~$0.001 |\n| EIP-3009 transferWithAuthorization | ~65,000 (docs) | ~$0.0013 |\n| Contract deploy (1M gas) | 1,000,000 | $0.02 |\n\nThe hackathon slides quote \"~$0.01 per transaction\". The docs target ~$0.001. Both are negligible for agent use."
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-3",
+   "title": "Arc gas and fees: Setting transaction fields",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "- Use type-2 (EIP-1559) or type-4 (EIP-7702) transactions. Type-3 blob txs are rejected.\n- Fee RPCs: eth_gasPrice, eth_feeHistory, eth_maxPriorityFeePerGas, eth_estimateGas. The docs say values \"remain accurate for a reasonable submission window\" because of smoothing.\n- Circle Wallets (dev-controlled) transactions take fee: { type: \"level\", config: { feeLevel: \"MEDIUM\" } }, and Circle computes the gas."
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-4",
+   "title": "Arc gas and fees: Recording and displaying fees in USDC",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "- Gas fees do not emit Transfer events. Derive them from receipts (gasUsed × effectiveGasPrice). Block rewards are attributed through block.miner.\n- Show fees in dollars, not gwei (fee-display).\n- An agent ledger should book gas as an expense line using the receipt math above. Emitter-based transfer indexing will not catch it."
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-5",
+   "title": "Arc gas and fees: Common errors",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "| Error | Cause | Fix |\n|---|---|---|\n| tx pending forever / transaction underpriced | maxFeePerGas < 20 gwei | Set ≥ 20 gwei |\n| intrinsic gas too low | gasLimit < 21,000 | Estimate |\n| insufficient funds for gas * price + value (pre-v0.8) / OutOfFunds… or gas required exceeds allowance (node v0.8.0+) | Not enough native USDC for value + gas | Fund with USDC. Remember value and gas draw from the same USDC balance. |\n| Reverted receipt with gas consumed | Blocklist hit, zero-address value send, or send to a destructed account | See gotchas.md |"
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-6",
+   "title": "Arc gas and fees: Who pays gas: options",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "| Option | Details |\n|---|---|\n| EOA holds USDC | Default. Each agent wallet needs a USDC float. |\n| Circle Gas Station | Sponsors gas for Circle dev-controlled SCA wallets. The docs say it \"automatically sponsors your transaction fees on Arc Testnet\" (deploy-contracts). |\n| EIP-3009 relayer | The user signs transferWithAuthorization and your relayer EOA pays gas. See account-abstraction-relayers-paymasters.md. |\n| ERC-4337 paymaster | EntryPoint v0.7 deposit denominated in 18-decimal native USDC. Pimlico and Alchemy support Arc. |\n| Circle Nanopayments / Gateway | Batched offchain x402 authorizations. The buyer pays no per-payment gas (Circle docs). |"
+  },
+  {
+   "id": "context-01-arc-gas-and-fees-md-7",
+   "title": "Arc gas and fees: App Kit, CCTP, and Gateway fees (for money-movement agents)",
+   "source": "https://docs.arc.io/arc/references/gas-and-fees",
+   "text": "| Product | Fee |\n|---|---|\n| App Kit custom fee (bridge, swap, unified-balance spend) | You set it. It is split 90% to your fee recipient, 10% to Arc. It is added on top of a bridge but carved out of a swap or spend amount. |\n| CCTP Standard transfer | 0 bps from every source (Arc included) |\n| CCTP Fast transfer | Varies by source. Arc as a source is \"N/A\" (already fast). Bridging from Arc: the amount must exceed the CCTPv2 max fee (~1.4 USDC on testnet) or the burn reverts with Max fee must be less than amount. |\n| CCTP Forwarding Service | Circle-set fee, deducted from the destination mint (or paid on source with config.feePayment: \"source\") |\n| Swap provider fee | 2 bps (0.02%) of the post-custom-fee amount |\n| Gateway / Unified Balance crosschain spend | 0.5 bps (0.005%), and 0 if same-chain. Plus per-burn-intent source gas: Arc $0.0035, Arbitrum $0.01, Base $0.01, Avalanche $0.02, HyperEVM $0.05, OP $0.0015, Ethereum $1.00 (Circle Gateway docs). |\n| Earn | Vault performance fee (Morpho 0–50%) and management fee (0–5%/yr), both from returns. 0 deposit fee same-chain. CCTP fees for crosschain deposits. 0 withdrawal fee (subject to change). |\n\nAlways pass human-readable decimal strings (\"1.00\") to App Kit. It converts to base units internally."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-1",
+   "title": "Arc gotchas: sharp edges builders hit: Money and decimals (the #1 source of bugs)",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "1. USDC is 18 decimals natively and 6 through ERC-20, with one balance. eth_getBalance, msg.value, and gas are 18 dp. USDC.balanceOf, transfer, approve, EIP-3009, and App Kit amounts are 6 dp. The raw numbers differ by 1e12. parseUnits(\"1\", 6) sent as a native value is 1e-12 USDC. (The gas-and-fees docs example has exactly this bug.)\n2. Don't show two USDC balances (native and ERC-20). They are the same money, so show one.\n3. balanceOf truncates amounts below 1e-6 USDC. balanceOf == 0 does not mean empty. Book from 18-dp native values if you need exactness. Truncating when you credit under-records.\n4. Gas and payments draw from the same USDC. An agent that sends its \"full balance\" via ERC-20 leaves nothing for gas. Keep a gas float, since ~$0.01 covers dozens of txs.\n5. There is no WUSDC and no wrapping. Use 0x3600…0000 as the ERC-20. Never alias the EIP-7528 0xEeee…EEeE sentinel to it. Don't pool native against ERC-20 USDC.\n6. ERC-20 allowances don't bound native sends. A contract or wallet that can send value can move USDC past any approve cap. Spending policies must cover both paths.\n7. Contract USDC is the contract's native balance. SELFDESTRUCT moves it, and a native \"sweep\" drains ERC-20 USDC too.\n8. EURC, USYC, and USDC(ERC-20) are 6 dp. cirBTC is 8 dp. WETH is 18 dp. Always call decimals()."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-2",
+   "title": "Arc gotchas: sharp edges builders hit: Transfers that revert even with enough balance (gas still spent)",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "9. Blocklist is enforced at runtime. A value transfer to or from a blocklisted address reverts, the tx is included, gas is consumed, and the receipt has status: 0. Screen counterparties first. Test with blocklisted testnet address 0x70997970C51812dc3A010C7d01b50e0d17dc79C8.\n10. A value send to address(0) reverts (\"Zero address not allowed\"). Zero-value is fine. Burn-style patterns fail.\n11. A value send to a precompile reverts. A value send to an account self-destructed earlier in the same tx reverts (Ethereum allows it).\n12. SELFDESTRUCT with a balance reverts if the beneficiary is self, 0x0, blocklisted, or already destructed.\n13. Always check receipt.status. Don't assume \"mined = paid\"."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-3",
+   "title": "Arc gotchas: sharp edges builders hit: Fees and transaction submission",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "14. maxFeePerGas < 20 gwei means the tx is silently dropped (no receipt, never mined). Floor at 20 gwei. Custom bundlers and relayers must do the same.\n15. Blob (type-3) txs are rejected. Use type-2 (or type-4 for 7702).\n16. The base fee is not burned (it goes to the proposer). The next base fee is in the parent extraData (8-byte BE).\n17. Gas fees emit no Transfer log. Compute them from gasUsed × effectiveGasPrice (18 dp).\n18. Node v0.8.0 changed error strings: insufficient balance now shows revm OutOfFunds or gas required exceeds allowance instead of insufficient funds for gas * price + value. Don't regex-match the old text."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-4",
+   "title": "Arc gotchas: sharp edges builders hit: Blocks, time, randomness",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "19. PREVRANDAO = 0 always. Use Chainlink, Pyth, or another VRF or oracle. The EIP-4788 beacon-roots contract is absent (reads return 0x). EIP-2935 block hashes work.\n20. block.timestamp is non-decreasing, not strictly increasing (1 s granularity, ~2 blocks/s). Don't use it for uniqueness or ordering. Use block number plus log index.\n21. block.withdrawals is always empty. BLOBHASH returns 0 and BLOBBASEFEE returns 1.\n22. Finality comes from 1 confirmation. safe and finalized tags equal latest. Don't add artificial N-confirmation waits."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-5",
+   "title": "Arc gotchas: sharp edges builders hit: Events and indexing",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "23. Two Transfer streams. The system emitter 0xffff…FfFE (18 dp) fires for all USDC moves. 0x3600… (6 dp) fires only for ERC-20 calls. One ERC-20 transfer produces two logs. Filter by emitter or you double count. Watching only 0x3600… misses native sends.\n24. On testnet, history before Zero5 used NativeCoinTransferred, NativeCoinMinted, and NativeCoinBurned from 0x1800…0000. Mainnet used EIP-7708 from genesis.\n25. eth_getLogs is capped at 10,000 blocks (~85 min) on public RPCs, returning -32012. Page your queries.\n26. The load-balanced public RPC can return -32014 for the head block. Retry with backoff, or query latest - 1."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-6",
+   "title": "Arc gotchas: sharp edges builders hit: Memo, Multicall3From, and smart accounts",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "27. Memo and Multicall3From only accept direct EOA callers. SCAs, 4337 accounts, Safes, delegatecall, and staticcall revert. Circle SCA wallets and modular wallets can't use them directly.\n28. Multicall3From can't forward native value (no aggregate3Value). Batch ERC-20 transfers instead.\n29. Memo data is public. Store invoice hashes or IDs, not PII. Arc privacy (APS) is not live.\n30. Compliance tooling must attribute calls routed through Memo and Multicall3From to the original sender."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-7",
+   "title": "Arc gotchas: sharp edges builders hit: Tooling",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "31. Stock anvil, Hardhat network, and Tenderly-like simulators don't model Arc. Use arc-anvil --network arc or arc-forge test --fork-url.\n32. viem's arcTestnet ships legacy RPCs (rpc.testnet.arc.network, which still works) and testnet.arcscan.app (redirects to explorer.testnet.arc.io). Pass http(\"https://rpc.testnet.arc.io\") explicitly. arcTestnet needs viem ≥ 2.38. arc (mainnet) is built in too.\n33. Reown AppKit needs defineChain from @reown/appkit/networks, not viem. WalletConnect prompts wallet_addEthereumChain for Arc Testnet. ConnectKit without mainnet breaks ENS lookups (CORS).\n34. The explorer is Blockscout. Verify with --verifier blockscout --verifier-url https://explorer.testnet.arc.io/api/, not an Etherscan key.\n35. Wallets without custom-gas-token support label USDC as \"ETH\"."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-8",
+   "title": "Arc gotchas: sharp edges builders hit: App Kit, CCTP, Gateway",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "36. App Kit amounts are decimal strings (\"1.00\"), not base units.\n37. Bridging out of Arc needs an amount > the CCTPv2 max fee (~1.4 USDC on testnet), otherwise you get Max fee must be less than amount.\n38. Standard Unified Balance deposits wait for source-chain finality (≥15 min from Ethereum L2s). Use fast deposits (to Arc) or pre-fund. Only spend totalConfirmedBalance.\n39. Unified Balance trustless withdrawal takes 7 days. SCAs need an EOA delegate to spend and allowanceStrategy: \"approve\" to deposit.\n40. Swap on testnets works only on Arc Testnet, and on Arc only USDC, EURC, and cirBTC.\n41. Kit keys are legacy. Use apiKey (Circle Console), which is required for Onramp and optional but rate-limited for Swap and Earn. Keys are per-environment and server-side only.\n42. Circle Wallets are per-chain. Pass address in every App Kit from/to. Solana-origin crosschain transfers can't be gas-sponsored."
+  },
+  {
+   "id": "context-01-arc-gotchas-md-9",
+   "title": "Arc gotchas: sharp edges builders hit: Network status and faucet",
+   "source": "https://docs.arc.io/arc/references/evm-differences",
+   "text": "43. Mainnet is live (2026-09-16), but the docs llms.txt still says \"Testnet only\". Arc Studio, the ERC-8004 tutorial, and the ERC-8183 tutorial are testnet-only. The ERC-8004 and ERC-8183 testnet addresses have no code on mainnet.\n44. The testnet faucet (faucet.circle.com) is rate-limited. Fund one wallet, then distribute via transfers (the ERC-8183 tutorial does this). There is no mainnet faucet. Get mainnet USDC by bridging with CCTP or Gateway, or by onramp.\n45. USYC requires allowlisting (a support ticket, 24–48h) even on testnet, and it is restricted to non-US institutions in production.\n46. Fee parameter tables still say \"may change before mainnet launch\". Read eth_gasPrice live (testnet currently returns 25 gwei, mainnet 20 gwei)."
+  },
+  {
+   "id": "context-01-arc-network-config-md-0",
+   "title": "Arc network config and contract addresses",
+   "source": "https://docs.arc.io/arc/references/connect-to-arc",
+   "text": "> Docs domain: docs.arc.network now 301-redirects to docs.arc.io. The hackathon page and slides still link docs.arc.network. Both work."
+  },
+  {
+   "id": "context-01-arc-network-config-md-1",
+   "title": "Arc network config and contract addresses: Networks",
+   "source": "https://docs.arc.io/arc/references/connect-to-arc",
+   "text": "| | Arc Mainnet | Arc Testnet |\n|---|---|---|\n| Chain ID | 5042 (0x13b2) | 5042002 (0x4cef52) |\n| CAIP-2 (x402 network) | eip155:5042 | eip155:5042002 |\n| Native / gas token | USDC (18 decimals native) | USDC (18 decimals native) |\n| Primary HTTP RPC (Circle, no key, open CORS) | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Primary WebSocket | none listed | wss://rpc.testnet.arc.io |\n| Explorer (Blockscout) | https://explorer.arc.io | https://explorer.testnet.arc.io |\n| Explorer API (for verification) | https://explorer.arc.io/api/v2 (viem apiUrl) | https://explorer.testnet.arc.io/api/ |\n| Gas tracker | n/a | https://explorer.testnet.arc.io/gas-tracker |\n| Faucet | none; the docs say to \"request gas USDC through your Circle point of contact\", or bridge real USDC in with CCTP | https://faucet.circle.com (USDC and EURC; select \"Arc Testnet\"; rate-limited) |\n| viem import | import { arc } from \"viem/chains\" | import { arcTestnet } from \"viem/chains\" (needs viem ≥ 2.38) |\n| Circle Wallets / Agent Wallets blockchain id | ARC | ARC-TESTNET |\n| App Kit chain identifier | Arc | Arc_Testnet |\n| CCTP / Gateway domain | 26 | 26 |\n| Gateway API chain name | arc | arcTestnet |\n| Public mainnet launch | 2026-09-16 (Circle press release). Block 1 timestamp is 2026-05-15 13:58 UTC, so the chain ran before public launch. | Live. Current block is ~64.5M at 2026-09-29. |\n| Node ver…"
+  },
+  {
+   "id": "context-01-arc-network-config-md-2",
+   "title": "Arc network config and contract addresses: Chain definitions (copy-paste)",
+   "source": "https://docs.arc.io/arc/references/connect-to-arc",
+   "text": "Reown AppKit requires defineChain from @reown/appkit/networks with caipNetworkId: \"eip155:5042002\" and chainNamespace: \"eip155\". The viem version causes a runtime error there. ConnectKit falls back to eth.merkle.io for ENS lookups, which CORS-fails unless you include mainnet with a CORS-safe transport. WalletConnect does not have Arc Testnet in its registry, so it issues wallet_addEthereumChain on first connect. Source: connect-to-arc.\n\nMetaMask, Rabby, Coinbase Wallet, and Rainbow manual add: name Arc / Arc Testnet, the RPC above, the chain ID above, symbol USDC, and the explorer above. Wallets without custom-gas-token support may label the balance \"ETH\", but it is USDC."
+  },
+  {
+   "id": "context-01-arc-network-config-md-3",
+   "title": "Arc network config and contract addresses: Contract addresses",
+   "source": "https://docs.arc.io/arc/references/connect-to-arc",
+   "text": "code = bytecode size in bytes returned by eth_getCode on 2026-09-29. Every documented address below had code.\n\n### Stablecoins and assets\n\n| Asset | Decimals | Mainnet | Testnet |\n|---|---|---|---|\n| USDC (optional ERC-20 view of the native balance) | 6 | 0x3600000000000000000000000000000000000000 | 0x3600000000000000000000000000000000000000 |\n| USDC native / gas | 18 | (native balance, eth_getBalance) | same |\n| EURC | 6 | 0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 | 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a |\n| USYC (tokenized T-bill MMF; allowlisted, non-US institutions, $100k min) | 6 | 0x8a5D989Bbb96929F689B0200f435f53dA42bF490 | 0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C |\n| USYC Entitlements | | 0xb69ecb156Dc0028198028c501340d5367845ca72 | 0xcc205224862c7641930c87679e98999d23c26113 |\n| USYC Teller (mint/redeem vs USDC) | | 0x51A8CE47dC08ba5CD19c7aa84EA6fD6664f60f9b | 0x9fdF14c5B14173D74C08Af27AebFf39240dC105A |\n| cirBTC (Circle wrapped BTC) | 8 | 0x171A4217b86A807A64eB94757Db6849fb4bDbAA0 | 0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF |\n| WETH (bridged, lock on Ethereum, mint on Arc) | 18 | 0x128cC466B61f542da60c70e3aA11c10e19B84EDB | 0x2c4047028a72803939b6fb674D01bC059B5C4961 |\n\nThere is no wrapped-USDC (WUSDC) contract and none is supported. Do not alias the EIP-7528 sentinel 0xEeee…EEeE to 0x3600….\nTo get testnet USYC: request allowlisting through a Circle Support tick…"
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-1",
+   "title": "Arc overview and architecture: One paragraph",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "Arc is Circle's open, EVM-compatible Layer-1 \"purpose-built for programmable money.\" USDC is the native gas token, so there is no volatile token. Finality is deterministic and sub-second: Malachite BFT under Proof-of-Authority, with blocks every ~0.48 s. Execution runs on Reth at the Osaka EVM baseline plus some Amsterdam features (EIP-7708). EURC and USYC are native at genesis. It integrates directly with Circle's platform: CCTP, Gateway, Wallets, App Kit, StableFX, and Agent Stack. Circle positions it for payments, lending, FX, treasury, and agentic commerce (arc-chain)."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-2",
+   "title": "Arc overview and architecture: Network properties",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "| Property | Value |\n|---|---|\n| Consensus | Malachite BFT (Tendermint family), permissioned PoA validator set |\n| Execution | Reth (Rust Ethereum client), EVM at the Osaka hard fork, plus EIP-7708 from Amsterdam |\n| Gas token | USDC (native, 18 decimals). ERC-20 view at 0x3600…0000 (6 decimals). |\n| Block time | ~0.48 s on testnet (\"~2 blocks/s\") |\n| Finality | Deterministic, under 1 s. 1 confirmation is final. safe and finalized tags both resolve to latest. |\n| Throughput (benchmarks) | 3,000+ TPS with 20 validators, under 350 ms finality. 10,000+ TPS with 4 validators. |\n| Gas limit | 30M gas/block (~60M gas/s). Confirmed live: gasLimit = 30,000,000. |\n| Validators | Permissioned and known institutions: SOC 2, geographically distributed, rotating proposer, uptime SLAs. The founding cohort includes BlackRock, Visa, Mastercard, and DTCC (press). |\n| Developer access | Permissionless. Anyone can deploy contracts or run a (non-validating) full node. |\n| Chain IDs | Mainnet 5042, testnet 5042002 |"
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-3",
+   "title": "Arc overview and architecture: Two-layer architecture",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "- Consensus layer (Malachite) (consensus-layer): Propose, then Pre-vote, then Pre-commit, then Commit. Two-phase voting means two conflicting blocks can never both finalize, so there are no reorgs. It is safe with fewer than 1/3 faulty validators and live with at least 2/3 honest and online. \"Optimistic responsiveness\" means there are no artificial timeouts.\n- Execution layer (Reth) (execution-layer) maintains state, executes the EVM, and computes the state root. Arc adds protocol-level modules:\n\n| Module | Status | Function |\n|---|---|---|\n| Fee Manager | Live | USDC-denominated base fee with EWMA smoothing, targeting ~$0.001 per tx. See gas-and-fees.md. |\n| CallFrom precompile | Live | Preserves the original msg.sender through Memo and Multicall3From |\n| Arc Privacy Sector (APS) | Planned | Confidential Solidity execution |\n| Stablecoin Services | Planned | Cross-currency settlement, paymaster-sponsored txs, multi-stablecoin gas |\n\nPrecompiles live at 0x1800…0000 through …0004 (Native Coin Authority, Native Coin Control/blocklist, System Accounting, Call From, PQ Signature Verify). See network-config.md."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-4",
+   "title": "Arc overview and architecture: Finality: why it matters for agents",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "| Network | Finality |\n|---|---|\n| Arc | under 1 s, deterministic |\n| Ethereum L1 | 12–15 min |\n| Optimistic L2 | ~7 days (withdrawal) |\n\nA transaction has two states only: pending or final (transaction-lifecycle). An agent can trigger downstream effects (ledger write, webhook, next payment) as soon as it has the receipt. It needs no confirmation counting, reorg rollback, or retry-on-reorg logic. Circle's CCTP and Gateway attest Arc burns after ~1 block (~0.5 s), so Arc as a source chain is fast. Other chains as source still take 13–19 min for standard attestation."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-5",
+   "title": "Arc overview and architecture: Stablecoin-native model (the most important concept)",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "stablecoin-native-model\n\n- One USDC balance, two interfaces:\n\n| Interface | Decimals | Used for |\n|---|---|---|\n| Native (eth_getBalance, msg.value, gas) | 18 | Gas, native sends, msg.value |\n| ERC-20 at 0x3600000000000000000000000000000000000000 | 6 | transfer, approve, transferFrom, allowances, permit/EIP-3009 |\n\n- Both interfaces move the same balance. The ERC-20 balanceOf truncates the last 12 decimals, so sub-micro-USDC dust is invisible there but still exists natively. A balanceOf of 0 does not mean the native balance is 0.\n- Every USDC movement emits a Transfer from the system emitter 0xffff…fffE (18 decimals, EIP-7708). ERC-20 calls also emit a 6-decimal Transfer from 0x3600…. Pick one emitter to avoid double counting.\n- EURC (6 decimals) is a standard ERC-20, native at genesis and not bridged. USYC is a yield-bearing tokenized money market fund, permissioned (non-US institutions, $100k minimum). cirBTC (8 decimals) and bridged WETH (18 decimals) also exist.\n- Gas launches as USDC only. Multi-stablecoin gas and protocol paymasters are \"Stablecoin Services\" (planned). Today, sponsor gas through ERC-4337 paymasters or Circle Gas Station. See account-abstraction-relayers-paymasters.md."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-6",
+   "title": "Arc overview and architecture: Opt-in privacy: Arc Privacy Sector (APS), not live",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "opt-in-privacy. \"Privacy features are on the roadmap and not yet available on Arc.\"\n- Design: one chain, two execution environments (public EVM and private APS) whose state roots commit in the same block. You encrypt a normal EVM tx with the APS network public key and send it as calldata to a precompile. Validators run APS inside hardware enclaves (TEEs). Only an ack and a fixed gas cost are public. There are no public return values or logs.\n- Synchronous composability between public and private contracts (atomic, no bridge).\n- Default-deny isolation: per-selector policies (Open, Restricted, Locked), trust domains via addTrustee, runtime visibility enforcement, events off by default, sanitized reverts, and constant-time gas reporting.\n- Cryptography: X-Wing KEM (X25519 + ML-KEM-768), HKDF-SHA256, and AES-256-GCM(-SIV); TLS 1.3 with X25519MLKEM768. The master secret key is Shamir-shared across validators and only reconstructable inside attested enclaves.\n- Hackathon implication: do not promise confidential payments on Arc in a demo. Memos and all transfers are public today."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-7",
+   "title": "Arc overview and architecture: Post-quantum security",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "post-quantum-security\n- Live on mainnet: SLH-DSA-SHA2-128s verification via the precompile at 0x1800…0004. Contracts can verify PQ-signed messages as an app-layer authorization primitive, and the signer doesn't need an Arc account.\n- Future: native PQ wallet signing (likely EIP-8141 frame transactions), PQ privacy (near-term, with APS), offchain infrastructure upgrades (mid-term), and PQ validator signatures (long-term)."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-8",
+   "title": "Arc overview and architecture: Roadmap items (not available yet)",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "- APS privacy, Stablecoin Services (multi-stablecoin gas and paymasters), and native PQ tx signing.\n- Malachite: multi-proposer, fewer consensus rounds, and a possible move from PoA to permissioned PoS.\n- Fee parameters \"may be adjusted before mainnet launch\". This caveat is still printed on the gas pages even though mainnet is live. Read eth_gasPrice live."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-9",
+   "title": "Arc overview and architecture: Mainnet status (important; resolves stale info)",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "- Arc public mainnet launched 2026-09-16 (Circle press release, arc.io blog). Launch partners include Uniswap, Aave, Morpho, Chainlink, MetaMask, and Alchemy.\n- Live check on 2026-09-29: rpc.mainnet.arc.io returns chain 0x13b2, block ~23.3M, and baseFeePerGas 20 gwei. Mainnet block 1 timestamp is 2026-05-15, so the chain ran privately before the public launch.\n- The docs index llms.txt still says \"Arc is currently available on Testnet only\". That line is stale. The reference pages (connect, RPC, contract addresses) all have Mainnet tabs.\n- Mainnet caveats for builders: there is no faucet (\"request gas USDC through your Circle point of contact\", or bridge USDC in via CCTP or Gateway). Arc Studio deploys to testnet only. The ERC-8004 and ERC-8183 docs cover testnet only. Swap works on mainnet and on Arc testnet.\n- Hackathon scoring: \"Mainnet > Testnet\" for traction. \"Real customers transacting in real USDC on mainnet count more\", but test USDC counts (tameion.md)."
+  },
+  {
+   "id": "context-01-arc-overview-and-architecture-md-10",
+   "title": "Arc overview and architecture: Hard forks (node-level)",
+   "source": "https://docs.arc.io/arc-chain",
+   "text": "The arc-node CHANGELOG names hard forks \"ZeroN\". Zero5 (testnet) switched native-USDC events from the NativeCoin* events at 0x1800…0000 to EIP-7708 Transfer from 0xffff…fffE. Mainnet has used EIP-7708 since genesis. Zero7/Zero8 activated on testnet on 2026-09-03 15:00 UTC and on mainnet on 2026-09-10 15:00 UTC (v0.8.0). Zero8 charges a uniform 200-gas penalty for rejected delegatecalls into stateful Arc precompiles. v0.8.0 also changed RPC error strings for insufficient balance: eth_call and eth_estimateGas now return revm OutOfFunds text, and simple transfers return gas required exceeds allowance. Tooling that matches insufficient funds for gas * price + value must be updated (CHANGELOG)."
+  },
+  {
+   "id": "context-01-arc-stablecoins-fx-and-yield-md-1",
+   "title": "Stablecoins, FX, and yield on Arc: Assets",
+   "source": "https://docs.arc.io/arc/concepts/stablecoin-native-model",
+   "text": "| Asset | Mainnet | Testnet | dp | How to get it (testnet) |\n|---|---|---|---|---|\n| USDC | native + 0x3600…0000 | same | 18/6 | faucet.circle.com |\n| EURC | 0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 | 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a | 6 | faucet.circle.com (select EURC) or swap USDC→EURC |\n| USYC | 0x8a5D989Bbb96929F689B0200f435f53dA42bF490 | 0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C | 6 | Allowlist via a Circle Support ticket (24–48h), then the Teller 0x9fdF…105A or usyc.dev.hashnote.com |\n| cirBTC | 0x171A4217b86A807A64eB94757Db6849fb4bDbAA0 | 0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF | 8 | Swap or bridge |\n| WETH (bridged) | 0x128cC466B61f542da60c70e3aA11c10e19B84EDB | 0x2c4047028a72803939b6fb674D01bC059B5C4961 | 18 | Bridge (CCTP expanded assets) |\n\nUSDC and EURC are native to Arc (deployed at genesis, moved crosschain only by CCTP burn/mint, never wrapped)."
+  },
+  {
+   "id": "context-01-arc-stablecoins-fx-and-yield-md-2",
+   "title": "Stablecoins, FX, and yield on Arc: FX options",
+   "source": "https://docs.arc.io/arc/concepts/stablecoin-native-model",
+   "text": "| Option | Model | Use when |\n|---|---|---|\n| App Kit Swap (kit.swap, tokenIn USDC, tokenOut EURC) | Liquidity provider route. 2 bps provider fee plus an optional custom fee (90/10). Default slippage 300 bps. Supports stopLimit. | Agent needs EUR to pay an EU invoice. Works on Arc testnet and mainnet. Sample: arc-stablecoin-fx. |\n| StableFX (Circle) | Enterprise RFQ with onchain settlement through FxEscrow (mainnet 0xe2E5F173576B513d994073CCbDaCBE027d43DFe6, testnet 0xd68256f4D69C6BbEcB873D8588AE0Dc6B8E22E10). Requires a USDC allowance to Permit2 0x000000000022D473030F116dDEE9F6B43aC78BA3. | Institutional size, firm quotes. Access is via Circle (see the Circle section). |\n| Oracles (Pyth, Chainlink, RedStone, Stork, Chronicle) | EUR/USD reference price for sanity checks and forecasting | Validate the swap quote before executing. Let agents check the price first. |"
+  },
+  {
+   "id": "context-01-arc-stablecoins-fx-and-yield-md-3",
+   "title": "Stablecoins, FX, and yield on Arc: Yield on idle treasury cash",
+   "source": "https://docs.arc.io/arc/concepts/stablecoin-native-model",
+   "text": "| Option | Access | Notes |\n|---|---|---|\n| App Kit Earn | Anyone. USDC and EURC on Arc. | Non-custodial vault shares over lending protocols (Morpho named). Performance fee 0–50% and management fee 0–5%/yr come from returns. No same-chain deposit fee. Withdrawal fee 0 (subject to change). Principal can drop in extreme markets. Use exploreVaults({ chain, sortBy: \"apy\" }), getDepositQuote, deposit, getPosition, withdraw. |\n| USYC | Allowlisted, non-US institutions, $100k minimum on mainnet | Tokenized T-bill money market fund. Mint and redeem vs USDC through the Teller. Hackathon slides pitch it as \"the reserve that earns while it waits\". Testnet access needs a support ticket, so plan ahead. |\n| Launch DeFi (Aave, Morpho, Uniswap per press) | Permissionless | Not documented in Arc docs. Check each protocol for Arc addresses. |"
+  },
+  {
+   "id": "context-01-arc-stablecoins-fx-and-yield-md-4",
+   "title": "Stablecoins, FX, and yield on Arc: Treasury-agent pattern (how the pieces fit)",
+   "source": "https://docs.arc.io/arc/concepts/stablecoin-native-model",
+   "text": "1. See: Unified Balance getBalances (crosschain USDC) plus eth_getBalance and balanceOf on Arc, and EURC balanceOf.\n2. Forecast and decide: offchain LLM logic with oracle prices.\n3. Move: kit.unifiedBalance.spend or kit.bridge to bring USDC onto Arc; kit.swap USDC→EURC for EUR payables.\n4. Pay: Memo-wrapped transfers for reconciliation, or Multicall3From for batch payroll.\n5. Park: kit.earn.deposit or USYC for surplus. Withdraw ahead of forecast payables.\n6. Prove: log every tx hash, memoId, and App Kit traceId. Optionally record an ERC-8004 reputation or ERC-8183 job."
+  },
+  {
+   "id": "context-01-arc-transactions-memo-batching-md-1",
+   "title": "Memos, batching, and indexing USDC on Arc: Memo: invoice or order reference on a payment",
+   "source": "https://docs.arc.io/arc/concepts/transaction-memos",
+   "text": "Contract (mainnet and testnet): 0x5294E9927c3306DcBaDb03fe70b92e01cCede505\n\n- The Memo contract forwards data to target through the CallFrom precompile, so USDC sees your EOA as msg.sender, not the Memo contract.\n- Log order: BeforeMemo(i), then the target's events (e.g. USDC Transfer), then Memo(...). Nested memos are supported.\n- If the child reverts, the whole tx reverts with MemoFailed(bytes).\n- EOA only. Calls from ERC-4337 smart accounts, Circle modular wallets, Circle SCA wallets, or Safe revert because sender spoofing is not allowed. A STATICCALL or DELEGATECALL into Memo also fails. Calling CallFrom directly from an EOA reverts with unauthorized caller. For SCA-based agents, either sign a separate EOA memo tx or keep the metadata offchain.\n- Memo data is public. Don't put PII or confidential invoice contents in it. Use a hash or opaque ID."
+  },
+  {
+   "id": "context-01-arc-transactions-memo-batching-md-2",
+   "title": "Memos, batching, and indexing USDC on Arc: Multicall3From: atomic batch payouts that keep the sender",
+   "source": "https://docs.arc.io/arc/concepts/transaction-memos",
+   "text": "Contract (both networks): 0x522fAf9A91c41c443c66765030741e4AaCe147D0\n\n- Each subcall runs with msg.sender = the calling EOA, so USDC.transfer debits your wallet directly with no approval to a batcher.\n- Constraints: EOA only. There is no aggregate3Value, because CallFrom doesn't forward native value, so pay through the ERC-20 interface. It emits no batch event; verify one USDC Transfer per subcall with from = your wallet.\n- Use allowFailure: false for all-or-nothing payroll. Simulate first (simulateContract).\n\nYou can nest: a Multicall3From subcall can target Memo, which lets one batch carry a memo per payee. The docs don't show this, so test it on testnet first.\n\nCompliance note: offchain blocklist and screening systems must account for Memo and Multicall3From routing, because the original caller appears as the sender in subcalls (contract-addresses warning, compliance how-to)."
+  },
+  {
+   "id": "context-01-arc-transactions-memo-batching-md-3",
+   "title": "Memos, batching, and indexing USDC on Arc: Standard Multicall3 (reads)",
+   "source": "https://docs.arc.io/arc/concepts/transaction-memos",
+   "text": "0xcA11bde05977b3631167028862bE2a173976CA11. viem's multicall uses it automatically (it's in the chain definition)."
+  },
+  {
+   "id": "context-01-arc-transactions-memo-batching-md-4",
+   "title": "Memos, batching, and indexing USDC on Arc: EIP-3009 gasless USDC (user signs, relayer pays gas)",
+   "source": "https://docs.arc.io/arc/concepts/transaction-memos",
+   "text": "USDC EIP-712 domain on Arc testnet: { name: \"USDC\", version: \"2\", chainId: 5042002, verifyingContract: \"0x3600000000000000000000000000000000000000\" } (mainnet: same, but chainId: 5042). name() returns \"USDC\" and version() returns \"2\" on both networks (eth_call, 2026-09-29). Note that the name is \"USDC\", not \"USD Coin\" as on Ethereum.\n\nThis is the basis of x402 \"exact\" payments. receiveWithAuthorization also exists on FiatToken. A blocklisted from or to reverts and burns the relayer's gas."
+  },
+  {
+   "id": "context-01-arc-transactions-memo-batching-md-5",
+   "title": "Memos, batching, and indexing USDC on Arc: Detecting incoming USDC (AR agents, deposit watchers)",
+   "source": "https://docs.arc.io/arc/concepts/transaction-memos",
+   "text": "Two emitters, same topic0 = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef:\n\n| Emitter | Decimals | Fires on |\n|---|---|---|\n| 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE (system, EIP-7708) | 18 | Every USDC movement: native sends, the ERC-20 transfer's native leg, mint/burn (from/to = 0x0), CREATE endowments, SELFDESTRUCT |\n| 0x3600000000000000000000000000000000000000 (ERC-20) | 6 | ERC-20 interface calls only |\n\nRules: to catch all incoming USDC, filter the system emitter. Filtering 0x3600… misses plain native sends. Never sum both streams, since one ERC-20 transfer logs twice. The system log comes first in the tx. There is no log for zero-value transfers, self-transfers, or gas. Credit after 1 confirmation (final).\n\nEURC, cirBTC, and other ERC-20s still use their own contract Transfer events.\nTo backfill testnet history from before Zero5, read NativeCoinTransferred, NativeCoinMinted, and NativeCoinBurned from 0x1800…0000 (usdc-system-events).\nAlternatives: Circle Contracts event monitors and webhooks (monitor-contract-events), and the indexers in ecosystem-and-infrastructure.md (Alchemy webhooks, Goldsky, Envio, The Graph, Zerion subscriptions)."
+  },
+  {
+   "id": "apps-docs-content-docs-en-architecture-mdx-0",
+   "title": "Architecture: One brain",
+   "source": "https://docs.getkawase.xyz/docs/architecture",
+   "text": "agentTurn() in packages/agent serves chat and voice alike: the voice worker sends what it heard to the same turn,\nwith the same tools, limits and thread. The model (OpenAI gpt-5.6-luna by default, chosen through a model registry) only\nproposes: no tool takes a network, an address or an \"approve\" flag. Code resolves the recipient, runs the policy, builds\nthe transaction and executes it."
+  },
+  {
+   "id": "apps-docs-content-docs-en-architecture-mdx-1",
+   "title": "Architecture: Pure policy, explicit intents",
+   "source": "https://docs.getkawase.xyz/docs/architecture",
+   "text": "- packages/policy is a pure function from facts to results (errors, refusals, preconditions, clarifications, warnings)\n  plus the route: the allowance or a wallet signature. It runs when a card is drafted, again on approval with fresh\n  facts, and again at execution.\n- packages/intents defines each action as a versioned, EIP-712-hashed draft (SendDraft, SwapDraft, BridgeDraft,\n  EarnDraft). An approval names the exact version it approves; a change makes a new version.\n- Resolve and resume: when something is missing (a contact, a currency, a sign-in), the fix continues the same intent\n  instead of starting over."
+  },
+  {
+   "id": "apps-docs-content-docs-en-architecture-mdx-2",
+   "title": "Architecture: Money paths",
+   "source": "https://docs.getkawase.xyz/docs/architecture",
+   "text": "- Allowance sends: a spend-ledger reservation under a per-user lock, then Kawase's agent wallet (a Circle\n  developer-controlled wallet) redeems your delegation; the receipt's Transfer log is compared with the draft.\n- Wallet-signed actions (above the allowance, swaps, bridges, earn): the api builds the exact transaction — for App\n  Kit operations, the kit's calls are captured and checked, then wrapped into one EIP-7702 self-batch — the device signs\n  it with Face ID, and the api verifies the signed bytes against the draft before broadcasting.\n- Bridges are tracked in three legs: the burn on Arc, Circle's attestation, and the mint on the destination chain.\n- Automations run in the api's runner every 30 seconds: each occurrence is claimed exactly once, re-checked on fresh\n  facts and paid through the same send, earn or bridge path under the automation's own grant.\n- Idempotency everywhere: a Circle idempotency key is stored before calling Circle; raw transactions store their hash\n  before broadcast; ambiguous outcomes become unknown_outcome and are only re-checked, never re-sent."
+  },
+  {
+   "id": "apps-docs-content-docs-en-architecture-mdx-3",
+   "title": "Architecture: Data",
+   "source": "https://docs.getkawase.xyz/docs/architecture",
+   "text": "Postgres 17 with Drizzle is the only store and the only message bus: an outbox written in the same transaction as each\nchange, pg_notify to fan events out over server-sent events, and an inbox table as the source of truth for\nnotifications. Money is stored as exact base units (numeric(78,0), bigint in TypeScript); ids are UUIDv7."
+  },
+  {
+   "id": "apps-docs-content-docs-en-availability-mdx-0",
+   "title": "What works today",
+   "source": "https://docs.getkawase.xyz/docs/availability",
+   "text": "This page is generated from the code. Kawase keeps one capability registry (packages/config/src/capabilities.ts): the\napp reads it to decide what to offer, and the agent reads it before it proposes anything. The docs import the same\nregistry when the site is built, so they cannot promise more than the app does.\n\n- Available: shipped and offered on that network.\n- Coming: part of the product plan, not shipped yet. Areas of the plan that the registry does not list yet are shown\n  as coming as well.\n- Not on this network: by design (for example, test money exists only on testnet)."
+  },
+  {
+   "id": "apps-docs-content-docs-en-availability-mdx-1",
+   "title": "What works today: What each capability covers",
+   "source": "https://docs.getkawase.xyz/docs/availability",
+   "text": "A capability being available doesn't mean every variation of it works. The registry also says, precisely, what runs today\nand what doesn't yet — the agent uses the same text to answer \"can you…?\" honestly."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-0",
+   "title": "FAQ: Is Kawase a bank or a custodian?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "No. Your money sits in your own account on Arc. Kawase holds permissions you signed — a daily allowance and one grant\nper automation — and the chain enforces their limits. See the safety model."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-1",
+   "title": "FAQ: Do I need crypto experience?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "No. You talk to Kawase like you would to a person: \"send 20 dollars to Alex\". There are no seed phrases, gas settings or\nPINs. Sign in with an email code, Apple or Google."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-2",
+   "title": "FAQ: Does the AI decide where my money goes?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "It proposes; code decides and the chain enforces. The model cannot choose the network, invent an address or approve a\npayment. Inside your allowance it sends to people you've paid before or named; anything else waits for your Face ID."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-3",
+   "title": "FAQ: What if the AI misunderstands me?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "Every action is shown as a card with the exact amount, currency, recipient and network before anything moves, and what was\nheard by voice is always shown in words. A newer request in the same conversation cancels an older open card, so an old card\ncan't be approved by mistake."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-4",
+   "title": "FAQ: What does it cost?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "Kawase pays the network fee to set your wallet up and for payments inside your allowance. For payments you sign yourself,\na small USDC network fee is shown on the card. Bridges show the provider's fee before you confirm; swaps show the rate and\nfees."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-5",
+   "title": "FAQ: Which countries and currencies?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "Kawase works with USDC (dollars) and EURC (euros) on Arc today, in ten languages. More tokens are on the way — see\nwhat works today."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-6",
+   "title": "FAQ: What happens to a payment if my phone dies mid-way?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "Nothing is lost or doubled. Each payment is recorded before it is sent; Kawase keeps checking the network until it knows\nthe outcome, and only a receipt with the exact transfer marks it paid. Automations are claimed once per run and recovered\nafter a restart."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-8",
+   "title": "FAQ: Why does testnet exist in the app?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "So you can try everything — sends, swaps, bridges, automations, voice — with free test money before using real money. The\nheader pill switches networks in one tap."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-9",
+   "title": "FAQ: Is the code open?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "The repository is Blockchain-Oracle/kawase on GitHub; it is being made public\nfor the hackathon submission."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-0",
+   "title": "Automations",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "Automations are where an agent earns its keep: things that should happen without you opening the app. Every automation\nruns unattended, but inside an on-chain grant you sign once — so even Kawase itself cannot make it do more."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-1",
+   "title": "Automations: Scheduled payments",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "\"Every Friday at 9 send 10 dollars to Alex.\" Kawase reads it back with the next runs and the maximum it could ever move,\nthen you turn it on with one Face ID. That signs the automation's own grant: it may only transfer that token, only\nto Alex's address (pinned on chain), and only up to the amount per period. Schedules: every day, every week on a weekday,\nor every month on day 1–28, in your own time zone.\n\nEach run happens exactly once: if Kawase's server restarts mid-run, the run is recovered under the same id, never\npaid twice. A run that can't go ahead (not enough money, over a limit) is skipped with a reason in your inbox."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-2",
+   "title": "Automations: Auto-save",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "\"Keep 100 dollars in my wallet and save the rest.\" Auto-save keeps that amount ready and moves anything above it into your\nown vault savings (see Earn); when your wallet drops below the line, it tops it back up from\nsavings. It checks daily and whenever money arrives. Its grants only allow moving USDC between your wallet and your own\nsavings — never anywhere else."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-3",
+   "title": "Automations: Rules",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "\"When my balance goes above 500, bridge what's above 400 to my Base address.\" Rules have:\n\n- a trigger: the balance goes above or below an amount, or money arrives (optionally from someone, or at least an\n  amount);\n- an action: bridge USDC to your own address on another network (the route fee is capped on chain), save it into your\n  vault, or just alert you;\n- an amount: what is above a line, a share of the money that arrived, or a fixed amount.\n\nA balance rule fires once per crossing and re-arms when the balance goes back."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-4",
+   "title": "Automations: Managing them",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "From the Automations screen or in chat: list, pause, resume, skip the next run, and cancel. Cancelling\nalso revokes the grant on chain, so the permission is gone, not just hidden."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-0",
+   "title": "Bridge and withdraw: Bridge USDC out of Arc (today)",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "\"Move 20 dollars to Base\" or the Bridge screen. Kawase moves USDC from Arc to your own address on Base, Ethereum,\nArbitrum, Optimism, Polygon or Avalanche through Circle CCTP with Circle's forwarder:\n\n- Your USDC is burned on Arc and minted on the destination network by Circle; you need no gas on the other side. The\n  fee comes out of the amount and is shown before you confirm.\n- It takes about a minute. The card follows three steps: the burn on Arc, Circle's attestation, and the mint on the\n  destination network — and it checks the money actually arrived at your address there.\n- You confirm with one Face ID. The approval and the burn go as one transaction from your wallet. The fee is capped:\n  if the route's fee rises above the cap you were shown, nothing is sent."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-1",
+   "title": "Bridge and withdraw: Routes compared",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "Before you confirm, Kawase can compare the same transfer across providers and rank them by what actually arrives:\n\n- Circle CCTP — the route Kawase executes today.\n- LI.FI (both networks), Relay and deBridge (mainnet) — quoted for comparison only today.\n- Across and Relay as executed routes, and bridging into Arc, are being added."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-2",
+   "title": "Bridge and withdraw: Withdraw anywhere (coming)",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "Today you can already send USDC or EURC to any address on Arc — including an exchange's Arc deposit address — and\nbridge USDC to your own address on the six networks above. Withdrawing to any address on another network (a friend,\nan exchange elsewhere) in one step is coming.\n\nIf you ever need to leave without Kawase, see Withdraw without Kawase."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-buy-mdx-0",
+   "title": "Buy with Apple Pay or card",
+   "source": "https://docs.getkawase.xyz/docs/features/buy",
+   "text": "Buying is planned through Circle's Onramp Kit: pay with a debit card, Apple Pay or Google Pay and receive USDC or EURC\ndirectly in your Kawase wallet on Arc. The session is created by Kawase's server and opened in a secure browser sheet;\nKawase marks the purchase complete only when the money is confirmed on chain.\n\nTo buy any other token with Apple Pay, the plan is to buy USDC first and then swap in one approval, with both fees shown\nbefore you pay.\n\nThis is coming: it is not available in the app yet. Until it is, on testnet you can use the free\nfaucet; on mainnet you can receive USDC from any wallet or exchange that sends to\nArc."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-contacts-and-handles-mdx-0",
+   "title": "Contacts and @handles: Contacts",
+   "source": "https://docs.getkawase.xyz/docs/features/contacts-and-handles",
+   "text": "A contact is a name (and nicknames) with one or more addresses. Kawase uses contacts to understand \"send to Alex\" and to\nprotect you:\n\n- Address changes are held. When a contact's address changes, the new address waits 24 hours before money can go to\n  it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.\n- Look-alike addresses are flagged. An address whose first and last four characters match one of your contacts' is\n  treated as a look-alike: Kawase stops and asks for Face ID.\n- Payment history builds trust per address and per network: a first payment to an address is treated more carefully\n  than a repeat one.\n\nIf you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment — you don't\nhave to start over."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-contacts-and-handles-mdx-1",
+   "title": "Contacts and @handles: @handles",
+   "source": "https://docs.getkawase.xyz/docs/features/contacts-and-handles",
+   "text": "A @handle is an optional public name you can be paid by: \"send 10 to @abu\". Rules:\n\n- 3 to 20 characters: lowercase letters, digits and underscore.\n- Unique regardless of case; names that would impersonate Kawase, Arc, Circle or staff are reserved.\n- You choose it during onboarding (or skip) and can change it in Settings.\n\nA handle resolves to the person's Kawase wallet address. If the person hasn't set up a wallet yet, Kawase tells you\ninstead of guessing."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-0",
+   "title": "Earn and borrow: Earn with Morpho vaults (today)",
+   "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
+   "text": "\"Put 50 dollars in savings\" or the Earn screen. Kawase lists the Morpho vaults available through Circle's App Kit\nEarn on Arc (on testnet: Arc Testnet's mock vaults) with readable names and their rates, and:\n\n- Deposits USDC into the vault you pick — or the best active one when you don't say — with a minimum number of vault\n  shares checked against the vault's own preview.\n- Withdraws any amount back to your wallet, paying at least the amount shown.\n- Shows your positions, read live from the vaults on chain (never stored by Kawase).\n\nEach deposit or withdrawal is one Face ID, sent as one transaction. Auto-save uses the\nsame vaults to keep your savings topped up by itself."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-1",
+   "title": "Earn and borrow: More yield and borrowing (coming)",
+   "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
+   "text": "The plan compares every source that accepts your asset — Aave V4, Morpho vaults directly and others — showing the\nrate, how much can be withdrawn right now, size and risk, and hides sources you couldn't exit. Borrowing USDC or EURC\nagainst collateral (for example on Aave V4) is planned with a health gauge, repay and add-collateral actions, and\nliquidation alerts in your inbox. Both are coming."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-languages-mdx-0",
+   "title": "Ten languages",
+   "source": "https://docs.getkawase.xyz/docs/features/languages",
+   "text": "Kawase speaks the world's most widely spoken languages, everywhere in the app:\n\n| Language | Name in the language | Direction |\n|---|---|---|\n| English | English | left to right |\n| Chinese | 中文 | left to right |\n| Hindi | हिन्दी | left to right |\n| Spanish | Español | left to right |\n| French | Français | left to right |\n| Arabic | العربية | right to left |\n| Bengali | বাংলা | left to right |\n| Portuguese | Português | left to right |\n| Russian | Русский | left to right |\n| Urdu | اردو | right to left |\n\n- From the first screen. The language pill is on the first onboarding panel and every screen after it; changing it is\n  instant, direction included.\n- Every string in every language. The app's ten catalogs are complete; the agent replies in your language and\n  voice hears and speaks all ten.\n- Amounts stay exact. Numbers are formatted for your language, while amounts, addresses and codes stay left-to-right\n  so they can be checked character by character.\n- These docs are available in the same ten languages (use the language switch in the sidebar)."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-marketplace-mdx-0",
+   "title": "x402 marketplace",
+   "source": "https://docs.getkawase.xyz/docs/features/marketplace",
+   "text": "x402 is an open standard for paying for a web request with stablecoins: the service answers \"402 Payment Required\"\nwith a price, the client pays in USDC and gets the result. Kawase's plan is to let the agent find and pay for services\nfrom Circle's x402 catalog on your behalf, strictly inside a budget:\n\n- a separate marketplace wallet whose balance is the hard cap,\n- limits per call, per session and per day, set by you,\n- every purchase shown with its price, the service and the result.\n\nCircle's catalog lists mainnet services only, so the marketplace is planned for mainnet and is not on testnet. It is\ncoming: not available in the app yet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-network-toggle-mdx-0",
+   "title": "The network toggle",
+   "source": "https://docs.getkawase.xyz/docs/features/network-toggle",
+   "text": "Kawase works on two networks: Arc mainnet, where money is real, and Arc testnet, where it is not. The network\npill in the header switches between them in one tap, both ways, like dark mode.\n\n- New accounts start on testnet, and anything missing or unreadable falls back to testnet: the safe direction.\n- The first switch to mainnet shows a short \"Real money\" consent; after that it is instant.\n- Always visible, never colour alone. On testnet a strip says \"Testnet · no real money\"; on mainnet, money cards carry a\n  REAL MONEY label. The pill names the network, and the voice orb changes colour (lime on mainnet, sky blue on\n  testnet).\n- Your wallet is the same on both: one address, the same contacts and settings. Balances and activity are per network.\n- The server decides. The network is part of your session on the server, never chosen by the AI model; every payment\n  carries the network it was prepared for, and a mismatch stops it.\n\nWhen something exists on only one network — the faucet on testnet, the x402 marketplace on mainnet — Kawase says so and\noffers to switch rather than failing. See networks for the full comparison."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-notifications-mdx-0",
+   "title": "Notifications",
+   "source": "https://docs.getkawase.xyz/docs/features/notifications",
+   "text": "Kawase's inbox is the record: every payment received, request paid, payment completed, automation skipped and rule\nalert lands there, and tapping one opens the right screen.\n\nOn top of the inbox, Kawase can tell you by push (on your phone) and email. In Settings → Notifications you choose,\nper event and per channel, what reaches you. The defaults:\n\n| Event | Push | Email |\n|---|---|---|\n| Money received | on | on |\n| Your request was paid | on | on |\n| Your payment completed | on | off |\n| An automation was skipped | on | on |\n| A rule alert | on | on |\n\nQuiet hours in your own time zone hold push notifications until morning; email still goes. Security events can never\nbe muted.\n\nEach notification is delivered at most once per channel, even if Kawase retries. Push and email delivery are built into\nthe app and the server; they switch on as the push (Apple and Google) and email provider accounts are connected for the\npublic release. The inbox works today."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-0",
+   "title": "Send, receive and request: Send",
+   "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
+   "text": "Say or type who and how much — \"send 20 dollars to Alex\", \"pay @mira 5 euros\" — or use the Send screen. Kawase:\n\n1. Finds the recipient: a saved contact, a Kawase @handle, or an 0x… address you typed yourself. The agent can only\n   use an address that came from your contacts or appears word for word in your own message.\n2. Picks the currency you hold, or asks if it is unclear.\n3. Checks everything at once: your balance, your limits, whether this is a first payment to that address, whether the\n   address looks like one of your contacts' (a look-alike), and whether a contact's address changed recently.\n4. Shows the payment card with the exact amount, currency, recipient and network.\n\nThen one of two things happens:\n\n| Situation | What you do |\n|---|---|\n| USDC, inside what is left of today's allowance, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |\n| Above the allowance, any EURC payment, a first payment to a new address above the threshold, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |\n\nA payment is only marked paid when the network's receipt shows the exact transfer. If the answer is unclear, the card\nsays \"still checking\" and Kawase keeps looking; it never sends twice."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-1",
+   "title": "Send, receive and request: Receive",
+   "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
+   "text": "Your wallet has one address on both networks. Open Receive for the address and its QR code. Payments that arrive are\nnoticed by Kawase's watcher, show up in Activity and the inbox, and can wake your automations."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-2",
+   "title": "Send, receive and request: Request",
+   "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
+   "text": "Ask \"request 15 dollars from Sam for dinner\" or open Request. Kawase creates a payment request in USDC or EURC with a\nshareable link. The person paying can open it in the web app; the request is marked paid when a Kawase payment or a\nmatching plain transfer arrives."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-0",
+   "title": "Swap and trade: Swap USDC ↔ EURC (today)",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "\"Swap 10 dollars to euros\" or the Swap screen. Kawase gets a quote through Circle's App Kit and shows:\n\n- the amount you give and the amount you get, at least,\n- Circle's market rate next to the quoted rate, and the fees,\n- a warning if the quote is noticeably worse than the market rate; a quote far worse is refused.\n\nOn mainnet the guaranteed minimum is 1% under the quote (2% on testnet, where pools are thin). The route itself is built\nat half that tolerance, so a small move between the quote and your confirmation still clears the minimum.\n\nYou confirm every swap yourself with one Face ID — swaps are never covered by the everyday allowance. The approval and\nthe swap go to the network as one transaction (an EIP-7702 batch from your own wallet), so either both happen or\nneither does. Kawase marks the swap complete only when the receipt shows the exact amount leaving your wallet and at least\nthe minimum arriving."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-1",
+   "title": "Swap and trade: Any token, meme coins, long and short (coming)",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "The plan is to make every token on Arc first-class: see everything your address holds, swap any listed token with quotes\ncompared across aggregators, and trade meme coins with safety checks (copycat detection, token risk data and your own\ntoken rules capping the risk). Long and short positions (perpetual futures) on Arc's perps venues are planned the same\nway: a clear ticket with leverage, liquidation price and take-profit/stop-loss, confirmed with Face ID.\n\nThese are marked coming in the matrix above until they ship; nothing here is presented as available before it is."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-voice-mdx-0",
+   "title": "Voice",
+   "source": "https://docs.getkawase.xyz/docs/features/voice",
+   "text": "Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it shows the words it heard, answers aloud,\nand puts the same cards on screen as chat does.\n\n- One conversation. What you said by voice is in your chat thread, and typing picks it up where you left off.\n- What was heard is always shown before anything is confirmed.\n- A spoken \"yes\" never approves a payment. A send by voice is prepared on its card and waits for your tap and Face ID\n  (fingerprint or screen lock on Android) — even inside your daily allowance.\n- The orb shows the network: lime on mainnet, sky blue on testnet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-voice-mdx-1",
+   "title": "Voice: Languages and voices",
+   "source": "https://docs.getkawase.xyz/docs/features/voice",
+   "text": "Kawase hears all ten languages with ElevenLabs Scribe v2 (realtime). It speaks with ElevenLabs Flash v2.5 in English,\nSpanish, French, Portuguese, Russian, Chinese, Hindi and Arabic, and with OpenAI's speech model in Bengali and Urdu, which\nFlash v2.5 does not cover."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-voice-mdx-2",
+   "title": "Voice: How it works",
+   "source": "https://docs.getkawase.xyz/docs/features/voice",
+   "text": "The phone joins a LiveKit room over WebRTC. Kawase's voice worker turns speech into text, runs the same agent turn as\nchat (same tools, same limits, same thread), and speaks the answer while the cards arrive on your screen."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-0",
+   "title": "Getting started: 1. Open the app",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "Open kawase.84.46.247.92.sslip.io in any modern browser. You start as a\n    guest: no sign-up, no email. You can chat with Kawase, look around every screen and see what it would do.\n\n    On the web, an email code stands in for Face ID wherever a payment needs your confirmation. Voice is not in the web\n    app yet; typing works everywhere.\n  \n  \n    Kawase for iPhone is distributed through TestFlight while it is in beta. Install TestFlight from the App Store,\n    then open the invite link you were given. A public TestFlight link will be published on the showcase page when it is\n    available.\n  \n  \n    Download the Android build (APK) from Expo:\n    build e644e19d.\n    Open it on the phone and allow the install. On Android the confirmation is your fingerprint or screen lock."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-1",
+   "title": "Getting started: 2. Pick your language",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "The language pill is on the very first screen. Kawase speaks ten languages, and Arabic and\nUrdu switch the whole layout to right-to-left at once. You can change it again at any time in Settings."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-2",
+   "title": "Getting started: 3. Sign in when you want to keep things",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "Guests can explore everything. To hold money, sign in with:\n\n- an email code,\n- Apple, or\n- Google.\n\nThere is no password and no PIN. Signing in creates your wallet (see safety): one address that works on\nboth networks. Everything you did as a guest — your chat, your contacts — moves into your account.\n\nSetting the wallet up costs you nothing: you sign one authorization and Kawase pays the network fee."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-3",
+   "title": "Getting started: 4. Get test money",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "New accounts start on testnet, where money has no value. Ask Kawase \"get me test money\" or open the faucet from the\nhome screen. Each claim brings about 20 test USDC and 20 test EURC from Circle's faucet, once a day. If the in-app\nclaim is refused, Circle's own faucet is at faucet.circle.com (choose \"Arc Testnet\")."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-4",
+   "title": "Getting started: 5. Accept your daily allowance",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "Kawase asks you once to accept an everyday allowance: an amount of USDC per day that the agent may send for you without\nasking again. You approve it with one Face ID. The default is shown on the card before you approve; see the\nlimits table."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-5",
+   "title": "Getting started: 6. Make your first payment",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "Type or say, for example:\n\n> send 1 dollar to @kawasedemo\n\nKawase finds the recipient, checks your balance and limits, and shows the payment card: exact amount, currency, recipient\nand network. Inside your allowance it sends at once; above it, it waits for your Face ID. The card follows the payment\nuntil the network confirms it, and the receipt links to the block explorer."
+  },
+  {
+   "id": "apps-docs-content-docs-en-getting-started-mdx-6",
+   "title": "Getting started: 7. Try the rest",
+   "source": "https://docs.getkawase.xyz/docs/getting-started",
+   "text": "- \"swap 2 dollars to euros\"\n- \"move 1 dollar to Base\"\n- \"put 5 dollars in savings\"\n- \"every Friday at 9 send 1 dollar to Alex\"\n- \"keep 20 dollars in my wallet and save the rest\"\n\nEach one shows a card first and tells you exactly what it needs from you."
+  },
+  {
+   "id": "apps-docs-content-docs-en-index-mdx-0",
+   "title": "What Kawase is",
+   "source": "https://docs.getkawase.xyz/docs",
+   "text": "Kawase (為替, \"exchange\" in Japanese) is a money app with an AI agent at its centre, built for Arc, Circle's stablecoin\nnetwork. You tell it what you want — \"send 20 dollars to Alex\", \"swap half my euros to dollars\", \"every Friday put 10\ndollars aside\" — by voice or by typing, in any of ten languages. Kawase works out the details, shows you exactly what will\nhappen, and does it."
+  },
+  {
+   "id": "apps-docs-content-docs-en-index-mdx-1",
+   "title": "What Kawase is: One app for everything on Arc",
+   "source": "https://docs.getkawase.xyz/docs",
+   "text": "The goal is that anything a person can do with money on Arc, they can do by asking Kawase:\n\n- Send, receive and request USDC and EURC, to a saved contact, a Kawase @handle or any address.\n- Swap and trade: USDC ↔ EURC today; any token on Arc, meme coins and long/short positions (perps) are being added.\n- Buy with Apple Pay or a card through Circle's Onramp Kit.\n- Bridge and withdraw: move USDC from Arc to six other networks over Circle CCTP, with other bridges (Across, Relay)\n  compared; withdraw anywhere.\n- Earn and borrow: Morpho vaults today; Aave V4 and borrowing are being added.\n- Automations: scheduled payments, Auto-save and rules that run by themselves inside limits you sign once.\n- The x402 marketplace: pay for services and APIs per call, inside a budget.\n- Voice on iPhone and Android, and the whole app in ten languages.\n\nNot all of this has shipped. The availability page is generated from the same capability registry the\napp and the agent read, so it always says honestly what runs today and what is coming:"
+  },
+  {
+   "id": "apps-docs-content-docs-en-index-mdx-2",
+   "title": "What Kawase is: Why an agent, and why it is safe",
+   "source": "https://docs.getkawase.xyz/docs",
+   "text": "Most money apps make you find the right screen. Kawase lets you say what you mean, and the agent fills in the rest: who\n\"Alex\" is, which currency you hold, which route is cheapest. What it can never do is move money beyond what you allowed:\n\n- Inside your daily allowance the agent just sends and tells you — no prompt. The allowance is an on-chain limit you\n  signed once; the chain refuses anything above it.\n- Above the allowance, for a new recipient over a threshold, a look-alike address, a swap or a bridge, you confirm with\n  Face ID (fingerprint or screen lock on Android, an email code on the web).\n- Automations run unattended, but each one is pinned on chain to its recipient and amount per period.\n\nRead the safety model for the details."
+  },
+  {
+   "id": "apps-docs-content-docs-en-index-mdx-3",
+   "title": "What Kawase is: Two networks, one tap",
+   "source": "https://docs.getkawase.xyz/docs",
+   "text": "Kawase runs on Arc mainnet (real money) and Arc testnet (test money, free from the in-app faucet). New accounts\nstart on testnet. The network pill in the header switches between them in one tap, like dark mode; the app, the orb and\nevery money card always say which one you are on. See networks."
+  },
+  {
+   "id": "apps-docs-content-docs-en-index-mdx-4",
+   "title": "What Kawase is: Where to try it",
+   "source": "https://docs.getkawase.xyz/docs",
+   "text": "- Web app, no install, starts as a guest: kawase.84.46.247.92.sslip.io\n- iPhone (TestFlight) and Android (APK): see getting started."
+  },
+  {
+   "id": "apps-docs-content-docs-en-networks-mdx-0",
+   "title": "Networks",
+   "source": "https://docs.getkawase.xyz/docs/networks",
+   "text": "Arc is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under\na second. Kawase supports exactly two Arc networks.\n\n| | Arc mainnet | Arc testnet |\n|---|---|---|\n| Money | Real | Test money with no value |\n| Chain ID | 5042 | 5042002 |\n| Explorer | explorer.arc.io | testnet.arcscan.app |\n| Getting money | Receive from any wallet or exchange that sends to Arc; buying with Apple Pay or card is coming | The in-app faucet (about 20 USDC + 20 EURC a day) |\n| Earn | Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |\n| Bridge destinations | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | their test networks (Base Sepolia, Ethereum Sepolia, …) |\n| x402 marketplace | Planned (Circle's catalog is mainnet-only) | Not available |\n| Default limits | Lower | Ten times higher (no real money at risk) |\n| Where new accounts start | | ✓ |\n\nEvery flow in Kawase has been run end to end with real transactions on Arc testnet; the evidence is linked from the\nshowcase's demo page. The availability below is what the app offers on each network:"
+  },
+  {
+   "id": "apps-docs-content-docs-en-networks-mdx-1",
+   "title": "Networks: How Kawase keeps them apart",
+   "source": "https://docs.getkawase.xyz/docs/networks",
+   "text": "- One tap to switch, both ways: see the network toggle.\n- The network is shown three ways: the header pill, the testnet strip or the REAL MONEY label, and the orb's colour.\n- The server owns the choice. Every payment is prepared for one network and carries it to the end; if the network\n  changes in between, the payment stops instead of crossing over.\n- One wallet address on both networks, with balances, activity and limits kept per network."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-0",
+   "title": "Safety model",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "Kawase lets an AI move money for you. That only works if what it can do is small, visible and enforced by the\nnetwork — not by trust in the AI or in Kawase's servers. This page describes how."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-1",
+   "title": "Safety model: Your wallet",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "- When you sign in (email code, Apple or Google), Kawase creates an ordinary Ethereum-style account (an EOA) whose key\n  is held by Turnkey in secure hardware, inside a sub-organization that belongs to you. There is no PIN and no\n  password. It is one address on both networks.\n- Kawase then upgrades that same account in place with EIP-7702, pointing its code at MetaMask's audited\n  EIP7702StatelessDeleGator. You sign one authorization; Kawase's relayer sends it and pays the fee, so setup costs you\n  nothing.\n- After the upgrade your account can grant delegations (ERC-7710, from MetaMask's Delegation Framework): narrow,\n  signed permissions with limits built in. Those are the only way the agent can ever move your money without you."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-2",
+   "title": "Safety model: Two ways a payment is authorized",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "| | Inside your everyday allowance | Everything else |\n|---|---|---|\n| What it covers | USDC payments up to what is left of today's allowance, to someone you've paid before or named in this request | Above the allowance, any EURC payment, a first payment to a new address above the threshold, look-alike addresses, every swap, bridge and vault move, any change to your limits |\n| What you do | Nothing. Kawase sends and tells you. | Face ID (fingerprint or screen lock on Android; an email code on the web) |\n| What enforces it | The chain: your signed allowance delegation | Your signature over the exact transaction |\n\n### The everyday allowance\n\nYou accept it once, with one Face ID, during setup. It is a delegation from your account to Kawase's agent wallet with\nthese limits written into it — decoded from the signed bytes and shown to you as a receipt before you sign:\n\n- Token: USDC only, and only its transfer function.\n- Amount: up to the daily allowance per 24-hour period (an on-chain period cap).\n- Who may use it: only Kawase's agent wallet (a redeemer lock). A copy of the permission is useless to anyone else.\n- Expiry: 90 days, after which it is dead and you accept a new one.\n- No native value: nothing in it allows sending the network's gas token.\n\nThe chain refuses anything outside those limits — a larger amount, another token, another function, after expiry or after\nyou revoke…"
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-3",
+   "title": "Safety model: Automations: pinned on chain",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "Each automation gets its own grant, signed with one Face ID when you turn it on:\n\n- Scheduled payments: transfer only, pinned to one recipient, at most the amount per period, expiring when the\n  automation ends.\n- Auto-save: may only move USDC between your wallet and your own vault savings.\n- Bridge rules: may only bridge USDC to your own address, with the route fee capped.\n\nCancelling an automation revokes its grant on chain in the same step."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-4",
+   "title": "Safety model: What the agent can never do",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "- Move more than your allowance in a day, or use the allowance for anything other than a USDC transfer.\n- Send to a recipient other than the one an automation's grant is pinned to.\n- Swap, bridge, pay in EURC, pay a look-alike address or raise your limits without your Face ID.\n- Approve a payment because of a spoken \"yes\": voice payments always wait for your tap.\n- Invent an address: addresses come only from your contacts or from your own message, word for word.\n- Choose the network: that is part of your session on the server, and every payment is checked against it.\n- Mark something as paid without proof: only a receipt with the exact transfer counts. An unclear outcome is shown as\n  \"still checking\" and never retried automatically, so nothing is paid twice."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-5",
+   "title": "Safety model: Default limits",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "On top of the on-chain allowance, Kawase's policy engine checks your limits before anything is prepared (two taps at once\ncannot both fit under the same limit):"
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-6",
+   "title": "Safety model: Revoke and pause",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "- Revoke the allowance: Wallet & limits → Revoke (press and hold to confirm). It is one ordinary transaction from your\n  wallet that disables the delegation on chain; the agent can no longer send anything without your Face ID.\n- Pause, skip or cancel any automation from the Automations screen or in chat; cancelling revokes its grant.\n- Pause everything at once (all automations and agent spending) is enforced by the server already; the switch for it\n  in Settings is coming.\n- Leave entirely: see Withdraw without Kawase."
+  },
+  {
+   "id": "apps-docs-content-docs-en-safety-mdx-7",
+   "title": "Safety model: Proof",
+   "source": "https://docs.getkawase.xyz/docs/safety",
+   "text": "Every step above was run on Arc testnet with real transactions; the evidence table with explorer links is on the\nshowcase's demo page, and the architecture page lists the tests."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-0",
+   "title": "Withdraw without Kawase",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "Kawase never holds your money. Your USDC and EURC sit in your own account on Arc, and the permissions you gave the agent\nare narrow and expire on their own. This page explains how to get your money out — with Kawase's help, and without it."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-1",
+   "title": "Withdraw without Kawase: While Kawase is running: send it out",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "The quickest exit is a normal payment:\n\n### Pick where it goes\nAn address you control in another wallet (MetaMask, Rabby, …) that has Arc added, or an exchange's Arc deposit\naddress. Check the network is Arc; sending to an address on another network is not the same thing.\n\n### Send everything\nSay \"send all my USDC to 0x…\" (paste the address in the same message) or use the Send screen. Larger amounts ask for your\nFace ID. Repeat for EURC.\n\n### Revoke the agent\nWallet & limits → Revoke (press and hold). Cancel any automations; each cancel revokes its grant on chain.\n\nUSDC can also go straight to your own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche with a\nbridge."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-2",
+   "title": "Withdraw without Kawase: Check everything on the explorer",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "You don't need Kawase to see your money. Open your address on Arc's block explorer:\n\n- Mainnet: https://explorer.arc.io/address/<your address>\n- Testnet: https://testnet.arcscan.app/address/<your address>\n\nThere you can see:\n\n- your USDC and EURC balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native\n  coin and as the USDC token),\n- every transaction, including the payments the agent made under your allowance,\n- your account's code: after setup it is 0xef0100 followed by the EIP7702StatelessDeleGator address. That is the\n  EIP-7702 upgrade; your account still works as a normal account.\n\nKawase's receipts link to these same pages."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-3",
+   "title": "Withdraw without Kawase: If Kawase disappears",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "- The agent's permissions stop being useful. Your allowance and automation grants can only be used by Kawase's own agent\n  wallet, and they expire (the allowance after 90 days, each automation at its end date).\n- Your money stays in your account. It is an ordinary account on Arc whose key is held for you by Turnkey.\n- Export wallet (coming). Settings → Account → Export wallet will show your wallet's key through Turnkey's secure export,\n  after Face ID and clear warnings. With it you can import the account into any wallet that supports Arc and move your\n  money without Kawase. This option is not available yet; until it is, the steps above are the way out."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-4",
+   "title": "Withdraw without Kawase: Adding Arc to another wallet",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "| | Mainnet | Testnet |\n|---|---|---|\n| Network name | Arc | Arc Testnet |\n| Chain ID | 5042 | 5042002 |\n| RPC | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Currency symbol | USDC | USDC |\n| Explorer | https://explorer.arc.io | https://explorer.testnet.arc.io |\n\nSome wallets label the gas balance \"ETH\" on custom networks; on Arc it is USDC. The USDC token address is\n0x3600000000000000000000000000000000000000 on both networks; EURC is\n0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 on mainnet and 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a on testnet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-5",
+   "title": "Withdraw without Kawase: Removing the EIP-7702 upgrade (optional)",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "You don't need to undo the upgrade to move your money. If you want a plain account again after exporting it, sign an\nEIP-7702 authorization pointing at the zero address and send it from the account itself, for example with viem:\n\nAfterwards the explorer shows no code on your address."
+  }
+ ]
+}

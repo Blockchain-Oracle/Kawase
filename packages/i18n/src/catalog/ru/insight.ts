@@ -6,4 +6,6 @@ export const insight: Catalog["insight"] = {
   searching: "Ищу в ваших разговорах…",
   you: "Вы",
   searchOffline: "Не удалось искать по всем разговорам; показаны только названия.",
+  sources: "Источники",
+  lookingUp: "Ищу…",
 };

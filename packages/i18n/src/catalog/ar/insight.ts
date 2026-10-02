@@ -6,4 +6,6 @@ export const insight: Catalog["insight"] = {
   searching: "جارٍ البحث في محادثاتك…",
   you: "أنت",
   searchOffline: "تعذّر البحث في كل المحادثات؛ تظهر العناوين فقط.",
+  sources: "المصادر",
+  lookingUp: "جارٍ البحث…",
 };

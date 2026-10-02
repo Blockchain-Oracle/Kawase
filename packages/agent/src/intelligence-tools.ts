@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import type { AgentContext } from "./context";
 import { factByRef } from "./intelligence";
+import { searchKnowledge } from "./knowledge";
 
 const FACT_MAX = 200;
 const MATCH_MAX = 120;
@@ -15,6 +16,7 @@ const SEARCH_MAX = 100;
 const SEARCH_SHOWN = 6;
 /** "YYYY-MM-DD". */
 const DATE_CHARS = 10;
+const KNOWLEDGE_MAX = 200;
 
 export function intelligenceTools(context: AgentContext) {
   const { intelligence } = context;
@@ -62,6 +64,19 @@ export function intelligenceTools(context: AgentContext) {
             who: hit.role === "user" ? "person" : hit.role === "assistant" ? "kawase" : "title",
             words: hit.snippet,
           })),
+        },
+      }),
+    }),
+    arc_knowledge: tool({
+      description:
+        "Facts about Arc (Circle's stablecoin network: USDC as gas, fees, finality, EURC, CCTP and bridging, Gateway, memos, x402, passkeys and smart accounts, the ecosystem) and about Kawase itself (safety model, what works, networks, how each feature works, withdrawing without Kawase), from Kawase's curated notes and docs, each with its source. Use it before answering a how/why/what-is question about Arc or Kawase from memory. Facts only: never investment advice, never a prediction or a recommendation to buy or sell.",
+      inputSchema: z.object({ question: z.string().min(1).max(KNOWLEDGE_MAX).describe("The question, in English keywords") }),
+      execute: async ({ question }) => searchKnowledge(question),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: {
+          note: "Answer from these passages in a sentence or two and name the source; if they do not answer it, say you do not know. Facts only, no investment advice.",
+          passages: output.passages.map((passage) => ({ title: passage.title, source: passage.source, text: passage.text })),
         },
       }),
     }),
