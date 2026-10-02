@@ -64,6 +64,7 @@ import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { scan } from "./scan";
+import { split } from "./split";
 
 export const en = {
   common,
@@ -129,6 +130,7 @@ export const en = {
   insight,
   forYou,
   scan,
+  split,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

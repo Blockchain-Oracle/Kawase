@@ -12,6 +12,8 @@ import type {
   PayCodeView,
   SettingDiff,
   SettingId,
+  SplitInput,
+  SplitView,
   StatusView,
   SuggestionsView,
 } from "@kawase/api-client";
@@ -47,9 +49,14 @@ export type IntelligenceContext = {
   status(): Promise<StatusView>;
   /** What a payment code (address, EIP-681 link, Kawase request or invoice link) means on the active network. */
   payCode(code: string): Promise<PayCodeView>;
+  /** Splits a bill into one payment request per person (equal or by hand); guests and walletless people are told why not. */
+  splitBill(input: SplitInput): Promise<SplitBillOutput>;
   /** Background work that failed after the person had their answer (logged, never shown). */
   warn(error: unknown, what: string): void;
 };
+
+/** What split_bill returns: the split (its card shows who has paid), or why there is none. */
+export type SplitBillOutput = { status: "created"; split: SplitView } | { status: "needs_sign_in" | "needs_wallet" } | { status: "invalid"; problem: string };
 
 /** How the model refers to a fact: "m1", "m2"… in the order `memory()` returned them. */
 export const factRef = (index: number) => `m${index + 1}`;

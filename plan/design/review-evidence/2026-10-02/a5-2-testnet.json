@@ -1,0 +1,14 @@
+{
+  "what": "A5-2 money round trips on Arc testnet (apps/api/test/everyday-testnet.test.ts): two fresh accounts, the payer funded from the ops wallet",
+  "at": "2026-10-02",
+  "scanToPay": {
+    "code": "ethereum:<USDC>@5042002/transfer?address=<requester>&uint256=2e4",
+    "resolved": { "status": "send", "amount": "0.02", "asset": "USDC" },
+    "tx": "https://testnet.arcscan.app/tx/0x767fad36f99c9e63dfd16b2a743fb6bcdad0b7dfe81afb134ac48edafde35e6d"
+  },
+  "splitABill": {
+    "split": "Dinner, 0.06 USDC, the requester plus Bob and Carol: 0.02 each",
+    "bobPaidFromLink": "https://testnet.arcscan.app/tx/0x00a55d4bc494bc9afcefbdde54f16f64e5cd16e2cae874f63bc370218b572df4",
+    "progressAfter": { "paidCount": 1, "collected": "20000", "status": "open" }
+  }
+}

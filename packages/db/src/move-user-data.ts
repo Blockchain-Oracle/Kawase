@@ -19,6 +19,7 @@ import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./s
 import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
+import { splitShares, splits } from "./schema/splits";
 
 type UserOwned = {
   table: PgTable;
@@ -74,6 +75,8 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   // One row per person: the account's own preferences win over the guest's.
   agent_preferences: { table: agentPreferences, userId: agentPreferences.userId, perUserKey: [] },
   suggestion_dismissals: { table: suggestionDismissals, userId: suggestionDismissals.userId, perUserKey: ["suggestionId"] },
+  splits: { table: splits, userId: splits.userId },
+  split_shares: { table: splitShares, userId: splitShares.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

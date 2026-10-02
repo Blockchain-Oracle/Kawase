@@ -16,6 +16,9 @@ import type { BridgeService } from "../bridge/service";
 import type { MarginService } from "../margin/service";
 import type { InvoiceService } from "../business/invoices";
 import { PayCodeService } from "../paycodes/service";
+import { SplitService } from "../splits/service";
+import type { Recipients } from "../send/recipients";
+import { ProblemError } from "../http/problem";
 import { StatusService } from "../status/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
@@ -41,6 +44,7 @@ export function buildIntelligence(input: {
   chains: Chains;
   margin?: MarginService | undefined;
   invoices?: InvoiceService | undefined;
+  recipients: Recipients;
 }): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
@@ -120,6 +124,18 @@ export function buildIntelligence(input: {
 
     async status() {
       return new StatusService(db, input.chains).view();
+    },
+
+    async splitBill(split) {
+      if (user.isAnonymous) return { status: "needs_sign_in" };
+      if (!(await input.wallets.userWallet(user.id))) return { status: "needs_wallet" };
+      try {
+        return { status: "created", split: await new SplitService(db, input.requests, input.recipients).create(user, split) };
+      } catch (error) {
+        // A share that does not add up is the person's to fix: say which rule, in their words via the model.
+        if (error instanceof ProblemError && error.code === "validation") return { status: "invalid", problem: error.detail ?? "invalid" };
+        throw error;
+      }
     },
 
     async payCode(code) {

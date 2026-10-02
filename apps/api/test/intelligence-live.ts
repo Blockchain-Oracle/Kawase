@@ -154,6 +154,30 @@ async function realAccountApp() {
 }
 
 const scenarios: Record<string, () => Promise<unknown>> = {
+  async split() {
+    const real = await realAccountApp();
+    const threadId = randomUUID();
+    const response = await real.request(
+      "/agent/chat",
+      jsonRequest("POST", { id: threadId, message: { id: `msg-${randomUUID()}`, role: "user", parts: [{ type: "text", text: "Split 30 dollars for dinner with Amina and Tunde." }] } }, token),
+    );
+    await response.text();
+    for (let i = 0; i < POLLS; i += 1) {
+      const rows = await db.select().from(threadTurns).where(eq(threadTurns.threadId, threadId));
+      if (rows.length > 0 && rows.every((row) => row.status !== "running")) break;
+      await wait(POLL_MS);
+    }
+    const stored = (await (await real.request(`/agent/threads/${threadId}`, { headers: { authorization: `Bearer ${token}` } })).json()) as { messages: Message[] };
+    const reply = stored.messages.at(-1)!;
+    const tool = reply.parts.find((part) => part.type === "tool-split_bill") as { input?: unknown; output?: { status: string; split?: { shares: { name: string; amount: string; request: { link: string } }[]; myShare: string | null } } } | undefined;
+    return {
+      reply: reply.parts.filter((part) => part.type === "text").map((part) => part.text).join(""),
+      input: tool?.input,
+      status: tool?.output?.status,
+      myShare: tool?.output?.split?.myShare,
+      shares: tool?.output?.split?.shares.map((share) => ({ name: share.name, amount: share.amount, link: share.request.link })),
+    };
+  },
   async scan() {
     const real = await realAccountApp();
     const call = (path: string, body?: unknown) =>

@@ -4,7 +4,7 @@
 // lists them all with their status; open ones can be cancelled. `?id=` opens one request directly (from the inbox).
 // Without an account or a wallet there is nothing to receive into, so the page says what to do instead.
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ChevronLeft, List, Plus } from "lucide-react-native";
+import { ChevronLeft, List, Plus, Users } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
@@ -144,9 +144,15 @@ export function RequestScreen() {
               <Icon as={Plus} className="size-5" />
             </Button>
           ) : (
-            <Button variant="secondary" size="icon" accessibilityLabel={t("request.yours")} className="size-11" onPress={() => setStep("list")}>
-              <Icon as={List} className="size-5" />
-            </Button>
+            <>
+              {/* Split a bill (A5-2): one amount, a request per person. */}
+              <Button variant="secondary" size="icon" accessibilityLabel={t("split.title")} className="size-11" onPress={() => router.push("/split")}>
+                <Icon as={Users} className="size-5" />
+              </Button>
+              <Button variant="secondary" size="icon" accessibilityLabel={t("request.yours")} className="size-11" onPress={() => setStep("list")}>
+                <Icon as={List} className="size-5" />
+              </Button>
+            </>
           )
         ) : null}
       </View>

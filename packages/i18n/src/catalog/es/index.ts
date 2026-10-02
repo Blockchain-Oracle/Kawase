@@ -63,6 +63,7 @@ import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { scan } from "./scan";
+import { split } from "./split";
 
 export const es: Catalog = {
   common,
@@ -128,4 +129,5 @@ export const es: Catalog = {
   insight,
   forYou,
   scan,
+  split,
 };

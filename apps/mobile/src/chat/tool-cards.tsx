@@ -93,7 +93,7 @@ import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, 
 import { MemoryCard } from "./memory-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
 import type { PayCodeView } from "@kawase/api-client";
-import { PayCodeCard } from "./pay-code-card";
+import { PayCodeCard, SplitBillCard } from "./pay-code-card";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -608,6 +608,7 @@ const LOADING_LABELS: Record<string, string> = {
   propose_setting_change: "insight.loadingSetting",
   get_status: "insight.loadingStatus",
   pay_from_code: "scan.reading",
+  split_bill: "split.loading",
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -731,6 +732,8 @@ export function ToolCard({
       return <SettingDiffCard output={part.output as SettingDiff} />;
     case "get_status":
       return <StatusCard output={part.output as StatusView} />;
+    case "split_bill":
+      return <SplitBillCard output={part.output as Parameters<typeof SplitBillCard>[0]["output"]} />;
     case "pay_from_code": {
       const paid = part.output as { code: PayCodeView; send: ProposeSendOutput | null };
       return paid.send ? <SendCard output={paid.send} /> : <PayCodeCard view={paid.code} />;
