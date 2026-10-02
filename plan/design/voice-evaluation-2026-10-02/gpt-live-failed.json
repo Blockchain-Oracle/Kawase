@@ -1,0 +1,15 @@
+{
+  "state": "synthetic-delegation-checked",
+  "scenario": "failed",
+  "backendFixture": true,
+  "realBackendIntegration": false,
+  "rawUserAudio": false,
+  "canonical": "The payment of 10 USDC to Amina on Arc Testnet failed before submission. Nothing was sent. Review the card before trying again.",
+  "transcript": " Hmm. I'll check that for you. It didn’t go through. The payment of 10 USDC to Amina on Arc Testnet failed before submission, so nothing was sent. I’d review the card before trying again.",
+  "delegationCount": 1,
+  "firstSoundAfterSyntheticSpeechMs": 2135.42425,
+  "measurement": "Synthetic input to first sound, may include filler. Phone useful response and listening fidelity unmeasured.",
+  "durationMs": 18794.910125,
+  "listeningAccepted": false,
+  "totalSessionCost": "unmeasured"
+}

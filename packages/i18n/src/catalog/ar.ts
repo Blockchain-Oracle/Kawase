@@ -108,6 +108,15 @@ export const ar: Catalog = {
     mainnetConsentAccept: "فهمت",
     testnetMoney: "‏USDC التجريبية لا قيمة لها.",
   },
+  feedback: {
+    title: "الصوت واللمس",
+    sounds: "أصوات الواجهة",
+    soundsBody: "أصوات تأكيد هادئة. تحترم الوضع الصامت.",
+    haptics: "الاستجابة اللمسية",
+    hapticsBody: "استجابة لمسية للنتائج المؤكدة.",
+    narration: "شرح البداية الصوتي",
+    saveFailed: "تعذر حفظ هذا التفضيل. حاول مجددًا.",
+  },
   settings: {
     title: "الإعدادات",
     language: "اللغة",

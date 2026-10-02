@@ -26,7 +26,16 @@ The sentence names ten USDC, Amina, Arc Testnet, review by card, and nothing sen
 
 The installed LiveKit ElevenLabs 1.9.1 plugin uses the older TTS streaming endpoint. v4 requires the separate dialogue protocol; the isolated `src/evaluation/eleven-dialogue.ts` adapter exercises that protocol without changing production. It still needs a production plugin lifecycle, connection reuse, interruption, and reconnect evaluation. See [ElevenLabs dialogue WebSocket guidance](https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/realtime-tdd).
 
-GPT-Live client delegation is available in the installed OpenAI plugin. Its backend work can be routed to Kawase, but commentary can be paraphrased. It has no passing sample or financial fidelity result yet. See [OpenAI delegation guidance](https://developers.openai.com/api/docs/guides/live-delegation) and [LiveKit integration](https://docs.livekit.io/agents/models/realtime/plugins/gpt-live/).
+GPT-Live client delegation is available in the installed OpenAI plugin. The isolated `test/gpt-live-delegation.ts` harness exercised four English synthetic fixtures, with no wallet account or money tools. It delegates to a controlled fixture, not Kawase's actual backend. First sound may include filler and cannot establish useful-response latency. See [OpenAI delegation guidance](https://developers.openai.com/api/docs/guides/live-delegation) and [LiveKit integration](https://docs.livekit.io/agents/models/realtime/plugins/gpt-live/).
+
+| Fixture | First sound after synthetic speech | Listening sample |
+|---|---:|---|
+| Draft | 1,501 ms | [Listen](en-gpt-live-draft.wav) |
+| Pending | 1,204 ms | [Listen](en-gpt-live-pending.wav) |
+| Failed before submission | 2,135 ms | [Listen](en-gpt-live-failed.wav) |
+| Balance | 1,485 ms | [Listen](en-gpt-live-balance.wav) |
+
+Canonical and generated transcripts are in the matching `gpt-live-*.json` files. The pending fixture softened “Do not send it again” into “I wouldn’t send it again.” It also omitted the separate explicit sentence that the outcome was not confirmed, while retaining awaiting confirmation. This is a financial-wording concern requiring strict review. The failed and balance samples contain filler. These results do not pass the financial fidelity or useful-latency gates. No production recommendation is justified yet.
 
 The deployed worker 63629f2 completed a synthetic greeting/capability-card/history smoke test. First sound after the synthetic question was approximately 6.8 seconds. The harness includes filler, so that does not establish useful-response latency or the 1.5-second acceptance target.
 

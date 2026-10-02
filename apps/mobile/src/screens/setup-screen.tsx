@@ -7,10 +7,9 @@
 // cancel, a mismatch or a device with nothing to check with is said plainly and signs nothing (R03). "Not now"
 // leaves it for later. Then "You're all set": the flag waves once — only after the allowance is accepted — over
 // the accepted receipt. Continue records the terms.
-import * as Haptics from "expo-haptics";
 import { Redirect, useRouter } from "expo-router";
 import * as React from "react";
-import { ActivityIndicator, Platform, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -33,6 +32,7 @@ import { useT } from "@/i18n";
 import { finishOnboarding } from "@/onboarding/continuation";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
+import { confirmedFeedback } from "@/feedback/feedback";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { authorityText } from "@/wallet/authority";
@@ -98,7 +98,11 @@ export function SetupScreen() {
   const networkName = network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   // The amount in the system prompt is the proposal's own, never a default from config.
   const proposed = BigInt(setup.proposal?.receipt.amountPerPeriod ?? "0");
-  const perPeriod = formatAmount(amount("USDC", proposed), locale, proposed % USDC_UNIT === ZERO ? { fractionDigits: 0 } : {});
+  const perPeriod = formatAmount(
+    amount("USDC", proposed),
+    locale,
+    proposed % USDC_UNIT === ZERO ? { fractionDigits: 0 } : {},
+  );
   const acceptLabel = {
     faceId: t("setup.acceptFaceId"),
     touchId: t("setup.acceptTouchId"),
@@ -110,22 +114,41 @@ export function SetupScreen() {
   }[kind];
   const cannotCheck = kind === "none";
   const goHome = () => finishOnboarding();
-  const leading = router.canGoBack() ? { kind: "back" as const, onPress: () => router.back() } : { kind: "close" as const, onPress: goHome };
+  const leading = router.canGoBack()
+    ? { kind: "back" as const, onPress: () => router.back() }
+    : { kind: "close" as const, onPress: goHome };
 
   const steps: SetupStep[] = [
     {
       key: "wallet",
       label: t("setup.stepWallet"),
       // A wallet that could not be read is a load failure with its own Retry, not a step "running" forever.
-      state: setup.hasWallet ? "done" : setup.failed.wallet || (!setup.loaded && setup.loadError) ? "failed" : setup.running === "wallet" || !setup.loaded ? "running" : "waiting",
-      detail: !setup.loaded && setup.loadError ? t("errors.walletLoadFailed") : setup.failed.wallet ? t("setup.failed") : setup.running === "wallet" ? t("wallet.creating") : undefined,
+      state: setup.hasWallet
+        ? "done"
+        : setup.failed.wallet || (!setup.loaded && setup.loadError)
+          ? "failed"
+          : setup.running === "wallet" || !setup.loaded
+            ? "running"
+            : "waiting",
+      detail:
+        !setup.loaded && setup.loadError
+          ? t("errors.walletLoadFailed")
+          : setup.failed.wallet
+            ? t("setup.failed")
+            : setup.running === "wallet"
+              ? t("wallet.creating")
+              : undefined,
       onRetry: () => void (!setup.loaded && setup.loadError ? setup.refresh() : setup.retry.wallet()),
     },
     {
       key: "setup",
       label: t("setup.stepNetwork", { network: networkName }),
       state: setup.setUp ? "done" : setup.failed.setup ? "failed" : setup.running === "setup" ? "running" : "waiting",
-      detail: setup.failed.setup ? t("setup.failed") : setup.running === "setup" ? t("setup.settingUpDetail") : undefined,
+      detail: setup.failed.setup
+        ? t("setup.failed")
+        : setup.running === "setup"
+          ? t("setup.settingUpDetail")
+          : undefined,
       onRetry: () => void setup.retry.setup(),
     },
     { key: "allowance", label: t("home.stepApproveAllowance"), state: "waiting" },
@@ -133,10 +156,15 @@ export function SetupScreen() {
 
   const accept = async () => {
     setOutcome(undefined);
-    const result = await setup.acceptAllowance({ message: t("setup.faceIdPrompt", { amount: perPeriod }), cancel: t("common.cancel") });
+    const result = await setup.acceptAllowance({
+      message: t("setup.faceIdPrompt", { amount: perPeriod }),
+      cancel: t("common.cancel"),
+    });
     if (result.status === "accepted") {
       setReceipt(result.receipt);
-      if (Platform.OS !== "web") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void confirmedFeedback(
+        `allowance:${user?.id}:${network}:${result.receipt.startsAt}:${result.receipt.expiresAt}:${result.receipt.amountPerPeriod}`,
+      );
     } else setOutcome(result.status);
   };
 
@@ -174,29 +202,51 @@ export function SetupScreen() {
     <View className="bg-background flex-1" style={{ paddingTop: insets.top + EDGE_INSET }}>
       <View className="px-5">
         {/* The language pill stays on the completion too; there is nothing to go back to once the allowance is on. */}
-        <OnboardingBar leading={phase === "done" ? undefined : leading} step={{ index: phase === "steps" ? WALLET_STEP : ALLOWANCE_STEP, total: ONBOARDING_STEPS }} />
+        <OnboardingBar
+          leading={phase === "done" ? undefined : leading}
+          step={{ index: phase === "steps" ? WALLET_STEP : ALLOWANCE_STEP, total: ONBOARDING_STEPS }}
+        />
       </View>
 
       {phase === "steps" ? (
-        <Animated.View key="steps" entering={FadeIn.duration(PHASE_FADE_MS)} exiting={FadeOut.duration(PHASE_FADE_MS)} className="flex-1 gap-6 px-5 pt-6">
+        <Animated.View
+          key="steps"
+          entering={FadeIn.duration(PHASE_FADE_MS)}
+          exiting={FadeOut.duration(PHASE_FADE_MS)}
+          className="flex-1 gap-6 px-5 pt-6"
+        >
           <Koban width={KOBAN_WIDTH} id="setup-koban" rotate={-10} />
           <View className="gap-2">
-            <Text className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>{t("setup.title")}</Text>
-            <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{t("setup.subtitle", { network: networkName })}</Text>
+            <Text className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
+              {t("setup.title")}
+            </Text>
+            <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>
+              {t("setup.subtitle", { network: networkName })}
+            </Text>
           </View>
           <SetupSteps steps={steps} retryLabel={t("common.retry")} spinnerColor={colors["muted-foreground"]} />
         </Animated.View>
       ) : null}
 
       {phase === "primer" ? (
-        <Animated.View key="primer" entering={FadeIn.duration(PHASE_FADE_MS)} exiting={FadeOut.duration(PHASE_FADE_MS)} className="flex-1">
+        <Animated.View
+          key="primer"
+          entering={FadeIn.duration(PHASE_FADE_MS)}
+          exiting={FadeOut.duration(PHASE_FADE_MS)}
+          className="flex-1"
+        >
           <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-6">
             <Hanko size={HANKO_SIZE} id="setup-hanko" />
             <View className="gap-2">
-              <Text accessibilityRole="header" className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
+              <Text
+                accessibilityRole="header"
+                className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}
+              >
                 {t("setup.scopeTitle")}
               </Text>
-              <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{t("setup.scopeBody")}</Text>
+              <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>
+                {t("setup.scopeBody")}
+              </Text>
             </View>
             {proposalAuthority ? (
               <AuthorityReceipt className="w-full" {...proposalAuthority} />
@@ -208,7 +258,10 @@ export function SetupScreen() {
                 </Button>
               </View>
             ) : (
-              <View accessibilityLabel={t("common.loading")} className="bg-card border-border gap-3 rounded-3xl border p-4">
+              <View
+                accessibilityLabel={t("common.loading")}
+                className="bg-card border-border gap-3 rounded-3xl border p-4"
+              >
                 {Array.from({ length: SKELETON_ROWS }, (_, row) => (
                   <Skeleton key={row} className="h-4 w-full rounded-md" />
                 ))}
@@ -219,12 +272,19 @@ export function SetupScreen() {
             {cannotCheck || outcome ? (
               <Text
                 accessibilityRole="alert"
-                className={cn("pb-1 text-center text-sm", outcome === "cancelled" || outcome === "refreshed" ? "text-muted-foreground" : "text-destructive")}
+                className={cn(
+                  "pb-1 text-center text-sm",
+                  outcome === "cancelled" || outcome === "refreshed" ? "text-muted-foreground" : "text-destructive",
+                )}
               >
                 {cannotCheck ? t("errors.biometricUnavailable") : outcomeText[outcome!]}
               </Text>
             ) : null}
-            <Button size="lg" disabled={accepting || !setup.proposal || setup.preparing || cannotCheck} onPress={() => void accept()}>
+            <Button
+              size="lg"
+              disabled={accepting || !setup.proposal || setup.preparing || cannotCheck}
+              onPress={() => void accept()}
+            >
               {accepting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
               <Text>{accepting ? t("setup.approving") : acceptLabel}</Text>
             </Button>
@@ -240,8 +300,12 @@ export function SetupScreen() {
           <ScrollView className="flex-1" contentContainerClassName="items-center gap-6 px-5 pb-6">
             <Flag width={FLAG_WIDTH} id="setup-flag" wave />
             <View className="gap-2">
-              <Text className="font-display text-foreground text-center text-3xl font-bold">{t("setup.doneTitle")}</Text>
-              <Text className="text-muted-foreground text-center text-base leading-6">{t("setup.doneBody", { network: networkName })}</Text>
+              <Text className="font-display text-foreground text-center text-3xl font-bold">
+                {t("setup.doneTitle")}
+              </Text>
+              <Text className="text-muted-foreground text-center text-base leading-6">
+                {t("setup.doneBody", { network: networkName })}
+              </Text>
             </View>
             <AuthorityReceipt className="w-full" {...authority} />
           </ScrollView>
@@ -253,7 +317,11 @@ export function SetupScreen() {
             ) : null}
             <Text className="text-muted-foreground text-center text-xs">
               {`${t("setup.terms")} `}
-              <Text accessibilityRole="link" onPress={() => router.push("/terms")} className="text-foreground text-xs underline">
+              <Text
+                accessibilityRole="link"
+                onPress={() => router.push("/terms")}
+                className="text-foreground text-xs underline"
+              >
                 {t("setup.readTerms")}
               </Text>
             </Text>

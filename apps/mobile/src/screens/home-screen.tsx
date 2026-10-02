@@ -14,10 +14,9 @@
 // and the first credit plays "You're funded" once (S2: the koban drops onto the card).
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
-import * as Haptics from "expo-haptics";
 import { ArrowDownToLine, MessageCircle, QrCode, ScanFace, Send, Settings2, Wallet } from "lucide-react-native";
 import * as React from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import Animated, { FadeOut, useAnimatedScrollHandler, useSharedValue, ZoomIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -54,6 +53,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { EarnEntry } from "@/earn/earn-entry";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
+import { confirmedFeedback } from "@/feedback/feedback";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useActivity } from "@/wallet/use-activity";
@@ -212,10 +212,10 @@ export function HomeScreen() {
     if (before !== false || !hasMoney) return undefined;
     setFunded(true);
     toast(t("home.funded"));
-    if (Platform.OS !== "web") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void confirmedFeedback(`funded:${user?.id}:${user?.activeNetwork}`);
     const timer = setTimeout(() => setFunded(false), FUNDED_MOMENT_MS);
     return () => clearTimeout(timer);
-  }, [state, hasMoney, t]);
+  }, [state, hasMoney, t, user?.id, user?.activeNetwork]);
 
   // Chips ask the agent in chat about things that work today; test money is an action of its own (the fund hub),
   // offered as a chip only when it is not already the main action.

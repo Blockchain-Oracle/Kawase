@@ -115,6 +115,15 @@ export const fr: Catalog = {
     mainnetConsentAccept: "J'ai compris",
     testnetMoney: "Les USDC de test n'ont aucune valeur.",
   },
+  feedback: {
+    title: "Son et vibrations",
+    sounds: "Sons de l’interface",
+    soundsBody: "Sons discrets de confirmation. Respecte le mode silencieux.",
+    haptics: "Vibrations",
+    hapticsBody: "Retour tactile pour les résultats confirmés.",
+    narration: "Narration de l’accueil",
+    saveFailed: "Impossible d’enregistrer ce choix. Réessayez.",
+  },
   settings: {
     title: "Réglages",
     language: "Langue",

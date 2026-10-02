@@ -6,7 +6,14 @@
 import { Check, Clock, ExternalLink, Minus, X } from "lucide-react-native";
 import * as React from "react";
 import { Linking, View } from "react-native";
-import Animated, { Easing, FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import type { SendIntent } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
@@ -21,6 +28,7 @@ import { cn } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { confirmedFeedback } from "@/feedback/feedback";
 
 import { recipientName, useMoney } from "./copy";
 import { isMoving } from "./use-send";
@@ -36,7 +44,19 @@ const FLOAT_AMPLITUDE = 6;
 const FLOAT_TILT = 3;
 
 /** The plane, floating while the send moves and flying off once when `departing` turns true. */
-function Plane({ id, compact, rtl, departing, onDeparted }: { id: string; compact: boolean; rtl: boolean; departing: boolean; onDeparted: () => void }) {
+function Plane({
+  id,
+  compact,
+  rtl,
+  departing,
+  onDeparted,
+}: {
+  id: string;
+  compact: boolean;
+  rtl: boolean;
+  departing: boolean;
+  onDeparted: () => void;
+}) {
   const progress = useSharedValue(0);
   React.useEffect(() => {
     if (!departing) return undefined;
@@ -72,7 +92,12 @@ function useEnding(intent: SendIntent): Ending | undefined {
   const sent = money(intent.draft?.asset, intent.draft?.amount);
   switch (intent.outcome) {
     case "sent":
-      return { icon: Check, tone: "success", title: t("send.sentTitle"), body: t("send.sentBody", { amount: sent, name }) };
+      return {
+        icon: Check,
+        tone: "success",
+        title: t("send.sentTitle"),
+        body: t("send.sentBody", { amount: sent, name }),
+      };
     case "not_sent":
       return { icon: X, tone: "destructive", title: t("send.notSentTitle"), body: t("send.notSentBody") };
     case "reverted":
@@ -114,6 +139,9 @@ export function SendStatus({
   const [departed, setDeparted] = React.useState(false);
   const onDeparted = React.useCallback(() => setDeparted(true), []);
   const departing = watched.current && intent.outcome === "sent" && !departed && !reduced;
+  React.useEffect(() => {
+    if (watched.current && intent.outcome === "sent") void confirmedFeedback(`send:${intent.id}`);
+  }, [intent.id, intent.outcome]);
 
   if (moving || departing) {
     return (
@@ -135,20 +163,37 @@ export function SendStatus({
   if (!ending) return null;
   const size = compact ? BADGE_COMPACT : BADGE;
   return (
-    <Animated.View entering={reduced ? undefined : FadeIn.duration(MOTION.sheetMs)} className={cn("items-center", compact ? "gap-2 py-1" : "gap-3 py-4")}>
+    <Animated.View
+      entering={reduced ? undefined : FadeIn.duration(MOTION.sheetMs)}
+      className={cn("items-center", compact ? "gap-2 py-1" : "gap-3 py-4")}
+    >
       <View
         className={cn(
           "items-center justify-center rounded-full",
-          ending.tone === "success" ? "bg-success/15" : ending.tone === "destructive" ? "bg-destructive/15" : "bg-muted",
+          ending.tone === "success"
+            ? "bg-success/15"
+            : ending.tone === "destructive"
+              ? "bg-destructive/15"
+              : "bg-muted",
         )}
         style={{ width: size, height: size }}
       >
         <Icon
           as={ending.icon}
-          className={cn(compact ? "size-5" : "size-7", ending.tone === "success" ? "text-success" : ending.tone === "destructive" ? "text-destructive" : "text-muted-foreground")}
+          className={cn(
+            compact ? "size-5" : "size-7",
+            ending.tone === "success"
+              ? "text-success"
+              : ending.tone === "destructive"
+                ? "text-destructive"
+                : "text-muted-foreground",
+          )}
         />
       </View>
-      <Text accessibilityRole="header" className={cn("font-display text-foreground font-bold", compact ? "text-xl" : "text-3xl")}>
+      <Text
+        accessibilityRole="header"
+        className={cn("font-display text-foreground font-bold", compact ? "text-xl" : "text-3xl")}
+      >
         {ending.title}
       </Text>
       <Text accessibilityLiveRegion="polite" className="text-muted-foreground text-center text-base">

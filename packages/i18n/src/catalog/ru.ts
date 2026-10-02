@@ -114,6 +114,15 @@ export const ru: Catalog = {
     mainnetConsentAccept: "Понятно",
     testnetMoney: "Тестовые USDC ничего не стоят.",
   },
+  feedback: {
+    title: "Звук и вибрация",
+    sounds: "Звуки интерфейса",
+    soundsBody: "Тихие звуки подтверждения. Учитывают беззвучный режим.",
+    haptics: "Вибрация",
+    hapticsBody: "Тактильный отклик при подтверждённых результатах.",
+    narration: "Озвучивание знакомства",
+    saveFailed: "Не удалось сохранить настройку. Попробуйте снова.",
+  },
   settings: {
     title: "Настройки",
     language: "Язык",

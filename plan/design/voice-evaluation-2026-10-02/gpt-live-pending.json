@@ -1,0 +1,15 @@
+{
+  "state": "synthetic-delegation-checked",
+  "scenario": "pending",
+  "backendFixture": true,
+  "realBackendIntegration": false,
+  "rawUserAudio": false,
+  "canonical": "Your payment of 10 USDC to Amina on Arc Testnet was submitted and is awaiting network confirmation. The outcome is not confirmed. Do not send it again. Check Activity for its status.",
+  "transcript": "Okay, your payment of 10 USDC to Amina on Arc Testnet was submitted, and it's awaiting confirmation. I wouldn't send it again. Check your Activity for the status.",
+  "delegationCount": 1,
+  "firstSoundAfterSyntheticSpeechMs": 1203.6506659999995,
+  "measurement": "Synthetic input to first sound, may include filler. Phone useful response and listening fidelity unmeasured.",
+  "durationMs": 17304.0875,
+  "listeningAccepted": false,
+  "totalSessionCost": "unmeasured"
+}

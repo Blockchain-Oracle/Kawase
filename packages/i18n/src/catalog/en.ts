@@ -111,6 +111,15 @@ export const en = {
     mainnetConsentAccept: "I understand",
     testnetMoney: "Test USDC has no value.",
   },
+  feedback: {
+    title: "Sound and touch",
+    sounds: "Interface sounds",
+    soundsBody: "Quiet confirmation sounds. Respects silent mode.",
+    haptics: "Haptics",
+    hapticsBody: "Touch feedback for confirmed results.",
+    narration: "Onboarding narration",
+    saveFailed: "Couldn’t save this preference. Try again.",
+  },
   settings: {
     title: "Settings",
     language: "Language",

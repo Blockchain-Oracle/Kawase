@@ -1,0 +1,15 @@
+{
+  "state": "synthetic-delegation-checked",
+  "scenario": "balance",
+  "backendFixture": true,
+  "realBackendIntegration": false,
+  "rawUserAudio": false,
+  "canonical": "Your available balance is 12.45 USDC on Arc Testnet. This is test money. You also hold 3 EURC. No balance is available for Arc mainnet in this result.",
+  "transcript": " Checking that now. Your available balance is 12.45 USDC on Arc Testnet, plus 3 EURC. That’s test money only, not real funds. No balance was shown for Arc mainnet.",
+  "delegationCount": 1,
+  "firstSoundAfterSyntheticSpeechMs": 1484.5077920000003,
+  "measurement": "Synthetic input to first sound, may include filler. Phone useful response and listening fidelity unmeasured.",
+  "durationMs": 20296.543625,
+  "listeningAccepted": false,
+  "totalSessionCost": "unmeasured"
+}

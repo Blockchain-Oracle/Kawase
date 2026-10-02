@@ -44,6 +44,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-asset",
       [
         "expo-splash-screen",
         {
@@ -151,6 +152,15 @@
           "icon": "./assets/brand/notification-icon.png",
           "color": "#3F6600",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Kawase hears you only while you talk to it, to answer you.",
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
         }
       ]
     ],

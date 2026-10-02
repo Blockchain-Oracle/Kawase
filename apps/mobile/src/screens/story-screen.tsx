@@ -178,7 +178,13 @@ export function StoryScreen() {
         canvasHint={t("story.canvasHint")}
         canvasHeight={Math.round(height * CANVAS_RATIO)}
         ink={STORY_INK}
-        topEnd={<StoryLanguagePill label={LANGUAGE_NAMES[locale]} accessibilityLabel={t("settings.language")} onPress={() => setLanguageOpen(true)} />}
+        topEnd={
+          <StoryLanguagePill
+            label={LANGUAGE_NAMES[locale]}
+            accessibilityLabel={t("settings.language")}
+            onPress={() => setLanguageOpen(true)}
+          />
+        }
         footer={
           <>
             {startFailed ? (
@@ -188,10 +194,10 @@ export function StoryScreen() {
             ) : null}
             <Button size="lg" disabled={starting} onPress={() => void start()}>
               {starting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
-              <Text>{t("welcome.tryFirst")}</Text>
+              <Text className="text-center">{t("welcome.tryFirst")}</Text>
             </Button>
             <Button size="lg" variant="secondary" disabled={starting} onPress={signIn.open}>
-              <Text>{t("story.haveAccount")}</Text>
+              <Text className="text-center">{t("story.haveAccount")}</Text>
             </Button>
           </>
         }

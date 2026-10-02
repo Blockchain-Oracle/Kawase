@@ -28,6 +28,7 @@ import { VOICE_CARD_RPC, VOICE_STOP_RPC } from "@kawase/config";
 import { ToolCard, type ToolPart } from "@/chat/tool-cards";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
+import { claimVoiceAudio } from "@/feedback/feedback";
 
 const IDLE_LEVEL = 0.2;
 const SPEAKING_FLOOR = 0.35;
@@ -47,18 +48,41 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
   const [session, setSession] = React.useState<Session>();
   const [failed, setFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
+  const closeAudio = React.useRef<() => Promise<void>>(() => Promise.resolve());
 
   React.useEffect(() => {
     let live = true;
+    let release: (() => void) | undefined;
+    let startedAudio = false;
+    let closing: Promise<void> | undefined;
     setFailed(false);
-    void AudioSession.startAudioSession();
-    api.voice
-      .session()
+    setSession(undefined);
+    const ready = claimVoiceAudio().then(async (releaseOwnership) => {
+      release = releaseOwnership;
+      if (!live) return;
+      await AudioSession.startAudioSession();
+      startedAudio = true;
+    });
+    const close = () =>
+      (closing ??= (async () => {
+        await ready.catch(() => undefined);
+        try {
+          if (startedAudio) await AudioSession.stopAudioSession();
+        } finally {
+          release?.();
+        }
+      })());
+    closeAudio.current = close;
+    ready
+      .then(() => (live ? api.voice.session() : undefined))
       .then((started) => live && setSession(started))
-      .catch(() => live && setFailed(true));
+      .catch(() => {
+        if (live) setFailed(true);
+        void close().catch(() => undefined);
+      });
     return () => {
       live = false;
-      void AudioSession.stopAudioSession();
+      void close().catch(() => undefined);
     };
   }, [attempt]);
 
@@ -81,7 +105,10 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
       connect
       audio
       video={false}
-      onError={() => setFailed(true)}
+      onError={() => {
+        setFailed(true);
+        void closeAudio.current().catch(() => undefined);
+      }}
     >
       <Conversation level={level} threadId={session.threadId} onTypeInstead={onTypeInstead} />
     </LiveKitRoom>

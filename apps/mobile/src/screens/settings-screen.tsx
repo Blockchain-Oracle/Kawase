@@ -20,6 +20,8 @@ import {
   Mic,
   Palette,
   ShieldCheck,
+  Vibrate,
+  Volume2,
   Waypoints,
   type LucideIcon,
 } from "lucide-react-native";
@@ -48,6 +50,8 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useTurnkeyAccount } from "@/wallet/use-turnkey-account";
+import { setFeedbackPreference, useFeedbackPreferences } from "@/feedback/preferences";
+import { stopInterfaceSounds } from "@/feedback/feedback";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
@@ -86,10 +90,21 @@ export function SettingsScreen() {
   const turnkey = useTurnkeyAccount();
   const { network, nextName, busy, toggle, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
   const [languageOpen, setLanguageOpen] = React.useState(false);
+  const feedback = useFeedbackPreferences();
+  const [feedbackError, setFeedbackError] = React.useState(false);
+  const changeFeedback = (key: "sounds" | "haptics", enabled: boolean) => {
+    setFeedbackError(false);
+    if (key === "sounds" && !enabled) stopInterfaceSounds();
+    void setFeedbackPreference(key, enabled).catch(() => setFeedbackError(true));
+  };
   const testnet = network === "testnet";
   const account = status === "account";
   const coming = <Coming label={t("fund.coming")} />;
-  const name = !account ? t("common.guest") : user?.handle ? `@${user.handle}` : (user?.email?.split("@")[0] ?? t("common.guest"));
+  const name = !account
+    ? t("common.guest")
+    : user?.handle
+      ? `@${user.handle}`
+      : (user?.email?.split("@")[0] ?? t("common.guest"));
 
   const leave = async () => {
     await turnkey.signOutTurnkey();
@@ -99,13 +114,24 @@ export function SettingsScreen() {
 
   return (
     <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <ScrollView className="flex-1" contentContainerClassName="gap-7 px-5" contentContainerStyle={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll }}>
+      {testnet ? (
+        <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
+      ) : null}
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-7 px-5"
+        contentContainerStyle={{
+          paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET,
+          paddingBottom: clearance.scroll,
+        }}
+      >
         <View className="items-center gap-3 pt-2">
           <DefaultAvatar seed={user?.id ?? GUEST_SEED} size={AVATAR_SIZE} label={name} />
           <View className="items-center gap-1">
             <Text className="font-display text-foreground text-2xl font-bold">{name}</Text>
-            <Text className="text-muted-foreground text-sm">{account ? (user?.email ?? "") : t("settings.guestBody")}</Text>
+            <Text className="text-muted-foreground text-sm">
+              {account ? (user?.email ?? "") : t("settings.guestBody")}
+            </Text>
           </View>
           {!account ? (
             <Button className="mt-1 self-stretch" onPress={signIn.open}>
@@ -120,18 +146,36 @@ export function SettingsScreen() {
               <ListRow
                 leading={<RowIcon icon={AtSign} />}
                 title={t("handle.row")}
-                trailing={<Text className="text-muted-foreground text-base">{user?.handle ? `@${user.handle}` : t("handle.none")}</Text>}
+                trailing={
+                  <Text className="text-muted-foreground text-base">
+                    {user?.handle ? `@${user.handle}` : t("handle.none")}
+                  </Text>
+                }
                 chevron
                 onPress={() => router.push({ pathname: "/handle", params: { edit: "1" } })}
               />
-              <ListRow leading={<RowIcon icon={Mail} />} title={t("signIn.email")} trailing={<Text numberOfLines={1} className="text-muted-foreground max-w-48 text-base">{user?.email ?? ""}</Text>} />
+              <ListRow
+                leading={<RowIcon icon={Mail} />}
+                title={t("signIn.email")}
+                trailing={
+                  <Text numberOfLines={1} className="text-muted-foreground max-w-48 text-base">
+                    {user?.email ?? ""}
+                  </Text>
+                }
+              />
             </ListGroup>
           </Section>
         ) : null}
 
         <Section title={t("settings.money")}>
           <ListGroup>
-            <ListRow leading={<RowIcon icon={ShieldCheck} />} title={t("limits.title")} subtitle={t("settings.limitsBody")} chevron onPress={() => router.push(account ? "/limits" : "/wallet")} />
+            <ListRow
+              leading={<RowIcon icon={ShieldCheck} />}
+              title={t("limits.title")}
+              subtitle={t("settings.limitsBody")}
+              chevron
+              onPress={() => router.push(account ? "/limits" : "/wallet")}
+            />
             <ListRow
               leading={<RowIcon icon={Waypoints} className="text-network" />}
               title={t("settings.network")}
@@ -139,22 +183,55 @@ export function SettingsScreen() {
               accessibilityLabel={t("network.switchTo", { network: nextName })}
               trailing={
                 <View className="flex-row items-center gap-2">
-                  <Text className="text-muted-foreground text-base">{testnet ? t("network.arcTestnet") : t("network.arc")}</Text>
-                  <Switch checked={!testnet} disabled={busy} onCheckedChange={toggle} accessibilityLabel={t("network.switchTo", { network: nextName })} />
+                  <Text className="text-muted-foreground text-base">
+                    {testnet ? t("network.arcTestnet") : t("network.arc")}
+                  </Text>
+                  <Switch
+                    checked={!testnet}
+                    disabled={busy}
+                    onCheckedChange={toggle}
+                    accessibilityLabel={t("network.switchTo", { network: nextName })}
+                  />
                 </View>
               }
               onPress={toggle}
             />
-            <ListRow leading={<RowIcon icon={BookUser} />} title={t("settings.contacts")} chevron onPress={() => router.push("/contacts")} />
-            <ListRow leading={<RowIcon icon={CalendarClock} />} title={t("settings.automations")} chevron onPress={() => router.push("/automations")} />
-            <ListRow leading={<RowIcon icon={Coins} />} title={t("settings.displayCurrency")} trailing={coming} disabled />
+            <ListRow
+              leading={<RowIcon icon={BookUser} />}
+              title={t("settings.contacts")}
+              chevron
+              onPress={() => router.push("/contacts")}
+            />
+            <ListRow
+              leading={<RowIcon icon={CalendarClock} />}
+              title={t("settings.automations")}
+              chevron
+              onPress={() => router.push("/automations")}
+            />
+            <ListRow
+              leading={<RowIcon icon={Coins} />}
+              title={t("settings.displayCurrency")}
+              trailing={coming}
+              disabled
+            />
           </ListGroup>
         </Section>
 
         <Section title={t("settings.preferences")}>
           <ListGroup>
-            <ListRow leading={<RowIcon icon={Globe} />} title={t("settings.language")} trailing={<Text className="text-muted-foreground text-base">{LANGUAGE_NAMES[locale]}</Text>} chevron onPress={() => setLanguageOpen(true)} />
-            <ListRow leading={<RowIcon icon={Bell} />} title={t("settings.notifications")} chevron onPress={() => router.push("/notifications")} />
+            <ListRow
+              leading={<RowIcon icon={Globe} />}
+              title={t("settings.language")}
+              trailing={<Text className="text-muted-foreground text-base">{LANGUAGE_NAMES[locale]}</Text>}
+              chevron
+              onPress={() => setLanguageOpen(true)}
+            />
+            <ListRow
+              leading={<RowIcon icon={Bell} />}
+              title={t("settings.notifications")}
+              chevron
+              onPress={() => router.push("/notifications")}
+            />
             <ListRow leading={<RowIcon icon={Mic} />} title={t("settings.voice")} trailing={coming} disabled />
             <ListRow leading={<RowIcon icon={Brain} />} title={t("settings.memory")} trailing={coming} disabled />
           </ListGroup>
@@ -176,6 +253,41 @@ export function SettingsScreen() {
           </View>
         </Section>
 
+        <Section title={t("feedback.title")}>
+          <ListGroup>
+            <ListRow
+              leading={<RowIcon icon={Volume2} />}
+              title={t("feedback.sounds")}
+              subtitle={t("feedback.soundsBody")}
+              trailing={
+                <Switch
+                  checked={feedback.sounds}
+                  onCheckedChange={(enabled) => changeFeedback("sounds", enabled)}
+                  accessibilityLabel={t("feedback.sounds")}
+                />
+              }
+            />
+            <ListRow
+              leading={<RowIcon icon={Vibrate} />}
+              title={t("feedback.haptics")}
+              subtitle={t("feedback.hapticsBody")}
+              trailing={
+                <Switch
+                  checked={feedback.haptics}
+                  onCheckedChange={(enabled) => changeFeedback("haptics", enabled)}
+                  accessibilityLabel={t("feedback.haptics")}
+                />
+              }
+            />
+            <ListRow leading={<RowIcon icon={Mic} />} title={t("feedback.narration")} trailing={coming} disabled />
+          </ListGroup>
+          {feedbackError ? (
+            <Text accessibilityRole="alert" className="text-destructive text-sm">
+              {t("feedback.saveFailed")}
+            </Text>
+          ) : null}
+        </Section>
+
         <Section title={t("settings.security")}>
           <ListGroup>
             <ListRow leading={<RowIcon icon={KeyRound} />} title={t("settings.devices")} trailing={coming} disabled />
@@ -186,19 +298,37 @@ export function SettingsScreen() {
         <Section title={t("settings.help")}>
           <ListGroup>
             <ListRow leading={<RowIcon icon={LifeBuoy} />} title={t("settings.trust")} trailing={coming} disabled />
-            <ListRow title={t("settings.version")} trailing={<Text className="text-muted-foreground font-mono text-sm">{Application.nativeApplicationVersion ? `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion ?? "?"})` : "web"}</Text>} />
+            <ListRow
+              title={t("settings.version")}
+              trailing={
+                <Text className="text-muted-foreground font-mono text-sm">
+                  {Application.nativeApplicationVersion
+                    ? `${Application.nativeApplicationVersion} (${Application.nativeBuildVersion ?? "?"})`
+                    : "web"}
+                </Text>
+              }
+            />
           </ListGroup>
         </Section>
 
         {account ? (
           <ListGroup>
-            <ListRow leading={<RowIcon icon={LogOut} className="text-destructive" />} title={t("common.signOut")} onPress={() => void leave()} />
+            <ListRow
+              leading={<RowIcon icon={LogOut} className="text-destructive" />}
+              title={t("common.signOut")}
+              onPress={() => void leave()}
+            />
           </ListGroup>
         ) : null}
       </ScrollView>
 
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
-      <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
+      <MainnetConsentSheet
+        open={consentNeeded}
+        busy={busy}
+        onAccept={() => void acceptMainnet()}
+        onClose={dismissConsent}
+      />
     </View>
   );
 }
