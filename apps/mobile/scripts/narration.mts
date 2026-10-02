@@ -161,6 +161,7 @@ const lines = [
   "/** One clip per story panel (1–5); panel 2 also in its web and Android wording. */",
   "export type NarrationPanel = { clip: number; web?: number; android?: number };",
   "",
+  "/* eslint-disable @typescript-eslint/no-require-imports */",
   "export const NARRATION_CLIPS: Record<SupportedLocale, readonly NarrationPanel[]> = {",
   ...SUPPORTED_LOCALES.map((locale) => {
     const panels = PANELS.map(({ panel, key, variants }) => {
@@ -174,6 +175,7 @@ const lines = [
     return [`  ${locale}: [`, ...panels, "  ],"].join("\n");
   }),
   "};",
+  "/* eslint-enable @typescript-eslint/no-require-imports */",
   "",
 ];
 await writeFile(CLIPS_MODULE, lines.join("\n"));
