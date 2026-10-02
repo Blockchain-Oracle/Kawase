@@ -144,12 +144,18 @@ importers:
       '@kawase/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@kawase/integrations-aave-v4':
+        specifier: workspace:*
+        version: link:../../packages/integrations/aave-v4
       '@kawase/integrations-app-kit':
         specifier: workspace:*
         version: link:../../packages/integrations/app-kit
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation
+      '@kawase/integrations-kyberswap':
+        specifier: workspace:*
+        version: link:../../packages/integrations/kyberswap
       '@kawase/intents':
         specifier: workspace:*
         version: link:../../packages/intents
@@ -662,6 +668,22 @@ importers:
       react-native-svg:
         specifier: 15.15.4
         version: 15.15.4(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(bufferutil@4.1.0)(supports-color@8.1.1))(@types/react@19.2.18)(bufferutil@4.1.0)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/integrations/aave-v4:
+    dependencies:
+      viem:
+        specifier: 'catalog:'
+        version: 2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
