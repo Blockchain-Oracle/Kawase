@@ -1,0 +1,76 @@
+---
+title: Getting started
+description: Open Kawase in the browser as a guest, or install it on iPhone or Android, then get free test money and make a first payment.
+---
+
+## 1. Open the app
+
+<Tabs items={['Web', 'iPhone', 'Android']}>
+  <Tab value="Web">
+    Open [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io) in any modern browser. You start as a
+    **guest**: no sign-up, no email. You can chat with Kawase, look around every screen and see what it would do.
+
+    On the web, an **email code** stands in for Face ID wherever a payment needs your confirmation. Voice is not in the web
+    app yet; typing works everywhere.
+  </Tab>
+  <Tab value="iPhone">
+    Kawase for iPhone is distributed through **TestFlight** while it is in beta. Install TestFlight from the App Store,
+    then open the invite link you were given. A public TestFlight link will be published on the showcase page when it is
+    available.
+  </Tab>
+  <Tab value="Android">
+    Download the Android build (APK) from Expo:
+    [build e644e19d](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed).
+    Open it on the phone and allow the install. On Android the confirmation is your **fingerprint or screen lock**.
+  </Tab>
+</Tabs>
+
+## 2. Pick your language
+
+The language pill is on the very first screen. Kawase speaks [ten languages](./features/languages.mdx), and Arabic and
+Urdu switch the whole layout to right-to-left at once. You can change it again at any time in Settings.
+
+## 3. Sign in when you want to keep things
+
+Guests can explore everything. To hold money, sign in with:
+
+- an **email code**,
+- **Apple**, or
+- **Google**.
+
+There is no password and no PIN. Signing in creates your wallet (see [safety](./safety.mdx)): one address that works on
+both networks. Everything you did as a guest — your chat, your contacts — moves into your account.
+
+Setting the wallet up costs you nothing: you sign one authorization and Kawase pays the network fee.
+
+## 4. Get test money
+
+New accounts start on **testnet**, where money has no value. Ask Kawase "get me test money" or open the faucet from the
+home screen. Each claim brings about **20 test USDC and 20 test EURC** from Circle's faucet, once a day. If the in-app
+claim is refused, Circle's own faucet is at [faucet.circle.com](https://faucet.circle.com) (choose "Arc Testnet").
+
+## 5. Accept your daily allowance
+
+Kawase asks you once to accept an **everyday allowance**: an amount of USDC per day that the agent may send for you without
+asking again. You approve it with one Face ID. The default is shown on the card before you approve; see the
+[limits table](./safety.mdx#default-limits).
+
+## 6. Make your first payment
+
+Type or say, for example:
+
+> send 1 dollar to @kawasedemo
+
+Kawase finds the recipient, checks your balance and limits, and shows the payment card: exact amount, currency, recipient
+and network. Inside your allowance it sends at once; above it, it waits for your Face ID. The card follows the payment
+until the network confirms it, and the receipt links to the block explorer.
+
+## 7. Try the rest
+
+- "swap 2 dollars to euros"
+- "move 1 dollar to Base"
+- "put 5 dollars in savings"
+- "every Friday at 9 send 1 dollar to Alex"
+- "keep 20 dollars in my wallet and save the rest"
+
+Each one shows a card first and tells you exactly what it needs from you.

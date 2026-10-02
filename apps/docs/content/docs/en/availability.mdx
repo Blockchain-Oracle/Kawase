@@ -1,0 +1,22 @@
+---
+title: What works today
+description: Every capability on Arc mainnet and Arc testnet, generated from Kawase's capability registry when this site is built.
+---
+
+This page is **generated from the code**. Kawase keeps one capability registry (`packages/config/src/capabilities.ts`): the
+app reads it to decide what to offer, and the agent reads it before it proposes anything. The docs import the same
+registry when the site is built, so they cannot promise more than the app does.
+
+- **Available**: shipped and offered on that network.
+- **Coming**: part of the product plan, not shipped yet. Areas of the plan that the registry does not list yet are shown
+  as coming as well.
+- **Not on this network**: by design (for example, test money exists only on testnet).
+
+<AvailabilityMatrix />
+
+## What each capability covers
+
+A capability being available doesn't mean every variation of it works. The registry also says, precisely, what runs today
+and what doesn't yet — the agent uses the same text to answer "can you…?" honestly.
+
+<ScopeList />

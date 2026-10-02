@@ -1,12 +1,15 @@
 @import "tailwindcss";
-/* Lime on Ink tokens (DESIGN.md): :root is paper (light), .dark is ink. Fumadocs' colours are mapped onto them below. */
+/* Lime on Ink tokens (DESIGN.md): :root is paper (light), .dark is ink. Fumadocs' colours (neutral preset for the
+   full set) are re-pointed at them below; the rule comes last, so it wins in both themes. */
 @import "@kawase/ui-tokens/web.css";
+@import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
 /* ui-web's Mark (real logos) is rendered in MDX pages. */
 @source "../../../packages/ui-web/src/components";
 
-@theme inline {
+:root,
+.dark {
   --color-fd-background: var(--background);
   --color-fd-foreground: var(--foreground);
   --color-fd-muted: var(--muted);

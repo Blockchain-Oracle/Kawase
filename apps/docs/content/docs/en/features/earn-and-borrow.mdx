@@ -1,0 +1,30 @@
+---
+title: Earn and borrow
+description: Deposit USDC into Morpho vaults on Arc through Circle's App Kit Earn and withdraw any time; Aave V4 and borrowing are coming.
+---
+
+<Status ids="yield borrow" />
+
+<Marks names="morpho circle usdc" />
+
+## Earn with Morpho vaults (today)
+
+"Put 50 dollars in savings" or the Earn screen. Kawase lists the **Morpho vaults** available through **Circle's App Kit
+Earn** on Arc (on testnet: Arc Testnet's mock vaults) with readable names and their rates, and:
+
+- **Deposits** USDC into the vault you pick — or the best active one when you don't say — with a minimum number of vault
+  shares checked against the vault's own preview.
+- **Withdraws** any amount back to your wallet, paying at least the amount shown.
+- Shows your **positions**, read live from the vaults on chain (never stored by Kawase).
+
+Each deposit or withdrawal is **one Face ID**, sent as one transaction. [Auto-save](./automations.mdx#auto-save) uses the
+same vaults to keep your savings topped up by itself.
+
+## More yield and borrowing (coming)
+
+The plan compares every source that accepts your asset — **Aave V4**, Morpho vaults directly and others — showing the
+rate, how much can be withdrawn right now, size and risk, and hides sources you couldn't exit. **Borrowing** USDC or EURC
+against collateral (for example on Aave V4) is planned with a health gauge, repay and add-collateral actions, and
+liquidation alerts in your inbox. Both are **coming**.
+
+<ScopeList ids="yield" />

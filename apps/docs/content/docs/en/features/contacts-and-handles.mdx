@@ -1,0 +1,32 @@
+---
+title: Contacts and @handles
+description: Save people by name, pay them by name or @handle, and get warned about changed or look-alike addresses.
+---
+
+<Status ids="contacts" />
+
+## Contacts
+
+A contact is a name (and nicknames) with one or more addresses. Kawase uses contacts to understand "send to Alex" and to
+protect you:
+
+- **Address changes are held.** When a contact's address changes, the new address waits **24 hours** before money can go to
+  it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.
+- **Look-alike addresses are flagged.** An address whose first and last four characters match one of your contacts' is
+  treated as a look-alike: Kawase stops and asks for Face ID.
+- **Payment history** builds trust per address and per network: a first payment to an address is treated more carefully
+  than a repeat one.
+
+If you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment — you don't
+have to start over.
+
+## @handles
+
+A `@handle` is an optional public name you can be paid by: "send 10 to @abu". Rules:
+
+- 3 to 20 characters: lowercase letters, digits and underscore.
+- Unique regardless of case; names that would impersonate Kawase, Arc, Circle or staff are reserved.
+- You choose it during onboarding (or skip) and can change it in Settings.
+
+A handle resolves to the person's Kawase wallet address. If the person hasn't set up a wallet yet, Kawase tells you
+instead of guessing.
