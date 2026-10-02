@@ -5,6 +5,7 @@ import { after, test } from "node:test";
 
 import { NETWORK_IDS } from "@kawase/networks";
 
+import { HTTP } from "../src/http/problem";
 import { PUBLIC_ACTION_KINDS } from "../src/public/service";
 import { fakeTurnkey, testApp } from "./helpers";
 
@@ -15,7 +16,7 @@ const PERSONAL_KEYS = /email|address|handle|userId|user_id|amount|hash|token|"id
 
 test("public stats are aggregate counts, open without a session", async () => {
   const response = await app.request("/public/stats");
-  assert.equal(response.status, 200);
+  assert.equal(response.status, HTTP.ok);
   const text = await response.text();
   assert.doesNotMatch(text, PERSONAL_KEYS);
   const stats = JSON.parse(text) as Record<string, unknown> & {

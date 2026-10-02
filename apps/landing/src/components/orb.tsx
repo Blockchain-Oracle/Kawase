@@ -18,7 +18,9 @@ const VoicePoweredOrb = dynamic(
 const SPEAKING_PERIOD_MS = 2600;
 const SPEAKING_FLOOR = 0.12;
 const SPEAKING_RANGE = 0.38;
-const FULL_TURN = Math.PI * 2;
+/** A full turn is 2π radians. */
+const PI_PER_TURN = 2;
+const FULL_TURN = Math.PI * PI_PER_TURN;
 /** sin() spans −1…1; (1 + sin) × HALF spans 0…1. */
 const HALF = 0.5;
 

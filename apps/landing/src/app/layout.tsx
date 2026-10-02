@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- the token file's one stylesheet, shared with the web app */}
+        {/* The token file's one font stylesheet, shared with the web app. */}
         <link rel="stylesheet" href={tokens.fonts.googleFontsHref} />
       </head>
       <body className="min-h-screen bg-background text-foreground">

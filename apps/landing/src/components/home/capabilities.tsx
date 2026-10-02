@@ -9,6 +9,9 @@ import { AREAS, ENTITY, areaState, isShipped, nextLine, todayLine, type Area } f
 import { links } from "@/lib/links";
 
 const MARK_SIZE = 26;
+/** Bento column spans: a wide card takes two of the three columns. */
+const WIDE = 2;
+const NARROW = 1;
 
 function status(area: Area) {
   const main = areaState(area.id, "mainnet");
@@ -50,7 +53,7 @@ const toItem = (area: Area): BentoItem => ({
   icon: area.marks?.map((name) => <Mark key={name} entity={ENTITY[name]} size={MARK_SIZE} />),
   tags: area.partners,
   footnote: footnote(area),
-  colSpan: area.wide ? 2 : 1,
+  colSpan: area.wide ? WIDE : NARROW,
   muted: !isShipped(area.id),
   href: `${links.docs}${area.docs}`,
 });
