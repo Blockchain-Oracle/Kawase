@@ -62,3 +62,7 @@ features declaration, store listing with screenshots — tracked in `plan/COVERA
   `adb install --no-streaming`.
 - Found and fixed on the first run: blur on Android needs a BlurTargetView (SDK 57), the segmented control's thumb,
   the dock showing rows through it, "Voice: coming" in the capability view, and "On" for push without a token.
+- **Builds to use (2026-10-02):** Play's first manual upload = production build `a372db49` (versionCode 5,
+  https://expo.dev/accounts/abu.dev/projects/kawase/builds/a372db49-714f-4adb-a8bf-a0f3d49e6982); phone install =
+  preview build `e644e19d` (https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed).
+  Do **not** use `fc084aa7` (versionCode 4): it has the blank-screen bug from the first blur-target version.
