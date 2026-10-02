@@ -14,6 +14,8 @@ import {
   TURNKEY_ORGANIZATION_ID,
   isWalletConfigured,
 } from "./config";
+import { reportClientEvent } from "@/session/client-events";
+import { describeError, summarize } from "./error-detail";
 import { classifySignInFailure } from "./sign-in-errors";
 
 const config: TurnkeyProviderConfig = {
@@ -33,7 +35,13 @@ const config: TurnkeyProviderConfig = {
 };
 
 const callbacks: TurnkeyCallbacks = {
-  onError: (error) => console.warn("[wallet]", { category: classifySignInFailure(error), code: error.code }),
+  onError: (error) => {
+    const category = classifySignInFailure(error);
+    const detail = describeError(error);
+    // A string, so the console's depth limit can't fold the cause chain into "[Object]".
+    console.warn("[wallet]", { category, code: error.code, error: JSON.stringify(detail) });
+    if (category !== "cancelled") reportClientEvent({ stage: "kit", category, ...summarize(detail) });
+  },
 };
 
 export function WalletProvider({ children }: { children: ReactNode }) {
