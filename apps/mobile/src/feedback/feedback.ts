@@ -67,6 +67,13 @@ export async function confirmedFeedback(identity: string): Promise<void> {
     .catch(() => undefined);
 }
 
+/** A light tick for a deliberate tap (send, chip, toggle); respects the person's haptics setting. */
+export function tapFeedback(kind: "light" | "selection" = "light"): void {
+  if (Platform.OS === "web" || !feedbackPreferences().haptics) return;
+  const done = kind === "selection" ? Haptics.selectionAsync() : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  void done.catch(() => undefined);
+}
+
 export function stopInterfaceSounds() {
   ownership.cancelEffects();
   player?.pause();

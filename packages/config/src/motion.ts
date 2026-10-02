@@ -13,6 +13,14 @@ export const MOTION = {
   /** A finger-released page settles without waiting for React. */
   storySettleMs: 260,
   composerMs: 180,
+  /** The composer's focus glow fading in/out (21st.dev "prompt input dynamic grow"). */
+  composerGlowMs: 220,
+  /** The ripple spreading from where the finger touched the composer. */
+  composerRippleMs: 520,
+  /** A sent message rising from the composer into the thread. */
+  messageRiseMs: 320,
+  /** Chat suggestion tiles arriving one after another. */
+  tileStaggerMs: 56,
   /** How long a story panel stays before the next one (auto-advance); swiping resets it. */
   storyDwellMs: 4_500,
   /** The blur behind an overlay reaching full strength (M06). */
@@ -37,6 +45,26 @@ export const MOTION = {
   sendingCycleMs: 1_600,
   /** The plane leaving when the send is confirmed, before the receipt settles in. */
   planeFlyMs: 650,
+} as const;
+
+/** Springs shared by layout changes that follow a finger or a focus (composer growing, chips arriving). */
+export const SPRING = {
+  layout: { damping: 20, stiffness: 240, mass: 0.9 },
+} as const;
+
+/** The composer ("orb capsule"): compact at rest beside the voice button, full width while typing. */
+export const COMPOSER = {
+  /** Share of the row the capsule takes at rest; the voice button takes the rest. */
+  restWidthPct: 72,
+  minHeightPt: 48,
+  /** About five lines of text before the field scrolls. */
+  maxHeightPt: 140,
+  voiceButtonPt: 48,
+  rippleSizePt: 56,
+  rippleScale: 6,
+  /** Peak opacity of the focus glow. */
+  glowOpacity: 0.45,
+  glowRadiusPt: 14,
 } as const;
 
 /** Geometry of the quick-action fan (P19, settled state): circles in a vertical trailing column. */
