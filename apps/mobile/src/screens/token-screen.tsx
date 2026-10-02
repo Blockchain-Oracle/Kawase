@@ -28,7 +28,8 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
-import { change, holdingAmount, money, price, shortAddress, USD_FX } from "@/portfolio/format";
+import { change, holdingAmount, money, price, shortAddress } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -63,7 +64,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const [scrub, setScrub] = React.useState<ChartPoint | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
-  const fx = USD_FX;
+  const fx = useFx();
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/markets"));
 
   const activeChain = user?.activeNetwork === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;

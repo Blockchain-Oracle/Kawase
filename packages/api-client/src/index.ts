@@ -84,6 +84,7 @@ import type {
   PayoutView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
+import type { FeeReserveView, FxView } from "./fees";
 import { intelligenceApi } from "./intelligence";
 import { everydayApi } from "./everyday";
 
@@ -104,6 +105,7 @@ export * from "./history";
 export * from "./intelligence";
 export * from "./everyday";
 export * from "./chat-cards";
+export * from "./fees";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -415,6 +417,12 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     },
 
     /** Looking back: why one transaction happened, a month's export, the weekly report. */
+    /** The fee reserve ("~N actions left") and the display currency's rate. */
+    fees: {
+      reserve: () => call<{ reserve: FeeReserveView }>("GET", "/fees/reserve"),
+      fx: (currency?: string) => call<{ fx: FxView }>("GET", `/fx${currency ? `?currency=${encodeURIComponent(currency)}` : ""}`),
+    },
+
     history: {
       why: (txHash: string, network: NetworkId) => call<{ why: WhyView }>("GET", `/history/why/${txHash}?network=${network}`),
       report: (network: NetworkId, days?: number) => call<{ report: ReportView }>("GET", `/history/report?network=${network}${days ? `&days=${days}` : ""}`),

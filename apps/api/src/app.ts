@@ -52,6 +52,8 @@ import { EarnService } from "./earn/service";
 import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noMarketData, type MarketData } from "./market/sources";
+import { feeRoutes, fxRoutes } from "./fees/routes";
+import { FeeService } from "./fees/service";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
@@ -370,6 +372,10 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  // Fees ("~N actions left") and the display currency's rate (B2-3).
+  const fees = new FeeService(deps.chains, wallets, deps.market ?? noMarketData);
+  app.route("/fees", feeRoutes(fees));
+  app.route("/fx", fxRoutes(fees));
   app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
   const exportLinks = new ExportLinks(deps.approvalSecret);
   app.route("/files/export", exportFileRoutes(history, exportLinks));
@@ -380,6 +386,7 @@ export function createApp(deps: AppDeps) {
     invoices,
     history,
     business: { payouts, account, exportLinks },
+    fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,
     wallets,

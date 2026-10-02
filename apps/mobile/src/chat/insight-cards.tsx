@@ -29,7 +29,8 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ForYouList } from "@/home/for-you";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { change, money, price, USD_FX } from "@/portfolio/format";
+import { change, money, price } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -115,6 +116,7 @@ const PERCENT = 100;
 
 /** show_chart: the portfolio's value or a token's price, with its range pills (other ranges are fetched here). */
 export function ChartCard({ output }: { output: ChartOutput }) {
+  const fx = useFx();
   const { t } = useT();
   const { locale } = useLocale();
   const colors = useThemeColors();
@@ -150,7 +152,7 @@ export function ChartCard({ output }: { output: ChartOutput }) {
       </AgentCard>
     );
 
-  const format = (value: number) => (output.kind === "token" ? price(value, USD_FX, locale) : money(value, USD_FX, locale));
+  const format = (value: number) => (output.kind === "token" ? price(value, fx, locale) : money(value, fx, locale));
   const first = points[0]?.v;
   const last = points.at(-1)?.v;
   const pct = first && last !== undefined ? change(((last - first) / first) * PERCENT, locale) : undefined;

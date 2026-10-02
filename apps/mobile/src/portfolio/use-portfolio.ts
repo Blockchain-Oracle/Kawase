@@ -11,6 +11,8 @@ import { useSession } from "@/session/session-provider";
 export function usePortfolio() {
   const { status, user } = useSession();
   const network = user?.activeNetwork;
+  // A new display currency is a new rate on every value: read again.
+  const currency = user?.displayCurrency;
   const [portfolio, setPortfolio] = React.useState<PortfolioView>();
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(false);
@@ -36,7 +38,7 @@ export function usePortfolio() {
   React.useEffect(() => {
     setPortfolio((current) => (current && current.network !== network ? undefined : current));
     void refresh();
-  }, [refresh, network]);
+  }, [refresh, network, currency]);
 
   const setVisibility = React.useCallback(
     async (address: string, visibility: "auto" | "shown" | "hidden") => {

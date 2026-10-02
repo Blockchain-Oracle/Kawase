@@ -170,6 +170,8 @@ export type AgentContext = {
   riskMode?: "careful" | "balanced" | "autonomous" | undefined;
   practice?: boolean | undefined;
   pausedAll?: boolean | undefined;
+  /** The person's display currency and today's rate (B2-3), when it is not US dollars. */
+  display?: { currency: string; perUsd: number } | undefined;
   /** The person's limits now. */
   safetyView?(): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   /** A change: tightening applies at once; loosening comes back as a card to approve with Face ID. */

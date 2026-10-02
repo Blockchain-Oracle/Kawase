@@ -79,6 +79,7 @@ import { receipt } from "./receipt";
 import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
+import { help } from "./help";
 
 export const ru: Catalog = {
   common,
@@ -160,4 +161,5 @@ export const ru: Catalog = {
   importContacts,
   alerts,
   chatCards,
+  help,
 };

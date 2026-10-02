@@ -53,7 +53,8 @@ import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { InboxBell } from "@/inbox/inbox-bell";
 import { useMarket } from "@/markets/use-markets";
-import { change, money, price, shortAddress, USD_FX } from "@/portfolio/format";
+import { change, money, price, shortAddress } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { StaleBanner } from "@/session/stale-banner";
@@ -322,6 +323,7 @@ export function HomeScreen() {
 
 /** Guest Home: what Kawase is, the two ways in, and real markets with no account (R13). */
 function GuestHome({ onTry, onBuy }: { onTry: () => void; onBuy: () => void }) {
+  const fx = useFx();
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -366,7 +368,7 @@ function GuestHome({ onTry, onBuy }: { onTry: () => void; onBuy: () => void }) {
                   key={row.token.address}
                   token={row.token}
                   amount={row.token.symbol}
-                  value={price(row.priceUsd, USD_FX, locale)}
+                  value={price(row.priceUsd, fx, locale)}
                   change24hPct={row.change24hPct}
                   {...(changeLabel ? { changeLabel } : {})}
                   {...(chip ? { chip } : {})}

@@ -144,6 +144,15 @@ function capabilityLines(capabilities: CapabilityLine[] | undefined): string[] {
   ];
 }
 
+/** Money in the person's own currency (B2-3): dollar values converted at today's rate; token amounts stay as they are. */
+function displayLines(context: AgentContext): string[] {
+  const display = context.display;
+  if (!display || display.currency === "USD") return [];
+  return [
+    `Their display currency is ${display.currency} (1 USD = ${display.perUsd} ${display.currency} today). When you mention a value in dollars (a price, a total, what something is worth), give it in ${display.currency}, e.g. "about 18.40 ${display.currency}"; amounts of a token (USDC, EURC, any other) stay in that token.`,
+  ];
+}
+
 /** Per-turn additions from the intelligence layer (A5), after the cacheable prefix. */
 export type TurnExtras = { memory?: MemoryFact[] | undefined; digest?: ThreadDigest | undefined };
 
@@ -166,6 +175,7 @@ export function instructions(
     who,
     `Reply in ${context.languageName} (${context.locale}).`,
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
+    ...displayLines(context),
     ...safetyLines(context),
     ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet), ...capabilityLines(capabilities)] : []),
     ...memoryLines(extras.memory ?? []),

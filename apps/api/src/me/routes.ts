@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   GPT_LIVE_VOICES,
   handleProblem,
+  isDisplayCurrency,
   MAINNET_CONSENT_VERSION,
   normalizeHandle,
   SUPPORTED_LOCALES,
@@ -27,7 +28,7 @@ const settingsSchema = z
   .object({
     locale: z.enum(SUPPORTED_LOCALES),
     replyLanguage: z.string().max(FIELD.localeMax).nullable(),
-    displayCurrency: z.string().length(FIELD.currencyCodeLength),
+    displayCurrency: z.string().length(FIELD.currencyCodeLength).transform((code) => code.toUpperCase()).refine(isDisplayCurrency, "not a display currency Kawase offers"),
     timezone: z.string().max(FIELD.timezoneMax),
     theme: z.enum(["system", "light", "dark"]),
     /** The @handle; null clears it. Checked against the shared rules and for uniqueness below. */
