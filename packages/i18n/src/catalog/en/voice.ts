@@ -8,6 +8,7 @@ export const voice = {
   speaking: "Speaking",
   failed: "Voice couldn’t start. Try again, or type instead.",
   micDenied: "Kawase can’t hear you: allow the microphone in Settings.",
+  micDeniedWeb: "Kawase can’t hear you: allow the microphone for this site in your browser.",
   openSettings: "Open Settings",
   mute: "Mute",
   unmute: "Unmute",

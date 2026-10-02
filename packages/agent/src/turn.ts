@@ -6,6 +6,8 @@ import {
   isStepCount,
   streamText,
   toUIMessageStream,
+  type TextStreamPart,
+  type ToolSet,
   type UIMessage,
   type UIMessageStreamOnEndCallback,
 } from "ai";
@@ -13,6 +15,8 @@ import {
 import type { CapabilityLine, WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
+import { factsUsed } from "./intelligence";
+import { foldThread, windowFor } from "./threads";
 import type { Models } from "./models";
 import { instructions } from "./prompt";
 import { buildTools } from "./tools";
@@ -50,6 +54,22 @@ export type TurnInput = {
   capabilities?: CapabilityLine[] | undefined;
 };
 
+/** What a turn said and did, read off its stream as it passes (for noticing which remembered fact it used). */
+function watchTurn() {
+  let replyText = "";
+  let toolInputs = "";
+  let toolOutputs = "";
+  const stream = new TransformStream<TextStreamPart<ToolSet>, TextStreamPart<ToolSet>>({
+    transform(part, controller) {
+      if (part.type === "text-delta") replyText += part.text;
+      else if (part.type === "tool-call") toolInputs += ` ${JSON.stringify(part.input)}`;
+      else if (part.type === "tool-result") toolOutputs += ` ${JSON.stringify(part.output)}`;
+      controller.enqueue(part);
+    },
+  });
+  return { stream, seen: () => ({ replyText, toolInputs, toolOutputs }) };
+}
+
 export async function agentTurn({
   models,
   context,
@@ -67,14 +87,22 @@ export async function agentTurn({
   let stepStartedAt = startedAt;
   const tools = buildTools(context);
   const voice = context.surface === "voice";
+  // What the person asked Kawase to remember, and a long thread's summary (A5); a failed read never stops the turn.
+  const [memory, digest] = await Promise.all([
+    context.intelligence.memory().catch(() => []),
+    context.intelligence.threadDigest().catch(() => null),
+  ]);
+  // A long thread: the summary of its older part plus the recent messages, verbatim.
+  const { window, summarized } = windowFor(messages, digest);
+  const watch = watchTurn();
   // Talking: the voice role's model, with the least reasoning — the person is waiting in silence.
   const model = models.forRole(voice ? "agentVoice" : "agentChat");
   // Only reasoning models take a reasoning effort (gpt-4.1 and gpt-4o refuse it).
   const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   const result = streamText({
     model,
-    instructions: instructions(context, new Date(), wallet, capabilities),
-    messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
+    instructions: instructions(context, new Date(), wallet, capabilities, { memory, digest: summarized && digest ? digest : undefined }),
+    messages: await convertToModelMessages(window, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     experimental_toolApprovalSecret: approvalSecret,
     stopWhen: isStepCount(MAX_STEPS),
@@ -99,11 +127,26 @@ export async function agentTurn({
     },
   });
   return toUIMessageStream({
-    stream: result.stream,
+    stream: result.stream.pipeThrough(watch.stream),
     tools,
     originalMessages: messages,
     generateMessageId: messageId,
-    onEnd,
+    // The facts the reply relied on ride on the message (the chat's "From memory" line), and are marked used.
+    messageMetadata: ({ part }) => {
+      if (part.type !== "finish" || memory.length === 0) return undefined;
+      const memoryUsed = factsUsed(memory, { userText: context.lastUserText, ...watch.seen() });
+      if (memoryUsed.length === 0) return undefined;
+      void context.intelligence.markMemoryUsed(memoryUsed.map((fact) => fact.id)).catch(() => undefined);
+      return { memoryUsed };
+    },
+    onEnd: async (event) => {
+      await onEnd(event);
+      // After the person has their answer: fold older messages into the summary when enough have piled up.
+      if (event.isAborted) return;
+      void foldThread(models, event.messages, digest)
+        .then((next) => (next ? context.intelligence.saveThreadDigest(next) : undefined))
+        .catch((error: unknown) => context.intelligence.warn(error, "thread summary failed"));
+    },
     onError: (error) => {
       onError(error);
       return "error";

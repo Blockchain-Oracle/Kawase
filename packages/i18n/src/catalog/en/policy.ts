@@ -41,4 +41,7 @@ export const policy = {
   fixSwitch: "Switch to {{network}}",
   fixEditAmount: "Change the amount",
   fixOpenContact: "Open contact",
+  AGENT_PAUSED: "Paused: this one needs your approval",
+  NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
+  NEW_RECIPIENT_COOLDOWN: "New recipients can get up to {{cap}} per payment until {{until}}. Change it in Wallet & limits.",
 } as const;

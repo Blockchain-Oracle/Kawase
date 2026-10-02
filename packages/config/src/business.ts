@@ -1,4 +1,4 @@
-// Business mode (cards/agent-business.md): invoices, batch payouts and payroll.
+// Business mode (cards/agent-business.md): invoices, batch payouts and payroll days (payroll runs as an automation).
 import { MS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "./units";
 
 export const INVOICE_NUMBER_PREFIX = "INV-";
@@ -17,7 +17,6 @@ export const PAYOUT_LINES_MAX = 50;
 /** Gas for a self-batch of transfers: a base plus each transfer. */
 export const PAYOUT_GAS_BASE = 120_000n;
 export const PAYOUT_GAS_PER_LINE = 60_000n;
-export const PAYROLL_PAYEES_MAX = 20;
 /** Due-date choices on a new invoice (days). */
 export const INVOICE_DUE_CHOICES = [7, 14, 30] as const;
 /** Payroll days offered (1–28, so every month has them). */

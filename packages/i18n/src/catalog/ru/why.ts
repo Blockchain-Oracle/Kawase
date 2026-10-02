@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "Сработала ваша автоматизация: {{kind}}",
   automationKind: {
+    payroll: "выплаты",
+    dca: "регулярная покупка",
     scheduled_send: "платёж по расписанию",
     auto_save: "Автосбережения",
     rule: "правило",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "Также сравнили: {{providers}}",
   approved: {
+    declined: "Вы отклонили",
+    expired: "Нет ответа вовремя",
     allowance: "Одобрено вашим дневным лимитом",
     wallet_signature: "Вы это одобрили",
     automation: "Одобрено лимитом автоматизации",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "по метке в блокчейне",
   recorded: "Записано",
   audit: {
+    automation: {
+      run_skipped: "Kawase записал пропуск",
+      run_practiced: "Записано как тренировка",
+    },
+    needs_you: {
+      opened: "Ждало вас",
+      approved: "Вы подтвердили",
+      declined: "Вы отклонили",
+    },
     payout: { sent: "Выплата записана" },
     invoice: { created: "Счёт создан", paid: "Счёт отмечен как оплаченный", canceled: "Счёт отменён" },
     payroll: { activated: "Зарплата включена" },

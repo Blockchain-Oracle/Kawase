@@ -1,6 +1,6 @@
 // Business mode (cards/agent-business.md): a business profile; invoices with line items and an on-chain reference
 // (Arc's Memo contract), paid through their payment request link and matched by that reference; batch payouts the
-// wallet signs once; and payroll, a group of scheduled sends (one grant per payee) run by the automation engine.
+// wallet signs once. Payroll is the automations `payroll` kind (decision X32).
 import { index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, money, networkEnum, timestampTz, updatedAt } from "./common";
@@ -90,19 +90,3 @@ export const payoutBatches = pgTable(
   (table) => [index("payout_batches_user_created_idx").on(table.userId, table.createdAt)],
 );
 
-export const payrolls = pgTable(
-  "payrolls",
-  {
-    id: id(),
-    userId: uuid()
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    network: networkEnum().notNull(),
-    name: text().notNull(),
-    /** One scheduled send per payee (each with its own grant pinned to that payee). */
-    automationIds: jsonb().$type<string[]>().notNull().default([]),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (table) => [index("payrolls_user_idx").on(table.userId)],
-);

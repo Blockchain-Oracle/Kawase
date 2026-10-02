@@ -27,9 +27,12 @@ import type { BridgeService } from "../bridge/service";
 import type { EarnService } from "../earn/service";
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
+import type { CrossChainService } from "../crosschain/service";
+import type { LendService } from "../lend/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
+import type { SafetyService } from "../safety/service";
 import type { InvoiceService } from "../business/invoices";
 import type { HistoryService } from "../history/service";
 import type { BusinessAgentDeps } from "./business-context";
@@ -75,6 +78,8 @@ export type AgentDeps = {
   earn: EarnService;
   margin?: MarginService | undefined;
   onramp?: OnrampService | undefined;
+  crosschain?: CrossChainService | undefined;
+  lend?: LendService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -82,6 +87,8 @@ export type AgentDeps = {
   approvalSecret?: string | undefined;
   /** The x402 marketplace; paid services are off without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Wallet & limits (A3); the safety tools answer "unavailable" without it. */
+  safety?: SafetyService | undefined;
   /** Business mode: invoices from chat. */
   invoices?: InvoiceService | undefined;
   history?: HistoryService | undefined;
@@ -119,6 +126,8 @@ export function createTurnRunner(deps: AgentDeps) {
     earn,
     margin,
     onramp,
+    crosschain,
+    lend,
     assets,
     automations,
     requests,
@@ -179,10 +188,13 @@ export function createTurnRunner(deps: AgentDeps) {
       earn,
       margin,
       onramp,
+      crosschain,
+      lend,
       assets,
       automations,
       requests,
       marketplace,
+      safety: deps.safety,
       invoices,
       history: historyService,
       business,

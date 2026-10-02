@@ -7,5 +7,6 @@ export const feedback: Catalog["feedback"] = {
   haptics: "لمسی ردعمل",
   hapticsBody: "تصدیق شدہ نتائج پر لمسی ردعمل۔",
   narration: "ابتدائی تعارف کی آواز",
+  narrationBody: "سوائپ کرتے وقت خوش آمدید کہانی پڑھ کر سناتا ہے۔",
   saveFailed: "یہ ترجیح محفوظ نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
 };

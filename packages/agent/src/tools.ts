@@ -7,6 +7,10 @@ import { z } from "zod";
 import { businessTools } from "./business-tools";
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
+import { safetyTools } from "./safety-tools";
+import { automationTools } from "./automation-tools";
+import { intelligenceTools } from "./intelligence-tools";
+import { withQuarantine } from "./quarantine";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -35,8 +39,11 @@ const BODY_MAX = 4_000;
 const INVOICE_DUE_MAX = 365;
 
 export function buildTools(context: AgentContext) {
-  return {
+  // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
+  return withQuarantine({
     ...railsTools(context),
+    ...safetyTools(context),
+    ...automationTools(context),
     ...businessTools(context),
     get_wallet: tool({
       description:
@@ -120,16 +127,7 @@ export function buildTools(context: AgentContext) {
       execute: async ({ amount, from, to }) => context.proposeSwap({ amount: amount ?? null, tokenIn: from ?? null, tokenOut: to ?? null }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-    propose_bridge: tool({
-      description:
-        "Prepare moving the person's USDC from Arc to their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche; the testnet versions on testnet). Pass the chain and the amount as digits with a dot. Kawase quotes Circle's CCTP route (native USDC burned on Arc, minted there by Circle's forwarder, no gas needed on the other chain), compares the other routes that serve Arc, runs every check and shows a card. The person confirms on the card with Face ID (an email code on the web); nothing moves from this call.",
-      inputSchema: z.object({
-        destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("The chain they named; omit if they did not say"),
-        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say how much"),
-      }),
-      execute: async ({ destination, amount }) => context.proposeBridge({ destination: destination ?? null, amount: amount ?? null }),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
+    // propose_bridge lives in rails-tools.ts (any recipient, route options; B1).
     get_earn: tool({
       description:
         "The USDC vaults the person can earn yield in on the active network (Morpho vaults through Circle App Kit; mock vaults on testnet): name, yearly yield now, how much can be paid out, whether Circle monitors it, and what the person already holds in each.",
@@ -185,21 +183,32 @@ export function buildTools(context: AgentContext) {
       description:
         "Draft a rule that acts by itself when something happens: when the balance goes above or drops below an amount, or when money arrives (optionally only from someone, or only at least an amount). The step: bridge USDC to the person's own address on base, ethereum, arbitrum, optimism, polygon or avalanche; save it into their own vault; or just tell them (an alert). How much: what is above the line (the default for 'balance above'), a share of the money that arrived (percent), or a fixed amount; pass reserve only if they said to keep something other than the line. Kawase checks it and shows a card with the read-back, what would happen right now and the bound the chain enforces; they turn it on on the card (Face ID; an alert needs only a tap). Nothing happens from this call. Use draft_automation for sends on a schedule and draft_auto_save for keep-an-amount-ready saving.",
       inputSchema: z.object({
-        trigger: z.enum(["balance_above", "balance_below", "money_in"]),
+        trigger: z.enum(["balance_above", "balance_below", "money_in", "price", "money_out"]).describe("price: when an amount of one token would buy at least an amount of another (live quote); money_out: each payment they send (round-ups)"),
         threshold: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, for balance triggers"),
         from: z.string().max(RECIPIENT_MAX).optional().describe("Money in: only from this sender, as the person said it (a contact, @handle or an address they typed)"),
         minAmount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Money in: only payments of at least this much"),
-        action: z.enum(["bridge", "save", "notify"]),
+        action: z.enum(["bridge", "save", "notify", "send", "swap"]).describe("send: to someone else; swap: waits for them in Needs you with a fresh quote"),
         destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("Bridge: the chain"),
         vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Save: only a vault address from get_earn the person chose"),
         amountMode: z.enum(["fixed", "excess", "percent"]).optional(),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Fixed amount, USDC"),
         reserve: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Excess: keep this much instead of the line"),
         percent: z.number().positive().max(MAX_PERCENT).optional().describe("A share of the money that arrived, 1–100"),
+        recipient: z.string().max(RECIPIENT_MAX).optional().describe("Send: who, as the person said it"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("Send: only if they named the currency"),
+        capPerDay: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Send: the most a day, if they said one"),
+        tokenIn: z.string().max(RECIPIENT_MAX).optional().describe("Price or swap: the token paid with, as said (USDC when not said)"),
+        tokenOut: z.string().max(RECIPIENT_MAX).optional().describe("Price or swap: the token bought, as said"),
+        priceAmount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Price: the amount of tokenIn the price is checked for (and swapped)"),
+        minOut: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Price: fire when priceAmount would buy at least this much tokenOut"),
+        roundTo: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Round-ups: to the next whole this many USDC, 1 when not said"),
       }),
       execute: async (input) => {
         // K2: an address can only come from the person's own words.
         if (input.from && /^0x/i.test(input.from.trim()) && !context.lastUserText.toLowerCase().includes(input.from.trim().toLowerCase())) {
+          throw new Error("An address must be typed by the person; ask them for it.");
+        }
+        if (input.recipient && /^0x/i.test(input.recipient.trim()) && !context.lastUserText.toLowerCase().includes(input.recipient.trim().toLowerCase())) {
           throw new Error("An address must be typed by the person; ask them for it.");
         }
         return context.draftRule(input);
@@ -392,7 +401,9 @@ export function buildTools(context: AgentContext) {
       execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-  };
+    // Memory, history search, Arc knowledge and the extra cards (A5).
+    ...intelligenceTools(context),
+  });
 }
 
 export type AgentTools = ReturnType<typeof buildTools>;

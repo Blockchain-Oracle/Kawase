@@ -64,6 +64,7 @@ test("devices, signing one out, and deleting the account with the handle held", 
   assert.equal(mine.name, "Test iPhone");
   assert.equal(mine.turnkeyPublicKey, phone.publicKeyHex);
   assert.equal(other.turnkeyPublicKey, laptop.publicKeyHex);
+  assert.ok(devices.every((device) => device.signedIn), "both devices read as signed in");
 
   // The new device got a place from its address (DB-IP's free API), and the account a "new sign-in" notice.
   let located: { location: string | null } | undefined;

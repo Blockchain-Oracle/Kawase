@@ -83,6 +83,7 @@ export function testApp(
     agentWallets?: AppDeps["agentWallets"];
     discovery?: AppDeps["discovery"];
     onramp?: AppDeps["onramp"];
+    alchemyApiKey?: string | undefined;
     /** Real models for a live agent round trip (none by default: the chat answers "unavailable"). */
     models?: AppDeps["models"];
   } = {},

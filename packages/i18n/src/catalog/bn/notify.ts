@@ -13,4 +13,11 @@ export const notify: Catalog["notify"] = {
   emailOpen: "Kawase খুলুন",
   emailNeverApprove: "Kawase কখনো ইমেইলে কিছু অনুমোদন বা সই করতে বলে না।",
   emailWhy: "Kawase-এ এটি চালু আছে বলে আপনি এটি পাচ্ছেন। সেটিংস → বিজ্ঞপ্তি থেকে বদলান।",
+  needsYouTitle: "আপনার অপেক্ষায়",
+  needsYouReminderTitle: "এখনও আপনার অপেক্ষায়",
+  needsYouSend: "{{name}}-কে {{amount}} পাঠান",
+  needsYouSwap: "{{amount}} {{symbolIn}} {{symbolOut}}-এ বদলান",
+  reminderTitle: "আগামীকাল, {{at}}",
+  reminderPayroll: "{{people}} জনের বেতন",
+  reminderShort: "আপনার ওয়ালেটে এই রানের চেয়ে কম আছে",
 };

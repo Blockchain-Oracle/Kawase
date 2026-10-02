@@ -59,19 +59,17 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
     (entry) => entry.code === "LOOKALIKE_ADDRESS" || entry.code === "FIRST_TIME_RECIPIENT",
   );
   const above = intent.results.some((entry) => entry.code === "ABOVE_ALLOWANCE");
-  const usdc = intent.draft?.asset !== "EURC";
+  // Each token has its own allowance (Wallet & limits), so "off" means off for this send's token.
   const line =
     route === "allowance"
       ? t("send.allowanceInside")
-      : !usdc
-        ? t("send.allowanceUsdcOnly")
-        : !allowance.active
-          ? t("send.allowanceOff")
-          : above
-            ? t("send.allowanceAbove")
-            : stepUp
-              ? t("send.allowanceStepUp")
-              : t("send.allowanceAbove");
+      : !allowance.active
+        ? t("send.allowanceOff")
+        : above
+          ? t("send.allowanceAbove")
+          : stepUp
+            ? t("send.allowanceStepUp")
+            : t("send.allowanceAbove");
   const total = allowance.perPeriod ? BigInt(allowance.perPeriod) : ZERO;
   const left = BigInt(allowance.available);
   const share = total > ZERO ? Number((left * BigInt(PERCENT)) / total) : 0;
@@ -84,15 +82,15 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
         />
         <Text className={cn("text-foreground flex-1 text-sm leading-5", TEXT_START)}>{line}</Text>
       </View>
-      {usdc && allowance.active && allowance.perPeriod && !compact ? (
+      {allowance.active && allowance.perPeriod && !compact ? (
         <>
           <View className="bg-background overflow-hidden rounded-full" style={{ height: METER_HEIGHT }}>
             <View className="bg-success h-full rounded-full" style={{ width: `${share}%` }} />
           </View>
           <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
             {t("send.allowanceLeft", {
-              amount: money("USDC", allowance.available),
-              total: money("USDC", allowance.perPeriod),
+              amount: money(intent.draft?.asset ?? "USDC", allowance.available),
+              total: money(intent.draft?.asset ?? "USDC", allowance.perPeriod),
             })}
           </Text>
         </>

@@ -53,12 +53,23 @@ import { assets } from "./assets";
 import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
+import { safety } from "./safety";
+import { needsYou } from "./needs-you";
+import { activityFeed } from "./activity-feed";
 import { buy } from "./buy";
+import { move } from "./move";
+import { movePolicy } from "./move-policy";
+import { lend } from "./lend";
+import { lendPolicy } from "./lend-policy";
+import { yieldOptions } from "./yield-options";
 import { business } from "./business";
 import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
 import { privacy } from "./privacy";
+import { memory } from "./memory";
+import { insight } from "./insight";
+import { forYou } from "./for-you";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 
@@ -116,12 +127,23 @@ export const zh: Catalog = {
   markets,
   tokenPage,
   ticket,
+  safety,
+  needsYou,
+  activityFeed,
   buy,
+  move,
+  movePolicy,
+  lend,
+  lendPolicy,
+  yieldOptions,
   business,
   why,
   report,
   history,
   privacy,
+  memory,
+  insight,
+  forYou,
   alerts,
   chatCards,
 };

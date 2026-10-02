@@ -6,3 +6,5 @@ export * from "./bridge-draft";
 export * from "./earn-draft";
 export * from "./schedule";
 export * from "./margin-draft";
+export * from "./crosschain-draft";
+export * from "./lend-draft";

@@ -99,6 +99,8 @@ export const contactAddressTrust = pgTable(
     /** Out-of-band confirmation ("they showed me their QR", "confirmed by phone"); required before unattended use. */
     verifiedAt: timestampTz(),
     verifiedMethod: text(),
+    /** On the person's allowlist on this network: the agent and automations may pay it without asking (Wallet & limits). */
+    allowlistedAt: timestampTz(),
     updatedAt: updatedAt(),
   },
   (table) => [primaryKey({ columns: [table.contactAddressId, table.network] })],

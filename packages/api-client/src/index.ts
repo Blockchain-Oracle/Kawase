@@ -67,6 +67,9 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type { ActivityFeedApi, FeedPage } from "./activity-feed";
+import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
+import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
 import type {
   BusinessProfile,
@@ -77,11 +80,9 @@ import type {
   PayoutCreateResult,
   PayoutLineInput,
   PayoutView,
-  PayrollGrantRequest,
-  PayrollInput,
-  PayrollView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
+import { intelligenceApi } from "./intelligence";
 
 export * from "./types";
 export * from "./agent-types";
@@ -89,9 +90,13 @@ export * from "./assets";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./safety";
+export * from "./automations-8c";
+export * from "./activity-feed";
 export * from "./rails";
 export * from "./business";
 export * from "./history";
+export * from "./intelligence";
 export * from "./chat-cards";
 
 export class ApiError extends Error {
@@ -178,8 +183,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
             | "displayCurrency"
             | "timezone"
             | "theme"
-            | "riskMode"
-            | "practiceMode"
             | "handle"
           >
         > & { handlePrompted?: true; voicePrefs?: Partial<VoicePrefs> },
@@ -350,6 +353,31 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         ),
     },
 
+    /** Automations 8c: payroll, DCA, practice runs, the dry run, editing in place. */
+    automationsMore: {
+      payroll: (input: PayrollAutomationInput) => call<{ automation: AutomationView }>("POST", "/automations/payroll", input),
+      dca: (input: DcaInput) => call<{ automation: AutomationView }>("POST", "/automations/dca", input),
+      practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
+      simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
+      edit: (id: string, edit: AutomationEdit) => call<AutomationEditResponse>("PATCH", `/automations/${id}`, edit),
+      editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
+    } satisfies AutomationsMoreApi,
+
+    /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
+    activityFeed: {
+      list: (network: NetworkId) => call<FeedPage>("GET", `/activity?network=${network}`),
+      runWhy: (runId: string) => call<{ why: WhyView }>("GET", `/activity/why/run/${runId}`),
+    } satisfies ActivityFeedApi,
+
+    /** The Needs-you queue: steps automations may not take alone, answered once from anywhere. */
+    needsYou: {
+      list: () => call<{ items: NeedsYouItem[]; pending: number }>("GET", "/needs-you"),
+      get: (id: string) => call<{ item: NeedsYouItem }>("GET", `/needs-you/${id}`),
+      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }),
+      decline: (id: string, via?: "app" | "push" | "web" | "chat") => call<{ item: NeedsYouItem }>("POST", `/needs-you/${id}/decline`, { via }),
+    } satisfies NeedsYouApi,
+
     voice: {
       /** Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. */
       session: (input: { threadId?: string } = {}) => call<VoiceSession>("POST", "/voice/session", input),
@@ -407,7 +435,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       },
     },
 
-    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts, payroll. */
+    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts. */
     business: {
       profile: () => call<{ profile: BusinessProfile | null }>("GET", "/business/profile"),
       saveProfile: (input: BusinessProfileInput) => call<{ profile: BusinessProfile }>("PUT", "/business/profile", input),
@@ -424,13 +452,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
       submitPayout: (id: string, requestId: string, signedTransaction: string) =>
         call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),
-      payrolls: () => call<{ payrolls: PayrollView[] }>("GET", "/business/payroll"),
-      createPayroll: (input: PayrollInput) => call<{ payroll: PayrollView }>("POST", "/business/payroll", input),
-      payrollGrant: (id: string) => call<PayrollGrantRequest>("POST", `/business/payroll/${id}/grant`),
-      activatePayroll: (id: string, lines: { automationId: string; signatures: { grantId: string; signature: string }[] }[]) =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/activate`, { lines }),
-      changePayroll: (id: string, change: "pause" | "resume" | "cancel") =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/change`, { change }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */
@@ -446,6 +467,16 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
       deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
     } satisfies AccountApi,
+
+    /** Wallet & limits on the active network: tightening applies at once; loosening returns what to sign. */
+    safety: {
+      get: () => call<SafetyView>("GET", "/safety"),
+      tokens: (address?: string) => call<{ tokens: TokenOption[] }>("GET", `/safety/tokens${address ? `?address=${encodeURIComponent(address)}` : ""}`),
+      change: (change: SafetyChange, via?: "app" | "chat" | "voice") => call<SafetyChangeResponse>("POST", "/safety/changes", { change, via }),
+      approve: (changeId: string, signature: string) => call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature }),
+      pause: () => call<SafetyChangeResponse>("POST", "/safety/changes", { change: { kind: "pause", on: true } }),
+      exitKit: () => call<ExitKitResponse>("POST", "/safety/exit-kit"),
+    } satisfies SafetyApi,
 
     /** The x402 marketplace and the Agent wallet page (on the active network). */
     marketplace: {
@@ -478,6 +509,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** A failure seen on the phone, for the api's logs; no account needed. */
       report: (event: ClientEvent) => call<void>("POST", "/client-events", event, { token: "" }),
     },
+
+    ...intelligenceApi(call),
   };
 }
 

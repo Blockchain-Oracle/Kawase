@@ -6,7 +6,7 @@
 // person's own session may do. Deleting the account deletes the person's data at Kawase (contacts, threads and their
 // transcripts, inbox, requests, grants as Kawase holds them) — the wallet stays theirs in their Turnkey sub-org — and
 // holds the @handle for 30 days. Money in the agent wallet goes back to their wallet first.
-import { and, count, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, count, eq, gt, isNull, ne, sql } from "drizzle-orm";
 
 import { HANDLE_HOLD_DAYS, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "@kawase/config";
 import { devices, grants, handleHolds, sessions, users, type Db } from "@kawase/db";
@@ -92,15 +92,18 @@ export class AccountService {
   }
 
   async devices(userId: string, currentDeviceId: string | undefined): Promise<DeviceView[]> {
-    const rows = await this.db
-      .select({
-        device: devices,
-        live: sql<number>`(select count(*) from ${sessions} where ${sessions.deviceId} = ${devices.id} and ${sessions.revokedAt} is null and ${sessions.expiresAt} > now())`,
-      })
-      .from(devices)
-      .where(eq(devices.userId, userId))
-      .orderBy(sql`${devices.lastSeenAt} desc`);
-    return rows.map(({ device, live }) => ({
+    // Live sessions per device, read on their own: a correlated subquery here rendered its columns unqualified, so
+    // it compared sessions with themselves and every device read as signed out.
+    const [rows, live] = await Promise.all([
+      this.db.select().from(devices).where(eq(devices.userId, userId)).orderBy(sql`${devices.lastSeenAt} desc`),
+      this.db
+        .select({ deviceId: sessions.deviceId, sessions: count() })
+        .from(sessions)
+        .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt), gt(sessions.expiresAt, new Date())))
+        .groupBy(sessions.deviceId),
+    ]);
+    const liveByDevice = new Map(live.map((entry) => [entry.deviceId, entry.sessions]));
+    return rows.map((device) => ({
       id: device.id,
       platform: device.platform,
       name: device.name,
@@ -108,7 +111,7 @@ export class AccountService {
       lastSeenAt: device.lastSeenAt.toISOString(),
       createdAt: device.createdAt.toISOString(),
       current: device.id === currentDeviceId,
-      signedIn: Number(live) > 0 && !device.revokedAt,
+      signedIn: (liveByDevice.get(device.id) ?? 0) > 0 && !device.revokedAt,
       turnkeyPublicKey: device.turnkeyPublicKey,
       location: device.location,
     }));

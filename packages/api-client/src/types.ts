@@ -19,6 +19,8 @@ export type ApiUser = {
   activeNetwork: NetworkId;
   riskMode: "careful" | "balanced" | "autonomous";
   practiceMode: boolean;
+  /** Set while the person has paused all agent and automation spending (Wallet & limits). */
+  pausedAllAt?: string | null;
   turnkeySubOrganizationId: string | null;
   /** Settings → Voice (defaults filled in by the api); absent on users cached before it existed. */
   voicePrefs?: VoicePrefs;
@@ -240,7 +242,7 @@ export type IntentState =
  * wallet); reverted (on chain but undone; only a fee may have been paid); checking (the outcome is not known yet
  * and nothing is retried); canceled; expired.
  */
-export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired";
+export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired" | "practiced";
 
 export type SendRecipientView = {
   via: "contact" | "handle" | "address";
@@ -269,6 +271,8 @@ export type SendIntent = {
   network: NetworkId;
   state: IntentState;
   outcome: SendOutcome | null;
+  /** Practice mode: what the chain said to the exact transaction, dry-run (nothing was sent). */
+  practice?: { ok: boolean; error: string | null } | null;
   version: number;
   /** The person's own words for each field. */
   request: { recipient: string | null; amount: string | null; asset: "USDC" | "EURC" | null; note: string | null };
@@ -528,7 +532,7 @@ export type AutomationSchedule = {
 export type AutomationRunView = {
   id: string;
   scheduledFor: string;
-  status: "pending" | "executing" | "succeeded" | "skipped" | "failed";
+  status: "pending" | "executing" | "succeeded" | "skipped" | "failed" | "needs_you" | "practiced";
   /** Why it was skipped or failed (a policy reason code) and its display values. */
   reason: string | null;
   reasonParams: Record<string, string> | null;
@@ -537,6 +541,10 @@ export type AutomationRunView = {
   /** A rule's run: what triggered it and what it decided (USDC base units as strings). */
   trigger: Record<string, string> | null;
   tx: { hash: string; explorerUrl: string } | null;
+  /** A practice run: what the chain said to the exact transaction, dry-run. */
+  practice?: { ok: boolean; error: string | null } | null;
+  /** A run waiting for the person: its Needs-you item. */
+  needsYouId?: string | null;
 };
 
 /** Auto-save: keep `keep` ready in the wallet; above it goes into the person's own position in one vault, below it comes back. */
@@ -561,12 +569,16 @@ export type AutoSaveView = {
 export type RuleView = {
   trigger:
     | { type: "balance_above" | "balance_below"; threshold: string }
-    | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null };
-  amount: { mode: "fixed"; amount: string } | { mode: "excess"; reserve: string } | { mode: "percent"; percent: number };
+    | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null }
+    | { type: "price"; tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amountIn: string; minOut: string }
+    | { type: "money_out" };
+  amount: { mode: "fixed"; amount: string } | { mode: "excess"; reserve: string } | { mode: "percent"; percent: number } | { mode: "roundup"; unit: string };
   step:
     | { type: "bridge"; destination: string; destinationName: string; chainId: number }
     | { type: "save"; vault: string; vaultName: string; protocol: string; apy: number }
-    | { type: "notify" };
+    | { type: "notify" }
+    | { type: "send"; recipientWords: string; recipientAddress: string; recipientName: string | null; asset: "USDC" | "EURC"; capPerDay: string }
+    | { type: "swap"; tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string };
   /** Balance triggers: whether the next crossing fires. */
   armed: boolean;
   /** The wallet's USDC now (base units). */
@@ -579,7 +591,13 @@ export type AutomationView = {
   id: string;
   network: NetworkId;
   status: "draft" | "active" | "paused" | "canceled" | "ended";
-  kind: "scheduled_send" | "auto_save" | "rule";
+  kind: "scheduled_send" | "auto_save" | "rule" | "payroll" | "dca";
+  /** Practice: runs are dry-run and recorded as "would have"; no grant is held. */
+  practice?: boolean;
+  /** Payroll only. */
+  payroll?: import("./automations-8c").PayrollAutomationView | null;
+  /** DCA only. */
+  dca?: import("./automations-8c").DcaView | null;
   schedule: AutomationSchedule;
   /** Auto-save only. */
   save: AutoSaveView | null;
@@ -638,22 +656,35 @@ export type AutoSaveInput = {
 
 /** A rule as asked (the model passes the person's words; Kawase resolves and checks them). */
 export type RuleInput = {
-  trigger: "balance_above" | "balance_below" | "money_in";
+  /** price: when an amount of one token would buy at least `minOut` of another (on the executable quote); money_out: each payment the person sends (round-ups). */
+  trigger: "balance_above" | "balance_below" | "money_in" | "price" | "money_out";
   /** Decimal USDC: the balance line, for balance triggers. */
   threshold?: string | undefined;
   /** Money in: only from this contact, @handle or typed address; and/or at least this much (decimal USDC). */
   from?: string | undefined;
   minAmount?: string | undefined;
-  action: "bridge" | "save" | "notify";
+  /** send: to someone else (pinned on chain, capped a day); swap: always waits in Needs you with a fresh quote. */
+  action: "bridge" | "save" | "notify" | "send" | "swap";
   /** Bridge: the chain to bridge to (to the person's own address there). */
   destination?: "base" | "ethereum" | "arbitrum" | "optimism" | "polygon" | "avalanche" | undefined;
   /** Save: a vault from the earn overview; the one they use, else the best, when not said. */
   vault?: string | undefined;
   /** How much each time: a fixed amount, what is above a reserve (balance above), or a share of the money in. */
-  amountMode?: "fixed" | "excess" | "percent" | undefined;
+  amountMode?: "fixed" | "excess" | "percent" | "roundup" | undefined;
   amount?: string | undefined;
   reserve?: string | undefined;
   percent?: number | undefined;
+  /** Send: who, as the person said it, the currency, and the most a day (decimal). */
+  recipient?: string | undefined;
+  asset?: "USDC" | "EURC" | undefined;
+  capPerDay?: string | undefined;
+  /** Price and swap: the tokens as the person said them; price: the amount in and the least out (decimals). */
+  tokenIn?: string | undefined;
+  tokenOut?: string | undefined;
+  priceAmount?: string | undefined;
+  minOut?: string | undefined;
+  /** Round-ups: to the next whole this (decimal USDC), 1 when not said. */
+  roundTo?: string | undefined;
 };
 
 /** The grants that turn an automation on: one for a scheduled send, three for Auto-save; one Face ID signs them all. */
@@ -698,7 +729,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue";
 
 export type InboxItem = {
   id: string;

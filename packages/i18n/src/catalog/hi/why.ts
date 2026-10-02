@@ -14,6 +14,8 @@ export const why: Catalog["why"] = {
   },
   automation: "आपका ऑटोमेशन चला: {{kind}}",
   automationKind: {
+    payroll: "वेतन",
+    dca: "नियमित खरीद",
     scheduled_send: "तय समय वाला भुगतान",
     auto_save: "ऑटो-सेव",
     rule: "एक नियम",
@@ -30,6 +32,8 @@ export const why: Catalog["why"] = {
   },
   compared: "इनसे भी तुलना की: {{providers}}",
   approved: {
+    declined: "आपने मना किया",
+    expired: "समय पर जवाब नहीं",
     allowance: "आपकी दैनिक सीमा से मंज़ूर",
     wallet_signature: "आपने मंज़ूर किया",
     automation: "ऑटोमेशन की सीमा से मंज़ूर",
@@ -59,6 +63,15 @@ export const why: Catalog["why"] = {
   byReference: "उसके ऑन-चेन रेफ़रेंस से",
   recorded: "दर्ज किया गया",
   audit: {
+    automation: {
+      run_skipped: "Kawase ने छोड़ना दर्ज किया",
+      run_practiced: "अभ्यास के रूप में दर्ज",
+    },
+    needs_you: {
+      opened: "आपका इंतज़ार किया",
+      approved: "आपने मंज़ूर किया",
+      declined: "आपने मना किया",
+    },
     payout: { sent: "पेआउट दर्ज हुआ" },
     invoice: { created: "इनवॉइस बनाया गया", paid: "इनवॉइस भुगतान हुआ चिह्नित", canceled: "इनवॉइस रद्द हुआ" },
     payroll: { activated: "पेरोल चालू हुआ" },

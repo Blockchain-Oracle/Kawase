@@ -9,8 +9,9 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 
 export function useStepText() {
-  const { t } = useT();
-  const policy = (code: string) => t(`policy.${code}`, { defaultValue: code });
+  const { t, i18n } = useT();
+  // An automation run's own reasons (not answered, declined, practice…) read from the automation words first.
+  const policy = (code: string) => (i18n.exists(`automation.reason_${code}`) ? t(`automation.reason_${code}`) : t(`policy.${code}`, { defaultValue: code }));
   return (step: WhyStep): { title: string; detail?: string } => {
     switch (step.step) {
       case "asked":

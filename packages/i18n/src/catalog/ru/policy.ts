@@ -44,4 +44,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "Перейти в {{network}}",
   fixEditAmount: "Изменить сумму",
   fixOpenContact: "Открыть контакт",
+  AGENT_PAUSED: "Пауза: этот платёж требует вашего подтверждения",
+  NOT_ON_ALLOWLIST: "Нет в белом списке: этот платёж требует вашего подтверждения",
+  NEW_RECIPIENT_COOLDOWN: "Новые получатели могут получить до {{cap}} за платёж до {{until}}. Это меняется в «Кошелёк и лимиты».",
 };

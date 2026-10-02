@@ -42,4 +42,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "{{network}} पर जाएँ",
   fixEditAmount: "राशि बदलें",
   fixOpenContact: "संपर्क खोलें",
+  AGENT_PAUSED: "रुका हुआ: इसके लिए आपकी मंज़ूरी चाहिए",
+  NOT_ON_ALLOWLIST: "आपकी अनुमत सूची में नहीं: इसके लिए आपकी मंज़ूरी चाहिए",
+  NEW_RECIPIENT_COOLDOWN: "{{until}} तक नए प्राप्तकर्ता प्रति भुगतान {{cap}} तक पा सकते हैं। इसे वॉलेट और सीमाएँ में बदलें।",
 };

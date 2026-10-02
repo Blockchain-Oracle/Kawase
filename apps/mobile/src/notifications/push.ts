@@ -72,7 +72,9 @@ export async function forgetPushToken() {
 /** The app screen a tapped notification opens (only Kawase's own paths). */
 export function pathOf(response: Notifications.NotificationResponse | null | undefined): string | undefined {
   const path = response?.notification.request.content.data?.path;
-  return typeof path === "string" && (path === "/inbox" || path === "/automations") ? path : undefined;
+  // A Needs-you item opens its own page (a uuid only, so a push can never point the app anywhere else).
+  const needsYou = /^\/needs-you\/[0-9a-f-]{36}\?from=push$/i;
+  return typeof path === "string" && (path === "/inbox" || path === "/automations" || needsYou.test(path)) ? path : undefined;
 }
 
 export { useLastNotificationResponse } from "expo-notifications";

@@ -44,4 +44,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "Cambiar a {{network}}",
   fixEditAmount: "Cambiar el importe",
   fixOpenContact: "Abrir contacto",
+  AGENT_PAUSED: "En pausa: este necesita tu aprobación",
+  NOT_ON_ALLOWLIST: "No está en tu lista permitida: este necesita tu aprobación",
+  NEW_RECIPIENT_COOLDOWN: "Los destinatarios nuevos pueden recibir hasta {{cap}} por pago hasta {{until}}. Cámbialo en Cartera y límites.",
 };

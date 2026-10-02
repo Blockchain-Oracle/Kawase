@@ -3,15 +3,16 @@
 // bounded on chain by its own grants and run by Kawase without asking again. Each occurrence is one row, unique per automation and scheduled time, so a run happens at
 // most once however often the runner looks; a run that cannot go says why.
 import { sql } from "drizzle-orm";
-import { index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
 
 export const automationStatusEnum = pgEnum("automation_status", ["draft", "active", "paused", "canceled", "ended"]);
-export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save", "rule"]);
+export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save", "rule", "payroll", "dca"]);
 /** "pending": an event (money in) has triggered a run that the runner has not taken yet. */
-export const automationRunStatusEnum = pgEnum("automation_run_status", ["executing", "succeeded", "skipped", "failed", "pending"]);
+/** "needs_you": waiting for the person (an attended step); "practiced": a practice run's "would have". */
+export const automationRunStatusEnum = pgEnum("automation_run_status", ["executing", "succeeded", "skipped", "failed", "pending", "needs_you", "practiced"]);
 
 /** When it runs: every day, week (on a weekday) or month (on a day of the month), at a local time in a time zone. */
 export type AutomationSchedule = {
@@ -55,12 +56,28 @@ export type AutoSaveAction = {
 export type RuleTrigger =
   | { type: "balance_above"; threshold: string }
   | { type: "balance_below"; threshold: string }
-  | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null };
-export type RuleAmount = { mode: "fixed"; amount: string } | { mode: "excess"; reserve: string } | { mode: "percent"; percent: number };
+  | { type: "money_in"; minAmount: string | null; from: string | null; fromName: string | null }
+  /**
+   * A price, on the executable quote (07-automations-contacts-safety/automations.md: a feed is too coarse): fires when
+   * `amountIn` of tokenIn would buy at least `minOut` of tokenOut right now. Its step is always attended.
+   */
+  | { type: "price"; tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amountIn: string; minOut: string }
+  /** Each payment the person sends (round-ups). */
+  | { type: "money_out" };
+export type RuleAmount =
+  | { mode: "fixed"; amount: string }
+  | { mode: "excess"; reserve: string }
+  | { mode: "percent"; percent: number }
+  /** Up to the next whole `unit` of the payment that triggered it (round-ups). */
+  | { mode: "roundup"; unit: string };
 export type RuleStep =
   | { type: "bridge"; destination: string; destinationName: string; domain: number }
   | { type: "save"; vault: string; vaultName: string }
-  | { type: "notify" };
+  | { type: "notify" }
+  /** Send to someone else: pinned on chain to their address, at most `capPerDay` a day. */
+  | { type: "send"; recipientWords: string; recipientAddress: string; recipientName: string | null; asset: "USDC" | "EURC"; capPerDay: string }
+  /** A swap: always attended (a route cannot be pinned by caveats), it waits in Needs you with a fresh quote. */
+  | { type: "swap"; tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string };
 export type RuleAction = {
   trigger: RuleTrigger;
   amount: RuleAmount;
@@ -68,6 +85,13 @@ export type RuleAction = {
   /** Balance triggers: whether the next crossing fires (false after firing, until the balance is back below/above). */
   armed: boolean;
 };
+
+/** Payroll: several people paid on one schedule, each line under its own grant pinned to that person. */
+export type PayrollLine = { recipientWords: string; recipientAddress: string; recipientName: string | null; asset: "USDC" | "EURC"; amount: string };
+export type PayrollAction = { lines: PayrollLine[]; note: string | null };
+
+/** DCA: a swap on a schedule ("buy $10 of ARGUS every day"). Each run waits in Needs you with a fresh quote. */
+export type DcaAction = { tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amount: string };
 
 /** What one Auto-save run moved: into savings or back to the wallet, in USDC base units. */
 export type AutomationMove = { direction: "in" | "out"; amount: string };
@@ -86,7 +110,7 @@ export const automations = pgTable(
     threadId: uuid(),
     schedule: jsonb().$type<AutomationSchedule>().notNull(),
     /** A scheduled send's `AutomationAction`, or Auto-save's `AutoSaveAction` (by `kind`). */
-    action: jsonb().$type<AutomationAction | AutoSaveAction | RuleAction>().notNull(),
+    action: jsonb().$type<AutomationAction | AutoSaveAction | RuleAction | PayrollAction | DcaAction>().notNull(),
     /** The grant that bounds it on chain (set when it is turned on). */
     grantId: uuid(),
     /** The request as it was asked, so a draft can be checked again after a fix without asking again. */
@@ -98,6 +122,10 @@ export const automations = pgTable(
     /** After this it ends by itself (the grant expires then too). */
     endsAt: timestampTz().notNull(),
     runsDone: integer().notNull().default(0),
+    /** Practice: runs are dry-run on chain and recorded as "would have"; no grant, nothing moves. */
+    practice: boolean().notNull().default(false),
+    /** The run the 24 h reminder was last sent for. */
+    remindedFor: timestampTz(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -140,5 +168,52 @@ export const automationRuns = pgTable(
     index("automation_runs_open_idx")
       .on(table.status)
       .where(sql`${table.status} = 'executing'`),
+  ],
+);
+
+/**
+ * The Needs-you queue (cards/automate-safety.md): a step an automation may not take alone — a swap, a payment over its
+ * grant, or one its safety rules hold back (allowlist, cooldown) — waits here for the person, in Activity, the inbox and
+ * a push. Approving re-checks everything and opens the same flow a person would use by hand; it is answered once, from
+ * wherever, and anywhere else then shows that it already was.
+ */
+export type AttentionRequest =
+  | { type: "send"; recipient: string; recipientAddress: string; name: string | null; asset: "USDC" | "EURC"; amount: string; note: string | null }
+  | { type: "swap"; tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; amount: string; quotedOut: string | null; decimalsOut: number | null };
+
+export const attentionItems = pgTable(
+  "attention_items",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    network: networkEnum().notNull(),
+    automationId: uuid().references(() => automations.id, { onDelete: "cascade" }),
+    runId: uuid(),
+    /** automation_step */
+    kind: text().notNull(),
+    /** Why it waits: a policy code (NOT_ON_ALLOWLIST, NEW_RECIPIENT_COOLDOWN, OVER_GRANT, SWAP_STEP, PRICE_REACHED). */
+    reason: text().notNull(),
+    reasonParams: jsonb().$type<Record<string, string>>(),
+    request: jsonb().$type<AttentionRequest>().notNull(),
+    /** pending | approved | declined | expired */
+    status: text().$type<"pending" | "approved" | "declined" | "expired">().notNull().default("pending"),
+    /** The send or swap the approval opened. */
+    intentId: uuid(),
+    intentKind: text().$type<"send" | "swap">(),
+    decidedAt: timestampTz(),
+    /** app | chat | voice | push | web */
+    decidedVia: text(),
+    expiresAt: timestampTz().notNull(),
+    remindedAt: timestampTz(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("attention_items_user_idx").on(table.userId, table.network, table.status, table.createdAt),
+    uniqueIndex("attention_items_run_idx")
+      .on(table.runId)
+      .where(sql`${table.runId} is not null`),
   ],
 );
