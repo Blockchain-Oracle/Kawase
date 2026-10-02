@@ -27,6 +27,9 @@ import type {
 } from "@kawase/api-client";
 import {
   AGENT_WALLET_GAS_RESERVE,
+  AGENT_WALLET_ON_HAND_BPS,
+  AGENT_WALLET_REFILL_MIN,
+  BPS,
   AGENT_WALLET_RETURN_GAS,
   GATEWAY_BURN_FEE,
   GATEWAY_MIN_DEPOSIT,
@@ -450,9 +453,12 @@ export class MarketplaceService {
     return updated!;
   }
 
-  /** Moves what is on hand (less the gas reserve) into Gateway. Returns the amount deposited (0 when too little). */
-  private async deposit(userId: string, network: NetworkId, wallet: AgentWallet, onHand: bigint): Promise<bigint> {
-    const amount = onHand - AGENT_WALLET_GAS_RESERVE;
+  /**
+   * Moves what is on hand into Gateway, less the gas reserve and `keep` (left on hand for plain EIP-3009 sellers).
+   * Returns the amount deposited (0 when too little).
+   */
+  private async deposit(userId: string, network: NetworkId, wallet: AgentWallet, onHand: bigint, keep: bigint = ZERO): Promise<bigint> {
+    const amount = onHand - AGENT_WALLET_GAS_RESERVE - keep;
     if (amount < GATEWAY_MIN_DEPOSIT) return ZERO;
     const { network: context } = this.clients(network);
     const move = await this.recordMove(userId, network, "deposit", amount);
@@ -500,12 +506,49 @@ export class MarketplaceService {
       throw problem(HTTP.badGateway, "upstream", "the top-up did not go through");
     }
     const settled = await this.settleMove(move, "confirmed", [topUpHash]);
-    // Money on hand is enough for plain EIP-3009 sellers; Gateway sellers (most) need it deposited.
+    // Gateway sellers (most) need it deposited; a share stays on hand for plain EIP-3009 sellers (BlockRun's data).
     const { onHand } = await this.balances(network, agent.address);
-    await this.deposit(user.id, network, agent, onHand).catch((error: unknown) =>
+    await this.deposit(user.id, network, agent, onHand, (amount * AGENT_WALLET_ON_HAND_BPS) / BPS).catch((error: unknown) =>
       this.log.warn({ err: error, userId: user.id }, "gateway deposit after top-up failed; money stays on hand"),
     );
     return { status: "topped_up" as const, move: moveView(settled), wallet: await this.view(user) };
+  }
+
+  /**
+   * Out of Gateway on Arc to `recipient` (the person's wallet, or the agent wallet itself to refill what is on hand): a
+   * burn intent the agent wallet signs, Circle's attestation, then the mint the agent wallet sends. Asks for exactly
+   * `value` leaving the burn fee; when refused, leaves the fee cap instead. Throws (with the move marked failed).
+   */
+  private async withdraw(userId: string, network: NetworkId, agent: AgentWallet, recipient: Address, available: bigint, value: bigint, kind: "return" | "refill") {
+    const { network: context } = this.clients(network);
+    const move = await this.recordMove(userId, network, kind, value);
+    const attest = async (amount: bigint) => {
+      const intent = withdrawIntent(context, {
+        depositor: agent.address,
+        recipient,
+        value: amount,
+        maxFee: GATEWAY_WITHDRAW_MAX_FEE,
+        salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
+      });
+      const signature = await this.agentWallets.signTypedData(network, agent.walletId, intent.typedData as never);
+      return gatewayTransfer(context, intent.burnIntent, signature, this.fetchImpl);
+    };
+    try {
+      let sent = value;
+      const mint = await attest(sent).catch(async (error: unknown) => {
+        // Refused for the fee: ask again leaving the fee cap. Anything else is a real refusal.
+        const capped = available - GATEWAY_WITHDRAW_MAX_FEE;
+        if (capped <= ZERO || sent <= capped) throw error;
+        sent = capped;
+        return attest(sent);
+      });
+      const hash = await this.send(network, agent.walletId, mint, `agent-${kind}:${move.id}`);
+      const [settled] = await this.db.update(agentWalletMoves).set({ status: "confirmed", amount: sent, txHashes: [hash] }).where(eq(agentWalletMoves.id, move.id)).returning();
+      return settled!;
+    } catch (error) {
+      await this.settleMove(move, "failed", [], (error as Error).message);
+      throw error;
+    }
   }
 
   /** Everything in the agent wallet back to the person's wallet: Gateway first (withdraw + mint), then what is on hand. */
@@ -519,37 +562,11 @@ export class MarketplaceService {
     const before = await this.balances(network, agent.address);
     const available = before.gateway.available;
     if (available > GATEWAY_BURN_FEE) {
-      const move = await this.recordMove(user.id, network, "return", available - GATEWAY_BURN_FEE);
-      // Circle's attestation for a burn intent; leaving exactly the burn fee first, then the fee cap if refused.
-      const attest = async (value: bigint) => {
-        const intent = withdrawIntent(context, {
-          depositor: agent.address,
-          recipient: owner.address as Address,
-          value,
-          maxFee: GATEWAY_WITHDRAW_MAX_FEE,
-          salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
-        });
-        const signature = await this.agentWallets.signTypedData(network, agent.walletId, intent.typedData as never);
-        return gatewayTransfer(context, intent.burnIntent, signature, this.fetchImpl);
-      };
-      try {
-        let value = available - GATEWAY_BURN_FEE;
-        const mint = await attest(value).catch(async (error: unknown) => {
-          if (available <= GATEWAY_WITHDRAW_MAX_FEE) throw error;
-          value = available - GATEWAY_WITHDRAW_MAX_FEE;
-          return attest(value);
-        });
-        const hash = await this.send(network, agent.walletId, mint, `agent-withdraw:${move.id}`);
-        const [settled] = await this.db
-          .update(agentWalletMoves)
-          .set({ status: "confirmed", amount: value, txHashes: [hash] })
-          .where(eq(agentWalletMoves.id, move.id))
-          .returning();
-        moves.push(moveView(settled!));
-      } catch (error) {
-        moves.push(moveView(await this.settleMove(move, "failed", [], (error as Error).message)));
+      const move = await this.withdraw(user.id, network, agent, owner.address as Address, available, available - GATEWAY_BURN_FEE, "return").catch((error: unknown) => {
         this.log.warn({ err: error, userId: user.id }, "gateway withdrawal failed");
-      }
+        return undefined;
+      });
+      if (move) moves.push(moveView(move));
     }
     const { onHand } = await this.balances(network, agent.address);
     const fromHand = onHand - AGENT_WALLET_RETURN_GAS;
@@ -730,6 +747,19 @@ export class MarketplaceService {
       await this.deposit(user.id, network, agent, onHand).catch((error: unknown) => this.log.warn({ err: error }, "deposit before paying failed"));
       ({ onHand, gateway: inGateway } = await this.balances(network, agent.address));
       if (inGateway.available >= BigInt(gateway.amount)) option = gateway;
+    } else if (eip3009 && inGateway.available > GATEWAY_BURN_FEE) {
+      // A plain EIP-3009 seller (BlockRun) while the money sits in Gateway: bring some back on hand first (one fee per
+      // refill, so at least the refill minimum, never more than Gateway holds less the fee).
+      const short = BigInt(eip3009.amount) + AGENT_WALLET_GAS_RESERVE - onHand;
+      const wanted = short > AGENT_WALLET_REFILL_MIN ? short : AGENT_WALLET_REFILL_MIN;
+      const room = inGateway.available - GATEWAY_BURN_FEE;
+      if (room >= short) {
+        await this.withdraw(user.id, network, agent, agent.address, inGateway.available, wanted < room ? wanted : room, "refill").catch((error: unknown) =>
+          this.log.warn({ err: error }, "refill from gateway failed"),
+        );
+        ({ onHand, gateway: inGateway } = await this.balances(network, agent.address));
+        if (onHand - AGENT_WALLET_GAS_RESERVE >= BigInt(eip3009.amount)) option = eip3009;
+      }
     }
     if (!option) {
       const presets = MARKETPLACE_DEFAULTS[network].topUpPresets;

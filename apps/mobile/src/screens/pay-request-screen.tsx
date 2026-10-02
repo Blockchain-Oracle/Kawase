@@ -26,6 +26,7 @@ import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { InvoicePanel } from "@/business/invoice-panel";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { effectiveStatus, requesterName } from "@/request/copy";
@@ -189,6 +190,7 @@ export function PayRequestScreen({ token }: { token: string }) {
           {request.note ? <Text className="text-foreground text-center text-base">“{request.note}”</Text> : null}
           <NetworkChip label={networkName} />
         </View>
+        <InvoicePanel token={request.token} payable={!ending && !own} />
 
         {ending ? (
           <View accessibilityLiveRegion="polite" className="items-center gap-3 py-4">

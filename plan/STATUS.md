@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-01 night (Stage 6, 8a/8b with rules, J10's K01–K04/K06, Stage 10 voice deployed, Android/EAS set up; current state per area in `plan/COVERAGE.md`)
+Last updated: 2026-10-02 evening (merges, agent speed, mainnet switched on; per-area truth in `plan/COVERAGE.md`)
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
@@ -31,9 +31,22 @@ Abu's direction: define every flow end to end, every asset first-class, the whol
 - **B2:** x402 Agent wallet, account, business, history.
 - **Lane C:** GPT-Live voice, web voice, narration, Settings → Voice (migration 0050).
 
-**Migration ranges:** A 0020–29, B1 0030–39, B2 0040–49, C 0050–59.
+**Migration ranges:** A 0020–29, B1 0030–39, B2 0040–49, C 0050–59, A3 0060–69, A5 0070–79. Journal order is by `when`, not by number: …0040, 0041, 0030_margin, 0020_wallet_tokens, 0050_voice_prefs, 0031_onramp.
 
-**Next for the lead:** merge slices as they finish; Circle KYB domain (pay.getkawase.xyz) via the browser; COVERAGE update; daily build.
+**Evening 10-02 (lead):**
+- **Merged:** voice (`43bd3bc`), the SSR fix (`f9a5e46`), A's Alchemy discovery (`a48c08e`), B1's Buy with Apple Pay / card through the Circle Onramp Kit (`8e18523`, a sandbox session verified with test cards), and A's market polish (`c31f189`).
+- **Builder A next:** A2 = send, withdraw and add money for every asset, plus the token-rules screen and margin positions on Home.
+- **Agent speed (`ddac3ad`):** measured with the real prompt and tools. The model alone took 5–6 s for five words; our prompt added little.
+  - OpenAI Fast mode is on for every turn: the first word went from 3.4 s to 2.5 s (median), and whole turns from 2.5–7.8 s to 1.7–4.1 s. It costs about $0.0005 a turn.
+  - Voice now reads the capability view together with the wallet, so "what can you do?" spoken takes one step: 5.3–7.6 s → 1.8–3.9 s.
+  - The old first-chunk timer measured SDK bookkeeping; it now times the first visible word or tool call. Probe scripts are in the session scratchpad `latency/`.
+- **Mainnet switched on:**
+  - The Circle LIVE key was verified with read calls, and a fresh LIVE entity secret was registered.
+  - The secret and the recovery file are in `~/.kawase-secrets/` (mode 600, outside the repo). **Abu should copy them into a password manager.**
+  - Ops wallet `cd79106f-…` `0x2afa6cb26f360adecbd8a014030a8aff17ae8b3b` and relayer `0x18fb4f6679dcb927Ef70b3B9Be8B0440e7836b78` on ARC. **Both have 0 USDC and need a few USDC for gas** before any mainnet setup or redeem.
+  - Coolify has `MAINNET_ENABLED=true` and the keys. The server keeps Arc's public RPC (`rpc.mainnet.arc.io`), so the 10 s watchers don't spend Alchemy's free 30M CU/month.
+
+**Next for the lead:** merge slices as they finish; the Circle webhook subscription for Onramp (after the API deploy); Circle KYB domain (pay.getkawase.xyz); COVERAGE update; daily build.
 
 ## Active repair — 2026-10-02
 
@@ -94,7 +107,8 @@ Abu requested a round-off and continuation by Claude Code because Codex credit i
 - **A real domain for passkeys** (a passkey is tied to its domain for life). Email-code sign-up works without it.
 - **Git source for Coolify: done with a deploy key** (Abu, 2026-09-30: "lets continue lol why wait for me"). Coolify key `kawase-deploy-key` (`qfzygvoehtclwstqsjcviqwm`), added read-only to `Blockchain-Oracle/kawase`. A GitHub App can replace it later if Abu wants push auto-deploy and Watch Paths without a webhook.
 - **Repo pushed:** first commit `be83488` on `main` (2026-09-30). `.env` is git-ignored and the commit was scanned for secrets first.
-- Circle **TEST: ready** ✅ (API key, App ID fetched, entity secret recovered from `_archive/arc-treasury-intelligence/.env` and proven by creating the `kawase-testnet` wallet set). Circle **LIVE: not approved yet.** Abu has applied and is awaiting Circle's verification (he said "approved" on 2026-09-30, then corrected it the same day: he was mistaken). The LIVE key returns 403 Forbidden on every Wallets endpoint, which is expected until approval (last check 2026-09-30; TEST returns 200). Nothing for Abu to do but wait. Once approved: re-run the 403 check, then set the LIVE entity secret (`CIRCLE_LIVE_ENTITY_SECRET` is empty) and fetch the LIVE App ID. Waiting behind it: #2 LIVE, the #4 mainnet $1 run, #12, #13 LIVE. (Circle bills MAW, first 1,000 wallets free; Gas Station charges gas + 5%.) OpenAI ✅ (same key in agari/keeperhubv2/stocklana; default gpt-5.6-luna tool-calls correctly).
+- **Circle LIVE: approved and set up 2026-10-02 evening** (see "Evening 10-02" above; the entity secret is registered, the ops wallet and relayer are created and waiting for gas USDC). The history below is kept for context.
+- Circle **TEST: ready** ✅ (API key, App ID fetched, entity secret recovered from `_archive/arc-treasury-intelligence/.env` and proven by creating the `kawase-testnet` wallet set). Circle **LIVE (as of 09-30): not approved yet.** Abu has applied and is awaiting Circle's verification (he said "approved" on 2026-09-30, then corrected it the same day: he was mistaken). The LIVE key returns 403 Forbidden on every Wallets endpoint, which is expected until approval (last check 2026-09-30; TEST returns 200). Nothing for Abu to do but wait. Once approved: re-run the 403 check, then set the LIVE entity secret (`CIRCLE_LIVE_ENTITY_SECRET` is empty) and fetch the LIVE App ID. Waiting behind it: #2 LIVE, the #4 mainnet $1 run, #12, #13 LIVE. (Circle bills MAW, first 1,000 wallets free; Gas Station charges gas + 5%.) OpenAI ✅ (same key in agari/keeperhubv2/stocklana; default gpt-5.6-luna tool-calls correctly).
 - Security note 2026-09-29: the Circle TEST entity secret was accidentally printed in the session transcript (a broken macOS sed mask). Low risk (testnet); Abu may rotate via the Circle console using the recovery file from arc-treasury-intelligence. ✅ Received and verified 2026-09-29: API_KEY_21ST, LiveKit Cloud (URL/key/secret), ElevenLabs (TTS + STT work; its voices-list permission is off, which is fine).
 - **Telegram and Discord are out of scope (D31, 2026-09-30).** Notifications are the in-app inbox, push and email. No bot token is needed.
 - Repo is private for now; flip to public before submission (Oct 10).

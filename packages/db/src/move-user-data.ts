@@ -16,6 +16,7 @@ import { marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
+import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
 
@@ -65,6 +66,10 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
   agent_wallet_moves: { table: agentWalletMoves, userId: agentWalletMoves.userId },
+  business_profiles: { table: businessProfiles, userId: businessProfiles.userId, perUserKey: [] },
+  invoices: { table: invoices, userId: invoices.userId, perUserKey: ["number"] },
+  payout_batches: { table: payoutBatches, userId: payoutBatches.userId },
+  payrolls: { table: payrolls, userId: payrolls.userId },
   memory_facts: { table: memoryFacts, userId: memoryFacts.userId },
   // One row per person: the account's own preferences win over the guest's.
   agent_preferences: { table: agentPreferences, userId: agentPreferences.userId, perUserKey: [] },

@@ -52,7 +52,7 @@ export type PurchaseView = {
 
 export type AgentWalletMove = {
   id: string;
-  kind: "top_up" | "deposit" | "return";
+  kind: "top_up" | "deposit" | "return" | "refill";
   amount: string;
   status: "pending" | "confirmed" | "failed";
   txHashes: string[];

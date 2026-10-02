@@ -12,7 +12,7 @@ import {
   type UIMessageStreamOnEndCallback,
 } from "ai";
 
-import type { WalletSummary } from "@kawase/api-client";
+import type { CapabilityLine, WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { factsUsed } from "./intelligence";
@@ -26,10 +26,16 @@ const MAX_STEPS = 6;
 const MESSAGE_ID_SIZE = 16;
 /** Keeps the cacheable prefix keyed for the provider (OpenAI prompt caching). */
 const PROMPT_CACHE_KEY = "kawase-agent-chat-v1";
+/**
+ * OpenAI Fast mode (formerly priority processing; docs guides/priority-processing): the person is waiting on every turn.
+ * Measured 2026-10-02 on gpt-5.6-luna with the real prompt and tools: first word median 3.4 s → 2.5 s, whole turns
+ * 2.5–7.8 s → 1.7–4.1 s. About twice the standard token price (~$0.0005 a turn); cached input keeps its discount.
+ */
+const SERVICE_TIER = "priority";
 
 const messageId = createIdGenerator({ prefix: "msg", size: MESSAGE_ID_SIZE });
 
-/** Where a turn's time goes (logged by the caller at debug): the model's first token and each step. */
+/** Where a turn's time goes (logged by the caller): the first thing the person sees (a word or a tool's step chip) and each step. */
 export type TurnTimings = { onFirstChunk?: (ms: number) => void; onStep?: (ms: number, toolNames: string[]) => void };
 
 export type TurnInput = {
@@ -44,6 +50,8 @@ export type TurnInput = {
   timings?: TurnTimings | undefined;
   /** The wallet read at the start of a voice turn, given to the model as one line (no tool round trip). */
   wallet?: WalletSummary | undefined;
+  /** What works on each network, read at the start of a voice turn, so "what can you do?" is answered in one step. */
+  capabilities?: CapabilityLine[] | undefined;
 };
 
 /** What a turn said and did, read off its stream as it passes (for noticing which remembered fact it used). */
@@ -62,7 +70,18 @@ function watchTurn() {
   return { stream, seen: () => ({ replyText, toolInputs, toolOutputs }) };
 }
 
-export async function agentTurn({ models, context, messages, approvalSecret, onEnd, onError, abortSignal, timings, wallet }: TurnInput) {
+export async function agentTurn({
+  models,
+  context,
+  messages,
+  approvalSecret,
+  onEnd,
+  onError,
+  abortSignal,
+  timings,
+  wallet,
+  capabilities,
+}: TurnInput) {
   const startedAt = Date.now();
   let firstChunk = true;
   let stepStartedAt = startedAt;
@@ -82,7 +101,7 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
   const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   const result = streamText({
     model,
-    instructions: instructions(context, new Date(), wallet, { memory, digest: summarized && digest ? digest : undefined }),
+    instructions: instructions(context, new Date(), wallet, capabilities, { memory, digest: summarized && digest ? digest : undefined }),
     messages: await convertToModelMessages(window, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     experimental_toolApprovalSecret: approvalSecret,
@@ -93,11 +112,12 @@ export async function agentTurn({ models, context, messages, approvalSecret, onE
       openai: {
         ...(reasons ? { reasoningEffort: voice ? "none" : "low", textVerbosity: "low" } : {}),
         promptCacheKey: voice ? `${PROMPT_CACHE_KEY}-voice` : PROMPT_CACHE_KEY,
+        serviceTier: SERVICE_TIER,
       },
     },
     onError: ({ error }) => onError(error),
-    onChunk: () => {
-      if (!firstChunk) return;
+    onChunk: ({ chunk }) => {
+      if (!firstChunk || (chunk.type !== "text-delta" && chunk.type !== "tool-call")) return;
       firstChunk = false;
       timings?.onFirstChunk?.(Date.now() - startedAt);
     },

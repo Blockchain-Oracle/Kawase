@@ -30,6 +30,8 @@ import type { OnrampService } from "../onramp/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
+import type { InvoiceService } from "../business/invoices";
+import type { HistoryService } from "../history/service";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -79,6 +81,9 @@ export type AgentDeps = {
   approvalSecret?: string | undefined;
   /** The x402 marketplace; paid services are off without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Business mode: invoices from chat. */
+  invoices?: InvoiceService | undefined;
+  history?: HistoryService | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -117,6 +122,8 @@ export function createTurnRunner(deps: AgentDeps) {
     models,
     approvalSecret,
     marketplace,
+    invoices,
+    history: historyService,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const conversations = new ConversationStore(db);
@@ -172,6 +179,8 @@ export function createTurnRunner(deps: AgentDeps) {
       automations,
       requests,
       marketplace,
+      invoices,
+      history: historyService,
       threadId,
       lastUserText,
       log,
@@ -189,6 +198,9 @@ export function createTurnRunner(deps: AgentDeps) {
             WALLET_FACTS_WAIT_MS,
           )
         : Promise.resolve(undefined);
+    // Likewise what works here, so "what can you do?" by voice skips the get_capabilities step (~1.5 s).
+    const capabilitiesNow =
+      surface === "voice" ? settleWithin(context.capabilities(), WALLET_FACTS_WAIT_MS) : Promise.resolve(undefined);
     const existing = await ownThread(user.id, threadId);
     if (!existing)
       await db
@@ -217,17 +229,25 @@ export function createTurnRunner(deps: AgentDeps) {
     const last = history.at(-1);
     const messages = last && last.id === incoming.id ? [...history.slice(0, -1), incoming] : [...history, incoming];
 
-    const wallet = await walletNow;
+    const [wallet, capabilities] = await Promise.all([walletNow, capabilitiesNow]);
     const preparedMs = Date.now() - startedAt;
     let failed = false;
     try {
       const stream = await agentTurn({
         wallet,
+        capabilities,
         timings: {
           onFirstChunk: (ms) =>
             log.info(
-              { surface, preparedMs, walletMs, walletLine: wallet !== undefined, firstChunkMs: ms },
-              "turn first chunk",
+              {
+                surface,
+                preparedMs,
+                walletMs,
+                walletLine: wallet !== undefined,
+                capabilityLines: capabilities !== undefined,
+                firstVisibleMs: ms,
+              },
+              "turn first visible",
             ),
           onStep: (ms, tools) => log.info({ surface, stepMs: ms, tools }, "turn step"),
         },

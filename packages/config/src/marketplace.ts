@@ -52,6 +52,14 @@ export const GATEWAY_WITHDRAW_MAX_FEE = usdc("0.01");
 export const AGENT_WALLET_RETURN_GAS = usdc("0.005");
 /** Smallest Gateway deposit worth making (anything below stays on hand for gas). */
 export const GATEWAY_MIN_DEPOSIT = usdc("0.05");
+/**
+ * Share of each top-up kept on hand for sellers that take only plain EIP-3009 (78 of 2,136 Arc listings on 10-02,
+ * among them BlockRun's money data); the rest goes into Gateway (the other 2,058). Basis points.
+ */
+export const AGENT_WALLET_ON_HAND_BPS = 2_000n;
+export const BPS = 10_000n;
+/** When an EIP-3009 seller needs more on hand, this much at least comes back out of Gateway (one fee per refill). */
+export const AGENT_WALLET_REFILL_MIN = usdc("0.25");
 
 /** Circle's x402 catalog (no key). `limit` ≤ 200; `query` searches server-side (checked 2026-10-02). */
 export const X402_DISCOVERY_URL = "https://api.circle.com/v2/x402/discovery/resources";

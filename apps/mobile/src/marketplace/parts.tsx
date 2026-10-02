@@ -67,7 +67,7 @@ export function MoveRow({ move }: { move: AgentWalletMove }) {
   const price = usePrice();
   const when = useWhen();
   const icon = move.kind === "top_up" ? ArrowDownLeft : move.kind === "return" ? ArrowUpRight : Layers;
-  const title = move.kind === "top_up" ? t("agentWallet.moveTopUp") : move.kind === "return" ? t("agentWallet.moveReturn") : t("agentWallet.moveDeposit");
+  const title = { top_up: t("agentWallet.moveTopUp"), return: t("agentWallet.moveReturn"), deposit: t("agentWallet.moveDeposit"), refill: t("agentWallet.moveRefill") }[move.kind];
   const state = move.status === "confirmed" ? "" : ` · ${move.status === "pending" ? t("agentWallet.pending") : t("agentWallet.failedRow")}`;
   return (
     <ListRow
