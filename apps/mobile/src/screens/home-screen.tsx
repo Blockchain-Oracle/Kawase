@@ -46,6 +46,7 @@ import { useDockClearance } from "@/dock/use-dock-clearance";
 import { confirmedFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
 import { BreakdownSheet } from "@/home/breakdown-sheet";
+import { ForYouSection } from "@/home/for-you";
 import { PortfolioHero } from "@/home/portfolio-hero";
 import { YourAssets } from "@/home/your-assets";
 import { useT } from "@/i18n";
@@ -270,6 +271,9 @@ export function HomeScreen() {
         {account ? (
           <YourAssets portfolio={view} loading={portfolio.loading} error={portfolio.error} onRetry={() => void portfolio.refresh()} onAddMoney={fund.open} onVisibility={portfolio.setVisibility} />
         ) : null}
+
+        {/* What the agent noticed (idle money, an expiring request, a slow bridge, a big move, a position near liquidation). */}
+        <ForYouSection />
 
         {account ? (
           <View className="gap-3">
