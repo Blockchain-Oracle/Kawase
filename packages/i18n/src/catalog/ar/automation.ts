@@ -103,4 +103,7 @@ export const automation: Catalog["automation"] = {
   ruleAlertMoneyIn: "وصل {{amount}}",
   ruleAlertBalance: "الرصيد {{amount}}",
   failed: "تعذّر ذلك. حاول مجددًا.",
+  reason_PRACTICE_RUN: "تدريب: كان سيُنفَّذ (لم يُرسل شيء)",
+  reason_PRACTICE_RUN_REFUSED: "تدريب: كانت Arc سترفضه",
+  reason_PAUSED_ALL: "متوقف مؤقتًا: أوقفت كل شيء",
 };

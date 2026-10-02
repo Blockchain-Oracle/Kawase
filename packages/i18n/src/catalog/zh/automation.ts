@@ -103,4 +103,7 @@ export const automation: Catalog["automation"] = {
   ruleAlertMoneyIn: "到账 {{amount}}",
   ruleAlertBalance: "余额 {{amount}}",
   failed: "操作失败，请重试。",
+  reason_PRACTICE_RUN: "练习：本来会执行（没有发送任何资金）",
+  reason_PRACTICE_RUN_REFUSED: "练习：Arc 本来会拒绝",
+  reason_PAUSED_ALL: "已暂停：你暂停了全部",
 };

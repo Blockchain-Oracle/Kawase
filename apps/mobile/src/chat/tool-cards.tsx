@@ -80,7 +80,9 @@ import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { useChatResume } from "./resume";
+import { SafetyCard } from "./safety-card";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
+import type { SafetyToolOutput } from "@kawase/api-client";
 
 type Network = "mainnet" | "testnet";
 const ROW_MARK = 32;
@@ -556,6 +558,12 @@ function NetworkSwitchCard({
 }
 
 const LOADING_LABELS: Record<string, string> = {
+  get_limits: "safety.loading",
+  pause_all: "safety.loading",
+  set_risk_mode: "safety.loading",
+  propose_limit_change: "safety.loading",
+  propose_allowlist_change: "safety.loading",
+  revoke_grant: "safety.loading",
   get_wallet: "chat.loadingWallet",
   get_activity: "chat.loadingActivity",
   get_capabilities: "chat.loadingCapabilities",
@@ -674,6 +682,13 @@ export function ToolCard({
       return <AgentWalletCard output={part.output as { wallet: AgentWalletLine }} />;
     case "top_up_agent_wallet":
       return <TopUpCard output={part.output as { proposal: AgentTopUpProposal }} onSend={resume} />;
+    case "get_limits":
+    case "pause_all":
+    case "set_risk_mode":
+    case "propose_limit_change":
+    case "propose_allowlist_change":
+    case "revoke_grant":
+      return <SafetyCard output={part.output as SafetyToolOutput} />;
     default:
       return null;
   }

@@ -101,4 +101,7 @@ export const automation = {
   ruleAlertMoneyIn: "{{amount}} arrived",
   ruleAlertBalance: "Balance {{amount}}",
   failed: "Couldn't do that. Try again.",
+  reason_PRACTICE_RUN: "Practice: would have run (nothing was sent)",
+  reason_PRACTICE_RUN_REFUSED: "Practice: Arc would have refused it",
+  reason_PAUSED_ALL: "Paused: you paused everything",
 } as const;

@@ -67,7 +67,7 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  const json = async <T>(response: Promise<Response>, what: string, status = 200) => {
+  const json = async <T>(response: Response | Promise<Response>, what: string, status = 200) => {
     const answer = await response;
     await expectStatus(answer, status, what);
     return (await answer.json()) as T;

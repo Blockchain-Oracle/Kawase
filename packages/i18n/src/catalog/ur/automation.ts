@@ -104,4 +104,7 @@ export const automation: Catalog["automation"] = {
   ruleAlertMoneyIn: "‏{{amount}} آئے",
   ruleAlertBalance: "بیلنس {{amount}}",
   failed: "نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+  reason_PRACTICE_RUN: "مشق: یہ چلتا (کچھ نہیں بھیجا گیا)",
+  reason_PRACTICE_RUN_REFUSED: "مشق: Arc اسے مسترد کر دیتا",
+  reason_PAUSED_ALL: "رکا ہوا: آپ نے سب روک دیا",
 };

@@ -43,4 +43,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "{{network}}-এ যান",
   fixEditAmount: "পরিমাণ বদলান",
   fixOpenContact: "পরিচিতি খুলুন",
+  AGENT_PAUSED: "থামানো: এটার জন্য আপনার অনুমোদন লাগবে",
+  NOT_ON_ALLOWLIST: "আপনার অনুমোদিত তালিকায় নেই: এটার জন্য আপনার অনুমোদন লাগবে",
+  NEW_RECIPIENT_COOLDOWN: "{{until}} পর্যন্ত নতুন প্রাপক প্রতি পেমেন্টে {{cap}} পর্যন্ত পেতে পারে। ওয়ালেট ও সীমা-তে বদলান।",
 };

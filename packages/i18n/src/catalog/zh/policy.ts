@@ -42,4 +42,7 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "切换到 {{network}}",
   fixEditAmount: "修改金额",
   fixOpenContact: "打开联系人",
+  AGENT_PAUSED: "已暂停：这笔需要你批准",
+  NOT_ON_ALLOWLIST: "不在你的白名单上：这笔需要你批准",
+  NEW_RECIPIENT_COOLDOWN: "在 {{until}} 之前，新收款人每笔最多收到 {{cap}}。可在“钱包与限额”中更改。",
 };

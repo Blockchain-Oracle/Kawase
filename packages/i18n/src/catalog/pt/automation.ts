@@ -105,4 +105,7 @@ export const automation: Catalog["automation"] = {
   ruleAlertMoneyIn: "Chegaram {{amount}}",
   ruleAlertBalance: "Saldo {{amount}}",
   failed: "Não deu certo. Tente de novo.",
+  reason_PRACTICE_RUN: "Treino: teria sido executado (nada foi enviado)",
+  reason_PRACTICE_RUN_REFUSED: "Treino: a Arc o teria recusado",
+  reason_PAUSED_ALL: "Em pausa: você pausou tudo",
 };
