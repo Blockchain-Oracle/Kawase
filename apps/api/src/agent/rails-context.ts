@@ -4,11 +4,12 @@ import { and, eq, inArray } from "drizzle-orm";
 import { formatUnits } from "viem";
 
 import type { AgentContext } from "@kawase/agent";
-import type { MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
+import type { CrossChainIntent, MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
 import { intents, type Db } from "@kawase/db";
 
 import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
+import type { CrossChainService } from "../crosschain/service";
 import type { SessionUser } from "../types";
 
 const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
@@ -85,14 +86,48 @@ const marketsSummary = (view: MarginMarketsView) =>
 const positionSummary = (p: MarginPositionView) =>
   `${p.side} ${p.market} ${p.leverage.toFixed(1)}×: P&L ${dollars(p.pnlUsd)} (${pct(p.pnlPercent)}), liquidation ${price(p.liquidationPrice)}, mark ${price(p.markPrice)}, id ${p.id}`;
 
+const MOVE_REASONS: Record<string, string> = {
+  SIGN_IN_REQUIRED: "The person must sign in first.",
+  ON_OTHER_NETWORK: "This works on the other network; offer to switch.",
+  WALLET_NOT_READY: "The wallet is not set up yet.",
+  WALLET_NOT_SET_UP: "The wallet is not set up on this network yet; the card offers to set it up.",
+  DESTINATION_MISSING: "Which chain?",
+  RECIPIENT_INVALID: "That address is not valid.",
+  RECIPIENT_UNKNOWN: "Kawase does not know who that is; ask for a saved contact, a @handle or an address.",
+  RECIPIENT_NO_WALLET: "That person has no Kawase wallet yet.",
+  AMOUNT_MISSING: "How much?",
+  AMOUNT_INVALID: "The amount is not valid.",
+  INSUFFICIENT_BALANCE: "Not enough USDC there.",
+  INSUFFICIENT_GAS: "A little USDC must stay on Arc for the network fee.",
+  QUOTE_UNAVAILABLE: "No route can carry it right now; try again in a moment or a different amount.",
+};
+
+function summarizeCrossChain(intent: CrossChainIntent): string {
+  const draft = intent.draft;
+  const blocking = intent.blocking;
+  if (!draft) return blocking ? (MOVE_REASONS[blocking.code] ?? blocking.code) : "Needs more details.";
+  const usdc = (base: string | null) => (base ? `${formatUnits(BigInt(base), USDC_DECIMALS)} USDC` : "unknown");
+  const who = draft.recipient.own ? "their own address" : (draft.recipient.label ?? draft.recipient.address);
+  const options = draft.routes.map((route) => `${route.provider}: ${route.executable ? usdc(route.received) : (route.reason ?? "not available")}`).join("; ");
+  const line = `${usdc(draft.amount)} from ${draft.source.name} to ${who} on ${draft.destination.name}; best route ${draft.chosen}, at least ${usdc(draft.minReceived)} arrives. Options: ${options}. The person picks and confirms on the card.`;
+  return blocking ? `${line} Blocked: ${MOVE_REASONS[blocking.code] ?? blocking.code}` : line;
+}
+
 const BUY_REASONS = {
   sign_in: "The person must sign in first; the card opens sign-in and comes back.",
   no_wallet: "The wallet is not set up yet.",
   not_configured: "Buying is not set up on this network.",
 } as const;
 
-export function railsContext(input: { user: SessionUser; db: Db; margin: MarginService | undefined; onramp: OnrampService | undefined; threadId: string }): Partial<AgentContext> {
-  const { user, db, margin, onramp, threadId } = input;
+export function railsContext(input: {
+  user: SessionUser;
+  db: Db;
+  margin: MarginService | undefined;
+  onramp: OnrampService | undefined;
+  crosschain: CrossChainService | undefined;
+  threadId: string;
+}): Partial<AgentContext> {
+  const { user, db, margin, onramp, crosschain, threadId } = input;
   const network = user.activeNetwork;
   const buy: Partial<AgentContext> = onramp
     ? {
@@ -112,9 +147,23 @@ export function railsContext(input: { user: SessionUser; db: Db; margin: MarginS
         },
       }
     : {};
-  if (!margin) return buy;
+  const moves: Partial<AgentContext> = crosschain
+    ? {
+        async proposeCrossChain(request) {
+          // One open cross-chain move per conversation.
+          await db
+            .update(intents)
+            .set({ state: "canceled" })
+            .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "crosschain"), inArray(intents.state, [...DRAFTABLE])));
+          const intent = await crosschain.create(user, request, { surface: "chat", threadId });
+          return { crosschain: true as const, intent, summary: summarizeCrossChain(intent) };
+        },
+      }
+    : {};
+  if (!margin) return { ...buy, ...moves };
   return {
     ...buy,
+    ...moves,
     async marginMarkets() {
       const view = await margin.markets(network);
       return { ...view, summary: marketsSummary(view) };

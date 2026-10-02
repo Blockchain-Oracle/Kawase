@@ -204,8 +204,101 @@ export type OnrampEventInput = { event: string; code?: string | null | undefined
 /** What start_buy proposes: the card's button mints the session when tapped (sessions live 30 minutes). */
 export type BuyProposalOutput = OnrampAvailability & { asset: string; amount: string; currency: string; then: string | null; summary: string };
 
+// ── Cross-chain: out of Arc to anyone, and Bring to Arc (routes.md) ─────────────────────────────────────────
+
+export type CrossChainProvider = "cctp" | "across" | "relay";
+export type CrossChainRouteReason = "needs_source_gas" | "not_on_arc_testnet" | "no_quote" | "amount_too_low" | "timeout" | "convert_first" | "own_address_only";
+
+export type CrossChainRouteView = {
+  provider: CrossChainProvider;
+  /** Base units that would arrive (6 decimals), when quoted. */
+  received: string | null;
+  /** What the route takes, and what the person pays on top (gas they would pay elsewhere counts here). */
+  fee: string | null;
+  extraCost: string;
+  /** received − extraCost, the ranking key. */
+  net: string | null;
+  etaSeconds: number | null;
+  executable: boolean;
+  /** "burn_mint" (Circle burns and mints native USDC) or "solver" (a relayer fills and is repaid). */
+  trust: "burn_mint" | "solver";
+  reason: CrossChainRouteReason | null;
+};
+
+export type CrossChainChainView = { chainId: number; name: string; key: string };
+
+export type CrossChainDraftView = {
+  direction: "out" | "in";
+  asset: string;
+  amount: string;
+  source: CrossChainChainView;
+  destination: CrossChainChainView;
+  recipient: { address: string; label: string | null; own: boolean };
+  routes: CrossChainRouteView[];
+  chosen: CrossChainProvider;
+  minReceived: string;
+  /** Gas the wallet pays on Arc (USDC base units); "0" for a gasless permit. */
+  networkFee: string;
+  quotedAt: string;
+};
+
+export type CrossChainStage = "draft" | "submitted" | "filling" | "delivered" | "refunded" | "failed";
+
+export type CrossChainIntent = {
+  id: string;
+  network: NetworkId;
+  state: IntentState;
+  outcome: SendOutcome | null;
+  stage: CrossChainStage;
+  version: number;
+  request: CrossChainRequest;
+  draft: CrossChainDraftView | null;
+  results: PolicyResultView[];
+  blocking: PolicyResultView | null;
+  /** The origin transaction and, once filled, the destination's. */
+  tx: { hash: string; explorerUrl: string } | null;
+  fillTx: { hash: string; explorerUrl: string } | null;
+  received: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+};
+
+export type CrossChainRequest = {
+  direction?: "out" | "in" | undefined;
+  asset?: string | null | undefined;
+  amount?: string | null | undefined;
+  /** Out: the destination chain id or name ("base"); in: the source chain. */
+  destination?: string | null | undefined;
+  source?: string | null | undefined;
+  /** Out: an address, @handle or contact; own address when absent. */
+  recipient?: string | null | undefined;
+  route?: CrossChainProvider | null | undefined;
+};
+
+export type CrossChainApproveResponse =
+  | { status: "executing" | "changed" | "final"; intent: CrossChainIntent }
+  | { status: "sign"; intent: CrossChainIntent; approvalId: string; transaction: UnsignedTransaction }
+  | { status: "sign_typed"; intent: CrossChainIntent; approvalId: string; typedData: { domain: Record<string, unknown>; types: Record<string, { name: string; type: string }[]>; primaryType: string; message: Record<string, unknown> } };
+
+export type ElsewhereView = { network: NetworkId; chains: { chainId: number; name: string; key: string; asset: string; balance: string }[] };
+
+export type ProposeCrossChainOutput = { crosschain: true; intent: CrossChainIntent; summary: string };
+
 export function railsEndpoints(call: Call) {
   return {
+    crosschain: {
+      /** USDC the person holds at the same address on the CCTP chains ("Bring to Arc"). */
+      elsewhere: () => call<ElsewhereView>("GET", "/crosschain/elsewhere"),
+      create: (request: CrossChainRequest) => call<{ intent: CrossChainIntent }>("POST", "/crosschain/orders", request),
+      get: (id: string) => call<{ intent: CrossChainIntent }>("GET", `/crosschain/orders/${id}`),
+      revise: (id: string, patch: CrossChainRequest) => call<{ intent: CrossChainIntent }>("PATCH", `/crosschain/orders/${id}`, patch),
+      cancel: (id: string) => call<{ intent: CrossChainIntent }>("POST", `/crosschain/orders/${id}/cancel`),
+      approve: (id: string, version: number, idempotencyKey?: string) =>
+        call<CrossChainApproveResponse>("POST", `/crosschain/orders/${id}/approve`, { version }, { idempotencyKey }),
+      signature: (id: string, approvalId: string, signed: { signedTransaction?: string; signature?: string }) =>
+        call<CrossChainApproveResponse>("POST", `/crosschain/orders/${id}/signature`, { approvalId, ...signed }),
+    },
     onramp: {
       status: () => call<OnrampAvailability>("GET", "/onramp"),
       /** Mints a Circle Onramp session for the person's own address; open `widgetUrl` top level (system browser). */

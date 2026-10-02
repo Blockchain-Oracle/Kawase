@@ -171,6 +171,9 @@ importers:
       '@kawase/integrations-app-kit':
         specifier: workspace:*
         version: link:../../packages/integrations/app-kit
+      '@kawase/integrations-bridges':
+        specifier: workspace:*
+        version: link:../../packages/integrations/bridges
       '@kawase/integrations-delegation':
         specifier: workspace:*
         version: link:../../packages/integrations/delegation

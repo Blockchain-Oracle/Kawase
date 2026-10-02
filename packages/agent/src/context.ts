@@ -31,6 +31,8 @@ import type {
   MarginRequest,
   ProposeMarginOutput,
   BuyProposalOutput,
+  CrossChainRequest,
+  ProposeCrossChainOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -120,6 +122,8 @@ export type AgentContext = {
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
   /** Buy with Apple Pay / Google Pay / debit (Circle Onramp): the card's button starts it; nothing is charged here. */
   proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
+  /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */
+  proposeCrossChain?(input: CrossChainRequest): Promise<ProposeCrossChainOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */
