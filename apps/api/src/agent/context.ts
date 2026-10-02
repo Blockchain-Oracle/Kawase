@@ -37,6 +37,7 @@ import { percent, summarizeEarn } from "./earn-summary";
 import { summarizeSwap } from "./swap-summary";
 import { railsContext } from "./rails-context";
 import { safetyContext } from "./safety-context";
+import { automationsContext } from "./automations-context";
 import type { SafetyService } from "../safety/service";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
@@ -112,6 +113,7 @@ export function buildAgentContext(input: {
     surface: input.surface ?? "chat",
     ...railsContext({ user, db, margin: input.margin, threadId }),
     ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
+    ...automationsContext({ user, automations, threadId }),
 
     async proposeSend(request) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card

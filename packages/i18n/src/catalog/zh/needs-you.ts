@@ -1,0 +1,28 @@
+import type { Catalog } from "../en/index";
+
+export const needsYou: Catalog["needsYou"] = {
+  title: "等你处理",
+  send: "向 {{name}} 发送 {{amount}}",
+  swap: "将 {{amount}} 兑换为 {{symbolOut}}",
+  swapQuote: "按最新报价约 {{amount}}",
+  reason_NOT_ON_ALLOWLIST: "不在你的白名单上，所以等你处理。",
+  reason_NEW_RECIPIENT_COOLDOWN: "新收款人：超过目前无需你确认的额度。",
+  reason_OVER_GRANT: "超过此自动任务可自行发送的额度。",
+  reason_SWAP_STEP: "每次兑换都需要你亲自同意。",
+  reason_PRICE_REACHED: "实时报价已达到你的价格。",
+  approve: "查看并批准",
+  decline: "这次不了",
+  status_pending: "等待中",
+  status_approved: "已批准",
+  status_declined: "已拒绝",
+  status_expired: "已过期",
+  alreadyAnswered: "已处理：{{status}} {{when}}",
+  answered: "{{when}}已处理，{{via}}",
+  via_app: "在应用中",
+  via_push: "通过通知",
+  via_web: "在网页上",
+  via_chat: "在聊天中",
+  expires: "等待至 {{time}}",
+  switchNetwork: "此项在 {{network}} 上等待。切换网络后处理。",
+  failed: "没有成功。仍在等待。",
+};

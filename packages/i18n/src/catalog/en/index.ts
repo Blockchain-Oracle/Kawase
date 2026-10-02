@@ -54,6 +54,7 @@ import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { safety } from "./safety";
+import { needsYou } from "./needs-you";
 
 export const en = {
   common,
@@ -109,6 +110,7 @@ export const en = {
   tokenPage,
   ticket,
   safety,
+  needsYou,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

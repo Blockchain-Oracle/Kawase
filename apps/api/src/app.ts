@@ -40,7 +40,10 @@ import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
-import { automationRoutes } from "./automations/routes";
+import { automationRoutes, needsYouRoutes } from "./automations/routes";
+import { automationMarket } from "./automations/market";
+import { NeedsYouService } from "./automations/needs-you";
+import { createSwapVenues } from "./swap/venues";
 import { AutomationService } from "./automations/service";
 import { noBridges, type BridgeEngine } from "./bridge/engine";
 import { noEarn, type EarnEngine } from "./earn/engine";
@@ -162,6 +165,8 @@ export function createApp(deps: AppDeps) {
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
+  needsYou.bind({ sends, swaps });
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -172,7 +177,11 @@ export function createApp(deps: AppDeps) {
     bridges,
     inbox,
     deps.log,
+    needsYou,
+    automationMarket(deps.chains, createSwapVenues(deps.swaps ?? noSwaps), assets),
   );
+  // Round-ups: each of the person's own completed sends gives every round-up rule one run.
+  sends.onSent((sent) => automations.queueRoundUps(sent));
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
   const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
@@ -261,6 +270,7 @@ export function createApp(deps: AppDeps) {
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
+  app.route("/needs-you", needsYouRoutes(needsYou));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));

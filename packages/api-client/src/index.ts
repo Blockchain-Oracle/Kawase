@@ -67,6 +67,7 @@ import type {
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
 import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
+import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
 
 export * from "./types";
@@ -76,6 +77,7 @@ export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
 export * from "./safety";
+export * from "./automations-8c";
 export * from "./rails";
 
 export class ApiError extends Error {
@@ -331,6 +333,25 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
           `/automations/${id}/cancel`,
         ),
     },
+
+    /** Automations 8c: payroll, DCA, practice runs, the dry run, editing in place. */
+    automationsMore: {
+      payroll: (input: PayrollInput) => call<{ automation: AutomationView }>("POST", "/automations/payroll", input),
+      dca: (input: DcaInput) => call<{ automation: AutomationView }>("POST", "/automations/dca", input),
+      practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
+      simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
+      edit: (id: string, edit: AutomationEdit) => call<AutomationEditResponse>("PATCH", `/automations/${id}`, edit),
+      editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
+    } satisfies AutomationsMoreApi,
+
+    /** The Needs-you queue: steps automations may not take alone, answered once from anywhere. */
+    needsYou: {
+      list: () => call<{ items: NeedsYouItem[]; pending: number }>("GET", "/needs-you"),
+      get: (id: string) => call<{ item: NeedsYouItem }>("GET", `/needs-you/${id}`),
+      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }),
+      decline: (id: string, via?: "app" | "push" | "web" | "chat") => call<{ item: NeedsYouItem }>("POST", `/needs-you/${id}/decline`, { via }),
+    } satisfies NeedsYouApi,
 
     voice: {
       /** Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. */

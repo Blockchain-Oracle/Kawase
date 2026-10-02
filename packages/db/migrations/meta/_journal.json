@@ -162,6 +162,13 @@
       "when": 1791000060000,
       "tag": "0060_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791000061000,
+      "tag": "0061_automations_8c",
+      "breakpoints": true
     }
   ]
 }

@@ -523,8 +523,13 @@ export class WalletService {
         .set({ status: "revoked", revokeTxAttemptId: attemptId })
         .where(and(inArray(grants.id, pending.grantIds), eq(grants.userId, userId)))
         .returning({ automationId: grants.automationId });
-      // An automation whose grant is gone can never run again: it ends now, said plainly (the exit kit, a cancel).
-      const ids = [...new Set(revoked.map((row) => row.automationId).filter((id): id is string => Boolean(id)))];
+      // An automation left with no grant can never run again: it ends now (the exit kit, a cancel). One that still holds
+      // another (a widened edit replaced the revoked one) carries on.
+      const touched = [...new Set(revoked.map((row) => row.automationId).filter((id): id is string => Boolean(id)))];
+      const stillHeld = touched.length
+        ? new Set((await this.db.select({ id: grants.automationId }).from(grants).where(and(inArray(grants.automationId, touched), eq(grants.status, "active")))).map((row) => row.id))
+        : new Set<string | null>();
+      const ids = touched.filter((id) => !stillHeld.has(id));
       if (ids.length > 0)
         await this.db
           .update(automations)

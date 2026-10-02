@@ -149,6 +149,12 @@ const feeInUsdc = (nativeWei: bigint) => {
 
 export class SendService {
   private readonly tracking = new Set<string>();
+  /** Told when a person's own send completes (round-up rules listen; wired by the app). */
+  private sentListener: ((sent: { userId: string; network: NetworkId; asset: AssetId; amount: bigint; intentId: string; surface: string }) => Promise<void>) | undefined;
+
+  onSent(listener: NonNullable<SendService["sentListener"]>) {
+    this.sentListener = listener;
+  }
 
   constructor(
     private readonly db: Db,
@@ -596,7 +602,10 @@ export class SendService {
     const room = await allowanceAvailable(context.client, context.network, input.grant.delegation as never)
       .then((result) => result.available)
       .catch(() => ZERO);
-    if (room < input.amount) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    // Nothing left this period: this period's run already went. Some left, but less than this run: over the grant,
+    // which waits for the person (Needs you) instead of squeezing through.
+    if (room === ZERO) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    if (room < input.amount) return { status: "skipped", reason: "OVER_GRANT", params: { room: room.toString(), asset: input.asset } };
 
     const token = assetAddress(context.network, input.asset);
     const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO };
@@ -979,7 +988,7 @@ export class SendService {
       return;
     }
     const at = new Date();
-    await withOutbox(this.db, async (tx) => {
+    const done = await withOutbox<{ completed: true } | undefined>(this.db, async (tx) => {
       const [moved] = await tx
         .update(intents)
         .set({ state: "completed", completedAt: at })
@@ -1004,7 +1013,7 @@ export class SendService {
         dedupeKey: `send_completed:${intent.id}`,
       });
       return {
-        result: undefined,
+        result: { completed: true },
         events: [
           {
             aggregateType: "intent",
@@ -1018,6 +1027,11 @@ export class SendService {
         ],
       };
     });
+    // Round-ups and the like listen for the person's own completed sends; a failure there never touches the send.
+    if (done?.completed && this.sentListener)
+      await this.sentListener({ userId: intent.userId, network: intent.network, asset: assetOf(this.clients(intent.network).network, draft.asset), amount: draft.amount, intentId: intent.id, surface: intent.originSurface }).catch((error: unknown) =>
+        this.log.warn({ err: error, intentId: intent.id }, "after-send listener failed"),
+      );
   }
 
   private async settleFailed(intentId: string, attemptId: string, how: "not_sent" | "reverted" | "mismatch", error: string | null, receipt?: TransactionReceipt) {

@@ -53,6 +53,7 @@ import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { safety } from "./safety";
+import { needsYou } from "./needs-you";
 
 export const fr: Catalog = {
   common,
@@ -108,4 +109,5 @@ export const fr: Catalog = {
   tokenPage,
   ticket,
   safety,
+  needsYou,
 };

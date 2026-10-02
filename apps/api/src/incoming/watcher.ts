@@ -28,6 +28,7 @@ import {
 } from "@kawase/config";
 import { randomUUID } from "node:crypto";
 import { automationRuns, automations, chainEvents, contacts, contactAddresses, indexerCursors, txAttempts, users, wallets, walletTokens, type AutoSaveAction, type Db, type RuleAction } from "@kawase/db";
+import { queueUnderfundedRetries } from "../automations/retry";
 import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS, USDC_NATIVE_DECIMALS, rescale } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
@@ -283,6 +284,8 @@ export class IncomingWatcher {
       });
       const paid = await this.requests.matchIncoming(tx, { userId, network, asset, amount, txHash: entry.transactionHash!, from: getAddress(from) });
       if (paid) await tx.update(chainEvents).set({ matchedRequestId: paid.id }).where(eq(chainEvents.id, inserted.id));
+      // A scheduled run skipped for want of money gets its one retry now that money arrived (X13).
+      await queueUnderfundedRetries(tx, userId, network);
       const awake = saves.filter((save) => save.status === "active").map((save) => save.id);
       if (asset === "USDC" && awake.length > 0) await tx.update(automations).set({ nextRunAt: new Date() }).where(inArray(automations.id, awake));
       if (asset === "USDC") {

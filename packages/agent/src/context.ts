@@ -42,6 +42,11 @@ import type {
   ServiceSearchResult,
   SafetyChange,
   SafetyToolOutput,
+  PayrollInput,
+  DcaInput,
+  AutomationEdit,
+  AutomationEditResponse,
+  SimulationView,
 } from "@kawase/api-client";
 
 export type {
@@ -145,4 +150,10 @@ export type AgentContext = {
   }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   proposeAllowlistChange?(input: { action: "add" | "remove" | "only_on" | "only_off"; contact?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   revokeGrant?(input: { what: "allowance" | "automation" | "everything"; token?: string | undefined; automationId?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  // Automations 8c (A3).
+  draftPayroll?(input: PayrollInput): Promise<ProposeAutomationOutput>;
+  draftDca?(input: DcaInput): Promise<ProposeAutomationOutput>;
+  editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
+  simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;
+  automationRuns?(input: { automationId?: string | undefined; limit: number }): Promise<{ network: AgentNetwork; automations: ProposeAutomationOutput[]; summary: ModelSummary }>;
 };

@@ -11,7 +11,7 @@ import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
-import { automationRuns, automations } from "./schema/automations";
+import { attentionItems, automationRuns, automations } from "./schema/automations";
 import { marginPositions } from "./schema/margin";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
@@ -66,6 +66,7 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   safety_settings: { table: safetySettings, userId: safetySettings.userId, perUserKey: ["network"] },
   limit_changes: { table: limitChanges, userId: limitChanges.userId },
   practice_runs: { table: practiceRuns, userId: practiceRuns.userId },
+  attention_items: { table: attentionItems, userId: attentionItems.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
