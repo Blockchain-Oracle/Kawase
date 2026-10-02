@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "खाता जोड़ना पूरा करें। नए कोड के बिना फिर कोशिश करें।",
+  accountFailed: "आप साइन इन हैं। खाता लोड नहीं हुआ। फिर कोशिश करें।",
+  recoveryRequired:
+    "यह ईमेल मौजूदा वॉलेट से जुड़ा है। उसके मूल साइन-इन तरीके का उपयोग करें। आपकी अतिथि बातचीत सुरक्षित है।",
+  title: "साइन इन",
+  subtitle: "ईमेल पर एक कोड। न पासवर्ड, न PIN।",
+  email: "ईमेल",
+  emailPlaceholder: "you@example.com",
+  sendCode: "मुझे कोड भेजें",
+  codeSent: "हमने {{email}} पर कोड भेजा है",
+  code: "6 अंकों का कोड",
+  verify: "साइन इन",
+  apple: "Apple से जारी रखें",
+  google: "Google से जारी रखें",
+  or: "या",
+  continueAs: "{{email}} के रूप में जारी रखें",
+  invalidCode: "यह कोड काम नहीं किया। फिर कोशिश करें।",
+  sheetTitle: "साइन इन करें या खाता बनाएँ",
+  codeTitle: "अपना ईमेल देखें",
+  resend: "नया कोड भेजें",
+  signingIn: "साइन इन हो रहा है…",
+  webUnavailable: "वेब पर साइन इन जल्द आ रहा है। अभी के लिए अपने फ़ोन पर Kawase ऐप इस्तेमाल करें।",
+};

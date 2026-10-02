@@ -1,0 +1,25 @@
+import type { Catalog } from "../en/index";
+
+export const signIn: Catalog["signIn"] = {
+  linkFailed: "أكمل ربط حسابك. حاول مجددًا دون رمز جديد.",
+  accountFailed: "تم تسجيل الدخول. تعذر تحميل حسابك. حاول مجددًا.",
+  recoveryRequired: "هذا البريد مرتبط بمحفظة موجودة. استخدم طريقة تسجيل الدخول الأصلية. تم الاحتفاظ بمحادثتك كضيف.",
+  title: "تسجيل الدخول",
+  subtitle: "رمز واحد عبر البريد. بلا كلمات مرور ولا رمز PIN.",
+  email: "البريد الإلكتروني",
+  emailPlaceholder: "you@example.com",
+  sendCode: "أرسل لي رمزاً",
+  codeSent: "أرسلنا رمزاً إلى {{email}}",
+  code: "رمز من 6 أرقام",
+  verify: "تسجيل الدخول",
+  apple: "المتابعة عبر Apple",
+  google: "المتابعة عبر Google",
+  or: "أو",
+  continueAs: "المتابعة باسم {{email}}",
+  invalidCode: "هذا الرمز لم يعمل. حاول مرة أخرى.",
+  sheetTitle: "سجّل الدخول أو أنشئ حسابًا",
+  codeTitle: "تحقّق من بريدك",
+  resend: "أرسل رمزًا جديدًا",
+  signingIn: "جارٍ تسجيل الدخول…",
+  webUnavailable: "تسجيل الدخول عبر الويب قادم قريبًا. حاليًا، استخدم تطبيق Kawase على هاتفك.",
+};

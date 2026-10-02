@@ -1,0 +1,31 @@
+export const setup = {
+  title: "Setting up your wallet",
+  subtitle: "On {{network}}. It takes a few seconds, and Kawase pays the network fee.",
+  stepWallet: "Create your wallet",
+  stepNetwork: "Set it up on {{network}}",
+  settingUpDetail: "Signing and sending through Kawase's relayer…",
+  failed: "That didn't go through. Try again.",
+  primerTitle: "One Face ID for your daily allowance",
+  primerTitleAndroid: "One approval for your daily allowance",
+  primerBody:
+    "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your Face ID again, and you can turn it off at any time.",
+  primerBodyAndroid:
+    "Kawase can send up to {{amount}} a day for you without asking. Anything more needs your fingerprint or screen lock again, and you can turn it off at any time.",
+  acceptFaceId: "Accept with Face ID",
+  acceptTouchId: "Accept with Touch ID",
+  acceptFingerprint: "Accept with your fingerprint",
+  scopeTitle: "What you're allowing",
+  scopeBody:
+    "Read this once. It is exactly what you approve, taken from the permission itself — and you can turn it off at any time.",
+  acceptFace: "Accept with face unlock",
+  acceptPasscode: "Accept with your passcode",
+  acceptEmailCode: "Accept with an email code",
+  faceIdPrompt: "Allow Kawase to send up to {{amount}} a day",
+  approving: "Approving…",
+  notNow: "Not now",
+  doneTitle: "You're all set",
+  doneBody: "Your wallet is ready on {{network}}. Here is exactly what Kawase may do with it.",
+  terms: "By continuing, you agree to Kawase's terms of use.",
+  readTerms: "Read the terms",
+  termsFailed: "Couldn't save that you agreed. Check your connection and try again.",
+} as const;

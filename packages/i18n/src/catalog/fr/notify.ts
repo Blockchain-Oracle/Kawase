@@ -1,0 +1,16 @@
+import type { Catalog } from "../en/index";
+
+export const notify: Catalog["notify"] = {
+  testnet: "Réseau de test",
+  receivedTitle: "Vous avez reçu {{amount}}",
+  receivedBody: "De {{name}}",
+  requestPaidTitle: "Votre demande a été payée",
+  requestPaidBody: "{{amount}} de {{name}}",
+  sentTitle: "Vous avez envoyé {{amount}}",
+  sentBody: "À {{name}}",
+  skippedTitle: "Une automatisation a été sautée",
+  skippedBody: "Rien n'a été envoyé. Ouvrez Kawase pour savoir pourquoi.",
+  emailOpen: "Ouvrir Kawase",
+  emailNeverApprove: "Kawase ne vous demande jamais d'approuver ou de signer quoi que ce soit par email.",
+  emailWhy: "Vous recevez ceci car c'est activé dans Kawase. Modifiez-le dans Réglages → Notifications.",
+};

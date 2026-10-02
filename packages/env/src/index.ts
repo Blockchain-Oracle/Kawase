@@ -77,6 +77,10 @@ export const apiEnvSchema = z.object({
   /** Email (Stage 9): Resend, from an address on a domain verified there. Email is off without both. */
   RESEND_API_KEY: z.preprocess(blankIsUnset, z.string().optional()),
   EMAIL_FROM: z.preprocess(blankIsUnset, z.string().optional()),
+  /** The oldest app version served ("1.2.0"); older apps show "Update required". Unset = every version. */
+  KAWASE_MIN_APP_VERSION: z.preprocess(blankIsUnset, z.string().regex(/^\d+(\.\d+){0,2}$/).optional()),
+  /** The testnet x402 demo seller (apps/x402-seller): Circle's catalog has no testnet listings (MASTER-PLAN:233). */
+  X402_DEMO_SELLER_URL: z.preprocess(blankIsUnset, z.url().optional()),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),

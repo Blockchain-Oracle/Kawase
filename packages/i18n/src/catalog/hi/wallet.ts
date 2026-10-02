@@ -1,0 +1,31 @@
+import type { Catalog } from "../en/index";
+
+export const wallet: Catalog["wallet"] = {
+  title: "वॉलेट",
+  creating: "आपका वॉलेट बन रहा है…",
+  settingUp: "{{network}} पर आपका वॉलेट सेट हो रहा है…",
+  ready: "आपका वॉलेट तैयार है",
+  address: "पता",
+  balance: "बैलेंस",
+  noWallet: "वॉलेट पाने के लिए साइन इन करें",
+  setupNeeded: "{{network}} पर सेट करें",
+  setUp: "सेट करें",
+  allowanceTitle: "दैनिक सीमा",
+  allowanceBody: "Kawase बिना पूछे आपके लिए रोज़ {{amount}} तक भेज सकता है। इससे ऊपर, आप Face ID से मंज़ूरी देते हैं।",
+  allowanceBodyAndroid:
+    "Kawase बिना पूछे आपके लिए रोज़ {{amount}} तक भेज सकता है। इससे ऊपर, आप फ़िंगरप्रिंट या स्क्रीन लॉक से मंज़ूरी देते हैं।",
+  allowanceAccept: "स्वीकार करें",
+  allowanceAcceptFaceId: "Face ID से स्वीकार करें",
+  allowanceActive: "चालू · रोज़ {{amount}}",
+  allowanceOff: "बंद",
+  allowanceRevoke: "बंद करें",
+  mainnetConsentTitle: "असली पैसा",
+  mainnetConsentBody:
+    "मेननेट असली USDC इस्तेमाल करता है। Kawase इसे सिर्फ़ आपकी तय सीमाओं में चलाता है, और आपके Face ID के बिना कभी सीमा से ऊपर नहीं।",
+  mainnetConsentBodyWeb:
+    "मेननेट असली USDC इस्तेमाल करता है। Kawase इसे सिर्फ़ आपकी तय सीमाओं के भीतर भेजता है, और आपकी पुष्टि के बिना कभी आपकी दैनिक सीमा से ज़्यादा नहीं।",
+  mainnetConsentBodyAndroid:
+    "मेननेट असली USDC इस्तेमाल करता है। Kawase इसे सिर्फ़ आपकी तय सीमाओं में चलाता है, और आपके फ़िंगरप्रिंट या स्क्रीन लॉक के बिना कभी सीमा से ऊपर नहीं।",
+  mainnetConsentAccept: "समझ गया",
+  testnetMoney: "टेस्ट USDC का कोई मूल्य नहीं है।",
+};

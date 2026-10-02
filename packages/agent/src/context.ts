@@ -1,6 +1,7 @@
 // What a turn may read and do, injected by the caller (the api) so the agent never reaches into storage or chains
 // itself (K2: the model proposes, code resolves). Everything is already scoped to one user and the network the
 // session is on; no tool takes a network, an address or an approval from the model.
+import type { JSONValue } from "ai";
 import type {
   ActivityLine,
   AgentNetwork,
@@ -25,6 +26,13 @@ import type {
   SendRequest,
   SwapRequest,
   WalletSummary,
+  AgentTopUpProposal,
+  AgentWalletLine,
+  BuyOutcome,
+  BuyServiceInput,
+  InspectServiceResult,
+  MarketplaceCategory,
+  ServiceSearchResult,
 } from "@kawase/api-client";
 
 export type {
@@ -43,6 +51,9 @@ export type {
   SwapSummary,
   WalletSummary,
 } from "@kawase/api-client";
+
+/** What the model reads of a tool's result (display strings, untrusted data already quarantined). */
+export type ModelSummary = { [key: string]: JSONValue | undefined };
 
 export type AgentContext = {
   network: AgentNetwork;
@@ -79,6 +90,15 @@ export type AgentContext = {
   findContacts(query: string): Promise<ContactLine[]>;
   /** A payment request with a shareable link, on the active network. */
   createPaymentRequest(input: PaymentRequestInput): Promise<{ request: PaymentRequest } | { status: "needs_sign_in" | "needs_wallet" }>;
+  /** Paid services (x402): Circle's catalog searched (free), one listing with its live price (free). */
+  searchServices(input: { query: string; category?: MarketplaceCategory | undefined }): Promise<ServiceSearchResult & { summary: ModelSummary }>;
+  inspectService(input: BuyServiceInput): Promise<{ result: InspectServiceResult; summary: ModelSummary }>;
+  /** One paid call from the person's agent wallet, inside their budget; the answer is untrusted data. */
+  buyService(input: BuyServiceInput): Promise<{ outcome: BuyOutcome; summary: ModelSummary }>;
+  /** The agent wallet: balance (Gateway and on hand), budget, spent today, recent purchases. */
+  agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
+  /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
+  proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */

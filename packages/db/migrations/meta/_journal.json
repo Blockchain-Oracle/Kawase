@@ -127,6 +127,20 @@
       "when": 1790928000001,
       "tag": "0017_thread_turn_lease",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791000040000,
+      "tag": "0040_marketplace",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791000041000,
+      "tag": "0041_account",
+      "breakpoints": true
     }
   ]
 }
