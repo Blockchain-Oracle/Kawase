@@ -1311,5 +1311,9 @@ export const zh: Catalog = {
     received: "你获得了 {{amount}}",
     traceTitle: "发生了什么",
     viewToken: "查看 {{symbol}}",
+    reason_not_on_network: "不在此网络",
+    reason_no_route: "无路径",
+    reason_timeout: "未及时响应",
+    reason_failed: "无法报价",
   },
 };

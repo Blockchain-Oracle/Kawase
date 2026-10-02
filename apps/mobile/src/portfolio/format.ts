@@ -24,7 +24,7 @@ export function tokenAmount(balance: string, decimals: number, symbol: string, l
   const units = BigInt(balance);
   const whole = units / TEN ** BigInt(decimals);
   const digits = whole < BigInt(SMALL_AMOUNT) ? SMALL_AMOUNT_DIGITS : AMOUNT_DIGITS;
-  return formatTokenAmount(units, decimals, symbol, locale, { fractionDigits: digits, withSymbol });
+  return formatTokenAmount(units, decimals, symbol, locale, { fractionDigits: digits, withSymbol, trimZeros: true });
 }
 
 export const holdingAmount = (holding: HoldingView, locale: string) => tokenAmount(holding.balance, holding.token.decimals, holding.token.symbol, locale);

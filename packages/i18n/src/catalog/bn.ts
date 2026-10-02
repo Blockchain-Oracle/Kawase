@@ -1337,5 +1337,9 @@ export const bn: Catalog = {
     received: "আপনি পেয়েছেন {{amount}}",
     traceTitle: "কী হয়েছে",
     viewToken: "{{symbol}} দেখুন",
+    reason_not_on_network: "এই নেটওয়ার্কে নেই",
+    reason_no_route: "কোনো রুট নেই",
+    reason_timeout: "সময়মতো উত্তর নেই",
+    reason_failed: "দাম পাওয়া যায়নি",
   },
 };

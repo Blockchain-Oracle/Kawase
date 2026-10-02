@@ -49,6 +49,8 @@ export type SwapVenueId = keyof typeof SWAP_VENUE_LABELS;
 export const LIFI_DIAMOND_ARC = "0xA4072583658Fae592A3506A42431cb6316a8d40b";
 /** A venue that has not answered by then is listed as "no answer" and the others decide. */
 export const SWAP_VENUE_TIMEOUT_MS = 7_000;
+/** Circle App Kit retries "no route yet" itself (up to four tries, 2026-10-01), so it gets longer. */
+export const APP_KIT_QUOTE_TIMEOUT_MS = 30_000;
 /** Gas for an approve + aggregator swap batch when an estimate is not possible yet. */
 export const AGGREGATOR_BATCH_GAS_ESTIMATE = 900_000n;
 

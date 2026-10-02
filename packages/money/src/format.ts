@@ -11,6 +11,8 @@ export type FormatOptions = {
   fractionDigits?: number;
   /** Show the asset symbol after the number. Default true. */
   withSymbol?: boolean;
+  /** Drop trailing zeros after the decimal point ("63.67", not "63.670000"). */
+  trimZeros?: boolean;
 };
 
 /**
@@ -35,7 +37,7 @@ export function formatTokenAmount(baseUnits: bigint, decimals: number, symbol: s
   const fraction = (abs % divisor).toString().padStart(decimals, "0").slice(0, fractionDigits);
   const decimalString = fractionDigits > 0 ? `${whole}.${fraction}` : `${whole}`;
   const formatter = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: options.trimZeros ? 0 : fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
   // Intl accepts decimal strings for exact formatting ("string" overload, ES2023 Intl.NumberFormat v3).

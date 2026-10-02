@@ -139,6 +139,24 @@ export function buildAgentContext(input: {
       return { intent, summary: summarizeBridge(intent) };
     },
 
+    async proposeTrade(request) {
+      // A token as the person named it: an address or a verified symbol goes through as is; any other name is the
+      // best match of a search (held and verified first), so the model never has to know an address.
+      const resolve = async (text: string | null) => {
+        if (!text) return null;
+        const value = text.trim();
+        if (/^0x[0-9a-fA-F]{40}$/.test(value) || /^(usdc|eurc|dollars?|euros?)$/i.test(value)) return value.replace(/^dollars?$/i, "USDC").replace(/^euros?$/i, "EURC");
+        const [best] = await assets.search(user, network, value);
+        return best?.token.address ?? value;
+      };
+      await db
+        .update(intents)
+        .set({ state: "canceled" })
+        .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "swap"), inArray(intents.state, [...DRAFTABLE])));
+      const intent = await swaps.create(user, { tokenIn: await resolve(request.from), tokenOut: await resolve(request.to), amount: request.amount }, { surface: "chat", threadId });
+      return { intent, summary: summarizeSwap(intent) };
+    },
+
     portfolio: () => assets.portfolio(user),
     searchTokens: (query) => assets.search(user, network, query),
     tokenDetail: (address) => assets.token(user, network, address),

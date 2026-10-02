@@ -358,6 +358,12 @@ export class AssetService {
 
   // ── Token page ──────────────────────────────────────────────────────────────────────────────────────────────
 
+  /** The safety verdict alone (copycat rule + GoPlus, cached), for a buy: no market page, no lookalike search. */
+  async safety(network: NetworkId, token: TokenView) {
+    const facts = network === "mainnet" ? await this.market.security(MAINNET_CHAIN_ID, token.address.toLowerCase()) : null;
+    return safetyVerdict(token, facts, []);
+  }
+
   async token(viewer: SessionUser | undefined, network: NetworkId, address: string): Promise<TokenDetailView> {
     if (!isAddress(address)) throw problem(HTTP.badRequest, "validation", "expected a token address");
     const chainId = chainIdOf(network);

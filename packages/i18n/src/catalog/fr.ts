@@ -1363,5 +1363,9 @@ export const fr: Catalog = {
     received: "Vous avez reçu {{amount}}",
     traceTitle: "Ce qui s'est passé",
     viewToken: "Voir {{symbol}}",
+    reason_not_on_network: "Pas sur ce réseau",
+    reason_no_route: "Aucune route",
+    reason_timeout: "Pas de réponse à temps",
+    reason_failed: "Pas de cotation",
   },
 };

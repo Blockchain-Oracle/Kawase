@@ -1344,5 +1344,9 @@ export const ur: Catalog = {
     received: "آپ کو {{amount}} ملے",
     traceTitle: "کیا ہوا",
     viewToken: "{{symbol}} دیکھیں",
+    reason_not_on_network: "اس نیٹ ورک پر نہیں",
+    reason_no_route: "کوئی راستہ نہیں",
+    reason_timeout: "وقت پر جواب نہیں",
+    reason_failed: "قیمت نہیں ملی",
   },
 };

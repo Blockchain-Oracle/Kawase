@@ -1325,5 +1325,9 @@ export const ar: Catalog = {
     received: "حصلت على {{amount}}",
     traceTitle: "ما الذي حدث",
     viewToken: "عرض {{symbol}}",
+    reason_not_on_network: "غير متاح على هذه الشبكة",
+    reason_no_route: "لا يوجد مسار",
+    reason_timeout: "لم يرد في الوقت",
+    reason_failed: "تعذّر التسعير",
   },
 };

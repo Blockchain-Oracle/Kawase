@@ -1339,6 +1339,10 @@ export const en = {
     received: "You got {{amount}}",
     traceTitle: "What happened",
     viewToken: "See {{symbol}}",
+    reason_not_on_network: "Not on this network",
+    reason_no_route: "No route",
+    reason_timeout: "No answer in time",
+    reason_failed: "Couldn't quote",
   },
 } as const;
 

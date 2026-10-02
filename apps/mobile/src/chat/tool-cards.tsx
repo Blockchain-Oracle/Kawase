@@ -499,6 +499,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_authority: "chat.loadingAuthority",
   propose_send: "chat.loadingSend",
   propose_swap: "chat.loadingSwap",
+  propose_trade: "chat.loadingSwap",
   propose_bridge: "chat.loadingBridge",
   get_earn: "chat.loadingEarn",
   propose_earn: "chat.loadingEarn",
@@ -554,6 +555,7 @@ export function ToolCard({
     case "propose_send":
       return <SendCard output={part.output as ProposeSendOutput} />;
     case "propose_swap":
+    case "propose_trade":
       return <SwapCard output={part.output as ProposeSwapOutput} />;
     case "propose_bridge":
       return <BridgeCard output={part.output as ProposeBridgeOutput} />;

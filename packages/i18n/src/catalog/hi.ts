@@ -1343,5 +1343,9 @@ export const hi: Catalog = {
     received: "आपको {{amount}} मिले",
     traceTitle: "क्या हुआ",
     viewToken: "{{symbol}} देखें",
+    reason_not_on_network: "इस नेटवर्क पर नहीं",
+    reason_no_route: "कोई रास्ता नहीं",
+    reason_timeout: "समय पर जवाब नहीं",
+    reason_failed: "दाम नहीं मिला",
   },
 };

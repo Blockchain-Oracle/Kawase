@@ -1348,5 +1348,9 @@ export const ru: Catalog = {
     received: "Вы получили {{amount}}",
     traceTitle: "Что произошло",
     viewToken: "Открыть {{symbol}}",
+    reason_not_on_network: "Нет в этой сети",
+    reason_no_route: "Нет маршрута",
+    reason_timeout: "Не ответил вовремя",
+    reason_failed: "Не удалось получить цену",
   },
 };

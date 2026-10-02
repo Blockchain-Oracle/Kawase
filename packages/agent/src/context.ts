@@ -92,4 +92,6 @@ export type AgentContext = {
   searchTokens(query: string): Promise<TokenSearchResult[]>;
   /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
   tokenDetail(address: string): Promise<TokenDetailView>;
+  /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
+  proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
 };

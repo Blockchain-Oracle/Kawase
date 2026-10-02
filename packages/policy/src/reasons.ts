@@ -21,6 +21,12 @@ export const REASONS = {
   ADDRESS_CHANGE_HOLD: "policy",
   RECIPIENT_BLOCKED: "policy",
   PRICE_IMPACT_HIGH: "policy",
+  /** The token is an impersonator, a honeypot or cannot be sold: Kawase never buys it (copycat rule, GoPlus). */
+  TOKEN_BLOCKED: "policy",
+  /** Over the token rules' per-trade limit for unverified tokens (D12: $50 by default). */
+  TOKEN_RULE_TRADE: "policy",
+  /** Over the token rules' daily limit for unverified tokens (D12: $200 by default). */
+  TOKEN_RULE_DAY: "policy",
   // Preconditions: one fix, then the same request resumes.
   SIGN_IN_REQUIRED: "precondition",
   WALLET_NOT_READY: "precondition",
@@ -64,6 +70,8 @@ export const REASONS = {
   NO_ALLOWANCE: "warning",
   LEAVES_LITTLE_FOR_FEES: "warning",
   RATE_BELOW_REFERENCE: "warning",
+  /** Buying a token Kawase does not vouch for (unverified or a lookalike): shown on the card. */
+  TOKEN_UNVERIFIED: "warning",
   VAULT_LOW_LIQUIDITY: "warning",
   /** The wallet holds less than one run today; runs skip until it is topped up. */
   FIRST_RUN_UNDERFUNDED: "warning",

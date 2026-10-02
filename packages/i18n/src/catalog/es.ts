@@ -1349,5 +1349,9 @@ export const es: Catalog = {
     received: "Recibiste {{amount}}",
     traceTitle: "Qué pasó",
     viewToken: "Ver {{symbol}}",
+    reason_not_on_network: "No está en esta red",
+    reason_no_route: "Sin ruta",
+    reason_timeout: "Sin respuesta a tiempo",
+    reason_failed: "No pudo cotizar",
   },
 };

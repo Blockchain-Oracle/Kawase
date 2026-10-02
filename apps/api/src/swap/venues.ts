@@ -8,7 +8,7 @@
 // automations all come through here.
 import { erc20Abi, encodeFunctionData, getAddress, type Address, type Hex, type PublicClient } from "viem";
 
-import { LIFI_DIAMOND_ARC, SWAP_VENUE_LABELS, SWAP_VENUE_TIMEOUT_MS, type SwapVenueId } from "@kawase/config";
+import { APP_KIT_QUOTE_TIMEOUT_MS, LIFI_DIAMOND_ARC, SWAP_VENUE_LABELS, SWAP_VENUE_TIMEOUT_MS, type SwapVenueId } from "@kawase/config";
 import { checkSwapCalls, type SwapCall } from "@kawase/integrations-app-kit";
 import { approveRouterCall, build, checkKyberSwap, isKyberSwapChain, quote as kyberQuote, KyberSwapError } from "@kawase/integrations-kyberswap";
 import type { NetworkContext } from "@kawase/networks";
@@ -44,7 +44,8 @@ export type VenueInput = {
 export type PreparedSwap = { calls: SwapCall[]; guaranteedOut: bigint };
 
 export type SwapVenues = {
-  quoteAll(input: VenueInput): Promise<{ quotes: VenueQuote[]; failures: VenueFailure[] }>;
+  /** Every venue (or only `only`, when re-checking the chosen one at approval). */
+  quoteAll(input: VenueInput, only?: readonly SwapVenueId[]): Promise<{ quotes: VenueQuote[]; failures: VenueFailure[] }>;
   /** The chosen venue's calls for exactly this swap, checked; throws `VenueRefused` when they do not hold. */
   prepare(venue: SwapVenueId, input: VenueInput & { minOut: bigint }): Promise<PreparedSwap>;
 };
@@ -136,9 +137,9 @@ export function createSwapVenues(appKit: SwapEngine): SwapVenues {
   };
 
   return {
-    async quoteAll(input) {
-      const venues = Object.keys(SWAP_VENUE_LABELS) as SwapVenueId[];
-      const settled = await Promise.allSettled(venues.map((venue) => within(quoteOne(venue, input), SWAP_VENUE_TIMEOUT_MS)));
+    async quoteAll(input, only) {
+      const venues = (Object.keys(SWAP_VENUE_LABELS) as SwapVenueId[]).filter((venue) => !only || only.includes(venue));
+      const settled = await Promise.allSettled(venues.map((venue) => within(quoteOne(venue, input), venue === "app_kit" ? APP_KIT_QUOTE_TIMEOUT_MS : SWAP_VENUE_TIMEOUT_MS)));
       const quotes: VenueQuote[] = [];
       const failures: VenueFailure[] = [];
       settled.forEach((outcome, index) => {

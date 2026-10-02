@@ -240,6 +240,17 @@ export function buildTools(context: AgentContext) {
       inputSchema: z.object({ query: z.string().max(RECIPIENT_MAX).describe("Part of a name or handle; empty for all") }),
       execute: async ({ query }) => ({ contacts: await context.findContacts(query) }),
     }),
+    propose_trade: tool({
+      description:
+        "Buy, sell or swap any token on the active network: \"buy $10 of ARGUS\", \"sell my cirBTC\", \"swap 5 USDC to WETH\". Pass from (what they give up) and to (what they want) as the person named them (a symbol, a name, or a 0x address), and the amount as digits with a dot in the from token; for a buy with no from, Kawase pays with USDC, for a sale with no to, it gets USDC. Kawase finds the token (held and verified first), asks KyberSwap, Circle App Kit and LI.FI for fresh quotes and recommends the best, checks the price impact and the token rules (fakes of stablecoins and honeypots are never bought; unverified tokens have a per-trade and per-day limit), and shows a ticket card. The person confirms by sliding on the card; nothing moves from this call. Use propose_swap only for plain USDC ↔ EURC.",
+      inputSchema: z.object({
+        from: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they give up; omit for a buy paid in dollars"),
+        to: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they want; omit for a sale to dollars"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Digits with a dot, in the from token; omit if they did not say"),
+      }),
+      execute: async ({ from, to, amount }) => context.proposeTrade({ from: from ?? null, to: to ?? null, amount: amount ?? null }),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     get_portfolio: tool({
       description:
         "Everything the person holds on the active network, priced: every token on Arc (not only USDC and EURC), what sits in positions (savings vaults), what their same address holds on other chains (mainnet), and what is hidden as spam or lookalikes. Total and 24-hour change in US dollars plus their display currency. Use it for 'what do I have', 'my portfolio', 'how much is my X worth'.",
