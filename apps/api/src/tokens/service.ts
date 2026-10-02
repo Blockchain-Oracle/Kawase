@@ -446,6 +446,9 @@ export class AssetService {
 
   async markets(network: NetworkId, segment: MarketSegment): Promise<MarketListView> {
     if (network === "testnet") return { segment, network, rows: [], pricedAt: new Date().toISOString(), stale: false, available: false };
+    // Long/short lists come from the margin venue (Kawase Margin on Aave V4), which is being built: no rows yet.
+    if (segment === "perps") return { segment, network, rows: [], pricedAt: new Date().toISOString(), stale: false, available: false };
+    if (segment === "fx") return this.fxMarkets();
     const pools = await this.market.pools(segment === "new" ? "new" : "trending").catch(() => ({ value: [] as PoolRow[], at: Date.now(), stale: true }));
     const owners = await this.directory.symbolOwners("mainnet", MAINNET_CHAIN_ID);
     const listed = await this.market.listed(MAINNET_CHAIN_ID);
@@ -471,6 +474,31 @@ export class AssetService {
       if (rows.length >= MARKET_LIST_LIMIT) break;
     }
     return { segment, network, rows, pricedAt: new Date(pools.at).toISOString(), stale: pools.stale, available: true };
+  }
+
+  /** Stocks & FX: the verified currency and real-world-asset tokens on Arc (EURC, wARS, XAUm…), priced. */
+  private async fxMarkets(): Promise<MarketListView> {
+    const tokens = CANONICAL_TOKENS.mainnet.filter((token) => token.kind === "fiat" || token.kind === "rwa");
+    const { prices, at, stale } = await this.prices("mainnet", tokens.map((token) => token.address));
+    const described = await this.directory.describe("mainnet", MAINNET_CHAIN_ID, this.anyClient("mainnet"), tokens.map((token) => token.address));
+    const rows: MarketRow[] = [];
+    for (const canonical of tokens) {
+      const token = described.get(canonical.address.toLowerCase());
+      const priced = prices.get(canonical.address.toLowerCase());
+      const pool = priced?.market?.pool;
+      if (!token || !pool) continue;
+      rows.push({
+        token: { ...token, logoUrl: token.logoUrl ?? priced?.market?.logoUrl ?? null },
+        priceUsd: priced?.priceUsd ?? null,
+        change24hPct: priced?.change24hPct ?? null,
+        volume24hUsd: priced?.market?.volume24hUsd ?? null,
+        liquidityUsd: priced?.market?.liquidityUsd ?? null,
+        marketCapUsd: priced?.market?.marketCapUsd ?? null,
+        pool: { address: pool.address, dex: pool.dex, createdAt: pool.createdAt },
+        spark: null,
+      });
+    }
+    return { segment: "fx", network: "mainnet", rows, pricedAt: new Date(at).toISOString(), stale, available: true };
   }
 
   private poolToken(side: PoolRow["base"], owners: Map<string, string>, listed: Map<string, unknown>): TokenView {

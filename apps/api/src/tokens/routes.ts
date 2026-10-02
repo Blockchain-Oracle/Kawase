@@ -14,7 +14,7 @@ const QUERY_MAX = 64;
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const visibilitySchema = z.object({ address, visibility: z.enum(["auto", "shown", "hidden"]) });
 const rangeSchema = z.enum(["1H", "1D", "1W", "1M", "1Y", "ALL"]);
-const segmentSchema = z.enum(["trending", "new", "meme"]);
+const segmentSchema = z.enum(["trending", "new", "meme", "fx", "perps"]);
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);

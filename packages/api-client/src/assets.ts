@@ -143,7 +143,7 @@ export type TokenDetailView = {
   stale: boolean;
 };
 
-export type MarketSegment = "trending" | "new" | "meme";
+export type MarketSegment = "trending" | "new" | "meme" | "fx" | "perps";
 
 export type MarketRow = {
   token: TokenView;
