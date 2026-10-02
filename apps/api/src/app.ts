@@ -89,6 +89,7 @@ import { payCodeRoutes } from "./paycodes/routes";
 import { PayCodeService } from "./paycodes/service";
 import { splitRoutes } from "./splits/routes";
 import { SplitService } from "./splits/service";
+import { intentRoutes } from "./intents/routes";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -301,6 +302,7 @@ export function createApp(deps: AppDeps) {
   // Everyday money (A5-2): scan to pay.
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);

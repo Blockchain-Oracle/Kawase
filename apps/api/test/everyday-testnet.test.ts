@@ -11,11 +11,12 @@ import { config } from "dotenv";
 import { createPublicClient, createWalletClient, erc20Abi, http, parseUnits, type Hex, type TransactionSerializable, type TypedDataDefinition } from "viem";
 import { generatePrivateKey, privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 
-import type { PayCodeView, SendApproveResponse, SendIntent, SplitView } from "@kawase/api-client";
+import type { IntentLookup, PayCodeView, SendApproveResponse, SendIntent, SplitView, SwapIntent } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
+import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
@@ -45,7 +46,7 @@ test("everyday money on Arc testnet: scan to pay, split a bill, open by id", { s
     Object.fromEntries(people.map((p) => [`${p.subOrg}/${p.turnkeyUser}`, { userId: p.turnkeyUser, userName: p.role, email: `${p.role}-${p.subOrg}@example.test`, sessionPublicKeys: [p.key.publicKeyHex] }])),
     Object.fromEntries(people.map((p) => [p.subOrg, [{ walletId: `wallet-${p.role}`, address: p.wallet.address }]])),
   );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env));
+  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), appKitSwaps(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   const userIds: string[] = [];
   const payer = people[0]!;
@@ -157,4 +158,26 @@ test("everyday money on Arc testnet: scan to pay, split a bill, open by id", { s
   assert.equal(progress?.paidCount, 1, "Bob's share shows paid");
   assert.equal(progress?.collected, "20000");
   assert.equal(progress?.status, "open", "Carol has not paid yet");
+
+  // 3. The same send by id, as a push, the inbox or an email opens it (`/i/<id>`): its kind and network; another
+  // person's id is not found.
+  const lookup = await asPayer("GET", `/intents/${scanned.id}`);
+  await expectStatus(lookup, 200, "lookup");
+  const found = (await lookup.json()) as IntentLookup;
+  assert.equal(found.kind, "send");
+  assert.equal(found.network, "testnet");
+  if (found.kind === "send") assert.equal(found.intent.state, "completed");
+  assert.equal((await asRequester("GET", `/intents/${scanned.id}`)).status, 404, "another person cannot open it");
+
+  // 4. Resolve and resume: a swap asked for before the wallet was set up waits on that; once set up, the same swap
+  // (same id, a new version) is checked again and that blocker is gone.
+  const swap = ((await (await asRequester("POST", "/swaps", { amount: "0.01", tokenIn: "USDC", tokenOut: "EURC" })).json()) as { intent: SwapIntent }).intent;
+  assert.ok(swap.blocking && /WALLET/.test(swap.blocking.code), `waits on setup: ${JSON.stringify(swap.blocking)}`);
+  await setup(asRequester, requester.wallet);
+  const resumed = ((await (await asRequester("PATCH", `/swaps/${swap.id}`, {})).json()) as { intent: SwapIntent }).intent;
+  assert.equal(resumed.id, swap.id, "the same swap");
+  assert.ok(resumed.version > swap.version, "a new version");
+  assert.ok(!resumed.blocking || !/WALLET/.test(resumed.blocking.code), `setup no longer blocks: ${JSON.stringify(resumed.blocking)}`);
+  console.log("swap resumed after setup", resumed.blocking?.code ?? "ready", resumed.draft?.estimatedOut ?? "");
+  await asRequester("POST", `/swaps/${swap.id}/cancel`);
 });

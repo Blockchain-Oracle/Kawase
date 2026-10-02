@@ -9,7 +9,8 @@
 // sweeping back to the first; it holds while the person drags, while a sheet covers the story, while the screen is
 // not focused or the app is in the background, while a screen reader is on, and with reduced motion; after any
 // interaction the dwell starts again from zero. The art moves only while the story is actually on screen.
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { takeDeepLink } from "@/onboarding/continuation";
 import * as React from "react";
 import { AccessibilityInfo, ActivityIndicator, AppState, useWindowDimensions, View } from "react-native";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
@@ -124,7 +125,8 @@ export function StoryScreen() {
     setStartFailed(false);
     try {
       await ensureGuest(locale);
-      router.replace("/");
+      // A link opened while signed out (a push, an email) is where the person was going (A5-2).
+      router.replace((takeDeepLink() ?? "/") as Href);
     } catch {
       setStartFailed(true);
     } finally {

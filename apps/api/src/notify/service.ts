@@ -214,7 +214,7 @@ export class NotifyService {
         }
       }
       const locale: CatalogLocale = isSupportedLocale(user.locale) ? user.locale : "en";
-      const rendered = renderNotification({ kind: item.kind, network: item.network, params: item.params }, locale);
+      const rendered = renderNotification({ kind: item.kind, network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash }, locale);
       if (delivery.channel === "push") {
         const phone = delivery.deviceId ? phoneById.get(delivery.deviceId) : undefined;
         if (!this.channels.push || !phone?.expoPushToken || phone.revokedAt) {

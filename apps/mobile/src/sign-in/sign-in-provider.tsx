@@ -7,12 +7,12 @@
 // is where they were (from the story: home). Onboarding that does run ends back on the page sign-in was opened from
 // (`onboarding/continuation.ts`), with that page's state kept and nothing submitted for them. Closing the sheet
 // without signing in changes nothing.
-import { usePathname, useRouter } from "expo-router";
+import { usePathname, useRouter, type Href } from "expo-router";
 import * as React from "react";
 
 import type { ApiUser } from "@kawase/api-client";
 
-import { forgetReturnTo, rememberReturnTo } from "@/onboarding/continuation";
+import { forgetReturnTo, rememberReturnTo, takeDeepLink } from "@/onboarding/continuation";
 import { api } from "@/session/api";
 import { SignInSheet } from "@/sign-in/sign-in-sheet";
 
@@ -72,7 +72,8 @@ export function SignInProvider({ children }: { children: React.ReactNode }) {
     else {
       // Nothing to set up: stay on the page (it now shows the account), or leave the story for home.
       forgetReturnTo();
-      if (ONBOARDING_PATHS.has(from)) router.replace("/");
+      // From the story: where a signed-out link was going, else home (A5-2).
+      if (ONBOARDING_PATHS.has(from)) router.replace((takeDeepLink() ?? "/") as Href);
     }
   };
 

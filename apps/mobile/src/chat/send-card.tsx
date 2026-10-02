@@ -25,12 +25,15 @@ import { SendReview } from "@/send/send-review";
 import { SendStatus } from "@/send/send-status";
 import { isOpen, useSend, type SendController } from "@/send/use-send";
 
+import { useResumeWhenFixed } from "@/intents/use-resume";
+
 import { AgentCard } from "./card";
 
 const AVATAR = 36;
 
 export function SendCard({ output }: { output: ProposeSendOutput }) {
   const { t } = useT();
+  const router = useRouter();
   const money = useMoney();
   const controller = useSend(output.intent);
   const approveLabel = useApproveLabel();
@@ -62,6 +65,10 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
     fixedHere.current = false;
     void controller.approve(t("send.signPrompt", { amount: amountLine, name }));
   }, [readyInside, intent.version]); // runs when a new version lands
+  // Back from wallet setup, Wallet & limits or adding money: the same send is checked again (sign-in is the
+  // blocker's own). Above the allowance it then waits for the tap; inside it, it was the person's instruction.
+  useResumeWhenFixed(isOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}), { signIn: false });
+  const overLimit = Boolean(intent.blocking?.code.startsWith("OVER_"));
 
   if (!isOpen(intent)) {
     const unsavedAddress = intent.outcome === "sent" && intent.draft?.recipient.via === "address";
@@ -105,6 +112,11 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
         </Text>
       )}
       <SendBlocker controller={fixing} recheckAfterSignIn={() => void controller.revise({})} />
+      {overLimit ? (
+        <Button variant="secondary" onPress={() => router.push("/limits")}>
+          <Text>{t("resume.seeLimits")}</Text>
+        </Button>
+      ) : null}
       {ready ? (
         <View className="gap-2">
           <Button

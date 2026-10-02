@@ -64,6 +64,7 @@ import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { scan } from "./scan";
 import { split } from "./split";
+import { resume } from "./resume";
 
 export const ar: Catalog = {
   common,
@@ -130,4 +131,5 @@ export const ar: Catalog = {
   forYou,
   scan,
   split,
+  resume,
 };

@@ -11,7 +11,7 @@ const ADDRESS_TAIL = 4;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
-type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string> };
+type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
 type Block = "notify" | "automation" | "inbox";
 
 function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
@@ -60,6 +60,12 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
       body = p.balance ? text(locale, "automation", "ruleAlertBalance", { amount: money("USDC", p.balance) }) : "";
       path = "/automations";
       break;
+  }
+  // The exact thing it is about (plan §A.4.11): the action's own card by id, the request, or why money arrived.
+  if (path === "/inbox") {
+    if (item.intentId) path = `/i/${item.intentId}`;
+    else if (item.requestId) path = `/request?id=${item.requestId}`;
+    else if (item.txHash) path = `/why/${item.txHash}?network=${item.network}`;
   }
   if (item.network === "testnet") title = `${text(locale, "notify", "testnet")} · ${title}`;
   return { title, body, path };

@@ -21,6 +21,8 @@ import { SwapReview } from "@/swap/swap-review";
 import { SwapStatus } from "@/swap/swap-status";
 import { isSwapOpen, useSwap } from "@/swap/use-swap";
 
+import { useResumeWhenFixed } from "@/intents/use-resume";
+
 import { AgentCard } from "./card";
 
 export function SwapCard({ output }: { output: ProposeSwapOutput }) {
@@ -35,6 +37,8 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const intent = controller.intent ?? output.intent;
   const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("swap.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
+  // Fixed elsewhere (signed in, set up, money added): the same swap is quoted and checked again (R12).
+  useResumeWhenFixed(isSwapOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
 
   if (!isSwapOpen(intent)) {
     return (
