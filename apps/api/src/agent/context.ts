@@ -238,7 +238,10 @@ export function buildAgentContext(input: {
     async createPaymentRequest(request) {
       if (user.isAnonymous) return { status: "needs_sign_in" as const };
       if (!(await wallets.userWallet(user.id))) return { status: "needs_wallet" as const };
-      return { request: await requests.create(user, request) };
+      // "euros" is EURC; any other name is found like a send's token (held and verified first).
+      const asked = request.asset.trim().replace(/^euros?$/i, "EURC").replace(/^dollars?$/i, "USDC");
+      const asset = /^(usdc|eurc|0x[0-9a-fA-F]{40})$/i.test(asked) ? asked.replace(/^(usdc|eurc)$/i, (symbol) => symbol.toUpperCase()) : ((await assets.search(user, network, asked).catch(() => []))[0]?.token.address ?? asked);
+      return { request: await requests.create(user, { ...request, asset }) };
     },
 
     async searchServices({ query, category }) {

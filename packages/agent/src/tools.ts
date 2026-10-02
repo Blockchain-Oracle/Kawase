@@ -225,10 +225,10 @@ export function buildTools(context: AgentContext) {
     }),
     create_payment_request: tool({
       description:
-        "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
+        "Create a payment request on the active network: an exact amount of any token (USDC by default; EURC, cirBTC or any other the person names) with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
       inputSchema: z.object({
         amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Digits with a dot"),
-        asset: z.enum(["USDC", "EURC"]).optional().describe("USDC unless the person named EURC or euros"),
+        asset: z.string().max(TOKEN_QUERY_MAX).optional().describe("USDC unless the person named another token (EURC, euros, a symbol, a name or an address)"),
         note: z.string().max(NOTE_MAX).optional().describe("What it is for, shown to the payer"),
       }),
       execute: async ({ amount, asset, note }) => context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null }),

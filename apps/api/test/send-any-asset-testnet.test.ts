@@ -11,12 +11,17 @@ import { config } from "dotenv";
 import { createPublicClient, createWalletClient, erc20Abi, http, parseUnits, type Hex, type TransactionSerializable } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { SendApproveResponse, SendIntent } from "@kawase/api-client";
-import { users, wallets } from "@kawase/db";
+import type { PaymentRequest, SendApproveResponse, SendIntent } from "@kawase/api-client";
+import { createDb, users, wallets } from "@kawase/db";
+import { createLogger } from "@kawase/log";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
+import { IncomingWatcher } from "../src/incoming/watcher";
+import { InboxService } from "../src/inbox/service";
+import { RequestService } from "../src/requests/service";
 import { circleOps } from "../src/send/ops";
+import { WalletService } from "../src/wallet/service";
 import { createChains } from "../src/wallet/chain";
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
@@ -130,4 +135,33 @@ test("any-asset sends and the recipient check on Arc testnet", { skip: !live, ti
   const toFriend = ((await (await call("POST", "/sends", { recipient: kawaseFriend, amount: "0.01", asset: "USDC" })).json()) as { intent: SendIntent }).intent;
   assert.equal(toFriend.draft?.recipient.handle, handle, JSON.stringify(toFriend.draft?.recipient));
   for (const id of [toToken.id, toFake.id, toFriend.id]) await call("POST", `/sends/${id}/cancel`);
+
+  // 5. A request in a token named by its address; an outside wallet pays it; the watcher marks it paid.
+  const createdResponse = await call("POST", "/requests", { amount: "0.03", asset: network.addresses.eurc, note: "any asset" });
+  await expectStatus(createdResponse, 201, "request");
+  const created = (await createdResponse.json()) as { request: PaymentRequest };
+  assert.equal(created.request.asset, "EURC");
+  assert.equal(created.request.assetToken.decimals, SIX);
+  const pay = await circle.createTransaction({ walletAddress: env.OPS_WALLET_ADDRESS_TESTNET, blockchain: network.circleBlockchain, tokenAddress: network.addresses.eurc, destinationAddress: wallet.address, amount: ["0.03"], fee: { type: "level", config: { feeLevel: "MEDIUM" } }, idempotencyKey: randomUUID() });
+  for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
+    const state = (await circle.getTransaction({ id: pay.data?.id ?? "" })).data?.transaction?.state ?? "";
+    if (DONE_STATES.includes(state)) break;
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+  }
+  const watcherDb = createDb(process.env.DATABASE_URL!, { poolSize: 2 });
+  try {
+    const inbox = new InboxService(watcherDb.db, chains);
+    const requests = new RequestService(watcherDb.db, chains, new WalletService(watcherDb.db, chains), inbox, "http://localhost:8081");
+    const watcher = new IncomingWatcher(watcherDb.db, chains, requests, inbox, createLogger({ service: "watch", level: "silent" }), { backfill: false });
+    let paid: PaymentRequest | undefined;
+    for (let attempt = 0; attempt < POLL_ATTEMPTS && paid?.status !== "paid"; attempt++) {
+      await watcher.tick();
+      paid = ((await (await call("GET", `/requests/${created.request.id}`)).json()) as { request: PaymentRequest }).request;
+      if (paid.status !== "paid") await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    }
+    assert.equal(paid?.status, "paid", JSON.stringify(paid));
+    console.log("request paid", paid?.paidTx?.explorerUrl);
+  } finally {
+    await watcherDb.pool.end();
+  }
 });

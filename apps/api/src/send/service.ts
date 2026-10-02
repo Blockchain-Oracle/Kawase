@@ -13,7 +13,7 @@ import {
   decodeEventLog,
   encodeFunctionData,
   erc20Abi,
-  isAddress,
+  formatUnits,
   keccak256,
   parseTransaction,
   recoverTransactionAddress,
@@ -64,7 +64,7 @@ import {
 } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { amount, canonicalAmount, decimalsOf, rescale, USDC_NATIVE_DECIMALS, type AssetId } from "@kawase/money";
-import { CANONICAL_TOKENS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
+import type { NetworkContext, NetworkId } from "@kawase/networks";
 import { evaluateSend, type PolicyResult, type SendEvaluation, type SendRoute } from "@kawase/policy";
 
 import type { ContactService } from "../contacts/service";
@@ -73,8 +73,9 @@ import { intentExists } from "../intents/chain";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { tokenLookup } from "../tokens/lookup";
 import type { AssetService } from "../tokens/service";
-import { activeAllowance, fitsLimits, gatherFacts, type Executor, type SendToken, type StoredRequest, type TokenLookup } from "./facts";
+import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
 import type { OpsExecutor } from "./ops";
 import type { InboxService } from "../inbox/service";
 import type { RequestService } from "../requests/service";
@@ -165,18 +166,9 @@ export class SendService {
   ) {}
 
   /** Any token on the network, by a verified symbol or its address, with its price (the asset registry). */
-  private readonly lookup: TokenLookup = async (network, value) => {
-    const clients = this.chains.get(network);
-    if (!this.assets || !clients) return undefined;
-    const text = value.trim();
-    const address = isAddress(text) ? text.toLowerCase() : CANONICAL_TOKENS[network].find((token) => normalizeSymbol(token.symbol) === normalizeSymbol(text))?.address.toLowerCase();
-    if (!address) return undefined;
-    const described = await this.assets.directory.describe(network, clients.network.chainId, clients.client, [address]);
-    const token = described.get(address);
-    if (!token) return undefined;
-    const { prices } = await this.assets.prices(network, [address]).catch(() => ({ prices: new Map<string, { priceUsd: number | null }>() }));
-    return { address: token.address as Address, symbol: token.symbol, decimals: token.decimals, priceUsd: prices.get(address)?.priceUsd ?? null } satisfies SendToken;
-  };
+  private get lookup(): TokenLookup {
+    return tokenLookup(this.chains, this.assets);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -194,10 +186,12 @@ export class SendService {
       const payable = await this.requests.payable(request.requestToken);
       if (!payable) throw problem(HTTP.unprocessable, "request_unavailable");
       const asked = payable.request;
+      // USDC/EURC by name; any other token by its address, in its own decimals (R1).
+      const stableAsk = asked.asset === "USDC" || asked.asset === "EURC";
       stored = {
         recipient: payable.handle ? `@${payable.handle}` : asked.payTo,
-        amount: canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, ""),
-        asset: asked.asset as AssetId,
+        amount: stableAsk ? canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, "") : formatUnits(asked.amount, asked.assetDecimals ?? 0),
+        asset: asked.asset,
         note: stored.note,
       };
       paymentRequestId = asked.id;

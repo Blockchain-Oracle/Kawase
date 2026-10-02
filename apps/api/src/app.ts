@@ -58,6 +58,7 @@ import { noOnramp, type OnrampEngine } from "./onramp/engine";
 import { onrampRoutes } from "./onramp/routes";
 import { OnrampService } from "./onramp/service";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
+import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
 import type { Discovery } from "@kawase/integrations-x402";
@@ -146,7 +147,8 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
-  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
+  // Requests describe any token through the asset registry, created just below (the lookup is read lazily).
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value));
   // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
   // for (earn is created further down).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);

@@ -1,25 +1,25 @@
-// How much to ask for (C3): the same ticket as Send — the asset chips with their real marks, the amount large in the
+// How much to ask for (C3): the same ticket as Send — any token (R1), chosen from the universal picker, with its real mark, the amount large in the
 // display face, the keypad — without a balance limit (you can ask for more than you hold), and a note that the payer
 // will see ("Dinner on Friday"), never written on the chain. One button carries the validation in words.
 import * as React from "react";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ChevronDown } from "lucide-react-native";
+
 import type { NetworkId } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { decimalsOf, type AssetId } from "@kawase/money";
-import { Mark } from "@kawase/ui-native/components/mark";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
+import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Input } from "@kawase/ui-native/components/ui/input";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { baseFromCanonical } from "@/send/amount-step";
+import { unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
 import { applyKey, decimalSeparator, displayAmount, Keypad } from "@/send/keypad";
 
-const ASSETS: AssetId[] = ["USDC", "EURC"];
 const CHIP_MARK = 24;
 const NOTE_MAX = 140;
 const FOOTER_GAP = 12;
@@ -31,8 +31,9 @@ const TICKET_MIN_SCALE = 0.5;
 
 export type RequestAmountProps = {
   network: NetworkId;
-  asset: AssetId;
-  onAsset: (asset: AssetId) => void;
+  /** The token asked for: any token on the network, held or not. */
+  token: TicketToken;
+  onPickAsset: () => void;
   value: string;
   onValue: (value: string) => void;
   note: string;
@@ -42,37 +43,27 @@ export type RequestAmountProps = {
 };
 
 export function RequestAmount(props: RequestAmountProps) {
-  const { network, asset, value, busy } = props;
+  const { token, value, busy } = props;
+  const asset = token.symbol;
   const { t } = useT();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
-  const ids = arcIdentity(network);
-  const base = baseFromCanonical(value, asset);
+  const base = unitsFromCanonical(value, token.decimals);
   const ready = base !== undefined && base > ZERO;
 
   return (
     <View className="flex-1">
       <View className="flex-1 gap-5 px-5 pt-4">
-        <View accessibilityRole="radiogroup" className="flex-row gap-2">
-          {ASSETS.map((option) => {
-            const selected = option === asset;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => props.onAsset(option)}
-                className={cn(
-                  "flex-1 flex-row items-center justify-center gap-2 rounded-full border py-2.5",
-                  selected ? "border-foreground bg-secondary" : "border-border bg-muted active:bg-secondary",
-                )}
-              >
-                <Mark entity={option === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={CHIP_MARK} />
-                <Text className="text-foreground text-base font-semibold">{option}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("assets.pickerTitle")}: ${token.name}`}
+          onPress={props.onPickAsset}
+          className="border-border bg-secondary active:bg-muted flex-row items-center justify-center gap-2 self-center rounded-full border py-2 pe-4 ps-2"
+        >
+          <TokenMark token={token} size={CHIP_MARK} />
+          <Text className="text-foreground text-base font-semibold">{asset}</Text>
+          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+        </Pressable>
 
         <View className="items-center py-4">
           <View className="flex-row items-baseline gap-2" style={{ direction: "ltr" }}>
@@ -105,7 +96,7 @@ export function RequestAmount(props: RequestAmountProps) {
       </View>
 
       <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-        <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => props.onValue(applyKey(value, key, decimalsOf(asset)))} />
+        <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => props.onValue(applyKey(value, key, token.decimals))} />
         <Button size="lg" disabled={!ready || busy} onPress={props.onCreate}>
           <Text>{busy ? t("request.creating") : ready ? t("request.create") : t("send.enterAmount")}</Text>
         </Button>
