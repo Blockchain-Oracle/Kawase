@@ -58,6 +58,22 @@ export const MARGIN_MARKET_ALIASES = {
 } as const;
 
 /**
+ * Earn and borrow on Aave V4 directly (earn-borrow.md): supply through the Main Spoke by reserve id (not the shallow
+ * ERC-4626 wrapper, G22), and borrow against any reserve that counts as collateral. Health in basis points of 1.0.
+ */
+export const LEND = {
+  /** A borrow that would leave the account below this is refused; between it and `warnHealthBps` it warns. */
+  minBorrowHealthBps: 12_500,
+  warnHealthBps: 15_000,
+  /** A full repay approves this much over the debt read (interest accrues until the block). */
+  repayBufferBps: 20,
+  gasEstimate: 600_000n,
+  /** Yield options list at most this many sources; LP opportunities are shown as advanced, read-only. */
+  maxOptions: 6,
+  merklApi: "https://api.merkl.xyz/v4/opportunities",
+} as const;
+
+/**
  * Buy with Apple Pay / Google Pay / debit through Circle's Onramp (money-in.md). The widget runs top level in the
  * system browser sheet (Apple Pay is restricted in WebViews; the kit says omit `referrerDomain` then). Mainnet uses
  * production with the LIVE key; testnet uses Circle's Onramp sandbox with the TEST key (docs.arc.io "Onramp hosting

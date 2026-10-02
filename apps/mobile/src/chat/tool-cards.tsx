@@ -53,6 +53,9 @@ import type {
   MarginPositionsOutput,
   ProposeMarginOutput,
   BuyProposalOutput,
+  ProposeCrossChainOutput,
+  CompareYieldOutput,
+  ProposeLendOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -83,6 +86,8 @@ import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
 import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
 import { OnrampBuyCard } from "./buy-card";
+import { MoveCard } from "./move-card";
+import { LendOrderCard, YieldOptionsCard } from "./lend-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
 import { ReportCard } from "@/history/report-card";
@@ -654,7 +659,10 @@ export function ToolCard({
     case "propose_trade":
       return <SwapCard output={part.output as ProposeSwapOutput} />;
     case "propose_bridge":
-      return <BridgeCard output={part.output as ProposeBridgeOutput} />;
+      // Threads from before route options keep their CCTP card; new ones carry `crosschain`.
+      return (part.output as { crosschain?: boolean }).crosschain ? <MoveCard output={part.output as ProposeCrossChainOutput} /> : <BridgeCard output={part.output as ProposeBridgeOutput} />;
+    case "bring_to_arc":
+      return (part.output as { crosschain?: boolean }).crosschain ? <MoveCard output={part.output as ProposeCrossChainOutput} /> : null;
     case "get_earn":
       return <EarnOverviewCard output={part.output as EarnOverviewLine} />;
     case "propose_earn":
@@ -691,6 +699,12 @@ export function ToolCard({
       return (part.output as Partial<BuyProposalOutput>).asset ? <OnrampBuyCard output={part.output as BuyProposalOutput} /> : null;
     case "get_positions":
       return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
+    case "compare_yield":
+      return (part.output as Partial<CompareYieldOutput>).options ? <YieldOptionsCard output={part.output as CompareYieldOutput} /> : null;
+    case "propose_supply":
+    case "propose_borrow":
+    case "propose_repay":
+      return (part.output as Partial<ProposeLendOutput>).intent ? <LendOrderCard output={part.output as ProposeLendOutput} /> : null;
     case "search_services":
       return <ServicesCard output={part.output as ServiceSearchResult} />;
     case "inspect_service":

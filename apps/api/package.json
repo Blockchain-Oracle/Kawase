@@ -29,6 +29,7 @@
     "@kawase/identity": "workspace:*",
     "@kawase/integrations-aave-v4": "workspace:*",
     "@kawase/integrations-app-kit": "workspace:*",
+    "@kawase/integrations-bridges": "workspace:*",
     "@kawase/integrations-delegation": "workspace:*",
     "@kawase/integrations-kyberswap": "workspace:*",
     "@kawase/integrations-x402": "workspace:*",

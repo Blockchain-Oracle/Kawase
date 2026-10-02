@@ -14,6 +14,12 @@ export const REASONS = {
   /** No venue lists this market, or this side of it (R2: the reason and the nearest path are shown). */
   MARGIN_MARKET_UNAVAILABLE: "error",
   MARGIN_SIDE_UNAVAILABLE: "error",
+  /** Aave V4 does not list this asset here, or not for borrowing. */
+  LEND_ASSET_UNAVAILABLE: "error",
+  /** The collateral named cannot back a loan (its collateral factor is 0, e.g. EURC). */
+  LEND_NOT_COLLATERAL: "error",
+  /** A repay with no debt in that asset. */
+  LEND_NOTHING_OWED: "error",
   /** A close names a position the person does not hold. */
   POSITION_MISSING: "error",
   /** The vault is not listed here, or not taking deposits. */
@@ -28,6 +34,8 @@ export const REASONS = {
   PRICE_IMPACT_HIGH: "policy",
   /** More leverage than the venue's collateral factor allows at the opening health floor. */
   LEVERAGE_TOO_HIGH: "policy",
+  /** The account would be too close to liquidation after this borrow or withdrawal. */
+  HEALTH_TOO_LOW: "policy",
   /** The source can pay out almost nothing right now: Kawase does not deposit into it (gaps.md G1). */
   VAULT_LIQUIDITY_STUCK: "policy",
   /** The token is an impersonator, a honeypot or cannot be sold: Kawase never buys it (copycat rule, GoPlus). */
@@ -91,6 +99,7 @@ export const REASONS = {
   VAULT_RISK_WARNING: "warning",
   /** Leverage: the margin can be lost; the card names the liquidation price. */
   MARGIN_RISK: "warning",
+  HEALTH_NEAR_LIMIT: "warning",
 } as const satisfies Record<string, PolicyKind>;
 
 export type ReasonCode = keyof typeof REASONS;

@@ -122,16 +122,7 @@ export function buildTools(context: AgentContext) {
       execute: async ({ amount, from, to }) => context.proposeSwap({ amount: amount ?? null, tokenIn: from ?? null, tokenOut: to ?? null }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-    propose_bridge: tool({
-      description:
-        "Prepare moving the person's USDC from Arc to their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche; the testnet versions on testnet). Pass the chain and the amount as digits with a dot. Kawase quotes Circle's CCTP route (native USDC burned on Arc, minted there by Circle's forwarder, no gas needed on the other chain), compares the other routes that serve Arc, runs every check and shows a card. The person confirms on the card with Face ID (an email code on the web); nothing moves from this call.",
-      inputSchema: z.object({
-        destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("The chain they named; omit if they did not say"),
-        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say how much"),
-      }),
-      execute: async ({ destination, amount }) => context.proposeBridge({ destination: destination ?? null, amount: amount ?? null }),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
+    // propose_bridge lives in rails-tools.ts (any recipient, route options; B1).
     get_earn: tool({
       description:
         "The USDC vaults the person can earn yield in on the active network (Morpho vaults through Circle App Kit; mock vaults on testnet): name, yearly yield now, how much can be paid out, whether Circle monitors it, and what the person already holds in each.",

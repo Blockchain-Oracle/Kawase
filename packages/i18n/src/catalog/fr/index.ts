@@ -54,6 +54,11 @@ import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
 import { buy } from "./buy";
+import { move } from "./move";
+import { movePolicy } from "./move-policy";
+import { lend } from "./lend";
+import { lendPolicy } from "./lend-policy";
+import { yieldOptions } from "./yield-options";
 import { business } from "./business";
 import { why } from "./why";
 import { report } from "./report";
@@ -118,6 +123,11 @@ export const fr: Catalog = {
   tokenPage,
   ticket,
   buy,
+  move,
+  movePolicy,
+  lend,
+  lendPolicy,
+  yieldOptions,
   business,
   why,
   report,

@@ -7,3 +7,5 @@ export * from "./bridge";
 export * from "./earn";
 export * from "./automation";
 export * from "./margin";
+export * from "./crosschain";
+export * from "./lend";

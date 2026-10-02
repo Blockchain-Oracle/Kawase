@@ -13,6 +13,7 @@ export const capability: Catalog["capability"] = {
   faucet: "أموال تجريبية",
   payment_links: "روابط الدفع",
   margin: "شراء وبيع على المكشوف",
+  lend: "الاقتراض والإقراض",
   buy: "الشراء بالبطاقة",
   memory: "الذاكرة والاقتراحات",
 };
