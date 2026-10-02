@@ -10,6 +10,7 @@ import {
   ArrowLeftRight,
   ArrowUpRight,
   AudioLines,
+  Brain,
   CalendarClock,
   Copy,
   Droplets,
@@ -298,6 +299,7 @@ const CAPABILITY_ICON: Record<string, LucideIcon> = {
   voice: AudioLines,
   faucet: Droplets,
   payment_links: Link2,
+  memory: Brain,
 };
 /** How many tiles show before "See all": three rows of two. */
 const CAPABILITY_PREVIEW = 6;

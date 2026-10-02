@@ -13,4 +13,5 @@ export const capability: Catalog["capability"] = {
   faucet: "Dinheiro de teste",
   payment_links: "Links de pagamento",
   margin: "Comprado e vendido",
+  memory: "Memória e sugestões",
 };

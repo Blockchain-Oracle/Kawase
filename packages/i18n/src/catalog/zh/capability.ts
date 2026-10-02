@@ -13,4 +13,5 @@ export const capability: Catalog["capability"] = {
   faucet: "测试币",
   payment_links: "付款链接",
   margin: "做多和做空",
+  memory: "记忆与建议",
 };

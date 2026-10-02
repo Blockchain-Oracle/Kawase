@@ -13,4 +13,5 @@ export const capability: Catalog["capability"] = {
   faucet: "ٹیسٹ پیسے",
   payment_links: "ادائیگی کے لنکس",
   margin: "لانگ اور شارٹ",
+  memory: "میموری اور تجاویز",
 };

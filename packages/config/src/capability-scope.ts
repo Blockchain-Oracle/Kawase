@@ -75,4 +75,15 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     ],
     notYet: ["voice in the web app (typing works there)", "choosing Kawase's voice or speed"],
   },
+  memory: {
+    supports: [
+      "remembering facts the person asks it to (people, @handles, preferences), shown, editable and forgettable in Settings → Memory, or switched off; it says when it uses one",
+      "searching every past conversation (words, cards and who they were for)",
+      "long conversations stay coherent: older parts are summarized, the cards' own results are kept as they were",
+      "For you cards on Home: idle USDC next to a vault that can pay it back, a request about to expire, a bridge that has not arrived, a big move in a held token, a margin position near liquidation",
+      "answering questions about Arc and Kawase from its curated notes and docs, with sources",
+      "charts of the portfolio or any token, why a route, venue or vault was chosen, a setting's now and after, and whether Arc, Circle and prices are up",
+    ],
+    notYet: ["remembering things it was not asked to remember", "push notifications for For you cards"],
+  },
 };
