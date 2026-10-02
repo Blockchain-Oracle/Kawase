@@ -206,12 +206,15 @@ export type BuyProposalOutput = OnrampAvailability & { asset: string; amount: st
 
 // ── Cross-chain: out of Arc to anyone, and Bring to Arc (routes.md) ─────────────────────────────────────────
 
-export type CrossChainProvider = "cctp" | "across" | "relay";
+export type CrossChainProvider = "cctp" | "across" | "relay" | "lifi" | "debridge";
 export type CrossChainRouteReason = "needs_source_gas" | "not_on_arc_testnet" | "no_quote" | "amount_too_low" | "timeout" | "convert_first" | "own_address_only";
+
+/** An asset on one side of a move (the zero address for a chain's native coin). */
+export type CrossChainAssetView = { chainId: number; address: string; symbol: string; decimals: number };
 
 export type CrossChainRouteView = {
   provider: CrossChainProvider;
-  /** Base units that would arrive (6 decimals), when quoted. */
+  /** Base units that would arrive, in `output`'s decimals (6 for USDC), when quoted. */
   received: string | null;
   /** What the route takes, and what the person pays on top (gas they would pay elsewhere counts here). */
   fee: string | null;
@@ -223,14 +226,27 @@ export type CrossChainRouteView = {
   /** "burn_mint" (Circle burns and mints native USDC) or "solver" (a relayer fills and is repaid). */
   trust: "burn_mint" | "solver";
   reason: CrossChainRouteReason | null;
+  /** What arrives on this route (absent on routes drafted before any-asset moves: USDC). */
+  output?: CrossChainAssetView | undefined;
+  /** The bridge an aggregator chose ("Relay", "Across"…), and its steps ("swap:kyberswap", "cross:relaydepository"). */
+  via?: string | null | undefined;
+  steps?: string[] | undefined;
+  /** A flat fee paid on top in the origin's native coin (deBridge: 1 USDC on Arc), base units of that coin. */
+  nativeFee?: string | null | undefined;
+  /** Convert first: swapped to USDC on Arc in the same batch (venue, the least USDC), then bridged. */
+  convertFirst?: { venue: string; minUsdc: string } | null | undefined;
 };
 
 export type CrossChainChainView = { chainId: number; name: string; key: string };
 
 export type CrossChainDraftView = {
   direction: "out" | "in";
+  /** The asset that leaves (its symbol), and its amount in its own base units. */
   asset: string;
   amount: string;
+  /** The asset that leaves and the one that arrives, in full (absent on drafts from before any-asset moves: USDC). */
+  input?: CrossChainAssetView | undefined;
+  output?: CrossChainAssetView | undefined;
   source: CrossChainChainView;
   destination: CrossChainChainView;
   recipient: { address: string; label: string | null; own: boolean };
@@ -274,6 +290,8 @@ export type CrossChainRequest = {
   /** Out: an address, @handle or contact; own address when absent. */
   recipient?: string | null | undefined;
   route?: CrossChainProvider | null | undefined;
+  /** What should arrive: the same asset (default, when a route carries it) or "USDC". */
+  toAsset?: string | null | undefined;
 };
 
 export type CrossChainApproveResponse =
@@ -281,7 +299,8 @@ export type CrossChainApproveResponse =
   | { status: "sign"; intent: CrossChainIntent; approvalId: string; transaction: UnsignedTransaction }
   | { status: "sign_typed"; intent: CrossChainIntent; approvalId: string; typedData: { domain: Record<string, unknown>; types: Record<string, { name: string; type: string }[]>; primaryType: string; message: Record<string, unknown> } };
 
-export type ElsewhereView = { network: NetworkId; chains: { chainId: number; name: string; key: string; asset: string; balance: string }[] };
+/** Money at the person's own address on other chains: USDC (read directly) and, on mainnet, any other asset found there. */
+export type ElsewhereView = { network: NetworkId; chains: { chainId: number; name: string; key: string; asset: string; balance: string; address?: string; decimals?: number; usd?: number | null }[] };
 
 export type ProposeCrossChainOutput = { crosschain: true; intent: CrossChainIntent; summary: string };
 

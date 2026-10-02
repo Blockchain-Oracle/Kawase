@@ -58,6 +58,8 @@ export type LifiQuote = {
   toToken: LifiToken;
   /** Fees taken from the amount and gas the wallet pays, in US dollars, when LI.FI says. */
   feeUsd: number | null;
+  /** Gas the origin transaction costs, in the origin's native coin, when LI.FI says. */
+  gasCost: bigint | null;
   /** Approve the Diamond for exactly the amount (ERC-20s), then its call (native value only for a native coin). */
   calls: BridgeCall[];
 };
@@ -92,7 +94,7 @@ export async function lifiQuote(input: LifiQuoteInput): Promise<LifiQuote> {
     allowDestinationCall: "false",
   });
   const { ok, body } = await get(`/quote?${query}`);
-  const estimate = body.estimate as { toAmount?: string; toAmountMin?: string; approvalAddress?: string; executionDuration?: number; feeCosts?: { amountUSD?: string }[]; gasCosts?: { amountUSD?: string }[] } | undefined;
+  const estimate = body.estimate as { toAmount?: string; toAmountMin?: string; approvalAddress?: string; executionDuration?: number; feeCosts?: { amountUSD?: string }[]; gasCosts?: { amountUSD?: string; amount?: string }[] } | undefined;
   const request = body.transactionRequest as { to?: string; data?: Hex; value?: string } | undefined;
   const toToken = (body.action as { toToken?: { address?: string; symbol?: string; decimals?: number; priceUSD?: string } } | undefined)?.toToken;
   if (!ok || !estimate?.toAmount || !estimate.toAmountMin || !request?.to || !request.data || !toToken?.address) {
@@ -113,6 +115,7 @@ export async function lifiQuote(input: LifiQuoteInput): Promise<LifiQuote> {
     fillSeconds: typeof estimate.executionDuration === "number" ? estimate.executionDuration : null,
     toToken: { address: getAddress(toToken.address), symbol: String(toToken.symbol ?? ""), decimals: Number(toToken.decimals ?? 0), priceUsd: toToken.priceUSD ? Number(toToken.priceUSD) : null },
     feeUsd: costs || null,
+    gasCost: estimate.gasCosts?.length ? estimate.gasCosts.reduce((sum, cost) => sum + BigInt(cost.amount ?? "0"), NO_VALUE) : null,
     calls,
   };
 }

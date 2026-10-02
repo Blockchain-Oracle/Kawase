@@ -98,8 +98,10 @@ const MOVE_REASONS: Record<string, string> = {
   RECIPIENT_NO_WALLET: "That person has no Kawase wallet yet.",
   AMOUNT_MISSING: "How much?",
   AMOUNT_INVALID: "The amount is not valid.",
-  INSUFFICIENT_BALANCE: "Not enough USDC there.",
-  INSUFFICIENT_GAS: "A little USDC must stay on Arc for the network fee.",
+  INSUFFICIENT_BALANCE: "Not enough of that asset there.",
+  INSUFFICIENT_GAS: "A little must stay for the network fee (USDC on Arc, or the coin itself on the other chain).",
+  MOVE_ASSET_UNKNOWN: "Kawase cannot find that asset on that chain; ask which one they mean.",
+  TOKEN_BLOCKED: "That token imitates another one; Kawase will not move it.",
   QUOTE_UNAVAILABLE: "No route can carry it right now; try again in a moment or a different amount.",
 };
 
@@ -107,10 +109,13 @@ function summarizeCrossChain(intent: CrossChainIntent): string {
   const draft = intent.draft;
   const blocking = intent.blocking;
   if (!draft) return blocking ? (MOVE_REASONS[blocking.code] ?? blocking.code) : "Needs more details.";
-  const usdc = (base: string | null) => (base ? `${formatUnits(BigInt(base), USDC_DECIMALS)} USDC` : "unknown");
+  // Drafts from before any-asset moves carry no input/output: USDC both sides.
+  const money = (base: string | null, asset: { symbol: string; decimals: number } | undefined) => (base ? `${formatUnits(BigInt(base), asset?.decimals ?? USDC_DECIMALS)} ${asset?.symbol ?? "USDC"}` : "unknown");
   const who = draft.recipient.own ? "their own address" : (draft.recipient.label ?? draft.recipient.address);
-  const options = draft.routes.map((route) => `${route.provider}: ${route.executable ? usdc(route.received) : (route.reason ?? "not available")}`).join("; ");
-  const line = `${usdc(draft.amount)} from ${draft.source.name} to ${who} on ${draft.destination.name}; best route ${draft.chosen}, at least ${usdc(draft.minReceived)} arrives. Options: ${options}. The person picks and confirms on the card.`;
+  const options = draft.routes
+    .map((route) => `${route.provider}${route.via ? ` via ${route.via}` : ""}${route.convertFirst ? ` (swapped to USDC on ${route.convertFirst.venue} first)` : ""}: ${route.executable ? money(route.received, route.output) : (route.reason ?? "not available")}`)
+    .join("; ");
+  const line = `${money(draft.amount, draft.input)} from ${draft.source.name} to ${who} on ${draft.destination.name}; best route ${draft.chosen}, at least ${money(draft.minReceived, draft.output)} arrives. Options: ${options}. The person picks and confirms on the card.`;
   return blocking ? `${line} Blocked: ${MOVE_REASONS[blocking.code] ?? blocking.code}` : line;
 }
 

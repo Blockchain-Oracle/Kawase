@@ -61,6 +61,21 @@ export const MARGIN_MARKET_ALIASES = {
  * Earn and borrow on Aave V4 directly (earn-borrow.md): supply through the Main Spoke by reserve id (not the shallow
  * ERC-4626 wrapper, G22), and borrow against any reserve that counts as collateral. Health in basis points of 1.0.
  */
+/** Cross-chain moves of any asset (routes.md): slippage asked of aggregators, and room kept for gas on another chain. */
+export const CROSSCHAIN = {
+  /** USDC and other stables. */
+  stableSlippageBps: 50,
+  /** Anything with a swap in it (WETH, cirBTC, a meme). */
+  volatileSlippageBps: 100,
+  /** A move in that starts with a transaction on another chain keeps this share over the quoted gas. */
+  sourceGasHeadroomPercent: 150,
+  /** Gas a source-chain bridge transaction is assumed to take when the chain will not estimate it. */
+  sourceGasFallback: 300_000n,
+  /** Gas the Arc batch is drafted at, per provider (an aggregator swaps inside its call), and what a swap first adds. */
+  batchGas: { cctp: 400_000n, across: 400_000n, relay: 400_000n, lifi: 1_000_000n, debridge: 800_000n },
+  convertGas: 700_000n,
+} as const;
+
 export const LEND = {
   /** A borrow that would leave the account below this is refused; between it and `warnHealthBps` it warns. */
   minBorrowHealthBps: 12_500,

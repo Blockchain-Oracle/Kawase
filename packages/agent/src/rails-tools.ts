@@ -14,7 +14,8 @@ const UNAVAILABLE = { summary: "This is not available here." };
 const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
 const RECIPIENT_MAX = 80;
 
-const ASSET_MAX = 40;
+/** A symbol, a 0x address (42), or an amount. */
+const ASSET_MAX = 64;
 
 export function railsTools(context: AgentContext) {
   return {
@@ -53,24 +54,30 @@ export function railsTools(context: AgentContext) {
     }),
     propose_bridge: tool({
       description:
-        "Prepare moving USDC from Arc to another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) for the person themselves or anyone else: pass the recipient only if they named one (a saved contact, a @handle or an address they gave). Kawase quotes every route that serves it (Circle CCTP, Across, Relay), ranks them by what arrives, and shows up to three on a card with the best chosen; the person can pick another and confirms with Face ID. Nothing moves from this call.",
+        "Prepare moving money from Arc to another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) for the person themselves or anyone else: any asset they hold on Arc (USDC by default; WETH, EURC, cirBTC, a meme by symbol or address). Pass the recipient only if they named one (a saved contact, a @handle or an address they gave). Kawase quotes every route that serves it (USDC: Circle CCTP, Across, Relay, LI.FI, deBridge; other assets: LI.FI and deBridge, arriving as the same asset, e.g. cirBTC as cbBTC), ranks them by what arrives after fees, and shows up to three on a card with the best chosen. When nothing carries the asset as itself it arrives as USDC (swapped on Arc in the same transaction). The person can pick another route and confirms with Face ID. Nothing moves from this call.",
       inputSchema: z.object({
         destination: z.enum(CHAINS).optional().describe("The chain they named; omit if they did not say"),
-        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot; omit if they did not say"),
+        asset: z.string().max(ASSET_MAX).optional().describe("The asset to move, as they said it (\"WETH\", \"cirBTC\", an address); omit for USDC"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("In that asset, digits with a dot; omit if they did not say"),
         recipient: z.string().max(RECIPIENT_MAX).optional().describe("Only who they named: a contact, @handle or address; omit for themselves"),
+        toAsset: z.literal("USDC").optional().describe("Only if they asked for it to arrive as USDC"),
       }),
-      execute: async ({ destination, amount, recipient }) =>
-        context.proposeCrossChain ? context.proposeCrossChain({ direction: "out", destination: destination ?? null, amount: amount ?? null, recipient: recipient ?? null }) : UNAVAILABLE,
+      execute: async ({ destination, asset, amount, recipient, toAsset }) =>
+        context.proposeCrossChain
+          ? context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: recipient ?? null, toAsset: toAsset ?? null })
+          : UNAVAILABLE,
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     bring_to_arc: tool({
       description:
-        "Bring USDC the person holds at their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) to Arc. Gasless: they sign one permit (no ETH needed there) and Relay delivers on Arc in seconds. Pass the chain only if they named one (else the chain holding the most), and the amount only if they said one. Shows a card; nothing moves from this call.",
+        "Bring money the person holds at their own address on another chain (Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche) to Arc. USDC is gasless: they sign one permit (no ETH needed there) and Relay delivers on Arc in seconds. The chain's own coin (ETH, POL, AVAX) goes in one transaction there, its gas paid from the coin, and arrives as the same asset on Arc (ETH as WETH). Another token goes with one signature once it is approved for Permit2 there. Pass the chain only if they named one (else the chain holding the most of it), the asset only if not USDC, and the amount only if they said one. Shows a card; nothing moves from this call.",
       inputSchema: z.object({
         source: z.enum(CHAINS).optional(),
+        asset: z.string().max(ASSET_MAX).optional().describe("\"ETH\", \"EURC\", \"WETH\"…; omit for USDC"),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
       }),
-      execute: async ({ source, amount }) => (context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, amount: amount ?? null }) : UNAVAILABLE),
+      execute: async ({ source, asset, amount }) =>
+        context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, asset: asset ?? null, amount: amount ?? null }) : UNAVAILABLE,
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     start_buy: tool({

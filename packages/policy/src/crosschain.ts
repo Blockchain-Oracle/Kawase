@@ -19,10 +19,17 @@ export type CrossChainFacts = {
   chain: "found" | "missing" | "unknown";
   /** Out only: own address when nothing was said. */
   recipient: RecipientFacts | { status: "own" };
+  /** What moves: found (its symbol and decimals; USDC unless said), not found, or a token Kawase will not move. */
+  asset: { status: "found"; symbol: string; decimals: number; usdc: boolean } | { status: "unknown"; name: string } | { status: "blocked"; symbol: string };
   amount: AmountFacts;
-  /** Base units the origin holds (Arc for out, the source chain for in), and Arc's gas float for out. */
+  /** Base units of the asset the origin holds (Arc for out, the source chain for in), and Arc's gas float for out. */
   balance: bigint;
   gasFloat: bigint;
+  /** Out with an asset other than USDC: the wallet's USDC on Arc (gas) and any flat fee the chosen route adds in it. */
+  usdc?: bigint | undefined;
+  nativeFee?: bigint | undefined;
+  /** In from another chain's own coin: the gas that transaction costs there, paid from the same coin. */
+  sourceGas?: bigint | undefined;
   /** Whether at least one route can carry it now, and why not. */
   route: { status: "ok" } | { status: "none"; reason: string } | { status: "not_requested" };
 };
@@ -41,6 +48,9 @@ export function evaluateCrossChain(facts: CrossChainFacts): CrossChainEvaluation
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
   if (facts.direction === "out" && !facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
   if (facts.chain !== "found") results.push(result("DESTINATION_MISSING"));
+  if (facts.asset.status === "unknown") return done([...results, result("MOVE_ASSET_UNKNOWN", { asset: facts.asset.name })]);
+  if (facts.asset.status === "blocked") return done([...results, result("TOKEN_BLOCKED", { symbol: facts.asset.symbol })]);
+  const asset = facts.asset;
 
   const recipient = facts.recipient;
   if (recipient.status === "invalid") results.push(result("RECIPIENT_INVALID", { query: recipient.query }));
@@ -56,8 +66,10 @@ export function evaluateCrossChain(facts: CrossChainFacts): CrossChainEvaluation
   if (facts.amount.status === "invalid" || (facts.amount.status === "ok" && facts.amount.baseUnits <= ZERO)) results.push(result("AMOUNT_INVALID"));
   if (facts.amount.status === "ok" && facts.amount.baseUnits > ZERO) {
     const amount = facts.amount.baseUnits;
-    if (amount > facts.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.balance), asset: "USDC" }));
-    else if (facts.direction === "out" && facts.balance - amount < facts.gasFloat) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.gasFloat), asset: "USDC" }));
+    if (amount > facts.balance) results.push(result("INSUFFICIENT_BALANCE", { balance: s(facts.balance), asset: asset.symbol, decimals: String(asset.decimals) }));
+    else if (facts.direction === "out" && asset.usdc && facts.balance - amount < facts.gasFloat + (facts.nativeFee ?? ZERO)) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.gasFloat), asset: "USDC" }));
+    else if (facts.direction === "out" && !asset.usdc && (facts.usdc ?? ZERO) < facts.gasFloat + (facts.nativeFee ?? ZERO)) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.gasFloat + (facts.nativeFee ?? ZERO)), asset: "USDC" }));
+    else if (facts.direction === "in" && facts.sourceGas && amount + facts.sourceGas > facts.balance) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.sourceGas), asset: asset.symbol, decimals: String(asset.decimals) }));
   }
   if (facts.route.status === "none") results.push(result("QUOTE_UNAVAILABLE", { reason: facts.route.reason }));
   return done(results);

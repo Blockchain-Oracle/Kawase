@@ -50,6 +50,7 @@ import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noMarketData, type MarketData } from "./market/sources";
 import { noSwaps, type SwapEngine } from "./swap/engine";
+import { createSwapVenues } from "./swap/venues";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import { marginRoutes } from "./margin/routes";
@@ -186,7 +187,7 @@ export function createApp(deps: AppDeps) {
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
-  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
+  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
