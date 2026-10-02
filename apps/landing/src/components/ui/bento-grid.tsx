@@ -17,17 +17,22 @@ export interface BentoItem {
   footnote?: React.ReactNode;
   colSpan?: 1 | 2;
   muted?: boolean;
+  /** Makes the whole card a link (e.g. to its docs page). */
+  href?: string;
 }
 
 export function BentoGrid({ items }: { items: readonly BentoItem[] }) {
   return (
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-3 md:grid-cols-3">
-      {items.map((item) => (
-        <div
+      {items.map((item) => {
+        const Tag = item.href ? "a" : "div";
+        return (
+        <Tag
           key={item.key}
+          {...(item.href ? { href: item.href } : {})}
           className={cn(
-            "group relative overflow-hidden rounded-3xl border border-border bg-card p-5 transition-transform duration-300",
-            "will-change-transform hover:-translate-y-0.5",
+            "group relative block overflow-hidden rounded-3xl border border-border bg-card p-5 transition-transform duration-300",
+            "will-change-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-ring",
             item.colSpan === 2 ? "md:col-span-2" : "col-span-1",
           )}
         >
@@ -60,8 +65,9 @@ export function BentoGrid({ items }: { items: readonly BentoItem[] }) {
               </div>
             ) : null}
           </div>
-        </div>
-      ))}
+        </Tag>
+        );
+      })}
     </div>
   );
 }
