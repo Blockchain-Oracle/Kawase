@@ -7,6 +7,8 @@ import { getAddress, type Address } from "viem";
 
 import type { NetworkId } from "@kawase/networks";
 
+import { assertAlchemyOpen, noteAlchemyAnswer } from "../market/alchemy-quota";
+
 const SLUG: Record<NetworkId, string> = { mainnet: "arc-mainnet", testnet: "arc-testnet" };
 const PAGE = "0x64";
 const TIMEOUT_MS = 8_000;
@@ -44,6 +46,8 @@ export type ChainTransfer = {
 const cache = new Map<string, { at: number; value: { transfers: ChainTransfer[]; more: boolean } }>();
 
 async function page(network: NetworkId, apiKey: string, side: "fromAddress" | "toAddress", address: Address) {
+  // While Alchemy is paused after a 429 this throws at once, and the feed reads the explorer instead.
+  assertAlchemyOpen();
   const response = await fetch(`https://${SLUG[network]}.g.alchemy.com/v2/${apiKey}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -55,9 +59,16 @@ async function page(network: NetworkId, apiKey: string, side: "fromAddress" | "t
     }),
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  if (!response.ok) throw new Error(`alchemy ${response.status}`);
-  const body = (await response.json()) as { result?: { transfers: AlchemyTransfer[]; pageKey?: string }; error?: { message: string } };
-  if (!body.result) throw new Error(`alchemy: ${body.error?.message ?? "no result"}`);
+  if (!response.ok) {
+    noteAlchemyAnswer(response.status, await response.text().catch(() => ""));
+    throw new Error(`alchemy ${response.status}`);
+  }
+  const body = (await response.json()) as { result?: { transfers: AlchemyTransfer[]; pageKey?: string }; error?: { code?: number; message: string } };
+  if (!body.result) {
+    // JSON-RPC can also carry the 429 in the body.
+    if (body.error?.code) noteAlchemyAnswer(body.error.code, body.error.message);
+    throw new Error(`alchemy: ${body.error?.message ?? "no result"}`);
+  }
   return body.result;
 }
 

@@ -5,6 +5,8 @@ import type { MiddlewareHandler } from "hono";
 import { HTTP, problem } from "./problem";
 
 const MS_PER_SECOND = 1000;
+/** Above this many keys, buckets idle for a whole window (full again anyway) are dropped, so the map can't grow forever. */
+const SWEEP_ABOVE = 10_000;
 
 type Bucket = { tokens: number; updatedAt: number };
 
@@ -20,7 +22,13 @@ export function createRateLimit({ limit, windowSeconds, keyOf }: RateLimitOption
   const buckets = new Map<string, Bucket>();
   const refillPerMs = limit / (windowSeconds * MS_PER_SECOND);
 
+  const windowMs = windowSeconds * MS_PER_SECOND;
+  const sweep = (now: number) => {
+    for (const [key, bucket] of buckets) if (now - bucket.updatedAt >= windowMs) buckets.delete(key);
+  };
+
   const take = (key: string, now = Date.now()): boolean => {
+    if (buckets.size > SWEEP_ABOVE) sweep(now);
     const bucket = buckets.get(key) ?? { tokens: limit, updatedAt: now };
     bucket.tokens = Math.min(limit, bucket.tokens + (now - bucket.updatedAt) * refillPerMs);
     bucket.updatedAt = now;

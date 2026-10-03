@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-03 morning (all lanes merged; OpenAI credit out; per-area truth in `plan/COVERAGE.md`)
+Last updated: 2026-10-03 afternoon (security fixes running in 4 worktrees, desktop web in 1; OpenAI credit out; per-area truth in `plan/COVERAGE.md`)
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
@@ -67,7 +67,19 @@ Abu's direction: define every flow end to end, every asset first-class, the whol
   - B2: B2-4 (README with the prior-work disclosure, judge walkthrough, push credentials audit).
 - **Abu:** OpenAI credit; ~5 USDC each to ops 0x2afa…8b3b and relayer 0x18fb…6b78 on Arc mainnet; back up ~/.kawase-secrets.
 
-**Next for the lead:** merge slices as they finish; run the mainnet acceptance runner once funded; security review over the money paths; Circle KYB domain; demo video and submission (deadline 10-10).
+**Afternoon 10-03 (lead):**
+- **Merged and deployed** (api, web, docs, landing all finished 14:53): A-4 (Home/Markets/token page to plan §D, withdraw as one batch), B2-4 (README, judge walkthrough, /demo anchors), B2-5 (live README screenshots, getting-started recipient, Alchemy over-quota pause), handles containing "kawase" reserved, the rate limiter forgets idle callers.
+- **Security review over the money paths:** 5 high, 7 medium, tracked with owners in `plan/reviews/2026-10-03-security-review.md`. **Don't fund the mainnet wallets until the highs are merged.**
+- All five builders died together on an API connection drop (ECONNRESET) at ~13:44. Agents from an earlier session can't be resumed, so fresh builders were started in the same worktrees with full briefs:
+  - `b2-security` (H1, H5, M7 payouts, M10, SSRF, lows, M12);
+  - `a5-security` (H2, M8, M11);
+  - `a3-security` (H4 wallet, which also adds the shared on-chain disable helper; M6, M7 pause, M9, practice regex);
+  - `b1-security` (commits its relayed-gas WIP, then H3, H4 protection, lows, then the acceptance runner);
+  - `a-desktop` (finishes the uncommitted web desktop layout).
+- Migration numbers: B2 0049 then 0080–89; A5 0078–79 then 0090–99. **Drizzle applies only entries whose `when` is later than the newest one recorded.** Locally, shared across worktrees, this had silently skipped 0030_margin and 0020_wallet_tokens; repaired 10-03 (applied by hand and recorded with their sha256). Production has all 51.
+- **Lead fix `161ade6`:** a Turnkey email counts only if it was proved. `UPDATE_USER_EMAIL`'s `verificationToken` is optional, so anyone could claim a victim's address for contact discovery or lock the real owner out.
+
+**Next for the lead:** merge each security slice as it lands and deploy; then tell Abu the wallets can be funded and run the acceptance runner; Circle KYB domain; demo video and submission (deadline 10-10).
 
 ## Active repair — 2026-10-02
 

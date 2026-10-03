@@ -16,6 +16,7 @@ import type { NetworkContext, NetworkId } from "@kawase/networks";
 import type { ContactService } from "../contacts/service";
 import { CIRCLE_FAUCET_SENDERS } from "../faucet/circle-faucet";
 import { HTTP, problem } from "../http/problem";
+import { AlchemyPausedError } from "../market/alchemy-quota";
 import type { SessionUser } from "../types";
 import { fetchActivity } from "../wallet/activity";
 import type { Chains } from "../wallet/chain";
@@ -76,7 +77,8 @@ export class ActivityFeedService {
       try {
         ({ transfers, more } = await chainTransfers(network, this.alchemyApiKey, wallet, context.addresses.usdc));
       } catch (error) {
-        this.log.warn({ err: error }, "alchemy transfers failed; using the explorer");
+        // While Alchemy is paused (after a 429) the switch is expected; say so once, when the pause starts.
+        if (!(error instanceof AlchemyPausedError)) this.log.warn({ err: error }, "alchemy transfers failed; using the explorer");
         source = "explorer";
       }
     } else source = "explorer";

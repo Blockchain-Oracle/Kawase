@@ -1,0 +1,287 @@
+{
+  "label": "baseline",
+  "model": "default agentChat role",
+  "network": "testnet",
+  "guest": true,
+  "at": "2026-10-02T09:19:07.731Z",
+  "summary": [
+    {
+      "question": "What can you do?",
+      "runs": 6,
+      "medianChars": 319,
+      "medianParagraphs": 2,
+      "medianRestated": 7,
+      "calledCapabilities": 6
+    },
+    {
+      "question": "Qu'est-ce que tu peux faire ?",
+      "runs": 6,
+      "medianChars": 452,
+      "medianParagraphs": 3,
+      "medianRestated": 7,
+      "calledCapabilities": 6
+    },
+    {
+      "question": "Can you buy meme coins for me?",
+      "runs": 6,
+      "medianChars": 118,
+      "medianParagraphs": 1,
+      "medianRestated": 1,
+      "calledCapabilities": 6
+    }
+  ],
+  "results": [
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "On Arc Testnet, I can send USDC or EURC, request money with a link, swap USDC and EURC, bridge USDC to supported chains, earn yield, manage contacts, and set up automations or balance rules.\n\nI can also show your wallet, history, and receive address, or claim free test money. Marketplace payments aren’t available yet.",
+      "kind": "overview",
+      "ms": 8440,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 319,
+      "paragraphs": 2,
+      "sentences": 3,
+      "restated": 8
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can send and request USDC or EURC, swap between them, bridge your USDC to your own address on other chains, earn yield, manage contacts, and set up scheduled payments, Auto-save, or balance rules. I can also show your wallet and history or provide test money; paying for services is coming soon.",
+      "kind": "overview",
+      "ms": 5204,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 297,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 7
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "On Arc Testnet, I can:\n\nSend or request USDC and EURC, look up contacts, show your wallet address, and swap between USDC and EURC.\n\nBridge your USDC to your own address on Base, Ethereum, Arbitrum, Optimism, Polygon, or Avalanche; use mock vaults to earn yield; and set up scheduled sends, Auto-save, balance or payment rules, and alerts.\n\nI can also provide free test USDC and EURC. Service payments and other-chain payments are not available yet.",
+      "kind": "overview",
+      "ms": 6449,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 448,
+      "paragraphs": 4,
+      "sentences": 4,
+      "restated": 6
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "On Arc Testnet, I can send USDC or EURC, request money with a link, swap USDC and EURC, bridge USDC to supported chains, earn yield, manage contacts, and set up automations or balance rules. I can also show your wallet, history, receive address, and claim free test money; marketplace payments aren’t available yet.",
+      "kind": "overview",
+      "ms": 5265,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 315,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 8
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can help you manage USDC and EURC on Arc Testnet: send and request money, swap currencies, bridge USDC to your own address on other chains, earn yield, and set up scheduled payments, Auto-save, or balance/payment alerts.\n\nI can also show contacts, balances and activity, receive details, explain permissions, and claim free test money. Testnet funds have no real value. Paying for services is not available yet.",
+      "kind": "overview",
+      "ms": 3871,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 413,
+      "paragraphs": 2,
+      "sentences": 4,
+      "restated": 7
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can send or request USDC/EURC, swap currencies, bridge USDC to supported chains, earn yield, manage contacts, and set up scheduled payments, Auto-save, or balance rules. I can also show your wallet, history, and receive address, or claim free test money; paying for services is still being built.",
+      "kind": "overview",
+      "ms": 4864,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 298,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 7
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Je peux, sur Arc Testnet :\n\nEnvoyer et recevoir des USDC ou EURC, créer des demandes de paiement, échanger USDC ↔ EURC, transférer vos USDC vers votre propre adresse sur d’autres réseaux, et mettre vos USDC dans un coffre de rendement.\n\nJe peux aussi configurer des paiements récurrents, l’épargne automatique et des règles de solde ou de réception. Vous êtes invité : il faut vous connecter pour utiliser votre portefeuille.",
+      "kind": "overview",
+      "ms": 4526,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 425,
+      "paragraphs": 3,
+      "sentences": 3,
+      "restated": 5
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Je peux, sur Arc Testnet :\n\nEnvoyer et recevoir des USDC/EURC, demander un paiement par lien, consulter vos contacts, échanger USDC et EURC, transférer vos USDC vers votre propre adresse sur d’autres réseaux, et les placer dans des coffres de rendement.\n\nJe peux aussi créer des paiements récurrents, l’Auto-save et des règles automatiques. L’argent du testnet n’a aucune valeur. Vous êtes invité : connectez-vous pour utiliser votre portefeuille.",
+      "kind": "overview",
+      "ms": 4400,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 447,
+      "paragraphs": 3,
+      "sentences": 4,
+      "restated": 7
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Je peux, sur Arc Testnet avec de l’argent de test :\n\nEnvoyer ou demander des USDC/EURC, gérer les contacts, échanger USDC et EURC, transférer vos USDC vers votre propre adresse sur Base ou d’autres réseaux, et afficher votre adresse de réception.\n\nJe peux aussi faire fructifier vos USDC dans un coffre, créer des paiements programmés ou des règles automatiques, et vous fournir des fonds de test gratuits. Les paiements de services ne sont pas encore disponibles.",
+      "kind": "overview",
+      "ms": 4300,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 464,
+      "paragraphs": 3,
+      "sentences": 3,
+      "restated": 7
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Je peux, sur Arc Testnet avec de l’argent fictif :\n\nEnvoyer ou demander des USDC/EURC, gérer les contacts, échanger USDC et EURC, transférer vos USDC vers votre adresse sur d’autres réseaux, et faire fructifier vos USDC dans des coffres.\n\nJe peux aussi créer des paiements récurrents, l’Auto-save et des règles automatiques. Je ne peux pas encore payer des services ni envoyer de l’argent à quelqu’un sur une autre chaîne.",
+      "kind": "overview",
+      "ms": 3991,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 422,
+      "paragraphs": 3,
+      "sentences": 3,
+      "restated": 6
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Je peux, sur Arc Testnet (argent de test sans valeur) :\n\nEnvoyer ou demander des USDC/EURC, gérer tes contacts, échanger USDC et EURC, déplacer tes USDC vers ta propre adresse sur Base ou d’autres réseaux, et faire fructifier tes USDC dans un coffre.\n\nJe peux aussi programmer des paiements, automatiser ton épargne, créer des règles d’alerte ou de transfert, afficher ton adresse de réception et te fournir des fonds de test. Les paiements de services sont encore en préparation.",
+      "kind": "overview",
+      "ms": 4451,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 480,
+      "paragraphs": 3,
+      "sentences": 3,
+      "restated": 8
+    },
+    {
+      "locale": "fr",
+      "languageName": "Français",
+      "text": "Sur Arc Testnet, je peux afficher votre solde et votre historique, envoyer ou demander des USDC/EURC, échanger USDC et EURC, déplacer vos USDC vers votre adresse sur d’autres réseaux, et faire fructifier vos USDC dans un coffre.\n\nJe peux aussi gérer vos contacts, créer des automatisations et des alertes, et vous donner des fonds de test gratuits. Les fonctions liées au portefeuille nécessitent de vous connecter ; l’argent de test n’a aucune valeur.",
+      "kind": "overview",
+      "ms": 4569,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 452,
+      "paragraphs": 2,
+      "sentences": 3,
+      "restated": 7
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "Not yet. On Arc Testnet, I can swap USDC and EURC, but I can’t buy other tokens such as meme coins.",
+      "kind": "scope",
+      "ms": 2946,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 99,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can’t buy meme coins. On Arc Testnet, I can swap only USDC and EURC; other tokens and token safety checks aren’t supported yet.",
+      "kind": "scope",
+      "ms": 5003,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 129,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "No. Buying meme coins isn’t supported; Kawase currently swaps only USDC and EURC on Arc Testnet.",
+      "kind": "scope",
+      "ms": 5092,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 96,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can’t buy meme coins. On Arc Testnet, I can only swap USDC and EURC; other tokens aren’t supported.",
+      "kind": "scope",
+      "ms": 3467,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 101,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "Meme coins aren’t supported. Kawase can currently swap USDC and EURC on Arc Testnet; testnet funds have no real value.",
+      "kind": "scope",
+      "ms": 3394,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 118,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    },
+    {
+      "locale": "en",
+      "languageName": "English",
+      "text": "I can’t buy meme coins. On Arc Testnet, I can currently swap only USDC and EURC; buying other tokens isn’t supported yet.",
+      "kind": "scope",
+      "ms": 2935,
+      "tools": [
+        "get_capabilities"
+      ],
+      "chars": 121,
+      "paragraphs": 1,
+      "sentences": 2,
+      "restated": 1
+    }
+  ]
+}
