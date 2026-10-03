@@ -68,7 +68,7 @@ import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
-import { venuePositions } from "./tokens/venue-positions";
+import { venueMarkets, venuePositions } from "./tokens/venue-positions";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
@@ -206,6 +206,7 @@ export function createApp(deps: AppDeps) {
     async (user) => (await earn.overview(user)).positions,
     // Loans with their health and long/short positions with their P&L count in the total too (created further down).
     venuePositions({ lend: () => lend, margin: () => margin }),
+    venueMarkets(() => margin),
   );
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(

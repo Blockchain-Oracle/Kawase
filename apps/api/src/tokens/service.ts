@@ -54,7 +54,7 @@ import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { TokenDirectory } from "./directory";
 import { safetyVerdict, type Lookalike } from "./safety";
-import type { VenuePositions } from "./venue-positions";
+import type { VenueMarkets, VenuePositions } from "./venue-positions";
 
 const MAINNET_CHAIN_ID = NETWORKS.mainnet.chainId;
 /** Other chains (LI.FI scans ~60) and positions may take longer than a Home screen should wait; they fill the cache. */
@@ -103,6 +103,8 @@ export class AssetService {
     private readonly earnPositions?: EarnPositions,
     /** Aave V4 supplies and loans, and Kawase Margin positions (tokens/venue-positions.ts). */
     private readonly venuePositions?: VenuePositions,
+    /** Aave V4's listed reserves and Kawase Margin's sides, for a token page's Earn, Borrow and Long/Short. */
+    private readonly venueMarkets?: VenueMarkets,
   ) {
     this.directory = new TokenDirectory(db, market);
   }
@@ -558,11 +560,12 @@ export class AssetService {
     const token = described.get(lower);
     if (!token) throw problem(HTTP.notFound, "not_found", "no token at this address on this network");
     const marketAddress = network === "testnet" ? TESTNET_PRICE_TWINS[lower]?.toLowerCase() : lower;
-    const [info, facts, lookalikes, holding] = await Promise.all([
+    const [info, facts, lookalikes, holding, venue] = await Promise.all([
       marketAddress && network === "mainnet" ? this.market.info(MAINNET_CHAIN_ID, marketAddress) : Promise.resolve(null),
       network === "mainnet" ? this.market.security(MAINNET_CHAIN_ID, lower) : Promise.resolve(null),
       network === "mainnet" ? this.lookalikes(token) : Promise.resolve([] as Lookalike[]),
       viewer ? this.holdingOf(viewer, network, token, priced) : Promise.resolve(null),
+      this.venueMarkets ? this.venueMarkets(network).catch(() => null) : Promise.resolve(null),
     ]);
     // Two unlisted tokens with one symbol: the deeper market is the one people mean; the other is the lookalike.
     if (token.status === "unverified" && lookalikes.some((other) => (other.liquidityUsd ?? 0) > (priced?.market?.liquidityUsd ?? 0))) token.status = "lookalike";
@@ -584,7 +587,7 @@ export class AssetService {
       about: { description: info?.description ?? null, websites: info?.websites ?? [], twitter: info?.twitter ?? null, telegram: info?.telegram ?? null },
       safety,
       holding,
-      actions: tokenActions(network, token, safety.level, holding),
+      actions: tokenActions(network, token, safety.level, holding, venue),
       pricedAt: new Date(at).toISOString(),
       stale,
     };
@@ -772,14 +775,29 @@ function hideReason(token: TokenView, valueUsd: number | null, visibility: "auto
 const MEME_EXCLUDED_KINDS = new Set(["dollar", "fiat", "bitcoin", "ether", "rwa", "permissioned", "position"]);
 const isMeme = (token: TokenView) => !MEME_EXCLUDED_KINDS.has(token.kind) && !isImpostor("mainnet", token.symbol, token.address, token.decimals);
 
+/** Kinds Kawase Margin and Aave V4 list on mainnet (the assets a testnet person is told to switch for). */
+const VENUE_KINDS = new Set(["bitcoin", "ether"]);
+
 /**
  * What a person can do with a token here, each with its reason when they cannot (R1, R2; capability-matrix.md).
- * Reason codes: mainnet_only, blocked, permissioned, position, no_balance, convert_first, no_yield, no_market.
+ * Earn, Borrow and Long/Short come from the venue's live reserves (Aave V4's Main Spoke; Kawase Margin's sides);
+ * Bridge carries any token as itself where the cross-chain routes quote it (mainnet), USDC by CCTP on both networks;
+ * a price alert is a notify rule on a quote (automations), for anything that trades.
+ * Reason codes: mainnet_only, blocked, permissioned, position, no_balance, convert_first, no_yield, no_lending, no_market.
  */
-export function tokenActions(network: NetworkId, token: TokenView, safety: "ok" | "caution" | "block", holding: HoldingView | null): TokenActionView[] {
+export function tokenActions(
+  network: NetworkId,
+  token: TokenView,
+  safety: "ok" | "caution" | "block",
+  holding: HoldingView | null,
+  venue: Awaited<ReturnType<VenueMarkets>> | null = null,
+): TokenActionView[] {
   const holds = holding !== null && BigInt(holding.balance) > ZERO;
   const testnetPair = token.kind === "dollar" || token.symbol === "EURC";
   const stable = token.kind === "dollar";
+  const listed = venue?.markets.find((market) => market.asset.toLowerCase() === token.address.toLowerCase());
+  // On testnet the venue is mainnet's alone: the assets it lists there are one switch away.
+  const venueElsewhere = network === "testnet" && (VENUE_KINDS.has(token.kind) || token.symbol === "EURC" || stable);
   const is = (available: boolean, reason: string | null): { available: boolean; reason: string | null } => ({ available, reason: available ? null : reason });
   const tradable = (): { available: boolean; reason: string | null } => {
     if (token.kind === "permissioned") return is(false, "permissioned");
@@ -789,15 +807,30 @@ export function tokenActions(network: NetworkId, token: TokenView, safety: "ok" 
     return is(true, null);
   };
   const trade = tradable();
+  const held = (reason: string) => (token.kind === "permissioned" ? is(false, "permissioned") : is(holds, reason));
+  const earn = stable ? is(true, null) : listed ? is(true, null) : venueElsewhere ? is(false, "mainnet_only") : is(false, "no_yield");
+  const borrow =
+    token.kind === "permissioned" || token.kind === "position"
+      ? is(false, token.kind)
+      : listed || (stable && venue?.available)
+        ? is(true, null)
+        : venueElsewhere
+          ? is(false, "mainnet_only")
+          : is(false, "no_lending");
+  const longShort = listed && (listed.long || listed.short) ? is(true, null) : venueElsewhere && !stable ? is(false, "mainnet_only") : is(false, "no_market");
+  // USDC by CCTP on both networks; any other token as itself through the cross-chain routes, which run on mainnet.
+  const bridge = stable ? held("no_balance") : network === "testnet" ? is(false, "mainnet_only") : safety === "block" ? is(false, "blocked") : held("no_balance");
   return [
     { id: "buy", ...trade },
     { id: "sell", ...(trade.available ? is(holds, "no_balance") : trade) },
     { id: "send", ...(token.kind === "permissioned" ? is(false, "permissioned") : is(holds, "no_balance")) },
     { id: "receive", ...is(token.kind !== "permissioned", "permissioned") },
     { id: "withdraw", ...(token.kind === "permissioned" ? is(false, "permissioned") : is(holds, "no_balance")) },
-    // CCTP carries USDC itself; every other token converts to USDC first (one approval: R2's nearest path).
-    { id: "bridge", ...(stable ? is(holds, "no_balance") : is(false, "convert_first")) },
-    { id: "earn", ...(stable ? is(true, null) : is(false, "no_yield")) },
-    { id: "long_short", ...is(false, "no_market") },
+    { id: "bridge", ...bridge },
+    { id: "earn", ...(trade.available || stable ? earn : trade) },
+    { id: "borrow", ...borrow },
+    { id: "long_short", ...(safety === "block" ? is(false, "blocked") : longShort) },
+    // A price alert watches a quote, so anything that trades here can have one.
+    { id: "alert", ...(stable ? is(false, "no_market") : trade) },
   ];
 }

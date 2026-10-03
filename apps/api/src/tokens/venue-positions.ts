@@ -3,7 +3,7 @@
 // supplied (earning) and, with a loan, the net of it with the account's health — and every open Kawase Margin
 // position by its equity, side, leverage and profit or loss. Read only when a portfolio is asked for; a venue that
 // does not answer in time leaves its rows out (the portfolio says it is not fresh).
-import type { PositionSummary } from "@kawase/api-client";
+import type { NetworkId, PositionSummary } from "@kawase/api-client";
 
 import type { LendService } from "../lend/service";
 import type { MarginService } from "../margin/service";
@@ -80,5 +80,15 @@ export function venuePositions(sources: { lend: () => LendService; margin: () =>
       });
     }
     return out;
+  };
+}
+
+/** Which tokens Aave V4's Main Spoke lists on a network, and which sides Kawase Margin opens on each (token page). */
+export type VenueMarkets = (network: NetworkId) => Promise<{ available: boolean; reason: string | null; markets: { asset: string; long: boolean; short: boolean }[] }>;
+
+export function venueMarkets(margin: () => MarginService): VenueMarkets {
+  return async (network) => {
+    const view = await margin().markets(network);
+    return { available: view.available, reason: view.reason, markets: view.markets.map((market) => ({ asset: market.asset, long: market.long.available, short: market.short.available })) };
   };
 }
