@@ -63,6 +63,7 @@ import { evaluateBridge, type BridgeEvaluation, type PolicyResult } from "@kawas
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { OpsAttempts } from "../intents/ops-attempts";
 import type { OpsExecutor } from "../send/ops";
@@ -209,7 +210,7 @@ export class BridgeService {
       network,
       capability: { here: view.bridge[network].state, other: view.bridge[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       wallet: { registered: Boolean(wallet), setUp, usdc },
       destination: destination?.id,
       amount,
@@ -578,6 +579,8 @@ export class BridgeService {
     amount: bigint;
   }): Promise<{ status: "executing"; intentId: string; resumed: boolean } | { status: "skipped"; reason: string; params?: Record<string, string> }> {
     if (await intentExists(this.db, input.intentId)) return { status: "executing", intentId: input.intentId, resumed: true };
+    // Nothing moves without the person while everything is paused (X30), whoever asks for the move.
+    if (await pausedAll(this.db, input.userId)) return { status: "skipped", reason: "PAUSED_ALL" };
     if (!this.opsAttempts) return { status: "skipped", reason: "NOT_AVAILABLE_YET" };
     const { client, network, ops } = this.clients(input.network);
     const wallet = (await this.wallets.userWallet(input.userId))?.address as Address | undefined;
