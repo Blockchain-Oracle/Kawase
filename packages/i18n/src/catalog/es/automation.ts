@@ -158,4 +158,5 @@ export const automation: Catalog["automation"] = {
   asset: "Activo",
   buys: "Compra {{asset}}",
   stableOnly: "Los envíos programados usan USDC o EURC (tu límite diario)",
+  drafts: "Borradores",
 };

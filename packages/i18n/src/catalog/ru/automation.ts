@@ -158,4 +158,5 @@ export const automation: Catalog["automation"] = {
   asset: "Актив",
   buys: "Покупает {{asset}}",
   stableOnly: "Платежи по расписанию идут в USDC или EURC (ваш дневной лимит)",
+  drafts: "Черновики",
 };

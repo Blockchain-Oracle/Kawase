@@ -153,4 +153,6 @@ export const automation = {
   asset: "Asset",
   buys: "Buys {{asset}}",
   stableOnly: "Scheduled sends use USDC or EURC (your everyday allowance)",
+  /** Automations made but not turned on yet (from chat or a template), on the Automations screen. */
+  drafts: "Drafts",
 } as const;

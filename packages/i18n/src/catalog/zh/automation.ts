@@ -154,4 +154,5 @@ export const automation: Catalog["automation"] = {
   asset: "资产",
   buys: "买入 {{asset}}",
   stableOnly: "定时转账使用 USDC 或 EURC（你的每日额度）",
+  drafts: "草稿",
 };

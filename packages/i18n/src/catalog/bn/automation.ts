@@ -155,4 +155,5 @@ export const automation: Catalog["automation"] = {
   asset: "অ্যাসেট",
   buys: "{{asset}} কেনে",
   stableOnly: "সময়সূচি ধরে পাঠানো হয় USDC বা EURC-তে (আপনার দৈনিক সীমা)",
+  drafts: "খসড়া",
 };

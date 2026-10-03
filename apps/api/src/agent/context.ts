@@ -53,6 +53,10 @@ import { businessContext, type BusinessAgentDeps } from "./business-context";
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
 const SECONDS_PER_DAY = 86_400;
+/** Drafts this recent are listed with the automations that are on (one made earlier can still be turned on). */
+const DRAFT_LISTED_DAYS = 7;
+const MS_PER_SECOND = 1000;
+const DRAFT_LISTED_MS = DRAFT_LISTED_DAYS * SECONDS_PER_DAY * MS_PER_SECOND;
 const ZERO = 0n;
 /** "YYYY-MM-DD" from an ISO timestamp. */
 const DATE_CHARS = 10;
@@ -250,7 +254,9 @@ export function buildAgentContext(input: {
 
     async listAutomations() {
       if (user.isAnonymous) return { network, automations: [] };
-      const list = (await automations.list(user)).filter((entry) => entry.status !== "draft");
+      // Drafts from the last week too: one made earlier (a DCA, a payroll) can still be turned on from its card.
+      const since = Date.now() - DRAFT_LISTED_MS;
+      const list = (await automations.list(user)).filter((entry) => entry.status !== "draft" || Date.parse(entry.createdAt) > since);
       return { network, automations: list.map((automation) => ({ automation, summary: summarizeAutomation(automation) })) };
     },
 

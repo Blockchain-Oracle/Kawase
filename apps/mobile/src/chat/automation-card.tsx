@@ -11,7 +11,7 @@ import { ChevronDown, ScanFace } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 
-import type { ProposeAutomationOutput } from "@kawase/api-client";
+import type { AutomationEditResponse, ProposeAutomationOutput, SimulationView } from "@kawase/api-client";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -19,7 +19,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AutomationSummary } from "@/automations/automation-summary";
-import { PracticeActions } from "@/automations/automation-more";
+import { PracticeActions, SimulationList } from "@/automations/automation-more";
 import { useRuleText, useScheduleText, useTurnOnLabel } from "@/automations/copy";
 import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
@@ -34,7 +34,11 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { AgentCard } from "./card";
 
 /** The card for one automation; the Payroll screen passes just the automation (the summary is for the model). */
-export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutput, "automation"> }) {
+/**
+ * `edit`: a widening edit the agent prepared in chat (edit_automation); its new permission is signed here, with the old
+ * one's revoke, in one Face ID. `simulation`: what its next runs would do (simulate_automation).
+ */
+export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutput, "automation"> & { edit?: AutomationEditResponse | undefined; simulation?: SimulationView | undefined } }) {
   const { t } = useT();
   const router = useRouter();
   const signIn = useSignIn();
@@ -45,6 +49,7 @@ export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutpu
   const controller = useAutomation(output.automation.id ? output.automation : undefined);
   const automation = controller.automation ?? output.automation;
   const [adding, setAdding] = React.useState(false);
+  const [editSigned, setEditSigned] = React.useState(false);
   const networkName = automation.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const eyebrow = `${t("automation.title")} · ${automation.network === "mainnet" ? t("network.realMoney") : networkName}`;
   const blocking = automation.blocking;
@@ -135,6 +140,16 @@ export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutpu
           </Button>
         </View>
       )}
+      {output.edit?.grant && !editSigned ? (
+        <View className="gap-2">
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("automation.editNote")}</Text>
+          <Button size="lg" disabled={controller.busy} onPress={() => void controller.approveEdit(output.edit!, t("automation.editPrompt")).then((done) => setEditSigned(Boolean(done)))}>
+            <Icon as={ScanFace} className="text-primary-foreground size-5" />
+            <Text>{t("automation.editPrompt")}</Text>
+          </Button>
+        </View>
+      ) : null}
+      {output.simulation ? <SimulationList automation={automation} simulation={output.simulation} /> : null}
       {/* 8c: practise first, go live from practice, and what the next runs would do. */}
       {!blocking || blocking.code === "WALLET_NOT_SET_UP" ? <PracticeActions controller={{ ...controller, automation }} goLivePrompt={prompt} /> : null}
       {pickable && assetToken ? (

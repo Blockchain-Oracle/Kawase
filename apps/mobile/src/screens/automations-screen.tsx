@@ -24,6 +24,7 @@ import { NeedsYouCard } from "@/needs-you/needs-you-card";
 import { useNeedsYou } from "@/needs-you/use-needs-you";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { useAutomation } from "@/automations/use-automation";
+import { AutomationCard } from "@/chat/automation-card";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
@@ -33,6 +34,10 @@ const STRIP_INSET = 6;
 const EDGE_INSET = 12;
 const ART_WIDTH = 150;
 const SKELETON_HEIGHT = 180;
+/** A draft (from chat or a template) stays here this long to be turned on; older ones are let go. */
+const DRAFT_DAYS = 7;
+const DAY_MS = 86_400_000;
+const MAX_DRAFTS = 5;
 
 function AutomationItem({ initial }: { initial: AutomationView }) {
   const { t } = useT();
@@ -86,6 +91,7 @@ export function AutomationsScreen() {
   const scope = `${user?.id ?? "guest"}:${user?.activeNetwork ?? "testnet"}`;
   const loadedScope = React.useRef(scope);
   const [list, setList] = React.useState<AutomationView[]>();
+  const [drafts, setDrafts] = React.useState<AutomationView[]>([]);
   const [failed, setFailed] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
@@ -108,6 +114,9 @@ export function AutomationsScreen() {
       const { automations } = await api.automations.list();
       if (ticket !== latestLoad.current) return;
       setList(automations.filter((entry) => entry.status !== "draft"));
+      // A draft made in chat or from a template is turned on from here too, not only from where it was made.
+      const since = Date.now() - DRAFT_DAYS * DAY_MS;
+      setDrafts(automations.filter((entry) => entry.status === "draft" && Date.parse(entry.createdAt) > since).slice(0, MAX_DRAFTS));
       setFailed(false);
     } catch {
       if (ticket !== latestLoad.current) return;
@@ -187,7 +196,15 @@ export function AutomationsScreen() {
             ))}
           </View>
         ) : null}
-        {!canLoad || !list ? null : list.length === 0 && waiting.length === 0 ? (
+        {canLoad && drafts.length > 0 ? (
+          <View className="gap-3">
+            <Eyebrow>{t("automation.drafts")}</Eyebrow>
+            {drafts.map((entry) => (
+              <AutomationCard key={entry.id} output={{ automation: entry }} />
+            ))}
+          </View>
+        ) : null}
+        {!canLoad || !list ? null : list.length === 0 && waiting.length === 0 && drafts.length === 0 ? (
           <View className="flex-1">
             <EmptyState
               art={<PaperPlane width={ART_WIDTH} id="automations-empty-plane" />}

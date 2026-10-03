@@ -156,4 +156,5 @@ export const automation: Catalog["automation"] = {
   asset: "एसेट",
   buys: "{{asset}} खरीदता है",
   stableOnly: "शेड्यूल किए गए भुगतान USDC या EURC में जाते हैं (आपकी दैनिक सीमा)",
+  drafts: "ड्राफ़्ट",
 };

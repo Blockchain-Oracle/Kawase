@@ -154,4 +154,5 @@ export const automation: Catalog["automation"] = {
   asset: "الأصل",
   buys: "يشتري {{asset}}",
   stableOnly: "الإرسال المجدول يستخدم USDC أو EURC (حدّك اليومي)",
+  drafts: "المسودات",
 };
