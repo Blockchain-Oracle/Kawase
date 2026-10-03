@@ -14,6 +14,9 @@ const AUDIT_LOCK = 4_242_001;
 const GENESIS = "genesis";
 const FOREIGN_KEY_VIOLATION = "23503";
 
+/** A transaction the caller holds (the row is written in it). */
+export type AuditTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
 export type AuditEntry = {
   userId: string | null;
   /** user, agent, system, admin */
@@ -62,38 +65,48 @@ export class AuditWriter {
     }
   }
 
+  /**
+   * Writes inside the caller's transaction, so the row lands with the change it records or not at all; a failure is
+   * the caller's to handle (a quota counted from the log must not let an uncounted action through).
+   */
+  async writeIn(tx: AuditTx, entry: AuditEntry): Promise<void> {
+    await this.append(tx, entry);
+  }
+
   private async insert(entry: AuditEntry): Promise<void> {
-    await this.db.transaction(async (tx) => {
-      await tx.execute(sql`select pg_advisory_xact_lock(${AUDIT_LOCK})`);
-      const [last] = await tx
-        .select({ hash: auditLog.hash })
-        .from(auditLog)
-        .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
-        .limit(1);
-      const prevHash = last?.hash ?? GENESIS;
-      const createdAt = new Date();
-      const row = {
-        actor: entry.actor,
-        actorRef: entry.actorRef ?? null,
-        action: entry.action,
-        subjectType: entry.subjectType ?? null,
-        subjectId: entry.subjectId ?? null,
-        network: entry.network ?? null,
-        intentId: entry.intentId ?? null,
-        policyVersion: entry.policyVersion ?? null,
-        checks: entry.checks ?? null,
-        decision: entry.decision ?? null,
-        reasonCode: entry.reasonCode ?? null,
-        modelId: entry.modelId ?? null,
-        toolCallId: entry.toolCallId ?? null,
-        deviceId: entry.deviceId ?? null,
-      };
-      const hash = createHash("sha256")
-        .update(prevHash)
-        .update(canonical({ ...row, createdAt: createdAt.toISOString() }))
-        .digest("hex");
-      await tx.insert(auditLog).values({ ...row, userId: entry.userId, prevHash, hash, createdAt });
-    });
+    await this.db.transaction((tx) => this.append(tx, entry));
+  }
+
+  private async append(tx: AuditTx, entry: AuditEntry): Promise<void> {
+    await tx.execute(sql`select pg_advisory_xact_lock(${AUDIT_LOCK})`);
+    const [last] = await tx
+      .select({ hash: auditLog.hash })
+      .from(auditLog)
+      .orderBy(desc(auditLog.createdAt), desc(auditLog.id))
+      .limit(1);
+    const prevHash = last?.hash ?? GENESIS;
+    const createdAt = new Date();
+    const row = {
+      actor: entry.actor,
+      actorRef: entry.actorRef ?? null,
+      action: entry.action,
+      subjectType: entry.subjectType ?? null,
+      subjectId: entry.subjectId ?? null,
+      network: entry.network ?? null,
+      intentId: entry.intentId ?? null,
+      policyVersion: entry.policyVersion ?? null,
+      checks: entry.checks ?? null,
+      decision: entry.decision ?? null,
+      reasonCode: entry.reasonCode ?? null,
+      modelId: entry.modelId ?? null,
+      toolCallId: entry.toolCallId ?? null,
+      deviceId: entry.deviceId ?? null,
+    };
+    const hash = createHash("sha256")
+      .update(prevHash)
+      .update(canonical({ ...row, createdAt: createdAt.toISOString() }))
+      .digest("hex");
+    await tx.insert(auditLog).values({ ...row, userId: entry.userId, prevHash, hash, createdAt });
   }
 
   /** Recomputes the chain over the last `limit` rows; true when every row hashes its predecessor. */
