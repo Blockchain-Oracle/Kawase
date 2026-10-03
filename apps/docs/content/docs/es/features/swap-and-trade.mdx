@@ -1,35 +1,70 @@
 ---
-title: "Cambiar y operar"
-description: "Cambia USDC y EURC hoy con un mínimo garantizado y un solo Face ID; cualquier token en Arc, las memecoins y las posiciones largas y cortas llegarán próximamente."
-sourceHash: 65c2ca9143c4cfd4
+title: "Operar cualquier token"
+description: "Mercados, una página para cada token en Arc con sus comprobaciones de seguridad, y compra, venta o intercambio de cualquier par al mejor precio de tres plataformas, confirmado con un deslizamiento."
+sourceHash: 7e1dd705a5bc50d0
 ---
 
-<Status ids="swap tokens meme_coins perps" />
+<Status ids="swap" />
 
-<Marks names="usdc eurc circle" />
+<Marks names="arc usdc eurc kyberswap circle lifi" />
 
-## Cambiar USDC ↔ EURC (hoy)
+## Mercados
 
-«Cambiar 10 dólares por euros» o la pantalla Cambiar. Kawase obtiene una cotización a través de **App Kit de Circle** y muestra:
+La pestaña **Mercados** (en la barra inferior, entre Inicio y el orbe) también está disponible para quienes no tienen cuenta:
 
-- el importe que das y el importe que recibes, como mínimo;
-- el tipo de cambio de mercado de Circle junto al tipo cotizado y las comisiones;
-- un aviso si la cotización es claramente peor que el tipo de cambio de mercado; si es mucho peor, se rechaza.
+- **Busca** por nombre, símbolo o dirección del contrato.
+- Segmentos **Tendencias · Meme · Largo/Corto · Acciones y divisas · Nuevos**, un carrusel de mercados populares y un **mapa de calor**. Cada
+  casilla tiene un tamaño según el volumen del día y un color según su variación.
+- Las filas muestran el precio, la variación del día, el volumen y la liquidez. Un token que copia a otro lleva una etiqueta de **clon**;
+  las falsificaciones siguen marcadas en la lista y nunca aparecen en el carrusel ni en el mapa de calor.
 
-En la red principal, el mínimo garantizado está un 1 % por debajo de la cotización (un 2 % en la red de pruebas, donde hay poca liquidez). La ruta se crea con la mitad de esa tolerancia, para que un pequeño cambio entre la cotización y tu confirmación siga cumpliendo el mínimo.
+Los Mercados solo están disponibles en la red principal de Arc. En la red de pruebas, la pestaña lo indica y ofrece cambiar de red.
 
-Confirmas cada cambio tú mismo con **un solo Face ID**: los cambios nunca están cubiertos por el límite diario. La aprobación y
-el cambio se envían a la red como **una sola transacción** (un lote EIP-7702 desde tu propia cartera), así que ambas cosas ocurren o
-no ocurre ninguna. Kawase marca el cambio como completado solo cuando el comprobante muestra el importe exacto que sale de tu cartera y, como mínimo,
-el importe mínimo que llega.
+## Una página para cada token
 
-## Cualquier token, memecoins, posiciones largas y cortas (próximamente)
+Toca cualquier token en Mercados, Inicio o una tarjeta del chat para abrir su página:
 
-El plan es que **todos los tokens en Arc** sean compatibles desde el principio: ver todo lo que tiene tu dirección, cambiar cualquier token disponible con cotizaciones
-comparadas entre distintos agregadores y operar con **memecoins** mediante controles de seguridad (detección de imitaciones, datos de riesgo del token y tus propias
-reglas para limitar el riesgo). Las **posiciones largas y cortas** (futuros perpetuos) en las plataformas de futuros perpetuos de Arc también están previstas de la misma
-forma: un ticket claro con el apalancamiento, el precio de liquidación y la toma de ganancias/stop-loss, confirmado con Face ID.
+- su icono, precio y variación, además de un gráfico que puedes explorar con intervalos de una hora hasta todo el historial;
+- **cuánto tienes** de ese token;
+- capitalización de mercado, liquidez, volumen, titulares, valor totalmente diluido y el contrato (cópialo con un toque);
+- **Seguridad**: un veredicto con sus motivos, las comprobaciones de **GoPlus** (honeypot, impuestos de compra y venta y permisos del propietario) y cualquier
+  token parecido, con enlaces;
+- **Comprar · Vender** y una hoja de **Más** que muestra todas las demás acciones, junto con el motivo cuando alguna no está disponible.
 
-Estas funciones aparecen como **próximamente** en la tabla anterior hasta que estén disponibles; no presentamos nada de esto como disponible antes de ese momento.
+## Tu cartera, todos tus tokens
+
+Inicio muestra **todos los tokens que tiene tu dirección** en Arc y en Ethereum, Base, Arbitrum, OP, Polygon y Avalanche, cada uno con
+su icono y valor reales. Kawase oculta lo que podría llevarte a equivocarte:
+
+- un **suplantador** (una stablecoin o un símbolo conocido en otra dirección, o con otros decimales) se oculta;
+- un token **sin precio ni pool** pasa a Ocultos;
+- un token sin precio nunca cuenta para el total.
+
+## Compra, venta o intercambio de cualquier par
+
+«Compra 20 dólares de ARGUS», «vende la mitad de mis cirBTC» o usa la opción de una página de token. Pagas con **cualquier token que tengas**
+y recibes cualquier otro token (búscalo por nombre, símbolo o dirección). Para cada operación, Kawase consulta **tres plataformas a la vez**: KyberSwap,
+el App Kit de Circle y LI.FI, y recomienda la que ofrece más. Las demás aparecen con lo que entregarían o con el motivo por el que no pudieron dar una cotización.
+
+La revisión muestra como mínimo cuánto recibes, el impacto en el precio frente al precio de mercado y la ruta. Confirmas
+**deslizando** la tarjeta y, después, con **Face ID**. Solo la plataforma elegida crea la transacción, con la mitad del deslizamiento que se te
+mostró, y Kawase comprueba sus llamadas (router, cantidades, destinatario y el mínimo en la cadena) antes de pedir acceso a tu cartera. La
+aprobación y la operación se envían como **una sola transacción** desde tu propia cartera.
+
+## Reglas de los tokens
+
+Cada compra pasa primero por tus **reglas de tokens**:
+
+- los suplantadores y honeypots quedan **bloqueados**;
+- un token **no verificado** se limita a **$50 por operación** y **$200 al día**;
+- el impacto en el precio puede ser como máximo del **5%** para todo lo que no sea una stablecoin.
+
+Una operación bloqueada indica qué regla la detuvo y qué tendría que cambiar para permitirla.
+
+## En la red de pruebas
+
+Arc Testnet solo permite operar con **USDC ↔ EURC**, mediante la misma opción. Todos los demás tokens y las monedas meme solo están disponibles en la red principal.
+
+Las posiciones largas y cortas tienen su propia página: [Largo y corto](./long-short.mdx).
 
 <ScopeList ids="swap" />

@@ -1,39 +1,39 @@
 {
   "nav": {
     "webApp": "Открыть веб-приложение",
-    "showcase": "Витрина",
+    "showcase": "Обзор",
     "docs": "Документация"
   },
   "home": {
     "eyebrow": "Документация Kawase",
-    "title": "Деньги движутся по вашему голосу",
-    "body": "Kawase — приложение с ИИ для работы со всем в Arc. Отправляйте запросы на своём языке — голосом или текстом: приложение предлагает действие, вы его подтверждаете, а блокчейн соблюдает ваши лимиты.",
+    "title": "Деньги движутся по вашей команде",
+    "body": "Kawase — это приложение с ИИ для работы со всем, что есть в Arc. Пишите или говорите на своём языке: приложение предлагает действие, вы его подтверждаете, а блокчейн соблюдает установленные вами ограничения.",
     "start": "Начать",
-    "safety": "Как приложение обеспечивает безопасность",
+    "safety": "Как приложение защищает ваши деньги",
     "cards": {
       "gettingStarted": {
-        "title": "Начать",
-        "body": "Откройте веб-приложение как гость за несколько секунд или установите его на iPhone или Android."
+        "title": "Начало работы",
+        "body": "Откройте веб-приложение в гостевом режиме за несколько секунд или установите его на iPhone или Android."
       },
       "safety": {
         "title": "Модель безопасности",
-        "body": "Что агент может делать без запроса подтверждения, когда ему нужен ваш Face ID и чего он не может сделать никогда."
+        "body": "Что агент может делать без подтверждения, когда ему нужен Face ID и чего он не сможет сделать никогда."
       },
       "availability": {
         "title": "Что работает сегодня",
-        "body": "Все возможности в основной сети и тестовой сети из собственного реестра приложения."
+        "body": "Все возможности в основной и тестовой сети — данные формируются из реестра самого приложения."
       },
       "architecture": {
         "title": "Архитектура",
-        "body": "Как чат, голос, движок политик и Arc работают вместе — для судей и разработчиков."
+        "body": "Как чат, голос, движок правил и Arc работают вместе — для судей и разработчиков."
       }
     }
   },
   "matrix": {
     "capability": "Возможность",
-    "mainnet": "Arc — основная сеть",
-    "testnet": "Arc — тестовая сеть",
-    "caption": "Создаётся при сборке сайта на основе реестра возможностей, который читают приложение и агент. «Скоро» означает, что функция ещё не выпущена."
+    "mainnet": "Arc Основная сеть",
+    "testnet": "Arc Тестовая сеть",
+    "caption": "Создаётся во время сборки сайта на основе реестра возможностей, который читают приложение и агент. «Скоро» означает, что функция ещё не выпущена."
   },
   "state": {
     "available": "Доступно",
@@ -45,32 +45,32 @@
     "notYet": "Пока недоступно"
   },
   "areas": {
-    "tokens": "Любой токен в Arc",
+    "tokens": "Любые токены в Arc",
     "meme_coins": "Мемкоины",
-    "perps": "Лонги и шорты (perps)",
-    "buy": "Покупка через Apple Pay или по карте",
-    "borrow": "Займы",
-    "withdraw": "Вывод куда угодно",
-    "export_wallet": "Экспорт кошелька"
+    "perps": "Лонг и шорт (бессрочные фьючерсы)",
+    "buy": "Купить через Apple Pay или картой",
+    "borrow": "Взять заём",
+    "withdraw": "Вывести куда угодно",
+    "export_wallet": "Экспортировать кошелёк"
   },
   "limits": {
     "rule": "По умолчанию",
     "mainnet": "Основная сеть",
     "testnet": "Тестовая сеть",
     "daily": "Дневной лимит: отправляется сразу, без запроса подтверждения",
-    "perTransaction": "Максимальный разовый платёж",
-    "weekly": "Всего в неделю",
-    "monthly": "Всего в месяц",
-    "perRecipientWeekly": "Одному человеку в неделю",
-    "firstTime": "Первый платёж на новый адрес: выше нужен Face ID",
-    "caption": "Значения по умолчанию из собственной конфигурации приложения. В тестовой сети лимиты выше, потому что настоящие деньги не находятся под угрозой."
+    "perTransaction": "Максимальный размер одного платежа",
+    "weekly": "Общая сумма за неделю",
+    "monthly": "Общая сумма за месяц",
+    "perRecipientWeekly": "Одному человеку за неделю",
+    "firstTime": "Первый платёж на новый адрес: Face ID требуется при превышении лимита",
+    "caption": "Значения по умолчанию взяты из конфигурации самого приложения. В тестовой сети лимиты выше, потому что настоящие деньги не подвергаются риску."
   },
   "status": {
     "label": "Статус"
   },
   "fumadocs": {
     "Ask AI(AI chat button)": "Спросить ИИ",
-    "Back to Home(404 not found page)": "Вернуться на главную",
+    "Back to Home(404 not found page)": "На главную",
     "Choose a language(language switcher)": "Выбрать язык",
     "Choose a language(language switcher)(aria-label)": "Выбрать язык",
     "Close Banner(banner)(aria-label)": "Закрыть баннер",
@@ -78,21 +78,21 @@
     "Close Sidebar(aria-label)": "Закрыть боковую панель",
     "Close Sidebar(sidebar)(aria-label)": "Закрыть боковую панель",
     "Collapse Sidebar(sidebar)(aria-label)": "Свернуть боковую панель",
-    "Copied Anchor Link(heading anchor)(aria-label)": "Ссылка на якорь скопирована",
+    "Copied Anchor Link(heading anchor)(aria-label)": "Ссылка на заголовок скопирована",
     "Copied Link(accordion)(aria-label)": "Ссылка скопирована",
     "Copied Markdown(page actions)": "Markdown скопирован",
     "Copied Text(code block)(aria-label)": "Текст скопирован",
-    "Copy Anchor Link(heading anchor)(aria-label)": "Скопировать ссылку на якорь",
+    "Copy Anchor Link(heading anchor)(aria-label)": "Скопировать ссылку на заголовок",
     "Copy Link(accordion)(aria-label)": "Скопировать ссылку",
     "Copy Markdown(page actions)": "Скопировать Markdown",
     "Copy Text(code block)(aria-label)": "Скопировать текст",
-    "Dark(theme switcher)(aria-label)": "Тёмная",
+    "Dark(theme switcher)(aria-label)": "Тёмная тема",
     "Default(type table)": "По умолчанию",
     "Edit on GitHub(edit page)": "Изменить на GitHub",
     "Hide Sidebar(sidebar)": "Скрыть боковую панель",
     "Last updated on(page footer)": "Последнее обновление",
     "Layout Tab(layout tab trigger)": "Вкладка макета",
-    "Light(theme switcher)(aria-label)": "Светлая",
+    "Light(theme switcher)(aria-label)": "Светлая тема",
     "Next Page(pagination)": "Следующая страница",
     "No Headings(table of contents)": "Нет заголовков",
     "No results found(search dialog)": "Ничего не найдено",
@@ -110,17 +110,17 @@
     "Parameters(type table)": "Параметры",
     "Previous Page(pagination)": "Предыдущая страница",
     "Prop(type table)": "Свойство",
-    "Read {url}, I want to ask questions about it.(page actions)": "Прочитайте {url}. Я хочу задать вопросы об этом.",
+    "Read {url}, I want to ask questions about it.(page actions)": "Прочитайте {url}, я хочу задать вопросы об этом.",
     "Returns(type table)": "Возвращаемые значения",
     "Search(search dialog)": "Поиск",
     "Search(search trigger)": "Поиск",
     "Show Sidebar(sidebar)": "Показать боковую панель",
-    "System(theme switcher)(aria-label)": "Системная",
+    "System(theme switcher)(aria-label)": "Системная тема",
     "Table of Contents(inline table of contents)": "Содержание",
     "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "Возможно, страница, которую вы ищете, была удалена, переименована или временно недоступна.",
     "Toggle Menu(home layout header)(aria-label)": "Переключить меню",
     "Toggle Theme(theme switcher)(aria-label)": "Переключить тему",
     "Type(type table)": "Тип",
-    "View as Markdown(page actions)": "Просмотреть как Markdown"
+    "View as Markdown(page actions)": "Посмотреть как Markdown"
   }
 }

@@ -13,6 +13,8 @@ export const PUBLIC_LINKS = {
   /** EAS preview build e644e19d (universal APK). Do not use fc084aa7 (blank-screen bug). */
   androidApk: "https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed",
   testFlight: null as string | null,
+  /** The Tauri desktop app for Apple-silicon Macs (apps/desktop), served by the landing from public/download. */
+  desktopMac: "https://getkawase.xyz/download/Kawase-mac.dmg",
 } as const;
 
 /**

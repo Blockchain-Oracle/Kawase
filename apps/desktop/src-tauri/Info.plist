@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into Kawase.app's Info.plist by Tauri. Voice in the web app asks for the microphone; macOS requires this
+     sentence before it shows its own permission prompt. -->
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Kawase listens when you talk to it, so you can ask for payments and answers by voice.</string>
+</dict>
+</plist>

@@ -18,6 +18,7 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
 import { Conversation, TypeInstead } from "./conversation";
+import { isMicrophoneFailure } from "./mic-failure";
 
 export type VoiceSessionProps = {
   /** The orb's level, driven by the conversation. */
@@ -103,7 +104,9 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
       connect
       audio
       video={false}
-      onError={() => {
+      onError={(error) => {
+        // A refused microphone keeps the room (Kawase still speaks); the conversation offers Settings and typing.
+        if (isMicrophoneFailure(error)) return;
         setFailed(true);
         void closeAudio.current().catch(() => undefined);
       }}

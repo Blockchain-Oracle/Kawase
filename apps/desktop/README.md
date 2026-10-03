@@ -18,6 +18,9 @@ What the shell adds to the web app:
   in a browser. Any other site (an explorer, the docs) opens in your browser.
 - **No access to the computer.** The remote page gets no Tauri commands: `capabilities` is empty and there is no
   global `__TAURI__`.
+- **The microphone, for voice.** `src-tauri/Info.plist` adds `NSMicrophoneUsageDescription` (macOS asks before the page
+  can listen), and `Entitlements.plist` declares `audio-input` for a signed build with the hardened runtime. Voice inside
+  the desktop window hasn't been checked yet.
 - **The icon** is the real Kawase icon (`apps/mobile/assets/brand/icon.png`) on the macOS rounded-square grid:
   824 pt on a 1024 canvas with a 185 pt corner, in `assets/app-icon.png`.
 
@@ -44,6 +47,12 @@ Other commands:
 
 - `pnpm --filter @kawase/desktop desktop:icons` rebuilds `src-tauri/icons/` from `assets/app-icon.png`.
 - `cargo test` in `src-tauri/` checks the deep-link mapping and the navigation rules.
+
+### Download
+
+The landing serves the latest local build at `https://getkawase.xyz/download/Kawase-mac.dmg`
+(`apps/landing/public/download/Kawase-mac.dmg`; `PUBLIC_LINKS.desktopMac`). After a rebuild, copy
+`src-tauri/target/release/bundle/dmg/Kawase_1.0.0_aarch64.dmg` over it. Every link to it says it isn't notarized yet.
 
 ### Signing
 

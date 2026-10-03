@@ -1,29 +1,61 @@
 ---
-title: "Échanger et trader"
-description: "Échangez USDC et EURC dès aujourd'hui avec un minimum garanti et un seul Face ID ; tous les tokens sur Arc, les meme coins et les positions longues/courtes arrivent bientôt."
-sourceHash: 65c2ca9143c4cfd4
+title: "Échanger n'importe quel jeton"
+description: "Marchés, une page pour chaque jeton sur Arc avec ses contrôles de sécurité, et l'achat, la vente ou l'échange de n'importe quelle paire au meilleur prix parmi trois plateformes, confirmé d'un geste."
+sourceHash: 7e1dd705a5bc50d0
 ---
 
-<Status ids="swap tokens meme_coins perps" />
+<Status ids="swap" />
 
-<Marks names="usdc eurc circle" />
+<Marks names="arc usdc eurc kyberswap circle lifi" />
 
-## Échanger USDC ↔ EURC (aujourd'hui)
+## Marchés
 
-« Échanger 10 dollars en euros » ou utilisez l'écran Échanger. Kawase obtient un cours via **l'App Kit de Circle** et affiche :
+L'onglet **Marchés** (dans le dock, entre Accueil et l'orbe) est aussi accessible aux visiteurs :
 
-- le montant que vous donnez et le montant que vous recevez, au minimum ;
-- le cours du marché de Circle à côté du cours proposé, ainsi que les frais ;
-- un avertissement si le cours proposé est sensiblement moins avantageux que le cours du marché ; un cours nettement moins avantageux est refusé.
+- **Recherchez** par nom, symbole ou adresse du contrat.
+- Les catégories **Tendance · Mème · Long et short · Actions et devises · Nouveau**, un carrousel des marchés populaires et une **heatmap** où chaque tuile est dimensionnée selon le volume du jour et colorée selon son évolution.
+- Les lignes affichent le prix, l'évolution du jour, le volume et la liquidité. Un jeton qui en copie un autre porte la mention **copie** ; les faux jetons restent signalés dans la liste et n'apparaissent jamais dans le carrousel ni dans la heatmap.
 
-Sur le Réseau principal, le minimum garanti est inférieur de 1 % au cours proposé (2 % sur le Réseau de test, où les pools sont peu fournis). Le chemin d'échange est lui-même configuré avec la moitié de cette marge. Ainsi, un petit changement entre le cours proposé et votre confirmation reste tout de même au-dessus du minimum.
+Les Marchés sont disponibles sur le Réseau principal Arc. Sur le Réseau de test, l'onglet l'indique et propose de changer de réseau.
 
-Vous confirmez vous-même chaque échange avec **un seul Face ID** : les échanges ne sont jamais couverts par le plafond quotidien. L'autorisation et l'échange sont envoyés au réseau en **une seule transaction** (un lot EIP-7702 depuis votre propre portefeuille). Les deux opérations sont donc exécutées, ou aucune ne l'est. Kawase marque l'échange comme terminé uniquement lorsque le reçu indique le montant exact sorti de votre portefeuille et au moins le montant minimum reçu.
+## Une page pour chaque jeton
 
-## Tous les tokens, meme coins, positions longues et courtes (à venir)
+Touchez un jeton dans Marchés, sur Accueil ou dans une carte de discussion pour ouvrir sa page :
 
-L'objectif est de traiter **tous les tokens sur Arc** comme des actifs à part entière : voir tout ce que contient votre adresse, échanger n'importe quel token proposé avec des cours comparés entre plusieurs agrégateurs, et trader des **meme coins** avec des contrôles de sécurité (détection des copies, données sur les risques du token et vos propres règles pour limiter ces risques). Les **positions longues et courtes** (contrats à terme perpétuels) sur les plateformes de perps d'Arc sont prévues de la même manière : un ticket clair avec l'effet de levier, le prix de liquidation et les niveaux de prise de bénéfices/stop-loss, confirmé avec Face ID.
+- son logo, son prix et son évolution, ainsi qu'un graphique que vous pouvez parcourir, d'une heure à toute la période disponible ;
+- **ce que vous en détenez** ;
+- sa capitalisation, sa liquidité, son volume, le nombre de détenteurs, sa valeur entièrement diluée et son contrat (copiez-le d'un geste) ;
+- **Sécurité** : un verdict avec ses raisons, les contrôles de **GoPlus** (honeypot, frais d'achat et de vente, pouvoirs du propriétaire) et les éventuels jetons similaires, avec leurs liens ;
+- **Acheter · Vendre**, ainsi qu'une feuille **Plus** qui répertorie toutes les autres actions, avec la raison pour laquelle chacune n'est pas disponible.
 
-Ces fonctionnalités sont indiquées comme **à venir** dans la matrice ci-dessus, jusqu'à leur lancement. Rien de ce qui est présenté ici n'est disponible avant cela.
+## Votre portefeuille, chaque jeton
+
+Accueil affiche **tous les jetons détenus par votre adresse** sur Arc et sur Ethereum, Base, Arbitrum, OP, Polygon et Avalanche, chacun avec son véritable logo et sa valeur. Kawase masque ce qui pourrait vous induire en erreur :
+
+- un **imposteur** (un stablecoin ou un symbole connu à une autre adresse, ou avec un autre nombre de décimales) est masqué ;
+- un jeton **sans prix ni pool** est placé dans Masqués ;
+- un jeton sans prix n'est jamais compté dans votre total.
+
+## Acheter, vendre ou échanger n'importe quelle paire
+
+« Acheter pour 20 dollars d'ARGUS », « vendre la moitié de mes cirBTC » ou utilisez le ticket depuis la page d'un jeton. Vous payez avec **n'importe quel jeton que vous détenez** et recevez le jeton de votre choix (recherchez par nom, symbole ou adresse). Pour chaque échange, Kawase interroge **trois plateformes en même temps** : KyberSwap, l'App Kit de Circle et LI.FI. L'application recommande celle qui vous en donne le plus. Les autres sont affichées avec le montant qu'elles fourniraient, ou la raison pour laquelle elles n'ont pas pu donner de prix.
+
+La vérification affiche le montant que vous recevez **au minimum**, l'impact sur le prix par rapport au prix du marché et le parcours. Vous confirmez en **faisant glisser** la carte, puis avec **Face ID**. Seule la plateforme choisie prépare la transaction, avec la moitié du glissement de prix qui vous a été indiqué. Kawase vérifie ses appels (routeur, montants, destinataire et minimum on-chain) avant de demander l'autorisation à votre portefeuille. L'autorisation et l'échange sont envoyés en **une seule transaction** depuis votre propre portefeuille.
+
+## Règles des jetons
+
+Chaque achat passe d'abord par vos **règles de jetons** :
+
+- les imposteurs et les honeypots sont **bloqués** ;
+- un jeton **non vérifié** est limité à **$50 par échange** et **$200 par jour** ;
+- l'impact sur le prix ne peut pas dépasser **5 %** pour les jetons qui ne sont pas des stablecoins.
+
+Un échange bloqué indique quelle règle l'a arrêté et ce qui devrait changer pour qu'il soit accepté.
+
+## Sur le Réseau de test
+
+Arc Testnet permet uniquement d'échanger **USDC ↔ EURC**, avec le même ticket. Tous les autres jetons et les meme coins sont disponibles uniquement sur le Réseau principal.
+
+Les positions Long et short ont leur propre page : [Long et short](./long-short.mdx).
 
 <ScopeList ids="swap" />

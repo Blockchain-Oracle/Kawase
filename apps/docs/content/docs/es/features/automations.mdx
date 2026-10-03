@@ -1,45 +1,73 @@
 ---
 title: "Automatizaciones"
-description: "Pagos programados, ahorro automático y reglas que se ejecutan solas, cada una limitada en cadena por un permiso que firmas una vez con Face ID."
-sourceHash: ac77249124998350
+description: "Pagos programados, ahorro automático, nómina, DCA y reglas (saldo, dinero que entra o sale, precio) que se ejecutan solas dentro de autorizaciones que firmas una vez, con pruebas primero y con tu intervención cuando no puedan hacerlo por sí mismas."
+sourceHash: 4d4a986aeccb8f32
 ---
 
 <Status ids="automations" />
 
-Las Automatizaciones son donde un agente demuestra su utilidad: tareas que deberían ocurrir sin que abras la app. Cada automatización
-se ejecuta **sin supervisión**, pero dentro de un permiso en cadena que firmas una sola vez; así, ni siquiera Kawase puede hacer que haga más.
+Las Automatizaciones hacen las tareas que deberían ocurrir sin que abras la app. Cada automatización
+se ejecuta **sin supervisión**, pero dentro de una autorización en cadena que firmas una vez. Así, ni siquiera Kawase puede hacer que haga más.
 
 ## Pagos programados
 
-«Todos los viernes a las 9, envía 10 dólares a Alex». Kawase te muestra el resumen, las próximas ejecuciones y el máximo que podría mover,
-y luego la activas con **un solo Face ID**. Eso firma el **permiso** de la automatización: solo puede transferir ese token, únicamente
-a la dirección de Alex (fijada en cadena) y hasta el importe establecido por periodo. Puedes programarlo para cada día, cada semana en un día laborable
-o cada mes, del día 1 al 28, según tu zona horaria.
+«Todos los viernes a las 9, envía 10 dólares a Alex». Kawase te lo repite con las próximas ejecuciones y el máximo que podría mover,
+y después la activas con **un Face ID**. Eso firma la **autorización** de la automatización: solo puede transferir ese token,
+solo a la dirección de Alex (fijada en la cadena) y solo hasta el importe de cada periodo. Frecuencias: todos los días, todas las semanas en un día laborable,
+o todos los meses del día 1 al 28, según tu propia zona horaria.
 
-Cada ejecución ocurre **exactamente una vez**: si el servidor de Kawase se reinicia a mitad de una ejecución, esta se recupera con el mismo ID y nunca
-se paga dos veces. Una ejecución que no pueda realizarse (por falta de dinero o por superar un límite) se **omite con un motivo** en tu bandeja de entrada.
+Cada ejecución ocurre **exactamente una vez**: si el servidor de Kawase se reinicia durante la ejecución, esta se recupera con el mismo identificador y nunca
+se paga dos veces. Las ejecuciones semanales y mensuales tienen un **recordatorio un día antes** (con un aviso si no tienes suficiente saldo). Una ejecución
+que no pueda realizarse se **omite con un motivo** en tu bandeja de entrada, y una ejecución omitida por falta de dinero se **reintenta una vez**
+cuando llegue dinero.
 
 ## Ahorro automático
 
-«Guarda 100 dólares en mi cartera y ahorra el resto». El ahorro automático mantiene ese importe disponible y mueve todo lo que lo supere a tu
-propia bóveda de ahorro (consulta [Generar rendimiento](./earn-and-borrow.mdx)); cuando el saldo de tu cartera baja del límite, lo repone desde
-tus ahorros. Comprueba el saldo a diario y cada vez que llega dinero. Sus permisos solo permiten mover USDC **entre tu cartera y tus propios
-ahorros**; nunca a ningún otro destino.
+«Mantén 100 dólares en mi cartera y guarda el resto». El ahorro automático mantiene ese importe disponible y mueve todo lo que lo supere a tu
+bóveda de ahorro (consulta [Generar rendimiento](./earn-and-borrow.mdx)). Cuando tu cartera baja de ese límite, la recarga desde
+tus ahorros. Lo comprueba a diario y cada vez que llega dinero. Sus autorizaciones solo permiten mover USDC **entre tu cartera y tus propios
+ahorros**, y nunca a ningún otro sitio.
+
+## Nómina y DCA
+
+- **La nómina** paga a varias personas en un día del mes. Cada beneficiario tiene su propia autorización, fijada para esa persona y su importe,
+  y todas se firman con **un Face ID**. Consulta [Negocios](./business.mdx#payroll).
+- **DCA** («compra 20 dólares de cirBTC cada semana») compra un token con un importe fijo según un calendario. Cada ejecución espera tu aprobación en
+  **Te necesita**, con una cotización ejecutable nueva.
 
 ## Reglas
 
-«Cuando mi saldo supere 500, envía lo que supere 400 a mi dirección de Base». Las reglas tienen:
+«Cuando mi saldo supere 500, conecta lo que supere 400 con mi dirección de Base». Una regla tiene:
 
-- un **activador**: el saldo supera o baja de un importe, o llega dinero (opcionalmente de alguien o por un importe mínimo);
-- una **acción**: enviar USDC a tu propia dirección en otra red (la comisión de la ruta tiene un límite en cadena), guardarlo en tu
-  bóveda o simplemente avisarte;
-- un **importe**: lo que supere un límite, una parte del dinero recibido o un importe fijo.
+- un **desencadenante**: el saldo supera o baja de un importe; llega dinero (opcionalmente de alguien o por al menos un
+  importe); sale dinero (**redondeos**); o el **precio** de un token cruza un nivel (se comprueba en la cotización ejecutable cada dos minutos);
+- una **acción**: conectar USDC con tu propia dirección en otra red (la comisión de la ruta tiene un límite en la cadena), guardarlo en tu
+  bóveda, **enviarlo a alguien** (con un límite en la cadena), **cambiarlo** o simplemente avisarte;
+- un **importe**: lo que supera un límite, una parte del dinero que llegó o un importe fijo.
 
-Una regla de saldo se activa **una vez por cada cruce** y vuelve a quedar lista cuando el saldo regresa al otro lado del límite.
+Una regla de saldo o de precio se activa **una vez por cada cruce** y vuelve a quedar lista cuando el valor regresa. Una regla de **redondeo**
+(«redondea mis pagos y guarda el cambio») guarda la diferencia de cada envío en tu propia bóveda.
+
+## Practica primero
+
+Una automatización nueva puede empezar en **modo de práctica**: se ejecuta sin una autorización y cada ejecución es la transferencia exacta como prueba en
+Arc, registrada como **«se habría hecho»**. No se mueve nada. Cuando estés conforme, **Activar** firma su autorización. Pregunta «¿qué pasaría si
+esto se ejecutara ahora?» para hacer una prueba cuando quieras. Con el [modo de práctica](./limits-and-control.mdx#practice-mode) global activado, todas las
+automatizaciones se ejecutan en modo de práctica.
+
+## Te necesita
+
+Una automatización nunca cambia tokens por sí sola ni paga por encima de lo permitido por su autorización, ni ignora tus reglas de lista de permitidos o de nuevos destinatarios. Cuando una
+ejecución llega a uno de esos pasos, espera en **Te necesita** (en la bandeja de entrada y en Automatizaciones, con una notificación si las notificaciones están configuradas).
+Al aprobarla, se abre el mismo envío o cambio que harías manualmente. Los elementos sin respuesta reciben un recordatorio después de 12 horas y caducan después de
+24. Consulta [Te necesita](./limits-and-control.mdx#needs-you).
 
 ## Cómo gestionarlas
 
-Desde la pantalla de Automatizaciones o en el chat puedes: ver la lista, **pausar**, **reanudar**, **omitir la próxima ejecución** y **cancelar**. Al cancelar
-también **revocas el permiso en cadena**, así que el permiso desaparece y no queda simplemente oculto.
+Desde la pantalla de Automatizaciones o en el chat: listar, **pausar**, **reanudar**, **omitir la próxima ejecución**, **editar** y **cancelar**.
+
+- **Editar** en el mismo sitio: pedir menos se aplica de inmediato; pedir más firma una autorización nueva junto con la
+  revocación de la anterior.
+- **Cancelar** también **revoca la autorización en la cadena**, así que el permiso desaparece y no queda simplemente oculto.
 
 <ScopeList ids="automations" />

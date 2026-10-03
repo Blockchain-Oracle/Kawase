@@ -1,33 +1,52 @@
 ---
-title: "Render e empréstimos"
-description: "Deposite USDC nos cofres da Morpho na Arc pelo App Kit Earn da Circle e retire quando quiser; Aave V4 e empréstimos estão a caminho."
-sourceHash: 957ea36e79ab420d
+title: "Render e pegar emprestado"
+description: "Compare onde seu dinheiro pode render na Arc (Aave V4, cofres Morpho, Aero), deposite e retire com uma aprovação e pegue emprestado usando o que você tem, com um indicador de saúde em tempo real."
+sourceHash: e6e77a22bbe7996c
 ---
 
-<Status ids="yield borrow" />
+<Status ids="yield lend" />
 
-<Marks names="morpho circle usdc" />
+<Marks names="aave morpho aero circle usdc eurc cirbtc weth" />
 
-## Render com cofres da Morpho (hoje)
+## Opções para render
 
-"Guardar 50 dólares" ou pela tela Render. A Kawase mostra os **cofres da Morpho** disponíveis pelo **App Kit
-Earn da Circle** na Arc (na rede de testes: cofres de demonstração da rede de testes da Arc), com nomes fáceis de
-entender e suas taxas. Além disso:
+"Onde meus 200 dólares podem render?" A Kawase compara todas as fontes que aceitam seu ativo, com **leituras em tempo real**:
 
-- **Deposita** USDC no cofre que você escolher — ou no melhor cofre ativo quando você não especificar um — verificando
-  um número mínimo de cotas com base na prévia do próprio cofre.
-- **Retira** qualquer valor para sua carteira, garantindo pelo menos o valor mostrado.
-- Mostra suas **posições**, lidas em tempo real diretamente dos cofres na rede (nunca armazenadas pela Kawase).
+- **Aave V4**: fornecimento, taxa atual, quanto o mercado poderia pagar agora e seu tamanho;
+- **Cofres Morpho** listados pelo App Kit Earn da Circle, classificados pelo que poderiam devolver agora. Um cofre que não pudesse devolver
+  seu dinheiro nunca é oferecido, e a baixa liquidez é indicada;
+- **Aero**: campanhas de liquidez da Merkl, mostradas como **avançadas** e somente para consulta.
 
-Cada depósito ou retirada exige **um Face ID** e é enviado como uma única transação. A [poupança automática](./automations.mdx#auto-save)
-usa os mesmos cofres para manter suas economias completas automaticamente.
+As opções são classificadas pela taxa entre as fontes que poderiam devolver o seu valor, e a melhor recebe uma indicação. Tocar em Aave abre
+a tela de fornecimento; tocar em um cofre abre o Earn desse cofre.
 
-## Mais rendimento e empréstimos (a caminho)
+## Render com cofres Morpho
 
-O plano compara todas as opções que aceitam seu ativo — **Aave V4**, cofres da Morpho diretamente e outras — mostrando a
-taxa, quanto pode ser retirado agora, tamanho e risco. Ele também oculta as opções das quais você não conseguiria sair.
-Está planejado **pedir emprestado** USDC ou EURC usando garantias (por exemplo, na Aave V4), com indicador de saúde,
-ações para pagar o empréstimo e adicionar garantias, além de alertas de liquidação na sua caixa de entrada. Ambos estão
-**a caminho**.
+"Guardar 50 dólares", ou a tela **Render**. Deposite USDC no cofre escolhido (ou no melhor cofre ativo) e
+retire qualquer valor. Suas **posições** são lidas em tempo real nos cofres. Cada depósito ou retirada exige **um Face ID**
+e é enviada como uma única transação. O [salvamento automático](./automations.mdx#auto-save) usa os mesmos cofres por conta própria.
 
-<ScopeList ids="yield" />
+Na rede de testes, o Render usa os cofres Morpho de teste da Arc.
+
+## Pegar e fornecer no Aave V4
+
+A tela **Pegar emprestado** (a partir de Render na rede principal) mostra primeiro sua posição no Aave V4: quanto você deve (com **Pagar**), o que você
+forneceu (com **Adicionar** e **Retirar**), o **indicador de saúde** e quanto espaço ainda resta. Depois, mostra o que você pode pegar emprestado e
+a qual taxa.
+
+- **Pegue emprestado** USDC, EURC, cirBTC ou WETH usando **USDC, cirBTC ou WETH** como garantia. EURC não pode ser usado como garantia no Aave V4.
+  A Kawase escolhe a garantia na sua carteira (o ativo que você tem e que vale mais depois de aplicar o fator) e a coloca
+  **na mesma transação**.
+- O indicador muda a cada dígito que você digita. O valor máximo mantém você no limite seguro.
+- Um empréstimo que deixaria a saúde **abaixo de 1,25 é recusado**; **abaixo de 1,5**, você recebe um aviso.
+- Com um único ativo como garantia, a tela mostra o **preço pelo qual ele seria liquidado**.
+- **Pague** parte ou tudo. "Tudo" paga o valor total com uma pequena margem para juros e redefine a aprovação.
+
+Cada ação é verificada novamente com preços atualizados quando você aprova, simulada a partir da sua carteira e enviada como **uma
+única transação**. Você confirma deslizando e usando o Face ID.
+
+## Não disponível na rede de testes
+
+O Aave V4 está disponível somente na rede principal da Arc. Por isso, os empréstimos e o fornecimento no Aave também estão disponíveis somente nela. Os cofres Morpho funcionam nas duas redes.
+
+<ScopeList ids="yield lend" />

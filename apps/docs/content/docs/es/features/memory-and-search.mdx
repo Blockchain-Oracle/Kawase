@@ -1,0 +1,62 @@
+---
+title: "Memoria y búsqueda"
+description: "Kawase recuerda lo que le pides, busca en todas tus conversaciones anteriores, mantiene la coherencia en conversaciones largas, sugiere qué merece tu atención en Inicio y responde preguntas sobre Arc con fuentes."
+sourceHash: d94f486866e462ad
+---
+
+<Status ids="memory" />
+
+## Memoria
+
+«Recuerda que mi casero es @maria». Kawase guarda **los datos que le pides que recuerde** (personas, @handles y preferencias)
+y los usa más adelante. Cuando una respuesta se basa en uno de ellos, el chat muestra una línea **De la memoria**, para que siempre sepas de dónde salió.
+
+**Ajustes → Memoria** muestra todos los datos: añade uno, edítalo, olvida uno o todos, o desactiva la memoria. La memoria de una persona invitada pasa
+a la cuenta cuando inicia sesión. Kawase no recuerda cosas que no le hayas pedido.
+
+## Buscar en todas las conversaciones
+
+La hoja del historial busca en **todas** tus conversaciones en el servidor de Kawase, no solo en las que están cargadas: las palabras, las tarjetas
+y para quién eran (busca «Maria» y aparecerá el envío que le hiciste). Funcionan las palabras incompletas y los textos en chino, japonés o coreano.
+Los resultados se agrupan por conversación, muestran las palabras que rodean la coincidencia y abren la conversación. También puedes preguntar:
+«¿Qué le envié a mi casero el mes pasado?».
+
+## Conversaciones largas
+
+Una conversación larga mantiene la coherencia: después de cada turno, la parte más antigua se resume y los mensajes más recientes se conservan
+palabra por palabra. El resumen nunca repite cantidades ni resultados de la memoria; los resultados propios de las tarjetas se conservan exactamente como
+estaban, y Kawase vuelve a comprobarlo con sus herramientas antes de basarse en uno.
+
+## Para ti
+
+**Inicio** muestra algunas tarjetas que merecen tu atención, calculadas a partir de tus saldos reales en la red activa:
+
+- USDC inactivo por encima de lo que gastas, junto a una bóveda que podría devolverlo todo;
+- una de tus solicitudes de pago está a punto de caducar;
+- un puente que no ha llegado 15 minutos después de lo previsto;
+- un movimiento importante en un token que tienes (5% en un día, 0.5% para una stablecoin de moneda, con al menos $10 en posesión);
+- una [posición de margen](./long-short.mdx) cuya salud es inferior a 1.25 o está a menos de un movimiento del 10% de la liquidación.
+
+Son datos y opciones, nunca consejos. Cada tarjeta tiene una acción. **Descartar** oculta una tarjeta durante una semana; **no mostrar este
+tipo** lo silencia (y puedes deshacerlo).
+
+## Respuestas sobre Arc, con fuentes
+
+Pregunta «¿Qué tan rápida es la finalidad en Arc?» o «¿Cuánto cuesta una transferencia?». Kawase responde a partir de un conjunto seleccionado de notas creado con
+la documentación de Arc y Circle y estos documentos, y muestra una tarjeta de **Fuentes** con el nombre de cada una. Solo datos, sin
+consejos de inversión.
+
+## Tarjetas explicativas
+
+- **Gráficos**: el valor de tu cartera o el precio de cualquier token durante un día, una semana, un mes o un año.
+- **¿Por qué esta?**: por qué ganó una ruta de puente, un lugar de intercambio o una bóveda (se preguntó a todos los proveedores, qué ofrece cada uno, la comisión y el
+  tiempo, y por qué los demás perdieron o no pudieron dar un precio).
+- **Cambios en Ajustes** como Ahora → Después, aplicados en tu dispositivo (memoria activada o desactivada, idioma de respuesta, tema).
+- **Estado**: si Kawase, Arc (cada red), Circle y los precios funcionan, están lentos o no funcionan.
+
+## El texto externo son datos
+
+Todo lo que Kawase lee de fuentes externas (respuestas de mercados, nombres de tokens y bóvedas, notas de cadena, notas de Contactos y mensajes anteriores)
+se marca como no confiable. Las instrucciones ocultas en ellos se señalan y nunca se siguen.
+
+<ScopeList ids="memory" />

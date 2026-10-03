@@ -1,23 +1,22 @@
 ---
-title: "Premiers pas"
-description: "Ouvrez Kawase dans votre navigateur en tant qu'invité, ou installez l'app sur iPhone ou Android. Recevez ensuite de l'argent de test gratuit et effectuez votre premier paiement."
-sourceHash: d04f550afbef6dcf
+title: "Bien démarrer"
+description: "Ouvrez Kawase dans le navigateur en tant qu'invité, sur Mac, iPhone ou Android, puis obtenez de l'argent de test gratuit et effectuez un premier paiement."
+sourceHash: 9da905ad5928756d
 ---
 
 ## 1. Ouvrir l'app
 
 <Tabs items={['Web', 'iPhone', 'Android']}>
   <Tab value="Web">
-    Ouvrez [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io) dans un navigateur récent. Vous commencez en tant
-    qu'**invité** : aucune inscription ni adresse e-mail. Vous pouvez discuter avec Kawase, parcourir tous les écrans et voir
-    ce que l'app ferait.
+    Ouvrez [app.getkawase.xyz](https://app.getkawase.xyz) dans un navigateur récent. Vous commencez en tant qu'**invité** : pas d'inscription, pas
+    d'adresse e-mail. Vous pouvez discuter avec Kawase, lui parler, parcourir tous les écrans et voir ce qu'il ferait.
 
-    Sur le Web, un **code envoyé par e-mail** remplace Face ID lorsque vous devez confirmer un paiement. La **Voix** n'est pas
-    encore disponible dans l'app Web ; vous pouvez écrire partout.
+    Sur le Web, un **code envoyé par e-mail** remplace Face ID lorsqu'un paiement nécessite votre confirmation. Vous pouvez installer
+    l'app Web ou utiliser [l'app de bureau pour Mac](./features/web-and-desktop.mdx).
   </Tab>
   <Tab value="iPhone">
-    Kawase pour iPhone est distribué via **TestFlight** pendant la phase bêta. Installez TestFlight depuis l'App Store,
-    puis ouvrez le lien d'invitation que vous avez reçu. Un lien TestFlight public sera publié sur la page de présentation
+    Kawase pour iPhone est distribué via **TestFlight** pendant sa phase bêta. Installez TestFlight depuis l'App Store,
+    puis ouvrez le lien d'invitation qui vous a été envoyé. Un lien TestFlight public sera publié sur la page de présentation
     dès qu'il sera disponible.
   </Tab>
   <Tab value="Android">
@@ -31,8 +30,7 @@ sourceHash: d04f550afbef6dcf
 ## 2. Choisir votre langue
 
 Le sélecteur de langue se trouve sur le tout premier écran. Kawase parle [dix langues](./features/languages.mdx), et l'arabe et
-l'ourdou passent immédiatement toute l'interface de droite à gauche. Vous pouvez modifier ce choix à tout moment dans les
-Paramètres.
+l'ourdou passent immédiatement toute l'interface de droite à gauche. Vous pouvez modifier ce choix à tout moment dans les Paramètres.
 
 ## 3. Se connecter quand vous le souhaitez
 
@@ -42,42 +40,42 @@ Les invités peuvent tout explorer. Pour conserver de l'argent, connectez-vous a
 - **Apple**, ou
 - **Google**.
 
-Il n'y a ni mot de passe ni code PIN. La connexion crée votre portefeuille (voir [sécurité](./safety.mdx)) : une seule adresse
-qui fonctionne sur les deux réseaux. Tout ce que vous avez fait en tant qu'invité — vos conversations et vos contacts — est
-transféré dans votre compte.
+Il n'y a ni mot de passe ni code PIN. La connexion crée votre portefeuille (voir [sécurité](./safety.mdx)) : une adresse qui fonctionne
+sur les deux réseaux. Tout ce que vous avez fait en tant qu'invité — vos discussions et vos contacts — est transféré dans votre compte.
 
 La configuration du portefeuille ne vous coûte rien : vous signez une seule autorisation et Kawase paie les frais du réseau.
 
-## 4. Recevoir de l'argent de test
+## 4. Obtenir de l'argent de test
 
-Les nouveaux comptes commencent sur le **Réseau de test**, où l'argent n'a aucune valeur. Demandez à Kawase « donne-moi de
-l'argent de test » ou ouvrez le robinet depuis l'écran d'accueil. Chaque demande vous apporte environ **20 USDC de test et
-20 EURC de test** depuis le robinet de Circle, une fois par jour. Si la demande dans l'app est refusée, le robinet de Circle
-se trouve sur [faucet.circle.com](https://faucet.circle.com) (choisissez « Arc Testnet »).
+Les nouveaux comptes commencent sur le **Réseau de test**, où l'argent n'a aucune valeur. Demandez à Kawase « donne-moi de l'argent de test » ou ouvrez le faucet depuis
+l'écran d'accueil. Chaque demande vous donne environ **20 USDC de test et 20 EURC de test** depuis le faucet de Circle, une fois par jour. Si la demande dans l'app est refusée, le faucet de Circle se trouve sur [faucet.circle.com](https://faucet.circle.com) (choisissez « Arc Testnet »).
 
 ## 5. Accepter votre allocation quotidienne
 
-Kawase vous demande une fois d'accepter une **allocation quotidienne** : un montant d'USDC par jour que l'agent peut envoyer
-pour vous sans vous le redemander. Vous l'approuvez avec un seul Face ID. Le montant par défaut est affiché sur la carte
-avant votre approbation ; consultez le [tableau des limites](./safety.mdx#default-limits).
+Kawase vous demande une fois d'accepter une **allocation quotidienne** : un montant d'USDC par jour que l'agent peut envoyer pour vous sans
+vous le redemander. Vous l'approuvez avec un seul Face ID. La valeur par défaut est affichée sur la carte avant votre approbation ; consultez le
+[tableau des limites](./safety.mdx#default-limits).
 
 ## 6. Effectuer votre premier paiement
 
 Écrivez ou dites, par exemple :
 
-> envoyer 1 dollar à @kawasedemo
+> envoie 1 dollar à @kawasedemo
 
-Kawase trouve le destinataire, vérifie votre solde et vos limites, puis affiche la carte de paiement : montant exact,
-devise, destinataire et réseau. Tant que le paiement respecte votre allocation, il est envoyé immédiatement. Au-delà, Kawase
-attend votre Face ID. La carte suit le paiement jusqu'à sa confirmation par le réseau, et le reçu contient un lien vers
-l'explorateur de blocs.
+Kawase trouve le destinataire, vérifie votre solde et vos limites, puis affiche la carte de paiement : montant exact, devise, destinataire
+et réseau. Si le paiement reste dans votre allocation, il est envoyé immédiatement ; sinon, Kawase attend votre Face ID. La carte suit le paiement
+jusqu'à sa confirmation par le réseau, et le reçu contient un lien vers l'explorateur de blocs.
 
 ## 7. Essayer le reste
 
-- « échanger 2 dollars en euros »
-- « déplacer 1 dollar vers Base »
-- « mettre 5 dollars de côté »
-- « chaque vendredi à 9 h, envoyer 1 dollar à Alex »
-- « garder 20 dollars dans mon portefeuille et épargner le reste »
+- « échange 2 dollars en euros »
+- « transfère 1 dollar vers Base »
+- « mets 5 dollars de côté »
+- « chaque vendredi à 9 h, envoie 1 dollar à Alex »
+- « garde 20 dollars dans mon portefeuille et épargne le reste »
+- « achète 10 dollars d'USDC par carte » (sandbox de Circle sur le Réseau de test)
+- « souviens-toi qu'Alex est mon frère »
 
-Chaque demande affiche d'abord une carte et vous indique exactement ce qu'elle attend de vous.
+Sur le **Réseau principal**, les marchés, l'échange de n'importe quel jeton, les positions long et short et l'emprunt sont également disponibles. Consultez les [fonctionnalités](./features/swap-and-trade.mdx).
+
+Chaque action affiche d'abord une carte et vous indique exactement ce dont elle a besoin.

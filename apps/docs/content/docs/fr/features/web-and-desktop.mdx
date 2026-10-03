@@ -1,0 +1,46 @@
+---
+title: "Web et ordinateur"
+description: "Kawase dans n'importe quel navigateur, sans rien installer, comme application web installable et comme application pour Mac qui utilise toujours la version actuelle."
+sourceHash: 0b0a27fbf85f8ce1
+---
+
+<Marks names="kawase arc" />
+
+## Dans le navigateur
+
+Ouvrez [app.getkawase.xyz](https://app.getkawase.xyz). Vous commencez en tant qu'**invité**, et tout fonctionne comme sur le téléphone :
+chat, cartes, Marchés, voix et tous les écrans.
+
+- **Confirmation d'un paiement** : un **code envoyé par e-mail** remplace Face ID.
+- **Voix** : appuyez sur l'orbe et autorisez l'accès au micro quand le navigateur vous le demande. Si vous refusez, Kawase vous explique
+  comment l'autoriser, et vous pouvez saisir votre message juste à côté.
+- **Installer l'application** : Kawase est une application web installable. Dans Chrome ou Edge, utilisez **Installer**. Dans Safari, choisissez
+  **Ajouter au Dock** (Mac) ou **Ajouter à l'écran d'accueil** (iPhone). Si le réseau est interrompu, une page hors ligne vous l'indique
+  au lieu d'afficher un écran cassé. Kawase ne met jamais les soldes en cache. Les anciennes données ne sont donc jamais affichées comme de l'argent disponible.
+
+## L'application pour ordinateur (Mac)
+
+[Télécharger Kawase pour Mac](https://getkawase.xyz/download/Kawase-mac.dmg) (puce Apple, environ 2 MB), ouvrez l'image disque
+et faites glisser Kawase dans Applications.
+
+<Callout type="warn">
+**Pas encore notarisée par Apple : la première fois, faites un clic droit sur Kawase → Ouvrir.** Sur macOS 15 et les versions suivantes, ouvrez-la une fois, puis allez dans
+**Réglages Système → Confidentialité et sécurité** et choisissez **Ouvrir quand même**. Il s'agit d'une version de prévisualisation, pas d'une version signée.
+</Callout>
+
+C'est l'application web actuelle dans une fenêtre native. Elle utilise donc **toujours la version actuelle**, sans aucune mise à jour à installer :
+
+- la barre de titre reprend les couleurs de Kawase et suit votre mode clair ou sombre ;
+- les fonctions copier, coller et les menus habituels fonctionnent ; ⌘+ et ⌘− permettent de zoomer ;
+- les **liens `kawase://`** (comme sur le téléphone) ouvrent la page correspondante dans la fenêtre. Par exemple, `kawase://r/…` ouvre
+  une demande de paiement ;
+- les fenêtres de connexion s'ouvrent dans l'application, et les autres sites (un explorateur, cette documentation) s'ouvrent dans votre navigateur ;
+- la page n'a **aucun accès à votre ordinateur** en dehors de la fenêtre dans laquelle elle s'exécute.
+
+La Voix dans l'application pour ordinateur n'a pas encore été testée. Pour utiliser la Voix, utilisez l'application web dans un navigateur ou votre téléphone.
+
+Les versions pour Windows et Linux proviennent du même code source (`apps/desktop`) ; elles n'ont pas encore été compilées.
+
+## Sur le téléphone
+
+Kawase pour **iPhone** est disponible sur TestFlight, et pour **Android** sous forme d'APK. Consultez [premiers pas](../getting-started.mdx).

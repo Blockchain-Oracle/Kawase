@@ -5,7 +5,7 @@ import { Mark } from "@kawase/ui-web/components/mark";
 import { Section } from "@/components/section";
 import { StateChip } from "@/components/state-chip";
 import { BentoGrid, type BentoItem } from "@/components/ui/bento-grid";
-import { AREAS, ENTITY, areaState, isShipped, nextLine, todayLine, type Area } from "@/lib/capabilities";
+import { AREAS, ENTITY, cardState, isShipped, nextLine, todayLine, type Area } from "@/lib/capabilities";
 import { links } from "@/lib/links";
 
 const MARK_SIZE = 26;
@@ -14,8 +14,8 @@ const WIDE = 2;
 const NARROW = 1;
 
 function status(area: Area) {
-  const main = areaState(area.id, "mainnet");
-  const test = areaState(area.id, "testnet");
+  const main = cardState(area, "mainnet");
+  const test = cardState(area, "testnet");
   if (main === test) return <StateChip state={main} />;
   return (
     <span className="flex flex-wrap justify-end gap-1">
@@ -26,7 +26,7 @@ function status(area: Area) {
 }
 
 function footnote(area: Area) {
-  const today = todayLine(area.id);
+  const today = todayLine(area.id, area.today);
   const next = nextLine(area.id);
   if (!today) return undefined;
   return (
@@ -46,7 +46,7 @@ function footnote(area: Area) {
 }
 
 const toItem = (area: Area): BentoItem => ({
-  key: area.id,
+  key: `${area.id}:${area.title}`,
   title: area.title,
   description: area.body,
   status: status(area),
@@ -67,10 +67,12 @@ export function Capabilities() {
       title="One app for everything on Arc"
       body={
         <>
-          Any token, trading, buying with Apple Pay, yield, borrowing, bridges, withdrawals, automations and paid AI
-          services, all from one conversation. {shipped} of these {AREAS.length} run today; the rest are marked
-          “Coming” from the same registry the app and its agent read, so this page can’t claim more than the product
-          does. The <a className="underline underline-offset-4 hover:text-foreground" href={`${links.docs}/docs/availability`}>availability matrix</a> has every network.
+          Any token, long and short, buying with a card, yield, borrowing, bridges, automations, business tools and
+          paid AI services, all from one conversation.{" "}
+          {shipped === AREAS.length
+            ? `All ${AREAS.length} run today (some on mainnet only),`
+            : `${shipped} of these ${AREAS.length} run today; the rest are marked “Coming”,`}{" "}
+          read from the same registry the app and its agent read, so this page can’t claim more than the product does. The <a className="underline underline-offset-4 hover:text-foreground" href={`${links.docs}/docs/availability`}>availability matrix</a> has every network.
         </>
       }
     >

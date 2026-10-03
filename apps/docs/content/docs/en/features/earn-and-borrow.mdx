@@ -1,30 +1,51 @@
 ---
 title: Earn and borrow
-description: Deposit USDC into Morpho vaults on Arc through Circle's App Kit Earn and withdraw any time; Aave V4 and borrowing are coming.
+description: Compare where your money can earn on Arc (Aave V4, Morpho vaults, Aero), deposit and withdraw with one approval, and borrow against what you hold with a live health gauge.
 ---
 
-<Status ids="yield borrow" />
+<Status ids="yield lend" />
 
-<Marks names="morpho circle usdc" />
+<Marks names="aave morpho aero circle usdc eurc cirbtc weth" />
 
-## Earn with Morpho vaults (today)
+## Yield options
 
-"Put 50 dollars in savings" or the Earn screen. Kawase lists the **Morpho vaults** available through **Circle's App Kit
-Earn** on Arc (on testnet: Arc Testnet's mock vaults) with readable names and their rates, and:
+"Where can my 200 dollars earn?" Kawase compares every source that takes your asset, from **live reads**:
 
-- **Deposits** USDC into the vault you pick — or the best active one when you don't say — with a minimum number of vault
-  shares checked against the vault's own preview.
-- **Withdraws** any amount back to your wallet, paying at least the amount shown.
-- Shows your **positions**, read live from the vaults on chain (never stored by Kawase).
+- **Aave V4** supply: the current rate, how much the market could pay out right now, and its size;
+- **Morpho vaults** listed by Circle's App Kit Earn, ranked by what they could give back now. A vault that couldn't return
+  your money is never offered, and low liquidity is flagged;
+- **Aero** liquidity campaigns from Merkl: shown as **advanced**, read only.
 
-Each deposit or withdrawal is **one Face ID**, sent as one transaction. [Auto-save](./automations.mdx#auto-save) uses the
-same vaults to keep your savings topped up by itself.
+Options are ranked by rate among the sources that could return your amount, with the best one marked. Tapping Aave opens
+the supply ticket; tapping a vault opens Earn for that vault.
 
-## More yield and borrowing (coming)
+## Earn with Morpho vaults
 
-The plan compares every source that accepts your asset — **Aave V4**, Morpho vaults directly and others — showing the
-rate, how much can be withdrawn right now, size and risk, and hides sources you couldn't exit. **Borrowing** USDC or EURC
-against collateral (for example on Aave V4) is planned with a health gauge, repay and add-collateral actions, and
-liquidation alerts in your inbox. Both are **coming**.
+"Put 50 dollars in savings", or the **Earn** screen. Deposit USDC into the vault you pick (or the best active one) and
+withdraw any amount back. Your **positions** are read live from the vaults. Each deposit or withdrawal is **one Face ID**,
+sent as one transaction. [Auto-save](./automations.mdx#auto-save) uses the same vaults by itself.
 
-<ScopeList ids="yield" />
+On testnet, Earn uses Arc Testnet's mock Morpho vaults.
+
+## Borrow and supply on Aave V4
+
+The **Borrow** screen (from Earn on mainnet) shows your Aave V4 position first: what you owe (with **Repay**), what you
+supplied (with **Add** and **Withdraw**), the **health gauge** and how much room is left. Then what you can borrow, and at
+what rate.
+
+- **Borrow** USDC, EURC, cirBTC or WETH against collateral of **USDC, cirBTC or WETH**. EURC can't be collateral on Aave V4.
+  Kawase picks the collateral from your wallet (the held asset worth most after its factor) and puts it in **in the same
+  transaction**.
+- The gauge moves with every digit you type. Max keeps you at the safe floor.
+- A loan that would leave health **under 1.25 is refused**; **under 1.5** you're warned.
+- With one collateral asset, the ticket shows the **price at which it would be liquidated**.
+- **Repay** part or all. "All" repays everything with a small margin for interest, and resets the approval.
+
+Every action is re-checked against fresh prices when you approve, simulated from your wallet, and sent as **one
+transaction**. You confirm by sliding and Face ID.
+
+## Not on testnet
+
+Aave V4 is on Arc mainnet only, so borrowing and Aave supply are too. Morpho vaults work on both networks.
+
+<ScopeList ids="yield lend" />
