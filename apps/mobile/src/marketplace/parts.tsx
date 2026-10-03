@@ -55,7 +55,7 @@ export function PurchaseRow({ purchase, onPress }: { purchase: PurchaseView; onP
     <ListRow
       leading={<SellerMark name={purchase.provider} />}
       title={purchase.description ?? purchase.provider}
-      subtitle={`${purchase.provider} · ${when(purchase.createdAt)}${purchase.status === "paid" ? "" : ` · ${t(`agentWallet.status.${purchase.status}`)}`}`}
+      subtitle={`${purchase.provider} · ${when(purchase.createdAt)}${purchase.status === "paid" ? "" : ` · ${t(`agentWallet.status.${purchase.status}`)}`}${purchase.refund === "none" ? ` · ${t("agentWallet.refundNone")}` : purchase.refund === "not_charged" ? ` · ${t("agentWallet.refundNotCharged")}` : ""}`}
       trailing={<Amount className={cn("text-sm font-semibold", settled ? "text-foreground" : "text-muted-foreground")}>{`−${price(purchase.amount)}`}</Amount>}
       {...(onPress ? { onPress } : {})}
     />

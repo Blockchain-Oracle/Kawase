@@ -77,7 +77,16 @@ export function testApp(
   swaps: SwapEngine = noSwaps,
   bridges: BridgeEngine = noBridges,
   earn: EarnEngine = noEarn,
-  options: { automationTickMs?: number; reconcileIntervalMs?: number; agentWallets?: AppDeps["agentWallets"]; discovery?: AppDeps["discovery"]; onramp?: AppDeps["onramp"]; alchemyApiKey?: string | undefined } = {},
+  options: {
+    automationTickMs?: number;
+    reconcileIntervalMs?: number;
+    agentWallets?: AppDeps["agentWallets"];
+    discovery?: AppDeps["discovery"];
+    onramp?: AppDeps["onramp"];
+    alchemyApiKey?: string | undefined;
+    /** Real models for a live agent round trip (none by default: the chat answers "unavailable"). */
+    models?: AppDeps["models"];
+  } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -94,7 +103,7 @@ export function testApp(
     bridges,
     earn,
     ...options,
-    models: createModels({}),
+    models: options.models ?? createModels({}),
     rateLimitPerMinute: TEST_LIMIT,
     signInLimitPerMinute: TEST_LIMIT,
   });

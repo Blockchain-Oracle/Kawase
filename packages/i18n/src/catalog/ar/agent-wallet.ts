@@ -65,4 +65,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "دُفع بدفعة نانوية عبر Circle Gateway",
     eip3009: "دُفع بتحويل USDC",
   },
+  cardTopUp: "أو اشترِ USDC مباشرة إليها",
+  expressPay: "Pay",
+  orCard: "أو ادفع بالبطاقة",
+  cardButton: "بطاقة خصم",
+  deliversAgent: "تصل USDC مباشرة إلى محفظة وكيلك على {{network}}.",
+  noRefund: "لا استرداد: احتفظ {{seller}} بالدفعة. لا يمكن استرداد الطلبات المدفوعة بعد.",
+  notCharged: "لم يُخصم شيء: لم تكتمل الدفعة أصلًا.",
+  refundNone: "لا استرداد",
+  refundNotCharged: "لم يُخصم شيء",
 };

@@ -1,38 +1,38 @@
 {
   "nav": {
     "webApp": "Abrir o app web",
-    "showcase": "Demonstração",
+    "showcase": "Vitrine",
     "docs": "Documentação"
   },
   "home": {
-    "eyebrow": "Documentação da Kawase",
+    "eyebrow": "Documentação do Kawase",
     "title": "Dinheiro que se movimenta quando você fala",
-    "body": "Kawase é um app de dinheiro com IA para tudo na Arc. Fale no seu próprio idioma, por voz ou texto: o app propõe, você aprova e a rede aplica seus limites.",
+    "body": "Kawase é um app de dinheiro com IA para tudo na Arc. Pergunte no seu idioma, por voz ou texto: ele propõe, você aprova e a rede aplica seus limites.",
     "start": "Começar",
-    "safety": "Como o app mantém seu dinheiro seguro",
+    "safety": "Como ele mantém seu dinheiro seguro",
     "cards": {
       "gettingStarted": {
         "title": "Começar",
-        "body": "Abra o app web como visitante em poucos segundos ou instale-o no iPhone ou Android."
+        "body": "Abra o app web como convidado em poucos segundos ou instale-o no iPhone ou Android."
       },
       "safety": {
         "title": "Modelo de segurança",
-        "body": "Veja o que o agente pode fazer sem perguntar, quando ele precisa do seu Face ID e o que nunca pode fazer."
+        "body": "O que o agente pode fazer sem perguntar, quando ele precisa do seu Face ID e o que ele nunca pode fazer."
       },
       "availability": {
         "title": "O que funciona hoje",
-        "body": "Veja todos os recursos disponíveis na rede principal e na rede de testes, gerados a partir do próprio registro do app."
+        "body": "Todos os recursos na rede principal e na rede de testes, gerados a partir do registro do próprio app."
       },
       "architecture": {
         "title": "Arquitetura",
-        "body": "Veja como o chat, a voz, o mecanismo de políticas e a Arc se conectam, para avaliadores e desenvolvedores."
+        "body": "Como o chat, a voz, o mecanismo de políticas e a Arc funcionam juntos, para avaliadores e desenvolvedores."
       }
     }
   },
   "matrix": {
     "capability": "Recurso",
-    "mainnet": "Rede principal da Arc",
-    "testnet": "Rede de testes da Arc",
+    "mainnet": "Arc na rede principal",
+    "testnet": "Arc na rede de testes",
     "caption": "Gerado quando o site é compilado, a partir do registro de recursos que o app e o agente consultam. \"Em breve\" significa que o recurso ainda não foi lançado."
   },
   "state": {
@@ -47,9 +47,9 @@
   "areas": {
     "tokens": "Qualquer token na Arc",
     "meme_coins": "Meme coins",
-    "perps": "Posições compradas e vendidas (perps)",
+    "perps": "Comprado e vendido (perps)",
     "buy": "Comprar com Apple Pay ou cartão",
-    "borrow": "Pedir empréstimo",
+    "borrow": "Pegar emprestado",
     "withdraw": "Sacar para qualquer lugar",
     "export_wallet": "Exportar sua carteira"
   },
@@ -58,19 +58,19 @@
     "mainnet": "Rede principal",
     "testnet": "Rede de testes",
     "daily": "Limite diário: enviado de uma vez, sem confirmação",
-    "perTransaction": "Maior pagamento individual",
+    "perTransaction": "Maior pagamento único",
     "weekly": "Total por semana",
     "monthly": "Total por mês",
     "perRecipientWeekly": "Para uma pessoa por semana",
-    "firstTime": "Primeiro pagamento para um novo endereço: Face ID acima desse valor",
-    "caption": "Valores padrão da própria configuração do app. Os limites da rede de testes são maiores porque nenhum dinheiro real está em risco."
+    "firstTime": "Primeiro pagamento para um endereço novo: Face ID acima desse valor",
+    "caption": "Valores padrão da configuração do próprio app. Os limites da rede de testes são maiores porque não há dinheiro real em risco."
   },
   "status": {
     "label": "Status"
   },
   "fumadocs": {
     "Ask AI(AI chat button)": "Perguntar à IA",
-    "Back to Home(404 not found page)": "Voltar para o início",
+    "Back to Home(404 not found page)": "Voltar para a página inicial",
     "Choose a language(language switcher)": "Escolher um idioma",
     "Choose a language(language switcher)(aria-label)": "Escolher um idioma",
     "Close Banner(banner)(aria-label)": "Fechar banner",
@@ -109,15 +109,15 @@
     "Page Not Found(404 not found page)": "Página não encontrada",
     "Parameters(type table)": "Parâmetros",
     "Previous Page(pagination)": "Página anterior",
-    "Prop(type table)": "Prop",
-    "Read {url}, I want to ask questions about it.(page actions)": "Leia {url}. Quero fazer perguntas sobre isso.",
+    "Prop(type table)": "Propriedade",
+    "Read {url}, I want to ask questions about it.(page actions)": "Leia {url}, quero fazer perguntas sobre isso.",
     "Returns(type table)": "Retornos",
     "Search(search dialog)": "Buscar",
     "Search(search trigger)": "Buscar",
     "Show Sidebar(sidebar)": "Mostrar barra lateral",
     "System(theme switcher)(aria-label)": "Sistema",
     "Table of Contents(inline table of contents)": "Índice",
-    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "A página que você está procurando pode ter sido removida, renomeada ou estar temporariamente indisponível.",
+    "The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.(404 not found page)": "A página que você procura pode ter sido removida, ter mudado de nome ou estar temporariamente indisponível.",
     "Toggle Menu(home layout header)(aria-label)": "Alternar menu",
     "Toggle Theme(theme switcher)(aria-label)": "Alternar tema",
     "Type(type table)": "Tipo",

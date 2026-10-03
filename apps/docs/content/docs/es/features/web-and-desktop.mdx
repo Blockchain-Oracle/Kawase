@@ -1,0 +1,46 @@
+---
+title: "Web y escritorio"
+description: "Kawase en cualquier navegador sin instalar nada, como una app web instalable y como una app de escritorio para Mac que siempre usa la versión actual."
+sourceHash: 0b0a27fbf85f8ce1
+---
+
+<Marks names="kawase arc" />
+
+## En el navegador
+
+Abre [app.getkawase.xyz](https://app.getkawase.xyz). Empiezas como **invitado** y todo funciona igual que en el teléfono:
+chat, tarjetas, Mercados, Voz y todas las pantallas.
+
+- **Confirmar un pago**: un **código por email** sustituye a Face ID.
+- **Voz**: toca el orbe y permite el acceso al micrófono cuando el navegador lo pida. Si lo rechazas, Kawase te explica cómo permitirlo y
+  puedes escribir directamente.
+- **Instalarla**: Kawase es una app web instalable. En Chrome o Edge, usa **Instalar**. En Safari, usa **Añadir al Dock** (Mac) o
+  **Añadir a la pantalla de inicio** (iPhone). Si se pierde la conexión, aparece una página sin conexión en lugar de una pantalla rota. Kawase nunca
+  guarda en caché los saldos, así que nunca muestra datos antiguos como si fueran dinero actual.
+
+## La app de escritorio (Mac)
+
+[Descarga Kawase para Mac](https://getkawase.xyz/download/Kawase-mac.dmg) (Apple silicon, unos 2 MB), abre la imagen de disco
+y arrastra Kawase a Aplicaciones.
+
+<Callout type="warn">
+**Apple todavía no la ha certificado: la primera vez, haz clic derecho en Kawase → Abrir.** En macOS 15 y versiones posteriores, ábrela una vez y luego ve a
+**Configuración del Sistema → Privacidad y seguridad** y elige **Abrir de todos modos**. Esta es una versión preliminar, no una versión firmada.
+</Callout>
+
+Es la app web activa en una ventana nativa, así que **siempre usa la versión actual** y no tienes que actualizar nada:
+
+- la barra de título usa los colores de Kawase y sigue tu modo claro u oscuro;
+- copiar, pegar y los menús habituales funcionan; ⌘+ y ⌘− cambian el zoom;
+- los **enlaces `kawase://`** (igual que en el teléfono) abren la página correspondiente en la ventana. Por ejemplo, `kawase://r/…` abre
+  una solicitud de pago;
+- las ventanas para iniciar sesión se abren dentro de la app y cualquier otro sitio (un explorador, esta documentación) se abre en el navegador;
+- la página **no puede acceder a tu ordenador** más allá de la ventana en la que se ejecuta.
+
+Todavía no hemos comprobado la Voz dentro de la app de escritorio. Para usarla, utiliza la app web en un navegador o tu teléfono.
+
+Las versiones para Windows y Linux provienen del mismo código (`apps/desktop`), pero todavía no se han creado.
+
+## En el teléfono
+
+Kawase para **iPhone** está en TestFlight y para **Android** está disponible como APK. Consulta [cómo empezar](../getting-started.mdx).

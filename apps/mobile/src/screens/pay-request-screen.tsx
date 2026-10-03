@@ -3,7 +3,8 @@
 // (the testnet strip when it is test money), and the status, read again every few seconds while it is open. With an
 // account the one action is Pay, which opens the send flow filled in and tied to the request; nothing is sent from
 // here. Without one: sign in to pay, or pay from any other wallet by sending exactly that amount on Arc to the
-// address shown. A paid, cancelled or expired request ends calmly, in words.
+// address shown. A paid, cancelled or expired request ends calmly, in words. An invoice in a token other than USDC or
+// EURC has a link of its own (no request behind it): the page is then the invoice (InvoiceLinkPage).
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { Check, ChevronLeft, Copy, Minus, TriangleAlert } from "lucide-react-native";
@@ -12,7 +13,7 @@ import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import { ApiError, type PublicPaymentRequest } from "@kawase/api-client";
+import { ApiError, type InvoicePublicView, type PublicPaymentRequest } from "@kawase/api-client";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
@@ -23,6 +24,7 @@ import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { InvoiceLinkPage } from "@/business/invoice-link-page";
 import { canonicalUnits } from "@/portfolio/ticket-token";
 import { RequestTokenMark, requestDecimals, requestFigures } from "@/request/request-token";
 import { InvoicePanel } from "@/business/invoice-panel";
@@ -45,7 +47,12 @@ const POLL_MS = 5_000;
 const HTTP_NOT_FOUND = 404;
 const LTR = { writingDirection: "ltr", textAlign: "left" } as const;
 
-type Load = { state: "loading" } | { state: "ready"; request: PublicPaymentRequest } | { state: "missing" } | { state: "failed" };
+type Load =
+  | { state: "loading" }
+  | { state: "ready"; request: PublicPaymentRequest }
+  | { state: "invoice"; invoice: InvoicePublicView }
+  | { state: "missing" }
+  | { state: "failed" };
 
 export function PayRequestScreen({ token }: { token: string }) {
   const { t } = useT();
@@ -63,8 +70,17 @@ export function PayRequestScreen({ token }: { token: string }) {
       const { request } = await api.requests.open(token);
       setLoad({ state: "ready", request });
     } catch (error) {
+      const missing = error instanceof ApiError && error.status === HTTP_NOT_FOUND;
+      // Not a request: it may be an invoice's own link (a token other than USDC or EURC).
+      const found = missing ? await api.business.publicInvoice(token).catch(() => undefined) : undefined;
       setLoad((current) =>
-        current.state === "ready" ? current : error instanceof ApiError && error.status === HTTP_NOT_FOUND ? { state: "missing" } : { state: "failed" },
+        current.state === "ready" || current.state === "invoice"
+          ? current
+          : found
+            ? { state: "invoice", invoice: found.invoice }
+            : missing
+              ? { state: "missing" }
+              : { state: "failed" },
       );
     }
   }, [token]);
@@ -80,7 +96,7 @@ export function PayRequestScreen({ token }: { token: string }) {
   }, [open, read]);
 
   const request = load.state === "ready" ? load.request : undefined;
-  const testnet = request?.network === "testnet";
+  const testnet = (request?.network ?? (load.state === "invoice" ? load.invoice.network : undefined)) === "testnet";
 
   const header = (
     <>
@@ -108,6 +124,14 @@ export function PayRequestScreen({ token }: { token: string }) {
           <Skeleton className="h-16 w-56 self-center rounded-xl" />
           <Skeleton className="h-14 rounded-2xl" />
         </View>
+      </View>
+    );
+  }
+  if (load.state === "invoice") {
+    return (
+      <View className="bg-background flex-1">
+        {header}
+        <InvoiceLinkPage token={token} invoice={load.invoice} />
       </View>
     );
   }

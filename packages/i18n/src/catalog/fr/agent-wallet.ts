@@ -67,4 +67,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "Payé par nanopaiement Circle Gateway",
     eip3009: "Payé par transfert d'USDC",
   },
+  cardTopUp: "Ou achetez-y directement des USDC",
+  expressPay: "Pay",
+  orCard: "ou payer par carte",
+  cardButton: "Carte de débit",
+  deliversAgent: "Les USDC arrivent directement dans le portefeuille de votre agent sur {{network}}.",
+  noRefund: "Pas de remboursement : {{seller}} a gardé le paiement. Les requêtes payées ne peuvent pas encore être remboursées.",
+  notCharged: "Non débité : le paiement n'a jamais abouti.",
+  refundNone: "pas de remboursement",
+  refundNotCharged: "non débité",
 };

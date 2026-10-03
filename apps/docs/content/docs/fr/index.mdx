@@ -1,45 +1,68 @@
 ---
 title: "Ce qu'est Kawase"
-description: "Une application financière avec IA pour tout faire sur Arc. Parlez ou écrivez dans votre langue ; l'agent propose, vous approuvez, et des limites sur la chaîne encadrent ce qu'il peut faire."
-sourceHash: 964d27b3491e7914
+description: "Une application financière avec IA pour tout faire sur Arc. Demandez par la voix ou par écrit dans votre langue ; l'agent propose, vous approuvez et des limites on-chain encadrent ce qu'il peut faire."
+sourceHash: c38c8b4a29bf5354
 ---
 
-Kawase (為替, « échange » en japonais) est une application financière avec un agent IA au cœur de son fonctionnement, conçue pour **Arc**, le réseau de stablecoins de Circle. Dites-lui ce que vous voulez — « envoyer 20 dollars à Alex », « échanger la moitié de mes euros en dollars », « mettre 10 dollars de côté chaque vendredi » — à la voix ou par écrit, dans l'une des dix langues disponibles. Kawase s'occupe des détails, vous montre exactement ce qui va se passer, puis l'exécute.
+Kawase (為替, « échange » en japonais) est une application financière avec un agent IA au centre, conçue pour **Arc**, le réseau de
+stablecoins de Circle. Dites-lui ce que vous voulez — « envoyer 20 dollars à Alex », « échanger la moitié de mes euros contre des dollars », « mettre 10
+dollars de côté tous les vendredis » — à la voix ou en écrivant, dans l'une des dix langues disponibles. Kawase s'occupe des détails, vous montre exactement ce qui va
+se passer, puis l'exécute.
 
-<Marks names="usdc eurc arc circle morpho" />
+<Marks names="usdc eurc arc circle aave morpho kyberswap" />
 
 ## Une seule application pour tout faire sur Arc
 
-L'objectif est de vous permettre de faire tout ce qui est possible avec votre argent sur Arc en le demandant à Kawase :
+L'objectif est de vous permettre de faire, en demandant à Kawase, tout ce que vous pouvez faire avec votre argent sur Arc :
 
-- **Envoyer, recevoir et demander** des USDC et des EURC à un contact enregistré, à un `@handle` Kawase ou à n'importe quelle adresse.
-- **Échanger et trader** : USDC ↔ EURC aujourd'hui ; tous les tokens sur Arc, les meme coins et les positions long/short (perps) sont en cours d'ajout.
-- **Acheter** avec Apple Pay ou une carte grâce à Onramp Kit de Circle.
-- **Faire un pont et retirer** : transférer des USDC d'Arc vers six autres réseaux avec Circle CCTP, en comparant d'autres ponts (Across, Relay) ; retirer vers n'importe quel endroit.
-- **Gagner des intérêts et emprunter** : coffres Morpho aujourd'hui ; Aave V4 et l'emprunt sont en cours d'ajout.
-- **Automatisations** : paiements programmés, épargne automatique et règles qui s'exécutent seules dans les limites que vous signez une seule fois.
-- **Le marketplace x402** : payer des services et des API à chaque appel, dans la limite d'un budget.
-- **La Voix** sur iPhone et Android, et toute l'application dans **dix langues**.
+- **[Envoyer, recevoir et demander](./features/send-receive-request.mdx)** n'importe quel jeton à un contact enregistré, à un `@handle` Kawase,
+  à n'importe quelle adresse ou via un QR code scanné ; partagez une facture avec un lien par personne.
+- **[Retirer](./features/bridge-and-withdraw.mdx#withdraw)** n'importe quel jeton vers une plateforme d'échange, votre propre portefeuille sur une autre chaîne,
+  ou votre compte bancaire via une plateforme d'échange, avec une seule confirmation.
+- **[Échanger n'importe quel jeton](./features/swap-and-trade.mdx)** : Markets, une page avec des contrôles de sécurité pour chaque jeton, et n'importe quelle paire aux
+  meilleurs taux de KyberSwap, de l'App Kit de Circle et de LI.FI, y compris les meme coins (réseau principal).
+- **[Long et short](./features/long-short.mdx)** avec Kawase Margin sur Aave V4 (réseau principal).
+- **[Acheter](./features/buy.mdx)** par carte, avec Apple Pay ou Google Pay grâce à l'Onramp de Circle.
+- **[Pont vers et depuis Arc](./features/bridge-and-withdraw.mdx)** des USDC vers n'importe qui sur six réseaux avec Circle CCTP, Across ou Relay, classés
+  selon le montant reçu, et envoyez des USDC vers Arc sans payer de frais de gas sur l'autre chaîne.
+- **[Rendement et emprunt](./features/earn-and-borrow.mdx)** : des options de rendement avec Aave V4, les coffres Morpho et Aero ; des emprunts sur
+  Aave V4 avec un indicateur de santé.
+- **[Automatisations](./features/automations.mdx)** : paiements programmés, épargne automatique, paie, DCA et règles, chacun encadré on-chain,
+  avec des essais d'abord.
+- **[Entreprise](./features/business.mdx)** : factures avec une référence on-chain, paiements groupés, paie.
+- **[Le portefeuille de l'agent](./features/marketplace.mdx)** : Kawase paie les services à chaque appel avec x402, dans la limite d'un budget.
+- **[Limites et contrôle](./features/limits-and-control.mdx)** : votre allocation par jeton, Tout mettre en pause, le mode d'entraînement, le kit
+  de sortie et Besoin de vous.
+- **[Mémoire et recherche](./features/memory-and-search.mdx)**, des suggestions sur l'accueil et des réponses documentées sur Arc.
+- **Voix** sur iPhone, Android et le web, et toute l'application dans **dix langues**, dans le navigateur ou dans l'
+  [application de bureau](./features/web-and-desktop.mdx).
 
-Tout n'est pas encore disponible. La [page de disponibilité](./availability.mdx) est générée à partir du même registre des fonctionnalités que lisent l'application et l'agent. Elle indique donc toujours honnêtement ce qui fonctionne aujourd'hui et ce qui arrive :
+Certaines fonctions sont uniquement disponibles sur le réseau principal, et quelques-unes sont encore en développement. La [page de disponibilité](./availability.mdx) est générée à partir du même registre de fonctionnalités que
+l'application et l'agent consultent. Elle indique donc toujours honnêtement ce qui fonctionne aujourd'hui et ce qui arrive bientôt :
 
 <AvailabilityMatrix />
 
-## Pourquoi un agent, et pourquoi c'est sûr
+## Pourquoi un agent, et pourquoi est-il sûr ?
 
-La plupart des applications financières vous obligent à trouver le bon écran. Avec Kawase, dites simplement ce que vous voulez et l'agent s'occupe du reste : qui est « Alex », quelle devise vous détenez et quel itinéraire est le moins cher. Il ne peut jamais transférer plus d'argent que ce que vous l'avez autorisé à faire :
+La plupart des applications financières vous obligent à trouver le bon écran. Kawase vous permet de dire ce que vous voulez, et l'agent s'occupe du reste : qui
+est « Alex », quelle monnaie vous détenez et quel itinéraire est le moins cher. En revanche, il ne peut jamais déplacer plus d'argent que ce que vous avez autorisé :
 
-- **Dans la limite de votre plafond quotidien**, l'agent envoie simplement l'argent et vous prévient — sans vous demander de confirmation. Ce plafond est une limite sur la chaîne que vous avez signée une seule fois ; la chaîne refuse tout ce qui la dépasse.
-- **Au-delà du plafond**, pour un nouveau destinataire au-dessus d'un certain seuil, une adresse qui ressemble à une autre, un échange ou un pont, vous confirmez avec **Face ID** (empreinte digitale ou verrouillage de l'écran sur Android, code reçu par e-mail sur le Web).
-- **Les Automatisations** s'exécutent sans surveillance, mais chacune est liée sur la chaîne à son destinataire et au montant autorisé par période.
+- **Dans les limites de votre allocation quotidienne**, l'agent envoie l'argent et vous prévient — sans vous demander de confirmation. L'allocation est une limite on-chain que vous
+  avez signée une seule fois ; la chaîne refuse tout montant supérieur.
+- **Au-delà de l'allocation**, pour un nouveau destinataire au-delà d'un certain seuil, une adresse ressemblante, un échange ou un pont, vous confirmez avec
+  **Face ID** (empreinte digitale ou verrouillage de l'écran sur Android, code envoyé par e-mail sur le web).
+- **Les Automatisations** s'exécutent sans intervention, mais chacune est liée on-chain à son destinataire et au montant par période.
 
 Consultez le [modèle de sécurité](./safety.mdx) pour plus de détails.
 
 ## Deux réseaux, une seule pression
 
-Kawase fonctionne sur **Arc Réseau principal** (Argent réel) et **Arc Réseau de test** (Argent de test, disponible gratuitement grâce au faucet intégré à l'application). Les nouveaux comptes commencent sur le Réseau de test. Le sélecteur de réseau dans l'en-tête permet de passer de l'un à l'autre en une seule pression, comme pour le mode sombre. L'application, l'orbe et chaque carte d'argent indiquent toujours le réseau utilisé. Consultez la page [réseaux](./networks.mdx).
+Kawase fonctionne sur **Arc Réseau principal** (argent réel) et **Arc Réseau de test** (argent de test, distribué gratuitement par le robinet intégré à l'application). Les nouveaux comptes
+commencent sur le réseau de test. Le sélecteur de réseau dans l'en-tête permet de passer de l'un à l'autre en une seule pression, comme pour le mode sombre ; l'application, l'orbe et
+chaque carte d'argent indiquent toujours le réseau utilisé. Consultez les [réseaux](./networks.mdx).
 
-## Où l'essayer
+## Où essayer l'application
 
-- **Application Web**, sans installation, utilisable en tant qu'invité : [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io)
-- **iPhone** (TestFlight) et **Android** (APK) : consultez le guide [premiers pas](./getting-started.mdx).
+- **Application web**, sans installation, utilisable comme invité : [app.getkawase.xyz](https://app.getkawase.xyz)
+- **Mac** : l'[application de bureau](./features/web-and-desktop.mdx)
+- **iPhone** (TestFlight) et **Android** (APK) : consultez le [guide de démarrage](./getting-started.mdx).

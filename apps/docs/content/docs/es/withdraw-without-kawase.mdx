@@ -1,39 +1,82 @@
 ---
 title: "Retirar sin Kawase"
-description: "Tu dinero está en tu propia cuenta en Arc. Aprende a retirarlo, consultarlo en el explorador y saber qué te dará la opción de exportación."
-sourceHash: 8f08c09f57888ea0
+description: "Guía paso a paso para retirar tu dinero, con el kit de salida de Kawase o completamente sin Kawase al exportar tu billetera, y comprobarlo todo en el explorador."
+sourceHash: 440035d13a881623
 ---
 
-Kawase nunca guarda tu dinero. Tus USDC y EURC están en **tu propia cuenta** en Arc, y los permisos que le diste al agente
-son limitados y caducan por sí solos. En esta página se explica cómo retirar tu dinero, con ayuda de Kawase o sin ella.
+Kawase nunca guarda tu dinero. Tus tokens están en **tu propia cuenta** en Arc, y los permisos que le diste al agente son
+limitados y caducan por sí solos. Esta guía te explica cómo salir paso a paso: primero con la ayuda de Kawase y después sin ella.
 
 <Status ids="export_wallet" />
 
-## Mientras Kawase está funcionando: envíalo fuera
+## Antes de empezar
 
-La salida más rápida es hacer un pago normal:
+Reúne lo que todavía no sea dinero disponible en tu billetera:
+
+- **Ahorros** en una bóveda: retíralos desde la pantalla de Generar rendimiento.
+- **Suministro o préstamo de Aave V4**: paga el préstamo y retira los fondos desde la pantalla de Pedir y prestar.
+- Posiciones **largas o cortas**: ciérralas (Close · All) en la página de cada posición.
+- **La billetera del agente**: Settings → Agent wallet → **Return to my wallet**.
+- Cualquier otro token puede salir con Withdraw como el mismo token en Arc, o convertirse primero a USDC para enviarlo a otra red.
+
+## Parte 1: con Kawase (el kit de salida)
 
 <Steps>
 <Step>
-### Elige adónde enviarlo
-Una dirección que controles en otra cartera (MetaMask, Rabby, …) que tenga **Arc** añadido, o la dirección de depósito en **Arc**
-de un exchange. Comprueba que la red sea Arc; enviar dinero a una dirección de otra red no es lo mismo.
+### Pausar el agente
+Settings → **Wallet & limits** → **Pause all**. Todo lo que haga el agente sin preguntarte se detiene de inmediato. Tus pagos con Face ID
+siguen funcionando.
 </Step>
 <Step>
-### Envíalo todo
-Di «envía todos mis USDC a 0x…» (pega la dirección en el mismo mensaje) o usa la pantalla Enviar. Para cantidades grandes se te pedirá
-Face ID. Repite el proceso con EURC.
+### Revocar todos los permisos
+En el kit de salida, **mantén pulsado para revocar**. Un Face ID envía una transacción que revoca todos los permisos de esa red: tu
+límite y los permisos de todas las automatizaciones. Las automatizaciones terminan. Repite el proceso en la otra red si la usaste.
 </Step>
 <Step>
-### Revoca el agente
-Cartera y límites → **Revocar** (mantén pulsado). Cancela todas las automatizaciones; cada cancelación revoca su autorización en la cadena.
+### Retirar todo
+En el kit de salida, **sacar el dinero** abre [Retirar](./features/bridge-and-withdraw.mdx#withdraw) con todo
+seleccionado (o di "retira todo a mi Kraken"). Elige adónde enviarlo: un **exchange** (Kraken, Bybit, OKX, Binance,
+Bitget, KuCoin o Coinbase a través de Base), **tu propia billetera** en Arc u otra red, o tu banco a través de un exchange.
+Kawase planifica cada token (una transferencia, un puente o una conversión previa a USDC), te avisa si el destino
+no acepta algún token y tú confirmas todo una sola vez con Face ID.
+</Step>
+<Step>
+### Comprobar el explorador
+Abre tu dirección en el explorador (abajo) y confirma que los saldos estén donde los enviaste.
 </Step>
 </Steps>
 
-También puedes enviar USDC directamente a **tu propia dirección** en Base, Ethereum, Arbitrum, Optimism, Polygon o Avalanche mediante un
-[puente](./features/bridge-and-withdraw.mdx).
+## Parte 2: sin Kawase (exportar tu billetera)
 
-## Consulta todo en el explorador
+**Turnkey** guarda la clave de tu billetera por ti. Al exportarla, obtienes tu propia copia y puedes usar la misma cuenta en cualquier
+billetera.
+
+<Steps>
+<Step>
+### Exportar
+Settings → **Account** → **Export wallet**. Lee las advertencias, confirma con Face ID y Turnkey descifra tu **frase de recuperación**
+en tu dispositivo. Las capturas de pantalla y la grabación de pantalla se bloquean mientras aparece, y se oculta cuando sales.
+Anótala en un lugar seguro y sin conexión. Cualquiera que la tenga controla tu dinero.
+</Step>
+<Step>
+### Importarla en otra billetera
+En MetaMask, Rabby u otra billetera que permita redes personalizadas, elige importar una frase de recuperación. Obtendrás **la misma
+dirección** que en Kawase.
+</Step>
+<Step>
+### Añadir Arc
+Añade la red con los datos de la tabla de abajo. Tus saldos aparecerán tal como están en la cadena.
+</Step>
+<Step>
+### Mover tu dinero
+Envía fondos desde esa billetera como lo harías desde cualquier otra. Las posiciones en bóvedas, Aave y margen están en tu propia
+cuenta en esos protocolos, así que cualquier interfaz para ellos en Arc puede gestionarlas.
+</Step>
+</Steps>
+
+Exporta mientras Kawase esté funcionando si quieres tener una copia bajo tu control: la exportación se hace a través de la app.
+
+## Comprobar todo en el explorador
 
 No necesitas Kawase para ver tu dinero. Abre tu dirección en el explorador de bloques de Arc:
 
@@ -42,34 +85,32 @@ No necesitas Kawase para ver tu dinero. Abre tu dirección en el explorador de b
 
 Allí puedes ver:
 
-- tus saldos de **USDC** y **EURC** (en Arc, USDC también es el token de gas de la red: hay un solo saldo, que se muestra tanto como
-  moneda nativa como token USDC),
-- todas las transacciones, incluidos los pagos que el agente hizo usando tu autorización,
-- el **código** de tu cuenta: después de configurarla, es `0xef0100` seguido de la dirección de `EIP7702StatelessDeleGator`. Esa es la
-  actualización EIP-7702; tu cuenta sigue funcionando como una cuenta normal.
+- tus saldos (en Arc, USDC también es el token de gas de la red: hay un solo saldo, que aparece tanto como moneda nativa como token
+  USDC);
+- todas las transacciones, incluidos los pagos que hizo el agente con tu límite;
+- el **código** de tu cuenta: después de la configuración es `0xef0100` seguido de la dirección de
+  `EIP7702StatelessDeleGator`. Esa es la actualización EIP-7702; tu cuenta sigue funcionando como una cuenta normal.
 
 Los comprobantes de Kawase enlazan a estas mismas páginas.
 
 ## Si Kawase desaparece
 
-- **Los permisos del agente dejan de ser útiles.** Tu autorización y las autorizaciones de las automatizaciones solo pueden usarlas la propia
-  cartera del agente de Kawase, y caducan (la autorización después de 90 días y cada automatización en su fecha de finalización).
-- **Tu dinero sigue en tu cuenta.** Es una cuenta normal en Arc cuya clave Turnkey guarda por ti.
-- **Exportar la cartera (próximamente).** Ajustes → Cuenta → Exportar cartera mostrará la clave de tu cartera mediante la exportación segura de
-  Turnkey, después de Face ID y de mostrarte advertencias claras. Con ella puedes importar la cuenta en cualquier cartera compatible con Arc y mover tu
-  dinero sin Kawase. Esta opción **todavía no está disponible**; hasta entonces, los pasos anteriores son la forma de retirar tu dinero.
+- **Los permisos del agente dejan de ser útiles.** Tu límite y los permisos de las automatizaciones solo pueden usarlos la propia
+  billetera del agente de Kawase, y caducan: el límite después de 90 días y cada automatización en su fecha de finalización.
+- **Tu dinero sigue en tu cuenta.** Es una cuenta normal en Arc.
+- **Con una frase de recuperación exportada** (parte 2), puedes moverlo todo desde cualquier billetera compatible con Arc.
 
-## Añadir Arc a otra cartera
+## Añadir Arc a otra billetera
 
 | | Red principal | Red de pruebas |
 |---|---|---|
 | Nombre de la red | Arc | Arc Testnet |
 | ID de cadena | `5042` | `5042002` |
 | RPC | `https://rpc.mainnet.arc.io` | `https://rpc.testnet.arc.io` |
-| Símbolo de moneda | USDC | USDC |
-| Explorador | `https://explorer.arc.io` | `https://explorer.testnet.arc.io` |
+| Símbolo de la moneda | USDC | USDC |
+| Explorador | `https://explorer.arc.io` | `https://testnet.arcscan.app` |
 
-Algunas carteras muestran el saldo de gas como «ETH» en redes personalizadas; en Arc es USDC. La dirección del token USDC es
+Algunas billeteras muestran el saldo de gas como «ETH» en redes personalizadas; en Arc es USDC. La dirección del token USDC es
 `0x3600000000000000000000000000000000000000` en ambas redes; EURC es
 `0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` en la red principal y `0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a` en la red de pruebas.
 

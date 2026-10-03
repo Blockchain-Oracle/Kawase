@@ -1,18 +1,26 @@
 // What Kawase does, as the landing presents it: the product areas of the approved plan (2026-10-02, "everything on
 // Arc"), each tied to a capability id. The state of each card comes from the registry the app and the agent read
 // (`CAPABILITIES`, packages/config); an id the registry does not list yet is "coming" on both networks. So nothing
-// unshipped is ever shown as shipped, and a card flips by itself when its id ships in capabilities.ts.
+// unshipped is ever shown as shipped, and a card flips by itself when its id ships in capabilities.ts. Account features
+// the agent never proposes (export) carry their state here, with the commit that shipped them.
 import { CAPABILITIES, CAPABILITY_SCOPE, type CapabilityId, type CapabilityState } from "@kawase/config";
-import { CHAIN_IDS, arcIdentity, chainKey, providerKey } from "@kawase/identity";
+import { CHAIN_IDS, ENTITIES, arcIdentity, chainKey, providerKey, venueKey } from "@kawase/identity";
 import type { NetworkId } from "@kawase/networks";
 
-/** Areas of the plan without a registry id yet (rename here if capabilities.ts picks other ids). */
-export const PLANNED_AREAS = ["tokens", "meme_coins", "perps", "buy", "borrow", "withdraw", "export_wallet"] as const;
-export type AreaId = CapabilityId | (typeof PLANNED_AREAS)[number];
+/** Areas of the plan without a registry id yet (none today: Withdraw ships inside `send`). */
+export const PLANNED_AREAS: readonly string[] = [];
+/** Shipped account features outside the registry: Settings → Account → Export wallet (B2, commit ea8b10b). */
+const ACCOUNT_AREAS = {
+  export_wallet: { mainnet: "available", testnet: "available" },
+} as const satisfies Record<string, Record<NetworkId, CapabilityState>>;
+export type AreaId = CapabilityId | keyof typeof ACCOUNT_AREAS;
 
 export const NETWORKS: readonly NetworkId[] = ["mainnet", "testnet"];
 
-const registry = CAPABILITIES as Record<string, Record<NetworkId, CapabilityState> | undefined>;
+const registry = { ...CAPABILITIES, ...ACCOUNT_AREAS } as Record<
+  string,
+  Record<NetworkId, CapabilityState> | undefined
+>;
 
 export function areaState(id: AreaId, network: NetworkId): CapabilityState {
   return registry[id]?.[network] ?? "coming";
@@ -23,9 +31,9 @@ export const isShipped = (id: AreaId) => NETWORKS.some((network) => areaState(id
 
 const scopeOf = (id: AreaId) => (id in CAPABILITIES ? CAPABILITY_SCOPE[id as CapabilityId] : undefined);
 
-/** The first thing the registry says runs today, for shipped capabilities only. */
-export function todayLine(id: AreaId): string | undefined {
-  return isShipped(id) ? scopeOf(id)?.supports[0] : undefined;
+/** A line the registry says runs today (the first, or the one a card names), for shipped capabilities only. */
+export function todayLine(id: AreaId, index = 0): string | undefined {
+  return isShipped(id) ? scopeOf(id)?.supports[index] : undefined;
 }
 
 /** The first thing the registry says is not built yet, so a shipped card never reads broader than it is. */
@@ -38,6 +46,9 @@ export const STATE_LABEL: Record<CapabilityState, string> = {
 };
 
 const arc = arcIdentity("mainnet");
+/** Arc mainnet tokens with marks, found by symbol (Aave V4's reserves). */
+const arcToken = (symbol: string) =>
+  ENTITIES.find((entity) => entity.kind === "token" && entity.symbol === symbol)?.id ?? symbol;
 export const ENTITY = {
   usdc: arc.usdc,
   eurc: arc.eurc,
@@ -50,9 +61,16 @@ export const ENTITY = {
   avalanche: chainKey(CHAIN_IDS.avalanche),
   circle: providerKey("circle"),
   morpho: providerKey("morpho"),
+  aave: providerKey("aave"),
   apple: providerKey("apple"),
   google: providerKey("google"),
   kawase: providerKey("kawase"),
+  kyberswap: venueKey("kyberswap"),
+  lifi: venueKey("lifi"),
+  across: venueKey("across"),
+  relay: venueKey("relay"),
+  cirbtc: arcToken("cirBTC"),
+  weth: arcToken("WETH"),
 } as const;
 export type EntityName = keyof typeof ENTITY;
 
@@ -64,9 +82,17 @@ export type Area = {
   marks?: EntityName[];
   partners?: string[];
   wide?: boolean;
+  /** Which of the registry's "runs today" lines the card quotes (default: the first). */
+  today?: number;
+  /** The registry says this part runs on mainnet only (other tokens, meme coins). */
+  mainnetOnly?: boolean;
   /** Its page on the docs site. */
   docs: string;
 };
+
+/** A card's state on one network, with its mainnet-only parts marked off testnet. */
+export const cardState = (area: Area, network: NetworkId): CapabilityState =>
+  area.mainnetOnly && network !== "mainnet" ? "unavailable" : areaState(area.id, network);
 
 /** Ordered so the three-column bento tiles without gaps (wide = two columns). */
 export const AREAS: readonly Area[] = [
@@ -81,49 +107,54 @@ export const AREAS: readonly Area[] = [
   {
     id: "swap",
     docs: "/docs/features/swap-and-trade",
-    title: "Swap",
-    body: "Trade at a quoted minimum you see before you approve, with one Face ID.",
-    marks: ["usdc", "eurc"],
+    title: "Trade any token",
+    body: "Any pair at the best of three venues, the others shown, confirmed with one slide.",
+    marks: ["kyberswap", "circle", "lifi"],
   },
   {
-    id: "meme_coins",
+    id: "margin",
+    docs: "/docs/features/long-short",
+    title: "Long and short",
+    body: "Kawase Margin: a leveraged long or short through your own Aave V4 account, opened as one transaction, with the liquidation price shown first.",
+    marks: ["aave", "cirbtc", "weth"],
+    wide: true,
+  },
+  {
+    id: "swap",
     docs: "/docs/features/swap-and-trade",
     title: "Meme coins",
-    body: "Trending and new tokens on Arc, with copycat and safety checks and caps you set.",
+    body: "Trending and new tokens on Arc, with copycat and GoPlus checks and caps you set.",
+    today: 2,
+    mainnetOnly: true,
   },
   {
-    id: "perps",
+    id: "swap",
     docs: "/docs/features/swap-and-trade",
-    title: "Long and short",
-    body: "Open a long or short position with take-profit and stop-loss, funded straight from your wallet.",
-    partners: ["Hibachi", "edgeX"],
-    wide: true,
+    title: "Markets and every token",
+    body: "A page for any token on Arc, and every token your address holds on seven chains, impostors hidden.",
+    marks: ["arc"],
+    today: 3,
+    mainnetOnly: true,
   },
   {
     id: "buy",
     docs: "/docs/features/buy",
-    title: "Buy with Apple Pay or card",
-    body: "Circle's Onramp Kit: a debit card, Apple Pay or Google Pay, straight into USDC on Arc.",
+    title: "Buy with a card",
+    body: "Circle's Onramp, straight into USDC or EURC on Arc; Apple Pay and Google Pay where Circle offers them.",
     marks: ["apple", "google", "circle"],
   },
   {
-    id: "tokens",
-    docs: "/docs/features/swap-and-trade",
-    title: "Any token on Arc",
-    body: "Every token your address holds, with its real mark, its value and the same actions as dollars.",
-    marks: ["arc"],
-  },
-  {
-    id: "withdraw",
-    docs: "/docs/features/bridge-and-withdraw",
+    id: "send",
+    docs: "/docs/features/bridge-and-withdraw#withdraw",
     title: "Withdraw anywhere",
-    body: "To your own address on another chain, an exchange that takes Arc deposits, or a friend.",
+    body: "Any token, as itself or as cash, to an exchange, your own wallet on another chain, or your bank through an exchange.",
+    today: 3,
   },
   {
     id: "bridge",
     docs: "/docs/features/bridge-and-withdraw",
     title: "Bridges, compared",
-    body: "Move money between Arc and other chains, with the bridges quoted side by side by what actually arrives.",
+    body: "USDC to anyone on six chains over the route that delivers most, and Bring to Arc with no gas on the other side.",
     marks: ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"],
     partners: ["CCTP", "Across", "Relay"],
     wide: true,
@@ -132,29 +163,41 @@ export const AREAS: readonly Area[] = [
     id: "yield",
     docs: "/docs/features/earn-and-borrow",
     title: "Earn",
-    body: "Put idle dollars to work across Arc protocols, compared by yield and by what you can withdraw today.",
-    marks: ["morpho"],
-    partners: ["Aave V4"],
+    body: "Yield options across Aave V4, Morpho vaults and Aero, ranked among those that could pay you back now.",
+    marks: ["aave", "morpho"],
   },
   {
-    id: "borrow",
+    id: "lend",
     docs: "/docs/features/earn-and-borrow",
     title: "Borrow",
-    body: "Borrow dollars against cirBTC, WETH or EURC, with a health gauge and liquidation alerts.",
-    partners: ["Aave V4", "Morpho"],
+    body: "Borrow against USDC, cirBTC or WETH on Aave V4, with a live health gauge and the liquidation price shown first.",
+    marks: ["aave"],
+  },
+  {
+    id: "request",
+    docs: "/docs/features/business",
+    title: "Business",
+    body: "Invoices with an on-chain reference that marks them paid, batch payouts signed once, payroll bounded per person.",
+    today: 1,
+  },
+  {
+    id: "marketplace",
+    docs: "/docs/features/marketplace",
+    title: "Agent wallet (x402)",
+    body: "Kawase buys answers per call from its own wallet, inside a daily budget and a per-call cap you set.",
   },
   {
     id: "automations",
     docs: "/docs/features/automations",
     title: "Automations",
-    body: "Scheduled sends, Auto-save and rules that act on their own, each one bounded on chain.",
+    body: "Scheduled payments, Auto-save, payroll, DCA and rules, each bounded on chain, with practice runs first and Needs you for the rest.",
     wide: true,
   },
   {
-    id: "marketplace",
-    docs: "/docs/features/marketplace",
-    title: "x402 marketplace",
-    body: "Pay AI services per call over x402, inside a budget you set.",
+    id: "memory",
+    docs: "/docs/features/memory-and-search",
+    title: "Memory and search",
+    body: "It remembers what you ask it to, searches every conversation, and answers questions about Arc with sources.",
   },
   {
     id: "contacts",
@@ -163,9 +206,15 @@ export const AREAS: readonly Area[] = [
     body: "Names instead of addresses, a hold when an address changes, and look-alike warnings.",
   },
   {
+    id: "voice",
+    docs: "/docs/features/voice",
+    title: "Voice",
+    body: "Talk to it on iPhone, Android or the web in your language; a payment by voice still waits for your tap.",
+  },
+  {
     id: "export_wallet",
     docs: "/docs/withdraw-without-kawase",
     title: "Your money without Kawase",
-    body: "Export your wallet with Face ID and use it in any other wallet, so your money never depends on the app.",
+    body: "Export your recovery phrase with Face ID and use the same account in any wallet, so your money never depends on the app.",
   },
 ];

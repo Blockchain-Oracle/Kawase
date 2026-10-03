@@ -1,29 +1,40 @@
 ---
 title: "Voz"
-description: "Fale com a Kawase no iPhone e no Android no seu idioma; ela responde em voz alta e mostra os mesmos cards do chat. Pagamentos por voz sempre esperam pelo seu toque."
-sourceHash: ea6ecb886fce0c64
+description: "Fale com a Kawase no iPhone, Android e na web no seu idioma; ela responde em voz alta e mostra os mesmos cartões do chat. Pagamentos por voz sempre esperam pelo seu toque."
+sourceHash: 2856bf7c72c232cc
 ---
 
 <Status ids="voice" />
 
-Toque no orbe no dock e fale. A página fica desfocada, o orbe sobe e começa a ouvir; ele mostra as palavras que ouviu, responde em voz alta
-e coloca na tela os mesmos **cards** do chat.
+Toque na esfera no dock e fale. A página fica desfocada, a esfera sobe e começa a ouvir; ela mostra as palavras que ouviu, responde em voz alta
+e coloca na tela os mesmos **cartões** do chat.
 
-- **Uma conversa.** O que você disse por voz fica na sua conversa, e a digitação continua de onde você parou.
-- **O que foi ouvido é sempre mostrado** antes de qualquer confirmação.
-- **Um "sim" falado nunca aprova um pagamento.** Um envio por voz é preparado no card e espera pelo seu toque e pelo Face ID
+- **Uma conversa só.** O que você falou fica na sua conversa, e você pode continuar de onde parou ao digitar.
+- **Legendas dos dois lados**: o que a Kawase ouviu e o que ela está dizendo.
+- **Um "sim" falado nunca aprova um pagamento.** Um envio por voz é preparado no cartão e espera pelo seu toque e pelo Face ID
   (impressão digital ou bloqueio de tela no Android) — mesmo dentro do seu limite diário.
-- **O orbe mostra a rede**: verde-limão na rede principal, azul-céu na rede de testes.
+- **Silencie** com um toque: nada é ouvido ou enviado enquanto estiver no mudo. **Digite em vez disso** está sempre disponível.
+- **A esfera mostra a rede**: verde-limão na Rede principal e azul-céu na Rede de testes.
 
-## Idiomas e vozes
+## Na web
 
-A Kawase entende os dez idiomas com o ElevenLabs Scribe v2 (em tempo real). Ela fala em inglês,
-espanhol, francês, português, russo, chinês, hindi e árabe com o ElevenLabs Flash v2.5 e usa o modelo de voz da OpenAI em bengali e urdu, que
-não são compatíveis com o Flash v2.5.
+A Voz também funciona no app web: permita o acesso ao microfone quando o navegador pedir. Se você recusar ou não tiver microfone,
+a Kawase continua conectada, informa como permitir o acesso, e a opção de digitar fica logo ao lado. A voz da Kawase continua funcionando.
+
+## Configurações → Voz
+
+- **Voz da Kawase**: uma entre seis opções.
+- **Velocidade da fala**: tranquila, normal ou rápida.
+- **A Kawase fala primeiro**: ela cumprimenta você assim que a Voz é aberta; quando desativada, espera você falar.
+
+As mudanças entram em vigor na próxima vez que você começar a falar.
 
 ## Como funciona
 
-O celular entra em uma sala do LiveKit por WebRTC. O agente de voz da Kawase transforma a fala em texto, executa **a mesma interação do agente que o
-chat** (as mesmas ferramentas, os mesmos limites e a mesma conversa) e fala a resposta enquanto os cards aparecem na sua tela.
+O celular ou navegador entra em uma sala do LiveKit por WebRTC, e o worker de voz da Kawase entra na mesma sala. Toda solicitação de dinheiro ou
+de conta é enviada **para a mesma rodada do agente usada no chat** (mesmas ferramentas, mesmos limites, mesma conversa); os cartões chegam à
+sua tela enquanto a resposta é falada. Antes de falar valores, ativos, @handles ou a rede, o worker confere tudo com o que as ferramentas retornaram
+e corrige qualquer divergência. Se a voz em tempo real não puder ser iniciada, a Kawase usa um fluxo alternativo de
+ouvir → responder → falar, com o mesmo agente por trás. O LiveKit não grava a conversa.
 
 <ScopeList ids="voice" />

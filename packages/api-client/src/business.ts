@@ -1,5 +1,6 @@
-// Business mode (cards/agent-business.md): profile, invoices, batch payouts, payroll. Amounts in base units.
-import type { AutomationGrantRequest, AutomationView, NetworkId, TransactionRequestResponse } from "./types";
+// Business mode (cards/agent-business.md): profile, invoices, batch payouts. Amounts in base units. Payroll is the
+// automations `payroll` kind (automations-8c.ts).
+import type { NetworkId, TransactionRequestResponse } from "./types";
 
 export type BusinessProfile = { name: string; address: string | null; taxId: string | null; email: string | null };
 export type BusinessProfileInput = { name: string; address?: string | undefined; taxId?: string | undefined; email?: string | undefined };
@@ -8,7 +9,8 @@ export type InvoiceLineInput = { description: string; quantity: number; /** Deci
 export type InvoiceInput = {
   clientName: string;
   clientEmail?: string | undefined;
-  asset: "USDC" | "EURC";
+  /** A symbol (USDC, EURC, cirBTC, a listed token) or a token address on Arc. */
+  asset: string;
   lines: InvoiceLineInput[];
   dueInDays?: number | undefined;
   dueAt?: string | undefined;
@@ -25,7 +27,10 @@ export type InvoiceView = {
   number: string;
   clientName: string;
   clientEmail: string | null;
-  asset: "USDC" | "EURC";
+  /** The token symbol; amounts are in its base units (`decimals`). */
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: InvoiceLine[];
   total: string;
   paid: string;
@@ -49,7 +54,9 @@ export type InvoicePublicView = {
   network: NetworkId;
   business: BusinessProfile;
   clientName: string;
-  asset: "USDC" | "EURC";
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: InvoiceLine[];
   total: string;
   paid: string;
@@ -68,7 +75,9 @@ export type PayoutProblem = { index: number; recipient: string; problem: string 
 export type PayoutView = {
   id: string;
   network: NetworkId;
-  asset: "USDC" | "EURC";
+  asset: string;
+  tokenAddress: string | null;
+  decimals: number;
   lines: PayoutLine[];
   total: string;
   status: "ready" | "submitted" | "confirmed" | "failed";
@@ -76,17 +85,5 @@ export type PayoutView = {
   createdAt: string;
 };
 export type PayoutCreateResult = { payout: PayoutView; problems: [] } | { payout: null; problems: PayoutProblem[] };
-
-export type PayrollInput = {
-  name: string;
-  asset?: "USDC" | "EURC" | undefined;
-  every: "week" | "month";
-  weekday?: number | undefined;
-  monthday?: number | undefined;
-  time?: string | undefined;
-  payees: PayoutLineInput[];
-};
-export type PayrollView = { id: string; network: NetworkId; name: string; lines: AutomationView[]; createdAt: string };
-export type PayrollGrantRequest = { lines: { automationId: string; request: AutomationGrantRequest }[] };
 
 export type PayoutSignRequest = TransactionRequestResponse;

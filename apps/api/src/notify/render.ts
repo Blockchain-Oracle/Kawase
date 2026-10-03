@@ -9,12 +9,14 @@ import type { NetworkId } from "@kawase/networks";
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const TEN = 10n;
+const USDC_DECIMALS = 6;
+const MAX_SHOWN_DECIMALS = 6;
 const TOKEN_DIGITS = 6;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
 type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
-type Block = "notify" | "automation" | "inbox";
+type Block = "notify" | "automation" | "inbox" | "alerts";
 
 function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
   const pick = (catalog: unknown) => (catalog as Record<Block, Record<string, unknown>>)[block]?.[key];
@@ -24,6 +26,13 @@ function text(locale: CatalogLocale, block: Block, key: string, values: Record<s
 }
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
+
+/** Any token's amount from base units and decimals (invoices can be in any Arc token), in the person's locale. */
+function tokenAmount(baseUnits: string | undefined, decimals: string | undefined, symbol: string | undefined, locale: CatalogLocale) {
+  if (!baseUnits) return "";
+  const places = Number(decimals ?? USDC_DECIMALS);
+  return formatTokenAmount(BigInt(baseUnits), places, symbol ?? "", locale, { fractionDigits: Math.min(places, MAX_SHOWN_DECIMALS), trimZeros: true }).trim();
+}
 
 /**
  * `hideAmounts` (Settings → Notifications, plan §A.4.11 "hide amounts on the lock screen"): the words carry no figure —
@@ -121,6 +130,32 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       body = p.balance ? text(locale, "automation", "ruleAlertBalance", { amount: money("USDC", p.balance) }) : "";
       path = "/automations";
       break;
+    case "device_signed_in":
+    case "device_signed_out": {
+      const device = p.name || text(locale, "alerts", "aDevice");
+      title = text(locale, "alerts", item.kind === "device_signed_in" ? "deviceSignedInTitle" : "deviceSignedOutTitle", { name: device });
+      body =
+        item.kind === "device_signed_out"
+          ? text(locale, "alerts", "deviceSignedOutBody")
+          : text(locale, "alerts", p.location ? "deviceSignedInBody" : "deviceSignedInBodyNoPlace", { platform: p.platform ?? "", location: p.location ?? "" });
+      path = "/account/devices";
+      break;
+    }
+    case "invoice_due":
+    case "invoice_overdue": {
+      const owed = tokenAmount(p.amount, p.decimals, p.asset, locale);
+      title = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueTitle" : p.stage === "due_today" ? "invoiceDueTodayTitle" : "invoiceDueSoonTitle", { number: p.number ?? "" });
+      // Hidden amounts: the client only, no figure on the lock screen.
+      body = hide
+        ? (p.client ?? "")
+        : text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueBody" : "invoiceDueBody", {
+            client: p.client ?? "",
+            amount: owed,
+            date: p.due ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(p.due)) : "",
+          });
+      path = p.invoiceId ? `/business/invoice/${p.invoiceId}` : "/business";
+      break;
+    }
   }
   // An automation's item opens that run's story, or that automation's own card; the list only when neither is known.
   if (path === "/automations") {
@@ -133,7 +168,9 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
     else if (item.requestId) path = `/request?id=${item.requestId}`;
     else if (item.txHash) path = `/why/${item.txHash}?network=${item.network}`;
   }
-  if (item.network === "testnet") title = `${text(locale, "notify", "testnet")} · ${title}`;
+  // Security notices are about the account, not about test money.
+  const security = item.kind === "device_signed_in" || item.kind === "device_signed_out";
+  if (item.network === "testnet" && !security) title = `${text(locale, "notify", "testnet")} · ${title}`;
   return { title, body, path };
 }
 

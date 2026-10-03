@@ -1,17 +1,22 @@
 {
-  "title": "ফিচারসমূহ",
+  "title": "ফিচার",
   "pages": [
     "send-receive-request",
     "contacts-and-handles",
     "swap-and-trade",
+    "long-short",
     "buy",
     "bridge-and-withdraw",
     "earn-and-borrow",
     "automations",
+    "business",
     "marketplace",
+    "limits-and-control",
+    "memory-and-search",
     "notifications",
     "voice",
     "languages",
-    "network-toggle"
+    "network-toggle",
+    "web-and-desktop"
   ]
 }

@@ -6,7 +6,7 @@
  * Catalog (context/08-product-research/05-voice-language-genui/llm-choice.md): gpt-5.6-luna $0.2 in / $0.02 cached / $1.2 out
  * per 1M tokens, 1.05M context, "cost-sensitive". Upgrade path without code changes: KAWASE_MODEL_AGENT_CHAT=openai:gpt-6-sol.
  */
-export const MODEL_PROVIDERS = ["openai", "anthropic"] as const;
+export const MODEL_PROVIDERS = ["openai", "anthropic", "google"] as const;
 export type ModelProvider = (typeof MODEL_PROVIDERS)[number];
 export type ModelRef = `${ModelProvider}:${string}`;
 

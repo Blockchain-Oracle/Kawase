@@ -31,6 +31,7 @@ const KIND_LABEL: Record<EvidenceKind, string> = {
   earn: "Earn",
   automation: "Automation",
   revoke: "Revoke",
+  business: "Business",
 };
 
 const HASH_EDGE = 10;
