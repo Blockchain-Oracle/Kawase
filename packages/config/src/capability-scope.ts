@@ -33,6 +33,7 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "on Arc Testnet only USDC ↔ EURC exists to trade; other tokens and meme coins are mainnet only",
       "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%), which they change on the Token rules screen (tightening at once, loosening with their wallet's signature)",
       "price, 24-hour change, a price chart and safety for any token on Arc; the Markets tab (trending, new, heatmap) and search by name, symbol or address",
+      "a token still on LIFT's bonding curve shows its progress to graduation and the fees a trade pays there, and can be watched for a graduation alert",
     ],
     notYet: [
       "limit orders that fill by themselves (DCA and price-triggered swaps run as automations, and each one waits for the person's tap)",
@@ -53,12 +54,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   bridge: {
     supports: [
-      "USDC from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche (the person's own address, a contact, an @handle or a 0x address): Kawase quotes Circle CCTP, Across and Relay, ranks them by what arrives after fees, shows up to three, and executes the chosen route as one batch confirmed with Face ID",
-      "Bring to Arc: USDC the person holds at the same address on another chain is found and brought to Arc with Relay's permit — one signature, no gas needed on that chain",
-      "following each move until it is delivered (Across deposit status, Relay request status, CCTP attestation), and saying plainly when a provider refunds instead",
-      "on Arc Testnet: CCTP only (Across and Relay serve Arc mainnet only)",
+      "any asset from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche: USDC through Circle CCTP, Across, Relay, LI.FI or deBridge; other assets (WETH, EURC, cirBTC, a meme by symbol or address) arrive as themselves through LI.FI or deBridge (cirBTC as cbBTC), or as USDC when nothing carries them, swapped on Arc in the same batch; ranked by what arrives after fees (deBridge's 1 USDC flat fee counted), up to three shown, one Face ID",
+      "Bring to Arc: USDC with Relay's permit (one signature, no gas there); the chain's own coin (ETH, POL, AVAX) in one transaction there, its gas from the coin, arriving as WETH etc.; other tokens with one signature once they are approved for Permit2 there",
+      "following each move until delivered (Across, Relay, LI.FI, deBridge, CCTP status) and saying plainly when a provider refunds",
+      "on Arc Testnet: CCTP only",
     ],
-    notYet: ["assets other than USDC across chains (convert to USDC first)", "deBridge and LI.FI routes (quoted, not executed)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
+    notYet: ["a token's first move in from another chain when it needs an approval there (two steps)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
   },
   yield: {
     supports: [
@@ -84,16 +85,19 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
       "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
       "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a live health gauge, the liquidation price when the collateral is one asset, a health check (refused below 1.25, warned below 1.5) and the rate; repaying part or all",
+      "health alerts by push and email under 1.5 and 1.2",
     ],
-    notYet: ["Morpho Blue markets directly", "LP deposits", "health alerts by push (shown on the position for now)", "Aave V4 on testnet (it is mainnet only)"],
+    notYet: ["Morpho Blue markets directly", "LP deposits", "Aave V4 on testnet (it is mainnet only)"],
   },
   margin: {
     supports: [
       "Kawase Margin on Arc mainnet: a leveraged long or short through the person's own Aave V4 account, opened and closed as one batch they confirm by sliding; markets come from Aave V4's live reserves (today cirBTC and WETH both ways; EURC short only, because EURC cannot be collateral there)",
       "margin is paid in USDC; leverage is capped by the asset's collateral factor so the account opens at health 1.10 or more (about 3.4× long cirBTC, 4× long WETH, 2.4× any short at today's factors); the card shows the liquidation price and borrow rate",
       "positions with live P&L, health and liquidation price; closing 25%, 50%, 75% or all",
+      "take-profit and stop-loss on any position, set on the position page or in chat: Kawase closes the whole position when the price gets there, checked on a live Uniswap quote (a stop-loss sells within 3% of the oracle, otherwise the person is told), under five grants signed once that can only close into their own wallet; available where Uniswap on Arc can carry the size (cirBTC, EURC; WETH's pool is too thin today)",
+      "health alerts by push and email when the account falls under 1.5 and under 1.2",
     ],
-    notYet: ["take-profit and stop-loss orders", "paying margin in a token other than USDC", "Hibachi perps", "practice on testnet (Aave V4 is mainnet only)", "meme coins (no lending market lets you short them)"],
+    notYet: ["paying margin in a token other than USDC", "Hibachi perps", "practice on testnet (Aave V4 is mainnet only)", "meme coins (no lending market lets you short them)"],
   },
   marketplace: {
     supports: [
