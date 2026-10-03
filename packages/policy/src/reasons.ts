@@ -59,6 +59,10 @@ export const REASONS = {
   ON_OTHER_NETWORK: "precondition",
   INSUFFICIENT_BALANCE: "precondition",
   INSUFFICIENT_GAS: "precondition",
+  /** Short of USDC for the fee, and Kawase's relayer has paid this person's fees as often or as much as it does in a day. */
+  GAS_RELAY_LIMIT: "precondition",
+  /** Short of USDC for the fee, and Kawase's relayer has spent its gas budget for the day (security review H5). */
+  GAS_RELAY_BUDGET_SPENT: "precondition",
   /** No swap price right now: "Try again" re-quotes the same request. */
   QUOTE_UNAVAILABLE: "precondition",
   /** The amount would not cover the route's fee: a bigger amount fixes it. */

@@ -97,6 +97,8 @@ export type SendFacts = {
     gasFloat: bigint;
     /** Kawase's relayer can carry this send gas-free (EIP-3009, USDC or EURC) when the wallet cannot pay the fee. */
     gasRelay?: boolean | undefined;
+    /** Why it cannot today, when it otherwise could: the person's relays are used, or the relayer's day's budget is. */
+    gasRelayRefusal?: "person_limit" | "budget_spent" | undefined;
     /** A first payment above a few times this offers sending this much first (base units of the asset). */
     testAmount?: bigint | undefined;
   };
@@ -122,6 +124,14 @@ function done(results: PolicyResult[], asset: string | undefined, route?: SendRo
   const blocking = blockingResult(results);
   return { results, blocking, route: blocking ? undefined : route, asset };
 }
+
+/** Short of USDC for the fee and the relayer cannot carry it: add USDC, said with the reason when there is one. */
+const noRelay = (refusal: SendFacts["thresholds"]["gasRelayRefusal"], needed: bigint) =>
+  refusal === "budget_spent"
+    ? result("GAS_RELAY_BUDGET_SPENT", { needed: s(needed), asset: "USDC" })
+    : refusal === "person_limit"
+      ? result("GAS_RELAY_LIMIT", { needed: s(needed), asset: "USDC" })
+      : result("INSUFFICIENT_GAS", { needed: s(needed), asset: "USDC" });
 
 export function evaluateSend(facts: SendFacts): SendEvaluation {
   const results: PolicyResult[] = [];
@@ -243,7 +253,7 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const usdcLeft = facts.wallet.usdc - (facts.isUsdc ? amount : ZERO);
   // Short of USDC for the fee: the relayer carries it when it can (no dead end); otherwise the fix is to add USDC.
   if (route === "wallet_signature" && usdcLeft < facts.thresholds.gasFloat && amount <= balance)
-    results.push(facts.thresholds.gasRelay ? result("GAS_RELAYED") : result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
+    results.push(facts.thresholds.gasRelay ? result("GAS_RELAYED") : noRelay(facts.thresholds.gasRelayRefusal, facts.thresholds.gasFloat));
   if (route === "allowance" && usdcLeft < facts.thresholds.gasFloat) results.push(result("LEAVES_LITTLE_FOR_FEES"));
 
   return done(results, asset, route);

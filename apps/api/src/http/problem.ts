@@ -38,6 +38,10 @@ export type ProblemCode =
   | "network_unavailable"
   /** The network is on, but Kawase's relayer there has no gas yet (a funded relayer makes it ready). */
   | "network_not_ready"
+  /** Kawase's relayer has paid this person's fees as often, or as much, as one person gets in a day. */
+  | "relay_limit"
+  /** Kawase's relayer has spent its gas budget for the day on this network. */
+  | "relayer_budget_spent"
   | "consent_required"
   | "handle_invalid"
   | "handle_reserved"
@@ -117,6 +121,8 @@ const TITLES: Record<ProblemCode, string> = {
   transaction_mismatch: "The signed transaction differs from the request",
   network_unavailable: "This network is not available",
   network_not_ready: "Kawase is getting this network ready",
+  relay_limit: "Kawase has paid your network fees enough times today",
+  relayer_budget_spent: "Kawase's free network fees are used up for today",
   consent_required: "A consent is required first",
   handle_invalid: "The handle is not valid",
   handle_reserved: "The handle is reserved",

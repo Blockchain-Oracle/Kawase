@@ -215,7 +215,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input, { authAttemptId }),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
       setupSubmit: (network: NetworkId, authorization: SignedAuthorizationInput, idempotencyKey?: string) =>
-        call<{ tx: string; setUp: boolean }>(
+        call<{ tx: string | null; setUp: boolean }>(
           "POST",
           "/wallet/setup/submit",
           { network, authorization },

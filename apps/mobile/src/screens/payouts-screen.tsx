@@ -21,7 +21,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Page, Section } from "@/account/page";
 import { assetParam, TokenChoice, USDC_CHOICE, type TokenChoiceValue } from "@/business/token-choice";
 import { parseLines } from "@/business/lines";
-import { signAndSubmitPayout } from "@/business/sign-payout";
+import { payoutFailedText, signAndSubmitPayout } from "@/business/sign-payout";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
@@ -80,8 +80,8 @@ export function PayoutsScreen() {
       setDraft(undefined);
       setText("");
       await load();
-    } catch {
-      toast(t("business.payoutFailed"));
+    } catch (error) {
+      toast(payoutFailedText(error, t, locale));
     } finally {
       setBusy(false);
     }

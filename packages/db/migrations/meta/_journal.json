@@ -358,6 +358,13 @@
       "when": 1791000093000,
       "tag": "0026_batch_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1791000100000,
+      "tag": "0049_relayer_gas",
+      "breakpoints": true
     }
   ]
 }

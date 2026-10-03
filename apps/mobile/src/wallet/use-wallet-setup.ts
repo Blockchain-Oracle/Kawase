@@ -82,7 +82,8 @@ export function useWalletSetup(network: NetworkId) {
         await refresh();
         setNotReady(false);
       } catch (error) {
-        if (error instanceof ApiError && error.code === "network_not_ready") setNotReady(true);
+        // No gas on the relayer yet, or its day's budget spent: the same calm wait, not an error.
+        if (error instanceof ApiError && (error.code === "network_not_ready" || error.code === "relayer_budget_spent")) setNotReady(true);
         setFailed((current) => ({ ...current, [key]: true }));
       } finally {
         setRunning(undefined);
