@@ -29,6 +29,7 @@ import { AAVE_V4, type NetworkId } from "@kawase/networks";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
 import { jsonSafe } from "../intents/chain";
+import { safetySettingsOf } from "../safety/settings";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -370,6 +371,14 @@ export class MarginProtection {
   }
 
   private async fire(row: PositionRow, reason: Reason, client: PublicClient) {
+    // Practice mode never touches real money: a target that is hit is only told (once). Pause stops what Kawase does
+    // for the person except what lowers their risk: a stop-loss still closes (a pause must not leave a falling position
+    // to liquidation); a take-profit waits, still armed, and closes after they resume if the price is still there.
+    const settings = await safetySettingsOf(this.db, row.userId, NETWORK);
+    if (settings.practice || (settings.pausedAt && reason === "take_profit")) {
+      await this.held(row, reason, settings.practice ? "practice" : "paused");
+      return;
+    }
     const granted = await this.active(row.userId, NETWORK, row.id);
     if (!granted) {
       await this.db.update(marginPositions).set({ protection: null }).where(eq(marginPositions.id, row.id));
@@ -405,6 +414,18 @@ export class MarginProtection {
       kind: "position_closed",
       params: { market: row.market, side: row.side, reason, outcome: "failed" },
       dedupeKey: `position_closed:${row.id}:${reason}:${Date.now()}`,
+    });
+  }
+
+  /** A target hit while practice mode or a pause holds the close back: told once per position, target and cause; still armed. */
+  private async held(row: PositionRow, reason: Reason, outcome: "practice" | "paused") {
+    if (!this.inbox) return;
+    await this.inbox.add(this.db, {
+      userId: row.userId,
+      network: row.network,
+      kind: "position_closed",
+      params: { market: row.market, side: row.side, reason, outcome },
+      dedupeKey: `position_held:${row.id}:${reason}:${outcome}`,
     });
   }
 

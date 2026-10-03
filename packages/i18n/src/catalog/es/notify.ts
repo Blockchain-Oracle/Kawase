@@ -21,6 +21,10 @@ export const notify: Catalog["notify"] = {
   protectClosedBody: "{{amount}} volvieron a tu billetera.",
   protectFailedTitle: "No se pudo cerrar {{position}}",
   protectFailedBody: "El precio que Kawase conseguía no era justo para vender. Revísalo ya.",
+  protectHeldTitle: "Objetivo alcanzado: {{position}} sigue abierta",
+  protectPracticeBody: "El modo práctica está activado, así que Kawase no la cerró. No se movió nada real.",
+  protectPausedBody:
+    "Kawase está en pausa, así que no tomó la ganancia. Lo hará cuando reanudes, si el precio sigue ahí.",
   side_long: "larga",
   side_short: "corta",
   needsYouTitle: "Te espera",

@@ -3,8 +3,10 @@
 // recorded; take-profit and stop-loss are refused on the wrong side of the price and past liquidation, and accepted
 // when Uniswap v3 can carry the whole close now (then they wait for the grants). Two more people sit on real accounts
 // under 1.5 and under 1.2: the health monitor tells each once (warning, danger), not again on the next tick, and the
-// long above 1.5 is not told. The redeem itself (grants signed, ops closes, attacks refused) runs in
-// test/margin-protect.sim.ts. Run: tsx --test test/margin-protection-mainnet.test.ts (DATABASE_URL set).
+// long above 1.5 is not told. Then the monitor's pause and practice rule: a hit target under practice mode is only
+// told (once), a take-profit waits while paused, and a stop-loss still goes ahead while paused. The redeem itself
+// (grants signed, ops closes, attacks refused) runs in test/margin-protect.sim.ts.
+// Run: tsx --test test/margin-protection-mainnet.test.ts (DATABASE_URL set).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
@@ -13,7 +15,7 @@ import { createPublicClient, createWalletClient, formatUnits, http, parseUnits, 
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import type { MarginProtectionResult, MarginProtectionView } from "@kawase/api-client";
-import { inboxItems, intents, marginPositions } from "@kawase/db";
+import { inboxItems, intents, marginPositions, users } from "@kawase/db";
 import { readAccount, readMarket } from "@kawase/integrations-aave-v4";
 import { createLogger } from "@kawase/log";
 import { AAVE_V4, getNetwork, type NetworkId } from "@kawase/networks";
@@ -127,4 +129,59 @@ test("margin protection: targets checked against the price, liquidation and Unis
   assert.deepEqual(forWarning!.map((item) => item.params.level), ["warning"]);
   assert.deepEqual(forDanger!.map((item) => item.params.level), ["danger"]);
   console.log(`health alerts: ${WARNING.slice(0, 8)}… warning at ${forWarning![0]!.params.health}, ${DANGER.slice(0, 8)}… danger at ${forDanger![0]!.params.health}, each once over two ticks; the long (above 1.5) not told`);
+});
+
+test("margin protection: practice mode never closes, a pause holds a take-profit but not a stop-loss", { skip: !process.env.DATABASE_URL, timeout: 200_000 }, async () => {
+  const person = { org: randomUUID(), turnkeyUser: randomUUID(), key: turnkeyStyleKeyPair(), wallet: privateKeyToAccount(generatePrivateKey()).address };
+  const turnkey = fakeTurnkey(
+    { [`${person.org}/${person.turnkeyUser}`]: { userId: person.turnkeyUser, userName: "held", email: `held-${person.org}@example.test`, sessionPublicKeys: [person.key.publicKeyHex] } },
+    { [person.org]: [{ walletId: `wallet-${person.org}`, address: person.wallet }] },
+  );
+  const chains = readOnlyChains();
+  const { app, db, close } = testApp(turnkey, chains);
+  let userId = "";
+  after(async () => {
+    if (userId) await deleteUser(db, userId);
+    await close();
+  });
+  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
+  const body = JSON.stringify({ organizationId: person.org, activityId: nonce });
+  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId: "held-phone-001" } }));
+  await expectStatus(signIn, 201, "sign-in");
+  const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
+  userId = user.id;
+  await expectStatus(await app.request("/wallet", jsonRequest("POST", { address: person.wallet, walletId: `wallet-${person.org}` }, token)), 201, "register");
+
+  const market = await readMarket(chains.get("mainnet")!.client, AAVE_V4.mainnet!.mainSpoke);
+  const cirBTC = market.reserves.find((reserve) => reserve.symbol === "cirBTC")!;
+  // A long whose take-profit ($1) is already passed: the next tick hits it.
+  const [row] = await db
+    .insert(marginPositions)
+    .values({ userId, network: "mainnet", venue: "Aave V4", market: "cirBTC", asset: cirBTC.underlying, side: "long", collateral: 1n, debt: 1n, margin: 1n, entryPrice: cirBTC.price, openedAt: new Date(), takeProfit: parseUnits("1", PRICE_DECIMALS), protection: "armed" })
+    .returning();
+  const log = createLogger({ service: "protection-test", level: "silent" });
+  const wallets = new WalletService(db, chains);
+  const protection = new MarginProtection(db, chains, wallets, new MarginService(db, chains, wallets, log), log, new InboxService(db, chains));
+  const held = async () => (await db.select().from(inboxItems).where(and(eq(inboxItems.userId, userId), eq(inboxItems.kind, "position_closed")))).map((item) => `${item.params.reason}:${item.params.outcome}`).sort();
+  const state = async () => (await db.select({ protection: marginPositions.protection }).from(marginPositions).where(eq(marginPositions.id, row!.id)))[0]!.protection;
+
+  // Practice mode: nothing real moves; told once over two ticks, and still watched.
+  await db.update(users).set({ practiceMode: true }).where(eq(users.id, userId));
+  await protection.tick();
+  await protection.tick();
+  assert.deepEqual(await held(), ["take_profit:practice"]);
+  assert.equal(await state(), "armed");
+  // Paused: the take-profit waits (told once), still watched.
+  await db.update(users).set({ practiceMode: false, pausedAllAt: new Date() }).where(eq(users.id, userId));
+  await protection.tick();
+  await protection.tick();
+  assert.deepEqual(await held(), ["take_profit:paused", "take_profit:practice"]);
+  assert.equal(await state(), "armed");
+  // Paused, but a stop-loss (far above the price, so hit) lowers risk: it goes ahead. With no grants signed it gets as
+  // far as finding none and stops watching; the pause did not hold it back.
+  await db.update(marginPositions).set({ takeProfit: null, stopLoss: parseUnits("100000000", PRICE_DECIMALS) }).where(eq(marginPositions.id, row!.id));
+  await protection.tick();
+  assert.equal(await state(), null);
+  assert.deepEqual(await held(), ["take_profit:paused", "take_profit:practice"]);
+  console.log("practice: take-profit told once, not closed; paused: take-profit held (told once), stop-loss went ahead");
 });

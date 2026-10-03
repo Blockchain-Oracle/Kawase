@@ -27,7 +27,7 @@ Read-only review at `19b65f9` (main moved to `27ab8bc` during it). Production ha
 ## Low
 
 - Practice mode's regex (`app.ts:345`) misses `/crosschain`, `/lend`, the withdrawal batch, `/business/payouts`, margin protection — A3.
-- Automated margin closes ignore pause and practice mode (`protection.ts:256-302`) — B1.
+- Automated margin closes ignore pause and practice mode (`protection.ts:256-302`) — B1. **Fixed (B1 branch).** Rule: practice mode never touches real money (a hit target is only told, once; the position stays watched); pause allows risk-reducing closes only (a stop-loss still closes, a take-profit waits and is told once). Test: `margin-protection-mainnet.test.ts`.
 - `pendingRelays`/`pendingTransactions` never expire; a double `submitRelayedBatch` makes the relayer pay for a reverted call — B2.
 - A webhook with a random `X-Circle-Key-Id` triggers an authenticated Circle fetch with the live key (`onramp/service.ts:259-268`) — B1.
 - Voice token key derived from the LiveKit secret; the token survives sign-out for 30 minutes — lane C (later).
