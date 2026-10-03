@@ -38,6 +38,14 @@ export const ALCHEMY_MAX_PAGES = 5;
 export const ALCHEMY_NETWORKS_PER_ADDRESS = 5;
 /** Alchemy's Prices API takes at most this many {network, address} pairs per request. */
 export const ALCHEMY_PRICES_MAX = 25;
+/**
+ * Alchemy answers 429 at once on every API when the plan's monthly compute units are spent ("Monthly capacity limit
+ * exceeded", seen 2026-10-03) and also when a second's throughput is exceeded (25 requests/s on the free plan,
+ * alchemy.com/pricing). After a monthly-capacity answer Kawase stops asking for this long, and after a throughput
+ * answer for the shorter time, so each read goes straight to its fallback instead of paying a doomed round trip.
+ */
+export const ALCHEMY_QUOTA_PAUSE_MS = 15 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+export const ALCHEMY_THROTTLE_PAUSE_MS = 10 * MS_PER_SECOND;
 
 /** Below this many US dollars a holding of an unlisted token counts as dust and is hidden by default. */
 export const DUST_USD = 0.01;

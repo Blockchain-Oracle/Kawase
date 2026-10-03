@@ -4,10 +4,22 @@
 // (GeckoTerminal, LI.FI, then Alchemy's Prices API for majors) and applies its own spam and copycat rules.
 // Docs (2026-10-02): POST /data/v1/{key}/assets/tokens/by-address — at most 2 addresses × 5 networks per request,
 // `pageKey` paging, `tokenBalance` hex; POST /prices/v1/{key}/tokens/by-address — up to 25 {network, address}.
-import { ALCHEMY_HOLDINGS_TTL_MS, ALCHEMY_MAX_PAGES, ALCHEMY_NETWORKS_PER_ADDRESS, ALCHEMY_PRICES_MAX, PRICE_TTL_MS } from "@kawase/config";
+import { ALCHEMY_HOLDINGS_TTL_MS, ALCHEMY_MAX_PAGES, ALCHEMY_NETWORKS_PER_ADDRESS, ALCHEMY_PRICES_MAX, MARKET_FETCH_TIMEOUT_MS, PRICE_TTL_MS } from "@kawase/config";
 import type { NetworkId } from "@kawase/networks";
 
-import { getJson, type MarketCache } from "./cache";
+import { assertAlchemyOpen, noteAlchemyAnswer } from "./alchemy-quota";
+import type { MarketCache } from "./cache";
+
+/** A JSON call to Alchemy: skipped while Alchemy is paused, and a 429 starts the pause (alchemy-quota.ts). */
+async function alchemyJson<T>(url: string, init: RequestInit): Promise<T> {
+  assertAlchemyOpen();
+  const response = await fetch(url, { ...init, headers: { accept: "application/json", ...(init.headers ?? {}) }, signal: AbortSignal.timeout(MARKET_FETCH_TIMEOUT_MS) });
+  if (!response.ok) {
+    noteAlchemyAnswer(response.status, await response.text().catch(() => ""));
+    throw new Error(`alchemy answered ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
 
 const DATA_API = "https://api.g.alchemy.com/data/v1";
 const PRICES_API = "https://api.g.alchemy.com/prices/v1";
@@ -90,7 +102,7 @@ export function alchemyIndex(apiKey: string, cache: MarketCache): WalletIndex {
     const failed = new Set<string>();
     let pageKey: string | undefined;
     for (let page = 0; page < ALCHEMY_MAX_PAGES; page++) {
-      const body = await getJson<{ data?: { tokens?: TokenRow[]; pageKey?: string | null }; error?: unknown }>(`${DATA_API}/${apiKey}/assets/tokens/by-address`, {
+      const body = await alchemyJson<{ data?: { tokens?: TokenRow[]; pageKey?: string | null }; error?: unknown }>(`${DATA_API}/${apiKey}/assets/tokens/by-address`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ addresses, withMetadata: true, withPrices: true, includeNativeTokens: true, includeErc20Tokens: true, ...(pageKey ? { pageKey } : {}) }),
@@ -171,7 +183,7 @@ export function alchemyIndex(apiKey: string, cache: MarketCache): WalletIndex {
       });
       for (let start = 0; start < due.length; start += ALCHEMY_PRICES_MAX) {
         const batch = due.slice(start, start + ALCHEMY_PRICES_MAX);
-        const body = await getJson<{ data: { network: string; address: string; prices?: { currency: string; value: string }[] }[] }>(`${PRICES_API}/${apiKey}/tokens/by-address`, {
+        const body = await alchemyJson<{ data: { network: string; address: string; prices?: { currency: string; value: string }[] }[] }>(`${PRICES_API}/${apiKey}/tokens/by-address`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ addresses: batch.map((token) => ({ network: slugOf.get(token.chainId), address: token.address })) }),
