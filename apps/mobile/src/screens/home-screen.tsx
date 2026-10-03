@@ -217,7 +217,8 @@ export function HomeScreen() {
     { key: "withdraw", label: t("assets.withdraw"), icon: ArrowUpFromLine, primary: false, onPress: () => guard(() => router.push("/withdraw")) },
   ];
   const actionRow = actions.map((action) => (
-    <Button key={action.key} variant={action.primary ? "default" : "secondary"} className="flex-1 flex-col gap-1 px-1 py-2" style={{ height: undefined }} onPress={action.onPress} accessibilityLabel={action.label}>
+    // Icon over label: the button grows to fit both (a fixed button height clipped the label's descenders on the web).
+    <Button key={action.key} variant={action.primary ? "default" : "secondary"} className="h-auto min-h-14 flex-1 flex-col gap-1 px-1 py-2" onPress={action.onPress} accessibilityLabel={action.label}>
       <Icon as={action.icon} className={cn("size-5", action.primary && "text-primary-foreground")} />
       <Text numberOfLines={1} className="text-xs">
         {action.label}
