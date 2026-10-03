@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 
-import type { MarginMarketsOutput, MarginPositionsOutput, ProposeMarginOutput } from "@kawase/api-client";
+import type { MarginMarketsOutput, MarginPositionsOutput, ProposeMarginOutput, ProtectPositionOutput } from "@kawase/api-client";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -17,7 +17,8 @@ import { useT } from "@/i18n";
 import { marketEntity, useMarginFormat } from "@/margin/copy";
 import { MarginTicket } from "@/margin/margin-ticket";
 import { PositionRow } from "@/margin/position-row";
-import { useMarginOrder } from "@/margin/use-margin";
+import { ProtectionCard } from "@/margin/protection-card";
+import { useMarginOrder, useMarginPositions } from "@/margin/use-margin";
 
 import { AgentCard } from "./card";
 
@@ -94,6 +95,27 @@ export function MarginPositionsCard({ output }: { output: MarginPositionsOutput 
             <PositionRow key={position.id} position={position} />
           ))}
         </ListGroup>
+      )}
+    </AgentCard>
+  );
+}
+
+/** protect_position: the position's targets as saved, live (the same card as the position page), or why not. */
+export function ProtectCard({ output }: { output: ProtectPositionOutput }) {
+  const { t } = useT();
+  const { positions, refresh } = useMarginPositions();
+  const position = positions?.find((entry) => entry.id === output.result?.position.id) ?? output.result?.position;
+  return (
+    <AgentCard eyebrow={`${t("protect.title")} · ${output.network === "mainnet" ? t("network.realMoney") : t("network.arcTestnet")}`}>
+      {position ? (
+        <>
+          <ListGroup>
+            <PositionRow position={position} />
+          </ListGroup>
+          <ProtectionCard position={position} onSaved={() => void refresh()} />
+        </>
+      ) : (
+        <Text className={cn("text-foreground text-base", TEXT_START)}>{output.refused && output.refused !== "not_found" ? t(`protect.${output.refused}`, { defaultValue: t("protect.failed") }) : t("margin.notFound")}</Text>
       )}
     </AgentCard>
   );

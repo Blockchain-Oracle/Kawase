@@ -59,6 +59,7 @@ import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { PlanError, liquidationPrice, maxLeverageBps, planClose, planOpen, type AccountBase, type Plan, type PlanLimits } from "./plan";
 import { kyberSwapper } from "./swapper";
+import type { MarginProtection } from "./protection";
 import { uniswapSwapper } from "./uniswap";
 
 type IntentRow = typeof intents.$inferSelect;
@@ -144,6 +145,8 @@ export class MarginService {
 
   /** Protective closes go out through the ops wallet (Circle), under the person's protection grants. */
   private readonly opsAttempts: OpsAttempts | undefined;
+  /** Take-profit / stop-loss, attached by the app (the grants, the targets and the monitor live there). */
+  protection: MarginProtection | undefined;
 
   constructor(
     private readonly db: Db,

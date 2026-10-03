@@ -3,7 +3,7 @@
 // whom, a request of yours that was paid, a send that landed — with an unread dot that is never the only signal.
 // Tapping marks it read and opens the request or the transaction. "Mark all read" when there is something unread.
 import { useRouter } from "expo-router";
-import { ChevronLeft, FileClock, ShieldAlert } from "lucide-react-native";
+import { ChevronLeft, FileClock, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,10 +43,48 @@ const SKELETON_HEIGHT = 64;
 const USDC_PLACES = 6;
 
 function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  if (item.kind === "position_health" || item.kind === "position_closed") return <PositionAlertRow item={item} onPress={onPress} />;
   if (item.kind === "device_signed_in" || item.kind === "device_signed_out" || item.kind === "invoice_due" || item.kind === "invoice_overdue") {
     return <AlertRow item={item} onPress={onPress} />;
   }
   return <MoneyRow item={item} onPress={onPress} />;
+}
+
+/** Kawase Margin and borrowing: account health falling, or a take-profit / stop-loss Kawase closed (or could not). */
+function PositionAlertRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  const { t } = useT();
+  const money = useMoney();
+  const dates = useRequestDates();
+  const p = item.params;
+  const health = item.kind === "position_health";
+  const position = `${p.market ?? ""} ${t(`notify.side_${p.side === "short" ? "short" : "long"}`)}`;
+  const closed = p.outcome === "closed";
+  const title = health
+    ? t(p.level === "danger" ? "notify.healthDangerTitle" : "notify.healthWarningTitle", { health: p.health ?? "" })
+    : closed
+      ? t(p.reason === "take_profit" ? "notify.takeProfitTitle" : "notify.stopLossTitle", { position })
+      : t("notify.protectFailedTitle", { position });
+  const detail = health ? t("notify.healthBody") : closed ? t("notify.protectClosedBody", { amount: money(p.asset, p.amount) }) : t("notify.protectFailedBody");
+  const warn = (health && p.level === "danger") || (!health && !closed);
+  const unread = !item.readAt;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
+      <View className="items-center justify-center" style={{ width: DOT }}>
+        {unread ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
+      </View>
+      <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+        <Icon as={health ? HeartPulse : ShieldCheck} className={cn("size-5", warn ? "text-destructive" : "text-muted-foreground")} />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text numberOfLines={2} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
+          {title}
+        </Text>
+        <Text numberOfLines={2} className={cn("text-muted-foreground text-sm", TEXT_START)}>
+          {[detail, dates.moment(item.createdAt)].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+    </Pressable>
+  );
 }
 
 /** Security and business notices: an icon, the notice, and when. */
@@ -195,6 +233,8 @@ export function InboxScreen() {
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
     if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
+    // Account health (margin or borrowing) and protective closes: where the positions are.
+    else if (item.kind === "position_health" || item.kind === "position_closed") router.push(item.params.path === "/borrow" ? "/borrow" : "/margin");
     // Asked to pay by someone on Kawase: the pay card itself.
     else if (item.kind === "request_received" && item.params.token) router.push({ pathname: "/r/[token]", params: { token: item.params.token } });
     // An automation's item: that run's story, or that automation's own card; the list when neither is known.

@@ -212,6 +212,7 @@ export function createApp(deps: AppDeps) {
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
   const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
+  margin.protection = protection;
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });

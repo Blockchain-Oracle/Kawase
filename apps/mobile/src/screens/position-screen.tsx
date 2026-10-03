@@ -1,7 +1,8 @@
 // One long/short position (surfaces.md "Position page"): identity, P&L as the hero split into the price move and
 // the borrow interest, the stats (size, entry, mark, liquidation and how far, leverage, borrow rate), the account's
-// health gauge, and Close 25 / 50 / 75 / All: choosing one drafts the unwind at once and the ticket below shows what
-// comes back, confirmed by sliding.
+// health gauge, take-profit and stop-loss (Kawase closes it for the person under grants signed once), and Close
+// 25 / 50 / 75 / All: choosing one drafts the unwind at once and the ticket below shows what comes back, confirmed by
+// sliding.
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import * as React from "react";
@@ -21,6 +22,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { useT } from "@/i18n";
 import { marketEntity, useMarginFormat } from "@/margin/copy";
 import { MarginTicket } from "@/margin/margin-ticket";
+import { ProtectionCard } from "@/margin/protection-card";
 import { isMarginFinished, useMarginOrder, useMarginPositions } from "@/margin/use-margin";
 import { api } from "@/session/api";
 
@@ -136,6 +138,7 @@ export function PositionScreen({ id }: { id: string }) {
               />
               <Stat label={t("margin.borrowRate")} value={t("margin.borrowRateValue", { rate: format.percent(position.borrowApr, HEALTH_DIGITS) })} />
             </View>
+            {!intent && position.network === "mainnet" ? <ProtectionCard position={position} onSaved={() => void refresh()} /> : null}
             {!intent ? (
               <View className="flex-row gap-2">
                 {CLOSE_SHARES.map((share) => (

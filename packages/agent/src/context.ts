@@ -30,6 +30,7 @@ import type {
   MarginPositionsOutput,
   MarginRequest,
   ProposeMarginOutput,
+  ProtectPositionOutput,
   BuyProposalOutput,
   CrossChainRequest,
   ProposeCrossChainOutput,
@@ -147,6 +148,8 @@ export type AgentContext = {
   marginPositions?(): Promise<MarginPositionsOutput>;
   /** Drafts a margin order (open or close); the person slides to confirm on the card. */
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Take-profit / stop-loss on an open position (USD prices; null clears one). */
+  protectPosition?(input: { positionId: string | null; market: string | null; side: "long" | "short" | null; takeProfit: string | null | undefined; stopLoss: string | null | undefined }): Promise<ProtectPositionOutput>;
   /** Buy with Apple Pay / Google Pay / debit (Circle Onramp): the card's button starts it; nothing is charged here. */
   proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
   /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */

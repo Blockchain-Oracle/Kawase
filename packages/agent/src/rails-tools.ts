@@ -130,5 +130,21 @@ export function railsTools(context: AgentContext) {
         context.proposeMargin ? context.proposeMargin({ action: "close", positionId: positionId ?? null, market: market ?? null, side: side ?? null, fraction: fraction ?? null }) : UNAVAILABLE,
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    protect_position: tool({
+      description:
+        "Set a take-profit and/or a stop-loss on an open long/short (Kawase Margin): Kawase closes the whole position for the person when the price gets there, checked on a real quote. Pass the position id from get_positions (or the market and side), and each price in US dollars only if they said one (\"off\" removes it). A take-profit is past today's price, a stop-loss before it and before liquidation. The first time, the card asks them to let Kawase close positions for them (one Face ID). Mainnet only.",
+      inputSchema: z.object({
+        positionId: z.uuid().optional(),
+        market: z.string().max(MARKET_MAX).optional(),
+        side: z.enum(["long", "short"]).optional(),
+        takeProfit: z.union([z.string().regex(/^\d+(\.\d+)?$/), z.literal("off")]).optional(),
+        stopLoss: z.union([z.string().regex(/^\d+(\.\d+)?$/), z.literal("off")]).optional(),
+      }),
+      execute: async ({ positionId, market, side, takeProfit, stopLoss }) =>
+        context.protectPosition
+          ? context.protectPosition({ positionId: positionId ?? null, market: market ?? null, side: side ?? null, takeProfit: takeProfit === "off" ? null : takeProfit, stopLoss: stopLoss === "off" ? null : stopLoss })
+          : UNAVAILABLE,
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
   };
 }

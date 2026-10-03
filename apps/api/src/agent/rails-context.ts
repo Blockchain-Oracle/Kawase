@@ -238,5 +238,30 @@ export function railsContext(input: {
       const intent = await margin.create(user, request, { surface: "chat", threadId });
       return { intent, summary: summarizeMargin(intent) };
     },
+    async protectPosition(request) {
+      const positions = user.isAnonymous ? [] : await margin.positions(user);
+      const wanted = request.market?.trim().toLowerCase();
+      const position = request.positionId
+        ? positions.find((entry) => entry.id === request.positionId)
+        : positions.find((entry) => (!wanted || entry.market.toLowerCase() === wanted) && (!request.side || entry.side === request.side));
+      if (!margin.protection || network !== "mainnet") return { network, result: null, refused: "protection_unavailable", summary: PROTECT_REASONS.protection_unavailable };
+      if (!position) return { network, result: null, refused: "not_found", summary: "No open position like that; get_positions lists them." };
+      try {
+        const result = await margin.protection.protect(user, position.id, { takeProfit: request.takeProfit, stopLoss: request.stopLoss });
+        const targets = [result.position.takeProfit ? `take-profit ${price(result.position.takeProfit)}` : null, result.position.stopLoss ? `stop-loss ${price(result.position.stopLoss)}` : null].filter(Boolean).join(", ") || "no targets";
+        const summary = `${position.market} ${position.side}: ${targets} saved.${result.needsGrant ? " The person still has to let Kawase close positions for them: the card asks (one Face ID)." : " Kawase watches it and closes the whole position when the price gets there."}`;
+        return { network, result, refused: null, summary };
+      } catch (error) {
+        const code = error instanceof Error && "code" in error ? String((error as { code: unknown }).code) : "failed";
+        return { network, result: null, refused: code, summary: PROTECT_REASONS[code as keyof typeof PROTECT_REASONS] ?? "Could not save the targets." };
+      }
+    },
   };
 }
+
+const PROTECT_REASONS = {
+  take_profit_wrong_side: "A take-profit must be past today's price (above it for a long, below for a short).",
+  stop_loss_wrong_side: "A stop-loss must be before today's price (below it for a long, above for a short).",
+  stop_loss_past_liquidation: "That stop-loss is past the liquidation price; it has to come before it.",
+  protection_unavailable: "Take-profit and stop-loss work on Arc mainnet, for sizes Uniswap on Arc can close now.",
+} as const;

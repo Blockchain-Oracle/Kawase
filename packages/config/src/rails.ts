@@ -90,6 +90,9 @@ export const MARGIN_PROTECTION = {
   /** Account health below these is told: a warning, then danger (liquidation starts at 1). */
   warnHealthBps: 15_000,
   dangerHealthBps: 12_000,
+  /** Targets offered on the position page, as steps from the price now: a take-profit past it, a stop-loss before it. */
+  takeProfitSteps: [0.1, 0.25],
+  stopLossSteps: [0.05, 0.1],
 } as const;
 
 /** Cross-chain moves of any asset (routes.md): slippage asked of aggregators, and room kept for gas on another chain. */

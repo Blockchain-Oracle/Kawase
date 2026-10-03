@@ -99,6 +99,9 @@ export type MarginProtectionGrantRequest = { grants: { grantId: string; typedDat
 /** Prices as the person types them, in US dollars ("92000"); null clears one. */
 export type MarginProtectionChange = { takeProfit?: string | null | undefined; stopLoss?: string | null | undefined };
 
+/** protect_position: the saved targets (and whether the grants are still needed), or why they were refused. */
+export type ProtectPositionOutput = { network: NetworkId; result: MarginProtectionResult | null; refused: string | null; summary: string };
+
 export type MarginProtectionResult = {
   position: MarginPositionView;
   /** The grants are not signed yet: the targets are saved and watched once they are. */
