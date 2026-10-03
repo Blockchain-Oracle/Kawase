@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import type { AgentContext } from "./context";
+import { destinationAddress } from "./trust";
 
 const MARKET_MAX = 40;
 const LEVERAGE_MIN = 1;
@@ -62,10 +63,12 @@ export function railsTools(context: AgentContext) {
         recipient: z.string().max(RECIPIENT_MAX).optional().describe("Only who they named: a contact, @handle or address; omit for themselves"),
         toAsset: z.literal("USDC").optional().describe("Only if they asked for it to arrive as USDC"),
       }),
-      execute: async ({ destination, asset, amount, recipient, toAsset }) =>
-        context.proposeCrossChain
-          ? context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: recipient ?? null, toAsset: toAsset ?? null })
-          : UNAVAILABLE,
+      execute: async ({ destination, asset, amount, recipient, toAsset }) => {
+        if (!context.proposeCrossChain) return UNAVAILABLE;
+        // K2 (M8): an address must be the person's own words; their own address means themselves (Kawase fills it in).
+        const own = recipient && /^0x/i.test(recipient.trim()) ? (await destinationAddress(context, recipient, "Omit the recipient for themselves.")) === "own" : false;
+        return context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: own ? null : (recipient ?? null), toAsset: toAsset ?? null });
+      },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     bring_to_arc: tool({

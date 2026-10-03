@@ -12,6 +12,7 @@
 // On other chains, Hidden (N), Explore; 7 Positions (earn, borrow with health, long/short with P&L); 8 For you;
 // 9 Automations (next runs); 10 Contacts (quick send); 11 Recent activity. After test money is sent the balance is
 // watched until it lands, and the first credit plays "You're funded" once (S2: the koban drops onto the card).
+// On a desktop window (Stage 13) the same sections sit in two columns and the sidebar carries the header.
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, MessageCircle, ScanFace, Send, Sparkles, Wallet } from "lucide-react-native";
@@ -39,6 +40,7 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { ActivityRow, ActivityRowSkeleton } from "@/activity/activity-row";
 import { ReceiptSheet } from "@/activity/receipt-sheet";
@@ -89,11 +91,14 @@ const RECENT_SKELETONS = 2;
 const GUEST_ART_WIDTH = 88;
 const PREVIEW_ROWS = 5;
 const PREVIEW_SKELETON_HEIGHT = 64;
+/** The desktop layout's second column. */
+const SIDE_COLUMN_PX = 400;
 
 type HomePhase = "guest" | "unknown" | "setup" | "fund" | "firstSend" | "firstAutomation" | "ready";
 
 export function HomeScreen() {
   const reserve = useFeeReserve();
+  const wide = useWide();
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -220,123 +225,163 @@ export function HomeScreen() {
     </Button>
   ));
 
+  const hero =
+    phase === "guest" ? (
+      <GuestHero onTry={() => router.navigate({ pathname: "/chat", params: { prompt: t("home.chipWhatCanYouDo") } })} onBuy={() => guard(fund.open)}>
+        {actionRow}
+      </GuestHero>
+    ) : (
+      <>
+        <PortfolioHero
+          portfolio={view}
+          name={name}
+          address={wallet?.address ? shortAddress(wallet.address) : undefined}
+          onCopy={() => void copyAddress()}
+          onOpenBreakdown={() => setBreakdownOpen(true)}
+        >
+          {actionRow}
+        </PortfolioHero>
+        {/* Arc fees are paid in USDC: how many actions the wallet can still pay for (B2-3). */}
+        <View className="flex-row flex-wrap items-center gap-3">
+          <FeeReserveChip reserve={reserve} />
+          {/* Offline or the last read failed: the values shown are the last good ones, and how old they are. */}
+          {portfolio.error || stale ? <UpdatedAgo at={portfolio.updatedAt} /> : null}
+        </View>
+      </>
+    );
+  const fundedMoment = funded ? (
+    <Animated.View pointerEvents="none" entering={ZoomIn.springify()} exiting={FadeOut} className="absolute items-center" style={{ top: 0, start: 0, end: 0 }}>
+      <Koban width={FUNDED_KOBAN_WIDTH} id="funded-koban" metal="gold" />
+    </Animated.View>
+  ) : null;
+  // Steps only from a known state: offline or unloaded is never "not done" (R01/R09).
+  const firstSteps = showSteps && currentStep !== -1 ? <FirstSteps label={t("home.firstSteps")} progressLabel={t("home.stepsProgress", { n: currentStep + 1, total: steps.length })} steps={steps} /> : null;
+  const allowance =
+    offerAllowance && phase !== "setup" ? (
+      <View className="bg-card border-border gap-3 rounded-2xl border p-5">
+        <View className="flex-row items-start gap-3">
+          <Icon as={ScanFace} className="text-muted-foreground mt-0.5 size-5" />
+          <View className="flex-1 gap-1">
+            <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("home.allowanceOffTitle")}</Text>
+            <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("home.allowanceOffBody")}</Text>
+          </View>
+        </View>
+        <Button variant="secondary" onPress={() => router.push("/wallet")}>
+          <Text>{t("home.allowanceOffAction")}</Text>
+        </Button>
+      </View>
+    ) : allowancePerDay && phase === "ready" ? (
+      <Text className="text-muted-foreground px-1 text-sm">{t("home.allowanceCue", { amount: formatAmount(amount("USDC", BigInt(allowancePerDay)), locale, { fractionDigits: 0 }) })}</Text>
+    ) : null;
+  // Steps automations may not take alone, waiting for the person (shown only when something waits).
+  const needsYou = account ? <NeedsYouSection /> : null;
+  const assets = account ? (
+    <YourAssets portfolio={view} loading={portfolio.loading} error={portfolio.error} onRetry={() => void portfolio.refresh()} onAddMoney={fund.open} onVisibility={portfolio.setVisibility} />
+  ) : (
+    <MarketsPreview />
+  );
+  const positions = account ? <Positions portfolio={view} /> : null;
+  // What the agent noticed (idle money, an expiring request, a slow bridge, a big move, a position near liquidation).
+  const forYou = <ForYouSection />;
+  const nextRuns = account ? <AutomationsNext automations={automations} /> : null;
+  const contacts = account ? <QuickSend /> : null;
+  const recent = account ? (
+    <View className="gap-3">
+      <View className="flex-row items-center justify-between">
+        <Eyebrow>{t("home.recent")}</Eyebrow>
+        {activity.items.length > RECENT_ROWS ? (
+          <Button variant="ghost" size="sm" onPress={() => router.navigate("/activity")}>
+            <Text className="text-muted-foreground">{t("activity.seeAll")}</Text>
+          </Button>
+        ) : null}
+      </View>
+      {activity.status === "loading" ? (
+        <ListGroup>
+          {Array.from({ length: RECENT_SKELETONS }, (_, i) => (
+            <ActivityRowSkeleton key={i} />
+          ))}
+        </ListGroup>
+      ) : activity.items.length > 0 ? (
+        <ListGroup>
+          {activity.items.slice(0, RECENT_ROWS).map((item) => (
+            <ActivityRow key={item.id} item={item} onPress={() => setReceipt(item)} />
+          ))}
+        </ListGroup>
+      ) : activity.status === "error" ? (
+        <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
+          <Text className="text-muted-foreground flex-1 text-sm">{t("activity.loadFailed")}</Text>
+          <Button size="sm" variant="secondary" onPress={() => void activity.refresh()}>
+            <Text>{t("common.retry")}</Text>
+          </Button>
+        </View>
+      ) : (
+        <View className="bg-card border-border rounded-2xl border">
+          <EmptyState layout="section" title={t("home.recentEmpty")} body={t("home.recentEmptyBody")} />
+        </View>
+      )}
+    </View>
+  ) : null;
+
   return (
     <View className="bg-background flex-1">
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <CollapsingHeader
-          scrollY={scrollY}
-          collapseAt={COLLAPSE_AT}
-          leading={<TabHeaderStart />}
-          compact={view && account ? <Amount className="text-foreground text-sm font-semibold">{money(view.totalUsd, view.fx, locale)}</Amount> : undefined}
-          trailing={<TabHeaderEnd />}
-        />
-      </View>
+      {/* On a desktop window the sidebar carries the avatar, the network pill and the inbox. */}
+      {wide ? null : (
+        <View className="px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
+          <CollapsingHeader
+            scrollY={scrollY}
+            collapseAt={COLLAPSE_AT}
+            leading={<TabHeaderStart />}
+            compact={view && account ? <Amount className="text-foreground text-sm font-semibold">{money(view.totalUsd, view.fx, locale)}</Amount> : undefined}
+            trailing={<TabHeaderEnd />}
+          />
+        </View>
+      )}
 
-      <Animated.ScrollView className="flex-1" onScroll={onScroll} scrollEventThrottle={16} contentContainerClassName="gap-6 px-5 pt-4" contentContainerStyle={{ paddingBottom: clearance.scroll }}>
+      <Animated.ScrollView
+        className="flex-1"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerClassName={cn("gap-6 px-5 pt-4", wide && "px-10 pt-8")}
+        contentContainerStyle={{ paddingBottom: clearance.scroll }}
+      >
         <StaleBanner />
-        {phase === "guest" ? (
-          <GuestHero onTry={() => router.navigate({ pathname: "/chat", params: { prompt: t("home.chipWhatCanYouDo") } })} onBuy={() => guard(fund.open)}>
-            {actionRow}
-          </GuestHero>
+        {wide ? (
+          // Desktop (Stage 13): the balance, the steps and the recent activity on the left; what waits for the person,
+          // the assets (a guest: the trending markets), positions and what the agent noticed on the right. Both columns
+          // always have something, for a guest and for a new account alike.
+          <View className="w-full flex-row items-start gap-8 self-center" style={{ maxWidth: WIDE_PAGE_PX }}>
+            <View className="min-w-0 flex-1 gap-6">
+              {hero}
+              {fundedMoment}
+              {firstSteps}
+              {allowance}
+              {recent}
+              {contacts}
+            </View>
+            <View className="gap-6" style={{ width: SIDE_COLUMN_PX }}>
+              {needsYou}
+              {assets}
+              {positions}
+              {forYou}
+              {nextRuns}
+            </View>
+          </View>
         ) : (
           <>
-          <PortfolioHero
-            portfolio={view}
-            name={name}
-            address={wallet?.address ? shortAddress(wallet.address) : undefined}
-            onCopy={() => void copyAddress()}
-            onOpenBreakdown={() => setBreakdownOpen(true)}
-          >
-            {actionRow}
-          </PortfolioHero>
-          {/* Arc fees are paid in USDC: how many actions the wallet can still pay for (B2-3). */}
-          <View className="flex-row flex-wrap items-center gap-3">
-            <FeeReserveChip reserve={reserve} />
-            {/* Offline or the last read failed: the values shown are the last good ones, and how old they are. */}
-            {portfolio.error || stale ? <UpdatedAgo at={portfolio.updatedAt} /> : null}
-          </View>
+            {hero}
+            {fundedMoment}
+            {firstSteps}
+            {allowance}
+            {needsYou}
+            {assets}
+            {positions}
+            {forYou}
+            {nextRuns}
+            {contacts}
+            {recent}
           </>
         )}
-        {funded ? (
-          <Animated.View pointerEvents="none" entering={ZoomIn.springify()} exiting={FadeOut} className="absolute items-center" style={{ top: 0, start: 0, end: 0 }}>
-            <Koban width={FUNDED_KOBAN_WIDTH} id="funded-koban" metal="gold" />
-          </Animated.View>
-        ) : null}
-
-        {/* Steps only from a known state: offline or unloaded is never "not done" (R01/R09). */}
-        {showSteps && currentStep !== -1 ? <FirstSteps label={t("home.firstSteps")} progressLabel={t("home.stepsProgress", { n: currentStep + 1, total: steps.length })} steps={steps} /> : null}
-
-        {offerAllowance && phase !== "setup" ? (
-          <View className="bg-card border-border gap-3 rounded-2xl border p-5">
-            <View className="flex-row items-start gap-3">
-              <Icon as={ScanFace} className="text-muted-foreground mt-0.5 size-5" />
-              <View className="flex-1 gap-1">
-                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("home.allowanceOffTitle")}</Text>
-                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("home.allowanceOffBody")}</Text>
-              </View>
-            </View>
-            <Button variant="secondary" onPress={() => router.push("/wallet")}>
-              <Text>{t("home.allowanceOffAction")}</Text>
-            </Button>
-          </View>
-        ) : allowancePerDay && phase === "ready" ? (
-          <Text className="text-muted-foreground px-1 text-sm">{t("home.allowanceCue", { amount: formatAmount(amount("USDC", BigInt(allowancePerDay)), locale, { fractionDigits: 0 }) })}</Text>
-        ) : null}
-
-        {/* Steps automations may not take alone, waiting for the person (shown only when something waits). */}
-        {account ? <NeedsYouSection /> : null}
-
-        {account ? (
-          <YourAssets portfolio={view} loading={portfolio.loading} error={portfolio.error} onRetry={() => void portfolio.refresh()} onAddMoney={fund.open} onVisibility={portfolio.setVisibility} />
-        ) : (
-          <MarketsPreview />
-        )}
-
-        {account ? <Positions portfolio={view} /> : null}
-
-        {/* What the agent noticed (idle money, an expiring request, a slow bridge, a big move, a position near liquidation). */}
-        <ForYouSection />
-
-        {account ? <AutomationsNext automations={automations} /> : null}
-        {account ? <QuickSend /> : null}
-
-        {account ? (
-          <View className="gap-3">
-            <View className="flex-row items-center justify-between">
-              <Eyebrow>{t("home.recent")}</Eyebrow>
-              {activity.items.length > RECENT_ROWS ? (
-                <Button variant="ghost" size="sm" onPress={() => router.navigate("/activity")}>
-                  <Text className="text-muted-foreground">{t("activity.seeAll")}</Text>
-                </Button>
-              ) : null}
-            </View>
-            {activity.status === "loading" ? (
-              <ListGroup>
-                {Array.from({ length: RECENT_SKELETONS }, (_, i) => (
-                  <ActivityRowSkeleton key={i} />
-                ))}
-              </ListGroup>
-            ) : activity.items.length > 0 ? (
-              <ListGroup>
-                {activity.items.slice(0, RECENT_ROWS).map((item) => (
-                  <ActivityRow key={item.id} item={item} onPress={() => setReceipt(item)} />
-                ))}
-              </ListGroup>
-            ) : activity.status === "error" ? (
-              <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
-                <Text className="text-muted-foreground flex-1 text-sm">{t("activity.loadFailed")}</Text>
-                <Button size="sm" variant="secondary" onPress={() => void activity.refresh()}>
-                  <Text>{t("common.retry")}</Text>
-                </Button>
-              </View>
-            ) : (
-              <View className="bg-card border-border rounded-2xl border">
-                <EmptyState layout="section" title={t("home.recentEmpty")} body={t("home.recentEmptyBody")} />
-              </View>
-            )}
-          </View>
-        ) : null}
       </Animated.ScrollView>
 
       <BreakdownSheet open={breakdownOpen} onClose={() => setBreakdownOpen(false)} portfolio={view} />

@@ -389,7 +389,7 @@ export function createApp(deps: AppDeps) {
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
   app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp }));
-  app.route("/contacts-discovery", discoveryRoutes(deps.db));
+  app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);

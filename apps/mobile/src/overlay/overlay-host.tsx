@@ -1,7 +1,8 @@
 // The layer above the tab pages and the dock: the fan's blur, the plus button with its four actions, and the
 // voice overlay. Order matters — the fan sits above its own blur, and the voice overlay above everything, so the
-// plus is blurred away while the orb is up. Rendered once by the (tabs) layout. The plus steps aside on Chat,
-// where the composer sits in its place. Send leads; an action that has not shipped on this network (Request until
+// plus is blurred away while the orb is up. Rendered once: by the (tabs) layout, or on a desktop window by the
+// signed-in area's layout over the sidebar and every page (no plus there: the sidebar lists the same actions). The
+// plus steps aside on Chat, where the composer sits in its place. Send leads; an action that has not shipped on this network (Request until
 // Stage 5b) says "Soon" in the fan itself instead of toasting after the tap (review R12). The closed plus is quiet
 // glass, so the screen's own main action stays the only lime one (R09). The fan's blur is only its backdrop (the
 // actions are the surface) and leaves over the fan's own exit, so both end together (R16). Opening the fan commits
@@ -11,6 +12,7 @@ import { ArrowDownToLine, ArrowLeftRight, HandCoins, QrCode, ScanLine, Send } fr
 
 import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
 import { FAN_EXIT_MS, QuickActionFan, type FanAction } from "@kawase/ui-native/components/quick-action-fan";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useFund } from "@/fund/fund-provider";
@@ -35,7 +37,9 @@ export function OverlayHost() {
   const clearance = useDockClearance();
   const fanOpen = overlay.current === "fan";
   const segments = useSegments();
-  const showPlus = !TABS_WITHOUT_PLUS.has(segments[segments.length - 1] ?? "");
+  // On a desktop window the sidebar carries the same actions, so there is no plus.
+  const wide = useWide();
+  const showPlus = !wide && !TABS_WITHOUT_PLUS.has(segments[segments.length - 1] ?? "");
 
   const request = useCapability("request");
   const requestReady = request === "available";

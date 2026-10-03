@@ -21,6 +21,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import { ActivityRowSkeleton } from "@/activity/activity-row";
 import { FeedRow } from "@/activity/feed-row";
@@ -38,6 +39,8 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
+/** A desktop page starts below a little air (there is no status bar). */
+const WIDE_TOP = 32;
 const ART_WIDTH = 140;
 const SKELETON_ROWS = 4;
 
@@ -85,6 +88,7 @@ export function ActivityScreen() {
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
   const colors = useThemeColors();
+  const wide = useWide();
   const signIn = useSignIn();
   const { user } = useSession();
   const network = user?.activeNetwork ?? "testnet";
@@ -125,11 +129,15 @@ export function ActivityScreen() {
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-5 px-5"
-        contentContainerStyle={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll }}
+        contentContainerClassName={cn("gap-5 px-5", wide && "px-10")}
+        contentContainerStyle={[
+          { paddingTop: wide ? WIDE_TOP : testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll },
+          // A desktop window: one centred column (the sidebar carries the header's pills).
+          wide ? { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center" } : null,
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void pull()} tintColor={colors["muted-foreground"]} />}
       >
-        <TabHeader />
+        {wide ? null : <TabHeader />}
         <View className="flex-row items-center justify-between">
           <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
             {t("activity.title")}

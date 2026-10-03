@@ -32,6 +32,7 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "Votre plafond quotidien est désactivé",
   LEAVES_LITTLE_FOR_FEES: "Il restera très peu d'USDC pour les frais de réseau",
   GAS_RELAYED: "Votre portefeuille ne couvre pas les frais de réseau, Kawase les paie pour cet envoi",
+  FEE_PAID_BY_KAWASE: "Frais payés par Kawase : votre portefeuille ne couvre pas ces frais de réseau",
   SCHEDULE_INVALID: "Ce calendrier ne peut pas être tenu (fuseau horaire ou jour inconnu).",
   AUTO_SAVE_EXISTS:
     "L’épargne auto est déjà activée. Désactivez-la d’abord dans Automatisations, puis créez la nouvelle.",

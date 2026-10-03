@@ -1,7 +1,8 @@
 // The send card (L, C1, T): what `propose_send` drafted, live. The tool's output is only where the card starts; it
 // then follows the intent itself, so a conversation reopened tomorrow shows what really happened (sent, cancelled,
 // expired) rather than the proposal it began as. Inside the allowance the request already went (D33: no prompt;
-// the api approved it as it was proposed), so the card opens on the plane. Blocked → the blocker with its fix (add
+// the api approved it as it was proposed), so the card opens on the plane — unless the person did not name the
+// recipient or outside text was read first (H2): then it waits for Send and says why. Blocked → the blocker with its fix (add
 // the contact, pick the currency, sign in); after a fix the person made here, the same request carries on by itself
 // when it lands inside the allowance, and waits for Send with Face ID above it. Nothing here is decided by the model.
 import { useRouter } from "expo-router";
@@ -131,6 +132,12 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           {[amountText, name].filter(Boolean).join(" → ")}
         </Text>
       )}
+      {ready && output.held ? (
+        // H2: it did not go by itself because the person did not name this recipient, or outside text came first.
+        <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
+          {t(output.held === "not_typed" ? "send.heldNotTyped" : "send.heldOutside")}
+        </Text>
+      ) : null}
       <SendBlocker controller={fixing} recheckAfterSignIn={() => void controller.revise({})} />
       {overLimit ? (
         <Button variant="secondary" onPress={() => router.push("/limits")}>

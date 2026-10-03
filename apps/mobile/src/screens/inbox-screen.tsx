@@ -81,13 +81,19 @@ function PositionAlertRow({ item, onPress }: { item: InboxItem; onPress: () => v
   }
   const position = `${p.market ?? ""} ${t(`notify.side_${p.side === "short" ? "short" : "long"}`)}`;
   const closed = p.outcome === "closed";
+  // Practice mode, or a pause holding a take-profit back: the target was hit and the position is still open.
+  const held = p.outcome === "practice" || p.outcome === "paused";
   const title = health
     ? t(p.level === "danger" ? "notify.healthDangerTitle" : "notify.healthWarningTitle", { health: p.health ?? "" })
     : closed
       ? t(p.reason === "take_profit" ? "notify.takeProfitTitle" : "notify.stopLossTitle", { position })
-      : t("notify.protectFailedTitle", { position });
-  const detail = health ? t("notify.healthBody") : closed ? t("notify.protectClosedBody", { amount: money(p.asset, p.amount) }) : t("notify.protectFailedBody");
-  const warn = (health && p.level === "danger") || (!health && !closed);
+      : t(held ? "notify.protectHeldTitle" : "notify.protectFailedTitle", { position });
+  const detail = health
+    ? t("notify.healthBody")
+    : closed
+      ? t("notify.protectClosedBody", { amount: money(p.asset, p.amount) })
+      : t(held ? (p.outcome === "practice" ? "notify.protectPracticeBody" : "notify.protectPausedBody") : "notify.protectFailedBody");
+  const warn = (health && p.level === "danger") || (!health && !closed && !held);
   const unread = !item.readAt;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">

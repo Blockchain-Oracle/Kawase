@@ -2,7 +2,7 @@
 // the draft that produced them, so it always describes what the chain will actually enforce.
 import { decodeCaveat } from "@metamask/smart-accounts-kit/utils";
 import type { Delegation } from "@metamask/smart-accounts-kit";
-import { slice, type Address, type Hex } from "viem";
+import { size, slice, type Address, type Hex } from "viem";
 import type { NetworkContext } from "@kawase/networks";
 
 import { delegationEnvironment } from "./environment";
@@ -25,8 +25,13 @@ export type GrantReceipt = {
   methods: Hex[];
   /** Set when the grant is pinned to one recipient (an automation): an address pinned as the first argument. */
   recipient: Address | undefined;
-  /** Every argument pinned to an address, by its byte offset in calldata (4 = the first argument). */
-  pins: { startIndex: number; address: Address }[];
+  /**
+   * Every pinned argument word, by its byte offset in calldata (4 = the first argument): `value` is the whole word,
+   * `address` its low 20 bytes (meaningful when the argument is an address).
+   */
+  pins: { startIndex: number; address: Address; value: Hex }[];
+  /** The most times the grant can ever be redeemed, from the LimitedCalls caveat. */
+  maxCalls: number | undefined;
   /** The most native value a redeem may carry. 0 means none. */
   maxNativeValue: bigint | undefined;
   /** Addresses allowed to redeem, from the Redeemer caveat. */
@@ -49,6 +54,7 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
     methods: [],
     recipient: undefined,
     pins: [],
+    maxCalls: undefined,
     maxNativeValue: undefined,
     redeemers: [],
     unknownCaveats: [],
@@ -84,12 +90,23 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
         receipt.maxNativeValue = decoded.maxValue;
         break;
       case "allowedCalldata": {
-        // A pinned address is one ABI word whose last 20 bytes are the address; the first argument is the recipient.
-        const address = slice(decoded.value as Hex, ABI_WORD_BYTES - ADDRESS_BYTES, ABI_WORD_BYTES) as Address;
-        receipt.pins.push({ startIndex: decoded.startIndex, address });
-        if (decoded.startIndex === FIRST_ARGUMENT_OFFSET) receipt.recipient = address;
+        // One pin may cover several ABI words (a struct's fields in a row), or only the top of one (a "≤" bound); each
+        // is listed on its own. A pinned address is a whole word whose last 20 bytes are the address; the first
+        // argument is the recipient.
+        const value = decoded.value as Hex;
+        for (let offset = 0; offset < size(value); offset += ABI_WORD_BYTES) {
+          const pinned = slice(value, offset, Math.min(offset + ABI_WORD_BYTES, size(value)));
+          const address = (
+            size(pinned) === ABI_WORD_BYTES ? slice(pinned, ABI_WORD_BYTES - ADDRESS_BYTES, ABI_WORD_BYTES) : "0x"
+          ) as Address;
+          receipt.pins.push({ startIndex: decoded.startIndex + offset, address, value: pinned });
+          if (decoded.startIndex + offset === FIRST_ARGUMENT_OFFSET) receipt.recipient = address;
+        }
         break;
       }
+      case "limitedCalls":
+        receipt.maxCalls = decoded.limit;
+        break;
       default:
         receipt.unknownCaveats.push(caveat.enforcer);
     }

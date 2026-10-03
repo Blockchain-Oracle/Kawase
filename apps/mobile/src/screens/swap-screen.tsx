@@ -27,6 +27,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { WEB_HOVER_MUTED, WEB_HOVER_SECONDARY } from "@kawase/ui-native/lib/wide";
 
 import { tapFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
@@ -86,11 +87,17 @@ function baseUnits(value: string, decimals: number): bigint | undefined {
   return BigInt(whole + fraction.padEnd(decimals, "0"));
 }
 
-export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
+/**
+ * `embedded`: the ticket inside another page (a token page on a desktop window, Stage 13): no header of its own, no
+ * safe-area padding, the amount step scrolls when the page is short, and "Done" or "Cancel" start a fresh ticket
+ * instead of leaving the page (`onFinished` lets the page refresh what the trade changed).
+ */
+export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill: SwapPrefill; embedded?: boolean; onFinished?: () => void }) {
   const { t } = useT();
   const { locale, rtl } = useLocale();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const safeInsets = useSafeAreaInsets();
+  const insets = embedded ? { top: 0, bottom: 0, left: 0, right: 0 } : safeInsets;
   const reduced = useReducedMotion();
   const { status, user } = useSession();
   const signIn = useSignIn();
@@ -122,12 +129,15 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
       .get(chainId, address)
       .then(({ token }) => {
         if (!live) return;
+        // Dollars on the other side; for USDC itself, euros.
+        const usdc = stable(network, "USDC");
+        const other = token.token.address.toLowerCase() === usdc.address.toLowerCase() ? stable(network, "EURC") : usdc;
         if (prefill.buy) {
           setTokenOut(token.token);
-          setTokenIn(stable(network, "USDC"));
+          setTokenIn(other);
         } else {
           setTokenIn(token.token);
-          setTokenOut(stable(network, "USDC"));
+          setTokenOut(other);
         }
       })
       .catch(() => toast(t("tokenPage.notFound")));
@@ -146,7 +156,18 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
 
   const intent = controller.intent;
   const settled = intent && (isSwapMoving(intent) || isSwapFinished(intent));
-  const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
+  const leave = () => {
+    if (embedded) {
+      // Inline: the same ticket again, ready for the next trade.
+      controller.reset();
+      setValue("");
+      setStep("amount");
+      onFinished?.();
+      return;
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+  };
   const back = () => {
     if (settled || step === "amount") leave();
     else setStep("amount");
@@ -196,7 +217,7 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
     tapFeedback("selection");
   };
 
-  const header = (
+  const header = embedded ? null : (
     <>
       {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
       <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
@@ -275,7 +296,7 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
                 <Button size="lg" onPress={leave}>
                   <Text>{t("send.done")}</Text>
                 </Button>
-                {intent.outcome === "sent" ? (
+                {intent.outcome === "sent" && !embedded ? (
                   <Button variant="ghost" onPress={() => router.replace(`/token/${tokenOut.chainId}/${tokenOut.address}`)}>
                     <Text className="text-foreground">{t("ticket.viewToken", { symbol: tokenOut.symbol })}</Text>
                   </Button>
@@ -356,79 +377,89 @@ export function SwapScreen({ prefill }: { prefill: SwapPrefill }) {
         accessibilityRole="button"
         accessibilityLabel={`${side === "in" ? t("ticket.pay") : t("ticket.get")}: ${token.symbol}`}
         onPress={() => setPicker(side)}
-        className="bg-secondary active:bg-muted flex-row items-center gap-2 rounded-full py-1.5 ps-1.5 pe-3"
+        className={cn("bg-secondary active:bg-muted flex-row items-center gap-2 rounded-full py-1.5 ps-1.5 pe-3", WEB_HOVER_SECONDARY)}
       >
         <TokenMark token={token} size={MARK} />
         <Text className="text-foreground text-base font-semibold">{token.symbol}</Text>
         <Icon as={ChevronDown} className="text-muted-foreground size-4" />
       </Pressable>
     );
-    body = (
-      <View className="flex-1">
-        <View className="flex-1 gap-4 px-5 pt-4">
-          <View className="bg-card border-border gap-3 rounded-3xl border p-4">
-            <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-muted-foreground text-sm">{t("ticket.pay")}</Text>
-              <Text className="text-muted-foreground text-xs">{balanceIn !== undefined ? t("ticket.balance", { amount: tokenAmount(balanceIn.toString(), tokenIn.decimals, tokenIn.symbol, locale) }) : " "}</Text>
-            </View>
-            <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
-              {tokenButton(tokenIn, "in")}
-              <Text
-                accessibilityLiveRegion="polite"
-                accessibilityLabel={`${value || "0"} ${tokenIn.symbol}`}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={TICKET_MIN_SCALE}
-                className={cn("font-display flex-1 text-right font-bold", value ? "text-foreground" : "text-muted-foreground")}
-                style={{ fontSize: TICKET_SIZE, lineHeight: TICKET_LINE_HEIGHT, fontVariant: ["tabular-nums"] }}
-              >
-                {displayAmount(value, locale)}
-              </Text>
-            </View>
-            {balanceIn !== undefined && balanceIn > ZERO ? (
-              <View className="flex-row justify-end gap-2">
-                {[
-                  { label: t("ticket.quarter"), divisor: QUARTER },
-                  { label: t("ticket.half"), divisor: HALF },
-                  { label: t("ticket.max"), divisor: 1n },
-                ].map((chip) => (
-                  <Pressable key={chip.label} accessibilityRole="button" onPress={() => share(chip.divisor)} className="bg-muted active:bg-secondary rounded-full px-3 py-1">
-                    <Text className="text-foreground text-xs font-semibold">{chip.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            <View className="flex-row items-center gap-3">
-              <View className="bg-border h-px flex-1" />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t("swap.flip")}
-                onPress={flip}
-                className="bg-secondary active:bg-muted border-border items-center justify-center rounded-full border"
-                style={{ width: FLIP, height: FLIP }}
-              >
-                <Icon as={ArrowUpDown} className="text-foreground size-5" />
+    const ticket = (
+      <View className="bg-card border-border gap-3 rounded-3xl border p-4">
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-muted-foreground text-sm">{t("ticket.pay")}</Text>
+          <Text className="text-muted-foreground text-xs">{balanceIn !== undefined ? t("ticket.balance", { amount: tokenAmount(balanceIn.toString(), tokenIn.decimals, tokenIn.symbol, locale) }) : " "}</Text>
+        </View>
+        <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
+          {tokenButton(tokenIn, "in")}
+          <Text
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={`${value || "0"} ${tokenIn.symbol}`}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={TICKET_MIN_SCALE}
+            className={cn("font-display flex-1 text-right font-bold", value ? "text-foreground" : "text-muted-foreground")}
+            style={{ fontSize: TICKET_SIZE, lineHeight: TICKET_LINE_HEIGHT, fontVariant: ["tabular-nums"] }}
+          >
+            {displayAmount(value, locale)}
+          </Text>
+        </View>
+        {balanceIn !== undefined && balanceIn > ZERO ? (
+          <View className="flex-row justify-end gap-2">
+            {[
+              { label: t("ticket.quarter"), divisor: QUARTER },
+              { label: t("ticket.half"), divisor: HALF },
+              { label: t("ticket.max"), divisor: 1n },
+            ].map((chip) => (
+              <Pressable key={chip.label} accessibilityRole="button" onPress={() => share(chip.divisor)} className={cn("bg-muted active:bg-secondary rounded-full px-3 py-1", WEB_HOVER_MUTED)}>
+                <Text className="text-foreground text-xs font-semibold">{chip.label}</Text>
               </Pressable>
-              <View className="bg-border h-px flex-1" />
-            </View>
-            <View className="flex-row items-center justify-between gap-3">
-              <Text className="text-muted-foreground text-sm">{t("ticket.get")}</Text>
-              {tokenButton(tokenOut, "out")}
-            </View>
+            ))}
           </View>
+        ) : null}
+        <View className="flex-row items-center gap-3">
+          <View className="bg-border h-px flex-1" />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("swap.flip")}
+            onPress={flip}
+            className={cn("bg-secondary active:bg-muted border-border items-center justify-center rounded-full border", WEB_HOVER_SECONDARY)}
+            style={{ width: FLIP, height: FLIP }}
+          >
+            <Icon as={ArrowUpDown} className="text-foreground size-5" />
+          </Pressable>
+          <View className="bg-border h-px flex-1" />
         </View>
-        <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => setValue(applyKey(value, key, tokenIn.decimals))} />
-          <Button size="lg" disabled={!cta.enabled || creating || controller.busy} onPress={() => void review()}>
-            <Text>{creating || controller.busy ? t("ticket.quoting") : cta.label}</Text>
-          </Button>
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-muted-foreground text-sm">{t("ticket.get")}</Text>
+          {tokenButton(tokenOut, "out")}
         </View>
+      </View>
+    );
+    const entry = (
+      <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
+        <Keypad decimal={decimalSeparator(locale)} backspaceLabel={t("send.deleteDigit")} onKey={(key) => setValue(applyKey(value, key, tokenIn.decimals))} />
+        <Button size="lg" disabled={!cta.enabled || creating || controller.busy} onPress={() => void review()}>
+          <Text>{creating || controller.busy ? t("ticket.quoting") : cta.label}</Text>
+        </Button>
+      </View>
+    );
+    body = embedded ? (
+      // Inline in a page: one scroll, so a short window still reaches the keypad and the button.
+      <ScrollView className="flex-1" contentContainerClassName="flex-grow justify-between gap-4 pt-4" keyboardShouldPersistTaps="handled">
+        <View className="px-5">{ticket}</View>
+        {entry}
+      </ScrollView>
+    ) : (
+      <View className="flex-1">
+        <View className="flex-1 gap-4 px-5 pt-4">{ticket}</View>
+        {entry}
       </View>
     );
   }
 
   return (
-    <View className="bg-background flex-1">
+    <View className={embedded ? "flex-1" : "bg-background flex-1"}>
       {header}
       <Animated.View key={visible} entering={enter} exiting={exit} className="flex-1">
         {body}

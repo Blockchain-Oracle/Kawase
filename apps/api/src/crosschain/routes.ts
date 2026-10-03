@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { CROSSCHAIN_PROVIDERS } from "@kawase/intents";
+
 import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
@@ -15,7 +17,9 @@ const requestSchema = z.object({
   destination: z.string().max(TEXT_MAX).nullable().optional(),
   source: z.string().max(TEXT_MAX).nullable().optional(),
   recipient: z.string().max(TEXT_MAX).nullable().optional(),
-  route: z.enum(["cctp", "across", "relay"]).nullable().optional(),
+  route: z.enum(CROSSCHAIN_PROVIDERS).nullable().optional(),
+  /** What arrives, when it differs from what leaves ("USDC": convert first). */
+  toAsset: z.string().max(TEXT_MAX).nullable().optional(),
 });
 const approveSchema = z.object({ version: z.number().int().positive() });
 const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);

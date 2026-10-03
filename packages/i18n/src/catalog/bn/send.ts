@@ -47,6 +47,8 @@ export const send: Catalog["send"] = {
   allowanceUsdcOnlyAndroid: "আপনার দৈনিক সীমা শুধু USDC-র জন্য — আপনার আঙুলের ছাপ বা স্ক্রিন লক লাগবে",
   allowanceLeft: "আজ {{total}}-এর মধ্যে {{amount}} বাকি",
   sendNow: "পাঠান",
+  heldNotTyped: "আপনার বার্তায় আপনি এই প্রাপকের নাম বলেননি। পাঠানোর আগে দেখে নিন টাকা কার কাছে যাচ্ছে।",
+  heldOutside: "আপনার বার্তার পরে Kawase বাইরের কনটেন্ট (কোনো বিক্রেতা, টোকেন বা মেমো) পড়েছে, তাই এটি আপনার অপেক্ষায় আছে।",
   sendFaceId: "Face ID দিয়ে পাঠান",
   signPrompt: "{{name}}-কে {{amount}} পাঠান",
   sending: "পাঠানো হচ্ছে…",

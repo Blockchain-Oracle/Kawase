@@ -3,7 +3,8 @@
 // Stocks & FX · New; on Trending the Long or short cards, a hot-markets carousel and the heatmap (21st.dev 30551); then rows
 // with price, 24 h change, volume and liquidity, copycats flagged. Public market data (R13): guests and testnet
 // users see mainnet's markets, and testnet says so with the switch. Rate-limited data shows its last snapshot
-// with the time. Every row opens the token page.
+// with the time. Every row opens the token page. On a desktop window (Stage 13) the page is a wide centred column,
+// the heatmap larger, and the rows in two columns; the sidebar carries the header's pills.
 import { useRouter } from "expo-router";
 import { Search, X } from "lucide-react-native";
 import * as React from "react";
@@ -24,6 +25,7 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { TabHeader } from "@/components/tab-header";
@@ -55,6 +57,10 @@ const SEGMENT_KEYS: Record<Segment, string> = {
 };
 const HOT_COUNT = 6;
 const HEAT_COUNT = 16;
+/** A desktop window shows more of the market, larger. */
+const WIDE_HEAT_COUNT = 28;
+const WIDE_HEAT_HEIGHT = 380;
+const WIDE_ROW_COLUMNS = 2;
 const SKELETON_ROWS = 6;
 const SKELETON_ROW_HEIGHT = 64;
 const HOT_CARD_WIDTH = 148;
@@ -73,6 +79,7 @@ export function MarketsScreen() {
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
   const colors = useThemeColors();
+  const wide = useWide();
   const { user } = useSession();
   const networkSwitch = useNetworkSwitch();
   const [segment, setSegment] = React.useState<Segment>("trending");
@@ -118,12 +125,12 @@ export function MarketsScreen() {
       {testnet ? (
         <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
       ) : null}
-      <TabHeader className="px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }} />
+      {wide ? null : <TabHeader className="px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }} />}
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-5 px-5 pt-2"
-        contentContainerStyle={{ paddingBottom: clearance.scroll }}
+        contentContainerClassName={cn("gap-5 px-5 pt-2", wide && "px-10 pt-8")}
+        contentContainerStyle={[{ paddingBottom: clearance.scroll }, wide ? { width: "100%", maxWidth: WIDE_PAGE_PX, alignSelf: "center" } : null]}
         keyboardShouldPersistTaps="handled"
       >
         <Text accessibilityRole="header" className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
@@ -318,13 +325,14 @@ export function MarketsScreen() {
                 <View className="gap-2">
                   <Eyebrow className="px-1">{t("markets.heatmap")}</Eyebrow>
                   <MarketHeatmap
+                    height={wide ? WIDE_HEAT_HEIGHT : undefined}
                     colors={{
                       up: colors.success,
                       down: colors.destructive,
                       flat: colors.muted,
                       text: colors.foreground,
                     }}
-                    tiles={promoted.slice(0, HEAT_COUNT).map((row) => ({
+                    tiles={promoted.slice(0, wide ? WIDE_HEAT_COUNT : HEAT_COUNT).map((row) => ({
                       key: row.token.address,
                       label: row.token.symbol,
                       weight: row.volume24hUsd ?? row.liquidityUsd ?? 0,
@@ -336,11 +344,26 @@ export function MarketsScreen() {
                   />
                 </View>
 
-                <ListGroup>
-                  {rows.map((row) => (
-                    <AssetRow key={row.token.address} {...rowProps(row)} />
-                  ))}
-                </ListGroup>
+                {wide ? (
+                  // Two columns of rows on a desktop window: the list reads down the first, then the second.
+                  <View className="flex-row items-start gap-4">
+                    {[rows.slice(0, Math.ceil(rows.length / WIDE_ROW_COLUMNS)), rows.slice(Math.ceil(rows.length / WIDE_ROW_COLUMNS))].map((half, column) => (
+                      <View key={column} className="min-w-0 flex-1">
+                        <ListGroup>
+                          {half.map((row) => (
+                            <AssetRow key={row.token.address} {...rowProps(row)} />
+                          ))}
+                        </ListGroup>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <ListGroup>
+                    {rows.map((row) => (
+                      <AssetRow key={row.token.address} {...rowProps(row)} />
+                    ))}
+                  </ListGroup>
+                )}
                 {market ? (
                   <Text className="text-muted-foreground text-center text-xs">
                     {t("markets.updated", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}

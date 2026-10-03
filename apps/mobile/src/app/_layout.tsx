@@ -12,6 +12,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Toaster } from "sonner-native";
 
+import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
+
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
 import { FundProvider } from "@/fund/fund-provider";
@@ -23,8 +25,11 @@ import { ThemeSync } from "@/theme/theme-sync";
 import { WalletProvider } from "@/wallet/wallet-provider";
 import { WebApprovalHost } from "@/wallet/web-approval-host";
 
-// Sheets, toasts and the overlay host sit inside LocaleProvider so they inherit the reading direction.
+// Sheets, toasts and the overlay host sit inside LocaleProvider so they inherit the reading direction. On a desktop
+// window (Stage 13) the pages outside the signed-in area (the story, terms, a public receipt) keep their phone shape
+// in a centred column; the signed-in area lays itself out for the desktop.
 export default function RootLayout() {
+  const wide = useWide();
   return (
     <GestureHandlerRootView className="flex-1">
       <KeyboardProvider>
@@ -38,7 +43,12 @@ export default function RootLayout() {
                   <SignInProvider>
                     <BuyProvider>
                       <FundProvider>
-                        <Stack screenOptions={{ headerShown: false }} />
+                        <Stack
+                          screenOptions={({ route }) => ({
+                            headerShown: false,
+                            ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
+                          })}
+                        />
                       </FundProvider>
                     </BuyProvider>
                   </SignInProvider>

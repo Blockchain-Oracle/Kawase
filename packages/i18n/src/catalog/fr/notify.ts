@@ -21,6 +21,10 @@ export const notify: Catalog["notify"] = {
   protectClosedBody: "{{amount}} sont revenus dans votre portefeuille.",
   protectFailedTitle: "Impossible de clôturer {{position}}",
   protectFailedBody: "Le prix obtenu par Kawase n'était pas assez juste pour vendre. Vérifiez maintenant.",
+  protectHeldTitle: "Objectif atteint : {{position}} reste ouverte",
+  protectPracticeBody: "Le mode entraînement est activé, Kawase ne l'a donc pas clôturée. Rien de réel n'a bougé.",
+  protectPausedBody:
+    "Kawase est en pause et n'a donc pas pris le profit. Il le fera à la reprise, si le prix est toujours là.",
   side_long: "longue",
   side_short: "courte",
   needsYouTitle: "Vous attend",

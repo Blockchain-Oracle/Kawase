@@ -139,8 +139,12 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
     case "position_closed": {
       const position = `${p.market ?? ""} ${text(locale, "notify", `side_${p.side === "short" ? "short" : "long"}`)}`;
       const closed = p.outcome === "closed";
-      title = closed ? text(locale, "notify", p.reason === "take_profit" ? "takeProfitTitle" : "stopLossTitle", { position }) : text(locale, "notify", "protectFailedTitle", { position });
-      body = closed ? text(locale, "notify", "protectClosedBody", { amount: sum }) : text(locale, "notify", "protectFailedBody");
+      // Practice mode, or a pause holding a take-profit back: the target was hit and the position is still open.
+      const held = p.outcome === "practice" || p.outcome === "paused";
+      title = closed
+        ? text(locale, "notify", p.reason === "take_profit" ? "takeProfitTitle" : "stopLossTitle", { position })
+        : text(locale, "notify", held ? "protectHeldTitle" : "protectFailedTitle", { position });
+      body = closed ? text(locale, "notify", "protectClosedBody", { amount: sum }) : text(locale, "notify", held ? (p.outcome === "practice" ? "protectPracticeBody" : "protectPausedBody") : "protectFailedBody");
       path = "/margin";
       break;
     }

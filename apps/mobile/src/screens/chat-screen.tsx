@@ -20,6 +20,7 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
 import { Conversation } from "@/chat/conversation";
 import { HistoryHitRow } from "@/chat/insight-cards";
@@ -34,6 +35,9 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
 const FAILED_ICON = 36;
+/** The conversation's width on a desktop window, and the air above it there (no status bar). */
+const CHAT_COLUMN_PX = 760;
+const WIDE_TOP = 24;
 
 type Open =
   | { status: "ready"; id: string; messages: UIMessage[]; prompt?: string | undefined }
@@ -47,6 +51,7 @@ export function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const wide = useWide();
   const { user } = useSession();
   const { prompt, thread } = useLocalSearchParams<{ prompt?: string; thread?: string }>();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
@@ -141,65 +146,68 @@ export function ChatScreen() {
       {testnet ? (
         <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
       ) : null}
-      <View
-        className="flex-row items-center gap-2 px-5"
-        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
-      >
-        <Button
-          variant="secondary"
-          size="icon"
-          className="size-11"
-          accessibilityLabel={t("chat.history")}
-          onPress={() => {
-            void loadThreads();
-            setHistoryOpen(true);
-          }}
+      {/* A desktop window: the conversation in a centred column of comfortable reading width (Stage 13). */}
+      <View className="w-full flex-1 self-center" style={wide ? { maxWidth: CHAT_COLUMN_PX } : undefined}>
+        <View
+          className="flex-row items-center gap-2 px-5"
+          style={{ paddingTop: wide ? WIDE_TOP : testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
         >
-          <Icon as={History} className="size-5" />
-        </Button>
-        <Text className="font-display text-foreground flex-1 text-center text-xl font-bold">{t("chat.title")}</Text>
-        <Button variant="secondary" size="icon" className="size-11" accessibilityLabel={t("scan.title")} onPress={() => setScanning(true)}>
-          <Icon as={ScanLine} className="size-5" />
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon"
-          className="size-11"
-          accessibilityLabel={t("chat.newChat")}
-          onPress={() => fresh()}
-        >
-          <Icon as={SquarePen} className="size-5" />
-        </Button>
-      </View>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-11"
+            accessibilityLabel={t("chat.history")}
+            onPress={() => {
+              void loadThreads();
+              setHistoryOpen(true);
+            }}
+          >
+            <Icon as={History} className="size-5" />
+          </Button>
+          <Text className="font-display text-foreground flex-1 text-center text-xl font-bold">{t("chat.title")}</Text>
+          <Button variant="secondary" size="icon" className="size-11" accessibilityLabel={t("scan.title")} onPress={() => setScanning(true)}>
+            <Icon as={ScanLine} className="size-5" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-11"
+            accessibilityLabel={t("chat.newChat")}
+            onPress={() => fresh()}
+          >
+            <Icon as={SquarePen} className="size-5" />
+          </Button>
+        </View>
 
-      {open.status === "ready" ? (
-        <Conversation
-          key={open.id}
-          threadId={open.id}
-          initialMessages={open.messages}
-          initialPrompt={open.prompt}
-          onActivity={() => void loadThreads()}
-        />
-      ) : open.status === "failed" ? (
-        <View className="flex-1 items-center justify-center gap-4 px-8">
-          <Icon as={CloudOff} className="text-muted-foreground" size={FAILED_ICON} />
-          <Text accessibilityRole="alert" className="text-foreground text-center text-base">
-            {open.id ? t("chat.threadFailed") : t("chat.historyFailed")}
-          </Text>
-          <View className="flex-row gap-3">
-            <Button variant="secondary" onPress={() => void (open.id ? openThread(open.id) : start())}>
-              <Text>{t("common.retry")}</Text>
-            </Button>
-            <Button variant="ghost" onPress={() => fresh()}>
-              <Text>{t("chat.newChat")}</Text>
-            </Button>
+        {open.status === "ready" ? (
+          <Conversation
+            key={open.id}
+            threadId={open.id}
+            initialMessages={open.messages}
+            initialPrompt={open.prompt}
+            onActivity={() => void loadThreads()}
+          />
+        ) : open.status === "failed" ? (
+          <View className="flex-1 items-center justify-center gap-4 px-8">
+            <Icon as={CloudOff} className="text-muted-foreground" size={FAILED_ICON} />
+            <Text accessibilityRole="alert" className="text-foreground text-center text-base">
+              {open.id ? t("chat.threadFailed") : t("chat.historyFailed")}
+            </Text>
+            <View className="flex-row gap-3">
+              <Button variant="secondary" onPress={() => void (open.id ? openThread(open.id) : start())}>
+                <Text>{t("common.retry")}</Text>
+              </Button>
+              <Button variant="ghost" onPress={() => fresh()}>
+                <Text>{t("chat.newChat")}</Text>
+              </Button>
+            </View>
           </View>
-        </View>
-      ) : (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator accessibilityLabel={t("common.loading")} color={colors["muted-foreground"]} />
-        </View>
-      )}
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator accessibilityLabel={t("common.loading")} color={colors["muted-foreground"]} />
+          </View>
+        )}
+      </View>
 
       <Sheet
         open={historyOpen}

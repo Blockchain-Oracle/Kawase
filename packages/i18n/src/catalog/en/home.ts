@@ -32,6 +32,8 @@ export const home = {
   dockVoice: "Talk to Kawase",
   dockActivity: "Activity",
   dockProfile: "Profile",
+  navigation: "Main menu",
+  moveMoney: "Move money",
   funded: "You're funded",
   guestTitle: "Your money agent on Arc",
   guestBody: "Ask about Arc, balances and sending — no wallet needed to try. Sign in when you want one of your own.",

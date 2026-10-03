@@ -5,6 +5,7 @@
 import { generateText, isToolUIPart, type UIMessage } from "ai";
 
 import type { Models } from "./models";
+import { untrusted } from "./quarantine";
 
 /** What a thread's digest holds (the api stores it per thread). */
 export type ThreadDigest = { summary: string; throughMessageId: string; folded: number; actions: string[] };
@@ -97,14 +98,18 @@ export async function foldThread(models: Models, messages: UIMessage[], digest: 
   return { summary: text.trim(), throughMessageId: chunk.at(-1)!.id, folded: (digest?.folded ?? 0) + chunk.length, actions };
 }
 
-/** The digest's block in the instructions (after the cacheable prefix). */
+/**
+ * The digest's block in the instructions (after the cacheable prefix). Both parts are fenced as data (M8): the cards
+ * are tool outputs as stored, which can hold a seller's answer, a vault's or token's name or a memo, and the summary
+ * was written from a conversation that may quote them. Fenced when read, so digests saved before this are too.
+ */
 export function digestLines(digest: ThreadDigest | undefined): string[] {
   if (!digest) return [];
   return [
     "",
-    `Earlier in this conversation (${digest.folded} older messages, summarized; amounts and outcomes may have changed since, so check with your tools before relying on any): ${digest.summary}`,
+    `Earlier in this conversation (${digest.folded} older messages, summarized; amounts and outcomes may have changed since, so check with your tools before relying on any): ${untrusted("conversation summary", digest.summary)}`,
     ...(digest.actions.length > 0
-      ? ["Cards shown in that earlier part, as the tools recorded them (oldest first):", ...digest.actions.map((action) => `- ${action}`)]
+      ? ["Cards shown in that earlier part, as the tools recorded them (oldest first):", ...digest.actions.map((action) => `- ${untrusted("earlier card", action)}`)]
       : []),
   ];
 }

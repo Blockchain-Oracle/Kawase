@@ -40,7 +40,7 @@ import type {
 } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, marginPositions, newId, txAttempts, type Db } from "@kawase/db";
 import { BPS, WAD, borrowApr, hasNoDebt, readAccount, readMarket, spokeMoves, valueOf, type AaveAccount, type AaveMarket, type AaveReserve } from "@kawase/integrations-aave-v4";
-import { encodeRedeemProtect, encodeSelfBatch, isWalletSetUp, type ProtectGrants } from "@kawase/integrations-delegation";
+import { encodeRedeemProtect, encodeSelfBatch, isWalletSetUp, ProtectCapExceeded, shapeProtectiveClose, type ProtectGrants, type ProtectScope } from "@kawase/integrations-delegation";
 import { DRAFTABLE_STATES, loadMarginDraft, marginDraftHash, storeMarginDraft, type IntentState, type MarginDraft, type StoredMarginDraft } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
@@ -351,36 +351,45 @@ export class MarginService {
     return { clients, wallet, venue, usdc, asset, side, row, rows, account, live, collateral, debt, soleDebtor, base: baseOf(account, { collateral, collateralAmount: live.collateral, debt, debtAmount: live.debt }) };
   }
 
-  /** A full close planned through the route protection can use (Uniswap v3, recipient the wallet). */
-  async planProtectiveClose(context: NonNullable<Awaited<ReturnType<MarginService["closeContext"]>>>, slippageBps: number, mode: "quote" | "build") {
+  /**
+   * A full close planned through the route protection can use (Uniswap v3, recipient the wallet): in the pool of `fee`
+   * when the grants pin one, else the best tier now.
+   */
+  async planProtectiveClose(context: NonNullable<Awaited<ReturnType<MarginService["closeContext"]>>>, slippageBps: number, mode: "quote" | "build", fee?: number) {
     const { clients, wallet, venue, usdc, asset, side, live, base, soleDebtor } = context;
     return planClose(
       { side, wallet, spoke: venue.spoke, usdc, asset, collateral: live.collateral, debt: live.debt, fractionBps: FULL_BPS, base, soleDebtor, limits: { ...limits, slippageBps } },
-      uniswapSwapper({ client: clients.client as never, wallet, slippageBps, mode }),
+      uniswapSwapper({ client: clients.client as never, wallet, slippageBps, mode, fee }),
     );
   }
 
   /**
-   * Kawase closes a position for the person (take-profit or stop-loss): the close planned now, every call under the
-   * grant that covers it, simulated from the ops wallet, then recorded as an order of its own (origin "automation")
-   * and handed to the ops wallet once. The receipt is witnessed exactly as for a close the person signs.
+   * Kawase closes a position for the person (take-profit or stop-loss): the close planned now in the pool the grants
+   * pin, shaped as they allow (one capped approval each, back to zero at the end), every call under the grant that
+   * covers it, simulated from the ops wallet, then recorded as an order of its own (origin "automation") and handed to
+   * the ops wallet once. The receipt is witnessed exactly as for a close the person signs.
    */
-  async protectiveClose(input: { userId: string; network: NetworkId; positionId: string; reason: "take_profit" | "stop_loss"; slippageBps: number; grants: ProtectGrants; terms: { spoke: Address; router: Address; tokens: Address[] } }): Promise<{ intentId: string } | { refused: string }> {
+  async protectiveClose(input: { userId: string; network: NetworkId; positionId: string; reason: "take_profit" | "stop_loss"; slippageBps: number; grants: ProtectGrants; scope: ProtectScope }): Promise<{ intentId: string } | { refused: string }> {
     const ops = this.chains.get(input.network)?.ops;
     if (!this.opsAttempts || !ops) return { refused: "no_ops_wallet" };
     const context = await this.closeContext(input.userId, input.network, input.positionId);
     if (!context) return { refused: "position_gone" };
     let plan: Plan;
     try {
-      plan = await this.planProtectiveClose(context, input.slippageBps, "build");
+      plan = await this.planProtectiveClose(context, input.slippageBps, "build", input.scope.fee);
     } catch (error) {
       this.log.warn({ err: error, positionId: input.positionId }, "protective close plan failed");
       return { refused: "no_route" };
     }
     let redeem: { to: Address; data: Hex };
     try {
-      redeem = encodeRedeemProtect(context.clients.network, input.grants, input.terms, plan.calls);
+      redeem = encodeRedeemProtect(context.clients.network, input.grants, input.scope, shapeProtectiveClose(input.scope, plan.calls));
     } catch (error) {
+      // Grown past what the person let Kawase move: not a security event, they are asked again.
+      if (error instanceof ProtectCapExceeded) {
+        this.log.warn({ err: error, positionId: input.positionId }, "protective close over the grants' caps");
+        return { refused: "grant_outgrown" };
+      }
       this.log.error({ err: error, positionId: input.positionId }, "security.protect_call_refused");
       return { refused: "not_covered" };
     }
@@ -1059,22 +1068,25 @@ export class MarginService {
       return;
     }
     const request = intent.request as StoredRequest;
-    await this.db.transaction(async (tx) => {
+    const positionId = await this.db.transaction(async (tx) => {
       const [done] = await tx
         .update(intents)
         .set({ state: "completed", completedAt: new Date() })
         .where(and(eq(intents.id, intent.id), inArray(intents.state, ["executing", "unknown_outcome"])))
         .returning({ id: intents.id });
-      if (!done) return;
-      const positionId = open
+      if (!done) return null;
+      const id = open
         ? await this.recordOpen(tx, intent, view, draft, { supplied, borrowed })
         : await this.recordClose(tx, request.positionId, draft, { withdrawn, repaid, returned: BigInt(view.returnedMin) });
       await tx
         .update(txAttempts)
-        .set({ status: "confirmed", receipt: { positionId, supplied: supplied.toString(), borrowed: borrowed.toString(), repaid: repaid.toString(), withdrawn: withdrawn.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
+        .set({ status: "confirmed", receipt: { positionId: id, supplied: supplied.toString(), borrowed: borrowed.toString(), repaid: repaid.toString(), withdrawn: withdrawn.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
         .where(eq(txAttempts.id, attempt.id));
+      return id;
     });
     if (!open) await this.tellProtective(intent, "closed", BigInt(view.returnedMin));
+    // Added to: past what its protection grants let Kawase move, the position stops being watched and asks again.
+    if (open && positionId) await this.protection?.resized(intent.userId, intent.network, positionId).catch((error: unknown) => this.log.warn({ err: error, positionId }, "protection resize check failed"));
   }
 
   private async recordOpen(tx: Tx, intent: IntentRow, view: MarginDraftView, draft: MarginDraft, moved: { supplied: bigint; borrowed: bigint }) {
