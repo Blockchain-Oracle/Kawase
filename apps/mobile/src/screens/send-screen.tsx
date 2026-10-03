@@ -164,14 +164,16 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     leave();
   };
 
-  // The recipient's wallet is on another chain (money-out.md "From → To"): USDC goes by a bridge with route options
-  // (the Move screen, same amount and recipient); any other token converts to USDC first.
+  // The recipient's wallet is on another chain (money-out.md "From → To"): the Move screen (same amount and recipient)
+  // with its route options — USDC by a bridge on both networks, any other token as itself where the cross-chain routes
+  // quote it (they run on mainnet); on testnet any other token converts to USDC first.
   const isUsdc = token.address.toLowerCase() === stableToken(network, "USDC").address.toLowerCase();
+  const asItself = isUsdc || !testnet;
   const otherChain = async () => {
     if (!recipient) return;
     if (intent && isOpen(intent)) await controller.cancel();
-    if (isUsdc)
-      router.push({ pathname: "/move", params: { direction: "out", amount: value, recipient: recipient.text } });
+    if (asItself)
+      router.push({ pathname: "/move", params: { direction: "out", amount: value, recipient: recipient.text, ...(isUsdc ? {} : { asset: token.address }) } });
     else router.push({ pathname: "/swap", params: { sell: token.address } });
   };
 
@@ -257,7 +259,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
           {!blocking && draft ? (
             <Pressable accessibilityRole="button" onPress={() => void otherChain()} className="active:bg-muted gap-0.5 rounded-2xl px-1 py-2">
               <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("send.otherChain")}</Text>
-              <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>{isUsdc ? t("send.otherChainBridge") : t("send.otherChainConvert", { asset: token.symbol })}</Text>
+              <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>{isUsdc ? t("send.otherChainBridge") : asItself ? t("send.otherChainAsItself", { asset: token.symbol }) : t("send.otherChainConvert", { asset: token.symbol })}</Text>
             </Pressable>
           ) : null}
         </ScrollView>

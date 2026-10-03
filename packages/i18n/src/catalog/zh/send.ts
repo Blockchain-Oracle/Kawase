@@ -100,6 +100,7 @@ export const send: Catalog["send"] = {
   otherChain: "对方的钱包在另一条链上？",
   otherChainBridge: "通过跨链桥把 USDC 发过去：链和路线由你选择。",
   otherChainConvert: "只有 USDC 能跨链。请先把你的 {{asset}} 换成 USDC。",
+  otherChainAsItself: "把 {{asset}} 原样发过去：链和路线由你选。",
   referenceAdd: "添加链上参考号",
   referencePlaceholder: "发票号或订单号",
   referenceHint: "随付款写入链上，方便收款人对账。内容公开，请勿填写私密信息。",

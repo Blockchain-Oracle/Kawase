@@ -103,6 +103,7 @@ export const send: Catalog["send"] = {
   otherChain: "¿Su billetera está en otra cadena?",
   otherChainBridge: "Envía USDC allí por un puente: tú eliges la cadena y la ruta.",
   otherChainConvert: "Solo USDC cruza de cadena. Convierte primero tu {{asset}} a USDC.",
+  otherChainAsItself: "Envía {{asset}} allí tal cual: tú eliges la red y la ruta.",
   referenceAdd: "Añadir una referencia en la cadena",
   referencePlaceholder: "Número de factura o de pedido",
   referenceHint:
