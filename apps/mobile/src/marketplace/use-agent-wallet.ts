@@ -21,6 +21,7 @@ import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { sayIfRefused } from "@/wallet/refused";
 
 const ZERO = BigInt(0);
+const HEX_PREFIX = "0x".length;
 
 /** "0.006 USDC" in the person's locale (sub-cent prices keep their digits). */
 export function usePrice() {
@@ -76,7 +77,7 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
         }
         // What is signed is what the grant card says (M6): USDC transfers only, to this person's agent wallet, capped a day.
         const grant = checkTransferGrant(result.grant.typedData, result.grant.receipt as unknown as ShownGrant, signer.address);
-        if (view?.address && !receiptOf(grant).recipient?.toLowerCase().endsWith(view.address.slice(2).toLowerCase())) throw new SigningRefused("a top-up grant to another wallet than the agent wallet");
+        if (view?.address && !receiptOf(grant).recipient?.toLowerCase().endsWith(view.address.slice(HEX_PREFIX).toLowerCase())) throw new SigningRefused("a top-up grant to another wallet than the agent wallet");
         const signature = await signer.signTypedData(result.grant.typedData as unknown as TypedDataDefinition);
         // The same yes also turns off an earlier grant that still works on chain (Kawase pays its fee when it can).
         const revoke = result.grant.revoke ? await signRevoke(signer, result.grant.revoke) : undefined;
