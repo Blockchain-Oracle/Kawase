@@ -58,6 +58,7 @@ import { evaluateEarn, type EarnEvaluation, type PolicyResult } from "@kawase/po
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
 import { OpsAttempts } from "../intents/ops-attempts";
@@ -237,7 +238,7 @@ export class EarnService {
       network,
       capability: { here: view.yield[network].state, other: view.yield[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       wallet: { registered: Boolean(wallet), setUp, usdc },
       action: request.action,
       vault: vault
@@ -578,6 +579,8 @@ export class EarnService {
     amount: bigint;
   }): Promise<{ status: "executing"; intentId: string; resumed: boolean } | { status: "skipped"; reason: string }> {
     if (await intentExists(this.db, input.intentId)) return { status: "executing", intentId: input.intentId, resumed: true };
+    // Nothing moves without the person while everything is paused (X30), whoever asks for the move.
+    if (await pausedAll(this.db, input.userId)) return { status: "skipped", reason: "PAUSED_ALL" };
     if (!this.ops) return { status: "skipped", reason: "NOT_AVAILABLE_YET" };
     const { client, network, ops } = this.clients(input.network);
     const wallet = (await this.wallets.userWallet(input.userId))?.address as Address | undefined;

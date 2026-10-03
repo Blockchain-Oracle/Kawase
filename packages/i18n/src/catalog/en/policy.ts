@@ -48,6 +48,8 @@ export const policy = {
   fixOpenContact: "Open contact",
   AGENT_PAUSED: "Paused: this one needs your approval",
   NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
+  ABOVE_APPROVAL_THRESHOLD: "Above {{limit}}: this one needs your approval",
+  OVER_RECIPIENT_WEEKLY: "Over {{limit}} a week to one person ({{used}} already): this one needs your approval",
   NEW_RECIPIENT_COOLDOWN:
     "New to you: until {{until}}, more than {{cap}} to them needs your own approval. Change it in Wallet & limits.",
   TEST_AMOUNT_SUGGESTED: "First payment here. Send {{test}} first to check it arrives?",

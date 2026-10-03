@@ -118,7 +118,7 @@ export class PayoutService {
     let before = ZERO;
     for (const [position, entry] of lines.entries()) {
       const facts: GatheredFacts["facts"] = { ...gathered[position]!.facts };
-      facts.spent = { day: facts.spent.day + before, week: facts.spent.week + before };
+      facts.spent = { ...facts.spent, day: facts.spent.day + before, week: facts.spent.week + before };
       const blocking = blockingResult(evaluateSend(facts).results.filter((result) => !BATCH_LEVEL.has(result.code)));
       if (blocking) problems.push({ index: entry.index, recipient: entry.recipient, problem: LINE_PROBLEMS[blocking.code] ?? "rules" });
       before += gathered[position]!.ledger?.amount ?? ZERO;

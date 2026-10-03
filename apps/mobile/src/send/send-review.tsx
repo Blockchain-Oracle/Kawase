@@ -45,6 +45,8 @@ const ROW_WARNINGS = new Set([
   // A new address in its cooldown: this one needs the person's own yes (D-cooldown).
   "NEW_RECIPIENT_COOLDOWN",
 ]);
+/** Why a send needs the person's own yes when the allowance would otherwise cover it, said on the meter. */
+const HELD = new Set(["AGENT_PAUSED", "NOT_ON_ALLOWLIST", "ABOVE_APPROVAL_THRESHOLD", "OVER_RECIPIENT_WEEKLY"]);
 /** USDC and EURC both have six decimals. */
 const STABLE_DECIMALS = 6;
 
@@ -64,19 +66,21 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
 export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compact?: boolean }) {
   const { t } = useT();
   const money = useMoney();
+  const policyText = usePolicyText();
   const { allowance, route } = intent;
   const stepUp = intent.results.some(
     (entry) => entry.code === "LOOKALIKE_ADDRESS" || entry.code === "FIRST_TIME_RECIPIENT",
   );
   const above = intent.results.some((entry) => entry.code === "ABOVE_ALLOWANCE");
   // Each token has its own allowance (Wallet & limits), so "off" means off for this send's token.
-  // Paused or off the allowlist: say why this one needs Face ID (D-pause).
-  const held = intent.results.find((entry) => entry.code === "AGENT_PAUSED" || entry.code === "NOT_ON_ALLOWLIST");
+  // Paused, off the allowlist, above the approval threshold or past one person's weekly cap: say why this one needs
+  // Face ID (D-pause, M9).
+  const held = intent.results.find((entry) => HELD.has(entry.code));
   const line =
     route === "allowance"
       ? t("send.allowanceInside")
       : held
-        ? t(`policy.${held.code}`)
+        ? policyText(held, intent.network)
         : !allowance.active
         ? t("send.allowanceOff")
         : above

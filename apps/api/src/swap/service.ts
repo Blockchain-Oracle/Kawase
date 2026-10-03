@@ -63,6 +63,7 @@ import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFac
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import type { BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import type { AssetService } from "../tokens/service";
@@ -285,7 +286,7 @@ export class SwapService {
       network,
       capability: { here: view.swap[network].state, other: view.swap[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       wallet: { registered: Boolean(wallet), setUp, balanceIn, usdc: usdcBalance },
       tokenIn,
       tokenOut,

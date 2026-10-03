@@ -9,9 +9,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@kawase/networks": "workspace:*",
     "viem": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {

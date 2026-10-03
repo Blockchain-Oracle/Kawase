@@ -94,6 +94,7 @@ import { evaluateCrossChain, type CrossChainEvaluation, type CrossChainFacts, ty
 import type { BridgeEngine } from "../bridge/engine";
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import { withCredit, type BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import type { Recipients } from "../send/recipients";
@@ -475,7 +476,7 @@ export class CrossChainService {
       network,
       capability: { here: view.bridge[network].state, other: view.bridge[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       direction,
       wallet: { registered: Boolean(wallet), setUp },
       chain: chainState,

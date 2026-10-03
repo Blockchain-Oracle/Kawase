@@ -38,7 +38,7 @@ export type SwapFacts = {
   network: NetworkId;
   capability: { here: CapabilityState; other: CapabilityState };
   signedIn: boolean;
-  /** Pause all stops the agent and automations only; a swap is always the person's own yes, so it never blocks (D-pause). */
+  /** Pause all stops the agent and automations only; a swap is always the person's own yes, so it never blocks (X30). */
   pausedAll: boolean;
   wallet: {
     registered: boolean;
@@ -107,6 +107,9 @@ export function evaluateSwap(facts: SwapFacts): SwapEvaluation {
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "swap" })], tokenIn, tokenOut);
   }
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")], tokenIn, tokenOut);
+  // Pause all stops everything that would move without the person (X30); a swap is the person's own yes, so it goes
+  // on, and the card says the pause is on.
+  if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   // Approve + swap go out as one batch from the wallet's own EIP-7702 code.
   if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
 

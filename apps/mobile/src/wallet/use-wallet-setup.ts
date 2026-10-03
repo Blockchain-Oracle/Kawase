@@ -11,10 +11,14 @@ import type { TypedDataDefinition } from "viem";
 import { ApiError, type AllowanceRequestResponse, type GrantReceipt, type NetworkId } from "@kawase/api-client";
 import { APPROVAL_TTL_S, MS_PER_SECOND } from "@kawase/config";
 
+import { checkTransferGrant } from "@kawase/wallet";
+
+import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
+import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke } from "@/wallet/sign-revoke";
 import { useTurnkeyAccount } from "@/wallet/use-turnkey-account";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
@@ -43,6 +47,7 @@ export { toSerializable } from "@/wallet/serializable";
 type Prompt = { message: string; cancel: string };
 
 export function useWalletSetup(network: NetworkId) {
+  const { t } = useT();
   const { status } = useSession();
   const turnkey = useTurnkeyAccount();
   // Passkeys need a real domain; until then the session key signs, behind the device's Face ID check.
@@ -73,12 +78,14 @@ export function useWalletSetup(network: NetworkId) {
       } catch (error) {
         // No gas on the relayer yet, or its day's budget spent: the same calm wait, not an error.
         if (error instanceof ApiError && (error.code === "network_not_ready" || error.code === "relayer_budget_spent")) setNotReady(true);
+        // The setup is signed only for the DeleGator on Arc; anything else is refused on the phone (M6).
+        sayIfRefused(error, t);
         setFailed((current) => ({ ...current, [key]: true }));
       } finally {
         setRunning(undefined);
       }
     },
-    [refresh],
+    [refresh, t],
   );
 
   const createWallet = React.useCallback(() => step("wallet", async () => void (await turnkey.ensureWallet())), [step, turnkey]);
@@ -143,6 +150,8 @@ export function useWalletSetup(network: NetworkId) {
       setRunning("allowance");
       setFailed((current) => ({ ...current, allowance: undefined }));
       try {
+        // The card reads this receipt; the phone decodes the grant itself and signs only if the two agree (M6).
+        checkTransferGrant(proposal.typedData, proposal.receipt, signer.address);
         const signature = await signer.signTypedData(proposal.typedData as unknown as TypedDataDefinition);
         // An allowance this one replaces is revoked in the same yes; the api turns it off on chain first.
         const revoke = proposal.revoke ? await signRevoke(signer, proposal.revoke) : undefined;
@@ -151,14 +160,15 @@ export function useWalletSetup(network: NetworkId) {
         await refresh();
         setProposal(undefined);
         return { status: "accepted", receipt: accepted.receipt as GrantReceipt };
-      } catch {
+      } catch (error) {
+        sayIfRefused(error, t);
         setFailed((current) => ({ ...current, allowance: true }));
         return { status: "failed" };
       } finally {
         setRunning(undefined);
       }
     },
-    [signer, proposal, prepareAllowance, refresh],
+    [signer, proposal, prepareAllowance, refresh, t],
   );
 
   return {

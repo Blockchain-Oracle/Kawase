@@ -48,6 +48,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "打开联系人",
   AGENT_PAUSED: "已暂停：这笔需要你批准",
   NOT_ON_ALLOWLIST: "不在你的白名单上：这笔需要你批准",
+  ABOVE_APPROVAL_THRESHOLD: "超过 {{limit}}：这笔需要你的批准",
+  OVER_RECIPIENT_WEEKLY: "每周向同一人发送超过 {{limit}}（已发送 {{used}}）：这笔需要你的批准",
   NEW_RECIPIENT_COOLDOWN: "新收款人：在 {{until}} 之前，给对方超过 {{cap}} 需要你本人批准。可在“钱包与限额”中更改。",
   TEST_AMOUNT_SUGGESTED: "首次付款到这里。先发 {{test}} 确认能到账？",
   BRAKE_HALF_BALANCE: "这超过你持有的一半，而且是付给你从未付过款的人。",
