@@ -1,4 +1,4 @@
-// Sends, from the person's words to a confirmed transfer (ARCHITECTURE §3–§5).
+// Sends of any asset on Arc (R1), from the person's words to a confirmed transfer (ARCHITECTURE §3–§5).
 //
 // Drafting: resolve the recipient, gather fresh facts, run the policy, and store an immutable draft version with
 // its EIP-712 hash. Approving: lock the intent and the person's (user, network) spend, re-run everything on fresh
@@ -13,6 +13,7 @@ import {
   decodeEventLog,
   encodeFunctionData,
   erc20Abi,
+  formatUnits,
   keccak256,
   parseTransaction,
   recoverTransactionAddress,
@@ -44,6 +45,7 @@ import {
   intentDrafts,
   intents,
   newId,
+  practiceRuns,
   spendLedger,
   txAttempts,
   users,
@@ -72,7 +74,11 @@ import { intentExists } from "../intents/chain";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
-import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest } from "./facts";
+import { tokenLookup } from "../tokens/lookup";
+import type { AssetService } from "../tokens/service";
+import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
+import { grantFor } from "../safety/allowances";
+import { recordPractice, simulateCall } from "../safety/practice";
 import type { OpsExecutor } from "./ops";
 import type { InboxService } from "../inbox/service";
 import type { RequestService } from "../requests/service";
@@ -87,7 +93,12 @@ type AttemptRow = typeof txAttempts.$inferSelect;
 type DraftPayload = {
   draft: StoredSendDraft | null;
   recipient: SendRecipientView | null;
-  asset: AssetId | null;
+  /** The token's symbol ("USDC", "cirBTC"). */
+  asset: string | null;
+  /** The token itself, for any asset (R1): address and decimals for the words and the marks. */
+  token?: { address: string; symbol: string; decimals: number } | null;
+  /** What the spend counts as against the limits (USDC/EURC in their units, other tokens in dollars). */
+  ledger?: { asset: string; amount: string | null } | null;
   amount: string | null;
   note: string | null;
   fee: { payer: "kawase" | "wallet"; estimate: string | null };
@@ -111,6 +122,11 @@ const AUTOMATION_STOPS: ReadonlySet<string> = new Set([
   "INSUFFICIENT_BALANCE",
   "WALLET_NOT_READY",
   "WALLET_NOT_SET_UP",
+  // Unattended runs never pay a new address above its cooldown cap, nor anyone off the allowlist when it is on.
+  "NEW_RECIPIENT_COOLDOWN",
+  "NOT_ON_ALLOWLIST",
+  // The brake: over half the balance to someone new is never sent without the person.
+  "BRAKE_HALF_BALANCE",
 ]);
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;
@@ -143,6 +159,12 @@ const feeInUsdc = (nativeWei: bigint) => {
 
 export class SendService {
   private readonly tracking = new Set<string>();
+  /** Told when a person's own send completes (round-up rules listen; wired by the app). */
+  private sentListener: ((sent: { userId: string; network: NetworkId; asset: AssetId; amount: bigint; intentId: string; surface: string }) => Promise<void>) | undefined;
+
+  onSent(listener: NonNullable<SendService["sentListener"]>) {
+    this.sentListener = listener;
+  }
 
   constructor(
     private readonly db: Db,
@@ -154,7 +176,13 @@ export class SendService {
     private readonly log: Logger,
     private readonly requests: RequestService,
     private readonly inbox: InboxService,
+    private readonly assets?: AssetService,
   ) {}
+
+  /** Any token on the network, by a verified symbol or its address, with its price (the asset registry). */
+  private get lookup(): TokenLookup {
+    return tokenLookup(this.chains, this.assets);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -172,10 +200,12 @@ export class SendService {
       const payable = await this.requests.payable(request.requestToken);
       if (!payable) throw problem(HTTP.unprocessable, "request_unavailable");
       const asked = payable.request;
+      // USDC/EURC by name; any other token by its address, in its own decimals (R1).
+      const stableAsk = asked.asset === "USDC" || asked.asset === "EURC";
       stored = {
         recipient: payable.handle ? `@${payable.handle}` : asked.payTo,
-        amount: canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, ""),
-        asset: asked.asset as AssetId,
+        amount: stableAsk ? canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, "") : formatUnits(asked.amount, asked.assetDecimals ?? 0),
+        asset: asked.asset,
         note: stored.note,
       };
       paymentRequestId = asked.id;
@@ -226,8 +256,18 @@ export class SendService {
       request,
       resolution,
       exceptIntentId: intent.id,
+      lookup: this.lookup,
     });
     const evaluation = evaluateSend(gathered.facts);
+    // What the chain says about the address joins the card's recipient (R6): a Kawase user's @handle, a contract.
+    const inspection = gathered.inspection;
+    if (resolution.view && inspection) {
+      resolution.view = {
+        ...resolution.view,
+        contract: inspection.contract,
+        handle: resolution.view.handle ?? inspection.kawaseHandle,
+      };
+    }
     return { walletAddress, resolution, gathered, evaluation };
   }
 
@@ -236,15 +276,16 @@ export class SendService {
     const { facts } = gathered;
     const amount = facts.amount.status === "ok" ? facts.amount.baseUnits : undefined;
     const asset = evaluation.asset;
+    const token = gathered.token;
     const network = this.clients(intent.network).network;
 
     let draft: SendDraft | null = null;
     let feeEstimate: bigint | null = null;
-    if (walletAddress && asset && amount !== undefined && amount > ZERO && resolution.facts.status === "resolved") {
+    if (walletAddress && asset && token && amount !== undefined && amount > ZERO && resolution.facts.status === "resolved") {
       const route = evaluation.route ?? "wallet_signature";
       let maxFee = ZERO;
       if (route === "wallet_signature") {
-        const fee = await this.estimateTransferFee(intent.network, walletAddress, assetAddress(network, asset), resolution.facts.address as Address, amount);
+        const fee = await this.estimateTransferFee(intent.network, walletAddress, token.address, resolution.facts.address as Address, amount);
         maxFee = fee * MAX_FEE_DRAFT_MULTIPLIER;
         feeEstimate = feeInUsdc(fee);
       }
@@ -252,7 +293,7 @@ export class SendService {
         chainId: network.chainId,
         from: walletAddress,
         to: resolution.facts.address as Address,
-        asset: assetAddress(network, asset),
+        asset: token.address,
         amount,
         memoHash: memoHash(request.note),
         maxFee,
@@ -263,6 +304,8 @@ export class SendService {
       draft: draft ? storeSendDraft(draft) : null,
       recipient: resolution.view,
       asset: asset ?? null,
+      token: token ? { address: token.address, symbol: token.symbol, decimals: token.decimals } : null,
+      ledger: gathered.ledger ? { asset: gathered.ledger.asset, amount: gathered.ledger.amount?.toString() ?? null } : null,
       amount: amount?.toString() ?? null,
       note: request.note,
       fee: { payer: evaluation.route === "allowance" ? "kawase" : "wallet", estimate: feeEstimate?.toString() ?? null },
@@ -349,7 +392,11 @@ export class SendService {
 
   async view(userId: string, intentId: string): Promise<SendIntent> {
     const intent = await this.ownIntent(userId, intentId);
-    const [draft, attempt] = await Promise.all([this.currentDraft(intent), this.latestAttempt(intentId)]);
+    const [draft, attempt, [practiced]] = await Promise.all([
+      this.currentDraft(intent),
+      this.latestAttempt(intentId),
+      this.db.select({ result: practiceRuns.result }).from(practiceRuns).where(eq(practiceRuns.intentId, intentId)),
+    ]);
     const payload = (draft?.payload ?? {}) as Partial<DraftPayload>;
     const report = (draft?.policyReport ?? { results: [], blocking: null, route: null }) as PolicyReport;
     const network = this.chains.get(intent.network)?.network;
@@ -359,7 +406,8 @@ export class SendService {
       id: intent.id,
       network: intent.network,
       state: intent.state,
-      outcome: outcomeOf(intent.state, attempt),
+      outcome: practiced ? "practiced" : outcomeOf(intent.state, attempt),
+      practice: practiced ? { ok: practiced.result.ok, error: practiced.result.error } : null,
       version: intent.currentDraftVersion,
       request: { recipient: request.recipient, amount: request.amount, asset: request.asset, note: request.note },
       draft:
@@ -367,6 +415,7 @@ export class SendService {
           ? {
               recipient: payload.recipient,
               asset: payload.asset,
+              token: payload.token ?? null,
               amount: payload.amount,
               note: payload.note ?? null,
               fee: payload.fee ?? { payer: "wallet", estimate: null },
@@ -412,7 +461,11 @@ export class SendService {
     if (fresh.kind === "changed") return this.redraft(user, intentId);
     const { draft, route, draftHash } = fresh;
     const context = this.clients(before.network);
-    const allowance = route === "allowance" ? await activeAllowance(this.db, user.id, before.network) : undefined;
+    // Practice mode: the exact transaction is dry-run on the chain and recorded as "would have"; nothing is sent.
+    if (fresh.practice) return this.practice(user, before, draft, route);
+    // The grant this payment goes under: the token's everyday allowance, or its temporary raise.
+    const room = route === "allowance" ? await activeAllowance(this.db, this.chains, user.id, before.network, draft.asset) : undefined;
+    const allowance = room ? grantFor(room, draft.amount) : undefined;
     if (route === "allowance" && !allowance) return this.redraft(user, intentId);
 
     const outcome = await this.db.transaction(async (tx) => {
@@ -425,8 +478,8 @@ export class SendService {
       if (route === "wallet_signature") {
         return { kind: "sign" as const, ...(await this.walletApproval(tx, user, intent, draft, draftHash, input)) };
       }
-      const asset = assetOf(context.network, draft.asset);
-      if (!(await fitsLimits(tx, user.id, intent.network, asset, draft.amount, intentId))) return { kind: "changed" as const };
+      const { ledger } = fresh;
+      if (ledger.amount !== null && !(await fitsLimits(tx, user.id, intent.network, ledger.asset, ledger.amount, intentId))) return { kind: "changed" as const };
 
       // Inside the allowance: reserve, record the attempt with its key, then let the ops wallet redeem.
       const call = encodeRedeemTransfer(context.network, allowance!.delegation as never, {
@@ -447,7 +500,7 @@ export class SendService {
         decidedViaSurface: input.surface,
         expiresAt: later(APPROVAL_TTL_S),
       });
-      await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset, amount: draft.amount });
+      if (ledger.amount !== null) await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset: ledger.asset, amount: ledger.amount });
       await tx.insert(txAttempts).values({
         userId: user.id,
         intentId,
@@ -476,6 +529,44 @@ export class SendService {
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }
 
+  /**
+   * Practice: the same checks passed, so the exact call is run as an `eth_call` from the exact sender — the ops wallet
+   * redeeming the allowance, or the person's own wallet — and the answer is kept as this send's "would have". The
+   * intent closes without anything sent (no attempt, no spend, no Face ID).
+   */
+  private async practice(user: SessionUser, intent: IntentRow, draft: SendDraft, route: SendRoute): Promise<SendApproveResponse> {
+    const { client, ops, network } = this.clients(intent.network);
+    const room = route === "allowance" ? await activeAllowance(this.db, this.chains, user.id, intent.network, draft.asset) : undefined;
+    const grant = room ? grantFor(room, draft.amount) : undefined;
+    const call = grant
+      ? { from: ops.address, ...encodeRedeemTransfer(network, grant.delegation as never, { token: draft.asset, to: draft.to, amount: draft.amount }) }
+      : { from: draft.from, to: draft.asset, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [draft.to, draft.amount] }) };
+    const result = await simulateCall(client, call);
+    const current = await this.currentDraft(intent);
+    const payload = (current?.payload ?? {}) as Partial<DraftPayload>;
+    await this.db.transaction(async (tx) => {
+      const locked = await this.lockIntent(tx, user.id, intent.id);
+      if (locked.state !== "ready_for_approval") return;
+      await recordPractice(tx, {
+        userId: user.id,
+        network: intent.network,
+        kind: "send",
+        intentId: intent.id,
+        summary: {
+          amount: draft.amount.toString(),
+          asset: payload.asset ?? "",
+          to: draft.to,
+          name: payload.recipient?.name ?? (payload.recipient?.handle ? `@${payload.recipient.handle}` : ""),
+          route: grant ? "allowance" : "wallet_signature",
+        },
+        result,
+      });
+      await tx.update(intents).set({ state: "canceled" }).where(eq(intents.id, intent.id));
+    });
+    this.log.info({ intentId: intent.id, ok: result.ok, route }, "practice send");
+    return { status: "final", intent: await this.view(user.id, intent.id) };
+  }
+
   // ── Automations (Stage 8) ───────────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -502,6 +593,8 @@ export class SendService {
     if (!wallet) return { status: "skipped", reason: "WALLET_NOT_READY" };
     const walletAddress = wallet.address as Address;
     const [owner] = await this.db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, input.userId));
+    // Pause all stops every automation at once (cards/automate-safety.md); the person resumes it.
+    if (owner?.pausedAllAt) return { status: "skipped", reason: "PAUSED_ALL" };
     const request: StoredRequest = {
       recipient: input.to,
       amount: canonicalAmount(amount(input.asset, input.amount)).replace(/ [A-Z]+$/, ""),
@@ -523,12 +616,28 @@ export class SendService {
     const evaluation = evaluateSend(gathered.facts);
     const stop = evaluation.results.find((entry) => AUTOMATION_STOPS.has(entry.code));
     if (stop) return { status: "skipped", reason: stop.code, ...(stop.params ? { params: stop.params } : {}) };
+    // Practice mode: the run's exact redeem is dry-run and recorded; nothing is sent (cards/automate-safety.md).
+    if (gathered.practice) {
+      const practiceCall = encodeRedeemTransfer(context.network, input.grant.delegation as never, { token: assetAddress(context.network, input.asset), to: input.to, amount: input.amount });
+      const result = await simulateCall(context.client, { from: context.ops.address, ...practiceCall });
+      await recordPractice(this.db, {
+        userId: input.userId,
+        network: input.network,
+        kind: "automation_run",
+        summary: { amount: input.amount.toString(), asset: input.asset, to: input.to, name: resolutionName(resolution) },
+        result,
+      });
+      return { status: "skipped", reason: result.ok ? "PRACTICE_RUN" : "PRACTICE_RUN_REFUSED" };
+    }
     if (resolution.facts.status !== "resolved" || resolution.facts.address.toLowerCase() !== input.to.toLowerCase())
       return { status: "skipped", reason: "RECIPIENT_INVALID", params: { query: input.to } };
     const room = await allowanceAvailable(context.client, context.network, input.grant.delegation as never)
       .then((result) => result.available)
       .catch(() => ZERO);
-    if (room < input.amount) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    // Nothing left this period: this period's run already went. Some left, but less than this run: over the grant,
+    // which waits for the person (Needs you) instead of squeezing through.
+    if (room === ZERO) return { status: "skipped", reason: "AUTOMATION_PERIOD_USED" };
+    if (room < input.amount) return { status: "skipped", reason: "OVER_GRANT", params: { room: room.toString(), asset: input.asset } };
 
     const token = assetAddress(context.network, input.asset);
     const draft: SendDraft = { chainId: context.network.chainId, from: walletAddress, to: input.to, asset: token, amount: input.amount, memoHash: memoHash(input.note), maxFee: ZERO };
@@ -637,13 +746,20 @@ export class SendService {
     const current = await this.currentDraft(intent);
     const stored = (current?.payload as DraftPayload | undefined)?.draft;
     if (!current || !stored || !current.draftHash) return { kind: "changed" as const };
-    const { resolution, evaluation } = await this.resolveAndEvaluate(user, intent, intent.request as StoredRequest);
+    const { resolution, evaluation, gathered } = await this.resolveAndEvaluate(user, intent, intent.request as StoredRequest);
     const draft = loadSendDraft(stored);
     const sameRecipient = resolution.facts.status === "resolved" && resolution.facts.address.toLowerCase() === draft.to.toLowerCase();
     const report = current.policyReport as unknown as PolicyReport;
     if (evaluation.blocking || !evaluation.route || !sameRecipient || evaluation.route !== report.route) return { kind: "changed" as const };
     if (sendDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
-    return { kind: "ok" as const, draft, route: evaluation.route, draftHash: current.draftHash as Hex };
+    return {
+      kind: "ok" as const,
+      draft,
+      route: evaluation.route,
+      draftHash: current.draftHash as Hex,
+      practice: gathered.practice,
+      ledger: ledgerOf(current.payload as DraftPayload, this.clients(intent.network).network, draft),
+    };
   }
 
   /** Above the allowance: the exact transfer for the wallet to sign. Reuses a still-valid request for this version. */
@@ -747,10 +863,10 @@ export class SendService {
         await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, approval.id));
         return { kind: "mismatch" as const };
       }
-      const asset = assetOf(context.network, draft.asset);
-      if (!(await fitsLimits(tx, user.id, intent.network, asset, draft.amount, intentId))) return { kind: "changed" as const };
+      const { ledger } = fresh;
+      if (ledger.amount !== null && !(await fitsLimits(tx, user.id, intent.network, ledger.asset, ledger.amount, intentId))) return { kind: "changed" as const };
       await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
-      await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset, amount: draft.amount });
+      if (ledger.amount !== null) await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset: ledger.asset, amount: ledger.amount });
       const [attempt] = await tx
         .insert(txAttempts)
         .values({
@@ -804,7 +920,7 @@ export class SendService {
     const draft = loadSendDraft(stored);
     const sameRecipient = resolution.facts.status === "resolved" && resolution.facts.address.toLowerCase() === draft.to.toLowerCase();
     if (evaluation.blocking || !sameRecipient || sendDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
-    return { kind: "ok" as const, draft };
+    return { kind: "ok" as const, draft, ledger: ledgerOf(current.payload as DraftPayload, this.clients(intent.network).network, draft) };
   }
 
   // ── Executing and tracking ──────────────────────────────────────────────────────────────────────────────────
@@ -911,7 +1027,7 @@ export class SendService {
       return;
     }
     const at = new Date();
-    await withOutbox(this.db, async (tx) => {
+    const done = await withOutbox<{ completed: true } | undefined>(this.db, async (tx) => {
       const [moved] = await tx
         .update(intents)
         .set({ state: "completed", completedAt: at })
@@ -930,13 +1046,13 @@ export class SendService {
         userId: intent.userId,
         network: intent.network,
         kind: "send_completed",
-        params: { amount: draft.amount.toString(), asset: assetOf(this.clients(intent.network).network, draft.asset), to: draft.to },
+        params: { amount: draft.amount.toString(), ...tokenParams((await this.currentDraft(intent))?.payload as DraftPayload | undefined, this.clients(intent.network).network, draft), to: draft.to },
         intentId: intent.id,
         txHash: receipt.transactionHash,
         dedupeKey: `send_completed:${intent.id}`,
       });
       return {
-        result: undefined,
+        result: { completed: true },
         events: [
           {
             aggregateType: "intent",
@@ -950,6 +1066,14 @@ export class SendService {
         ],
       };
     });
+    // Round-ups and the like listen for the person's own completed sends of USDC and EURC (they count in those
+    // units); a failure there never touches the send.
+    const network = this.clients(intent.network).network;
+    const stable = [network.addresses.usdc, network.addresses.eurc].some((address) => address.toLowerCase() === draft.asset.toLowerCase());
+    if (done?.completed && this.sentListener && stable)
+      await this.sentListener({ userId: intent.userId, network: intent.network, asset: assetOf(this.clients(intent.network).network, draft.asset), amount: draft.amount, intentId: intent.id, surface: intent.originSurface }).catch((error: unknown) =>
+        this.log.warn({ err: error, intentId: intent.id }, "after-send listener failed"),
+      );
   }
 
   private async settleFailed(intentId: string, attemptId: string, how: "not_sent" | "reverted" | "mismatch", error: string | null, receipt?: TransactionReceipt) {
@@ -1059,3 +1183,20 @@ function outcomeOf(state: IntentState, attempt: AttemptRow | undefined): SendOut
   }
 }
 
+/** The spend a version counts against the limits; older drafts (USDC/EURC only) count the asset itself. */
+function ledgerOf(payload: DraftPayload | undefined, network: NetworkContext, draft: SendDraft): { asset: string; amount: bigint | null } {
+  if (payload?.ledger) return { asset: payload.ledger.asset, amount: payload.ledger.amount === null ? null : BigInt(payload.ledger.amount) };
+  return { asset: assetOf(network, draft.asset), amount: draft.amount };
+}
+
+/** The asset of an inbox item: its symbol, with decimals when it is not USDC or EURC. */
+function tokenParams(payload: DraftPayload | undefined, network: NetworkContext, draft: SendDraft): Record<string, string> {
+  const token = payload?.token;
+  if (!token || token.symbol === "USDC" || token.symbol === "EURC") return { asset: assetOf(network, draft.asset) };
+  return { asset: token.symbol, decimals: String(token.decimals) };
+}
+
+/** The name a run's recipient shows under, for its practice record. */
+function resolutionName(resolution: { view: SendRecipientView | null }): string {
+  return resolution.view?.name ?? (resolution.view?.handle ? `@${resolution.view.handle}` : "");
+}

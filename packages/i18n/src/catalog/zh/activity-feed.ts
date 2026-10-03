@@ -1,0 +1,26 @@
+import type { Catalog } from "../en/index";
+
+export const activityFeed: Catalog["activityFeed"] = {
+  requestPaid: "{{name}} 已支付请求",
+  margin: "Kawase Margin",
+  automation: "自动任务",
+  automationTo: "自动任务：给 {{name}}",
+  practiceTo: "练习：给 {{name}}",
+  other: "变动",
+  checking: "正在确认…",
+  skipped: "已跳过 · {{reason}}",
+  failed: "未成功",
+  failedWhy: "未成功 · {{reason}}",
+  practiced: "练习 · 本来会成功",
+  practicedRefused: "练习 · Arc 本来会拒绝",
+  waiting: "等你处理 · {{reason}}",
+  filterIn: "收入",
+  filterOut: "支出",
+  filterTrades: "交易",
+  filterAutomations: "自动任务",
+  emptyNeedsYou: "没有等你处理的事",
+  emptyFilter: "这里还没有内容",
+  latestOnly: "这是你最近的变动。",
+  network: "网络",
+  paid: "支付",
+};

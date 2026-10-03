@@ -94,4 +94,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "إرسال برمز عبر البريد",
   showFullAddress: "يعرض العنوان كاملًا",
   youWrote: "‏كتبتَ «{{words}}»",
+  otherChain: "محفظته على شبكة أخرى؟",
+  otherChainBridge: "أرسل USDC إليها عبر جسر: تختار الشبكة والمسار.",
+  otherChainConvert: "‏USDC وحده ينتقل بين الشبكات. حوّل {{asset}} إلى USDC أولًا.",
 };

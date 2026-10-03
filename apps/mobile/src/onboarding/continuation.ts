@@ -10,6 +10,21 @@ const NOT_A_DESTINATION = new Set(["/welcome", "/sign-in", "/handle", "/wallet"]
 const TABS = new Set(["/", "/chat", "/activity", "/settings"]);
 
 let returnTo: string | undefined;
+/** A link opened with no session at all (a push, an email): the story and sign-in end there instead of home. */
+let deepLink: string | undefined;
+
+/** Called when a signed-out open had to go to the story first (A5-2: signed out → sign in → it resumes). */
+export function rememberDeepLink(href: string) {
+  const path = href.split("?")[0] ?? href;
+  deepLink = NOT_A_DESTINATION.has(path) || path === "/" ? undefined : href;
+}
+
+/** The link to land on after the story or sign-in, once (then it is forgotten). */
+export function takeDeepLink(): string | undefined {
+  const target = deepLink;
+  deepLink = undefined;
+  return target;
+}
 
 /** Called when sign-in opens: remembers the page under the sheet (the latest opening wins). */
 export function rememberReturnTo(pathname: string) {
@@ -26,7 +41,7 @@ export function forgetReturnTo() {
  * to go back to (Wallet & limits opened setup) and otherwise home.
  */
 export function finishOnboarding() {
-  const target = returnTo;
+  const target = returnTo ?? takeDeepLink();
   returnTo = undefined;
   if (!target) {
     if (router.canGoBack()) router.back();

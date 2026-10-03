@@ -11,14 +11,19 @@ import { consents, devices, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
-import { automationRuns, automations } from "./schema/automations";
+import { attentionItems, automationRuns, automations } from "./schema/automations";
 import { accountHealth, marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
-import { businessProfiles, invoices, payoutBatches, payrolls } from "./schema/business";
+import { businessProfiles, invoices, payoutBatches } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
+import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
+import { portfolioSnapshots, walletTokens } from "./schema/assets";
+import { places } from "./schema/places";
+import { tokenRules } from "./schema/token-rules";
+import { splitShares, splits } from "./schema/splits";
 
 type UserOwned = {
   table: PgTable;
@@ -68,14 +73,26 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
   agent_wallet_moves: { table: agentWalletMoves, userId: agentWalletMoves.userId },
+  safety_settings: { table: safetySettings, userId: safetySettings.userId, perUserKey: ["network"] },
+  limit_changes: { table: limitChanges, userId: limitChanges.userId },
+  practice_runs: { table: practiceRuns, userId: practiceRuns.userId },
+  attention_items: { table: attentionItems, userId: attentionItems.userId },
   business_profiles: { table: businessProfiles, userId: businessProfiles.userId, perUserKey: [] },
   invoices: { table: invoices, userId: invoices.userId, perUserKey: ["number"] },
   payout_batches: { table: payoutBatches, userId: payoutBatches.userId },
-  payrolls: { table: payrolls, userId: payrolls.userId },
   memory_facts: { table: memoryFacts, userId: memoryFacts.userId },
   // One row per person: the account's own preferences win over the guest's.
   agent_preferences: { table: agentPreferences, userId: agentPreferences.userId, perUserKey: [] },
   suggestion_dismissals: { table: suggestionDismissals, userId: suggestionDismissals.userId, perUserKey: ["suggestionId"] },
+  // The asset registry (A0): tokens seen arriving and the balance chart's snapshots; the account's own rows win.
+  wallet_tokens: { table: walletTokens, userId: walletTokens.userId, perUserKey: ["chainId", "tokenAddress"] },
+  portfolio_snapshots: { table: portfolioSnapshots, userId: portfolioSnapshots.userId, perUserKey: ["network", "takenAt"] },
+  // My places (Withdraw): the account's own saved place for the same address wins.
+  places: { table: places, userId: places.userId, perUserKey: ["network", "chain", "address"] },
+  // Token rules (D12): one row per network; the account's own rules win.
+  token_rules: { table: tokenRules, userId: tokenRules.userId, perUserKey: ["network"] },
+  splits: { table: splits, userId: splits.userId },
+  split_shares: { table: splitShares, userId: splitShares.userId },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

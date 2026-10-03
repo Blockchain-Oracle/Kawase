@@ -44,7 +44,7 @@ export function evaluateCrossChain(facts: CrossChainFacts): CrossChainEvaluation
   const results: PolicyResult[] = [];
   if (!facts.signedIn) return done([result("SIGN_IN_REQUIRED")]);
   if (facts.capability.here !== "available") return done([result(facts.capability.other === "available" ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "bridge" })]);
-  if (facts.pausedAll) return done([result("PAUSED_ALL")]);
+  // Pause all stops the agent and automations; this is always the person's own yes, so it is never blocked (D-pause).
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
   if (facts.direction === "out" && !facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
   if (facts.chain !== "found") results.push(result("DESTINATION_MISSING"));

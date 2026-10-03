@@ -1,6 +1,6 @@
 ---
 title: Send, receive and request
-description: Pay anyone in USDC or EURC by name, @handle or address; receive with one address on both networks; request money with a shareable link.
+description: Pay anyone in any token by name, @handle, address or QR code; add money from a card, an exchange or another chain; request money or split a bill with a link.
 ---
 
 <Status ids="send request payment_links" />
@@ -9,36 +9,68 @@ description: Pay anyone in USDC or EURC by name, @handle or address; receive wit
 
 ## Send
 
-Say or type who and how much — "send 20 dollars to Alex", "pay @mira 5 euros" — or use the Send screen. Kawase:
+Say or type who and how much ("send 20 dollars to Alex", "pay @mira 5 euros"), or use the Send screen. You can send **any
+token you hold on Arc**. Kawase:
 
-1. **Finds the recipient**: a saved contact, a Kawase `@handle`, or an `0x…` address you typed yourself. The agent can only
-   use an address that came from your contacts or appears word for word in your own message.
-2. **Picks the currency** you hold, or asks if it is unclear.
-3. **Checks everything at once**: your balance, your limits, whether this is a first payment to that address, whether the
-   address looks like one of your contacts' (a look-alike), and whether a contact's address changed recently.
-4. **Shows the payment card** with the exact amount, currency, recipient and network.
+1. **Finds the recipient**: a saved contact, a Kawase `@handle`, an `0x…` address you typed yourself, or a **QR code** you
+   scanned. The agent can only use an address that came from your contacts, a code you scanned, or your own message, word
+   for word.
+2. **Picks the token** you hold, or asks if it is unclear.
+3. **Checks the recipient on every payment**: a token contract or a look-alike of a saved contact is refused, a contract
+   that isn't a wallet is warned about, the token issuer's blocklist is checked where it has one, and your own address is
+   named as yours. It also checks your balance, your limits and whether a contact's address changed recently.
+4. **Shows the payment card** with the exact amount, token, recipient and network.
 
 Then one of two things happens:
 
 | Situation | What you do |
 |---|---|
-| USDC, inside what is left of today's allowance, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |
-| Above the allowance, any EURC payment, a first payment to a new address above the threshold, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |
+| Inside what is left of today's allowance for that token, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |
+| Above the allowance, a token outside it, a new address, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |
 
-A payment is only marked **paid** when the network's receipt shows the exact transfer. If the answer is unclear, the card
-says "still checking" and Kawase keeps looking; it never sends twice.
+A payment to an address you just added can suggest sending a **test amount** first. A payment is only marked **paid** when the network's
+receipt shows the exact transfer. If the answer is unclear, the card says "still checking" and Kawase keeps looking; it
+never sends twice.
 
-## Receive
+**Their wallet is on another chain?** The review offers it: USDC opens the [move card](./bridge-and-withdraw.mdx) with the
+same amount and recipient; any other token offers converting to USDC first.
 
-Your wallet has **one address on both networks**. Open Receive for the address and its QR code. Payments that arrive are
-noticed by Kawase's watcher, show up in Activity and the inbox, and can wake your [automations](./automations.mdx).
+## Scan to pay
 
-## Request
+Tap **Scan** in the quick-action fan, on Send, or in chat's header. The scanner reads:
 
-Ask "request 15 dollars from Sam for dinner" or open Request. Kawase creates a **payment request** in USDC or EURC with a
-shareable link. The person paying can open it in the web app; the request is marked paid when a Kawase payment or a
+- a bare address, or a payment link with an amount and token (EIP-681): Send opens filled in, and the usual checks run;
+- a Kawase request or invoice link: its pay page opens.
+
+A code for the other Arc network, another chain or a closed request says why, with a network switch where that helps. You
+can also paste a code instead.
+
+## Receive and add money
+
+Your wallet has **one address on both networks**, and it takes **any token on Arc**. **Add money** gathers every way in:
+
+- **Buy** with a card ([Buy](./buy.mdx));
+- **From an exchange**: the exchange's logo and its own steps (Coinbase through Base, then Bring to Arc);
+- **From another chain**: USDC waiting at your address elsewhere, brought to Arc with no gas;
+- **Receive**: your address and its QR code;
+- **Test USDC** on testnet.
+
+Money that arrives shows up in Activity and the inbox, can wake your [automations](./automations.mdx), and offers
+**Save sender as a contact**.
+
+## Request and split
+
+"Request 15 dollars from Sam for dinner", or open Request. Kawase creates a **payment request** in any token on Arc with a
+shareable link. The person paying can open it in any browser; the request is marked paid when a Kawase payment or a
 matching plain transfer arrives.
 
-## What is not built yet
+**Split a bill**: "split 30 dollars for dinner with Amina and Tunde". Equal shares or by hand, with you included or not.
+Each person gets their own request and link, and a progress card shows who has paid.
+
+## Receipts and links
+
+- **Share a receipt** of a finished payment as an image card (or text with the explorer link on the web).
+- Every action has its own link (`/i/…`). Notifications open the exact card; a link opened while signed out comes back to
+  it after sign-in. A card blocked by something you then fix (sign in, setup, limits, adding money) checks again by itself.
 
 <ScopeList ids="send request" />

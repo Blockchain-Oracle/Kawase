@@ -2,6 +2,9 @@
 // worker dispatched into it — joined with LiveKit's web client. The browser asks for the microphone, Kawase's voice
 // plays through an audio element, and the shared Conversation shows both sides as captions, moves the orb and puts
 // Kawase's cards on screen over RPC, exactly as on the phone. Typing is always one tap away.
+//
+// A microphone the browser refuses (or doesn't have) is not a failed session (see ./mic-failure): the room stays and
+// the conversation says how to allow it, with typing beside it. Only a real connection error ends it with "try again".
 import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import * as React from "react";
 import { View } from "react-native";
@@ -16,6 +19,7 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
 import { Conversation, TypeInstead } from "./conversation";
+import { isMicrophoneFailure } from "./mic-failure";
 
 export type VoiceSessionProps = { level: SharedValue<number>; onTypeInstead: (threadId: string | undefined) => void };
 
@@ -57,7 +61,9 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
       connect
       audio
       video={false}
-      onError={() => setFailed(true)}
+      onError={(error) => {
+        if (!isMicrophoneFailure(error)) setFailed(true);
+      }}
       style={{ display: "contents" }}
     >
       {/* Kawase's voice: one audio element per remote audio track. */}

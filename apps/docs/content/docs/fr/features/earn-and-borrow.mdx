@@ -1,32 +1,43 @@
 ---
-title: "Obtenir un rendement et emprunter"
-description: "Déposez des USDC dans les coffres Morpho sur Arc via le Rendement d'App Kit de Circle et retirez-les à tout moment ; Aave V4 et les emprunts arrivent bientôt."
-sourceHash: 957ea36e79ab420d
+title: "Gagner et emprunter"
+description: "Comparez les options de rendement de votre argent sur Arc (Aave V4, coffres Morpho, Aero), déposez et retirez vos fonds avec une seule autorisation, et empruntez en utilisant vos avoirs avec un indicateur de santé en temps réel."
+sourceHash: e6e77a22bbe7996c
 ---
 
-<Status ids="yield borrow" />
+<Status ids="yield lend" />
 
-<Marks names="morpho circle usdc" />
+<Marks names="aave morpho aero circle usdc eurc cirbtc weth" />
 
-## Obtenir un rendement avec les coffres Morpho (aujourd'hui)
+## Options de rendement
 
-« Mettre 50 dollars de côté » ou depuis l'écran Rendement. Kawase répertorie les **coffres Morpho** disponibles via le
-Rendement d'App Kit de Circle sur Arc (sur le réseau de test : les coffres fictifs du réseau de test Arc), avec des noms
-clairs et leurs taux, et :
+« Où mes 200 dollars peuvent-ils générer un rendement ? » Kawase compare toutes les sources qui acceptent votre actif, à partir de **données en temps réel** :
 
-- **Dépose** des USDC dans le coffre que vous choisissez — ou dans le meilleur coffre actif si vous ne précisez rien — avec un nombre minimum de parts du coffre vérifié par rapport à son propre aperçu.
-- **Retire** n'importe quel montant vers votre portefeuille, en versant au moins le montant affiché.
-- Affiche vos **positions**, lues en direct depuis les coffres sur la blockchain (Kawase ne les stocke jamais).
+- **Aave V4** supply : le taux actuel, le montant que le marché pourrait verser maintenant et sa taille ;
+- les coffres **Morpho** proposés par le module Rendement de Circle's App Kit, classés selon ce qu'ils pourraient rapporter maintenant. Un coffre qui ne pourrait pas vous rendre votre argent n'est jamais proposé, et les liquidités faibles sont signalées ;
+- les campagnes de liquidité **Aero** de Merkl : affichées comme **avancées**, en lecture seule.
 
-Chaque dépôt ou retrait demande **une validation Face ID** et est envoyé en une seule transaction. L'[épargne automatique](./automations.mdx#auto-save)
-utilise les mêmes coffres pour maintenir automatiquement votre épargne à niveau.
+Les options sont classées par taux, parmi les sources capables de vous rendre votre montant. La meilleure est signalée. Touchez Aave pour ouvrir le ticket de dépôt ; touchez un coffre pour ouvrir Rendement pour ce coffre.
 
-## Plus de rendement et les emprunts (à venir)
+## Obtenir un rendement avec les coffres Morpho
 
-Le plan compare chaque source qui accepte votre actif — **Aave V4**, les coffres Morpho directement et d'autres — en affichant le
-taux, le montant qui peut être retiré immédiatement, la taille et le risque, et masque les sources dont vous ne pourriez pas sortir. Les
-**emprunts** d'USDC ou d'EURC avec une garantie (par exemple sur Aave V4) sont prévus, avec un indicateur de santé, des actions pour
-rembourser et ajouter une garantie, ainsi que des alertes de liquidation dans votre boîte de réception. Les deux fonctionnalités
-**arrivent bientôt**.
+« Mettre 50 dollars de côté », ou depuis l'écran **Rendement**. Déposez des USDC dans le coffre de votre choix (ou dans le meilleur coffre actif), puis retirez le montant voulu. Vos **positions** sont lues en temps réel depuis les coffres. Chaque dépôt ou retrait nécessite **un seul Face ID**. L'opération est envoyée en une seule transaction. [Épargne automatique](./automations.mdx#auto-save) utilise les mêmes coffres automatiquement.
 
-<ScopeList ids="yield" />
+Sur le réseau de test, Rendement utilise les coffres Morpho fictifs du réseau de test Arc.
+
+## Emprunter et déposer sur Aave V4
+
+L'écran **Emprunter** (depuis Rendement sur le réseau principal) affiche d'abord votre position Aave V4 : ce que vous devez (avec **Rembourser**), ce que vous avez déposé (avec **Ajouter** et **Retirer**), l'**indicateur de santé** et la marge restante. Il affiche ensuite ce que vous pouvez emprunter et à quel taux.
+
+- **Empruntez** des USDC, EURC, cirBTC ou WETH en utilisant des **USDC, cirBTC ou WETH** comme garantie. Les EURC ne peuvent pas servir de garantie sur Aave V4. Kawase choisit la garantie dans votre portefeuille (l'actif détenu qui a la plus grande valeur après application de son facteur) et l'ajoute **dans la même transaction**.
+- L'indicateur évolue à chaque chiffre saisi. Le montant maximal vous maintient au niveau de sécurité minimal.
+- Un prêt qui ferait passer la santé **sous 1.25 est refusé** ; **sous 1.5**, un avertissement s'affiche.
+- Avec un seul actif en garantie, le ticket indique le **prix auquel il serait liquidé**.
+- **Remboursez** une partie ou la totalité. « Tout » rembourse l'intégralité avec une petite marge pour les intérêts, puis réinitialise l'autorisation.
+
+Chaque opération est vérifiée à nouveau avec des prix actualisés au moment de votre approbation, simulée depuis votre portefeuille, puis envoyée en **une seule transaction**. Vous confirmez en faisant glisser le curseur, puis avec Face ID.
+
+## Pas sur le réseau de test
+
+Aave V4 est disponible uniquement sur le réseau principal Arc. L'emprunt et les dépôts Aave le sont donc aussi. Les coffres Morpho fonctionnent sur les deux réseaux.
+
+<ScopeList ids="yield lend" />

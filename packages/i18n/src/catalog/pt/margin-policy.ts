@@ -22,4 +22,5 @@ export const marginPolicy: Catalog["marginPolicy"] = {
   MARGIN_RISK: "A alavancagem pode fazer você perder toda a margem.",
   fixTryAgain: "Tentar de novo",
   fixSwitch: "Mudar para Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× passa de 5×: um pequeno movimento contra você pode zerar a margem.",
 };

@@ -54,6 +54,9 @@ import { assets } from "./assets";
 import { markets } from "./markets";
 import { tokenPage } from "./token-page";
 import { ticket } from "./ticket";
+import { safety } from "./safety";
+import { needsYou } from "./needs-you";
+import { activityFeed } from "./activity-feed";
 import { buy } from "./buy";
 import { move } from "./move";
 import { movePolicy } from "./move-policy";
@@ -69,6 +72,15 @@ import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
 import { protect } from "./protect";
+import { withdraw } from "./withdraw";
+import { tokenRules } from "./token-rules";
+import { scan } from "./scan";
+import { split } from "./split";
+import { resume } from "./resume";
+import { receipt } from "./receipt";
+import { importContacts } from "./import-contacts";
+import { alerts } from "./alerts";
+import { chatCards } from "./chat-cards";
 
 export const en = {
   common,
@@ -124,6 +136,9 @@ export const en = {
   markets,
   tokenPage,
   ticket,
+  safety,
+  needsYou,
+  activityFeed,
   buy,
   move,
   movePolicy,
@@ -139,6 +154,15 @@ export const en = {
   insight,
   forYou,
   protect,
+  withdraw,
+  tokenRules,
+  scan,
+  split,
+  resume,
+  receipt,
+  importContacts,
+  alerts,
+  chatCards,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

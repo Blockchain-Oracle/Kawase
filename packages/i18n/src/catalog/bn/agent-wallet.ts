@@ -66,4 +66,13 @@ export const agentWallet: Catalog["agentWallet"] = {
     gateway: "Circle Gateway ন্যানোপেমেন্টে পরিশোধিত",
     eip3009: "USDC ট্রান্সফারে পরিশোধিত",
   },
+  cardTopUp: "অথবা সরাসরি এতে USDC কিনুন",
+  expressPay: "Pay",
+  orCard: "অথবা কার্ডে পেমেন্ট করুন",
+  cardButton: "ডেবিট কার্ড",
+  deliversAgent: "USDC সরাসরি {{network}}-এ আপনার এজেন্ট ওয়ালেটে যায়।",
+  noRefund: "রিফান্ড নেই: {{seller}} পেমেন্টটি রেখে দিয়েছে। পেইড কল এখনো রিফান্ড করা যায় না।",
+  notCharged: "টাকা কাটা হয়নি: পেমেন্টটি কখনো সম্পন্ন হয়নি।",
+  refundNone: "রিফান্ড নেই",
+  refundNotCharged: "টাকা কাটা হয়নি",
 };

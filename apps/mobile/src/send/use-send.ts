@@ -12,7 +12,7 @@ import { randomUUID } from "expo-crypto";
 import * as React from "react";
 import { toast } from "sonner-native";
 
-import { ApiError, type SendIntent, type SendRequest } from "@kawase/api-client";
+import { ApiError, hasBrake, type SendIntent, type SendRequest } from "@kawase/api-client";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -133,7 +133,8 @@ export function useSend(initial?: SendIntent | undefined): SendController {
   const approve = async (prompt: string) => {
     if (!intent) return;
     await act(async () => {
-      const answer = await api.sends.approve(intent.id, intent.version, randomUUID());
+      // The brake (over half the balance to someone new) is on the card; Face ID below is the person's override.
+      const answer = await api.sends.approve(intent.id, intent.version, randomUUID(), hasBrake(intent.results));
       if (answer.status !== "sign") {
         if (answer.status === "changed") toast(t("send.changed"));
         show(answer.intent);

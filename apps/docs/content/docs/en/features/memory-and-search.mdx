@@ -1,0 +1,61 @@
+---
+title: Memory and search
+description: Kawase remembers what you ask it to, searches every past conversation, keeps long threads coherent, suggests what deserves a look on Home, and answers questions about Arc with sources.
+---
+
+<Status ids="memory" />
+
+## Memory
+
+"Remember that my landlord is @maria." Kawase keeps **facts you ask it to remember** (people, @handles, preferences) and
+uses them later. When an answer relies on one, chat shows a **From memory** line, so you always know where it came from.
+
+**Settings → Memory** lists every fact: add one, edit it, forget one or all, or turn memory off. A guest's memory moves
+into the account on sign-in. Kawase doesn't remember things you didn't ask it to.
+
+## Search every conversation
+
+The history sheet searches **all** your conversations on Kawase's server, not just the ones loaded: the words, the cards
+and who they were for (search "Maria" and the send to her shows up). Partial words and Chinese, Japanese or Korean text
+work. Results are grouped by conversation with the words around the match, and open the conversation. You can also ask:
+"what did I send my landlord last month?"
+
+## Long conversations
+
+A long thread stays coherent: after each turn, the older part is folded into a summary and the latest messages are kept
+word for word. The summary never restates amounts or outcomes from memory; the cards' own results are kept exactly as they
+were, and Kawase checks again with its tools before relying on one.
+
+## For you
+
+**Home** shows a few cards that deserve a look, computed from your real balances on the active network:
+
+- idle USDC above what you spend, next to a vault that could pay it all back;
+- one of your payment requests about to expire;
+- a bridge that hasn't arrived 15 minutes after it should have;
+- a big move in a token you hold (5% in a day, 0.5% for a currency stablecoin, at least $10 held);
+- a [margin position](./long-short.mdx) whose health is under 1.25 or within a 10% move of liquidation.
+
+They're facts and options, never advice. Each card has one action. **Dismiss** hides a card for a week; **don't show this
+kind** mutes it (and can be undone).
+
+## Answers about Arc, with sources
+
+Ask "how fast is finality on Arc?" or "what does a transfer cost?". Kawase answers from a curated set of notes built from
+Arc's and Circle's documentation and these docs, and shows a **Sources** card naming each one. Facts only, no investment
+advice.
+
+## Cards that explain
+
+- **Charts**: your portfolio's value, or any token's price, over a day, a week, a month or a year.
+- **Why this one?**: why a bridge route, swap venue or vault won (every provider asked, what each delivers, the fee and the
+  time, why the others lost or couldn't quote).
+- **Settings changes** as Now → After, applied on your device (memory on or off, reply language, theme).
+- **Status**: whether Kawase, Arc (each network), Circle and prices are up, slow or down.
+
+## Outside text is data
+
+Anything Kawase reads from outside (marketplace answers, token and vault names, chain memos, contact notes, past messages)
+is fenced as untrusted. Instructions hidden in it are flagged and never followed.
+
+<ScopeList ids="memory" />

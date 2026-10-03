@@ -29,11 +29,14 @@ import type { MarginService } from "../margin/service";
 import type { OnrampService } from "../onramp/service";
 import type { CrossChainService } from "../crosschain/service";
 import type { LendService } from "../lend/service";
+import type { WithdrawService } from "../withdraw/service";
 import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
+import type { SafetyService } from "../safety/service";
 import type { InvoiceService } from "../business/invoices";
 import type { HistoryService } from "../history/service";
+import type { BusinessAgentDeps } from "./business-context";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -78,6 +81,7 @@ export type AgentDeps = {
   onramp?: OnrampService | undefined;
   crosschain?: CrossChainService | undefined;
   lend?: LendService | undefined;
+  withdraw?: WithdrawService | undefined;
   assets: AssetService;
   automations: AutomationService;
   requests: RequestService;
@@ -85,9 +89,13 @@ export type AgentDeps = {
   approvalSecret?: string | undefined;
   /** The x402 marketplace; paid services are off without it. */
   marketplace?: MarketplaceService | undefined;
+  /** Wallet & limits (A3); the safety tools answer "unavailable" without it. */
+  safety?: SafetyService | undefined;
   /** Business mode: invoices from chat. */
   invoices?: InvoiceService | undefined;
   history?: HistoryService | undefined;
+  /** Payouts, payroll, devices and export links for chat (B2-2). */
+  business?: BusinessAgentDeps | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -122,6 +130,7 @@ export function createTurnRunner(deps: AgentDeps) {
     onramp,
     crosschain,
     lend,
+    withdraw,
     assets,
     automations,
     requests,
@@ -130,6 +139,7 @@ export function createTurnRunner(deps: AgentDeps) {
     marketplace,
     invoices,
     history: historyService,
+    business,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const conversations = new ConversationStore(db);
@@ -183,12 +193,15 @@ export function createTurnRunner(deps: AgentDeps) {
       onramp,
       crosschain,
       lend,
+      withdraw,
       assets,
       automations,
       requests,
       marketplace,
+      safety: deps.safety,
       invoices,
       history: historyService,
+      business,
       threadId,
       lastUserText,
       log,

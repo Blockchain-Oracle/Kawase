@@ -67,6 +67,10 @@ export type ProblemCode =
   | "take_profit_wrong_side"
   | "stop_loss_wrong_side"
   | "stop_loss_past_liquidation"
+  | "change_not_pending"
+  | "practice_mode"
+  | "brake_override"
+  | "token_invalid"
   | "upstream"
   | "internal";
 
@@ -139,6 +143,10 @@ const TITLES: Record<ProblemCode, string> = {
   take_profit_wrong_side: "The take-profit is on the wrong side of the price",
   stop_loss_wrong_side: "The stop-loss is on the wrong side of the price",
   stop_loss_past_liquidation: "The stop-loss must come before liquidation",
+  change_not_pending: "That change is no longer waiting for approval",
+  practice_mode: "Practice mode is on: nothing real moves",
+  brake_override: "A risky action: confirm it on its card",
+  token_invalid: "Not a token on this network",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

@@ -64,6 +64,7 @@ import {
   encodeUsdcTransfer,
   gatewayBalance,
   gatewayTransfer,
+  x402TransferStatus,
   optionsHere,
   pay,
   probe,
@@ -79,6 +80,7 @@ import { amount, formatPrice } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import { recordPractice } from "../safety/practice";
 import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
@@ -110,6 +112,10 @@ const min = (a: bigint, b: bigint) => (a < b ? a : b);
 
 type PurchaseRow = typeof marketplacePurchases.$inferSelect;
 type MoveRow = typeof agentWalletMoves.$inferSelect;
+/** A purchase that failed after payment, whose batched Gateway payment Circle reports as failed: never charged. */
+const NOT_CHARGED = "not_charged";
+/** How long a failed-after-payment Gateway purchase is looked at again (Circle batches within minutes). */
+const RECHECK_DAYS = 7;
 type AgentWallet = { id: string; walletId: string; address: Address };
 
 export function listingView(listing: Listing): ServiceListing {
@@ -140,6 +146,9 @@ const purchaseView = (row: PurchaseRow): PurchaseView => ({
   reasonCode: row.reasonCode,
   settlement: row.settlement,
   responsePreview: row.responsePreview,
+  // x402 has no refund yet (a proposal, x402-foundation PR 3640, unmerged): a call that failed after payment is not
+  // refunded, unless Circle reports the batched payment itself failed (never taken).
+  refund: row.status === "failed_after_payment" ? "none" : row.reasonCode === NOT_CHARGED ? "not_charged" : null,
   paidAt: row.paidAt?.toISOString() ?? null,
   createdAt: row.createdAt.toISOString(),
 });
@@ -323,7 +332,8 @@ export class MarketplaceService {
         .from(marketplacePurchases)
         .where(and(eq(marketplacePurchases.userId, user.id), eq(marketplacePurchases.network, network)))
         .orderBy(desc(marketplacePurchases.createdAt))
-        .limit(HISTORY_LIMIT),
+        .limit(HISTORY_LIMIT)
+        .then((rows) => this.recheckCharges(rows)),
       this.db
         .select()
         .from(agentWalletMoves)
@@ -480,6 +490,26 @@ export class MarketplaceService {
       await sleep(POLL_MS);
     }
     return amount;
+  }
+
+  /**
+   * Money that arrived on the agent wallet from outside (a card purchase through Circle's Onramp): put to work like a
+   * top-up — into Gateway, less the share kept on hand for plain EIP-3009 sellers and the gas reserve.
+   */
+  async putToWork(userId: string, network: NetworkId) {
+    const agent = await this.agentWallet(userId, network);
+    if (!agent) return;
+    const { onHand } = await this.balances(network, agent.address);
+    await this.deposit(userId, network, agent, onHand, (onHand * AGENT_WALLET_ON_HAND_BPS) / BPS);
+  }
+
+  /** Every transaction the agent wallet's own moves made (top-ups, refills), so an arrival is never mistaken for one. */
+  async moveHashes(userId: string, network: NetworkId): Promise<Set<string>> {
+    const rows = await this.db
+      .select({ txHashes: agentWalletMoves.txHashes })
+      .from(agentWalletMoves)
+      .where(and(eq(agentWalletMoves.userId, userId), eq(agentWalletMoves.network, network)));
+    return new Set(rows.flatMap((row) => row.txHashes.map((hash) => hash.toLowerCase())));
   }
 
   /** Tops up from the person's wallet under the marketplace grant, then deposits into Gateway. */
@@ -653,7 +683,44 @@ export class MarketplaceService {
       .where(and(eq(marketplacePurchases.userId, user.id), eq(marketplacePurchases.network, user.activeNetwork)))
       .orderBy(desc(marketplacePurchases.createdAt))
       .limit(HISTORY_LIMIT);
-    return rows.map(purchaseView);
+    return (await this.recheckCharges(rows)).map(purchaseView);
+  }
+
+  /**
+   * A call that failed after a Gateway payment: Circle batches the payment later, and a batch can fail (the money is
+   * then never taken). Each such purchase is asked about again while it is recent; a failed one becomes "failed, not
+   * charged" and leaves the day's spend.
+   */
+  private async recheckCharges(rows: PurchaseRow[]): Promise<PurchaseRow[]> {
+    const since = Date.now() - RECHECK_DAYS * MS_PER_DAY;
+    return Promise.all(
+      rows.map(async (row) => {
+        if (row.status !== "failed_after_payment" || row.rail !== "gateway" || !row.settlement || row.createdAt.getTime() < since) return row;
+        const transfer = await x402TransferStatus(this.clients(row.network).network, row.settlement, this.fetchImpl).catch(() => undefined);
+        if (transfer?.status !== "failed") return row;
+        const [updated] = await this.db.update(marketplacePurchases).set({ status: "failed", reasonCode: NOT_CHARGED }).where(eq(marketplacePurchases.id, row.id)).returning();
+        return updated ?? row;
+      }),
+    );
+  }
+
+  /**
+   * Practice mode (cards/automate-safety.md, R11): the seller was asked its live price and every rule was checked, but
+   * nothing is paid and no consent row waits. The card says what would have happened: paid from the agent wallet, or
+   * waited for the person's tap first, or needed a top-up. Recorded as a practice run, so Activity shows it.
+   */
+  private async practiceBuy(userId: string, network: NetworkId, service: ServiceListing, amount: bigint, why: "over_per_call" | "ask_first" | "after_paid_data" | undefined): Promise<BuyOutcome> {
+    const agent = await this.agentWallet(userId, network);
+    const held = agent ? await this.balances(network, agent.address) : undefined;
+    const funded = held ? held.gateway.available >= amount || held.onHand - AGENT_WALLET_GAS_RESERVE >= amount : false;
+    await recordPractice(this.db, {
+      userId,
+      network,
+      kind: "purchase",
+      summary: { amount: amount.toString(), asset: "USDC", name: service.provider.name, url: service.url, funded: funded ? "1" : "0", ...(why ? { why } : {}) },
+      result: { ok: true, error: null, simulatedAt: new Date().toISOString() },
+    });
+    return { network, status: "practiced", service, price: amount.toString(), wouldAsk: why ?? null, funded };
   }
 
   /**
@@ -729,6 +796,7 @@ export class MarketplaceService {
       amount,
     };
     const why = amount > BigInt(settings.perCallCap) ? "over_per_call" : settings.askFirst ? "ask_first" : context.tainted ? "after_paid_data" : undefined;
+    if (user.practiceMode) return this.practiceBuy(user.id, network, service, amount, why);
     if (why && !approved) {
       const [pending] =
         earlier?.status === "needs_consent" && earlier.amount === amount

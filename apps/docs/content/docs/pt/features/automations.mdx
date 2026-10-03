@@ -1,46 +1,72 @@
 ---
 title: "Automações"
-description: "Pagamentos programados, poupança automática e regras que funcionam sozinhas, cada uma limitada na rede por uma permissão que você assina uma vez com o Face ID."
-sourceHash: ac77249124998350
+description: "Pagamentos programados, poupança automática, folha de pagamento, DCA e regras (saldo, dinheiro que entra ou sai, preço) que funcionam sozinhos dentro de permissões que você assina uma vez, com execuções de teste primeiro e Precisa de você para tudo que não puderem fazer sozinhos."
+sourceHash: 4d4a986aeccb8f32
 ---
 
 <Status ids="automations" />
 
-As Automações fazem o trabalho por você: são tarefas que devem acontecer sem precisar abrir o app. Cada automação
-funciona **sem supervisão**, mas dentro de uma permissão na rede que você assina uma vez — assim, nem o próprio Kawase pode fazer mais do que isso.
+As Automações fazem as coisas acontecerem sem você precisar abrir o app. Cada automação
+funciona **sem supervisão**, mas dentro de uma permissão na blockchain que você assina uma vez. Assim, nem o próprio Kawase pode fazer mais do que isso.
 
 ## Pagamentos programados
 
-"Toda sexta-feira, às 9h, envie 10 dólares para Alex." O Kawase mostra a confirmação com as próximas execuções e o valor máximo que poderia movimentar,
-e você ativa tudo com **um Face ID**. Isso assina a própria **permissão** da automação: ela só pode transferir esse token, apenas
-para o endereço de Alex (fixado na rede) e somente até o valor permitido por período. Você pode programar: todos os dias, toda semana em um dia da semana,
-ou todo mês do dia 1 ao 28, no seu próprio fuso horário.
+"Toda sexta às 9, envie 10 dólares para Alex." O Kawase repete a instrução, mostra as próximas execuções e o valor máximo que poderá movimentar.
+Depois, você ativa tudo com **um Face ID**. Isso assina a **permissão** da automação: ela só pode transferir esse token, apenas
+para o endereço de Alex (fixado na blockchain) e até o valor permitido por período. Você pode programar: todos os dias, toda semana em um dia útil
+ou todo mês, do dia 1 ao 28, no seu próprio fuso horário.
 
 Cada execução acontece **exatamente uma vez**: se o servidor do Kawase reiniciar no meio da execução, ela será recuperada com o mesmo ID e nunca
-será paga duas vezes. Uma execução que não puder acontecer (por falta de dinheiro ou por ultrapassar um limite) será **ignorada com um motivo** na sua caixa de entrada.
+será paga duas vezes. As execuções semanais e mensais recebem um **lembrete um dia antes** (com um aviso se faltar dinheiro na sua carteira). Uma execução
+que não puder acontecer será **pulada com um motivo** na sua caixa de entrada. Se for pulada por falta de dinheiro, será **tentada novamente uma vez**
+quando o dinheiro chegar.
 
 ## Poupança automática
 
-"Mantenha 100 dólares na minha carteira e guarde o restante." A poupança automática mantém esse valor disponível e transfere tudo que passar dele para a sua
-poupança no cofre (veja [Render](./earn-and-borrow.mdx)); quando sua carteira fica abaixo desse valor, ela repõe a diferença usando a
-poupança. Ela verifica todos os dias e sempre que chega dinheiro. As permissões permitem apenas movimentar USDC **entre a sua carteira e a sua própria
-poupança** — nunca para outro lugar.
+"Deixe 100 dólares na minha carteira e guarde o restante." A poupança automática mantém esse valor disponível e transfere tudo que passar dele para a sua
+própria reserva (veja [Render](./earn-and-borrow.mdx)). Quando o saldo da carteira fica abaixo desse limite, ela repõe o valor usando a reserva. Ela verifica o saldo todos os dias e sempre que entra dinheiro. As permissões dela só permitem transferir USDC **entre sua carteira e sua própria
+reserva**, nunca para outro lugar.
+
+## Folha de pagamento e DCA
+
+- A **folha de pagamento** paga várias pessoas em um dia do mês. Cada beneficiário recebe sua própria permissão, vinculada a ele e ao valor,
+  e todas são assinadas com **um Face ID**. Veja [Negócios](./business.mdx#payroll).
+- O **DCA** ("compre 20 dólares de cirBTC toda semana") compra um token com um valor fixo em uma programação. Cada execução espera por você em
+  **Precisa de você**, com uma nova cotação pronta para executar.
 
 ## Regras
 
-"Quando meu saldo passar de 500, faça uma ponte com o que passar de 400 para o meu endereço na Base." As regras têm:
+"Quando meu saldo passar de 500, faça uma ponte com o que passar de 400 para o meu endereço na Base." Uma regra tem:
 
-- um **gatilho**: o saldo passa de um valor ou fica abaixo dele, ou chega dinheiro (opcionalmente de alguém ou de pelo menos um
-  determinado valor);
-- uma **ação**: fazer uma ponte com USDC para o seu próprio endereço em outra rede (a taxa da rota tem um limite definido na rede), guardar o valor no seu
-  cofre ou apenas avisar você;
-- um **valor**: o que passar de um limite, uma parte do dinheiro recebido ou um valor fixo.
+- um **gatilho**: o saldo passa de um valor para cima ou para baixo; entra dinheiro (opcionalmente de alguém ou de pelo menos um
+  determinado valor); sai dinheiro (**arredondamentos**); ou o **preço** de um token passa de um nível (verificado na cotação pronta para execução a cada dois minutos);
+- uma **ação**: fazer uma ponte com USDC para o seu próprio endereço em outra rede (a taxa da rota tem um limite na blockchain), guardar na sua
+  reserva, **enviar para alguém** (com limite na blockchain), **trocar** ou apenas avisar você;
+- um **valor**: o que passar de um limite, uma parte do dinheiro que entrou ou um valor fixo.
 
-Uma regra de saldo é acionada **uma vez a cada cruzamento** e fica pronta para ser acionada novamente quando o saldo voltar.
+Uma regra de saldo ou de preço é ativada **uma vez por cruzamento** e fica pronta novamente quando o valor volta. Uma regra de
+**arredondamento** ("arredonde meus pagamentos e guarde o troco") guarda a diferença de cada envio na sua própria reserva.
 
-## Gerenciando suas automações
+## Teste primeiro
 
-Na tela de Automações ou no chat: liste, **pause**, **retome**, **ignore a próxima execução** e **cancele**. Cancelar
-também **revoga a permissão na rede**, então o acesso é removido, não apenas ocultado.
+Uma nova automação pode começar em **modo de teste**: ela funciona sem uma permissão, e cada execução é a transferência exata em modo de teste na
+Arc, registrada como **"teria acontecido"**. Nada é movimentado. Quando você estiver satisfeito, **Ativar** assina a permissão. Pergunte "o que aconteceria se
+isso fosse executado agora?" para fazer um teste sob demanda. Com o [modo de teste](./limits-and-control.mdx#practice-mode) global ativado, todas as
+automações funcionam em modo de teste.
+
+## Precisa de você
+
+Uma automação nunca troca tokens sozinha e nunca paga acima do limite da permissão, nem ignora sua lista de permissões ou as regras para novos destinatários. Quando uma
+execução chega a uma dessas etapas, ela fica em **Precisa de você** (na caixa de entrada e em Automações, com uma notificação push quando configurada).
+Ao aprovar, você abre o mesmo envio ou troca que faria manualmente. Itens sem resposta recebem um lembrete depois de 12 horas e expiram após
+24 horas. Veja [Precisa de você](./limits-and-control.mdx#needs-you).
+
+## Como gerenciar
+
+Na tela de Automações ou no chat: listar, **pausar**, **retomar**, **pular a próxima execução**, **editar** e **cancelar**.
+
+- **Editar** no mesmo lugar: pedir menos aplica a mudança na hora; pedir mais assina uma nova permissão junto com a
+  revogação da antiga.
+- **Cancelar** também **revoga a permissão na blockchain**, então a autorização deixa de existir, em vez de apenas ficar oculta.
 
 <ScopeList ids="automations" />

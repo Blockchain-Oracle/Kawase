@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -40,7 +40,10 @@ import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
-import { automationRoutes } from "./automations/routes";
+import { automationRoutes, needsYouRoutes } from "./automations/routes";
+import { automationMarket } from "./automations/market";
+import { NeedsYouService } from "./automations/needs-you";
+import { createSwapVenues } from "./swap/venues";
 import { AutomationService } from "./automations/service";
 import { noBridges, type BridgeEngine } from "./bridge/engine";
 import { noEarn, type EarnEngine } from "./earn/engine";
@@ -50,7 +53,6 @@ import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noMarketData, type MarketData } from "./market/sources";
 import { noSwaps, type SwapEngine } from "./swap/engine";
-import { createSwapVenues } from "./swap/venues";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
 import { MarginProtection } from "./margin/protection";
@@ -63,7 +65,12 @@ import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
 import { LendService } from "./lend/service";
+import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
+import { WithdrawService } from "./withdraw/service";
+import { tokenRulesRoutes } from "./tokens/rules-routes";
+import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
+import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
 import type { AppEnv } from "./types";
 import type { Discovery } from "@kawase/integrations-x402";
@@ -75,15 +82,20 @@ import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
 import { InvoiceService } from "./business/invoices";
 import { PayoutService } from "./business/payouts";
-import { PayrollService } from "./business/payroll";
+import { tokenResolver } from "./business/tokens";
 import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { PrivacyService } from "./history/privacy";
-import { historyRoutes, privacyRoutes } from "./history/routes";
+import { ExportLinks } from "./history/export-link";
+import { exportFileRoutes, historyRoutes, privacyRoutes } from "./history/routes";
 import { HistoryService } from "./history/service";
 import { MarketplaceService } from "./marketplace/service";
 import type { Chains } from "./wallet/chain";
 import { voiceRoutes, type LiveKitConfig } from "./voice/routes";
 import { walletRoutes } from "./wallet/routes";
+import { safetyRoutes } from "./safety/routes";
+import { activityRoutes } from "./activity/routes";
+import { ActivityFeedService } from "./activity/service";
+import { SafetyService } from "./safety/service";
 import { memoryRoutes } from "./memory/routes";
 import { MemoryService } from "./memory/service";
 import { searchRoutes } from "./search/routes";
@@ -91,6 +103,12 @@ import { SearchService } from "./search/service";
 import { suggestionRoutes } from "./suggestions/routes";
 import { SuggestionService } from "./suggestions/service";
 import { StatusService } from "./status/service";
+import { payCodeRoutes } from "./paycodes/routes";
+import { PayCodeService } from "./paycodes/service";
+import { splitRoutes } from "./splits/routes";
+import { SplitService } from "./splits/service";
+import { intentRoutes } from "./intents/routes";
+import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
@@ -124,6 +142,8 @@ export type AppDeps = {
   circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
   market?: MarketData | undefined;
+  /** Alchemy's Transfers API for Activity (every token, in and out); the explorer's USDC/EURC page without it. */
+  alchemyApiKey?: string | undefined;
   /** Refreshes the shared market cache this often; off when unset. */
   marketWarmMs?: number | undefined;
   /** Looks again at sends in flight this often; off when unset (tests drive tracking themselves). */
@@ -167,7 +187,12 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
-  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL);
+  // Requests describe any token through the asset registry, created just below (the lookup is read lazily).
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value));
+  // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
+  // for (earn is created further down).
+  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
+  if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(
     deps.db,
     deps.chains,
@@ -178,19 +203,20 @@ export function createApp(deps: AppDeps) {
     deps.log,
     requests,
     inbox,
+    assets,
   );
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
-  // Positions come from earn, read only when a portfolio is asked for (earn is created just below).
-  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
-  if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
   const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
+  const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
+  needsYou.bind({ sends, swaps });
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
+  const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -202,13 +228,30 @@ export function createApp(deps: AppDeps) {
     bridges,
     inbox,
     deps.log,
+    needsYou,
+    automationMarket(deps.chains, createSwapVenues(deps.swaps ?? noSwaps), assets),
   );
+  // Round-ups: each of the person's own completed sends gives every round-up rule one run.
+  sends.onSent((sent) => automations.queueRoundUps(sent));
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
+  needsYou.setAudit(audit);
+  automations.setAudit(audit);
+  const safety = new SafetyService(deps.db, deps.chains, wallets, audit, deps.log);
+  const tokenRules = new TokenRulesService(deps.db, deps.chains, wallets, audit, (userId, network) => swaps.unverifiedSpentToday(userId, network, ""));
   const marketplace =
     deps.agentWallets && deps.discovery
       ? new MarketplaceService(deps.db, deps.chains, wallets, deps.ops, deps.agentWallets, deps.discovery, deps.log)
       : undefined;
+  // "Top up my agent wallet with Apple Pay": the onramp lands on the agent wallet and the marketplace puts it to work.
+  if (marketplace) {
+    onramp.setAgentWallets({
+      address: async (user) => (await marketplace.ensureAgentWallet(user.id, user.activeNetwork)).address,
+      ownMoves: (userId, network) => marketplace.moveHashes(userId, network),
+      arrived: (userId, network) => marketplace.putToWork(userId, network),
+    });
+  }
+  const account = new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace, inbox);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
@@ -279,7 +322,7 @@ export function createApp(deps: AppDeps) {
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/client-events", clientEventRoutes());
   app.route("/public", publicRoutes(new PublicStatsService(deps.db)));
-  app.route("/auth", authRoutes(deps.db, auth));
+  app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input)));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/notifications", notifyRoutes(deps.db, notify));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
@@ -287,6 +330,14 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
+  // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
+  // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
+  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$|^\/marketplace\/agent-wallet\/top-up$/;
+  app.use("*", async (c, next) => {
+    if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
+      throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");
+    await next();
+  });
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
@@ -294,30 +345,44 @@ export function createApp(deps: AppDeps) {
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
+  app.route("/withdrawals", withdrawRoutes(withdraw));
+  app.route("/places", placeRoutes(withdraw));
+  app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
+  app.route("/needs-you", needsYouRoutes(needsYou));
   app.route("/requests", requestRoutes(requests));
   app.route("/r", publicRequestRoutes(requests));
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
-  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL);
-  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit);
-  const payroll = new PayrollService(deps.db, automations, audit);
-  app.route("/business", businessRoutes({ invoices, payouts, payroll }));
+  app.route("/safety", safetyRoutes(safety));
+  const resolveToken = tokenResolver(assets);
+  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
+  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
+  app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
-  const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
+  // Everyday money (A5-2): scan to pay.
+  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
+  app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
+  app.route("/contacts-discovery", discoveryRoutes(deps.db));
+  const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
+  const exportLinks = new ExportLinks(deps.approvalSecret);
+  app.route("/files/export", exportFileRoutes(history, exportLinks));
   app.route("/privacy", privacyRoutes(privacy));
-  app.route("/account", accountRoutes(deps.db, new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace)));
+  app.route("/account", accountRoutes(deps.db, account));
   const agentDeps = {
     marketplace,
     invoices,
     history,
+    business: { payouts, account, exportLinks },
     db: deps.db,
     chains: deps.chains,
     wallets,
@@ -332,9 +397,11 @@ export function createApp(deps: AppDeps) {
     onramp,
     crosschain,
     lend,
+    withdraw,
     assets,
     automations,
     requests,
+    safety,
     models: deps.models,
     approvalSecret: deps.approvalSecret,
   };

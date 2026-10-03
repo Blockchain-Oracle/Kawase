@@ -21,4 +21,11 @@ export const notify = {
   protectFailedBody: "The price Kawase could get wasn't fair enough to sell. Check it now.",
   side_long: "long",
   side_short: "short",
+  needsYouTitle: "Needs you",
+  needsYouReminderTitle: "Still waiting for you",
+  needsYouSend: "Send {{amount}} to {{name}}",
+  needsYouSwap: "Swap {{amount}} {{symbolIn}} to {{symbolOut}}",
+  reminderTitle: "Tomorrow, {{at}}",
+  reminderPayroll: "Payroll for {{people}} people",
+  reminderShort: "Your wallet holds less than this run",
 } as const;

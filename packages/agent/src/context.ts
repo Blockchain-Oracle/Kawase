@@ -36,6 +36,8 @@ import type {
   CompareYieldOutput,
   LendRequest,
   ProposeLendOutput,
+  WithdrawPlanInput,
+  WithdrawProposalOutput,
   PortfolioView,
   TokenDetailView,
   TokenSearchResult,
@@ -46,8 +48,22 @@ import type {
   InspectServiceResult,
   MarketplaceCategory,
   ServiceSearchResult,
+  SafetyChange,
+  SafetyToolOutput,
+  PayrollAutomationInput,
+  DcaInput,
+  AutomationEdit,
+  AutomationEditResponse,
+  SimulationView,
   InvoiceView,
-  ReportView,
+  PayoutProposal,
+  InvoiceFilter,
+  InvoiceListOutput,
+  ExportLinkOutput,
+  WeeklyReportOutput,
+  ExplainOutput,
+  DeviceSignOutProposal,
+  DeleteAccountProposal,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -116,10 +132,8 @@ export type AgentContext = {
   agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
   /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
-  /** Business mode: an invoice with a payment link and an on-chain reference (the card shares it). */
-  createInvoice(input: { client: string; amount: string; asset: "USDC" | "EURC"; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
-  /** The weekly report: money in and out, swaps, bridges, earn, services, automations, invoices. */
-  report(input: { days?: number | undefined }): Promise<{ report: ReportView | null; summary: ModelSummary }>;
+  /** Business mode: an invoice in any Arc token with a payment link and an on-chain reference (the card shares it). */
+  createInvoice(input: { client: string; amount: string; asset: string; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
@@ -141,6 +155,8 @@ export type AgentContext = {
   compareYield?(input: { asset: string; amount: string | null }): Promise<CompareYieldOutput>;
   /** Drafts an Aave V4 action: supply, withdraw, borrow (collateral in the same batch) or repay; approved on the card. */
   proposeLend?(input: LendRequest): Promise<ProposeLendOutput>;
+  /** Plans a withdrawal (any assets, to an exchange, a saved place or an own wallet); the card opens Withdraw. */
+  proposeWithdraw?(input: WithdrawPlanInput): Promise<WithdrawProposalOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */
@@ -149,4 +165,43 @@ export type AgentContext = {
   tokenDetail(address: string): Promise<TokenDetailView>;
   /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
   proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
+  // Wallet & limits (A3). Optional so a context without them still builds; the tools say so when one is missing.
+  /** The risk dial, practice mode and pause, read from the session for the instructions (X11). */
+  riskMode?: "careful" | "balanced" | "autonomous" | undefined;
+  practice?: boolean | undefined;
+  pausedAll?: boolean | undefined;
+  /** The person's limits now. */
+  safetyView?(): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  /** A change: tightening applies at once; loosening comes back as a card to approve with Face ID. */
+  changeSafety?(change: SafetyChange): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  proposeLimitChange?(input: {
+    limit: "allowance" | "per_payment" | "temporary_raise" | "cooldown" | "practice";
+    token?: string | undefined;
+    amount?: string | undefined;
+    hours?: number | undefined;
+    on?: boolean | undefined;
+  }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  proposeAllowlistChange?(input: { action: "add" | "remove" | "only_on" | "only_off"; contact?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  revokeGrant?(input: { what: "allowance" | "automation" | "everything"; token?: string | undefined; automationId?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
+  // Automations 8c (A3).
+  draftPayroll?(input: PayrollAutomationInput): Promise<ProposeAutomationOutput>;
+  draftDca?(input: DcaInput): Promise<ProposeAutomationOutput>;
+  editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
+  simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;
+  automationRuns?(input: { automationId?: string | undefined; limit: number }): Promise<{ network: AgentNetwork; automations: ProposeAutomationOutput[]; summary: ModelSummary }>;
+  // Business, history and account from chat (builder B2). Optional so a context without them still builds.
+  /** A checked batch payout (any Arc token); one Face ID on the card pays everyone. */
+  proposePayout?(input: { asset: string | null; lines: { recipient: string; amount: string }[] }): Promise<{ proposal: PayoutProposal; summary: ModelSummary }>;
+  /** The business's invoices with their status, filtered; one by number or client. */
+  listInvoices?(input: { filter: InvoiceFilter; number: string | null; client: string | null }): Promise<{ list: InvoiceListOutput; summary: ModelSummary }>;
+  /** A short-lived download link for one month of history as CSV or beancount. */
+  exportHistory?(input: { month: string | null; format: "csv" | "beancount" }): Promise<{ link: ExportLinkOutput; summary: ModelSummary }>;
+  /** The weekly report card. */
+  weeklyReport?(input: { days: number | null }): Promise<{ output: WeeklyReportOutput; summary: ModelSummary }>;
+  /** Why one movement happened: the decision record (the latest movement, in or out, when not named). */
+  explainTransaction?(input: { txHash: string | null; which: "latest" | "latest_in" | "latest_out" }): Promise<{ output: ExplainOutput; summary: ModelSummary }>;
+  /** The devices, for the person to sign one out on the card. */
+  proposeDeviceSignOut?(input: { device: string | null }): Promise<{ proposal: DeviceSignOutProposal; summary: ModelSummary }>;
+  /** What deleting the account means; the person does it on the delete screen with their @handle typed. */
+  proposeDeleteAccount?(): Promise<{ proposal: DeleteAccountProposal; summary: ModelSummary }>;
 };

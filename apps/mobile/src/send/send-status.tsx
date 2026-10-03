@@ -89,7 +89,7 @@ function useEnding(intent: SendIntent): Ending | undefined {
   const { t } = useT();
   const money = useMoney();
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
-  const sent = money(intent.draft?.asset, intent.draft?.amount);
+  const sent = money(intent.draft?.asset, intent.draft?.amount, intent.draft?.token?.decimals);
   switch (intent.outcome) {
     case "sent":
       return {
@@ -108,6 +108,14 @@ function useEnding(intent: SendIntent): Ending | undefined {
       return { icon: Minus, tone: "muted", title: t("send.canceledTitle"), body: t("send.notSentBody") };
     case "expired":
       return { icon: Minus, tone: "muted", title: t("send.expiredTitle"), body: t("send.expiredBody") };
+    // Practice mode (cards/automate-safety.md): the exact payment was dry-run on Arc; nothing was sent.
+    case "practiced":
+      return {
+        icon: intent.practice?.ok ? Check : X,
+        tone: "muted",
+        title: `${t("safety.practiceEyebrow")} · ${t("safety.wouldHaveSent", { amount: sent, name })}`,
+        body: intent.practice?.ok ? t("safety.wouldHaveOk") : t("safety.wouldHaveRefused", { reason: intent.practice?.error ?? "" }),
+      };
     default:
       return undefined;
   }
@@ -150,7 +158,7 @@ export function SendStatus({
         {/* With no confirm step inside the allowance, what is moving is always in view while it moves. */}
         {intent.draft ? (
           <Text className={cn("font-display text-foreground text-center font-bold", compact ? "text-lg" : "text-2xl")}>
-            {`${money(intent.draft.asset, intent.draft.amount)} → ${recipientName(intent.draft.recipient, intent.request.recipient)}`}
+            {`${money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals)} → ${recipientName(intent.draft.recipient, intent.request.recipient)}`}
           </Text>
         ) : null}
         <Plane id={intent.id} compact={Boolean(compact)} rtl={rtl} departing={departing} onDeparted={onDeparted} />

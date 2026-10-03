@@ -10,7 +10,6 @@ import { Pressable, ScrollView, View } from "react-native";
 import { KeyboardStickyView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
 import { isAddress } from "viem";
 
 import type { Contact, RecipientMatch } from "@kawase/api-client";
@@ -27,6 +26,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
+import { ScanModal } from "@/scan/scan-modal";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
@@ -124,6 +124,8 @@ export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) =>
   const [query, setQuery] = React.useState("");
   const [matches, setMatches] = React.useState<RecipientMatch[]>();
   const [adding, setAdding] = React.useState(false);
+  // Scan to pay (A5-2): the scanner opens over this step; a code replaces Send with the flow it asks for.
+  const [scanning, setScanning] = React.useState(false);
   const latest = React.useRef(0);
   const { height } = useReanimatedKeyboardAnimation();
   // The list scrolls clear of the keyboard: a spacer as tall as the keyboard under the last row.
@@ -233,7 +235,7 @@ export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) =>
             <Button variant="secondary" size="icon" className="size-14 rounded-2xl" accessibilityLabel={t("send.paste")} onPress={() => void paste()}>
               <Icon as={ClipboardPaste} className="size-5" />
             </Button>
-            <Button variant="secondary" size="icon" className="size-14 rounded-2xl" accessibilityLabel={t("send.scan")} onPress={() => toast(t("send.scanSoon"))}>
+            <Button variant="secondary" size="icon" className="size-14 rounded-2xl" accessibilityLabel={t("send.scan")} onPress={() => setScanning(true)}>
               <Icon as={ScanLine} className="size-5" />
             </Button>
           </View>
@@ -255,6 +257,7 @@ export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) =>
           onPick(choiceFromContact(contact));
         }}
       />
+      <ScanModal open={scanning} origin="send" onClose={() => setScanning(false)} />
     </View>
   );
 }

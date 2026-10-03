@@ -1,0 +1,52 @@
+---
+title: "Negócios"
+description: "Faturas com um link de pagamento, um PDF e uma referência na blockchain que marca o pagamento como feito; pagamentos em lote assinados uma vez; folha de pagamento com limites definidos na blockchain para cada pessoa."
+sourceHash: 641b91dcea90d194
+---
+
+<Status ids="request" />
+
+<Marks names="usdc eurc arc" />
+
+Configurações → **Negócios** transforma o Kawase em uma ferramenta para pequenas empresas. Seu **perfil comercial** (nome e dados) é impresso
+em todas as faturas.
+
+## Faturas
+
+"Faturar 500 USDC para a Acme pelo logotipo", ou **Nova fatura**: o cliente, o token (USDC, EURC, qualquer token que você tenha ou qualquer
+token na Arc pelo nome ou endereço; tokens parecidos são recusados), itens, vencimento em 7, 14 ou 30 dias e uma observação, com um
+total atualizado. Cada fatura recebe um número (`INV-0001`, …) e:
+
+- um **link de pagamento** (`/r/…`) para enviar ao cliente;
+- um **PDF** para compartilhar;
+- uma **referência na blockchain** para o contrato **Memo** da Arc. É um ID opaco: nenhum nome ou valor vai para a blockchain.
+
+O cliente abre o link e vê a fatura: sua empresa, o número, os itens, a data de vencimento e o que já foi
+pago. Ele pode pagar com o Kawase ou em qualquer navegador com uma carteira: **Pagar com sua carteira** muda a rede para a Arc (adicionando a Arc se
+necessário) e envia o pagamento exato indicado na fatura, com a referência.
+
+O Kawase monitora a Arc em busca dessa referência e registra cada pagamento como **parcialmente pago**, **pago** ou **pago a mais**, com sua
+transação. Um envio pelo Kawase ou uma transferência simples e exata pelo link também conta. A página da fatura mostra o total, o que foi
+pago e o que falta, além de permitir enviar o link novamente, compartilhar o PDF ou cancelar.
+
+## Pagamentos
+
+Pague várias pessoas de uma só vez, com qualquer token: cole ou digite linhas no formato "quem, valor" (um CSV também funciona), para contatos,
+@handles ou endereços. Cada linha é
+**verificada como um envio** (seu próprio endereço, um contrato de token, um token parecido, um endereço bloqueado) e seu saldo é
+verificado. Depois, **um Face ID** assina **uma transação** que paga todo mundo: tudo ou nada. Os pagamentos anteriores mostram sua
+transação.
+
+## Folha de pagamento
+
+Dê um nome, escolha o dia do mês e adicione os beneficiários. **Ativar** assina o limite de cada beneficiário com **um Face ID**: cada
+beneficiário recebe sua própria autorização na blockchain, vinculada a ele e ao seu valor mensal, para que uma execução nunca possa pagar outra pessoa ou
+um valor maior. Pause, retome ou cancele toda a folha de pagamento. Se o endereço salvo de um beneficiário mudar, apenas essa linha fica pausada até você
+verificá-la; todas as outras continuam funcionando. Cada linha tem seu próprio ID, para que uma execução nunca pague uma linha duas vezes.
+
+## Lembretes
+
+O Kawase lembra você um dia antes do vencimento de uma fatura e uma vez quando ela está atrasada: na caixa de entrada e por notificação push; a
+fatura atrasada também gera um e-mail.
+
+<ScopeList ids="request" />

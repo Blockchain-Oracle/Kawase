@@ -19,6 +19,10 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AutomationSummary } from "@/automations/automation-summary";
+import { EditAutomation, PracticeActions } from "@/automations/automation-more";
+import { NeedsYouCard } from "@/needs-you/needs-you-card";
+import { useNeedsYou } from "@/needs-you/use-needs-you";
+import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { useAutomation } from "@/automations/use-automation";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -37,8 +41,10 @@ function AutomationItem({ initial }: { initial: AutomationView }) {
   return (
     <View className="bg-card border-border gap-4 rounded-3xl border p-4">
       <AutomationSummary automation={automation} showRuns />
+      {automation.practice && automation.status === "active" ? <PracticeActions controller={{ ...controller, automation }} goLivePrompt={t("automation.goLive")} /> : null}
       {automation.status === "active" || automation.status === "paused" ? (
         <View className="flex-row flex-wrap gap-2">
+          <EditAutomation controller={{ ...controller, automation }} />
           {automation.status === "active" ? (
             <>
               <Button size="sm" variant="secondary" disabled={controller.busy} onPress={() => void controller.pause()}>
@@ -83,6 +89,8 @@ export function AutomationsScreen() {
   const [failed, setFailed] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
+  const needsYou = useNeedsYou();
+  const waiting = (needsYou.items ?? []).filter((item) => item.status === "pending");
 
   const load = React.useCallback(async () => {
     const ticket = ++latestLoad.current;
@@ -170,7 +178,16 @@ export function AutomationsScreen() {
           </View>
         ) : !list ? (
           <Skeleton className="rounded-3xl" style={{ height: SKELETON_HEIGHT }} />
-        ) : list.length === 0 ? (
+        ) : null}
+        {canLoad && waiting.length > 0 ? (
+          <View className="gap-3">
+            <Eyebrow>{t("needsYou.title")}</Eyebrow>
+            {waiting.map((item) => (
+              <NeedsYouCard key={item.id} item={item} onChange={needsYou.replace} />
+            ))}
+          </View>
+        ) : null}
+        {!canLoad || !list ? null : list.length === 0 && waiting.length === 0 ? (
           <View className="flex-1">
             <EmptyState
               art={<PaperPlane width={ART_WIDTH} id="automations-empty-plane" />}

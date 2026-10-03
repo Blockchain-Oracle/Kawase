@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "Envios ainda não estão disponíveis nesta rede.",
   ON_OTHER_NETWORK: "Envios funcionam em {{network}}.",
-  PAUSED_ALL: "Você pausou todos os envios. Retome em Configurações para continuar.",
+  PAUSED_ALL: "Em pausa: a Kawase e as automações não fazem nada sem você. Retome em Carteira e limites.",
   OVER_PER_TX_LIMIT: "Isso passa do seu limite de {{limit}} por envio.",
   OVER_DAILY_LIMIT: "Isso passa do seu limite diário de {{limit}} ({{used}} usados hoje).",
   OVER_WEEKLY_LIMIT: "Isso passa do seu limite semanal de {{limit}} ({{used}} usados nesta semana).",
@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "Esse valor não é válido.",
   ASSET_UNCLEAR: "USDC ou EURC?",
   FIRST_TIME_RECIPIENT: "Primeiro pagamento para este endereço",
-  LOOKALIKE_ADDRESS: "Parece o endereço de {{name}}, mas é diferente. Confira cada caractere.",
+  LOOKALIKE_ADDRESS:
+    "Parece o endereço de {{name}}, mas é diferente, então o Kawase não vai enviar. Confirme com {{name}}.",
   UNSAVED_ADDRESS: "Este endereço não está nos seus contatos",
   ABOVE_ALLOWANCE: "Acima do que resta do seu limite ({{available}})",
   NO_ALLOWANCE: "Seu limite diário está desligado",
@@ -44,4 +45,16 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "Mudar para {{network}}",
   fixEditAmount: "Mudar o valor",
   fixOpenContact: "Abrir contato",
+  AGENT_PAUSED: "Em pausa: este precisa da sua aprovação",
+  NOT_ON_ALLOWLIST: "Fora da sua lista permitida: este precisa da sua aprovação",
+  NEW_RECIPIENT_COOLDOWN:
+    "Destinatário novo: até {{until}}, mais de {{cap}} para ele precisa da sua aprovação. Mude isso em Carteira e limites.",
+  TEST_AMOUNT_SUGGESTED: "Primeiro pagamento aqui. Enviar {{test}} antes para conferir que chega?",
+  BRAKE_HALF_BALANCE: "É mais da metade do que você tem, para alguém a quem você nunca pagou.",
+  BRAKE_PRICE_IMPACT: "Este preço está {{gap}}% abaixo do mercado, acima da sua regra de {{max}}%.",
+  BRAKE_LEVERAGE: "{{leverage}}× passa de 5×: um pequeno movimento contra você pode zerar a margem.",
+  RECIPIENT_TOKEN_CONTRACT:
+    "Esse endereço é o contrato de um token. O dinheiro enviado ali se perde, então o Kawase não vai enviar.",
+  RECIPIENT_ISSUER_BLOCKED: "O emissor de {{asset}} bloqueou este endereço, então ele não pode receber {{asset}}.",
+  RECIPIENT_CONTRACT: "Este endereço é um contrato, não uma carteira. Talvez ele não consiga mover o que receber.",
 };

@@ -94,4 +94,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "用邮箱验证码发送",
   showFullAddress: "显示完整地址",
   youWrote: "你输入的是“{{words}}”",
+  otherChain: "对方的钱包在另一条链上？",
+  otherChainBridge: "通过跨链桥把 USDC 发过去：链和路线由你选择。",
+  otherChainConvert: "只有 USDC 能跨链。请先把你的 {{asset}} 换成 USDC。",
 };

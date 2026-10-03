@@ -17,11 +17,14 @@ export const markets: Catalog["markets"] = {
   testnetTitle: "Les marchés sont sur le mainnet",
   testnetBody: "L'argent de test n'échange que l'USDC et l'EURC. Passez au mainnet pour voir les vrais marchés.",
   switchToMainnet: "Passer au mainnet",
-  perpsBody: "Le long et le short sur Arc sont en construction : cirBTC, WETH et EURC via Aave d'abord.",
   empty: "Rien pour le moment",
   loadFailed: "Impossible de charger les marchés.",
   updated: "Mis à jour {{time}}",
   stale: "Derniers prix de {{time}}",
   recentSearches: "Recherches récentes",
   segmentsLabel: "Segments de marché",
+  yourPositions: "Vos positions",
+  marginVenue: "Kawase Margin · Aave V4 sur Arc",
+  perpsMainnet:
+    "Long et short fonctionnent sur le réseau principal d’Arc. Changez de réseau pour trader ; votre argent de testnet reste tel quel.",
 };

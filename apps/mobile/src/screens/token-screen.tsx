@@ -34,6 +34,7 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useToken, useTokenChart } from "@/token/use-token";
+import { withdrawHref } from "@/withdraw/href";
 
 const RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M", "1Y", "ALL"];
 const MARK = 36;
@@ -47,8 +48,6 @@ const SCROLL_BOTTOM = 96;
 const ZERO = 0n;
 /** Actions that move or receive money: they need a signed-in account and the token's own network. */
 const WRITES: ReadonlySet<TokenAction> = new Set(["buy", "sell", "send", "receive", "withdraw", "bridge", "earn", "long_short"]);
-/** Kawase's send and request flows carry these today; other tokens convert first. */
-const SENDABLE = new Set(["USDC", "EURC"]);
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
@@ -106,7 +105,6 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const reasonFor = (action: TokenActionView): string | null => {
     if (WRITES.has(action.id) && token.chainId !== activeChain) return t("tokenPage.n_mainnet_only");
     if (!action.available) return t(`tokenPage.n_${action.reason ?? "blocked"}`);
-    if ((action.id === "send" || action.id === "withdraw") && !SENDABLE.has(token.symbol)) return t("tokenPage.n_send_convert");
     return null;
   };
 
@@ -124,8 +122,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push({ pathname: "/swap", params: { sell: token.address } });
         return;
       case "send":
+        router.push({ pathname: "/send", params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address } });
+        return;
       case "withdraw":
-        router.push({ pathname: "/send", params: { asset: token.symbol } });
+        router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
         return;
       case "receive":
         router.push("/wallet/receive");

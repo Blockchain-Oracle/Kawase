@@ -15,7 +15,7 @@ import {
 } from "viem";
 
 import { DEFAULT_LIMITS, SECONDS_PER_DAY } from "@kawase/config";
-import { grants, intentDrafts, intents, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
+import { automations, grants, intentDrafts, intents, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
   buildAllowanceGrant,
   describeGrant,
@@ -202,6 +202,8 @@ export class WalletService {
               eq(grants.network, id),
               eq(grants.kind, "allowance"),
               eq(grants.status, "active"),
+              eq(grants.boost, false),
+              sql`lower(coalesce(${grants.tokenAddress}, ${grants.receipt}->>'token')) = ${network.addresses.usdc.toLowerCase()}`,
             ),
           )
           .orderBy(desc(grants.createdAt))
@@ -315,8 +317,12 @@ export class WalletService {
     return { tx: hash, setUp };
   }
 
-  /** The everyday allowance: the network's default daily amount to our redeemer, any recipient. */
-  async allowanceRequest(userId: string, network: NetworkId, periodAmount?: bigint) {
+  /**
+   * The everyday allowance for one token (USDC unless another is named): the network's default daily amount to our
+   * redeemer, any recipient. Each token has its own (cards/automate-safety.md); changing one later goes through
+   * Wallet & limits (/safety), where loosening replaces the grant and revokes the old one.
+   */
+  async allowanceRequest(userId: string, network: NetworkId, periodAmount?: bigint, token?: Address) {
     const wallet = await this.requireWallet(userId);
     const { client, ops, network: context } = this.clients(network);
     if (!isWalletSetUp(await client.getCode({ address: wallet.address })))
@@ -327,7 +333,7 @@ export class WalletService {
       network: context,
       wallet: wallet.address,
       redeemer: ops.address,
-      token: context.addresses.usdc,
+      token: token ?? context.addresses.usdc,
       amountPerPeriod: periodAmount ?? DEFAULT_LIMITS[network].daily,
       periodSeconds: SECONDS_PER_DAY,
       startsAt,
@@ -349,6 +355,7 @@ export class WalletService {
         receipt: jsonSafe(receipt),
         periodAmount: receipt.amountPerPeriod ?? ZERO,
         periodSeconds: SECONDS_PER_DAY,
+        tokenAddress: token ?? context.addresses.usdc,
         startsAt: new Date(startsAt * MS_PER_SECOND),
         expiresAt: new Date(expiresAt * MS_PER_SECOND),
         status: "pending",
@@ -370,6 +377,7 @@ export class WalletService {
     // A malformed signature (wrong length, impossible v) is just an invalid one.
     const valid = await verifyTypedData({ address: wallet.address, ...typedData, signature }).catch(() => false);
     if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
+    const token = (pending.tokenAddress ?? (pending.receipt as { token?: string }).token ?? "").toLowerCase();
     await this.db.transaction(async (tx) => {
       await tx
         .update(grants)
@@ -380,6 +388,8 @@ export class WalletService {
             eq(grants.network, pending.network),
             eq(grants.kind, "allowance"),
             eq(grants.status, "active"),
+            eq(grants.boost, false),
+            sql`lower(coalesce(${grants.tokenAddress}, ${grants.receipt}->>'token')) = ${token}`,
           ),
         );
       await tx
@@ -394,27 +404,15 @@ export class WalletService {
     return { grantId, receipt: pending.receipt, expiresAt: pending.expiresAt };
   }
 
-  /** An unsigned transaction that revokes the active allowance; the wallet signs it and sends it back. */
+  /** An unsigned transaction that revokes every allowance on this network (each token's, and any raise); one Face ID. */
   async revokeRequest(userId: string, network: NetworkId) {
-    const [active] = await this.db
-      .select()
+    const active = await this.db
+      .select({ id: grants.id })
       .from(grants)
-      .where(
-        and(
-          eq(grants.userId, userId),
-          eq(grants.network, network),
-          eq(grants.kind, "allowance"),
-          eq(grants.status, "active"),
-        ),
-      )
-      .orderBy(desc(grants.createdAt))
-      .limit(1);
-    if (!active) throw problem(HTTP.notFound, "not_found", "no active allowance");
-    const { network: context } = this.clients(network);
-    const call = encodeRevoke(context, active.delegation as never);
-    return this.unsignedTransaction(userId, network, "revoke_allowance", call.to, call.data, REVOKE_GAS_LIMIT, {
-      grantId: active.id,
-    });
+      .where(and(eq(grants.userId, userId), eq(grants.network, network), eq(grants.kind, "allowance"), eq(grants.status, "active")));
+    const request = await this.revokeGrantsRequest(userId, active.map((row) => row.id));
+    if (!request) throw problem(HTTP.notFound, "not_found", "no active allowance");
+    return request;
   }
 
   /** An unsigned transaction that revokes one grant (an automation's) on chain; the wallet signs it. */
@@ -530,10 +528,23 @@ export class WalletService {
       .set({ txHash: hash, status, receipt: jsonSafe(receipt) })
       .where(eq(txAttempts.id, attemptId));
     if (pending.kind === "revoke_grant" && pending.grantIds?.length && status === "confirmed") {
-      await this.db
+      const revoked = await this.db
         .update(grants)
         .set({ status: "revoked", revokeTxAttemptId: attemptId })
-        .where(and(inArray(grants.id, pending.grantIds), eq(grants.userId, userId)));
+        .where(and(inArray(grants.id, pending.grantIds), eq(grants.userId, userId)))
+        .returning({ automationId: grants.automationId });
+      // An automation left with no grant can never run again: it ends now (the exit kit, a cancel). One that still holds
+      // another (a widened edit replaced the revoked one) carries on.
+      const touched = [...new Set(revoked.map((row) => row.automationId).filter((id): id is string => Boolean(id)))];
+      const stillHeld = touched.length
+        ? new Set((await this.db.select({ id: grants.automationId }).from(grants).where(and(inArray(grants.automationId, touched), eq(grants.status, "active")))).map((row) => row.id))
+        : new Set<string | null>();
+      const ids = touched.filter((id) => !stillHeld.has(id));
+      if (ids.length > 0)
+        await this.db
+          .update(automations)
+          .set({ status: "canceled", nextRunAt: null })
+          .where(and(inArray(automations.id, ids), eq(automations.userId, userId), inArray(automations.status, ["active", "paused", "draft"])));
     }
     if (pending.kind === "revoke_allowance" && status === "confirmed") {
       await this.db

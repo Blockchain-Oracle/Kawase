@@ -19,4 +19,5 @@ export const swapPolicy: Catalog["swapPolicy"] = {
     "Ce prix est {{gap}} % sous le marché, plus que les {{max}} % autorisés par Kawase. Essayez un montant plus petit ou attendez.",
   RATE_BELOW_REFERENCE: "Ce prix est {{gap}} % sous le taux du marché.",
   fixTryAgain: "Réessayer",
+  BRAKE_PRICE_IMPACT: "Ce prix est {{gap}} % sous le marché, au-delà de votre règle de {{max}} %.",
 };

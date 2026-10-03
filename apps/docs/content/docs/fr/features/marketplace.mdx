@@ -1,18 +1,53 @@
 ---
-title: "marketplace x402"
-description: "Payer des services et des API à chaque appel avec x402, dans les limites d'un budget que vous définissez. Bientôt."
-sourceHash: 3c4377298862e5c0
+title: "Portefeuille d’agent et place de marché"
+description: "Kawase paie les services à chaque appel avec x402 depuis son propre portefeuille d’agent, dans les limites d’un budget quotidien et d’un plafond par appel que vous définissez, avec un reçu pour chaque achat."
+sourceHash: b30083e867ea8387
 ---
 
 <Status ids="marketplace" />
 
+<Marks names="circle usdc blockrun exa defillama" />
+
 **x402** est un standard ouvert qui permet de payer une requête web avec des stablecoins : le service répond « 402 Payment Required »
-avec un prix, le client paie en USDC et reçoit le résultat. Kawase prévoit de permettre à l'agent de **trouver et payer des services**
-du catalogue x402 de Circle pour vous, dans les limites strictes d'un budget :
+avec un prix, le client paie en USDC et reçoit le résultat. Kawase l’utilise pour **acheter des réponses pour vous** : recherches web et actualités,
+cotes de marchés prédictifs, rendements et prix de DefiLlama, cours des actions et enrichissement de données, dans le **catalogue x402 de Circle** sur Arc.
 
-- un portefeuille marketplace séparé, dont le solde constitue la limite maximale,
-- des limites par appel, par session et par jour, définies par vos soins,
-- chaque achat affiché avec son prix, le service et le résultat.
+## Votre portefeuille d’agent
 
-Le catalogue de Circle ne répertorie que des services du réseau principal. Le marketplace est donc prévu sur le **Réseau principal**
-et n'est pas disponible sur le réseau de test. C'est **bientôt** : cette fonctionnalité n'est pas encore disponible dans l'application.
+Les achats ne sont jamais directement prélevés sur votre portefeuille principal. Kawase possède pour vous un **portefeuille d’agent** séparé, qui ne peut
+dépenser que ce que vous y versez :
+
+- **Ajouter des fonds** depuis votre portefeuille Kawase avec un montant prédéfini. Le premier ajout de fonds signe une **autorisation plafonnée pour la place de marché** avec Face ID ;
+  les ajouts suivants ne demandent aucune confirmation, dans la limite de ce plafond. Vous pouvez aussi ajouter des fonds avec **Apple Pay ou une carte** via l’Onramp de Circle, directement
+  dans le portefeuille d’agent.
+- Son solde est réparti entre **Circle Gateway** (prêt pour les nanopaiements, acceptés par la plupart des vendeurs) et une partie **disponible**
+  pour les vendeurs qui acceptent les USDC classiques (EIP-3009). Lorsqu’un achat en USDC classiques nécessite davantage de fonds disponibles, Kawase les recharge depuis
+  Gateway.
+- **Renvoyer vers mon portefeuille** renvoie les deux parties à tout moment.
+
+Réglages → **Portefeuille d’agent** affiche le solde, le montant dépensé aujourd’hui, l’adresse et l’historique complet des achats et
+des transferts.
+
+## Budgets que vous définissez
+
+- un **budget quotidien** et un **plafond par appel** ;
+- **me demander d’abord** au-dessus du plafond : l’achat attend votre accord dans une carte de consentement dans le chat ;
+- les **catégories** auprès desquelles Kawase peut acheter ;
+- les **vendeurs bloqués** : touchez un achat pour bloquer son vendeur.
+
+Un plafond plus strict s’applique immédiatement ; un plafond plus souple demande Face ID. Un refus indique la règle qui l’a empêché.
+
+## Un reçu pour chaque achat
+
+Le chat affiche ce que Kawase a trouvé (le logo du vendeur, ce qu’il renvoie et le prix), puis, après le paiement, un reçu : « Paid 0.002
+USDC to … ». La réponse du vendeur est marquée **non vérifiée**. x402 ne propose pas encore de standard de remboursement : si un appel échoue après le paiement,
+le reçu indique que le vendeur a conservé le paiement ; un paiement que Circle signale comme échoué est marqué **non facturé**. Kawase considère les textes externes comme des données, jamais comme des instructions, et
+vous le signale lorsqu’une réponse essaie de lui dire quoi faire.
+
+## Réseaux
+
+- **Réseau principal** : catalogue de Circle (environ 2,100 annonces sur Arc), avec paiement via les deux modes.
+- **Réseau de test** : le catalogue de Circle ne contient aucune annonce sur le réseau de test. Kawase utilise donc son propre vendeur de démonstration (`seller.getkawase.xyz`) pour
+  tout tester de bout en bout avec de l’Argent de test.
+
+<ScopeList ids="marketplace" />

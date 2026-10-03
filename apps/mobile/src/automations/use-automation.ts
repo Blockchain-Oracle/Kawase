@@ -6,7 +6,7 @@ import * as React from "react";
 import { toast } from "sonner-native";
 import type { TypedDataDefinition } from "viem";
 
-import type { AutomationView } from "@kawase/api-client";
+import type { AutomationEdit, AutomationView, SimulationView } from "@kawase/api-client";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -112,5 +112,45 @@ export function useAutomation(initial: AutomationView | undefined) {
       await refresh();
     });
 
-  return { automation, set: setAutomation, busy, refresh, recheck, turnOn, pause, resume, skip, cancel };
+  /** Practice first: on without a grant; its runs are "would have" until it goes live (turnOn). */
+  const practice = () => act(async () => setAutomation((await api.automationsMore.practice(id!)).automation));
+
+  /** What the next runs would do now (the first dry-run on chain); nothing happens. */
+  const [simulation, setSimulation] = React.useState<SimulationView>();
+  const simulate = () =>
+    act(async () => {
+      setSimulation(await api.automationsMore.simulate(id!));
+    });
+
+  /**
+   * Edit in place: narrowing is saved at once; widening comes back with a new grant, signed with the old one's revoke
+   * in the same yes (Face ID), then applied.
+   */
+  const edit = (change: AutomationEdit, prompt: string) =>
+    act(async () => {
+      const answer = await api.automationsMore.edit(id!, change);
+      setAutomation(answer.automation);
+      if (!answer.grant) {
+        toast(t("automation.edited"));
+        return;
+      }
+      if (!signer) {
+        toast(t("send.approvalUnavailable"));
+        return;
+      }
+      const check = await confirmWithBiometrics(prompt, t("common.cancel"));
+      if (check !== "approved") {
+        toast(t("safety.notApproved"));
+        return;
+      }
+      const signatures: { grantId: string; signature: string }[] = [];
+      for (const entry of answer.grant.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
+      const signedRevoke = answer.revoke ? await signer.signTransaction(toSerializable(answer.revoke.transaction)) : undefined;
+      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures);
+      setAutomation(edited);
+      if (answer.revoke && signedRevoke) await api.wallet.submitTransaction(answer.revoke.requestId, signedRevoke).catch(() => undefined);
+      toast(t("automation.edited"));
+    });
+
+  return { automation, set: setAutomation, busy, refresh, recheck, turnOn, pause, resume, skip, cancel, practice, simulate, simulation, edit };
 }

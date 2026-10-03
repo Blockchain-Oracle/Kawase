@@ -1,97 +1,97 @@
 ---
 title: "Architecture"
-description: "Comment Kawase est construit : un seul cerveau pour le chat et la voix, un moteur de règles indépendant, des limites on-chain, Postgres comme seul bus et Coolify pour l'hébergement."
-sourceHash: 626fba33e352db9a
+description: "Comment Kawase est construit : un seul cerveau d’agent pour le chat et la voix, un moteur de règles pur, des limites on-chain, Postgres comme seul bus et Coolify pour l’hébergement."
+sourceHash: 624b9a9a0d3ea30a
 ---
 
 ## La structure
 
 ```text
  iPhone / Android / Web (Expo 57)          LiveKit Cloud (WebRTC)
-        │  chat (SSE), écrans                    │ audio
+        │  chat (SSE), screens                    │ audio
         ▼                                          ▼
  ┌──────────────────────────────┐        ┌───────────────────────┐
- │ apps/api — Hono sur Node     │◀──────▶│ apps/voice-agent      │
- │  tour de l'agent (AI SDK 7)  │  tour  │  worker LiveKit Agents │
- │  règles · intentions · runners│       │  STT → tour → TTS      │
+ │ apps/api — Hono on Node      │◀──────▶│ apps/voice-agent      │
+ │  agent turn (AI SDK 7)       │  turn  │  LiveKit Agents worker │
+ │  policy · intents · runners  │        │  STT → turn → TTS      │
  └──────┬───────────┬───────────┘        └───────────────────────┘
         │           │
         ▼           ▼
-   Postgres     Arc (réseau principal / réseau de test) · Circle (App Kit, CCTP, portefeuilles, faucet) · Turnkey
+   Postgres     Arc (mainnet / testnet) · Circle (App Kit, CCTP, wallets, faucet) · Turnkey
 ```
 
 ## Un seul cerveau
 
-`agentTurn()` dans `packages/agent` sert aussi bien au **chat** qu'à la **voix** : le worker vocal envoie ce qu'il a compris au même tour,
-avec les mêmes outils, limites et fil de discussion. Par défaut, le modèle (OpenAI `gpt-5.6-luna`, choisi via un registre de modèles)
-ne fait que **proposer** : aucun outil ne reçoit de réseau, d'adresse ou de paramètre « approuver ». Le code trouve le destinataire,
-applique les règles, construit la transaction et l'exécute.
+`agentTurn()` dans `packages/agent` sert aussi bien au **chat** qu'à la **voix** : le worker vocal envoie ce qu'il a entendu au même tour,
+avec les mêmes outils, limites et fil de discussion. Le modèle (OpenAI `gpt-5.6-luna` par défaut, choisi via un registre de modèles) fait uniquement des
+**propositions** : aucun outil ne reçoit de réseau, d'adresse ou d'indicateur « approve ». Le code détermine le destinataire, applique les règles, construit
+la transaction et l'exécute.
 
-## Règles indépendantes et intentions explicites
+## Règles pures et intentions explicites
 
-- `packages/policy` est une fonction pure qui transforme des faits en résultats (erreurs, refus, préconditions, demandes de précision, avertissements),
-  ainsi qu'en **parcours** : l'autorisation ou la signature d'un portefeuille. Elle s'exécute lors de la préparation d'une carte, à nouveau lors
-  de l'approbation avec des faits à jour, puis une dernière fois lors de l'exécution.
-- `packages/intents` définit chaque action comme un **brouillon** versionné et haché avec EIP-712 (`SendDraft`, `SwapDraft`, `BridgeDraft`,
+- `packages/policy` est une fonction pure qui transforme des faits en résultats (erreurs, refus, préconditions, demandes de clarification, avertissements),
+  ainsi qu'en **route** : l'allocation ou la signature d'un portefeuille. Elle s'exécute lors de la préparation d'une carte, à nouveau lors de l'approbation avec des
+  faits à jour, puis une dernière fois lors de l'exécution.
+- `packages/intents` définit chaque action sous la forme d'un **brouillon** versionné et haché avec EIP-712 (`SendDraft`, `SwapDraft`, `BridgeDraft`,
   `EarnDraft`). Une approbation indique la version exacte approuvée ; toute modification crée une nouvelle version.
-- **Résoudre et reprendre** : lorsqu'il manque quelque chose (un contact, une devise, une connexion), la correction continue la même intention
+- **Résoudre et reprendre** : lorsqu'il manque quelque chose (un contact, une devise, une connexion), la correction poursuit la même intention
   au lieu de recommencer.
 
-## Parcours de l'argent
+## Parcours des fonds
 
-- **Envois avec autorisation** : une réservation dans le registre des dépenses est créée sous un verrou par utilisateur. Ensuite, le portefeuille
-  d'agent de Kawase (un portefeuille Circle contrôlé par le développeur) utilise votre délégation ; le journal `Transfer` du reçu est comparé au brouillon.
-- **Actions signées par le portefeuille** (au-delà de l'autorisation, échanges, ponts, rendement) : l'API construit la transaction exacte — pour les opérations
-  App Kit, les appels du kit sont capturés et vérifiés, puis regroupés dans un seul auto-batch EIP-7702 — l'appareil la signe avec Face ID,
-  et l'API vérifie que les octets signés correspondent au brouillon avant de diffuser la transaction.
+- **Envois via allocation** : une réservation dans le registre des dépenses est créée sous un verrou par utilisateur. Le portefeuille d'agent de Kawase (un portefeuille
+  contrôlé par un développeur Circle) utilise ensuite votre délégation ; le journal `Transfer` du reçu est comparé au brouillon.
+- **Actions signées par le portefeuille** (au-delà de l'allocation, échanges, ponts, rendement) : l'API construit la transaction exacte — pour les opérations App
+  Kit, les appels du kit sont capturés et vérifiés, puis regroupés dans un seul lot EIP-7702 — l'appareil la signe avec Face ID, et l'API vérifie les octets signés
+  par rapport au brouillon avant la diffusion.
 - Les **ponts** sont suivis en trois étapes : le burn sur Arc, l'attestation de Circle et le mint sur la chaîne de destination.
-- Les **Automatisations** s'exécutent dans le runner de l'API toutes les 30 secondes : chaque occurrence est réclamée une seule fois exactement,
-  vérifiée à nouveau avec des faits à jour, puis payée via le même parcours d'envoi, de rendement ou de pont, avec l'autorisation propre à l'automatisation.
-- **Idempotence partout** : une clé d'idempotence Circle est enregistrée avant l'appel à Circle ; les transactions brutes enregistrent leur hash
-  avant diffusion ; les résultats ambigus deviennent `unknown_outcome` et sont uniquement vérifiés à nouveau, jamais renvoyés.
+- Les **Automatisations** s'exécutent dans le runner de l'API toutes les 30 secondes : chaque occurrence est réclamée une seule fois, revérifiée avec des faits à jour,
+  puis payée via le même parcours d'envoi, de rendement ou de pont, avec la propre autorisation de l'automatisation.
+- **Idempotence partout** : une clé d'idempotence Circle est enregistrée avant l'appel à Circle ; les transactions brutes enregistrent leur hash avant leur diffusion ;
+  les résultats ambigus deviennent `unknown_outcome` et sont uniquement revérifiés, jamais renvoyés.
 
 ## Données
 
 **Postgres 17 avec Drizzle** est le seul stockage et le seul bus de messages : une outbox est écrite dans la même transaction que chaque
-modification, `pg_notify` diffuse les événements via des événements envoyés par le serveur, et une table inbox sert de source de vérité pour
-les notifications. L'argent est stocké dans ses unités de base exactes (`numeric(78,0)`, `bigint` en TypeScript) ; les identifiants sont des UUIDv7.
+modification, `pg_notify` diffuse les événements via des événements envoyés par le serveur, et une table inbox sert de source de vérité pour les
+notifications. Les montants sont stockés dans leurs unités de base exactes (`numeric(78,0)`, `bigint` en TypeScript) ; les identifiants sont des UUIDv7.
 
 ## Monorepo
 
-| Élément | Description |
+| Partie | Description |
 |---|---|
 | `apps/api` | API Hono : authentification, flux de chat de l'agent, intentions et approbations, runners, webhooks |
 | `apps/mobile` | Expo 57 / React Native 0.86 : l'app iOS, Android et web |
 | `apps/voice-agent` | Worker LiveKit Agents (Node) |
 | `apps/docs` | ce site (Fumadocs 16, Next 16) |
-| `apps/landing` | la vitrine et le kit pour les juges |
-| `packages/config` | toutes les constantes : limites, registre des capacités, langues, voix, délais d'attente |
-| `packages/policy`, `packages/intents` | le moteur de règles indépendant et les brouillons EIP-712 |
+| `apps/landing` | la vitrine et le kit pour les évaluateurs |
+| `packages/config` | toutes les constantes : limites, registre des capacités, langues, voix, délais d'expiration |
+| `packages/policy`, `packages/intents` | le moteur de règles pur et les brouillons EIP-712 |
 | `packages/integrations/*` | délégations (MetaMask Delegation Framework), Circle App Kit |
-| `packages/networks`, `packages/money` | les deux réseaux Arc et les adresses vérifiées ; les types exacts pour l'argent |
-| `packages/identity` | vrais logos avec leur provenance |
+| `packages/networks`, `packages/money` | les deux réseaux Arc et les adresses vérifiées ; les types de montants exacts |
+| `packages/identity` | les vrais logos avec leur provenance |
 
 ## API publique
 
-L'API se trouve à `https://kawase-api.84.46.247.92.sslip.io`. Points d'accès publics, sans authentification :
+L'API se trouve à l'adresse `https://api.getkawase.xyz`. Voici les endpoints publics, sans authentification :
 
-| Point d'accès | Renvoie |
+| Endpoint | Renvoie |
 |---|---|
 | `GET /health` | `{ ok, networks }` |
-| `GET /capabilities` | le registre des capacités avec les remplacements actifs, pour chaque réseau |
-| `GET /public/stats` | uniquement des totaux : envois terminés, échanges, ponts, opérations de rendement, exécutions d'automatisations, comptes |
+| `GET /capabilities` | le registre des capacités avec les remplacements à l'exécution, pour chaque réseau |
+| `GET /public/stats` | uniquement des statistiques globales (envois terminés, échanges, ponts, opérations de rendement, exécutions d'automatisations, comptes) |
 
-Tout le reste nécessite une session (un token bearer fourni par l'app ou un cookie sur le web).
+Tout le reste nécessite une session (un bearer token fourni par l'app, ou un cookie sur le web).
 
 ## Hébergement
 
 Tout fonctionne sur un serveur **Coolify** derrière Traefik avec Let's Encrypt : l'API, l'app web, le worker vocal, cette documentation
-et la vitrine, ainsi que Postgres. Chaque service est construit avec un Dockerfile depuis la racine du monorepo ; les services écoutent sur `::`
+et la vitrine, ainsi que Postgres. Chaque service utilise un Dockerfile construit depuis la racine du monorepo ; les services écoutent sur `::`
 (les vérifications d'état de Coolify résolvent `localhost` vers IPv6).
 
 ## Des tests qui le prouvent
 
-Les tests s'exécutent sur le réseau de test Arc avec de vraies transactions (`pnpm --filter @kawase/api test`) : envois (avec autorisation et signés par le portefeuille,
-deux appuis → un seul envoi, signatures modifiées refusées), échanges, ponts (burn → attestation → mint), dépôts et retraits de rendement,
-automatisations planifiées, épargne automatique, règles et reprise après des exécutions interrompues. Le package de délégation vérifie à lui seul
-les limites on-chain (`pnpm --filter @kawase/integrations-delegation test:arc-testnet`).
+Les tests s'exécutent sur le réseau de test Arc avec de vraies transactions (`pnpm --filter @kawase/api test`) : envois (via allocation et signés par le portefeuille,
+double appui → un seul envoi, signatures modifiées refusées), échanges, ponts (burn → attestation → mint), dépôts et retraits de rendement,
+automatisations programmées, épargne automatique, règles et reprise après des exécutions interrompues. Le package de délégation vérifie
+à lui seul les limites on-chain (`pnpm --filter @kawase/integrations-delegation test:arc-testnet`).

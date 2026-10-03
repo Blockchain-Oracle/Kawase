@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { requireBrakeOverride } from "../safety/brake";
 import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
@@ -19,7 +20,8 @@ const requestSchema = z.object({
   positionId: z.uuid().nullable().optional(),
   fraction: z.number().gt(0).max(1).nullable().optional(),
 });
-const approveSchema = z.object({ version: z.number().int().positive() });
+/** `override`: the person confirmed a braked (risky) action on its card. */
+const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });
 const networkSchema = z.enum(["mainnet", "testnet"]);
 const PRICE_MAX = 32;
@@ -74,6 +76,8 @@ export function marginRoutes(margin: MarginService, protection?: MarginProtectio
   app.post("/orders/:id/cancel", async (c) => c.json({ intent: await margin.cancel(c.get("userId")!, c.req.param("id")) }));
   app.post("/orders/:id/approve", requireAccount, async (c) => {
     const input = await parse(approveSchema, await c.req.json());
+    // The brake: a risky draft goes ahead only with the person's explicit override.
+    requireBrakeOverride((await margin.get(c.get("userId")!, c.req.param("id"))).results, input.override);
     return c.json(await margin.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));
   });
   app.post("/orders/:id/signature", requireAccount, async (c) => {

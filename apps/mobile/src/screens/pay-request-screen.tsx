@@ -3,7 +3,8 @@
 // (the testnet strip when it is test money), and the status, read again every few seconds while it is open. With an
 // account the one action is Pay, which opens the send flow filled in and tied to the request; nothing is sent from
 // here. Without one: sign in to pay, or pay from any other wallet by sending exactly that amount on Arc to the
-// address shown. A paid, cancelled or expired request ends calmly, in words.
+// address shown. A paid, cancelled or expired request ends calmly, in words. An invoice in a token other than USDC or
+// EURC has a link of its own (no request behind it): the page is then the invoice (InvoiceLinkPage).
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { Check, ChevronLeft, Copy, Minus, TriangleAlert } from "lucide-react-native";
@@ -12,13 +13,10 @@ import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import { ApiError, type PublicPaymentRequest } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { ApiError, type InvoicePublicView, type PublicPaymentRequest } from "@kawase/api-client";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { Mark } from "@kawase/ui-native/components/mark";
 import { NetworkChip, TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -26,12 +24,13 @@ import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { InvoiceLinkPage } from "@/business/invoice-link-page";
+import { canonicalUnits } from "@/portfolio/ticket-token";
+import { RequestTokenMark, requestDecimals, requestFigures } from "@/request/request-token";
 import { InvoicePanel } from "@/business/invoice-panel";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { effectiveStatus, requesterName } from "@/request/copy";
-import { canonicalFromBase } from "@/send/amount-step";
-import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -48,14 +47,18 @@ const POLL_MS = 5_000;
 const HTTP_NOT_FOUND = 404;
 const LTR = { writingDirection: "ltr", textAlign: "left" } as const;
 
-type Load = { state: "loading" } | { state: "ready"; request: PublicPaymentRequest } | { state: "missing" } | { state: "failed" };
+type Load =
+  | { state: "loading" }
+  | { state: "ready"; request: PublicPaymentRequest }
+  | { state: "invoice"; invoice: InvoicePublicView }
+  | { state: "missing" }
+  | { state: "failed" };
 
 export function PayRequestScreen({ token }: { token: string }) {
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const money = useMoney();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const { wallet } = useWalletStatus();
@@ -67,8 +70,17 @@ export function PayRequestScreen({ token }: { token: string }) {
       const { request } = await api.requests.open(token);
       setLoad({ state: "ready", request });
     } catch (error) {
+      const missing = error instanceof ApiError && error.status === HTTP_NOT_FOUND;
+      // Not a request: it may be an invoice's own link (a token other than USDC or EURC).
+      const found = missing ? await api.business.publicInvoice(token).catch(() => undefined) : undefined;
       setLoad((current) =>
-        current.state === "ready" ? current : error instanceof ApiError && error.status === HTTP_NOT_FOUND ? { state: "missing" } : { state: "failed" },
+        current.state === "ready" || current.state === "invoice"
+          ? current
+          : found
+            ? { state: "invoice", invoice: found.invoice }
+            : missing
+              ? { state: "missing" }
+              : { state: "failed" },
       );
     }
   }, [token]);
@@ -84,7 +96,7 @@ export function PayRequestScreen({ token }: { token: string }) {
   }, [open, read]);
 
   const request = load.state === "ready" ? load.request : undefined;
-  const testnet = request?.network === "testnet";
+  const testnet = (request?.network ?? (load.state === "invoice" ? load.invoice.network : undefined)) === "testnet";
 
   const header = (
     <>
@@ -115,6 +127,14 @@ export function PayRequestScreen({ token }: { token: string }) {
       </View>
     );
   }
+  if (load.state === "invoice") {
+    return (
+      <View className="bg-background flex-1">
+        {header}
+        <InvoiceLinkPage token={token} invoice={load.invoice} />
+      </View>
+    );
+  }
   if (!request) {
     const missing = load.state === "missing";
     return (
@@ -138,11 +158,11 @@ export function PayRequestScreen({ token }: { token: string }) {
     );
   }
 
-  const ids = arcIdentity(request.network);
-  const asset = request.asset as AssetId;
+  const asset = request.asset;
+  const requested = { ...request, assetToken: request.assetToken };
   const name = requesterName(request.requester);
-  const amountText = money(asset, request.amount);
-  const figures = formatAmount(toAmount(asset, BigInt(request.amount)), locale, { withSymbol: false });
+  const amountText = requestFigures(requested, locale, true);
+  const figures = requestFigures(requested, locale);
   const networkName = request.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const current = effectiveStatus(request);
   const own =
@@ -155,8 +175,8 @@ export function PayRequestScreen({ token }: { token: string }) {
       pathname: "/send",
       params: {
         to: request.requester.handle ? `@${request.requester.handle}` : request.requester.address,
-        amount: canonicalFromBase(BigInt(request.amount), asset),
-        asset,
+        amount: canonicalUnits(BigInt(request.amount), requestDecimals(requested)),
+        asset: asset === "USDC" || asset === "EURC" ? asset : (request.assetToken?.address ?? asset),
         request: request.token,
       },
     });
@@ -181,7 +201,7 @@ export function PayRequestScreen({ token }: { token: string }) {
         <View className="items-center gap-2">
           <Text className="text-muted-foreground text-base">{t("request.requests", { name })}</Text>
           <View className="flex-row items-center gap-3" style={{ direction: "ltr" }}>
-            <Mark entity={asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={ASSET_MARK} />
+            <RequestTokenMark request={requested} size={ASSET_MARK} />
             <Text accessibilityLabel={amountText} className="font-display text-foreground text-5xl font-bold" style={{ fontVariant: ["tabular-nums"] }}>
               {figures}
             </Text>

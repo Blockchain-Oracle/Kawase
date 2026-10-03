@@ -16,6 +16,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AutomationSummary } from "@/automations/automation-summary";
+import { PracticeActions } from "@/automations/automation-more";
 import { useRuleText, useScheduleText, useTurnOnLabel } from "@/automations/copy";
 import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
@@ -26,7 +27,8 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 
 import { AgentCard } from "./card";
 
-export function AutomationCard({ output }: { output: ProposeAutomationOutput }) {
+/** The card for one automation; the Payroll screen passes just the automation (the summary is for the model). */
+export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutput, "automation"> }) {
   const { t } = useT();
   const router = useRouter();
   const signIn = useSignIn();
@@ -104,6 +106,8 @@ export function AutomationCard({ output }: { output: ProposeAutomationOutput }) 
           </Button>
         </View>
       )}
+      {/* 8c: practise first, go live from practice, and what the next runs would do. */}
+      {!blocking || blocking.code === "WALLET_NOT_SET_UP" ? <PracticeActions controller={{ ...controller, automation }} goLivePrompt={prompt} /> : null}
       {a ? (
         <AddContactSheet open={adding} onClose={() => setAdding(false)} initialName={nameFromWords(a.recipientWords)} onSaved={() => {
           setAdding(false);

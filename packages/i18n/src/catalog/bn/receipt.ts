@@ -1,0 +1,21 @@
+import type { Catalog } from "../en/index";
+
+export const receipt: Catalog["receipt"] = {
+  title: "রসিদ",
+  sent: "আপনি পাঠিয়েছেন",
+  received: "আপনি পেয়েছেন",
+  to: "প্রাপক",
+  from: "প্রেরক",
+  when: "কখন",
+  network: "নেটওয়ার্ক",
+  note: "নোট",
+  transaction: "লেনদেন",
+  testMoney: "টেস্ট টাকা",
+  footer: "Kawase দিয়ে Arc-এ পরিশোধিত · getkawase.xyz",
+  share: "রসিদ শেয়ার করুন",
+  shareImage: "ছবি শেয়ার করুন",
+  sentLine: "আমি Kawase দিয়ে {{name}}-কে {{amount}} পাঠিয়েছি।",
+  receivedLine: "আমি Kawase-এ {{name}}-এর কাছ থেকে {{amount}} পেয়েছি।",
+  saveSender: "প্রেরককে পরিচিতিতে সংরক্ষণ করুন",
+  savedAs: "{{name}} নামে সংরক্ষিত।",
+};

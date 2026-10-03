@@ -1,35 +1,71 @@
 ---
-title: Swap and trade
-description: Swap USDC and EURC today with a guaranteed minimum and one Face ID; any token on Arc, meme coins and long/short positions are coming.
+title: Trade any token
+description: Markets, a page for every token on Arc with its safety checks, and buying, selling or swapping any pair at the best of three venues, confirmed with one slide.
 ---
 
-<Status ids="swap tokens meme_coins perps" />
+<Status ids="swap" />
 
-<Marks names="usdc eurc circle" />
+<Marks names="arc usdc eurc kyberswap circle lifi" />
 
-## Swap USDC ↔ EURC (today)
+## Markets
 
-"Swap 10 dollars to euros" or the Swap screen. Kawase gets a quote through **Circle's App Kit** and shows:
+The **Markets** tab (in the dock, between Home and the orb) is open to guests too:
 
-- the amount you give and the amount you get, at least,
-- Circle's market rate next to the quoted rate, and the fees,
-- a warning if the quote is noticeably worse than the market rate; a quote far worse is refused.
+- **Search** by name, symbol or contract address.
+- Segments **Trending · Meme · Long/Short · Stocks & FX · New**, a carousel of hot markets, and a **heatmap** where each
+  tile is sized by the day's volume and coloured by its move.
+- Rows show the price, the day's change, volume and liquidity. A token that copies another one carries a **copycat**
+  chip; fakes stay flagged in the list and never reach the carousel or the heatmap.
 
-On mainnet the guaranteed minimum is 1% under the quote (2% on testnet, where pools are thin). The route itself is built
-at half that tolerance, so a small move between the quote and your confirmation still clears the minimum.
+Markets are an Arc mainnet thing. On testnet the tab says so and offers the switch.
 
-You confirm every swap yourself with **one Face ID** — swaps are never covered by the everyday allowance. The approval and
-the swap go to the network as **one transaction** (an EIP-7702 batch from your own wallet), so either both happen or
-neither does. Kawase marks the swap complete only when the receipt shows the exact amount leaving your wallet and at least
-the minimum arriving.
+## A page for every token
 
-## Any token, meme coins, long and short (coming)
+Tap any token, in Markets, on Home or in a chat card, to open its page:
 
-The plan is to make **every token on Arc** first-class: see everything your address holds, swap any listed token with quotes
-compared across aggregators, and trade **meme coins** with safety checks (copycat detection, token risk data and your own
-token rules capping the risk). **Long and short positions** (perpetual futures) on Arc's perps venues are planned the same
-way: a clear ticket with leverage, liquidation price and take-profit/stop-loss, confirmed with Face ID.
+- its mark, price and change, and a chart you can scrub with ranges from one hour to all time;
+- **what you hold** of it;
+- market cap, liquidity, volume, holders, fully diluted value and the contract (copy it in one tap);
+- **Safety**: a verdict with its reasons, the checks from **GoPlus** (honeypot, buy and sell taxes, owner powers) and any
+  look-alikes, linked;
+- **Buy · Sell**, and a **More** sheet that lists every other action, each with the reason when it isn't available.
 
-These are marked **coming** in the matrix above until they ship; nothing here is presented as available before it is.
+## Your portfolio, every token
+
+Home shows **every token your address holds** on Arc and on Ethereum, Base, Arbitrum, OP, Polygon and Avalanche, each with
+its real mark and value. Kawase hides what would mislead you:
+
+- an **impostor** (a stablecoin's or a well-known symbol at another address, or with other decimals) is hidden;
+- a token with **no price and no pool** goes to Hidden;
+- an unpriced token never counts toward your total.
+
+## Buy, sell or swap any pair
+
+"Buy 20 dollars of ARGUS", "sell half my cirBTC", or the ticket from a token page. You pay with **any token you hold**
+and get any token (search by name, symbol or address). For every trade Kawase asks **three venues at once**, KyberSwap,
+Circle's App Kit and LI.FI, and recommends the one that delivers the most. The others are listed with what they would
+deliver, or why they couldn't quote.
+
+The review shows the amount you get **at least**, the price impact against the market price and the route. You confirm by
+**sliding** on the card, then **Face ID**. Only the chosen venue builds the transaction, at half the slippage you were
+shown, and Kawase checks its calls (router, amounts, recipient, the on-chain minimum) before your wallet is asked. The
+approval and the trade go out as **one transaction** from your own wallet.
+
+## Token rules
+
+Every buy passes your **token rules** first:
+
+- impersonators and honeypots are **blocked**;
+- an **unverified** token is limited to **$50 a trade** and **$200 a day**;
+- price impact may be at most **5%** for anything that isn't a stablecoin.
+
+A blocked trade says which rule stopped it and what would change the answer.
+
+## On testnet
+
+Arc Testnet has only **USDC ↔ EURC** to trade, through the same ticket. Every other token, and meme coins, are mainnet
+only.
+
+Long and short positions have their own page: [Long and short](./long-short.mdx).
 
 <ScopeList ids="swap" />

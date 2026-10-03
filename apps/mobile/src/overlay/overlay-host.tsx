@@ -7,7 +7,7 @@
 // actions are the surface) and leaves over the fan's own exit, so both end together (R16). Opening the fan commits
 // to nothing, so it has no haptic: haptics are kept for real outcomes (the allowance accepted, money arrived).
 import { useRouter, useSegments } from "expo-router";
-import { ArrowDownToLine, ArrowLeftRight, HandCoins, QrCode, Send } from "lucide-react-native";
+import { ArrowDownToLine, ArrowLeftRight, HandCoins, QrCode, ScanLine, Send } from "lucide-react-native";
 
 import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
 import { FAN_EXIT_MS, QuickActionFan, type FanAction } from "@kawase/ui-native/components/quick-action-fan";
@@ -46,6 +46,7 @@ export function OverlayHost() {
     { key: "swap", label: t("home.swap"), icon: ArrowLeftRight, ...(swapReady ? {} : { soon: t("home.soon") }) },
     { key: "request", label: t("home.request"), icon: HandCoins, ...(requestReady ? {} : { soon: t("home.soon") }) },
     { key: "fund", label: t("home.fund"), icon: ArrowDownToLine },
+    { key: "scan", label: t("scan.fanLabel"), icon: ScanLine },
   ];
 
   const onAction = (key: string) => {
@@ -56,6 +57,7 @@ export function OverlayHost() {
     else if (key === "send") router.push("/send");
     else if (key === "swap") router.push("/swap");
     else if (key === "request") router.push("/request");
+    else if (key === "scan") router.push("/scan");
   };
 
   return (

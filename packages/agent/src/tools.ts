@@ -4,10 +4,14 @@
 import { tool } from "ai";
 import { z } from "zod";
 
+import { businessTools } from "./business-tools";
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
+import { safetyTools } from "./safety-tools";
+import { automationTools } from "./automation-tools";
 import { intelligenceTools } from "./intelligence-tools";
 import { withQuarantine } from "./quarantine";
+import { moneyOutTools } from "./money-out-tools";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -34,12 +38,14 @@ const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
 const INVOICE_DUE_MAX = 365;
-const REPORT_DAYS_MAX = 31;
 
 export function buildTools(context: AgentContext) {
   // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
   return withQuarantine({
     ...railsTools(context),
+    ...safetyTools(context),
+    ...automationTools(context),
+    ...businessTools(context),
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
@@ -86,7 +92,7 @@ export function buildTools(context: AgentContext) {
     }),
     propose_send: tool({
       description:
-        "Send USDC or EURC on the active network. Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\"), the asset only if they named it, and their note if they gave one. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once (their request is the instruction); above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
+        "Send any token the person holds on the active network (USDC, EURC, cirBTC, a meme coin…). Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\") in that token, the asset only if they named it (its symbol, name or address), and their note if they gave one. Every recipient is checked: a token contract, an address the token's issuer blocked or a look-alike of a saved contact is never paid; a contract that is not a wallet gets a warning. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once (their request is the instruction); above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
       inputSchema: z.object({
         recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
         amount: z
@@ -94,7 +100,7 @@ export function buildTools(context: AgentContext) {
           .regex(/^\d+(\.\d+)?$/)
           .optional()
           .describe("Digits with a dot; omit if they did not say how much"),
-        asset: z.enum(["USDC", "EURC"]).optional().describe("Only if the person named the currency"),
+        asset: z.string().max(TOKEN_QUERY_MAX).optional().describe("Only if the person named the token: its symbol, name or address"),
         note: z.string().max(NOTE_MAX).optional().describe("A private note the person asked to attach"),
       }),
       execute: async (input) => {
@@ -178,21 +184,32 @@ export function buildTools(context: AgentContext) {
       description:
         "Draft a rule that acts by itself when something happens: when the balance goes above or drops below an amount, or when money arrives (optionally only from someone, or only at least an amount). The step: bridge USDC to the person's own address on base, ethereum, arbitrum, optimism, polygon or avalanche; save it into their own vault; or just tell them (an alert). How much: what is above the line (the default for 'balance above'), a share of the money that arrived (percent), or a fixed amount; pass reserve only if they said to keep something other than the line. Kawase checks it and shows a card with the read-back, what would happen right now and the bound the chain enforces; they turn it on on the card (Face ID; an alert needs only a tap). Nothing happens from this call. Use draft_automation for sends on a schedule and draft_auto_save for keep-an-amount-ready saving.",
       inputSchema: z.object({
-        trigger: z.enum(["balance_above", "balance_below", "money_in"]),
+        trigger: z.enum(["balance_above", "balance_below", "money_in", "price", "money_out"]).describe("price: when an amount of one token would buy at least an amount of another (live quote); money_out: each payment they send (round-ups)"),
         threshold: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, for balance triggers"),
         from: z.string().max(RECIPIENT_MAX).optional().describe("Money in: only from this sender, as the person said it (a contact, @handle or an address they typed)"),
         minAmount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Money in: only payments of at least this much"),
-        action: z.enum(["bridge", "save", "notify"]),
+        action: z.enum(["bridge", "save", "notify", "send", "swap"]).describe("send: to someone else; swap: waits for them in Needs you with a fresh quote"),
         destination: z.enum(["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"]).optional().describe("Bridge: the chain"),
         vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Save: only a vault address from get_earn the person chose"),
         amountMode: z.enum(["fixed", "excess", "percent"]).optional(),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Fixed amount, USDC"),
         reserve: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Excess: keep this much instead of the line"),
         percent: z.number().positive().max(MAX_PERCENT).optional().describe("A share of the money that arrived, 1–100"),
+        recipient: z.string().max(RECIPIENT_MAX).optional().describe("Send: who, as the person said it"),
+        asset: z.enum(["USDC", "EURC"]).optional().describe("Send: only if they named the currency"),
+        capPerDay: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Send: the most a day, if they said one"),
+        tokenIn: z.string().max(RECIPIENT_MAX).optional().describe("Price or swap: the token paid with, as said (USDC when not said)"),
+        tokenOut: z.string().max(RECIPIENT_MAX).optional().describe("Price or swap: the token bought, as said"),
+        priceAmount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Price: the amount of tokenIn the price is checked for (and swapped)"),
+        minOut: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Price: fire when priceAmount would buy at least this much tokenOut"),
+        roundTo: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Round-ups: to the next whole this many USDC, 1 when not said"),
       }),
       execute: async (input) => {
         // K2: an address can only come from the person's own words.
         if (input.from && /^0x/i.test(input.from.trim()) && !context.lastUserText.toLowerCase().includes(input.from.trim().toLowerCase())) {
+          throw new Error("An address must be typed by the person; ask them for it.");
+        }
+        if (input.recipient && /^0x/i.test(input.recipient.trim()) && !context.lastUserText.toLowerCase().includes(input.recipient.trim().toLowerCase())) {
           throw new Error("An address must be typed by the person; ask them for it.");
         }
         return context.draftRule(input);
@@ -221,10 +238,10 @@ export function buildTools(context: AgentContext) {
     }),
     create_payment_request: tool({
       description:
-        "Create a payment request on the active network: an exact amount of USDC or EURC with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
+        "Create a payment request on the active network: an exact amount of any token (USDC by default; EURC, cirBTC or any other the person names) with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
       inputSchema: z.object({
         amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Digits with a dot"),
-        asset: z.enum(["USDC", "EURC"]).optional().describe("USDC unless the person named EURC or euros"),
+        asset: z.string().max(TOKEN_QUERY_MAX).optional().describe("USDC unless the person named another token (EURC, euros, a symbol, a name or an address)"),
         note: z.string().max(NOTE_MAX).optional().describe("What it is for, shown to the payer"),
       }),
       execute: async ({ amount, asset, note }) => context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null }),
@@ -374,26 +391,21 @@ export function buildTools(context: AgentContext) {
     }),
     create_invoice: tool({
       description:
-        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\"). Pass the client's name as said, the total as digits with a dot, the currency (USDC unless they said euros/EURC), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link.",
+        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\", \"bill Ben 0.01 cirBTC\"). Pass the client's name as said, the total as digits with a dot, the token (USDC unless they named another: EURC, cirBTC or any Arc token by symbol or address), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link; the business is reminded before it falls due and when it is overdue.",
       inputSchema: z.object({
         client: z.string().min(1).max(RECIPIENT_MAX),
         amount: z.string().regex(/^\d+(\.\d+)?$/),
-        asset: z.enum(["USDC", "EURC"]).optional(),
+        asset: z.string().max(TOKEN_QUERY_MAX).optional(),
         description: z.string().min(1).max(NOTE_MAX),
         dueInDays: z.number().int().min(0).max(INVOICE_DUE_MAX).optional(),
       }),
       execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
-    get_report: tool({
-      description:
-        "The person's report on the active network for the last week (or the days they say, up to 31): money received and sent, swaps, bridges, earn moves, what the agent spent on services, automations that ran or skipped, invoices paid. Use it for 'how did I do this week?', 'what did I spend?', 'weekly summary'.",
-      inputSchema: z.object({ days: z.number().int().min(1).max(REPORT_DAYS_MAX).optional() }),
-      execute: async (input) => context.report(input),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
     // Memory, history search, Arc knowledge and the extra cards (A5).
     ...intelligenceTools(context),
+    // Money out (A2): withdraw any asset anywhere.
+    ...moneyOutTools(context),
   });
 }
 

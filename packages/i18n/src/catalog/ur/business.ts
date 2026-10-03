@@ -31,6 +31,8 @@ export const business: Catalog["business"] = {
   clientName: "کلائنٹ کا نام",
   clientEmail: "کلائنٹ کی ای میل (اختیاری)",
   currency: "کرنسی",
+  otherToken: "کوئی اور ٹوکن: نام، سمبل یا پتہ",
+  tokenContract: "‏Arc پر {{asset}} ٹوکن کنٹریکٹ",
   lines: "آئٹمز",
   lineDescription: "کس لیے",
   removeLine: "آئٹم ہٹائیں",

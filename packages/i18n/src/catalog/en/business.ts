@@ -29,6 +29,8 @@ export const business = {
   clientName: "Client name",
   clientEmail: "Client email (optional)",
   currency: "Currency",
+  otherToken: "Another token: name, symbol or address",
+  tokenContract: "{{asset}} token contract on Arc",
   lines: "Items",
   lineDescription: "What it's for",
   removeLine: "Remove item",

@@ -1,7 +1,7 @@
 // What the model is told about a drafted automation: the read-back in plain English (when, how much, to whom — or,
 // for Auto-save, what it keeps ready and where the rest goes), the next runs, and the bound the chain enforces. The card carries the same in the person's language and the button.
 import type { AutomationSummary, AutomationView, PolicyResultView } from "@kawase/api-client";
-import { amount, formatAmount, type AssetId } from "@kawase/money";
+import { amount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
 
 const DISPLAY_LOCALE = "en";
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -76,6 +76,10 @@ function describe(result: PolicyResultView): string {
       return "Which chain should it bridge to?";
     case "BRIDGE_FEE_HIGH":
       return "The bridge route's fee is too high right now for a rule; it tries again next time.";
+    case "ASSET_UNCLEAR":
+      return "Which token? Ask them to name it.";
+    case "SWAP_SAME_TOKEN":
+      return "Both tokens are the same.";
     case "FIRST_RUN_UNDERFUNDED":
       return `They hold ${money(p.asset ?? "USDC", p.balance ?? "0")} now, less than one run; runs are skipped until they add money.`;
     default:
@@ -83,21 +87,59 @@ function describe(result: PolicyResultView): string {
   }
 }
 
+const tokens = (baseUnits: string, decimals: number, symbol: string) => formatTokenAmount(BigInt(baseUnits), decimals, symbol, DISPLAY_LOCALE, { trimZeros: true });
+
 function ruleReadBack(automation: AutomationView) {
   const rule = automation.rule!;
   const t = rule.trigger;
   const when =
     t.type === "money_in"
       ? `When money arrives${t.fromName ? ` from ${t.fromName}` : ""}${t.minAmount ? ` (at least ${money("USDC", t.minAmount)})` : ""}`
-      : `When the balance ${t.type === "balance_above" ? "goes above" : "drops below"} ${money("USDC", t.threshold)}`;
+      : t.type === "money_out"
+        ? "Each time they send a payment"
+        : t.type === "price"
+          ? `When ${tokens(t.amountIn, t.decimalsIn, t.symbolIn)} would buy at least ${tokens(t.minOut, t.decimalsOut, t.symbolOut)} (on the live quote)`
+          : `When the balance ${t.type === "balance_above" ? "goes above" : "drops below"} ${money("USDC", t.threshold)}`;
   const how =
-    rule.amount.mode === "fixed" ? money("USDC", rule.amount.amount) : rule.amount.mode === "percent" ? `${rule.amount.percent}% of it` : `what is above ${money("USDC", rule.amount.reserve)}`;
+    rule.amount.mode === "fixed"
+      ? money("USDC", rule.amount.amount)
+      : rule.amount.mode === "percent"
+        ? `${rule.amount.percent}% of it`
+        : rule.amount.mode === "roundup"
+          ? `the change up to the next ${money("USDC", rule.amount.unit)}`
+          : `what is above ${money("USDC", rule.amount.reserve)}`;
   const step = rule.step;
   const what =
-    step.type === "bridge" ? `bridge ${how} to their own address on ${step.destinationName}` : step.type === "save" ? `save ${how} into their own savings in ${step.vaultName}` : "tell them (an alert)";
-  const now = rule.now ? (rule.now.amount ? ` Right now it would move ${money("USDC", rule.now.amount)}.` : " Right now it would alert them.") : " Right now nothing would happen.";
-  const cadence = t.type === "money_in" ? " It runs once for each matching payment." : " It fires once each time the line is crossed, checking every 10 minutes and whenever money arrives.";
+    step.type === "bridge"
+      ? `bridge ${how} to their own address on ${step.destinationName}`
+      : step.type === "save"
+        ? `save ${how} into their own savings in ${step.vaultName}`
+        : step.type === "send"
+          ? `send ${how} to ${step.recipientName ?? step.recipientWords}`
+          : step.type === "swap"
+            ? `ask them to swap ${t.type === "price" ? tokens(t.amountIn, t.decimalsIn, t.symbolIn) : how} to ${step.symbolOut} (it waits in Needs you with a fresh quote; they confirm it)`
+            : "tell them (an alert)";
+  const now = rule.now ? (rule.now.amount ? ` Right now it would ${step.type === "swap" ? "ask" : "move"} ${t.type === "price" ? tokens(t.amountIn, t.decimalsIn, t.symbolIn) : money("USDC", rule.now.amount)}.` : " Right now it would alert them.") : " Right now nothing would happen.";
+  const cadence =
+    t.type === "money_in"
+      ? " It runs once for each matching payment."
+      : t.type === "money_out"
+        ? " It runs once for each payment they send."
+        : t.type === "price"
+          ? " It looks at the live quote every 2 minutes and fires once each time the price crosses the line."
+          : " It fires once each time the line is crossed, checking every 10 minutes and whenever money arrives.";
   return `${when}: ${what}.${cadence}${now}`;
+}
+
+function payrollReadBack(automation: AutomationView) {
+  const payroll = automation.payroll!;
+  const people = payroll.lines.map((line) => `${money(line.asset, line.amount)} to ${line.recipientName ?? line.recipientWords}`).join(", ");
+  return `${when(automation)}: pay ${people}${payroll.note ? ` ("${payroll.note}")` : ""}.`;
+}
+
+function dcaReadBack(automation: AutomationView) {
+  const dca = automation.dca!;
+  return `${when(automation)}: swap ${tokens(dca.amount, dca.decimalsIn, dca.symbolIn)} to ${dca.symbolOut}. Each run waits in Needs you with a fresh quote and they confirm the swap (Face ID); nothing swaps by itself.`;
 }
 
 function saveReadBack(automation: AutomationView) {
@@ -137,14 +179,27 @@ export function summarizeAutomation(automation: AutomationView): AutomationSumma
   const per = PERIOD_WORDS[automation.schedule.every] ?? "per period";
   const ends = automation.endsAt.slice(0, DATE_CHARS);
   const rule = automation.rule;
-  const readBack = rule
-    ? ruleReadBack(automation)
+  const practice = automation.practice ? " PRACTICE: runs are dry-run and recorded as \"would have\"; nothing moves until they go live." : "";
+  const readBack = automation.payroll
+    ? payrollReadBack(automation) + practice
+    : automation.dca
+      ? dcaReadBack(automation) + practice
+      : rule
+    ? ruleReadBack(automation) + practice
     : save
     ? saveReadBack(automation)
     : a && a.amount !== "0"
       ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${a.recipientName ?? a.recipientWords}${a.note ? ` ("${a.note}")` : ""}`
       : null;
-  const bound = rule
+  const bound = automation.payroll
+    ? `Each person can get at most their own amount ${per}, only at their own address, enforced on Arc by one grant per person, all signed with one Face ID; it ends on ${ends}.`
+    : automation.dca
+      ? "A DCA holds no permission: every swap waits for their own confirmation."
+      : rule && rule.step.type === "send"
+        ? `At most ${money(rule.step.asset, rule.step.capPerDay)} a day can go, and only to ${rule.step.recipientName ?? rule.step.recipientWords}, enforced on Arc by the grant they sign; more waits for them in Needs you.`
+        : rule && rule.step.type === "swap"
+          ? "A swap holds no permission: it waits for their own confirmation each time."
+          : rule
     ? rule.step.type === "bridge"
       ? `Kawase can only move USDC from their wallet to their own address on ${rule.step.destinationName}, through Circle CCTP; the route's fee can never exceed 16.77 USDC. Enforced on Arc by the two grants they sign with one Face ID; it ends on ${ends}.`
       : rule.step.type === "save"

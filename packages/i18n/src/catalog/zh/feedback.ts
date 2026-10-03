@@ -7,5 +7,6 @@ export const feedback: Catalog["feedback"] = {
   haptics: "触感反馈",
   hapticsBody: "确认结果时提供触感反馈。",
   narration: "入门解说",
+  narrationBody: "滑动时朗读欢迎故事。",
   saveFailed: "无法保存此偏好。请重试。",
 };

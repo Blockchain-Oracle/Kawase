@@ -5,7 +5,7 @@ import { FileDown, Share2 } from "lucide-react-native";
 import { View } from "react-native";
 
 import type { InvoiceView } from "@kawase/api-client";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -15,9 +15,12 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { shareInvoiceLink, shareInvoicePdf } from "@/business/share-invoice";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
+import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 import { AgentCard } from "./card";
+import { useChatResume } from "./resume";
 
 export function InvoiceCard({ output }: { output: { invoice: InvoiceView | null; summary: { status?: unknown } } }) {
   const { t } = useT();
@@ -25,18 +28,29 @@ export function InvoiceCard({ output }: { output: { invoice: InvoiceView | null;
   const { locale } = useLocale();
   const signIn = useSignIn();
   const invoice = output.invoice;
+  // Resolve and resume (R12): once signed in and set up, the same invoice is asked for again in this conversation.
+  const { status } = useSession();
+  const { wallet } = useWalletStatus();
+  const resume = useChatResume();
   if (!invoice) {
-    const guest = output.summary.status === "needs_sign_in";
+    const guest = output.summary.status === "needs_sign_in" && status !== "account";
+    const fixed = status === "account" && Boolean(wallet?.address);
     return (
       <AgentCard eyebrow={t("business.invoice")}>
-        <Text className={cn("text-foreground text-base", TEXT_START)}>{guest ? t("request.signInTitle") : t("receive.setUpFirst")}</Text>
-        <Button onPress={() => (guest ? signIn.open() : router.push("/wallet"))}>
-          <Text>{guest ? t("signIn.title") : t("wallet.setUp")}</Text>
-        </Button>
+        <Text className={cn("text-foreground text-base", TEXT_START)}>{fixed ? t("resume.readyNow") : guest ? t("request.signInTitle") : t("receive.setUpFirst")}</Text>
+        {fixed && resume ? (
+          <Button onPress={() => resume(t("resume.continuePrompt"))}>
+            <Text>{t("resume.continue")}</Text>
+          </Button>
+        ) : fixed ? null : (
+          <Button onPress={() => (guest ? signIn.open() : router.push("/wallet"))}>
+            <Text>{guest ? t("signIn.title") : t("wallet.setUp")}</Text>
+          </Button>
+        )}
       </AgentCard>
     );
   }
-  const money = formatAmount(toAmount(invoice.asset as AssetId, BigInt(invoice.total)), locale);
+  const money = formatTokenAmount(BigInt(invoice.total), invoice.decimals, invoice.asset, locale);
   const due = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(invoice.dueAt));
   return (
     <AgentCard eyebrow={`${t("business.invoice")} · ${invoice.network === "testnet" ? t("network.arcTestnet") : t("network.arc")}`}>

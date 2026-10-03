@@ -24,4 +24,11 @@ export const notify: Catalog["notify"] = {
   protectFailedBody: "Цена, доступная Kawase, была недостаточно честной для продажи. Проверьте позицию.",
   side_long: "лонг",
   side_short: "шорт",
+  needsYouTitle: "Ждёт вас",
+  needsYouReminderTitle: "Всё ещё ждёт вас",
+  needsYouSend: "Отправить {{amount}} получателю {{name}}",
+  needsYouSwap: "Обменять {{amount}} {{symbolIn}} на {{symbolOut}}",
+  reminderTitle: "Завтра, {{at}}",
+  reminderPayroll: "Выплаты {{people}} людям",
+  reminderShort: "В кошельке меньше, чем нужно для запуска",
 };

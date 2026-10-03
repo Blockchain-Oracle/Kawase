@@ -25,6 +25,7 @@ import { confirmedFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { BrakeNote } from "@/safety/brake-note";
 import { useMoney } from "@/send/copy";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useTheme } from "@/theme/theme-provider";
@@ -229,6 +230,8 @@ export function MarginTicket({ controller, market, compact = false }: { controll
             </Button>
           ) : null}
         </View>
+      ) : !moving && !finished ? (
+        <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} />
       ) : null}
 
       <MarginTrace intent={intent} busy={controller.busy} />

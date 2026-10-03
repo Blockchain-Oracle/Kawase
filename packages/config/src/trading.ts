@@ -66,3 +66,13 @@ export const TOKEN_RULES = {
   /** Above this it carries a warning. */
   warnPriceImpactBps: 200,
 } as const;
+
+/** The token rules screen's steps (D12): what each rule can be set to. Defaults are TOKEN_RULES. */
+export const TOKEN_RULE_CHOICES = {
+  unverifiedPerTradeUsd: [0, 25, 50, 100, 250, 500],
+  unverifiedPerDayUsd: [0, 100, 200, 500, 1_000, 2_500],
+  maxPriceImpactBps: [100, 300, 500, 1_000, 1_500],
+} as const;
+
+/** A loosening of the token rules waits this long for the wallet's signature (seconds). */
+export const TOKEN_RULES_CHANGE_TTL_S = 600;

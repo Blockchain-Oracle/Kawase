@@ -3,13 +3,15 @@
 // the address reached the book (the trust chip); then the warnings as rows (a lookalike address in the error colour,
 // the rest as quiet notes with an icon, never colour alone); then network, fee and note; then the allowance meter,
 // which says in words whether this send goes without asking or needs Face ID.
-import { BadgeCheck, ChevronDown, CircleAlert, Info, ShieldAlert } from "lucide-react-native";
+import { BadgeCheck, ChevronDown, CircleAlert, FlaskConical, Info, ShieldAlert } from "lucide-react-native";
+import { formatUnits } from "viem";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 
-import type { SendIntent } from "@kawase/api-client";
-import { arcIdentity } from "@kawase/identity";
-import { amount as toAmount, formatAmount, type AssetId } from "@kawase/money";
+import type { SendIntent, SendRequest } from "@kawase/api-client";
+import { arcIdentity, CHAIN_IDS } from "@kawase/identity";
+import { amount as toAmount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";
@@ -19,6 +21,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { BrakeNote } from "@/safety/brake-note";
 
 import { recipientName, shortAddress, useMoney, usePolicyText, useTrustLabel } from "./copy";
 
@@ -31,12 +34,19 @@ const PERCENT = 100;
 const METER_HEIGHT = 6;
 
 /** Warnings shown as rows; the allowance ones are said by the meter instead. */
+const TOKEN_DIGITS = 6;
+const DEFAULT_TOKEN_DECIMALS = 18;
 const ROW_WARNINGS = new Set([
   "LOOKALIKE_ADDRESS",
+  "RECIPIENT_CONTRACT",
   "FIRST_TIME_RECIPIENT",
   "UNSAVED_ADDRESS",
   "LEAVES_LITTLE_FOR_FEES",
+  // A new address in its cooldown: this one needs the person's own yes (D-cooldown).
+  "NEW_RECIPIENT_COOLDOWN",
 ]);
+/** USDC and EURC both have six decimals. */
+const STABLE_DECIMALS = 6;
 
 function DetailRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
@@ -59,19 +69,21 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
     (entry) => entry.code === "LOOKALIKE_ADDRESS" || entry.code === "FIRST_TIME_RECIPIENT",
   );
   const above = intent.results.some((entry) => entry.code === "ABOVE_ALLOWANCE");
-  const usdc = intent.draft?.asset !== "EURC";
+  // Each token has its own allowance (Wallet & limits), so "off" means off for this send's token.
+  // Paused or off the allowlist: say why this one needs Face ID (D-pause).
+  const held = intent.results.find((entry) => entry.code === "AGENT_PAUSED" || entry.code === "NOT_ON_ALLOWLIST");
   const line =
     route === "allowance"
       ? t("send.allowanceInside")
-      : !usdc
-        ? t("send.allowanceUsdcOnly")
+      : held
+        ? t(`policy.${held.code}`)
         : !allowance.active
-          ? t("send.allowanceOff")
-          : above
-            ? t("send.allowanceAbove")
-            : stepUp
-              ? t("send.allowanceStepUp")
-              : t("send.allowanceAbove");
+        ? t("send.allowanceOff")
+        : above
+          ? t("send.allowanceAbove")
+          : stepUp
+            ? t("send.allowanceStepUp")
+            : t("send.allowanceAbove");
   const total = allowance.perPeriod ? BigInt(allowance.perPeriod) : ZERO;
   const left = BigInt(allowance.available);
   const share = total > ZERO ? Number((left * BigInt(PERCENT)) / total) : 0;
@@ -84,15 +96,15 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
         />
         <Text className={cn("text-foreground flex-1 text-sm leading-5", TEXT_START)}>{line}</Text>
       </View>
-      {usdc && allowance.active && allowance.perPeriod && !compact ? (
+      {allowance.active && allowance.perPeriod && !compact ? (
         <>
           <View className="bg-background overflow-hidden rounded-full" style={{ height: METER_HEIGHT }}>
             <View className="bg-success h-full rounded-full" style={{ width: `${share}%` }} />
           </View>
           <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
             {t("send.allowanceLeft", {
-              amount: money("USDC", allowance.available),
-              total: money("USDC", allowance.perPeriod),
+              amount: money(intent.draft?.asset ?? "USDC", allowance.available),
+              total: money(intent.draft?.asset ?? "USDC", allowance.perPeriod),
             })}
           </Text>
         </>
@@ -101,7 +113,11 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
   );
 }
 
-export function SendReview({ intent, compact }: { intent: SendIntent; compact?: boolean }) {
+/**
+ * `onRevise`: change the amount here (the "send a test amount first?" offer on a first payment). Without it the offer
+ * is said but not offered as a button.
+ */
+export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; compact?: boolean; onRevise?: ((patch: SendRequest) => void) | undefined }) {
   const { t } = useT();
   const { locale } = useLocale();
   const policyText = usePolicyText();
@@ -117,18 +133,25 @@ export function SendReview({ intent, compact }: { intent: SendIntent; compact?: 
   const name = recipientName(recipient, intent.request.recipient);
   const secondary = recipient.name && recipient.handle ? `@${recipient.handle}` : shortAddress(recipient.address);
   const warnings = intent.results.filter((entry) => ROW_WARNINGS.has(entry.code));
-  const figures = formatAmount(toAmount(draft.asset as AssetId, BigInt(draft.amount)), locale, { withSymbol: false });
+  const test = intent.results.find((entry) => entry.code === "TEST_AMOUNT_SUGGESTED");
+  // Any token (R1): its own decimals and mark; drafts from before any-asset sends are USDC/EURC.
+  const decimals = draft.token?.decimals ?? (draft.asset === "USDC" || draft.asset === "EURC" ? undefined : DEFAULT_TOKEN_DECIMALS);
+  const figures =
+    decimals === undefined
+      ? formatAmount(toAmount(draft.asset as AssetId, BigInt(draft.amount)), locale, { withSymbol: false })
+      : formatTokenAmount(BigInt(draft.amount), decimals, draft.asset, locale, { withSymbol: false, fractionDigits: TOKEN_DIGITS, trimZeros: true });
+  const chainId = intent.network === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
 
   return (
     <View className="gap-4">
       <View className={cn("items-center gap-2", compact ? "py-1" : "py-3")}>
         <Text className="text-muted-foreground text-sm">{t("send.youSend")}</Text>
         <View className="flex-row items-center gap-3">
-          <Mark
-            entity={draft.asset === "USDC" ? ids.usdc : ids.eurc}
-            chainBadge={ids.chain}
-            size={compact ? ASSET_MARK_COMPACT : ASSET_MARK}
-          />
+          {draft.token ? (
+            <TokenMark token={{ chainId, address: draft.token.address, symbol: draft.token.symbol }} chainBadge={ids.chain} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
+          ) : (
+            <Mark entity={draft.asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={compact ? ASSET_MARK_COMPACT : ASSET_MARK} />
+          )}
           <Text
             accessibilityLabel={`${figures} ${draft.asset}`}
             className={cn("font-display text-foreground font-bold", compact ? "text-[32px]" : "text-5xl")}
@@ -193,6 +216,24 @@ export function SendReview({ intent, compact }: { intent: SendIntent; compact?: 
           </View>
         ) : null}
       </Pressable>
+
+      <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} />
+
+      {test?.params?.test ? (
+        <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
+          <Icon as={FlaskConical} className="text-muted-foreground size-4" />
+          <Text className={cn("text-foreground flex-1 text-sm leading-5", TEXT_START)}>{policyText(test, intent.network)}</Text>
+          {onRevise ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => onRevise({ amount: formatUnits(BigInt(test.params!.test!), STABLE_DECIMALS) })}
+              className="bg-background active:bg-card rounded-full px-3 py-1.5"
+            >
+              <Text className="text-foreground text-xs font-semibold">{t("safety.sendTestFirst")}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       {warnings.length ? (
         <View className="gap-2">

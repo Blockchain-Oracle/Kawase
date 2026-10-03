@@ -4,6 +4,7 @@ import { z } from "zod";
 import { voicePrefs } from "@kawase/config";
 import type { Db } from "@kawase/db";
 
+import { clientIp } from "../account/location";
 import { FIELD } from "../http/fields";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
@@ -31,7 +32,10 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
   return parsed.data;
 }
 
-export function authRoutes(db: Db, auth: AuthService) {
+/** After an account sign-in: the device's place and the "new sign-in" notice (never delays or fails the sign-in). */
+export type SignedInHook = (input: { userId: string; deviceId: string; deviceCreatedAt: Date; ip: string | undefined }) => Promise<void>;
+
+export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook) {
   const app = new Hono<AppEnv>();
 
   app.post("/nonce", async (c) => c.json(await auth.issueNonce()));
@@ -48,8 +52,9 @@ export function authRoutes(db: Db, auth: AuthService) {
     const guestToken = bearerToken(c.req.raw.headers);
     const guest = guestToken ? await findSession(db, guestToken) : undefined;
     const guestUserId = guest?.user.isAnonymous ? guest.user.id : undefined;
-    const { token, user } = await auth.signInWithTurnkey({ ...input, guestUserId });
+    const { token, user, device } = await auth.signInWithTurnkey({ ...input, guestUserId });
     if (guest) await revokeSession(db, guest.session.id);
+    if (onSignedIn) void onSignedIn({ userId: user.id, deviceId: device.id, deviceCreatedAt: device.createdAt, ip: clientIp(c) }).catch(() => undefined);
     return c.json({ token, user: publicUser(user) }, HTTP.created);
   });
 
@@ -78,6 +83,7 @@ export function publicUser(user: {
   activeNetwork: string;
   riskMode: string;
   practiceMode: boolean;
+  pausedAllAt?: Date | null;
   turnkeySubOrganizationId: string | null;
   voicePrefs?: unknown;
 }) {
@@ -96,6 +102,7 @@ export function publicUser(user: {
     activeNetwork: user.activeNetwork,
     riskMode: user.riskMode,
     practiceMode: user.practiceMode,
+    pausedAllAt: user.pausedAllAt?.toISOString() ?? null,
     turnkeySubOrganizationId: user.turnkeySubOrganizationId,
     /** Settings → Voice, with the defaults filled in. */
     voicePrefs: voicePrefs(user.voicePrefs),

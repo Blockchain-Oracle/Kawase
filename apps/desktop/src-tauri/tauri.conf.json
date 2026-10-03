@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Kawase",
+  "version": "1.0.0",
+  "identifier": "xyz.kawase.desktop",
+  "build": {
+    "frontendDist": "https://app.getkawase.xyz",
+    "devUrl": "https://app.getkawase.xyz"
+  },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "security": {
+      "csp": null,
+      "capabilities": []
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Finance",
+    "shortDescription": "Your money on Arc, by voice or text",
+    "longDescription": "Kawase is a voice-first AI money app for everything on Arc: send, swap, bridge, earn and automate in ten languages, inside limits you set.",
+    "copyright": "© 2026 Kawase",
+    "homepage": "https://getkawase.xyz",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "entitlements": "Entitlements.plist"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["kawase"]
+      }
+    }
+  }
+}

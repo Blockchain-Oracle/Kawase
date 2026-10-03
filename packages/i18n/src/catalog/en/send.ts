@@ -93,4 +93,7 @@ export const send = {
   sendEmailCode: "Send with an email code",
   showFullAddress: "Shows the full address",
   youWrote: "You wrote “{{words}}”",
+  otherChain: "Their wallet is on another chain?",
+  otherChainBridge: "Send USDC there by a bridge: you pick the chain and the route.",
+  otherChainConvert: "Only USDC crosses chains. Convert your {{asset}} to USDC first.",
 } as const;

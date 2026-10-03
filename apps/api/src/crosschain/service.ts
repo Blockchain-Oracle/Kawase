@@ -148,6 +148,8 @@ const ERROR_MAX = 140;
 const QUOTE_TIMEOUT_MS = 6_000;
 /** Aggregators answer more slowly than a single bridge. */
 const AGGREGATOR_TIMEOUT_MS = 15_000;
+/** App Kit's CCTP estimate simulates the burn and reads Circle's fees: 6.2–6.8 s on Arc Testnet (measured 10-02). */
+const CCTP_QUOTE_TIMEOUT_MS = 15_000;
 const NO_QUOTE = -1n;
 /** Arc's native USDC transfers (and the native leg of every ERC-20 USDC transfer) are logged from this address. */
 const ARC_NATIVE_LOGGER = "0xfffffffffffffffffffffffffffffffffffffffe";
@@ -302,6 +304,7 @@ export class CrossChainService {
         return base("cctp", received, received, null);
       }),
       this.failed("cctp", output, { code: "timeout" }),
+      CCTP_QUOTE_TIMEOUT_MS,
     ).catch((error: unknown) => this.failed("cctp", output, error));
     if (testnet) return [cctp, ...(["across", "relay"] as const).map((provider) => Promise.resolve(this.none(provider, output, "not_on_arc_testnet")))];
     const across = within(

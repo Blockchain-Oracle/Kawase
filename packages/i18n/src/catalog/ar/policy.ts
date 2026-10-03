@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "الإرسال غير متاح على هذه الشبكة بعد.",
   ON_OTHER_NETWORK: "الإرسال يعمل على {{network}}.",
-  PAUSED_ALL: "أوقفتَ كل عمليات الإرسال مؤقتًا. استأنفها من الإعدادات للمتابعة.",
+  PAUSED_ALL: "متوقف مؤقتًا: لا يفعل Kawase والأتمتة شيئًا من دونك. استأنف من المحفظة والحدود.",
   OVER_PER_TX_LIMIT: "هذا يتجاوز حدّك البالغ {{limit}} لكل إرسال.",
   OVER_DAILY_LIMIT: "هذا يتجاوز حدّك اليومي البالغ {{limit}} (استُخدم {{used}} اليوم).",
   OVER_WEEKLY_LIMIT: "هذا يتجاوز حدّك الأسبوعي البالغ {{limit}} (استُخدم {{used}} هذا الأسبوع).",
@@ -24,7 +24,7 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "هذا المبلغ غير صالح.",
   ASSET_UNCLEAR: "‏USDC أم EURC؟",
   FIRST_TIME_RECIPIENT: "أول دفعة إلى هذا العنوان",
-  LOOKALIKE_ADDRESS: "يشبه عنوان {{name}} لكنه مختلف. تحقّق من كل حرف.",
+  LOOKALIKE_ADDRESS: "يشبه عنوان {{name}} لكنه مختلف، لذا لن يرسل Kawase إليه. تحقّق منه مع {{name}}.",
   UNSAVED_ADDRESS: "هذا العنوان ليس ضمن جهات اتصالك",
   ABOVE_ALLOWANCE: "أكثر مما تبقّى من حدّك ({{available}})",
   NO_ALLOWANCE: "حدّك اليومي متوقف",
@@ -42,4 +42,15 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "انتقل إلى {{network}}",
   fixEditAmount: "غيّر المبلغ",
   fixOpenContact: "افتح جهة الاتصال",
+  AGENT_PAUSED: "متوقف مؤقتًا: هذه الدفعة تحتاج موافقتك",
+  NOT_ON_ALLOWLIST: "ليس في قائمة السماح: هذه الدفعة تحتاج موافقتك",
+  NEW_RECIPIENT_COOLDOWN:
+    "مستلم جديد: حتى {{until}}، أي مبلغ يزيد على {{cap}} إليه يحتاج موافقتك. غيّر ذلك في المحفظة والحدود.",
+  TEST_AMOUNT_SUGGESTED: "أول دفعة إلى هنا. هل ترسل {{test}} أولًا للتأكد من وصولها؟",
+  BRAKE_HALF_BALANCE: "هذا أكثر من نصف ما تملكه، إلى شخص لم تدفع له من قبل.",
+  BRAKE_PRICE_IMPACT: "هذا السعر أقل من السوق بـ{{gap}}%، أكثر من قاعدتك البالغة {{max}}%.",
+  BRAKE_LEVERAGE: "{{leverage}}× أعلى من 5×: حركة صغيرة ضدك قد تمحو الهامش.",
+  RECIPIENT_TOKEN_CONTRACT: "هذا العنوان عقد رمز. المال المرسل إليه يضيع، لذا لن يرسله Kawase.",
+  RECIPIENT_ISSUER_BLOCKED: "حظر مُصدِر {{asset}} هذا العنوان، فلا يمكنه استلام {{asset}}.",
+  RECIPIENT_CONTRACT: "هذا العنوان عقد وليس محفظة، وقد لا يستطيع تحريك ما يستلمه.",
 };

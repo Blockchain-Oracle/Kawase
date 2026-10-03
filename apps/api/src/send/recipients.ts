@@ -2,11 +2,11 @@
 // may only come from the person's book, a Kawase @handle, or an address the person typed or pasted themselves. A
 // bare name never resolves to a stranger's public handle: an exact handle match is offered as a suggestion only.
 import { and, eq, sql } from "drizzle-orm";
-import { getAddress, isAddress } from "viem";
+import { erc20Abi, getAddress, isAddress, parseAbi, type Address, type PublicClient } from "viem";
 
 import { LOOKALIKE_PREFIX_CHARS, LOOKALIKE_SUFFIX_CHARS } from "@kawase/config";
 import type { AddressSource, RecipientMatch, SendRecipientView } from "@kawase/api-client";
-import { contactAddressTrust, intentDrafts, intents, type Db } from "@kawase/db";
+import { contactAddressTrust, intentDrafts, intents, users, wallets, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 import type { RecipientFacts } from "@kawase/policy";
 
@@ -28,6 +28,53 @@ const looksAlike = (a: string, b: string) =>
   body(a) !== body(b) &&
   body(a).slice(0, LOOKALIKE_PREFIX_CHARS) === body(b).slice(0, LOOKALIKE_PREFIX_CHARS) &&
   body(a).slice(-LOOKALIKE_SUFFIX_CHARS) === body(b).slice(-LOOKALIKE_SUFFIX_CHARS);
+
+/** What an address is on chain, for the recipient check every payment runs (R6). */
+export type RecipientInspection = {
+  /** null: a plain account (or one with EIP-7702 code, which is still the person's own account). */
+  contract: "token" | "smart_wallet" | "contract" | null;
+  /** The token's issuer has blocked the address (USDC/EURC `isBlacklisted`, verified on Arc 2026-10-02). */
+  issuerBlocked: boolean;
+  /** The address is a Kawase user's wallet: their @handle. */
+  kawaseHandle: string | null;
+};
+
+const BLOCKLIST_ABI = parseAbi(["function isBlacklisted(address account) view returns (bool)"]);
+/** ERC-4337 accounts name their EntryPoint; Safes have owners and a threshold. Either is a smart wallet. */
+const SMART_WALLET_ABI = parseAbi(["function entryPoint() view returns (address)", "function getThreshold() view returns (uint256)"]);
+/** An EIP-7702 account's code is this designator followed by the delegate's address. */
+const DELEGATION_DESIGNATOR = "0xef0100";
+const READS_PER_ADDRESS = 4;
+
+export async function inspectRecipient(db: Db, client: PublicClient, address: Address, stableToken?: Address): Promise<RecipientInspection> {
+  const [code, blocked, owner] = await Promise.all([
+    client.getCode({ address }).catch(() => undefined),
+    stableToken ? client.readContract({ address: stableToken, abi: BLOCKLIST_ABI, functionName: "isBlacklisted", args: [address] }).catch(() => false) : Promise.resolve(false),
+    db
+      .select({ handle: users.handle })
+      .from(wallets)
+      .innerJoin(users, eq(users.id, wallets.userId))
+      .where(and(eq(wallets.role, "user"), sql`lower(${wallets.address}) = ${address.toLowerCase()}`))
+      .limit(1),
+  ]);
+  let contract: RecipientInspection["contract"] = null;
+  if (code && code !== "0x" && !code.toLowerCase().startsWith(DELEGATION_DESIGNATOR)) {
+    const reads = await client
+      .multicall({
+        contracts: [
+          { address, abi: erc20Abi, functionName: "totalSupply" },
+          { address, abi: erc20Abi, functionName: "decimals" },
+          { address, abi: SMART_WALLET_ABI, functionName: "entryPoint" },
+          { address, abi: SMART_WALLET_ABI, functionName: "getThreshold" },
+        ],
+        allowFailure: true,
+      })
+      .catch(() => Array.from({ length: READS_PER_ADDRESS }, () => ({ status: "failure" as const })));
+    const [totalSupply, decimals, entryPoint, threshold] = reads.map((read) => read.status === "success");
+    contract = totalSupply && decimals ? "token" : entryPoint || threshold ? "smart_wallet" : "contract";
+  }
+  return { contract, issuerBlocked: blocked === true, kawaseHandle: owner[0]?.handle ?? null };
+}
 
 export class Recipients {
   constructor(

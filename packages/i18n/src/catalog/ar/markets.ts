@@ -17,11 +17,14 @@ export const markets: Catalog["markets"] = {
   testnetTitle: "الأسواق على الشبكة الرئيسية",
   testnetBody: "المال التجريبي يبادل USDC وEURC فقط. انتقل إلى الشبكة الرئيسية لترى الأسواق الحقيقية.",
   switchToMainnet: "الانتقال إلى الشبكة الرئيسية",
-  perpsBody: "الشراء والبيع على المكشوف في Arc قيد البناء: أولًا cirBTC وWETH وEURC عبر Aave.",
   empty: "لا شيء هنا الآن",
   loadFailed: "تعذّر تحميل الأسواق.",
   updated: "حُدّث {{time}}",
   stale: "آخر الأسعار من {{time}}",
   recentSearches: "عمليات البحث الأخيرة",
   segmentsLabel: "أقسام السوق",
+  yourPositions: "مراكزك",
+  marginVenue: "Kawase Margin · Aave V4 على Arc",
+  perpsMainnet:
+    "الشراء والبيع على المكشوف يعملان على شبكة Arc الرئيسية. بدّل الشبكة للتداول؛ تبقى أموالك التجريبية كما هي.",
 };

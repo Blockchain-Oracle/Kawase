@@ -7,7 +7,7 @@ import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES } from "@kawase/networks"
  * registry cannot drift from the verified values. Mark files live in svg/ with a row in PROVENANCE.md each;
  * an entity whose file has not arrived yet renders the labelled neutral disc, never a stand-in logo.
  */
-export type EntityKind = "chain" | "token" | "provider" | "venue" | "name-service";
+export type EntityKind = "chain" | "token" | "provider" | "venue" | "name-service" | "exchange" | "wallet";
 
 export type MarkVariant = "color" | "mono";
 
@@ -40,6 +40,8 @@ export const chainKey = (chainId: number) => `chain:eip155:${chainId}`;
 export const tokenKey = (chainId: number, address: string) => `token:eip155:${chainId}:${address.toLowerCase()}`;
 export const providerKey = (slug: string) => `provider:${slug}`;
 export const venueKey = (slug: string) => `venue:${slug}`;
+export const exchangeKey = (slug: string) => `exchange:${slug}`;
+export const walletKey = (slug: string) => `wallet:${slug}`;
 
 const USDC_DECIMALS = 6;
 const EURC_DECIMALS = 6;
@@ -245,4 +247,18 @@ export const ENTITIES: readonly Entity[] = [
   { id: "name-service:ens", kind: "name-service", name: "ENS", brandColor: "#5298FF", shape: "uncontained", marks: {} },
   { id: "name-service:basenames", kind: "name-service", name: "Basenames", brandColor: "#0052FF", shape: "uncontained", marks: {} },
   { id: "name-service:arcns", kind: "name-service", name: "ArcNS (unofficial)", brandColor: "#0F0F0F", shape: "uncontained", marks: {} },
+
+  // Exchanges people withdraw to and fund from, and self-custody wallets on other chains (Withdraw and Add money
+  // hubs). web3icons background marks fill their square, so they are tiles.
+  { id: exchangeKey("kraken"), kind: "exchange", name: "Kraken", brandColor: "#5741D9", shape: "tile", marks: { color: "kraken", mono: "kraken-mono" } },
+  { id: exchangeKey("bybit"), kind: "exchange", name: "Bybit", brandColor: "#000000", shape: "tile", marks: { color: "bybit", mono: "bybit-mono" } },
+  { id: exchangeKey("okx"), kind: "exchange", name: "OKX", brandColor: "#000000", shape: "tile", marks: { color: "okx", mono: "okx-mono" } },
+  { id: exchangeKey("binance"), kind: "exchange", name: "Binance", brandColor: "#F0B90B", shape: "tile", marks: { color: "binance", mono: "binance-mono" } },
+  { id: exchangeKey("bitget"), kind: "exchange", name: "Bitget", brandColor: "#00040C", shape: "tile", marks: { color: "bitget", mono: "bitget-mono" } },
+  { id: exchangeKey("kucoin"), kind: "exchange", name: "KuCoin", brandColor: "#23AF91", shape: "tile", marks: { color: "kucoin", mono: "kucoin-mono" } },
+  { id: exchangeKey("coinbase"), kind: "exchange", name: "Coinbase", brandColor: "#0052FF", shape: "tile", marks: { color: "coinbase", mono: "coinbase-mono" } },
+  { id: walletKey("metamask"), kind: "wallet", name: "MetaMask", brandColor: "#FF5C16", shape: "tile", marks: { color: "metamask" } },
+  { id: walletKey("phantom"), kind: "wallet", name: "Phantom", brandColor: "#AB9FF2", shape: "tile", marks: { color: "phantom", mono: "phantom-mono" } },
+  { id: walletKey("rabby"), kind: "wallet", name: "Rabby", brandColor: "#7084FF", shape: "tile", marks: { color: "rabby", mono: "rabby-mono" } },
+  { id: walletKey("ledger"), kind: "wallet", name: "Ledger", brandColor: "#000000", shape: "tile", marks: { color: "ledger", mono: "ledger-mono" } },
 ];

@@ -23,4 +23,11 @@ export const notify: Catalog["notify"] = {
   protectFailedBody: "Kawase 能拿到的价格不够公道，没有卖出。请现在查看。",
   side_long: "多头",
   side_short: "空头",
+  needsYouTitle: "等你处理",
+  needsYouReminderTitle: "仍在等你处理",
+  needsYouSend: "向 {{name}} 发送 {{amount}}",
+  needsYouSwap: "将 {{amount}} {{symbolIn}} 兑换为 {{symbolOut}}",
+  reminderTitle: "明天，{{at}}",
+  reminderPayroll: "{{people}} 人的工资",
+  reminderShort: "你的钱包余额少于本次运行所需",
 };

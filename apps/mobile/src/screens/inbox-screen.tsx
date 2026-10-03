@@ -3,13 +3,14 @@
 // whom, a request of yours that was paid, a send that landed — with an unread dot that is never the only signal.
 // Tapping marks it read and opens the request or the transaction. "Mark all read" when there is something unread.
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, FileClock, ShieldAlert } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { InboxItem } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
+import { formatTokenAmount } from "@kawase/money";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
@@ -24,6 +25,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
 import { useRunReason } from "@/automations/copy";
 import { useInbox } from "@/inbox/use-inbox";
 import { useRequestDates } from "@/request/copy";
@@ -38,22 +40,80 @@ const BADGE = 18;
 const DOT = 8;
 const SKELETON_ROWS = 4;
 const SKELETON_HEIGHT = 64;
+const USDC_PLACES = 6;
 
 function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  if (item.kind === "device_signed_in" || item.kind === "device_signed_out" || item.kind === "invoice_due" || item.kind === "invoice_overdue") {
+    return <AlertRow item={item} onPress={onPress} />;
+  }
+  return <MoneyRow item={item} onPress={onPress} />;
+}
+
+/** Security and business notices: an icon, the notice, and when. */
+function AlertRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  const { t } = useT();
+  const { locale } = useLocale();
+  const dates = useRequestDates();
+  const p = item.params;
+  const security = item.kind === "device_signed_in" || item.kind === "device_signed_out";
+  const places = Number(p.decimals ?? USDC_PLACES);
+  const owed = p.amount ? formatTokenAmount(BigInt(p.amount), places, p.asset ?? "", locale, { fractionDigits: Math.min(places, USDC_PLACES), trimZeros: true }) : "";
+  const title =
+    item.kind === "device_signed_in"
+      ? t("alerts.deviceSignedInTitle", { name: p.name ?? t("alerts.aDevice") })
+      : item.kind === "device_signed_out"
+        ? t("alerts.deviceSignedOutTitle", { name: p.name ?? t("alerts.aDevice") })
+        : item.kind === "invoice_overdue"
+          ? t("alerts.invoiceOverdueTitle", { number: p.number ?? "" })
+          : t(p.stage === "due_today" ? "alerts.invoiceDueTodayTitle" : "alerts.invoiceDueSoonTitle", { number: p.number ?? "" });
+  const detail = security ? [p.platform, p.location].filter(Boolean).join(" · ") : t("alerts.invoiceDueBody", { client: p.client ?? "", amount: owed });
+  const unread = !item.readAt;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
+      <View className="items-center justify-center" style={{ width: DOT }}>
+        {unread ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
+      </View>
+      <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+        <Icon as={security ? ShieldAlert : FileClock} className={cn("size-5", item.kind === "invoice_overdue" || item.kind === "device_signed_in" ? "text-destructive" : "text-muted-foreground")} />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text numberOfLines={2} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
+          {title}
+        </Text>
+        <Text numberOfLines={1} className={cn("text-muted-foreground text-sm", TEXT_START)}>
+          {[detail, dates.moment(item.createdAt)].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const { t } = useT();
   const money = useMoney();
   const dates = useRequestDates();
   const reasonText = useRunReason();
+  const { locale } = useLocale();
   const ids = arcIdentity(item.network);
   const p = item.params;
   const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
-  const amount = money(p.asset, p.amount);
+  const amount = money(p.asset, p.amount, p.decimals);
   const skipped = item.kind === "automation_skipped";
   const alert = item.kind === "rule_alert";
-  const incoming = item.kind !== "send_completed" && !skipped && !alert;
+  // 8c: a step waiting for the person, and the 24 h reminder; neither moved money.
+  const waiting = item.kind === "needs_you";
+  const reminder = item.kind === "automation_reminder";
+  const quiet = alert || waiting || reminder;
+  const incoming = item.kind !== "send_completed" && !skipped && !quiet;
   const title =
-    alert
+    waiting
+      ? t(p.reminder ? "notify.needsYouReminderTitle" : "notify.needsYouTitle")
+      : reminder
+        ? t("automation.inboxReminder")
+        : alert && p.trigger === "price"
+          ? t("automation.ruleAlertPrice", { amountIn: p.amountIn ?? "", symbolIn: p.symbolIn ?? "", quotedOut: p.quotedOut ?? "", symbolOut: p.symbolOut ?? "" })
+          : alert
       ? p.trigger === "money_in"
         ? t("automation.ruleAlertMoneyIn", { amount })
         : t(p.trigger === "balance_above" ? "automation.ruleAlertAbove" : "automation.ruleAlertBelow", { amount: money("USDC", p.threshold) })
@@ -65,7 +125,13 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           ? t("automation.inboxSkipped", { reason: reasonText(p.reason ?? null, p, item.network) })
           : t("inbox.sentTo", { name });
   const subtitle =
-    item.kind === "request_paid"
+    waiting
+      ? p.type === "swap"
+        ? t("notify.needsYouSwap", { amount: p.amount && p.decimalsIn ? formatTokenAmount(BigInt(p.amount), Number(p.decimalsIn), "", locale, { trimZeros: true, withSymbol: false }) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
+        : t("notify.needsYouSend", { amount, name })
+      : reminder
+        ? [p.automationKind === "payroll" ? t("notify.reminderPayroll", { people: p.people ?? "" }) : p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : `${amount} → ${name}`, p.short ? t("notify.reminderShort") : null, p.at ? dates.moment(p.at) : null].filter(Boolean).join(" · ")
+        : item.kind === "request_paid"
       ? t("inbox.requestPaidBy", { amount, name })
       : alert && p.balance
         ? `${t("automation.ruleAlertBalance", { amount: money("USDC", p.balance) })} · ${dates.moment(item.createdAt)}`
@@ -97,7 +163,7 @@ function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           {subtitle}
         </Text>
       </View>
-      {p.amount && !alert ? (
+      {p.amount && !quiet ? (
         <Amount className={cn("text-base", incoming ? "text-success" : skipped ? "text-muted-foreground" : "text-foreground")}>
           {skipped ? amount : `${incoming ? "+" : "−"}${amount}`}
         </Amount>
@@ -117,8 +183,14 @@ export function InboxScreen() {
 
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
-    if (item.kind === "automation_skipped" || item.kind === "rule_alert") router.push("/automations");
+    if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
+    else if (item.kind === "device_signed_in" || item.kind === "device_signed_out") router.push("/account/devices");
+    else if ((item.kind === "invoice_due" || item.kind === "invoice_overdue") && item.params.invoiceId) router.push({ pathname: "/business/invoice/[id]", params: { id: item.params.invoiceId } });
+    else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
+    // The action's own card by id (A5-2), or why money arrived; the explorer only when there is neither.
+    else if (item.intentId) router.push({ pathname: "/i/[id]", params: { id: item.intentId } });
+    else if (item.txHash) router.push({ pathname: "/why/[tx]", params: { tx: item.txHash, network: item.network } });
     else if (item.explorerUrl) void Linking.openURL(item.explorerUrl);
   };
   const pull = async () => {

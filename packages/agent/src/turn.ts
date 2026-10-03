@@ -114,6 +114,8 @@ export async function agentTurn({
         promptCacheKey: voice ? `${PROMPT_CACHE_KEY}-voice` : PROMPT_CACHE_KEY,
         serviceTier: SERVICE_TIER,
       },
+      // Gemini 3 (the fallback provider, D29): the least thinking it accepts (3.8 Flash refuses "minimal").
+      google: { thinkingConfig: { thinkingLevel: "low" } },
     },
     onError: ({ error }) => onError(error),
     onChunk: ({ chunk }) => {

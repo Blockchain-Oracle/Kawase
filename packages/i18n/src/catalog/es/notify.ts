@@ -23,4 +23,11 @@ export const notify: Catalog["notify"] = {
   protectFailedBody: "El precio que Kawase conseguía no era justo para vender. Revísalo ya.",
   side_long: "larga",
   side_short: "corta",
+  needsYouTitle: "Te espera",
+  needsYouReminderTitle: "Sigue esperándote",
+  needsYouSend: "Enviar {{amount}} a {{name}}",
+  needsYouSwap: "Cambiar {{amount}} {{symbolIn}} a {{symbolOut}}",
+  reminderTitle: "Mañana, {{at}}",
+  reminderPayroll: "Nómina de {{people}} personas",
+  reminderShort: "Tu cartera tiene menos que esta ejecución",
 };

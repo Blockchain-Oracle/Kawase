@@ -45,4 +45,5 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "کوئی راستہ نہیں",
   reason_timeout: "وقت پر جواب نہیں",
   reason_failed: "قیمت نہیں ملی",
+  ruleVerifiedOnly: "آپ کے اصول صرف تصدیق شدہ ٹوکنز کی اجازت دیتے ہیں",
 };

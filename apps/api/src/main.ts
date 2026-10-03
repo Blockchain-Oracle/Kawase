@@ -40,7 +40,11 @@ const app = createApp({
   chains: createChains(env),
   faucet: circleFaucet(env.CIRCLE_TEST_API_KEY),
   models: createModels(
-    { ...(env.OPENAI_API_KEY ? { openai: env.OPENAI_API_KEY } : {}), ...(env.ANTHROPIC_API_KEY ? { anthropic: env.ANTHROPIC_API_KEY } : {}) },
+    {
+      ...(env.OPENAI_API_KEY ? { openai: env.OPENAI_API_KEY } : {}),
+      ...(env.ANTHROPIC_API_KEY ? { anthropic: env.ANTHROPIC_API_KEY } : {}),
+      ...(env.GOOGLE_GENERATIVE_AI_API_KEY ? { google: env.GOOGLE_GENERATIVE_AI_API_KEY } : {}),
+    },
     {
       ...(env.KAWASE_MODEL_AGENT_CHAT ? { agentChat: env.KAWASE_MODEL_AGENT_CHAT as ModelRef } : {}),
       ...(env.KAWASE_MODEL_AGENT_VOICE ? { agentVoice: env.KAWASE_MODEL_AGENT_VOICE as ModelRef } : {}),
@@ -59,6 +63,7 @@ const app = createApp({
   onramp: circleOnramp(env),
   circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
   market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
+  alchemyApiKey: env.ALCHEMY_API_KEY,
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,

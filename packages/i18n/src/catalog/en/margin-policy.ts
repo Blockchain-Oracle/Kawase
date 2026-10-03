@@ -20,4 +20,5 @@ export const marginPolicy = {
   MARGIN_RISK: "Leverage can lose your whole margin.",
   fixTryAgain: "Try again",
   fixSwitch: "Switch to Arc",
+  BRAKE_LEVERAGE: "{{leverage}}× is above 5×: a small move against you can wipe out the margin.",
 } as const;

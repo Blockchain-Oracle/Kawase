@@ -35,3 +35,8 @@ Verified: 2026-10-02
 | X29 | Marketplace payments | A per-user agent wallet funded by a capped marketplace grant; Gateway nanopayments + plain EIP-3009 via `@circle-fin/x402-batching` | 2,060 of 2,136 Arc listings are Gateway-only |
 | X24 | Marketplace payments | See X29 | `cards/marketplace.md` |
 | X25 | Mainnet | First-class now; Circle LIVE is approved; end-to-end runs use small real amounts | D36 |
+| X30 | Pause all | Blocks only routes that act without the person (allowance sends, automations, agent auto-execution); the person's own Face ID actions keep working so the exit kit can always move money out | A3 found swap/bridge/earn refusing everything while paused (10-02) |
+| X31 | New-recipient cooldown | Applies to no-prompt sends and automations only; the person's own Face ID send to a new address gets the first-time warning and "send a test amount first?" | A3: a blanket cooldown blocked people's own sends ($50 / 24 h on mainnet) |
+| X32 | Payroll | One backend: the automations `payroll` kind (Needs-you, practice, underfunded retry); Business → Payroll uses it | A3 and B2 had built it twice (10-02) |
+| X33 | Agent latency | OpenAI Fast mode (service_tier priority) on every turn; voice gets wallet + capability lines up front | Measured 10-02: first word 3.4 → 2.5 s; voice "what can you do?" 5.3–7.6 → 1.8–3.9 s; ~$0.0005/turn |
+| X34 | Findable by email | ON by default (Venmo/Cash App norm) with a switch in Settings → Data & privacy and on the import page; only SHA-256 email hashes leave the device | A5-2 contacts import (10-02) |

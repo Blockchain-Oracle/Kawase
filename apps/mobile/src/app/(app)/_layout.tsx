@@ -3,7 +3,9 @@
 // parenthesised group keeps the URL paths, so "/", "/settings", "/wallet" and "/sign-in" are unchanged.
 // A saved session that cannot be read yet (offline on the very first open after an update, before any account
 // was cached) shows a calm "can't reach Kawase" page with Retry, never a blank screen and never a new guest.
-import { Redirect, Stack } from "expo-router";
+import { Redirect, Stack, useGlobalSearchParams, usePathname } from "expo-router";
+
+import { rememberDeepLink } from "@/onboarding/continuation";
 import { CloudOff } from "lucide-react-native";
 import { View } from "react-native";
 
@@ -14,6 +16,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
 import { useT } from "@/i18n";
+import { SafetyStripFrame } from "@/safety/safety-strip";
 import { useSession } from "@/session/session-provider";
 
 const ICON = 40;
@@ -45,6 +48,25 @@ export default function AppLayout() {
     );
   }
   if (status === "loading") return null;
-  if (status === "none") return <Redirect href="/welcome" />;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  if (status === "none") return <SignedOutRedirect />;
+  // Paused or practising: one strip above every screen says so (cards/automate-safety.md).
+  return (
+    <SafetyStripFrame>
+      <Stack screenOptions={{ headerShown: false }} />
+    </SafetyStripFrame>
+  );
+}
+
+/** No session at all: the story first, and where the link was going is kept for after it (A5-2, R12). */
+function SignedOutRedirect() {
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  // Query parameters only (route segments like `[id]` are already in the path).
+  const segments = new Set(pathname.split("/").map((part) => decodeURIComponent(part)));
+  const query = Object.entries(params)
+    .filter(([, value]) => typeof value === "string" && !segments.has(value))
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value as string)}`)
+    .join("&");
+  rememberDeepLink(query ? `${pathname}?${query}` : pathname);
+  return <Redirect href="/welcome" />;
 }

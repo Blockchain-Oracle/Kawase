@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const policy: Catalog["policy"] = {
   NOT_AVAILABLE_YET: "এই নেটওয়ার্কে এখনো পাঠানো যায় না।",
   ON_OTHER_NETWORK: "{{network}}-এ পাঠানো যায়।",
-  PAUSED_ALL: "আপনি সব পাঠানো থামিয়ে রেখেছেন। চালিয়ে যেতে সেটিংসে আবার চালু করুন।",
+  PAUSED_ALL: "থামানো: আপনাকে ছাড়া Kawase ও অটোমেশন কিছুই করে না। ওয়ালেট ও সীমা-তে আবার চালু করুন।",
   OVER_PER_TX_LIMIT: "এটি প্রতিবার পাঠানোর {{limit}} সীমার চেয়ে বেশি।",
   OVER_DAILY_LIMIT: "এটি আপনার {{limit}} দৈনিক সীমার চেয়ে বেশি (আজ {{used}} ব্যবহার হয়েছে)।",
   OVER_WEEKLY_LIMIT: "এটি আপনার {{limit}} সাপ্তাহিক সীমার চেয়ে বেশি (এই সপ্তাহে {{used}} ব্যবহার হয়েছে)।",
@@ -25,7 +25,8 @@ export const policy: Catalog["policy"] = {
   AMOUNT_INVALID: "এই পরিমাণটি বৈধ নয়।",
   ASSET_UNCLEAR: "USDC না EURC?",
   FIRST_TIME_RECIPIENT: "এই ঠিকানায় প্রথম পেমেন্ট",
-  LOOKALIKE_ADDRESS: "{{name}}-এর ঠিকানার মতো দেখায়, কিন্তু আলাদা। প্রতিটি অক্ষর মিলিয়ে দেখুন।",
+  LOOKALIKE_ADDRESS:
+    "এটি {{name}}-এর ঠিকানার মতো দেখায় কিন্তু আলাদা, তাই Kawase পাঠাবে না। {{name}}-এর সাথে মিলিয়ে নিন।",
   UNSAVED_ADDRESS: "এই ঠিকানা আপনার পরিচিতিতে নেই",
   ABOVE_ALLOWANCE: "আপনার বাকি সীমার ({{available}}) চেয়ে বেশি",
   NO_ALLOWANCE: "আপনার দৈনিক সীমা বন্ধ",
@@ -43,4 +44,16 @@ export const policy: Catalog["policy"] = {
   fixSwitch: "{{network}}-এ যান",
   fixEditAmount: "পরিমাণ বদলান",
   fixOpenContact: "পরিচিতি খুলুন",
+  AGENT_PAUSED: "থামানো: এটার জন্য আপনার অনুমোদন লাগবে",
+  NOT_ON_ALLOWLIST: "আপনার অনুমোদিত তালিকায় নেই: এটার জন্য আপনার অনুমোদন লাগবে",
+  NEW_RECIPIENT_COOLDOWN:
+    "নতুন প্রাপক: {{until}} পর্যন্ত, তাকে {{cap}}-এর বেশি পাঠাতে আপনার অনুমোদন লাগবে। ওয়ালেট ও সীমা-তে বদলান।",
+  TEST_AMOUNT_SUGGESTED: "এখানে প্রথম পেমেন্ট। পৌঁছায় কিনা দেখতে আগে {{test}} পাঠাবেন?",
+  BRAKE_HALF_BALANCE: "এটা আপনার যা আছে তার অর্ধেকের বেশি, এমন কাউকে যাকে আগে কখনো পেমেন্ট করেননি।",
+  BRAKE_PRICE_IMPACT: "এই দাম বাজারের চেয়ে {{gap}}% কম, আপনার {{max}}% নিয়মের বেশি।",
+  BRAKE_LEVERAGE: "{{leverage}}× পাঁচ গুণের বেশি: আপনার বিপক্ষে ছোট একটা নড়াচড়াও মার্জিন মুছে দিতে পারে।",
+  RECIPIENT_TOKEN_CONTRACT:
+    "এই ঠিকানাটি একটি টোকেন কন্ট্র্যাক্ট। সেখানে পাঠানো টাকা হারিয়ে যায়, তাই Kawase পাঠাবে না।",
+  RECIPIENT_ISSUER_BLOCKED: "{{asset}}-এর ইস্যুকারী এই ঠিকানা ব্লক করেছে, তাই এটি {{asset}} পেতে পারে না।",
+  RECIPIENT_CONTRACT: "এই ঠিকানাটি ওয়ালেট নয়, একটি কন্ট্র্যাক্ট। পাওয়া অর্থ হয়তো এটি সরাতে পারবে না।",
 };

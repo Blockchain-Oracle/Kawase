@@ -67,7 +67,12 @@ import type {
   TopUpResult,
 } from "./marketplace";
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type { ActivityFeedApi, FeedPage } from "./activity-feed";
+import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
+import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
+import { withdrawEndpoints } from "./withdraw";
+import { tokenRulesEndpoints } from "./token-rules";
 import type {
   BusinessProfile,
   BusinessProfileInput,
@@ -77,12 +82,10 @@ import type {
   PayoutCreateResult,
   PayoutLineInput,
   PayoutView,
-  PayrollGrantRequest,
-  PayrollInput,
-  PayrollView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import { intelligenceApi } from "./intelligence";
+import { everydayApi } from "./everyday";
 
 export * from "./types";
 export * from "./agent-types";
@@ -90,10 +93,17 @@ export * from "./assets";
 export * from "./client-events";
 export * from "./marketplace";
 export * from "./account";
+export * from "./safety";
+export * from "./automations-8c";
+export * from "./activity-feed";
 export * from "./rails";
+export * from "./withdraw";
+export * from "./token-rules";
 export * from "./business";
 export * from "./history";
 export * from "./intelligence";
+export * from "./everyday";
+export * from "./chat-cards";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -150,6 +160,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
   return {
     ...railsEndpoints(call),
+    ...withdrawEndpoints(call),
+    ...tokenRulesEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),
@@ -179,8 +191,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
             | "displayCurrency"
             | "timezone"
             | "theme"
-            | "riskMode"
-            | "practiceMode"
             | "handle"
           >
         > & { handlePrompted?: true; voicePrefs?: Partial<VoicePrefs> },
@@ -260,8 +270,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SendRequest) => call<{ intent: SendIntent }>("PATCH", `/sends/${id}`, patch),
       cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
     },
@@ -292,8 +302,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       revise: (id: string, patch: SwapRequest) => call<{ intent: SwapIntent }>("PATCH", `/swaps/${id}`, patch),
       cancel: (id: string) => call<{ intent: SwapIntent }>("POST", `/swaps/${id}/cancel`),
       /** Approve one version: the answer carries the one transaction (approve + swap) for the wallet to sign. */
-      approve: (id: string, version: number, idempotencyKey?: string) =>
-        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version }, { idempotencyKey }),
+      approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
+        call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
     },
@@ -350,6 +360,31 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
           `/automations/${id}/cancel`,
         ),
     },
+
+    /** Automations 8c: payroll, DCA, practice runs, the dry run, editing in place. */
+    automationsMore: {
+      payroll: (input: PayrollAutomationInput) => call<{ automation: AutomationView }>("POST", "/automations/payroll", input),
+      dca: (input: DcaInput) => call<{ automation: AutomationView }>("POST", "/automations/dca", input),
+      practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
+      simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
+      edit: (id: string, edit: AutomationEdit) => call<AutomationEditResponse>("PATCH", `/automations/${id}`, edit),
+      editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
+    } satisfies AutomationsMoreApi,
+
+    /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
+    activityFeed: {
+      list: (network: NetworkId) => call<FeedPage>("GET", `/activity?network=${network}`),
+      runWhy: (runId: string) => call<{ why: WhyView }>("GET", `/activity/why/run/${runId}`),
+    } satisfies ActivityFeedApi,
+
+    /** The Needs-you queue: steps automations may not take alone, answered once from anywhere. */
+    needsYou: {
+      list: () => call<{ items: NeedsYouItem[]; pending: number }>("GET", "/needs-you"),
+      get: (id: string) => call<{ item: NeedsYouItem }>("GET", `/needs-you/${id}`),
+      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }),
+      decline: (id: string, via?: "app" | "push" | "web" | "chat") => call<{ item: NeedsYouItem }>("POST", `/needs-you/${id}/decline`, { via }),
+    } satisfies NeedsYouApi,
 
     voice: {
       /** Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. */
@@ -408,7 +443,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       },
     },
 
-    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts, payroll. */
+    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts. */
     business: {
       profile: () => call<{ profile: BusinessProfile | null }>("GET", "/business/profile"),
       saveProfile: (input: BusinessProfileInput) => call<{ profile: BusinessProfile }>("PUT", "/business/profile", input),
@@ -421,17 +456,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** The printable invoice (HTML) for a PDF or a browser. */
       documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
       payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
-      createPayout: (input: { asset: "USDC" | "EURC"; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
+      createPayout: (input: { asset: string; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
       signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
       submitPayout: (id: string, requestId: string, signedTransaction: string) =>
         call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),
-      payrolls: () => call<{ payrolls: PayrollView[] }>("GET", "/business/payroll"),
-      createPayroll: (input: PayrollInput) => call<{ payroll: PayrollView }>("POST", "/business/payroll", input),
-      payrollGrant: (id: string) => call<PayrollGrantRequest>("POST", `/business/payroll/${id}/grant`),
-      activatePayroll: (id: string, lines: { automationId: string; signatures: { grantId: string; signature: string }[] }[]) =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/activate`, { lines }),
-      changePayroll: (id: string, change: "pause" | "resume" | "cancel") =>
-        call<{ payroll: PayrollView }>("POST", `/business/payroll/${id}/change`, { change }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */
@@ -447,6 +475,16 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
       deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
     } satisfies AccountApi,
+
+    /** Wallet & limits on the active network: tightening applies at once; loosening returns what to sign. */
+    safety: {
+      get: () => call<SafetyView>("GET", "/safety"),
+      tokens: (address?: string) => call<{ tokens: TokenOption[] }>("GET", `/safety/tokens${address ? `?address=${encodeURIComponent(address)}` : ""}`),
+      change: (change: SafetyChange, via?: "app" | "chat" | "voice") => call<SafetyChangeResponse>("POST", "/safety/changes", { change, via }),
+      approve: (changeId: string, signature: string) => call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature }),
+      pause: () => call<SafetyChangeResponse>("POST", "/safety/changes", { change: { kind: "pause", on: true } }),
+      exitKit: () => call<ExitKitResponse>("POST", "/safety/exit-kit"),
+    } satisfies SafetyApi,
 
     /** The x402 marketplace and the Agent wallet page (on the active network). */
     marketplace: {
@@ -481,6 +519,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     },
 
     ...intelligenceApi(call),
+    ...everydayApi(call),
   };
 }
 

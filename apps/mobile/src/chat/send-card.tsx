@@ -25,12 +25,16 @@ import { SendReview } from "@/send/send-review";
 import { SendStatus } from "@/send/send-status";
 import { isOpen, useSend, type SendController } from "@/send/use-send";
 
+import { useResumeWhenFixed } from "@/intents/use-resume";
+import { ShareReceiptButton } from "@/receipt/share-receipt";
+
 import { AgentCard } from "./card";
 
 const AVATAR = 36;
 
 export function SendCard({ output }: { output: ProposeSendOutput }) {
   const { t } = useT();
+  const router = useRouter();
   const money = useMoney();
   const controller = useSend(output.intent);
   const approveLabel = useApproveLabel();
@@ -56,12 +60,16 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   const eyebrow = `${t("send.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
   const readyInside = !intent.blocking && intent.state === "ready_for_approval" && intent.route === "allowance";
-  const amountLine = intent.draft ? money(intent.draft.asset, intent.draft.amount) : "";
+  const amountLine = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : "";
   React.useEffect(() => {
     if (!fixedHere.current || !readyInside || controller.busy) return;
     fixedHere.current = false;
     void controller.approve(t("send.signPrompt", { amount: amountLine, name }));
   }, [readyInside, intent.version]); // runs when a new version lands
+  // Back from wallet setup, Wallet & limits or adding money: the same send is checked again (sign-in is the
+  // blocker's own). Above the allowance it then waits for the tap; inside it, it was the person's instruction.
+  useResumeWhenFixed(isOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}), { signIn: false });
+  const overLimit = Boolean(intent.blocking?.code.startsWith("OVER_"));
 
   if (!isOpen(intent)) {
     const unsavedAddress = intent.outcome === "sent" && intent.draft?.recipient.via === "address";
@@ -72,10 +80,29 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           compact
           connectionLost={controller.connectionLost}
           actions={
-            unsavedAddress ? (
-              <Button variant="secondary" onPress={() => setSaving(true)}>
-                <Text>{t("send.saveContact")}</Text>
-              </Button>
+            unsavedAddress || (intent.outcome === "sent" && intent.tx && intent.draft) ? (
+              <View className="gap-2">
+                {unsavedAddress ? (
+                  <Button variant="secondary" onPress={() => setSaving(true)}>
+                    <Text>{t("send.saveContact")}</Text>
+                  </Button>
+                ) : null}
+                {intent.outcome === "sent" && intent.tx && intent.draft ? (
+                  <ShareReceiptButton
+                    variant="ghost"
+                    receipt={{
+                      direction: "sent",
+                      amount: money(intent.draft.asset, intent.draft.amount),
+                      counterparty: name,
+                      network: intent.network,
+                      at: intent.completedAt ?? intent.createdAt,
+                      txHash: intent.tx.hash,
+                      explorerUrl: intent.tx.explorerUrl,
+                      note: intent.request.note,
+                    }}
+                  />
+                ) : null}
+              </View>
             ) : undefined
           }
         />
@@ -94,17 +121,22 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   }
 
   const ready = !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
-  const amountText = intent.draft ? money(intent.draft.asset, intent.draft.amount) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
+  const amountText = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (
-        <SendReview intent={intent} compact />
+        <SendReview intent={intent} compact onRevise={(patch) => void controller.revise(patch)} />
       ) : (
         <Text className={cn("text-foreground font-display text-xl font-bold", TEXT_START)}>
           {[amountText, name].filter(Boolean).join(" → ")}
         </Text>
       )}
       <SendBlocker controller={fixing} recheckAfterSignIn={() => void controller.revise({})} />
+      {overLimit ? (
+        <Button variant="secondary" onPress={() => router.push("/limits")}>
+          <Text>{t("resume.seeLimits")}</Text>
+        </Button>
+      ) : null}
       {ready ? (
         <View className="gap-2">
           <Button

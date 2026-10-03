@@ -94,4 +94,7 @@ export const send: Catalog["send"] = {
   sendEmailCode: "ইমেল কোড দিয়ে পাঠান",
   showFullAddress: "পুরো ঠিকানা দেখায়",
   youWrote: "আপনি লিখেছেন “{{words}}”",
+  otherChain: "তাদের ওয়ালেট অন্য চেইনে?",
+  otherChainBridge: "ব্রিজ দিয়ে সেখানে USDC পাঠান: চেইন আর রুট আপনি বেছে নেবেন।",
+  otherChainConvert: "শুধু USDC চেইন পার হয়। আগে আপনার {{asset}} USDC-তে রূপান্তর করুন।",
 };

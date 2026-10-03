@@ -37,6 +37,8 @@ export type ReportView = {
   services: { spent: string; purchases: number };
   automations: { ran: number; skipped: number };
   invoices: { paid: number; amount: Record<string, string> };
+  /** Decimals of every asset above that is not USDC or EURC (6), e.g. an invoice paid in cirBTC (8). */
+  decimals?: Record<string, number> | undefined;
   /** False when the explorer had more history than one report reads. */
   complete: boolean;
 };
