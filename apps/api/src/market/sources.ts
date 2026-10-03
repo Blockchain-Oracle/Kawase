@@ -19,6 +19,8 @@ import {
   OTHER_CHAIN_BALANCES_TTL_MS,
   PRICE_TTL_MS,
   SAFETY_TTL_MS,
+  SPARK_POINTS,
+  SPARK_TTL_MS,
   TOKEN_LIST_TTL_MS,
 } from "@kawase/config";
 import type { Candle, ChartRange } from "@kawase/api-client";
@@ -122,6 +124,11 @@ export type MarketData = {
   pools(kind: "trending" | "new"): Promise<Cached<PoolRow[]>>;
   search(query: string): Promise<PoolRow[]>;
   chart(chainId: number, pool: string, token: string, range: ChartRange): Promise<Candle[]>;
+  /**
+   * A market row's sparkline: hourly closes over 24 h for a pool's token. `load: false` answers only from the cache
+   * (a list never spends the budget on it); the warmer loads one at a time.
+   */
+  spark?(pool: string, token: string, load: boolean): Promise<number[] | null>;
   info(chainId: number, address: string): Promise<TokenInfo | null>;
   security(chainId: number, address: string): Promise<SecurityFacts | null>;
   otherChains(wallet: string): Promise<OtherChainBalance[]>;
@@ -383,6 +390,22 @@ export function liveMarketData(options: { alchemyApiKey?: string | undefined } =
         },
         [],
       );
+    },
+    spark: async (pool, token, load) => {
+      const key = `gt:spark:${lower(pool)}:${lower(token)}`;
+      const held = cache.peek<number[]>(key);
+      if (!load || (held && Date.now() - held.at < SPARK_TTL_MS)) return held?.value ?? null;
+      return cache.value(
+        key,
+        SPARK_TTL_MS,
+        async () => {
+          const body = await geckoGet<{ data: { attributes: { ohlcv_list: [number, number, number, number, number, number][] } } }>(
+            `/networks/${GECKO_NETWORK}/pools/${pool}/ohlcv/hour?aggregate=1&limit=${SPARK_POINTS}&currency=usd&token=${token}`,
+          );
+          return [...body.data.attributes.ohlcv_list].sort((a, b) => a[0] - b[0]).map((candle) => candle[4]);
+        },
+        held?.value ?? [],
+      ).then((values) => (values.length > 1 ? values : null));
     },
     info: async (chainId, address) => {
       if (chainId !== ARC_MAINNET_CHAIN_ID) return null;

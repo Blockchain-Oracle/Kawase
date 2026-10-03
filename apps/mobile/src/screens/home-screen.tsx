@@ -427,6 +427,7 @@ function MarketsPreview() {
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
+  const colors = useThemeColors();
   const { market, loading } = useMarket("trending", "mainnet");
   const rows = (market?.rows ?? []).filter((row) => row.token.status !== "impersonator").slice(0, PREVIEW_ROWS);
   return (
@@ -453,6 +454,7 @@ function MarketsPreview() {
                 change24hPct={row.change24hPct}
                 {...(changeLabel ? { changeLabel } : {})}
                 {...(chip ? { chip } : {})}
+                {...(row.spark ? { spark: { values: row.spark, colors: { up: colors.success, down: colors.destructive } } } : {})}
                 onPress={() => router.push(`/token/${row.token.chainId}/${row.token.address}`)}
               />
             );

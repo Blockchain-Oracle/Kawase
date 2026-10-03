@@ -119,11 +119,33 @@ export class AssetService {
       await this.market.pools("new").catch(() => undefined);
       const listed = await this.market.listed(MAINNET_CHAIN_ID);
       await this.market.markets(MAINNET_CHAIN_ID, [...CANONICAL_TOKENS.mainnet.map((token) => token.address.toLowerCase()), ...listed.keys()]);
+      await this.warmSpark();
     };
     void run().catch((error: unknown) => this.log.warn({ err: error }, "market warm failed"));
     const timer = setInterval(() => void run().catch((error: unknown) => this.log.warn({ err: error }, "market warm failed")), intervalMs);
     timer.unref();
     return () => clearInterval(timer);
+  }
+
+  /**
+   * One market row's sparkline per warm tick (GeckoTerminal's budget is small): the first trending or new pool whose
+   * hourly closes are missing or due, so the Markets lists fill in over a few minutes and stay fresh.
+   */
+  private async warmSpark() {
+    if (!this.market.spark) return;
+    const [trending, fresh] = await Promise.all([this.market.pools("trending").catch(() => null), this.market.pools("new").catch(() => null)]);
+    for (const pool of [...(trending?.value ?? []).slice(0, MARKET_LIST_LIMIT), ...(fresh?.value ?? []).slice(0, MARKET_LIST_LIMIT)]) {
+      const side = this.tradedSide(pool);
+      if (!side.address) continue;
+      if (await this.market.spark(pool.address, side.address, false)) continue;
+      await this.market.spark(pool.address, side.address, true);
+      return;
+    }
+  }
+
+  /** The traded side of a pool: the base token, unless the base is a stable quote (then the other side). */
+  private tradedSide(pool: PoolRow) {
+    return CANONICAL_TOKENS.mainnet.some((token) => token.address.toLowerCase() === pool.base.address.toLowerCase() && token.kind === "dollar") ? pool.quote : pool.base;
   }
 
   // ── Prices ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -647,8 +669,7 @@ export class AssetService {
     const rows: MarketRow[] = [];
     const seen = new Set<string>();
     for (const pool of pools.value) {
-      // The traded side is the base token, unless the base is a stable quote (then the other side).
-      const side = CANONICAL_TOKENS.mainnet.some((token) => token.address.toLowerCase() === pool.base.address.toLowerCase() && token.kind === "dollar") ? pool.quote : pool.base;
+      const side = this.tradedSide(pool);
       if (!side.address || seen.has(side.address.toLowerCase())) continue;
       const token = this.poolToken(side, owners, listed);
       if (segment === "meme" && !isMeme(token)) continue;
@@ -661,7 +682,8 @@ export class AssetService {
         liquidityUsd: pool.liquidityUsd,
         marketCapUsd: pool.marketCapUsd,
         pool: { address: pool.address, dex: pool.dex, createdAt: pool.createdAt },
-        spark: null,
+        // From the cache only: the warmer fills them in (a list never waits on GeckoTerminal for a sparkline).
+        spark: (await this.market.spark?.(pool.address, side.address, false)) ?? null,
       });
       if (rows.length >= MARKET_LIST_LIMIT) break;
     }

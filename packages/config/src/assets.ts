@@ -10,6 +10,9 @@ export const PRICE_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
 export const MARKET_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
 /** Charts change slowly at the ranges a phone shows. */
 export const CHART_TTL_MS = 2 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Market rows' sparklines: 24 hourly closes, refreshed every half hour, one call per warm tick. */
+export const SPARK_POINTS = 24;
+export const SPARK_TTL_MS = 30 * SECONDS_PER_MINUTE * MS_PER_SECOND;
 /** GoPlus safety facts barely move; a day keeps the free tier quiet. */
 export const SAFETY_TTL_MS = 6 * SECONDS_PER_HOUR * MS_PER_SECOND;
 /** Balances on other chains (LI.FI) per wallet. */
