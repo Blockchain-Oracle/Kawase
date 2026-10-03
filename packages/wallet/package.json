@@ -6,12 +6,18 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
+    "@kawase/networks": "workspace:*",
     "viem": "catalog:"
   },
   "devDependencies": {
+    "@kawase/integrations-delegation": "workspace:*",
+    "@metamask/smart-accounts-kit": "catalog:",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:"
   },
   "exports": {

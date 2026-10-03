@@ -31,6 +31,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
+import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
@@ -97,8 +98,8 @@ export function DeleteAccountScreen() {
         toast(result.status === "confirmed" ? t("deleteAccount.revoked") : t("deleteAccount.revokeFailed"));
       }
       await load();
-    } catch {
-      toast(t("deleteAccount.revokeFailed"));
+    } catch (error) {
+      if (!sayIfRefused(error, t)) toast(t("deleteAccount.revokeFailed"));
     } finally {
       setBusy(undefined);
     }

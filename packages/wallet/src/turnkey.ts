@@ -1,6 +1,7 @@
 // Turnkey behind the WalletSigner interface.
 // This file does not import Turnkey's SDK: the app passes in the two functions it gets from
 // `useTurnkey()` (native kit) or the web kit, so the same adapter serves both and stays testable.
+// Before anything is signed, the phone checks it against what is compiled into the app (checks.ts, review M6).
 // Payload encodings follow @turnkey/viem 0.14.43 for messages and authorizations. Typed data is hashed here
 // with viem and signed as a raw digest: signing it through Turnkey's own EIP-712 encoding produced a
 // signature that did not verify against viem's hash for the delegation typed data (spike 16, 2026-09-30).
@@ -18,6 +19,7 @@ import {
 } from "viem";
 import { toAccount } from "viem/accounts";
 
+import { checkAuthorization, checkTypedData } from "./checks";
 import type { ApprovalStrength, WalletSigner } from "./signer";
 
 export type TurnkeyPayloadEncoding =
@@ -66,6 +68,8 @@ export function turnkeySigner(deps: TurnkeySignerDeps): WalletSigner {
       return serializeSignature(await sign(hashMessage(message), "PAYLOAD_ENCODING_HEXADECIMAL"));
     },
     async signTypedData(typedData) {
+      // The digest is signed raw, so what it commits to is checked here first: a delegation must decode (checks.ts).
+      checkTypedData(typedData as TypedDataDefinition, address);
       return serializeSignature(
         await sign(hashTypedData(typedData as TypedDataDefinition), "PAYLOAD_ENCODING_HEXADECIMAL"),
       );
@@ -75,6 +79,8 @@ export function turnkeySigner(deps: TurnkeySignerDeps): WalletSigner {
       return deps.signTransaction({ unsignedTransaction, approval });
     },
     async signAuthorization(authorization) {
+      // Only ever MetaMask's DeleGator, only on Arc: the address and chain ids are compiled into the app (M6).
+      checkAuthorization(authorization);
       const target = authorization.contractAddress ?? authorization.address;
       const parts = await sign(
         JSON.stringify({ address: target, chainId: authorization.chainId, nonce: authorization.nonce }),

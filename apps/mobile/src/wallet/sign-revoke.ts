@@ -5,12 +5,14 @@
 import type { TypedDataDefinition } from "viem";
 
 import type { RevokeRequest, SignedRevokeInput } from "@kawase/api-client";
-import type { WalletSigner } from "@kawase/wallet";
+import { checkRevoke, type WalletSigner } from "@kawase/wallet";
 
 import { api } from "@/session/api";
 import { toSerializable } from "@/wallet/serializable";
 
 export async function signRevoke(signer: WalletSigner, request: RevokeRequest): Promise<SignedRevokeInput> {
+  // A revoke does only that: every call is disableDelegation of this wallet's own grants, decoded here (M6).
+  checkRevoke("relayed" in request ? { typedData: request.typedData } : { transaction: request.transaction }, signer.address);
   if ("relayed" in request) return { requestId: request.requestId, signed: await signer.signTypedData(request.typedData as unknown as TypedDataDefinition) };
   return { requestId: request.requestId, signed: await signer.signTransaction(toSerializable(request.transaction)) };
 }
