@@ -105,7 +105,7 @@ test("margin protection: targets checked against the price, liquidation and Unis
   await refused({ stopLoss: price(mark * UP) }, "stop_loss_wrong_side");
   await refused({ stopLoss: price(mark * FAR_DOWN) }, "stop_loss_past_liquidation");
   const set = (await (await long.call("PUT", `/margin/positions/${row!.id}/protection`, { takeProfit: price(mark * UP), stopLoss: price(mark * DOWN) })).json()) as MarginProtectionResult;
-  assert.equal(set.needsGrant, true);
+  assert.equal(set.needsGrant, true, JSON.stringify(set));
   assert.equal(set.position.takeProfit, parseUnits(price(mark * UP), PRICE_DECIMALS).toString());
   assert.equal(set.position.protection, null);
   console.log(`targets: take-profit $${price(mark * UP)}, stop-loss $${price(mark * DOWN)} accepted (Uniswap can close the whole size now), waiting for the grants; liquidation at $${Number(formatUnits(BigInt(set.position.liquidationPrice ?? "0"), PRICE_DECIMALS)).toFixed(0)}`);
