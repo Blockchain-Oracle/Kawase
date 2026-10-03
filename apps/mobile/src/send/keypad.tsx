@@ -1,10 +1,12 @@
 // The amount keypad (revamp journey 10, the amount ticket): three columns of large keys, the locale's decimal
 // separator on the key, a backspace. The value it builds is always canonical ("12.5": Latin digits, a dot), so the
 // api and the policy never parse a localized number; only the display is localized. Up to the asset's decimals,
-// no leading zeros.
+// no leading zeros. On the web the computer's keyboard types into it too (digits, either separator, Backspace) while
+// its screen is the focused one and no dialog is over it.
+import { useIsFocused } from "expo-router";
 import { Delete } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -74,7 +76,40 @@ function Key({ label, onPress, children }: { label: string; onPress: () => void;
   );
 }
 
+/** The keypad key a physical key stands for, if any. */
+function keyFor(key: string): string | undefined {
+  if (/^\d$/.test(key)) return key;
+  if (key === "." || key === ",") return DECIMAL_KEY;
+  if (key === "Backspace") return BACKSPACE_KEY;
+  return undefined;
+}
+
+/** Web only: the keyboard presses the keypad's keys, unless the person is typing in a field or a dialog is open. */
+function useKeyboardTyping(onKey: (key: string) => void) {
+  const focused = useIsFocused();
+  const latest = React.useRef(onKey);
+  React.useEffect(() => {
+    latest.current = onKey;
+  });
+  React.useEffect(() => {
+    if (Platform.OS !== "web" || !focused) return undefined;
+    const listener = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      const key = keyFor(event.key);
+      if (!key) return;
+      event.preventDefault();
+      latest.current(key);
+    };
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [focused]);
+}
+
 export function Keypad({ onKey, decimal, backspaceLabel }: { onKey: (key: string) => void; decimal: string; backspaceLabel: string }) {
+  useKeyboardTyping(onKey);
   const rows = Array.from({ length: DIGITS.length / KEYS_PER_ROW }, (_, index) =>
     DIGITS.slice(index * KEYS_PER_ROW, (index + 1) * KEYS_PER_ROW),
   );

@@ -102,8 +102,11 @@ export type AgentContext = {
   capabilities(): Promise<CapabilityLine[]>;
   claimTestMoney(): Promise<FaucetResult>;
   authority(): Promise<AuthoritySummary>;
-  /** Drafts a send from the person's words; code resolves the recipient and runs every check (K2). */
-  proposeSend(input: SendRequest): Promise<ProposeSendOutput>;
+  /**
+   * Drafts a send from the person's words; code resolves the recipient and runs every check (K2). `autoSend`: whether
+   * one inside the allowance may go without their tap (H2: only for a recipient they named, nothing outside read since).
+   */
+  proposeSend(input: SendRequest, options: { autoSend: boolean }): Promise<ProposeSendOutput>;
   /** Drafts a swap between USDC and EURC with a fresh quote; the person approves on the card (always Face ID). */
   proposeSwap(input: SwapRequest): Promise<ProposeSwapOutput>;
   /** Drafts a bridge of USDC from Arc to the person's own address on another chain; approved on the card. */

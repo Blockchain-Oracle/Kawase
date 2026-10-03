@@ -5,13 +5,16 @@
 // keyboard instead of being covered by it. Kawase chrome over
 // @gorhom/bottom-sheet's modal, which needs `BottomSheetModalProvider` above it (mounted inside LocaleProvider so
 // the reading direction applies). Gorhom's own views take hex colours, not class names, so the theme is passed in.
+// On a desktop window (Stage 13, `useWide`) the same sheet is a centred dialog over the scrim: same header, same
+// content, closed by Escape, the scrim, or the close button.
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView, BottomSheetTextInput, type BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
-import { ChevronLeft } from "lucide-react-native";
+import { useWide } from "@kawase/ui-native/lib/wide";
+import { ChevronLeft, X } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Pressable, TextInput, View, useWindowDimensions } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, TextInput, View, useWindowDimensions } from "react-native";
 import { withUniwind } from "uniwind";
 
 type SheetColors = {
@@ -54,7 +57,82 @@ const BACK_HIT_SLOP = 8;
 /** A sheet never grows past this share of the window; longer content scrolls inside it (review R13). */
 const MAX_HEIGHT_SHARE = 0.9;
 
-function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset = 0, onBack, backLabel, headerEnd, children, className }: SheetProps) {
+/** The dialog's width on desktop, and its share of the window's height. */
+const DIALOG_WIDTH = 520;
+const DIALOG_HEIGHT_SHARE = 0.85;
+
+function Sheet(props: SheetProps) {
+  const wide = useWide();
+  return wide ? <DialogSheet {...props} /> : <BottomSheet {...props} />;
+}
+
+/** The header both forms share: back chevron, the end control, title and subtitle. */
+function SheetHeader({ title, subtitle, onBack, backLabel, headerEnd, closeLabel, onClose }: Pick<SheetProps, "title" | "subtitle" | "onBack" | "backLabel" | "headerEnd"> & { closeLabel?: string; onClose?: () => void }) {
+  if (!title && !onBack && !headerEnd && !onClose) return null;
+  return (
+    <View className="gap-1 px-5 pb-4 pt-1">
+      {onBack || headerEnd || onClose ? (
+        <View className="min-h-10 flex-row items-center justify-between gap-2 pb-2">
+          {onBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={backLabel}
+              hitSlop={BACK_HIT_SLOP}
+              onPress={onBack}
+              className="bg-muted active:bg-secondary items-center justify-center rounded-full"
+              style={{ width: BACK_SIZE, height: BACK_SIZE }}
+            >
+              <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          <View className="flex-row items-center gap-2">
+            {headerEnd}
+            {onClose ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={closeLabel}
+                hitSlop={BACK_HIT_SLOP}
+                onPress={onClose}
+                className={cn("bg-muted active:bg-secondary items-center justify-center rounded-full", Platform.select({ web: "cursor-pointer hover:bg-secondary" }))}
+                style={{ width: BACK_SIZE, height: BACK_SIZE }}
+              >
+                <Icon as={X} className="size-5" />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+      {title ? <Text className={cn("font-display text-foreground text-2xl font-bold", TEXT_START)}>{title}</Text> : null}
+      {subtitle ? <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{subtitle}</Text> : null}
+    </View>
+  );
+}
+
+/** Desktop: a centred dialog over the scrim (Escape, the scrim and the close button dismiss it). */
+function DialogSheet({ open, onClose, title, subtitle, colors, closeLabel, onBack, backLabel, headerEnd, children, className }: SheetProps) {
+  const { height } = useWindowDimensions();
+  return (
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+      <View className="flex-1 items-center justify-center px-6">
+        <Pressable accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose} className="absolute inset-0" style={{ backgroundColor: colors.scrim }} />
+        <View
+          accessibilityViewIsModal
+          className="border-border w-full overflow-hidden border"
+          style={{ maxWidth: DIALOG_WIDTH, maxHeight: Math.round(height * DIALOG_HEIGHT_SHARE), backgroundColor: colors.background, borderRadius: RADIUS }}
+        >
+          <ScrollView contentContainerStyle={{ paddingTop: CONTENT_BOTTOM, paddingBottom: CONTENT_BOTTOM }} keyboardShouldPersistTaps="handled">
+            <SheetHeader title={title} subtitle={subtitle} onBack={onBack} backLabel={backLabel} headerEnd={headerEnd} closeLabel={closeLabel} onClose={onClose} />
+            <View className={cn("px-5", className)}>{children}</View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function BottomSheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset = 0, onBack, backLabel, headerEnd, children, className }: SheetProps) {
   const ref = React.useRef<BottomSheetModal>(null);
   const { height: windowHeight } = useWindowDimensions();
 
@@ -108,31 +186,7 @@ function Sheet({ open, onClose, title, subtitle, colors, closeLabel, bottomInset
       handleIndicatorStyle={{ backgroundColor: colors.handle, width: HANDLE_WIDTH, height: HANDLE_HEIGHT }}
     >
       <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset + CONTENT_BOTTOM }} keyboardShouldPersistTaps="handled">
-        {title || onBack || headerEnd ? (
-          <View className="gap-1 px-5 pb-4 pt-1">
-            {onBack || headerEnd ? (
-              <View className="min-h-10 flex-row items-center justify-between pb-2">
-                {onBack ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={backLabel}
-                    hitSlop={BACK_HIT_SLOP}
-                    onPress={onBack}
-                    className="bg-muted active:bg-secondary items-center justify-center rounded-full"
-                    style={{ width: BACK_SIZE, height: BACK_SIZE }}
-                  >
-                    <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-                  </Pressable>
-                ) : (
-                  <View />
-                )}
-                {headerEnd}
-              </View>
-            ) : null}
-            {title ? <Text className={cn("font-display text-foreground text-2xl font-bold", TEXT_START)}>{title}</Text> : null}
-            {subtitle ? <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{subtitle}</Text> : null}
-          </View>
-        ) : null}
+        <SheetHeader title={title} subtitle={subtitle} onBack={onBack} backLabel={backLabel} headerEnd={headerEnd} />
         <View className={cn("px-5", className)}>{children}</View>
       </BottomSheetScrollView>
     </BottomSheetModal>

@@ -47,6 +47,8 @@ export const send: Catalog["send"] = {
   allowanceUsdcOnlyAndroid: "Tu límite diario solo cubre USDC: necesita tu huella o el bloqueo de pantalla",
   allowanceLeft: "Quedan {{amount}} de {{total}} hoy",
   sendNow: "Enviar",
+  heldNotTyped: "No nombraste a este destinatario en tu mensaje. Comprueba a quién va antes de enviar.",
+  heldOutside: "Kawase leyó contenido externo (un vendedor, un token o una nota) después de tu mensaje, así que esto espera por ti.",
   sendFaceId: "Enviar con Face ID",
   signPrompt: "Enviar {{amount}} a {{name}}",
   sending: "Enviando…",

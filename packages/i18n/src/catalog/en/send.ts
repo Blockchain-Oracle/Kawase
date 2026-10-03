@@ -45,6 +45,8 @@ export const send = {
   allowanceUsdcOnlyAndroid: "Your allowance covers USDC only — needs your fingerprint or screen lock",
   allowanceLeft: "{{amount}} of {{total}} left today",
   sendNow: "Send",
+  heldNotTyped: "You didn't name this recipient in your message. Check who it goes to before you send.",
+  heldOutside: "Kawase read content from outside (a seller, a token or a memo) after your message, so this waits for you.",
   sendFaceId: "Send with Face ID",
   signPrompt: "Send {{amount}} to {{name}}",
   sending: "Sending…",

@@ -32,6 +32,18 @@ const BPS = 10_000n;
 const AMOUNT_MAX_DIGITS = 12;
 const EVENTS_KEPT = 20;
 const CIRCLE_KEY_URL = "https://api.circle.com/v2/notifications/publicKey/";
+/** A key id worth asking Circle about: short and URL-safe (anything else is refused without a call). */
+const KEY_ID = /^[A-Za-z0-9-]{1,64}$/;
+/**
+ * Asking Circle for a key we don't hold spends the live API key, so a webhook with a made-up key id must not be a
+ * lever: at most this many lookups of new ids per window across everyone, and an id Circle didn't know is not asked
+ * again for a while (both bounded in memory).
+ */
+const KEY_LOOKUPS_PER_WINDOW = 6;
+const KEY_LOOKUP_WINDOW_MS = 60_000;
+const UNKNOWN_KEY_FORGET_MS = 3_600_000;
+const UNKNOWN_KEYS_KEPT = 1_000;
+const KEY_FETCH_TIMEOUT_MS = 5_000;
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 /** Public Arc RPC: at most 9,999 blocks per getLogs. */
 const LOG_BLOCKS_MAX = 9_000n;
@@ -49,6 +61,9 @@ const decimal = (value: string | null | undefined) => (value && /^\d+(\.\d{1,2})
 
 export class OnrampService {
   private readonly publicKeys = new Map<string, string>();
+  /** Key ids Circle answered without a key, and when. */
+  private readonly unknownKeys = new Map<string, number>();
+  private keyLookups = { windowStart: 0, count: 0 };
   private agentWallets: AgentWalletPort | undefined;
 
   constructor(
@@ -256,14 +271,38 @@ export class OnrampService {
     return true;
   }
 
+  /** Whether Circle may be asked about a key id we don't hold yet (see KEY_LOOKUPS_PER_WINDOW). */
+  private mayLookUp(keyId: string) {
+    const now = Date.now();
+    const forgotten = this.unknownKeys.get(keyId);
+    if (forgotten !== undefined && now - forgotten < UNKNOWN_KEY_FORGET_MS) return false;
+    if (now - this.keyLookups.windowStart >= KEY_LOOKUP_WINDOW_MS) this.keyLookups = { windowStart: now, count: 0 };
+    if (this.keyLookups.count >= KEY_LOOKUPS_PER_WINDOW) return false;
+    this.keyLookups.count++;
+    return true;
+  }
+
+  private rememberUnknown(keyId: string) {
+    if (this.unknownKeys.size >= UNKNOWN_KEYS_KEPT) this.unknownKeys.delete(this.unknownKeys.keys().next().value!);
+    this.unknownKeys.set(keyId, Date.now());
+  }
+
   private async verified(body: string, signature: string, keyId: string) {
     try {
       let key = this.publicKeys.get(keyId);
       if (!key) {
-        if (!this.circleApiKey) return false;
-        const response = await fetch(`${CIRCLE_KEY_URL}${encodeURIComponent(keyId)}`, { headers: { authorization: `Bearer ${this.circleApiKey}` } });
+        if (!this.circleApiKey || !KEY_ID.test(keyId)) return false;
+        if (!this.mayLookUp(keyId)) {
+          this.log.warn({ keyId }, "onramp webhook key lookup refused (unknown or over the rate)");
+          return false;
+        }
+        const response = await fetch(`${CIRCLE_KEY_URL}${encodeURIComponent(keyId)}`, { headers: { authorization: `Bearer ${this.circleApiKey}` }, signal: AbortSignal.timeout(KEY_FETCH_TIMEOUT_MS) });
         key = ((await response.json()) as { data?: { publicKey?: string } }).data?.publicKey;
-        if (!key) return false;
+        if (!key) {
+          // Circle doesn't know it (a 404) — not asked again for a while. A 5xx or 429 is Circle's trouble, not the id's.
+          if (response.status < HTTP.internal && response.status !== HTTP.tooManyRequests) this.rememberUnknown(keyId);
+          return false;
+        }
         this.publicKeys.set(keyId, key);
       }
       const publicKey = createPublicKey({ key: Buffer.from(key, "base64"), format: "der", type: "spki" });

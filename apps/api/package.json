@@ -12,6 +12,8 @@
     "test": "tsx --test --test-concurrency=1 test/*.test.ts"
   },
   "devDependencies": {
+    "@kawase/wallet": "workspace:*",
+    "@turnkey/crypto": "2.13.2",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   },

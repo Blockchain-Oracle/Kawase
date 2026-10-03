@@ -1,7 +1,8 @@
 // Take-profit and stop-loss on the position page (trade.md "Long / short"): two rows of targets as steps from the
 // price now (a take-profit past it, a stop-loss before it; never past liquidation), what is saved, Save, and — the first
-// time — one button to let Kawase close positions for the person (the grants, one Face ID). Kawase then watches; the
-// row says "Watching", "Closing…" or that it could not close at a fair price. The api checks every target.
+// time, or once the position outgrew or outlived them — one button to let Kawase close this position for the person
+// (its grants, one Face ID). Kawase then watches; the row says "Watching", "Closing…" or that it could not close at a
+// fair price. The api checks every target.
 import { ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -31,7 +32,7 @@ export function ProtectionCard({ position, onSaved }: { position: MarginPosition
   const { t } = useT();
   const { locale } = useLocale();
   const format = useMarginFormat();
-  const protection = useProtection();
+  const protection = useProtection(position.id);
   const mark = usd(position.markPrice)!;
   const liquidation = usd(position.liquidationPrice);
   const long = position.side === "long";
@@ -56,7 +57,7 @@ export function ProtectionCard({ position, onSaved }: { position: MarginPosition
 
   const save = async () => {
     setRefusal(undefined);
-    const result = await protection.protect(position.id, {
+    const result = await protection.protect({
       takeProfit: chosen.takeProfit === null ? null : chosen.takeProfit.toFixed(CENTS),
       stopLoss: chosen.stopLoss === null ? null : chosen.stopLoss.toFixed(CENTS),
     });

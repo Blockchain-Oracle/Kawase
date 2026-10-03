@@ -7,6 +7,7 @@ import { Sparkline } from "@kawase/ui-native/components/area-chart";
 import { TokenMark, type TokenLike } from "@kawase/ui-native/components/token-mark";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
+import { WEB_PRESSABLE } from "@kawase/ui-native/lib/wide";
 import { Pressable, View } from "react-native";
 
 type AssetRowProps = {
@@ -44,7 +45,7 @@ function AssetRow({ token, amount, value, change24hPct, changeLabel, chip, chain
       accessibilityState={{ disabled: Boolean(unavailable), selected: selected ?? false }}
       onPress={onPress}
       disabled={!onPress}
-      className={cn("flex-row items-center gap-3 px-4 py-3", onPress && "active:bg-muted", selected && "bg-muted", unavailable && "opacity-60", className)}
+      className={cn("flex-row items-center gap-3 px-4 py-3", onPress && cn("active:bg-muted", WEB_PRESSABLE), selected && "bg-muted", unavailable && "opacity-60", className)}
       style={{ minHeight: ROW_MIN_HEIGHT }}
     >
       <TokenMark token={token} {...(chainBadge ? { chainBadge } : {})} />

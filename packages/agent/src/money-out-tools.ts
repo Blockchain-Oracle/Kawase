@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 import type { AgentContext } from "./context";
+import { destinationAddress } from "./trust";
 
 const TEXT_MAX = 80;
 const LINES_MAX = 10;
@@ -33,7 +34,13 @@ export function moneyOutTools(context: AgentContext) {
         chain: z.enum(CHAINS).optional().describe("Their own wallet's chain, when they named one"),
         address: z.string().regex(/^0x[0-9a-fA-F]{40}$/).optional().describe("Only an address they gave"),
       }),
-      execute: async (input) => (context.proposeWithdraw ? context.proposeWithdraw(input) : UNAVAILABLE),
+      execute: async (input) => {
+        if (!context.proposeWithdraw) return UNAVAILABLE;
+        // K2 (M8): an address must be the person's own words (or their own address); a saved place goes by its name
+        // and Kawase fills in its address, so the model never needs to carry one.
+        if (input.address) await destinationAddress(context, input.address, "If it is one of their saved places, pass its name as place; Kawase fills in the address.");
+        return context.proposeWithdraw(input);
+      },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
   };

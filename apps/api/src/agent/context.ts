@@ -140,7 +140,7 @@ export function buildAgentContext(input: {
     ...moneyOutContext({ user, withdraw: input.withdraw }),
     ...businessContext({ user, db, wallets, invoices: input.invoices, history: input.history, business: input.business }),
 
-    async proposeSend(request) {
+    async proposeSend(request, { autoSend }) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
       // can never be approved by mistake.
       await db
@@ -158,7 +158,9 @@ export function buildAgentContext(input: {
       // By voice it always waits for the tap on its card: a microphone can hear a request the person did not make
       // (seen on 2026-10-01: speech in the room became "10 usdc"), and a spoken yes never moves money.
       // Guard (X11) confirms everything, chat too: the card waits for the person's tap.
-      if (!intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
+      // So does a send the tool did not clear (H2): a recipient the person did not name, outside text read since their
+      // message, or a scanned code.
+      if (autoSend && !intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
         const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
           log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
           return undefined;

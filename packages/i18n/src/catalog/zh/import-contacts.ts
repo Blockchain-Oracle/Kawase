@@ -13,6 +13,7 @@ export const importContacts: Catalog["importContacts"] = {
   noneOnKawase: "他们还没人在用 Kawase。",
   add: "添加",
   addFailed: "无法添加 {{name}}。",
+  quotaReached: "你今天已经查过很多联系人了，明天再试吧。",
   others: "邀请加入 Kawase",
   invite: "邀请 {{name}}",
   inviteMessage: "嗨 {{name}}，我用 Kawase 在 Arc 上收付美元和欧元。一起来吧：{{link}}",

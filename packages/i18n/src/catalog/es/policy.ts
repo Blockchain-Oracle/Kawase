@@ -34,6 +34,7 @@ export const policy: Catalog["policy"] = {
   GAS_RELAYED: "Tu billetera no cubre la comisión de red, así que Kawase la paga en este envío",
   GAS_RELAY_LIMIT: "Kawase ya pagó tus comisiones de red todas las veces que puede hoy. Deja unos {{needed}} para la comisión.",
   GAS_RELAY_BUDGET_SPENT: "Las comisiones de red gratis de Kawase se agotaron por hoy. Deja unos {{needed}} para la comisión.",
+  FEE_PAID_BY_KAWASE: "Comisión pagada por Kawase: tu billetera no cubre esta comisión de red",
   SCHEDULE_INVALID: "Ese horario no se puede cumplir (zona horaria o día desconocidos).",
   AUTO_SAVE_EXISTS:
     "El ahorro automático ya está activado. Desactívalo primero en Automatizaciones y luego crea el nuevo.",

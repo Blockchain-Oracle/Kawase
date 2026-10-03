@@ -6,6 +6,7 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Separator } from "@kawase/ui-native/components/ui/separator";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
+import { WEB_PRESSABLE } from "@kawase/ui-native/lib/wide";
 import { Check, ChevronRight } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -57,7 +58,7 @@ function ListRow({
       disabled={disabled || !onPress}
       className={cn(
         "flex-row items-center gap-3 px-4 py-3",
-        onPress && "active:bg-muted",
+        onPress && !disabled && cn("active:bg-muted", WEB_PRESSABLE),
         standalone && "bg-card border-border rounded-2xl border",
         disabled && "opacity-50",
         className,

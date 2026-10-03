@@ -19,6 +19,10 @@ export const notify = {
   protectClosedBody: "{{amount}} came back to your wallet.",
   protectFailedTitle: "Couldn't close {{position}}",
   protectFailedBody: "The price Kawase could get wasn't fair enough to sell. Check it now.",
+  protectHeldTitle: "Target hit: {{position}} is still open",
+  protectPracticeBody: "Practice mode is on, so Kawase didn't close it. Nothing real moved.",
+  protectPausedBody:
+    "Kawase is paused, so it didn't take the profit. It will once you resume, if the price is still there.",
   side_long: "long",
   side_short: "short",
   needsYouTitle: "Needs you",

@@ -34,6 +34,7 @@ export const policy: Catalog["policy"] = {
   GAS_RELAYED: "Votre portefeuille ne couvre pas les frais de réseau, Kawase les paie pour cet envoi",
   GAS_RELAY_LIMIT: "Kawase a payé vos frais de réseau autant de fois qu'il le peut aujourd'hui. Gardez environ {{needed}} pour les frais.",
   GAS_RELAY_BUDGET_SPENT: "Les frais de réseau offerts par Kawase sont épuisés pour aujourd'hui. Gardez environ {{needed}} pour les frais.",
+  FEE_PAID_BY_KAWASE: "Frais payés par Kawase : votre portefeuille ne couvre pas ces frais de réseau",
   SCHEDULE_INVALID: "Ce calendrier ne peut pas être tenu (fuseau horaire ou jour inconnu).",
   AUTO_SAVE_EXISTS:
     "L’épargne auto est déjà activée. Désactivez-la d’abord dans Automatisations, puis créez la nouvelle.",
