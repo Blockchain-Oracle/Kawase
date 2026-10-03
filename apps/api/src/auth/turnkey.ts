@@ -7,6 +7,7 @@ import { TurnkeyClient } from "@turnkey/http";
 export type TurnkeyUser = {
   userId: string;
   userName: string;
+  /** Only an email the user proved: the one set at sign-up, or a later change that carried an OTP verification token. */
   email: string | undefined;
   /** Compressed public keys of the user's live API keys (sessions are API keys with an expiry). */
   sessionPublicKeys: string[];
@@ -22,6 +23,23 @@ const MS_PER_SECOND = 1000;
 /** A session from the Auth Proxy is a "login" credential; an API key made in the dashboard is a P-256 key. Both stamp with P-256. */
 const P256_CREDENTIALS = new Set(["CREDENTIAL_TYPE_LOGIN", "CREDENTIAL_TYPE_API_KEY_P256"]);
 const ETHEREUM = "ADDRESS_FORMAT_ETHEREUM";
+const UPDATE_USER_EMAIL = "ACTIVITY_TYPE_UPDATE_USER_EMAIL";
+
+type EmailChange = { at: number; change: { userId: string; userEmail: string; verificationToken?: string } | undefined };
+
+/**
+ * A user can set their own email with UPDATE_USER_EMAIL and no verificationToken (it is optional), so the field
+ * alone could claim someone else's address: their contact lookups, or a "recovery required" lock on the real
+ * owner. The user's latest completed change decides; with none, the email is the one the Auth Proxy set at
+ * sign-up after the code or the OAuth check.
+ */
+export function emailIsProved(changes: EmailChange[], userId: string, email: string): boolean {
+  const latest = changes
+    .filter((entry) => entry.change?.userId === userId)
+    .sort((a, b) => b.at - a.at)[0]?.change;
+  if (!latest) return true;
+  return Boolean(latest.verificationToken) && latest.userEmail.toLowerCase() === email.toLowerCase();
+}
 
 export function createTurnkeyReader(config: {
   baseUrl: string;
@@ -32,6 +50,21 @@ export function createTurnkeyReader(config: {
     { baseUrl: config.baseUrl },
     new ApiKeyStamper({ apiPublicKey: config.apiPublicKey, apiPrivateKey: config.apiPrivateKey }),
   );
+
+  const provedEmail = async (organizationId: string, userId: string, email: string) => {
+    const { activities } = await client.getActivities({
+      organizationId,
+      filterByType: [UPDATE_USER_EMAIL],
+      filterByStatus: ["ACTIVITY_STATUS_COMPLETED"],
+      paginationOptions: { limit: "100" },
+    });
+    return emailIsProved(
+      activities.map((activity) => ({ at: Number(activity.createdAt.seconds), change: activity.intent.updateUserEmailIntent })),
+      userId,
+      email,
+    );
+  };
+
   return {
     async getUser(organizationId, userId) {
       try {
@@ -45,7 +78,8 @@ export function createTurnkeyReader(config: {
             return createdMs + Number(key.expirationSeconds) * MS_PER_SECOND > now;
           })
           .map((key) => key.credential.publicKey);
-        return { userId: user.userId, userName: user.userName, email: user.userEmail, sessionPublicKeys };
+        const email = user.userEmail && (await provedEmail(organizationId, user.userId, user.userEmail)) ? user.userEmail : undefined;
+        return { userId: user.userId, userName: user.userName, email, sessionPublicKeys };
       } catch (error) {
         if (error instanceof Error && /not found|does not exist|NOT_FOUND/i.test(error.message)) return undefined;
         throw error;

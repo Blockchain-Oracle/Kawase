@@ -37,7 +37,7 @@ Read-only review at `19b65f9` (main moved to `27ab8bc` during it). Production ha
 
 - **SSRF through x402 catalog listings** (`discovery.ts:54-79` accepts `http:`, private IPs, host templates; `pay.ts:86` fetches) — B2: require https, reject templates, block private addresses at connect time.
 - **Rate limits keyed on the first `X-Forwarded-For`** — checked by the lead 10-03: Traefik replaces the spoofed header with the real peer IP, so not spoofable. The bucket map never shrank; fixed by sweeping idle buckets (`rate-limit.ts`).
-- **Turnkey email trust** — if Turnkey allows an unverified email change, discovery returns the attacker's handle. Verify in Turnkey docs.
+- **Turnkey email trust** — **confirmed and fixed by the lead 10-03.** Turnkey's `UPDATE_USER_EMAIL` takes `verificationToken` as optional, so a user could set any email on their own sub-org; Kawase copied it on every sign-in and in `syncEmail`. `TurnkeyReader.getUser` now returns an email only if it was never changed since the Auth Proxy set it at sign-up, or if the user's latest completed change carried a verification token (`emailIsProved`, `apps/api/src/auth/turnkey.ts`; unit test `turnkey-email.test.ts`; checked read-only against three real sub-orgs).
 - **Whether models follow the injection in H2** — code path confirmed, model behaviour untested (OpenAI credit is out).
 
 ## What looks solid
