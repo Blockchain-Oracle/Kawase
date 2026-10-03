@@ -53,6 +53,7 @@ import { PASSKEY_RP_ID } from "@/wallet/config";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 import { FeeReserveChip } from "@/wallet/fee-reserve";
+import { sayIfRefused } from "@/wallet/refused";
 
 import { AgentCard } from "./card";
 
@@ -189,9 +190,9 @@ export function PayoutProposalCard({ output }: { output: { proposal: PayoutPropo
     if (yes !== "approved") return;
     setBusy(true);
     try {
-      setPayout(await signAndSubmitPayout(signer, payout.id));
+      setPayout(await signAndSubmitPayout(signer, payout));
     } catch (error) {
-      toast(payoutFailedText(error, t, locale));
+      if (!sayIfRefused(error, t)) toast(payoutFailedText(error, t, locale));
     } finally {
       setBusy(false);
     }

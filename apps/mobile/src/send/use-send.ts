@@ -14,6 +14,7 @@ import { toast } from "sonner-native";
 import type { TypedDataDefinition } from "viem";
 
 import { ApiError, hasBrake, type SendIntent, type SendRequest } from "@kawase/api-client";
+import { SigningRefused, arcStablecoin, checkTransferAuthorization } from "@kawase/wallet";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -22,6 +23,7 @@ import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { sayIfProofNeeded } from "@/session/device-proof";
+import { sayIfRefused } from "@/wallet/refused";
 
 const POLL_MS = 2_000;
 const MOVING: ReadonlySet<SendIntent["state"]> = new Set(["approved", "executing", "unknown_outcome"]);
@@ -111,7 +113,9 @@ export function useSend(initial?: SendIntent | undefined): SendController {
     try {
       return await work();
     } catch (error) {
-      if (error instanceof ApiError) {
+      if (sayIfRefused(error, t)) {
+        // The phone would not sign what it was handed: nothing was signed or sent.
+      } else if (error instanceof ApiError) {
         if (!sayIfProofNeeded(error, t)) toast(error.code === "intent_stale" || error.code === "intent_final" ? t("send.changed") : t("send.failed"));
       } else {
         // No answer: the request may have been taken. Read the send again instead of saying it failed.
@@ -157,6 +161,13 @@ export function useSend(initial?: SendIntent | undefined): SendController {
       }
       // Gas-free (the wallet cannot pay the fee): one EIP-3009 authorization instead; Kawase's relayer sends it.
       const typed = answer.status === "sign_typed";
+      // A gas-free send's authorization moves exactly the card's amount of its token to its recipient (M6).
+      if (answer.status === "sign_typed") {
+        const draft = answer.intent.draft;
+        const token = draft?.token?.address ?? (draft ? arcStablecoin(answer.intent.network, draft.asset) : undefined);
+        if (!draft || !token) throw new SigningRefused("a gas-free send without its card");
+        checkTransferAuthorization(answer.typedData, { token, to: draft.recipient.address, amount: draft.amount }, signer.address);
+      }
       const signed = typed ? await signer.signTypedData(answer.typedData as unknown as TypedDataDefinition) : await signer.signTransaction(toSerializable(answer.transaction));
       const submitted = await api.sends.signature(intent.id, answer.approvalId, signed, typed ? "typed" : undefined);
       if (submitted.status === "changed") toast(t("send.changed"));
