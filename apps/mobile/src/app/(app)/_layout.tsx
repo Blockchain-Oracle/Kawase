@@ -14,10 +14,11 @@ import type * as React from "react";
 import { View } from "react-native";
 
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
+import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
-import { useWide, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
+import { useWide, WideFrameContext, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
 import { DesktopSidebar } from "@/dock/desktop-sidebar";
@@ -86,13 +87,20 @@ export default function AppLayout() {
  * breakpoint keeps its navigation.
  */
 function DesktopFrame({ children }: { children: React.ReactNode }) {
+  const { t } = useT();
   const wide = useWide();
   const overlay = useOverlay();
+  const { user } = useSession();
+  const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   return (
     <View className="bg-background flex-1">
       <View className="flex-1 flex-row" aria-hidden={wide && overlay.current !== null}>
         {wide ? <DesktopSidebar /> : null}
-        <View className="flex-1">{children}</View>
+        <View className="flex-1">
+          {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
+          {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
+          <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>
+        </View>
       </View>
       {wide ? <OverlayHost /> : null}
     </View>
