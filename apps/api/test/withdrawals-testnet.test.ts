@@ -211,7 +211,8 @@ test("a single step goes as its own intent, and Finish it returns the same inten
 test("convert + bridge burn go as one transaction on Arc; the delivery on Base Sepolia is the tracker step", { skip: !live, timeout: 1_500_000 }, async () => {
   const base = createPublicClient({ chain: baseSepolia, transport: http() });
   const otherWallet = privateKeyToAccount(generatePrivateKey()).address;
-  await fund([[network.addresses.eurc, "1"]]);
+  // Arc's gas is USDC, paid before the batch runs: the conversion's USDC cannot pay for it.
+  await fund([[network.addresses.usdc, "0.1"], [network.addresses.eurc, "1"]]);
   const input = { assets: [{ asset: "EURC", as: "cash" }], chain: "base", address: otherWallet };
   const started = await call("POST", "/withdrawals", input);
   await expectStatus(started, 201, "start");
