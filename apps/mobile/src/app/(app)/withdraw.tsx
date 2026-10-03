@@ -10,7 +10,7 @@ import { WithdrawScreen } from "@/screens/withdraw-screen";
  * `chain=base` · `address=0x…`.
  */
 export default function WithdrawRoute() {
-  const params = useLocalSearchParams<{ assets?: string; everything?: string; place?: string; exchange?: string; chain?: string; address?: string }>();
+  const params = useLocalSearchParams<{ assets?: string; everything?: string; place?: string; exchange?: string; chain?: string; address?: string; resume?: string }>();
   const assets: WithdrawAssetInput[] = (params.assets ?? "")
     .split(",")
     .filter(Boolean)
@@ -25,6 +25,7 @@ export default function WithdrawRoute() {
         assets,
         everything: params.everything === "1",
         destination: { place: params.place, exchange: params.exchange, chain: params.chain, address: params.address },
+        resume: params.resume,
       }}
     />
   );

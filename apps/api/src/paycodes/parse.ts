@@ -15,6 +15,9 @@ export type ParsedCode =
       amount: string | null;
       /** An ERC-20 amount whose token's decimals were not known when parsing, as written (base units). */
       rawAmount?: string | undefined;
+      /** A reference the payment should carry on chain (Arc Memo): `memo`/`reference` text and/or a bytes32 `memoId`. */
+      memo?: string | undefined;
+      memoId?: string | undefined;
     }
   | { kind: "request"; token: string }
   | { kind: "unknown" };
@@ -24,6 +27,19 @@ const HEX_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const DECIMAL = /^\d+(\.\d+)?([eE][+-]?\d+)?$/;
 const NATIVE_DECIMALS = 18;
 const MAX_FRACTION = 18;
+const MEMO_MAX = 64;
+const MEMO_TEXT = /^[\x20-\x7E]+$/;
+const MEMO_ID = /^0x[0-9a-fA-F]{64}$/;
+
+/** The reference an EIP-681 link carries for Arc's Memo contract: printable text (≤ 64) and/or a bytes32 id. */
+function memoParams(params: URLSearchParams): { memo?: string; memoId?: string } {
+  const text = (params.get("memo") ?? params.get("reference") ?? "").trim();
+  const id = params.get("memoId") ?? params.get("memoid") ?? "";
+  return {
+    ...(text && text.length <= MEMO_MAX && MEMO_TEXT.test(text) ? { memo: text } : {}),
+    ...(MEMO_ID.test(id) ? { memoId: id.toLowerCase() } : {}),
+  };
+}
 
 /** "1e6", "2.5e6", "1000000" → an exact decimal string of base units divided by 10^decimals (no float rounding). */
 export function scaledAmount(raw: string, decimals: number): string | null {
@@ -66,13 +82,14 @@ function parseEip681(code: string, decimalsOf: (token: string) => number | null)
       native: false,
       amount: raw && decimals !== null ? scaledAmount(raw, decimals) : null,
       ...(raw && decimals === null ? { rawAmount: raw } : {}),
+      ...memoParams(params),
     };
   }
   if (fn) return { kind: "unknown" };
   const recipient = checksum(target!);
   if (!recipient) return { kind: "unknown" };
   const value = params.get("value");
-  return { kind: "address", address: recipient, chainId, token: null, native: true, amount: value ? scaledAmount(value, NATIVE_DECIMALS) : null };
+  return { kind: "address", address: recipient, chainId, token: null, native: true, amount: value ? scaledAmount(value, NATIVE_DECIMALS) : null, ...memoParams(params) };
 }
 
 /**

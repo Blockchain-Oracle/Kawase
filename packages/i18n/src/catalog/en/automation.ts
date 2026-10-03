@@ -150,4 +150,7 @@ export const automation = {
   inboxReminder: "Tomorrow's automation",
   reason_INSUFFICIENT_BALANCE: "Not enough money in the wallet then",
   reason_BRAKE_HALF_BALANCE: "Over half the balance to someone new: waiting for you",
+  asset: "Asset",
+  buys: "Buys {{asset}}",
+  stableOnly: "Scheduled sends use USDC or EURC (your everyday allowance)",
 } as const;

@@ -152,4 +152,7 @@ export const automation: Catalog["automation"] = {
   inboxReminder: "کل کا آٹومیشن",
   reason_INSUFFICIENT_BALANCE: "تب والیٹ میں کافی رقم نہیں تھی",
   reason_BRAKE_HALF_BALANCE: "آدھے سے زیادہ بیلنس کسی نئے کو: آپ کا انتظار",
+  asset: "اثاثہ",
+  buys: "‏{{asset}} خریدتا ہے",
+  stableOnly: "طے شدہ ترسیلات USDC یا EURC میں ہوتی ہیں (آپ کی روزانہ کی حد)",
 };

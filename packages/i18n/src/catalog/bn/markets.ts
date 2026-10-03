@@ -26,4 +26,11 @@ export const markets: Catalog["markets"] = {
   yourPositions: "আপনার পজিশন",
   marginVenue: "Kawase Margin · Arc-এ Aave V4",
   perpsMainnet: "লং ও শর্ট Arc মেইননেটে চলে। ট্রেড করতে নেটওয়ার্ক বদলান; আপনার টেস্টনেট টাকা যেমন আছে তেমনই থাকবে।",
+  watchlist: "ওয়াচলিস্ট",
+  watchSignIn: "ওয়াচলিস্ট রাখতে সাইন ইন করুন: যেকোনো টোকেনের পেজে স্টার দিন।",
+  watchEmptyTitle: "এখনো কিছু স্টার করা হয়নি",
+  watchEmptyBody: "এখানে ফলো করতে টোকেনের পেজে স্টারে ট্যাপ করুন।",
+  watchHeld: "আপনার কাছে আছে",
+  recent: "সাম্প্রতিক",
+  recentClear: "মুছুন",
 };

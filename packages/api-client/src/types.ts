@@ -269,6 +269,8 @@ export type SendDraftView = {
   note: string | null;
   /** Who pays the network fee, and about how much (USDC base units, 6 decimals). */
   fee: { payer: "kawase" | "wallet"; estimate: string | null };
+  /** The on-chain reference (Arc Memo) this send writes, when it has one. */
+  memo?: { memoId: string; memoData: string } | null;
 };
 
 export type SendIntent = {
@@ -303,6 +305,12 @@ export type SendRequest = {
   /** "USDC", "EURC", a verified symbol, or any token's address on the active network (R1). */
   asset?: string | null | undefined;
   note?: string | null | undefined;
+  /**
+   * A reference written on chain with the payment through Arc's Memo contract (public: an invoice or order id, never
+   * private words). `memoId` is its bytes32 lookup key; without one Kawase uses keccak256 of the text.
+   */
+  memo?: string | null | undefined;
+  memoId?: string | null | undefined;
 };
 
 export type SendApproveResponse =

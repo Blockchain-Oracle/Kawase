@@ -155,4 +155,7 @@ export const automation: Catalog["automation"] = {
   inboxReminder: "Automação de amanhã",
   reason_INSUFFICIENT_BALANCE: "Não havia dinheiro suficiente na carteira",
   reason_BRAKE_HALF_BALANCE: "Mais da metade do saldo para alguém novo: esperando por você",
+  asset: "Ativo",
+  buys: "Compra {{asset}}",
+  stableOnly: "Envios programados usam USDC ou EURC (seu limite diário)",
 };

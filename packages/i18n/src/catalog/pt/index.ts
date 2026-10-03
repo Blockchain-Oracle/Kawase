@@ -81,6 +81,7 @@ import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 import { launchpad } from "./launchpad";
+import { places } from "./places";
 
 export const pt: Catalog = {
   common,
@@ -164,4 +165,5 @@ export const pt: Catalog = {
   alerts,
   chatCards,
   launchpad,
+  places,
 };

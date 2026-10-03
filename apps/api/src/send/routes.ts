@@ -13,6 +13,9 @@ const NOTE_MAX = 140;
 const TOKEN_MAX = 64;
 
 const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
+/** Arc Memo data is public and paid for in gas: a short reference only. */
+const MEMO_MAX = 64;
+
 const requestSchema = z.object({
   /** Paying a payment request: its link token (recipient, asset and amount then come from the request). */
   requestToken: z.string().max(TOKEN_MAX).nullable().optional(),
@@ -21,6 +24,9 @@ const requestSchema = z.object({
   /** "USDC", "EURC", a verified symbol or a token address (any asset, R1). */
   asset: z.string().regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/).nullable().optional(),
   note: z.string().max(NOTE_MAX).nullable().optional(),
+  /** A public reference written on chain (Arc Memo): printable text, and/or its bytes32 id. */
+  memo: z.string().max(MEMO_MAX).regex(/^[\x20-\x7E]*$/).nullable().optional(),
+  memoId: z.string().regex(/^0x[0-9a-fA-F]{64}$/).nullable().optional(),
 });
 /** `override`: the person confirmed a braked (risky) action on its card. */
 const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });

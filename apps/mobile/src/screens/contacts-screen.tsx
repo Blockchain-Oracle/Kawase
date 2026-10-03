@@ -3,7 +3,8 @@
 // the send screen and the chat ("Alex isn't in your contacts" → Add Alex). Loading shows skeleton rows, an error
 // keeps what was already shown with a retry, a guest is asked to sign in, and an empty book says why it is worth
 // filling. Import from the phone's contacts (I7) arrives in Stage 5c, and the page says so instead of hiding it.
-import { useFocusEffect, useRouter } from "expo-router";
+// A second tab, My places (surfaces.md Contacts), lists the exchanges and own wallets money is taken out to.
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ContactRound, Search, UserPlus } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
@@ -13,6 +14,7 @@ import { CoinStack } from "@kawase/ui-native/components/art/coin-stack";
 import { Koban } from "@kawase/ui-native/components/art/koban";
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
+import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Input } from "@kawase/ui-native/components/ui/input";
@@ -24,6 +26,7 @@ import { ContactRow, ContactRowSkeleton } from "@/contacts/contact-row";
 import { ContactsHeader } from "@/contacts/screen-header";
 import { contactAddress, useContacts } from "@/contacts/use-contacts";
 import { useT } from "@/i18n";
+import { PlacesTab } from "@/places/places-tab";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
@@ -41,6 +44,8 @@ export function ContactsScreen() {
   const { status: load, contacts, refresh } = useContacts();
   const [query, setQuery] = React.useState("");
   const [adding, setAdding] = React.useState(false);
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = React.useState<"people" | "places">(params.tab === "places" ? "places" : "people");
   const network = user?.activeNetwork ?? "testnet";
   const account = status === "account";
 
@@ -174,8 +179,21 @@ export function ContactsScreen() {
 
   return (
     <View className="bg-background flex-1">
-      <ContactsHeader title={t("contacts.title")} end={addButton} />
-      {body}
+      <ContactsHeader title={t("contacts.title")} end={tab === "people" ? addButton : undefined} />
+      {account ? (
+        <View className="px-5 pt-4">
+          <SegmentedControl
+            label={t("contacts.title")}
+            value={tab}
+            onValueChange={(value) => setTab(value as "people" | "places")}
+            options={[
+              { value: "people", label: t("places.people") },
+              { value: "places", label: t("withdraw.myPlaces") },
+            ]}
+          />
+        </View>
+      ) : null}
+      {account && tab === "places" ? <PlacesTab network={network} /> : body}
       <AddContactSheet
         open={adding}
         onClose={() => setAdding(false)}

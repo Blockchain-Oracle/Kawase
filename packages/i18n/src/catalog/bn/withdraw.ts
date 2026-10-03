@@ -81,4 +81,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "এক্সচেঞ্জ আর চেইনগুলো এখানে সবার জন্য দেখানো হয়। টাকা তুলতে আপনার অ্যাকাউন্ট লাগবে।",
   cardTo: "{{to}}-এ তুলুন",
   cardOpen: "যাচাই করে তুলুন",
+  testFaceId: "{{to}}-এ {{amount}} USDC-এর টেস্ট পাঠান",
+  finishFaceId: "{{to}}-এ তোলা শেষ করুন",
+  testTo: "টেস্ট কোথায়",
+  testDoneTitle: "টেস্ট পৌঁছেছে",
+  testDoneBody: "{{to}}-এ এটি দেখা যাচ্ছে কি না দেখে নিন, তারপর বাকিটা তুলুন।",
+  testContinue: "বাকিটা তুলুন",
+  firstTimeTitle: "এখানে প্রথমবার পাঠাচ্ছেন",
+  firstTimeBody: "আগে {{amount}} USDC-এর অল্প একটি টেস্ট পাঠান, পৌঁছেছে কি না দেখুন, তারপর বাকিটা তুলুন।",
+  sendTest: "আগে {{amount}} USDC-এর টেস্ট পাঠান",
 };

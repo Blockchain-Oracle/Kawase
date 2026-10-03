@@ -65,4 +65,8 @@ export const earn: Catalog["earn"] = {
   homePosition: "{{amount}} rapportent dans les coffres",
   yourPosition: "Votre position",
   stuckHidden: "{{count}} autres ne peuvent rien verser pour l'instant : elles sont masquées",
+  earnOn: "Gagner avec",
+  earnOnAsset: "Gagner avec {{asset}}",
+  waysFor: "Façons de gagner avec {{asset}}",
+  alreadyEarning: "Rapporte déjà",
 };

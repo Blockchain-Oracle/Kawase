@@ -27,4 +27,12 @@ export const markets: Catalog["markets"] = {
   marginVenue: "Kawase Margin · Aave V4 sur Arc",
   perpsMainnet:
     "Long et short fonctionnent sur le réseau principal d’Arc. Changez de réseau pour trader ; votre argent de testnet reste tel quel.",
+  watchlist: "Liste de suivi",
+  watchSignIn:
+    "Connectez-vous pour avoir une liste de suivi : mettez une étoile sur n'importe quel jeton depuis sa page.",
+  watchEmptyTitle: "Aucune étoile pour l'instant",
+  watchEmptyBody: "Touchez l'étoile sur la page d'un jeton pour le suivre ici.",
+  watchHeld: "Vous en détenez",
+  recent: "Récents",
+  recentClear: "Effacer",
 };

@@ -63,4 +63,8 @@ export const earn = {
   homePosition: "{{amount}} earning in vaults",
   yourPosition: "Your position",
   stuckHidden: "{{count}} more can't pay out now, so they're hidden",
+  earnOn: "Earn on",
+  earnOnAsset: "Earn on {{asset}}",
+  waysFor: "Ways to earn on {{asset}}",
+  alreadyEarning: "Already earning",
 } as const;

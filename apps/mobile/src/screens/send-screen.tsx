@@ -58,6 +58,9 @@ export type SendPrefill = {
   asset?: string | undefined;
   /** Paying a payment request: its link token, carried into the send so the request is marked paid by it. */
   requestToken?: string | undefined;
+  /** A reference a scanned code carries, written on chain with the payment (Arc Memo). */
+  memo?: string | undefined;
+  memoId?: string | undefined;
 };
 
 export function SendScreen({ prefill }: { prefill: SendPrefill }) {
@@ -85,6 +88,9 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   const fund = useFund();
   const [value, setValue] = React.useState(prefill.amount ?? "");
   const [note, setNote] = React.useState("");
+  const [reference, setReference] = React.useState(prefill.memo ?? "");
+  // A bytes32 id from the code stays with its text; once the text is removed or changed, it no longer applies.
+  const codeMemoId = prefill.memoId && reference === (prefill.memo ?? "") ? prefill.memoId : undefined;
   const [creating, setCreating] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
@@ -130,6 +136,8 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
       asset: assetParam(token),
       note: note.trim() || null,
       requestToken: prefill.requestToken ?? null,
+      memo: reference.trim() || null,
+      memoId: codeMemoId ?? null,
     };
     setCreating(true);
     try {
@@ -276,6 +284,9 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
         onValue={setValue}
         note={note}
         onNote={setNote}
+        reference={reference}
+        onReference={setReference}
+        referenceFromCode={Boolean(prefill.memo || prefill.memoId) && reference === (prefill.memo ?? "")}
         balance={balance}
         onReview={() => void review()}
         busy={creating || controller.busy}

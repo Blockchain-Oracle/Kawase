@@ -23,6 +23,7 @@ Status: in progress — 6a swap, 6b bridge and 6c earn done on testnet (screen +
 
 ## 21st.dev sourcing
 - None for 6a: the swap ticket, review and exchange animation reuse the send grammar (amount ticket, review card, status) already sourced in Stage 2/5.
+- **Token page candles** (A-3, 2026-10-02): Candle Chart · ssychui (21st id 20107, `candle-chart`) · https://21st.dev/r/ssychui/candle-chart · plan §C's Trading Terminal line (943 no longer resolves; 20107 is the same author's candle panel): OHLC candles over a volume strip, a crosshair reading the exact bar. Ported as `packages/ui-native/src/components/candle-chart.tsx`; the interval bar is the existing Range Navigator twin (23954).
 
 ## Progress log
 - **2026-10-01 — 6a swap, built and verified on Arc testnet.**

@@ -99,4 +99,11 @@ export const send: Catalog["send"] = {
   otherChain: "ان کا والیٹ کسی اور چین پر ہے؟",
   otherChainBridge: "برج کے ذریعے وہاں USDC بھیجیں: چین اور راستہ آپ چنیں۔",
   otherChainConvert: "‏صرف USDC چینز کے پار جاتا ہے۔ پہلے اپنا {{asset}} USDC میں بدلیں۔",
+  referenceAdd: "چین پر حوالہ نمبر شامل کریں",
+  referencePlaceholder: "انوائس یا آرڈر نمبر",
+  referenceHint:
+    "یہ ادائیگی کے ساتھ چین پر لکھا جاتا ہے تاکہ وصول کنندہ اسے ملا سکے۔ یہ عوامی ہے: کوئی نجی بات نہ لکھیں۔",
+  referenceFromCode: "کوڈ سے حوالہ نمبر: {{reference}}",
+  referenceRemove: "ہٹائیں",
+  referenceLabel: "چین پر حوالہ نمبر",
 };

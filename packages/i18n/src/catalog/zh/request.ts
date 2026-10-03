@@ -10,7 +10,7 @@ export const request: Catalog["request"] = {
   yours: "我的收款请求",
   new: "新的收款请求",
   emptyTitle: "还没有收款请求",
-  emptyBody: "用一个任何人都能支付的链接收取 USDC 或 EURC。",
+  emptyBody: "用任何人都能支付的链接收取任意代币，或直接向 Kawase 上的人发起请求。",
   linkCopied: "链接已复制",
   copyLink: "复制链接",
   share: "分享",

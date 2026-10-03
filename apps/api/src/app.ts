@@ -69,6 +69,7 @@ import { lendRoutes } from "./lend/routes";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
+import { WithdrawalService } from "./withdraw/withdrawals";
 import { tokenRulesRoutes } from "./tokens/rules-routes";
 import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
@@ -208,7 +209,7 @@ export function createApp(deps: AppDeps) {
     assets,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
@@ -221,6 +222,8 @@ export function createApp(deps: AppDeps) {
   needsYou.bind({ sends, swaps });
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
+  const withdrawalRuns = new WithdrawalService(deps.db, withdraw);
+  withdrawalRuns.bind({ sends, swaps, crosschain });
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -351,11 +354,11 @@ export function createApp(deps: AppDeps) {
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
-  app.route("/withdrawals", withdrawRoutes(withdraw));
+  app.route("/withdrawals", withdrawRoutes(withdraw, withdrawalRuns));
   app.route("/places", placeRoutes(withdraw));
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
-  app.route("/tokens", tokenRoutes(assets));
+  app.route("/tokens", tokenRoutes(assets, deps.db));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
   app.route("/needs-you", needsYouRoutes(needsYou));

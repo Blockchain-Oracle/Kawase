@@ -152,4 +152,7 @@ export const automation: Catalog["automation"] = {
   inboxReminder: "আগামীকালের অটোমেশন",
   reason_INSUFFICIENT_BALANCE: "তখন ওয়ালেটে যথেষ্ট টাকা ছিল না",
   reason_BRAKE_HALF_BALANCE: "ব্যালান্সের অর্ধেকের বেশি নতুন কাউকে: আপনার অপেক্ষায়",
+  asset: "অ্যাসেট",
+  buys: "{{asset}} কেনে",
+  stableOnly: "সময়সূচি ধরে পাঠানো হয় USDC বা EURC-তে (আপনার দৈনিক সীমা)",
 };

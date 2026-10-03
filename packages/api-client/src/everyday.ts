@@ -15,6 +15,9 @@ export type PayCodeView =
       amount: string | null;
       /** "USDC", "EURC", or any token's address on this network (R1); null when the code named none. */
       asset: string | null;
+      /** The reference the code asks the payment to carry on chain (Arc Memo), when it has one. */
+      memo?: string | null;
+      memoId?: string | null;
     }
   | {
       status: "request";

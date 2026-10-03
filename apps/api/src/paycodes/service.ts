@@ -3,7 +3,7 @@
 // where the recipient check runs as always —, a Kawase request or invoice link opens its pay page. What cannot be
 // paid here says why (R2): the other Arc network (switch first), another chain, a token Kawase does not send here,
 // a request that is paid, expired or cancelled.
-import { erc20Abi, getAddress } from "viem";
+import { erc20Abi, formatUnits, getAddress } from "viem";
 
 import type { PayCodeView } from "@kawase/api-client";
 import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES, type NetworkId } from "@kawase/networks";
@@ -74,7 +74,22 @@ export class PayCodeService {
       try {
         request = await this.requests.openPublic(parsed.token);
       } catch {
-        return { status: "unsupported", reason: "not_found" };
+        // An invoice in any token has its own link and no payment request: pay what is left of it with Send, carrying
+        // the invoice's on-chain reference (Arc Memo), so the business's books match it by memoId.
+        const invoice = this.invoices ? await this.invoices.publicView(parsed.token).catch(() => undefined) : undefined;
+        if (!invoice) return { status: "unsupported", reason: "not_found" };
+        if (invoice.status === "paid" || invoice.status === "canceled") return { status: "unsupported", reason: "request_closed", network: invoice.network };
+        if (invoice.network !== network) return { status: "unsupported", reason: "other_network", network: invoice.network };
+        const remaining = BigInt(invoice.remaining);
+        return {
+          status: "send",
+          network,
+          to: invoice.payTo,
+          amount: remaining > BigInt(0) ? formatUnits(remaining, invoice.decimals) : null,
+          asset: invoice.tokenAddress ?? invoice.asset,
+          memo: invoice.number,
+          memoId: invoice.memoId,
+        };
       }
       if (request.status !== "open") return { status: "unsupported", reason: "request_closed", network: request.network };
       const invoice = this.invoices ? await this.invoices.publicView(parsed.token).catch(() => undefined) : undefined;
@@ -95,13 +110,15 @@ export class PayCodeService {
     if (target !== network) return { status: "unsupported", reason: "other_network", network: target };
     // Native value on Arc is USDC (Arc's gas token). A token is USDC, EURC, or any ERC-20 on this network (R1: every
     // asset is first-class; Send runs the token rules and the recipient check on it).
-    if (parsed.native || !parsed.token) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: parsed.native && parsed.amount ? "USDC" : null };
+    // A reference the code carries (Arc Memo) rides along: the send writes it on chain with the payment.
+    const memo = { memo: parsed.memo ?? null, memoId: parsed.memoId ?? null };
+    if (parsed.native || !parsed.token) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: parsed.native && parsed.amount ? "USDC" : null, ...memo };
     const stable = this.assetOf(network, parsed.token);
-    if (stable) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: stable };
+    if (stable) return { status: "send", network, to: parsed.address, amount: parsed.amount, asset: stable, ...memo };
     const decimals = await this.decimals(network, parsed.token);
     if (decimals === undefined) return { status: "unsupported", reason: "unsupported_asset", token: getAddress(parsed.token) };
     const amount = parsed.rawAmount ? scaledAmount(parsed.rawAmount, decimals) : parsed.amount;
-    return { status: "send", network, to: parsed.address, amount, asset: getAddress(parsed.token) };
+    return { status: "send", network, to: parsed.address, amount, asset: getAddress(parsed.token), ...memo };
   }
 
   /** An ERC-20's decimals on this network; undefined when the address is no token here. */

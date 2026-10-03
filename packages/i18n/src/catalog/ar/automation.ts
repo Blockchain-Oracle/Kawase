@@ -151,4 +151,7 @@ export const automation: Catalog["automation"] = {
   inboxReminder: "أتمتة الغد",
   reason_INSUFFICIENT_BALANCE: "لم يكن في المحفظة ما يكفي حينها",
   reason_BRAKE_HALF_BALANCE: "أكثر من نصف الرصيد إلى شخص جديد: بانتظارك",
+  asset: "الأصل",
+  buys: "يشتري {{asset}}",
+  stableOnly: "الإرسال المجدول يستخدم USDC أو EURC (حدّك اليومي)",
 };

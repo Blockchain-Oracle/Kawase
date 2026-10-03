@@ -30,6 +30,9 @@ export type StoredRequest = {
   /** "USDC"/"EURC", a verified symbol, or a lower-case token address on the network. */
   asset: string | null;
   note: string | null;
+  /** A public reference written on chain with the payment (Arc Memo), and its bytes32 id. Absent on older rows. */
+  memo?: string | null;
+  memoId?: string | null;
 };
 
 /** What a send needs to know about its token. */
@@ -163,6 +166,8 @@ export async function gatherFacts(input: {
   /** Any token beyond USDC and EURC (the asset registry); without it only those two are known. */
   lookup?: TokenLookup | undefined;
 }): Promise<GatheredFacts> {
+  // A reference on chain goes through Arc's Memo contract from the wallet itself: never on the allowance.
+  const memo = Boolean(input.request.memo || input.request.memoId);
   const { db, chains, userId, network, wallet, request } = input;
   const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
   const view = await capabilityView(db, chains.available);
@@ -248,7 +253,7 @@ export async function gatherFacts(input: {
       asset: token?.symbol ?? (named || undefined),
       assetUnclear,
       isUsdc,
-      allowable: Boolean(stableSymbol),
+      allowable: Boolean(stableSymbol) && !memo,
       decimals: token?.decimals,
       amount,
       limitAmount: valued,

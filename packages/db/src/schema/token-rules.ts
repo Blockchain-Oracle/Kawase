@@ -4,6 +4,8 @@
 // signature of the step-up message (the same yes as Wallet & limits, X7).
 import { integer, jsonb, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
+import { TOKEN_RULES } from "@kawase/config";
+
 import { networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
 
@@ -25,9 +27,9 @@ export const tokenRules = pgTable(
     network: networkEnum().notNull(),
     /** verified = only tokens Kawase vouches for; warned = also unverified ones, inside the caps, with a warning. */
     access: text().$type<TokenAccess>().notNull().default("warned"),
-    unverifiedPerTradeUsd: integer().notNull().default(50),
-    unverifiedPerDayUsd: integer().notNull().default(200),
-    maxPriceImpactBps: integer().notNull().default(500),
+    unverifiedPerTradeUsd: integer().notNull().default(TOKEN_RULES.unverifiedPerTradeUsd),
+    unverifiedPerDayUsd: integer().notNull().default(TOKEN_RULES.unverifiedPerDayUsd),
+    maxPriceImpactBps: integer().notNull().default(TOKEN_RULES.maxPriceImpactBps),
     /** A loosening waiting for the wallet's signature: the values asked and the message to sign. */
     pending: jsonb().$type<{ id: string; values: TokenRulesValues; typedData: Record<string, unknown> }>(),
     pendingExpiresAt: timestampTz(),

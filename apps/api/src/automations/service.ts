@@ -1130,6 +1130,10 @@ export class AutomationService {
     const row = await this.own(user.id, id);
     if (row.status === "canceled" || row.status === "ended") throw problem(HTTP.conflict, "intent_final");
     if (row.kind === "auto_save" || row.kind === "rule") throw problem(HTTP.unprocessable, "validation", "this automation is edited by asking for a new one");
+    // The asset is chosen on the draft (the picker on the card); once on, a different asset is a new automation.
+    if (row.status !== "draft" && (edit.asset !== undefined || edit.to !== undefined)) throw problem(HTTP.unprocessable, "validation", "draft a new automation for another asset");
+    if (edit.asset !== undefined && row.kind !== "scheduled_send") throw problem(HTTP.unprocessable, "validation", "only a scheduled send has a currency to change");
+    if (edit.to !== undefined && row.kind !== "dca") throw problem(HTTP.unprocessable, "validation", "only a DCA buys a token");
     const merged = {
       every: edit.every ?? row.schedule.every,
       weekday: edit.weekday ?? row.schedule.weekday,

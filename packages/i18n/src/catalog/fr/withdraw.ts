@@ -84,4 +84,13 @@ export const withdraw: Catalog["withdraw"] = {
     "Les plateformes d'échange et les chaînes sont visibles par tous. Pour retirer de l'argent, il faut votre compte.",
   cardTo: "Retirer vers {{to}}",
   cardOpen: "Vérifier et retirer",
+  testFaceId: "Envoyer un test de {{amount}} USDC vers {{to}}",
+  finishFaceId: "Terminer le retrait vers {{to}}",
+  testTo: "Test vers",
+  testDoneTitle: "Le test est arrivé",
+  testDoneBody: "Vérifiez que {{to}} l'affiche, puis retirez le reste.",
+  testContinue: "Retirer le reste",
+  firstTimeTitle: "Premier envoi ici",
+  firstTimeBody: "Envoyez d'abord un petit test de {{amount}} USDC, vérifiez qu'il est arrivé, puis retirez le reste.",
+  sendTest: "Envoyer d'abord un test de {{amount}} USDC",
 };

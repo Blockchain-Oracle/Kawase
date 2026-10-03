@@ -1,13 +1,13 @@
 // Words for Withdraw, in the person's language: where it goes (an exchange's name, a saved place's own name, or
 // "My wallet on Base"), each line's route and what arrives, why a line cannot go (R2), and each tracker step.
-import type { PolicyResultView, WithdrawDestinationView, WithdrawLegView, WithdrawReason } from "@kawase/api-client";
+import type { PolicyResultView, WithdrawalStepView, WithdrawDestinationView, WithdrawLegView, WithdrawReason } from "@kawase/api-client";
 
 import { useT } from "@/i18n";
 import { usePolicyText } from "@/send/copy";
 
-import type { RunStep } from "./use-withdraw-run";
+type RunStep = WithdrawalStepView;
 
-type Named = Pick<WithdrawDestinationView, "kind" | "label" | "brand" | "chain"> & { exchange?: { name: string } | null };
+type Named = Pick<WithdrawDestinationView, "kind" | "label" | "brand" | "chain"> & { exchange?: { name: string } | null | undefined };
 
 export function useDestinationName() {
   const { t } = useT();

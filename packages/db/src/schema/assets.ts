@@ -70,3 +70,19 @@ export const portfolioSnapshots = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.network, table.takenAt] })],
 );
+
+/** Tokens the person stars on a token page (the Markets "Watchlist" segment), per network. */
+export const watchlist = pgTable(
+  "watchlist",
+  {
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    network: networkEnum().notNull(),
+    chainId: integer().notNull(),
+    /** Lower case. */
+    tokenAddress: text().notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.chainId, table.tokenAddress] }), index("watchlist_user_network_idx").on(table.userId, table.network)],
+);

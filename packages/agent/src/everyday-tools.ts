@@ -64,7 +64,8 @@ export function everydayTools(context: AgentContext) {
         if (!context.lastUserText.includes(code.trim())) throw new Error("The code must come from the person's own message; ask them to scan or paste it.");
         const view = await context.intelligence.payCode(code);
         if (view.status === "send") {
-          const send = await context.proposeSend({ recipient: view.to, amount: view.amount ?? amount ?? null, asset: view.asset, note: null });
+          // The code's reference (an invoice or order id) is written on chain with the payment (Arc Memo).
+          const send = await context.proposeSend({ recipient: view.to, amount: view.amount ?? amount ?? null, asset: view.asset, note: null, memo: view.memo ?? null, memoId: view.memoId ?? null });
           return { code: view, send };
         }
         if (view.status === "request") {
