@@ -15,12 +15,15 @@ const ADDRESS_BYTES = 20;
 const WORD_BYTES = 32;
 const SELECTOR_BYTES = 4;
 const HALF_WORD_BYTES = 16;
+/** Period terms carry three words: amount, period length, start. */
+const PERIOD_WORDS = 3;
 /** ERC20PeriodTransferEnforcer terms: token (20) + amount, period, start (32 each). */
-const PERIOD_TRANSFER_BYTES = ADDRESS_BYTES + 3 * WORD_BYTES;
+const PERIOD_TRANSFER_BYTES = ADDRESS_BYTES + PERIOD_WORDS * WORD_BYTES;
 /** ERC20TransferAmountEnforcer terms: token (20) + amount (32). */
 const TRANSFER_AMOUNT_BYTES = ADDRESS_BYTES + WORD_BYTES;
 /** NativeTokenPeriodTransferEnforcer terms: amount, period, start (32 each). */
-const NATIVE_PERIOD_BYTES = 3 * WORD_BYTES;
+const NATIVE_PERIOD_BYTES = PERIOD_WORDS * WORD_BYTES;
+const ZERO = 0n;
 /** A delegation signed by its delegator directly (not a re-delegation of another one). */
 const ROOT_AUTHORITY = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 const DELEGATION_DOMAIN_NAME = "DelegationManager";
@@ -111,7 +114,7 @@ function decodeCaveat(enforcer: string, terms: Hex): DecodedCaveat {
   const is = (address: string) => isAddressEqual(enforcer as Address, address as Address);
   if (is(known.erc20PeriodTransfer)) {
     exactly(terms, PERIOD_TRANSFER_BYTES);
-    return { type: "erc20PeriodTransfer", token: getAddress(slice(terms, 0, ADDRESS_BYTES)), amount: word(terms, ADDRESS_BYTES), periodSeconds: Number(word(terms, ADDRESS_BYTES + WORD_BYTES)), startsAt: Number(word(terms, ADDRESS_BYTES + 2 * WORD_BYTES)) };
+    return { type: "erc20PeriodTransfer", token: getAddress(slice(terms, 0, ADDRESS_BYTES)), amount: word(terms, ADDRESS_BYTES), periodSeconds: Number(word(terms, ADDRESS_BYTES + WORD_BYTES)), startsAt: Number(word(terms, ADDRESS_BYTES + (PERIOD_WORDS - 1) * WORD_BYTES)) };
   }
   if (is(known.erc20TransferAmount)) {
     exactly(terms, TRANSFER_AMOUNT_BYTES);
@@ -119,7 +122,7 @@ function decodeCaveat(enforcer: string, terms: Hex): DecodedCaveat {
   }
   if (is(known.nativeTokenPeriodTransfer)) {
     exactly(terms, NATIVE_PERIOD_BYTES);
-    return { type: "nativeTokenPeriodTransfer", amount: word(terms, 0), periodSeconds: Number(word(terms, WORD_BYTES)), startsAt: Number(word(terms, 2 * WORD_BYTES)) };
+    return { type: "nativeTokenPeriodTransfer", amount: word(terms, 0), periodSeconds: Number(word(terms, WORD_BYTES)), startsAt: Number(word(terms, (PERIOD_WORDS - 1) * WORD_BYTES)) };
   }
   if (is(known.allowedTargets)) return { type: "allowedTargets", targets: chunks(terms, ADDRESS_BYTES).map((address) => getAddress(address)) };
   if (is(known.redeemer)) return { type: "redeemer", redeemers: chunks(terms, ADDRESS_BYTES).map((address) => getAddress(address)) };
@@ -292,7 +295,7 @@ export function checkGrant(typedData: TypedDataLike, shown: ShownGrant, wallet: 
   const differs = checks.filter(([, ok]) => !ok).map(([name]) => name);
   if (differs.length > 0) refuse(`the grant differs from its card in: ${differs.join(", ")}`);
   if (mine.redeemers.length === 0 || !mine.redeemers.every((address) => isAddressEqual(address as Address, decoded.delegate))) refuse("a grant someone else could redeem");
-  if (BigInt(mine.maxNativeValue ?? "0") !== 0n) refuse("a grant that can move native value");
+  if (BigInt(mine.maxNativeValue ?? "0") !== ZERO) refuse("a grant that can move native value");
   return decoded;
 }
 
@@ -312,7 +315,7 @@ export function checkTransferGrant(typedData: TypedDataLike, shown: ShownGrant, 
 function checkDisables(executions: readonly Execution[], wallet: Address) {
   if (executions.length === 0) refuse("a revoke with nothing in it");
   for (const execution of executions) {
-    if (!isAddressEqual(execution.target, DELEGATION_FRAMEWORK.delegationManager as Address) || execution.value !== 0n) refuse("a revoke that calls something else");
+    if (!isAddressEqual(execution.target, DELEGATION_FRAMEWORK.delegationManager as Address) || execution.value !== ZERO) refuse("a revoke that calls something else");
     let decoded;
     try {
       decoded = decodeFunctionData({ abi: DISABLE_DELEGATION_ABI, data: execution.callData });
@@ -338,8 +341,8 @@ export function checkRevoke(request: { typedData: TypedDataLike } | { transactio
   }
   const { transaction } = request;
   if (!ARC_CHAIN_IDS.includes(transaction.chainId)) refuse("a revoke for a chain other than Arc");
-  if (BigInt(transaction.value) !== 0n) refuse("a revoke that moves money");
-  if (isAddressEqual(transaction.to as Address, DELEGATION_FRAMEWORK.delegationManager as Address)) return checkDisables([{ target: transaction.to as Address, value: 0n, callData: transaction.data }], wallet);
+  if (BigInt(transaction.value) !== ZERO) refuse("a revoke that moves money");
+  if (isAddressEqual(transaction.to as Address, DELEGATION_FRAMEWORK.delegationManager as Address)) return checkDisables([{ target: transaction.to as Address, value: ZERO, callData: transaction.data }], wallet);
   if (!isAddressEqual(transaction.to as Address, wallet)) refuse("a revoke sent somewhere else");
   // The wallet's own batch: execute(mode, executionCalldata), one call packed or several ABI-encoded.
   let call;
