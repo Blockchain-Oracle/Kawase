@@ -32,6 +32,8 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "Votre plafond quotidien est désactivé",
   LEAVES_LITTLE_FOR_FEES: "Il restera très peu d'USDC pour les frais de réseau",
   GAS_RELAYED: "Votre portefeuille ne couvre pas les frais de réseau, Kawase les paie pour cet envoi",
+  GAS_RELAY_LIMIT: "Kawase a payé vos frais de réseau autant de fois qu'il le peut aujourd'hui. Gardez environ {{needed}} pour les frais.",
+  GAS_RELAY_BUDGET_SPENT: "Les frais de réseau offerts par Kawase sont épuisés pour aujourd'hui. Gardez environ {{needed}} pour les frais.",
   FEE_PAID_BY_KAWASE: "Frais payés par Kawase : votre portefeuille ne couvre pas ces frais de réseau",
   SCHEDULE_INVALID: "Ce calendrier ne peut pas être tenu (fuseau horaire ou jour inconnu).",
   AUTO_SAVE_EXISTS:

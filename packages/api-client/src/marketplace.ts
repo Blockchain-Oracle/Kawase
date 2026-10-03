@@ -1,6 +1,6 @@
 // The x402 marketplace and the Agent wallet page (cards/marketplace.md). Amounts are USDC base units as decimal
 // strings; the app formats them, the agent's summaries carry display strings.
-import type { NetworkId } from "./types";
+import type { NetworkId, RevokeRequest } from "./types";
 
 export type MarketplaceCategory =
   | "SOCIAL"
@@ -90,7 +90,16 @@ export type ServiceListing = {
   payTo: string;
 };
 
-export type MarketplaceGrantRequest = { grantId: string; typedData: Record<string, unknown>; receipt: Record<string, unknown> };
+export type MarketplaceGrantRequest = {
+  grantId: string;
+  typedData: Record<string, unknown>;
+  receipt: Record<string, unknown>;
+  /**
+   * When an earlier marketplace grant still works on chain: its on-chain revoke, signed in the same yes (`signRevoke`)
+   * and sent with the new grant, so the new one replaces the old one on chain. Absent on older servers.
+   */
+  revoke?: RevokeRequest | null;
+};
 
 export type TopUpResult =
   | { status: "needs_grant"; grant: MarketplaceGrantRequest }

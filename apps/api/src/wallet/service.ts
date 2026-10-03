@@ -1,7 +1,7 @@
 // The wallet's life on each network: registration, the relayed 7702 setup, the everyday allowance, and
 // transactions the wallet signs itself. Every signature is checked here before anything is broadcast.
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import {
   erc20Abi,
   hashTypedData,
@@ -13,9 +13,17 @@ import {
   type SignedAuthorization,
   type TypedDataDefinition,
 } from "viem";
+import { recoverAuthorizationAddress } from "viem/utils";
 
 import type { RevokeRequest } from "@kawase/api-client";
-import { DEFAULT_LIMITS, GAS_ESTIMATE_HEADROOM_PERCENT, MIN_MAX_FEE_PER_GAS_GWEI, SECONDS_PER_DAY } from "@kawase/config";
+import {
+  DEFAULT_LIMITS,
+  GAS_ESTIMATE_HEADROOM_PERCENT,
+  MIN_MAX_FEE_PER_GAS_GWEI,
+  RELAYED_SETUP_GAS,
+  SECONDS_PER_DAY,
+  SPONSORED_SETUP_ATTEMPTS,
+} from "@kawase/config";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
 import { automations, grants, intentDrafts, intents, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
@@ -38,7 +46,7 @@ import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
 import { ContactService } from "../contacts/service";
 import { HTTP, ProblemError, problem } from "../http/problem";
-import { relayerReady } from "../send/relayed";
+import { lockPerson, relayGasPrice, relayProblem, relayRefusal, relayerReady, reserveRelay, REVOKE_KIND } from "../send/relayed";
 import { fetchActivity } from "./activity";
 import type { Chains, NetworkClients } from "./chain";
 
@@ -50,6 +58,8 @@ const REVOKE_GAS_LIMIT = 200_000n;
 /** Each further grant revoked in the same batch. */
 const REVOKE_EACH_GAS = 120_000n;
 const ZERO = 0n;
+/** How much of a node's error is kept on a failed attempt. */
+const ERROR_CHARS = 300;
 
 const jsonSafe = (value: unknown) =>
   JSON.parse(JSON.stringify(value, (_, v) => (typeof v === "bigint" ? v.toString() : v))) as Record<string, unknown>;
@@ -73,10 +83,21 @@ export type PendingTransaction = {
   nonce: number;
   /** For revoking an automation's grants: which. */
   grantIds?: string[] | undefined;
+  /** Forgotten after this (ms): a request the app never came back to does not stay in memory. */
+  expiresAt: number;
 };
 
 /** A batch the relayer will send for the wallet, waiting for the wallet's signature on its one-time delegation. */
-export type PendingRelay = { userId: string; network: NetworkId; kind: string; wallet: Address; grant: Delegation; calls: BatchCall[] };
+export type PendingRelay = {
+  userId: string;
+  network: NetworkId;
+  kind: string;
+  wallet: Address;
+  grant: Delegation;
+  calls: BatchCall[];
+  /** When its delegation stops being redeemable (ms); forgotten then. */
+  expiresAt: number;
+};
 
 /** The wallet's answer to an on-chain revoke handed to the app with a new grant: signed in the same yes. */
 export type SignedRevoke = { requestId: string; signed: Hex };
@@ -89,6 +110,10 @@ export type GrantFilter = { kind?: (typeof grants.$inferSelect)["kind"]; token?:
 
 /** How long a relayed batch's delegation stays valid (it is also limited to one use). */
 const RELAY_TTL_SECONDS = 600;
+/** An unsigned transaction handed to the wallet is remembered this long. */
+const PENDING_TRANSACTION_TTL_MS = 900_000;
+/** A relayed batch's answer is kept this long, so the same request sent again gets it instead of a second send. */
+const RELAYED_ANSWER_TTL_MS = RELAY_TTL_SECONDS * MS_PER_SECOND;
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;
 
@@ -97,6 +122,9 @@ export class WalletService {
 
   /** Unsigned transactions handed to the wallet, remembered until the signed one comes back. */
   private readonly pendingTransactions = new Map<string, PendingTransaction>();
+
+  /** Relayed batches being sent or sent: the same request submitted again gets this answer, never a second send. */
+  private readonly relayedAnswers = new Map<string, { userId: string; answer: Promise<{ tx: Hex; status: "confirmed" | "reverted" }>; expiresAt: number }>();
 
   /** Relayed revokes waiting for the wallet's signature: which grants each one turns off, until its batch expires. */
   private readonly pendingRevokes = new Map<string, { userId: string; grantIds: string[]; expiresAt: number }>();
@@ -110,6 +138,14 @@ export class WalletService {
     contacts?: ContactService,
   ) {
     this.contacts = contacts ?? new ContactService(db);
+  }
+
+  /** Requests the app never came back to are forgotten once they can no longer be used. */
+  private forgetExpired() {
+    const now = Date.now();
+    for (const map of [this.pendingRelays, this.pendingTransactions, this.relayedAnswers] as Map<string, { expiresAt: number }>[]) {
+      for (const [id, entry] of map) if (entry.expiresAt < now) map.delete(id);
+    }
   }
 
   private clients(network: NetworkId): NetworkClients {
@@ -297,37 +333,80 @@ export class WalletService {
     return { alreadySetUp: false as const, authorization: setupAuthorizationRequest(context, nonce) };
   }
 
-  /** The relayer sends the type-4 transaction and pays for it (spike 15). */
+  /**
+   * The relayer sends the type-4 transaction and pays for it (spike 15). Sponsored once per wallet (security review
+   * H5): a wallet already set up is not set up again; the authorization must be the wallet's own, for its nonce now
+   * (otherwise the transaction lands, costs gas and sets nothing up); a wallet gets a set number of relayed attempts;
+   * and the attempt is counted against the relayer's budget under the locks before anything is sent.
+   */
   async setupSubmit(userId: string, network: NetworkId, authorization: SignedAuthorization) {
     const wallet = await this.requireWallet(userId);
     const clients = this.clients(network);
     const { client, relayer, relayerAddress, network: context } = clients;
+    if (isWalletSetUp(await client.getCode({ address: wallet.address }))) return { tx: null, setUp: true };
     if (!(await relayerReady(clients))) throw problem(HTTP.serviceUnavailable, "network_not_ready", `Kawase is getting ${network} ready`);
     if (authorization.chainId !== context.chainId)
       throw problem(HTTP.unprocessable, "validation", "authorization is for another chain");
     if (authorization.address.toLowerCase() !== DELEGATION_FRAMEWORK.eip7702StatelessDeleGator.toLowerCase()) {
       throw problem(HTTP.unprocessable, "validation", "authorization does not name the expected delegator");
     }
+    const [signer, nonce] = await Promise.all([
+      recoverAuthorizationAddress({ authorization }).catch(() => undefined),
+      client.getTransactionCount({ address: wallet.address, blockTag: "pending" }),
+    ]);
+    if (signer?.toLowerCase() !== wallet.address.toLowerCase()) throw problem(HTTP.unprocessable, "signature_mismatch", "the authorization is not signed by this wallet");
+    if (authorization.nonce !== nonce) throw problem(HTTP.unprocessable, "validation", "the authorization is for another nonce; ask for a new one");
+    const gas = await client
+      .estimateGas({ account: relayerAddress, to: wallet.address, data: "0x", authorizationList: [authorization] })
+      .then((estimate) => (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT)
+      .catch(() => RELAYED_SETUP_GAS);
+    const cost = gas * (await relayGasPrice(clients));
     const attemptId = newId();
-    await this.db.insert(txAttempts).values({
-      id: attemptId,
-      userId,
-      network,
-      chainId: context.chainId,
-      kind: "setup_7702",
-      provider: "relayer",
-      idempotencyKey: randomUUID(),
-      fromAddress: relayerAddress,
-      toAddress: wallet.address,
-      status: "submitted",
+    await this.db.transaction(async (tx) => {
+      await lockPerson(tx, userId, network);
+      const [tried] = await tx
+        .select({ used: count() })
+        .from(txAttempts)
+        .where(
+          and(
+            eq(txAttempts.network, network),
+            eq(txAttempts.kind, "setup_7702"),
+            eq(txAttempts.provider, "relayer"),
+            ne(txAttempts.status, "not_sent"),
+            sql`lower(${txAttempts.toAddress}) = ${wallet.address.toLowerCase()}`,
+          ),
+        );
+      if (Number(tried?.used ?? 0) >= SPONSORED_SETUP_ATTEMPTS) throw problem(HTTP.tooManyRequests, "relay_limit", "this wallet's relayed setup was already used");
+      const refusal = await reserveRelay(tx, { userId, network, cost, counted: false });
+      if (refusal) throw relayProblem(refusal);
+      await tx.insert(txAttempts).values({
+        id: attemptId,
+        userId,
+        network,
+        chainId: context.chainId,
+        kind: "setup_7702",
+        provider: "relayer",
+        idempotencyKey: randomUUID(),
+        fromAddress: relayerAddress,
+        toAddress: wallet.address,
+        status: "submitted",
+        gasCost: cost,
+      });
     });
-    const hash = await relayer.sendTransaction({
-      account: relayer.account!,
-      chain: context.viemChain,
-      authorizationList: [authorization],
-      to: wallet.address,
-      data: "0x",
-    });
+    let hash: Hex;
+    try {
+      hash = await relayer.sendTransaction({
+        account: relayer.account!,
+        chain: context.viemChain,
+        authorizationList: [authorization],
+        to: wallet.address,
+        data: "0x",
+        gas,
+      });
+    } catch (error) {
+      await this.db.update(txAttempts).set({ status: "not_sent", errorCode: String((error as Error).message ?? error).slice(0, ERROR_CHARS) }).where(eq(txAttempts.id, attemptId));
+      throw problem(HTTP.badGateway, "upstream", "the setup transaction was not sent");
+    }
     const receipt = await client.waitForTransactionReceipt({ hash });
     const setUp = isWalletSetUp(await client.getCode({ address: wallet.address }));
     await this.db
@@ -336,6 +415,7 @@ export class WalletService {
         txHash: hash,
         status: receipt.status === "success" ? "confirmed" : "reverted",
         receipt: jsonSafe(receipt),
+        gasCost: receipt.gasUsed * receipt.effectiveGasPrice,
       })
       .where(eq(txAttempts.id, attemptId));
     if (!setUp) throw problem(HTTP.badGateway, "upstream", "the setup transaction did not take", { tx: hash });
@@ -622,51 +702,103 @@ export class WalletService {
    * once, for ten minutes, redeemable only by the relayer (integrations-delegation relayed-batch.ts). The relayer pays.
    */
   async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex; value?: bigint | undefined }[]) {
+    this.forgetExpired();
     const wallet = await this.requireWallet(userId);
     const clients = this.clients(network);
     if (!isWalletSetUp(await clients.client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.conflict, "wallet_not_set_up");
+    // Never asked to sign what the relayer would then refuse: today's relays and budget are read first (and again,
+    // under the locks, when the signature comes back).
+    const refusal = await relayRefusal(this.db, { userId, network, cost: ZERO, counted: kind !== REVOKE_KIND });
+    if (refusal) throw relayProblem(refusal);
     // A call's value (Arc's native USDC, e.g. a bridge's flat fee) comes from the wallet's own balance, pinned like the rest.
     const batch = calls.map((call) => ({ ...call, value: call.value ?? ZERO }));
+    const expiresAt = Math.floor(Date.now() / MS_PER_SECOND) + RELAY_TTL_SECONDS;
     const grant = buildRelayedBatch({
       network: clients.network,
       wallet: wallet.address as Address,
       relayer: clients.relayerAddress,
       calls: batch,
-      expiresAt: Math.floor(Date.now() / MS_PER_SECOND) + RELAY_TTL_SECONDS,
+      expiresAt,
       salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
     });
     const id = newId();
-    this.pendingRelays.set(id, { userId, network, kind, wallet: wallet.address as Address, grant, calls: batch });
+    this.pendingRelays.set(id, { userId, network, kind, wallet: wallet.address as Address, grant, calls: batch, expiresAt: expiresAt * MS_PER_SECOND });
     // JSON for the app: uint256 fields as decimal strings (the signer reads them back as numbers).
     return { requestId: id, relayed: true as const, typedData: jsonSafe(grantTypedData(clients.network, grant)) as Record<string, unknown> };
   }
 
-  /** The wallet signed the one-time delegation: checked, then the relayer redeems it with exactly that batch. */
+  /**
+   * The wallet signed the one-time delegation: checked, then the relayer redeems it with exactly that batch. The same
+   * request sent twice (a retry, a double tap) gets the first one's answer: the relayer never sends a second, reverting
+   * copy. A submit that fails before anything was sent leaves the request open for another try.
+   */
   async submitRelayedBatch(userId: string, requestId: string, signature: Hex) {
+    this.forgetExpired();
+    const earlier = this.relayedAnswers.get(requestId);
+    if (earlier?.userId === userId) return earlier.answer;
     const pending = this.pendingRelays.get(requestId);
     if (!pending || pending.userId !== userId) throw problem(HTTP.notFound, "not_found", "no such transaction request");
+    // Taken at once, before anything is awaited: a second submit now waits for this one's answer.
+    this.pendingRelays.delete(requestId);
+    const answer = this.relayBatch(pending, signature);
+    this.relayedAnswers.set(requestId, { userId, answer, expiresAt: Date.now() + RELAYED_ANSWER_TTL_MS });
+    answer.catch(() => {
+      if (this.relayedAnswers.get(requestId)?.answer !== answer) return;
+      this.relayedAnswers.delete(requestId);
+      this.pendingRelays.set(requestId, pending);
+    });
+    return answer;
+  }
+
+  /**
+   * Paid by the relayer only when the batch will go through and fits (security review H5): the redeem is simulated
+   * first (a used, expired or failing delegation costs nothing), then the person's relays and the relayer's budget are
+   * checked under the locks together with the attempt row that reserves the gas.
+   */
+  private async relayBatch(pending: PendingRelay, signature: Hex): Promise<{ tx: Hex; status: "confirmed" | "reverted" }> {
+    const { userId } = pending;
     const clients = this.clients(pending.network);
     const valid = await verifyTypedData({ address: pending.wallet, ...(grantTypedData(clients.network, pending.grant) as TypedDataDefinition), signature }).catch(() => false);
     if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch", "the delegation is not signed by this wallet");
-    this.pendingRelays.delete(requestId);
     const call = encodeRedeemBatch(clients.network, withSignature(pending.grant, signature), pending.calls);
+    const gas = await clients.client
+      .estimateGas({ account: clients.relayerAddress, to: call.to, data: call.data })
+      .then((estimate) => (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT)
+      .catch(() => undefined);
+    if (gas === undefined) throw problem(HTTP.conflict, "simulation_failed", "this batch would not go through; nothing was sent");
+    const cost = gas * (await relayGasPrice(clients));
     const attemptId = newId();
-    await this.db.insert(txAttempts).values({
-      id: attemptId,
-      userId,
-      network: pending.network,
-      chainId: clients.network.chainId,
-      kind: `${pending.kind}_relayed`,
-      provider: "relayer",
-      idempotencyKey: randomUUID(),
-      fromAddress: clients.relayerAddress,
-      toAddress: call.to,
-      status: "submitted",
+    await this.db.transaction(async (tx) => {
+      await lockPerson(tx, userId, pending.network);
+      const refusal = await reserveRelay(tx, { userId, network: pending.network, cost, counted: pending.kind !== REVOKE_KIND });
+      if (refusal) throw relayProblem(refusal);
+      await tx.insert(txAttempts).values({
+        id: attemptId,
+        userId,
+        network: pending.network,
+        chainId: clients.network.chainId,
+        kind: `${pending.kind}_relayed`,
+        provider: "relayer",
+        idempotencyKey: randomUUID(),
+        fromAddress: clients.relayerAddress,
+        toAddress: call.to,
+        status: "submitted",
+        gasCost: cost,
+      });
     });
-    const hash = await clients.relayer.sendTransaction({ to: call.to, data: call.data, chain: clients.network.viemChain, account: clients.relayer.account! });
+    let hash: Hex;
+    try {
+      hash = await clients.relayer.sendTransaction({ to: call.to, data: call.data, gas, chain: clients.network.viemChain, account: clients.relayer.account! });
+    } catch (error) {
+      await this.db.update(txAttempts).set({ status: "not_sent", errorCode: String((error as Error).message ?? error).slice(0, ERROR_CHARS) }).where(eq(txAttempts.id, attemptId));
+      throw problem(HTTP.badGateway, "upstream", "the relayer could not send it; nothing moved");
+    }
     const receipt = await clients.client.waitForTransactionReceipt({ hash });
-    const status = receipt.status === "success" ? "confirmed" : "reverted";
-    await this.db.update(txAttempts).set({ txHash: hash, status, receipt: jsonSafe(receipt) }).where(eq(txAttempts.id, attemptId));
+    const status = receipt.status === "success" ? ("confirmed" as const) : ("reverted" as const);
+    await this.db
+      .update(txAttempts)
+      .set({ txHash: hash, status, receipt: jsonSafe(receipt), gasCost: receipt.gasUsed * receipt.effectiveGasPrice })
+      .where(eq(txAttempts.id, attemptId));
     return { tx: hash, status };
   }
 
@@ -687,7 +819,8 @@ export class WalletService {
     ]);
     const id = newId();
     const grantIds = Array.isArray(extra.grantIds) ? (extra.grantIds as string[]) : undefined;
-    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce, grantIds });
+    this.forgetExpired();
+    this.pendingTransactions.set(id, { userId, network, kind, wallet: wallet.address, to, data, nonce, grantIds, expiresAt: Date.now() + PENDING_TRANSACTION_TTL_MS });
     return {
       requestId: id,
       ...extra,

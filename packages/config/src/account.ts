@@ -2,6 +2,8 @@
 
 /** A deleted account's @handle cannot be taken by anyone for this long (X16). */
 export const HANDLE_HOLD_DAYS = 30;
+/** A handle someone renamed away from is held as long, so no one else is paid in their place under it; they may take it back. */
+export const HANDLE_RENAME_HOLD_DAYS = HANDLE_HOLD_DAYS;
 /** Device names as the app reports them ("Abu's iPhone"). */
 export const DEVICE_NAME_MAX = 80;
 /** When the api sets no minimum, every app version is served. */

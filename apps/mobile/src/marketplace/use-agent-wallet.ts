@@ -15,6 +15,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
+import { signRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const ZERO = BigInt(0);
@@ -72,7 +73,9 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
           return false;
         }
         const signature = await signer.signTypedData(result.grant.typedData as unknown as TypedDataDefinition);
-        await api.marketplace.grantSubmit(result.grant.grantId, signature);
+        // The same yes also turns off an earlier grant that still works on chain (Kawase pays its fee when it can).
+        const revoke = result.grant.revoke ? await signRevoke(signer, result.grant.revoke) : undefined;
+        await api.marketplace.grantSubmit(result.grant.grantId, signature, revoke);
         result = await api.marketplace.topUp(baseUnits);
       }
       if (result.status !== "topped_up") return false;

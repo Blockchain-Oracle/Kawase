@@ -99,6 +99,8 @@ export type AgentDeps = {
   business?: BusinessAgentDeps | undefined;
   /** One US dollar in a display currency (B2-3); replies stay in dollars without it. */
   fx?: ((currency: string) => Promise<number | null>) | undefined;
+  /** M12: with device proofs required, a chat turn sends inside the allowance by itself only when it carried one. */
+  deviceProofRequired?: boolean | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -176,6 +178,8 @@ export function createTurnRunner(deps: AgentDeps) {
     surface: "chat" | "voice";
     signal?: AbortSignal | undefined;
     log: Logger;
+    /** The turn's request carried the proof from the person's own device (M12). */
+    deviceProven?: boolean | undefined;
   }) => {
     const { user, threadId, incoming, surface, log } = input;
     const startedAt = Date.now();
@@ -210,6 +214,8 @@ export function createTurnRunner(deps: AgentDeps) {
       lastUserText,
       log,
       surface,
+      // M12: without the device's proof (once required) a send inside the allowance waits for the tap on its card.
+      autoSendAllowed: !deps.deviceProofRequired || input.deviceProven === true,
     });
     // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
     if (fx && user.displayCurrency && user.displayCurrency !== "USD") {
@@ -353,6 +359,7 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
       surface: "chat",
       signal: c.req.raw.signal,
       log: c.get("log"),
+      deviceProven: c.get("deviceProven"),
     });
     return createUIMessageStreamResponse({ stream });
   });

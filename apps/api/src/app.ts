@@ -83,6 +83,7 @@ import type { Discovery } from "@kawase/integrations-x402";
 import type { AgentWalletProvider } from "./marketplace/agent-wallets";
 import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
+import { markDeviceProof, requireDeviceProof } from "./auth/device-proof";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
@@ -172,6 +173,8 @@ export type AppDeps = {
   discovery?: Discovery | undefined;
   /** The oldest app version this api serves; older apps show "Update required" (cards/access.md). */
   minAppVersion?: string | undefined;
+  /** Allowance sends and account deletion refuse a request without the device's proof (M12; DEVICE_PROOF_REQUIRED). */
+  deviceProofRequired?: boolean | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -326,6 +329,13 @@ export function createApp(deps: AppDeps) {
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
   app.use("*", auditWrites(audit));
+  // M12: a leaked bearer token alone cannot spend within the allowance or delete the account; these also carry the
+  // proof from the signed-in device's own Turnkey key (after idempotency, so a retried request gets its first answer).
+  const deviceProof = requireDeviceProof(deps.db, deps.deviceProofRequired ?? false, deps.turnkey);
+  app.use("/sends/:id/approve", deviceProof);
+  app.use("/needs-you/:id/approve", deviceProof);
+  app.use("/account/delete", deviceProof);
+  app.use("/agent/chat", markDeviceProof(deps.db, deps.turnkey));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -407,7 +417,7 @@ export function createApp(deps: AppDeps) {
   const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
   if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
   if (deps.watchIntervalMs) requests.start(REQUEST_REMINDER_TICK_MS, deps.log);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken, tokenLookup(deps.chains, assets));
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
   // Everyday money (A5-2): scan to pay.
@@ -429,6 +439,7 @@ export function createApp(deps: AppDeps) {
   app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, account));
   const agentDeps = {
+    deviceProofRequired: deps.deviceProofRequired,
     marketplace,
     invoices,
     history,

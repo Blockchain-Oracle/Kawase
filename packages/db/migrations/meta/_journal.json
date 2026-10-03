@@ -358,6 +358,27 @@
       "when": 1791000093000,
       "tag": "0026_batch_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1791000100000,
+      "tag": "0049_relayer_gas",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791000101000,
+      "tag": "0080_payout_spend",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1791000102000,
+      "tag": "0081_handle_rename_hold",
+      "breakpoints": true
     }
   ]
 }

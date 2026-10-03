@@ -10,7 +10,7 @@ import { useSession } from "@/session/session-provider";
 /** Fixed by signing in (the session becomes an account). */
 const SIGN_IN = new Set(["SIGN_IN_REQUIRED", "ACCOUNT_REQUIRED"]);
 /** Fixed on another screen the person comes back from: wallet setup, Wallet & limits, adding money. */
-const ELSEWHERE = new Set(["WALLET_NOT_READY", "WALLET_NOT_SET_UP", "NO_WALLET", "NO_ALLOWANCE", "INSUFFICIENT_BALANCE", "INSUFFICIENT_GAS"]);
+const ELSEWHERE = new Set(["WALLET_NOT_READY", "WALLET_NOT_SET_UP", "NO_WALLET", "NO_ALLOWANCE", "INSUFFICIENT_BALANCE", "INSUFFICIENT_GAS", "GAS_RELAY_LIMIT", "GAS_RELAY_BUDGET_SPENT"]);
 const LIMIT = /^OVER_/;
 
 export const fixedElsewhere = (code: string | undefined) => Boolean(code && (ELSEWHERE.has(code) || LIMIT.test(code)));

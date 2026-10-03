@@ -38,7 +38,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useAccountMethods } from "@/account/use-account-methods";
-import { signAndSubmitPayout } from "@/business/sign-payout";
+import { payoutFailedText, signAndSubmitPayout } from "@/business/sign-payout";
 import { shareTextFile } from "@/history/share-file";
 import { useWhyHeadline, WhyTimeline } from "@/history/why-timeline";
 import { useLocale } from "@/i18n/locale-provider";
@@ -66,7 +66,7 @@ const HASH_TAIL = 8;
 const INVOICES_SHOWN = 8;
 const WHY_STEPS_SHOWN = 6;
 const PLATFORM_NAMES = { ios: "iOS", android: "Android", web: "Web", desktop: "Desktop" } as const;
-const PROBLEMS = ["amount", "self", "lookalike", "token_contract", "invalid"];
+const PROBLEMS = ["amount", "self", "lookalike", "token_contract", "invalid", "hold", "blocked", "limit", "changed", "rules"];
 
 export const BUSINESS_LOADING_LABELS: Record<string, string> = {
   propose_payout: "chatCards.loadingPayout",
@@ -144,6 +144,7 @@ function PayoutReceipt({ payout }: { payout: PayoutView }) {
 
 export function PayoutProposalCard({ output }: { output: { proposal: PayoutProposal } }) {
   const { t } = useT();
+  const { locale } = useLocale();
   const money = useTokenMoney();
   const networkName = useNetworkName();
   const { user } = useSession();
@@ -189,8 +190,8 @@ export function PayoutProposalCard({ output }: { output: { proposal: PayoutPropo
     setBusy(true);
     try {
       setPayout(await signAndSubmitPayout(signer, payout.id));
-    } catch {
-      toast(t("business.payoutFailed"));
+    } catch (error) {
+      toast(payoutFailedText(error, t, locale));
     } finally {
       setBusy(false);
     }
