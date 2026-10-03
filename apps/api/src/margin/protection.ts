@@ -292,6 +292,15 @@ export class MarginProtection {
     return request;
   }
 
+  /** A position just grew (the person added to it): past what its grants let Kawase move, it stops being watched and its page asks again. */
+  async resized(userId: string, network: NetworkId, positionId: string) {
+    const granted = await this.active(userId, network, positionId);
+    if (!granted) return;
+    const context = await this.margin.closeContext(userId, network, positionId);
+    if (!context || covers(granted.scope, context)) return;
+    await this.db.update(marginPositions).set({ protection: null }).where(and(eq(marginPositions.id, positionId), eq(marginPositions.protection, "armed")));
+  }
+
   /** A take-profit and/or stop-loss for one position: on the right side of the mark, short of liquidation, and routable now. */
   async protect(user: SessionUser, positionId: string, change: MarginProtectionChange): Promise<MarginProtectionResult> {
     const network = user.activeNetwork;

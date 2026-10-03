@@ -1067,22 +1067,25 @@ export class MarginService {
       return;
     }
     const request = intent.request as StoredRequest;
-    await this.db.transaction(async (tx) => {
+    const positionId = await this.db.transaction(async (tx) => {
       const [done] = await tx
         .update(intents)
         .set({ state: "completed", completedAt: new Date() })
         .where(and(eq(intents.id, intent.id), inArray(intents.state, ["executing", "unknown_outcome"])))
         .returning({ id: intents.id });
-      if (!done) return;
-      const positionId = open
+      if (!done) return null;
+      const id = open
         ? await this.recordOpen(tx, intent, view, draft, { supplied, borrowed })
         : await this.recordClose(tx, request.positionId, draft, { withdrawn, repaid, returned: BigInt(view.returnedMin) });
       await tx
         .update(txAttempts)
-        .set({ status: "confirmed", receipt: { positionId, supplied: supplied.toString(), borrowed: borrowed.toString(), repaid: repaid.toString(), withdrawn: withdrawn.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
+        .set({ status: "confirmed", receipt: { positionId: id, supplied: supplied.toString(), borrowed: borrowed.toString(), repaid: repaid.toString(), withdrawn: withdrawn.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
         .where(eq(txAttempts.id, attempt.id));
+      return id;
     });
     if (!open) await this.tellProtective(intent, "closed", BigInt(view.returnedMin));
+    // Added to: past what its protection grants let Kawase move, the position stops being watched and asks again.
+    if (open && positionId) await this.protection?.resized(intent.userId, intent.network, positionId).catch((error: unknown) => this.log.warn({ err: error, positionId }, "protection resize check failed"));
   }
 
   private async recordOpen(tx: Tx, intent: IntentRow, view: MarginDraftView, draft: MarginDraft, moved: { supplied: bigint; borrowed: bigint }) {
