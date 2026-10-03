@@ -11,6 +11,8 @@ export const buy: Catalog["buy"] = {
   realMoney: "Реальные деньги. Оплата Circle откроется в окне браузера.",
   delivers: "{{asset}} придёт в ваш кошелёк в сети {{network}}.",
   thenNote: "Затем купите на них {{token}} (ещё одно подтверждение).",
+  get: "Вы получите",
+  thenEstimate: "Около {{amount}} по сегодняшней цене.",
   byCircle: "Оплата через Circle",
   opening: "Открываем оплату Circle…",
   waiting: "В пути",

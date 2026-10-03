@@ -11,6 +11,8 @@ export const buy: Catalog["buy"] = {
   realMoney: "আসল টাকা। Circle-এর চেকআউট ব্রাউজার শিটে খোলে।",
   delivers: "{{asset}} আপনার ওয়ালেটে {{network}}-এ আসে।",
   thenNote: "তারপর এ দিয়ে {{token}} কিনুন (আরেকটি অনুমোদন)।",
+  get: "আপনি পাবেন",
+  thenEstimate: "আজকের দামে প্রায় {{amount}}।",
   byCircle: "Circle-এর মাধ্যমে চেকআউট",
   opening: "Circle-এর চেকআউট খুলছে…",
   waiting: "পথে আছে",

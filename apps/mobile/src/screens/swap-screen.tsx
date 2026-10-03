@@ -31,6 +31,7 @@ import { WEB_HOVER_MUTED, WEB_HOVER_SECONDARY } from "@kawase/ui-native/lib/wide
 
 import { tapFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
+import { useBuy } from "@/onramp/buy-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { BrakeNote } from "@/safety/brake-note";
@@ -102,6 +103,7 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const { status, user } = useSession();
   const signIn = useSignIn();
   const fund = useFund();
+  const buy = useBuy();
   const { portfolio } = usePortfolio();
   const controller = useSwap();
   const policyText = useSwapPolicyText();
@@ -359,12 +361,17 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
     );
   } else {
     const base = baseUnits(value, tokenIn.decimals);
+    const short = base !== undefined && base !== ZERO && balanceIn !== undefined && base > balanceIn;
     const cta =
       base === undefined || base === ZERO
         ? { label: t("ticket.needAmount"), enabled: false }
-        : balanceIn !== undefined && base > balanceIn
+        : short
           ? { label: t("ticket.notEnough", { symbol: tokenIn.symbol }), enabled: false }
           : { label: t("swap.review"), enabled: true };
+    // Short of dollars (or euros): Buy with Apple Pay / card for the amount, then this same swap (money-in.md entry).
+    const payStable = tokenIn.symbol === "USDC" || tokenIn.symbol === "EURC";
+    const outStable = tokenOut.symbol === "USDC" || tokenOut.symbol === "EURC";
+    const buyWithCard = short && payStable ? () => buy.open({ asset: tokenIn.symbol, amount: String(Math.ceil(Number(value))), ...(outStable ? {} : { then: tokenOut.address }) }) : undefined;
     const flip = () => {
       setTokenIn(tokenOut);
       setTokenOut(tokenIn);
@@ -442,6 +449,11 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
         <Button size="lg" disabled={!cta.enabled || creating || controller.busy} onPress={() => void review()}>
           <Text>{creating || controller.busy ? t("ticket.quoting") : cta.label}</Text>
         </Button>
+        {buyWithCard ? (
+          <Button variant="ghost" onPress={buyWithCard}>
+            <Text className="text-foreground">{t("buy.rowTitle")}</Text>
+          </Button>
+        ) : null}
       </View>
     );
     body = embedded ? (

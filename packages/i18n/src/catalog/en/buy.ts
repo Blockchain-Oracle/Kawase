@@ -9,6 +9,8 @@ export const buy = {
   realMoney: "Real money. Circle's checkout opens in a browser sheet.",
   delivers: "{{asset}} arrives in your wallet on {{network}}.",
   thenNote: "Then buy {{token}} with it (one more approval).",
+  get: "You get",
+  thenEstimate: "About {{amount}} at today's price.",
   byCircle: "Checkout by Circle",
   opening: "Opening Circle's checkout…",
   waiting: "On its way",
