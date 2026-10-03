@@ -31,4 +31,8 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "Kawase сообщит, когда вам заплатят, когда дойдёт перевод и когда автоматизация сработает за вас.",
   primerAllow: "Включить уведомления",
   primerLater: "Не сейчас",
+  kindRequestReceived: "Вас просят оплатить",
+  lockTitle: "Экран блокировки",
+  hideAmounts: "Скрывать суммы",
+  hideAmountsBody: "Уведомления говорят «Вы получили деньги» без суммы. Во входящих и в письмах суммы видны.",
 };

@@ -32,4 +32,8 @@ export const notifications: Catalog["notifications"] = {
     "जब आपको भुगतान मिलता है, जब भेजा गया पैसा पहुँचता है और जब कोई ऑटोमेशन आपके लिए चलता है, Kawase आपको बताता है।",
   primerAllow: "सूचनाएँ चालू करें",
   primerLater: "अभी नहीं",
+  kindRequestReceived: "कोई आपसे भुगतान माँगे",
+  lockTitle: "लॉक स्क्रीन",
+  hideAmounts: "राशि छिपाएँ",
+  hideAmountsBody: "सूचनाएँ बिना राशि के “आपको पैसे मिले” कहेंगी। आपके इनबॉक्स और ईमेल में राशि दिखती रहेगी।",
 };

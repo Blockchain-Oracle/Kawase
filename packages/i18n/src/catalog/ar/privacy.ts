@@ -15,4 +15,5 @@ export const privacy: Catalog["privacy"] = {
   deleted: "حُذفت المحادثات",
   money: "سجل الأموال",
   moneyBody: "معاملاتك موجودة على Arc؛ صدّرها حسب الشهر.",
+  findTitle: "العثور عليك",
 };

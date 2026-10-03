@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "No se pudo leer esta división.",
   invalid: "Las partes no suman la cuenta. Ajústalas en el formulario.",
   openForm: "Abrir el formulario",
+  askedInApp: "Pedido en Kawase",
 };

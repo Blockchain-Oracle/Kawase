@@ -11,11 +11,12 @@ const NAME_MAX = 80;
 const amountText = z.string().regex(/^\d+(\.\d+)?$/);
 const schema = z.object({
   title: z.string().trim().min(1).max(SPLIT_TITLE_MAX),
-  asset: z.enum(["USDC", "EURC"]),
+  /** "USDC", "EURC", a verified symbol or any token's address on the active network (R1). */
+  asset: z.string().regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/),
   total: amountText,
   includeMe: z.boolean(),
   people: z
-    .array(z.object({ name: z.string().trim().min(1).max(NAME_MAX), amount: amountText.optional() }))
+    .array(z.object({ name: z.string().trim().min(1).max(NAME_MAX), amount: amountText.optional(), ask: z.boolean().optional() }))
     .min(1)
     .max(SPLIT_PEOPLE_MAX),
 });

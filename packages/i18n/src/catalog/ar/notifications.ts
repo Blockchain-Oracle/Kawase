@@ -31,4 +31,8 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "‏يخبرك Kawase عندما يدفع لك أحد، وعندما يصل إرسال، وعندما تعمل أتمتة نيابةً عنك.",
   primerAllow: "تفعيل الإشعارات",
   primerLater: "ليس الآن",
+  kindRequestReceived: "شخص يطلب منك الدفع",
+  lockTitle: "شاشة القفل",
+  hideAmounts: "إخفاء المبالغ",
+  hideAmountsBody: "تقول الإشعارات «استلمت أموالًا» دون الرقم. يظل صندوق الوارد والبريد الإلكتروني يعرضان المبالغ.",
 };

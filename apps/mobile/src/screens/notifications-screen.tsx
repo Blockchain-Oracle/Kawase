@@ -1,5 +1,5 @@
 // Settings → Notifications (Stage 9, D31): whether this phone gets push (and the one way to fix it when it can't),
-// where emails go, what Kawase tells about on each channel, and quiet hours. Every change saves at once and is undone
+// where emails go, what Kawase tells about on each channel, amounts hidden on the lock screen (A5-3), and quiet hours. Every change saves at once and is undone
 // on screen if the save fails. The inbox gets everything regardless; these choices only decide who else is told.
 import { useFocusEffect, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -26,6 +26,7 @@ import { api } from "@/session/api";
 const EDGE_INSET = 12;
 const KIND_LABEL: Record<NotificationKind, string> = {
   payment_received: "notifications.kindPaymentReceived",
+  request_received: "notifications.kindRequestReceived",
   request_paid: "notifications.kindRequestPaid",
   send_completed: "notifications.kindSendCompleted",
   automation_skipped: "notifications.kindAutomationSkipped",
@@ -178,6 +179,28 @@ export function NotificationsScreen() {
             </ListGroup>
           )}
         </View>
+
+        {native && settings ? (
+          <View className="gap-2">
+            <Text accessibilityRole="header" className={cn("text-foreground text-lg font-semibold", TEXT_START)}>
+              {t("notifications.lockTitle")}
+            </Text>
+            <ListGroup>
+              <ListRow
+                title={t("notifications.hideAmounts")}
+                trailing={
+                  <Switch
+                    checked={settings.hideAmounts}
+                    accessibilityLabel={t("notifications.hideAmounts")}
+                    onCheckedChange={(next) => void save({ hideAmounts: next }, { ...settings, hideAmounts: next })}
+                  />
+                }
+                onPress={() => void save({ hideAmounts: !settings.hideAmounts }, { ...settings, hideAmounts: !settings.hideAmounts })}
+              />
+            </ListGroup>
+            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("notifications.hideAmountsBody")}</Text>
+          </View>
+        ) : null}
 
         {native && settings ? (
           <View className="gap-2">

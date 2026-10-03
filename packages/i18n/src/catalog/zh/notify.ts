@@ -20,4 +20,12 @@ export const notify: Catalog["notify"] = {
   reminderTitle: "明天，{{at}}",
   reminderPayroll: "{{people}} 人的工资",
   reminderShort: "你的钱包余额少于本次运行所需",
+  requestReceivedTitle: "{{name}} 向你请求 {{amount}}",
+  requestReceivedTitleHidden: "{{name}} 向你请求付款",
+  requestReceivedBody: "点按付款",
+  receivedTitleHidden: "你收到了一笔钱",
+  sentTitleHidden: "你的款项已发出",
+  needsYouSendHidden: "向 {{name}} 付款",
+  needsYouSwapHidden: "将 {{symbolIn}} 兑换为 {{symbolOut}}",
+  ruleAlertHidden: "你的一条规则已触发",
 };

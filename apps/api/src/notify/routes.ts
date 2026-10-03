@@ -21,6 +21,8 @@ const settingsSchema = z
   .object({
     prefs: z.object(Object.fromEntries(NOTIFICATION_KINDS.map((kind) => [kind, channels.optional()]))).strict().optional(),
     quietHours: z.object({ start: z.string().regex(HHMM), end: z.string().regex(HHMM) }).nullable().optional(),
+    /** Push without figures on the lock screen ("You received money"). */
+    hideAmounts: z.boolean().optional(),
   })
   .strict();
 const tokenSchema = z.object({ token: z.string().max(TOKEN_MAX).regex(EXPO_PUSH_TOKEN).nullable() });

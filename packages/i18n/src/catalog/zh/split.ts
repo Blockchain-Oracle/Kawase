@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "无法读取此分账。",
   invalid: "各份额加起来不等于账单金额。请在分账页面设置。",
   openForm: "打开分账页面",
+  askedInApp: "已在 Kawase 上请求",
 };

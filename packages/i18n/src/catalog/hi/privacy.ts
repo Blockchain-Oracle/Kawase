@@ -15,4 +15,5 @@ export const privacy: Catalog["privacy"] = {
   deleted: "बातचीत मिटा दी गई",
   money: "पैसों का इतिहास",
   moneyBody: "आपके लेन-देन Arc पर हैं; उन्हें महीने के हिसाब से एक्सपोर्ट करें।",
+  findTitle: "आपको ढूँढना",
 };

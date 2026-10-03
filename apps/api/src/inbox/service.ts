@@ -12,6 +12,20 @@ import type { Executor } from "../send/facts";
 import type { Chains } from "../wallet/chain";
 
 const PAGE = 100;
+const UUID = /^[0-9a-f-]{36}$/i;
+
+/**
+ * The exact thing an automation's item is about, from its dedupe key (`automation_skipped:<run>`, `rule_alert:<run>`,
+ * `automation_reminder:<automation>:<at>`), so its push and inbox row open that run's story or that automation's card
+ * rather than the list (plan §A.4.11). Params set by the producer win.
+ */
+export function subjectOf(kind: InboxKind, dedupeKey: string): Record<string, string> {
+  const [, first] = dedupeKey.split(":");
+  if (!first || !UUID.test(first)) return {};
+  if (kind === "automation_skipped" || kind === "rule_alert") return { runId: first };
+  if (kind === "automation_reminder") return { automationId: first };
+  return {};
+}
 
 export type NewInboxItem = {
   userId: string;
@@ -39,7 +53,7 @@ export class InboxService {
         userId: item.userId,
         network: item.network,
         kind: item.kind,
-        params: item.params,
+        params: { ...subjectOf(item.kind, item.dedupeKey), ...item.params },
         dedupeKey: item.dedupeKey,
         requestId: item.requestId ?? null,
         intentId: item.intentId ?? null,
@@ -70,7 +84,7 @@ export class InboxService {
           id: row.id,
           kind: row.kind,
           network: row.network,
-          params: row.params,
+          params: { ...subjectOf(row.kind, row.dedupeKey), ...row.params },
           requestId: row.requestId,
           intentId: row.intentId,
           txHash: row.txHash,

@@ -33,4 +33,8 @@ export const notifications: Catalog["notifications"] = {
     "Kawase vous prévient quand vous êtes payé, quand un envoi arrive et quand une automatisation s'exécute pour vous.",
   primerAllow: "Activer les notifications",
   primerLater: "Plus tard",
+  kindRequestReceived: "Quelqu’un vous demande de payer",
+  lockTitle: "Écran verrouillé",
+  hideAmounts: "Masquer les montants",
+  hideAmountsBody: "Les notifications disent « Vous avez reçu de l’argent » sans le montant. Votre boîte de réception et vos e-mails affichent toujours les montants.",
 };

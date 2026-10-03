@@ -731,10 +731,16 @@ export type PaymentRequest = {
   paidTx: { hash: string; explorerUrl: string } | null;
   /** Who paid, when known: a Kawase @handle / contact name, or just the address. */
   paidBy: { address: string; name: string | null } | null;
+  /** The Kawase user it was also asked of in the app (their inbox and push); null when it is a link only. */
+  payer?: { handle: string } | null;
 };
 
-/** `asset`: "USDC", "EURC", a verified symbol or any token's address on the active network (R1). */
-export type PaymentRequestInput = { amount: string; asset: string; note?: string | null | undefined };
+/**
+ * `asset`: "USDC", "EURC", a verified symbol or any token's address on the active network (R1). `payer`: who to ask
+ * in the app as well, in the person's own words — an @handle, or a saved contact's name whose @handle is known. Anyone
+ * else still gets the link.
+ */
+export type PaymentRequestInput = { amount: string; asset: string; note?: string | null | undefined; payer?: string | null | undefined };
 
 /** A request's token: its address on the network, symbol and decimals. */
 export type RequestToken = { address: string; symbol: string; decimals: number };
@@ -754,7 +760,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue" | "request_received";
 
 export type InboxItem = {
   id: string;
@@ -791,5 +797,7 @@ export type NotificationSettings = {
   emailEnabled: boolean;
   /** Whether this phone has a push token on file. */
   pushRegistered: boolean;
+  /** Push says "You received money" with no figure (lock-screen privacy); off by default. */
+  hideAmounts: boolean;
 };
-export type NotificationSettingsChange = { prefs?: NotificationPrefs; quietHours?: QuietHours | null };
+export type NotificationSettingsChange = { prefs?: NotificationPrefs; quietHours?: QuietHours | null; hideAmounts?: boolean };

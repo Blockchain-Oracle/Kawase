@@ -401,6 +401,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       create: (input: PaymentRequestInput) => call<{ request: PaymentRequest }>("POST", "/requests", input),
       get: (id: string) => call<{ request: PaymentRequest }>("GET", `/requests/${id}`),
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
+      /** Ask a Kawase user for an open request in the app (an @handle or a contact's name); the link still works. */
+      ask: (id: string, payer: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/ask`, { payer }),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
     },

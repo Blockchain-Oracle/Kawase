@@ -12,4 +12,6 @@ export const inbox: Catalog["inbox"] = {
   markAllRead: "Marcar tudo como lido",
   loadFailed: "Não foi possível carregar sua caixa de entrada.",
   bellUnread: "Caixa de entrada, {{count}} novos",
+  askedYou: "{{name}} pediu {{amount}} a você",
+  pay: "Pagar",
 };

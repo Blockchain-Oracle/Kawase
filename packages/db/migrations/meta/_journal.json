@@ -314,13 +314,27 @@
       "idx": 44,
       "version": "7",
       "when": 1791000087000,
-      "tag": "0024_withdrawals",
+      "tag": "0076_request_received",
       "breakpoints": true
     },
     {
       "idx": 45,
       "version": "7",
       "when": 1791000088000,
+      "tag": "0077_notify_hide_amounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1791000089000,
+      "tag": "0024_withdrawals",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1791000090000,
       "tag": "0025_watchlist",
       "breakpoints": true
     }
