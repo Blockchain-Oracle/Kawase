@@ -25,6 +25,7 @@ import { signAndSubmitPayout } from "@/business/sign-payout";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
@@ -80,8 +81,8 @@ export function PayoutsScreen() {
       setDraft(undefined);
       setText("");
       await load();
-    } catch {
-      toast(t("business.payoutFailed"));
+    } catch (error) {
+      if (!sayIfPractice(error, t)) toast(t("business.payoutFailed"));
     } finally {
       setBusy(false);
     }

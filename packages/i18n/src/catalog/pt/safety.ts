@@ -128,4 +128,6 @@ export const safety: Catalog["safety"] = {
   practiceBuyAsk: "Esperaria o seu toque primeiro. Nada foi pago.",
   practiceBuyTopUp: "A carteira do agente precisaria de uma recarga antes. Nada foi pago.",
   practiceBuyNothing: "Da carteira do agente. Nada foi pago.",
+  practiceRefused: "O modo de prática está ativado, então nada se move de verdade. Desative-o em Carteira e limites para fazer isso de verdade.",
+  practiceOpen: "Carteira e limites",
 };

@@ -15,6 +15,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
@@ -64,7 +65,7 @@ export function useProtection(positionId: string) {
       setView(await api.margin.protectionActivate(signatures, revoke));
       return true;
     } catch (error) {
-      if (!sayIfRefused(error, t)) toast(t("protect.failed"));
+      if (!sayIfRefused(error, t) && !sayIfPractice(error, t)) toast(t("protect.failed"));
       return false;
     } finally {
       setBusy(false);

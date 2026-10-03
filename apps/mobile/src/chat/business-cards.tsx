@@ -45,6 +45,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { usePrice } from "@/marketplace/use-agent-wallet";
 import { shortAddress } from "@/send/copy";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { API_URL, api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -189,8 +190,8 @@ export function PayoutProposalCard({ output }: { output: { proposal: PayoutPropo
     setBusy(true);
     try {
       setPayout(await signAndSubmitPayout(signer, payout.id));
-    } catch {
-      toast(t("business.payoutFailed"));
+    } catch (error) {
+      if (!sayIfPractice(error, t)) toast(t("business.payoutFailed"));
     } finally {
       setBusy(false);
     }

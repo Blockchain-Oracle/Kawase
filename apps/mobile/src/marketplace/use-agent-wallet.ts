@@ -11,6 +11,7 @@ import { amount, formatPrice } from "@kawase/money";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
@@ -79,8 +80,8 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
       setView(result.wallet);
       toast(t("agentWallet.toppedUp", { amount: price(baseUnits) }));
       return true;
-    } catch {
-      toast(t("agentWallet.topUpFailed"));
+    } catch (error) {
+      if (!sayIfPractice(error, t)) toast(t("agentWallet.topUpFailed"));
       await refresh();
       return false;
     } finally {
@@ -97,8 +98,8 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
       if (result.status === "nothing_to_return") toast(t("agentWallet.nothingToReturn"));
       else if (result.moves.some((move) => move.status === "failed")) toast(t("agentWallet.returnFailed"));
       else toast(t("agentWallet.returned", { amount: price(back.toString()) }));
-    } catch {
-      toast(t("agentWallet.returnFailed"));
+    } catch (error) {
+      if (!sayIfPractice(error, t)) toast(t("agentWallet.returnFailed"));
       await refresh();
     } finally {
       setBusy(undefined);
