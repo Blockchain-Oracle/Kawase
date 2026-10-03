@@ -16,6 +16,7 @@ import { createDb, txAttempts, users, wallets } from "@kawase/db";
 import { DELEGATION_FRAMEWORK, getNetwork, type NetworkId } from "@kawase/networks";
 
 import { ProblemError } from "../src/http/problem";
+import { lockPerson, reserveRelay } from "../src/send/relayed";
 import type { Chains, NetworkClients } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
 
@@ -201,4 +202,34 @@ test("the relayer's daily gas budget refuses everything past it, with its own re
     await db.delete(txAttempts).where(eq(txAttempts.id, row!.id));
   }
   assert.equal(state.sends, 0);
+});
+
+test("M10: a gas-free send's relay is counted inside the person's transaction, so the last one goes once", { skip: !url }, async () => {
+  // The shape submitAuthorization runs under lockIntent: the person's lock, the relayer's budget, the attempt row.
+  const { userId, key } = await person();
+  const chainId = getNetwork("testnet").chainId;
+  const relayed = (status: "confirmed" | "prepared") => ({
+    userId,
+    network: "testnet" as const,
+    chainId,
+    kind: "send_relayed",
+    provider: "relayer" as const,
+    idempotencyKey: randomUUID(),
+    fromAddress: key.address,
+    status,
+    gasCost: 1n,
+  });
+  await db.insert(txAttempts).values(Array.from({ length: RELAYED_SENDS_PER_DAY - 1 }, () => relayed("confirmed")));
+  const send = () =>
+    db.transaction(async (tx) => {
+      await lockPerson(tx, userId, "testnet");
+      const refused = await reserveRelay(tx, { userId, network: "testnet", cost: 1n, counted: true });
+      if (refused) return refused;
+      // As slow as a real approval, so the two overlap.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await tx.insert(txAttempts).values(relayed("prepared"));
+      return "relayed";
+    });
+  const outcomes = await Promise.all([send(), send(), send()]);
+  assert.deepEqual(outcomes.sort(), ["person_limit", "person_limit", "relayed"]);
 });
