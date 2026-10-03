@@ -255,6 +255,9 @@ export type IntentState =
  */
 export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired" | "practiced";
 
+/** How the person checked a contact's address is really theirs: their QR scanned, in person, or by phone or video. */
+export type VerifyMethod = "qr" | "in_person" | "call";
+
 export type SendRecipientView = {
   via: "contact" | "handle" | "address";
   address: string;
@@ -724,6 +727,9 @@ export type AutomationGrantRequest = { grants: { grantId: string; typedData: unk
 export type PaymentRequestStatus = "open" | "paid" | "canceled" | "expired";
 
 /** A request the person made: share `link`; it is marked paid by the send that paid it or by a matching incoming transfer. */
+/** What a Remind did: told someone asked in the app, they were already reminded today, or it is a link to share again. */
+export type RequestReminder = "in_app" | "already_today" | "link";
+
 export type PaymentRequest = {
   id: string;
   /** The public id in the link (`/r/{token}`). */

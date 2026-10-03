@@ -13,5 +13,6 @@ export const inbox: Catalog["inbox"] = {
   loadFailed: "Impossible de charger votre boîte de réception.",
   bellUnread: "Boîte de réception, {{count}} nouveaux",
   askedYou: "{{name}} vous demande {{amount}}",
+  remindedYou: "Rappel : {{name}} vous demande {{amount}}",
   pay: "Payer",
 };

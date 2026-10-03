@@ -3,7 +3,8 @@
 // under the network it happened on. When that is not the network the person is on, it says so and offers the
 // switch; the card's own actions apply once they match. A guest who opens an account's link signs in in place and
 // the card loads (signed-out links come back here after onboarding). A margin order opens its position; an automation
-// shows its live card and a Buy order its own; a run, an invoice, a split or a request opens its page (A5-3).
+// shows its live card, and so do a Buy order, a move across chains and an Aave action; a run, an invoice, a split or a
+// request opens its page (A5-3), a withdrawal resumes on Withdraw and a paid service call opens the agent wallet.
 import { useRouter } from "expo-router";
 import { CloudOff, Waypoints } from "lucide-react-native";
 import * as React from "react";
@@ -27,6 +28,8 @@ import { Page } from "@/account/page";
 import { AutomationCard } from "@/chat/automation-card";
 import { BridgeCard } from "@/chat/bridge-card";
 import { EarnCard } from "@/chat/earn-card";
+import { LendOrderCard } from "@/chat/lend-card";
+import { MoveCard } from "@/chat/move-card";
 import { SendCard } from "@/chat/send-card";
 import { SwapCard } from "@/chat/swap-card";
 import { useT } from "@/i18n";
@@ -59,6 +62,9 @@ export function IntentScreen({ id }: { id: string }) {
       if (found.kind === "invoice") return void router.replace({ pathname: "/business/invoice/[id]", params: { id: found.invoiceId } });
       if (found.kind === "split") return void router.replace({ pathname: "/split/[id]", params: { id: found.splitId } });
       if (found.kind === "request") return void router.replace({ pathname: "/request", params: { id: found.requestId } });
+      // A withdrawal resumes where it stands ("Finish it"); a paid service call is in the agent wallet's history.
+      if (found.kind === "withdrawal") return void router.replace({ pathname: "/withdraw", params: { resume: found.withdrawalId } });
+      if (found.kind === "purchase") return void router.replace("/agent-wallet");
       setLoad({ status: "ready", found });
     } catch (error) {
       setLoad({ status: error instanceof ApiError && error.code === "not_found" ? "not_found" : "failed" });
@@ -77,6 +83,8 @@ export function IntentScreen({ id }: { id: string }) {
     earn: t("earn.title"),
     automation: t("automation.title"),
     onramp: t("buy.title"),
+    crosschain: t("move.title"),
+    lend: t("lend.title"),
   };
   const title = (load.status === "ready" ? titles[load.found.kind] : undefined) ?? t("resume.title");
   const active = user?.activeNetwork ?? "testnet";
@@ -127,6 +135,10 @@ export function IntentScreen({ id }: { id: string }) {
             <AutomationCard output={{ automation: load.found.automation } as ProposeAutomationOutput} />
           ) : load.found.kind === "onramp" ? (
             <OnrampOrderCard order={load.found.order} />
+          ) : load.found.kind === "crosschain" ? (
+            <MoveCard output={{ crosschain: true, intent: load.found.intent, summary: "" }} />
+          ) : load.found.kind === "lend" ? (
+            <LendOrderCard output={{ intent: load.found.intent, summary: "" }} />
           ) : null}
           {load.found.threadId ? (
             <Button variant="ghost" onPress={() => router.navigate({ pathname: "/chat", params: { thread: load.found.threadId! } })}>

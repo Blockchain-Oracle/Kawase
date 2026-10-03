@@ -103,7 +103,7 @@ import type { SafetyToolOutput } from "@kawase/api-client";
 import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
-import type { PayCodeView } from "@kawase/api-client";
+import type { PayCodeView, RemindPaymentOutput } from "@kawase/api-client";
 import { PayCodeCard, SplitBillCard } from "./pay-code-card";
 
 type Network = "mainnet" | "testnet";
@@ -626,6 +626,7 @@ const LOADING_LABELS: Record<string, string> = {
   get_status: "insight.loadingStatus",
   pay_from_code: "scan.reading",
   split_bill: "split.loading",
+  remind_payment: "request.reminding",
   ...BUSINESS_LOADING_LABELS,
 };
 
@@ -773,6 +774,11 @@ export function ToolCard({
       return <StatusCard output={part.output as StatusView} />;
     case "split_bill":
       return <SplitBillCard output={part.output as Parameters<typeof SplitBillCard>[0]["output"]} />;
+    case "remind_payment": {
+      // The request reminded, live (its Remind shares a link-only request again); several or none: the reply says.
+      const reminded = part.output as RemindPaymentOutput;
+      return reminded.status === "reminded" ? <RequestCard output={{ request: reminded.request }} /> : null;
+    }
     case "pay_from_code": {
       const paid = part.output as { code: PayCodeView; send: ProposeSendOutput | null };
       return paid.send ? <SendCard output={paid.send} /> : <PayCodeCard view={paid.code} />;

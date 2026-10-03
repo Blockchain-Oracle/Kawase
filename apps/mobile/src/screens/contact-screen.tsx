@@ -1,19 +1,19 @@
 // One contact (revamp 10c; I1, I4): who they are, the address money goes to now (in full, mono, left-to-right,
-// copyable), Send, and the address history — every version with its status (current, active from a time, old),
-// where it came from (the same words as the send screen's trust chip), and per this network when it was last paid
-// and how it was verified. Changing the address puts the new one on a 24 h hold during which payments to the contact
-// are frozen; the banner says until when and lets the person cancel the change. Notes are the person's own (saved
-// when the field loses focus). Removing a contact is hold-to-confirm, because it cannot be undone and is not a
-// payment (DESIGN.md).
+// copyable), Verify (scan their QR, or confirm it together), Send, and the address history — every version with its
+// status (current, active from a time, old), where it came from (the same words as the send screen's trust chip), and
+// per this network when it was last paid and how it was verified. Changing the address puts the new one on a 24 h hold
+// during which payments to the contact are frozen; the banner says until when and lets the person cancel the change.
+// Notes are the person's own (saved when the field loses focus). Removing a contact is hold-to-confirm, because it
+// cannot be undone and is not a payment (DESIGN.md).
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Clock, Copy, Send } from "lucide-react-native";
+import { BadgeCheck, Clock, Copy, ScanLine, Send } from "lucide-react-native";
 import * as React from "react";
-import { ScrollView, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import { ApiError, type Contact, type ContactAddress } from "@kawase/api-client";
+import { ApiError, type Contact, type ContactAddress, type VerifyMethod } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Koban } from "@kawase/ui-native/components/art/koban";
@@ -34,6 +34,7 @@ import { ContactsHeader } from "@/contacts/screen-header";
 import { contactAddress, useContact, useSourceLabel } from "@/contacts/use-contacts";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { ScanModal } from "@/scan/scan-modal";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -66,8 +67,90 @@ function useFormatters() {
   };
 }
 
+/** How a verification is named: the method the person chose, in their language (older free-text ones as they are). */
+function useVerifiedLabel() {
+  const { t } = useT();
+  return (method: string) => (method === "qr" ? t("contacts.verifiedQr") : method === "in_person" ? t("contacts.verifiedInPerson") : method === "call" ? t("contacts.verifiedCall") : method);
+}
+
+/** The first address a scanned code carries for a person: an EIP-681 transfer's recipient, else the first 0x address. */
+function scannedAddress(code: string): string | undefined {
+  return (/[?&]address=(0x[0-9a-fA-F]{40})/.exec(code) ?? /(0x[0-9a-fA-F]{40})/.exec(code))?.[1];
+}
+
+/**
+ * Verify (capability matrix, Counterparts): check once that the current address is really theirs — scan the QR on
+ * their phone (it must show this exact address), or confirm it together in person or on a call. Per network; a new
+ * address starts unverified. Only the person sets it, here.
+ */
+function VerifyAddress({ contact, network, onChanged }: { contact: Contact; network: "mainnet" | "testnet"; onChanged: (contact: Contact) => void }) {
+  const { t } = useT();
+  const verifiedLabel = useVerifiedLabel();
+  const [scanning, setScanning] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const current = contact.addresses.find((entry) => entry.status === "active");
+  const method = current?.trust[network]?.verifiedMethod ?? null;
+  if (!current || contact.pendingChange) return null;
+
+  const save = async (next: VerifyMethod | null) => {
+    setBusy(true);
+    try {
+      onChanged((await api.contacts.verify(contact.id, next)).contact);
+      if (next) toast(t("contacts.verifyDone"));
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const scanned = (code: string) => {
+    setScanning(false);
+    const found = scannedAddress(code);
+    if (found && found.toLowerCase() === current.address.toLowerCase()) void save("qr");
+    else toast(t("contacts.verifyMismatch"));
+    return true;
+  };
+
+  return (
+    <View className="bg-card border-border gap-3 rounded-2xl border p-4">
+      {method ? (
+        <View className="flex-row items-center gap-2">
+          <Icon as={BadgeCheck} className="text-success size-5" />
+          <Text className={cn("text-foreground flex-1 text-sm font-semibold", TEXT_START)}>{t("contacts.verified", { method: verifiedLabel(method) })}</Text>
+          <Button variant="ghost" size="sm" disabled={busy} onPress={() => void save(null)}>
+            <Text className="text-muted-foreground">{t("contacts.unverify")}</Text>
+          </Button>
+        </View>
+      ) : (
+        <>
+          <View className="gap-1">
+            <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("contacts.verifyTitle")}</Text>
+            <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("contacts.verifyBody")}</Text>
+          </View>
+          {Platform.OS !== "web" ? (
+            <Button variant="secondary" disabled={busy} onPress={() => setScanning(true)}>
+              <Icon as={ScanLine} className="size-4" />
+              <Text>{t("contacts.verifyScan")}</Text>
+            </Button>
+          ) : null}
+          <View className="flex-row flex-wrap gap-2">
+            <Button size="sm" variant="ghost" disabled={busy} onPress={() => void save("in_person")}>
+              <Text className="text-muted-foreground">{t("contacts.verifyInPerson")}</Text>
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onPress={() => void save("call")}>
+              <Text className="text-muted-foreground">{t("contacts.verifyCall")}</Text>
+            </Button>
+          </View>
+        </>
+      )}
+      <ScanModal open={scanning} origin="contact" onClose={() => setScanning(false)} onCode={scanned} />
+    </View>
+  );
+}
+
 function AddressVersion({ address, network }: { address: ContactAddress; network: "mainnet" | "testnet" }) {
   const { t } = useT();
+  const verifiedLabel = useVerifiedLabel();
   const source = useSourceLabel();
   const { time, date } = useFormatters();
   const trust = address.trust[network];
@@ -97,7 +180,7 @@ function AddressVersion({ address, network }: { address: ContactAddress; network
       {address.status !== "retired" ? (
         <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
           {trust?.lastPaidAt ? t("contacts.lastPaid", { date: date(trust.lastPaidAt), network: networkName }) : t("contacts.neverPaid")}
-          {trust?.verifiedMethod ? ` · ${t("contacts.verified", { method: trust.verifiedMethod })}` : ""}
+          {trust?.verifiedMethod ? ` · ${t("contacts.verified", { method: verifiedLabel(trust.verifiedMethod) })}` : ""}
         </Text>
       ) : null}
     </View>
@@ -377,6 +460,8 @@ export function ContactScreen({ id }: { id: string | undefined }) {
             </Button>
           </View>
         ) : null}
+
+        <VerifyAddress contact={contact} network={network} onChanged={set} />
 
         <View className="gap-2">
           <Button

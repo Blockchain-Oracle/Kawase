@@ -176,7 +176,7 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const incoming = item.kind !== "send_completed" && !skipped && !quiet && !asked;
   const title =
     asked
-      ? t("inbox.askedYou", { name, amount })
+      ? t(p.reminder ? "inbox.remindedYou" : "inbox.askedYou", { name, amount })
       : waiting
       ? t(p.reminder ? "notify.needsYouReminderTitle" : "notify.needsYouTitle")
       : reminder

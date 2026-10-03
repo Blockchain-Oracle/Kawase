@@ -65,6 +65,7 @@ const messageSchema = z.object({
   metadata: z.unknown().optional(),
 });
 const chatSchema = z.object({ id: z.uuid(), message: messageSchema });
+const renameSchema = z.object({ title: z.string().trim().min(1).max(TITLE_MAX) });
 
 export type AgentDeps = {
   db: Db;
@@ -375,6 +376,21 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
       thread: { id: thread.id, title: thread.title, network: thread.network, lastMessageAt: thread.lastMessageAt },
       messages: await loadMessages(thread.id),
     });
+  });
+
+  // Rename (capability matrix, Thread "rename"): the person's own title, in place of the first words.
+  app.patch("/threads/:id", async (c) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    const body = renameSchema.safeParse(await c.req.json().catch(() => undefined));
+    if (!id.success) throw problem(HTTP.notFound, "not_found");
+    if (!body.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: body.error.issues });
+    const [renamed] = await db
+      .update(threads)
+      .set({ title: body.data.title })
+      .where(and(eq(threads.id, id.data), eq(threads.userId, c.get("userId")!)))
+      .returning({ id: threads.id, title: threads.title, network: threads.network, lastMessageAt: threads.lastMessageAt });
+    if (!renamed) throw problem(HTTP.notFound, "not_found");
+    return c.json({ thread: renamed });
   });
 
   app.delete("/threads/:id", async (c) => {

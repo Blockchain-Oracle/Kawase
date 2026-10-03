@@ -1,18 +1,20 @@
 // The Chat tab (journey 14, Stage 4): the agent, live. It opens on the most recent conversation (threads are kept
-// on the api, so they follow the account across devices); the clock icon lists past threads (M1) and the pen
-// starts a new one. A starter chip from home starts a new thread with its question already asked. The network
+// on the api, so they follow the account across devices); the clock icon lists past threads (M1), each of which can be
+// renamed or deleted from its … button, and the pen starts a new one. A starter chip from home starts a new thread with its question already asked. The network
 // strip and the agent both follow the session's network. A conversation or a list that could not be read says so
 // with Retry — never an empty new conversation or "no conversations" in its place — and only the newest open
 // request is shown, so a slow read cannot replace a thread opened after it (Codex review R14).
 import * as Crypto from "expo-crypto";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CloudOff, History, ScanLine, SquarePen } from "lucide-react-native";
+import { CloudOff, Ellipsis, History, ScanLine, SquarePen } from "lucide-react-native";
 import * as React from "react";
 import { ActivityIndicator, View } from "react-native";
+import { toast } from "sonner-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { UIMessage } from "ai";
 
 import type { ThreadSummary } from "@kawase/api-client";
+import { HoldToConfirm } from "@kawase/ui-native/components/hold-to-confirm";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
@@ -33,6 +35,8 @@ import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 const STRIP_INSET = 6;
+/** A conversation's title, as the api keeps it. */
+const TITLE_MAX = 60;
 const EDGE_INSET = 12;
 const FAILED_ICON = 36;
 /** The conversation's width on a desktop window, and the air above it there (no status bar). */
@@ -69,6 +73,11 @@ export function ChatScreen() {
   const [scanning, setScanning] = React.useState(false);
   // Every open bumps this; a read that finishes after a newer open is dropped.
   const latestOpen = React.useRef(0);
+  // A conversation's options in the history sheet: rename it, or delete it (capability matrix, Thread).
+  const [managing, setManaging] = React.useState<ThreadSummary | null>(null);
+  const [newTitle, setNewTitle] = React.useState("");
+  const [savingTitle, setSavingTitle] = React.useState(false);
+  const [deleteAttempt, setDeleteAttempt] = React.useState(0);
 
   const fresh = React.useCallback((first?: string) => {
     latestOpen.current += 1;
@@ -136,6 +145,42 @@ export function ChatScreen() {
     router.setParams({ prompt: undefined });
   }, [prompt, fresh, router]);
 
+  const manage = (thread: ThreadSummary) => {
+    setManaging(thread);
+    setNewTitle(thread.title ?? "");
+  };
+  const rename = async () => {
+    if (!managing || !newTitle.trim()) return;
+    setSavingTitle(true);
+    try {
+      const { thread: renamed } = await api.agent.renameThread(managing.id, newTitle.trim());
+      setThreads((current) =>
+        current.map((entry) => (entry.id === renamed.id ? { ...entry, title: renamed.title } : entry)),
+      );
+      setManaging(null);
+      toast(t("chat.threadRenamed"));
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+  const removeThread = async () => {
+    if (!managing) return;
+    const gone = managing.id;
+    try {
+      await api.agent.deleteThread(gone);
+      setThreads((current) => current.filter((entry) => entry.id !== gone));
+      setManaging(null);
+      toast(t("chat.threadDeleted"));
+      // The conversation on screen was the one deleted: a new one takes its place.
+      if (open.status === "ready" && open.id === gone) fresh();
+    } catch {
+      toast(t("common.error"));
+      setDeleteAttempt((count) => count + 1);
+    }
+  };
+
   const when = (iso: string) =>
     new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(
       new Date(iso),
@@ -165,7 +210,13 @@ export function ChatScreen() {
             <Icon as={History} className="size-5" />
           </Button>
           <Text className="font-display text-foreground flex-1 text-center text-xl font-bold">{t("chat.title")}</Text>
-          <Button variant="secondary" size="icon" className="size-11" accessibilityLabel={t("scan.title")} onPress={() => setScanning(true)}>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="size-11"
+            accessibilityLabel={t("scan.title")}
+            onPress={() => setScanning(true)}
+          >
             <Icon as={ScanLine} className="size-5" />
           </Button>
           <Button
@@ -211,81 +262,124 @@ export function ChatScreen() {
 
       <Sheet
         open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        title={t("chat.history")}
+        onClose={() => {
+          setHistoryOpen(false);
+          setManaging(null);
+        }}
+        title={managing ? t("chat.manageThread") : t("chat.history")}
         colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
         closeLabel={t("common.close")}
         bottomInset={insets.bottom}
         className="gap-3"
       >
-        <SheetInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder={t("chat.search")}
-          accessibilityLabel={t("chat.search")}
-          autoCorrect={false}
-        />
-        <Button
-          variant="secondary"
-          onPress={() => {
-            setHistoryOpen(false);
-            fresh();
-          }}
-        >
-          <Icon as={SquarePen} className="size-4" />
-          <Text>{t("chat.newChat")}</Text>
-        </Button>
-        {threadsFailed ? (
-          <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
-            <Text accessibilityRole="alert" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
-              {threads.length > 0 ? t("chat.historyStale") : t("chat.historyFailed")}
-            </Text>
-            <Button size="sm" variant="secondary" onPress={() => void loadThreads()}>
-              <Text>{t("common.retry")}</Text>
+        {managing ? (
+          <View className="gap-3">
+            <SheetInput
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder={t("chat.renamePlaceholder")}
+              accessibilityLabel={t("chat.rename")}
+              maxLength={TITLE_MAX}
+              onSubmitEditing={() => void rename()}
+            />
+            <Button disabled={savingTitle || !newTitle.trim()} onPress={() => void rename()}>
+              <Text>{t("chat.rename")}</Text>
+            </Button>
+            <HoldToConfirm
+              onConfirm={() => void removeThread()}
+              confirmLabel={t("chat.deletingThread")}
+              done={false}
+              resetKey={deleteAttempt}
+              hint={t("limits.holdHint")}
+            >
+              {t("chat.holdToDeleteThread")}
+            </HoldToConfirm>
+            <Button variant="ghost" onPress={() => setManaging(null)}>
+              <Text className="text-muted-foreground">{t("common.back")}</Text>
             </Button>
           </View>
-        ) : null}
-        {found.failed ? (
-          <Text accessibilityRole="alert" className={cn("text-muted-foreground px-1 text-sm", TEXT_START)}>
-            {t("insight.searchOffline")}
-          </Text>
-        ) : null}
-        {found.hits ? (
-          found.hits.length > 0 ? (
-            <ListGroup>
-              {found.hits.map((hit) => (
-                <HistoryHitRow
-                  key={hit.threadId}
-                  hit={hit}
-                  onOpen={(id) => {
-                    setHistoryOpen(false);
-                    void openThread(id);
-                  }}
-                />
-              ))}
-            </ListGroup>
-          ) : (
-            <Text className="text-muted-foreground py-2 text-center text-sm">{t("chat.noMatches")}</Text>
-          )
-        ) : matches.length > 0 ? (
-          <ListGroup>
-            {matches.map((thread) => (
-              <ListRow
-                key={thread.id}
-                title={thread.title ?? t("chat.untitled")}
-                subtitle={`${thread.network === "testnet" ? t("network.arcTestnet") : t("network.arc")} · ${when(thread.lastMessageAt)}`}
-                selected={open.status === "ready" && thread.id === open.id}
-                onPress={() => {
-                  setHistoryOpen(false);
-                  void openThread(thread.id);
-                }}
-              />
-            ))}
-          </ListGroup>
-        ) : threadsFailed ? null : (
-          <Text className="text-muted-foreground py-2 text-center text-sm">
-            {search.trim() ? t("chat.noMatches") : t("chat.noHistory")}
-          </Text>
+        ) : (
+          <>
+            <SheetInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={t("chat.search")}
+              accessibilityLabel={t("chat.search")}
+              autoCorrect={false}
+            />
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setHistoryOpen(false);
+                fresh();
+              }}
+            >
+              <Icon as={SquarePen} className="size-4" />
+              <Text>{t("chat.newChat")}</Text>
+            </Button>
+            {threadsFailed ? (
+              <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
+                <Text accessibilityRole="alert" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
+                  {threads.length > 0 ? t("chat.historyStale") : t("chat.historyFailed")}
+                </Text>
+                <Button size="sm" variant="secondary" onPress={() => void loadThreads()}>
+                  <Text>{t("common.retry")}</Text>
+                </Button>
+              </View>
+            ) : null}
+            {found.failed ? (
+              <Text accessibilityRole="alert" className={cn("text-muted-foreground px-1 text-sm", TEXT_START)}>
+                {t("insight.searchOffline")}
+              </Text>
+            ) : null}
+            {found.hits ? (
+              found.hits.length > 0 ? (
+                <ListGroup>
+                  {found.hits.map((hit) => (
+                    <HistoryHitRow
+                      key={hit.threadId}
+                      hit={hit}
+                      onOpen={(id) => {
+                        setHistoryOpen(false);
+                        void openThread(id);
+                      }}
+                    />
+                  ))}
+                </ListGroup>
+              ) : (
+                <Text className="text-muted-foreground py-2 text-center text-sm">{t("chat.noMatches")}</Text>
+              )
+            ) : matches.length > 0 ? (
+              <ListGroup>
+                {matches.map((thread) => (
+                  <ListRow
+                    key={thread.id}
+                    title={thread.title ?? t("chat.untitled")}
+                    subtitle={`${thread.network === "testnet" ? t("network.arcTestnet") : t("network.arc")} · ${when(thread.lastMessageAt)}`}
+                    selected={open.status === "ready" && thread.id === open.id}
+                    onPress={() => {
+                      setHistoryOpen(false);
+                      void openThread(thread.id);
+                    }}
+                    trailing={
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        accessibilityLabel={t("chat.threadOptions", { title: thread.title ?? t("chat.untitled") })}
+                        onPress={() => manage(thread)}
+                      >
+                        <Icon as={Ellipsis} className="text-muted-foreground size-5" />
+                      </Button>
+                    }
+                  />
+                ))}
+              </ListGroup>
+            ) : threadsFailed ? null : (
+              <Text className="text-muted-foreground py-2 text-center text-sm">
+                {search.trim() ? t("chat.noMatches") : t("chat.noHistory")}
+              </Text>
+            )}
+          </>
         )}
       </Sheet>
       <ScanModal

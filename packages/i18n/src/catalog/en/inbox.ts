@@ -11,5 +11,6 @@ export const inbox = {
   loadFailed: "Couldn't load your inbox.",
   bellUnread: "Inbox, {{count}} new",
   askedYou: "{{name}} asked you for {{amount}}",
+  remindedYou: "Reminder: {{name}} asked you for {{amount}}",
   pay: "Pay",
 } as const;

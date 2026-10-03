@@ -260,8 +260,9 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
         from: z.string().max(RECIPIENT_MAX).optional().describe("Who to ask, exactly as the person named them (@handle or contact name); omit if they did not say"),
       }),
       execute: async ({ amount, asset, note, from }) => {
-        // Only someone named in the person's own message is asked in the app (K2); otherwise it is a link only.
-        const payer = from && context.lastUserText.toLowerCase().includes(from.trim().replace(/^@/, "").toLowerCase()) ? from : null;
+        // Only someone named in the person's own message is asked in the app (K2), matched as whole words like a
+        // send's recipient (trust.ts); otherwise it is a link only.
+        const payer = from && trust.typed(from) ? from : null;
         return context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null, payer });
       },
       toModelOutput: ({ output }) => ({

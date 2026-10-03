@@ -49,6 +49,8 @@ import type {
   BridgeRequest,
   PaymentRequest,
   PaymentRequestInput,
+  RequestReminder,
+  VerifyMethod,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -249,6 +251,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** One conversation with its messages (AI SDK UI messages). */
       thread: (id: string) => call<{ thread: ThreadSummary; messages: unknown[] }>("GET", `/agent/threads/${id}`),
       deleteThread: (id: string) => call<void>("DELETE", `/agent/threads/${id}`),
+      renameThread: (id: string, title: string) => call<{ thread: ThreadSummary }>("PATCH", `/agent/threads/${id}`, { title }),
     },
 
     contacts: {
@@ -263,6 +266,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
         call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
       cancelChange: (id: string) => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending`),
+      /** Mark the current address verified on the active network (null clears it). */
+      verify: (id: string, method: VerifyMethod | null) => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method }),
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
     },
 
@@ -415,6 +420,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
       /** Ask a Kawase user for an open request in the app (an @handle or a contact's name); the link still works. */
       ask: (id: string, payer: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/ask`, { payer }),
+      /** Remind the payer: in the app once a day when they were asked there; otherwise "link" (share it again). */
+      remind: (id: string) => call<{ request: PaymentRequest; reminded: RequestReminder }>("POST", `/requests/${id}/remind`),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
     },

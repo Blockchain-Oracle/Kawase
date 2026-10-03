@@ -35,6 +35,8 @@ export const notify: Catalog["notify"] = {
   reminderShort: "محفظتك تحوي أقل من هذا التشغيل",
   requestReceivedTitle: "طلب منك {{name}} مبلغ {{amount}}",
   requestReceivedTitleHidden: "طلب منك {{name}} مالًا",
+  requestReminderTitle: "تذكير: طلب منك {{name}} مبلغ {{amount}}",
+  requestReminderTitleHidden: "تذكير: طلب منك {{name}} مالًا",
   requestReceivedBody: "اضغط للدفع",
   receivedTitleHidden: "استلمت أموالًا",
   sentTitleHidden: "تم إرسال أموالك",

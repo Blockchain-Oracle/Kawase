@@ -75,6 +75,7 @@ export const send: Catalog["send"] = {
   faceIdCancelledWeb: "未确认，未发送任何资金。",
   faceIdCancelledAndroid: "验证已取消，没有转出任何钱。",
   trustPaidBefore: "转过账",
+  trustVerified: "已验证",
   trustNew: "新收款人",
   trustHandle: "来自其 @handle",
   trustScanned: "扫码添加",
