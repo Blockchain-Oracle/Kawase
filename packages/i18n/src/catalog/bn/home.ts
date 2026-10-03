@@ -53,4 +53,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "চালু করুন",
   allowanceCue: "দৈনিক সীমা চালু · দিনে {{amount}} পর্যন্ত",
   soon: "শীঘ্রই",
+  nextRun: "পরেরটি: {{when}}",
+  watching: "নজরে রাখছে",
+  stepFirstAutomation: "আপনার প্রথম অটোমেশন তৈরি করুন",
+  stepAutomationAction: "দেখান",
+  sendTo: "{{name}}-কে পাঠান",
+  contactWaiting: "ঠিকানা বদল অপেক্ষায়",
 };

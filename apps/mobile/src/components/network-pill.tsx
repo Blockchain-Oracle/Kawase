@@ -1,7 +1,8 @@
 // The network pill is the toggle (D15 / A3): one tap switches between Arc and Arc Testnet. It is a switch to
 // assistive technology, its label says where a tap goes, and the first switch to mainnet raises the consent
 // sheet (S25, in C12's acknowledgment shape: read, tick, then the button). The pill never disappears because the
-// user signed in; Settings → Network repeats the same toggle with the explanation.
+// user signed in; Settings → Network repeats the same toggle with the explanation. Holding the pill opens both
+// networks with their own totals (surfaces.md "Network pill sheet"); assistive tech gets it as a named action.
 import { Check } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -16,6 +17,8 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { NetworksSheet } from "@/components/networks-sheet";
+import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
@@ -29,7 +32,9 @@ export const PILL_HIT_SLOP = { top: 10, bottom: 10 } as const;
 
 export function NetworkPill({ className }: NetworkPillProps) {
   const { t } = useT();
-  const { network, nextName, busy, toggle, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
+  const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
+  const { availableNetworks } = useSession();
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   const testnet = network === "testnet";
   return (
     <>
@@ -37,12 +42,26 @@ export function NetworkPill({ className }: NetworkPillProps) {
         accessibilityRole="switch"
         accessibilityLabel={t("network.switchTo", { network: nextName })}
         accessibilityState={{ checked: !testnet, busy }}
+        accessibilityActions={[{ name: "longpress", label: t("network.sheetTitle") }]}
+        onAccessibilityAction={(event) => event.nativeEvent.actionName === "longpress" && setSheetOpen(true)}
         hitSlop={PILL_HIT_SLOP}
         onPress={toggle}
+        onLongPress={() => setSheetOpen(true)}
         className={cn("active:opacity-70", className)}
       >
         <NetworkChip label={testnet ? t("network.arcTestnet") : t("network.arc")} />
       </Pressable>
+      <NetworksSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        network={network}
+        available={availableNetworks}
+        onSwitch={(target) => {
+          // The sheet steps aside first, so the real-money consent (when it is the first time) is the only sheet up.
+          setSheetOpen(false);
+          void switchNetwork(target);
+        }}
+      />
       <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
     </>
   );

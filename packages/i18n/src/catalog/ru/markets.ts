@@ -35,4 +35,5 @@ export const markets: Catalog["markets"] = {
   watchHeld: "У вас есть",
   recent: "Недавние",
   recentClear: "Очистить",
+  longShort: "Лонг или шорт",
 };

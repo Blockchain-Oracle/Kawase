@@ -12,4 +12,9 @@ export const network: Catalog["network"] = {
   signInForMainnet: "Connectez-vous pour utiliser de l’argent réel.",
   consentCheck: "Je comprends qu’il s’agit d’argent réel.",
   chooseNetwork: "Choisir un réseau",
+  sheetTitle: "Réseaux",
+  testMoney: "Argent de test, sans valeur",
+  notYet: "Pas encore disponible",
+  totalAt: "à {{time}}",
+  sheetDrafts: "Ce que vous êtes en train de vérifier reste sur le réseau où il a été créé. Revenez-y pour l’approuver.",
 };

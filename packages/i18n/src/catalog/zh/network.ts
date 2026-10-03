@@ -12,4 +12,9 @@ export const network: Catalog["network"] = {
   signInForMainnet: "登录后才能使用真实资金。",
   consentCheck: "我明白这是真实资金。",
   chooseNetwork: "选择网络",
+  sheetTitle: "网络",
+  testMoney: "测试资金，没有价值",
+  notYet: "暂不可用",
+  totalAt: "截至 {{time}}",
+  sheetDrafts: "你正在核对的内容会留在创建它的网络上。切换回去即可批准。",
 };

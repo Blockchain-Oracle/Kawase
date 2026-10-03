@@ -82,4 +82,5 @@ export const tokenPage: Catalog["tokenPage"] = {
   tradesNote: "من مشترياتك ومبيعاتك في Kawase، بمتوسط سعر الشراء. الرموز التي استلمتها أو نقلتها عبر جسر ليست صفقات.",
   activity: "نشاطك",
   seeAll: "عرض الكل",
+  onChain: "{{amount}} على {{chain}}",
 };

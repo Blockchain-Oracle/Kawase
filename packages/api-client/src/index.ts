@@ -53,7 +53,7 @@ import type {
   NotificationSettings,
   NotificationSettingsChange,
 } from "./types";
-import type { Candle, ChartRange, MarketListView, MarketSegment, PortfolioView, TokenDetailView, TokenSearchResult, TokenTradesView, WatchRow } from "./assets";
+import type { Candle, ChartRange, MarketListView, MarketSegment, NetworkTotalsView, PortfolioView, TokenDetailView, TokenSearchResult, TokenTradesView, WatchRow } from "./assets";
 import type { ClientEvent } from "./client-events";
 import type {
   AgentWalletSettings,
@@ -283,6 +283,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     /** Every asset the person holds (Arc, other chains, positions), priced; and their show/hide choices. */
     portfolio: {
       get: () => call<{ portfolio: PortfolioView }>("GET", "/portfolio"),
+      /** Each network's own total (the network pill's sheet). */
+      networks: () => call<NetworkTotalsView>("GET", "/portfolio/networks"),
       setVisibility: (address: string, visibility: "auto" | "shown" | "hidden") =>
         call<{ address: string; visibility: string }>("POST", "/portfolio/visibility", { address, visibility }),
     },

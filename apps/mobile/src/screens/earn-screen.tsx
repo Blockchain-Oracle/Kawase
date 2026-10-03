@@ -71,7 +71,7 @@ type Step = "overview" | "amount" | "review";
 type Action = "deposit" | "withdraw";
 
 /** `/earn?vault=0x…&amount=20` (the yield options card) opens that vault's deposit ticket. */
-export type EarnPrefill = { vault?: string | undefined; amount?: string | undefined };
+export type EarnPrefill = { vault?: string | undefined; amount?: string | undefined; token?: TicketToken | undefined };
 
 export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   const { t } = useT();
@@ -130,7 +130,7 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   };
 
   // The asset to earn on (R1): USDC by default; any held asset from the universal picker.
-  const [earnToken, setEarnToken] = React.useState<TicketToken>(() => stableToken(network, "USDC"));
+  const [earnToken, setEarnToken] = React.useState<TicketToken>(() => prefill.token ?? stableToken(network, "USDC"));
   const [picking, setPicking] = React.useState(false);
   const onUsdc = earnToken.address.toLowerCase() === stableToken(network, "USDC").address.toLowerCase();
   // Other places it earns (Aave V4, Morpho, LP campaigns as advanced); for USDC beside the vaults. Each opens its ticket.

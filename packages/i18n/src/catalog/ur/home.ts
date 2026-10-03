@@ -53,4 +53,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "آن کریں",
   allowanceCue: "‏روزانہ کی حد چالو · روزانہ {{amount}} تک",
   soon: "جلد",
+  nextRun: "اگلا: {{when}}",
+  watching: "نگرانی میں",
+  stepFirstAutomation: "اپنی پہلی آٹومیشن بنائیں",
+  stepAutomationAction: "دکھائیں",
+  sendTo: "{{name}} کو بھیجیں",
+  contactWaiting: "پتے کی تبدیلی زیرِ انتظار",
 };

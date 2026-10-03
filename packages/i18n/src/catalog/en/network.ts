@@ -10,4 +10,9 @@ export const network = {
   signInForMainnet: "Sign in to use real money.",
   consentCheck: "I understand this is real money.",
   chooseNetwork: "Choose a network",
+  sheetTitle: "Networks",
+  testMoney: "Test money, no value",
+  notYet: "Not available yet",
+  totalAt: "as of {{time}}",
+  sheetDrafts: "Something you're reviewing stays on the network it was made on. Switch back to approve it.",
 } as const;

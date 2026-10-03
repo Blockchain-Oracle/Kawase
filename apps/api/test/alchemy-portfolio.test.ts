@@ -1,7 +1,8 @@
 // Alchemy as primary discovery (approved 2026-10-02), without a key: the Portfolio API client is checked against the
 // documented request/response shape with a stubbed fetch, and the portfolio's own rules are checked on its output —
 // Arc tokens Alchemy finds join the on-chain balance read, a fake 18-decimal "USDC" on Base is an impostor, an
-// unpriced token is Hidden, and nothing unpriced counts toward the total. Arc balances are read on Arc mainnet.
+// unpriced token is Hidden, and nothing unpriced counts toward the total. Arc balances are read on Arc mainnet. The
+// network pill's sheet reads each network's own total (a network the api does not run is not offered).
 // Run: pnpm --filter @kawase/api exec tsx --test test/alchemy-portfolio.test.ts
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
@@ -9,7 +10,7 @@ import { createPublicClient, createWalletClient, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { arc } from "viem/chains";
 
-import type { PortfolioView } from "@kawase/api-client";
+import type { NetworkTotalsView, PortfolioView } from "@kawase/api-client";
 import { createDb, devices, sessions, users, wallets } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 import { getNetwork } from "@kawase/networks";
@@ -28,6 +29,8 @@ const HOLDER = "0x7d613c6316eDe9d257f3BF512777Cb4Ea4A6beE4";
 const ARGUS = "0xece5ca8bf9220718e5727754026757512212cb3c";
 const HOUR_MS = 3_600_000;
 const OK = 200;
+/** What the stubbed index holds on other chains, priced (0.01 ETH on Base at 2750). */
+const OTHER_CHAINS_USD = 27.5;
 
 test("the Portfolio API client: two address entries cover seven networks, hex balances, native coins, paging", async () => {
   const calls: unknown[] = [];
@@ -117,4 +120,17 @@ test("the portfolio applies Kawase's rules to what Alchemy finds", async () => {
   assert.equal(portfolio.hidden.find((row) => row.token.symbol === "USDC" && row.chainName === "Base")?.hiddenReason, "impersonator", "an 18-decimal USDC is a fake");
   assert.equal(portfolio.hidden.find((row) => row.token.symbol === "FREE")?.hiddenReason, "spam", "no price → Hidden");
   assert.equal(portfolio.breakdown.otherChainsUsd, 27.5, "nothing unpriced or fake counts toward the total");
+});
+
+test("the network pill's sheet: each network's own total, an unavailable one said so", async () => {
+  const response = await app.request("/portfolio/networks", { headers: { authorization: `Bearer ${token}` } });
+  assert.equal(response.status, OK, await response.clone().text());
+  const view = (await response.json()) as NetworkTotalsView;
+  const mainnetRow = view.networks.find((row) => row.network === "mainnet");
+  const testnetRow = view.networks.find((row) => row.network === "testnet");
+  console.log("network totals", JSON.stringify(view.networks));
+  assert.equal(mainnetRow?.available, true);
+  assert.equal(typeof mainnetRow?.totalUsd, "number", "mainnet's live total");
+  assert.ok((mainnetRow?.totalUsd ?? 0) >= OTHER_CHAINS_USD, "the same total as the portfolio (other chains included)");
+  assert.deepEqual(testnetRow, { network: "testnet", available: false, totalUsd: null, at: null }, "a network the api does not run is not offered");
 });

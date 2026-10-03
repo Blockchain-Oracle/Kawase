@@ -53,4 +53,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "Activer",
   allowanceCue: "Plafond actif · jusqu'à {{amount}} par jour",
   soon: "Bientôt",
+  nextRun: "Prochaine : {{when}}",
+  watching: "En veille",
+  stepFirstAutomation: "Créez votre première automatisation",
+  stepAutomationAction: "Montrez-moi",
+  sendTo: "Envoyer à {{name}}",
+  contactWaiting: "changement d’adresse en attente",
 };

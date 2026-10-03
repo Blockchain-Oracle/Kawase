@@ -82,4 +82,5 @@ export const tokenPage: Catalog["tokenPage"] = {
   tradesNote: "根据你在 Kawase 的买入和卖出，按买入均价计算。收到或跨链转入的代币不算交易。",
   activity: "你的动态",
   seeAll: "查看全部",
+  onChain: "{{chain}} 上的 {{amount}}",
 };

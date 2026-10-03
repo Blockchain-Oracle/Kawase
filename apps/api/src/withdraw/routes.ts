@@ -33,6 +33,9 @@ const placeSchema = z.object({
   address: z.string().regex(ADDRESS),
 });
 const renameSchema = z.object({ label: z.string().max(LABEL_MAX) });
+/** `override`: the brake (most of the balance to an address that is new) was on the review the person confirmed. */
+const batchSchema = z.object({ override: z.boolean().optional() });
+const batchSignatureSchema = z.object({ approvalId: z.string().uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]+$/) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -58,6 +61,15 @@ export function withdrawRoutes(withdraw: WithdrawService, runs: WithdrawalServic
   });
   app.get("/:id", requireAccount, async (c) => c.json({ withdrawal: await runs.get(c.get("user")!, c.req.param("id")) }));
   app.post("/:id/next", requireAccount, async (c) => c.json(await runs.next(c.get("user")!, c.req.param("id"))));
+  // One transaction for every step left on Arc: build it, then take the wallet's signature for it.
+  app.post("/:id/batch", requireAccount, async (c) => {
+    const input = await parse(batchSchema, await c.req.json().catch(() => ({})));
+    return c.json(await runs.batch(c.get("user")!, c.req.param("id"), Boolean(input.override)));
+  });
+  app.post("/:id/batch/signature", requireAccount, async (c) => {
+    const input = await parse(batchSignatureSchema, await c.req.json());
+    return c.json(await runs.batchSignature(c.get("user")!, c.req.param("id"), { approvalId: input.approvalId, signedTransaction: input.signedTransaction as `0x${string}` }));
+  });
   app.post("/:id/cancel", requireAccount, async (c) => c.json({ withdrawal: await runs.cancel(c.get("user")!, c.req.param("id")) }));
   return app;
 }
