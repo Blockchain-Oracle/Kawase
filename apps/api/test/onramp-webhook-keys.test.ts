@@ -24,7 +24,14 @@ afterEach(() => {
 
 function service() {
   const log = createLogger({ service: "onramp-webhook-test", level: "silent" });
-  return new OnrampService({} as Db, { available: [], get: () => undefined } as unknown as Chains, {} as WalletService, {} as OnrampEngine, log, "test-circle-key");
+  return new OnrampService(
+    {} as Db,
+    { available: [], get: () => undefined } as unknown as Chains,
+    {} as WalletService,
+    {} as OnrampEngine,
+    log,
+    "test-circle-key",
+  );
 }
 
 /** fetch answers like Circle: the key for `known`, a 404 for anything else; every lookup is counted. */
@@ -34,7 +41,10 @@ function circle(known: Record<string, string>) {
     const id = decodeURIComponent(String(input).split("/").pop()!);
     asked.push(id);
     const publicKey = known[id];
-    return new Response(JSON.stringify(publicKey ? { data: { publicKey } } : { code: HTTP_NOT_FOUND, message: "not found" }), { status: publicKey ? 200 : HTTP_NOT_FOUND });
+    return new Response(
+      JSON.stringify(publicKey ? { data: { publicKey } } : { code: HTTP_NOT_FOUND, message: "not found" }),
+      { status: publicKey ? 200 : HTTP_NOT_FOUND },
+    );
   }) as typeof fetch;
   return asked;
 }
@@ -43,7 +53,8 @@ test("unknown key ids are rate-limited and remembered; malformed ones are never 
   const onramp = service();
   const asked = circle({});
   const body = JSON.stringify({ notificationType: "test" });
-  for (let i = 0; i < LOOKUPS_PER_MINUTE * 2; i++) assert.equal(await onramp.webhook(body, "c2ln", randomUUID()), false);
+  for (let i = 0; i < LOOKUPS_PER_MINUTE * 2; i++)
+    assert.equal(await onramp.webhook(body, "c2ln", randomUUID()), false);
   assert.equal(asked.length, LOOKUPS_PER_MINUTE, "at most six new ids a minute reach Circle");
   const first = asked[0]!;
   assert.equal(await onramp.webhook(body, "c2ln", first), false);
