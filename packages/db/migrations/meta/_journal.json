@@ -365,6 +365,13 @@
       "when": 1791000100000,
       "tag": "0049_relayer_gas",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1791000101000,
+      "tag": "0080_payout_spend",
+      "breakpoints": true
     }
   ]
 }

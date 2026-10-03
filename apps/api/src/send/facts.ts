@@ -2,7 +2,7 @@
 // and what is left of the token's allowance from the chain; limits and what was already spent from the database; who
 // the recipient is, and what that address is on chain (R6: a token contract, a smart wallet, another contract, blocked
 // by the token's issuer, a Kawase user).
-import { and, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { erc20Abi, formatUnits, parseUnits, type Address } from "viem";
 
 import {
@@ -63,6 +63,10 @@ export function parseTokenAmount(text: string | null, decimals: number): AmountF
 /** The ledger bucket a send's limits count in: USDC and EURC in their own units, every other token in dollars. */
 export const ledgerAsset = (symbol: string): string => (symbol === "USDC" || symbol === "EURC" ? symbol : USD_LEDGER_ASSET);
 
+/** A token amount's value in US dollars, in USDC base units (how the limits count tokens other than USDC and EURC). */
+export const usdValue = (baseUnits: bigint, decimals: number, priceUsd: number) =>
+  parseUnits((Number(formatUnits(baseUnits, decimals)) * priceUsd).toFixed(USD_DECIMALS), USD_DECIMALS);
+
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
 export const assetToken = (network: { addresses: { usdc: Address; eurc: Address } }, asset: AssetId) => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
 
@@ -110,7 +114,8 @@ export async function spent(db: Executor, userId: string, network: NetworkId, as
           eq(spendLedger.asset, asset),
           inArray(spendLedger.state, ["reserved", "committed"]),
           gt(spendLedger.createdAt, since(seconds)),
-          ...(exceptIntentId ? [ne(spendLedger.intentId, exceptIntentId)] : []),
+          // "Is distinct from": a payout's spend has no intent, and still counts.
+          ...(exceptIntentId ? [sql`${spendLedger.intentId} is distinct from ${exceptIntentId}`] : []),
         ),
       );
     return BigInt(row?.total ?? "0");

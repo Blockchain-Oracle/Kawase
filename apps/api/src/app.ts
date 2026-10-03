@@ -382,7 +382,7 @@ export function createApp(deps: AppDeps) {
   const resolveToken = tokenResolver(assets);
   const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
   if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken, tokenLookup(deps.chains, assets));
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
   // Everyday money (A5-2): scan to pay.
