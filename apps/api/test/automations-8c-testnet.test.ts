@@ -36,7 +36,7 @@ import { appKitEarn } from "../src/earn/engine";
 import { circleOps } from "../src/send/ops";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, signRevokeRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -185,11 +185,9 @@ test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll
   assert.equal(narrower.automation.action?.amount, units("0.03").toString());
   const wider = await json<AutomationEditResponse>(call("PATCH", `/automations/${draft.id}`, { amount: "0.08" }), "widen");
   assert.ok(wider.grant && wider.revoke, "a new grant to sign and the old one's revoke");
-  const widened = (await json<{ automation: AutomationView }>(call("POST", `/automations/${draft.id}/edit/activate`, { signatures: [{ grantId: wider.grant!.grants[0]!.grantId, signature: await wallet.signTypedData(wider.grant!.grants[0]!.typedData as TypedDataDefinition) }] }), "edit activate")).automation;
+  // The old grant's revoke goes with the new grant: the api turns it off on chain before the edit applies.
+  const widened = (await json<{ automation: AutomationView }>(call("POST", `/automations/${draft.id}/edit/activate`, { signatures: [{ grantId: wider.grant!.grants[0]!.grantId, signature: await wallet.signTypedData(wider.grant!.grants[0]!.typedData as TypedDataDefinition) }], revoke: await signRevokeRequest(wallet, wider.revoke!) }), "edit activate")).automation;
   assert.equal(widened.action?.amount, units("0.08").toString());
-  const oldRevoked = await json<{ status: string; tx: string }>(call("POST", "/wallet/transactions/submit", { requestId: wider.revoke!.requestId, signedTransaction: await signTx(wider.revoke!) }), "revoke old");
-  assert.equal(oldRevoked.status, "confirmed");
-  console.log("widened: old grant revoked", oldRevoked.tx);
 
   // 4. Needs you: with "only my allowlist" on, the run waits for the person instead of paying.
   assert.equal((await json<SafetyChangeResponse>(call("POST", "/safety/changes", { change: { kind: "allowlist_only", on: true } }), "allowlist on")).status, "applied");

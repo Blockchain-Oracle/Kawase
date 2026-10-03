@@ -12,7 +12,7 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
+import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const POLL_MS = 5_000;
@@ -106,8 +106,7 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(t("automation.revokeLater"));
         return;
       }
-      const signed = await signer.signTransaction(toSerializable(revoke.transaction));
-      const result = await api.wallet.submitTransaction(revoke.requestId, signed);
+      const result = await submitRevoke(revoke, await signRevoke(signer, revoke));
       toast(result.status === "confirmed" ? t("automation.revoked") : t("automation.revokeLater"));
       await refresh();
     });
@@ -145,10 +144,10 @@ export function useAutomation(initial: AutomationView | undefined) {
       }
       const signatures: { grantId: string; signature: string }[] = [];
       for (const entry of answer.grant.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
-      const signedRevoke = answer.revoke ? await signer.signTransaction(toSerializable(answer.revoke.transaction)) : undefined;
-      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures);
+      // The old grant's revoke goes with the new one: the api turns it off on chain before the edit applies.
+      const signedRevoke = answer.revoke ? await signRevoke(signer, answer.revoke) : undefined;
+      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures, signedRevoke);
       setAutomation(edited);
-      if (answer.revoke && signedRevoke) await api.wallet.submitTransaction(answer.revoke.requestId, signedRevoke).catch(() => undefined);
       toast(t("automation.edited"));
     });
 

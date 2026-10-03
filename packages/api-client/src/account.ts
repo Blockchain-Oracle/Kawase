@@ -1,5 +1,5 @@
 // Settings → Account (cards/access.md): devices and sessions, the email, export, deleting the account.
-import type { NetworkId, TransactionRequestResponse } from "./types";
+import type { NetworkId, RevokeRequest } from "./types";
 
 export type DeviceView = {
   id: string;
@@ -36,6 +36,6 @@ export type AccountApi = {
   syncEmail: () => Promise<{ email: string | null }>;
   exportRecorded: () => Promise<void>;
   holdings: () => Promise<AccountHoldings>;
-  revokeAllRequest: (network: NetworkId) => Promise<{ revoke: TransactionRequestResponse | null }>;
+  revokeAllRequest: (network: NetworkId) => Promise<{ revoke: RevokeRequest | null }>;
   deleteAccount: (confirm: string) => Promise<AccountDeleted>;
 };

@@ -1,7 +1,7 @@
 // Wallet & limits (cards/automate-safety.md "Stay in control"): the authority receipt, the allowance per token, the
 // per-payment cap, the new-recipient cooldown, the allowlist, temporary raises, pause all, the risk dial, practice mode
 // and the exit kit. Tightening applies at once; loosening returns what to sign (X7).
-import type { ApiUser, NetworkId, TransactionRequestResponse } from "./types";
+import type { ApiUser, NetworkId, RevokeRequest, SignedRevokeInput } from "./types";
 
 export type RiskMode = "careful" | "balanced" | "autonomous";
 
@@ -71,7 +71,7 @@ export type SafetyChangeResponse =
       safety: SafetyView;
       user: ApiUser;
       /** Turning a token's allowance off: the on-chain revoke for the wallet to sign (Kawase already stopped using it). */
-      revoke?: TransactionRequestResponse | null | undefined;
+      revoke?: RevokeRequest | null | undefined;
     }
   | {
       status: "needs_approval";
@@ -86,18 +86,19 @@ export type SafetyChangeResponse =
        */
       approval:
         | { kind: "message"; typedData: Record<string, unknown> }
-        | { kind: "grant"; typedData: Record<string, unknown>; receipt: Record<string, unknown>; revoke: TransactionRequestResponse | null };
+        | { kind: "grant"; typedData: Record<string, unknown>; receipt: Record<string, unknown>; revoke: RevokeRequest | null };
     };
 
 export type TokenOption = { token: string; symbol: string; decimals: number; balance: string; hasAllowance: boolean };
 
-export type ExitKitResponse = { safety: SafetyView; user: ApiUser; revoke: TransactionRequestResponse | null };
+export type ExitKitResponse = { safety: SafetyView; user: ApiUser; revoke: RevokeRequest | null };
 
 export type SafetyApi = {
   get: () => Promise<SafetyView>;
   tokens: (address?: string) => Promise<{ tokens: TokenOption[] }>;
   change: (change: SafetyChange, via?: "app" | "chat" | "voice") => Promise<SafetyChangeResponse>;
-  approve: (changeId: string, signature: string) => Promise<SafetyChangeResponse>;
+  /** `revoke`: what the wallet signed for the approval's revoke (the grant it replaces), in the same yes. */
+  approve: (changeId: string, signature: string, revoke?: SignedRevokeInput) => Promise<SafetyChangeResponse>;
   /** Pause all: instant. */
   pause: () => Promise<SafetyChangeResponse>;
   /** The exit kit's first two steps: pause, then the one transaction that revokes every grant on this network. */
@@ -115,7 +116,7 @@ export type SafetyToolOutput = {
   /** The change asked for, or the revoke. */
   change: SafetyChange | { kind: "revoke"; what: "allowance" | "automation" | "everything"; token?: string | undefined } | null;
   response: SafetyChangeResponse | null;
-  revoke: TransactionRequestResponse | null;
+  revoke: RevokeRequest | null;
   safety: SafetyView | null;
   reason?: string | undefined;
 };

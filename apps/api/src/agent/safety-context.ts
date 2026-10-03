@@ -5,7 +5,7 @@
 import { formatUnits, parseUnits } from "viem";
 
 import type { AgentContext, ModelSummary } from "@kawase/agent";
-import type { LimitValue, SafetyChange, SafetyChangeResponse, SafetyToolOutput, SafetyView, TransactionRequestResponse } from "@kawase/api-client";
+import type { LimitValue, SafetyChange, SafetyChangeResponse, SafetyToolOutput, SafetyView } from "@kawase/api-client";
 
 import type { AutomationService } from "../automations/service";
 import type { ContactService } from "../contacts/service";
@@ -164,7 +164,7 @@ export function safetyContext(input: { user: SessionUser; safety: SafetyService 
         if (request.what === "automation") {
           if (!request.automationId) return refused("Which automation? (list_automations)");
           const { revoke } = await input.automations.cancel(user, request.automationId);
-          return { network, status: revoke ? "revoke" : "applied", change, response: null, revoke: (revoke as TransactionRequestResponse | null) ?? null, safety: null, summary: { status: "canceled", next: revoke ? "It stopped; the card revokes its grant on Arc with Face ID." : "It stopped." } };
+          return { network, status: revoke ? "revoke" : "applied", change, response: null, revoke: revoke ?? null, safety: null, summary: { status: "canceled", next: revoke ? "It stopped; the card revokes its grant on Arc with Face ID." : "It stopped." } };
         }
         const found = await token(request.token ?? "USDC");
         if (!found) return refused(`No allowance for ${request.token ?? "USDC"} here.`);

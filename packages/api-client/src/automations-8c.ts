@@ -1,6 +1,6 @@
 // Automations 8c (cards/automate-safety.md "Automate anything"): payroll and DCA, rules that send to others, swap, act
 // on a price or round up, practice runs, editing in place, and the Needs-you queue.
-import type { AutomationGrantRequest, NetworkId, SendIntent, SwapIntent, TransactionRequestResponse } from "./types";
+import type { AutomationGrantRequest, NetworkId, SendIntent, SwapIntent, RevokeRequest, SignedRevokeInput } from "./types";
 
 type Every = "day" | "week" | "month";
 type ScheduleFields = {
@@ -43,7 +43,7 @@ export type AutomationEditResponse = {
   automation: import("./types").AutomationView;
   /** Set when the edit gives the automation more than its grant allows: sign these, then `editActivate`. */
   grant: AutomationGrantRequest | null;
-  revoke: TransactionRequestResponse | null;
+  revoke: RevokeRequest | null;
 };
 
 /** What the next runs would do right now ("would have" on fresh facts; the first one dry-run on chain). */
@@ -103,5 +103,6 @@ export type AutomationsMoreApi = {
   practice: (id: string) => Promise<{ automation: import("./types").AutomationView }>;
   simulate: (id: string) => Promise<SimulationView>;
   edit: (id: string, edit: AutomationEdit) => Promise<AutomationEditResponse>;
-  editActivate: (id: string, signatures: { grantId: string; signature: string }[]) => Promise<{ automation: import("./types").AutomationView }>;
+  /** `revoke`: the old grant's revoke, signed in the same yes; the api turns it off on chain before the edit applies. */
+  editActivate: (id: string, signatures: { grantId: string; signature: string }[], revoke?: SignedRevokeInput) => Promise<{ automation: import("./types").AutomationView }>;
 };

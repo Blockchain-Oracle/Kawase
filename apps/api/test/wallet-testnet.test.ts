@@ -6,14 +6,15 @@ import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { config } from "dotenv";
-import type { Hex, TransactionSerializable, TypedDataDefinition } from "viem";
+import type { Hex, TypedDataDefinition } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
+import type { RevokeRequest } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, revokeSubmitBody, signRevokeRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -169,44 +170,14 @@ test(
       jsonRequest("POST", { network: "testnet" }, token),
     );
     await expectStatus(revokeRequest, 200, "revoke request");
-    const { requestId, transaction } = (await revokeRequest.json()) as {
-      requestId: string;
-      transaction: {
-        chainId: number;
-        nonce: number;
-        to: Hex;
-        data: Hex;
-        value: string;
-        gas: string;
-        maxFeePerGas: string;
-        maxPriorityFeePerGas: string;
-      };
-    };
-    const unsigned: TransactionSerializable = {
-      type: "eip1559",
-      chainId: transaction.chainId,
-      nonce: transaction.nonce,
-      to: transaction.to,
-      data: transaction.data,
-      value: BigInt(transaction.value),
-      gas: BigInt(transaction.gas),
-      maxFeePerGas: BigInt(transaction.maxFeePerGas),
-      maxPriorityFeePerGas: BigInt(transaction.maxPriorityFeePerGas),
-    };
-    const tampered = await wallet.signTransaction({ ...unsigned, data: "0x" });
-    assert.equal(
-      (
-        await app.request(
-          "/wallet/transactions/submit",
-          jsonRequest("POST", { requestId, signedTransaction: tampered }, token),
-        )
-      ).status,
-      422,
-    );
-    const signedTransaction = await wallet.signTransaction(unsigned);
+    const request = (await revokeRequest.json()) as RevokeRequest;
+    // A signature by any other key is refused, whichever way the revoke is sent.
+    const stranger = privateKeyToAccount(generatePrivateKey());
+    const tampered = await signRevokeRequest(stranger, request);
+    assert.equal((await app.request("/wallet/transactions/submit", jsonRequest("POST", revokeSubmitBody(request, tampered), token))).status, 422);
     const submit = await app.request(
       "/wallet/transactions/submit",
-      jsonRequest("POST", { requestId, signedTransaction }, token),
+      jsonRequest("POST", revokeSubmitBody(request, await signRevokeRequest(wallet, request)), token),
     );
     await expectStatus(submit, 200, "revoke submit");
     assert.equal(((await submit.json()) as { status: string }).status, "confirmed");

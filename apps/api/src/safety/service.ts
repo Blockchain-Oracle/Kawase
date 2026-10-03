@@ -9,7 +9,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { erc20Abi, getAddress, hashTypedData, isAddress, verifyTypedData, type Address, type Hex, type TypedDataDefinition } from "viem";
 
 import { DEFAULT_LIMITS, MS_PER_SECOND, SECONDS_PER_DAY } from "@kawase/config";
-import type { ApiUser, LimitValue, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption, TransactionRequestResponse } from "@kawase/api-client";
+import type { ApiUser, LimitValue, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "@kawase/api-client";
 import { contactAddresses, contactAddressTrust, contacts, grants, limitChanges, limits, safetySettings, tokenMetadata, userWalletSetup, users, walletTokens, type Db, type LimitChange } from "@kawase/db";
 import { buildAllowanceGrant, describeGrant, grantTypedData, isWalletSetUp, withSignature } from "@kawase/integrations-delegation";
 import type { Logger } from "@kawase/log";
@@ -22,7 +22,7 @@ import { HTTP, problem } from "../http/problem";
 import { jsonSafe } from "../intents/chain";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
-import type { WalletService } from "../wallet/service";
+import type { SignedRevoke, WalletService } from "../wallet/service";
 import { activeGrantCounts, allowanceRoom, byToken, liveAllowanceGrants, type AllowanceGrant } from "./allowances";
 import { allowlistEntries, safetySettingsOf } from "./settings";
 
@@ -230,7 +230,7 @@ export class SafetyService {
       });
       void this.audit.write({ userId: user.id, actor: via === "app" ? "user" : "agent", action: `limits.${change.kind}`, subjectType: "limit_change", subjectId: id, network, checks: { direction: "tighten" }, decision: "applied" });
       // Turning a token's allowance off: Kawase stopped using it now; the on-chain revoke is offered with it.
-      const revoke = change.kind === "allowance_off" ? await this.revokeTokenGrants(user.id, current.live, change.token) : undefined;
+      const revoke = change.kind === "allowance_off" ? await this.revokeTokenGrants(user.id, network, change.token) : undefined;
       return { status: "applied", safety: await this.view(user), user: await this.person(user.id), ...(revoke !== undefined ? { revoke } : {}) };
     }
 
@@ -244,6 +244,9 @@ export class SafetyService {
       if (!isWalletSetUp(await clients.client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.unprocessable, "wallet_not_set_up");
       const token = getAddress((change as { token: string }).token);
       const replaced = change.kind === "allowance" ? byToken(current.live).get(token.toLowerCase())?.base : undefined;
+      // Every everyday allowance for this token the chain still honours (the current one, and any set aside here but never
+      // revoked on chain) is revoked in the same yes as the new grant.
+      const replacing = change.kind === "allowance" ? await this.wallets.unrevokedGrantIds(user.id, network, { kind: "allowance", token, boost: false }) : [];
       const startsAt = nowSeconds();
       const isBoost = change.kind === "boost";
       const until = isBoost ? Math.floor(Date.parse(change.until) / MS_PER_SECOND) : startsAt + ALLOWANCE_TTL_DAYS * SECONDS_PER_DAY;
@@ -278,7 +281,7 @@ export class SafetyService {
         .values({ userId: user.id, network, change, direction: "loosen", before: values.before, after: values.after, grantId: row!.id, replacesGrantId: replaced?.id ?? null, requestedVia: via, expiresAt })
         .returning();
       // The grant it replaces is revoked in the same yes, so the chain never allows both.
-      const revoke = replaced ? ((await this.wallets.revokeGrantsRequest(user.id, [replaced.id])) as TransactionRequestResponse | null) : null;
+      const revoke = await this.wallets.revokeGrantsRequest(user.id, replacing);
       return {
         status: "needs_approval",
         changeId: pending!.id,
@@ -301,8 +304,11 @@ export class SafetyService {
     return { status: "needs_approval", changeId: id, change, before: values.before, after: values.after, expiresAt: expiresAt.toISOString(), approval: { kind: "message", typedData: jsonSafe(typedData) } };
   }
 
-  /** The wallet signed a loosening: the signature is checked against the wallet, then the change applies. */
-  async approve(user: SessionUser, changeId: string, signature: Hex): Promise<SafetyChangeResponse> {
+  /**
+   * The wallet signed a loosening: the signature is checked against the wallet, then the change applies. A new allowance
+   * that replaces one goes on only after the old one is off on chain (`revoke`, signed in the same yes).
+   */
+  async approve(user: SessionUser, changeId: string, signature: Hex, revoke?: SignedRevoke): Promise<SafetyChangeResponse> {
     const [row] = await this.db.select().from(limitChanges).where(and(eq(limitChanges.id, changeId), eq(limitChanges.userId, user.id)));
     if (!row || row.status !== "pending") throw problem(HTTP.conflict, "change_not_pending");
     if (row.expiresAt.getTime() < Date.now()) {
@@ -321,8 +327,10 @@ export class SafetyService {
       const typedData = grantTypedData(clients.network, signed) as TypedDataDefinition;
       const valid = await verifyTypedData({ address: wallet.address as Address, ...typedData, signature }).catch(() => false);
       if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
+      if (change.kind === "allowance")
+        await this.wallets.revokeFirst(user.id, await this.wallets.unrevokedGrantIds(user.id, row.network, { kind: "allowance", token: change.token, boost: false }), revoke);
       await this.db.transaction(async (tx) => {
-        if (row.replacesGrantId) await tx.update(grants).set({ status: "superseded" }).where(and(eq(grants.id, row.replacesGrantId), eq(grants.userId, user.id)));
+        if (row.replacesGrantId) await tx.update(grants).set({ status: "superseded" }).where(and(eq(grants.id, row.replacesGrantId), eq(grants.userId, user.id), eq(grants.status, "active")));
         await tx.update(grants).set({ status: "active", delegation: jsonSafe(signed) }).where(eq(grants.id, pending.id));
         if (!pending.boost && pending.tokenAddress?.toLowerCase() === clients.network.addresses.usdc.toLowerCase())
           await tx.update(userWalletSetup).set({ allowanceGrantId: pending.id }).where(and(eq(userWalletSetup.userId, user.id), eq(userWalletSetup.network, row.network)));
@@ -359,12 +367,10 @@ export class SafetyService {
       });
       void this.audit.write({ userId: user.id, actor: "user", action: "limits.pause", network, decision: "applied" });
     }
-    const live = await this.db
-      .select({ id: grants.id })
-      .from(grants)
-      .where(and(eq(grants.userId, user.id), eq(grants.network, network), eq(grants.status, "active")));
-    const revoke = (await this.wallets.revokeGrantsRequest(user.id, live.map((row) => row.id))) as TransactionRequestResponse | null;
-    void this.audit.write({ userId: user.id, actor: "user", action: "limits.exit_kit", network, checks: { grants: live.length }, decision: revoke ? "revoke_offered" : "nothing_to_revoke" });
+    // Every grant the chain still honours, whatever its status here (one set aside but never revoked on chain included).
+    const live = await this.wallets.unrevokedGrantIds(user.id, network);
+    const revoke = await this.wallets.revokeGrantsRequest(user.id, live);
+    void this.audit.write({ userId: user.id, actor: "user", action: "limits.exit_kit", network, checks: { grants: revoke?.grantIds?.length ?? 0 }, decision: revoke ? "revoke_offered" : "nothing_to_revoke" });
     return { safety: await this.view(user), user: await this.person(user.id), revoke };
   }
 
@@ -445,9 +451,9 @@ export class SafetyService {
       .onConflictDoUpdate({ target: [limits.userId, limits.network, limits.kind], set: { value: perDay } });
   }
 
-  private async revokeTokenGrants(userId: string, live: AllowanceGrant[], token: string) {
-    const ids = live.filter((grant) => grant.token === token.toLowerCase()).map((grant) => grant.id);
-    return (await this.wallets.revokeGrantsRequest(userId, ids)) as TransactionRequestResponse | null;
+  /** Every allowance for this token the chain still honours (the everyday one and any raise). */
+  private async revokeTokenGrants(userId: string, network: NetworkId, token: string) {
+    return this.wallets.revokeGrantsRequest(userId, await this.wallets.unrevokedGrantIds(userId, network, { kind: "allowance", token }));
   }
 
   private async ownContact(userId: string, contactId: string) {
