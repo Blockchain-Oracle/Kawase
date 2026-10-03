@@ -76,7 +76,8 @@ Abu's direction: define every flow end to end, every asset first-class, the whol
   - `a3-security` (H4 wallet, which also adds the shared on-chain disable helper; M6, M7 pause, M9, practice regex);
   - `b1-security` (commits its relayed-gas WIP, then H3, H4 protection, lows, then the acceptance runner);
   - `a-desktop` (finishes the uncommitted web desktop layout).
-- Migration numbers: B2 0049 then 0080–89; A5 0078–79 then 0090–99.
+- Migration numbers: B2 0049 then 0080–89; A5 0078–79 then 0090–99. **Drizzle applies only entries whose `when` is later than the newest one recorded.** Locally, shared across worktrees, this had silently skipped 0030_margin and 0020_wallet_tokens; repaired 10-03 (applied by hand and recorded with their sha256). Production has all 51.
+- **Lead fix `161ade6`:** a Turnkey email counts only if it was proved. `UPDATE_USER_EMAIL`'s `verificationToken` is optional, so anyone could claim a victim's address for contact discovery or lock the real owner out.
 
 **Next for the lead:** merge each security slice as it lands and deploy; then tell Abu the wallets can be funded and run the acceptance runner; Circle KYB domain; demo video and submission (deadline 10-10).
 
