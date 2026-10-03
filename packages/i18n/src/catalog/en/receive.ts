@@ -5,6 +5,8 @@ export const receive = {
   share: "Share",
   network: "Network",
   shareMessage: "My Kawase address on {{network}}: {{address}}",
+  otherChains: "Base, Ethereum and other chains",
+  otherChainsBody: "The same address works there; then Bring to Arc.",
   askAmount: "Ask for an amount",
   askAsset: "Asset",
   askShow: "Show the code",

@@ -7,6 +7,8 @@ export const receive: Catalog["receive"] = {
   share: "分享",
   network: "网络",
   shareMessage: "我在 {{network}} 上的 Kawase 地址：{{address}}",
+  otherChains: "Base、Ethereum 等其他链",
+  otherChainsBody: "同一地址在那里也可用；之后转回 Arc。",
   askAmount: "指定金额收款",
   askAsset: "资产",
   askShow: "显示收款码",

@@ -6,7 +6,7 @@
 // any wallet fills in (gaps.md G10); a token page's Receive starts it on that token.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronLeft, Copy, HandCoins, Share2, TriangleAlert, X } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Copy, HandCoins, Share2, TriangleAlert, Waypoints, X } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, Share, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -236,6 +236,19 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
               }}
             />
           ))}
+        </ListGroup>
+        {/* The same address on the other chains (surfaces.md Receive: "a chain chooser … other chains get Bring to Arc"). */}
+        <ListGroup label={t("assets.otherChainsTotal")}>
+          <ListRow
+            leading={<Icon as={Waypoints} className="text-muted-foreground size-5" />}
+            title={t("receive.otherChains")}
+            subtitle={t("receive.otherChainsBody")}
+            chevron
+            onPress={() => {
+              setChooserOpen(false);
+              router.push({ pathname: "/move", params: { direction: "in" } });
+            }}
+          />
         </ListGroup>
       </Sheet>
       <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />

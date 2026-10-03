@@ -7,6 +7,8 @@ export const receive: Catalog["receive"] = {
   share: "Compartir",
   network: "Red",
   shareMessage: "Mi dirección de Kawase en {{network}}: {{address}}",
+  otherChains: "Base, Ethereum y otras redes",
+  otherChainsBody: "La misma dirección sirve allí; luego tráelo a Arc.",
   askAmount: "Pedir un importe",
   askAsset: "Activo",
   askShow: "Mostrar el código",
