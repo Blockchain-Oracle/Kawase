@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getSmartAccountsEnvironment } from "@metamask/smart-accounts-kit";
-import { encodeFunctionData, erc20Abi, toFunctionSelector, type Address, type Hex, type TypedDataDefinition } from "viem";
+import { encodeFunctionData, erc20Abi, pad, toFunctionSelector, type Address, type Hex, type TypedDataDefinition } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import {
@@ -112,7 +112,20 @@ test("every grant Kawase builds decodes on the phone", () => {
     buildMarketplaceGrant({ ...allowanceTerms, agentWallet: other }),
     ...Object.values(buildSaveGrants({ network, wallet, redeemer: ops, usdc: network.addresses.usdc, vault: other, expiresAt, salts: { approve: salt(2), deposit: salt(3), withdraw: salt(4) } })),
     ...Object.values(buildBridgeGrants({ network, wallet, redeemer: ops, usdc: network.addresses.usdc, bridge: other, domain: 6, expiresAt, salts: { allowance: salt(5), burn: salt(6) } })),
-    ...Object.values(buildProtectGrants({ network, wallet, redeemer: ops, spoke: other, router: relayer, tokens: [network.addresses.usdc, network.addresses.eurc], expiresAt, salts: Object.fromEntries(PROTECT_PURPOSES.map((purpose, index) => [purpose, salt(30 + index)])) as Record<ProtectPurpose, Hex> })),
+    ...Object.values(
+      buildProtectGrants({
+        network,
+        wallet,
+        redeemer: ops,
+        spoke: other,
+        router: relayer,
+        collateral: { token: network.addresses.eurc, reserveId: 2, cap: 1_000_000n },
+        debt: { token: network.addresses.usdc, reserveId: 1, cap: 500_000n },
+        fee: 500,
+        expiresAt,
+        salts: Object.fromEntries(PROTECT_PURPOSES.map((purpose, index) => [purpose, salt(30 + index)])) as Record<ProtectPurpose, Hex>,
+      }),
+    ),
     buildRelayedBatch({ network, wallet, relayer, calls: [{ to: network.addresses.usdc, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [other, 1n] }) }], expiresAt, salt: salt(11) }),
     buildRelayedBatch({ network, wallet, relayer, calls: [{ to: network.addresses.usdc, data: "0x" }, { to: network.addresses.eurc, data: "0x" }], expiresAt, salt: salt(12) }),
   ];
@@ -147,7 +160,26 @@ test("a grant whose bytes match its card is signed; one that differs from it is 
   refused(() => checkTransferGrant(offer(save.approve).typedData, offer(save.approve).receipt, wallet), /more than its token|more than transfer/);
   // A deposit whose receiver pin the card shows differently.
   const deposit = offer(save.deposit);
-  refused(() => checkGrant(deposit.typedData, { ...deposit.receipt, pins: [{ startIndex: 36, address: other }] }, wallet), /pinned arguments/);
+  refused(() => checkGrant(deposit.typedData, { ...deposit.receipt, pins: [{ startIndex: 36, address: other, value: pad(other) }] }, wallet), /pinned arguments/);
+  // A margin-protection approval the card says can be used once, signed to be used without limit, is refused.
+  const protect = buildProtectGrants({
+    network,
+    wallet,
+    redeemer: ops,
+    spoke: other,
+    router: relayer,
+    collateral: { token: network.addresses.eurc, reserveId: 2, cap: 1_000_000n },
+    debt: { token: network.addresses.usdc, reserveId: 1, cap: 500_000n },
+    fee: 500,
+    expiresAt: now + DAY,
+    salts: Object.fromEntries(PROTECT_PURPOSES.map((purpose, index) => [purpose, salt(50 + index)])) as Record<ProtectPurpose, Hex>,
+  });
+  const approveRouter = offer(protect.approveRouter);
+  assert.equal(approveRouter.receipt.maxCalls, 1);
+  checkGrant(approveRouter.typedData, approveRouter.receipt, wallet);
+  refused(() => checkGrant(approveRouter.typedData, { ...approveRouter.receipt, maxCalls: 2 }, wallet), /uses/);
+  // An approval cap on the card that is not the one in the bytes.
+  refused(() => checkGrant(offer(protect.approveSpoke).typedData, approveRouter.receipt, wallet), /pinned arguments|targets/);
   // Redeemable by someone else than the card says.
   refused(() => checkGrant(offer(buildAllowanceGrant({ ...allowanceTerms, redeemer: relayer })).typedData, receipt, wallet), /redeemer/);
   // Another token than the card's.

@@ -314,8 +314,8 @@ const STOP_LOSS_STEP = 1.05;
 
 /**
  * Take-profit and stop-loss on an open short (H3, H4): targets saved, the position's six grants signed with one yes and
- * on (the position watched); then off, which hands back their on-chain disable for the wallet to sign (its own
- * transaction, or relayed when it can't pay the fee), confirmed on Arc.
+ * on (the position watched); then off, which hands back their on-chain disable for the wallet to sign (the shared
+ * revoke: relayed, or its own transaction while the relayer has no gas), confirmed on Arc.
  */
 async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
   const mark = Number(position.markPrice) / PRICE_SCALE;
@@ -346,7 +346,7 @@ async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
   check(off.revoke, "turning protection off handed back no on-chain disable");
   const sent =
     "relayed" in off.revoke
-      ? await ctx.api.post<{ tx: Hex; status: string }>("/margin/protection/disable", { requestId: off.revoke.requestId, signature: await signTypedData(ctx, off.revoke.typedData) })
+      ? await ctx.api.post<{ tx: Hex; status: string }>("/wallet/transactions/submit", { requestId: off.revoke.requestId, signature: await signTypedData(ctx, off.revoke.typedData) })
       : await ctx.api.post<{ tx: Hex; status: string }>("/wallet/transactions/submit", { requestId: off.revoke.requestId, signedTransaction: await signTransaction(ctx, off.revoke.transaction) });
   ctx.tx(`disable the protection grants${"relayed" in off.revoke ? " (relayed)" : ""}`, sent.tx);
   check(sent.status === "confirmed", `the on-chain disable ended ${sent.status}`);

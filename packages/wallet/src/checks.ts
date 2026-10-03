@@ -193,23 +193,33 @@ export type ShownGrant = {
   targets: string[];
   methods: string[];
   recipient?: string | undefined;
-  /** Every argument pinned to an address, by its byte offset in calldata. */
-  pins?: { startIndex: number; address: string }[] | undefined;
+  /** Every pinned argument word, by its byte offset in calldata: the whole word, and its low 20 bytes as an address. */
+  pins?: { startIndex: number; address: string; value?: string | undefined }[] | undefined;
   maxNativeValue?: string | undefined;
   redeemers: string[];
+  maxCalls?: number | undefined;
   unknownCaveats: string[];
 };
 
 const FIRST_ARGUMENT_OFFSET = 4;
+type Pin = { startIndex: number; address: string; value: string };
+
 /**
- * A pinned argument is one ABI word whose last 20 bytes are the address; the api's receipt reads every pin this way
- * (a shorter pin, like the bridge fee's zero bytes, reads as what is there), so the phone does too.
+ * A pin's words, each on its own, as the api's receipt lists them: one pin may cover several ABI words (a struct's
+ * fields in a row) or only the top of one; a whole word's low 20 bytes are its address.
  */
-const pinnedAddress = (value: Hex) => slice(value, WORD_BYTES - ADDRESS_BYTES, Math.min(WORD_BYTES, size(value))).toLowerCase();
+function pinsOf(startIndex: number, value: Hex): Pin[] {
+  const out: Pin[] = [];
+  for (let offset = 0; offset < size(value); offset += WORD_BYTES) {
+    const word = slice(value, offset, Math.min(offset + WORD_BYTES, size(value)));
+    out.push({ startIndex: startIndex + offset, address: size(word) === WORD_BYTES ? slice(word, WORD_BYTES - ADDRESS_BYTES, WORD_BYTES) : "0x", value: word });
+  }
+  return out;
+}
 
 /** The same receipt, worked out on the phone from the delegation itself. */
-export function receiptOf(decoded: DecodedDelegation): Omit<ShownGrant, "unknownCaveats"> & { pins: { startIndex: number; address: string }[] } {
-  const receipt: Omit<ShownGrant, "unknownCaveats"> & { pins: { startIndex: number; address: string }[] } = { redeemer: decoded.delegate, targets: [], methods: [], redeemers: [], pins: [] };
+export function receiptOf(decoded: DecodedDelegation): Omit<ShownGrant, "unknownCaveats"> & { pins: Pin[] } {
+  const receipt: Omit<ShownGrant, "unknownCaveats"> & { pins: Pin[] } = { redeemer: decoded.delegate, targets: [], methods: [], redeemers: [], pins: [] };
   for (const caveat of decoded.caveats) {
     switch (caveat.type) {
       case "erc20PeriodTransfer":
@@ -230,12 +240,15 @@ export function receiptOf(decoded: DecodedDelegation): Omit<ShownGrant, "unknown
       case "valueLte":
         receipt.maxNativeValue = caveat.maxValue.toString();
         break;
-      case "allowedCalldata": {
-        const address = pinnedAddress(caveat.value);
-        receipt.pins.push({ startIndex: caveat.startIndex, address });
-        if (caveat.startIndex === FIRST_ARGUMENT_OFFSET) receipt.recipient = address;
+      case "limitedCalls":
+        receipt.maxCalls = caveat.limit;
         break;
-      }
+      case "allowedCalldata":
+        for (const pin of pinsOf(caveat.startIndex, caveat.value)) {
+          receipt.pins.push(pin);
+          if (pin.startIndex === FIRST_ARGUMENT_OFFSET) receipt.recipient = pin.address;
+        }
+        break;
       default:
         break;
     }
@@ -258,7 +271,10 @@ export function checkGrant(typedData: TypedDataLike, shown: ShownGrant, wallet: 
   if (shown.unknownCaveats.length > 0) refuse("the card shows terms it could not read");
   if (decoded.caveats.some((caveat) => caveat.type === "exactCalldata" || caveat.type === "exactExecution" || caveat.type === "exactExecutionBatch" || caveat.type === "nativeTokenPeriodTransfer"))
     refuse("a grant with terms its card does not show");
-  const pinsOf = (pins: readonly { startIndex: number; address: string }[]) => pins.map((pin) => `${pin.startIndex}:${pin.address.toLowerCase()}`);
+  // Whole words when the card's receipt carries them, addresses otherwise.
+  const words = (pins: readonly { startIndex: number; address: string; value?: string | undefined }[], whole: boolean) =>
+    pins.map((pin) => `${pin.startIndex}:${(whole ? (pin.value ?? "") : pin.address).toLowerCase()}`);
+  const whole = Boolean(shown.pins?.every((pin) => pin.value !== undefined));
   const checks: [string, boolean][] = [
     ["redeemer", sameOptional(mine.redeemer, shown.redeemer)],
     ["redeemers", sameList(mine.redeemers, shown.redeemers)],
@@ -269,8 +285,9 @@ export function checkGrant(typedData: TypedDataLike, shown: ShownGrant, wallet: 
     ["targets", sameList(mine.targets, shown.targets)],
     ["methods", sameList(mine.methods, shown.methods)],
     ["recipient", sameOptional(mine.recipient, shown.recipient)],
-    ["pinned arguments", shown.pins === undefined || sameList(pinsOf(mine.pins), pinsOf(shown.pins))],
+    ["pinned arguments", shown.pins === undefined || sameList(words(mine.pins, whole), words(shown.pins, whole))],
     ["native value", sameOptional(mine.maxNativeValue ?? "0", shown.maxNativeValue ?? "0")],
+    ["uses", shown.maxCalls === undefined || mine.maxCalls === shown.maxCalls],
   ];
   const differs = checks.filter(([, ok]) => !ok).map(([name]) => name);
   if (differs.length > 0) refuse(`the grant differs from its card in: ${differs.join(", ")}`);
