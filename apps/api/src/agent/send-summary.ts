@@ -83,6 +83,10 @@ function describe(result: PolicyResultView): string {
       return "The daily allowance is off, so it needs their confirmation on the card.";
     case "LEAVES_LITTLE_FOR_FEES":
       return "Very little USDC will be left for future network fees.";
+    case "ABOVE_APPROVAL_THRESHOLD":
+      return `Above ${money(p.asset, p.limit)}, a send always needs their own approval on the card, whatever the risk dial.`;
+    case "OVER_RECIPIENT_WEEKLY":
+      return `More than ${money(p.asset, p.limit)} a week to one person (${money(p.asset, p.used)} already), so it needs their approval on the card.`;
     default:
       return result.code;
   }

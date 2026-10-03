@@ -48,6 +48,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "পরিচিতি খুলুন",
   AGENT_PAUSED: "থামানো: এটার জন্য আপনার অনুমোদন লাগবে",
   NOT_ON_ALLOWLIST: "আপনার অনুমোদিত তালিকায় নেই: এটার জন্য আপনার অনুমোদন লাগবে",
+  ABOVE_APPROVAL_THRESHOLD: "{{limit}}-এর বেশি: এটির জন্য আপনার অনুমোদন লাগবে",
+  OVER_RECIPIENT_WEEKLY: "একজনকে সপ্তাহে {{limit}}-এর বেশি (ইতিমধ্যে {{used}} পাঠানো হয়েছে): এটির জন্য আপনার অনুমোদন লাগবে",
   NEW_RECIPIENT_COOLDOWN:
     "নতুন প্রাপক: {{until}} পর্যন্ত, তাকে {{cap}}-এর বেশি পাঠাতে আপনার অনুমোদন লাগবে। ওয়ালেট ও সীমা-তে বদলান।",
   TEST_AMOUNT_SUGGESTED: "এখানে প্রথম পেমেন্ট। পৌঁছায় কিনা দেখতে আগে {{test}} পাঠাবেন?",

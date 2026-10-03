@@ -46,6 +46,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "संपर्क खोलें",
   AGENT_PAUSED: "रुका हुआ: इसके लिए आपकी मंज़ूरी चाहिए",
   NOT_ON_ALLOWLIST: "आपकी अनुमत सूची में नहीं: इसके लिए आपकी मंज़ूरी चाहिए",
+  ABOVE_APPROVAL_THRESHOLD: "{{limit}} से ज़्यादा: इसके लिए आपकी मंज़ूरी चाहिए",
+  OVER_RECIPIENT_WEEKLY: "एक व्यक्ति को हफ़्ते में {{limit}} से ज़्यादा (पहले ही {{used}} भेजे गए): इसके लिए आपकी मंज़ूरी चाहिए",
   NEW_RECIPIENT_COOLDOWN:
     "नया प्राप्तकर्ता: {{until}} तक, उन्हें {{cap}} से ज़्यादा भेजने के लिए आपकी मंज़ूरी चाहिए। इसे वॉलेट और सीमाएँ में बदलें।",
   TEST_AMOUNT_SUGGESTED: "यहाँ पहला भुगतान। पहले {{test}} भेजकर देखें कि पहुँचता है?",

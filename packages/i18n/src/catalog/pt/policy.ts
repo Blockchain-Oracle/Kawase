@@ -49,6 +49,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "Abrir contato",
   AGENT_PAUSED: "Em pausa: este precisa da sua aprovação",
   NOT_ON_ALLOWLIST: "Fora da sua lista permitida: este precisa da sua aprovação",
+  ABOVE_APPROVAL_THRESHOLD: "Acima de {{limit}}: este precisa da sua aprovação",
+  OVER_RECIPIENT_WEEKLY: "Mais de {{limit}} por semana para uma pessoa ({{used}} já enviados): este precisa da sua aprovação",
   NEW_RECIPIENT_COOLDOWN:
     "Destinatário novo: até {{until}}, mais de {{cap}} para ele precisa da sua aprovação. Mude isso em Carteira e limites.",
   TEST_AMOUNT_SUGGESTED: "Primeiro pagamento aqui. Enviar {{test}} antes para conferir que chega?",

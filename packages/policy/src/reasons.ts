@@ -130,6 +130,10 @@ export const REASONS = {
   BRAKE_LEVERAGE: "warning",
   /** Only allowlisted recipients go without the person; this one needs their Face ID. */
   NOT_ON_ALLOWLIST: "warning",
+  /** Above the human-approval threshold ($100 on mainnet): never on the allowance, whatever the risk dial. */
+  ABOVE_APPROVAL_THRESHOLD: "warning",
+  /** Past what one address gets in a week without the person ($200 on mainnet): this one needs their Face ID. */
+  OVER_RECIPIENT_WEEKLY: "warning",
   /** Leverage: the margin can be lost; the card names the liquidation price. */
   MARGIN_RISK: "warning",
   HEALTH_NEAR_LIMIT: "warning",

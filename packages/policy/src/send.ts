@@ -86,11 +86,16 @@ export type SendFacts = {
   cooldown?: { seconds: number; cap: bigint; now: string } | undefined;
   /** Only allowlisted recipients may be paid inside the allowance (without the person). */
   allowlistOnly?: boolean | undefined;
-  /** The person's limits for this network, in the asset's own units. */
-  limits: { perTx: bigint; daily: bigint; weekly: bigint };
-  /** Reserved and committed sends of this asset in the last day and week. */
-  spent: { day: bigint; week: bigint };
+  /**
+   * The person's limits for this network, in the asset's own units. `perRecipientWeekly`: the most one address gets in
+   * a week without the person's own yes (limits-and-safety.md §1, "per-recipient cap").
+   */
+  limits: { perTx: bigint; daily: bigint; weekly: bigint; perRecipientWeekly: bigint };
+  /** Reserved and committed sends of this asset in the last day and week, and to this recipient in the last week. */
+  spent: { day: bigint; week: bigint; recipientWeek: bigint };
   thresholds: {
+    /** Above this a send always takes the person's own yes, whatever the risk dial (the human-approval threshold). */
+    approval: bigint;
     /** A first payment to a new address above this always takes Face ID. */
     firstTimeStepUp: bigint;
     /** USDC kept for network fees when the wallet pays them itself. */
@@ -228,7 +233,14 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const offAllowlist = Boolean(facts.allowlistOnly) && !recipient.allowlisted;
   if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   if (offAllowlist) results.push(result("NOT_ON_ALLOWLIST", { name: recipient.name ?? "" }));
-  const allowanceCovers = facts.allowable && facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake;
+  // Above the approval threshold, or past what one address gets in a week, a send takes the person's own yes (never the
+  // allowance, whatever the risk dial). Like the cooldown, neither stops the person's own Face ID send (X31).
+  const aboveApproval = limitAmount !== null && limitAmount > facts.thresholds.approval;
+  if (aboveApproval) results.push(result("ABOVE_APPROVAL_THRESHOLD", { limit: s(facts.thresholds.approval), asset: limitAsset }));
+  const overRecipient = limitAmount !== null && spent.recipientWeek + limitAmount > limits.perRecipientWeekly;
+  if (overRecipient) results.push(result("OVER_RECIPIENT_WEEKLY", { limit: s(limits.perRecipientWeekly), used: s(spent.recipientWeek), asset: limitAsset, name: recipient.name ?? "" }));
+  const allowanceCovers =
+    facts.allowable && facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake && !aboveApproval && !overRecipient;
   if (facts.allowable && !facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
   if (allowanceCovers && amount > facts.allowance.available)
     results.push(result("ABOVE_ALLOWANCE", { available: s(facts.allowance.available), asset }));
