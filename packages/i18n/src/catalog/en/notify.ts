@@ -34,6 +34,8 @@ export const notify = {
   reminderShort: "Your wallet holds less than this run",
   requestReceivedTitle: "{{name}} asked you for {{amount}}",
   requestReceivedTitleHidden: "{{name}} asked you for money",
+  requestReminderTitle: "Reminder: {{name}} asked you for {{amount}}",
+  requestReminderTitleHidden: "Reminder: {{name}} asked you for money",
   requestReceivedBody: "Tap to pay",
   receivedTitleHidden: "You received money",
   sentTitleHidden: "Your money was sent",

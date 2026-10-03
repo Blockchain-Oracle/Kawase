@@ -35,6 +35,11 @@ export function splitRoutes(splits: SplitService) {
     if (!id.success) throw problem(HTTP.notFound, "not_found");
     return c.json({ split: await splits.get(c.get("userId")!, id.data) });
   });
+  app.post("/:id/remind", async (c) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    if (!id.success) throw problem(HTTP.notFound, "not_found");
+    return c.json(await splits.remind(c.get("userId")!, id.data));
+  });
   app.post("/:id/cancel", async (c) => {
     const id = z.uuid().safeParse(c.req.param("id"));
     if (!id.success) throw problem(HTTP.notFound, "not_found");

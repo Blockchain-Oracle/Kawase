@@ -35,6 +35,8 @@ export const notify: Catalog["notify"] = {
   reminderShort: "আপনার ওয়ালেটে এই রানের চেয়ে কম আছে",
   requestReceivedTitle: "{{name}} আপনার কাছে {{amount}} চেয়েছেন",
   requestReceivedTitleHidden: "{{name}} আপনার কাছে টাকা চেয়েছেন",
+  requestReminderTitle: "মনে করিয়ে দেওয়া: {{name}} আপনার কাছে {{amount}} চেয়েছেন",
+  requestReminderTitleHidden: "মনে করিয়ে দেওয়া: {{name}} আপনার কাছে টাকা চেয়েছেন",
   requestReceivedBody: "পেমেন্ট করতে ট্যাপ করুন",
   receivedTitleHidden: "আপনি টাকা পেয়েছেন",
   sentTitleHidden: "আপনার টাকা পাঠানো হয়েছে",

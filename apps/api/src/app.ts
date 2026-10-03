@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -382,6 +382,7 @@ export function createApp(deps: AppDeps) {
   const resolveToken = tokenResolver(assets);
   const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
   if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
+  if (deps.watchIntervalMs) requests.start(REQUEST_REMINDER_TICK_MS, deps.log);
   const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));

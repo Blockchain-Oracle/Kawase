@@ -13,5 +13,6 @@ export const inbox: Catalog["inbox"] = {
   loadFailed: "无法加载你的收件箱。",
   bellUnread: "收件箱，{{count}} 条新消息",
   askedYou: "{{name}} 向你请求 {{amount}}",
+  remindedYou: "提醒：{{name}} 向你请求 {{amount}}",
   pay: "付款",
 };

@@ -48,6 +48,7 @@ import type {
   BridgeRequest,
   PaymentRequest,
   PaymentRequestInput,
+  RequestReminder,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -409,6 +410,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
       /** Ask a Kawase user for an open request in the app (an @handle or a contact's name); the link still works. */
       ask: (id: string, payer: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/ask`, { payer }),
+      /** Remind the payer: in the app once a day when they were asked there; otherwise "link" (share it again). */
+      remind: (id: string) => call<{ request: PaymentRequest; reminded: RequestReminder }>("POST", `/requests/${id}/remind`),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
     },

@@ -65,6 +65,9 @@ export type SplitShare = {
   request: PaymentRequest;
 };
 
+/** What a split's Remind did: told in the app, already reminded today, and the links to share again. */
+export type SplitReminders = { inApp: number; alreadyToday: number; links: { name: string; amount: string; link: string }[] };
+
 export type SplitView = {
   id: string;
   network: AgentNetwork;
@@ -117,6 +120,8 @@ export function everydayApi(call: Call) {
       get: (id: string) => call<{ split: SplitView }>("GET", `/splits/${id}`),
       create: (input: SplitInput) => call<{ split: SplitView }>("POST", "/splits", input),
       cancel: (id: string) => call<{ split: SplitView }>("POST", `/splits/${id}/cancel`, {}),
+      /** Remind everyone whose share is open (in the app where asked there; the other links come back to share). */
+      remind: (id: string) => call<{ split: SplitView; reminded: SplitReminders }>("POST", `/splits/${id}/remind`, {}),
     },
     intents: {
       /** Any money action of the person's by id, with its kind and network. */

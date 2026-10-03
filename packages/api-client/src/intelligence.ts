@@ -1,6 +1,7 @@
 // The agent's intelligence layer (A5): memory, history search, proactive suggestions, Arc knowledge and the extra
 // generative cards. Client-safe shapes shared by the api, the server-only agent package and the app.
 import type { AgentNetwork, SendHold } from "./agent-types";
+import type { PaymentRequest, RequestReminder } from "./types";
 
 /** One remembered fact, as Settings → Memory lists it. */
 export type MemoryFact = {
@@ -25,6 +26,15 @@ export type MemoryToolOutput =
   | { status: "refused"; reason: "not_from_person" | "address_not_typed" | "too_long" }
   /** Not saved yet (H2): it names an @handle the person did not write, or outside content was read first; the card asks. */
   | { status: "confirm"; fact: string; reason: SendHold };
+
+/**
+ * What remind_payment returns: the request reminded (its card, with how: in Kawase, already today, or a link to share
+ * again), the open requests to choose from when several match, or why none.
+ */
+export type RemindPaymentOutput =
+  | { status: "reminded"; request: PaymentRequest; reminded: RequestReminder; who: string | null }
+  | { status: "choose"; requests: { requestId: string; who: string | null; amount: string; note: string | null }[] }
+  | { status: "not_found" | "needs_sign_in" };
 
 /** A fact the agent relied on in a reply, attached to that reply's metadata (the "From memory" line). */
 export type MemoryUsed = { id: string; fact: string };

@@ -1,6 +1,6 @@
 // A split bill's progress (C3): the bill in its token (R1), how much of it has come back (a bar that fills as people
 // pay), and each person's share with its state — paid (mint check), asked in Kawase (their inbox and a push), waiting,
-// or expired — and a Share button that sends that person their own link. It reads the split again every few seconds while shares are open, so a payment from any
+// or expired — and a Share button that sends that person their own link; Remind nudges everyone still open. It reads the split again every few seconds while shares are open, so a payment from any
 // wallet turns the row to Paid on its own. Used by the chat's split_bill card and the split page.
 import { BellRing, Check, Clock, Share2, X } from "lucide-react-native";
 import * as React from "react";
@@ -100,6 +100,28 @@ export function SplitCard({ initial, framed = true }: { initial: SplitView; fram
   const bar = useAnimatedStyle(() => ({ width: `${progress.value}%` }));
   const network = split.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
 
+  // Remind everyone whose share is open: in Kawase where they were asked there, the other links in one message.
+  const { user } = useSession();
+  const [reminding, setReminding] = React.useState(false);
+  const remind = async () => {
+    setReminding(true);
+    try {
+      const { split: next, reminded } = await api.splits.remind(split.id);
+      setSplit(next);
+      if (reminded.inApp > 0) toast(t("split.remindedInApp"));
+      else if (reminded.alreadyToday > 0 && reminded.links.length === 0) toast(t("split.remindedAlready"));
+      if (reminded.links.length > 0) {
+        const name = user?.handle ? `@${user.handle}` : t("split.someone");
+        const lines = reminded.links.map((entry) => t("split.reminderLine", { name: entry.name, amount: money(next.asset, entry.amount, next.assetToken.decimals), link: entry.link }));
+        await Share.share({ message: [t("split.reminderMessage", { name, title: next.title, network }), ...lines].join("\n") }).catch(() => undefined);
+      }
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setReminding(false);
+    }
+  };
+
   const cancel = async () => {
     setCancelling(true);
     try {
@@ -143,9 +165,15 @@ export function SplitCard({ initial, framed = true }: { initial: SplitView; fram
       </View>
 
       {split.status === "open" && split.paidCount < split.shares.length ? (
-        <Button variant="ghost" size="sm" disabled={cancelling} onPress={() => void cancel()}>
-          <Text className="text-muted-foreground">{t("split.cancelRest")}</Text>
-        </Button>
+        <View className="gap-1">
+          <Button variant="secondary" disabled={reminding} onPress={() => void remind()}>
+            <Icon as={BellRing} className="size-4" />
+            <Text>{t("split.remind")}</Text>
+          </Button>
+          <Button variant="ghost" size="sm" disabled={cancelling} onPress={() => void cancel()}>
+            <Text className="text-muted-foreground">{t("split.cancelRest")}</Text>
+          </Button>
+        </View>
       ) : null}
     </View>
   );

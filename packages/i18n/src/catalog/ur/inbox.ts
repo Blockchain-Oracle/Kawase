@@ -13,5 +13,6 @@ export const inbox: Catalog["inbox"] = {
   loadFailed: "آپ کا ان باکس لوڈ نہیں ہو سکا۔",
   bellUnread: "‏ان باکس، {{count}} نئے",
   askedYou: "{{name}} نے آپ سے {{amount}} مانگے",
+  remindedYou: "یاددہانی: {{name}} نے آپ سے {{amount}} مانگے",
   pay: "ادا کریں",
 };

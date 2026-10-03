@@ -1,11 +1,11 @@
-// Everyday-money tools (A5-2), spread into the intelligence tools: pay from a scanned or pasted code. The code is the
-// person's own words (they scanned or pasted it into this message), so the address it carries counts as typed (K2);
-// Kawase reads it, checks the network and asset, and drafts the send — the recipient check runs there as always, and
-// the card waits for the person's tap (H2).
+// Everyday-money tools (A5-2), spread into the intelligence tools: split a bill, remind whoever has not paid, and pay
+// from a scanned or pasted code. The code is the person's own words (they scanned or pasted it into this message), so
+// the address it carries counts as typed (K2); Kawase reads it, checks the network and asset, and drafts the send —
+// the recipient check runs there as always, and the card waits for the person's tap (H2).
 import { tool } from "ai";
 import { z } from "zod";
 
-import type { PayCodeView, ProposeSendOutput } from "@kawase/api-client";
+import type { PayCodeView, ProposeSendOutput, RequestReminder } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import type { TurnTrust } from "./trust";
@@ -17,6 +17,13 @@ const PEOPLE_MAX = 20;
 const ASSET_MAX = 64;
 
 export type PayFromCodeOutput = { code: PayCodeView; send: ProposeSendOutput | null };
+
+/** What the model says after a reminder, by how it went. */
+const REMINDED_SAY: Record<RequestReminder, string> = {
+  in_app: "They were reminded in Kawase: their inbox and a push.",
+  already_today: "They were already reminded today; Kawase reminds once a day per request.",
+  link: "They are not on Kawase: the card's Remind button shares the link again with a reminder; tell the person to tap it.",
+};
 
 export function everydayTools(context: AgentContext, trust: TurnTrust) {
   return {
@@ -51,6 +58,23 @@ export function everydayTools(context: AgentContext, trust: TurnTrust) {
                 shares: output.split.shares.map((share) => ({ name: share.name, handle: share.handle, askedInApp: share.askedInApp, amount: share.request.amount, link: share.request.link })),
                 say: "The card lists each share: people on Kawase were asked in the app; the others have a link and Share button. Nobody is charged until they pay.",
               }
+            : output,
+      }),
+    }),
+    remind_payment: tool({
+      description:
+        "Remind someone who has not paid the person's payment request or their share of a split: \"remind Kemi about dinner\", \"nudge whoever owes me for the taxi\". Pass who it was for as the person said it (a name or @handle) and/or a few words of what it was about; requestId only when they picked one from an earlier choose list. Someone asked in Kawase gets a reminder in their inbox and by push (once a day per request); for a link only, the card's Remind shares the link again. Several open requests match → status choose: ask which. Nothing is paid or charged by this.",
+      inputSchema: z.object({
+        who: z.string().max(NAME_MAX).optional().describe("Who it was for, as the person said it"),
+        about: z.string().max(TITLE_MAX).optional().describe("A few words of what it was for"),
+        requestId: z.string().uuid().optional().describe("Only one the person picked from a choose list"),
+      }),
+      execute: async (input) => context.intelligence.remindPayment(input),
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value:
+          output.status === "reminded"
+            ? { status: output.reminded === "link" ? "share_link" : output.reminded, who: output.who, say: REMINDED_SAY[output.reminded] }
             : output,
       }),
     }),

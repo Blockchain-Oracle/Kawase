@@ -148,7 +148,7 @@ export const KAWASE_ONLY: ReadonlySet<string> = new Set([
   "propose_network_switch", "propose_setting_change", "remember_fact", "forget_fact",
   "get_limits", "pause_all", "set_risk_mode", "propose_limit_change", "propose_allowlist_change", "revoke_grant",
   "propose_supply", "propose_borrow", "propose_repay", "start_buy", "propose_perp_order", "get_positions", "close_position", "protect_position",
-  "create_payment_request", "split_bill", "create_invoice", "list_invoices", "propose_payout", "weekly_report", "export_history",
+  "create_payment_request", "split_bill", "remind_payment", "create_invoice", "list_invoices", "propose_payout", "weekly_report", "export_history",
   "top_up_agent_wallet", "sign_out_device", "get_fee_reserve", "delete_account",
 ]);
 
