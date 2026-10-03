@@ -1,6 +1,6 @@
 // The agent's intelligence layer (A5): memory, history search, proactive suggestions, Arc knowledge and the extra
 // generative cards. Client-safe shapes shared by the api, the server-only agent package and the app.
-import type { AgentNetwork } from "./agent-types";
+import type { AgentNetwork, SendHold } from "./agent-types";
 
 /** One remembered fact, as Settings → Memory lists it. */
 export type MemoryFact = {
@@ -22,7 +22,9 @@ export type MemoryToolOutput =
   | { status: "not_found" }
   | { status: "memory_off" }
   | { status: "full"; limit: number }
-  | { status: "refused"; reason: "not_from_person" | "address_not_typed" | "too_long" };
+  | { status: "refused"; reason: "not_from_person" | "address_not_typed" | "too_long" }
+  /** Not saved yet (H2): it names an @handle the person did not write, or outside content was read first; the card asks. */
+  | { status: "confirm"; fact: string; reason: SendHold };
 
 /** A fact the agent relied on in a reply, attached to that reply's metadata (the "From memory" line). */
 export type MemoryUsed = { id: string; fact: string };

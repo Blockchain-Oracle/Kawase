@@ -13,6 +13,7 @@ export const importContacts = {
   noneOnKawase: "None of them are on Kawase yet.",
   add: "Add",
   addFailed: "Couldn't add {{name}}.",
+  quotaReached: "You've checked a lot of contacts today. Try again tomorrow.",
   others: "Invite to Kawase",
   invite: "Invite {{name}}",
   inviteMessage: "Hi {{name}}, I use Kawase to send and receive dollars and euros on Arc. Join me: {{link}}",

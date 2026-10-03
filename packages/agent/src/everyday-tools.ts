@@ -1,6 +1,7 @@
 // Everyday-money tools (A5-2), spread into the intelligence tools: pay from a scanned or pasted code. The code is the
 // person's own words (they scanned or pasted it into this message), so the address it carries counts as typed (K2);
-// Kawase reads it, checks the network and asset, and drafts the send — the recipient check runs there as always.
+// Kawase reads it, checks the network and asset, and drafts the send — the recipient check runs there as always, and
+// the card waits for the person's tap (H2).
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -54,7 +55,7 @@ export function everydayTools(context: AgentContext) {
     }),
     pay_from_code: tool({
       description:
-        "Pay from a payment code the person scanned or pasted in this message: a wallet address, an `ethereum:` payment link (EIP-681, which can carry the amount, token and chain), or a Kawase request or invoice link (/r/…). Pass the code exactly as it appears in their message. Kawase reads it, checks it is for this Arc network and a token on it (any ERC-20, not only USDC and EURC), and drafts the send as a card (paying a request or invoice ties the send to it). If the code is for the other Arc network, another chain or a token not on this network, or the request is closed, the result says so: tell them in one sentence (offer propose_network_switch for the other Arc network). Pass an amount only if the code had none and they said one.",
+        "Pay from a payment code the person scanned or pasted in this message: a wallet address, an `ethereum:` payment link (EIP-681, which can carry the amount, token and chain), or a Kawase request or invoice link (/r/…). Pass the code exactly as it appears in their message. Kawase reads it, checks it is for this Arc network and a token on it (any ERC-20, not only USDC and EURC), and drafts the send as a card the person confirms with a tap, even inside their allowance (paying a request or invoice ties the send to it). If the code is for the other Arc network, another chain or a token not on this network, or the request is closed, the result says so: tell them in one sentence (offer propose_network_switch for the other Arc network). Pass an amount only if the code had none and they said one.",
       inputSchema: z.object({
         code: z.string().min(1).max(CODE_MAX).describe("Exactly as in the person's message"),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Only if the code has no amount and they said one"),
@@ -63,13 +64,15 @@ export function everydayTools(context: AgentContext) {
         // K2: the code must be in the person's own message, never from a tool result or the model.
         if (!context.lastUserText.includes(code.trim())) throw new Error("The code must come from the person's own message; ask them to scan or paste it.");
         const view = await context.intelligence.payCode(code);
+        // H2: a code's recipient and amount were written by whoever made the code, so its send never goes by itself,
+        // even inside the allowance: the person checks the card and taps.
         if (view.status === "send") {
           // The code's reference (an invoice or order id) is written on chain with the payment (Arc Memo).
-          const send = await context.proposeSend({ recipient: view.to, amount: view.amount ?? amount ?? null, asset: view.asset, note: null, memo: view.memo ?? null, memoId: view.memoId ?? null });
+          const send = await context.proposeSend({ recipient: view.to, amount: view.amount ?? amount ?? null, asset: view.asset, note: null, memo: view.memo ?? null, memoId: view.memoId ?? null }, { autoSend: false });
           return { code: view, send };
         }
         if (view.status === "request") {
-          const send = await context.proposeSend({ requestToken: view.token, recipient: null, amount: null, asset: null, note: null });
+          const send = await context.proposeSend({ requestToken: view.token, recipient: null, amount: null, asset: null, note: null }, { autoSend: false });
           return { code: view, send };
         }
         return { code: view, send: null };
