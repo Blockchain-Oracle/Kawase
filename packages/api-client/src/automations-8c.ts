@@ -27,7 +27,18 @@ export type PayrollAutomationView = {
 export type DcaView = { tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amount: string };
 
 /** An edit in place: narrowing applies at once; widening answers with the new grant to sign (and the old one's revoke). */
-export type AutomationEdit = { every?: Every | undefined; weekday?: number | undefined; monthday?: number | undefined; time?: string | undefined; timezone?: string | undefined; amount?: string | undefined; note?: string | null | undefined };
+export type AutomationEdit = {
+  every?: Every | undefined;
+  weekday?: number | undefined;
+  monthday?: number | undefined;
+  time?: string | undefined;
+  timezone?: string | undefined;
+  amount?: string | undefined;
+  note?: string | null | undefined;
+  /** Drafts only (the asset picker on the card): a scheduled send's currency, or what a DCA buys (any token). */
+  asset?: "USDC" | "EURC" | undefined;
+  to?: string | undefined;
+};
 export type AutomationEditResponse = {
   automation: import("./types").AutomationView;
   /** Set when the edit gives the automation more than its grant allows: sign these, then `editActivate`. */

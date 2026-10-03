@@ -3,7 +3,7 @@
 // whom, a request of yours that was paid, a send that landed — with an unread dot that is never the only signal.
 // Tapping marks it read and opens the request or the transaction. "Mark all read" when there is something unread.
 import { useRouter } from "expo-router";
-import { ChevronLeft, FileClock, ShieldAlert } from "lucide-react-native";
+import { ChevronLeft, FileClock, GraduationCap, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,10 +43,70 @@ const SKELETON_HEIGHT = 64;
 const USDC_PLACES = 6;
 
 function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  if (item.kind === "position_health" || item.kind === "position_closed" || item.kind === "token_graduated") return <PositionAlertRow item={item} onPress={onPress} />;
   if (item.kind === "device_signed_in" || item.kind === "device_signed_out" || item.kind === "invoice_due" || item.kind === "invoice_overdue") {
     return <AlertRow item={item} onPress={onPress} />;
   }
   return <MoneyRow item={item} onPress={onPress} />;
+}
+
+/** Kawase Margin and borrowing: account health falling, or a take-profit / stop-loss Kawase closed (or could not). */
+function PositionAlertRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
+  const { t } = useT();
+  const money = useMoney();
+  const dates = useRequestDates();
+  const p = item.params;
+  const health = item.kind === "position_health";
+  if (item.kind === "token_graduated") {
+    const unreadGrad = !item.readAt;
+    const titleGrad = t("notify.graduatedTitle", { symbol: p.symbol ?? "", launchpad: p.launchpad ?? "" });
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={`${unreadGrad ? `${t("inbox.unread")}, ` : ""}${titleGrad}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
+        <View className="items-center justify-center" style={{ width: DOT }}>
+          {unreadGrad ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
+        </View>
+        <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+          <Icon as={GraduationCap} className="text-muted-foreground size-5" />
+        </View>
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text numberOfLines={2} className={cn("text-foreground text-base", unreadGrad ? "font-bold" : "font-semibold", TEXT_START)}>
+            {titleGrad}
+          </Text>
+          <Text numberOfLines={2} className={cn("text-muted-foreground text-sm", TEXT_START)}>
+            {[t("notify.graduatedBody", { symbol: p.symbol ?? "" }), dates.moment(item.createdAt)].filter(Boolean).join(" · ")}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
+  const position = `${p.market ?? ""} ${t(`notify.side_${p.side === "short" ? "short" : "long"}`)}`;
+  const closed = p.outcome === "closed";
+  const title = health
+    ? t(p.level === "danger" ? "notify.healthDangerTitle" : "notify.healthWarningTitle", { health: p.health ?? "" })
+    : closed
+      ? t(p.reason === "take_profit" ? "notify.takeProfitTitle" : "notify.stopLossTitle", { position })
+      : t("notify.protectFailedTitle", { position });
+  const detail = health ? t("notify.healthBody") : closed ? t("notify.protectClosedBody", { amount: money(p.asset, p.amount) }) : t("notify.protectFailedBody");
+  const warn = (health && p.level === "danger") || (!health && !closed);
+  const unread = !item.readAt;
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
+      <View className="items-center justify-center" style={{ width: DOT }}>
+        {unread ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
+      </View>
+      <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+        <Icon as={health ? HeartPulse : ShieldCheck} className={cn("size-5", warn ? "text-destructive" : "text-muted-foreground")} />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text numberOfLines={2} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
+          {title}
+        </Text>
+        <Text numberOfLines={2} className={cn("text-muted-foreground text-sm", TEXT_START)}>
+          {[detail, dates.moment(item.createdAt)].filter(Boolean).join(" · ")}
+        </Text>
+      </View>
+    </Pressable>
+  );
 }
 
 /** Security and business notices: an icon, the notice, and when. */
@@ -105,9 +165,13 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const waiting = item.kind === "needs_you";
   const reminder = item.kind === "automation_reminder";
   const quiet = alert || waiting || reminder;
-  const incoming = item.kind !== "send_completed" && !skipped && !quiet;
+  // A5-3: someone on Kawase asked the person to pay; nothing moved yet, so the amount carries no sign.
+  const asked = item.kind === "request_received";
+  const incoming = item.kind !== "send_completed" && !skipped && !quiet && !asked;
   const title =
-    waiting
+    asked
+      ? t("inbox.askedYou", { name, amount })
+      : waiting
       ? t(p.reminder ? "notify.needsYouReminderTitle" : "notify.needsYouTitle")
       : reminder
         ? t("automation.inboxReminder")
@@ -125,7 +189,9 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           ? t("automation.inboxSkipped", { reason: reasonText(p.reason ?? null, p, item.network) })
           : t("inbox.sentTo", { name });
   const subtitle =
-    waiting
+    asked
+      ? [p.note, dates.moment(item.createdAt)].filter(Boolean).join(" · ")
+      : waiting
       ? p.type === "swap"
         ? t("notify.needsYouSwap", { amount: p.amount && p.decimalsIn ? formatTokenAmount(BigInt(p.amount), Number(p.decimalsIn), "", locale, { trimZeros: true, withSymbol: false }) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
         : t("notify.needsYouSend", { amount, name })
@@ -140,7 +206,7 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}, ${incoming ? "+" : "−"}${amount}`}
+      accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}${asked ? "" : `, ${incoming ? "+" : "−"}${amount}`}`}
       onPress={onPress}
       className="active:bg-muted flex-row items-center gap-3 px-4 py-3"
     >
@@ -149,7 +215,8 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
       </View>
       <View style={{ width: AVATAR, height: AVATAR }}>
         <DefaultAvatar seed={(counterparty ?? item.id).toLowerCase()} size={AVATAR} />
-        {p.asset ? (
+        {/* USDC and EURC carry their mark; another token's symbol is in the words (never the wrong logo). */}
+        {p.asset === "USDC" || p.asset === "EURC" ? (
           <View className="absolute -bottom-0.5 -end-0.5">
             <Mark entity={p.asset === "EURC" ? ids.eurc : ids.usdc} size={BADGE} />
           </View>
@@ -163,10 +230,14 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
           {subtitle}
         </Text>
       </View>
-      {p.amount && !quiet ? (
+      {p.amount && !quiet && !asked ? (
         <Amount className={cn("text-base", incoming ? "text-success" : skipped ? "text-muted-foreground" : "text-foreground")}>
           {skipped ? amount : `${incoming ? "+" : "−"}${amount}`}
         </Amount>
+      ) : asked ? (
+        <View className="bg-primary rounded-full px-3 py-1.5">
+          <Text className="text-primary-foreground text-sm font-semibold">{t("inbox.pay")}</Text>
+        </View>
       ) : null}
     </Pressable>
   );
@@ -184,6 +255,14 @@ export function InboxScreen() {
   const open = (item: InboxItem) => {
     if (!item.readAt) void inbox.markRead(item.id);
     if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
+    // Account health (margin or borrowing) and protective closes: where the positions are.
+    else if (item.kind === "position_health" || item.kind === "position_closed") router.push(item.params.path === "/borrow" ? "/borrow" : "/margin");
+    else if (item.kind === "token_graduated" && item.params.token) router.push({ pathname: "/token/[chainId]/[address]", params: { chainId: "5042", address: item.params.token } });
+    // Asked to pay by someone on Kawase: the pay card itself.
+    else if (item.kind === "request_received" && item.params.token) router.push({ pathname: "/r/[token]", params: { token: item.params.token } });
+    // An automation's item: that run's story, or that automation's own card; the list when neither is known.
+    else if ((item.kind === "automation_skipped" || item.kind === "rule_alert") && item.params.runId) router.push({ pathname: "/why/run/[id]", params: { id: item.params.runId } });
+    else if (item.kind === "automation_reminder" && item.params.automationId) router.push({ pathname: "/i/[id]", params: { id: item.params.automationId } });
     else if (item.kind === "device_signed_in" || item.kind === "device_signed_out") router.push("/account/devices");
     else if ((item.kind === "invoice_due" || item.kind === "invoice_overdue") && item.params.invoiceId) router.push({ pathname: "/business/invoice/[id]", params: { id: item.params.invoiceId } });
     else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");

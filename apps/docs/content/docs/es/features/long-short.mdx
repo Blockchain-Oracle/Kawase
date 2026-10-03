@@ -1,0 +1,59 @@
+---
+title: "Largo y corto"
+description: "Kawase Margin abre una posición larga o corta con apalancamiento a través de tu propia cuenta de Aave V4 en Arc, en una sola transacción que confirmas deslizando, con el precio de liquidación visible desde el principio."
+sourceHash: c040ac083125c6c6
+---
+
+<Status ids="margin" />
+
+<Marks names="aave cirbtc weth eurc usdc kyberswap" />
+
+**Kawase Margin** te permite apostar a que el precio subirá (**largo**) o bajará (**corto**) con más dinero del que aportas. Funciona en
+**Aave V4** en la red principal de Arc, a través de **tu propia** cuenta de Aave: sin cuenta de exchange, sin préstamo flash y sin que
+Kawase custodie tus fondos.
+
+## Cómo se crea una posición
+
+- **Largo X**: tu margen en USDC se cambia por X y se deposita como garantía. Después, Kawase pide USDC prestado con esa garantía, lo cambia por
+  más X y lo deposita. Este proceso se repite varias veces.
+- **Corto X**: tus USDC se depositan como garantía. Después, Kawase pide X prestado, lo cambia por USDC y lo deposita. Este proceso se repite.
+- **Cerrar** funciona al revés: retirar, cambiar, devolver el préstamo y enviar el resto a tu billetera.
+
+La posición completa se abre o se cierra en **una sola transacción** desde tu propia billetera (un lote EIP-7702). Las operaciones de cambio vienen de
+KyberSwap y usan datos de llamada verificados. Cada ciclo pide prestado solo hasta alcanzar un nivel de salud seguro según los precios del oráculo, y la cuenta se abre con una
+**salud de 1.10 o más**.
+
+## Mercados
+
+Los mercados usan las reservas activas de Aave V4 en Arc. Hoy:
+
+- **cirBTC** (Bitcoin de Circle) y **WETH**: largo y corto;
+- **EURC**: solo corto, porque EURC no puede usarse como garantía en Aave V4.
+
+El apalancamiento está limitado por el factor de garantía de cada activo. Con los factores actuales, es de aproximadamente **3.4× para un largo en cirBTC**, **4× para un largo en
+WETH** y **2.4× para un corto**. El margen se paga en **USDC**.
+
+## La ficha
+
+«Largo en Bitcoin 2x con 10 dólares» o la pantalla de **Largo/corto**. Al elegir un lado, se prepara de inmediato un plan real ($10, 2×), así que
+la ficha se abre con datos actualizados:
+
+- tu margen y el tamaño apalancado, con opciones predeterminadas y Max;
+- una **regla de apalancamiento** limitada por el mercado, con una marca cada medio punto;
+- el **precio de liquidación** y la distancia hasta él, la **salud** de la cuenta, la tasa de préstamo y la comisión de red;
+- la ruta y una línea de riesgo.
+
+Confirmas **deslizando** (color menta para un largo, rojo para un corto) y después con Face ID. La ficha sigue la transacción desde la
+comprobación hasta el final. Cualquier cambio en el plan reinicia el deslizamiento, para que nunca confirmes cifras que no hayas visto.
+
+## Posiciones
+
+Cada posición tiene su propia página: las ganancias y pérdidas se dividen entre **cambio de precio** y **coste del préstamo**, un **indicador de salud**, su
+precio de liquidación y las opciones **Cerrar 25% · 50% · 75% · Todo**, que preparan el cierre en la misma ficha. La tarjeta **Para ti**
+de Inicio te avisa cuando la salud de una posición abierta baja de 1.25 o la liquidación está a menos de un movimiento del 10%.
+
+## No está disponible en la red de pruebas
+
+Aave V4 solo está en la red principal de Arc, así que Kawase Margin también. En la red de pruebas, la pantalla lo explica y ofrece cambiar de red.
+
+<ScopeList ids="margin" />

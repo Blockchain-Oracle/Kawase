@@ -3,13 +3,16 @@
 // and one button named after the device's real check that signs the grant and turns it on. Blocked → the reason and
 // its one fix (sign in, set up, add the contact); once the fix happens, the same draft is checked again with the
 // request as it was asked — never a new one, and nothing turns on by itself (review K03). Once on, the card is the
-// automation's live state; cancelled from chat, it offers the revoke of its permission on Arc.
+// automation's live state; cancelled from chat, it offers the revoke of its permission on Arc. While it is a draft,
+// its asset is a chip with the universal picker (R1): a scheduled send's currency (USDC or EURC — the everyday
+// allowance's tokens; others say why), or the token a DCA buys (any token).
 import { useFocusEffect, useRouter } from "expo-router";
-import { ScanFace } from "lucide-react-native";
+import { ChevronDown, ScanFace } from "lucide-react-native";
 import * as React from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import type { ProposeAutomationOutput } from "@kawase/api-client";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -22,6 +25,9 @@ import { useAutomation } from "@/automations/use-automation";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useT } from "@/i18n";
 import { nameFromWords, useMoney, usePolicyText } from "@/send/copy";
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { stableToken } from "@/portfolio/ticket-token";
+import { ARC_CHAIN_IDS } from "@/safety/use-safety";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
@@ -65,6 +71,16 @@ export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutpu
   );
   const revokePending = automation.status === "canceled" && automation.grant?.status === "active";
 
+  // The draft's asset (R1): a scheduled send's currency, or what a DCA buys.
+  const [picking, setPicking] = React.useState(false);
+  const dca = automation.dca ?? null;
+  const assetToken = a
+    ? stableToken(automation.network, a.asset)
+    : dca
+      ? { chainId: ARC_CHAIN_IDS[automation.network], address: dca.tokenOut, symbol: dca.symbolOut, name: dca.symbolOut, decimals: dca.decimalsOut, logoUrl: null }
+      : undefined;
+  const pickable = automation.status === "draft" && Boolean(automation.id) && assetToken !== undefined;
+
   const fix =
     blocking?.code === "SIGN_IN_REQUIRED"
       ? { label: t("policy.fixSignIn"), onPress: () => signIn.open() }
@@ -79,6 +95,19 @@ export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutpu
   return (
     <AgentCard eyebrow={eyebrow}>
       <AutomationSummary automation={automation} compact />
+      {pickable && assetToken ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t("automation.asset")}: ${assetToken.symbol}`}
+          disabled={controller.busy}
+          onPress={() => setPicking(true)}
+          className="border-border active:bg-muted flex-row items-center gap-2 self-start rounded-full border py-1 pe-3 ps-1"
+        >
+          <TokenMark token={assetToken} size={24} />
+          <Text className="text-foreground text-sm font-semibold">{dca ? t("automation.buys", { asset: assetToken.symbol }) : assetToken.symbol}</Text>
+          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+        </Pressable>
+      ) : null}
       {blocking ? (
         <View className="gap-2">
           <Text className={cn("text-foreground text-base", TEXT_START)}>{policyText(blocking, automation.network)}</Text>
@@ -108,6 +137,26 @@ export function AutomationCard({ output }: { output: Pick<ProposeAutomationOutpu
       )}
       {/* 8c: practise first, go live from practice, and what the next runs would do. */}
       {!blocking || blocking.code === "WALLET_NOT_SET_UP" ? <PracticeActions controller={{ ...controller, automation }} goLivePrompt={prompt} /> : null}
+      {pickable && assetToken ? (
+        <AssetPickerSheet
+          open={picking}
+          onClose={() => setPicking(false)}
+          title={t("automation.asset")}
+          mode={dca ? "any" : "held"}
+          selected={assetToken.address.toLowerCase()}
+          onSelect={({ token }) => {
+            setPicking(false);
+            if (dca) void controller.edit({ to: token.address }, prompt);
+            else if (token.symbol === "USDC" || token.symbol === "EURC") void controller.edit({ asset: token.symbol }, prompt);
+          }}
+          unavailable={(token) => {
+            if (token.status === "impersonator") return t("tokenPage.n_blocked");
+            if (dca) return token.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined;
+            const stable = token.address.toLowerCase() === stableToken(automation.network, "USDC").address.toLowerCase() || token.address.toLowerCase() === stableToken(automation.network, "EURC").address.toLowerCase();
+            return stable ? undefined : t("automation.stableOnly");
+          }}
+        />
+      ) : null}
       {a ? (
         <AddContactSheet open={adding} onClose={() => setAdding(false)} initialName={nameFromWords(a.recipientWords)} onSaved={() => {
           setAdding(false);

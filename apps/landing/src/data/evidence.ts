@@ -3,7 +3,7 @@
 // To add one, copy the full hash from its log line and name the file; never retype a hash by hand.
 import type { ExplorerId } from "@kawase/config";
 
-export type EvidenceKind = "setup" | "allowance" | "send" | "swap" | "bridge" | "earn" | "automation" | "revoke";
+export type EvidenceKind = "setup" | "allowance" | "send" | "swap" | "bridge" | "earn" | "automation" | "revoke" | "business";
 
 export type Evidence = {
   /** The day it ran (UTC). */
@@ -324,5 +324,77 @@ export const EVIDENCE: readonly Evidence[] = [
     explorer: "arcTestnet",
     hash: "0x4bda70c4f94a34c32e4ad864236261d1cc73161c4d7325250c4c6036643ecda9",
     source: "plan/stages/08-automations-delegated-authority.md",
+  },
+  {
+    date: "2026-10-02",
+    kind: "business",
+    action: "Invoice INV-0001 (0.05 USDC) paid from another wallet through its link's Arc Memo call; matched by its on-chain reference and closed",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0xefcc0f0bb9a651b14f5a66b3b2e6b041e33cb9b60e7c65aa370bdfbbebed1afa",
+    source: "apps/api/test/business-testnet.test.ts (commit 20ac602)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "business",
+    action: "Batch payout: two people paid in one transaction, signed once",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x8ebd67721b3ca59330d96c6de3baaa872569a368606c223d174f1227177a6b9a",
+    source: "apps/api/test/business-testnet.test.ts (commit 20ac602)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "swap",
+    action: "Any-pair ticket: 0.5 USDC → 0.424811 EURC at the best of KyberSwap, Circle App Kit and LI.FI, one signed batch",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x3e5100e512ffca4fe370b190bca374bd8e6d090fa37042806db777ef0f2a2604",
+    source: "apps/api/test/swap-testnet.test.ts (commit 7a2d333)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "automation",
+    action: "Practice first: after two dry runs that moved nothing, the automation went live and ran",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x65699067147df3e791e555667ede9410169956a6a7df30a00d94efb3959c5f2a",
+    source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "revoke",
+    action: "Edit in place: a larger amount signed a new grant and revoked the old one",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x07fc26e3f998ba5a6904c0312ebe39edd47f62411c07e18f17301bce297bc009",
+    source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "automation",
+    action: "Needs you: a payment held by the allowlist was approved from the push and sent; a second answer found it answered",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x2b21cf841306cfec2d7668d58571a8c12889fd61c916da7b4b01364202a3bf9c",
+    source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "automation",
+    action: "An underfunded run retried by itself when money arrived",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x36517d8b2b08af54e97a86960676fbabcd8cc205a217a09fd17fa4f124f834d4",
+    source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
+  },
+  {
+    date: "2026-10-02",
+    kind: "automation",
+    action: "Round-up: a 0.03 send saved 0.07 into the person's own vault",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0xe9a2cca5abf9becbfbd20f6e30379082b131728940a4118f57049370479d3a0f",
+    source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
   },
 ];

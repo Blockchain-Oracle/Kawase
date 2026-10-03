@@ -16,7 +16,9 @@ export const movePolicy: Catalog["movePolicy"] = {
   FIRST_TIME_RECIPIENT: "第一次向这个地址付款。发送前请核对。",
   AMOUNT_MISSING: "多少？",
   AMOUNT_INVALID: "该金额无效。",
-  INSUFFICIENT_BALANCE: "那边的 USDC 不足。你有 {{balance}}。",
-  INSUFFICIENT_GAS: "请在 Arc 上保留约 {{needed}} 作为网络费用。",
+  INSUFFICIENT_BALANCE: "那里的 {{asset}} 不足。你有 {{balance}}。",
+  INSUFFICIENT_GAS: "请留约 {{needed}} 支付网络费。",
   QUOTE_UNAVAILABLE: "暂时没有路径能转移它。",
+  MOVE_ASSET_UNKNOWN: "Kawase 在那里找不到 {{asset}}。你指的是哪种资产？",
+  TOKEN_BLOCKED: "{{symbol}} 仿冒其他代币，Kawase 不会转移它。",
 };

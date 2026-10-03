@@ -1,32 +1,37 @@
 ---
 title: "Redes"
-description: "La Red principal de Arc y la Red de pruebas de Arc, lado a lado: qué cambia, qué está disponible solo en una de ellas y cómo Kawase las mantiene separadas."
-sourceHash: 23465b593fd86e92
+description: "La red principal y la red de pruebas de Arc, lado a lado: qué cambia, qué está disponible solo en una de ellas y cómo Kawase las mantiene separadas."
+sourceHash: 71c5a20ef18b7833
 ---
 
 <Marks names="arc usdc eurc" />
 
-**Arc** es la red de stablecoins de Circle: USDC es su token de gas, así que las comisiones se pagan en dólares y las transacciones se liquidan en menos de un segundo. Kawase admite exactamente dos redes de Arc.
+**Arc** es la red de stablecoins de Circle: USDC es su token de gas, así que las comisiones se pagan en dólares y las transacciones se liquidan en menos de
+un segundo. Kawase admite exactamente dos redes de Arc.
 
 | | Red principal de Arc | Red de pruebas de Arc |
 |---|---|---|
 | Dinero | Dinero real | Dinero de prueba sin valor |
 | ID de cadena | `5042` | `5042002` |
 | Explorador | `explorer.arc.io` | `testnet.arcscan.app` |
-| Cómo conseguir dinero | Recibe dinero de cualquier billetera o exchange que envíe a Arc; próximamente podrás comprar con Apple Pay o tarjeta | El faucet integrado (aproximadamente 20 USDC + 20 EURC al día) |
-| Rendimiento | Bóvedas de Morpho incluidas en App Kit Earn de Circle | Bóvedas de Morpho de prueba de Arc Testnet |
-| Destinos del puente | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | Sus redes de prueba (Base Sepolia, Ethereum Sepolia, …) |
-| Mercado x402 | Planeado (el catálogo de Circle solo está disponible en la red principal) | No disponible |
-| Límites predeterminados | Más bajos | Diez veces más altos (sin riesgo de perder dinero real) |
+| Cómo obtener dinero | Comprar con tarjeta mediante el Onramp de Circle; recibir desde cualquier wallet o exchange que envíe a Arc | El faucet integrado en la app (aproximadamente 20 USDC + 20 EURC al día); el sandbox del Onramp de Circle con tarjetas de prueba |
+| Operar | Cualquier token, incluidas las meme coins, con la mejor opción entre KyberSwap, App Kit y LI.FI | Solo USDC ↔ EURC |
+| Largo y corto | Kawase Margin en Aave V4 | No disponible (Aave V4 solo está en la red principal) |
+| Generar rendimiento y pedir prestado | Suministro y préstamos en Aave V4; bóvedas de Morpho incluidas por Circle en App Kit Earn | Bóvedas de prueba de Morpho en la red de pruebas de Arc |
+| Puentes | Con cualquiera en Base, Ethereum, Arbitrum, Optimism, Polygon y Avalanche mediante CCTP, Across o Relay; traer a Arc | CCTP a sus redes de prueba (Base Sepolia, Ethereum Sepolia, …) |
+| Mercado x402 | Catálogo de Circle | Vendedor de demostración propio de Kawase (el catálogo de Circle solo está en la red principal) |
+| Límites predeterminados | Más bajos | Diez veces más altos (no hay dinero real en riesgo) |
 | Dónde empiezan las cuentas nuevas | | ✓ |
 
-Todos los flujos de Kawase se han probado de principio a fin con transacciones reales en **Arc Testnet**; la evidencia está enlazada desde la página de demostración del showcase. La disponibilidad de abajo muestra lo que ofrece la app en cada red:
+Todos los flujos de Kawase se han ejecutado de principio a fin con transacciones reales en la **red de pruebas de Arc**; la evidencia está enlazada desde la página de demo del
+showcase. La disponibilidad de abajo muestra lo que ofrece la app en cada red:
 
 <AvailabilityMatrix />
 
-## Cómo Kawase mantiene separadas las redes
+## Cómo Kawase las mantiene separadas
 
-- **Puedes cambiar con un toque**, en ambos sentidos: consulta [el selector de red](./features/network-toggle.mdx).
-- **La red se muestra de tres formas**: la pastilla del encabezado, la franja de red de pruebas o la etiqueta DINERO REAL, y el color de la esfera.
-- **El servidor controla la elección.** Cada pago se prepara para una red y se mantiene en ella hasta el final; si la red cambia mientras tanto, el pago se detiene en lugar de pasar a la otra red.
-- **Una sola dirección de billetera en ambas redes**, con saldos, actividad y límites independientes para cada red.
+- **Un toque para cambiar**, en ambos sentidos: consulta [el selector de red](./features/network-toggle.mdx).
+- **La red se muestra de tres formas**: la etiqueta del encabezado, la franja de la red de pruebas o la etiqueta DINERO REAL, y el color del orbe.
+- **El servidor controla la elección.** Cada pago se prepara para una red y la mantiene hasta el final; si la red
+  cambia mientras tanto, el pago se detiene en lugar de pasar a la otra red.
+- **Una dirección de wallet en ambas redes**, con saldos, actividad y límites independientes para cada red.

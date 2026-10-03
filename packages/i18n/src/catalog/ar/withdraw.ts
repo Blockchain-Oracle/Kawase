@@ -81,4 +81,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "منصات التداول والشبكات معروضة هنا للجميع. سحب الأموال يحتاج إلى حسابك.",
   cardTo: "اسحب إلى {{to}}",
   cardOpen: "راجع واسحب",
+  testFaceId: "أرسل مبلغًا تجريبيًا قدره {{amount}} USDC إلى {{to}}",
+  finishFaceId: "أكمِل السحب إلى {{to}}",
+  testTo: "تجربة إلى",
+  testDoneTitle: "وصل المبلغ التجريبي",
+  testDoneBody: "تأكد أن {{to}} يعرضه، ثم اسحب الباقي.",
+  testContinue: "اسحب الباقي",
+  firstTimeTitle: "أول إرسال إلى هنا",
+  firstTimeBody: "أرسل أولًا مبلغًا تجريبيًا صغيرًا قدره {{amount}} USDC، وتأكد من وصوله، ثم اسحب الباقي.",
+  sendTest: "أرسل أولًا مبلغًا تجريبيًا قدره {{amount}} USDC",
 };

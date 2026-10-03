@@ -70,6 +70,11 @@ export type AmountStepProps = {
   onValue: (value: string) => void;
   note: string;
   onNote: (note: string) => void;
+  /** A public reference written on chain with the payment (Arc Memo): an invoice or order number. */
+  reference: string;
+  onReference: (reference: string) => void;
+  /** The reference came with a scanned code (it shows; it can be removed, not edited). */
+  referenceFromCode: boolean;
   /** The token's balance in base units; undefined while loading. */
   balance: bigint | undefined;
   /** USDC kept for network fees when this is USDC ("Send max" leaves it, plan §A.4 12); typing more still works. */
@@ -169,6 +174,7 @@ export function AmountStep(props: AmountStepProps) {
           />
           <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("send.noteHint")}</Text>
         </View>
+        <ReferenceField value={props.reference} onChange={props.onReference} fromCode={props.referenceFromCode} />
       </View>
 
       <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
@@ -177,6 +183,43 @@ export function AmountStep(props: AmountStepProps) {
           <Text>{busy ? t("common.loading") : cta.label}</Text>
         </Button>
       </View>
+    </View>
+  );
+}
+
+const REFERENCE_MAX = 64;
+
+/** The on-chain reference (Arc Memo): public, so only an invoice or order number. Hidden until asked for. */
+function ReferenceField({ value, onChange, fromCode }: { value: string; onChange: (value: string) => void; fromCode: boolean }) {
+  const { t } = useT();
+  const [open, setOpen] = React.useState(Boolean(value));
+  if (fromCode && value)
+    return (
+      <View className="bg-muted flex-row items-center gap-2 rounded-2xl px-3 py-2">
+        <Text className={cn("text-foreground min-w-0 flex-1 text-sm", TEXT_START)}>{t("send.referenceFromCode", { reference: value })}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t("send.referenceRemove")} hitSlop={10} onPress={() => onChange("")}>
+          <Text className="text-muted-foreground text-xs font-semibold">{t("send.referenceRemove")}</Text>
+        </Pressable>
+      </View>
+    );
+  if (!open)
+    return (
+      <Pressable accessibilityRole="button" onPress={() => setOpen(true)} className="self-start px-1">
+        <Text className="text-muted-foreground text-xs font-semibold">{t("send.referenceAdd")}</Text>
+      </Pressable>
+    );
+  return (
+    <View className="gap-1">
+      <Input
+        value={value}
+        onChangeText={(text) => onChange(text.replace(/[^\x20-\x7E]/g, ""))}
+        placeholder={t("send.referencePlaceholder")}
+        accessibilityLabel={t("send.referencePlaceholder")}
+        maxLength={REFERENCE_MAX}
+        autoCapitalize="characters"
+        returnKeyType="done"
+      />
+      <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("send.referenceHint")}</Text>
     </View>
   );
 }

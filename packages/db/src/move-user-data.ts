@@ -12,7 +12,8 @@ import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
 import { attentionItems, automationRuns, automations } from "./schema/automations";
-import { marginPositions } from "./schema/margin";
+import { launchpadWatches } from "./schema/launchpad";
+import { accountHealth, marginPositions } from "./schema/margin";
 import { onrampOrders } from "./schema/onramp";
 import { notificationDeliveries } from "./schema/notifications";
 import { agentWalletMoves, marketplacePurchases, marketplaceSettings } from "./schema/marketplace";
@@ -20,10 +21,11 @@ import { businessProfiles, invoices, payoutBatches } from "./schema/business";
 import { faucetClaims, grants, limits, txAttempts, userWalletSetup, wallets } from "./schema/wallets";
 import { limitChanges, practiceRuns, safetySettings } from "./schema/safety";
 import { agentPreferences, memoryFacts, suggestionDismissals } from "./schema/memory";
-import { portfolioSnapshots, walletTokens } from "./schema/assets";
+import { portfolioSnapshots, walletTokens, watchlist } from "./schema/assets";
 import { places } from "./schema/places";
 import { tokenRules } from "./schema/token-rules";
 import { splitShares, splits } from "./schema/splits";
+import { withdrawals } from "./schema/withdrawals";
 
 type UserOwned = {
   table: PgTable;
@@ -67,6 +69,10 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   automation_runs: { table: automationRuns, userId: automationRuns.userId },
   notification_deliveries: { table: notificationDeliveries, userId: notificationDeliveries.userId },
   margin_positions: { table: marginPositions, userId: marginPositions.userId },
+  // One row per person and network: the account's own last-told level wins.
+  account_health: { table: accountHealth, userId: accountHealth.userId, perUserKey: ["network"] },
+  // One watch per person, network and token: the account's own wins.
+  launchpad_watches: { table: launchpadWatches, userId: launchpadWatches.userId, perUserKey: ["network", "token"] },
   onramp_orders: { table: onrampOrders, userId: onrampOrders.userId },
   marketplace_settings: { table: marketplaceSettings, userId: marketplaceSettings.userId, perUserKey: ["network"] },
   marketplace_purchases: { table: marketplacePurchases, userId: marketplacePurchases.userId },
@@ -91,6 +97,10 @@ export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   token_rules: { table: tokenRules, userId: tokenRules.userId, perUserKey: ["network"] },
   splits: { table: splits, userId: splits.userId },
   split_shares: { table: splitShares, userId: splitShares.userId },
+  // Withdrawals (their steps point at intents, which move too).
+  withdrawals: { table: withdrawals, userId: withdrawals.userId },
+  // The token page's star: one row per token; the account's own wins.
+  watchlist: { table: watchlist, userId: watchlist.userId, perUserKey: ["chainId", "tokenAddress"] },
 };
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];

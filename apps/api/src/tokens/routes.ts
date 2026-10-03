@@ -9,12 +9,16 @@ import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { AssetService } from "./service";
+import { tokenTrades } from "./trades";
+import type { Db } from "@kawase/db";
+import { NETWORKS } from "@kawase/networks";
 
 const QUERY_MAX = 64;
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const visibilitySchema = z.object({ address, visibility: z.enum(["auto", "shown", "hidden"]) });
 const rangeSchema = z.enum(["1H", "1D", "1W", "1M", "1Y", "ALL"]);
 const segmentSchema = z.enum(["trending", "new", "meme", "fx", "perps"]);
+const watchSchema = z.object({ on: z.boolean() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -50,7 +54,7 @@ export function portfolioRoutes(assets: AssetService) {
   return app;
 }
 
-export function tokenRoutes(assets: AssetService) {
+export function tokenRoutes(assets: AssetService, db?: Db) {
   const app = new Hono<AppEnv>();
   app.get("/search", async (c) => {
     const query = (c.req.query("q") ?? "").slice(0, QUERY_MAX);
@@ -59,6 +63,23 @@ export function tokenRoutes(assets: AssetService) {
   app.get("/:chainId/:address", async (c) => {
     const tokenAddress = await parse(address, c.req.param("address"));
     return c.json({ token: await assets.token(c.get("user"), networkOfChain(c.req.param("chainId")), tokenAddress) });
+  });
+  /** The person's own: whether it is starred, and their trades' profit and loss. */
+  app.get("/:chainId/:address/mine", requireUser, requireAccount, async (c) => {
+    const tokenAddress = await parse(address, c.req.param("address"));
+    const network = networkOfChain(c.req.param("chainId"));
+    const user = c.get("user")!;
+    const { prices } = await assets.prices(network, [tokenAddress.toLowerCase()]).catch(() => ({ prices: new Map<string, { priceUsd: number | null }>() }));
+    const [watched, trades] = await Promise.all([
+      assets.watched(user.id, network, tokenAddress),
+      db ? tokenTrades(db, { userId: user.id, network, token: tokenAddress, usdc: NETWORKS[network].addresses.usdc, priceUsd: prices.get(tokenAddress.toLowerCase())?.priceUsd ?? null }) : Promise.resolve(null),
+    ]);
+    return c.json({ watched, trades });
+  });
+  app.post("/:chainId/:address/watch", requireUser, requireAccount, async (c) => {
+    const tokenAddress = await parse(address, c.req.param("address"));
+    const body = await parse(watchSchema, await c.req.json());
+    return c.json(await assets.watch(c.get("user")!, networkOfChain(c.req.param("chainId")), tokenAddress, body.on));
   });
   app.get("/:chainId/:address/chart", async (c) => {
     const tokenAddress = await parse(address, c.req.param("address"));
@@ -70,6 +91,8 @@ export function tokenRoutes(assets: AssetService) {
 
 export function marketRoutes(assets: AssetService) {
   const app = new Hono<AppEnv>();
+  /** The person's starred tokens (the Markets "Watchlist" segment). */
+  app.get("/watchlist", requireUser, requireAccount, async (c) => c.json({ rows: await assets.watchlist(c.get("user")!, networkOf(c)) }));
   app.get("/", async (c) => {
     const segment = await parse(segmentSchema, c.req.query("segment") ?? "trending");
     return c.json({ market: await assets.markets(networkOf(c), segment) });

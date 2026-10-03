@@ -13,4 +13,5 @@ export const privacy = {
   deleted: "Conversations deleted",
   money: "Money history",
   moneyBody: "Your transactions are on Arc; export them by month.",
+  findTitle: "Finding you",
 } as const;

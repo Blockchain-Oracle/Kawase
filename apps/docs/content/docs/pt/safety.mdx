@@ -1,94 +1,94 @@
 ---
 title: "Modelo de segurança"
-description: "Sua própria carteira, um limite diário on-chain sem confirmação dentro dele, Face ID acima desse limite, autorizações de automação fixadas na rede e uma lista curta do que o agente nunca pode fazer."
-sourceHash: 02e7458e65e9901c
+description: "Sua própria carteira, um limite diário na blockchain sem confirmação dentro dele, Face ID acima desse limite, permissões de automação registradas na blockchain e uma lista curta do que o agente nunca pode fazer."
+sourceHash: e6a7e9817049c31c
 ---
 
-A Kawase permite que uma IA mova dinheiro por você. Isso só funciona se o que ela **pode** fazer for limitado, visível e controlado pela
-rede — não pela confiança na IA ou nos servidores da Kawase. Esta página explica como.
+A Kawase permite que uma IA mova dinheiro por você. Isso só funciona se o que ela **pode** fazer for limitado, visível e imposto pela
+rede — e não pela confiança na IA ou nos servidores da Kawase. Esta página explica como.
 
 ## Sua carteira
 
-- Quando você entra (código por e-mail, Apple ou Google), a Kawase cria uma conta comum no estilo Ethereum (uma **EOA**), cuja chave
+- Ao entrar (código por e-mail, Apple ou Google), a Kawase cria uma conta comum no estilo Ethereum (uma **EOA**), cuja chave
   fica protegida pela **Turnkey** em hardware seguro, dentro de uma suborganização que pertence a você. Não há PIN nem
   senha. É **um endereço nas duas redes**.
-- Depois, a Kawase atualiza essa mesma conta com **EIP-7702**, apontando o código dela para o
-  `EIP7702StatelessDeleGator` auditado da MetaMask. Você assina uma autorização; o retransmissor da Kawase a envia e paga a taxa, então a configuração não custa
-  nada para você.
-- Depois da atualização, sua conta pode conceder **autorizações** (ERC-7710, do Delegation Framework da MetaMask): permissões limitadas,
+- Depois, a Kawase atualiza essa mesma conta usando **EIP-7702**, apontando o código dela para o
+  `EIP7702StatelessDeleGator`, auditado pela MetaMask. Você assina uma autorização; o relayer da Kawase a envia e paga a taxa, então a configuração não custa nada para você.
+- Após a atualização, sua conta pode conceder **permissões** (ERC-7710, do Delegation Framework da MetaMask): permissões restritas,
   assinadas e com limites integrados. Essa é a única forma de o agente mover seu dinheiro sem você.
 
 ## Duas formas de autorizar um pagamento
 
 | | Dentro do seu limite diário | Todo o resto |
 |---|---|---|
-| O que abrange | Pagamentos em USDC até o valor restante do limite de hoje, para alguém a quem você já pagou ou que nomeou neste pedido | Acima do limite, qualquer pagamento em EURC, um primeiro pagamento para um novo endereço acima do limite, endereços parecidos, toda troca, ponte e movimentação para um cofre, qualquer alteração nos seus limites |
+| O que inclui | Pagamentos em USDC até o valor restante do limite de hoje, para alguém a quem você já pagou ou que nomeou neste pedido | Acima do limite, qualquer pagamento em EURC, um primeiro pagamento para um novo endereço acima do limite, endereços parecidos, todas as trocas, pontes e movimentações em cofres, qualquer mudança nos seus limites |
 | O que você faz | **Nada.** A Kawase envia e avisa você. | **Face ID** (impressão digital ou bloqueio de tela no Android; código por e-mail na web) |
-| O que aplica a regra | A **rede**: sua autorização de limite assinada | **Sua assinatura** sobre a transação exata |
+| O que garante isso | A **blockchain**: sua permissão de limite assinada | **Sua assinatura** sobre a transação exata |
 
 ### O limite diário
 
-Você o aceita uma vez, com um Face ID, durante a configuração. É uma autorização da sua conta para a carteira do agente da Kawase, com
-estes limites registrados — **decodificados a partir dos bytes assinados** e mostrados a você em um comprovante antes da assinatura:
+Você o aceita uma vez, com um Face ID, durante a configuração. É uma permissão da sua conta para a carteira do agente da Kawase, com
+estes limites registrados nela — **decodificados a partir dos bytes assinados** e mostrados a você como um recibo antes da assinatura:
 
-- **Token**: somente USDC e apenas sua função `transfer`.
-- **Valor**: até o limite diário por período de 24 horas (um limite de período on-chain).
-- **Quem pode usar**: somente a carteira do agente da Kawase (uma trava para o recebedor). Uma cópia da permissão não serve para mais ninguém.
+- **Token**: somente USDC e apenas a função `transfer`.
+- **Valor**: até o limite diário por período de 24 horas (um limite de período na blockchain).
+- **Quem pode usar**: somente a carteira do agente da Kawase (um bloqueio do resgatador). Uma cópia da permissão não serve para mais ninguém.
 - **Validade**: 90 dias. Depois disso, ela deixa de valer e você aceita uma nova.
 - **Sem valor nativo**: nada nela permite enviar o token usado para pagar o gás da rede.
 
-A rede recusa qualquer coisa fora desses limites — um valor maior, outro token, outra função, depois da validade ou depois
-que você a revogar. Isso foi testado na rede de testes da Arc, incluindo tentativas com uma chave de agente vazada, que a rede reverteu.
+A blockchain recusa qualquer coisa fora desses limites — um valor maior, outro token, outra função, depois do vencimento ou depois
+que você a revogar. Isso foi testado na rede de testes da Arc, incluindo tentativas feitas com uma chave de agente vazada, que a blockchain rejeitou.
 
-### Face ID acima do limite
+### Face ID acima desse limite
 
-Acima do limite, a Kawase monta a transação exata, mostra o valor, a moeda, o destinatário e a rede, e pede
-para sua carteira assinar **essa** transação. Depois, o servidor verifica se os bytes assinados correspondem ao cartão — remetente, destinatário,
-valor, rede e taxas — antes de transmitir. Se houver alguma diferença, o pagamento é bloqueado.
+Acima do limite, a Kawase monta a transação exata, mostra o valor, a moeda, o destinatário e a rede, e pede que sua carteira assine
+**essa** transação. Depois, o servidor verifica se os bytes assinados correspondem ao cartão — remetente, destinatário,
+valor, rede e taxas — antes de transmitir. Se houver diferença, o pagamento é bloqueado.
 
-Hoje, a assinatura vem da sua sessão iniciada, protegida pela verificação biométrica do próprio dispositivo. **As chaves de acesso estão chegando**
-(elas precisam do próprio domínio da Kawase): depois que você adicionar uma, a Turnkey exigirá essa chave em todas as assinaturas da carteira. Assim, nem uma
-sessão roubada nem o próprio servidor da Kawase poderão assinar por você.
+Hoje, a assinatura vem da sua sessão iniciada, protegida pela verificação biométrica do próprio dispositivo. **As passkeys estão chegando**
+(elas precisam do domínio próprio da Kawase): depois que você adicionar uma, a própria Turnkey exigirá seu uso em todas as assinaturas da carteira. Assim, nem uma
+sessão roubada nem o servidor da Kawase poderão assinar por você.
 
-## Automações: fixadas na rede
+## Automações: registradas na blockchain
 
-Cada automação recebe **sua própria autorização**, assinada com um Face ID quando você a ativa:
+Cada automação recebe **sua própria permissão**, assinada com um Face ID quando você a ativa:
 
-- **Pagamentos programados**: somente transferências, **fixadas em um destinatário**, com no máximo o valor por período e validade até o fim da
-  automação.
+- **Pagamentos programados**: somente transferências, **vinculadas a um único destinatário**, no máximo o valor por período e com vencimento quando a
+  automação terminar.
 - **Guardar automaticamente**: só pode mover USDC entre sua carteira e seu próprio cofre de rendimento.
-- **Regras de ponte**: só podem enviar USDC para o **seu próprio** endereço, com a taxa da rota limitada.
+- **Regras de ponte**: só podem fazer uma ponte de USDC para **seu próprio** endereço, com um limite para a taxa da rota.
 
-Cancelar uma automação **revoga a autorização na rede** na mesma etapa.
+Cancelar uma automação **revoga sua permissão na blockchain** na mesma etapa.
 
 ## O que o agente nunca pode fazer
 
 - Mover mais do que o seu limite em um dia ou usar o limite para qualquer coisa que não seja uma transferência de USDC.
-- Enviar para um destinatário diferente daquele ao qual a autorização da automação está vinculada.
-- Trocar, fazer uma ponte, pagar em EURC, pagar para um endereço parecido ou aumentar seus limites sem o seu Face ID.
-- Aprovar um pagamento por causa de um “sim” falado: pagamentos por voz sempre esperam que você toque na tela.
+- Enviar para um destinatário diferente daquele ao qual a permissão da automação está vinculada.
+- Fazer uma troca, uma ponte, pagar em EURC, pagar para um endereço parecido ou aumentar seus limites sem seu Face ID.
+- Aprovar um pagamento por causa de um "sim" falado: pagamentos por voz sempre aguardam seu toque.
 - Inventar um endereço: os endereços vêm apenas dos seus contatos ou da sua própria mensagem, palavra por palavra.
-- Escolher a rede: isso faz parte da sua sessão no servidor, e todos os pagamentos são verificados de acordo com ela.
-- Marcar algo como pago sem comprovação: somente um comprovante com a transferência exata é válido. Um resultado incerto aparece como
-  “ainda verificando” e **nunca é tentado novamente automaticamente**, para que nada seja pago duas vezes.
+- Escolher a rede: isso faz parte da sua sessão no servidor, e cada pagamento é verificado de acordo com ela.
+- Marcar algo como pago sem comprovação: somente um recibo com a transferência exata é válido. Um resultado incerto aparece como
+  "ainda verificando" e **nunca é tentado novamente automaticamente**, para que nada seja pago duas vezes.
 
 ## Limites padrão
 
-Além do limite on-chain, o mecanismo de políticas da Kawase verifica seus limites antes de preparar qualquer coisa (dois toques ao mesmo tempo
-não podem ultrapassar o mesmo limite):
+Além do limite na blockchain, o mecanismo de políticas da Kawase verifica seus limites antes de preparar qualquer coisa (dois toques ao mesmo tempo
+não podem ficar dentro do mesmo limite):
 
 <LimitsTable />
 
 ## Revogar e pausar
 
-- **Revogar o limite**: Carteira e limites → Revogar (mantenha pressionado para confirmar). É uma transação comum da sua
-  carteira que desativa a autorização na rede; o agente não poderá mais enviar nada sem o seu Face ID.
-- **Pausar, pular ou cancelar** qualquer automação na tela Automações ou no chat; cancelar revoga a autorização.
-- **Pausar tudo** de uma vez (todas as automações e os gastos do agente) já é aplicado pelo servidor; o botão para isso
-  em Configurações **está chegando**.
-- **Sair completamente**: veja [Sacar sem a Kawase](./withdraw-without-kawase.mdx).
+- **Revogar o limite**: Carteira e limites → Revogar (pressione e segure para confirmar). É uma transação comum da sua
+  carteira que desativa a permissão na blockchain; o agente não poderá mais enviar nada sem seu Face ID.
+- **Pausar, pular ou cancelar** qualquer automação na tela de Automações ou no chat; cancelar revoga a permissão.
+- **Pausar tudo** em Carteira e limites desativa tudo o que o agente faz sem perguntar; seus próprios pagamentos com Face ID continuam
+  funcionando. O **kit de saída** pausa, revoga todas as permissões em uma transação e ajuda você a retirar o dinheiro. Consulte
+  [Limites e controle](./features/limits-and-control.mdx).
+- **Sair completamente**: consulte [Retirar dinheiro sem a Kawase](./withdraw-without-kawase.mdx).
 
 ## Comprovação
 
-Cada etapa acima foi executada na rede de testes da Arc com transações reais; a tabela de evidências, com links para os exploradores, está na
+Cada etapa acima foi executada na rede de testes da Arc com transações reais; a tabela de evidências, com links para o explorador, está na
 página de demonstração do showcase, e a página de [arquitetura](./architecture.mdx) lista os testes.

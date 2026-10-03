@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "تعذّرت قراءة هذا التقسيم.",
   invalid: "الحصص لا تساوي الفاتورة. اضبطها في نموذج التقسيم.",
   openForm: "افتح نموذج التقسيم",
+  askedInApp: "طُلب على Kawase",
 };

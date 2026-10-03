@@ -72,7 +72,15 @@ const payrollSchema = z.object({
   note: z.string().max(NOTE_MAX).nullable().optional(),
 });
 const dcaSchema = z.object({ ...scheduleFields, from: z.string().min(1).max(TOKEN_MAX), to: z.string().min(1).max(TOKEN_MAX), amount: z.string().max(AMOUNT_MAX) });
-const editSchema = z.object({ ...scheduleFields, every: scheduleFields.every.optional(), amount: z.string().max(AMOUNT_MAX).optional(), note: z.string().max(NOTE_MAX).nullable().optional() });
+const editSchema = z.object({
+  ...scheduleFields,
+  every: scheduleFields.every.optional(),
+  amount: z.string().max(AMOUNT_MAX).optional(),
+  note: z.string().max(NOTE_MAX).nullable().optional(),
+  // Drafts only (the card's asset picker): a scheduled send's currency, or the token a DCA buys.
+  asset: z.enum(["USDC", "EURC"]).optional(),
+  to: z.string().min(1).max(TOKEN_MAX).optional(),
+});
 const viaSchema = z.object({ via: z.enum(["app", "push", "web", "chat"]).optional() });
 const activateSchema = z.object({
   signatures: z

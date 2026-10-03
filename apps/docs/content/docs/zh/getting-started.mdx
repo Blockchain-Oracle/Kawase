@@ -1,67 +1,72 @@
 ---
 title: "开始使用"
-description: "以访客身份在浏览器中打开 Kawase，或将其安装到 iPhone 或 Android，然后领取免费的测试币并完成第一笔付款。"
-sourceHash: d04f550afbef6dcf
+description: "在浏览器、Mac、iPhone 或 Android 上以访客身份打开 Kawase，获取免费的测试币并完成首笔转账。"
+sourceHash: 9da905ad5928756d
 ---
 
 ## 1. 打开应用
 
 <Tabs items={['Web', 'iPhone', 'Android']}>
   <Tab value="Web">
-    在任意现代浏览器中打开 [kawase.84.46.247.92.sslip.io](https://kawase.84.46.247.92.sslip.io)。你会以
-    **访客**身份开始使用：无需注册，也无需邮箱。你可以和 Kawase 聊天，浏览每个页面，看看它能做什么。
+    在任意现代浏览器中打开 [app.getkawase.xyz](https://app.getkawase.xyz)。你会以**访客**身份开始：无需注册，也无需
+    提供邮箱。你可以和 Kawase 聊天、与它语音交流、浏览每个页面，看看它能做什么。
 
-    在网页端，凡是需要你确认付款的地方，都会用**邮箱验证码**代替 Face ID。网页端暂时还不支持语音；所有地方都可以输入文字。
+    在网页上，每当转账需要你确认时，**邮箱验证码**会代替 Face ID。你可以安装网页应用，也可以使用
+    [Mac 桌面应用](./features/web-and-desktop.mdx)。
   </Tab>
   <Tab value="iPhone">
-    Kawase 的 iPhone 版本目前处于测试阶段，通过 **TestFlight** 发布。请从 App Store 安装 TestFlight，
-    然后打开你收到的邀请链接。正式的 TestFlight 链接发布后，会放在展示页面上。
+    Kawase 的 iPhone 版本目前处于测试阶段，通过 **TestFlight** 发布。先从 App Store 安装 TestFlight，
+    然后打开你收到的邀请链接。公开的 TestFlight 链接将在应用上线时发布到展示页面。
   </Tab>
   <Tab value="Android">
     从 Expo 下载 Android 版本（APK）：
     [build e644e19d](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed)。
-    在手机上打开安装包并允许安装。在 Android 上，你需要使用**指纹或屏幕锁**进行确认。
+    在手机上打开它并允许安装。在 Android 上，你需要使用**指纹或屏幕锁**进行确认。
   </Tab>
 </Tabs>
 
 ## 2. 选择语言
 
-语言按钮在第一个页面上。Kawase 支持[十种语言](./features/languages.mdx)，切换到阿拉伯语或乌尔都语后，整个布局会立即变为从右到左。你之后随时都可以在设置中更改语言。
+语言选项位于第一个页面。Kawase 支持[十种语言](./features/languages.mdx)，切换为阿拉伯语或乌尔都语后，整个界面会立即变为从右向左排列。你可以随时在设置中再次更改语言。
 
-## 3. 想保留数据时再登录
+## 3. 想保留数据时登录
 
-访客可以浏览所有内容。要持有资金，请使用以下方式登录：
+访客可以探索所有功能。要持有资金，请使用以下方式登录：
 
 - **邮箱验证码**，
 - **Apple**，或
 - **Google**。
 
-无需密码，也无需 PIN。登录后会创建你的钱包（请参阅[安全性](./safety.mdx)）：同一个地址可在两个网络上使用。你以访客身份完成的所有操作——聊天记录和联系人——都会转移到你的账户中。
+无需密码，也无需 PIN。登录后，系统会创建你的钱包（参见[安全性](./safety.mdx)）：一个地址即可在两个网络上使用。你以访客身份进行的所有操作——聊天记录、联系人——都会转入你的账户。
 
 设置钱包完全免费：你只需签署一次授权，网络费用由 Kawase 支付。
 
 ## 4. 获取测试币
 
-新账户会从**测试网**开始，测试网上的资金没有实际价值。你可以向 Kawase 说“给我测试币”，或从首页打开水龙头。每天可以领取一次，每次大约获得 **20 测试 USDC 和 20 测试 EURC**，资金来自 Circle 的水龙头。如果应用内领取失败，可以前往 Circle 自己的水龙头：[faucet.circle.com](https://faucet.circle.com)（选择“Arc Testnet”）。
+新账户会从**测试网**开始，测试网上的资金没有实际价值。你可以让 Kawase“给我测试币”，也可以从主页面打开水龙头。每天可以领取一次，每次大约获得 **20 test USDC and 20 test EURC**，由 Circle 的水龙头发放。如果应用内领取失败，可以前往 Circle 自己的水龙头：[faucet.circle.com](https://faucet.circle.com)（选择“Arc Testnet”）。
 
 ## 5. 接受每日额度
 
-Kawase 会请你接受一次**每日额度**：每天允许代理代你转出的 USDC 金额，额度内无需再次询问。你可以使用一次 Face ID 批准。批准前，卡片上会显示默认额度；请参阅[限额表](./safety.mdx#default-limits)。
+Kawase 会请你接受一次**每日额度**：这是智能代理每天可以代你转出的 USDC 金额，无需再次询问。你可以通过一次 Face ID 批准。批准前，卡片上会显示默认额度；详情请参见[限额表](./safety.mdx#default-limits)。
 
-## 6. 完成第一笔付款
+## 6. 完成首笔转账
 
 例如，输入或说：
 
-> 给 @kawasedemo 转 1 美元
+> 转 1 dollar 给 @kawasedemo
 
-Kawase 会找到收款人，检查你的余额和限额，并显示付款卡片：包括准确金额、币种、收款人和网络。在你的额度内，转账会立即完成；超过额度时，则会等待你的 Face ID。卡片会持续显示付款进度，直到网络确认交易，收据中还会附有区块浏览器链接。
+Kawase 会找到收款人，检查你的余额和限额，并显示转账卡片：准确金额、币种、收款人和网络。在每日额度内时，转账会立即发送；超过额度时，则会等待你的 Face ID。卡片会一直跟踪这笔转账，直到网络确认，收据中也会附上区块浏览器链接。
 
 ## 7. 试试其他功能
 
-- “把 2 美元兑换成欧元”
-- “把 1 美元转到 Base”
-- “把 5 美元存入储蓄”
-- “每周五 9 点给 Alex 转 1 美元”
-- “在我的钱包里保留 20 美元，剩下的存起来”
+- “swap 2 dollars to euros”
+- “move 1 dollar to Base”
+- “put 5 dollars in savings”
+- “every Friday at 9 send 1 dollar to Alex”
+- “keep 20 dollars in my wallet and save the rest”
+- “buy 10 dollars of USDC with a card” （测试网上的 Circle 沙盒）
+- “remember that Alex is my brother”
 
-每项操作都会先显示一张卡片，并明确告诉你需要做什么。
+在**主网**上，你还可以使用 Markets、交易任意代币、做多和做空，以及借款。请参阅[功能介绍](./features/swap-and-trade.mdx)。
+
+每项操作都会先显示一张卡片，并准确告诉你需要进行什么操作。

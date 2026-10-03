@@ -139,6 +139,30 @@ export function checkRelayPermit(permit: RelayPermit, expected: { chainId: numbe
   );
 }
 
+/** Uniswap's Permit2, at the same address on every chain. */
+export const PERMIT2: Address = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
+
+/**
+ * For tokens other than USDC Relay asks for a Permit2 batch-witness transfer (seen live 10-02 for EURC and WETH from
+ * Base): it must be Permit2's own domain on the origin chain, permit exactly one token for exactly the amount, and
+ * name one of Relay's contracts as the spender; the witness (Relay's calls) is bound to its request on Relay's side.
+ */
+export function checkRelayPermit2(permit: RelayPermit, expected: { chainId: number; token: Address; amount: bigint; spenders: readonly Address[] }): boolean {
+  const same = (a: unknown, b: string) => typeof a === "string" && a.toLowerCase() === b.toLowerCase();
+  const { domain, primaryType, message } = permit.typedData;
+  const permitted = message.permitted as { token?: string; amount?: string }[] | undefined;
+  return (
+    primaryType === "PermitBatchWitnessTransferFrom" &&
+    Number(domain.chainId) === expected.chainId &&
+    same(domain.verifyingContract, PERMIT2) &&
+    Array.isArray(permitted) &&
+    permitted.length === 1 &&
+    same(permitted[0]!.token, expected.token) &&
+    BigInt(String(permitted[0]!.amount)) === expected.amount &&
+    expected.spenders.some((spender) => same(message.spender, spender))
+  );
+}
+
 /** Hands the signed permit to Relay, which executes it on the origin chain. */
 export async function submitRelayPermit(permit: RelayPermit, signature: Hex): Promise<void> {
   const { ok, body } = await call(`${permit.post.endpoint}?signature=${signature}`, {

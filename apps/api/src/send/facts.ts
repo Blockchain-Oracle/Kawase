@@ -31,6 +31,9 @@ export type StoredRequest = {
   /** "USDC"/"EURC", a verified symbol, or a lower-case token address on the network. */
   asset: string | null;
   note: string | null;
+  /** A public reference written on chain with the payment (Arc Memo), and its bytes32 id. Absent on older rows. */
+  memo?: string | null;
+  memoId?: string | null;
 };
 
 /** What a send needs to know about its token. */
@@ -164,6 +167,8 @@ export async function gatherFacts(input: {
   /** Any token beyond USDC and EURC (the asset registry); without it only those two are known. */
   lookup?: TokenLookup | undefined;
 }): Promise<GatheredFacts> {
+  // A reference on chain goes through Arc's Memo contract from the wallet itself: never on the allowance.
+  const memo = Boolean(input.request.memo || input.request.memoId);
   const { db, chains, userId, network, wallet, request } = input;
   const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
   const view = await capabilityView(db, chains.available);
@@ -222,7 +227,8 @@ export async function gatherFacts(input: {
     recipientAddress ? recipientTrust(db, userId, network, recipientAddress) : Promise.resolve(undefined),
     clients && recipientAddress ? inspectRecipient(db, clients.client, recipientAddress as Address, stableSymbol && token ? token.address : undefined) : Promise.resolve(undefined),
     // USDC and EURC can go gas-free through the relayer (EIP-3009) while it has gas and the person has relays left.
-    clients && stableSymbol ? Promise.all([relayerReady(clients), relaysLeft(db, userId)]).then(([ready, left]) => ready && left) : Promise.resolve(false),
+    // (Not with a memo: the Memo contract only takes calls from the wallet itself.)
+    clients && stableSymbol && !memo ? Promise.all([relayerReady(clients), relaysLeft(db, userId)]).then(([ready, left]) => ready && left) : Promise.resolve(false),
   ]);
   const grant = room?.base?.grant ?? room?.boost?.grant;
   const allowance: ActiveAllowance | undefined = grant && room ? { id: grant.id, delegation: grant.delegation, perPeriod: room.perPeriod } : undefined;
@@ -251,7 +257,7 @@ export async function gatherFacts(input: {
       asset: token?.symbol ?? (named || undefined),
       assetUnclear,
       isUsdc,
-      allowable: Boolean(stableSymbol),
+      allowable: Boolean(stableSymbol) && !memo,
       decimals: token?.decimals,
       amount,
       limitAmount: valued,

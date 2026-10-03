@@ -11,7 +11,8 @@
 // (ERC-721 Transfers share the event signature but carry four topics, and are skipped). Each token that arrives is
 // recorded in `wallet_tokens`, which the portfolio reads with one multicall; a token is never chosen from a list.
 // New wallets are also read backwards from when they were registered (bounded, a few windows per tick), so tokens
-// that arrived before Kawase watched are found too. Only USDC and EURC become inbox items and pay requests.
+// that arrived before Kawase watched are found too. USDC and EURC are always news; any other token is announced too
+// (inbox and push) unless the Hidden rules keep it quiet (spam, copycats, dust, the person's own choice).
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getAddress, parseAbiItem, type Address, type Log } from "viem";
 
@@ -60,7 +61,11 @@ export class IncomingWatcher {
     private readonly inbox: InboxService,
     private readonly log: Logger,
     /** Read new wallets backwards for tokens that arrived earlier; off when Alchemy does cold start in one call. */
-    private readonly options: { backfill: boolean } = { backfill: true },
+    private readonly options: {
+      backfill: boolean;
+      /** Whether a token that arrived is news, with its symbol and decimals; null keeps it silent (AssetService). */
+      notice?: (userId: string, network: NetworkId, token: string, amount: bigint) => Promise<{ symbol: string; decimals: number } | null>;
+    } = { backfill: true },
   ) {}
 
   start(intervalMs: number) {
@@ -133,8 +138,10 @@ export class IncomingWatcher {
   }
 
   /**
-   * Any other token that arrives (R1): kept as a chain event and matched against an open request for exactly it. It
-   * is not announced on its own: unsolicited tokens are how spam arrives (they show in Hidden instead).
+   * Any other token that arrives (R1): kept as a chain event, matched against an open request for exactly it, and
+   * announced (inbox, push) when it is news. Unsolicited tokens are how spam arrives, so the Hidden rules decide: a
+   * spam, copycat or dust token, or one the person hid, stays silent (it shows in Hidden). The person's own
+   * transaction (a swap's output) is not money received.
    */
   private async recordToken(network: NetworkId, chainId: number, entry: TransferLog, ownerOf: Map<string, string>) {
     const from = entry.args.from;
@@ -143,15 +150,33 @@ export class IncomingWatcher {
     if (!from || !to || !value || !entry.transactionHash || entry.logIndex === null || entry.blockNumber === null) return;
     const userId = ownerOf.get(to.toLowerCase());
     if (!userId || from.toLowerCase() === to.toLowerCase()) return;
+    const token = entry.address.toLowerCase();
+    // Read outside the transaction (a price and a contract read); a failure keeps the arrival silent, never lost.
+    const notice = this.options.notice ? await this.options.notice(userId, network, token, value).catch(() => null) : null;
     await this.db.transaction(async (tx) => {
       const [inserted] = await tx
         .insert(chainEvents)
-        .values({ userId, network, chainId, blockNumber: entry.blockNumber!, txHash: entry.transactionHash!, logIndex: entry.logIndex!, asset: entry.address.toLowerCase(), fromAddress: getAddress(from), toAddress: getAddress(to), amount: value })
+        .values({ userId, network, chainId, blockNumber: entry.blockNumber!, txHash: entry.transactionHash!, logIndex: entry.logIndex!, asset: token, fromAddress: getAddress(from), toAddress: getAddress(to), amount: value })
         .onConflictDoNothing({ target: [chainEvents.chainId, chainEvents.txHash, chainEvents.logIndex] })
         .returning({ id: chainEvents.id });
       if (!inserted) return;
-      const paid = await this.requests.matchIncoming(tx, { userId, network, asset: entry.address.toLowerCase(), amount: value, txHash: entry.transactionHash!, from: getAddress(from) });
+      const paid = await this.requests.matchIncoming(tx, { userId, network, asset: token, amount: value, txHash: entry.transactionHash!, from: getAddress(from) });
       if (paid) await tx.update(chainEvents).set({ matchedRequestId: paid.id }).where(eq(chainEvents.id, inserted.id));
+      if (!notice && !paid) return;
+      const [own] = await tx
+        .select({ id: txAttempts.id })
+        .from(txAttempts)
+        .where(and(eq(txAttempts.userId, userId), eq(txAttempts.chainId, chainId), eq(txAttempts.txHash, entry.transactionHash!.toLowerCase())));
+      if (own || !notice) return;
+      const name = await this.senderName(tx, userId, from);
+      await this.inbox.add(tx, {
+        userId,
+        network,
+        kind: "payment_received",
+        params: { amount: value.toString(), asset: notice.symbol, decimals: String(notice.decimals), token, from: getAddress(from), ...(name ? { name } : {}) },
+        txHash: entry.transactionHash!,
+        dedupeKey: `payment_received:${chainId}:${entry.transactionHash}:${entry.logIndex}`,
+      });
     });
   }
 

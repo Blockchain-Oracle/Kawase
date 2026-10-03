@@ -1,0 +1,29 @@
+import type { Catalog } from "../en/index";
+
+export const protect: Catalog["protect"] = {
+  title: "টেক-প্রফিট ও স্টপ-লস",
+  takeProfit: "টেক-প্রফিট",
+  stopLoss: "স্টপ-লস",
+  takeProfitHint: "{{market}} এখানে পৌঁছালে সব বন্ধ করুন",
+  stopLossHint: "{{market}} এখানে পৌঁছালে সব বন্ধ করুন",
+  off: "বন্ধ",
+  save: "সেভ করুন",
+  saved: "সেভ হয়েছে। Kawase আপনার হয়ে নজর রাখে।",
+  needsGrant:
+    "আরেকটি ধাপ: আপনি না থাকলে Kawase-কে এই পজিশন বন্ধ করতে দিন। এটি শুধু বন্ধ করতে পারে, আপনার নিজের ওয়ালেটে।",
+  turnOn: "সুরক্ষা চালু করুন",
+  turningOn: "চালু হচ্ছে…",
+  grantPrompt: "Kawase-কে আপনার পজিশন বন্ধ করতে দিন",
+  onUntil: "সুরক্ষা {{date}} পর্যন্ত চালু",
+  turnOff: "বন্ধ করুন",
+  armed: "নজরে আছে",
+  closing: "বন্ধ হচ্ছে…",
+  unavailable: "ন্যায্য দামে বন্ধ করা যায়নি",
+  liquidationNote: "লিকুইডেশন {{price}}-এ: স্টপ-লস তার আগে থাকতে হবে।",
+  route: "Arc-এ Uniswap দিয়ে বন্ধ হয়, টাকা আপনার ওয়ালেটে।",
+  take_profit_wrong_side: "টেক-প্রফিট আজকের দামের পরে থাকে: লং-এ উপরে, শর্ট-এ নিচে।",
+  stop_loss_wrong_side: "স্টপ-লস আজকের দামের আগে থাকে: লং-এ নিচে, শর্ট-এ উপরে।",
+  stop_loss_past_liquidation: "স্টপ-লস লিকুইডেশনের আগে রাখুন।",
+  protection_unavailable: "Arc-এ Uniswap এখন এই আকারের পজিশন বন্ধ করতে পারে না, তাই Kawase এর প্রতিশ্রুতি দেয় না।",
+  failed: "সেভ করা যায়নি। আবার চেষ্টা করুন।",
+};

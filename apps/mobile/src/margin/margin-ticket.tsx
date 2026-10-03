@@ -244,7 +244,7 @@ export function MarginTicket({ controller, market, compact = false }: { controll
           <View className="flex-row gap-2">
             {intent.state === "completed" && intent.positionId && !closing ? (
               <Button className="flex-1" onPress={() => router.push(`/position/${intent.positionId}`)}>
-                <Text>{t("margin.viewPosition")}</Text>
+                <Text>{intent.network === "mainnet" ? t("protect.title") : t("margin.viewPosition")}</Text>
               </Button>
             ) : null}
             {intent.tx ? (

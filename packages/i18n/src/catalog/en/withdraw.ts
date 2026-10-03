@@ -79,4 +79,13 @@ export const withdraw = {
   signInBody: "Exchanges and chains are listed here for everyone. Taking money out needs your account.",
   cardTo: "Withdraw to {{to}}",
   cardOpen: "Review and withdraw",
+  testFaceId: "Send a test of {{amount}} USDC to {{to}}",
+  finishFaceId: "Finish withdrawing to {{to}}",
+  testTo: "Test to",
+  testDoneTitle: "The test arrived",
+  testDoneBody: "Check that {{to}} shows it, then withdraw the rest.",
+  testContinue: "Withdraw the rest",
+  firstTimeTitle: "First time sending here",
+  firstTimeBody: "Send a small test of {{amount}} USDC first, check it arrived, then withdraw the rest.",
+  sendTest: "Send a {{amount}} USDC test first",
 } as const;

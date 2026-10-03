@@ -57,6 +57,9 @@ import { FeeService } from "./fees/service";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { LaunchpadService } from "./launchpad/service";
+import { launchpadRoutes } from "./launchpad/routes";
+import { MarginProtection } from "./margin/protection";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
 import { noOnramp, type OnrampEngine } from "./onramp/engine";
@@ -68,6 +71,7 @@ import { lendRoutes } from "./lend/routes";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
+import { WithdrawalService } from "./withdraw/withdrawals";
 import { tokenRulesRoutes } from "./tokens/rules-routes";
 import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
@@ -189,7 +193,7 @@ export function createApp(deps: AppDeps) {
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
   // Requests describe any token through the asset registry, created just below (the lookup is read lazily).
-  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value));
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value), recipients);
   // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
   // for (earn is created further down).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
@@ -207,16 +211,21 @@ export function createApp(deps: AppDeps) {
     assets,
   );
   if (deps.watchIntervalMs)
-    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets }).start(deps.watchIntervalMs);
+    new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
-  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
+  const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
+  margin.protection = protection;
+  const launchpads = new LaunchpadService(deps.db, deps.log, inbox);
+  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
-  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
+  const withdrawalRuns = new WithdrawalService(deps.db, withdraw);
+  withdrawalRuns.bind({ sends, swaps, crosschain });
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
     deps.db,
@@ -258,6 +267,8 @@ export function createApp(deps: AppDeps) {
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
+    protection.start();
+    launchpads.start();
     onramp.startReconciler(deps.reconcileIntervalMs);
     crosschain.startSweeper(deps.reconcileIntervalMs);
     lend.startSweeper(deps.reconcileIntervalMs);
@@ -340,15 +351,16 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
-  app.route("/margin", marginRoutes(margin));
+  app.route("/margin", marginRoutes(margin, protection));
+  app.route("/launchpad", launchpadRoutes(launchpads));
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
-  app.route("/withdrawals", withdrawRoutes(withdraw));
+  app.route("/withdrawals", withdrawRoutes(withdraw, withdrawalRuns));
   app.route("/places", placeRoutes(withdraw));
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
-  app.route("/tokens", tokenRoutes(assets));
+  app.route("/tokens", tokenRoutes(assets, deps.db));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
   app.route("/needs-you", needsYouRoutes(needsYou));
@@ -366,7 +378,7 @@ export function createApp(deps: AppDeps) {
   // Everyday money (A5-2): scan to pay.
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
-  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);

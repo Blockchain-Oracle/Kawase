@@ -97,4 +97,10 @@ export const send = {
   otherChain: "Their wallet is on another chain?",
   otherChainBridge: "Send USDC there by a bridge: you pick the chain and the route.",
   otherChainConvert: "Only USDC crosses chains. Convert your {{asset}} to USDC first.",
+  referenceAdd: "Add an on-chain reference",
+  referencePlaceholder: "Invoice or order number",
+  referenceHint: "Written on chain with the payment, so the receiver can match it. Public: no private words.",
+  referenceFromCode: "Reference from the code: {{reference}}",
+  referenceRemove: "Remove",
+  referenceLabel: "Reference on chain",
 } as const;

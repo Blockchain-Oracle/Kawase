@@ -5,6 +5,7 @@ import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { WithdrawService } from "./service";
+import type { WithdrawalService } from "./withdrawals";
 
 const TEXT_MAX = 80;
 const LABEL_MAX = 40;
@@ -40,7 +41,7 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
 }
 
 /** `/withdrawals`: the exchange table and chains are public data (guests see them, R13); the plan needs a person. */
-export function withdrawRoutes(withdraw: WithdrawService) {
+export function withdrawRoutes(withdraw: WithdrawService, runs: WithdrawalService) {
   const app = new Hono<AppEnv>();
   app.use("*", requireUser);
   app.get("/exchanges", (c) => c.json({ exchanges: withdraw.exchanges(c.get("user")!.activeNetwork) }));
@@ -49,6 +50,15 @@ export function withdrawRoutes(withdraw: WithdrawService) {
     const input = await parse(planSchema, await c.req.json());
     return c.json({ plan: await withdraw.plan(c.get("user")!, input) });
   });
+  // A withdrawal kept on the server: start it, follow it, sign its next step, finish it after a restart.
+  app.get("/", requireAccount, async (c) => c.json({ withdrawals: await runs.open(c.get("user")!) }));
+  app.post("/", requireAccount, async (c) => {
+    const input = await parse(planSchema, await c.req.json());
+    return c.json({ withdrawal: await runs.start(c.get("user")!, input) }, HTTP.created);
+  });
+  app.get("/:id", requireAccount, async (c) => c.json({ withdrawal: await runs.get(c.get("user")!, c.req.param("id")) }));
+  app.post("/:id/next", requireAccount, async (c) => c.json(await runs.next(c.get("user")!, c.req.param("id"))));
+  app.post("/:id/cancel", requireAccount, async (c) => c.json({ withdrawal: await runs.cancel(c.get("user")!, c.req.param("id")) }));
   return app;
 }
 

@@ -79,6 +79,12 @@ const OPENABLE = [
   /^\/why\/0x[0-9a-fA-F]{64}\?network=(testnet|mainnet)$/,
   // A Needs-you item opens its own page (a uuid only, so a push can never point the app anywhere else).
   /^\/needs-you\/[0-9a-f-]{36}\?from=push$/i,
+  // A5-3: an automation run's story, and someone on Kawase asking the person to pay (the public pay card).
+  /^\/why\/run\/[0-9a-f-]{36}$/i,
+  /^\/r\/[A-Za-z0-9_-]{8,64}$/,
+  // Security and business notices (the api already sends these paths): the devices list and the invoice itself.
+  /^\/account\/devices$/,
+  /^\/business\/invoice\/[0-9a-f-]{36}$/i,
 ];
 
 export function pathOf(response: Notifications.NotificationResponse | null | undefined): string | undefined {

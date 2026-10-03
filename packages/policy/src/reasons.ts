@@ -81,6 +81,8 @@ export const REASONS = {
   AMOUNT_MISSING: "clarification",
   AMOUNT_INVALID: "clarification",
   ASSET_UNCLEAR: "clarification",
+  /** A cross-chain move names an asset Kawase cannot find on that side. */
+  MOVE_ASSET_UNKNOWN: "clarification",
   SWAP_SAME_TOKEN: "clarification",
   DESTINATION_MISSING: "clarification",
   MARKET_MISSING: "clarification",

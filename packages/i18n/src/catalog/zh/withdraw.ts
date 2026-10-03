@@ -80,4 +80,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "这里的交易所和链对所有人可见。提现需要你的账户。",
   cardTo: "提现到 {{to}}",
   cardOpen: "核对并提现",
+  testFaceId: "将 {{amount}} USDC 测试金额发送到 {{to}}",
+  finishFaceId: "完成提现到 {{to}}",
+  testTo: "测试去往",
+  testDoneTitle: "测试金额已到账",
+  testDoneBody: "确认 {{to}} 已显示这笔金额，再提现剩余部分。",
+  testContinue: "提现剩余部分",
+  firstTimeTitle: "首次向这里发送",
+  firstTimeBody: "先发送一小笔 {{amount}} USDC 测试金额，确认到账后再提现剩余部分。",
+  sendTest: "先发送 {{amount}} USDC 测试金额",
 };

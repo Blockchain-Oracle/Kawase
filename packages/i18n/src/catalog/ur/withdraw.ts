@@ -82,4 +82,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "ایکسچینج اور چینز یہاں سب کے لیے دکھائی جاتی ہیں۔ پیسے نکالنے کے لیے آپ کا اکاؤنٹ چاہیے۔",
   cardTo: "‏{{to}} میں نکالیں",
   cardOpen: "جائزہ لیں اور نکالیں",
+  testFaceId: "‏{{to}} کو {{amount}} USDC کی ٹیسٹ رقم بھیجیں",
+  finishFaceId: "‏{{to}} میں نکالنا مکمل کریں",
+  testTo: "ٹیسٹ کہاں",
+  testDoneTitle: "ٹیسٹ رقم پہنچ گئی",
+  testDoneBody: "دیکھ لیں کہ {{to}} پر یہ نظر آ رہی ہے، پھر باقی نکالیں۔",
+  testContinue: "باقی نکالیں",
+  firstTimeTitle: "یہاں پہلی بار بھیج رہے ہیں",
+  firstTimeBody: "پہلے {{amount}} USDC کی تھوڑی سی ٹیسٹ رقم بھیجیں، دیکھیں کہ پہنچ گئی، پھر باقی نکالیں۔",
+  sendTest: "پہلے {{amount}} USDC کی ٹیسٹ رقم بھیجیں",
 };

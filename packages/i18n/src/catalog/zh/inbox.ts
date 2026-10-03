@@ -12,4 +12,6 @@ export const inbox: Catalog["inbox"] = {
   markAllRead: "全部标为已读",
   loadFailed: "无法加载你的收件箱。",
   bellUnread: "收件箱，{{count}} 条新消息",
+  askedYou: "{{name}} 向你请求 {{amount}}",
+  pay: "付款",
 };

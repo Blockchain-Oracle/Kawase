@@ -1,32 +1,34 @@
 ---
 title: "Redes"
-description: "A rede principal e a rede de testes da Arc lado a lado — o que muda, o que existe em apenas uma delas e como a Kawase mantém tudo separado."
-sourceHash: 23465b593fd86e92
+description: "A rede principal e a rede de testes da Arc lado a lado — o que muda, o que existe só em uma delas e como a Kawase mantém tudo separado."
+sourceHash: 71c5a20ef18b7833
 ---
 
 <Marks names="arc usdc eurc" />
 
-A **Arc** é a rede de stablecoins da Circle: USDC é seu token de gas, então as taxas são pagas em dólares, e as transações são concluídas em menos de um segundo. A Kawase é compatível com exatamente duas redes da Arc.
+A **Arc** é a rede de stablecoins da Circle: a USDC é seu token de gas, então as taxas são pagas em dólares e as transações são concluídas em menos de um segundo. A Kawase é compatível com exatamente duas redes Arc.
 
-| | Arc rede principal | Arc rede de testes |
+| | Rede principal da Arc | Rede de testes da Arc |
 |---|---|---|
-| Dinheiro | Real | Dinheiro de teste sem valor |
+| Dinheiro | Dinheiro real | Dinheiro de teste sem valor |
 | ID da rede | `5042` | `5042002` |
 | Explorador | `explorer.arc.io` | `testnet.arcscan.app` |
-| Como receber dinheiro | Receba de qualquer carteira ou corretora que envie para a Arc; comprar com Apple Pay ou cartão está a caminho | O faucet dentro do app (cerca de 20 USDC + 20 EURC por dia) |
-| Render | Vaults da Morpho listados pelo App Kit Earn da Circle | Vaults Morpho simulados da rede de testes da Arc |
-| Destinos da ponte | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | suas redes de testes (Base Sepolia, Ethereum Sepolia, …) |
-| Marketplace x402 | Planejado (o catálogo da Circle está disponível apenas na rede principal) | Indisponível |
+| Como receber dinheiro | Comprar com cartão pela Onramp da Circle; receber de qualquer carteira ou corretora que envie para a Arc | O faucet no app (cerca de 20 USDC + 20 EURC por dia); o sandbox da Onramp da Circle com cartões de teste |
+| Negociação | Negociar qualquer token, incluindo meme coins, pelo melhor preço entre KyberSwap, App Kit e LI.FI | Somente USDC ↔ EURC |
+| Comprado e vendido | Kawase Margin na Aave V4 | Indisponível (Aave V4 existe apenas na rede principal) |
+| Render e pegar emprestado | Fornecimento e empréstimos na Aave V4; vaults da Morpho listados pelo App Kit Earn da Circle | Vaults simulados da Morpho na rede de testes da Arc |
+| Pontes | Para qualquer pessoa na Base, Ethereum, Arbitrum, Optimism, Polygon e Avalanche usando CCTP, Across ou Relay; trazer para a Arc | CCTP para as redes de testes correspondentes (Base Sepolia, Ethereum Sepolia, …) |
+| Marketplace x402 | Catálogo da Circle | Vendedor de demonstração da Kawase (o catálogo da Circle existe apenas na rede principal) |
 | Limites padrão | Menores | Dez vezes maiores (sem risco de perder dinheiro real) |
 | Onde novas contas começam | | ✓ |
 
-Todos os fluxos da Kawase foram executados de ponta a ponta com transações reais na **rede de testes da Arc**; as evidências estão vinculadas à página de demonstração do showcase. A disponibilidade abaixo mostra o que o app oferece em cada rede:
+Todos os fluxos da Kawase foram executados de ponta a ponta com transações reais na **rede de testes da Arc**; as evidências estão disponíveis na página de demonstração do showcase. A disponibilidade abaixo mostra o que o app oferece em cada rede:
 
 <AvailabilityMatrix />
 
-## Como a Kawase mantém tudo separado
+## Como a Kawase mantém as redes separadas
 
-- **Uma toque para trocar**, nos dois sentidos: veja [o seletor de rede](./features/network-toggle.mdx).
-- **A rede é mostrada de três formas**: o selo no cabeçalho, a faixa da rede de testes ou o rótulo DINHEIRO REAL, e a cor da esfera.
-- **O servidor controla a escolha.** Cada pagamento é preparado para uma rede e permanece nela até o fim; se a rede mudar nesse intervalo, o pagamento é interrompido em vez de passar para a outra rede.
+- **Um toque para trocar**, nos dois sentidos: veja [o seletor de rede](./features/network-toggle.mdx).
+- **A rede aparece de três formas**: no indicador do cabeçalho, na faixa da rede de testes ou no rótulo DINHEIRO REAL, e na cor da esfera.
+- **O servidor controla a escolha.** Cada pagamento é preparado para uma rede e permanece nela até o fim. Se a rede mudar nesse intervalo, o pagamento é interrompido em vez de passar para a outra rede.
 - **Um único endereço de carteira nas duas redes**, com saldos, atividades e limites separados por rede.

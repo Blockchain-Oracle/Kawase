@@ -1,29 +1,39 @@
 ---
 title: "Voix"
-description: "Parlez à Kawase sur iPhone et Android dans votre langue ; il répond à voix haute et affiche les mêmes cartes que dans le chat. Les paiements par la voix attendent toujours votre appui."
-sourceHash: ea6ecb886fce0c64
+description: "Parlez à Kawase sur iPhone, Android et le web dans votre langue ; il répond à voix haute et affiche les mêmes cartes que dans le chat. Les paiements par la voix attendent toujours votre confirmation."
+sourceHash: 2856bf7c72c232cc
 ---
 
 <Status ids="voice" />
 
-Appuyez sur la bulle dans la barre inférieure et parlez. La page devient floue, la bulle s’élève et vous écoute ; elle affiche les mots
-qu’elle a entendus, répond à voix haute et affiche les mêmes **cartes** qu’en mode chat.
+Touchez l'orbe dans la barre de navigation et parlez. La page devient floue, l'orbe monte et écoute ; elle affiche les mots
+qu'elle a entendus, répond à voix haute et affiche les mêmes **cartes** qu'en mode chat.
 
-- **Une seule conversation.** Ce que vous dites à voix haute apparaît dans votre fil de discussion, et la saisie reprend là où vous vous êtes arrêté.
-- **Ce qui a été entendu est toujours affiché** avant toute confirmation.
-- **Un « oui » prononcé n’approuve jamais un paiement.** Un envoi par la voix est préparé sur sa carte et attend votre appui et Face ID
-  (empreinte ou verrouillage de l’écran sur Android), même dans la limite de votre allocation quotidienne.
-- **La bulle indique le réseau** : vert citron sur le Réseau principal, bleu ciel sur le Réseau de test.
+- **Une seule conversation.** Ce que vous dites à voix haute apparaît dans votre conversation. En écrivant, vous reprenez là où vous vous étiez arrêté.
+- **Sous-titres des deux côtés** : ce que Kawase a entendu et ce qu'il dit.
+- **Un « oui » à voix haute n'approuve jamais un paiement.** Un envoi par la voix est préparé sur sa carte et attend votre confirmation par une pression et Face ID
+  (empreinte digitale ou verrouillage de l'écran sur Android), même dans la limite de votre allocation quotidienne.
+- **Coupez le son** d'une seule pression : rien n'est entendu ni envoyé quand le son est coupé. **Écrire à la place** est toujours possible.
+- **L'orbe indique le réseau** : vert citron sur le réseau principal, bleu ciel sur le réseau de test.
 
-## Langues et voix
+## Sur le web
 
-Kawase comprend les dix langues avec ElevenLabs Scribe v2 (en temps réel). Il parle anglais,
-espagnol, français, portugais, russe, chinois, hindi et arabe avec ElevenLabs Flash v2.5, et utilise le modèle vocal d’OpenAI pour le bengali et l’ourdou, que
-Flash v2.5 ne prend pas en charge.
+La Voix fonctionne aussi dans l'application web : autorisez l'accès au microphone lorsque le navigateur vous le demande. Si vous refusez l'accès ou s'il n'y a pas de microphone,
+Kawase reste connecté, vous explique comment l'autoriser et la saisie reste juste à côté. La voix de Kawase continue de fonctionner.
+
+## Réglages → Voix
+
+- **Voix de Kawase** : choisissez l'une des six voix.
+- **Vitesse de parole** : détendue, normale ou rapide.
+- **Kawase parle en premier** : il vous salue dès que la Voix s'ouvre ; si l'option est désactivée, il attend que vous parliez.
+
+Les changements s'appliquent au prochain démarrage de la conversation.
 
 ## Comment ça marche
 
-Le téléphone rejoint une salle LiveKit via WebRTC. Le service vocal de Kawase transforme la parole en texte, exécute **le même tour d’agent que
-le chat** (mêmes outils, mêmes limites, même fil de discussion) et prononce la réponse pendant que les cartes apparaissent à l’écran.
+Le téléphone ou le navigateur rejoint une salle LiveKit via WebRTC, et le service vocal de Kawase rejoint la même salle. Chaque demande concernant votre argent ou votre compte est transmise au **même tour d'agent que dans le chat** (mêmes outils, mêmes limites, même conversation) ; les cartes s'affichent
+à l'écran pendant que la réponse est prononcée. Avant de prononcer des montants, des actifs, des @handles ou le réseau, le service vérifie ces informations
+avec les résultats des outils et corrige toute incohérence. Si la Voix en temps réel ne peut pas démarrer, Kawase utilise un processus
+écouter → répondre → parler avec le même agent. LiveKit n'enregistre pas la conversation.
 
 <ScopeList ids="voice" />

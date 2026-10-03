@@ -1,14 +1,20 @@
-// Cross-chain moves with options (routes.md): USDC out of Arc to anyone on another chain, and Bring to Arc.
+// Cross-chain moves with options (routes.md): any asset out of Arc to anyone on another chain, and Bring to Arc.
 //
-// Out: Kawase quotes every route that serves the pair (Circle CCTP through App Kit, Across, Relay), ranks them by
-// what arrives net of anything paid on top, shows up to three, and executes the chosen one: the provider's calls
-// (approve + deposit/burn) are built at approval, checked against the version (recipient, amounts, destination,
-// the provider's own contracts), simulated from the wallet, and sent by the wallet to itself as one EIP-7702 batch
-// (one Face ID). In: "Bring to Arc" from a chain where the person holds USDC at the same address uses Relay's
-// permit — one EIP-712 signature (USDC's ReceiveWithAuthorization), no gas on that chain — which Kawase hands to
-// Relay. Tracking: the origin receipt must show exactly `amount` leaving; the fill is followed through the
-// provider (Across deposit status, Relay request status, CCTP's attestation and forwarder) until it is delivered.
-// A move that is not filled says so and how it ends (refunded by the provider), never re-sent on its own (R7).
+// Out: Kawase quotes every route that serves the pair and executes the chosen one as one EIP-7702 batch (one Face ID):
+// USDC through Circle CCTP (App Kit), Across, Relay, LI.FI or deBridge; any other asset "as itself" (WETH arrives as
+// WETH, cirBTC as cbBTC) through LI.FI or deBridge. When nothing carries the asset as itself it arrives as USDC: through
+// an aggregator that swaps inside its own call, or Kawase's convert-first plan, the Arc swap (the swap fan-out's best
+// venue, its minimum held) and the USDC bridge in the same batch. Routes are ranked by what arrives, net of anything
+// paid on top (deBridge's flat fee, converted at the asset's price); up to three are shown. Each provider's calls are
+// built at approval, checked against the version (recipient, amounts, destination, the provider's own contracts),
+// simulated from the wallet, and sent by the wallet to itself.
+// In: "Bring to Arc" from a chain where the person holds money at the same address: USDC with Relay's permit (one
+// EIP-712 signature, no gas there); another token with Relay's Permit2 signature once that token is approved to
+// Permit2 there; the chain's own coin (ETH, POL, AVAX) through LI.FI as one transaction on that chain, its gas paid
+// from the coin itself. Tracking: the origin receipt must show exactly the amount leaving (on Arc, USDC is measured
+// by the chain's own native-transfer log, which covers both its native and ERC-20 faces, plus any flat fee); the fill
+// is followed through the provider until it is delivered. A move that is not filled says so and how it ends
+// (refunded by the provider), never re-sent on its own (R7).
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
@@ -20,15 +26,18 @@ import {
   http,
   keccak256,
   parseTransaction,
+  parseUnits,
   recoverTransactionAddress,
   verifyTypedData,
+  zeroAddress,
   type Address,
   type Hex,
+  type PublicClient,
   type TransactionReceipt,
   type TypedDataDefinition,
 } from "viem";
 
-import { APPROVAL_TTL_S, GAS_ESTIMATE_HEADROOM_PERCENT, GAS_FLOAT_USDC_BASE_UNITS, INTENT_TTL_S, MAX_FEE_DRAFT_MULTIPLIER, MS_PER_SECOND, SEND_UNKNOWN_AFTER_S } from "@kawase/config";
+import { APPROVAL_TTL_S, CROSSCHAIN, GAS_ESTIMATE_HEADROOM_PERCENT, GAS_FLOAT_USDC_BASE_UNITS, INTENT_TTL_S, MAX_FEE_DRAFT_MULTIPLIER, MS_PER_SECOND, SEND_UNKNOWN_AFTER_S, SWAP_ROUTE_SLIPPAGE_DIVISOR, SWAP_VENUE_LABELS, type SwapVenueId } from "@kawase/config";
 import type {
   CrossChainApproveResponse,
   CrossChainChainView,
@@ -47,8 +56,17 @@ import {
   acrossQuote,
   acrossStatus,
   checkAcrossCalls,
+  checkDebridgeCalls,
+  checkLifiCalls,
   checkRelayCalls,
   checkRelayPermit,
+  checkRelayPermit2,
+  DEBRIDGE_NATIVE,
+  debridgeQuote,
+  debridgeStatus,
+  LIFI_NATIVE,
+  lifiQuote,
+  lifiStatus,
   relayContracts,
   relayQuote,
   relayStatus,
@@ -58,6 +76,7 @@ import {
 } from "@kawase/integrations-bridges";
 import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
 import {
+  CONVERT_VENUES,
   CROSSCHAIN_PROVIDERS,
   DRAFTABLE_STATES,
   crossChainDraftHash,
@@ -70,17 +89,19 @@ import {
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
 import type { NetworkContext, NetworkId } from "@kawase/networks";
-import { evaluateCrossChain, type CrossChainEvaluation, type PolicyResult, type RecipientFacts } from "@kawase/policy";
+import { evaluateCrossChain, type CrossChainEvaluation, type CrossChainFacts, type PolicyResult, type RecipientFacts } from "@kawase/policy";
 
 import type { BridgeEngine } from "../bridge/engine";
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
-import { parseRequestAmount } from "../send/facts";
 import type { Recipients } from "../send/recipients";
+import { VenueRefused, type SwapVenues } from "../swap/venues";
+import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { arcAsset, assetView, counterpartOnArc, counterpartThere, isBlocked, remoteAsset, type MoveAsset } from "./assets";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
@@ -88,36 +109,75 @@ type AttemptRow = typeof txAttempts.$inferSelect;
 type StoredRequest = Required<{ [K in keyof CrossChainRequest]: Exclude<CrossChainRequest[K], undefined> }>;
 type DraftPayload = { draft: StoredCrossChainDraft | null; view: CrossChainDraftView | null };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
-type Progress = { provider: CrossChainProvider; requestId?: string | null; status?: string; fillTx?: string | null; received?: string | null };
-type Quote = { provider: CrossChainProvider; received: bigint | null; minReceived: bigint | null; etaSeconds: number | null; reason: CrossChainRouteView["reason"] };
+/** Where the origin transaction is: the Arc batch, a transaction on the other chain, or a permit Relay executes. */
+type Origin = "arc" | "source" | "permit";
+type Track = { requestId?: string | null; orderId?: string | null; tool?: string | null };
+type Progress = Track & { provider: CrossChainProvider; origin?: Origin; status?: string; fillTx?: string | null; received?: string | null };
+type Quote = {
+  provider: CrossChainProvider;
+  /** Base units of `output` that would arrive, and the least. */
+  received: bigint | null;
+  minReceived: bigint | null;
+  etaSeconds: number | null;
+  reason: CrossChainRouteView["reason"];
+  output: MoveAsset;
+  /** A flat fee in the origin's native coin, paid on top (deBridge). */
+  nativeFee: bigint;
+  /** That fee in `output`'s units, for ranking. */
+  extraCost: bigint;
+  via: string | null;
+  steps: string[];
+  convert: { venue: SwapVenueId; minOut: bigint } | null;
+  /** In, from the chain's own coin: the gas the source transaction costs there. */
+  sourceGas: bigint | null;
+};
+type Built =
+  | { kind: "batch"; calls: BridgeCall[]; track: Track }
+  | { kind: "source"; call: BridgeCall; track: Track }
+  | { kind: "permit"; permit: RelayPermit; requestId: string }
+  | { changed: true };
 
 const ZERO = 0n;
 const ONE = 1n;
 const PERCENT = 100n;
 const USDC_DECIMALS = decimalsOf("USDC");
 const SHOWN_ROUTES = 3;
-const BATCH_GAS_ESTIMATE = 400_000n;
 const TRACK_POLL_MS = 3_000;
 const TRACK_POLL_ATTEMPTS = 120;
 const ERROR_MAX = 140;
 const QUOTE_TIMEOUT_MS = 6_000;
+/** Aggregators answer more slowly than a single bridge. */
+const AGGREGATOR_TIMEOUT_MS = 15_000;
 /** App Kit's CCTP estimate simulates the burn and reads Circle's fees: 6.2–6.8 s on Arc Testnet (measured 10-02). */
 const CCTP_QUOTE_TIMEOUT_MS = 15_000;
 const NO_QUOTE = -1n;
-const TRUST: Record<CrossChainProvider, CrossChainRouteView["trust"]> = { cctp: "burn_mint", across: "solver", relay: "solver" };
+/** Arc's native USDC transfers (and the native leg of every ERC-20 USDC transfer) are logged from this address. */
+const ARC_NATIVE_LOGGER = "0xfffffffffffffffffffffffffffffffffffffffe";
+const TRUST: Record<CrossChainProvider, CrossChainRouteView["trust"]> = { cctp: "burn_mint", across: "solver", relay: "solver", lifi: "solver", debridge: "solver" };
 const CHAIN_NAMES: Record<string, string> = { base: "Base", ethereum: "Ethereum", arbitrum: "Arbitrum", optimism: "OP Mainnet", polygon: "Polygon", avalanche: "Avalanche" };
+const BRIDGE_NAMES: Record<string, string> = { relaydepository: "Relay", relay: "Relay", across: "Across", acrossV3: "Across", polymerStandard: "Polymer", cbridge: "Celer", stargateV2: "Stargate", mayan: "Mayan", glacis: "Glacis" };
+const DECIMAL = /^\d+(\.\d+)?$/;
 
 const ms = (seconds: number) => seconds * MS_PER_SECOND;
 const later = (seconds: number) => new Date(Date.now() + ms(seconds));
 const sleep = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-const within = <T>(promise: Promise<T>, fallback: T, timeoutMs = QUOTE_TIMEOUT_MS) =>
-  Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs))]).catch(() => fallback);
+const within = <T>(promise: Promise<T>, fallback: T, timeout = QUOTE_TIMEOUT_MS) =>
+  Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeout))]).catch(() => fallback);
+const toNative = (usdc: bigint) => rescale(usdc, USDC_DECIMALS, USDC_NATIVE_DECIMALS);
 
 const feeInUsdc = (nativeWei: bigint) => {
   const scaled = rescale(nativeWei, USDC_NATIVE_DECIMALS, USDC_DECIMALS);
   return rescale(scaled, USDC_DECIMALS, USDC_NATIVE_DECIMALS) < nativeWei ? scaled + ONE : scaled;
 };
+
+/** "10.5" in an asset's own decimals; more decimals than it has is not an amount. */
+function parseAmount(text: string | null, decimals: number): CrossChainFacts["amount"] {
+  if (!text || !text.trim()) return { status: "missing" };
+  const value = text.trim();
+  if (!DECIMAL.test(value) || (value.split(".")[1]?.length ?? 0) > decimals) return { status: "invalid" };
+  return { status: "ok", baseUnits: parseUnits(value, decimals) };
+}
 
 function restingState(evaluation: CrossChainEvaluation): IntentState {
   const blocking = evaluation.blocking;
@@ -137,6 +197,8 @@ export class CrossChainService {
     private readonly recipients: Recipients,
     private readonly engine: BridgeEngine,
     private readonly log: Logger,
+    private readonly assets?: AssetService | undefined,
+    private readonly venues?: SwapVenues | undefined,
   ) {}
 
   private clients(network: NetworkId): NetworkClients {
@@ -156,24 +218,39 @@ export class CrossChainService {
     return this.engine.destinations(network).find((chain) => chain.id === wanted || String(chain.chainId) === wanted || (CHAIN_NAMES[chain.id] ?? "").toLowerCase() === wanted);
   }
 
-  private remoteUsdc(chain: BridgeDestination, owner: Address) {
-    const client = createPublicClient({ transport: http(chain.rpcUrl, { timeout: QUOTE_TIMEOUT_MS }) });
-    return client.readContract({ address: chain.usdc, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
+  private remote(chain: BridgeDestination): PublicClient {
+    return createPublicClient({ transport: http(chain.rpcUrl, { timeout: QUOTE_TIMEOUT_MS }) });
   }
 
-  /** USDC at the person's own address on each CCTP chain (Bring to Arc finds it here). */
+  private remoteBalance(chain: BridgeDestination, asset: MoveAsset, owner: Address) {
+    const client = this.remote(chain);
+    return asset.native ? client.getBalance({ address: owner }) : client.readContract({ address: asset.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
+  }
+
+  private arcUsdc(network: NetworkContext): MoveAsset {
+    return { chainId: network.chainId, address: network.addresses.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "canonical" };
+  }
+
+  /** Money at the person's own address on the other chains: USDC read directly, and (mainnet) whatever the portfolio found there. */
   async elsewhere(user: SessionUser): Promise<ElsewhereView> {
     const network = user.activeNetwork;
     const clients = this.clients(network);
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     if (!wallet) return { network, chains: [] };
-    const rows = await Promise.all(
-      this.engine.destinations(clients.network).map(async (chain) => ({ chain, balance: await within(this.remoteUsdc(chain, wallet), ZERO) })),
-    );
-    return {
-      network,
-      chains: rows.filter((row) => row.balance > ZERO).map((row) => ({ ...this.chainView(clients.network, row.chain), asset: "USDC", balance: row.balance.toString() })),
-    };
+    const destinations = this.engine.destinations(clients.network);
+    const [usdcRows, portfolio] = await Promise.all([
+      Promise.all(destinations.map(async (chain) => ({ chain, balance: await within(this.remoteBalance(chain, { ...this.arcUsdc(clients.network), address: chain.usdc }, wallet), ZERO) }))),
+      this.assets && clients.network.isRealMoney ? within(this.assets.portfolio(user), undefined, AGGREGATOR_TIMEOUT_MS) : Promise.resolve(undefined),
+    ]);
+    const chains: ElsewhereView["chains"] = usdcRows
+      .filter((row) => row.balance > ZERO)
+      .map((row) => ({ ...this.chainView(clients.network, row.chain), asset: "USDC", balance: row.balance.toString(), address: row.chain.usdc, decimals: USDC_DECIMALS, usd: Number(formatUnits(row.balance, USDC_DECIMALS)) }));
+    for (const holding of portfolio?.otherChains ?? []) {
+      const chain = destinations.find((entry) => entry.chainId === holding.token.chainId);
+      if (!chain || holding.hidden || same(holding.token.address, chain.usdc) || BigInt(holding.balance) === ZERO) continue;
+      chains.push({ ...this.chainView(clients.network, chain), asset: holding.token.symbol, balance: holding.balance, address: holding.token.address, decimals: holding.token.decimals, usd: holding.valueUsd });
+    }
+    return { network, chains };
   }
 
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -196,55 +273,121 @@ export class CrossChainService {
     return this.draft(user, { ...intent, request: stored }, stored, "user");
   }
 
-  private async quotes(input: { network: NetworkContext; client: NetworkClients["client"]; direction: "out" | "in"; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint }): Promise<Quote[]> {
-    const { network, direction, chain, wallet, recipient, amount } = input;
+  /** A quote that did not happen, with why. */
+  private none(provider: CrossChainProvider, output: MoveAsset, reason: CrossChainRouteView["reason"]): Quote {
+    return { provider, received: null, minReceived: null, etaSeconds: null, reason, output, nativeFee: ZERO, extraCost: ZERO, via: null, steps: [], convert: null, sourceGas: null };
+  }
+
+  private failed(provider: CrossChainProvider, output: MoveAsset, error: unknown): Quote {
+    const code = (error as { code?: string }).code;
+    return this.none(provider, output, code === "amount_too_low" ? "amount_too_low" : code === "timeout" ? "timeout" : "no_quote");
+  }
+
+  /** A flat fee in Arc's native USDC (18 decimals), in `output`'s units at its price. */
+  private feeIn(output: MoveAsset, nativeFee: bigint) {
+    if (nativeFee === ZERO) return ZERO;
+    const usd = Number(formatUnits(nativeFee, USDC_NATIVE_DECIMALS));
+    if (output.usdc) return feeInUsdc(nativeFee);
+    if (!output.priceUsd) return ZERO;
+    return parseUnits((usd / output.priceUsd).toFixed(output.decimals), output.decimals);
+  }
+
+  /** The USDC routes out of Arc for exactly `amount` (6 decimals), with `convert` set when a swap comes first. */
+  private usdcOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint; convert: Quote["convert"] }): Promise<Quote>[] {
+    const { network, chain, wallet, recipient, amount, convert } = input;
     const testnet = !network.isRealMoney;
-    const failed = (provider: CrossChainProvider, error: unknown): Quote => ({
-      provider,
-      received: null,
-      minReceived: null,
-      etaSeconds: null,
-      reason: (error as { code?: string }).code === "amount_too_low" ? "amount_too_low" : (error as { code?: string }).code === "timeout" ? "timeout" : "no_quote",
-    });
-    if (direction === "in") {
-      const relay: Quote = testnet
-        ? { provider: "relay", received: null, minReceived: null, etaSeconds: null, reason: "not_on_arc_testnet" }
-        : await within(
-            relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: chain.usdc, destinationCurrency: network.addresses.usdc, amount, user: wallet, recipient: wallet, usePermit: true }).then(
-              (quote): Quote => ({ provider: "relay", received: quote.outputAmount, minReceived: quote.outputAmount, etaSeconds: quote.fillSeconds, reason: null }),
-            ),
-            failed("relay", { code: "timeout" }),
-          ).catch((error: unknown) => failed("relay", error));
-      // Across and CCTP start with a transaction on the other chain, which needs its gas (ETH on Base): offered
-      // only once Kawase can sponsor it (routes.md ranking rule).
-      return [relay, { provider: "across", received: null, minReceived: null, etaSeconds: null, reason: "needs_source_gas" }, { provider: "cctp", received: null, minReceived: null, etaSeconds: null, reason: "needs_source_gas" }];
-    }
-    const decimal = formatUnits(amount, USDC_DECIMALS);
+    const output: MoveAsset = { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" };
+    const base = (provider: CrossChainProvider, received: bigint, minReceived: bigint, etaSeconds: number | null, extra: Partial<Quote> = {}): Quote => ({ ...this.none(provider, output, null), received, minReceived, etaSeconds, convert, ...extra });
     const cctp = within(
-      this.engine.estimate({ network, client: input.client, from: wallet, destination: chain, recipient, amount: decimal }).then((estimate): Quote => {
+      this.engine.estimate({ network, client: input.client, from: wallet, destination: chain, recipient, amount: formatUnits(amount, USDC_DECIMALS) }).then((estimate) => {
         const received = amount > estimate.maxFee ? amount - estimate.maxFee : ZERO;
-        return { provider: "cctp", received, minReceived: received, etaSeconds: null, reason: null };
+        return base("cctp", received, received, null);
       }),
-      failed("cctp", { code: "timeout" }),
+      this.failed("cctp", output, { code: "timeout" }),
       CCTP_QUOTE_TIMEOUT_MS,
-    ).catch((error: unknown) => failed("cctp", error));
-    const across: Promise<Quote> = testnet
-      ? Promise.resolve({ provider: "across", received: null, minReceived: null, etaSeconds: null, reason: "not_on_arc_testnet" })
-      : within(
-          acrossQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: network.addresses.usdc, outputToken: chain.usdc, amount, depositor: wallet, recipient }).then(
-            (quote): Quote => ({ provider: "across", received: quote.outputAmount, minReceived: quote.minOutputAmount, etaSeconds: quote.fillSeconds, reason: null }),
-          ),
-          failed("across", { code: "timeout" }),
-        ).catch((error: unknown) => failed("across", error));
-    const relay: Promise<Quote> = testnet
-      ? Promise.resolve({ provider: "relay", received: null, minReceived: null, etaSeconds: null, reason: "not_on_arc_testnet" })
-      : within(
-          relayQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, originCurrency: network.addresses.usdc, destinationCurrency: chain.usdc, amount, user: wallet, recipient }).then(
-            (quote): Quote => ({ provider: "relay", received: quote.outputAmount, minReceived: quote.outputAmount, etaSeconds: quote.fillSeconds, reason: null }),
-          ),
-          failed("relay", { code: "timeout" }),
-        ).catch((error: unknown) => failed("relay", error));
-    return Promise.all([cctp, across, relay]);
+    ).catch((error: unknown) => this.failed("cctp", output, error));
+    if (testnet) return [cctp, ...(["across", "relay"] as const).map((provider) => Promise.resolve(this.none(provider, output, "not_on_arc_testnet")))];
+    const across = within(
+      acrossQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: network.addresses.usdc, outputToken: chain.usdc, amount, depositor: wallet, recipient }).then((quote) => base("across", quote.outputAmount, quote.minOutputAmount, quote.fillSeconds)),
+      this.failed("across", output, { code: "timeout" }),
+    ).catch((error: unknown) => this.failed("across", output, error));
+    const relay = within(
+      relayQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, originCurrency: network.addresses.usdc, destinationCurrency: chain.usdc, amount, user: wallet, recipient }).then((quote) => base("relay", quote.outputAmount, quote.outputAmount, quote.fillSeconds)),
+      this.failed("relay", output, { code: "timeout" }),
+    ).catch((error: unknown) => this.failed("relay", output, error));
+    return [cctp, across, relay];
+  }
+
+  /** An aggregator route out of Arc for `from` → `to` (LI.FI or deBridge). */
+  private aggregatorOut(provider: "lifi" | "debridge", input: { network: NetworkContext; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset; amount: bigint }): Promise<Quote> {
+    const { network, chain, wallet, recipient, from, to, amount } = input;
+    if (!network.isRealMoney) return Promise.resolve(this.none(provider, to, "not_on_arc_testnet"));
+    const slippageBps = from.usdc && to.usdc ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
+    const quote =
+      provider === "lifi"
+        ? lifiQuote({ fromChainId: network.chainId, toChainId: chain.chainId, fromToken: from.address as Address, toToken: to.address as Address, amount, from: wallet, to: recipient, slippageBps }).then(
+            (quoted): Quote => ({ ...this.none("lifi", to, null), received: quoted.outputAmount, minReceived: quoted.minOutputAmount, etaSeconds: quoted.fillSeconds, via: BRIDGE_NAMES[quoted.tool] ?? quoted.tool, steps: quoted.steps }),
+          )
+        : debridgeQuote({ srcChainId: network.chainId, srcToken: from.usdc ? DEBRIDGE_NATIVE : (from.address as Address), amount: from.usdc ? toNative(amount) : amount, dstChainId: chain.chainId, dstToken: to.address as Address, recipient, authority: wallet }).then(
+            (quoted): Quote => ({ ...this.none("debridge", to, null), received: quoted.outputAmount, minReceived: quoted.outputAmount, etaSeconds: quoted.fillSeconds, nativeFee: quoted.fixFee, extraCost: this.feeIn(to, quoted.fixFee) }),
+          );
+    return within(quote, this.failed(provider, to, { code: "timeout" }), AGGREGATOR_TIMEOUT_MS).catch((error: unknown) => this.failed(provider, to, error));
+  }
+
+  /** Kawase's own plan when nothing carries the asset as itself: the Arc swap to USDC and a USDC bridge, one batch. */
+  private async convertFirst(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; amount: bigint }): Promise<Quote[]> {
+    if (!this.venues) return [];
+    const { network, client, wallet, from, amount } = input;
+    const swapped = await within(
+      this.venues.quoteAll({ network, client: client as PublicClient, from: wallet, tokenIn: from.address as Address, tokenOut: network.addresses.usdc, amountIn: amount, decimalsIn: from.decimals, decimalsOut: USDC_DECIMALS, slippageBps: CROSSCHAIN.volatileSlippageBps }),
+      { quotes: [], failures: [] },
+      AGGREGATOR_TIMEOUT_MS,
+    );
+    const best = swapped.quotes[0];
+    if (!best || best.minOut === ZERO) return [];
+    return Promise.all(this.usdcOut({ ...input, amount: best.minOut, convert: { venue: best.venue, minOut: best.minOut } }));
+  }
+
+  private async quotesOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset | undefined; amount: bigint }): Promise<Quote[]> {
+    const { from, to } = input;
+    const usdcThere: MoveAsset = { chainId: input.chain.chainId, address: input.chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" };
+    if (from.usdc) {
+      return Promise.all([...this.usdcOut({ ...input, convert: null }), this.aggregatorOut("lifi", { ...input, to: usdcThere }), this.aggregatorOut("debridge", { ...input, to: usdcThere })]);
+    }
+    // As itself first; USDC (an aggregator's own swap, or convert-first) when nothing carries it.
+    if (to && !to.usdc) {
+      const direct = await Promise.all([this.aggregatorOut("lifi", { ...input, to }), this.aggregatorOut("debridge", { ...input, to })]);
+      if (direct.some((quote) => quote.received !== null && quote.reason === null)) return direct;
+    }
+    const [lifi, debridge, converted] = await Promise.all([this.aggregatorOut("lifi", { ...input, to: usdcThere }), this.aggregatorOut("debridge", { ...input, to: usdcThere }), this.convertFirst(input)]);
+    return [...converted, lifi, debridge];
+  }
+
+  private async quotesIn(input: { network: NetworkContext; chain: BridgeDestination; wallet: Address; from: MoveAsset; to: MoveAsset; amount: bigint }): Promise<Quote[]> {
+    const { network, chain, wallet, from, to, amount } = input;
+    if (!network.isRealMoney) return [this.none("relay", to, "not_on_arc_testnet")];
+    if (from.native) {
+      // The chain's own coin: one transaction there, its gas paid from the same coin.
+      const quote = await within(
+        lifiQuote({ fromChainId: chain.chainId, toChainId: network.chainId, fromToken: LIFI_NATIVE, toToken: to.address as Address, amount, from: wallet, to: wallet, slippageBps: CROSSCHAIN.volatileSlippageBps }).then((quoted): Quote => {
+          // Whether the coin also covers this gas is the policy's to say (it names the amount to keep).
+          const gas = ((quoted.gasCost ?? ZERO) * BigInt(CROSSCHAIN.sourceGasHeadroomPercent)) / PERCENT;
+          return { ...this.none("lifi", to, null), received: quoted.outputAmount, minReceived: quoted.minOutputAmount, etaSeconds: quoted.fillSeconds, via: BRIDGE_NAMES[quoted.tool] ?? quoted.tool, steps: quoted.steps, sourceGas: gas };
+        }),
+        this.failed("lifi", to, { code: "timeout" }),
+        AGGREGATOR_TIMEOUT_MS,
+      ).catch((error: unknown) => this.failed("lifi", to, error));
+      return [quote];
+    }
+    // A token: Relay's signature (EIP-3009 for USDC; Permit2 for others, gasless once the token is approved to Permit2).
+    const relay = await within(
+      relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: from.address as Address, destinationCurrency: to.address as Address, amount, user: wallet, recipient: wallet, usePermit: true }).then(
+        (quote): Quote => ({ ...this.none("relay", to, quote.permit && quote.calls.length === 0 ? null : "needs_source_gas"), received: quote.outputAmount, minReceived: quote.outputAmount, etaSeconds: quote.fillSeconds }),
+      ),
+      this.failed("relay", to, { code: "timeout" }),
+    ).catch((error: unknown) => this.failed("relay", to, error));
+    // Across and CCTP start with a transaction on the other chain, which needs its gas: offered once Kawase can sponsor it.
+    return from.usdc ? [relay, this.none("across", to, "needs_source_gas"), this.none("cctp", to, "needs_source_gas")] : [relay];
   }
 
   private async evaluate(user: SessionUser, intent: IntentRow, request: StoredRequest) {
@@ -254,29 +397,42 @@ export class CrossChainService {
     const view = await capabilityView(this.db, this.chains.available);
     const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
     const direction: "in" | "out" = request.direction === "in" ? "in" : "out";
-    const amount = parseRequestAmount(request.amount, "USDC");
+    const outbound = direction === "out";
+    const wantUsdc = request.toAsset?.trim().toLowerCase() === "usdc";
 
     let setUp = false;
     let balance = ZERO;
+    let usdcBalance = ZERO;
     let chain: BridgeDestination | undefined;
     let chainState: "found" | "missing" | "unknown" = "missing";
     let recipientFacts: RecipientFacts | { status: "own" } = { status: "own" };
     let recipient: Address | undefined = wallet;
     let recipientLabel: string | null = null;
+    let from: MoveAsset | "unknown" | undefined;
+    let to: MoveAsset | undefined;
     if (clients && wallet) {
-      const named = direction === "in" ? request.source : request.destination;
+      const named = outbound ? request.destination : request.source;
       chain = this.findChain(clients.network, named);
-      if (direction === "in" && !named) {
-        // Bring to Arc from wherever the money is: the chain holding the most USDC at this address.
+      if (!outbound && !named) {
+        // Bring to Arc from wherever the money is: the chain holding the most of the asked asset at this address.
         const found = await this.elsewhere(user);
-        const richest = [...found.chains].sort((a, b) => (BigInt(b.balance) > BigInt(a.balance) ? 1 : -1))[0];
+        const asked = (request.asset ?? "USDC").toLowerCase();
+        const richest = found.chains.filter((entry) => entry.asset.toLowerCase() === asked).sort((a, b) => (BigInt(b.balance) > BigInt(a.balance) ? 1 : -1))[0];
         chain = richest ? this.findChain(clients.network, richest.key) : undefined;
       }
       chainState = chain ? "found" : named ? "unknown" : "missing";
-      const code = await clients.client.getCode({ address: wallet });
+      const [code, usdc] = await Promise.all([
+        clients.client.getCode({ address: wallet }),
+        clients.client.readContract({ address: clients.network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }),
+      ]);
       setUp = isWalletSetUp(code);
-      if (direction === "out") {
-        balance = await clients.client.readContract({ address: clients.network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
+      usdcBalance = usdc;
+      if (outbound) {
+        from = await arcAsset(clients.network, clients.client as PublicClient, this.assets?.directory, request.asset);
+        if (from !== "unknown") {
+          balance = from.usdc ? usdc : await clients.client.readContract({ address: from.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
+          if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
+        }
         if (request.recipient) {
           const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient);
           recipientFacts = resolution.facts.status === "self" ? { status: "own" } : resolution.facts;
@@ -285,13 +441,25 @@ export class CrossChainService {
             recipientLabel = resolution.view?.name ?? resolution.view?.handle ?? null;
           }
         }
-      } else if (chain) balance = await within(this.remoteUsdc(chain, wallet), ZERO);
+      } else if (chain) {
+        from = await remoteAsset(chain, request.asset);
+        if (from !== "unknown") {
+          balance = await within(this.remoteBalance(chain, from, wallet), ZERO);
+          to = from.usdc || wantUsdc ? this.arcUsdc(clients.network) : (counterpartOnArc(clients.network, from) ?? this.arcUsdc(clients.network));
+        }
+      }
     }
+    const asset = from && from !== "unknown" ? from : undefined;
+    const amount = asset ? parseAmount(request.amount, asset.decimals) : request.amount ? ({ status: "invalid" } as const) : ({ status: "missing" } as const);
 
     let quotes: Quote[] = [];
-    const canQuote = clients && wallet && chain && recipient && amount.status === "ok" && amount.baseUnits > ZERO && (recipientFacts.status === "own" || recipientFacts.status === "resolved");
-    if (canQuote) quotes = await this.quotes({ network: clients.network, client: clients.client, direction, chain: chain!, wallet, recipient: recipient!, amount: amount.baseUnits });
-    const net = (quote: Quote) => quote.received ?? NO_QUOTE;
+    const canQuote = clients && wallet && chain && recipient && asset && !isBlocked(asset) && amount.status === "ok" && amount.baseUnits > ZERO && (recipientFacts.status === "own" || recipientFacts.status === "resolved");
+    if (canQuote) {
+      quotes = outbound
+        ? await this.quotesOut({ network: clients.network, client: clients.client, chain: chain!, wallet, recipient: recipient!, from: asset, to, amount: amount.baseUnits })
+        : await this.quotesIn({ network: clients.network, chain: chain!, wallet, from: asset, to: to!, amount: amount.baseUnits });
+    }
+    const net = (quote: Quote) => (quote.received === null ? NO_QUOTE : quote.received - quote.extraCost);
     const executable = quotes.filter((quote) => quote.received !== null && quote.reason === null);
     const ranked = [...executable].sort((a, b) => (net(b) > net(a) ? 1 : net(b) < net(a) ? -1 : (a.etaSeconds ?? Infinity) - (b.etaSeconds ?? Infinity)));
     const chosen = ranked.find((quote) => quote.provider === request.route) ?? ranked[0];
@@ -305,56 +473,78 @@ export class CrossChainService {
       wallet: { registered: Boolean(wallet), setUp },
       chain: chainState,
       recipient: recipientFacts,
+      asset: from === "unknown" ? { status: "unknown", name: request.asset ?? "" } : asset && isBlocked(asset) ? { status: "blocked", symbol: asset.symbol } : { status: "found", symbol: asset?.symbol ?? "USDC", decimals: asset?.decimals ?? USDC_DECIMALS, usdc: asset?.usdc ?? true },
       amount,
       balance,
       gasFloat: GAS_FLOAT_USDC_BASE_UNITS,
-      route: canQuote ? (chosen ? { status: "ok" } : { status: "none", reason: quotes[0]?.reason ?? "no_quote" }) : { status: "not_requested" },
+      usdc: usdcBalance,
+      nativeFee: chosen && outbound ? feeInUsdc(chosen.nativeFee) : ZERO,
+      sourceGas: chosen && !outbound ? (chosen.sourceGas ?? undefined) : undefined,
+      route: canQuote ? (chosen ? { status: "ok" } : { status: "none", reason: quotes.find((quote) => quote.reason)?.reason ?? "no_quote" }) : { status: "not_requested" },
     });
-    return { wallet, clients, direction, chain, recipient, recipientLabel, amount, quotes, ranked, chosen, evaluation };
+    return { wallet, clients, direction, chain, recipient, recipientLabel, asset, amount, quotes, ranked, chosen, evaluation };
   }
 
   private async draft(user: SessionUser, intent: IntentRow, request: StoredRequest, createdBy: "user" | "agent" | "system") {
     const fresh = await this.evaluate(user, intent, request);
-    const { wallet, clients, direction, chain, recipient, recipientLabel, amount, quotes, ranked, chosen, evaluation } = fresh;
+    const { wallet, clients, direction, chain, recipient, recipientLabel, asset, amount, quotes, ranked, chosen, evaluation } = fresh;
     let draft: CrossChainDraft | null = null;
     let view: CrossChainDraftView | null = null;
-    if (wallet && clients && chain && recipient && chosen && chosen.minReceived !== null && amount.status === "ok") {
+    if (wallet && clients && chain && recipient && asset && chosen && chosen.minReceived !== null && amount.status === "ok") {
       const outbound = direction === "out";
-      const { maxFeePerGas } = await walletGasPrice(clients.client);
-      const fee = outbound ? ((BATCH_GAS_ESTIMATE * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas : ZERO;
+      const sourceTx = !outbound && chosen.provider === "lifi";
+      let fee = ZERO;
+      if (outbound) {
+        const { maxFeePerGas } = await walletGasPrice(clients.client);
+        const gas = CROSSCHAIN.batchGas[chosen.provider] + (chosen.convert ? CROSSCHAIN.convertGas : ZERO);
+        fee = ((gas * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
+      } else if (sourceTx) fee = chosen.sourceGas ?? ZERO;
       draft = {
         originChainId: outbound ? clients.network.chainId : chain.chainId,
         destinationChainId: outbound ? chain.chainId : clients.network.chainId,
         from: wallet,
-        token: outbound ? clients.network.addresses.usdc : chain.usdc,
+        token: asset.native ? zeroAddress : (asset.address as Address),
         amount: amount.baseUnits,
         recipient,
+        outputToken: chosen.output.address as Address,
         minReceived: chosen.minReceived,
         provider: CROSSCHAIN_PROVIDERS.indexOf(chosen.provider),
+        nativeFee: chosen.nativeFee,
+        swapMinOut: chosen.convert?.minOut ?? ZERO,
+        swapVenue: chosen.convert ? CONVERT_VENUES.indexOf(chosen.convert.venue) : 0,
         maxFee: fee * MAX_FEE_DRAFT_MULTIPLIER,
       };
       const shown = [...ranked, ...quotes.filter((quote) => !ranked.includes(quote))].slice(0, SHOWN_ROUTES);
       view = {
         direction,
-        asset: "USDC",
+        asset: asset.symbol,
         amount: amount.baseUnits.toString(),
+        input: assetView(asset),
+        output: assetView(chosen.output),
         source: outbound ? this.chainView(clients.network, "arc") : this.chainView(clients.network, chain),
         destination: outbound ? this.chainView(clients.network, chain) : this.chainView(clients.network, "arc"),
         recipient: { address: recipient, label: recipientLabel, own: same(recipient, wallet) },
         routes: shown.map((quote) => ({
           provider: quote.provider,
           received: quote.received?.toString() ?? null,
-          fee: quote.received !== null ? (amount.baseUnits - quote.received).toString() : null,
-          extraCost: "0",
-          net: quote.received?.toString() ?? null,
+          // A fee in the asset itself only means something when the same asset arrives.
+          fee: quote.received !== null && same(quote.output.symbol, asset.symbol) && quote.output.decimals === asset.decimals && !quote.convert ? (amount.baseUnits - quote.received).toString() : null,
+          extraCost: quote.extraCost.toString(),
+          net: quote.received !== null ? (quote.received - quote.extraCost).toString() : null,
           etaSeconds: quote.etaSeconds,
           executable: quote.received !== null && quote.reason === null,
           trust: TRUST[quote.provider],
           reason: quote.reason,
+          output: assetView(quote.output),
+          via: quote.via,
+          steps: quote.steps,
+          nativeFee: quote.nativeFee > ZERO ? quote.nativeFee.toString() : null,
+          convertFirst: quote.convert ? { venue: SWAP_VENUE_LABELS[quote.convert.venue], minUsdc: quote.convert.minOut.toString() } : null,
         })),
         chosen: chosen.provider,
         minReceived: chosen.minReceived.toString(),
-        networkFee: feeInUsdc(fee).toString(),
+        // Gas the wallet pays on Arc, in USDC; a move that starts on another chain pays there, in its coin.
+        networkFee: outbound ? feeInUsdc(fee).toString() : "0",
         quotedAt: new Date().toISOString(),
       };
     }
@@ -452,39 +642,103 @@ export class CrossChainService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination): Promise<{ calls: BridgeCall[] } | { permit: RelayPermit; requestId: string } | { changed: true }> {
+  /** The USDC bridge's calls out of Arc for exactly `amount`, checked (also the second half of convert-first). */
+  private async bridgeUsdc(provider: CrossChainProvider, draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination, amount: bigint): Promise<{ calls: BridgeCall[]; track: Track } | { changed: true }> {
+    const usdc = network.addresses.usdc;
+    if (provider === "across") {
+      const quote = await acrossQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: usdc, outputToken: chain.usdc, amount, depositor: draft.from, recipient: draft.recipient });
+      if (quote.minOutputAmount < draft.minReceived) return { changed: true };
+      const check = checkAcrossCalls(quote.calls, { spokePool: quote.spokePool, depositor: draft.from, recipient: draft.recipient, inputToken: usdc, outputToken: chain.usdc, amount, minOutput: draft.minReceived, destinationChainId: chain.chainId });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { calls: quote.calls, track: {} };
+    }
+    if (provider === "relay") {
+      const quote = await relayQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, originCurrency: usdc, destinationCurrency: chain.usdc, amount, user: draft.from, recipient: draft.recipient });
+      if (quote.outputAmount < draft.minReceived) return { changed: true };
+      const check = checkRelayCalls(quote.calls, { depositories: await relayContracts(network.chainId), depositor: draft.from, token: usdc, amount });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      // The fill is followed by Relay's request id, kept with the attempt.
+      return { calls: quote.calls, track: { requestId: quote.requestId } };
+    }
+    if (provider === "cctp") {
+      const calls = await this.engine.prepare({ network, client, from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(amount, USDC_DECIMALS) });
+      const check = checkBridgeCalls(network, calls, { usdc, amount, recipient: draft.recipient, domain: chain.domain, maxFee: amount > draft.minReceived ? amount - draft.minReceived : ZERO });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { calls: calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), track: {} };
+    }
+    return this.aggregatorCalls(provider, draft, network, chain, { address: usdc, usdc: true }, amount);
+  }
+
+  /** LI.FI's or deBridge's calls out of Arc for exactly `amount` of `token`, checked. */
+  private async aggregatorCalls(provider: CrossChainProvider, draft: CrossChainDraft, network: NetworkContext, chain: BridgeDestination, token: { address: Address; usdc: boolean }, amount: bigint): Promise<{ calls: BridgeCall[]; track: Track } | { changed: true }> {
+    if (provider === "lifi") {
+      const slippageBps = token.usdc && same(draft.outputToken, chain.usdc) ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
+      const quote = await lifiQuote({ fromChainId: network.chainId, toChainId: chain.chainId, fromToken: token.address, toToken: draft.outputToken, amount, from: draft.from, to: draft.recipient, slippageBps });
+      if (quote.minOutputAmount < draft.minReceived) return { changed: true };
+      const check = checkLifiCalls(quote.calls, { chainId: network.chainId, token: token.address, amount, recipient: draft.recipient, destinationChainId: chain.chainId });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { calls: quote.calls, track: { tool: quote.tool } };
+    }
+    if (provider === "debridge") {
+      const srcToken = token.usdc ? DEBRIDGE_NATIVE : token.address;
+      const srcAmount = token.usdc ? toNative(amount) : amount;
+      const quote = await debridgeQuote({ srcChainId: network.chainId, srcToken, amount: srcAmount, dstChainId: chain.chainId, dstToken: draft.outputToken, recipient: draft.recipient, authority: draft.from });
+      if (quote.outputAmount < draft.minReceived || quote.fixFee !== draft.nativeFee) return { changed: true };
+      const check = checkDebridgeCalls(quote.calls, { token: srcToken, amount: srcAmount, fixFee: quote.fixFee, recipient: draft.recipient, destinationChainId: chain.chainId });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { calls: quote.calls, track: { orderId: quote.orderId } };
+    }
+    throw this.refused(provider, "not_an_aggregator");
+  }
+
+  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination): Promise<Built> {
     const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
     if (draft.originChainId !== network.chainId) {
-      // Bring to Arc: Relay's permit, checked: USDC's ReceiveWithAuthorization from the wallet to Relay's proxy.
-      const quote = await relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: chain.usdc, destinationCurrency: network.addresses.usdc, amount: draft.amount, user: draft.from, recipient: draft.from, usePermit: true });
-      if (!quote.permit) throw problem(HTTP.badGateway, "quote_unavailable");
+      if (provider === "lifi") {
+        // The chain's own coin, one transaction there.
+        const quote = await lifiQuote({ fromChainId: chain.chainId, toChainId: network.chainId, fromToken: LIFI_NATIVE, toToken: draft.outputToken, amount: draft.amount, from: draft.from, to: draft.recipient, slippageBps: CROSSCHAIN.volatileSlippageBps });
+        if (quote.minOutputAmount < draft.minReceived) return { changed: true };
+        const check = checkLifiCalls(quote.calls, { chainId: chain.chainId, token: LIFI_NATIVE, amount: draft.amount, recipient: draft.recipient, destinationChainId: network.chainId });
+        if (!check.ok) throw this.refused(provider, check.reason);
+        return { kind: "source", call: quote.calls[0]!, track: { tool: quote.tool } };
+      }
+      // Relay's signature: USDC's ReceiveWithAuthorization, or a Permit2 transfer for any other token.
+      const quote = await relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: draft.token, destinationCurrency: draft.outputToken, amount: draft.amount, user: draft.from, recipient: draft.recipient, usePermit: true });
+      if (!quote.permit || quote.calls.length > 0) throw problem(HTTP.badGateway, "quote_unavailable");
       if (quote.outputAmount < draft.minReceived) return { changed: true };
       const contracts = await relayContracts(chain.chainId);
-      const proxy = contracts.find((address) => same(address, String(quote.permit!.typedData.message.to)));
-      if (!proxy || !checkRelayPermit(quote.permit, { chainId: chain.chainId, token: chain.usdc, from: draft.from, amount: draft.amount, approvalProxy: proxy })) {
+      const usdcPermit = same(draft.token, chain.usdc);
+      const proxy = contracts.find((address) => same(address, String(quote.permit!.typedData.message.to ?? "")));
+      const ok = usdcPermit
+        ? Boolean(proxy) && checkRelayPermit(quote.permit, { chainId: chain.chainId, token: chain.usdc, from: draft.from, amount: draft.amount, approvalProxy: proxy! })
+        : checkRelayPermit2(quote.permit, { chainId: chain.chainId, token: draft.token, amount: draft.amount, spenders: contracts });
+      if (!ok) {
         this.log.error({ provider }, "security.permit_refused");
         throw problem(HTTP.badGateway, "quote_unavailable", "the route asked for a signature Kawase does not accept");
       }
-      return { permit: quote.permit, requestId: quote.requestId };
+      return { kind: "permit", permit: quote.permit, requestId: quote.requestId };
     }
-    if (provider === "across") {
-      const quote = await acrossQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: network.addresses.usdc, outputToken: chain.usdc, amount: draft.amount, depositor: draft.from, recipient: draft.recipient });
-      if (quote.minOutputAmount < draft.minReceived) return { changed: true };
-      const check = checkAcrossCalls(quote.calls, { spokePool: quote.spokePool, depositor: draft.from, recipient: draft.recipient, inputToken: network.addresses.usdc, outputToken: chain.usdc, amount: draft.amount, minOutput: draft.minReceived, destinationChainId: chain.chainId });
-      if (!check.ok) throw this.refused(provider, check.reason);
-      return { calls: quote.calls };
+    if (draft.swapMinOut > ZERO) {
+      // Convert first: the Arc swap (its minimum held) and the USDC bridge for exactly that minimum, one batch.
+      if (!this.venues) throw this.refused(provider, "no_swap_venues");
+      const venue = CONVERT_VENUES[draft.swapVenue]!;
+      const decimals = await client.readContract({ address: draft.token, abi: erc20Abi, functionName: "decimals" });
+      // Built at half the shown slippage, as swaps are (the build re-prices); a price that moved past the minimum is a new version.
+      const prepared = await this.venues
+        .prepare(venue, { network, client: client as PublicClient, from: draft.from, tokenIn: draft.token, tokenOut: network.addresses.usdc, amountIn: draft.amount, decimalsIn: decimals, decimalsOut: USDC_DECIMALS, slippageBps: CROSSCHAIN.volatileSlippageBps / SWAP_ROUTE_SLIPPAGE_DIVISOR, minOut: draft.swapMinOut })
+        .catch((error: unknown) => {
+          if (error instanceof VenueRefused && error.reason === "below_minimum") return undefined;
+          throw error;
+        });
+      if (!prepared || prepared.guaranteedOut < draft.swapMinOut) return { changed: true };
+      const bridged = await this.bridgeUsdc(provider, draft, network, client, chain, draft.swapMinOut);
+      if ("changed" in bridged) return bridged;
+      return { kind: "batch", calls: [...prepared.calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), ...bridged.calls], track: bridged.track };
     }
-    if (provider === "relay") {
-      const quote = await relayQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, originCurrency: network.addresses.usdc, destinationCurrency: chain.usdc, amount: draft.amount, user: draft.from, recipient: draft.recipient });
-      if (quote.outputAmount < draft.minReceived) return { changed: true };
-      const check = checkRelayCalls(quote.calls, { depositories: await relayContracts(network.chainId), depositor: draft.from, token: network.addresses.usdc, amount: draft.amount });
-      if (!check.ok) throw this.refused(provider, check.reason);
-      return { calls: quote.calls };
-    }
-    const calls = await this.engine.prepare({ network, client, from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(draft.amount, USDC_DECIMALS) });
-    const check = checkBridgeCalls(network, calls, { usdc: network.addresses.usdc, amount: draft.amount, recipient: draft.recipient, domain: chain.domain, maxFee: draft.amount - draft.minReceived });
-    if (!check.ok) throw this.refused(provider, check.reason);
-    return { calls: calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })) };
+    const usdc = same(draft.token, network.addresses.usdc);
+    const built = usdc ? await this.bridgeUsdc(provider, draft, network, client, chain, draft.amount) : await this.aggregatorCalls(provider, draft, network, chain, { address: draft.token, usdc: false }, draft.amount);
+    if ("changed" in built) return built;
+    return { kind: "batch", calls: built.calls, track: built.track };
   }
 
   private refused(provider: string, reason: string) {
@@ -507,7 +761,7 @@ export class CrossChainService {
     const chain = this.engine.destinations(network).find((entry) => entry.chainId === (payload.view!.direction === "out" ? draft.destinationChainId : draft.originChainId));
     if (!chain) return this.redraft(user, intentId);
 
-    let built: Awaited<ReturnType<CrossChainService["build"]>>;
+    let built: Built;
     try {
       built = await this.build(draft, network, client, chain);
     } catch (error) {
@@ -519,26 +773,42 @@ export class CrossChainService {
 
     let unsigned: Record<string, unknown>;
     let answer: { status: "sign"; transaction: UnsignedTransaction } | { status: "sign_typed"; typedData: RelayPermit["typedData"] };
-    if ("permit" in built) {
+    if (built.kind === "permit") {
       unsigned = { kind: "permit", permit: built.permit, requestId: built.requestId };
       answer = { status: "sign_typed", typedData: built.permit.typedData };
     } else {
-      const data = encodeSelfBatch(built.calls).toLowerCase() as Hex;
+      // The Arc batch (to the wallet itself), or the one transaction on the other chain.
+      const onArc = built.kind === "batch";
+      const origin = onArc ? (client as PublicClient) : this.remote(chain);
+      const target = built.kind === "batch" ? draft.from : built.call.to;
+      const data = (built.kind === "batch" ? encodeSelfBatch(built.calls) : built.call.data).toLowerCase() as Hex;
+      const value = built.kind === "batch" ? ZERO : built.call.value;
       try {
-        await client.call({ account: draft.from, to: draft.from, data });
+        await origin.call({ account: draft.from, to: target, data, value });
       } catch (error) {
-        this.log.warn({ err: error, intentId }, "crosschain batch simulation reverted");
+        this.log.warn({ err: error, intentId }, "crosschain simulation reverted");
         throw problem(HTTP.badGateway, "simulation_failed");
       }
+      const fallbackGas = onArc ? CROSSCHAIN.batchGas[CROSSCHAIN_PROVIDERS[draft.provider]!] + (draft.swapMinOut > ZERO ? CROSSCHAIN.convertGas : ZERO) : CROSSCHAIN.sourceGasFallback;
       const [nonce, price, estimate] = await Promise.all([
-        client.getTransactionCount({ address: draft.from, blockTag: "pending" }),
-        walletGasPrice(client),
-        client.estimateGas({ account: draft.from, to: draft.from, data }).catch(() => BATCH_GAS_ESTIMATE),
+        origin.getTransactionCount({ address: draft.from, blockTag: "pending" }),
+        onArc ? walletGasPrice(client) : origin.estimateFeesPerGas().then((fees) => ({ maxFeePerGas: fees.maxFeePerGas ?? ZERO, maxPriorityFeePerGas: fees.maxPriorityFeePerGas ?? ZERO })),
+        origin.estimateGas({ account: draft.from, to: target, data, value }).catch(() => fallbackGas),
       ]);
       const gas = (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT;
       if (gas * price.maxFeePerGas > draft.maxFee) return this.redraft(user, intentId);
-      const transaction: UnsignedTransaction = { type: "eip1559", chainId: network.chainId, nonce, to: draft.from, data, value: "0", gas: gas.toString(), maxFeePerGas: price.maxFeePerGas.toString(), maxPriorityFeePerGas: price.maxPriorityFeePerGas.toString() };
-      unsigned = transaction as unknown as Record<string, unknown>;
+      const transaction: UnsignedTransaction = {
+        type: "eip1559",
+        chainId: onArc ? network.chainId : chain.chainId,
+        nonce,
+        to: target,
+        data,
+        value: value.toString(),
+        gas: gas.toString(),
+        maxFeePerGas: price.maxFeePerGas.toString(),
+        maxPriorityFeePerGas: price.maxPriorityFeePerGas.toString(),
+      };
+      unsigned = { ...(transaction as unknown as Record<string, unknown>), kind: built.kind, track: built.track };
       answer = { status: "sign", transaction };
     }
 
@@ -555,7 +825,7 @@ export class CrossChainService {
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",
-        unsignedTransaction: unsigned,
+        unsignedTransaction: jsonSafe(unsigned),
         signerAddress: draft.from,
         status: "pending_signature",
         decidedViaSurface: input.surface,
@@ -584,7 +854,7 @@ export class CrossChainService {
     return intent;
   }
 
-  /** The wallet signed: the exact transaction handed out (broadcast here), or the permit (handed to Relay). */
+  /** The wallet signed: the exact transaction handed out (broadcast here, on Arc or the other chain), or the permit (handed to Relay). */
   async submitSignature(user: SessionUser, intentId: string, input: { approvalId: string; signedTransaction?: Hex | undefined; signature?: Hex | undefined }): Promise<CrossChainApproveResponse> {
     const before = await this.ownIntent(user.id, intentId);
     if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
@@ -594,6 +864,7 @@ export class CrossChainService {
     const draft = loadCrossChainDraft(stored);
     const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
     const context = this.clients(before.network);
+    const chain = this.engine.destinations(context.network).find((entry) => entry.chainId === (draft.originChainId === context.network.chainId ? draft.destinationChainId : draft.originChainId));
 
     const prepared = await this.db.transaction(async (tx) => {
       const intent = await this.lockIntent(tx, user.id, intentId);
@@ -603,7 +874,7 @@ export class CrossChainService {
       if (approval.expiresAt.getTime() < Date.now()) throw problem(HTTP.conflict, "intent_stale", "the approval expired");
       const unsigned = approval.unsignedTransaction as Record<string, unknown>;
       let txHash: Hex | null = null;
-      let requestId: string | null = null;
+      let progress: Progress;
       if (unsigned.kind === "permit") {
         const permit = unsigned.permit as RelayPermit;
         const valid = input.signature ? await verifyTypedData({ address: draft.from, ...(permit.typedData as unknown as TypedDataDefinition), signature: input.signature }).catch(() => false) : false;
@@ -612,18 +883,21 @@ export class CrossChainService {
           await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, approval.id));
           return { kind: "mismatch" as const };
         }
-        requestId = String(unsigned.requestId);
+        progress = { provider, origin: "permit", requestId: String(unsigned.requestId), status: "submitted" };
       } else {
         const transaction = unsigned as unknown as UnsignedTransaction;
+        const onArc = unsigned.kind !== "source";
         if (!input.signedTransaction) throw problem(HTTP.badRequest, "validation", "a signed transaction is needed");
         const parsed = parseTransaction(input.signedTransaction);
         const signer = await recoverTransactionAddress({ serializedTransaction: input.signedTransaction as never }).catch(() => undefined);
         const ok =
           signer?.toLowerCase() === draft.from.toLowerCase() &&
           parsed.chainId === draft.originChainId &&
-          parsed.to?.toLowerCase() === draft.from.toLowerCase() &&
+          parsed.to?.toLowerCase() === transaction.to.toLowerCase() &&
+          (onArc ? parsed.to?.toLowerCase() === draft.from.toLowerCase() : true) &&
           parsed.data?.toLowerCase() === transaction.data.toLowerCase() &&
-          (parsed.value ?? ZERO) === ZERO &&
+          (parsed.value ?? ZERO) === BigInt(transaction.value) &&
+          (onArc ? (parsed.value ?? ZERO) === ZERO : (parsed.value ?? ZERO) === draft.amount) &&
           parsed.nonce === transaction.nonce &&
           (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= draft.maxFee;
         if (!ok) {
@@ -632,9 +906,9 @@ export class CrossChainService {
           return { kind: "mismatch" as const };
         }
         txHash = keccak256(input.signedTransaction);
+        progress = { provider, origin: onArc ? "arc" : "source", ...((unsigned.track as Track | undefined) ?? {}), status: "submitted" };
       }
       await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
-      const progress: Progress = { provider, requestId, status: "submitted" };
       const [attempt] = await tx
         .insert(txAttempts)
         .values({
@@ -644,23 +918,24 @@ export class CrossChainService {
           chainId: draft.originChainId,
           attemptNo: await nextAttemptNo(tx, intentId),
           kind: "crosschain_wallet",
-          provider: unsigned.kind === "permit" ? ("relayer" as const) : ("user_wallet" as const),
+          provider: progress.origin === "permit" ? ("relayer" as const) : ("user_wallet" as const),
           idempotencyKey: randomUUID(),
           fromAddress: draft.from,
-          toAddress: draft.from,
+          toAddress: progress.origin === "source" ? (unsigned.to as string) : draft.from,
           txHash,
           status: "prepared",
           receipt: progress as unknown as Record<string, unknown>,
         })
         .returning({ id: txAttempts.id });
       await tx.update(intents).set({ state: "executing" }).where(eq(intents.id, intentId));
-      return { kind: "go" as const, attemptId: attempt!.id, permit: unsigned.kind === "permit" ? (unsigned.permit as RelayPermit) : null };
+      return { kind: "go" as const, attemptId: attempt!.id, origin: progress.origin, permit: unsigned.kind === "permit" ? (unsigned.permit as RelayPermit) : null };
     });
 
     if (prepared.kind === "mismatch") throw problem(HTTP.unprocessable, "transaction_mismatch");
     if (prepared.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
     try {
       if (prepared.permit) await submitRelayPermit(prepared.permit, input.signature!);
+      else if (prepared.origin === "source" && chain) await this.remote(chain).sendRawTransaction({ serializedTransaction: input.signedTransaction! });
       else await context.client.sendRawTransaction({ serializedTransaction: input.signedTransaction! });
       await this.db.update(txAttempts).set({ status: "submitted" }).where(eq(txAttempts.id, prepared.attemptId));
     } catch (error) {
@@ -684,6 +959,20 @@ export class CrossChainService {
     }
   }
 
+  /** Whether the origin receipt shows exactly what the draft moves leaving the wallet. */
+  private async originHolds(receipt: TransactionReceipt, draft: CrossChainDraft, network: NetworkContext, onArc: boolean, client: PublicClient): Promise<boolean> {
+    if (receipt.status !== "success") return false;
+    if (!onArc) {
+      // The other chain's own coin: the transaction carried exactly the amount.
+      const sent = await client.getTransaction({ hash: receipt.transactionHash });
+      return same(sent.from, draft.from) && sent.value === draft.amount;
+    }
+    // On Arc every USDC movement (native or through the ERC-20) is logged from the system address in 18 decimals.
+    const usdcOut = nativeOut(receipt, draft.from);
+    if (same(draft.token, network.addresses.usdc)) return usdcOut === toNative(draft.amount) + draft.nativeFee;
+    return outOf(receipt, draft.token, draft.from) === draft.amount && usdcOut === toNative(draft.swapMinOut) + draft.nativeFee;
+  }
+
   async track(intentId: string): Promise<boolean> {
     if (this.tracking.has(intentId)) return false;
     this.tracking.add(intentId);
@@ -697,22 +986,26 @@ export class CrossChainService {
       const progress = (attempt.receipt ?? {}) as Progress;
       const { network, client } = this.clients(intent.network);
       const update = (next: Progress) => this.db.update(txAttempts).set({ receipt: jsonSafe(next), lastReconciledAt: new Date() }).where(eq(txAttempts.id, attempt.id));
+      // Attempts from before the origin was recorded: Arc when it started there, otherwise Relay's permit.
+      const origin: Origin = progress.origin ?? (draft.originChainId === network.chainId ? "arc" : "permit");
 
-      // Out of Arc: the origin receipt first, exactly `amount` leaving the wallet.
-      if (draft.originChainId === network.chainId && progress.status === "submitted") {
-        const receipt = await client.getTransactionReceipt({ hash: attempt.txHash as Hex }).catch(() => undefined);
+      // The origin receipt first (not for a permit, which Relay executes): exactly the amount leaving the wallet.
+      if (origin !== "permit" && progress.status === "submitted") {
+        const far = this.engine.destinations(network).find((entry) => entry.chainId === draft.originChainId);
+        const originClient = origin === "arc" ? (client as PublicClient) : far ? this.remote(far) : undefined;
+        const receipt = originClient ? await originClient.getTransactionReceipt({ hash: attempt.txHash as Hex }).catch(() => undefined) : undefined;
         if (!receipt) {
           if (intent.state === "executing" && attempt.createdAt.getTime() < Date.now() - ms(SEND_UNKNOWN_AFTER_S)) {
             await this.db.update(intents).set({ state: "unknown_outcome" }).where(and(eq(intents.id, intentId), eq(intents.state, "executing")));
           }
           return false;
         }
-        if (receipt.status !== "success" || outOf(receipt, draft.token, draft.from) !== draft.amount) {
+        if (!(await this.originHolds(receipt, draft, network, origin === "arc", originClient!))) {
           if (receipt.status === "success") this.log.error({ intentId, tx: receipt.transactionHash }, "security.receipt_mismatch");
           await this.settleFailed(intentId, attempt.id, receipt.status === "success" ? "mismatch" : "reverted", null);
           return true;
         }
-        await update({ ...progress, status: "filling" });
+        await update({ ...progress, origin, status: "filling" });
         return false;
       }
       // The fill, through the provider.
@@ -725,16 +1018,16 @@ export class CrossChainService {
             .where(and(eq(intents.id, intentId), inArray(intents.state, ["executing", "unknown_outcome"])))
             .returning({ id: intents.id });
           if (!done) return;
-          await tx.update(txAttempts).set({ status: "confirmed", receipt: jsonSafe({ ...progress, status: "delivered", fillTx: filled.fillTx, received: filled.received }) }).where(eq(txAttempts.id, attempt.id));
+          await tx.update(txAttempts).set({ status: "confirmed", receipt: jsonSafe({ ...progress, origin, status: "delivered", fillTx: filled.fillTx, received: filled.received }) }).where(eq(txAttempts.id, attempt.id));
         });
         return true;
       }
       if (filled.status === "refunded" || filled.status === "failed") {
-        await update({ ...progress, status: filled.status });
+        await update({ ...progress, origin, status: filled.status });
         await this.settleFailed(intentId, attempt.id, "reverted", filled.status);
         return true;
       }
-      if (progress.status !== "filling") await update({ ...progress, status: "filling" });
+      if (progress.status !== "filling") await update({ ...progress, origin, status: "filling" });
       return false;
     } finally {
       this.tracking.delete(intentId);
@@ -742,25 +1035,38 @@ export class CrossChainService {
   }
 
   private async fillOf(progress: Progress, network: NetworkContext, draft: CrossChainDraft, originTx: Hex | null): Promise<{ status: "pending" | "delivered" | "refunded" | "failed"; fillTx: string | null; received: string | null }> {
+    const pending = { status: "pending" as const, fillTx: null, received: null };
     if (progress.provider === "relay" && progress.requestId) {
       const status = await relayStatus(progress.requestId as Hex);
       if (status.status === "success") return { status: "delivered", fillTx: status.destinationTxHash, received: draft.minReceived.toString() };
       if (status.status === "refund") return { status: "refunded", fillTx: null, received: null };
       if (status.status === "failure") return { status: "failed", fillTx: null, received: null };
-      return { status: "pending", fillTx: null, received: null };
+      return pending;
     }
     if (progress.provider === "across" && originTx) {
       const status = await acrossStatus(network.chainId, originTx);
       if (status.status === "filled") return { status: "delivered", fillTx: status.fillTxHash, received: draft.minReceived.toString() };
       if (status.status === "refunded" || status.status === "expired") return { status: "refunded", fillTx: null, received: null };
-      return { status: "pending", fillTx: null, received: null };
+      return pending;
     }
     if (progress.provider === "cctp" && originTx) {
       const forward = await this.engine.progress(network, originTx);
       if (forwardDelivered(forward)) return { status: "delivered", fillTx: forward?.forwardTxHash ?? null, received: draft.minReceived.toString() };
-      return { status: "pending", fillTx: null, received: null };
+      return pending;
     }
-    return { status: "pending", fillTx: null, received: null };
+    if (progress.provider === "lifi" && originTx && progress.tool) {
+      const status = await lifiStatus({ txHash: originTx, fromChainId: draft.originChainId, toChainId: draft.destinationChainId, tool: progress.tool });
+      if (status.status === "delivered") return { status: "delivered", fillTx: status.receivingTx, received: (status.received ?? draft.minReceived).toString() };
+      if (status.status === "refunded" || status.status === "failed") return { status: status.status, fillTx: null, received: null };
+      return pending;
+    }
+    if (progress.provider === "debridge" && progress.orderId) {
+      const status = await debridgeStatus(progress.orderId as Hex);
+      if (status.status === "delivered") return { status: "delivered", fillTx: status.fillTx, received: draft.minReceived.toString() };
+      if (status.status === "refunded") return { status: "refunded", fillTx: null, received: null };
+      return pending;
+    }
+    return pending;
   }
 
   private async settleFailed(intentId: string, attemptId: string, how: "not_sent" | "reverted" | "mismatch", error: string | null) {
@@ -786,11 +1092,11 @@ export class CrossChainService {
   }
 }
 
-const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null });
+const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null, toAsset: null });
 
 function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest {
   const pick = <K extends keyof StoredRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
-  const text = (value: string | null) => (typeof value === "string" ? value.trim() || null : null);
+  const text = (value: string | null | undefined) => (typeof value === "string" ? value.trim() || null : null);
   return {
     direction: pick("direction") === "in" ? "in" : "out",
     asset: text(pick("asset")) ?? "USDC",
@@ -799,10 +1105,11 @@ function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest
     source: text(pick("source")),
     recipient: text(pick("recipient")),
     route: pick("route") ?? null,
+    toAsset: text(pick("toAsset") ?? null),
   };
 }
 
-/** What the receipt says left `from` in `token` (ERC-20 Transfer logs). */
+/** What the receipt says left `from` in `token` (ERC-20 Transfer logs from that token). */
 function outOf(receipt: TransactionReceipt, token: Address, from: Address): bigint {
   let out = ZERO;
   for (const log of receipt.logs) {
@@ -816,6 +1123,9 @@ function outOf(receipt: TransactionReceipt, token: Address, from: Address): bigi
   }
   return out;
 }
+
+/** USDC that left `from` on Arc, 18 decimals: the chain's own transfer log, written for native and ERC-20 USDC alike. */
+const nativeOut = (receipt: TransactionReceipt, from: Address) => outOf(receipt, ARC_NATIVE_LOGGER as Address, from);
 
 function stageOf(state: IntentState, progress: Progress): CrossChainStage {
   if (state === "completed") return "delivered";

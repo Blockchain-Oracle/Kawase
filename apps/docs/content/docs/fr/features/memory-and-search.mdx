@@ -1,0 +1,52 @@
+---
+title: "Mémoire et recherche"
+description: "Kawase se souvient de ce que vous lui demandez, recherche dans toutes vos conversations passées, garde les longues discussions cohérentes, suggère ce qui mérite votre attention sur l'Accueil et répond aux questions sur Arc avec des sources."
+sourceHash: d94f486866e462ad
+---
+
+<Status ids="memory" />
+
+## Mémoire
+
+« Souviens-toi que mon propriétaire est @maria. » Kawase conserve les **informations que vous lui demandez de retenir** (personnes, @handles, préférences) et
+les utilise plus tard. Lorsqu'une réponse s'appuie sur l'une d'elles, une ligne **Depuis la mémoire** s'affiche dans la conversation. Vous savez ainsi toujours d'où vient l'information.
+
+**Paramètres → Mémoire** répertorie toutes les informations : vous pouvez en ajouter une, la modifier, en oublier une ou toutes les oublier, ou désactiver la mémoire. La mémoire d'un invité est transférée vers son compte lors de sa connexion. Kawase ne se souvient pas des choses que vous ne lui avez pas demandé de retenir.
+
+## Rechercher dans toutes les conversations
+
+Le panneau d'historique recherche dans **toutes** vos conversations sur le serveur de Kawase, et pas seulement dans celles qui sont chargées : les mots, les cartes et les destinataires (recherchez « Maria » pour voir apparaître l'envoi qui lui est destiné). Les mots partiels et les textes en chinois, japonais ou coréen fonctionnent aussi. Les résultats sont regroupés par conversation, avec les mots autour de la correspondance, et ouvrent la conversation. Vous pouvez aussi demander :
+« Qu'ai-je envoyé à mon propriétaire le mois dernier ? »
+
+## Longues conversations
+
+Une longue discussion reste cohérente : après chaque échange, la partie la plus ancienne est condensée dans un résumé et les derniers messages sont conservés mot pour mot. Le résumé ne répète jamais les montants ni les résultats déjà mémorisés. Les résultats propres aux cartes sont conservés exactement tels quels, et Kawase vérifie à nouveau avec ses outils avant de s'appuyer sur l'un d'eux.
+
+## Pour vous
+
+**Accueil** affiche quelques cartes qui méritent votre attention, calculées à partir de vos soldes réels sur le réseau actif :
+
+- des USDC inutilisés au-delà de ce que vous dépensez, à côté d'un coffre qui pourrait tout vous rembourser ;
+- l'une de vos demandes de paiement sur le point d'expirer ;
+- un pont qui n'est toujours pas arrivé 15 minutes après l'heure prévue ;
+- un mouvement important sur un jeton que vous détenez (5 % en un jour, 0.5 % pour un stablecoin monétaire, au moins $10 détenus) ;
+- une [position de marge](./long-short.mdx) dont le niveau de santé est inférieur à 1.25 ou qui se trouve à moins de 10 % d'un mouvement entraînant sa liquidation.
+
+Ce sont des informations et des options, jamais des conseils. Chaque carte propose une seule action. **Ignorer** masque une carte pendant une semaine ; **ne plus afficher ce type** le désactive (vous pouvez annuler ce choix).
+
+## Réponses sur Arc, avec des sources
+
+Demandez « Quelle est la vitesse de la finalité sur Arc ? » ou « Combien coûte un transfert ? ». Kawase répond à partir d'un ensemble de notes sélectionnées, créées à partir de la documentation d'Arc et de Circle ainsi que de ces documents, et affiche une carte **Sources** qui nomme chacune d'elles. Uniquement des faits, sans conseils en investissement.
+
+## Des cartes qui expliquent
+
+- **Graphiques** : la valeur de votre portefeuille ou le prix d'un jeton, sur un jour, une semaine, un mois ou une année.
+- **Pourquoi celui-ci ?** : pourquoi un itinéraire de pont, une plateforme d'échange ou un coffre a été choisi (tous les prestataires interrogés, ce que chacun propose, les frais et le délai, et pourquoi les autres ont été écartés ou n'ont pas pu fournir de devis).
+- **Modifications des paramètres** sous la forme Maintenant → Après, appliquées sur votre appareil (mémoire activée ou désactivée, langue des réponses, thème).
+- **État** : indique si Kawase, Arc (pour chaque réseau), Circle et les prix fonctionnent, sont ralentis ou sont indisponibles.
+
+## Le texte externe est traité comme une donnée
+
+Tout ce que Kawase lit à l'extérieur (réponses de places de marché, noms de jetons et de coffres, mémos de chaînes, notes de contacts, anciens messages) est isolé comme non fiable. Les instructions qui y sont cachées sont signalées et ne sont jamais suivies.
+
+<ScopeList ids="memory" />

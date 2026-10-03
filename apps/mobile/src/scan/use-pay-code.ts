@@ -17,6 +17,8 @@ export function sendParams(view: Extract<PayCodeView, { status: "send" }>) {
     to: view.to,
     ...(view.amount ? { amount: view.amount } : {}),
     ...(view.asset ? { asset: view.asset } : {}),
+    ...(view.memo ? { memo: view.memo } : {}),
+    ...(view.memoId ? { memoId: view.memoId } : {}),
   };
 }
 

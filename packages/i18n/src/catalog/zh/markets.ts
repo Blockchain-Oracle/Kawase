@@ -26,4 +26,11 @@ export const markets: Catalog["markets"] = {
   yourPositions: "你的仓位",
   marginVenue: "Kawase Margin · Arc 上的 Aave V4",
   perpsMainnet: "做多和做空在 Arc 主网上进行。切换网络即可交易；你的测试网资金保持不变。",
+  watchlist: "自选",
+  watchSignIn: "登录后即可使用自选：在任意代币页面点亮星标。",
+  watchEmptyTitle: "还没有加星标",
+  watchEmptyBody: "在代币页面点按星标，即可在这里关注它。",
+  watchHeld: "已持有",
+  recent: "最近",
+  recentClear: "清除",
 };

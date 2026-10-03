@@ -1,14 +1,17 @@
 // Settings → Data & privacy (cards/automate-safety.md; capability matrix "Thread … delete, export transcript"): how long
 // Kawase keeps conversations (chat and voice are the same threads), export them as a text file, delete them all now,
-// and export the money history (the Activity export). Deleting asks once more; it cannot be undone.
+// and export the money history (the Activity export). Deleting asks once more; it cannot be undone. Whether people who
+// have the person's email can find their @handle (X34, on by default) is switched here too.
 import * as React from "react";
 import { View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { PrivacySettings } from "@kawase/api-client";
 import { TRANSCRIPT_RETENTION_CHOICES } from "@kawase/config";
+import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
+import { Switch } from "@kawase/ui-native/components/ui/switch";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
@@ -36,6 +39,25 @@ export function PrivacyScreen() {
       .then(setSettings)
       .catch(() => toast(t("common.error")));
   }, [t]);
+
+  // Findable by email (X34): on by default; the same switch as on the import page, kept here with the other data choices.
+  const [discoverable, setDiscoverable] = React.useState<boolean>();
+  React.useEffect(() => {
+    void api.discover
+      .get()
+      .then(({ discoverable: on }) => setDiscoverable(on))
+      .catch(() => undefined);
+  }, []);
+  const setFindable = async (on: boolean) => {
+    const before = discoverable;
+    setDiscoverable(on);
+    try {
+      setDiscoverable((await api.discover.set(on)).discoverable);
+    } catch {
+      setDiscoverable(before);
+      toast(t("common.error"));
+    }
+  };
 
   const act = async (work: () => Promise<void>) => {
     setBusy(true);
@@ -93,6 +115,18 @@ export function PrivacyScreen() {
               </View>
             )}
           </Section>
+          {discoverable !== undefined ? (
+            <Section title={t("privacy.findTitle")}>
+              <ListGroup>
+                <ListRow
+                  title={t("importContacts.findable")}
+                  trailing={<Switch checked={discoverable} accessibilityLabel={t("importContacts.findable")} onCheckedChange={(on) => void setFindable(on)} />}
+                  onPress={() => void setFindable(!discoverable)}
+                />
+              </ListGroup>
+              <Text className={cn("text-muted-foreground px-1 text-xs leading-5", TEXT_START)}>{t("importContacts.findableBody")}</Text>
+            </Section>
+          ) : null}
           <Section title={t("privacy.money")}>
             <Button variant="secondary" onPress={() => setExporting(true)}>
               <Text>{t("history.exportTitle")}</Text>

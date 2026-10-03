@@ -16,7 +16,9 @@ export const movePolicy: Catalog["movePolicy"] = {
   FIRST_TIME_RECIPIENT: "এই ঠিকানায় প্রথম পেমেন্ট। পাঠানোর আগে যাচাই করুন।",
   AMOUNT_MISSING: "কত?",
   AMOUNT_INVALID: "এই পরিমাণটি সঠিক নয়।",
-  INSUFFICIENT_BALANCE: "সেখানে যথেষ্ট USDC নেই। আপনার আছে {{balance}}।",
-  INSUFFICIENT_GAS: "নেটওয়ার্ক ফির জন্য Arc-এ প্রায় {{needed}} রাখুন।",
+  INSUFFICIENT_BALANCE: "সেখানে যথেষ্ট {{asset}} নেই। আপনার আছে {{balance}}।",
+  INSUFFICIENT_GAS: "নেটওয়ার্ক ফির জন্য প্রায় {{needed}} রাখুন।",
   QUOTE_UNAVAILABLE: "এখন কোনো রুট এটি নিতে পারছে না।",
+  MOVE_ASSET_UNKNOWN: "Kawase সেখানে {{asset}} খুঁজে পাচ্ছে না। কোন সম্পদের কথা বলছেন?",
+  TOKEN_BLOCKED: "{{symbol}} অন্য একটি টোকেনের নকল করে, তাই Kawase এটি পাঠাবে না।",
 };

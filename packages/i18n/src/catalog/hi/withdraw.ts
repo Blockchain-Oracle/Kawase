@@ -83,4 +83,13 @@ export const withdraw: Catalog["withdraw"] = {
   signInBody: "एक्सचेंज और चेन यहाँ सबके लिए दिखते हैं। पैसे निकालने के लिए आपका खाता चाहिए।",
   cardTo: "{{to}} में निकालें",
   cardOpen: "जाँचें और निकालें",
+  testFaceId: "{{to}} को {{amount}} USDC की टेस्ट राशि भेजें",
+  finishFaceId: "{{to}} में निकालना पूरा करें",
+  testTo: "टेस्ट कहाँ",
+  testDoneTitle: "टेस्ट राशि पहुँच गई",
+  testDoneBody: "देख लें कि {{to}} पर यह दिख रही है, फिर बाकी निकालें।",
+  testContinue: "बाकी निकालें",
+  firstTimeTitle: "यहाँ पहली बार भेज रहे हैं",
+  firstTimeBody: "पहले {{amount}} USDC की थोड़ी टेस्ट राशि भेजें, देखें कि वह पहुँच गई, फिर बाकी निकालें।",
+  sendTest: "पहले {{amount}} USDC की टेस्ट राशि भेजें",
 };

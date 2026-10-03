@@ -100,4 +100,11 @@ export const send: Catalog["send"] = {
   otherChain: "A carteira está em outra rede?",
   otherChainBridge: "Envie USDC para lá por uma ponte: você escolhe a rede e a rota.",
   otherChainConvert: "Só USDC atravessa redes. Converta seu {{asset}} em USDC primeiro.",
+  referenceAdd: "Adicionar uma referência na blockchain",
+  referencePlaceholder: "Número da fatura ou do pedido",
+  referenceHint:
+    "Gravada na blockchain junto com o pagamento, para quem recebe poder identificá-lo. É pública: nada privado.",
+  referenceFromCode: "Referência do código: {{reference}}",
+  referenceRemove: "Remover",
+  referenceLabel: "Referência na blockchain",
 };

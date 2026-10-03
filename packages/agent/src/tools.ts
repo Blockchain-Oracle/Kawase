@@ -238,18 +238,23 @@ export function buildTools(context: AgentContext) {
     }),
     create_payment_request: tool({
       description:
-        "Create a payment request on the active network: an exact amount of any token (USDC by default; EURC, cirBTC or any other the person names) with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically.",
+        "Create a payment request on the active network: an exact amount of any token (USDC by default; EURC, cirBTC or any other the person names) with an optional note, as a link and QR the person can share. Whoever opens the link sees who asks and pays from Kawase or any wallet; it is marked paid automatically. When they say who to ask (\"ask @kemi for 12 dollars\", \"request 20 from Tunde\"), pass from exactly as they named them: someone on Kawase (an @handle, or a saved contact with one) is also asked in the app, in their inbox and by push; anyone else gets the link.",
       inputSchema: z.object({
         amount: z.string().regex(/^\d+(\.\d+)?$/).describe("Digits with a dot"),
         asset: z.string().max(TOKEN_QUERY_MAX).optional().describe("USDC unless the person named another token (EURC, euros, a symbol, a name or an address)"),
         note: z.string().max(NOTE_MAX).optional().describe("What it is for, shown to the payer"),
+        from: z.string().max(RECIPIENT_MAX).optional().describe("Who to ask, exactly as the person named them (@handle or contact name); omit if they did not say"),
       }),
-      execute: async ({ amount, asset, note }) => context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null }),
+      execute: async ({ amount, asset, note, from }) => {
+        // Only someone named in the person's own message is asked in the app (K2); otherwise it is a link only.
+        const payer = from && context.lastUserText.toLowerCase().includes(from.trim().replace(/^@/, "").toLowerCase()) ? from : null;
+        return context.createPaymentRequest({ amount, asset: asset ?? "USDC", note: note ?? null, payer });
+      },
       toModelOutput: ({ output }) => ({
         type: "json",
         value:
           "request" in output
-            ? { status: "created", link: output.request.link, amount: output.request.amount, asset: output.request.asset, note: output.request.note, network: output.request.network }
+            ? { status: "created", link: output.request.link, amount: output.request.amount, asset: output.request.asset, note: output.request.note, network: output.request.network, askedInApp: output.request.payer ? `@${output.request.payer.handle}` : null }
             : output,
       }),
     }),

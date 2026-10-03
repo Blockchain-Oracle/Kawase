@@ -285,6 +285,7 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
           }
         />
         {draft.note ? <DetailRow label={t("send.note")} value={draft.note} /> : null}
+        {draft.memo ? <DetailRow label={t("send.referenceLabel")} value={draft.memo.memoData || shortAddress(draft.memo.memoId)} /> : null}
       </View>
 
       <AllowanceMeter intent={intent} compact={compact ?? false} />

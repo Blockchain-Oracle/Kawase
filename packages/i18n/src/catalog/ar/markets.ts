@@ -27,4 +27,11 @@ export const markets: Catalog["markets"] = {
   marginVenue: "Kawase Margin · Aave V4 على Arc",
   perpsMainnet:
     "الشراء والبيع على المكشوف يعملان على شبكة Arc الرئيسية. بدّل الشبكة للتداول؛ تبقى أموالك التجريبية كما هي.",
+  watchlist: "قائمة المتابعة",
+  watchSignIn: "سجّل الدخول لتحتفظ بقائمة متابعة: ضع نجمة على أي رمز من صفحته.",
+  watchEmptyTitle: "لا شيء بنجمة بعد",
+  watchEmptyBody: "اضغط النجمة في صفحة أي رمز لتتابعه هنا.",
+  watchHeld: "تملك منه",
+  recent: "الأخيرة",
+  recentClear: "مسح",
 };

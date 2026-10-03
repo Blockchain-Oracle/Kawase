@@ -1,0 +1,28 @@
+import type { Catalog } from "../en/index";
+
+export const protect: Catalog["protect"] = {
+  title: "止盈与止损",
+  takeProfit: "止盈",
+  stopLoss: "止损",
+  takeProfitHint: "当 {{market}} 达到时全部平仓",
+  stopLossHint: "当 {{market}} 到达时全部平仓",
+  off: "关闭",
+  save: "保存",
+  saved: "已保存。Kawase 会替你盯着。",
+  needsGrant: "还差一步：允许 Kawase 在你不在时替你平掉这个仓位。它只能平仓，资金回到你自己的钱包。",
+  turnOn: "开启保护",
+  turningOn: "正在开启…",
+  grantPrompt: "允许 Kawase 替你平仓",
+  onUntil: "保护有效至 {{date}}",
+  turnOff: "关闭",
+  armed: "监控中",
+  closing: "平仓中…",
+  unavailable: "无法以公道价格平仓",
+  liquidationNote: "清算价 {{price}}：止损必须设在它之前。",
+  route: "通过 Arc 上的 Uniswap 平仓，资金回到你的钱包。",
+  take_profit_wrong_side: "止盈要设在当前价格之外：多头高于当前价，空头低于当前价。",
+  stop_loss_wrong_side: "止损要设在当前价格之前：多头低于当前价，空头高于当前价。",
+  stop_loss_past_liquidation: "请把止损设在清算之前。",
+  protection_unavailable: "Arc 上的 Uniswap 目前无法平掉这么大的仓位，所以 Kawase 不做这个承诺。",
+  failed: "保存失败。请重试。",
+};

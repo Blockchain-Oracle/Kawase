@@ -1,0 +1,29 @@
+import type { Catalog } from "../en/index";
+
+export const protect: Catalog["protect"] = {
+  title: "ٹیک پرافٹ اور اسٹاپ لاس",
+  takeProfit: "ٹیک پرافٹ",
+  stopLoss: "اسٹاپ لاس",
+  takeProfitHint: "جب {{market}} یہاں پہنچے تو سب بند کریں",
+  stopLossHint: "جب {{market}} یہاں پہنچے تو سب بند کریں",
+  off: "بند",
+  save: "محفوظ کریں",
+  saved: "محفوظ ہو گیا۔ Kawase آپ کے لیے نظر رکھتا ہے۔",
+  needsGrant:
+    "ایک قدم اور: اپنی غیر موجودگی میں Kawase کو یہ پوزیشن بند کرنے دیں۔ یہ اسے صرف بند کر سکتا ہے، آپ کے اپنے والیٹ میں۔",
+  turnOn: "حفاظت آن کریں",
+  turningOn: "آن ہو رہی ہے…",
+  grantPrompt: "Kawase کو آپ کی پوزیشنز بند کرنے دیں",
+  onUntil: "حفاظت {{date}} تک آن ہے",
+  turnOff: "بند کریں",
+  armed: "نظر میں",
+  closing: "بند ہو رہی ہے…",
+  unavailable: "مناسب قیمت پر بند نہیں ہو سکی",
+  liquidationNote: "لیکویڈیشن {{price}} پر: اسٹاپ لاس اس سے پہلے ہونا چاہیے۔",
+  route: "Arc پر Uniswap کے ذریعے بند ہوتی ہے، رقم آپ کے والیٹ میں۔",
+  take_profit_wrong_side: "ٹیک پرافٹ آج کی قیمت سے آگے ہوتا ہے: لانگ میں اوپر، شارٹ میں نیچے۔",
+  stop_loss_wrong_side: "اسٹاپ لاس آج کی قیمت سے پہلے ہوتا ہے: لانگ میں نیچے، شارٹ میں اوپر۔",
+  stop_loss_past_liquidation: "اسٹاپ لاس لیکویڈیشن سے پہلے رکھیں۔",
+  protection_unavailable: "Arc پر Uniswap ابھی اس سائز کی پوزیشن بند نہیں کر سکتا، اس لیے Kawase اس کا وعدہ نہیں کرتا۔",
+  failed: "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+};

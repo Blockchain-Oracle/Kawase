@@ -1,9 +1,12 @@
 // Real entity marks from @kawase/identity through ui-web's Mark (the same component the web app uses). Names map to
 // the identity registry's keys; an unknown name renders the registry's labelled neutral disc, never a stand-in logo.
-import { CHAIN_IDS, arcIdentity, chainKey, providerKey } from "@kawase/identity";
+import { CHAIN_IDS, ENTITIES, arcIdentity, chainKey, providerKey, venueKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-web/components/mark";
 
 const arc = arcIdentity("mainnet");
+/** Arc mainnet tokens with marks, found by symbol (Aave V4's reserves: cirBTC, WETH). */
+const arcToken = (symbol: string) =>
+  ENTITIES.find((entity) => entity.kind === "token" && entity.symbol === symbol)?.id ?? symbol;
 const ENTITY_BY_NAME: Record<string, string> = {
   usdc: arc.usdc,
   eurc: arc.eurc,
@@ -20,6 +23,19 @@ const ENTITY_BY_NAME: Record<string, string> = {
   apple: providerKey("apple"),
   google: providerKey("google"),
   kawase: providerKey("kawase"),
+  aave: providerKey("aave"),
+  aero: providerKey("aero"),
+  defillama: providerKey("defillama"),
+  exa: providerKey("exa"),
+  blockrun: providerKey("blockrun"),
+  cctp: venueKey("cctp"),
+  across: venueKey("across"),
+  relay: venueKey("relay"),
+  lifi: venueKey("lifi"),
+  debridge: venueKey("debridge"),
+  kyberswap: venueKey("kyberswap"),
+  cirbtc: arcToken("cirBTC"),
+  weth: arcToken("WETH"),
 };
 
 const DEFAULT_SIZE = 28;

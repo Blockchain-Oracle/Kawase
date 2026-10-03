@@ -22,6 +22,7 @@ catalog:
   # Model providers for the registry (D29; spike 07 used openai 4.0.82)
   "@ai-sdk/openai": 4.0.83
   "@ai-sdk/anthropic": 4.0.71
+  "@ai-sdk/google": 4.0.87
   # On-chain limits (spikes 04 and 15)
   "@metamask/smart-accounts-kit": 2.0.0
   "@circle-fin/developer-controlled-wallets": 10.8.1
@@ -72,6 +73,7 @@ minimumReleaseAgeExclude:
   - pg@8.23.1
   - '@ai-sdk/anthropic@4.0.71'
   - '@ai-sdk/openai@4.0.83'
+  - '@ai-sdk/google@4.0.87'
   - '@ai-sdk/provider-utils@5.0.53'
   - '@ai-sdk/provider@4.0.21'
   - '@turnkey/core@2.12.1'

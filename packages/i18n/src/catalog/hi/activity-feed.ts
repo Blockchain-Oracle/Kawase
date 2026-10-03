@@ -23,4 +23,9 @@ export const activityFeed: Catalog["activityFeed"] = {
   latestOnly: "ये आपके सबसे नए लेन-देन हैं।",
   network: "नेटवर्क",
   paid: "चुकाया",
+  withdrawnTo: "{{name}} में निकाला गया",
+  withdrawingTo: "{{name}} में निकासी",
+  withdrawSteps: "{{count}} कदम",
+  withdrawCanceled: "रद्द",
+  withdrawUnfinished: "पूरा नहीं हुआ · पूरा करें",
 };

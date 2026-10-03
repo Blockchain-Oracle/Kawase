@@ -99,4 +99,11 @@ export const send: Catalog["send"] = {
   otherChain: "उनका वॉलेट किसी दूसरी चेन पर है?",
   otherChainBridge: "ब्रिज से वहाँ USDC भेजें: चेन और रूट आप चुनें।",
   otherChainConvert: "सिर्फ़ USDC चेन पार करता है। पहले अपना {{asset}} USDC में बदलें।",
+  referenceAdd: "चेन पर रेफ़रेंस जोड़ें",
+  referencePlaceholder: "इनवॉइस या ऑर्डर नंबर",
+  referenceHint:
+    "भुगतान के साथ चेन पर लिखा जाता है, ताकि पाने वाला उसे मिला सके। यह सार्वजनिक है: कुछ भी निजी न लिखें।",
+  referenceFromCode: "कोड से रेफ़रेंस: {{reference}}",
+  referenceRemove: "हटाएँ",
+  referenceLabel: "चेन पर रेफ़रेंस",
 };

@@ -10,7 +10,8 @@ import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import type { ExchangeView, PlaceView, WithdrawAssetInput, WithdrawLegView, WithdrawPlanInput, WithdrawPlanView } from "@kawase/api-client";
+import type { ExchangeView, PlaceView, WithdrawalStepView, WithdrawAssetInput, WithdrawLegView, WithdrawPlanInput, WithdrawPlanView } from "@kawase/api-client";
+import { WITHDRAW_TEST_AMOUNT } from "@kawase/config";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { ProcessTimeline, type TimelineStep } from "@kawase/ui-native/components/process-timeline";
 import { ReceiptCard } from "@kawase/ui-native/components/receipt-card";
@@ -34,7 +35,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useDestinationName, useLegRoute, useStepProblem, useStepTitle, useWithdrawReason } from "@/withdraw/copy";
 import { DestinationPicker, type DestinationInput } from "@/withdraw/destination-picker";
-import { useWithdrawRun, type RunStep } from "@/withdraw/use-withdraw-run";
+import { useWithdrawRun } from "@/withdraw/use-withdraw-run";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
@@ -44,7 +45,7 @@ const PLAN_DEBOUNCE_MS = 350;
 const DECIMAL = /^\d*\.?\d*$/;
 const USDC_DECIMALS = 6;
 
-export type WithdrawPrefill = { assets: WithdrawAssetInput[]; everything: boolean; destination: DestinationInput };
+export type WithdrawPrefill = { assets: WithdrawAssetInput[]; everything: boolean; destination: DestinationInput; resume?: string | undefined };
 
 type Line = { asset: string; amount: string | null; as: "itself" | "cash" | null };
 
@@ -125,7 +126,14 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   }, [account, everything, input, network, t]);
 
   const where = destination.place || destination.exchange || destination.chain ? destinationName(plan?.destination) : "";
-  const run = useWithdrawRun(plan, plan?.destination?.address ? { chainKey: plan.destination.chain.key, address: plan.destination.address } : undefined);
+  const run = useWithdrawRun();
+  const { load } = run;
+  // Opened from Activity or a restart ("Finish it"): the server's record of where it stands.
+  React.useEffect(() => {
+    if (!prefill.resume || !account) return;
+    void load(prefill.resume).catch(() => toast(t("withdraw.planFailed")));
+  }, [prefill.resume, account, load, t]);
+  const [testing, setTesting] = React.useState(false);
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
   // A line is found by its token (an address, or the symbol it was asked by), never by position: the plan leaves out
@@ -138,38 +146,56 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   const blockedLine = legs.some((leg) => leg.status === "blocked");
   const ready = Boolean(plan && !plan.blocking && legs.length > 0 && !blockedLine && plan.destination?.address);
   const started = run.phase !== "idle";
+  const testAmount = WITHDRAW_TEST_AMOUNT[network];
 
-  const confirm = async () => {
-    if (!plan) return;
-    const outcome = await run.start(t("withdraw.faceId", { count: legs.length, to: where }), t("common.cancel"));
+  const said = (outcome: string) => {
     if (outcome === "declined") toast(t("send.faceIdCancelled"));
     if (outcome === "unavailable") toast(t("send.approvalUnavailable"));
-    if (outcome === "done") {
-      void confirmedFeedback(`withdraw:${plan.legs.map((leg) => leg.token.address).join(",")}:${Date.now()}`);
-      const target = plan.destination;
-      if (target?.address)
-        void api.places
-          .create({ kind: target.kind, brand: target.brand, chain: target.chain.key, address: target.address, label: target.label })
-          .then(({ place }) => setPlaces((current) => [place, ...current.filter((entry) => entry.id !== place.id)]))
-          .catch(() => undefined);
-    }
+    if (outcome === "failed") toast(t("withdraw.planFailed"));
+  };
+  const confirm = async () => {
+    if (!plan) return;
+    setTesting(false);
+    const outcome = await run.start(input, t("withdraw.faceId", { count: legs.length, to: where }), t("common.cancel"));
+    said(outcome);
+    if (outcome === "done") void confirmedFeedback(`withdraw:${plan.legs.map((leg) => leg.token.address).join(",")}:${Date.now()}`);
+  };
+  /** A first-time destination: a small USDC test goes first (money-out.md "What if"), then the rest. */
+  const sendTest = async () => {
+    if (!plan) return;
+    setTesting(true);
+    const test: WithdrawPlanInput = { ...input, everything: undefined, assets: [{ asset: "USDC", amount: testAmount, as: "itself" }] };
+    const outcome = await run.start(test, t("withdraw.testFaceId", { amount: testAmount, to: where }), t("common.cancel"));
+    said(outcome);
+  };
+  const finish = async () => {
+    const outcome = await run.resume(t("withdraw.finishFaceId", { to: where }), t("common.cancel"));
+    said(outcome);
+  };
+  const afterTest = () => {
+    run.reset();
+    setTesting(false);
+    // The plan again: the destination is no longer first-time.
+    setLines((current) => [...current]);
   };
 
-  const stepAmount = (step: RunStep) => {
-    const units = step.moved ?? (step.amount === "pool" ? undefined : step.amount);
-    return units === undefined ? step.token.symbol : tokenAmount(units.toString(), step.token.decimals, step.token.symbol, locale);
+  const record = run.withdrawal;
+  const recordName = record ? destinationName(record.destination) : where;
+  const stepAmount = (step: WithdrawalStepView) => {
+    const units = step.moved ?? step.amount;
+    return units === null ? step.token.symbol : tokenAmount(units, step.token.decimals, step.token.symbol, locale);
   };
-  const chainName = plan?.destination?.chain.name ?? "";
-  const timeline: TimelineStep[] = run.steps.map((step) => ({
+  const chainName = record?.destination.chain.name ?? plan?.destination?.chain.name ?? "";
+  const timeline: TimelineStep[] = (record?.steps ?? []).map((step) => ({
     id: step.id,
-    title: stepTitle(step, stepAmount(step), where, chainName),
+    title: stepTitle(step, stepAmount(step), recordName, chainName),
     description:
       step.state === "failed"
         ? stepProblem(step, network)
         : step.arriving
           ? t("withdraw.arriving", { chain: chainName })
-          : step.kind === "swap" && step.received !== undefined
-            ? t("withdraw.converted", { amount: tokenAmount(step.received.toString(), USDC_DECIMALS, "USDC", locale) })
+          : step.kind === "swap" && step.received
+            ? t("withdraw.converted", { amount: tokenAmount(step.received, USDC_DECIMALS, "USDC", locale) })
             : undefined,
     state: step.state,
     trailing: step.explorerUrl ? (
@@ -202,23 +228,32 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
         ) : started ? (
           <View className="gap-5">
             <View className="gap-1">
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("withdraw.toLabel")}</Text>
-              <Text className={cn("text-foreground text-xl font-semibold", TEXT_START)}>{where}</Text>
+              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{testing ? t("withdraw.testTo") : t("withdraw.toLabel")}</Text>
+              <Text className={cn("text-foreground text-xl font-semibold", TEXT_START)}>{recordName}</Text>
             </View>
             <ProcessTimeline steps={timeline} spinnerColor={colors.foreground} />
-            {run.phase === "stopped" ? (
-              <Button onPress={() => void confirm()}>
+            {run.phase === "stopped" && record ? (
+              <Button onPress={() => void finish()}>
                 <Text>{t("withdraw.finishIt")}</Text>
               </Button>
             ) : null}
-            {run.phase === "done" ? (
+            {run.phase === "done" && testing ? (
+              <View className="bg-card border-border gap-3 rounded-3xl border p-4">
+                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("withdraw.testDoneTitle")}</Text>
+                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.testDoneBody", { to: recordName })}</Text>
+                <Button onPress={afterTest}>
+                  <Text>{t("withdraw.testContinue")}</Text>
+                </Button>
+              </View>
+            ) : null}
+            {run.phase === "done" && !testing ? (
               <ReceiptCard
                 title={t("withdraw.doneTitle")}
                 badge={testnet ? t("network.arcTestnet") : t("network.arc")}
                 details={[
-                  { label: t("withdraw.toLabel"), value: where, isBold: true },
-                  ...run.steps.map((step) => ({ label: stepTitle(step, stepAmount(step), where, chainName), value: t("withdraw.stepDone") })),
-                  ...(plan?.totalUsd ? [{ label: t("withdraw.total"), value: fiat(plan.totalUsd, fx, locale), isBold: true }] : []),
+                  { label: t("withdraw.toLabel"), value: recordName, isBold: true },
+                  ...(record?.steps ?? []).map((step) => ({ label: stepTitle(step, stepAmount(step), recordName, chainName), value: t("withdraw.stepDone") })),
+                  ...(record?.totalUsd ? [{ label: t("withdraw.total"), value: fiat(record.totalUsd, fx, locale), isBold: true }] : []),
                 ]}
                 buttonText={t("common.done")}
                 onAction={leave}
@@ -289,6 +324,15 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
                   </View>
                 ) : null}
                 {blockedLine ? <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("withdraw.removeBlocked")}</Text> : null}
+                {ready && plan?.destination?.firstTime ? (
+                  <View className="bg-muted gap-2 rounded-3xl p-4">
+                    <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("withdraw.firstTimeTitle")}</Text>
+                    <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.firstTimeBody", { amount: testAmount })}</Text>
+                    <Button variant="secondary" onPress={() => void sendTest()}>
+                      <Text>{t("withdraw.sendTest", { amount: testAmount })}</Text>
+                    </Button>
+                  </View>
+                ) : null}
                 <SlideToConfirm disabled={!ready || planning} resetKey={JSON.stringify(input)} pendingLabel={t("withdraw.sending")} rtl={rtl} onHaptic={slideHaptic} onConfirm={() => void confirm()}>
                   {t("withdraw.slide")}
                 </SlideToConfirm>

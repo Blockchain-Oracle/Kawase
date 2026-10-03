@@ -23,4 +23,9 @@ export const activityFeed: Catalog["activityFeed"] = {
   latestOnly: "这是你最近的变动。",
   network: "网络",
   paid: "支付",
+  withdrawnTo: "已提现到 {{name}}",
+  withdrawingTo: "提现到 {{name}}",
+  withdrawSteps: "共 {{count}} 步",
+  withdrawCanceled: "已取消",
+  withdrawUnfinished: "未完成 · 继续完成",
 };

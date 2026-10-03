@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "یہ تقسیم پڑھی نہیں جا سکی۔",
   invalid: "حصے بل کے برابر نہیں بنتے۔ تقسیم کے فارم میں طے کریں۔",
   openForm: "تقسیم کا فارم کھولیں",
+  askedInApp: "Kawase پر مانگا گیا",
 };

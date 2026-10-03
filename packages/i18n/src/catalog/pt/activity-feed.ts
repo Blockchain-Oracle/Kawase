@@ -23,4 +23,9 @@ export const activityFeed: Catalog["activityFeed"] = {
   latestOnly: "Estas são suas movimentações mais recentes.",
   network: "Rede",
   paid: "Pago",
+  withdrawnTo: "Sacado para {{name}}",
+  withdrawingTo: "Saque para {{name}}",
+  withdrawSteps: "{{count}} etapa(s)",
+  withdrawCanceled: "Cancelado",
+  withdrawUnfinished: "Não concluído · Concluir",
 };

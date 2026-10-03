@@ -53,7 +53,7 @@ import type {
   NotificationSettings,
   NotificationSettingsChange,
 } from "./types";
-import type { Candle, ChartRange, MarketListView, MarketSegment, PortfolioView, TokenDetailView, TokenSearchResult } from "./assets";
+import type { Candle, ChartRange, MarketListView, MarketSegment, PortfolioView, TokenDetailView, TokenSearchResult, TokenTradesView, WatchRow } from "./assets";
 import type { ClientEvent } from "./client-events";
 import type {
   AgentWalletSettings,
@@ -293,10 +293,14 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ range: ChartRange; candles: Candle[] }>("GET", `/tokens/${chainId}/${address}/chart?range=${range}`),
       search: (query: string, network?: NetworkId) =>
         call<{ results: TokenSearchResult[] }>("GET", `/tokens/search?q=${encodeURIComponent(query)}${network ? `&network=${network}` : ""}`),
+      /** The person's own: whether the token is starred, and their trades' profit and loss. */
+      mine: (chainId: number, address: string) => call<{ watched: boolean; trades: TokenTradesView | null }>("GET", `/tokens/${chainId}/${address}/mine`),
+      watch: (chainId: number, address: string, on: boolean) => call<{ watched: boolean }>("POST", `/tokens/${chainId}/${address}/watch`, { on }),
     },
     markets: {
       list: (segment: MarketSegment, network?: NetworkId) =>
         call<{ market: MarketListView }>("GET", `/markets?segment=${segment}${network ? `&network=${network}` : ""}`),
+      watchlist: (network?: NetworkId) => call<{ rows: WatchRow[] }>("GET", `/markets/watchlist${network ? `?network=${network}` : ""}`),
     },
     swaps: {
       /** A swap with a fresh quote; naming one currency is enough when there are two. */
@@ -378,7 +382,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
 
     /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
     activityFeed: {
-      list: (network: NetworkId) => call<FeedPage>("GET", `/activity?network=${network}`),
+      list: (network: NetworkId, token?: string) => call<FeedPage>("GET", `/activity?network=${network}${token ? `&token=${token}` : ""}`),
       runWhy: (runId: string) => call<{ why: WhyView }>("GET", `/activity/why/run/${runId}`),
     } satisfies ActivityFeedApi,
 
@@ -401,6 +405,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       create: (input: PaymentRequestInput) => call<{ request: PaymentRequest }>("POST", "/requests", input),
       get: (id: string) => call<{ request: PaymentRequest }>("GET", `/requests/${id}`),
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
+      /** Ask a Kawase user for an open request in the app (an @handle or a contact's name); the link still works. */
+      ask: (id: string, payer: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/ask`, { payer }),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
     },

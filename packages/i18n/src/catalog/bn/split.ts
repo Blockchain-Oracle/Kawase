@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "এই ভাগটি পড়া গেল না।",
   invalid: "ভাগগুলো যোগ করে বিলের সমান হয় না। ভাগের ফর্মে ঠিক করুন।",
   openForm: "ভাগের ফর্ম খুলুন",
+  askedInApp: "Kawase-এ চাওয়া হয়েছে",
 };

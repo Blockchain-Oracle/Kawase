@@ -1,5 +1,6 @@
 // One open long/short as a row (Home's positions, the Long/Short screen, the chat card): the asset's mark, side and
-// leverage, P&L in mint or red with its sign (never colour alone), and the liquidation price. Opens the position.
+// leverage, P&L in mint or red with its sign (never colour alone), the liquidation price and any take-profit or
+// stop-loss. Opens the position.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -29,7 +30,13 @@ export function PositionRow({ position }: { position: MarginPositionView }) {
           {`${position.market} · ${t(`margin.${position.side}`)} ${format.leverage(position.leverage)}`}
         </Text>
         <Text numberOfLines={1} className={cn("text-muted-foreground text-xs", TEXT_START)}>
-          {`${t("margin.liquidation")} ${format.price(position.liquidationPrice)}`}
+          {[
+            `${t("margin.liquidation")} ${format.price(position.liquidationPrice)}`,
+            position.takeProfit ? `${t("protect.takeProfit")} ${format.price(position.takeProfit)}` : null,
+            position.stopLoss ? `${t("protect.stopLoss")} ${format.price(position.stopLoss)}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </Text>
       </View>
       <View className="items-end">

@@ -238,9 +238,9 @@ export const ENTITIES: readonly Entity[] = [
 
   // Registered now, marks later (Stage 6 routes and names).
   { id: venueKey("cctp"), kind: "venue", name: "Circle CCTP", brandColor: "#00E599", shape: "uncontained", marks: {} },
-  { id: venueKey("lifi"), kind: "venue", name: "LI.FI", brandColor: "#5F2FEA", shape: "uncontained", marks: {} },
+  { id: venueKey("lifi"), kind: "venue", name: "LI.FI", brandColor: "#F7C2FF", shape: "tile", marks: { color: "lifi", mono: "lifi-mono" } },
   { id: venueKey("across"), kind: "venue", name: "Across", brandColor: "#6CF9D8", shape: "disc", marks: { color: "across", mono: "across-mono" } },
-  { id: venueKey("relay"), kind: "venue", name: "Relay", brandColor: "#7C3AED", shape: "uncontained", marks: {} },
+  { id: venueKey("relay"), kind: "venue", name: "Relay", brandColor: "#4615C8", shape: "tile", marks: { color: "relay", mono: "relay-mono" } },
   { id: venueKey("debridge"), kind: "venue", name: "deBridge", brandColor: "#FBFF3A", shape: "disc", marks: { color: "debridge", mono: "debridge-mono" } },
   { id: venueKey("kyberswap"), kind: "venue", name: "KyberSwap", brandColor: "#31CB9E", shape: "disc", marks: { color: "kyberswap", mono: "kyberswap-mono" } },
   { id: venueKey("socket"), kind: "venue", name: "Socket", brandColor: "#FF6B6B", shape: "uncontained", marks: {} },

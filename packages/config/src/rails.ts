@@ -26,6 +26,11 @@ export const MARGIN = {
   /** Shown and quoted; the router calldata is built tighter (build re-prices). */
   slippageBps: 50,
   buildSlippageBps: 25,
+  /**
+   * A batch's legs move the same thin pools one after another (a WETH short's four legs needed ~200 bps on 10-02);
+   * when the simulation shows a leg short of its minimum, the order is planned again at this (once) and shown first.
+   */
+  maxSlippageBps: 400,
   /** A loop step worth less than this (USD, 8 decimals = 1 cent) is not worth its gas. */
   dustValue: 1_000_000n,
   /** Interest accrues between the read and the block: a full repay approves this much over the debt read. */
@@ -61,6 +66,50 @@ export const MARGIN_MARKET_ALIASES = {
  * Earn and borrow on Aave V4 directly (earn-borrow.md): supply through the Main Spoke by reserve id (not the shallow
  * ERC-4626 wrapper, G22), and borrow against any reserve that counts as collateral. Health in basis points of 1.0.
  */
+/**
+ * Margin protection (trade.md "Long / short" → take-profit, stop-loss, alerts): closes Kawase runs for the person
+ * under grants signed once, through Uniswap v3 on Arc (its router's recipient can be pinned to the wallet; addresses
+ * from Uniswap's sdk-core ARC_ADDRESSES, pools read live 10-02: cirBTC/USDC 0.01% deep, EURC/USDC 0.05%, WETH/USDC
+ * 0.3% thin), and the account-health alerts both margin and borrowing share.
+ */
+export const MARGIN_PROTECTION = {
+  uniswap: {
+    factory: "0xf0db7b58379503491d857db50ac9ece64c653918",
+    router: "0x53bf6b0684ec7ef91e1387da3d1a1769bc5a6f77",
+    quoter: "0x7dfd4f31be6814d2906bde155c3e1b146eac1468",
+  },
+  feeTiers: [100, 500, 3000, 10000],
+  /** A take-profit closes only when the executable price is within this of the oracle (and still past the target). */
+  takeProfitSlippageBps: 100,
+  /** A stop-loss accepts more, since waiting costs more; worse than this and Kawase alerts instead of selling. */
+  stopLossSlippageBps: 300,
+  /** How long the grants live once signed. */
+  grantDays: 180,
+  tickMs: 30_000,
+  healthTickMs: 60_000,
+  /** Account health below these is told: a warning, then danger (liquidation starts at 1). */
+  warnHealthBps: 15_000,
+  dangerHealthBps: 12_000,
+  /** Targets offered on the position page, as steps from the price now: a take-profit past it, a stop-loss before it. */
+  takeProfitSteps: [0.1, 0.25],
+  stopLossSteps: [0.05, 0.1],
+} as const;
+
+/** Cross-chain moves of any asset (routes.md): slippage asked of aggregators, and room kept for gas on another chain. */
+export const CROSSCHAIN = {
+  /** USDC and other stables. */
+  stableSlippageBps: 50,
+  /** Anything with a swap in it (WETH, cirBTC, a meme). */
+  volatileSlippageBps: 100,
+  /** A move in that starts with a transaction on another chain keeps this share over the quoted gas. */
+  sourceGasHeadroomPercent: 150,
+  /** Gas a source-chain bridge transaction is assumed to take when the chain will not estimate it. */
+  sourceGasFallback: 300_000n,
+  /** Gas the Arc batch is drafted at, per provider (an aggregator swaps inside its call), and what a swap first adds. */
+  batchGas: { cctp: 400_000n, across: 400_000n, relay: 400_000n, lifi: 1_000_000n, debridge: 800_000n },
+  convertGas: 700_000n,
+} as const;
+
 export const LEND = {
   /** A borrow that would leave the account below this is refused; between it and `warnHealthBps` it warns. */
   minBorrowHealthBps: 12_500,

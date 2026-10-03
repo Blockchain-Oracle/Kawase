@@ -1,7 +1,8 @@
 // Everyday money (A5-2): scan to pay, split a bill, open any intent by its id, and contacts from the device.
 // Client-safe shapes shared by the api, the agent and the app.
 import type { AgentNetwork } from "./agent-types";
-import type { PaymentRequest, PublicPaymentRequest, SendIntent, SwapIntent, BridgeIntent, EarnIntent } from "./types";
+import type { OnrampOrderView } from "./rails";
+import type { AutomationView, PaymentRequest, PublicPaymentRequest, RequestToken, SendIntent, SwapIntent, BridgeIntent, EarnIntent } from "./types";
 
 /** What a scanned or pasted code means, and where it goes. */
 export type PayCodeView =
@@ -14,6 +15,9 @@ export type PayCodeView =
       amount: string | null;
       /** "USDC", "EURC", or any token's address on this network (R1); null when the code named none. */
       asset: string | null;
+      /** The reference the code asks the payment to carry on chain (Arc Memo), when it has one. */
+      memo?: string | null;
+      memoId?: string | null;
     }
   | {
       status: "request";
@@ -37,11 +41,13 @@ export type PayCodeView =
     };
 
 /** One person in a split: who, and their share (decimal). */
-export type SplitShareInput = { name: string; amount?: string | undefined };
+/** `ask: false` keeps a share to its link only (the agent sets it for a name that is not in the person's own words). */
+export type SplitShareInput = { name: string; amount?: string | undefined; ask?: boolean | undefined };
 export type SplitInput = {
   /** What the bill was for (shown to every payer). */
   title: string;
-  asset: "USDC" | "EURC";
+  /** "USDC", "EURC", a verified symbol or any token's address on the active network (R1). */
+  asset: string;
   /** The whole bill, decimal; equal shares unless each share has its own amount. */
   total: string;
   /** Whether the person who split it pays a share too (it is never requested from them). */
@@ -53,6 +59,8 @@ export type SplitShare = {
   name: string;
   /** The contact or @handle it matched, when it did. */
   handle: string | null;
+  /** They are on Kawase and were asked in the app (inbox and push); the link is for everyone else. */
+  askedInApp: boolean;
   amount: string;
   request: PaymentRequest;
 };
@@ -61,7 +69,9 @@ export type SplitView = {
   id: string;
   network: AgentNetwork;
   title: string;
-  asset: "USDC" | "EURC";
+  /** The token's symbol; `assetToken` has its address and decimals (any asset, R1). */
+  asset: string;
+  assetToken: RequestToken;
   /** Base units. */
   total: string;
   myShare: string | null;
@@ -79,7 +89,15 @@ export type IntentLookup =
   | { kind: "swap"; network: AgentNetwork; threadId: string | null; intent: SwapIntent }
   | { kind: "bridge"; network: AgentNetwork; threadId: string | null; intent: BridgeIntent }
   | { kind: "earn"; network: AgentNetwork; threadId: string | null; intent: EarnIntent }
-  | { kind: "margin"; network: AgentNetwork; threadId: string | null; positionId: string | null };
+  | { kind: "margin"; network: AgentNetwork; threadId: string | null; positionId: string | null }
+  // Every other id a notification can carry lands on its own screen (A5-3): an automation's live card, a run's story,
+  // an invoice, a Buy order, a split or one of the person's requests.
+  | { kind: "automation"; network: AgentNetwork; threadId: string | null; automation: AutomationView }
+  | { kind: "automation_run"; network: AgentNetwork; threadId: null; runId: string }
+  | { kind: "invoice"; network: AgentNetwork; threadId: null; invoiceId: string }
+  | { kind: "onramp"; network: AgentNetwork; threadId: null; order: OnrampOrderView }
+  | { kind: "split"; network: AgentNetwork; threadId: null; splitId: string }
+  | { kind: "request"; network: AgentNetwork; threadId: null; requestId: string };
 
 /** A device contact the person chose to check, as a hash of each email (the email never leaves the phone). */
 export type DiscoverInput = { contacts: { ref: string; emailHashes: string[] }[] };

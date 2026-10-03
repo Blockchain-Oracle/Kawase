@@ -55,6 +55,7 @@ import type {
   BuyProposalOutput,
   ProposeCrossChainOutput,
   CompareYieldOutput,
+  ProtectPositionOutput,
   ProposeLendOutput,
   WithdrawProposalOutput,
 } from "@kawase/api-client";
@@ -85,7 +86,7 @@ import { AutomationCard } from "./automation-card";
 import { BridgeCard } from "./bridge-card";
 import { EarnCard, EarnOverviewCard } from "./earn-card";
 import { SwapCard } from "./swap-card";
-import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard } from "./margin-card";
+import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard, ProtectCard } from "./margin-card";
 import { OnrampBuyCard } from "./buy-card";
 import { MoveCard } from "./move-card";
 import { LendOrderCard, YieldOptionsCard } from "./lend-card";
@@ -717,6 +718,8 @@ export function ToolCard({
       return (part.output as Partial<WithdrawProposalOutput>).withdraw ? <WithdrawCard output={part.output as WithdrawProposalOutput} /> : null;
     case "get_positions":
       return (part.output as Partial<MarginPositionsOutput>).positions ? <MarginPositionsCard output={part.output as MarginPositionsOutput} /> : null;
+    case "protect_position":
+      return (part.output as Partial<ProtectPositionOutput>).network ? <ProtectCard output={part.output as ProtectPositionOutput} /> : null;
     case "compare_yield":
       return (part.output as Partial<CompareYieldOutput>).options ? <YieldOptionsCard output={part.output as CompareYieldOutput} /> : null;
     case "propose_supply":
