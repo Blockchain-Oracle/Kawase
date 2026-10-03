@@ -4,7 +4,7 @@
 // Where a checklist line needs a person (an Apple Pay sheet, a web wallet, a Kraken account, a phone's push), the step
 // does every part the api can and says what is left to do by hand.
 import type { Address, Hex } from "viem";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits, keccak256, parseUnits } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import type {
@@ -13,6 +13,10 @@ import type {
   LendIntent,
   MarginIntent,
   MarginPositionView,
+  MarginProtectionGrantRequest,
+  MarginProtectionOff,
+  MarginProtectionResult,
+  MarginProtectionView,
   PolicyResultView,
   SwapIntent,
   UnsignedTransaction,
@@ -303,10 +307,57 @@ const borrowRepay: Step = {
   },
 };
 
+const PRICE_SCALE = 1e8;
+const PROTECT_GRANTS = 6;
+const TAKE_PROFIT_STEP = 0.9;
+const STOP_LOSS_STEP = 1.05;
+
+/**
+ * Take-profit and stop-loss on an open short (H3, H4): targets saved, the position's six grants signed with one yes and
+ * on (the position watched); then off, which hands back their on-chain disable for the wallet to sign (its own
+ * transaction, or relayed when it can't pay the fee), confirmed on Arc.
+ */
+async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
+  const mark = Number(position.markPrice) / PRICE_SCALE;
+  const liquidation = position.liquidationPrice ? Number(position.liquidationPrice) / PRICE_SCALE : Number.POSITIVE_INFINITY;
+  // A short: the take-profit below the price, the stop-loss above it and short of liquidation.
+  const targets = { takeProfit: (mark * TAKE_PROFIT_STEP).toFixed(2), stopLoss: Math.min(mark * STOP_LOSS_STEP, (mark + liquidation) / 2).toFixed(2) };
+  let saved: MarginProtectionResult;
+  try {
+    saved = await ctx.api.put<MarginProtectionResult>(`/margin/positions/${position.id}/protection`, targets);
+  } catch (error) {
+    if (error instanceof ApiError && String(error.body.type ?? "").endsWith("/protection_unavailable")) {
+      ctx.note("protection: Uniswap on Arc can't close this size right now, so it isn't offered (nothing to sign)");
+      return;
+    }
+    throw error;
+  }
+  check(saved.needsGrant, "targets saved without asking for the position's grants");
+  const request = await ctx.api.post<MarginProtectionGrantRequest>("/margin/protection/grant", { positionId: position.id });
+  check(request.grants.length === PROTECT_GRANTS, `expected ${PROTECT_GRANTS} grants, got ${request.grants.length}`);
+  const signatures: { grantId: string; signature: Hex }[] = [];
+  for (const grant of request.grants) signatures.push({ grantId: grant.grantId, signature: await signTypedData(ctx, grant.typedData) });
+  const on = await ctx.api.post<MarginProtectionView>("/margin/protection/grant/activate", { signatures });
+  check(on.grant === "active", `protection reads ${on.grant} after signing`);
+  const watched = (await ctx.api.get<{ positions: MarginPositionView[] }>("/margin/positions")).positions.find((p) => p.id === position.id);
+  check(watched?.protection === "armed", `the position reads ${watched?.protection} with protection on`);
+  ctx.note(`protection on until ${on.expiresAt}: take-profit $${targets.takeProfit}, stop-loss $${targets.stopLoss}, watched`);
+  const off = await ctx.api.del<MarginProtectionOff>(`/margin/protection/grant?positionId=${position.id}`);
+  check(off.revoke, "turning protection off handed back no on-chain disable");
+  const sent =
+    "relayed" in off.revoke
+      ? await ctx.api.post<{ tx: Hex; status: string }>("/margin/protection/disable", { requestId: off.revoke.requestId, signature: await signTypedData(ctx, off.revoke.typedData) })
+      : await ctx.api.post<{ tx: Hex; status: string }>("/wallet/transactions/submit", { requestId: off.revoke.requestId, signedTransaction: await signTransaction(ctx, off.revoke.transaction) });
+  ctx.tx(`disable the protection grants${"relayed" in off.revoke ? " (relayed)" : ""}`, sent.tx);
+  check(sent.status === "confirmed", `the on-chain disable ended ${sent.status}`);
+  const after = await ctx.api.get<MarginProtectionView>(`/margin/protection?positionId=${position.id}`);
+  check(after.grant === "none", `protection reads ${after.grant} after turning it off`);
+}
+
 const shortWeth: Step = {
   id: "trade.short-weth",
   card: "trade",
-  title: "Short WETH 2× with $5: liquidation price on the ticket → position with health → close all",
+  title: "Short WETH 2× with $5: liquidation price on the ticket → position with health → TP/SL on and off (grants disabled on Arc) → close all",
   worstCaseUsd: 2,
   async run(ctx) {
     const { intent } = await ctx.api.post<{ intent: MarginIntent }>("/margin/orders", { market: "WETH", side: "short", margin: "5", leverage: 2 });
@@ -317,6 +368,7 @@ const shortWeth: Step = {
     const position = positions.find((p) => p.status === "open" && p.side === "short");
     check(position, `no open short after ${opened.id}`);
     ctx.note(`position ${position.id}: ${JSON.stringify({ health: (position as unknown as { health?: number }).health }).slice(0, 80)}`);
+    await protectAndRelease(ctx, position);
     const close = (await ctx.api.post<{ intent: MarginIntent }>("/margin/orders", { action: "close", positionId: position.id, fraction: 1 })).intent;
     await drive(ctx, "/margin/orders", close as unknown as Intent, "close the WETH short");
     const after = (await ctx.api.get<{ positions: MarginPositionView[] }>("/margin/positions")).positions.find((p) => p.id === position.id);
@@ -521,19 +573,74 @@ const aaveCleanup: Step = {
   },
 };
 
-type WithdrawalView = { id: string; status: string; steps: { id: string; kind: string; state: string; failure: string | null; explorerUrl: string | null }[] };
-type NextView = { withdrawal: WithdrawalView; step: { id: string; kind: string } | null; intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null; brake: boolean } | null };
+type WithdrawalView = { id: string; status: string; steps: { id: string; kind: string; state: string; arriving: boolean; failure: string | null; explorerUrl: string | null; blocking: PolicyResultView | null }[] };
+type NextView = {
+  withdrawal: WithdrawalView;
+  step: { id: string; kind: string } | null;
+  intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null; brake: boolean } | null;
+  /** Every step left is signed by the wallet on Arc: they go as one EIP-7702 batch (`/withdrawals/:id/batch`). */
+  batch: { steps: string[] } | null;
+};
+type BatchAnswer = { status: "sign"; withdrawal: WithdrawalView; approvalId: string; transaction: UnsignedTransaction } | { status: "executing" | "changed" | "stopped" | "steps"; withdrawal: WithdrawalView };
 
-/** Runs a withdrawal the way the app does: each step's intent approved and signed in turn until none is left. */
+const stepLine = (withdrawal: WithdrawalView) => withdrawal.steps.map((step) => `${step.id}:${step.kind} ${step.state}${step.failure ? ` (${step.failure})` : ""}${step.blocking ? ` [${step.blocking.code}]` : ""}`).join(", ");
+
+/**
+ * Every step left as one transaction, the way the app does it (use-withdraw-run.ts): the server builds it, the wallet
+ * signs it once, it is broadcast once; then the last step is followed until it lands (a bridge's burn: until it left,
+ * in a dry run, since its delivery happens on a chain the shadow never sees). Returns whether the walk may go on.
+ */
+async function runWithdrawalBatch(ctx: Ctx, id: string, steps: string[], what: string): Promise<"done" | "left" | "changed"> {
+  // The brake (a first-time destination) was on the review the person confirmed: the run's override, as the app's.
+  const answer = await ctx.api.post<BatchAnswer>(`/withdrawals/${id}/batch`, { override: true });
+  if (answer.status === "changed" || answer.status === "steps") return "changed";
+  if (answer.status !== "sign") return fail(`${what}: the batch stopped before signing (${stepLine(answer.withdrawal)})`);
+  const signed = await signTransaction(ctx, answer.transaction);
+  const submitted = await ctx.api.post<BatchAnswer>(`/withdrawals/${id}/batch/signature`, { approvalId: answer.approvalId, signedTransaction: signed });
+  const hash = keccak256(signed);
+  ctx.tx(`${what}: one batch of ${steps.length} steps`, hash);
+  check(submitted.status === "executing", `${what}: the signed batch reads ${submitted.status} (${stepLine(submitted.withdrawal)})`);
+  const lastId = steps.at(-1)!;
+  const bridge = submitted.withdrawal.steps.find((step) => step.id === lastId)?.kind === "bridge";
+  const read = async () => (await ctx.api.get<{ withdrawal: WithdrawalView }>(`/withdrawals/${id}`)).withdrawal;
+  const settled = (withdrawal: WithdrawalView) => {
+    const last = withdrawal.steps.find((step) => step.id === lastId);
+    return !last || last.state === "done" || last.state === "failed" || (bridge && ctx.mode === "dry" && last.arriving);
+  };
+  const after = await waitFor(`${what} batch`, read, settled, bridge && ctx.mode === "live" ? BRIDGE_WAIT_MS : SWAP_WAIT_MS);
+  const last = after.steps.find((step) => step.id === lastId);
+  if (last?.state === "failed") {
+    const reverted = ctx.shadowError?.(hash);
+    if (reverted && MIN_OUT_REVERT.test(reverted)) throw new StepSkipped(`dry-run drift: ${what} reverted "${reverted}" on the shadow state after this run's own trades moved a pool the quote did not see`);
+    fail(`${what}: the batch's last step failed (${stepLine(after)})${reverted ? `: ${reverted}` : ""}`);
+  }
+  if (bridge && ctx.mode === "dry") {
+    ctx.note(`${what}: the batch (conversions, transfers and the burn) simulated on mainnet state; the delivery on the other chain is not checkable in a dry run`);
+    return "left";
+  }
+  return "done";
+}
+
+/** Runs a withdrawal the way the app does: one batch where every step left can share a transaction, else each step's intent approved and signed in turn, until none is left. */
 async function runWithdrawal(ctx: Ctx, body: Record<string, unknown>, what: string) {
   const plan = await ctx.api.post<{ plan: { legs: { token: { symbol: string }; amountText: string; as: string; steps: string[]; status: string; reason: string | null }[]; blocking: string | null; totalUsd: number } }>("/withdrawals/plan", body);
   ctx.note(`${what}: ${plan.plan.legs.map((l) => `${l.amountText} ${l.token.symbol} as ${l.as} via ${l.steps.join("+")}${l.reason ? ` (${l.reason})` : ""}`).join("; ")}`);
   check(!plan.plan.blocking, `${what}: plan blocked by ${plan.plan.blocking}`);
   const { withdrawal } = await ctx.api.post<{ withdrawal: WithdrawalView }>("/withdrawals", body);
+  let changed = 0;
   for (let i = 0; i < 3 * plan.plan.legs.length + CHANGED_RETRIES; i++) {
     const next = await ctx.api.post<NextView>(`/withdrawals/${withdrawal.id}/next`);
     if (!next.step) return next.withdrawal;
-    check(next.intent && !next.intent.blocking, `${what}: step ${next.step.kind} stopped (${next.intent?.blocking?.code ?? "no intent"})`);
+    if (next.batch) {
+      const outcome = await runWithdrawalBatch(ctx, withdrawal.id, next.batch.steps, what);
+      if (outcome === "left") return next.withdrawal;
+      if (outcome === "changed") {
+        if (changed++ >= CHANGED_RETRIES) fail(`${what}: the batch kept changing under approval`);
+        ctx.note(`${what}: the batch was re-quoted; building it again`);
+      }
+      continue;
+    }
+    check(next.intent && !next.intent.blocking, `${what}: step ${next.step.kind} stopped (${next.intent?.blocking?.code ?? "no intent"}; ${stepLine(next.withdrawal)})`);
     const base = next.intent.kind === "swap" ? "/swaps" : next.intent.kind === "send" ? "/sends" : "/crosschain/orders";
     const { intent } = await ctx.api.get<{ intent: Intent }>(`${base}/${next.intent.id}`);
     const crossChain = next.intent.kind === "crosschain";
