@@ -76,7 +76,7 @@ export class PayoutService {
         continue;
       }
       const resolved = await this.recipients.resolve({ id: user.id, walletAddress: wallet.address }, user.activeNetwork, line.recipient);
-      const facts = resolved.facts as { status: string; address?: string; lookalikeOf?: string };
+      const facts = resolved.facts as { status: string; address?: string; lookalikeOf?: string; blocked?: boolean };
       if (facts.status !== "resolved" || !facts.address) {
         problems.push({ index, recipient: line.recipient, problem: facts.status });
         continue;
@@ -87,6 +87,11 @@ export class PayoutService {
       }
       if (facts.lookalikeOf) {
         problems.push({ index, recipient: line.recipient, problem: "lookalike" });
+        continue;
+      }
+      // Someone the person blocked is never paid.
+      if (facts.blocked) {
+        problems.push({ index, recipient: line.recipient, problem: "blocked" });
         continue;
       }
       lines.push({ name: resolved.view?.name ?? (resolved.view?.handle ? `@${resolved.view.handle}` : null), address: getAddress(facts.address), amount: amount.toString() });

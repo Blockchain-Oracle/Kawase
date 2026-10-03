@@ -127,3 +127,28 @@ export const contactAddressEvents = pgTable(
   },
   (table) => [index("contact_address_events_contact_idx").on(table.contactId, table.createdAt)],
 );
+
+/**
+ * Who the person blocked (Counterparts "Block"): a Kawase user by account (every address of theirs follows it), or one
+ * address. Payments to them are refused (RECIPIENT_BLOCKED, for the agent and automations too), and their asks,
+ * requests, split shares and reminders never reach the person's inbox or push.
+ */
+export const blocks = pgTable(
+  "blocks",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedUserId: uuid().references(() => users.id, { onDelete: "cascade" }),
+    /** Lower-case; set for an address block, null for a Kawase user. */
+    address: text(),
+    /** How the person knew them when they blocked ("@mallory", "Mallory"), for the list in Contacts. */
+    label: text().notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("blocks_user_blocked_user_idx").on(table.userId, table.blockedUserId).where(sql`${table.blockedUserId} is not null`),
+    uniqueIndex("blocks_user_address_idx").on(table.userId, table.address).where(sql`${table.address} is not null`),
+  ],
+);

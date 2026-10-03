@@ -13,6 +13,7 @@ import { contactAddresses, contacts, inboxItems, paymentRequests, users, wallets
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
+import { blockedSender } from "../contacts/blocks";
 import { addressForHandle } from "../contacts/service";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
@@ -95,7 +96,9 @@ export class RequestService {
    * Tells the payer in their inbox (and by push): "@x asked you for 12 USDC", opening the pay card. A reminder is the
    * same item marked as one ("Reminder: @x asked you…"), under its own dedupe key; false when that one was already told.
    */
-  private async tellPayer(row: RequestRow, payerId: string, reminder?: string) {
+  private async tellPayer(row: RequestRow, payerId: string, reminder?: string): Promise<boolean | "blocked"> {
+    // Someone the payer blocked never reaches their inbox or push (asks, split shares, reminders); they are not told.
+    if (await blockedSender(this.db, payerId, row.userId, row.payTo)) return "blocked";
     const symbol = this.tokenOf(row).symbol;
     const name = await this.nameIn(payerId, row.payTo);
     return this.inbox.add(this.db, {
@@ -229,7 +232,8 @@ export class RequestService {
     const request = await this.named(row);
     if (!row.payerUserId) return { request, reminded: "link" };
     const told = await this.tellPayer(row, row.payerUserId, new Date().toISOString().slice(0, DATE_CHARS));
-    return { request, reminded: told ? "in_app" : "already_today" };
+    // A block is never revealed to the one blocked: to them it reads as reminded.
+    return { request, reminded: told === false ? "already_today" : "in_app" };
   }
 
   /**
@@ -249,7 +253,7 @@ export class RequestService {
     for (const row of due) {
       const stage = row.expiresAt.getTime() - now.getTime() <= REQUEST_LAST_DAY_S * MS_PER_SECOND ? "last_day" : "nudge";
       if (told.has(`request_reminder:${row.id}:${stage}`)) continue;
-      if (await this.tellPayer(row, row.payerUserId!, stage)) sent++;
+      if ((await this.tellPayer(row, row.payerUserId!, stage)) === true) sent++;
     }
     return sent;
   }

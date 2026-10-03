@@ -114,6 +114,7 @@ import { PayCodeService } from "./paycodes/service";
 import { splitRoutes } from "./splits/routes";
 import { SplitService } from "./splits/service";
 import { intentRoutes } from "./intents/routes";
+import { BlockService, blockRoutes } from "./contacts/blocks";
 import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
@@ -415,6 +416,7 @@ export function createApp(deps: AppDeps) {
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
   app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
+  app.route("/blocks", blockRoutes(new BlockService(deps.db)));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);

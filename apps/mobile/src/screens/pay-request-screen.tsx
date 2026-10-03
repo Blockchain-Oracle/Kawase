@@ -7,7 +7,7 @@
 // EURC has a link of its own (no request behind it): the page is then the invoice (InvoiceLinkPage).
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { Check, ChevronLeft, Copy, Minus, TriangleAlert } from "lucide-react-native";
+import { Ban, Check, ChevronLeft, Copy, Minus, TriangleAlert } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -184,6 +184,16 @@ export function PayRequestScreen({ token }: { token: string }) {
     await Clipboard.setStringAsync(request.requester.address);
     toast(t("home.addressCopied"));
   };
+  // Block the one asking: Kawase won't pay them, and their asks and reminders stop reaching the person.
+  const block = async () => {
+    try {
+      await api.blocks.block(request.requester.handle ? { handle: request.requester.handle } : { address: request.requester.address });
+      toast(t("contacts.blockedToast", { name }));
+      router.back();
+    } catch {
+      toast(t("common.error"));
+    }
+  };
 
   const ending =
     current === "paid"
@@ -262,6 +272,12 @@ export function PayRequestScreen({ token }: { token: string }) {
                   <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{t("receive.warning")}</Text>
                 </View>
               </View>
+            ) : null}
+            {status === "account" ? (
+              <Button variant="ghost" onPress={() => void block()}>
+                <Icon as={Ban} className="text-muted-foreground size-4" />
+                <Text className="text-muted-foreground">{t("contacts.block", { name })}</Text>
+              </Button>
             ) : null}
           </View>
         )}

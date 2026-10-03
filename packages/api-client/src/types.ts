@@ -211,8 +211,13 @@ export type Contact = {
   /** Set while a changed address waits out its cooldown; payments to the contact are frozen until then. */
   pendingChange: { address: string; activatesAt: string } | null;
   addresses: ContactAddress[];
+  /** Blocked by the person: payments to them are refused, and their asks and reminders never reach the inbox. */
+  blocked: boolean;
   createdAt: string;
 };
+
+/** One entry in the person's blocked list: a Kawase user (their @handle) or an address, as the person knew them. */
+export type BlockView = { id: string; label: string; handle: string | null; address: string | null; createdAt: string };
 
 export type ContactInput = {
   displayName: string;
