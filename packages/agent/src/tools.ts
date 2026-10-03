@@ -48,7 +48,7 @@ const HELD_APPROVAL: Record<Hold, string> = {
 };
 
 /** A send that waited for the person's tap: the card says why, and so does the model's summary while it is ready. */
-export function heldSend(send: ProposeSendOutput, held: Hold): ProposeSendOutput {
+function heldSend(send: ProposeSendOutput, held: Hold): ProposeSendOutput {
   const waiting = send.summary.status === "ready" && send.intent.route === "allowance";
   return { ...send, held, summary: waiting ? { ...send.summary, approval: HELD_APPROVAL[held] } : send.summary };
 }
@@ -107,7 +107,7 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
     }),
     propose_send: tool({
       description:
-        "Send any token the person holds on the active network (USDC, EURC, cirBTC, a meme coin…). Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\") in that token, the asset only if they named it (its symbol, name or address), and their note if they gave one. Every recipient is checked: a token contract, an address the token's issuer blocked or a look-alike of a saved contact is never paid; a contract that is not a wallet gets a warning. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once when they named the recipient in their own message and nothing from outside Kawase was read since (their request is the instruction); otherwise, above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
+        "Send any token the person holds on the active network (USDC, EURC, cirBTC, a meme coin…). Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\") in that token, the asset only if they named it (its symbol, name or address), and their note if they gave one. Every recipient is checked: a token contract, an address the token's issuer blocked or a look-alike of a saved contact is never paid; a contract that is not a wallet gets a warning. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once when they named the recipient in their own message and nothing from outside Kawase was read since (their request is the instruction); otherwise it waits for their own confirmation on the card, as it does above the allowance, to a new address over the first-payment threshold or to a look-alike address. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
       inputSchema: z.object({
         recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
         amount: z
