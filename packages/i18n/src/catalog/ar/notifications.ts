@@ -37,4 +37,5 @@ export const notifications: Catalog["notifications"] = {
   lockTitle: "شاشة القفل",
   hideAmounts: "إخفاء المبالغ",
   hideAmountsBody: "تقول الإشعارات «استلمت أموالًا» دون الرقم. يظل صندوق الوارد والبريد الإلكتروني يعرضان المبالغ.",
+  kindTokenGraduated: "تخرّج الرموز",
 };

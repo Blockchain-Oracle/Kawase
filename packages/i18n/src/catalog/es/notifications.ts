@@ -36,5 +36,7 @@ export const notifications: Catalog["notifications"] = {
   kindRequestReceived: "Alguien te pide un pago",
   lockTitle: "Pantalla de bloqueo",
   hideAmounts: "Ocultar importes",
-  hideAmountsBody: "Las notificaciones dicen «Recibiste dinero» sin la cifra. Tu bandeja y el correo siguen mostrando los importes.",
+  hideAmountsBody:
+    "Las notificaciones dicen «Recibiste dinero» sin la cifra. Tu bandeja y el correo siguen mostrando los importes.",
+  kindTokenGraduated: "Graduaciones de tokens",
 };

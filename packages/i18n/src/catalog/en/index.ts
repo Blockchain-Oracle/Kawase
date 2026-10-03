@@ -81,6 +81,7 @@ import { receipt } from "./receipt";
 import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
+import { launchpad } from "./launchpad";
 
 export const en = {
   common,
@@ -163,6 +164,7 @@ export const en = {
   importContacts,
   alerts,
   chatCards,
+  launchpad,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

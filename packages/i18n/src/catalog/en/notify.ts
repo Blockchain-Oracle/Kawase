@@ -36,4 +36,6 @@ export const notify = {
   needsYouSendHidden: "Send money to {{name}}",
   needsYouSwapHidden: "Swap {{symbolIn}} to {{symbolOut}}",
   ruleAlertHidden: "One of your rules went off",
+  graduatedTitle: "{{symbol}} graduated from {{launchpad}}",
+  graduatedBody: "{{symbol}} now trades in a regular pool.",
 } as const;

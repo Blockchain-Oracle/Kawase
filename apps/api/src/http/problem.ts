@@ -67,6 +67,7 @@ export type ProblemCode =
   | "take_profit_wrong_side"
   | "stop_loss_wrong_side"
   | "stop_loss_past_liquidation"
+  | "launchpad_unavailable"
   | "change_not_pending"
   | "practice_mode"
   | "brake_override"
@@ -143,6 +144,7 @@ const TITLES: Record<ProblemCode, string> = {
   take_profit_wrong_side: "The take-profit is on the wrong side of the price",
   stop_loss_wrong_side: "The stop-loss is on the wrong side of the price",
   stop_loss_past_liquidation: "The stop-loss must come before liquidation",
+  launchpad_unavailable: "Launchpads are read on Arc mainnet",
   change_not_pending: "That change is no longer waiting for approval",
   practice_mode: "Practice mode is on: nothing real moves",
   brake_override: "A risky action: confirm it on its card",

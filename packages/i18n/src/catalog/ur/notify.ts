@@ -38,4 +38,6 @@ export const notify: Catalog["notify"] = {
   needsYouSendHidden: "{{name}} کو پیسے بھیجیں",
   needsYouSwapHidden: "{{symbolIn}} کو {{symbolOut}} میں بدلیں",
   ruleAlertHidden: "آپ کا ایک اصول متحرک ہوا",
+  graduatedTitle: "{{symbol}} {{launchpad}} سے گریجویٹ ہو گیا",
+  graduatedBody: "{{symbol}} اب عام پول میں ٹریڈ ہوتا ہے۔",
 };

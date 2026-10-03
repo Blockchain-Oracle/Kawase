@@ -144,6 +144,11 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       path = "/margin";
       break;
     }
+    case "token_graduated":
+      title = text(locale, "notify", "graduatedTitle", { symbol: p.symbol ?? "", launchpad: p.launchpad ?? "" });
+      body = text(locale, "notify", "graduatedBody", { symbol: p.symbol ?? "" });
+      path = p.token ? `/token/5042/${p.token}` : "/markets";
+      break;
     case "device_signed_in":
     case "device_signed_out": {
       const device = p.name || text(locale, "alerts", "aDevice");

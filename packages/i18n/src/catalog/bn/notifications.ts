@@ -37,4 +37,5 @@ export const notifications: Catalog["notifications"] = {
   lockTitle: "লক স্ক্রিন",
   hideAmounts: "পরিমাণ লুকান",
   hideAmountsBody: "নোটিফিকেশনে পরিমাণ ছাড়া শুধু “আপনি টাকা পেয়েছেন” দেখাবে। ইনবক্স ও ইমেইলে পরিমাণ দেখা যাবে।",
+  kindTokenGraduated: "টোকেন গ্র্যাজুয়েশন",
 };

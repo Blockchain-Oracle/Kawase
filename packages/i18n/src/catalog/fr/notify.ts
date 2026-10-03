@@ -38,4 +38,6 @@ export const notify: Catalog["notify"] = {
   needsYouSendHidden: "Envoyer de l’argent à {{name}}",
   needsYouSwapHidden: "Échanger {{symbolIn}} contre {{symbolOut}}",
   ruleAlertHidden: "Une de vos règles s’est déclenchée",
+  graduatedTitle: "{{symbol}} a quitté la courbe {{launchpad}}",
+  graduatedBody: "{{symbol}} s'échange désormais dans un pool classique.",
 };

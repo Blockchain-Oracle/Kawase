@@ -3,7 +3,7 @@
 // whom, a request of yours that was paid, a send that landed — with an unread dot that is never the only signal.
 // Tapping marks it read and opens the request or the transaction. "Mark all read" when there is something unread.
 import { useRouter } from "expo-router";
-import { ChevronLeft, FileClock, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
+import { ChevronLeft, FileClock, GraduationCap, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,7 +43,7 @@ const SKELETON_HEIGHT = 64;
 const USDC_PLACES = 6;
 
 function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
-  if (item.kind === "position_health" || item.kind === "position_closed") return <PositionAlertRow item={item} onPress={onPress} />;
+  if (item.kind === "position_health" || item.kind === "position_closed" || item.kind === "token_graduated") return <PositionAlertRow item={item} onPress={onPress} />;
   if (item.kind === "device_signed_in" || item.kind === "device_signed_out" || item.kind === "invoice_due" || item.kind === "invoice_overdue") {
     return <AlertRow item={item} onPress={onPress} />;
   }
@@ -57,6 +57,28 @@ function PositionAlertRow({ item, onPress }: { item: InboxItem; onPress: () => v
   const dates = useRequestDates();
   const p = item.params;
   const health = item.kind === "position_health";
+  if (item.kind === "token_graduated") {
+    const unreadGrad = !item.readAt;
+    const titleGrad = t("notify.graduatedTitle", { symbol: p.symbol ?? "", launchpad: p.launchpad ?? "" });
+    return (
+      <Pressable accessibilityRole="button" accessibilityLabel={`${unreadGrad ? `${t("inbox.unread")}, ` : ""}${titleGrad}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
+        <View className="items-center justify-center" style={{ width: DOT }}>
+          {unreadGrad ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
+        </View>
+        <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
+          <Icon as={GraduationCap} className="text-muted-foreground size-5" />
+        </View>
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text numberOfLines={2} className={cn("text-foreground text-base", unreadGrad ? "font-bold" : "font-semibold", TEXT_START)}>
+            {titleGrad}
+          </Text>
+          <Text numberOfLines={2} className={cn("text-muted-foreground text-sm", TEXT_START)}>
+            {[t("notify.graduatedBody", { symbol: p.symbol ?? "" }), dates.moment(item.createdAt)].filter(Boolean).join(" · ")}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
   const position = `${p.market ?? ""} ${t(`notify.side_${p.side === "short" ? "short" : "long"}`)}`;
   const closed = p.outcome === "closed";
   const title = health
@@ -235,6 +257,7 @@ export function InboxScreen() {
     if (item.kind === "needs_you" && item.params.itemId) router.push(`/needs-you/${item.params.itemId}`);
     // Account health (margin or borrowing) and protective closes: where the positions are.
     else if (item.kind === "position_health" || item.kind === "position_closed") router.push(item.params.path === "/borrow" ? "/borrow" : "/margin");
+    else if (item.kind === "token_graduated" && item.params.token) router.push({ pathname: "/token/[chainId]/[address]", params: { chainId: "5042", address: item.params.token } });
     // Asked to pay by someone on Kawase: the pay card itself.
     else if (item.kind === "request_received" && item.params.token) router.push({ pathname: "/r/[token]", params: { token: item.params.token } });
     // An automation's item: that run's story, or that automation's own card; the list when neither is known.

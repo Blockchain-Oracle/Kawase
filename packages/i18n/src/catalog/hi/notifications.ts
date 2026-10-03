@@ -38,4 +38,5 @@ export const notifications: Catalog["notifications"] = {
   lockTitle: "लॉक स्क्रीन",
   hideAmounts: "राशि छिपाएँ",
   hideAmountsBody: "सूचनाएँ बिना राशि के “आपको पैसे मिले” कहेंगी। आपके इनबॉक्स और ईमेल में राशि दिखती रहेगी।",
+  kindTokenGraduated: "टोकन ग्रेजुएशन",
 };

@@ -37,4 +37,5 @@ export const notifications: Catalog["notifications"] = {
   lockTitle: "锁屏",
   hideAmounts: "隐藏金额",
   hideAmountsBody: "通知只显示“你收到了一笔钱”，不显示金额。收件箱和邮件仍会显示金额。",
+  kindTokenGraduated: "代币毕业",
 };

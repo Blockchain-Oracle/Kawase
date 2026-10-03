@@ -38,5 +38,7 @@ export const notifications: Catalog["notifications"] = {
   kindRequestReceived: "Quelqu’un vous demande de payer",
   lockTitle: "Écran verrouillé",
   hideAmounts: "Masquer les montants",
-  hideAmountsBody: "Les notifications disent « Vous avez reçu de l’argent » sans le montant. Votre boîte de réception et vos e-mails affichent toujours les montants.",
+  hideAmountsBody:
+    "Les notifications disent « Vous avez reçu de l’argent » sans le montant. Votre boîte de réception et vos e-mails affichent toujours les montants.",
+  kindTokenGraduated: "Graduations de jetons",
 };

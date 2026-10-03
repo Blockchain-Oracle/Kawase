@@ -38,4 +38,6 @@ export const notify: Catalog["notify"] = {
   needsYouSendHidden: "向 {{name}} 付款",
   needsYouSwapHidden: "将 {{symbolIn}} 兑换为 {{symbolOut}}",
   ruleAlertHidden: "你的一条规则已触发",
+  graduatedTitle: "{{symbol}} 已从 {{launchpad}} 毕业",
+  graduatedBody: "{{symbol}} 现在在常规池中交易。",
 };

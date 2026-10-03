@@ -99,6 +99,23 @@ export type MarginProtectionGrantRequest = { grants: { grantId: string; typedDat
 /** Prices as the person types them, in US dollars ("92000"); null clears one. */
 export type MarginProtectionChange = { takeProfit?: string | null | undefined; stopLoss?: string | null | undefined };
 
+/** A token a launchpad launched (LIFT): its bonding curve, the fees a trade pays there, and whether the person watches it. */
+export type LaunchpadView = {
+  launchpad: string;
+  url: string;
+  graduated: boolean;
+  graduatedAt: string | null;
+  /** 0 to 1: how full the curve is (graduation at 1). */
+  progress: number;
+  marketCapUsd: number | null;
+  curveUsd: number | null;
+  /** What a trade pays on the curve, and the creator's share of it. */
+  buyFeeBps: number;
+  sellFeeBps: number;
+  creatorFeeBps: number;
+  watching: boolean;
+};
+
 /** protect_position: the saved targets (and whether the grants are still needed), or why they were refused. */
 export type ProtectPositionOutput = { network: NetworkId; result: MarginProtectionResult | null; refused: string | null; summary: string };
 
@@ -455,6 +472,12 @@ export type ProposeLendOutput = { intent: LendIntent; summary: string };
 
 export function railsEndpoints(call: Call) {
   return {
+    launchpad: {
+      /** Public (R13): null when no launchpad Kawase reads launched it. */
+      token: (address: string) => call<{ launchpad: LaunchpadView | null }>("GET", `/launchpad/tokens/${address}`),
+      watch: (address: string) => call<{ launchpad: LaunchpadView | null }>("POST", `/launchpad/tokens/${address}/watch`),
+      unwatch: (address: string) => call<{ launchpad: LaunchpadView | null }>("DELETE", `/launchpad/tokens/${address}/watch`),
+    },
     lend: {
       /** Every source an asset can earn in, ranked among those that could give the amount back now. */
       options: (asset: string, amount?: string) => call<YieldOptionsView>("GET", `/lend/options?asset=${encodeURIComponent(asset)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}`),

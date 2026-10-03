@@ -37,6 +37,7 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   invoice_overdue: "alerts.kindInvoiceOverdue",
   position_health: "notifications.kindPositionHealth",
   position_closed: "notifications.kindPositionClosed",
+  token_graduated: "notifications.kindTokenGraduated",
 };
 /** Quiet hours as a few common nights rather than a time picker: most people want one of these. */
 const QUIET_CHOICES: (QuietHours | null)[] = [null, { start: "22:00", end: "07:00" }, { start: "23:00", end: "08:00" }, { start: "21:00", end: "06:00" }];

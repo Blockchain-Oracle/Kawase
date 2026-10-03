@@ -37,4 +37,5 @@ export const notifications: Catalog["notifications"] = {
   lockTitle: "Экран блокировки",
   hideAmounts: "Скрывать суммы",
   hideAmountsBody: "Уведомления говорят «Вы получили деньги» без суммы. Во входящих и в письмах суммы видны.",
+  kindTokenGraduated: "Выпуск токенов",
 };

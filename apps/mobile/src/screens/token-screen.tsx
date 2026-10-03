@@ -27,6 +27,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { LaunchpadCard } from "@/launchpad/launchpad-card";
 import { useLocale } from "@/i18n/locale-provider";
 import { change, holdingAmount, money, price, shortAddress, USD_FX } from "@/portfolio/format";
 import { tokenChip } from "@/portfolio/token-chip";
@@ -48,6 +49,8 @@ const SCROLL_BOTTOM = 96;
 const ZERO = 0n;
 /** Actions that move or receive money: they need a signed-in account and the token's own network. */
 const WRITES: ReadonlySet<TokenAction> = new Set(["buy", "sell", "send", "receive", "withdraw", "bridge", "earn", "long_short"]);
+
+const ARC_MAINNET = 5042;
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
@@ -230,6 +233,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             ))}
           </View>
         </View>
+
+        {/* B1: a launchpad token's curve and graduation alert (LIFT on Arc mainnet). */}
+        {chainId === ARC_MAINNET ? <LaunchpadCard address={address} /> : null}
 
         <View className="gap-2">
           <Eyebrow className="px-1">{t("tokenPage.safety")}</Eyebrow>

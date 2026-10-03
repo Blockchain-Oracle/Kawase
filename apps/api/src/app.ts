@@ -55,6 +55,8 @@ import { noMarketData, type MarketData } from "./market/sources";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { LaunchpadService } from "./launchpad/service";
+import { launchpadRoutes } from "./launchpad/routes";
 import { MarginProtection } from "./margin/protection";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
@@ -213,6 +215,7 @@ export function createApp(deps: AppDeps) {
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
   const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
   margin.protection = protection;
+  const launchpads = new LaunchpadService(deps.db, deps.log, inbox);
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
@@ -260,6 +263,7 @@ export function createApp(deps: AppDeps) {
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
     protection.start();
+    launchpads.start();
     onramp.startReconciler(deps.reconcileIntervalMs);
     crosschain.startSweeper(deps.reconcileIntervalMs);
     lend.startSweeper(deps.reconcileIntervalMs);
@@ -343,6 +347,7 @@ export function createApp(deps: AppDeps) {
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
   app.route("/margin", marginRoutes(margin, protection));
+  app.route("/launchpad", launchpadRoutes(launchpads));
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
