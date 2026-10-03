@@ -101,6 +101,8 @@ export const REASONS = {
   LEAVES_LITTLE_FOR_FEES: "warning",
   /** The wallet cannot pay this send's fee, so Kawase's EIP-3009 relayer carries it and pays the fee (no dead end). */
   GAS_RELAYED: "warning",
+  /** A batch (swap, bridge, earn, lend, margin, cross-chain) the wallet cannot pay the fee for: Kawase's relayer sends it. */
+  FEE_PAID_BY_KAWASE: "warning",
   RATE_BELOW_REFERENCE: "warning",
   /** Buying a token Kawase does not vouch for (unverified or a lookalike): shown on the card. */
   TOKEN_UNVERIFIED: "warning",

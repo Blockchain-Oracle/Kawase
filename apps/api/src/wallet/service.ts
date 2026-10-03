@@ -490,11 +490,12 @@ export class WalletService {
    * The same batch, sent by Kawase's relayer: the wallet signs a one-time delegation that allows exactly these calls,
    * once, for ten minutes, redeemable only by the relayer (integrations-delegation relayed-batch.ts). The relayer pays.
    */
-  async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex }[]) {
+  async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex; value?: bigint | undefined }[]) {
     const wallet = await this.requireWallet(userId);
     const clients = this.clients(network);
     if (!isWalletSetUp(await clients.client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.conflict, "wallet_not_set_up");
-    const batch = calls.map((call) => ({ ...call, value: ZERO }));
+    // A call's value (Arc's native USDC, e.g. a bridge's flat fee) comes from the wallet's own balance, pinned like the rest.
+    const batch = calls.map((call) => ({ ...call, value: call.value ?? ZERO }));
     const grant = buildRelayedBatch({
       network: clients.network,
       wallet: wallet.address as Address,

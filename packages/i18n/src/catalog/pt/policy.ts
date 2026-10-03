@@ -32,6 +32,7 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "Seu limite diário está desligado",
   LEAVES_LITTLE_FOR_FEES: "Vai sobrar muito pouco USDC para as taxas da rede",
   GAS_RELAYED: "Sua carteira não cobre a taxa da rede, então a Kawase paga neste envio",
+  FEE_PAID_BY_KAWASE: "Taxa paga pela Kawase: sua carteira não cobre esta taxa de rede",
   SCHEDULE_INVALID: "Essa agenda não pode ser cumprida (fuso horário ou dia desconhecido).",
   AUTO_SAVE_EXISTS: "A poupança automática já está ativada. Desative-a primeiro em Automações e depois crie a nova.",
   RULE_INCOMPLETE: "Falta um número nesta regra: a linha de saldo, a parte ou o valor.",

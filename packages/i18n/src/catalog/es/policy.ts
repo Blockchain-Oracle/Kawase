@@ -32,6 +32,7 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "Tu límite diario está desactivado",
   LEAVES_LITTLE_FOR_FEES: "Te quedará muy poco USDC para las comisiones de red",
   GAS_RELAYED: "Tu billetera no cubre la comisión de red, así que Kawase la paga en este envío",
+  FEE_PAID_BY_KAWASE: "Comisión pagada por Kawase: tu billetera no cubre esta comisión de red",
   SCHEDULE_INVALID: "Ese horario no se puede cumplir (zona horaria o día desconocidos).",
   AUTO_SAVE_EXISTS:
     "El ahorro automático ya está activado. Desactívalo primero en Automatizaciones y luego crea el nuevo.",
