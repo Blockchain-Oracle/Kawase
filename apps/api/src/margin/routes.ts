@@ -29,6 +29,8 @@ const SIGNATURES_MAX = 10;
 const price = z.string().max(PRICE_MAX).nullable().optional();
 const protectSchema = z.object({ takeProfit: price, stopLoss: price });
 const activateSchema = z.object({ signatures: z.array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) })).max(SIGNATURES_MAX) });
+const positionSchema = z.object({ positionId: z.uuid() });
+const disableSchema = z.object({ requestId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -46,17 +48,26 @@ export function marginRoutes(margin: MarginService, protection?: MarginProtectio
   });
   app.use("/positions", requireUser);
   app.get("/positions", async (c) => c.json({ positions: await margin.positions(c.get("user")!) }));
-  // Take-profit / stop-loss: the grants Kawase closes under (signed once), and each position's targets.
+  // Take-profit / stop-loss: the grants Kawase closes a position under (signed together), and each position's targets.
   if (protection) {
     app.use("/protection", requireAccount);
     app.use("/protection/*", requireAccount);
-    app.get("/protection", async (c) => c.json(await protection.view(c.get("user")!)));
-    app.post("/protection/grant", async (c) => c.json(await protection.requestGrant(c.get("user")!)));
+    const position = (id: string | undefined) => (id === undefined ? undefined : positionSchema.shape.positionId.safeParse(id).success ? id : undefined);
+    app.get("/protection", async (c) => c.json(await protection.view(c.get("user")!, position(c.req.query("positionId")))));
+    app.post("/protection/grant", async (c) => {
+      const input = await parse(positionSchema, await c.req.json().catch(() => ({})));
+      return c.json(await protection.requestGrant(c.get("user")!, input.positionId));
+    });
     app.post("/protection/grant/activate", async (c) => {
       const input = await parse(activateSchema, await c.req.json());
       return c.json(await protection.activate(c.get("user")!, input.signatures.map((entry) => ({ grantId: entry.grantId, signature: entry.signature as `0x${string}` }))));
     });
-    app.delete("/protection/grant", async (c) => c.json(await protection.revoke(c.get("user")!)));
+    // No position named: every position's grants (and any from before grants were per position).
+    app.delete("/protection/grant", async (c) => c.json(await protection.revoke(c.get("user")!, position(c.req.query("positionId")))));
+    app.post("/protection/disable", async (c) => {
+      const input = await parse(disableSchema, await c.req.json());
+      return c.json(await protection.submitDisable(c.get("user")!, input.requestId, input.signature as `0x${string}`));
+    });
     app.put("/positions/:id/protection", requireAccount, async (c) => {
       const input = await parse(protectSchema, await c.req.json());
       return c.json(await protection.protect(c.get("user")!, c.req.param("id"), input));

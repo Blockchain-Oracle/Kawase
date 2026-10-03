@@ -1,6 +1,6 @@
 // Money rails (builder B1): Kawase Margin (long/short on Aave V4), and the endpoints that serve it. Kept apart from
 // types.ts so the lanes merge cleanly; the client spreads `railsEndpoints` into its routes.
-import type { IntentState, NetworkId, PolicyResultView, SendOutcome, UnsignedTransaction } from "./types";
+import type { IntentState, NetworkId, PolicyResultView, RelayedBatchRequest, SendOutcome, TransactionRequestResponse, UnsignedTransaction } from "./types";
 
 type Call = <T>(method: string, path: string, body?: unknown, options?: { idempotencyKey?: string | undefined }) => Promise<T>;
 
@@ -84,17 +84,33 @@ export type MarginPositionView = {
   protection?: "armed" | "closing" | "unavailable" | null | undefined;
 };
 
-/** Whether Kawase may close positions for the person (the grants signed once), and until when. */
+/**
+ * Whether Kawase may close one position for the person (its grants, signed together), and until when. "none" also
+ * covers a position grown past what its grants let Kawase move: they are asked for again.
+ */
 export type MarginProtectionView = {
   network: NetworkId;
+  positionId: string | null;
   grant: "none" | "pending" | "active" | "expired" | "revoked";
   expiresAt: string | null;
   /** Mainnet only: Uniswap v3 on Arc is the route a protective close takes. */
   available: boolean;
 };
 
-/** The grants to sign (one Face ID), each with what it allows, decoded for display. */
-export type MarginProtectionGrantRequest = { grants: { grantId: string; typedData: Record<string, unknown> }[]; receipts: Record<string, unknown>[]; expiresAt: string };
+/**
+ * An on-chain `disableDelegation` the wallet signs: a transaction it sends itself, or — when its USDC can't pay the
+ * fee — a one-time delegation for exactly that call, which Kawase's relayer sends.
+ */
+export type GrantDisableRequest = TransactionRequestResponse | RelayedBatchRequest;
+
+/**
+ * A position's grants to sign (one Face ID), each with what it allows, decoded for display; with the disable of the
+ * live grants they replace, signed in the same yes.
+ */
+export type MarginProtectionGrantRequest = { grants: { grantId: string; typedData: Record<string, unknown> }[]; receipts: Record<string, unknown>[]; expiresAt: string; revoke: GrantDisableRequest | null };
+
+/** Protection off: Kawase stopped using the grants; the wallet signs their on-chain disable (none when all had expired). */
+export type MarginProtectionOff = MarginProtectionView & { revoke: GrantDisableRequest | null };
 
 /** Prices as the person types them, in US dollars ("92000"); null clears one. */
 export type MarginProtectionChange = { takeProfit?: string | null | undefined; stopLoss?: string | null | undefined };
@@ -521,11 +537,13 @@ export function railsEndpoints(call: Call) {
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/signature`, { approvalId, signedTransaction }),
-      /** Take-profit / stop-loss: the grants (signed once) and each position's targets. */
-      protection: () => call<MarginProtectionView>("GET", "/margin/protection"),
-      protectionGrant: () => call<MarginProtectionGrantRequest>("POST", "/margin/protection/grant"),
+      /** Take-profit / stop-loss: each position's grants (signed together) and its targets. */
+      protection: (positionId: string) => call<MarginProtectionView>("GET", `/margin/protection?positionId=${encodeURIComponent(positionId)}`),
+      protectionGrant: (positionId: string) => call<MarginProtectionGrantRequest>("POST", "/margin/protection/grant", { positionId }),
       protectionActivate: (signatures: { grantId: string; signature: string }[]) => call<MarginProtectionView>("POST", "/margin/protection/grant/activate", { signatures }),
-      protectionRevoke: () => call<MarginProtectionView>("DELETE", "/margin/protection/grant"),
+      protectionRevoke: (positionId: string) => call<MarginProtectionOff>("DELETE", `/margin/protection/grant?positionId=${encodeURIComponent(positionId)}`),
+      /** The relayed variant of a grant disable, signed: Kawase's relayer sends it. */
+      protectionDisable: (requestId: string, signature: string) => call<{ tx: string; status: string }>("POST", "/margin/protection/disable", { requestId, signature }),
       protect: (positionId: string, change: MarginProtectionChange) => call<MarginProtectionResult>("PUT", `/margin/positions/${positionId}/protection`, change),
     },
   };

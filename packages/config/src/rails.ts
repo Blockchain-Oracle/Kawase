@@ -83,8 +83,16 @@ export const MARGIN_PROTECTION = {
   takeProfitSlippageBps: 100,
   /** A stop-loss accepts more, since waiting costs more; worse than this and Kawase alerts instead of selling. */
   stopLossSlippageBps: 300,
-  /** How long the grants live once signed. */
-  grantDays: 180,
+  /**
+   * How long a position's grants live once signed: the horizon brokers give a good-'til-cancelled order. After it the
+   * position page asks again (they are dead on chain by then).
+   */
+  grantDays: 90,
+  /**
+   * The grants let a close move at most this share of the position as signed (collateral to the router, debt to the
+   * Spoke): room for interest and the repay buffer, not for a bigger position (adding to it asks again).
+   */
+  capHeadroomBps: 12_500,
   tickMs: 30_000,
   healthTickMs: 60_000,
   /** Account health below these is told: a warning, then danger (liquidation starts at 1). */

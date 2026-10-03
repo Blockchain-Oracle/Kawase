@@ -93,8 +93,8 @@ test("margin protection: targets checked against the price, liquidation and Unis
   const price = (value: number) => value.toFixed(2);
   console.log(`long ${LONG}: ${formatUnits(account.reserves[cirBTC.reserveId]!.supplied, cirBTC.decimals)} cirBTC against ${formatUnits(account.reserves[usdc.reserveId]!.debt, usdc.decimals)} USDC, cirBTC $${mark.toFixed(0)}`);
 
-  const view = (await (await long.call("GET", "/margin/protection")).json()) as MarginProtectionView;
-  assert.deepEqual([view.available, view.grant], [true, "none"]);
+  const view = (await (await long.call("GET", `/margin/protection?positionId=${row!.id}`)).json()) as MarginProtectionView;
+  assert.deepEqual([view.available, view.grant, view.positionId], [true, "none", row!.id]);
   const refused = async (change: Record<string, string | null>, code: string) => {
     const response = await long.call("PUT", `/margin/positions/${row!.id}/protection`, change);
     const problem = (await response.json()) as { type?: string };
@@ -109,8 +109,10 @@ test("margin protection: targets checked against the price, liquidation and Unis
   assert.equal(set.position.takeProfit, parseUnits(price(mark * UP), PRICE_DECIMALS).toString());
   assert.equal(set.position.protection, null);
   console.log(`targets: take-profit $${price(mark * UP)}, stop-loss $${price(mark * DOWN)} accepted (Uniswap can close the whole size now), waiting for the grants; liquidation at $${Number(formatUnits(BigInt(set.position.liquidationPrice ?? "0"), PRICE_DECIMALS)).toFixed(0)}`);
-  // This address is not a Kawase wallet (no DeleGator code): its grants cannot be asked for.
-  const grant = await long.call("POST", "/margin/protection/grant");
+  // Grants are per position, so one must be named; and this address is not a Kawase wallet (no DeleGator code): its
+  // grants cannot be asked for.
+  assert.equal((await long.call("POST", "/margin/protection/grant", {})).status, 400);
+  const grant = await long.call("POST", "/margin/protection/grant", { positionId: row!.id });
   assert.equal(grant.status, 422);
 
   // Health: told once on the way down.

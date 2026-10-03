@@ -1,7 +1,8 @@
 // The swap legs of a protective close (take-profit / stop-loss), through Uniswap v3 on Arc: SwapRouter02's
-// `exactInputSingle` takes a static struct, so the grant the person signed pins its recipient to their wallet (no
-// caveat can pin KyberSwap's, which sits in a dynamic struct). Each leg asks QuoterV2 for every fee tier with a pool
-// and takes the best; the minimum is the quote less the protection's slippage.
+// `exactInputSingle` takes a static struct, so the grants the person signed pin its tokens, fee tier and recipient (no
+// caveat can pin KyberSwap's, which sits in a dynamic struct). Before the grants exist, QuoterV2 is asked for every
+// fee tier with a pool and the best is taken (that is the tier the grants then pin); a close under the grants quotes
+// only their tier. The minimum is the quote less the protection's slippage.
 import { encodeFunctionData, erc20Abi, parseAbi, type Address, type PublicClient } from "viem";
 
 import { MARGIN_PROTECTION } from "@kawase/config";
@@ -23,17 +24,18 @@ export class NoUniswapRoute extends Error {
   }
 }
 
-/** The best fee tier's quote for exactly `amountIn`. */
-export async function uniswapQuote(client: PublicClient, tokenIn: Address, tokenOut: Address, amountIn: bigint): Promise<{ fee: number; amountOut: bigint }> {
+/** The best fee tier's quote for exactly `amountIn` (only `fee`'s, when the grants pin one). */
+export async function uniswapQuote(client: PublicClient, tokenIn: Address, tokenOut: Address, amountIn: bigint, fee?: number): Promise<{ fee: number; amountOut: bigint }> {
   const { factory, quoter } = MARGIN_PROTECTION.uniswap;
+  const candidates: readonly number[] = fee === undefined ? MARGIN_PROTECTION.feeTiers : [fee];
   const tiers = await Promise.all(
-    MARGIN_PROTECTION.feeTiers.map(async (fee) => {
-      const pool = await client.readContract({ address: factory, abi: factoryAbi, functionName: "getPool", args: [tokenIn, tokenOut, fee] }).catch(() => undefined);
+    candidates.map(async (tier) => {
+      const pool = await client.readContract({ address: factory, abi: factoryAbi, functionName: "getPool", args: [tokenIn, tokenOut, tier] }).catch(() => undefined);
       if (!pool || BigInt(pool) === ZERO) return undefined;
       const quoted = await client
-        .simulateContract({ address: quoter, abi: quoterAbi, functionName: "quoteExactInputSingle", args: [{ tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: NO_PRICE_LIMIT }] })
+        .simulateContract({ address: quoter, abi: quoterAbi, functionName: "quoteExactInputSingle", args: [{ tokenIn, tokenOut, amountIn, fee: tier, sqrtPriceLimitX96: NO_PRICE_LIMIT }] })
         .catch(() => undefined);
-      return quoted ? { fee, amountOut: quoted.result[0] } : undefined;
+      return quoted ? { fee: tier, amountOut: quoted.result[0] } : undefined;
     }),
   );
   const best = tiers.flatMap((tier) => (tier ? [{ fee: tier.fee as number, amountOut: tier.amountOut }] : [])).sort((a, b) => (b.amountOut > a.amountOut ? 1 : -1))[0];
@@ -41,10 +43,10 @@ export async function uniswapQuote(client: PublicClient, tokenIn: Address, token
   return best;
 }
 
-export function uniswapSwapper(input: { client: PublicClient; wallet: Address; slippageBps: number; mode: "quote" | "build" }): Swapper {
+export function uniswapSwapper(input: { client: PublicClient; wallet: Address; slippageBps: number; mode: "quote" | "build"; fee?: number | undefined }): Swapper {
   const { router } = MARGIN_PROTECTION.uniswap;
   return async (tokenIn, tokenOut, amountIn) => {
-    const best = await uniswapQuote(input.client, tokenIn, tokenOut, amountIn);
+    const best = await uniswapQuote(input.client, tokenIn, tokenOut, amountIn, input.fee);
     const minOut = (best.amountOut * (BPS - BigInt(input.slippageBps))) / BPS;
     const venues = ["uniswap-v3"];
     if (input.mode === "quote") return { amountOut: best.amountOut, minOut, calls: [], venues };
