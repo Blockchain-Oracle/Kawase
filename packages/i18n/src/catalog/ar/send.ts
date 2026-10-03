@@ -47,6 +47,8 @@ export const send: Catalog["send"] = {
   allowanceUsdcOnlyAndroid: "‏حدّك اليومي يشمل USDC فقط — يلزم بصمة إصبعك أو قفل الشاشة",
   allowanceLeft: "تبقّى {{amount}} من {{total}} اليوم",
   sendNow: "إرسال",
+  heldNotTyped: "لم تذكر هذا المستلم في رسالتك. تحقّق ممن سيستلم المال قبل الإرسال.",
+  heldOutside: "قرأ Kawase محتوى من الخارج (بائعًا أو رمزًا أو مذكرة) بعد رسالتك، لذا ينتظر هذا تأكيدك.",
   sendFaceId: "أرسل ببصمة الوجه",
   signPrompt: "أرسل {{amount}} إلى {{name}}",
   sending: "جارٍ الإرسال…",

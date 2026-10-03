@@ -15,6 +15,7 @@ export const importContacts: Catalog["importContacts"] = {
   noneOnKawase: "Aucun n’est encore sur Kawase.",
   add: "Ajouter",
   addFailed: "Impossible d’ajouter {{name}}.",
+  quotaReached: "Vous avez vérifié beaucoup de contacts aujourd’hui. Réessayez demain.",
   others: "Inviter sur Kawase",
   invite: "Inviter {{name}}",
   inviteMessage:

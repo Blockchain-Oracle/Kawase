@@ -34,6 +34,8 @@ export const home: Catalog["home"] = {
   dockVoice: "تحدّث إلى كاواسي",
   dockActivity: "النشاط",
   dockProfile: "الملف",
+  navigation: "القائمة الرئيسية",
+  moveMoney: "نقل الأموال",
   funded: "وصلتك الأموال",
   guestTitle: "وكيل أموالك على Arc",
   guestBody: "اسأل عن Arc والأرصدة والإرسال — لا تحتاج إلى محفظة للتجربة. سجّل الدخول عندما تريد محفظتك الخاصة.",

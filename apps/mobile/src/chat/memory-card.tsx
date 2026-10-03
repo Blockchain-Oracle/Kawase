@@ -1,13 +1,14 @@
 // Memory in the conversation (cards/agent-business.md): the card after remember_fact / forget_fact (what was kept or
 // forgotten, with Undo and a way to Settings → Memory), and the quiet "From memory" line under a reply that relied
-// on a remembered fact — the agent always says when it uses one.
+// on a remembered fact — the agent always says when it uses one. A fact naming an @handle the person did not write,
+// or one that came after outside content, is not saved until they tap Save here (H2).
 import { useRouter } from "expo-router";
 import { Brain } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
 
-import type { AgentMessageMetadata, MemoryToolOutput } from "@kawase/api-client";
+import type { AgentMessageMetadata, MemoryFact, MemoryToolOutput } from "@kawase/api-client";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -24,13 +25,27 @@ export function MemoryCard({ output }: { output: MemoryToolOutput }) {
   const [undone, setUndone] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [turnedOn, setTurnedOn] = React.useState(false);
+  // A fact the card asked about, once the person saved it.
+  const [kept, setKept] = React.useState<MemoryFact | null>(null);
+  const savedId = output.status === "saved" ? output.fact.id : kept?.id;
 
   const undo = async () => {
-    if (output.status !== "saved") return;
+    if (!savedId) return;
     setBusy(true);
     try {
-      await api.memory.forget(output.fact.id);
+      await api.memory.forget(savedId);
       setUndone(true);
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const keep = async () => {
+    if (output.status !== "confirm") return;
+    setBusy(true);
+    try {
+      setKept((await api.memory.add(output.fact)).fact);
     } catch {
       toast(t("common.error"));
     } finally {
@@ -49,7 +64,7 @@ export function MemoryCard({ output }: { output: MemoryToolOutput }) {
     }
   };
 
-  const fact = output.status === "saved" || output.status === "forgotten" ? output.fact.fact : undefined;
+  const fact = output.status === "saved" || output.status === "forgotten" ? output.fact.fact : output.status === "confirm" ? output.fact : undefined;
   const title =
     output.status === "saved"
       ? undone
@@ -59,7 +74,13 @@ export function MemoryCard({ output }: { output: MemoryToolOutput }) {
           : t("memory.cardRemembered")
       : output.status === "forgotten"
         ? t("memory.cardForgotten")
-        : undefined;
+        : output.status === "confirm"
+          ? undone
+            ? t("memory.cardForgotten")
+            : kept
+              ? t("memory.cardRemembered")
+              : t("memory.cardConfirm")
+          : undefined;
   const note =
     output.status === "not_found"
       ? t("memory.cardNotFound")
@@ -81,10 +102,20 @@ export function MemoryCard({ output }: { output: MemoryToolOutput }) {
           {fact ?? note}
         </Text>
       </View>
+      {output.status === "confirm" && !kept ? (
+        <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
+          {t(output.reason === "not_typed" ? "memory.confirmNotTyped" : "memory.confirmOutside")}
+        </Text>
+      ) : null}
       <View className="flex-row gap-2">
-        {output.status === "saved" && !undone ? (
+        {savedId && !undone ? (
           <Button size="sm" variant="secondary" disabled={busy} onPress={() => void undo()}>
             <Text>{t("memory.undo")}</Text>
+          </Button>
+        ) : null}
+        {output.status === "confirm" && !kept ? (
+          <Button size="sm" disabled={busy} onPress={() => void keep()}>
+            <Text>{t("memory.save")}</Text>
           </Button>
         ) : null}
         {output.status === "memory_off" && !turnedOn ? (

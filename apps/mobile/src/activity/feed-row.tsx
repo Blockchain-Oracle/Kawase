@@ -20,6 +20,7 @@ import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { WEB_PRESSABLE } from "@kawase/ui-native/lib/wide";
 
 import { useRunReason } from "@/automations/copy";
 import { vaultTitle } from "@/earn/vault-title";
@@ -221,7 +222,7 @@ export function FeedRow({ item, onPress }: { item: FeedItem; onPress: () => void
         accessibilityLabel={`${title}, ${line}, ${sign}${amount}`}
         accessibilityState={grouped ? { expanded: open } : undefined}
         onPress={grouped ? () => setOpen((value) => !value) : onPress}
-        className="active:bg-muted flex-row items-center gap-3 px-4 py-3"
+        className={cn("active:bg-muted flex-row items-center gap-3 px-4 py-3", WEB_PRESSABLE)}
       >
         <Face item={item} />
         <View className="min-w-0 flex-1 gap-0.5">

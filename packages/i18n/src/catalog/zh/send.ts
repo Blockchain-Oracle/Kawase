@@ -47,6 +47,8 @@ export const send: Catalog["send"] = {
   allowanceUsdcOnlyAndroid: "日常额度只适用于 USDC — 需要指纹或屏幕锁定",
   allowanceLeft: "今天还剩 {{amount}}，共 {{total}}",
   sendNow: "转账",
+  heldNotTyped: "你的消息里没有提到这个收款人。发送前请确认收款对象。",
+  heldOutside: "在你发消息之后，Kawase 读取了外部内容（卖家、代币或备注），所以这笔转账等你确认。",
   sendFaceId: "用面容 ID 转账",
   signPrompt: "向 {{name}} 转账 {{amount}}",
   sending: "正在转账…",

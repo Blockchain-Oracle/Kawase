@@ -34,6 +34,8 @@ export const home: Catalog["home"] = {
   dockVoice: "和 Kawase 说话",
   dockActivity: "动态",
   dockProfile: "我的",
+  navigation: "主菜单",
+  moveMoney: "资金操作",
   funded: "资金已到账",
   guestTitle: "你在 Arc 上的资金助手",
   guestBody: "可以问 Arc、余额和转账——试用不需要钱包。想要自己的钱包时再登录。",

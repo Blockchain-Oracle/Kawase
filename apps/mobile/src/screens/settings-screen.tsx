@@ -43,6 +43,7 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Switch } from "@kawase/ui-native/components/ui/switch";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import { CurrencySheet, useCurrencyName } from "@/components/currency-sheet";
 import { LanguageSheet } from "@/components/language-sheet";
@@ -59,6 +60,8 @@ import { stopInterfaceSounds } from "@/feedback/feedback";
 
 const STRIP_INSET = 6;
 const EDGE_INSET = 12;
+/** A desktop page starts below a little air (there is no status bar). */
+const WIDE_TOP = 32;
 const AVATAR_SIZE = 72;
 const GUEST_SEED = "guest";
 
@@ -80,6 +83,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
+  const wide = useWide();
   const { locale } = useLocale();
   const { status, user, update, signOut } = useSession();
   const signIn = useSignIn();
@@ -117,11 +121,12 @@ export function SettingsScreen() {
       ) : null}
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-7 px-5"
-        contentContainerStyle={{
-          paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET,
-          paddingBottom: clearance.scroll,
-        }}
+        contentContainerClassName={cn("gap-7 px-5", wide && "px-10")}
+        contentContainerStyle={[
+          { paddingTop: wide ? WIDE_TOP : testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll },
+          // A desktop window (Stage 13): one centred column beside the sidebar.
+          wide ? { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center" } : null,
+        ]}
       >
         <View className="items-center gap-3 pt-2">
           <DefaultAvatar seed={user?.id ?? GUEST_SEED} size={AVATAR_SIZE} label={name} />

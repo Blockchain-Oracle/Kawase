@@ -74,6 +74,9 @@ export type ProblemCode =
   | "practice_mode"
   | "brake_override"
   | "token_invalid"
+  // Contact discovery (M11): more email fingerprints than one address book in a request, or than a day allows.
+  | "discovery_batch_too_large"
+  | "discovery_quota"
   | "upstream"
   | "internal";
 
@@ -152,6 +155,8 @@ const TITLES: Record<ProblemCode, string> = {
   practice_mode: "Practice mode is on: nothing real moves",
   brake_override: "A risky action: confirm it on its card",
   token_invalid: "Not a token on this network",
+  discovery_batch_too_large: "Too many contacts in one check; send them in smaller batches",
+  discovery_quota: "Enough contacts were checked today; try again tomorrow",
   upstream: "A provider did not answer",
   internal: "Something went wrong",
 };

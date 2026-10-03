@@ -34,6 +34,8 @@ export const home: Catalog["home"] = {
   dockVoice: "Habla con Kawase",
   dockActivity: "Actividad",
   dockProfile: "Perfil",
+  navigation: "Menú principal",
+  moveMoney: "Mover dinero",
   funded: "Ya tienes fondos",
   guestTitle: "Tu agente de dinero en Arc",
   guestBody:

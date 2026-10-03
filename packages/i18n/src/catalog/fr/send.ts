@@ -49,6 +49,8 @@ export const send: Catalog["send"] = {
     "Votre plafond quotidien ne couvre que l’USDC — empreinte ou verrouillage de l'écran requis",
   allowanceLeft: "Il reste {{amount}} sur {{total}} aujourd'hui",
   sendNow: "Envoyer",
+  heldNotTyped: "Vous n’avez pas nommé ce destinataire dans votre message. Vérifiez à qui cela va avant d’envoyer.",
+  heldOutside: "Kawase a lu du contenu extérieur (un vendeur, un jeton ou un mémo) après votre message : l’envoi attend donc votre accord.",
   sendFaceId: "Envoyer avec Face ID",
   signPrompt: "Envoyer {{amount}} à {{name}}",
   sending: "Envoi…",

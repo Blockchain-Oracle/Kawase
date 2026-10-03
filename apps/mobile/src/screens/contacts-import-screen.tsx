@@ -2,7 +2,8 @@
 // with their permission the app reads names and emails here, and only on "Find who's on Kawase" does it send
 // SHA-256 hashes of those emails (never the emails, names or numbers) to match Kawase @handles — of people who let
 // others who have their email find them. A match is saved as a contact by its @handle in one tap; the rest can be
-// invited. The person can also choose whether others can find them the same way.
+// invited. The person can also choose whether others can find them the same way. A big address book goes in several
+// checks, and the api allows a few address books a day (M11).
 import * as Crypto from "expo-crypto";
 import { Contact as DeviceContact, ContactField, requestPermissionsAsync } from "expo-contacts";
 import { useRouter } from "expo-router";
@@ -11,6 +12,7 @@ import * as React from "react";
 import { ActivityIndicator, Linking, Platform, Share, View } from "react-native";
 import { toast } from "sonner-native";
 
+import { ApiError, type DiscoverInput, type DiscoverMatch } from "@kawase/api-client";
 import { PUBLIC_LINKS } from "@kawase/config";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
@@ -31,6 +33,26 @@ const AVATAR = 32;
 const EMAILS_PER_PERSON = 5;
 const PEOPLE_MAX = 500;
 const SHOWN_OTHERS = 40;
+/** The api checks at most this many email fingerprints at once (M11): a bigger address book goes in several checks. */
+const HASHES_PER_CHECK = 1_000;
+
+/** The chosen contacts in checks of at most HASHES_PER_CHECK fingerprints, in order. */
+function inChecks(contacts: DiscoverInput["contacts"]): DiscoverInput[] {
+  const checks: DiscoverInput[] = [];
+  let current: DiscoverInput["contacts"] = [];
+  let hashes = 0;
+  for (const contact of contacts) {
+    if (current.length > 0 && hashes + contact.emailHashes.length > HASHES_PER_CHECK) {
+      checks.push({ contacts: current });
+      current = [];
+      hashes = 0;
+    }
+    current.push(contact);
+    hashes += contact.emailHashes.length;
+  }
+  if (current.length > 0) checks.push({ contacts: current });
+  return checks;
+}
 
 const hashEmail = (email: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, email.trim().toLowerCase());
 
@@ -80,9 +102,21 @@ export function ContactsImportScreen() {
       const contacts = await Promise.all(
         people.filter((person) => person.emails.length > 0).map(async (person) => ({ ref: person.ref, emailHashes: await Promise.all(person.emails.map(hashEmail)) })),
       );
-      const { matches: found } = await api.discover.match({ contacts });
+      // One check after another; past the day's quota, what was found so far still shows, with the reason.
+      const found: DiscoverMatch[] = [];
+      let checked = 0;
+      for (const check of inChecks(contacts)) {
+        try {
+          found.push(...(await api.discover.match(check)).matches);
+          checked += 1;
+        } catch (error) {
+          if (!(error instanceof ApiError && error.code === "discovery_quota")) throw error;
+          toast(t("importContacts.quotaReached"));
+          break;
+        }
+      }
       setMatches(new Map(found.map((match) => [match.ref, match.handle])));
-      setStage("matched");
+      setStage(checked > 0 || contacts.length === 0 ? "matched" : "ready");
     } catch {
       toast(t("common.error"));
       setStage("ready");

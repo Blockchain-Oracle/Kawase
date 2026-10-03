@@ -47,6 +47,8 @@ export const send: Catalog["send"] = {
   allowanceUsdcOnlyAndroid: "आपकी दैनिक सीमा सिर्फ़ USDC के लिए है — आपका फ़िंगरप्रिंट या स्क्रीन लॉक चाहिए",
   allowanceLeft: "आज {{total}} में से {{amount}} बचा है",
   sendNow: "भेजें",
+  heldNotTyped: "आपने अपने संदेश में इस प्राप्तकर्ता का नाम नहीं लिया। भेजने से पहले देख लें कि पैसा किसे जा रहा है।",
+  heldOutside: "आपके संदेश के बाद Kawase ने बाहर की सामग्री (कोई विक्रेता, टोकन या मेमो) पढ़ी, इसलिए यह आपकी पुष्टि का इंतज़ार कर रहा है।",
   sendFaceId: "Face ID से भेजें",
   signPrompt: "{{name}} को {{amount}} भेजें",
   sending: "भेजा जा रहा है…",
