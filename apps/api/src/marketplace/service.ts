@@ -189,6 +189,13 @@ const whyAsk = (price: bigint, settings: AgentWalletSettings, tainted: boolean):
 export class MarketplaceService {
   private readonly creating = new Map<string, Promise<AgentWallet>>();
 
+  /**
+   * Sellers are called only at the URLs the listing rules allow, and only at public addresses checked at connect time
+   * (integrations-x402 guard.ts: a listing must not point the api inside its own network). Circle's own APIs
+   * (Gateway) go through `fetchImpl`.
+   */
+  private readonly sellerFetch: typeof fetch;
+
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
@@ -198,7 +205,11 @@ export class MarketplaceService {
     private readonly discovery: Discovery,
     private readonly log: Logger,
     private readonly fetchImpl: typeof fetch = fetch,
-  ) {}
+    /** Answers sellers in memory in tests; the listing rules still apply to it. */
+    sellerBase?: typeof fetch,
+  ) {
+    this.sellerFetch = discovery.sellerFetch(sellerBase);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -661,7 +672,7 @@ export class MarketplaceService {
     const listing = await this.discovery.find(context, input.url, input.method);
     if (!listing) return { network, status: "not_listed" as const };
     const call = filledCall(listing, input);
-    const asked = await probe(call, this.fetchImpl).catch(() => ({ kind: "error" as const, status: 0 }));
+    const asked = await probe(call, this.sellerFetch).catch(() => ({ kind: "error" as const, status: 0 }));
     const price = asked.kind === "payment_required" ? this.cheapest(asked.required, context) : undefined;
     const settings = user.isAnonymous ? undefined : await this.settings(user.id, network);
     return {
@@ -867,7 +878,7 @@ export class MarketplaceService {
     }
     const approved = earlier?.status === "approved" ? earlier : undefined;
 
-    const asked = await probe(call, this.fetchImpl).catch((error: unknown) => {
+    const asked = await probe(call, this.sellerFetch).catch((error: unknown) => {
       this.log.warn({ err: error, url: call.url }, "seller did not answer");
       return { kind: "error" as const, status: 0 };
     });
@@ -954,7 +965,7 @@ export class MarketplaceService {
     const paying = reserved.row;
     let result;
     try {
-      result = await pay(call, asked.required, option, this.signer(network, agent), this.fetchImpl);
+      result = await pay(call, asked.required, option, this.signer(network, agent), this.sellerFetch);
     } catch (error) {
       this.log.warn({ err: error, purchaseId: paying.id }, "x402 payment did not go through");
       const [failed] = await this.db

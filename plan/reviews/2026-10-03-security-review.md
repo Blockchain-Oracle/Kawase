@@ -35,7 +35,7 @@ Read-only review at `19b65f9` (main moved to `27ab8bc` during it). Production ha
 
 ## Plausible, verify
 
-- **SSRF through x402 catalog listings** (`discovery.ts:54-79` accepts `http:`, private IPs, host templates; `pay.ts:86` fetches) — B2: require https, reject templates, block private addresses at connect time.
+- **SSRF through x402 catalog listings** (`discovery.ts:54-79` accepts `http:`, private IPs, host templates; `pay.ts:86` fetches) — B2: require https, reject templates, block private addresses at connect time. **Fixed in B2 branch:** `integrations-x402/src/guard.ts` — listings must be https with the host written out (no `{param}` in scheme/host/port, no credentials, no private IP or local name) or they are dropped from the catalog; sellers are called through `sellerFetch`, which resolves the host and connects only when every address is public (node http(s) `lookup` hook, so rebinding cannot slip past) and refuses redirects; only the configured demo seller origin is exempt (`test/security-ssrf.test.ts`; `marketplace-practice` passes against the live demo seller).
 - **Rate limits keyed on the first `X-Forwarded-For`** — checked by the lead 10-03: Traefik replaces the spoofed header with the real peer IP, so not spoofable. The bucket map never shrank; fixed by sweeping idle buckets (`rate-limit.ts`).
 - **Turnkey email trust** — if Turnkey allows an unverified email change, discovery returns the attacker's handle. Verify in Turnkey docs.
 - **Whether models follow the injection in H2** — code path confirmed, model behaviour untested (OpenAI credit is out).

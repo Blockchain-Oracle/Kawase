@@ -14,7 +14,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { Address } from "viem";
 
 import { createDb, marketplacePurchases, marketplaceSettings, users, wallets } from "@kawase/db";
-import type { Discovery, Listing } from "@kawase/integrations-x402";
+import { sellerFetch, type Discovery, type Listing } from "@kawase/integrations-x402";
 import { createLogger } from "@kawase/log";
 import { getNetwork } from "@kawase/networks";
 
@@ -81,6 +81,7 @@ const listing = (path: string): Listing => ({
 const discovery = {
   find: async (_: unknown, target: string) => listing(new URL(target).pathname),
   search: async () => ({ listings: [], total: 0 }),
+  sellerFetch: (base?: typeof fetch) => sellerFetch({ base }),
 } as unknown as Discovery;
 
 const agentWallets: AgentWalletProvider = {
@@ -111,7 +112,7 @@ after(async () => {
 });
 
 const service = (fetchImpl: typeof fetch) =>
-  new MarketplaceService(db, chains, new WalletService(db, chains), noOps, agentWallets, discovery, createLogger({ service: "x402-h1-test", level: "silent" }), fetchImpl);
+  new MarketplaceService(db, chains, new WalletService(db, chains), noOps, agentWallets, discovery, createLogger({ service: "x402-h1-test", level: "silent" }), fetchImpl, fetchImpl);
 
 const setCaps = (perCallCap: bigint, dailyBudget: bigint) =>
   db
