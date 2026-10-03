@@ -48,6 +48,7 @@ import { useFund } from "@/fund/fund-provider";
 import { BreakdownSheet } from "@/home/breakdown-sheet";
 import { ForYouSection } from "@/home/for-you";
 import { PortfolioHero } from "@/home/portfolio-hero";
+import { FeeReserveChip, useFeeReserve } from "@/wallet/fee-reserve";
 import { YourAssets } from "@/home/your-assets";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
@@ -85,6 +86,7 @@ const PREVIEW_SKELETON_HEIGHT = 64;
 type HomePhase = "guest" | "unknown" | "setup" | "fund" | "firstSend" | "ready";
 
 export function HomeScreen() {
+  const reserve = useFeeReserve();
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -226,6 +228,7 @@ export function HomeScreen() {
         {phase === "guest" ? (
           <GuestHome onTry={() => router.navigate({ pathname: "/chat", params: { prompt: t("home.chipWhatCanYouDo") } })} onBuy={signIn.open} />
         ) : (
+          <>
           <PortfolioHero
             portfolio={view}
             name={name}
@@ -242,6 +245,9 @@ export function HomeScreen() {
               </Button>
             ))}
           </PortfolioHero>
+          {/* Arc fees are paid in USDC: how many actions the wallet can still pay for (B2-3). */}
+          <FeeReserveChip reserve={reserve} />
+          </>
         )}
         {funded ? (
           <Animated.View pointerEvents="none" entering={ZoomIn.springify()} exiting={FadeOut} className="absolute items-center" style={{ top: 0, start: 0, end: 0 }}>

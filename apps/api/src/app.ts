@@ -385,7 +385,7 @@ export function createApp(deps: AppDeps) {
     marketplace,
     invoices,
     history,
-    business: { payouts, account, exportLinks },
+    business: { payouts, account, exportLinks, fees },
     fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,

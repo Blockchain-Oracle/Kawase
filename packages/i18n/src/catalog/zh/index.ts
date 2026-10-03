@@ -80,6 +80,7 @@ import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 import { help } from "./help";
+import { fees } from "./fees";
 
 export const zh: Catalog = {
   common,
@@ -162,4 +163,5 @@ export const zh: Catalog = {
   alerts,
   chatCards,
   help,
+  fees,
 };

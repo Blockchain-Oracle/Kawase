@@ -160,7 +160,7 @@ export function useWithdrawRun(plan: WithdrawPlanView | undefined, destination: 
         if (step.kind === "send") {
           let { intent } = await api.sends.create({ recipient: destination.address, amount: decimal, asset });
           if (intent.blocking) return (update(step.id, { state: "failed", blocking: intent.blocking }), { ok: false });
-          const answer = await approveAndSign<SendIntent>(() => api.sends.approve(intent.id, intent.version, randomUUID()), (approvalId, signed) => api.sends.signature(intent.id, approvalId, signed));
+          const answer = await approveAndSign<SendIntent>(() => api.sends.approve(intent.id, intent.version, randomUUID()), (approvalId, signed, typed) => api.sends.signature(intent.id, approvalId, signed, typed ? "typed" : undefined));
           if (answer.status === "changed") return (update(step.id, { state: "failed", failure: "changed" }), { ok: false });
           intent = (await follow(() => api.sends.get(intent.id).then((read) => read.intent), (read) => FINISHED.has(read.state), STEP_FOLLOW_MS)) ?? answer.intent;
           if (intent.state !== "completed") return (update(step.id, { state: "failed", failure: intent.outcome === "checking" ? "checking" : "not_sent", explorerUrl: intent.tx?.explorerUrl }), { ok: false });

@@ -72,6 +72,8 @@ export type AmountStepProps = {
   onNote: (note: string) => void;
   /** The token's balance in base units; undefined while loading. */
   balance: bigint | undefined;
+  /** USDC kept for network fees when this is USDC ("Send max" leaves it, plan §A.4 12); typing more still works. */
+  reserve?: bigint | undefined;
   onReview: () => void;
   busy: boolean;
 };
@@ -147,7 +149,7 @@ export function AmountStep(props: AmountStepProps) {
             {balance !== undefined && balance > ZERO ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => props.onValue(canonicalUnits(balance, token.decimals))}
+                onPress={() => props.onValue(canonicalUnits(props.reserve && balance > props.reserve ? balance - props.reserve : balance, token.decimals))}
                 className="bg-muted active:bg-secondary rounded-full px-3 py-1"
               >
                 <Text className="text-foreground text-xs font-semibold">{t("send.max")}</Text>

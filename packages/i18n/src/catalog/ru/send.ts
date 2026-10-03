@@ -30,6 +30,7 @@ export const send: Catalog["send"] = {
   fee: "Комиссия сети",
   feeKawase: "Оплачивает Kawase",
   feeWallet: "Около {{amount}}",
+  feeRelayed: "Около {{amount}}, платит Kawase",
   note: "Заметка",
   allowanceInside: "В пределах дневного лимита — отправится без вопросов",
   allowanceAbove: "Больше остатка лимита — нужен ваш Face ID",

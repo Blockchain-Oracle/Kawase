@@ -64,6 +64,7 @@ import type {
   ExplainOutput,
   DeviceSignOutProposal,
   DeleteAccountProposal,
+  FeeReserveView,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -204,6 +205,8 @@ export type AgentContext = {
   explainTransaction?(input: { txHash: string | null; which: "latest" | "latest_in" | "latest_out" }): Promise<{ output: ExplainOutput; summary: ModelSummary }>;
   /** The devices, for the person to sign one out on the card. */
   proposeDeviceSignOut?(input: { device: string | null }): Promise<{ proposal: DeviceSignOutProposal; summary: ModelSummary }>;
+  /** The fee reserve: Arc fees are USDC; "~N actions left" and the relayer for when it runs out (B2-3). */
+  feeReserve?(): Promise<{ reserve: FeeReserveView | null; summary: ModelSummary }>;
   /** What deleting the account means; the person does it on the delete screen with their @handle typed. */
   proposeDeleteAccount?(): Promise<{ proposal: DeleteAccountProposal; summary: ModelSummary }>;
 };

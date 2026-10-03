@@ -18,6 +18,7 @@ import type {
   DeviceView,
   ExplainOutput,
   ExportLinkOutput,
+  FeeReserveView,
   InvoiceFilter,
   InvoiceListOutput,
   PayoutProposal,
@@ -37,6 +38,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useAccountMethods } from "@/account/use-account-methods";
+import { signAndSubmitPayout } from "@/business/sign-payout";
 import { shareTextFile } from "@/history/share-file";
 import { useWhyHeadline, WhyTimeline } from "@/history/why-timeline";
 import { useLocale } from "@/i18n/locale-provider";
@@ -48,8 +50,9 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
+
+import { FeeReserveChip } from "@/wallet/fee-reserve";
 
 import { AgentCard } from "./card";
 
@@ -72,6 +75,7 @@ export const BUSINESS_LOADING_LABELS: Record<string, string> = {
   weekly_report: "report.loading",
   explain_transaction: "chatCards.loadingWhy",
   sign_out_device: "chatCards.loadingDevices",
+  get_fee_reserve: "fees.loading",
   delete_account: "common.loading",
 };
 
@@ -184,9 +188,7 @@ export function PayoutProposalCard({ output }: { output: { proposal: PayoutPropo
     if (yes !== "approved") return;
     setBusy(true);
     try {
-      const request = await api.business.signPayout(payout.id);
-      const signed = await signer.signTransaction(toSerializable(request.transaction));
-      setPayout((await api.business.submitPayout(payout.id, request.requestId, signed)).payout);
+      setPayout(await signAndSubmitPayout(signer, payout.id));
     } catch {
       toast(t("business.payoutFailed"));
     } finally {
@@ -470,6 +472,22 @@ export function DeviceSignOutCard({ output }: { output: { proposal: DeviceSignOu
   );
 }
 
+// ── Fee reserve ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+export function FeeReserveCard({ output }: { output: { reserve: FeeReserveView | null; summary: { status?: unknown } } }) {
+  const { t } = useT();
+  const money = useTokenMoney();
+  const { reserve } = output;
+  if (!reserve) return <Blocked status={String(output.summary.status ?? "unavailable")} eyebrow={t("fees.cardTitle")} />;
+  return (
+    <AgentCard eyebrow={t("fees.cardTitle")}>
+      <FeeReserveChip reserve={reserve} />
+      <Text className={cn("text-foreground text-sm", TEXT_START)}>{t("fees.perTransfer", { amount: money(reserve.perTransfer, STABLE_DECIMALS, "USDC") })}</Text>
+      <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("fees.relayer")}</Text>
+    </AgentCard>
+  );
+}
+
 // ── Delete account ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 export function DeleteAccountCard({ output }: { output: { proposal: DeleteAccountProposal } }) {
@@ -508,6 +526,8 @@ export function BusinessToolCard({ tool, output }: { tool: string; output: unkno
       return (output as Partial<{ output: ExplainOutput }>).output ? <WhyCard output={(output as { output: ExplainOutput }).output} /> : null;
     case "sign_out_device":
       return (output as Partial<{ proposal: DeviceSignOutProposal }>).proposal ? <DeviceSignOutCard output={output as { proposal: DeviceSignOutProposal }} /> : null;
+    case "get_fee_reserve":
+      return (output as Partial<{ summary: unknown }>).summary ? <FeeReserveCard output={output as { reserve: FeeReserveView | null; summary: { status?: unknown } }} /> : null;
     case "delete_account":
       return (output as Partial<{ proposal: DeleteAccountProposal }>).proposal ? <DeleteAccountCard output={output as { proposal: DeleteAccountProposal }} /> : null;
     default:

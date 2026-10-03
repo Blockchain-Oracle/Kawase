@@ -14,18 +14,23 @@ import {
   type TypedDataDefinition,
 } from "viem";
 
-import { DEFAULT_LIMITS, SECONDS_PER_DAY } from "@kawase/config";
+import { DEFAULT_LIMITS, GAS_ESTIMATE_HEADROOM_PERCENT, MIN_MAX_FEE_PER_GAS_GWEI, SECONDS_PER_DAY } from "@kawase/config";
+import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
 import { automations, grants, intentDrafts, intents, newId, txAttempts, userWalletSetup, wallets, type Db } from "@kawase/db";
 import {
   buildAllowanceGrant,
+  buildRelayedBatch,
   describeGrant,
+  encodeRedeemBatch,
   encodeRevoke,
   encodeSelfBatch,
   grantTypedData,
   isWalletSetUp,
   setupAuthorizationRequest,
   withSignature,
+  type BatchCall,
 } from "@kawase/integrations-delegation";
+import type { Delegation } from "@metamask/smart-accounts-kit";
 import { DelegationManager } from "@metamask/smart-accounts-kit/contracts";
 import { hashDelegation } from "@metamask/smart-accounts-kit/utils";
 import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
@@ -60,7 +65,17 @@ export type PendingTransaction = {
   grantIds?: string[] | undefined;
 };
 
+/** A batch the relayer will send for the wallet, waiting for the wallet's signature on its one-time delegation. */
+export type PendingRelay = { userId: string; network: NetworkId; kind: string; wallet: Address; grant: Delegation; calls: BatchCall[] };
+
+/** How long a relayed batch's delegation stays valid (it is also limited to one use). */
+const RELAY_TTL_SECONDS = 600;
+const GWEI = 1_000_000_000n;
+const PERCENT = 100n;
+
 export class WalletService {
+  private readonly pendingRelays = new Map<string, PendingRelay>();
+
   /** Unsigned transactions handed to the wallet, remembered until the signed one comes back. */
   private readonly pendingTransactions = new Map<string, PendingTransaction>();
 
@@ -446,6 +461,75 @@ export class WalletService {
     const wallet = await this.requireWallet(userId);
     const data = encodeSelfBatch(calls.map((call) => ({ ...call, value: ZERO })));
     return this.unsignedTransaction(userId, network, kind, wallet.address, data, gas);
+  }
+
+  /**
+   * Whether the wallet can pay a batch's fee itself once `spendUsdc` has left it (Arc gas is USDC). When it can't,
+   * the batch goes through the relayer instead (relayedBatchRequest): no out-of-gas dead end.
+   */
+  async canPayFee(userId: string, network: NetworkId, spendUsdc: bigint, gas: bigint): Promise<boolean> {
+    const wallet = await this.requireWallet(userId);
+    const { client, network: context } = this.clients(network);
+    const [usdc, fees] = await Promise.all([
+      client.readContract({ address: context.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet.address as Address] }),
+      client.estimateFeesPerGas(),
+    ]);
+    const floor = MIN_MAX_FEE_PER_GAS_GWEI * GWEI;
+    const perGas = fees.maxFeePerGas > floor ? fees.maxFeePerGas : floor;
+    const fee = rescale((gas * GAS_ESTIMATE_HEADROOM_PERCENT * perGas) / PERCENT, USDC_NATIVE_DECIMALS, decimalsOf("USDC"));
+    return usdc - spendUsdc >= fee;
+  }
+
+  /**
+   * The same batch, sent by Kawase's relayer: the wallet signs a one-time delegation that allows exactly these calls,
+   * once, for ten minutes, redeemable only by the relayer (integrations-delegation relayed-batch.ts). The relayer pays.
+   */
+  async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex }[]) {
+    const wallet = await this.requireWallet(userId);
+    const clients = this.clients(network);
+    if (!isWalletSetUp(await clients.client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.conflict, "wallet_not_set_up");
+    const batch = calls.map((call) => ({ ...call, value: ZERO }));
+    const grant = buildRelayedBatch({
+      network: clients.network,
+      wallet: wallet.address as Address,
+      relayer: clients.relayerAddress,
+      calls: batch,
+      expiresAt: Math.floor(Date.now() / MS_PER_SECOND) + RELAY_TTL_SECONDS,
+      salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
+    });
+    const id = newId();
+    this.pendingRelays.set(id, { userId, network, kind, wallet: wallet.address as Address, grant, calls: batch });
+    // JSON for the app: uint256 fields as decimal strings (the signer reads them back as numbers).
+    return { requestId: id, relayed: true as const, typedData: jsonSafe(grantTypedData(clients.network, grant)) as Record<string, unknown> };
+  }
+
+  /** The wallet signed the one-time delegation: checked, then the relayer redeems it with exactly that batch. */
+  async submitRelayedBatch(userId: string, requestId: string, signature: Hex) {
+    const pending = this.pendingRelays.get(requestId);
+    if (!pending || pending.userId !== userId) throw problem(HTTP.notFound, "not_found", "no such transaction request");
+    const clients = this.clients(pending.network);
+    const valid = await verifyTypedData({ address: pending.wallet, ...(grantTypedData(clients.network, pending.grant) as TypedDataDefinition), signature }).catch(() => false);
+    if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch", "the delegation is not signed by this wallet");
+    this.pendingRelays.delete(requestId);
+    const call = encodeRedeemBatch(clients.network, withSignature(pending.grant, signature), pending.calls);
+    const attemptId = newId();
+    await this.db.insert(txAttempts).values({
+      id: attemptId,
+      userId,
+      network: pending.network,
+      chainId: clients.network.chainId,
+      kind: `${pending.kind}_relayed`,
+      provider: "relayer",
+      idempotencyKey: randomUUID(),
+      fromAddress: clients.relayerAddress,
+      toAddress: call.to,
+      status: "submitted",
+    });
+    const hash = await clients.relayer.sendTransaction({ to: call.to, data: call.data, chain: clients.network.viemChain, account: clients.relayer.account! });
+    const receipt = await clients.client.waitForTransactionReceipt({ hash });
+    const status = receipt.status === "success" ? "confirmed" : "reverted";
+    await this.db.update(txAttempts).set({ txHash: hash, status, receipt: jsonSafe(receipt) }).where(eq(txAttempts.id, attemptId));
+    return { tx: hash, status };
   }
 
   private async unsignedTransaction(

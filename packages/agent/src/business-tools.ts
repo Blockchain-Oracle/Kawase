@@ -93,6 +93,13 @@ export function businessTools(context: AgentContext) {
       execute: async ({ device }) => (context.proposeDeviceSignOut ? context.proposeDeviceSignOut({ device: device ?? null }) : UNAVAILABLE),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
+    get_fee_reserve: tool({
+      description:
+        "The person's fee reserve on the active network: Arc's network fees are paid in USDC, so this says how many sends (\"~N actions left\") their USDC can still pay for, what one costs now, and that when it runs out Kawase pays the fee for USDC and EURC sends (no dead end). Use it for \"how much gas do I have?\", \"can I still send?\", \"why is there a fee?\".",
+      inputSchema: z.object({}),
+      execute: async () => (context.feeReserve ? context.feeReserve() : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
     delete_account: tool({
       description:
         "When the person asks to delete their Kawase account: show what deleting means (the wallet stays theirs; Kawase deletes its records; permissions should be revoked and money moved first) and the way to the delete screen, where they type their @handle to confirm. You never delete the account and never ask them to type the handle in chat.",

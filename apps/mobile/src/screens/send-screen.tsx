@@ -27,6 +27,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
 import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { useFeeReserve } from "@/wallet/fee-reserve";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
@@ -61,6 +62,7 @@ export type SendPrefill = {
 };
 
 export function SendScreen({ prefill }: { prefill: SendPrefill }) {
+  const feeReserve = useFeeReserve();
   const { t } = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -277,6 +279,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
         note={note}
         onNote={setNote}
         balance={balance}
+        reserve={feeReserve && isUsdc ? BigInt(feeReserve.reserve) : undefined}
         onReview={() => void review()}
         busy={creating || controller.busy}
       />

@@ -12,13 +12,14 @@ import { formatTokenAmount } from "@kawase/money";
 import type { AccountService } from "../account/service";
 import type { InvoiceService } from "../business/invoices";
 import type { PayoutService } from "../business/payouts";
+import type { FeeService } from "../fees/service";
 import type { ExportLinks } from "../history/export-link";
 import type { HistoryService } from "../history/service";
 import { ProblemError } from "../http/problem";
 import type { SessionUser } from "../types";
 import type { WalletService } from "../wallet/service";
 
-export type BusinessAgentDeps = { payouts: PayoutService; account: AccountService; exportLinks: ExportLinks };
+export type BusinessAgentDeps = { payouts: PayoutService; account: AccountService; exportLinks: ExportLinks; fees?: FeeService | undefined };
 
 /** Display strings for the model are canonical (English digits). */
 const DISPLAY_LOCALE = "en";
@@ -73,7 +74,7 @@ export function businessContext(input: {
   business?: BusinessAgentDeps | undefined;
 }): Pick<
   AgentContext,
-  "proposePayout" | "listInvoices" | "exportHistory" | "weeklyReport" | "explainTransaction" | "proposeDeviceSignOut" | "proposeDeleteAccount"
+  "proposePayout" | "feeReserve" | "listInvoices" | "exportHistory" | "weeklyReport" | "explainTransaction" | "proposeDeviceSignOut" | "proposeDeleteAccount"
 > {
   const { user, wallets, invoices, history, business } = input;
   const network = user.activeNetwork;
@@ -193,6 +194,23 @@ export function businessContext(input: {
           devices: devices.map((entry) => ({ name: entry.name ?? entry.platform, platform: entry.platform, where: entry.location, lastActive: entry.lastSeenAt.slice(0, DATE_CHARS) })),
           matched: target ? (target.name ?? target.platform) : null,
           next: "The person taps Sign out on the card; you never sign a device out.",
+        },
+      };
+    },
+
+    async feeReserve() {
+      if (user.isAnonymous || !business?.fees) return { reserve: null, summary: { status: user.isAnonymous ? "needs_sign_in" : "unavailable" } };
+      const reserve = await business.fees.reserve(user);
+      return {
+        reserve,
+        summary: {
+          status: reserve.hasWallet ? "ready" : "needs_wallet",
+          network,
+          usdc: show(reserve.usdc, STABLE_DECIMALS, "USDC"),
+          actionsLeft: reserve.actionsLeft,
+          perSend: show(reserve.perTransfer, STABLE_DECIMALS, "USDC"),
+          low: reserve.low,
+          relayer: "When the wallet cannot pay a fee, Kawase pays it for USDC and EURC sends; nothing is stuck.",
         },
       };
     },
