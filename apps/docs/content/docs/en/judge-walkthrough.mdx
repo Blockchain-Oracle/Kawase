@@ -1,0 +1,162 @@
+---
+title: Judge walkthrough
+description: What you can try on the live app today, the five-minute path through Kawase on Arc testnet, and the mainnet path, each step linked to its on-chain evidence on the demo page.
+---
+
+This page is for reviewers who click around without us in the room. Each step says what to do, what you should see, and
+where the proof is: the [demo page](https://getkawase.xyz/demo) groups every real Arc testnet transaction behind a claim,
+and each step links to its group (for example [`/demo#send`](https://getkawase.xyz/demo#send)). Testnet money has no
+value, so nothing here costs anything.
+
+<Callout type="warn" title="Paused on the live app (2026-10-03)">
+
+- **Chat and voice** are paused: the AI model provider's prepaid credit has run out.
+- **Anything your wallet signs** is paused: wallet setup, the everyday allowance, and every confirmation (Face ID or the
+  email code). Kawase's wallet provider, Turnkey, allows 25 signatures a month on its free plan, and October's are used.
+- **Mainnet** moves no money yet: Kawase's mainnet relayer has not been funded.
+
+Until these are lifted, the steps marked **paused** below cannot be run on the live app; their transactions on the demo
+page are the proof that they work.
+
+</Callout>
+
+## What you can try right now
+
+Use [app.getkawase.xyz](https://app.getkawase.xyz) in a desktop or phone browser, the
+[Android APK](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed), or
+TestFlight if you have an invite.
+
+1. **Arrive as a guest.** Pick a language from the pill on the first screen (Arabic and Urdu turn the whole layout
+   right-to-left), swipe the short story, and open every screen: Home, Markets, a token page, Activity, Settings.
+2. **Help & trust** (Settings): what Kawase can do, where your money lives, how to leave without Kawase, and the live
+   state of Arc, Circle and prices.
+3. **Sign in** with an email code (or Apple or Google). Kawase creates your own wallet at Turnkey: one address on both
+   networks.
+4. **Get test money** from the faucet card on Home: Circle's faucet sends about **20 USDC and 20 EURC**. Your balance,
+   the fee chip ("~N actions left": Arc's fees are paid in USDC) and the receive page with your QR code follow.
+5. **Switch networks** with the pill in the header: the first switch to mainnet shows the real-money consent.
+6. **Check the chain.** Every claim below has a transaction on [/demo](https://getkawase.xyz/demo) that opens on the
+   explorer.
+
+## The five-minute path (testnet, paused)
+
+This is the path once chat and wallet signing are back. On the web an **email code** stands in for Face ID; on iPhone and
+Android the same steps use Face ID or the fingerprint.
+
+<Steps>
+<Step>
+
+### 1. Ask what it can do
+
+> what can you do?
+
+You get the capability card: what works on testnet and on mainnet, from the same registry the agent reads before it
+proposes anything ([availability](./availability.mdx)).
+
+Proof: [the demo video](https://getkawase.xyz/demo#video).
+
+</Step>
+<Step>
+
+### 2. Set up the wallet and accept the allowance
+
+Kawase upgrades your wallet in place with EIP-7702; you sign once and Kawase's relayer pays the fee. Then you accept the
+**everyday allowance** with one confirmation: a delegation that lets Kawase's agent wallet send up to a daily amount of
+USDC for you, with the cap, the token, the function, the redeemer and the expiry written on chain.
+
+Proof: [setup paid by the relayer](https://getkawase.xyz/demo#setup), [sends inside the on-chain
+allowance](https://getkawase.xyz/demo#allowance).
+
+</Step>
+<Step>
+
+### 3. Send money
+
+> send 1 dollar to 0x… (paste an address you control, or a friend's @handle)
+
+Kawase resolves the recipient, runs its checks (balance, limits, look-alike and contract addresses) and shows the card:
+amount, currency, recipient, network. Inside the allowance it goes at once and the card follows the transaction to the
+explorer; above it, or to a new address above the first-time threshold, it waits for your confirmation. A wallet with no
+USDC left for fees still sends USDC or EURC: you sign once and the relayer pays.
+
+Proof: [sends](https://getkawase.xyz/demo#send), including the gas-free one.
+
+</Step>
+<Step>
+
+### 4. Swap
+
+> swap 2 dollars to euros
+
+The ticket shows the best quote of KyberSwap, Circle App Kit and LI.FI (the others below it), the minimum you receive and
+the fee. Slide to confirm: approve and swap go as **one** EIP-7702 batch, one confirmation. On testnet only USDC ↔ EURC
+exists to trade; on mainnet it is any token on Arc, meme coins included, with GoPlus checks and Kawase's copycat rule.
+
+Proof: [swaps](https://getkawase.xyz/demo#swap). Bridges and earn work the same way:
+[bridge](https://getkawase.xyz/demo#bridge) ("move 1 dollar to Base"), [earn](https://getkawase.xyz/demo#earn) ("put 5
+dollars in savings").
+
+</Step>
+<Step>
+
+### 5. Hand it a job
+
+> every day at 9 send 0.05 dollars to the same address
+
+The card shows the schedule, the amount and the **grant** it needs: transfer only, pinned to that one recipient, at most
+that amount per period, expiring with the automation. Run it in practice first (a dry run that moves nothing), then turn
+it on with one confirmation. It then runs by itself inside the grant; anything it may not do alone waits in **Needs
+you**. Also try "keep 20 dollars in my wallet and save the rest" (Auto-save). Cancelling revokes the grant on chain.
+
+Proof: [automations that ran unattended](https://getkawase.xyz/demo#automation), [grants
+revoked](https://getkawase.xyz/demo#revoke).
+
+</Step>
+<Step>
+
+### 6. Talk to it
+
+Tap the orb in the dock and say, in any of the ten languages, "how much do I have?". It answers aloud and puts the same
+cards on screen as chat. Ask it to send money: the card is prepared and **waits for your tap**. A spoken "yes" never
+approves a payment.
+
+Proof: [the demo video](https://getkawase.xyz/demo#video).
+
+</Step>
+</Steps>
+
+With another minute: **Business** (Settings → Business) makes an invoice with a payment link, a PDF and an Arc Memo
+reference that marks it paid when the money lands, and pays several people in one signed batch
+([business](https://getkawase.xyz/demo#business)). **Wallet & limits** has Pause all and the exit kit; see
+[safety](./safety.mdx).
+
+## The mainnet path
+
+Mainnet is real money, so it takes an account and an explicit consent. Tap the network pill: the first switch shows the
+real-money consent; after it, the pill, the REAL MONEY label and the orb's colour all say mainnet. Your address is the
+same; balances, history and limits are kept per network ([network toggle](./features/network-toggle.mdx)).
+
+What only mainnet has, each built against mainnet contracts and live quotes:
+
+- **Markets**: every token on Arc with price, chart and safety checks; meme coins; a token still on a launchpad's bonding
+  curve shows its progress to graduation ([swap and trade](./features/swap-and-trade.mdx)).
+- **Long and short**: Kawase Margin opens a leveraged position through your own Aave V4 account, with the liquidation
+  price on the ticket before you slide ([long and short](./features/long-short.mdx)).
+- **Earn and borrow**: Aave V4 supply and borrowing with a live health gauge next to Morpho vaults and Aero campaigns
+  ([earn and borrow](./features/earn-and-borrow.mdx)).
+- **Agent wallet**: paid x402 services from Circle's catalog, inside a daily budget you set
+  ([marketplace](./features/marketplace.mdx)).
+- **Buy**: USDC with a card through Circle's Onramp, delivered to your own wallet ([buy](./features/buy.mdx)).
+
+Moving real money needs the mainnet wallet setup, which is **paused** with the rest of wallet signing and until the
+mainnet relayer is funded; the setup then says "Kawase is getting mainnet ready" instead of failing silently. Every
+mainnet action runs the same code as its testnet twin (the network is part of the session, not something the agent
+chooses), so the testnet evidence is the proof of the mechanism: [setup](https://getkawase.xyz/demo#setup),
+[send](https://getkawase.xyz/demo#send), [swap](https://getkawase.xyz/demo#swap), [earn](https://getkawase.xyz/demo#earn).
+No real money has moved through Kawase on mainnet yet.
+
+## Where to read the code
+
+The repository's README maps every feature to its package, and [architecture](./architecture.mdx) lists the tests that
+ran against Arc testnet. The [availability](./availability.mdx) page is generated from the capability registry
+(`packages/config/src/capabilities.ts`) when this site is built, so it says what the app says.
