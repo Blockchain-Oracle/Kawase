@@ -2,8 +2,10 @@ import { generateKeyPairSync, type KeyObject } from "node:crypto";
 import { ApiKeyStamper } from "@turnkey/api-key-stamper";
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
+import type { Hex, LocalAccount, TypedDataDefinition } from "viem";
 
 import { createModels } from "@kawase/agent";
+import type { RevokeRequest } from "@kawase/api-client";
 import { createDb, users, type Db } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
@@ -127,3 +129,18 @@ export async function expectStatus(response: Response, status: number, what = "r
   if (response.status !== status)
     throw new Error(`${what}: expected ${status}, got ${response.status}: ${await response.clone().text()}`);
 }
+
+/**
+ * What a local wallet signs for an on-chain revoke: the relayed batch's one-time delegation (Kawase's relayer pays), or
+ * the transaction the wallet sends itself. Post it to /wallet/transactions/submit, or with the change it belongs to.
+ */
+export async function signRevokeRequest(wallet: LocalAccount, request: RevokeRequest): Promise<{ requestId: string; signed: Hex }> {
+  if ("relayed" in request) return { requestId: request.requestId, signed: await wallet.signTypedData(request.typedData as unknown as TypedDataDefinition) };
+  const t = request.transaction;
+  const signed = await wallet.signTransaction!({ type: "eip1559", chainId: t.chainId, nonce: t.nonce, to: t.to, data: t.data, value: 0n, gas: BigInt(t.gas), maxFeePerGas: BigInt(t.maxFeePerGas), maxPriorityFeePerGas: BigInt(t.maxPriorityFeePerGas) });
+  return { requestId: request.requestId, signed };
+}
+
+/** The body /wallet/transactions/submit takes for a signed revoke. */
+export const revokeSubmitBody = (request: RevokeRequest, signed: { requestId: string; signed: Hex }) =>
+  "relayed" in request ? { requestId: signed.requestId, signature: signed.signed } : { requestId: signed.requestId, signedTransaction: signed.signed };

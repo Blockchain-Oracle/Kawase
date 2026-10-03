@@ -16,7 +16,8 @@ import type {
   SignedAuthorizationInput,
   SignInResponse,
   StampedProof,
-  TransactionRequestResponse,
+  RevokeRequest,
+  SignedRevokeInput,
   WalletStatus,
   FaucetClaim,
   FaucetStatus,
@@ -223,18 +224,23 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         ),
       allowanceRequest: (network: NetworkId, periodAmount?: string) =>
         call<AllowanceRequestResponse>("POST", "/wallet/allowance/request", { network, periodAmount }),
-      allowanceSubmit: (grantId: string, signature: string) =>
+      /** `revoke`: the allowance it replaces, signed in the same yes; the api turns it off on chain first. */
+      allowanceSubmit: (grantId: string, signature: string, revoke?: SignedRevokeInput) =>
         call<{ grantId: string; receipt: unknown; expiresAt: string }>("POST", "/wallet/allowance/submit", {
           grantId,
           signature,
+          revoke,
         }),
       revokeRequest: (network: NetworkId) =>
-        call<TransactionRequestResponse>("POST", "/wallet/allowance/revoke/request", { network }),
+        call<RevokeRequest>("POST", "/wallet/allowance/revoke/request", { network }),
       submitTransaction: (requestId: string, signedTransaction: string) =>
         call<{ tx: string; status: "confirmed" | "reverted" }>("POST", "/wallet/transactions/submit", {
           requestId,
           signedTransaction,
         }),
+      /** The wallet's signature on a relayed request (a RevokeRequest with `relayed`): Kawase's relayer sends it. */
+      submitSignature: (requestId: string, signature: string) =>
+        call<{ tx: string; status: "confirmed" | "reverted" }>("POST", "/wallet/transactions/submit", { requestId, signature }),
     },
 
     agent: {
@@ -365,7 +371,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       skip: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/skip`),
       /** Stops it at once; the answer carries the revoke transaction for the wallet to sign (the grant on chain). */
       cancel: (id: string) =>
-        call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>(
+        call<{ automation: AutomationView; revoke: RevokeRequest | null }>(
           "POST",
           `/automations/${id}/cancel`,
         ),
@@ -378,8 +384,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
       simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
       edit: (id: string, edit: AutomationEdit) => call<AutomationEditResponse>("PATCH", `/automations/${id}`, edit),
-      editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
-        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
+      editActivate: (id: string, signatures: { grantId: string; signature: string }[], revoke?: SignedRevokeInput) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures, revoke }),
     } satisfies AutomationsMoreApi,
 
     /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
@@ -491,7 +497,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       exportRecorded: () => call<void>("POST", "/account/export/recorded"),
       holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
       revokeAllRequest: (network: NetworkId) =>
-        call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
+        call<{ revoke: RevokeRequest | null }>("POST", "/account/grants/revoke/request", { network }),
       deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
     } satisfies AccountApi,
 
@@ -500,7 +506,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       get: () => call<SafetyView>("GET", "/safety"),
       tokens: (address?: string) => call<{ tokens: TokenOption[] }>("GET", `/safety/tokens${address ? `?address=${encodeURIComponent(address)}` : ""}`),
       change: (change: SafetyChange, via?: "app" | "chat" | "voice") => call<SafetyChangeResponse>("POST", "/safety/changes", { change, via }),
-      approve: (changeId: string, signature: string) => call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature }),
+      approve: (changeId: string, signature: string, revoke?: SignedRevokeInput) =>
+        call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature, revoke }),
       pause: () => call<SafetyChangeResponse>("POST", "/safety/changes", { change: { kind: "pause", on: true } }),
       exitKit: () => call<ExitKitResponse>("POST", "/safety/exit-kit"),
     } satisfies SafetyApi,
@@ -514,9 +521,9 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ settings: AgentWalletSettings }>("PATCH", "/marketplace/agent-wallet/settings", change),
       /** The marketplace grant to sign once (Face ID): USDC only to the agent wallet, capped per day. */
       grant: () => call<MarketplaceGrantRequest>("POST", "/marketplace/agent-wallet/grant"),
-      /** `revoke`: the signed revoke the request carried (the earlier grant it replaces is disabled on chain). */
-      grantSubmit: (grantId: string, signature: string, revoke?: { requestId: string; signature: string }) =>
-        call<{ grantId: string; perDay: string; expiresAt: string; revoked?: boolean }>("POST", "/marketplace/agent-wallet/grant/submit", revoke ? { grantId, signature, revoke } : { grantId, signature }),
+      /** `revoke`: the request's revoke, signed in the same yes (the earlier grant it replaces is turned off on chain first). */
+      grantSubmit: (grantId: string, signature: string, revoke?: SignedRevokeInput) =>
+        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", revoke ? { grantId, signature, revoke } : { grantId, signature }),
       topUp: (amount: string, idempotencyKey?: string) =>
         call<TopUpResult>("POST", "/marketplace/agent-wallet/top-up", { amount }, { idempotencyKey }),
       /** Everything in the agent wallet back to the person's wallet. */

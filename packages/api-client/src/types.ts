@@ -97,7 +97,8 @@ export type TypedDataPayload = {
   message: Record<string, unknown>;
 };
 
-export type AllowanceRequestResponse = { grantId: string; typedData: TypedDataPayload; receipt: GrantReceipt };
+/** `revoke`: the allowance it replaces, still on chain, to revoke in the same yes (null when there is none). */
+export type AllowanceRequestResponse = { grantId: string; typedData: TypedDataPayload; receipt: GrantReceipt; revoke?: RevokeRequest | null };
 
 export type UnsignedTransaction = {
   type: "eip1559";
@@ -114,6 +115,14 @@ export type UnsignedTransaction = {
 export type TransactionRequestResponse = { requestId: string; transaction: UnsignedTransaction; grantId?: string };
 /** The wallet cannot pay the fee: it signs a one-time delegation for exactly this batch and Kawase's relayer sends it. */
 export type RelayedBatchRequest = { requestId: string; relayed: true; typedData: Record<string, unknown> };
+/**
+ * Turning grants off on chain (`disableDelegation` for each): Kawase's relayer sends it (the wallet signs a one-time
+ * delegation for exactly those calls), or, while the relayer has no gas, a transaction the wallet sends itself. Either
+ * way the app posts what it signed to /wallet/transactions/submit.
+ */
+export type RevokeRequest = (RelayedBatchRequest | TransactionRequestResponse) & { grantIds?: string[] };
+/** What the wallet signed for a RevokeRequest, sent with the change it belongs to. */
+export type SignedRevokeInput = { requestId: string; signed: `0x${string}` };
 
 export type Problem = {
   type: string;

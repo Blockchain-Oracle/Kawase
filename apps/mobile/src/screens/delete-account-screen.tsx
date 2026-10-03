@@ -31,7 +31,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
+import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const MARK_SIZE = 24;
@@ -93,8 +93,7 @@ export function DeleteAccountScreen() {
     try {
       const { revoke: request } = await api.account.revokeAllRequest(network);
       if (request) {
-        const signed = await signer.signTransaction(toSerializable(request.transaction));
-        const result = await api.wallet.submitTransaction(request.requestId, signed);
+        const result = await submitRevoke(request, await signRevoke(signer, request));
         toast(result.status === "confirmed" ? t("deleteAccount.revoked") : t("deleteAccount.revokeFailed"));
       }
       await load();

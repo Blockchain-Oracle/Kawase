@@ -2,12 +2,12 @@
 // A change goes to the api, which classifies it: a tightening comes back applied; a loosening comes back with what the
 // wallet signs. Approving is the owner's own yes (Face ID, a fingerprint, or an email code on the web) followed by the
 // wallet signing exactly that — the step-up message, or the new grant together with the revoke of the grant it
-// replaces (one yes covers both), so the chain never holds two allowances for one token. Only an explicit "approved"
-// from the device check signs (review R03).
+// replaces (one yes covers both; the api turns the old one off on chain before the new one goes on), so the chain never
+// holds two allowances for one token. Only an explicit "approved" from the device check signs (review R03).
 import * as React from "react";
 import type { TypedDataDefinition } from "viem";
 
-import { ApiError, type SafetyChange, type SafetyChangeResponse, type SafetyView, type TransactionRequestResponse } from "@kawase/api-client";
+import { ApiError, type RevokeRequest, type SafetyChange, type SafetyChangeResponse, type SafetyView } from "@kawase/api-client";
 import { formatTokenAmount } from "@kawase/money";
 
 import { useLocale } from "@/i18n/locale-provider";
@@ -15,7 +15,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
+import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 export const ARC_CHAIN_IDS = { mainnet: 5042, testnet: 5042002 } as const;
@@ -71,11 +71,11 @@ export function useSafetyChange() {
       if (check !== "approved") return { outcome: check === "unavailable" ? "unavailable" : check === "failed" ? "failed" : "cancelled" };
       try {
         const signature = await signer.signTypedData(pending.approval.typedData as unknown as TypedDataDefinition);
-        // The old grant's revoke is signed in the same yes, before anything is sent.
+        // The old grant's revoke is signed in the same yes and goes with the approval: the api turns it off on chain
+        // before the new one goes on.
         const revoke = pending.approval.kind === "grant" ? pending.approval.revoke : null;
-        const signedRevoke = revoke ? await signer.signTransaction(toSerializable(revoke.transaction)) : undefined;
-        const response = await api.safety.approve(pending.changeId, signature);
-        if (revoke && signedRevoke) await api.wallet.submitTransaction(revoke.requestId, signedRevoke).catch(() => undefined);
+        const signedRevoke = revoke ? await signRevoke(signer, revoke) : undefined;
+        const response = await api.safety.approve(pending.changeId, signature, signedRevoke);
         await session.refresh();
         return { outcome: "applied", response };
       } catch (error) {
@@ -88,13 +88,12 @@ export function useSafetyChange() {
 
   /** An on-chain revoke the api prepared: the owner's yes, the wallet signs it, the api broadcasts and confirms it. */
   const revoke = React.useCallback(
-    async (transaction: TransactionRequestResponse, prompt: string, cancelLabel: string): Promise<RevokeOutcome> => {
+    async (request: RevokeRequest, prompt: string, cancelLabel: string): Promise<RevokeOutcome> => {
       if (!signer) return "later";
       const check = await confirmWithBiometrics(prompt, cancelLabel);
       if (check !== "approved") return "later";
       try {
-        const signed = await signer.signTransaction(toSerializable(transaction.transaction));
-        const result = await api.wallet.submitTransaction(transaction.requestId, signed);
+        const result = await submitRevoke(request, await signRevoke(signer, request));
         await session.refresh();
         return result.status === "confirmed" ? "revoked" : "later";
       } catch {

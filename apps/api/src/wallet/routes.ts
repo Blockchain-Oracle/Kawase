@@ -6,7 +6,7 @@ import { requireAccount } from "../auth/middleware";
 import type { TurnkeyReader } from "../auth/turnkey";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
-import type { WalletService } from "./service";
+import type { SignedRevoke, WalletService } from "./service";
 
 const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
 const network = z.enum(["mainnet", "testnet"]);
@@ -35,8 +35,13 @@ const allowanceRequestSchema = z.object({
   /** The token; USDC when not named (one allowance per token). */
   token: z.string().refine((value) => isAddress(value, { strict: false }), "expected a token address").optional(),
 });
-const allowanceSubmitSchema = z.object({ grantId: z.uuid(), signature: hex });
-const submitTransactionSchema = z.object({ requestId: z.uuid(), signedTransaction: hex });
+/** What the wallet signed for a revoke handed out with a new grant (a relayed batch's signature or a transaction). */
+export const signedRevokeSchema = z.object({ requestId: z.uuid(), signed: hex });
+const allowanceSubmitSchema = z.object({ grantId: z.uuid(), signature: hex, revoke: signedRevokeSchema.optional() });
+/** A signed transaction, or the wallet's signature on a relayed request (Kawase's relayer sends it). */
+const submitTransactionSchema = z
+  .object({ requestId: z.uuid(), signedTransaction: hex.optional(), signature: hex.optional() })
+  .refine((input) => Boolean(input.signedTransaction) !== Boolean(input.signature), "send signedTransaction or signature");
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -101,7 +106,7 @@ export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
 
   app.post("/allowance/submit", async (c) => {
     const input = await parse(allowanceSubmitSchema, await c.req.json());
-    return c.json(await wallets.allowanceSubmit(c.get("userId")!, input.grantId, input.signature as Hex));
+    return c.json(await wallets.allowanceSubmit(c.get("userId")!, input.grantId, input.signature as Hex, input.revoke as SignedRevoke | undefined));
   });
 
   app.post("/allowance/revoke/request", async (c) => {
@@ -111,7 +116,7 @@ export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
 
   app.post("/transactions/submit", async (c) => {
     const input = await parse(submitTransactionSchema, await c.req.json());
-    return c.json(await wallets.submitTransaction(c.get("userId")!, input.requestId, input.signedTransaction as Hex));
+    return c.json(await wallets.submitSigned(c.get("userId")!, input.requestId, (input.signature ?? input.signedTransaction) as Hex));
   });
 
   return app;

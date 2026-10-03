@@ -35,6 +35,9 @@ export type ProblemCode =
   | "grant_not_pending"
   | "signature_mismatch"
   | "transaction_mismatch"
+  /** A new grant replaces one the chain still honours: the old one's revoke must be signed and land first. */
+  | "revoke_required"
+  | "revoke_failed"
   | "network_unavailable"
   /** The network is on, but Kawase's relayer there has no gas yet (a funded relayer makes it ready). */
   | "network_not_ready"
@@ -119,6 +122,8 @@ const TITLES: Record<ProblemCode, string> = {
   grant_not_pending: "There is no allowance waiting for a signature",
   signature_mismatch: "The signature does not match the wallet",
   transaction_mismatch: "The signed transaction differs from the request",
+  revoke_required: "The grant this replaces must be revoked in the same approval",
+  revoke_failed: "The old grant's revoke did not go through; nothing changed",
   network_unavailable: "This network is not available",
   network_not_ready: "Kawase is getting this network ready",
   relay_limit: "Kawase has paid your network fees enough times today",

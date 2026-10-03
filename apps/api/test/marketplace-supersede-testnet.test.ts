@@ -1,7 +1,8 @@
 // H4, marketplace part (security review 2026-10-03), on Arc testnet: signing a new marketplace grant while an earlier
-// one still works disables the earlier one on chain in the same step. The request carries a relayed revoke (a
-// one-time delegation for exactly that `disableDelegation`), the wallet signs it with the grant, the relayer pays,
-// and the DelegationManager then reports the old delegation disabled. Uses the shared relayer (run on its own).
+// one still works disables the earlier one on chain in the same step. The request carries the shared on-chain revoke
+// (`revokeGrantsRequest`: a one-time delegation for exactly that `disableDelegation`, the relayer pays), the wallet
+// signs it with the grant, it lands before the new grant goes on, and the DelegationManager then reports the old
+// delegation disabled. Without the revoke the new grant is refused. Uses the shared relayer (run on its own).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
@@ -33,7 +34,7 @@ const agentWallets: AgentWalletProvider = {
   },
 };
 
-type GrantRequest = { grantId: string; typedData: Record<string, unknown>; revoke: { requestId: string; typedData: Record<string, unknown> } | null };
+type GrantRequest = { grantId: string; typedData: Record<string, unknown>; revoke: { requestId: string; relayed?: true; typedData?: Record<string, unknown> } | null };
 
 test("a new marketplace grant disables the one it replaces on chain, in the same step", { skip: !live, timeout: 600_000 }, async () => {
   const env = loadApiEnv();
@@ -77,16 +78,18 @@ test("a new marketplace grant disables the one it replaces on chain, in the same
   assert.equal(first.revoke, null, "nothing to revoke yet");
   await expectStatus(await call("POST", "/marketplace/agent-wallet/grant/submit", { grantId: first.grantId, signature: await wallet.signTypedData(first.typedData as unknown as TypedDataDefinition) }), 200, "first grant");
 
-  // A second grant: its request carries the first one's revoke; both are signed in the one step.
+  // A second grant: its request carries the first one's revoke (relayed: the wallet holds no USDC). Without the
+  // revoke the new grant is refused; with it, both signed in the one step, the old one goes off first.
   const second = (await (await call("POST", "/marketplace/agent-wallet/grant", {})).json()) as GrantRequest;
-  assert.ok(second.revoke, "the earlier grant is offered for revoke");
+  assert.ok(second.revoke?.relayed && second.revoke.typedData, `the earlier grant is offered for a relayed revoke (${JSON.stringify(second.revoke)})`);
+  const grantSignature = await wallet.signTypedData(second.typedData as unknown as TypedDataDefinition);
+  await expectStatus(await call("POST", "/marketplace/agent-wallet/grant/submit", { grantId: second.grantId, signature: grantSignature }), 422, "refused without the revoke");
   const submitted = await call("POST", "/marketplace/agent-wallet/grant/submit", {
     grantId: second.grantId,
-    signature: await wallet.signTypedData(second.typedData as unknown as TypedDataDefinition),
-    revoke: { requestId: second.revoke.requestId, signature: await wallet.signTypedData(second.revoke.typedData as unknown as TypedDataDefinition) },
+    signature: grantSignature,
+    revoke: { requestId: second.revoke.requestId, signed: await wallet.signTypedData(second.revoke.typedData as unknown as TypedDataDefinition) },
   });
   await expectStatus(submitted, 200, "second grant");
-  assert.equal(((await submitted.json()) as { revoked: boolean }).revoked, true);
 
   const [old] = await db.select().from(grants).where(eq(grants.id, first.grantId));
   assert.equal(old!.status, "revoked");

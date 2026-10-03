@@ -6,7 +6,7 @@
 // person's own session may do. Deleting the account deletes the person's data at Kawase (contacts, threads and their
 // transcripts, inbox, requests, grants as Kawase holds them) — the wallet stays theirs in their Turnkey sub-org — and
 // holds the @handle for 30 days. Money in the agent wallet goes back to their wallet first.
-import { and, count, eq, gt, isNull, ne, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 
 import { HANDLE_HOLD_DAYS, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "@kawase/config";
 import { devices, grants, handleHolds, sessions, users, type Db } from "@kawase/db";
@@ -185,10 +185,9 @@ export class AccountService {
     const networks = await Promise.all(
       this.chains.available.map(async (network) => {
         const state = (status.networks as Record<string, { usdcBalance: string; eurcBalance: string } | undefined>)[network];
-        const live = await this.db
-          .select({ id: grants.id, kind: grants.kind })
-          .from(grants)
-          .where(and(eq(grants.userId, user.id), eq(grants.network, network), eq(grants.status, "active")));
+        // Every grant the chain still honours, whatever its status here: step 3 revokes exactly these.
+        const ids = await this.wallets.unrevokedGrantIds(user.id, network);
+        const live = ids.length ? await this.db.select({ id: grants.id, kind: grants.kind }).from(grants).where(inArray(grants.id, ids)) : [];
         const agent = this.marketplace ? await this.marketplace.agentWallet(user.id, network) : undefined;
         let agentTotal = "0";
         if (agent && this.marketplace) {
@@ -206,13 +205,9 @@ export class AccountService {
     return { address: status.address ?? null, networks };
   }
 
-  /** Step 3: one transaction (one Face ID) that revokes every grant still on, on one network. */
+  /** Step 3: one transaction (one Face ID) that revokes every grant the chain still honours, on one network. */
   async revokeAllRequest(user: SessionUser, network: NetworkId) {
-    const live = await this.db
-      .select({ id: grants.id })
-      .from(grants)
-      .where(and(eq(grants.userId, user.id), eq(grants.network, network), eq(grants.status, "active")));
-    return this.wallets.revokeGrantsRequest(user.id, live.map((row) => row.id));
+    return this.wallets.revokeGrantsRequest(user.id, await this.wallets.unrevokedGrantIds(user.id, network));
   }
 
   /**

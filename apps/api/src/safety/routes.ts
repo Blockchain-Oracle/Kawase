@@ -7,6 +7,8 @@ import { MS_PER_SECOND, SECONDS_PER_DAY } from "@kawase/config";
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import { signedRevokeSchema } from "../wallet/routes";
+import type { SignedRevoke } from "../wallet/service";
 import type { SafetyService } from "./service";
 
 const MAX_BOOST_DAYS = 30;
@@ -34,7 +36,7 @@ const changeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("pause"), on: z.boolean() }),
 ]);
 const requestSchema = z.object({ change: changeSchema, via: z.enum(["app", "chat", "voice"]).optional() });
-const approveSchema = z.object({ signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
+const approveSchema = z.object({ signature: z.string().regex(/^0x[0-9a-fA-F]+$/), revoke: signedRevokeSchema.optional() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -56,7 +58,7 @@ export function safetyRoutes(safety: SafetyService) {
   });
   app.post("/changes/:id/approve", async (c) => {
     const input = await parse(approveSchema, await c.req.json());
-    return c.json(await safety.approve(c.get("user")!, c.req.param("id"), input.signature as `0x${string}`));
+    return c.json(await safety.approve(c.get("user")!, c.req.param("id"), input.signature as `0x${string}`, input.revoke as SignedRevoke | undefined));
   });
   /** The exit kit: pause, then the one transaction that revokes every grant on this network. */
   app.post("/exit-kit", async (c) => c.json(await safety.exitKit(c.get("user")!)));
