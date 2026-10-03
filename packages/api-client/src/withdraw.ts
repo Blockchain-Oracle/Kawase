@@ -154,7 +154,11 @@ export type WithdrawalView = {
 export type WithdrawalNextView = {
   withdrawal: WithdrawalView;
   step: WithdrawalStepView | null;
-  intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null } | null;
+  /**
+   * `brake`: the step trips the brake (most of the balance to an address that is new): the withdrawal's review said
+   * so (first-time destination) and its Face ID is the person's override.
+   */
+  intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null; brake: boolean } | null;
 };
 
 /** What propose_withdraw returns: the plan, and the card opens the Withdraw screen with it prefilled. */

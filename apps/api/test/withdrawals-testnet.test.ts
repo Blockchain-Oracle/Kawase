@@ -108,10 +108,12 @@ test("a server-held withdrawal: first-time flag, resume with the same intent, on
   const sign = async (next: WithdrawalNextView) => {
     const intent = next.intent!;
     const path = intent.kind === "swap" ? "/swaps" : "/sends";
-    let answer = (await (await call("POST", `${path}/${intent.id}/approve`, { version: intent.version })).json()) as SwapApproveResponse | SendApproveResponse;
+    // The brake (most of the balance to a new address) is the person's override, as the app passes it.
+    const body = { version: intent.version, ...(intent.brake ? { override: true } : {}) };
+    let answer = (await (await call("POST", `${path}/${intent.id}/approve`, body)).json()) as SwapApproveResponse | SendApproveResponse;
     for (let attempt = 0; attempt < RETRIES && answer.status !== "sign"; attempt++) {
       await wait(POLL_MS);
-      answer = (await (await call("POST", `${path}/${intent.id}/approve`, { version: intent.version })).json()) as SwapApproveResponse | SendApproveResponse;
+      answer = (await (await call("POST", `${path}/${intent.id}/approve`, body)).json()) as SwapApproveResponse | SendApproveResponse;
     }
     assert.equal(answer.status, "sign", JSON.stringify(answer));
     if (answer.status !== "sign") return;

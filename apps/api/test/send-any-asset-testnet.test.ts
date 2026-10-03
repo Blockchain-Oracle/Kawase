@@ -102,7 +102,8 @@ test("any-asset sends and the recipient check on Arc testnet", { skip: !live, ti
   assert.equal(send.draft?.asset, "EURC");
   assert.equal(send.draft?.token?.decimals, SIX);
   assert.equal(send.route, "wallet_signature", "the allowance covers USDC only");
-  const sign = (await (await call("POST", `/sends/${send.id}/approve`, { version: send.version })).json()) as SendApproveResponse;
+  // Most of the balance to a new contact trips the brake (A3): the person confirms the override on the card.
+  const sign = (await (await call("POST", `/sends/${send.id}/approve`, { version: send.version, override: true })).json()) as SendApproveResponse;
   assert.equal(sign.status, "sign", JSON.stringify(sign));
   if (sign.status !== "sign") return;
   const t = sign.transaction;

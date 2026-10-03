@@ -53,8 +53,13 @@ export function useWithdrawRun() {
   const sign = React.useCallback(
     async (intent: NonNullable<WithdrawalNextView["intent"]>): Promise<string> => {
       const key = randomUUID();
+      // The brake (most of the balance to a new address) was on the review the person confirmed: their override.
       const approve = (): Promise<Answer> =>
-        intent.kind === "swap" ? api.swaps.approve(intent.id, intent.version, key) : intent.kind === "send" ? api.sends.approve(intent.id, intent.version, key) : api.crosschain.approve(intent.id, intent.version, key);
+        intent.kind === "swap"
+          ? api.swaps.approve(intent.id, intent.version, key, intent.brake)
+          : intent.kind === "send"
+            ? api.sends.approve(intent.id, intent.version, key, intent.brake)
+            : api.crosschain.approve(intent.id, intent.version, key);
       const answer = await approve();
       if (answer.status !== "sign" && answer.status !== "sign_typed") return answer.status;
       if (!signer || !answer.approvalId) throw new Error("no signer");

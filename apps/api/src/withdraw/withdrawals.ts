@@ -14,6 +14,7 @@ import type { PolicyResultView, WithdrawalNextView, WithdrawalStepView, Withdraw
 import { withdrawals, type Db, type WithdrawalStep } from "@kawase/db";
 import { MS_PER_SECOND, SECONDS_PER_DAY, WITHDRAW_OPEN_DAYS } from "@kawase/config";
 import { DRAFTABLE_STATES } from "@kawase/intents";
+import { hasBrake } from "@kawase/policy";
 
 import type { CrossChainService } from "../crosschain/service";
 import { HTTP, problem } from "../http/problem";
@@ -253,7 +254,7 @@ export class WithdrawalService {
     if (step.state === "active" && step.intentId) {
       const current = step.kind === "swap" ? await swaps.get(user.id, step.intentId) : step.kind === "send" ? await sends.get(user.id, step.intentId) : await crosschain.get(user.id, step.intentId);
       const standing = DRAFTABLE_STATES.has(current.state) || MOVING.has(current.state);
-      if (standing) return { withdrawal: withdrawalView(row), step: stepView(step), intent: { kind: kindOf, id: current.id, version: current.version, blocking: current.blocking } };
+      if (standing) return { withdrawal: withdrawalView(row), step: stepView(step), intent: { kind: kindOf, id: current.id, version: current.version, blocking: current.blocking, brake: hasBrake(current.results) } };
     }
     if (step.state === "failed" && step.failure === "checking") return { withdrawal: withdrawalView(row), step: stepView(step), intent: null };
 
@@ -262,7 +263,7 @@ export class WithdrawalService {
     if (amount <= ZERO) throw problem(HTTP.unprocessable, "intent_blocked", "nothing to move");
     const decimal = formatUnits(amount, step.token.decimals);
     const origin = { surface: "app" as const };
-    let intent: { id: string; version: number; blocking: PolicyResultView | null };
+    let intent: { id: string; version: number; blocking: PolicyResultView | null; results: PolicyResultView[] };
     if (step.kind === "swap") {
       let created = await swaps.create(user, { tokenIn: step.token.address, tokenOut: "USDC", amount: decimal }, origin);
       if (created.blocking?.code === "QUOTE_UNAVAILABLE") created = await swaps.revise(user, created.id, {});
@@ -279,7 +280,7 @@ export class WithdrawalService {
       at === index ? { ...entry, intentId: intent.id, state: "active" as const, failure: null, blocking: intent.blocking, moved: amount.toString() } : entry,
     );
     [row] = await this.db.update(withdrawals).set({ steps, status: "running" }).where(eq(withdrawals.id, row.id)).returning() as [Row];
-    return { withdrawal: withdrawalView(row), step: stepView(row.steps[index]!), intent: { kind: kindOf, id: intent.id, version: intent.version, blocking: intent.blocking } };
+    return { withdrawal: withdrawalView(row), step: stepView(row.steps[index]!), intent: { kind: kindOf, id: intent.id, version: intent.version, blocking: intent.blocking, brake: hasBrake(intent.results) } };
   }
 }
 
