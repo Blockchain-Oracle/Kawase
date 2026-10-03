@@ -16,6 +16,7 @@ import { SuggestionService } from "../suggestions/service";
 import type { WalletService } from "../wallet/service";
 import type { BridgeService } from "../bridge/service";
 import type { MarginService } from "../margin/service";
+import type { MarketplaceService } from "../marketplace/service";
 import type { InvoiceService } from "../business/invoices";
 import { PayCodeService } from "../paycodes/service";
 import { SplitService } from "../splits/service";
@@ -51,6 +52,8 @@ export function buildIntelligence(input: {
   margin?: MarginService | undefined;
   invoices?: InvoiceService | undefined;
   recipients: Recipients;
+  /** The x402 catalog, for For you's service card. */
+  marketplace?: MarketplaceService | undefined;
 }): IntelligenceContext {
   const { db, user, threadId, log } = input;
   const memory = new MemoryService(db);
@@ -113,7 +116,7 @@ export function buildIntelligence(input: {
     },
 
     async forYou() {
-      return new SuggestionService(db, input.wallets, input.earn, input.requests, log, input.assets, input.margin).list(user);
+      return new SuggestionService(db, input.wallets, input.earn, input.requests, log, input.assets, input.margin, { bridges: input.bridges, marketplace: input.marketplace }).list(user);
     },
 
     async chart({ token, range }) {

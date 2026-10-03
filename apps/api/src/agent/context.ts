@@ -136,7 +136,7 @@ export function buildAgentContext(input: {
     ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
     ...automationsContext({ user, automations, threadId }),
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
-    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, invoices: input.invoices, recipients }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, invoices: input.invoices, recipients, marketplace }),
     ...moneyOutContext({ user, withdraw: input.withdraw }),
     ...businessContext({ user, db, wallets, invoices: input.invoices, history: input.history, business: input.business }),
 

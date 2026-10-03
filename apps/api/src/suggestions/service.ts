@@ -2,17 +2,21 @@
 // person's holdings, positions and events on the active network, each with one action. Every producer reads a real
 // source and stays silent when it has nothing to say or its source is down; none of them gives investment advice:
 // they point at a fact (money sitting idle next to a liquid vault, a request about to expire, a bridge that has not
-// arrived, a move in a currency the person holds) and offer the next step. Dismissed cards stay hidden for a week (or
-// for good once their subject is done); a muted kind never shows.
-import { and, eq, gt, inArray, lt, sql } from "drizzle-orm";
-import { formatUnits } from "viem";
+// arrived, a move in a currency the person holds, a route that now beats the one they keep using, a token trending on
+// Arc they do not hold, a paid service about what they hold) and offer the next step; each card's words say why it
+// appears. Dismissed cards stay hidden for a week (or for good once their subject is done); a muted kind never shows.
+import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm";
+import { formatUnits, parseUnits, type Address } from "viem";
 
-import { agentPreferences, automations, intents, suggestionDismissals, type Db } from "@kawase/db";
+import { agentPreferences, automations, intentDrafts, intents, suggestionDismissals, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { amount, formatAmount } from "@kawase/money";
-import { SUGGESTION_KINDS, type Suggestion, type SuggestionKind, type SuggestionsView } from "@kawase/api-client";
+import { SUGGESTION_KINDS, type PortfolioView, type Suggestion, type SuggestionKind, type SuggestionsView } from "@kawase/api-client";
 
+import type { BridgeService } from "../bridge/service";
+import { netOf, rankRoutes, type RouteQuote } from "../bridge/compare";
 import type { EarnService } from "../earn/service";
+import type { MarketplaceService } from "../marketplace/service";
 import type { MarginService } from "../margin/service";
 import type { AssetService } from "../tokens/service";
 import type { RequestService } from "../requests/service";
@@ -48,7 +52,28 @@ const HEALTH_WARN = 1.25;
 const LIQUIDATION_NEAR = 0.1;
 const HEALTH_STEP = 0.25;
 const DATE_CHARS = 10;
-const PRIORITY = { stuck_bridge: 90, health_drop: 85, expiring_request: 70, idle_cash: 50, big_move: 40 } as const;
+const PRIORITY = { stuck_bridge: 90, health_drop: 85, expiring_request: 70, idle_cash: 50, better_route: 45, big_move: 40, trending_token: 20, service_pick: 15 } as const;
+/** Better route: a move counts as repeated at two in 30 days; a saving worth a card is 0.05 USDC and 0.1% of the amount. */
+const ROUTE_HISTORY_DAYS = 30;
+const ROUTE_REPEAT_MIN = 2;
+const ROUTE_SAVING_MIN = 50_000n;
+const ROUTE_SAVING_PER_MILLE = 1n;
+const PER_MILLE = 1000n;
+/** Faster: at least a minute sooner, for no more than 0.1% of the amount. */
+const ROUTE_FASTER_S = 60;
+const USDC_DECIMALS = 6;
+/** Trending: only tokens with real liquidity, never a lookalike or an impersonator. */
+const TRENDING_MIN_LIQUIDITY_USD = 10_000;
+const TRENDING_SEGMENTS = ["trending", "meme"] as const;
+const NOT_SHOWN_STATUSES = new Set(["lookalike", "impersonator"]);
+/** A service's own words on a card, at most this long. */
+const SERVICE_WHAT_MAX = 90;
+const THOUSAND = 1000;
+const MILLION = 1_000_000;
+
+/** A route's provider as Kawase's cross-chain service names it ("lifi"), to find it among the quotes ("LI.FI"). */
+const providerKey = (label: string) => (/cctp/i.test(label) ? "cctp" : label.toLowerCase().replace(/[^a-z]/g, ""));
+const compactUsd = (value: number) => (value >= MILLION ? `$${(value / MILLION).toFixed(1)}M` : value >= THOUSAND ? `$${(value / THOUSAND).toFixed(1)}k` : `$${value.toFixed(0)}`);
 const PCT_DIGITS = 1;
 const PCT_SCALE = 100;
 const DECIMALS_SHOWN = 2;
@@ -68,6 +93,8 @@ export class SuggestionService {
     /** The priced portfolio (builder A) and Kawase Margin (B1); each card kind stays silent without its source. */
     private readonly assets?: AssetService | undefined,
     private readonly margin?: MarginService | undefined,
+    /** Live route quotes (B1's bridge comparison) and the x402 catalog; their cards stay silent without them. */
+    private readonly sources: { bridges?: BridgeService | undefined; marketplace?: MarketplaceService | undefined } = {},
   ) {}
 
   private async prefs(userId: string) {
@@ -175,11 +202,10 @@ export class SuggestionService {
    * tokens, half a percent for a currency stablecoin (EURC follows the euro), never a dollar stablecoin. When the
    * portfolio has no price change for EURC, the ECB's daily euro rate stands in.
    */
-  private async bigMoves(user: SessionUser, balances: Balances | undefined): Promise<Suggestion[]> {
+  private async bigMoves(user: SessionUser, balances: Balances | undefined, portfolio: PortfolioView | undefined): Promise<Suggestion[]> {
     const today = new Date().toISOString().slice(0, DATE_CHARS);
     const moves: Suggestion[] = [];
     let eurcPriced = false;
-    const portfolio = this.assets ? await this.assets.portfolio(user).catch(() => undefined) : undefined;
     for (const holding of portfolio?.assets ?? []) {
       const pct = holding.change24hPct;
       if (holding.token.symbol.toUpperCase() === "EURC" && pct !== null) eurcPriced = true;
@@ -227,6 +253,159 @@ export class SuggestionService {
     ];
   }
 
+  /**
+   * A move the person keeps making (two or more out of Arc to the same chain in 30 days) that another route now
+   * delivers for less, or a minute or more sooner for almost nothing, on live quotes for their usual amount (routes.md
+   * ranking rule). Kawase picks the best route on every card; this is for the route they chose themselves.
+   */
+  private async betterRoute(user: SessionUser): Promise<Suggestion[]> {
+    const bridges = this.sources.bridges;
+    if (!bridges) return [];
+    const wallet = await this.wallets.userWallet(user.id);
+    if (!wallet) return [];
+    const rows = await this.db
+      .select({ id: intents.id, kind: intents.kind, request: intents.request, version: intents.currentDraftVersion })
+      .from(intents)
+      .where(
+        and(
+          eq(intents.userId, user.id),
+          eq(intents.network, user.activeNetwork),
+          inArray(intents.kind, ["bridge", "crosschain"]),
+          eq(intents.state, "completed"),
+          gt(intents.createdAt, new Date(Date.now() - ROUTE_HISTORY_DAYS * MS_PER_DAY)),
+        ),
+      )
+      .orderBy(desc(intents.createdAt));
+    // USDC out of Arc, by the chain it went to (newest first).
+    const moves = rows.flatMap((row) => {
+      const request = row.request as { direction?: string; destination?: string | null; asset?: string | null; amount?: string | null };
+      const usdcOut = row.kind === "bridge" || (request.direction === "out" && (request.asset ?? "USDC").toUpperCase() === "USDC");
+      return usdcOut && request.destination && request.amount ? [{ ...row, destination: request.destination.toLowerCase(), amount: request.amount }] : [];
+    });
+    const counts = new Map<string, number>();
+    for (const move of moves) counts.set(move.destination, (counts.get(move.destination) ?? 0) + 1);
+    const [chain, times] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
+    if (!chain || !times || times < ROUTE_REPEAT_MIN) return [];
+    const latest = moves.find((move) => move.destination === chain)!;
+    let amountBase: bigint;
+    try {
+      amountBase = parseUnits(latest.amount, USDC_DECIMALS);
+    } catch {
+      return [];
+    }
+    // The route they used last: Circle CCTP for a plain bridge; the one their cross-chain card went with otherwise.
+    let used = "cctp";
+    if (latest.kind === "crosschain") {
+      const [draft] = await this.db
+        .select({ payload: intentDrafts.payload })
+        .from(intentDrafts)
+        .where(and(eq(intentDrafts.intentId, latest.id), eq(intentDrafts.version, latest.version)));
+      used = (draft?.payload as { view?: { chosen?: string } } | undefined)?.view?.chosen ?? "cctp";
+    }
+    const quotes = await bridges.compareFor(user.activeNetwork, chain, amountBase, wallet.address as Address);
+    if (!quotes) return [];
+    const quoted = quotes.filter((quote) => quote.received !== null);
+    const mine = quoted.find((quote) => providerKey(quote.provider) === used);
+    if (!mine) return [];
+    const best = rankRoutes(quoted)[0]!;
+    const saving = netOf(best) - netOf(mine);
+    const worth = ROUTE_SAVING_MIN > (amountBase * ROUTE_SAVING_PER_MILLE) / PER_MILLE ? ROUTE_SAVING_MIN : (amountBase * ROUTE_SAVING_PER_MILLE) / PER_MILLE;
+    const facts = { chain: chain[0]!.toUpperCase() + chain.slice(1), times: String(times), amount: usd(amountBase), used: mine.provider };
+    if (best.provider !== mine.provider && saving >= worth)
+      return [this.routeCard(user, chain, "cheaper", { ...facts, better: best.provider, saving: usd(saving) })];
+    // Faster: both times known, at least a minute sooner, costing no more than the saving threshold.
+    const faster = quoted.find(
+      (quote: RouteQuote) =>
+        quote.provider !== mine.provider &&
+        quote.etaSeconds !== null &&
+        mine.etaSeconds !== null &&
+        mine.etaSeconds - quote.etaSeconds >= ROUTE_FASTER_S &&
+        netOf(mine) - netOf(quote) <= worth,
+    );
+    return faster ? [this.routeCard(user, chain, "faster", { ...facts, better: faster.provider, seconds: String(faster.etaSeconds), usedSeconds: String(mine.etaSeconds) })] : [];
+  }
+
+  private routeCard(user: SessionUser, chain: string, why: "cheaper" | "faster", facts: Record<string, string>): Suggestion {
+    return {
+      id: `better_route:${chain}:${facts.better}:${why}`,
+      kind: "better_route",
+      network: user.activeNetwork,
+      facts: { ...facts, why },
+      action: { type: "chat" },
+      priority: PRIORITY.better_route,
+    };
+  }
+
+  /**
+   * A token trending on Arc today that the person does not hold (Markets data, builder A's: trending, then meme), with
+   * real liquidity and never a copycat. It says why it is here (trending, its day, its liquidity, its verification) and
+   * opens the token's page; it is not a recommendation to buy.
+   */
+  private async trendingToken(user: SessionUser, portfolio: PortfolioView | undefined): Promise<Suggestion[]> {
+    if (!this.assets) return [];
+    const held = new Set([...(portfolio?.assets ?? []), ...(portfolio?.hidden ?? [])].map((holding) => holding.token.address.toLowerCase()));
+    const today = new Date().toISOString().slice(0, DATE_CHARS);
+    for (const segment of TRENDING_SEGMENTS) {
+      const list = await this.assets.markets(user.activeNetwork, segment).catch(() => undefined);
+      if (!list?.available) continue;
+      const row = list.rows.find(
+        (entry) =>
+          !held.has(entry.token.address.toLowerCase()) &&
+          !NOT_SHOWN_STATUSES.has(entry.token.status) &&
+          entry.token.kind !== "dollar" &&
+          entry.change24hPct !== null &&
+          (entry.liquidityUsd ?? 0) >= TRENDING_MIN_LIQUIDITY_USD,
+      );
+      if (!row) continue;
+      return [
+        {
+          id: `trending_token:${row.token.address.toLowerCase()}:${today}`,
+          kind: "trending_token",
+          network: user.activeNetwork,
+          facts: {
+            token: row.token.symbol,
+            tokenName: row.token.name,
+            segment,
+            change: `${row.change24hPct! > 0 ? "+" : ""}${row.change24hPct!.toFixed(PCT_DIGITS)}%`,
+            liquidity: compactUsd(row.liquidityUsd ?? 0),
+            status: row.token.status,
+          },
+          action: { type: "route", path: `/token/${row.token.chainId}/${row.token.address}` },
+          priority: PRIORITY.trending_token,
+        },
+      ];
+    }
+    return [];
+  }
+
+  /**
+   * A paid service (x402, Circle's catalog) about the person's largest holding that is not a dollar, within their
+   * per-call cap: it says they hold it and what the service answers for its price, and opens the agent wallet.
+   */
+  private async servicePick(user: SessionUser, portfolio: PortfolioView | undefined): Promise<Suggestion[]> {
+    const marketplace = this.sources.marketplace;
+    if (!marketplace) return [];
+    const holding = (portfolio?.assets ?? [])
+      .filter((entry) => entry.token.kind !== "dollar" && (entry.valueUsd ?? 0) >= MOVE_MIN_USD)
+      .sort((a, b) => (b.valueUsd ?? 0) - (a.valueUsd ?? 0))[0];
+    if (!holding) return [];
+    const [found, wallet] = await Promise.all([marketplace.search(user, `${holding.token.symbol} price`, "FINANCIAL"), marketplace.view(user).catch(() => undefined)]);
+    const cap = wallet ? BigInt(wallet.settings.perCallCap) : undefined;
+    const service = found.services.find((entry) => cap === undefined || BigInt(entry.price) <= cap);
+    if (!service) return [];
+    const what = service.description.length > SERVICE_WHAT_MAX ? `${service.description.slice(0, SERVICE_WHAT_MAX - 1)}…` : service.description;
+    return [
+      {
+        id: `service_pick:${service.url}`,
+        kind: "service_pick",
+        network: user.activeNetwork,
+        facts: { token: holding.token.symbol, service: service.provider.name, what, price: service.priceDisplay },
+        action: { type: "route", path: "/agent-wallet" },
+        priority: PRIORITY.service_pick,
+      },
+    ];
+  }
+
   /** An open long or short (Kawase Margin) whose account health is low or whose liquidation price is close. */
   private async healthDrops(user: SessionUser): Promise<Suggestion[]> {
     if (!this.margin) return [];
@@ -263,14 +442,18 @@ export class SuggestionService {
         this.log.warn({ err: error, what }, "suggestion source failed");
         return [] as T[];
       });
-    const balances = await this.balances(user).catch(() => undefined);
+    // The priced portfolio is read once: big moves, trending tokens not held, and services about a holding use it.
+    const [balances, portfolio] = await Promise.all([this.balances(user).catch(() => undefined), this.assets ? this.assets.portfolio(user).catch(() => undefined) : undefined]);
     const all = (
       await Promise.all([
         quiet("idle_cash", this.idleCash(user, balances)),
         quiet("expiring_request", this.expiringRequests(user)),
         quiet("stuck_bridge", this.stuckBridges(user)),
-        quiet("big_move", this.bigMoves(user, balances)),
+        quiet("big_move", this.bigMoves(user, balances, portfolio)),
         quiet("health_drop", this.healthDrops(user)),
+        quiet("better_route", muted.includes("better_route") ? Promise.resolve([]) : this.betterRoute(user)),
+        quiet("trending_token", muted.includes("trending_token") ? Promise.resolve([]) : this.trendingToken(user, portfolio)),
+        quiet("service_pick", muted.includes("service_pick") ? Promise.resolve([]) : this.servicePick(user, portfolio)),
       ])
     ).flat();
     const dismissed = all.length
