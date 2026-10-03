@@ -24,4 +24,11 @@ export const markets = {
   yourPositions: "Your positions",
   marginVenue: "Kawase Margin · Aave V4 on Arc",
   perpsMainnet: "Long and short run on Arc mainnet. Switch networks to trade; your testnet money stays as it is.",
+  watchlist: "Watchlist",
+  watchSignIn: "Sign in to keep a watchlist: star any token on its page.",
+  watchEmptyTitle: "Nothing starred yet",
+  watchEmptyBody: "Tap the star on a token's page to follow it here.",
+  watchHeld: "You hold some",
+  recent: "Recent",
+  recentClear: "Clear",
 } as const;

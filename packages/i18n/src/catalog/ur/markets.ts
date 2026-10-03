@@ -27,4 +27,11 @@ export const markets: Catalog["markets"] = {
   marginVenue: "Kawase Margin · Arc پر Aave V4",
   perpsMainnet:
     "لانگ اور شارٹ Arc مین نیٹ پر چلتے ہیں۔ ٹریڈ کرنے کے لیے نیٹ ورک بدلیں؛ آپ کی ٹیسٹ نیٹ رقم ویسی ہی رہے گی۔",
+  watchlist: "واچ لسٹ",
+  watchSignIn: "واچ لسٹ رکھنے کے لیے سائن ان کریں: کسی بھی ٹوکن کو اس کے صفحے پر اسٹار کریں۔",
+  watchEmptyTitle: "ابھی کچھ اسٹار نہیں کیا",
+  watchEmptyBody: "کسی ٹوکن کو یہاں فالو کرنے کے لیے اس کے صفحے پر اسٹار پر ٹیپ کریں۔",
+  watchHeld: "آپ کے پاس ہے",
+  recent: "حالیہ",
+  recentClear: "صاف کریں",
 };

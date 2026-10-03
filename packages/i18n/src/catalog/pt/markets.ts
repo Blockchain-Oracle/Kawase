@@ -27,4 +27,11 @@ export const markets: Catalog["markets"] = {
   marginVenue: "Kawase Margin · Aave V4 na Arc",
   perpsMainnet:
     "Long e short funcionam na mainnet da Arc. Troque de rede para negociar; seu dinheiro de testnet fica como está.",
+  watchlist: "Lista de observação",
+  watchSignIn: "Entre para ter uma lista de observação: marque com estrela qualquer token na página dele.",
+  watchEmptyTitle: "Nada com estrela ainda",
+  watchEmptyBody: "Toque na estrela na página de um token para acompanhá-lo aqui.",
+  watchHeld: "Você tem um pouco",
+  recent: "Recentes",
+  recentClear: "Limpar",
 };
