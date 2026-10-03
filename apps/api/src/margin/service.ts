@@ -91,6 +91,8 @@ const TRACK_POLL_ATTEMPTS = 60;
 const ERROR_MAX = 140;
 /** Supplies are read back through shares, rounded against the holder by a few base units. */
 const SHARE_ROUNDING = 10n;
+/** A swap router's own "less than the minimum" revert (KyberSwap; Uniswap). */
+const SHORT_LEG = /Return amount is not enough|Too little received|INSUFFICIENT_OUTPUT/i;
 
 const limits: PlanLimits = {
   loopHealthBps: MARGIN.loopHealthBps,
@@ -565,13 +567,16 @@ export class MarginService {
 
     let plan: Plan | undefined;
     let planStatus: MarginFacts["plan"] = { status: "not_requested" };
-    const swapper = clients && wallet ? kyberSwapper({ chainId: clients.network.chainId, wallet, slippageBps: MARGIN.slippageBps, buildSlippageBps: MARGIN.buildSlippageBps, mode }) : undefined;
+    // Kawase's slippage for this order: the default, or wider after a simulation showed the legs falling short.
+    const slippageBps = request.slippageBps ?? MARGIN.slippageBps;
+    const orderLimits: PlanLimits = { ...limits, slippageBps };
+    const swapper = clients && wallet ? kyberSwapper({ chainId: clients.network.chainId, wallet, slippageBps, buildSlippageBps: Math.round((slippageBps * MARGIN.buildSlippageBps) / MARGIN.slippageBps), mode }) : undefined;
     try {
       if (swapper && venue && usdc && market && side && account && wallet) {
         if (request.action === "open" && amount.status === "ok" && amount.baseUnits > ZERO && sideView?.available && chosenLeverage <= maxBps) {
           const collateral = side === "long" ? market : usdc;
           plan = await planOpen(
-            { side, wallet, spoke: venue.spoke, usdc, asset: market, margin: amount.baseUnits, leverageBps: chosenLeverage, base: baseOf(account), collateralOn: account.reserves[collateral.reserveId]!.usingAsCollateral, limits },
+            { side, wallet, spoke: venue.spoke, usdc, asset: market, margin: amount.baseUnits, leverageBps: chosenLeverage, base: baseOf(account), collateralOn: account.reserves[collateral.reserveId]!.usingAsCollateral, limits: orderLimits },
             swapper,
           );
         }
@@ -592,7 +597,7 @@ export class MarginService {
               fractionBps,
               base: baseOf(account, { collateral: collateralReserve, collateralAmount: live.collateral, debt: debtReserve, debtAmount: live.debt }),
               soleDebtor,
-              limits,
+              limits: orderLimits,
             },
             swapper,
           );
@@ -832,6 +837,14 @@ export class MarginService {
       await client.call({ account: draft.from, to: draft.from, data });
     } catch (error) {
       this.log.warn({ err: error, intentId }, "margin batch simulation reverted");
+      // A leg short of its minimum: the legs move the same pools one after another. Plan again with room for that,
+      // and show the person the new (lower) numbers before anything is signed.
+      const current = (before.request as StoredRequest).slippageBps ?? MARGIN.slippageBps;
+      if (SHORT_LEG.test(String((error as Error).message ?? error)) && current < MARGIN.maxSlippageBps) {
+        const widened: StoredRequest = { ...(before.request as StoredRequest), slippageBps: MARGIN.maxSlippageBps };
+        await this.db.update(intents).set({ request: widened }).where(eq(intents.id, intentId));
+        return this.redraft(user, intentId);
+      }
       throw problem(HTTP.badGateway, "simulation_failed", "the order would not go through right now; nothing was sent");
     }
     const [nonce, price, estimate] = await Promise.all([
@@ -1162,6 +1175,8 @@ function normalise(base: StoredRequest, patch: MarginRequest): StoredRequest {
     leverage: pick("leverage") ?? null,
     positionId: pick("positionId") ?? null,
     fraction: pick("fraction") ?? null,
+    // Kawase's own, never the client's: kept across edits of the same order.
+    slippageBps: base.slippageBps ?? null,
   };
 }
 

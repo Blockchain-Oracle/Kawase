@@ -162,7 +162,8 @@ export type MarginIntent = {
   state: IntentState;
   outcome: SendOutcome | null;
   version: number;
-  request: { action: "open" | "close"; market: string | null; side: MarginSide | null; margin: string | null; leverage: number | null; positionId: string | null; fraction: number | null };
+  /** `slippageBps` is Kawase's own: widened when the swap legs' impact on each other made the batch fall short (shown again first). */
+  request: { action: "open" | "close"; market: string | null; side: MarginSide | null; margin: string | null; leverage: number | null; positionId: string | null; fraction: number | null; slippageBps?: number | null };
   draft: MarginDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;

@@ -26,6 +26,11 @@ export const MARGIN = {
   /** Shown and quoted; the router calldata is built tighter (build re-prices). */
   slippageBps: 50,
   buildSlippageBps: 25,
+  /**
+   * A batch's legs move the same thin pools one after another (a WETH short's four legs needed ~200 bps on 10-02);
+   * when the simulation shows a leg short of its minimum, the order is planned again at this (once) and shown first.
+   */
+  maxSlippageBps: 400,
   /** A loop step worth less than this (USD, 8 decimals = 1 cent) is not worth its gas. */
   dustValue: 1_000_000n,
   /** Interest accrues between the read and the block: a full repay approves this much over the debt read. */

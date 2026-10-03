@@ -31,8 +31,10 @@ const spoke = AAVE_V4.mainnet!.mainSpoke;
 const client = createPublicClient({ chain: arc, transport: http(RPC, { timeout: TIMEOUT_MS }) });
 const wallet = privateKeyToAccount(generatePrivateKey()).address;
 const designator = `0xef0100${DELEGATION_FRAMEWORK.eip7702StatelessDeleGator.slice(2)}` as Hex;
-const limits: PlanLimits = { ...MARGIN, slippageBps: MARGIN.slippageBps };
-const swapper = kyberSwapper({ chainId: arc.id, wallet, slippageBps: MARGIN.slippageBps, buildSlippageBps: MARGIN.buildSlippageBps, mode: "build" });
+/** The service's planning at an order's slippage: the default, or the widened one after a short leg (as approval does). */
+const limitsAt = (slippageBps: number): PlanLimits => ({ ...MARGIN, slippageBps });
+const swapperAt = (slippageBps: number) => kyberSwapper({ chainId: arc.id, wallet, slippageBps, buildSlippageBps: Math.round((slippageBps * MARGIN.buildSlippageBps) / MARGIN.slippageBps), mode: "build" });
+const SHORT_LEG = /Return amount is not enough/;
 
 const market = await readMarket(client, spoke);
 const bySymbol = (symbol: string) => market.reserves.find((reserve) => reserve.symbol === symbol)!;
@@ -61,7 +63,16 @@ async function roundTrip(side: MarginSide, symbol: string) {
   const asset = bySymbol(symbol);
   const collateral = side === "long" ? asset : usdc;
   const debt = side === "long" ? usdc : asset;
-  const open = await planOpen({ side, wallet, spoke, usdc, asset, margin: MARGIN_USDC, leverageBps: TWO_X, base: { weightedCollateral: 0n, debtValue: 0n }, collateralOn: false, limits }, swapper);
+  const planAt = (slippageBps: number) => planOpen({ side, wallet, spoke, usdc, asset, margin: MARGIN_USDC, leverageBps: TWO_X, base: { weightedCollateral: 0n, debtValue: 0n }, collateralOn: false, limits: limitsAt(slippageBps) }, swapperAt(slippageBps));
+  let slippageBps: number = MARGIN.slippageBps;
+  let open = await planAt(slippageBps);
+  // Approval simulates first; a leg short of its minimum (legs moving the same thin pools) is planned again, wider.
+  const [first] = await simulate([[batch(open)]]);
+  if (first![0]!.status !== "0x1" && SHORT_LEG.test(first![0]!.error?.message ?? "")) {
+    slippageBps = MARGIN.maxSlippageBps;
+    open = await planAt(slippageBps);
+    console.log(`  ${side} ${symbol}: a leg fell short at ${MARGIN.slippageBps} bps; planned again at ${slippageBps} bps (shown to the person first)`);
+  }
   console.log(`${side} ${symbol} 2×: ${open.calls.length} calls, ${open.loops} loops, borrow ${formatUnits(open.debtDelta, debt.decimals)} ${debt.symbol}, supply ≥ ${formatUnits(open.collateralDelta, collateral.decimals)} ${collateral.symbol}, health ${(open.healthAfterBps / FULL).toFixed(3)}, liquidation $${formatUnits(open.liquidationPrice ?? 0n, PRICE_DECIMALS)} (now $${formatUnits(asset.price, PRICE_DECIMALS)}) via ${open.venues.join(",")}`);
 
   const [afterOpen] = await simulate([[batch(open), read("getUserSuppliedAssets", collateral), read("getUserTotalDebt", debt), health]]);
@@ -73,9 +84,18 @@ async function roundTrip(side: MarginSide, symbol: string) {
   // The Spoke reads supply back through shares, rounded against the holder by a few base units.
   assert.ok(suppliedNow + SHARE_ROUNDING >= open.collateralDelta && owedNow >= open.debtDelta);
 
-  const close = await planClose({ side, wallet, spoke, usdc, asset, collateral: suppliedNow, debt: owedNow, fractionBps: FULL, base: { weightedCollateral: 0n, debtValue: 0n }, soleDebtor: true, limits }, swapper);
+  // The close is quoted against today's chain, which in this simulation does not yet hold the open's own swaps; a leg
+  // short of its minimum is planned again wider, as approval does for a real close.
+  const closeAt = (slippageBps: number) => planClose({ side, wallet, spoke, usdc, asset, collateral: suppliedNow, debt: owedNow, fractionBps: FULL, base: { weightedCollateral: 0n, debtValue: 0n }, soleDebtor: true, limits: limitsAt(slippageBps) }, swapperAt(slippageBps));
+  const reads = [read("getUserTotalDebt", debt), read("getUserSuppliedAssets", collateral), usdcBalance];
+  let close = await closeAt(slippageBps);
+  let [, afterClose] = await simulate([[batch(open)], [batch(close), ...reads]]);
+  if (afterClose![0]!.status !== "0x1" && SHORT_LEG.test(afterClose![0]!.error?.message ?? "") && slippageBps < MARGIN.maxSlippageBps) {
+    console.log(`  close: a leg fell short at ${slippageBps} bps; planned again at ${MARGIN.maxSlippageBps} bps`);
+    close = await closeAt(MARGIN.maxSlippageBps);
+    [, afterClose] = await simulate([[batch(open)], [batch(close), ...reads]]);
+  }
   console.log(`  close: ${close.calls.length} calls, ${close.loops} loops, repays ≥ ${formatUnits(close.debtDelta, debt.decimals)} ${debt.symbol}, returns ≥ ${formatUnits(close.returnedMin, usdc.decimals)} USDC`);
-  const [, afterClose] = await simulate([[batch(open)], [batch(close), read("getUserTotalDebt", debt), read("getUserSuppliedAssets", collateral), usdcBalance]]);
   const [closed, debtLeft, collateralLeft, balance] = afterClose!;
   assert.equal(closed!.status, "0x1", `close reverted: ${closed!.error?.message ?? ""}`);
   const remainingDebt = asBigint(debtLeft!, "getUserTotalDebt");
