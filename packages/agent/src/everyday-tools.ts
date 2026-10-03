@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { PayCodeView, ProposeSendOutput } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
+import type { TurnTrust } from "./trust";
 
 const CODE_MAX = 2_000;
 const TITLE_MAX = 60;
@@ -17,7 +18,7 @@ const ASSET_MAX = 64;
 
 export type PayFromCodeOutput = { code: PayCodeView; send: ProposeSendOutput | null };
 
-export function everydayTools(context: AgentContext) {
+export function everydayTools(context: AgentContext, trust: TurnTrust) {
   return {
     split_bill: tool({
       description:
@@ -33,9 +34,9 @@ export function everydayTools(context: AgentContext) {
           .max(PEOPLE_MAX),
       }),
       execute: async ({ title, total, asset, includeMe, people }) => {
-        // Only a name from the person's own message is asked in the app (K2); any other share is a link only.
-        const said = context.lastUserText.toLowerCase();
-        const shares = people.map((person) => ({ ...person, ask: said.includes(person.name.trim().replace(/^@/, "").toLowerCase()) }));
+        // Only a name from the person's own message is asked in the app (K2), matched as whole words like a send's
+        // recipient (trust.ts); any other share is a link only.
+        const shares = people.map((person) => ({ ...person, ask: trust.typed(person.name) }));
         return context.intelligence.splitBill({ title, total, asset: asset ?? "USDC", includeMe: includeMe ?? true, people: shares });
       },
       toModelOutput: ({ output }) => ({
