@@ -122,6 +122,8 @@ const nowSeconds = () => Math.floor(Date.now() / MS_PER_SECOND);
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 /** Auto-save's runs that found nothing to move: kept (each check is claimed once) but not shown. */
 const NOTHING_TO_MOVE = "NOTHING_TO_MOVE";
+/** The recipient's address changed: paused until the person reviews it. */
+const CONTACT_ADDRESS_CHANGED = "CONTACT_ADDRESS_CHANGED";
 /** Reasons a run stops without telling the person (they chose it, or there was nothing to do). */
 const QUIET_REASONS = new Set([NOTHING_TO_MOVE, "PAUSED_ALL"]);
 /** A balance rule is looked at this often (and at once when money arrives). */
@@ -1007,6 +1009,36 @@ export class AutomationService {
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * A contact's address changed (cards/automate-safety.md "What if"): every automation still paying their old address
+   * pauses until the person reviews it, with a run that says why and an inbox item. Its grant stays pinned to the old
+   * address (the chain allows nothing else), so resuming keeps paying it, and paying the new one is a new automation.
+   */
+  async pauseForAddressChange(userId: string, oldAddress: string, name: string) {
+    const old = oldAddress.toLowerCase();
+    const rows = await this.db
+      .select()
+      .from(automations)
+      .where(and(eq(automations.userId, userId), eq(automations.status, "active"), inArray(automations.kind, ["scheduled_send", "payroll", "rule"])));
+    const paysOld = (row: AutomationRow) => {
+      if (row.kind === "scheduled_send") return (row.action as AutomationAction).recipientAddress?.toLowerCase() === old;
+      if (row.kind === "payroll") return (row.action as PayrollAction).lines.some((line) => line.recipientAddress?.toLowerCase() === old);
+      const step = (row.action as RuleAction).step;
+      return step.type === "send" && step.recipientAddress.toLowerCase() === old;
+    };
+    for (const row of rows.filter(paysOld)) {
+      const paused = await this.db.update(automations).set({ status: "paused" }).where(and(eq(automations.id, row.id), eq(automations.status, "active"))).returning({ id: automations.id });
+      if (paused.length === 0) continue;
+      const [run] = await this.db
+        .insert(automationRuns)
+        .values({ automationId: row.id, userId, scheduledFor: new Date(), status: "executing" })
+        .onConflictDoNothing()
+        .returning({ id: automationRuns.id });
+      if (run) await this.skipRun(row, run.id, CONTACT_ADDRESS_CHANGED, { name });
+      this.log.info({ automationId: row.id }, "automation paused: its recipient's address changed");
+    }
+  }
 
   async pause(user: SessionUser, id: string) {
     const row = await this.own(user.id, id);

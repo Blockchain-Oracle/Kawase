@@ -108,6 +108,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Práctica: se habría ejecutado (no se envió nada)",
   reason_PRACTICE_RUN_REFUSED: "Práctica: Arc lo habría rechazado",
   reason_PAUSED_ALL: "En pausa: pausaste todo",
+  reason_CONTACT_ADDRESS_CHANGED: "En pausa: la dirección de {{name}} cambió. Revísala y reanuda (sigue pagando la dirección anterior) o crea una nueva",
   practiceBody:
     "Práctica: las ejecuciones se simulan en Arc y se muestran como «habría». Nada se mueve hasta que lo actives.",
   practising: "Práctica",

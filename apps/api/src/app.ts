@@ -252,6 +252,8 @@ export function createApp(deps: AppDeps) {
   );
   // Round-ups: each of the person's own completed sends gives every round-up rule one run.
   sends.onSent((sent) => automations.queueRoundUps(sent));
+  // A contact's new address: the automations paying the old one pause until the person reviews them.
+  contacts.onAddressChange = (userId, oldAddress, name) => automations.pauseForAddressChange(userId, oldAddress, name);
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
   needsYou.setAudit(audit);

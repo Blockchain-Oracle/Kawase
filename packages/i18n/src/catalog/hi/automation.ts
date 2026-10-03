@@ -107,6 +107,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "अभ्यास: यह चलता (कुछ नहीं भेजा गया)",
   reason_PRACTICE_RUN_REFUSED: "अभ्यास: Arc इसे अस्वीकार कर देता",
   reason_PAUSED_ALL: "रुका हुआ: आपने सब रोका",
+  reason_CONTACT_ADDRESS_CHANGED: "रुका हुआ: {{name}} का पता बदल गया है। इसे जाँचें, फिर फिर से चालू करें (यह पुराने पते पर ही भुगतान करता रहेगा) या नया बनाएँ",
   practiceBody: "अभ्यास: रन Arc पर ड्राई-रन होते हैं और “होता” दिखाते हैं। असली चालू करने तक कुछ नहीं हिलता।",
   practising: "अभ्यास",
   practiceFirst: "पहले अभ्यास करें",

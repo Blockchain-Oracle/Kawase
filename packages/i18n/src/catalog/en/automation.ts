@@ -104,6 +104,7 @@ export const automation = {
   reason_PRACTICE_RUN: "Practice: would have run (nothing was sent)",
   reason_PRACTICE_RUN_REFUSED: "Practice: Arc would have refused it",
   reason_PAUSED_ALL: "Paused: you paused everything",
+  reason_CONTACT_ADDRESS_CHANGED: "Paused: {{name}}'s address changed. Check it, then resume (it keeps paying the old address) or set up a new one",
   practiceBody: "Practice: runs are dry-run on Arc and shown as “would have”. Nothing moves until you go live.",
   practising: "Practice",
   practiceFirst: "Practise first",

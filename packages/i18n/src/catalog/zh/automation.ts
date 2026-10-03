@@ -106,6 +106,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "练习：本来会执行（没有发送任何资金）",
   reason_PRACTICE_RUN_REFUSED: "练习：Arc 本来会拒绝",
   reason_PAUSED_ALL: "已暂停：你暂停了全部",
+  reason_CONTACT_ADDRESS_CHANGED: "已暂停：{{name}} 的地址已更改。请核对后再恢复（仍会付款到旧地址），或新建一个自动化",
   practiceBody: "练习：每次运行都在 Arc 上模拟，显示为“本来会”。正式开启前不会动用资金。",
   practising: "练习",
   practiceFirst: "先练习",

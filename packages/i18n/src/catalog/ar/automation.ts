@@ -106,6 +106,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "تدريب: كان سيُنفَّذ (لم يُرسل شيء)",
   reason_PRACTICE_RUN_REFUSED: "تدريب: كانت Arc سترفضه",
   reason_PAUSED_ALL: "متوقف مؤقتًا: أوقفت كل شيء",
+  reason_CONTACT_ADDRESS_CHANGED: "متوقفة مؤقتًا: تغيّر عنوان {{name}}. تحقّق منه، ثم استأنف (ستواصل الدفع إلى العنوان القديم) أو أنشئ واحدة جديدة",
   practiceBody: "تدريب: تُجرَّب عمليات التشغيل على Arc وتُعرض كـ«كان سيحدث». لا يتحرك شيء حتى تفعّلها فعليًا.",
   practising: "تدريب",
   practiceFirst: "تدرّب أولًا",

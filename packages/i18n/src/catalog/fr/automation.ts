@@ -111,6 +111,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "Entraînement : se serait exécuté (rien n'a été envoyé)",
   reason_PRACTICE_RUN_REFUSED: "Entraînement : Arc l'aurait refusé",
   reason_PAUSED_ALL: "En pause : vous avez tout mis en pause",
+  reason_CONTACT_ADDRESS_CHANGED: "En pause : l'adresse de {{name}} a changé. Vérifiez-la, puis reprenez (elle paie toujours l'ancienne adresse) ou créez-en une nouvelle",
   practiceBody:
     "Entraînement : les exécutions sont simulées sur Arc et affichées comme « aurait ». Rien ne bouge avant la mise en service.",
   practising: "Entraînement",

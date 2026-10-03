@@ -106,6 +106,7 @@ export const automation: Catalog["automation"] = {
   reason_PRACTICE_RUN: "অনুশীলন: চলত (কিছুই পাঠানো হয়নি)",
   reason_PRACTICE_RUN_REFUSED: "অনুশীলন: Arc এটা প্রত্যাখ্যান করত",
   reason_PAUSED_ALL: "থামানো: আপনি সব থামিয়েছেন",
+  reason_CONTACT_ADDRESS_CHANGED: "বিরতি: {{name}}-এর ঠিকানা বদলেছে। এটি যাচাই করুন, তারপর আবার চালু করুন (পুরোনো ঠিকানাতেই পাঠাতে থাকবে) অথবা নতুন একটি তৈরি করুন",
   practiceBody: "অনুশীলন: রানগুলো Arc-এ ড্রাই-রান হয় ও “হতো” দেখায়। আসল চালু না করা পর্যন্ত কিছুই সরে না।",
   practising: "অনুশীলন",
   practiceFirst: "আগে অনুশীলন করুন",
