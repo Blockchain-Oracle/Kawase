@@ -22,6 +22,7 @@ import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
+import { providerKey } from "@kawase/identity";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -563,6 +564,19 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
             <View className="min-w-0 flex-1">
               <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("lend.borrowTitle")}</Text>
               <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("lend.borrowEntry")}</Text>
+            </View>
+          </Pressable>
+        ) : null}
+        {!testnet ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/lp")}
+            className="bg-card border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border px-4 py-3"
+          >
+            <Mark entity={providerKey("aero")} size={MARK} />
+            <View className="min-w-0 flex-1">
+              <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("lp.title")}</Text>
+              <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("lp.entry")}</Text>
             </View>
           </Pressable>
         ) : null}

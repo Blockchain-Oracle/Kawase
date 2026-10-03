@@ -1,7 +1,7 @@
 // Home's "Positions" (surfaces.md Home §7; plan §D "Positions: earn, borrow (health), perps (P&L)"): long and short
 // positions with their side, leverage and profit or loss (Kawase Margin, each opening its page); a loan with the
-// account's health, its zone in words and colour (opens Borrow); and every earning position with its yearly rate
-// (opens Earn). Hidden until one exists. The same positions count in the balance hero's total and its breakdown.
+// account's health, its zone in words and colour (opens Borrow); every earning position with its yearly rate (opens
+// Earn); and each Aero LP position with whether it is in range (opens LP). Hidden until one exists. The same positions count in the balance hero's total and its breakdown.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { View } from "react-native";
@@ -75,6 +75,21 @@ export function Positions({ portfolio }: { portfolio: PortfolioView | undefined 
           }
           chevron
           onPress={() => router.push("/borrow")}
+        />
+      );
+    }
+    if (position.kind === "lp") {
+      // Aero LP: earning (fees and Merkl's rewards) only while the price is in its range.
+      const subtitle = position.inRange ? (position.apyPct ? t("lp.inRangeRewards", { apr: position.apyPct.toFixed(APY_DIGITS) }) : t("lp.inRange")) : t("lp.outOfRange");
+      return (
+        <ListRow
+          key={position.id}
+          title={position.title}
+          subtitle={subtitle}
+          leading={leading}
+          trailing={<Amount className="text-foreground text-base">{money(position.valueUsd, fx, locale)}</Amount>}
+          chevron
+          onPress={() => router.push("/lp")}
         />
       );
     }

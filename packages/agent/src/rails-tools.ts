@@ -22,7 +22,7 @@ export function railsTools(context: AgentContext) {
   return {
     compare_yield: tool({
       description:
-        "Where an asset can earn now, compared: Aave V4 (supply rate, what it can pay out right now), Morpho vaults (only those that could give the money back; low liquidity flagged) and LP campaigns (shown as advanced: impermanent loss). Ranked by yield among sources that could return the amount. Pass the asset (USDC by default) and the amount if they said one. The card lets them deposit.",
+        "Where an asset can earn now, compared: Aave V4 (supply rate, what it can pay out right now), Morpho vaults (only those that could give the money back; low liquidity flagged) and Aero LP pools with Merkl rewards (advanced: impermanent loss and range risk; propose_lp deposits). Ranked by yield among sources that could return the amount. Pass the asset (USDC by default) and the amount if they said one. The card lets them deposit.",
       inputSchema: z.object({ asset: z.string().max(ASSET_MAX).optional(), amount: z.string().regex(/^\d+(\.\d+)?$/).optional() }),
       execute: async ({ asset, amount }) => (context.compareYield ? context.compareYield({ asset: asset ?? "USDC", amount: amount ?? null }) : UNAVAILABLE),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
@@ -32,6 +32,18 @@ export function railsTools(context: AgentContext) {
         "Prepare putting an asset into Aave V4 to earn (or taking it back out with withdraw; 'all' for everything). Pass the asset and the amount as digits with a dot. Kawase checks the balance and, for a withdrawal, the account's health; the person confirms on the card.",
       inputSchema: z.object({ action: z.enum(["supply", "withdraw"]), asset: z.string().max(ASSET_MAX), amount: z.string().max(ASSET_MAX).optional() }),
       execute: async ({ action, asset, amount }) => (context.proposeLend ? context.proposeLend({ action, asset, amount: amount ?? null }) : UNAVAILABLE),
+      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
+    }),
+    propose_lp: tool({
+      description:
+        "Aero liquidity on Arc mainnet (advanced): deposit into USDC-EURC, cirBTC-USDC or WETH-USDC from one asset of the pair (Kawase buys the other side and sets a range around today's price: 1% each side for USDC-EURC, 10% for the others), withdraw a position (both sides back, fees included), or claim Merkl's USDC rewards. Pass the pool or the asset they named and the amount as digits with a dot. Earns the pool's fees and Merkl's rewards only while the price stays in range; out of range it earns nothing and sits all in one side (impermanent loss). Nothing moves from this call: the card opens the LP screen, where they confirm with Face ID.",
+      inputSchema: z.object({
+        action: z.enum(["deposit", "withdraw", "claim"]),
+        pool: z.string().max(ASSET_MAX).optional().describe("The pair they named, e.g. cirBTC-USDC"),
+        asset: z.string().max(ASSET_MAX).optional().describe("The asset they pay in (one side of the pair)"),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+      }),
+      execute: async ({ action, pool, asset, amount }) => (context.proposeLp ? context.proposeLp({ action, pool: pool ?? null, asset: asset ?? null, amount: amount ?? null }) : UNAVAILABLE),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     propose_borrow: tool({

@@ -404,6 +404,84 @@ export type YieldOptionView = {
   note: "low_liquidity" | "small_for_amount" | "advanced" | null;
 };
 
+// ── Aero LP + Merkl rewards (earn-borrow.md) ────────────────────────────────────────────────────────────────
+
+export type LpTokenView = { address: string; symbol: string; decimals: number };
+
+/** One Aero pool Kawase deposits into: its pair, the priced side's price in USDC, Merkl's reward rate and its size. */
+export type LpPoolView = {
+  address: string;
+  /** "cirBTC-USDC". */
+  pair: string;
+  token0: LpTokenView;
+  token1: LpTokenView;
+  /** The side a price is read for (cirBTC, WETH, EURC) and that price in USDC now. */
+  base: string;
+  price: number;
+  /** Both sides are dollar or euro coins: the range is tight. */
+  stable: boolean;
+  /** Merkl's yearly reward rate for positions in range (a fraction), and the pool's size in USD. */
+  rewardApr: number | null;
+  tvlUsd: number | null;
+};
+
+/** A price range, as the pool's priced side in USDC: where a position earns (fees and rewards), and the price now. */
+export type LpRangeView = { lower: number; upper: number; price: number };
+
+/** What a deposit would do: the range, the share bought of the other side, what goes in, and the fee. */
+export type LpQuoteView = {
+  network: NetworkId;
+  pool: LpPoolView;
+  /** The asset paid in, and how much (base units). */
+  asset: string;
+  amount: string;
+  range: LpRangeView;
+  /** The part bought of the other side (KyberSwap), with the least it brings. */
+  swap: { amountIn: string; symbolIn: string; symbolOut: string; minOut: string; decimalsIn: number; decimalsOut: number; venues: string[] } | null;
+  /** What the position takes of each side at today's price (base units; any rest stays in the wallet). */
+  deposit: { amount0: string; amount1: string };
+  depositUsd: number;
+  /** USDC base units, at most. */
+  fees: { network: string };
+  /** Why it cannot go yet. */
+  reason: "insufficient_balance" | "below_minimum" | null;
+};
+
+/** One Aero position the wallet holds: what it holds now (fees owed apart), its value, and whether it earns now. */
+export type LpPositionView = {
+  /** Its NFT id. */
+  id: string;
+  pool: LpPoolView;
+  liquidity: string;
+  amount0: string;
+  amount1: string;
+  fees0: string;
+  fees1: string;
+  valueUsd: number;
+  /** In range: earning fees and Merkl's rewards; out of range: neither, and all in one side. */
+  inRange: boolean;
+  range: LpRangeView;
+};
+
+/** Merkl rewards for the wallet: claimable now (in Merkl's latest root) and still accruing. */
+export type LpRewardView = { token: LpTokenView; claimable: string; pending: string; usd: number };
+
+export type LpPositionsView = { network: NetworkId; available: boolean; positions: LpPositionView[]; rewards: LpRewardView[]; claimableUsd: number };
+
+/** A deposit, withdrawal or claim built and simulated: the one transaction the wallet signs, with what it does. */
+export type LpActionResponse = { request: TransactionRequestResponse; quote?: LpQuoteView | undefined; position?: LpPositionView | undefined; rewards?: LpRewardView[] | undefined };
+
+/** propose_lp: Aero LP from chat. The card opens the LP screen (deposit prefilled, or the positions to withdraw or claim). */
+export type ProposeLpOutput = {
+  network: NetworkId;
+  action: "deposit" | "withdraw" | "claim";
+  pools: LpPoolView[];
+  quote: LpQuoteView | null;
+  positions: LpPositionsView | null;
+  refused: string | null;
+  summary: string;
+};
+
 export type YieldOptionsView = { network: NetworkId; asset: string; amount: string | null; options: YieldOptionView[]; best: string | null };
 
 export type LendReserveView = {
@@ -506,6 +584,16 @@ export function railsEndpoints(call: Call) {
       cancel: (id: string) => call<{ intent: LendIntent }>("POST", `/lend/orders/${id}/cancel`),
       approve: (id: string, version: number, idempotencyKey?: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/signature`, { approvalId, signedTransaction }),
+    },
+    lp: {
+      /** Aero LP: pools, a deposit quoted then built, the wallet's positions, withdraw one, claim Merkl's rewards, submit the signed batch. */
+      pools: () => call<{ pools: LpPoolView[] }>("GET", "/lp/pools"),
+      quote: (input: { pool: string; asset: string; amount: string }) => call<LpQuoteView>("POST", "/lp/quote", input),
+      deposit: (input: { pool: string; asset: string; amount: string }) => call<LpActionResponse>("POST", "/lp/deposit", input),
+      positions: () => call<LpPositionsView>("GET", "/lp/positions"),
+      withdraw: (positionId: string) => call<LpActionResponse>("POST", `/lp/positions/${encodeURIComponent(positionId)}/withdraw`),
+      claim: () => call<LpActionResponse>("POST", "/lp/claim"),
+      submit: (requestId: string, signedTransaction: string) => call<{ tx: string; status: "confirmed" | "reverted" }>("POST", "/lp/submit", { requestId, signedTransaction }),
     },
     crosschain: {
       /** USDC the person holds at the same address on the CCTP chains ("Bring to Arc"). */

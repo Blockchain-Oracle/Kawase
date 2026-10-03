@@ -68,6 +68,8 @@ import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
+import { lpRoutes } from "./lp/routes";
+import { LpService } from "./lp/service";
 import { venuePositions } from "./tokens/venue-positions";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
@@ -233,6 +235,8 @@ export function createApp(deps: AppDeps) {
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
+  // Aero LP rides with earn and borrow: its pools are yield options, its positions count with the others.
+  lend.lp = new LpService(deps.chains, wallets, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
   withdrawalRuns.bind({ sends, swaps, crosschain });
@@ -366,6 +370,7 @@ export function createApp(deps: AppDeps) {
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
+  app.route("/lp", lpRoutes(lend.lp));
   app.route("/withdrawals", withdrawRoutes(withdraw, withdrawalRuns));
   app.route("/places", placeRoutes(withdraw));
   app.route("/token-rules", tokenRulesRoutes(tokenRules));

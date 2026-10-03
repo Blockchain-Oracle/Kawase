@@ -127,9 +127,41 @@ export const LEND = {
   /** A full repay approves this much over the debt read (interest accrues until the block). */
   repayBufferBps: 20,
   gasEstimate: 600_000n,
-  /** Yield options list at most this many sources; LP opportunities are shown as advanced, read-only. */
+  /** Yield options list at most this many sources; LP pools Kawase can deposit into are offered as advanced. */
   maxOptions: 6,
   merklApi: "https://api.merkl.xyz/v4/opportunities",
+} as const;
+
+/**
+ * Aero LP on Arc mainnet (earn-borrow.md "Aero LP + Merkl rewards"): Slipstream concentrated-liquidity pools, each
+ * position an Aero NFT held by the person's own wallet, earning the pool's fees and Merkl's weekly USDC campaign while
+ * the price is inside its range (the campaigns weight by fees earned and pay nothing out of range; read 10-03).
+ */
+export const AERO_LP = {
+  /** Slipstream's NonfungiblePositionManager ("Slipstream V3 Deposit", AERO-CL): every mint in these pools goes through it (pool Mint events, 10-03). */
+  positionManager: "0xc84bB45D43CD25D02b83B4C085eaA4e08da8f473",
+  /** Merkl's Distributor on Arc: its merkle root and the claimed amounts match the Merkl API (read 10-03). */
+  merklDistributor: "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae",
+  merklUsersApi: "https://api.merkl.xyz/v4/users",
+  /** The pools Kawase deposits into: each with a live Merkl campaign (10-03). `stable`: both sides are dollar or euro coins. */
+  pools: [
+    { pair: "USDC-EURC", address: "0xbe080aC37ad1305DFCc9521F5e6F68CFDc41B7fa", stable: true },
+    { pair: "cirBTC-USDC", address: "0xd945cAEe4635BcD7FB8A9fA74dC1D0c4C1472782", stable: false },
+    { pair: "WETH-USDC", address: "0x6F302dECb49fB30B2D2c609BDD16e04e7Dd096FC", stable: false },
+  ],
+  /** The price range a deposit covers, each side of the price now: tight for the stable pair, wide for the others. */
+  stableRangeBps: 100,
+  volatileRangeBps: 1_000,
+  /** A mint or withdrawal takes at least this much less than the amounts at today's price, or nothing happens. */
+  slippageBps: 100,
+  /** The swap that buys the pair's other side: quoted, and built tighter. */
+  swapSlippageBps: 50,
+  swapBuildSlippageBps: 25,
+  deadlineSeconds: 1_200,
+  /** When the node cannot estimate: a deposit (swap, approvals, mint), a withdrawal (decrease, collect, burn), a claim. */
+  depositGas: 1_500_000n,
+  withdrawGas: 700_000n,
+  claimGas: 300_000n,
 } as const;
 
 /**

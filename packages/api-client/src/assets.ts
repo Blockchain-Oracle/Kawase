@@ -73,6 +73,8 @@ export type PositionSummary = {
   leverage?: number | null;
   pnlUsd?: number | null;
   pnlPct?: number | null;
+  /** LP: the price is inside the position's range (earning fees and rewards). */
+  inRange?: boolean | null;
 };
 
 export type PortfolioPoint = { t: string; usd: number };

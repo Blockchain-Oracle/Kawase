@@ -86,6 +86,7 @@ import { places } from "./places";
 import { help } from "./help";
 import { fees } from "./fees";
 import { offline } from "./offline";
+import { lp } from "./lp";
 
 export const en = {
   common,
@@ -173,6 +174,7 @@ export const en = {
   help,
   fees,
   offline,
+  lp,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

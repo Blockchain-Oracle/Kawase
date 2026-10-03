@@ -37,6 +37,7 @@ import type {
   CompareYieldOutput,
   LendRequest,
   ProposeLendOutput,
+  ProposeLpOutput,
   WithdrawPlanInput,
   WithdrawProposalOutput,
   PortfolioView,
@@ -162,6 +163,8 @@ export type AgentContext = {
   compareYield?(input: { asset: string; amount: string | null }): Promise<CompareYieldOutput>;
   /** Drafts an Aave V4 action: supply, withdraw, borrow (collateral in the same batch) or repay; approved on the card. */
   proposeLend?(input: LendRequest): Promise<ProposeLendOutput>;
+  /** Aero LP: a deposit quoted (one asset in, the range inferred), or the positions to withdraw or claim; the card opens the LP screen. */
+  proposeLp?(input: { action: "deposit" | "withdraw" | "claim"; pool: string | null; asset: string | null; amount: string | null }): Promise<ProposeLpOutput>;
   /** Plans a withdrawal (any assets, to an exchange, a saved place or an own wallet); the card opens Withdraw. */
   proposeWithdraw?(input: WithdrawPlanInput): Promise<WithdrawProposalOutput>;
   /** Every asset the person holds on this network, on other chains and in positions, priced (R1). */

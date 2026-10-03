@@ -57,6 +57,7 @@ import type {
   CompareYieldOutput,
   ProtectPositionOutput,
   ProposeLendOutput,
+  ProposeLpOutput,
   WithdrawProposalOutput,
 } from "@kawase/api-client";
 import { arcIdentity } from "@kawase/identity";
@@ -90,6 +91,7 @@ import { MarginMarketsCard, MarginOrderCard, MarginPositionsCard, ProtectCard } 
 import { OnrampBuyCard } from "./buy-card";
 import { MoveCard } from "./move-card";
 import { LendOrderCard, YieldOptionsCard } from "./lend-card";
+import { LpCard } from "./lp-card";
 import { WithdrawCard } from "./withdraw-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
 import { InvoiceCard } from "./invoice-card";
@@ -601,6 +603,7 @@ const LOADING_LABELS: Record<string, string> = {
   propose_bridge: "chat.loadingBridge",
   get_earn: "chat.loadingEarn",
   propose_earn: "chat.loadingEarn",
+  propose_lp: "chat.loadingEarn",
   draft_automation: "chat.loadingAutomation",
   draft_auto_save: "chat.loadingAutoSave",
   draft_rule: "chat.loadingRule",
@@ -722,6 +725,8 @@ export function ToolCard({
       return (part.output as Partial<ProtectPositionOutput>).network ? <ProtectCard output={part.output as ProtectPositionOutput} /> : null;
     case "compare_yield":
       return (part.output as Partial<CompareYieldOutput>).options ? <YieldOptionsCard output={part.output as CompareYieldOutput} /> : null;
+    case "propose_lp":
+      return (part.output as Partial<ProposeLpOutput>).action ? <LpCard output={part.output as ProposeLpOutput} /> : null;
     case "propose_supply":
     case "propose_borrow":
     case "propose_repay":

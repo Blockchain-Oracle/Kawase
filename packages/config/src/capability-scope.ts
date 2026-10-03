@@ -64,10 +64,11 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   yield: {
     supports: [
       "depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc, ranked by what they could give back now; vaults that could not are hidden (mock vaults on Arc Testnet)",
-      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP campaigns from Merkl (advanced, shown only), ranked by rate among sources that could return the amount",
+      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP pools with Merkl rewards (advanced), ranked by rate among sources that could return the amount",
       "supplying to and withdrawing from Aave V4 on Arc mainnet (see lend)",
+      "Aero LP on Arc mainnet (advanced): depositing into USDC-EURC, cirBTC-USDC or WETH-USDC from one asset of the pair (the other side bought in the same batch, a range set around today's price), the position's value, fees and whether it is in range on Home and Earn, withdrawing a whole position in one batch, and claiming Merkl's USDC rewards; impermanent loss and range risk are named",
     ],
-    notYet: ["LP deposits and claiming rewards", "Morpho Blue markets directly", "depositing from another chain"],
+    notYet: ["choosing an LP range by hand, or adding to an existing LP position", "Morpho Blue markets directly", "depositing from another chain"],
   },
   automations: {
     supports: [
@@ -82,12 +83,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   lend: {
     supports: [
-      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
+      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP pools with Merkl rewards as advanced (see yield)",
       "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
       "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a live health gauge, the liquidation price when the collateral is one asset, a health check (refused below 1.25, warned below 1.5) and the rate; repaying part or all",
       "health alerts by push and email under 1.5 and 1.2",
     ],
-    notYet: ["Morpho Blue markets directly", "LP deposits", "Aave V4 on testnet (it is mainnet only)"],
+    notYet: ["Morpho Blue markets directly", "Aave V4 on testnet (it is mainnet only)"],
   },
   margin: {
     supports: [
