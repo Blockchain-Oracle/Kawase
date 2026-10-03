@@ -82,6 +82,7 @@ import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 import { help } from "./help";
 import { fees } from "./fees";
+import { offline } from "./offline";
 
 export const en = {
   common,
@@ -165,6 +166,7 @@ export const en = {
   chatCards,
   help,
   fees,
+  offline,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

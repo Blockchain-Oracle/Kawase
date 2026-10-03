@@ -49,6 +49,7 @@ import { BreakdownSheet } from "@/home/breakdown-sheet";
 import { ForYouSection } from "@/home/for-you";
 import { PortfolioHero } from "@/home/portfolio-hero";
 import { FeeReserveChip, useFeeReserve } from "@/wallet/fee-reserve";
+import { UpdatedAgo } from "@/session/updated-ago";
 import { YourAssets } from "@/home/your-assets";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
@@ -92,7 +93,7 @@ export function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
-  const { status, user } = useSession();
+  const { status, user, stale } = useSession();
   const { wallet, error: walletError, refresh } = useWalletStatus();
   const portfolio = usePortfolio();
   const fund = useFund();
@@ -246,7 +247,11 @@ export function HomeScreen() {
             ))}
           </PortfolioHero>
           {/* Arc fees are paid in USDC: how many actions the wallet can still pay for (B2-3). */}
-          <FeeReserveChip reserve={reserve} />
+          <View className="flex-row flex-wrap items-center gap-3">
+            <FeeReserveChip reserve={reserve} />
+            {/* Offline or the last read failed: the values shown are the last good ones, and how old they are. */}
+            {portfolio.error || stale ? <UpdatedAgo at={portfolio.updatedAt} /> : null}
+          </View>
           </>
         )}
         {funded ? (

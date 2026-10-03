@@ -81,6 +81,7 @@ import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
 import { help } from "./help";
 import { fees } from "./fees";
+import { offline } from "./offline";
 
 export const pt: Catalog = {
   common,
@@ -164,4 +165,5 @@ export const pt: Catalog = {
   chatCards,
   help,
   fees,
+  offline,
 };
