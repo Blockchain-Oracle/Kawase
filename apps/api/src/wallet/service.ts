@@ -37,6 +37,7 @@ import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
 import { ContactService } from "../contacts/service";
 import { HTTP, problem } from "../http/problem";
+import { relayerReady } from "../send/relayed";
 import { fetchActivity } from "./activity";
 import type { Chains, NetworkClients } from "./chain";
 
@@ -265,9 +266,12 @@ export class WalletService {
 
   async setupRequest(userId: string, network: NetworkId) {
     const wallet = await this.requireWallet(userId);
-    const { client, network: context } = this.clients(network);
+    const clients = this.clients(network);
+    const { client, network: context } = clients;
     const code = await client.getCode({ address: wallet.address });
     if (isWalletSetUp(code)) return { alreadySetUp: true as const };
+    // The relayer pays for the setup; until it holds gas on this network, say so plainly (no signature is asked).
+    if (!(await relayerReady(clients))) throw problem(HTTP.serviceUnavailable, "network_not_ready", `Kawase is getting ${network} ready`);
     const nonce = await client.getTransactionCount({ address: wallet.address });
     return { alreadySetUp: false as const, authorization: setupAuthorizationRequest(context, nonce) };
   }
@@ -275,7 +279,9 @@ export class WalletService {
   /** The relayer sends the type-4 transaction and pays for it (spike 15). */
   async setupSubmit(userId: string, network: NetworkId, authorization: SignedAuthorization) {
     const wallet = await this.requireWallet(userId);
-    const { client, relayer, relayerAddress, network: context } = this.clients(network);
+    const clients = this.clients(network);
+    const { client, relayer, relayerAddress, network: context } = clients;
+    if (!(await relayerReady(clients))) throw problem(HTTP.serviceUnavailable, "network_not_ready", `Kawase is getting ${network} ready`);
     if (authorization.chainId !== context.chainId)
       throw problem(HTTP.unprocessable, "validation", "authorization is for another chain");
     if (authorization.address.toLowerCase() !== DELEGATION_FRAMEWORK.eip7702StatelessDeleGator.toLowerCase()) {

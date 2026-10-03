@@ -12,6 +12,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
+import { useSignIn } from "@/sign-in/sign-in-provider";
 
 const other = (network: NetworkId): NetworkId => (network === "testnet" ? "mainnet" : "testnet");
 type Translate = ReturnType<typeof useT>["t"];
@@ -21,6 +22,7 @@ export function useNetworkSwitch() {
   const { t } = useT();
   const { locale } = useLocale();
   const { status, user, availableNetworks, setNetwork } = useSession();
+  const signIn = useSignIn();
   const [busy, setBusy] = React.useState(false);
   const [consentNeeded, setConsentNeeded] = React.useState(false);
 
@@ -34,8 +36,10 @@ export function useNetworkSwitch() {
         toast(t("network.unavailable", { network: networkName(t, target) }));
         return;
       }
+      // A guest signs in first (the sheet opens); the switch is then one more tap.
       if (target === "mainnet" && status !== "account") {
         toast(t("network.signInForMainnet"));
+        signIn.open();
         return;
       }
       setBusy(true);
@@ -55,7 +59,7 @@ export function useNetworkSwitch() {
         setBusy(false);
       }
     },
-    [network, busy, availableNetworks, status, setNetwork, t],
+    [network, busy, availableNetworks, status, setNetwork, signIn, t],
   );
 
   const acceptMainnet = React.useCallback(async () => {

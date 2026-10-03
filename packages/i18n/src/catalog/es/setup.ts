@@ -7,6 +7,7 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "Configurarla en {{network}}",
   settingUpDetail: "Firmando y enviando a través del relayer de Kawase…",
   failed: "No se completó. Inténtalo de nuevo.",
+  notReady: "Kawase está preparando {{network}}. No se firmó nada y tu dinero está a salvo; inténtalo de nuevo pronto.",
   primerTitle: "Un Face ID para tu límite diario",
   primerTitleAndroid: "Una aprobación para tu límite diario",
   primerBody:

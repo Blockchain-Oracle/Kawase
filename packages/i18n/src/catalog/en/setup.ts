@@ -5,6 +5,7 @@ export const setup = {
   stepNetwork: "Set it up on {{network}}",
   settingUpDetail: "Signing and sending through Kawase's relayer…",
   failed: "That didn't go through. Try again.",
+  notReady: "Kawase is getting {{network}} ready. Nothing was signed and your money is safe — try again soon.",
   primerTitle: "One Face ID for your daily allowance",
   primerTitleAndroid: "One approval for your daily allowance",
   primerBody:

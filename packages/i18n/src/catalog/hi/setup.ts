@@ -7,6 +7,7 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "{{network}} पर सेट अप करें",
   settingUpDetail: "Kawase के रिले से साइन करके भेजा जा रहा है…",
   failed: "यह पूरा नहीं हुआ। फिर से कोशिश करें।",
+  notReady: "Kawase अभी {{network}} तैयार कर रहा है। कुछ भी साइन नहीं हुआ और आपका पैसा सुरक्षित है — थोड़ी देर बाद फिर कोशिश करें।",
   primerTitle: "दैनिक सीमा के लिए एक Face ID",
   primerTitleAndroid: "दैनिक सीमा के लिए एक मंज़ूरी",
   primerBody:
