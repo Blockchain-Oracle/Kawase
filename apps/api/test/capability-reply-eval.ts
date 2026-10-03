@@ -94,7 +94,7 @@ async function ask(question: (typeof QUESTIONS)[number]) {
   };
 }
 
-const results = [];
+const results: Awaited<ReturnType<typeof ask>>[] = [];
 for (const question of QUESTIONS)
   for (let i = 0; i < runs; i += 1) {
     const result = await ask(question);
