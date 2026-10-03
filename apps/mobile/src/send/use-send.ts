@@ -21,6 +21,7 @@ import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
+import { sayIfProofNeeded } from "@/session/device-proof";
 
 const POLL_MS = 2_000;
 const MOVING: ReadonlySet<SendIntent["state"]> = new Set(["approved", "executing", "unknown_outcome"]);
@@ -111,7 +112,7 @@ export function useSend(initial?: SendIntent | undefined): SendController {
       return await work();
     } catch (error) {
       if (error instanceof ApiError) {
-        toast(error.code === "intent_stale" || error.code === "intent_final" ? t("send.changed") : t("send.failed"));
+        if (!sayIfProofNeeded(error, t)) toast(error.code === "intent_stale" || error.code === "intent_final" ? t("send.changed") : t("send.failed"));
       } else {
         // No answer: the request may have been taken. Read the send again instead of saying it failed.
         setConnectionLost(true);

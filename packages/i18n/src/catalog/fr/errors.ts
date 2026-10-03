@@ -24,4 +24,5 @@ export const errors: Catalog["errors"] = {
     "Configurez une empreinte ou un verrouillage de l'écran dans les Paramètres du téléphone pour approuver.",
   biometricFailed: "Pas de correspondance. Rien n'a été signé. Réessayez.",
   tryAgainIn: "Réessayez dans {{time}}",
+  deviceProofNeeded: "Reconnectez-vous sur ce téléphone pour l'approuver. Rien n'a été envoyé.",
 };

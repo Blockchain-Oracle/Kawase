@@ -24,6 +24,7 @@ import { useT } from "@/i18n";
 import { shortAddress, useMoney, usePolicyText } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
+import { sayIfProofNeeded } from "@/session/device-proof";
 
 const AVATAR = 40;
 const HTTP_CONFLICT = 409;
@@ -76,7 +77,7 @@ export function NeedsYouCard({ item: initial, via = "app", onChange }: { item: N
       if (answer.status === "opened") setOpened(answer);
       else toast(t("needsYou.alreadyAnswered", { status: t(`needsYou.status_${answer.item.status}`), when: answer.item.decidedAt ? text.when(answer.item.decidedAt) : "" }));
     } catch (error) {
-      toast(error instanceof ApiError && error.status === HTTP_CONFLICT ? t("needsYou.switchNetwork", { network: networkName }) : t("needsYou.failed"));
+      if (!sayIfProofNeeded(error, t)) toast(error instanceof ApiError && error.status === HTTP_CONFLICT ? t("needsYou.switchNetwork", { network: networkName }) : t("needsYou.failed"));
     } finally {
       setBusy(false);
     }

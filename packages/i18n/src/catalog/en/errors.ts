@@ -19,4 +19,5 @@ export const errors = {
   biometricUnavailableAndroid: "Set up a fingerprint or a screen lock in your phone's Settings to approve.",
   biometricFailed: "That didn't match. Nothing was signed. Try again.",
   tryAgainIn: "Try again in {{time}}",
+  deviceProofNeeded: "Sign in again on this phone to approve this. Nothing was sent.",
 } as const;

@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { eq } from "drizzle-orm";
+import { sha256, stringToBytes } from "viem";
 
 import { devices } from "@kawase/db";
 
@@ -81,4 +82,12 @@ test("not yet required: requests without a proof go on as before (old app builds
   const approve = `/sends/${randomUUID()}/approve`;
   assert.equal((await app.request(approve, jsonRequest("POST", { version: 1 }, token))).status, 404);
   assert.equal((await app.request(approve, await proven(token, approve, { version: 1 }, turnkeyStyleKeyPair()))).status, 404, "a proof that does not hold is only logged");
+});
+
+test("the app's proof format is the api's: the same activity id for the same request (apps/mobile session/device-proof.ts)", () => {
+  const body = JSON.stringify({ id: randomUUID(), message: { role: "user", parts: [{ type: "text", text: "send 5 to mum — ça va?" }] } });
+  const at = Date.now();
+  // What the app computes (viem, as on the phone) and what the api checks (node's crypto) must agree byte for byte.
+  const app = `kawase:${at}:${sha256(stringToBytes(`POST /agent/chat\n${body}`)).slice(2)}`;
+  assert.equal(proofActivity("POST", "/agent/chat", body, at), app);
 });
