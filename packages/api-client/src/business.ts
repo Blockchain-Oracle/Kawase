@@ -1,6 +1,6 @@
 // Business mode (cards/agent-business.md): profile, invoices, batch payouts. Amounts in base units. Payroll is the
 // automations `payroll` kind (automations-8c.ts).
-import type { NetworkId, TransactionRequestResponse } from "./types";
+import type { NetworkId, RelayedBatchRequest, TransactionRequestResponse } from "./types";
 
 export type BusinessProfile = { name: string; address: string | null; taxId: string | null; email: string | null };
 export type BusinessProfileInput = { name: string; address?: string | undefined; taxId?: string | undefined; email?: string | undefined };
@@ -86,4 +86,4 @@ export type PayoutView = {
 };
 export type PayoutCreateResult = { payout: PayoutView; problems: [] } | { payout: null; problems: PayoutProblem[] };
 
-export type PayoutSignRequest = TransactionRequestResponse;
+export type PayoutSignRequest = TransactionRequestResponse | RelayedBatchRequest;

@@ -277,7 +277,9 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
           value={
             draft.fee.payer === "kawase"
               ? t("send.feeKawase")
-              : draft.fee.estimate
+              : draft.fee.payer === "relayer"
+                ? t("send.feeRelayed", { amount: draft.fee.estimate ? fee(draft.fee.estimate) : "" })
+                : draft.fee.estimate
                 ? t("send.feeWallet", { amount: fee(draft.fee.estimate) })
                 : "—"
           }

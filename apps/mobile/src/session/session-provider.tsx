@@ -15,6 +15,7 @@ import { forgetPushToken } from "@/notifications/push";
 
 import { api } from "./api";
 import { sessionStorage } from "./storage";
+import { clearCaches } from "./cache";
 
 type Status = "loading" | "none" | "guest" | "account";
 
@@ -85,6 +86,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await sessionStorage.setToken(undefined);
     if (version !== epoch.current) return;
     await sessionStorage.setUser(undefined);
+    await clearCaches();
     if (version !== epoch.current) return;
     setUser(undefined);
     setStatus("none");

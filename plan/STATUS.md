@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-02 evening (merges, agent speed, mainnet switched on; per-area truth in `plan/COVERAGE.md`)
+Last updated: 2026-10-03 morning (all lanes merged; OpenAI credit out; per-area truth in `plan/COVERAGE.md`)
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
@@ -46,7 +46,28 @@ Abu's direction: define every flow end to end, every asset first-class, the whol
   - Ops wallet `cd79106f-…` `0x2afa6cb26f360adecbd8a014030a8aff17ae8b3b` and relayer `0x18fb4f6679dcb927Ef70b3B9Be8B0440e7836b78` on ARC. **Both have 0 USDC and need a few USDC for gas** before any mainnet setup or redeem.
   - Coolify has `MAINNET_ENABLED=true` and the keys. The server keeps Arc's public RPC (`rpc.mainnet.arc.io`), so the 10 s watchers don't spend Alchemy's free 30M CU/month.
 
-**Next for the lead:** merge slices as they finish; the Circle webhook subscription for Onramp (after the API deploy); Circle KYB domain (pay.getkawase.xyz); COVERAGE update; daily build.
+**Night 10-02 → morning 10-03 (lead):**
+- **Merged:**
+  - B1: bridges and yield/borrow (4a95264); then any asset across chains, TP/SL with health alerts, and launchpads (B1-6).
+  - A3: safety, automations 8c and Activity (411cbfb); then pause/cooldown/brake per X30/X31 (389708a).
+  - C2: narration, the Tauri desktop app, docs and landing (411cbfb, 82ecd28).
+  - A: A2 Withdraw, Add money and any-asset Send; then A-3 (picker in Earn/Automations, My places, withdraw resume and grouping, watchlist, candles, P&L, alerts for any token, memo on Send).
+  - A5: A5-2 (scan to pay, splits, /i/<id>, receipts, contacts); then A5-3 (in-app asks, any-asset splits, hide amounts).
+  - B2: B2-2 (business and account from chat, any-token invoices, device alerts, Apple Pay into the agent wallet; one payroll per X32); then B2-3 (display currency, Help & trust, gas-free sends through the EIP-3009/7702 relayer, mainnet "getting ready", offline cache).
+- **Production fixes from builders:**
+  - every one-call 7702 batch was reverting (6c2bf66);
+  - Aave V4 account totals were read 1e18 too large (cdc7665);
+  - the web origin and links now use app.getkawase.xyz (CORS);
+  - the api image starts tsx directly (health-check timeout).
+- **OpenAI credit ran out on 10-02 night (`credit_balance_exhausted`):** the agent and GPT-Live voice are down until Abu adds credit. Builders burned it on doc translation and live tests; see memory shared-model-key-budget. A Google provider option was added (1725923), but the shell's Gemini key is free tier and hits its quota.
+- **Live:** api + web follow main; docs and landing deployed (Mac .dmg at getkawase.xyz/download). TestFlight 9 (`d40d78b9`) and APK (`e224f315`) were built from main on 10-03 08:40.
+- **Running:**
+  - A: A-4 (§D surface audit; withdraw as one batch);
+  - B1: B1-7 (mainnet acceptance runner, relayed gas for its flows, Aero LP, two-step bring-in);
+  - B2: B2-4 (README with the prior-work disclosure, judge walkthrough, push credentials audit).
+- **Abu:** OpenAI credit; ~5 USDC each to ops 0x2afa…8b3b and relayer 0x18fb…6b78 on Arc mainnet; back up ~/.kawase-secrets.
+
+**Next for the lead:** merge slices as they finish; run the mainnet acceptance runner once funded; security review over the money paths; Circle KYB domain; demo video and submission (deadline 10-10).
 
 ## Active repair — 2026-10-02
 

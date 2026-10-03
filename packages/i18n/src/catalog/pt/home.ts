@@ -52,4 +52,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "Ativar",
   allowanceCue: "Limite diário ligado · até {{amount}} por dia",
   soon: "Em breve",
+  nextRun: "Próxima: {{when}}",
+  watching: "Observando",
+  stepFirstAutomation: "Crie sua primeira automação",
+  stepAutomationAction: "Mostrar",
+  sendTo: "Enviar para {{name}}",
+  contactWaiting: "troca de endereço em espera",
 };

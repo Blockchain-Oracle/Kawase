@@ -7,6 +7,7 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "Настроить в сети {{network}}",
   settingUpDetail: "Подписываем и отправляем через ретранслятор Kawase…",
   failed: "Не получилось. Попробуйте ещё раз.",
+  notReady: "Kawase готовит {{network}}. Ничего не подписано, ваши деньги в безопасности — попробуйте чуть позже.",
   primerTitle: "Один Face ID для дневного лимита",
   primerTitleAndroid: "Одно подтверждение для дневного лимита",
   primerBody:

@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "Метка",
   labelPlaceholder: "Поставщик, арендодатель…",
   fromHandle: "@{{handle}}",
-  importSoon: "Импорт из контактов телефона — скоро",
   signInBody: "Войдите, чтобы вести адресную книгу тех, кому вы платите.",
   loadFailed: "Не удалось загрузить контакты.",
   noMatches: "Подходящих контактов нет.",

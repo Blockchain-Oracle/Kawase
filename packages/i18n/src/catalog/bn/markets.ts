@@ -33,4 +33,5 @@ export const markets: Catalog["markets"] = {
   watchHeld: "আপনার কাছে আছে",
   recent: "সাম্প্রতিক",
   recentClear: "মুছুন",
+  longShort: "লং বা শর্ট",
 };

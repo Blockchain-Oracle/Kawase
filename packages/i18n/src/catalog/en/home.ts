@@ -50,4 +50,10 @@ export const home = {
   allowanceOffAction: "Turn on",
   allowanceCue: "Allowance on · up to {{amount}} a day",
   soon: "Soon",
+  nextRun: "Next: {{when}}",
+  watching: "Watching",
+  stepFirstAutomation: "Set up your first automation",
+  stepAutomationAction: "Show me",
+  sendTo: "Send to {{name}}",
+  contactWaiting: "address change waiting",
 } as const;

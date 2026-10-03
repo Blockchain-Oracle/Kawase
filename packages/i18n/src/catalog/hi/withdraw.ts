@@ -92,4 +92,5 @@ export const withdraw: Catalog["withdraw"] = {
   firstTimeTitle: "यहाँ पहली बार भेज रहे हैं",
   firstTimeBody: "पहले {{amount}} USDC की थोड़ी टेस्ट राशि भेजें, देखें कि वह पहुँच गई, फिर बाकी निकालें।",
   sendTest: "पहले {{amount}} USDC की टेस्ट राशि भेजें",
+  oneTransaction: "ये {{n}} चरण Arc पर एक ही लेनदेन में होते हैं: सब या कुछ नहीं।",
 };

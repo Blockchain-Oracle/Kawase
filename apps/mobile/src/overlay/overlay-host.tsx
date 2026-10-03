@@ -40,12 +40,13 @@ export function OverlayHost() {
   const request = useCapability("request");
   const requestReady = request === "available";
   const swapReady = useCapability("swap") === "available";
+  // Plan §D "Fan": Add money (the hub, Buy with Apple Pay its first row) · Send · Receive · Swap · Request, then Scan.
   const actions: FanAction[] = [
+    { key: "fund", label: t("assets.addMoney"), icon: ArrowDownToLine },
     { key: "send", label: t("home.send"), icon: Send },
     { key: "receive", label: t("home.receive"), icon: QrCode },
     { key: "swap", label: t("home.swap"), icon: ArrowLeftRight, ...(swapReady ? {} : { soon: t("home.soon") }) },
     { key: "request", label: t("home.request"), icon: HandCoins, ...(requestReady ? {} : { soon: t("home.soon") }) },
-    { key: "fund", label: t("home.fund"), icon: ArrowDownToLine },
     { key: "scan", label: t("scan.fanLabel"), icon: ScanLine },
   ];
 

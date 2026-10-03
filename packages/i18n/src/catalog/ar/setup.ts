@@ -7,6 +7,7 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "جهّزها على {{network}}",
   settingUpDetail: "جارٍ التوقيع والإرسال عبر مُرحِّل Kawase…",
   failed: "لم تكتمل العملية. حاول مرة أخرى.",
+  notReady: "تجهّز Kawase شبكة {{network}} الآن. لم يُوقَّع شيء وأموالك بأمان — حاول مجددًا بعد قليل.",
   primerTitle: "بصمة وجه واحدة لحدّك اليومي",
   primerTitleAndroid: "موافقة واحدة لحدّك اليومي",
   primerBody:

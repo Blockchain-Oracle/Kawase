@@ -30,6 +30,7 @@ export const policy: Catalog["policy"] = {
   ABOVE_ALLOWANCE: "آپ کی باقی حد ({{available}}) سے زیادہ",
   NO_ALLOWANCE: "آپ کی روزانہ کی حد بند ہے",
   LEAVES_LITTLE_FOR_FEES: "نیٹ ورک فیس کے لیے بہت کم USDC بچے گا",
+  GAS_RELAYED: "آپ کا والیٹ نیٹ ورک فیس ادا نہیں کر سکتا، اس لیے اس بھیجنے کی فیس Kawase دے گا",
   SCHEDULE_INVALID: "یہ شیڈول نہیں چل سکتا (نامعلوم ٹائم زون یا دن)۔",
   AUTO_SAVE_EXISTS: "آٹو سیو پہلے سے آن ہے۔ پہلے آٹومیشنز میں اسے بند کریں، پھر نیا سیٹ کریں۔",
   RULE_INCOMPLETE: "اس اصول کو ایک اور عدد چاہیے: بیلنس کی لکیر، حصہ یا رقم۔",

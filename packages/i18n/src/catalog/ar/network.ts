@@ -12,4 +12,9 @@ export const network: Catalog["network"] = {
   signInForMainnet: "سجّل الدخول لاستخدام أموال حقيقية.",
   consentCheck: "أفهم أن هذه أموال حقيقية.",
   chooseNetwork: "اختر شبكة",
+  sheetTitle: "الشبكات",
+  testMoney: "أموال تجريبية بلا قيمة",
+  notYet: "غير متاحة بعد",
+  totalAt: "حتى {{time}}",
+  sheetDrafts: "ما تراجعه يبقى على الشبكة التي أُنشئ عليها. عُد إليها للموافقة عليه.",
 };

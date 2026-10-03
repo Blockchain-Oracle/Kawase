@@ -31,4 +31,5 @@ export const markets = {
   watchHeld: "You hold some",
   recent: "Recent",
   recentClear: "Clear",
+  longShort: "Long or short",
 } as const;

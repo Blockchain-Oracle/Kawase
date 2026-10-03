@@ -36,6 +36,8 @@ export type ProblemCode =
   | "signature_mismatch"
   | "transaction_mismatch"
   | "network_unavailable"
+  /** The network is on, but Kawase's relayer there has no gas yet (a funded relayer makes it ready). */
+  | "network_not_ready"
   | "consent_required"
   | "handle_invalid"
   | "handle_reserved"
@@ -114,6 +116,7 @@ const TITLES: Record<ProblemCode, string> = {
   signature_mismatch: "The signature does not match the wallet",
   transaction_mismatch: "The signed transaction differs from the request",
   network_unavailable: "This network is not available",
+  network_not_ready: "Kawase is getting this network ready",
   consent_required: "A consent is required first",
   handle_invalid: "The handle is not valid",
   handle_reserved: "The handle is reserved",

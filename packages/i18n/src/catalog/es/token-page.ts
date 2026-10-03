@@ -83,4 +83,5 @@ export const tokenPage: Catalog["tokenPage"] = {
     "De tus compras y ventas en Kawase, al precio medio de compra. Los tokens que recibiste o pasaste por un puente no son operaciones.",
   activity: "Tu actividad",
   seeAll: "Ver todo",
+  onChain: "{{amount}} en {{chain}}",
 };

@@ -128,9 +128,11 @@ export function ContactsScreen() {
             </Button>
           }
         />
-        <Text className="text-muted-foreground px-5 text-center text-sm" style={{ paddingBottom: insets.bottom + BOTTOM_GAP }}>
-          {t("contacts.importSoon")}
-        </Text>
+        <View className="items-center px-5" style={{ paddingBottom: insets.bottom + BOTTOM_GAP }}>
+          <Button variant="ghost" onPress={() => router.push("/contacts/import")}>
+            <Text className="text-muted-foreground">{t("importContacts.title")}</Text>
+          </Button>
+        </View>
       </View>
     );
   } else {
@@ -172,7 +174,9 @@ export function ContactsScreen() {
         ) : (
           <Text className="text-muted-foreground py-6 text-center text-base">{t("contacts.noMatches")}</Text>
         )}
-        <Text className="text-muted-foreground px-1 text-center text-sm">{t("contacts.importSoon")}</Text>
+        <Button variant="ghost" onPress={() => router.push("/contacts/import")}>
+          <Text className="text-muted-foreground">{t("importContacts.title")}</Text>
+        </Button>
       </ScrollView>
     );
   }

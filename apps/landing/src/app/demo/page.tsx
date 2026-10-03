@@ -34,6 +34,13 @@ const KIND_LABEL: Record<EvidenceKind, string> = {
   business: "Business",
 };
 
+/** The groups in the order a judge walks them (docs: judge walkthrough); each is a `/demo#<kind>` anchor. */
+const KIND_ORDER = Object.keys(KIND_LABEL) as EvidenceKind[];
+const GROUPS = KIND_ORDER.map((kind) => ({ kind, rows: EVIDENCE.filter((row) => row.kind === kind) })).filter(
+  (group) => group.rows.length > 0,
+);
+const COLUMNS = 4;
+
 const HASH_EDGE = 10;
 const HASH_TAIL = 8;
 const shortHash = (hash: string) => `${hash.slice(0, HASH_EDGE)}…${hash.slice(-HASH_TAIL)}`;
@@ -65,6 +72,7 @@ export default function DemoPage() {
   return (
     <>
       <Section
+        id="video"
         eyebrow="Demo"
         title="See it work, then check the chain"
         body="Each feature Kawase ships was proven with real transactions on Arc testnet as it was built. Here is the video and the evidence behind it."
@@ -79,51 +87,68 @@ export default function DemoPage() {
         title={`${EVIDENCE.length} transactions over ${days} days`}
         body={
           <>
-            Each row names where it was triggered (a package script, an API test against testnet, the iOS simulator
-            with Face ID, or chat) and the build log that recorded it. Testnet money has no value. Hashes are shortened
-            for reading; each link carries the full one.
+            Grouped by what they prove, each group in the order it ran. Each row names where it was triggered (a package
+            script, an API test against testnet, the iOS simulator with Face ID, or chat) and the build log that
+            recorded it. Testnet money has no value. Hashes are shortened for reading; each link carries the full one.
           </>
         }
         className="pt-8 sm:pt-10"
       >
+        <nav aria-label="Jump to a group" className="mb-4 flex flex-wrap gap-2">
+          {GROUPS.map(({ kind, rows }) => (
+            <a
+              key={kind}
+              href={`#${kind}`}
+              className="rounded-full border border-border bg-card px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+            >
+              {KIND_LABEL[kind]} <span className="text-muted-foreground">{rows.length}</span>
+            </a>
+          ))}
+        </nav>
         <div className="rounded-3xl border border-border bg-card p-2 sm:p-4">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>What</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Where</TableHead>
                 <TableHead>Transaction</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {EVIDENCE.map((row) => (
-                <TableRow key={row.hash}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{row.date}</TableCell>
-                  <TableCell>
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs">{KIND_LABEL[row.kind]}</span>
+              {GROUPS.flatMap(({ kind, rows }) => [
+                <TableRow key={kind} id={kind} className="scroll-mt-28 hover:bg-transparent target:bg-muted">
+                  <TableCell
+                    colSpan={COLUMNS}
+                    className="pt-6 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+                  >
+                    {KIND_LABEL[kind]}
                   </TableCell>
-                  <TableCell className="min-w-72 whitespace-normal leading-snug">
-                    {row.action}
-                    <span className="mt-1 block text-xs text-muted-foreground">{row.source}</span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{row.surface}</TableCell>
-                  <TableCell>
-                    <a
-                      href={explorerTxUrl(row.explorer, row.hash)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title={row.hash}
-                      className="inline-flex items-center gap-1.5 font-mono text-xs underline-offset-4 hover:underline"
-                    >
-                      <span dir="ltr">{shortHash(row.hash)}</span>
-                      <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden />
-                    </a>
-                    <span className="mt-1 block text-xs text-muted-foreground">{CHAIN_NAME[row.explorer]}</span>
-                  </TableCell>
-                </TableRow>
-              ))}
+                </TableRow>,
+                ...rows.map((row) => (
+                  <TableRow key={row.hash}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{row.date}</TableCell>
+                    <TableCell className="min-w-72 whitespace-normal leading-snug">
+                      {row.action}
+                      <span className="mt-1 block text-xs text-muted-foreground">{row.source}</span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{row.surface}</TableCell>
+                    <TableCell>
+                      <a
+                        href={explorerTxUrl(row.explorer, row.hash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={row.hash}
+                        className="inline-flex items-center gap-1.5 font-mono text-xs underline-offset-4 hover:underline"
+                      >
+                        <span dir="ltr">{shortHash(row.hash)}</span>
+                        <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden />
+                      </a>
+                      <span className="mt-1 block text-xs text-muted-foreground">{CHAIN_NAME[row.explorer]}</span>
+                    </TableCell>
+                  </TableRow>
+                )),
+              ])}
             </TableBody>
           </Table>
         </div>

@@ -39,6 +39,9 @@ export const RESERVED_HANDLES = new Set([
 
 export type HandleProblem = "too_short" | "too_long" | "invalid" | "reserved";
 
+/** Any handle that reads as Kawase itself (@kawasedemo, @kawase_support…) could pass for the app: reserved too. */
+const IMPERSONATES_KAWASE = /kawase/;
+
 /** Returns the first rule the handle breaks, or null. Uniqueness is the api's job. */
 export const normalizeHandle = (raw: string): string => raw.trim().toLowerCase().replace(/^@/, "");
 
@@ -47,6 +50,6 @@ export const handleProblem = (raw: string): HandleProblem | null => {
   if (handle.length < HANDLE_MIN) return "too_short";
   if (handle.length > HANDLE_MAX) return "too_long";
   if (!HANDLE_PATTERN.test(handle)) return "invalid";
-  if (RESERVED_HANDLES.has(handle)) return "reserved";
+  if (RESERVED_HANDLES.has(handle) || IMPERSONATES_KAWASE.test(handle)) return "reserved";
   return null;
 };

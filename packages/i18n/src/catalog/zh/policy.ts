@@ -29,6 +29,7 @@ export const policy: Catalog["policy"] = {
   ABOVE_ALLOWANCE: "超出你剩余的额度（{{available}}）",
   NO_ALLOWANCE: "你的每日额度已关闭",
   LEAVES_LITTLE_FOR_FEES: "剩下用于网络费的 USDC 很少",
+  GAS_RELAYED: "你的钱包不够支付网络费，这笔转账的网络费由 Kawase 支付",
   SCHEDULE_INVALID: "无法执行这个时间表（未知的时区或日期）。",
   AUTO_SAVE_EXISTS: "自动储蓄已开启。请先在“自动化”中关闭，再设置新的。",
   RULE_INCOMPLETE: "这条规则还缺一个数字：余额线、比例或金额。",

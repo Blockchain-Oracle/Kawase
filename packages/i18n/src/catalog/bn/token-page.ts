@@ -83,4 +83,5 @@ export const tokenPage: Catalog["tokenPage"] = {
     "Kawase-এ আপনার কেনা-বেচা থেকে, গড় ক্রয়মূল্যে। যে টোকেন আপনি পেয়েছেন বা ব্রিজ করেছেন, সেগুলো ট্রেড নয়।",
   activity: "আপনার কার্যকলাপ",
   seeAll: "সব দেখুন",
+  onChain: "{{chain}}-এ {{amount}}",
 };

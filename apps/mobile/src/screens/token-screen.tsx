@@ -41,13 +41,15 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { useT } from "@/i18n";
 import { LaunchpadCard } from "@/launchpad/launchpad-card";
 import { useLocale } from "@/i18n/locale-provider";
-import { change, holdingAmount, money, price, shortAddress, USD_FX } from "@/portfolio/format";
+import { change, holdingAmount, money, price, shortAddress } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { FeedRow } from "@/activity/feed-row";
 import { useToken, useTokenChart } from "@/token/use-token";
+import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useTokenMine } from "@/token/use-token-mine";
 import { withdrawHref } from "@/withdraw/href";
 
@@ -87,12 +89,18 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const [range, setRange] = React.useState<ChartRange>("1D");
   const candles = useTokenChart(chainId, address, range);
   const mine = useTokenMine(chainId, address);
+  // The person's holdings on other chains: the same token there is part of "my holding" (§D: across chains).
+  const portfolio = usePortfolio();
+  const refreshPortfolio = portfolio.refresh;
+  React.useEffect(() => {
+    if (status === "account") void refreshPortfolio();
+  }, [status, refreshPortfolio]);
   const [chartKind, setChartKind] = React.useState<"line" | "candles">("line");
   const [scrub, setScrub] = React.useState<ChartPoint | null>(null);
   const [candleScrub, setCandleScrub] = React.useState<CandlePoint | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
-  const fx = USD_FX;
+  const fx = useFx();
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/markets"));
 
   const activeChain = user?.activeNetwork === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
@@ -130,6 +138,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const scrubbedAt = scrub?.t ?? candleScrub?.t;
   const changeLabel = change(detail.market.change24hPct, locale);
   const holds = detail.holding && BigInt(detail.holding.balance) > ZERO;
+  const elsewhere = (portfolio.portfolio?.otherChains ?? []).filter((holding) => holding.token.symbol.toUpperCase() === token.symbol.toUpperCase());
 
   /** The page's own reason first (another network, signing in), then the api's (R2). */
   const reasonFor = (action: TokenActionView): string | null => {
@@ -167,7 +176,11 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push("/bridge");
         return;
       case "earn":
-        router.push("/earn");
+        // Earn on this very token (the universal picker starts on it).
+        router.push({ pathname: "/earn", params: { asset: token.address, chainId: String(token.chainId), symbol: token.symbol, decimals: String(token.decimals), name: token.name } });
+        return;
+      case "long_short":
+        router.push({ pathname: "/margin", params: { market: token.symbol } });
         return;
       default:
     }
@@ -348,13 +361,28 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           <RangePills ranges={RANGES} value={range} onChange={setRange} label={t("assets.rangeLabel")} />
         </View>
 
-        {holds && detail.holding ? (
+        {(holds && detail.holding) || elsewhere.length > 0 ? (
           <View className="bg-card border-border gap-1 rounded-2xl border p-4">
             <Eyebrow>{t("tokenPage.myHolding")}</Eyebrow>
-            <Amount className="text-foreground text-xl font-semibold">{holdingAmount(detail.holding, locale)}</Amount>
-            <Text className="text-muted-foreground text-sm">
-              {t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}
-            </Text>
+            {holds && detail.holding ? (
+              <>
+                <Amount className="text-foreground text-xl font-semibold">{holdingAmount(detail.holding, locale)}</Amount>
+                <Text className="text-muted-foreground text-sm">
+                  {t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}
+                </Text>
+              </>
+            ) : null}
+            {/* The same token on other chains (one address everywhere), with the way to bring it to Arc. */}
+            {elsewhere.map((holding) => (
+              <View key={`${holding.token.chainId}:${holding.token.address}`} className="flex-row items-center gap-2 pt-2">
+                <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
+                  {t("tokenPage.onChain", { amount: holdingAmount(holding, locale), chain: holding.chainName })}
+                </Text>
+                <Button size="sm" variant="secondary" onPress={() => router.push({ pathname: "/move", params: { direction: "in" } })}>
+                  <Text>{t("assets.bringToArc")}</Text>
+                </Button>
+              </View>
+            ))}
           </View>
         ) : null}
 

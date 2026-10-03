@@ -36,6 +36,23 @@ export type WithdrawalStep = {
   fillUrl?: string | null | undefined;
   failure?: "changed" | "checking" | "not_sent" | "unavailable" | null | undefined;
   blocking?: { code: string; kind: string; params?: Record<string, string> } | null | undefined;
+  /**
+   * Signed together with the other batched steps (one transaction), and what its engine records for the attempt
+   * when the batch is signed (intents/bundle.ts).
+   */
+  batched?: boolean | undefined;
+  bundle?:
+    | {
+        version: number;
+        chainId: number;
+        from: string;
+        attemptKind: "swap_wallet" | "send_wallet" | "crosschain_wallet";
+        attemptTo: string;
+        attemptReceipt?: Record<string, unknown> | undefined;
+        ledger?: { asset: string; amount: string } | null | undefined;
+      }
+    | null
+    | undefined;
 };
 
 export const withdrawals = pgTable(

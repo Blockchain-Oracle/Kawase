@@ -50,4 +50,6 @@ export const assets: Catalog["assets"] = {
   mainnetOnly: "শুধু মেইননেট",
   noPrice: "এখনো দাম নেই",
   vault: "ভল্ট",
+  borrowed: "{{assets}} ধার",
+  owed: "{{amount}} বাকি",
 };

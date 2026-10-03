@@ -12,4 +12,9 @@ export const network: Catalog["network"] = {
   signInForMainnet: "اصلی رقم استعمال کرنے کے لیے سائن ان کریں۔",
   consentCheck: "میں سمجھتا/سمجھتی ہوں کہ یہ اصلی رقم ہے۔",
   chooseNetwork: "نیٹ ورک منتخب کریں",
+  sheetTitle: "نیٹ ورک",
+  testMoney: "ٹیسٹ رقم، کوئی قدر نہیں",
+  notYet: "ابھی دستیاب نہیں",
+  totalAt: "{{time}} تک",
+  sheetDrafts: "جو آپ دیکھ رہے ہیں وہ اسی نیٹ ورک پر رہتا ہے جہاں بنا تھا۔ منظوری کے لیے واپس اسی پر جائیں۔",
 };

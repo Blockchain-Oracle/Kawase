@@ -93,4 +93,5 @@ export const withdraw: Catalog["withdraw"] = {
   firstTimeTitle: "Premier envoi ici",
   firstTimeBody: "Envoyez d'abord un petit test de {{amount}} USDC, vérifiez qu'il est arrivé, puis retirez le reste.",
   sendTest: "Envoyer d'abord un test de {{amount}} USDC",
+  oneTransaction: "Ces {{n}} étapes partent en une seule transaction sur Arc : toutes ou aucune.",
 };

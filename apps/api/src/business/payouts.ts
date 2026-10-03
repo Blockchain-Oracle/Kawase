@@ -123,14 +123,18 @@ export class PayoutService {
     if (balance < row.total) throw problem(HTTP.unprocessable, "validation", "not enough in the wallet for this payout");
     const calls = row.lines.map((line) => ({ to: token, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [line.address as Address, BigInt(line.amount)] }) as Hex }));
     const gas = PAYOUT_GAS_BASE + PAYOUT_GAS_PER_LINE * BigInt(calls.length);
+    // No gas dead end: when the USDC left after the payout cannot pay the fee, Kawase's relayer sends the batch.
+    const spendsUsdc = token.toLowerCase() === clients.network.addresses.usdc.toLowerCase() ? row.total : BigInt(0);
+    if (!(await this.wallets.canPayFee(user.id, row.network, spendsUsdc, gas))) return this.wallets.relayedBatchRequest(user.id, row.network, "payout", calls);
     return this.wallets.selfBatchRequest(user.id, row.network, "payout", calls, gas);
   }
 
-  async submit(user: SessionUser, id: string, input: { requestId: string; signedTransaction: Hex }) {
+  async submit(user: SessionUser, id: string, input: { requestId: string; signedTransaction: Hex; kind?: "transaction" | "typed" | undefined }) {
     const row = await this.own(user, id);
     if (row.status !== "ready") throw problem(HTTP.conflict, "intent_final");
     await this.db.update(payoutBatches).set({ status: "submitted" }).where(eq(payoutBatches.id, id));
-    const sent = await this.wallets.submitTransaction(user.id, input.requestId, input.signedTransaction).catch(async (error: unknown) => {
+    const send = input.kind === "typed" ? this.wallets.submitRelayedBatch(user.id, input.requestId, input.signedTransaction) : this.wallets.submitTransaction(user.id, input.requestId, input.signedTransaction);
+    const sent = await send.catch(async (error: unknown) => {
       await this.db.update(payoutBatches).set({ status: "ready" }).where(eq(payoutBatches.id, id));
       throw error;
     });

@@ -1,7 +1,7 @@
 // Home's "Your assets" and "Positions" (surfaces.md Home §6–7; R1): every token the wallet holds on Arc with its real
 // mark, amount, value and 24-hour change, sorted by value; then "On other chains" (Bring to Arc), "Hidden (N)"
-// (spam, dust, lookalikes, the person's own choices — each can be shown again), and Explore. Positions come from
-// every venue that reports one (earn vaults today). Empty: "Nothing yet" with the ways in.
+// (spam, dust, lookalikes, the person's own choices — each can be shown again), and Explore. Positions are their own
+// section (home/positions.tsx). Empty: "Nothing yet" with the ways in.
 import { useRouter } from "expo-router";
 import { ArrowDownToLine, Compass, Eye, EyeOff, QrCode } from "lucide-react-native";
 import * as React from "react";
@@ -9,11 +9,9 @@ import { View } from "react-native";
 
 import type { HoldingView, PortfolioView } from "@kawase/api-client";
 import { CHAIN_IDS, getChainIdentity, chainKey } from "@kawase/identity";
-import { Amount } from "@kawase/ui-native/components/amount";
 import { AssetRow } from "@kawase/ui-native/components/asset-row";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
-import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
@@ -22,8 +20,6 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
-import { PositionRow } from "@/margin/position-row";
-import { useMarginPositions } from "@/margin/use-margin";
 import { change, holdingAmount, money } from "@/portfolio/format";
 import { tokenChip } from "@/portfolio/token-chip";
 
@@ -38,8 +34,6 @@ type YourAssetsProps = {
 
 const SKELETON_ROWS = 3;
 const SKELETON_ROW_HEIGHT = 64;
-const POSITION_MARK = 36;
-const APY_DIGITS = 2;
 const HIDDEN_KEYS = { spam: "assets.hiddenSpam", dust: "assets.hiddenDust", lookalike: "assets.hiddenLookalike", impersonator: "assets.hiddenImpersonator", chosen: "assets.hiddenChosen" } as const;
 
 export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onVisibility }: YourAssetsProps) {
@@ -47,9 +41,6 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
   const { locale } = useLocale();
   const router = useRouter();
   const [hiddenOpen, setHiddenOpen] = React.useState(false);
-  // Kawase Margin longs and shorts sit with the earn positions (surfaces.md Home §7: perps with side, leverage, P&L).
-  const { positions: margin } = useMarginPositions();
-  const marginRows = margin ?? [];
   const fx = portfolio?.fx ?? { currency: "USD", perUsd: 1 };
   const openToken = (holding: HoldingView) => router.push(`/token/${holding.token.chainId}/${holding.token.address}`);
 
@@ -99,7 +90,7 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
     );
   }
 
-  const empty = portfolio.assets.length === 0 && portfolio.otherChains.length === 0 && portfolio.positions.length === 0 && marginRows.length === 0;
+  const empty = portfolio.assets.length === 0 && portfolio.otherChains.length === 0 && portfolio.positions.length === 0;
 
   return (
     <>
@@ -126,7 +117,13 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
         {portfolio.stale ? <Text className="text-muted-foreground px-1 text-xs">{t("assets.pricesFrom", { time: new Date(portfolio.pricedAt).toLocaleTimeString(locale) })}</Text> : null}
       </View>
 
-      {portfolio.otherChains.length > 0 ? <ListGroup label={t("assets.onOtherChains")}>{portfolio.otherChains.map((holding) => row(holding, { other: true }))}</ListGroup> : null}
+      {portfolio.otherChains.length > 0 ? (
+        <ListGroup label={t("assets.onOtherChains")}>
+          {portfolio.otherChains.map((holding) => row(holding, { other: true }))}
+          {/* Bring to Arc: from the chain holding the most (gasless where the route allows). */}
+          <ListRow title={t("assets.bringToArc")} leading={<Icon as={ArrowDownToLine} className="text-foreground size-5" />} chevron onPress={() => router.push({ pathname: "/move", params: { direction: "in" } })} />
+        </ListGroup>
+      ) : null}
 
       {portfolio.hidden.length > 0 ? (
         <View className="gap-2">
@@ -159,25 +156,6 @@ export function YourAssets({ portfolio, loading, error, onRetry, onAddMoney, onV
       ) : null}
 
       <ListRow standalone title={t("assets.explore")} leading={<Icon as={Compass} className="text-foreground size-5" />} chevron onPress={() => router.navigate("/markets")} />
-
-      {portfolio.positions.length > 0 || marginRows.length > 0 ? (
-        <ListGroup label={t("assets.positions")}>
-          {marginRows.map((position) => (
-            <PositionRow key={position.id} position={position} />
-          ))}
-          {portfolio.positions.map((position) => (
-            <ListRow
-              key={position.id}
-              title={position.title}
-              {...(position.apyPct ? { subtitle: t("assets.apy", { apy: position.apyPct.toFixed(APY_DIGITS) }) } : {})}
-              leading={position.token ? <TokenMark token={position.token} size={POSITION_MARK} /> : undefined}
-              trailing={<Amount className="text-foreground text-base">{money(position.valueUsd, fx, locale)}</Amount>}
-              chevron
-              onPress={() => router.push("/earn")}
-            />
-          ))}
-        </ListGroup>
-      ) : null}
     </>
   );
 }

@@ -397,4 +397,22 @@ export const EVIDENCE: readonly Evidence[] = [
     hash: "0xe9a2cca5abf9becbfbd20f6e30379082b131728940a4118f57049370479d3a0f",
     source: "apps/api/test/automations-8c-testnet.test.ts (commit 9ed4f87)",
   },
+  {
+    date: "2026-10-03",
+    kind: "send",
+    action: "Gas-free send: a wallet with no gas signed once (EIP-3009) and Kawase's relayer paid the fee",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x7a93e823165dc468605203545b883f645b39d7f476c84122002f0ac7ef64c3cf",
+    source: "plan/stages/11-onboarding-and-trust-layer.md (apps/api/test/gasless-send-testnet.test.ts)",
+  },
+  {
+    date: "2026-10-03",
+    kind: "business",
+    action: "Payout batch with no gas in the wallet: signed once, sent by the relayer through a one-time delegation",
+    surface: "API test",
+    explorer: "arcTestnet",
+    hash: "0x52160ea35588d7890ba92ce265ba6897f540f8b3a36430f0228e4939ef58b23e",
+    source: "plan/stages/11-onboarding-and-trust-layer.md (apps/api/test/gasless-batch-testnet.test.ts)",
+  },
 ];

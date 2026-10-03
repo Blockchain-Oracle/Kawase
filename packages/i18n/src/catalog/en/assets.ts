@@ -48,4 +48,6 @@ export const assets = {
   mainnetOnly: "Mainnet only",
   noPrice: "No price yet",
   vault: "Vault",
+  borrowed: "Borrowed {{assets}}",
+  owed: "{{amount}} owed",
 } as const;

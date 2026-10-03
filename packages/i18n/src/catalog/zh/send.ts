@@ -30,6 +30,7 @@ export const send: Catalog["send"] = {
   fee: "网络费",
   feeKawase: "由 Kawase 支付",
   feeWallet: "约 {{amount}}",
+  feeRelayed: "约 {{amount}}，由 Kawase 支付",
   note: "备注",
   allowanceInside: "在你的每日额度内——无需确认即可转出",
   allowanceAbove: "超出你剩余的额度——需要面容 ID",

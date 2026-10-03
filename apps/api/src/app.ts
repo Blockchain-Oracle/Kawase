@@ -52,6 +52,8 @@ import { EarnService } from "./earn/service";
 import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noMarketData, type MarketData } from "./market/sources";
+import { feeRoutes, fxRoutes } from "./fees/routes";
+import { FeeService } from "./fees/service";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
@@ -66,6 +68,7 @@ import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
+import { venuePositions } from "./tokens/venue-positions";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
@@ -194,7 +197,16 @@ export function createApp(deps: AppDeps) {
   const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value), recipients);
   // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
   // for (earn is created further down).
-  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
+  const assets = new AssetService(
+    deps.db,
+    deps.chains,
+    wallets,
+    deps.market ?? noMarketData,
+    deps.log,
+    async (user) => (await earn.overview(user)).positions,
+    // Loans with their health and long/short positions with their P&L count in the total too (created further down).
+    venuePositions({ lend: () => lend, margin: () => margin }),
+  );
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(
     deps.db,
@@ -222,7 +234,7 @@ export function createApp(deps: AppDeps) {
   needsYou.bind({ sends, swaps });
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
-  const withdrawalRuns = new WithdrawalService(deps.db, withdraw);
+  const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
   withdrawalRuns.bind({ sends, swaps, crosschain });
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(
@@ -382,6 +394,10 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  // Fees ("~N actions left") and the display currency's rate (B2-3).
+  const fees = new FeeService(deps.chains, wallets, deps.market ?? noMarketData);
+  app.route("/fees", feeRoutes(fees));
+  app.route("/fx", fxRoutes(fees));
   app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
   const exportLinks = new ExportLinks(deps.approvalSecret);
   app.route("/files/export", exportFileRoutes(history, exportLinks));
@@ -391,7 +407,8 @@ export function createApp(deps: AppDeps) {
     marketplace,
     invoices,
     history,
-    business: { payouts, account, exportLinks },
+    business: { payouts, account, exportLinks, fees },
+    fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,
     wallets,

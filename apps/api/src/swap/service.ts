@@ -63,6 +63,7 @@ import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFac
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import type { BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
@@ -461,54 +462,11 @@ export class SwapService {
    * limit, check them, and hand the wallet one transaction to itself.
    */
   async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<SwapApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
-
-    const current = await this.currentDraft(before);
-    const stored = (current?.payload as DraftPayload | undefined)?.draft;
-    if (!current?.draftHash || !stored) return this.redraft(user, intentId);
-    const draft = loadSwapDraft(stored);
-    if (swapDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
-    // The version's stop limit stands as long as the route still expects to deliver it; when the price has moved
-    // below it, the person sees a new version with the new numbers.
-    // Re-check everything on fresh facts, asking only the venue the person saw recommended.
-    const venue = (current.payload as DraftPayload).venue ?? "app_kit";
-    const fresh = await this.evaluate(user, before, before.request as StoredSwapRequest, venue);
-    // No price for a moment is not a change: the person tries again, the version stands.
-    if (fresh.quote.status === "unavailable") throw problem(HTTP.badGateway, "quote_unavailable");
-    const still = fresh.quotes.find((entry) => entry.venue === venue);
-    if (fresh.evaluation.blocking || !still || still.estimatedOut < draft.minOut || !fresh.viewIn || !fresh.viewOut) return this.redraft(user, intentId);
-
-    const { network, client } = this.clients(before.network);
-    let calls: SwapCall[];
-    try {
-      const prepared = await this.venues.prepare(venue, {
-        network,
-        client,
-        from: draft.from,
-        tokenIn: draft.tokenIn,
-        tokenOut: draft.tokenOut,
-        amountIn: draft.amountIn,
-        decimalsIn: fresh.viewIn.decimals,
-        decimalsOut: fresh.viewOut.decimals,
-        slippageBps: (fresh.quote.status === "ok" ? fresh.quote.slippageBps : DEFAULT_LIMITS[before.network].maxSlippageOtherBps) / SWAP_ROUTE_SLIPPAGE_DIVISOR,
-        minOut: draft.minOut,
-      });
-      calls = prepared.calls;
-    } catch (error) {
-      // The price moved enough that the calls no longer guarantee what the person was shown: a new version.
-      if (error instanceof VenueRefused && error.reason === "below_minimum") return this.redraft(user, intentId);
-      if (error instanceof VenueRefused) {
-        this.log.error({ intentId, venue, reason: error.reason }, "security.swap_calls_refused");
-        throw problem(HTTP.badGateway, "quote_unavailable", "the swap route returned calls Kawase does not accept");
-      }
-      // Not a new version: the price check above passed, so a new quote would most likely fail the same way.
-      this.log.warn({ err: error, intentId, venue }, "swap prepare failed");
-      throw problem(HTTP.badGateway, "quote_unavailable");
-    }
+    const fresh = await this.freshCalls(user, intentId, input.version);
+    if (fresh.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { before, current, draft, calls, venue } = fresh;
+    const { client } = this.clients(before.network);
 
     // Lower-case, as a parsed signed transaction reads it back (App Kit's calldata can carry upper-case hex).
     const data = encodeSelfBatch(calls).toLowerCase() as Hex;
@@ -562,6 +520,89 @@ export class SwapService {
     });
     if (outcome.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
     return { status: "sign", intent: await this.view(user.id, intentId), approvalId: outcome.approvalId, transaction };
+  }
+
+  /**
+   * One version's part in a batch (intents/bundle.ts): the calls its approval would sign, re-checked the same way.
+   * `changed` means the version was redrafted (the person reviews again); `final` means it can no longer go.
+   */
+  async bundlePart(user: SessionUser, intentId: string): Promise<BundlePart | "changed" | "final"> {
+    const intent = await this.ownIntent(user.id, intentId);
+    const fresh = await this.freshCalls(user, intentId, intent.currentDraftVersion);
+    if (fresh.kind === "final") return "final";
+    if (fresh.kind === "changed") {
+      await this.redraft(user, intentId);
+      return "changed";
+    }
+    const { before, current, draft, calls } = fresh;
+    return {
+      intentId,
+      version: before.currentDraftVersion,
+      draftHash: current.draftHash as Hex,
+      from: draft.from,
+      chainId: draft.chainId,
+      calls: calls.map((call) => ({ to: call.to, data: call.data.toLowerCase() as Hex, value: call.value })),
+      maxFee: draft.maxFee,
+      attemptKind: "swap_wallet",
+      attemptTo: draft.from,
+    };
+  }
+
+  /**
+   * The calls one version would sign, built on fresh facts (the same re-check an approval makes): the venue the
+   * person saw recommended, still delivering at least the version's minimum. Shared by a lone approval and a batch.
+   */
+  private async freshCalls(user: SessionUser, intentId: string, version: number) {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { kind: "final" as const };
+    if (version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { kind: "final" as const };
+
+    const current = await this.currentDraft(before);
+    const stored = (current?.payload as DraftPayload | undefined)?.draft;
+    if (!current?.draftHash || !stored) return { kind: "changed" as const };
+    const draft = loadSwapDraft(stored);
+    if (swapDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
+    // The version's stop limit stands as long as the route still expects to deliver it; when the price has moved
+    // below it, the person sees a new version with the new numbers.
+    // Re-check everything on fresh facts, asking only the venue the person saw recommended.
+    const venue = (current.payload as DraftPayload).venue ?? "app_kit";
+    const fresh = await this.evaluate(user, before, before.request as StoredSwapRequest, venue);
+    // No price for a moment is not a change: the person tries again, the version stands.
+    if (fresh.quote.status === "unavailable") throw problem(HTTP.badGateway, "quote_unavailable");
+    const still = fresh.quotes.find((entry) => entry.venue === venue);
+    if (fresh.evaluation.blocking || !still || still.estimatedOut < draft.minOut || !fresh.viewIn || !fresh.viewOut) return { kind: "changed" as const };
+
+    const { network, client } = this.clients(before.network);
+    let calls: SwapCall[];
+    try {
+      const prepared = await this.venues.prepare(venue, {
+        network,
+        client,
+        from: draft.from,
+        tokenIn: draft.tokenIn,
+        tokenOut: draft.tokenOut,
+        amountIn: draft.amountIn,
+        decimalsIn: fresh.viewIn.decimals,
+        decimalsOut: fresh.viewOut.decimals,
+        slippageBps: (fresh.quote.status === "ok" ? fresh.quote.slippageBps : DEFAULT_LIMITS[before.network].maxSlippageOtherBps) / SWAP_ROUTE_SLIPPAGE_DIVISOR,
+        minOut: draft.minOut,
+      });
+      calls = prepared.calls;
+    } catch (error) {
+      // The price moved enough that the calls no longer guarantee what the person was shown: a new version.
+      if (error instanceof VenueRefused && error.reason === "below_minimum") return { kind: "changed" as const };
+      if (error instanceof VenueRefused) {
+        this.log.error({ intentId, venue, reason: error.reason }, "security.swap_calls_refused");
+        throw problem(HTTP.badGateway, "quote_unavailable", "the swap route returned calls Kawase does not accept");
+      }
+      // Not a new version: the price check above passed, so a new quote would most likely fail the same way.
+      this.log.warn({ err: error, intentId, venue }, "swap prepare failed");
+      throw problem(HTTP.badGateway, "quote_unavailable");
+    }
+
+    return { kind: "calls" as const, before, current, draft, calls, venue };
   }
 
   private async redraft(user: SessionUser, intentId: string): Promise<SwapApproveResponse> {

@@ -1,5 +1,6 @@
-// The Markets tab (surfaces.md "Markets tab"; D1, D36): search by name, symbol or address; segments Trending · Meme ·
-// Long/Short · Stocks & FX · New; a hot-markets carousel; the heatmap (21st.dev 30551) for the segment; then rows
+// The Markets tab (surfaces.md "Markets tab"; plan §D; D1, D36): the shared tab header (Sign in for guests); search by
+// name, symbol or address, the Long/Short markets it names on top; segments Watchlist · Trending · Meme · Long/Short ·
+// Stocks & FX · New; on Trending the Long or short cards, a hot-markets carousel and the heatmap (21st.dev 30551); then rows
 // with price, 24 h change, volume and liquidity, copycats flagged. Public market data (R13): guests and testnet
 // users see mainnet's markets, and testnet says so with the switch. Rate-limited data shows its last snapshot
 // with the time. Every row opens the token page.
@@ -24,19 +25,19 @@ import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { HeaderAvatar } from "@/components/header-avatar";
-import { LanguagePill, LanguageSheet } from "@/components/language-sheet";
-import { MainnetConsentSheet, NetworkPill } from "@/components/network-pill";
+import { MainnetConsentSheet } from "@/components/network-pill";
+import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
-import { InboxBell } from "@/inbox/inbox-bell";
 import { useMarket, useTokenSearch } from "@/markets/use-markets";
-import { change, money, price, USD_FX } from "@/portfolio/format";
+import { change, money, price } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
+import { LongShortMatches, LongShortRow } from "@/markets/long-short-row";
 import { LongShortSegment } from "@/markets/long-short-segment";
 import { useRecentSearches } from "@/markets/recent-searches";
 import { WatchlistSegment } from "@/markets/watchlist-segment";
@@ -72,19 +73,17 @@ export function MarketsScreen() {
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
   const colors = useThemeColors();
-  const { status, user } = useSession();
+  const { user } = useSession();
   const networkSwitch = useNetworkSwitch();
   const [segment, setSegment] = React.useState<Segment>("trending");
   const [query, setQuery] = React.useState("");
   const [searchFocused, setSearchFocused] = React.useState(false);
   const recentSearches = useRecentSearches();
-  const [languageOpen, setLanguageOpen] = React.useState(false);
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
-  const account = status === "account";
   // Markets live on mainnet; a testnet session still reads them, labelled.
   const { market, loading, error, refresh } = useMarket(segment === "watchlist" ? "trending" : segment, "mainnet");
   const { results, searching } = useTokenSearch(query, "mainnet");
-  const fx = USD_FX;
+  const fx = useFx();
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
   const rows = market?.rows ?? [];
   // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel or the map.
@@ -119,17 +118,7 @@ export function MarketsScreen() {
       {testnet ? (
         <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
       ) : null}
-      <View
-        className="flex-row items-center justify-between gap-3 px-5 pb-2"
-        style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}
-      >
-        <View className="flex-row items-center gap-2">
-          <HeaderAvatar />
-          {!account ? <LanguagePill onPress={() => setLanguageOpen(true)} /> : null}
-          <NetworkPill />
-        </View>
-        {account ? <InboxBell /> : null}
-      </View>
+      <TabHeader className="px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }} />
 
       <ScrollView
         className="flex-1"
@@ -163,6 +152,7 @@ export function MarketsScreen() {
           ) : null}
         </View>
 
+        {query.trim() ? <LongShortMatches query={query.trim()} /> : null}
         {query.trim() ? (
           searching && results.length === 0 ? (
             <SkeletonRows />
@@ -285,6 +275,7 @@ export function MarketsScreen() {
               </View>
             ) : (
               <>
+                {segment === "trending" ? <LongShortRow onSeeAll={() => setSegment("perps")} /> : null}
                 <View className="gap-2">
                   <Eyebrow className="px-1">{t("markets.hot")}</Eyebrow>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">
@@ -360,7 +351,6 @@ export function MarketsScreen() {
           </>
         )}
       </ScrollView>
-      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
       <MainnetConsentSheet
         open={networkSwitch.consentNeeded}
         busy={networkSwitch.busy}

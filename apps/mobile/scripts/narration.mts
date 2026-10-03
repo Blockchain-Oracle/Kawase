@@ -60,7 +60,8 @@ const PANELS = [
   { panel: 2, key: "bounds", variants: ["", "Web", "Android"] },
   { panel: 3, key: "practice", variants: [""] },
   { panel: 4, key: "language", variants: [""] },
-  { panel: 5, key: "first", variants: [""] },
+  // Panel 5 became "Everything on Arc" (B2-3); the shipped 5-first clips predate it until this script is run again.
+  { panel: 5, key: "everything", variants: [""] },
 ] as const;
 
 function findEnvFile(start: string): string | undefined {

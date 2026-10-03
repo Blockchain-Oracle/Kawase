@@ -45,7 +45,6 @@ export const contacts: Catalog["contacts"] = {
   label: "标签",
   labelPlaceholder: "供应商、房东…",
   fromHandle: "@{{handle}}",
-  importSoon: "从手机通讯录导入——即将推出",
   signInBody: "登录后可以保存你常付款的人。",
   loadFailed: "无法加载你的联系人。",
   noMatches: "没有匹配的联系人。",

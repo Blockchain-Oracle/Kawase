@@ -11,6 +11,7 @@
 import { randomUUID } from "expo-crypto";
 import * as React from "react";
 import { toast } from "sonner-native";
+import type { TypedDataDefinition } from "viem";
 
 import { ApiError, hasBrake, type SendIntent, type SendRequest } from "@kawase/api-client";
 
@@ -135,7 +136,7 @@ export function useSend(initial?: SendIntent | undefined): SendController {
     await act(async () => {
       // The brake (over half the balance to someone new) is on the card; Face ID below is the person's override.
       const answer = await api.sends.approve(intent.id, intent.version, randomUUID(), hasBrake(intent.results));
-      if (answer.status !== "sign") {
+      if (answer.status !== "sign" && answer.status !== "sign_typed") {
         if (answer.status === "changed") toast(t("send.changed"));
         show(answer.intent);
         return;
@@ -153,8 +154,10 @@ export function useSend(initial?: SendIntent | undefined): SendController {
         show(answer.intent);
         return;
       }
-      const signed = await signer.signTransaction(toSerializable(answer.transaction));
-      const submitted = await api.sends.signature(intent.id, answer.approvalId, signed);
+      // Gas-free (the wallet cannot pay the fee): one EIP-3009 authorization instead; Kawase's relayer sends it.
+      const typed = answer.status === "sign_typed";
+      const signed = typed ? await signer.signTypedData(answer.typedData as unknown as TypedDataDefinition) : await signer.signTransaction(toSerializable(answer.transaction));
+      const submitted = await api.sends.signature(intent.id, answer.approvalId, signed, typed ? "typed" : undefined);
       if (submitted.status === "changed") toast(t("send.changed"));
       show(submitted.intent);
     });
