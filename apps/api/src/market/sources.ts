@@ -129,6 +129,8 @@ export type MarketData = {
    * (a list never spends the budget on it); the warmer loads one at a time.
    */
   spark?(pool: string, token: string, load: boolean): Promise<number[] | null>;
+  /** Whether a pool's sparkline is missing or older than its half hour (what the warmer loads next). */
+  sparkDue?(pool: string, token: string): boolean;
   info(chainId: number, address: string): Promise<TokenInfo | null>;
   security(chainId: number, address: string): Promise<SecurityFacts | null>;
   otherChains(wallet: string): Promise<OtherChainBalance[]>;
@@ -390,6 +392,10 @@ export function liveMarketData(options: { alchemyApiKey?: string | undefined } =
         },
         [],
       );
+    },
+    sparkDue: (pool, token) => {
+      const held = cache.peek<number[]>(`gt:spark:${lower(pool)}:${lower(token)}`);
+      return !held || Date.now() - held.at >= SPARK_TTL_MS;
     },
     spark: async (pool, token, load) => {
       const key = `gt:spark:${lower(pool)}:${lower(token)}`;

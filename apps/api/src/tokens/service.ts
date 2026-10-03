@@ -137,7 +137,7 @@ export class AssetService {
     for (const pool of [...(trending?.value ?? []).slice(0, MARKET_LIST_LIMIT), ...(fresh?.value ?? []).slice(0, MARKET_LIST_LIMIT)]) {
       const side = this.tradedSide(pool);
       if (!side.address) continue;
-      if (await this.market.spark(pool.address, side.address, false)) continue;
+      if (this.market.sparkDue && !this.market.sparkDue(pool.address, side.address)) continue;
       await this.market.spark(pool.address, side.address, true);
       return;
     }
