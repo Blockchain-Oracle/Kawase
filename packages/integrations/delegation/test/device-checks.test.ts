@@ -23,10 +23,10 @@ import {
   withSignature,
   PROTECT_PURPOSES,
   type ProtectPurpose,
-} from "@kawase/integrations-delegation";
+} from "../src";
 import { DELEGATION_FRAMEWORK, getNetwork } from "@kawase/networks";
 
-import { ARC_CHAIN_IDS, SigningRefused, checkAuthorization, checkGrant, checkRevoke, checkTransferGrant, checkTypedData, decodeDelegation, turnkeySigner, type ShownGrant } from "../src";
+import { ARC_CHAIN_IDS, SigningRefused, checkAuthorization, checkGrant, checkRevoke, checkTransferGrant, checkTypedData, decodeDelegation, turnkeySigner, type ShownGrant } from "@kawase/wallet";
 
 const network = getNetwork("testnet");
 const wallet = privateKeyToAccount(generatePrivateKey()).address;
