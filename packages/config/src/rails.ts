@@ -93,6 +93,8 @@ export const MARGIN_PROTECTION = {
    * Spoke): room for interest and the repay buffer, not for a bigger position (adding to it asks again).
    */
   capHeadroomBps: 12_500,
+  /** Gas for each grant's `disableDelegation` in a batch (measured ~86k on Arc mainnet state, 10-03). */
+  disableGas: 120_000n,
   tickMs: 30_000,
   healthTickMs: 60_000,
   /** Account health below these is told: a warning, then danger (liquidation starts at 1). */

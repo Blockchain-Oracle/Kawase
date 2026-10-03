@@ -217,6 +217,8 @@ export function MarginTicket({ controller, market, compact = false }: { controll
         </View>
       ) : null}
 
+      {draft && closing && draft.protectionOff && !finished ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("margin.closeEndsProtection")}</Text> : null}
+
       {draft && !closing && draft.liquidationPrice && !moving && !finished ? (
         <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("margin.risk", { price: format.price(draft.liquidationPrice) })}</Text>
       ) : null}

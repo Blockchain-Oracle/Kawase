@@ -8,7 +8,8 @@
 // a swap paying a stranger, an approval over the cap, a second approval after the close, and a redeem from anyone but
 // the ops wallet. Then the off switch (H4): the wallet disables the grants on chain, once as its own transaction and
 // once through Kawase's relayer (the one-time delegation it signs when it can't pay the fee), and the same close is
-// refused as a disabled delegation. Run: tsx test/margin-protect.sim.ts
+// refused as a disabled delegation; and the person's own close, whose batch carries the disables, leaves nothing for
+// Kawase to redeem. Run: tsx test/margin-protect.sim.ts
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { concat, createPublicClient, decodeErrorResult, decodeFunctionResult, encodeFunctionData, erc20Abi, formatUnits, http, numberToHex, pad, parseAbi, parseUnits, slice, size, type Address, type Hex } from "viem";
@@ -81,7 +82,7 @@ const withBuffer = (amount: bigint) => amount + (amount * BigInt(MARGIN.repayBuf
 type Call = { from?: Address; to: Address; data: Hex };
 /** A call from the wallet, as a plan or the shaped close carries it. */
 type PlanCall = { to: Address; data: Hex; value?: bigint | undefined };
-type CallResult = { status: string; returnData: Hex; error?: { message?: string } };
+type CallResult = { status: string; returnData: Hex; gasUsed?: Hex; error?: { message?: string } };
 async function simulate(blocks: Call[][]): Promise<CallResult[][]> {
   const overrides = { [wallet]: { balance: numberToHex(FUNDING), code: designator }, [ops]: { balance: numberToHex(FUNDING) }, [relayer]: { balance: numberToHex(FUNDING) } };
   const result = (await client.request({
@@ -193,8 +194,22 @@ async function protectRoundTrip(side: MarginSide, symbol: string, otherSymbol: s
   ] as const) {
     const [, off, after] = await simulate([[openCall], [disable], [{ from: ops, to: redeem.to, data: redeem.data }]]);
     assert.equal(off![0]!.status, SUCCESS, `disable via ${how} reverted: ${reason(off![0]!)}`);
+    console.log(`  off through ${how}: ${PROTECT_PURPOSES.length} grants disabled for ${BigInt(off![0]!.gasUsed ?? "0x0")} gas`);
     refusedBy(after![0], /CannotUseADisabledDelegation/, `the close after protection was turned off through ${how}`);
   }
+
+  // The person closes it themselves (MarginService.approve): the disables ride in the close's own batch, one signature.
+  // The position is gone and the grants with it: Kawase's close under them is refused afterwards.
+  const own = await planClose(
+    { side, wallet, spoke, usdc, asset, collateral: supplied, debt: owed, fractionBps: FULL, base: { weightedCollateral: 0n, debtValue: 0n }, soleDebtor: true, limits: { ...limits, slippageBps: OPEN_SLIPPAGE_BPS } },
+    kyberSwapper({ chainId: arc.id, wallet, slippageBps: OPEN_SLIPPAGE_BPS, buildSlippageBps: OPEN_SLIPPAGE_BPS / 2, mode: "build" }),
+  );
+  const ownClose: Call = { from: wallet, to: wallet, data: encodeSelfBatch([...own.calls, ...disables]) };
+  const [, closedByPerson, afterOwn] = await simulate([[openCall], [ownClose, read("getUserTotalDebt", debt)], [{ from: ops, to: redeem.to, data: redeem.data }]]);
+  assert.equal(closedByPerson![0]!.status, SUCCESS, `the person's close with the disables reverted: ${reason(closedByPerson![0]!)}`);
+  assert.equal(asBigint(closedByPerson![1]!, "getUserTotalDebt"), 0n);
+  console.log(`  the person's own close carried the ${disables.length} disables in its batch (${BigInt(closedByPerson![0]!.gasUsed ?? "0x0")} gas): debt 0`);
+  refusedBy(afterOwn![0], /CannotUseADisabledDelegation/, "Kawase's close after the person closed it themselves");
 }
 
 // Off chain, before anything is sent: a call no grant covers never becomes a redeem, and a close bigger than the caps

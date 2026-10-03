@@ -188,6 +188,8 @@ export type MarginDraftView = {
   loops: number;
   venues: string[];
   fees: { network: string };
+  /** A full close of a position with take-profit/stop-loss: the same signature switches Kawase's permission off on Arc. */
+  protectionOff?: boolean | undefined;
   provider: string;
   quotedAt: string;
 };

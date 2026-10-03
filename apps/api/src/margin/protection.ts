@@ -55,9 +55,8 @@ const ZERO = 0n;
 const HEALTH_DIGITS = 2;
 /** A short's buy-back is quoted with this much USDC over the debt's value, then priced per unit bought. */
 const SHORT_QUOTE_HEADROOM = 1.05;
-/** `disableDelegation` from the wallet: one, then each more in the same self-batch (as WalletService sizes revokes). */
+/** `disableDelegation` from the wallet as a transaction of its own (as WalletService sizes revokes); each more adds MARGIN_PROTECTION.disableGas. */
 const DISABLE_GAS = 200_000n;
-const DISABLE_EACH_GAS = 120_000n;
 const NETWORK: NetworkId = "mainnet";
 const LEVELS: Record<Level, number> = { ok: 0, warning: 1, danger: 2 };
 const nowSeconds = () => Math.floor(Date.now() / MS_PER_SECOND);
@@ -279,7 +278,7 @@ export class MarginProtection {
     const unexpired = rows.filter(live);
     const clients = this.chains.get(network);
     if (unexpired.length === 0 || !clients) return null;
-    const gas = DISABLE_GAS + DISABLE_EACH_GAS * BigInt(unexpired.length - 1);
+    const gas = DISABLE_GAS + MARGIN_PROTECTION.disableGas * BigInt(unexpired.length - 1);
     const ids = unexpired.map((row) => row.id);
     if (await this.wallets.canPayFee(userId, network, ZERO, gas)) return (await this.wallets.revokeGrantsRequest(userId, ids)) as GrantDisableRequest | null;
     const request = await this.wallets.relayedBatchRequest(
@@ -290,6 +289,31 @@ export class MarginProtection {
     );
     this.relayedDisables.add(request.requestId);
     return request;
+  }
+
+  /**
+   * The person's own full close takes the position's protection grants with it: the `disableDelegation` calls its batch
+   * carries (live grants only, the account-wide ones from before included; expired ones are dead on chain already), so
+   * nothing stays signed behind a closed position. One signature for both.
+   */
+  async disableCalls(userId: string, network: NetworkId, positionId: string): Promise<{ to: Address; data: Hex }[]> {
+    const clients = this.chains.get(network);
+    if (!clients) return [];
+    return (await this.rows(userId, network, positionId)).filter(live).map((row) => encodeRevoke(clients.network, row.delegation as never));
+  }
+
+  /**
+   * The position closed. The person's own close disabled its grants in the same batch: revoked. A protective close spent
+   * the capped approvals (what is left can move nothing): set aside, and the account-wide ones from before stay as they were.
+   */
+  async closed(userId: string, network: NetworkId, positionId: string, attempt: { id: string; kind: string }) {
+    const protective = attempt.kind === "margin_protect";
+    const rows = (await this.rows(userId, network, positionId)).filter((row) => !protective || receiptOf(row).positionId === positionId);
+    if (rows.length === 0) return;
+    await this.db
+      .update(grants)
+      .set(protective ? { status: "superseded" } : { status: "revoked", revokeTxAttemptId: attempt.id })
+      .where(inArray(grants.id, rows.map((row) => row.id)));
   }
 
   /** A position just grew (the person added to it): past what its grants let Kawase move, it stops being watched and its page asks again. */
