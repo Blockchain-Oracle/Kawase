@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "تصنيف",
   labelPlaceholder: "مورّد، مالك العقار…",
   fromHandle: "@{{handle}}",
-  importSoon: "الاستيراد من جهات اتصال هاتفك — قريبًا",
   signInBody: "سجّل الدخول للاحتفاظ بدفتر عناوين للأشخاص الذين تدفع لهم.",
   loadFailed: "تعذّر تحميل جهات اتصالك.",
   noMatches: "لا توجد جهات اتصال مطابقة.",

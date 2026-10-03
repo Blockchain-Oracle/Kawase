@@ -4,11 +4,11 @@
 //   2 Bounds    "What can it do without me?"  the daily allowance as a scope card; the seal is secondary
 //   3 Practice  "Can I learn without risk?"   a labelled test-money task, and the test/real distinction
 //   4 Language  "Will it understand me?"      the same request in three languages meaning one thing
-//   5 First     "What do I try first?"        the real first task, which the footer's Start begins
+//   5 Arc       "What else can it do?"         everything on Arc: buy with Apple Pay, trade long or short, earn, automate
 // Amounts are labelled examples on Arc Testnet, never a finished transaction. Only the visible panel moves (its
 // objects float; panel 1's fields arrive after the request), and with reduced motion every panel still shows its
 // whole event. Shared by the real story (copy from the catalogs) and the direction board.
-import { ArrowDown, Check, ChevronDown, Globe, ScanFace, Send, ShieldX, Volume2, VolumeOff } from "lucide-react-native";
+import { ArrowDown, CalendarClock, Check, ChevronDown, Globe, ScanFace, ShieldX, Volume2, VolumeOff } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 import Animated, { FadeInDown, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
@@ -49,7 +49,7 @@ const FIELDS_MS = MOTION.storyPanelMs;
 /** The orb sits inside its ink disc with a rim. */
 const ORB_INNER = 44;
 /** The panels, in order, for "only the visible one moves". */
-const PANEL = { request: 0, bounds: 1, practice: 2, language: 3, first: 4 } as const;
+const PANEL = { request: 0, bounds: 1, practice: 2, language: 3, everything: 4 } as const;
 const ADDRESS_STYLE = { writingDirection: "ltr", textAlign: "left" } as const;
 const CENTERED = { alignItems: "center", justifyContent: "center" } as const;
 
@@ -61,7 +61,7 @@ export type StoryCopy = {
   request: string;
   otherRequests: readonly string[];
   fields: { amount: string; to: string; network: string };
-  /** "Typing works now · voice is coming" — the truth about panel 1's orb. */
+  /** "Type it or say it" — panel 1's orb: typing and voice both work. */
   typingNow: string;
   amount: string;
   recipient: string;
@@ -70,7 +70,8 @@ export type StoryCopy = {
   allowance: { amount: string; perDay: string; inside: string; above: string; never: string };
   practice: { faucetLine: string; faucetAmount: string; testMoney: string; realMoney: string };
   sameMeaning: string;
-  first: { step1: string; step2: string };
+  /** Panel 5, one line each with its real mark. */
+  everything: { buy: string; trade: string; earn: string; automate: string };
 };
 
 export type StoryMotion = {
@@ -214,7 +215,7 @@ function ListLine({ icon, text, tone = DARK.foreground }: { icon: typeof Check; 
 }
 
 export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] {
-  const [request, bounds, practice, language, first] = copy.panels;
+  const [request, bounds, practice, language, everything] = copy.panels;
   const test = arcIdentity("testnet");
   const real = arcIdentity("mainnet");
   const on = (i: number) => motion.animate && motion.active === i;
@@ -377,50 +378,37 @@ export function storyPanels(copy: StoryCopy, motion: StoryMotion): StoryPanel[] 
       ),
     },
     {
-      key: "first",
+      key: "everything",
       field: FIELDS.periwinkle,
-      title: first?.title ?? "",
-      body: first?.body ?? "",
+      title: everything?.title ?? "",
+      body: everything?.body ?? "",
       art: (
         <FitArt
           className="items-center px-6"
           overlayNeeds={PLANE_HEIGHT}
           overlay={
-            <Drift on={on(PANEL.first)} phase={0.25} style={{ position: "absolute", bottom: 14, start: 18 }}>
+            <Drift on={on(PANEL.everything)} phase={0.25} style={{ position: "absolute", bottom: 14, start: 18 }}>
               <PaperPlane width={PLANE_WIDTH} id="story-plane" />
             </Drift>
           }
         >
           <InkCard>
-            <CardEyebrow>{copy.arcTestnet}</CardEyebrow>
-            <View className="flex-row items-center gap-3">
-              <View
-                className="items-center justify-center rounded-full"
-                style={{ width: MARK, height: MARK, backgroundColor: DARK.foreground }}
-              >
-                <Text className="text-sm font-bold" style={{ color: STORY_INK }}>
-                  1
+            <CardEyebrow>{copy.arc}</CardEyebrow>
+            {[
+              { key: "buy", text: copy.everything.buy, mark: <Mark entity="provider:apple" size={MARK_SMALL} variant="mono" tint={DARK.foreground} /> },
+              { key: "trade", text: copy.everything.trade, mark: <Mark entity="provider:aave" size={MARK_SMALL} /> },
+              { key: "earn", text: copy.everything.earn, mark: <Mark entity="provider:morpho" size={MARK_SMALL} /> },
+              { key: "automate", text: copy.everything.automate, mark: <Icon as={CalendarClock} className="size-5" color={DARK.foreground} /> },
+            ].map((row) => (
+              <View key={row.key} className="flex-row items-center gap-3">
+                <View className="items-center justify-center rounded-full" style={{ width: MARK, height: MARK, backgroundColor: DARK.secondary }}>
+                  {row.mark}
+                </View>
+                <Text className={cn("flex-1 text-base font-semibold", TEXT_START)} style={{ color: DARK.foreground }}>
+                  {row.text}
                 </Text>
               </View>
-              <Text className={cn("flex-1 text-base font-semibold", TEXT_START)} style={{ color: DARK.foreground }}>
-                {copy.first.step1}
-              </Text>
-              <Mark entity="provider:circle" size={MARK_SMALL} disc />
-            </View>
-            <View className="flex-row items-center gap-3">
-              <View
-                className="items-center justify-center rounded-full"
-                style={{ width: MARK, height: MARK, backgroundColor: DARK.secondary }}
-              >
-                <Text className="text-sm font-bold" style={{ color: DARK.foreground }}>
-                  2
-                </Text>
-              </View>
-              <Text className={cn("flex-1 text-base font-semibold", TEXT_START)} style={{ color: DARK.foreground }}>
-                {copy.first.step2}
-              </Text>
-              <Icon as={Send} className="size-4" color={DARK["muted-foreground"]} />
-            </View>
+            ))}
           </InkCard>
         </FitArt>
       ),

@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "لیبل",
   labelPlaceholder: "سپلائر، مالک مکان…",
   fromHandle: "@{{handle}}",
-  importSoon: "فون کے رابطوں سے درآمد — جلد آ رہا ہے",
   signInBody: "جنہیں آپ ادائیگی کرتے ہیں ان کے پتوں کی فہرست رکھنے کے لیے سائن ان کریں۔",
   loadFailed: "آپ کے رابطے لوڈ نہیں ہو سکے۔",
   noMatches: "کوئی رابطہ نہیں ملا۔",
