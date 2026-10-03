@@ -31,13 +31,13 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { config } from "dotenv";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { createPublicClient, erc20Abi, formatUnits, getAddress, http, parseUnits, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 
 import { createModels } from "@kawase/agent";
-import { createDb, users } from "@kawase/db";
+import { createDb, txAttempts, users } from "@kawase/db";
 import { loadApiEnv, type ApiEnv } from "@kawase/env";
 import { createLogger } from "@kawase/log";
 import { Discovery } from "@kawase/integrations-x402";
@@ -197,6 +197,7 @@ async function preflight(env: ApiEnv, account: AcceptanceAccount) {
 // --- the api, in-process (dry) or deployed (live) ----------------------------------------------------------------
 
 async function dryRunApi(env: ApiEnv, state: RunState, account: AcceptanceAccount, standIn: StandIn | undefined) {
+  const runAddress = standIn?.address ?? account.address;
   const chain = new ShadowChain(SHADOW_UPSTREAM);
   const url = await chain.start();
   if (state.shadow) chain.restore(state.shadow);
@@ -207,6 +208,9 @@ async function dryRunApi(env: ApiEnv, state: RunState, account: AcceptanceAccoun
   const databaseUrl = process.env.ACCEPTANCE_DATABASE_URL ?? env.DATABASE_URL;
   const { db, pool } = createDb(databaseUrl, { poolSize: 4 });
   if (flags.fresh) {
+    // The shadow chain starts again at nonce 0, so the last dry run's attempts from this wallet (kept past the user's
+    // deletion, and unique per network, sender and nonce) go too. This is the dry run's own database only.
+    await db.delete(txAttempts).where(and(eq(txAttempts.network, "mainnet"), sql`lower(${txAttempts.fromAddress}) = ${runAddress.toLowerCase()}`));
     await db.delete(users).where(eq(users.turnkeySubOrganizationId, account.subOrganizationId));
     console.log("  fresh: the dry run's database user and shadow chain start over");
   }
