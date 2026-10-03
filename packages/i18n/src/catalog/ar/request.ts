@@ -29,4 +29,13 @@ export const request: Catalog["request"] = {
   signInTitle: "سجّل الدخول لطلب المال",
   signInBody: "تُدفع الطلبات إلى محفظتك الخاصة، لذا تحتاج إلى حساب.",
   loadFailed: "تعذّر تحميل طلباتك.",
+  askOnKawase: "اطلب من شخص على Kawase",
+  askBody: "يصله الطلب في صندوق Kawase وكإشعار. اكتب @اسم المستخدم أو اختر جهة اتصال.",
+  askPlaceholder: "@اسم المستخدم أو اسم جهة الاتصال",
+  ask: "اطلب",
+  askName: "اطلب من {{name}}",
+  askedInApp: "طُلب من {{name}} على Kawase",
+  askedToast: "أُرسل الطلب إلى {{name}} على Kawase",
+  askNotOnKawase: "{{name}} ليس من مستخدمي Kawase المحفوظين لديك. شارك الرابط بدلًا من ذلك.",
+  askSomeoneElse: "اطلب من شخص آخر",
 };

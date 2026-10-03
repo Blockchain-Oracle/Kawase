@@ -2,7 +2,7 @@
 // event kinds, what each channel does by default, and the timings of delivery, so the api and the app agree.
 
 /** Every inbox event, in the order Settings → Notifications lists them. */
-export const NOTIFICATION_KINDS = ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert"] as const;
+export const NOTIFICATION_KINDS = ["payment_received", "request_received", "request_paid", "send_completed", "automation_skipped", "rule_alert"] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export const NOTIFICATION_CHANNELS = ["push", "email"] as const;
@@ -17,14 +17,21 @@ export type NotificationPrefs = Partial<Record<NotificationKind, Partial<Record<
  */
 export const NOTIFICATION_DEFAULTS: Record<NotificationKind, Record<NotificationChannel, boolean>> = {
   payment_received: { push: true, email: true },
+  // Someone on Kawase asked the person for money: the in-app ask stands in for sharing a link, so both channels tell.
+  request_received: { push: true, email: true },
   request_paid: { push: true, email: true },
   send_completed: { push: true, email: false },
   automation_skipped: { push: true, email: true },
   rule_alert: { push: true, email: true },
 };
 
-export function notificationOn(prefs: NotificationPrefs | null | undefined, kind: NotificationKind, channel: NotificationChannel): boolean {
-  return prefs?.[kind]?.[channel] ?? NOTIFICATION_DEFAULTS[kind][channel];
+/**
+ * An inbox kind with no switch of its own in Settings (Needs you, the 24 h reminder) is always told: it is waiting on
+ * the person, and reading a default that is not there must never stop the delivery loop.
+ */
+export function notificationOn(prefs: NotificationPrefs | null | undefined, kind: NotificationKind | string, channel: NotificationChannel): boolean {
+  const known = kind as NotificationKind;
+  return prefs?.[known]?.[channel] ?? NOTIFICATION_DEFAULTS[known]?.[channel] ?? true;
 }
 
 /** Quiet hours in the person's own time zone ("HH:MM", end may be the next day). Push waits; email still goes. */

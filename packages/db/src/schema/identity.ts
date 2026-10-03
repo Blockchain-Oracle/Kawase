@@ -41,6 +41,8 @@ export const users = pgTable(
     notificationPrefs: jsonb().$type<NotificationPrefs>().notNull().default({}),
     /** Push waits during these hours (the person's time zone); null = off. */
     quietHours: jsonb().$type<QuietHours>(),
+    /** Push on the lock screen says "You received money" with no figure (plan §A.4.11); the inbox keeps amounts. */
+    notifyHideAmounts: boolean().notNull().default(false),
     /** Settings → Voice; what is not set follows DEFAULT_VOICE_PREFS (read with `voicePrefs`). */
     voicePrefs: jsonb().$type<Partial<VoicePrefs>>().notNull().default({}),
     /** Conversations (chat and voice transcripts) older than this many days are deleted; null = kept until deleted. */

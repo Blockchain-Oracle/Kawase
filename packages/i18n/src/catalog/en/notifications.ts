@@ -29,4 +29,8 @@ export const notifications = {
   primerBody: "Kawase tells you when you're paid, when a send lands and when an automation runs for you.",
   primerAllow: "Turn on notifications",
   primerLater: "Not now",
+  kindRequestReceived: "Someone asks you to pay",
+  lockTitle: "Lock screen",
+  hideAmounts: "Hide amounts",
+  hideAmountsBody: "Notifications say “You received money” without the figure. Your inbox and email still show amounts.",
 } as const;

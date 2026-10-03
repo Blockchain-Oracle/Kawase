@@ -281,6 +281,20 @@
       "when": 1791000082000,
       "tag": "0075_discoverable",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791000083000,
+      "tag": "0076_request_received",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791000084000,
+      "tag": "0077_notify_hide_amounts",
+      "breakpoints": true
     }
   ]
 }

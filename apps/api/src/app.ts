@@ -186,7 +186,7 @@ export function createApp(deps: AppDeps) {
   if (deps.notifyTickMs) notify.start(deps.notifyTickMs, PUSH_RECEIPT_TICK_MS);
   const inbox = new InboxService(deps.db, deps.chains, notify);
   // Requests describe any token through the asset registry, created just below (the lookup is read lazily).
-  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value));
+  const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value), recipients);
   // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
   // for (earn is created further down).
   const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
@@ -354,7 +354,7 @@ export function createApp(deps: AppDeps) {
   // Everyday money (A5-2): scan to pay.
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
-  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn }));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts);
   const privacy = new PrivacyService(deps.db, audit, deps.log);

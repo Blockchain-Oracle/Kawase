@@ -27,4 +27,13 @@ export const request = {
   signInTitle: "Sign in to request money",
   signInBody: "Requests are paid into your own wallet, so they need an account.",
   loadFailed: "Couldn't load your requests.",
+  askOnKawase: "Ask someone on Kawase",
+  askBody: "They get it in their Kawase inbox and as a notification. Type their @handle or pick a contact.",
+  askPlaceholder: "@handle or contact name",
+  ask: "Ask",
+  askName: "Ask {{name}}",
+  askedInApp: "Asked {{name}} in Kawase",
+  askedToast: "{{name}} was asked in Kawase",
+  askNotOnKawase: "{{name}} isn't someone on Kawase you've saved. Share the link instead.",
+  askSomeoneElse: "Ask someone else",
 } as const;

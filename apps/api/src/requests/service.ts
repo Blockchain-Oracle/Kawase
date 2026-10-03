@@ -12,9 +12,11 @@ import type { PaymentRequest, PaymentRequestInput, PublicPaymentRequest } from "
 import { contactAddresses, contacts, paymentRequests, users, wallets, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
+import { addressForHandle } from "../contacts/service";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
 import { parseTokenAmount, type Executor, type TokenLookup } from "../send/facts";
+import type { Recipients } from "../send/recipients";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -32,7 +34,79 @@ export class RequestService {
     private readonly inbox: InboxService,
     private readonly webUrl: string,
     private readonly lookup?: TokenLookup,
+    private readonly recipients?: Recipients,
   ) {}
+
+  /**
+   * What a request is in: USDC/EURC by name (asked for by address they are still USDC/EURC, which the watcher matches
+   * by name), any other token by its lower-case address with its symbol and decimals (R1).
+   */
+  async token(network: NetworkId, asset: string): Promise<{ stored: string; symbol: string | null; decimals: number }> {
+    const upper = asset.trim().toUpperCase();
+    const named = upper === "USDC" || upper === "EURC" ? upper : undefined;
+    const found = named ? undefined : this.lookup ? await this.lookup(network, asset) : undefined;
+    const context = this.chains.get(network)?.network;
+    const byAddress = found && context ? (found.address.toLowerCase() === context.addresses.usdc.toLowerCase() ? "USDC" : found.address.toLowerCase() === context.addresses.eurc.toLowerCase() ? "EURC" : undefined) : undefined;
+    const stable = named ?? byAddress;
+    if (stable) return { stored: stable, symbol: null, decimals: STABLE_DECIMALS };
+    if (!found) throw problem(HTTP.unprocessable, "validation", "no such token on this network");
+    return { stored: found.address.toLowerCase(), symbol: found.symbol, decimals: found.decimals };
+  }
+
+  /**
+   * The Kawase user to ask in the app, from the person's own words only (K2): an @handle, or one saved contact by its
+   * exact name or alias whose @handle is known. A bare name is never matched to a stranger's handle; anything else is
+   * a link only.
+   */
+  async kawasePayer(user: SessionUser, words: string | null | undefined): Promise<{ userId: string; handle: string } | undefined> {
+    const text = words?.trim();
+    if (!text || !this.recipients) return undefined;
+    const wallet = await this.wallets.userWallet(user.id);
+    const found = await this.recipients.resolve({ id: user.id, walletAddress: wallet?.address }, user.activeNetwork, text);
+    const handle = found.facts.status === "resolved" ? found.view?.handle : undefined;
+    if (!handle) return undefined;
+    const person = await addressForHandle(this.db, handle);
+    return person && person.userId !== user.id ? { userId: person.userId, handle: person.handle } : undefined;
+  }
+
+  /** How `viewerId` knows `address`: their own contact name, else its owner's Kawase @handle. */
+  private async nameIn(viewerId: string, address: string): Promise<string | null> {
+    const lower = address.toLowerCase();
+    const [contact] = await this.db
+      .select({ name: contacts.displayName })
+      .from(contactAddresses)
+      .innerJoin(contacts, eq(contacts.id, contactAddresses.contactId))
+      .where(and(eq(contactAddresses.userId, viewerId), isNull(contacts.deletedAt), sql`lower(${contactAddresses.address}) = ${lower}`));
+    if (contact) return contact.name;
+    const [owner] = await this.db
+      .select({ handle: users.handle })
+      .from(wallets)
+      .innerJoin(users, eq(users.id, wallets.userId))
+      .where(and(eq(wallets.role, "user"), sql`lower(${wallets.address}) = ${lower}`));
+    return owner?.handle ? `@${owner.handle}` : null;
+  }
+
+  /** Tells the payer in their inbox (and by push): "@x asked you for 12 USDC", opening the pay card. */
+  private async tellPayer(row: RequestRow, payerId: string) {
+    const symbol = this.tokenOf(row).symbol;
+    const name = await this.nameIn(payerId, row.payTo);
+    await this.inbox.add(this.db, {
+      userId: payerId,
+      network: row.network,
+      kind: "request_received",
+      params: {
+        amount: row.amount.toString(),
+        asset: symbol,
+        ...(row.asset === "USDC" || row.asset === "EURC" ? {} : { decimals: String(row.assetDecimals ?? "") }),
+        from: row.payTo,
+        token: row.token,
+        ...(name ? { name } : {}),
+        ...(row.note ? { note: row.note } : {}),
+      },
+      requestId: row.id,
+      dedupeKey: `request_received:${row.id}:${payerId}`,
+    });
+  }
 
   /** The token of a row: USDC/EURC by name, any other from its stored symbol and decimals. */
   private tokenOf(row: RequestRow) {
@@ -48,25 +122,14 @@ export class RequestService {
 
   /** How the requester knows the payer: their own contact name, else the payer's Kawase @handle. */
   private async payerName(row: RequestRow): Promise<string | null> {
-    if (!row.paidByAddress) return null;
-    const address = row.paidByAddress.toLowerCase();
-    const [contact] = await this.db
-      .select({ name: contacts.displayName })
-      .from(contactAddresses)
-      .innerJoin(contacts, eq(contacts.id, contactAddresses.contactId))
-      .where(and(eq(contactAddresses.userId, row.userId), isNull(contacts.deletedAt), sql`lower(${contactAddresses.address}) = ${address}`));
-    if (contact) return contact.name;
-    const [payer] = await this.db
-      .select({ handle: users.handle })
-      .from(wallets)
-      .innerJoin(users, eq(users.id, wallets.userId))
-      .where(and(eq(wallets.role, "user"), sql`lower(${wallets.address}) = ${address}`));
-    return payer?.handle ? `@${payer.handle}` : null;
+    return row.paidByAddress ? this.nameIn(row.userId, row.paidByAddress) : null;
   }
 
   private async named(row: RequestRow): Promise<PaymentRequest> {
     const view = this.view(row);
-    return view.paidBy ? { ...view, paidBy: { ...view.paidBy, name: await this.payerName(row) } } : view;
+    const [asked] = row.payerUserId ? await this.db.select({ handle: users.handle }).from(users).where(eq(users.id, row.payerUserId)) : [];
+    const payer = asked?.handle ? { handle: asked.handle } : null;
+    return view.paidBy ? { ...view, payer, paidBy: { ...view.paidBy, name: await this.payerName(row) } } : { ...view, payer };
   }
 
   view(row: RequestRow): PaymentRequest {
@@ -106,34 +169,44 @@ export class RequestService {
   async create(user: SessionUser, input: PaymentRequestInput): Promise<PaymentRequest> {
     const wallet = await this.wallets.userWallet(user.id);
     if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered");
-    const upper = input.asset.trim().toUpperCase();
-    const named = upper === "USDC" || upper === "EURC" ? upper : undefined;
-    const found = named ? undefined : this.lookup ? await this.lookup(user.activeNetwork, input.asset) : undefined;
-    // USDC and EURC asked for by address are still USDC and EURC (the watcher matches them by name).
-    const context = this.chains.get(user.activeNetwork)?.network;
-    const byAddress = found && context ? (found.address.toLowerCase() === context.addresses.usdc.toLowerCase() ? "USDC" : found.address.toLowerCase() === context.addresses.eurc.toLowerCase() ? "EURC" : undefined) : undefined;
-    const stable = named ?? byAddress;
-    if (!stable && !found) throw problem(HTTP.unprocessable, "validation", "no such token on this network");
-    const decimals = stable ? STABLE_DECIMALS : found!.decimals;
-    const parsed = parseTokenAmount(input.amount, decimals);
+    const token = await this.token(user.activeNetwork, input.asset);
+    const stable = token.symbol === null;
+    const parsed = parseTokenAmount(input.amount, token.decimals);
     if (parsed.status !== "ok" || parsed.baseUnits <= ZERO) throw problem(HTTP.unprocessable, "validation", "the amount is not valid");
     const note = input.note?.trim().slice(0, REQUEST_NOTE_MAX) || null;
+    const payer = await this.kawasePayer(user, input.payer);
     const [row] = await this.db
       .insert(paymentRequests)
       .values({
         userId: user.id,
         token: randomBytes(REQUEST_TOKEN_BYTES).toString("base64url"),
         network: user.activeNetwork,
-        asset: stable ?? found!.address.toLowerCase(),
-        assetSymbol: stable ? null : found!.symbol,
-        assetDecimals: stable ? null : found!.decimals,
+        asset: token.stored,
+        assetSymbol: stable ? null : token.symbol,
+        assetDecimals: stable ? null : token.decimals,
         amount: parsed.baseUnits,
         note,
         payTo: getAddress(wallet.address),
+        payerUserId: payer?.userId ?? null,
         expiresAt: new Date(Date.now() + REQUEST_TTL_S * MS_PER_SECOND),
       })
       .returning();
-    return this.view(row!);
+    if (payer) await this.tellPayer(row!, payer.userId);
+    return { ...this.view(row!), payer: payer ? { handle: payer.handle } : null };
+  }
+
+  /**
+   * Asks a Kawase user for an open request in the app as well (the share card's "Ask on Kawase"). Not someone the
+   * person's words name exactly → 422 `recipient_unknown`, and the link is still theirs to share.
+   */
+  async ask(user: SessionUser, id: string, words: string) {
+    const row = await this.own(user.id, id);
+    if (row.status !== "open") throw problem(HTTP.conflict, "request_unavailable", "this request is no longer open");
+    const payer = await this.kawasePayer(user, words);
+    if (!payer) throw problem(HTTP.unprocessable, "recipient_unknown", "not someone on Kawase");
+    const [updated] = await this.db.update(paymentRequests).set({ payerUserId: payer.userId }).where(eq(paymentRequests.id, id)).returning();
+    await this.tellPayer(updated ?? row, payer.userId);
+    return this.named(updated ?? row);
   }
 
   async list(userId: string): Promise<PaymentRequest[]> {

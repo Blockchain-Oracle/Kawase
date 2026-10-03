@@ -116,10 +116,11 @@ export class NotifyService {
       email: user?.isAnonymous ? null : (user?.email ?? null),
       emailEnabled: this.emailEnabled,
       pushRegistered: Boolean(device?.token),
+      hideAmounts: user?.notifyHideAmounts ?? false,
     };
   }
 
-  async updateSettings(userId: string, change: { prefs?: NotificationPrefs | undefined; quietHours?: QuietHours | null | undefined }) {
+  async updateSettings(userId: string, change: { prefs?: NotificationPrefs | undefined; quietHours?: QuietHours | null | undefined; hideAmounts?: boolean | undefined }) {
     await this.db.transaction(async (tx) => {
       const [user] = await tx.select({ prefs: users.notificationPrefs }).from(users).where(eq(users.id, userId)).for("update");
       const merged: NotificationPrefs = { ...(user?.prefs ?? {}) };
@@ -128,7 +129,11 @@ export class NotifyService {
       }
       await tx
         .update(users)
-        .set({ notificationPrefs: merged, ...(change.quietHours !== undefined ? { quietHours: change.quietHours } : {}) })
+        .set({
+          notificationPrefs: merged,
+          ...(change.quietHours !== undefined ? { quietHours: change.quietHours } : {}),
+          ...(change.hideAmounts !== undefined ? { notifyHideAmounts: change.hideAmounts } : {}),
+        })
         .where(eq(users.id, userId));
     });
   }
@@ -214,7 +219,12 @@ export class NotifyService {
         }
       }
       const locale: CatalogLocale = isSupportedLocale(user.locale) ? user.locale : "en";
-      const rendered = renderNotification({ kind: item.kind, network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash }, locale);
+      // A push shows on the lock screen: without figures when the person chose so. Email keeps the amounts.
+      const rendered = renderNotification(
+        { kind: item.kind, network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash },
+        locale,
+        { hideAmounts: delivery.channel === "push" && user.notifyHideAmounts },
+      );
       if (delivery.channel === "push") {
         const phone = delivery.deviceId ? phoneById.get(delivery.deviceId) : undefined;
         if (!this.channels.push || !phone?.expoPushToken || phone.revokedAt) {

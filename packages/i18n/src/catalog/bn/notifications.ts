@@ -31,4 +31,8 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "কেউ আপনাকে পেমেন্ট করলে, পাঠানো টাকা পৌঁছালে আর কোনো অটোমেশন আপনার হয়ে চললে Kawase আপনাকে জানায়।",
   primerAllow: "বিজ্ঞপ্তি চালু করুন",
   primerLater: "এখন নয়",
+  kindRequestReceived: "কেউ আপনাকে পেমেন্ট করতে বলছেন",
+  lockTitle: "লক স্ক্রিন",
+  hideAmounts: "পরিমাণ লুকান",
+  hideAmountsBody: "নোটিফিকেশনে পরিমাণ ছাড়া শুধু “আপনি টাকা পেয়েছেন” দেখাবে। ইনবক্স ও ইমেইলে পরিমাণ দেখা যাবে।",
 };

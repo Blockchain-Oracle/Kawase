@@ -12,4 +12,6 @@ export const inbox: Catalog["inbox"] = {
   markAllRead: "সব পঠিত করুন",
   loadFailed: "আপনার ইনবক্স লোড করা যায়নি।",
   bellUnread: "ইনবক্স, {{count}}টি নতুন",
+  askedYou: "{{name}} আপনার কাছে {{amount}} চেয়েছেন",
+  pay: "পেমেন্ট করুন",
 };

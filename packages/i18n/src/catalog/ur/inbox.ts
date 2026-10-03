@@ -12,4 +12,6 @@ export const inbox: Catalog["inbox"] = {
   markAllRead: "سب کو پڑھا ہوا کریں",
   loadFailed: "آپ کا ان باکس لوڈ نہیں ہو سکا۔",
   bellUnread: "‏ان باکس، {{count}} نئے",
+  askedYou: "{{name}} نے آپ سے {{amount}} مانگے",
+  pay: "ادا کریں",
 };

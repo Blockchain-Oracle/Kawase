@@ -29,4 +29,13 @@ export const request: Catalog["request"] = {
   signInTitle: "Connectez-vous pour demander de l’argent",
   signInBody: "Les demandes sont payées sur votre propre portefeuille : il faut un compte.",
   loadFailed: "Impossible de charger vos demandes.",
+  askOnKawase: "Demander à quelqu’un sur Kawase",
+  askBody: "La demande arrive dans sa boîte Kawase et en notification. Saisissez son @identifiant ou choisissez un contact.",
+  askPlaceholder: "@identifiant ou nom du contact",
+  ask: "Demander",
+  askName: "Demander à {{name}}",
+  askedInApp: "Demandé à {{name}} sur Kawase",
+  askedToast: "Demande envoyée à {{name}} sur Kawase",
+  askNotOnKawase: "{{name}} n’est pas un contact Kawase enregistré. Partagez plutôt le lien.",
+  askSomeoneElse: "Demander à quelqu’un d’autre",
 };

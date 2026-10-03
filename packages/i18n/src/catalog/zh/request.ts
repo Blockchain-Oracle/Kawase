@@ -29,4 +29,13 @@ export const request: Catalog["request"] = {
   signInTitle: "登录后即可收款",
   signInBody: "收款会进入你自己的钱包，所以需要一个账户。",
   loadFailed: "无法加载你的收款请求。",
+  askOnKawase: "在 Kawase 上向某人请求",
+  askBody: "对方会在 Kawase 收件箱和通知中收到。输入对方的 @用户名，或选择一个联系人。",
+  askPlaceholder: "@用户名或联系人姓名",
+  ask: "请求",
+  askName: "向 {{name}} 请求",
+  askedInApp: "已在 Kawase 上向 {{name}} 请求",
+  askedToast: "已在 Kawase 上向 {{name}} 发出请求",
+  askNotOnKawase: "{{name}} 不是你保存的 Kawase 用户。请改为分享链接。",
+  askSomeoneElse: "改为请求其他人",
 };

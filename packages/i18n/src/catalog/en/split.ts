@@ -36,4 +36,5 @@ export const split = {
   failed: "This split couldn't be read.",
   invalid: "The shares don't add up to the bill. Set them in the split form.",
   openForm: "Open the split form",
+  askedInApp: "Asked in Kawase",
 };

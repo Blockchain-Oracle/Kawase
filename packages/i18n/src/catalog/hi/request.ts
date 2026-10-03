@@ -29,4 +29,13 @@ export const request: Catalog["request"] = {
   signInTitle: "पैसे माँगने के लिए साइन इन करें",
   signInBody: "अनुरोध आपके अपने वॉलेट में चुकाए जाते हैं, इसलिए खाता चाहिए।",
   loadFailed: "आपके अनुरोध लोड नहीं हो सके।",
+  askOnKawase: "Kawase पर किसी से माँगें",
+  askBody: "उन्हें यह उनके Kawase इनबॉक्स और सूचना में मिलेगा। उनका @handle लिखें या कोई संपर्क चुनें।",
+  askPlaceholder: "@handle या संपर्क का नाम",
+  ask: "माँगें",
+  askName: "{{name}} से माँगें",
+  askedInApp: "Kawase में {{name}} से माँगा गया",
+  askedToast: "Kawase में {{name}} से माँगा गया",
+  askNotOnKawase: "{{name}} आपका सेव किया हुआ Kawase उपयोगकर्ता नहीं है। इसके बजाय लिंक शेयर करें।",
+  askSomeoneElse: "किसी और से माँगें",
 };
