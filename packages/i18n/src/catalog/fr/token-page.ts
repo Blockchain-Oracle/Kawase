@@ -83,4 +83,5 @@ export const tokenPage: Catalog["tokenPage"] = {
     "Calculé à partir de vos achats et ventes dans Kawase, au prix d'achat moyen. Les jetons reçus ou transférés par pont ne sont pas des opérations.",
   activity: "Votre activité",
   seeAll: "Tout voir",
+  onChain: "{{amount}} sur {{chain}}",
 };

@@ -22,6 +22,7 @@ import type {
   MarketListView,
   MarketRow,
   MarketSegment,
+  NetworkTotalsView,
   PortfolioPoint,
   PortfolioView,
   PositionSummary,
@@ -53,10 +54,13 @@ import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { TokenDirectory } from "./directory";
 import { safetyVerdict, type Lookalike } from "./safety";
+import type { VenuePositions } from "./venue-positions";
 
 const MAINNET_CHAIN_ID = NETWORKS.mainnet.chainId;
 /** Other chains (LI.FI scans ~60) and positions may take longer than a Home screen should wait; they fill the cache. */
 const SLOW_SOURCE_WAIT_MS = 3_000;
+/** How long the network sheet waits for a network's live total before showing its last snapshot. */
+const NETWORK_TOTAL_WAIT_MS = 8_000;
 /** Alchemy answered in 0.8–6.4 s in the live check; past this the fallback path answers and Alchemy fills its cache. */
 const ALCHEMY_WAIT_MS = 7_000;
 /** How the bridge chains' native coins (ETH, POL, AVAX) are addressed. */
@@ -97,6 +101,8 @@ export class AssetService {
     private readonly market: MarketData,
     private readonly log: Logger,
     private readonly earnPositions?: EarnPositions,
+    /** Aave V4 supplies and loans, and Kawase Margin positions (tokens/venue-positions.ts). */
+    private readonly venuePositions?: VenuePositions,
   ) {
     this.directory = new TokenDirectory(db, market);
   }
@@ -190,7 +196,7 @@ export class AssetService {
         .values(unseen.map((tokenAddress) => ({ userId: user.id, network, chainId, tokenAddress, walletAddress: wallet.toLowerCase(), source: "balance" as const })))
         .onConflictDoNothing();
 
-    const [{ prices, at, stale }, positionsRaw, other] = await Promise.all([
+    const [{ prices, at, stale }, positionsRaw, other, venues] = await Promise.all([
       this.prices(network, held),
       this.earnPositions
         ? within(this.earnPositions(user).catch((error: unknown) => (this.log.warn({ err: error }, "portfolio earn positions failed"), [])), SLOW_SOURCE_WAIT_MS, [])
@@ -200,6 +206,9 @@ export class AssetService {
         : network === "mainnet"
           ? within(this.otherChains(wallet), SLOW_SOURCE_WAIT_MS, [] as HoldingView[])
           : Promise.resolve([] as HoldingView[]),
+      this.venuePositions
+        ? within(this.venuePositions(user).catch((error: unknown) => (this.log.warn({ err: error }, "portfolio venue positions failed"), [] as PositionSummary[])), SLOW_SOURCE_WAIT_MS, [] as PositionSummary[])
+        : Promise.resolve([] as PositionSummary[]),
     ]);
     const described = await this.directory.describe(network, chainId, clients.client, held, new Map([...prices].flatMap(([address, priced]) => (priced.market ? [[address, priced.market] as const] : []))));
 
@@ -243,6 +252,7 @@ export class AssetService {
       else assets.push(holding);
     }
 
+    positions.push(...venues);
     const byValue = (a: HoldingView, b: HoldingView) => (b.valueUsd ?? -1) - (a.valueUsd ?? -1);
     assets.sort(byValue);
     hidden.sort(byValue);
@@ -286,6 +296,36 @@ export class AssetService {
       // A chain Alchemy could not answer for is shown from its last answer, or missing: either way, not fresh.
       stale: stale || (index?.failedChains.length ?? 0) > 0,
     };
+  }
+
+  /**
+   * Each network's own total, for the network pill's sheet (surfaces.md "Network pill sheet": two rows, each with its
+   * network's total, the Senryo pattern): the live portfolio of each network that is on, read side by side. A
+   * network that answers too slowly shows its last snapshot, with when.
+   */
+  async networkTotals(user: SessionUser): Promise<NetworkTotalsView> {
+    const all: NetworkId[] = ["mainnet", "testnet"];
+    const networks = await Promise.all(
+      all.map(async (network) => {
+        if (!this.chains.available.includes(network)) return { network, available: false, totalUsd: null, at: null };
+        const live = await within(
+          this.portfolio({ ...user, activeNetwork: network }).then((view) => view.totalUsd),
+          NETWORK_TOTAL_WAIT_MS,
+          null,
+        ).catch(() => null);
+        if (live !== null) return { network, available: true, totalUsd: live, at: new Date().toISOString() };
+        const [last] = await this.db
+          .select({ takenAt: portfolioSnapshots.takenAt, totalUsd: portfolioSnapshots.totalUsd })
+          .from(portfolioSnapshots)
+          .where(and(eq(portfolioSnapshots.userId, user.id), eq(portfolioSnapshots.network, network)))
+          .orderBy(desc(portfolioSnapshots.takenAt))
+          .limit(1);
+        return { network, available: true, totalUsd: last ? round(last.totalUsd) : null, at: last?.takenAt.toISOString() ?? null };
+      }),
+    );
+    const currency = user.displayCurrency || "USD";
+    const perUsd = (await this.market.fx(currency)) ?? 1;
+    return { networks, fx: { currency: perUsd === 1 && currency !== "USD" ? "USD" : currency, perUsd } };
   }
 
   private emptyPortfolio(network: NetworkId, fx: PortfolioView["fx"]): PortfolioView {

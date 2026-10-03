@@ -88,4 +88,5 @@ export const withdraw = {
   firstTimeTitle: "First time sending here",
   firstTimeBody: "Send a small test of {{amount}} USDC first, check it arrived, then withdraw the rest.",
   sendTest: "Send a {{amount}} USDC test first",
+  oneTransaction: "These {{n}} steps go as one transaction on Arc: all of them or none.",
 } as const;

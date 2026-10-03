@@ -63,9 +63,25 @@ export type PositionSummary = {
   apyPct?: number | null;
   /** The token the position is in. */
   token: TokenView | null;
+  /** Borrow and perps: the venue account's health (1 = liquidation; null with no debt). */
+  health?: number | null;
+  /** Borrow: what is owed and what is supplied against it, in USD (the value is their difference). */
+  debtUsd?: number | null;
+  suppliedUsd?: number | null;
+  /** Perps (long/short): the side, leverage now, and profit or loss in USD and percent of the margin. */
+  side?: "long" | "short" | null;
+  leverage?: number | null;
+  pnlUsd?: number | null;
+  pnlPct?: number | null;
 };
 
 export type PortfolioPoint = { t: string; usd: number };
+
+/** Each network's own total for the network pill's sheet; `at` says when it was read (a snapshot when the live read was slow). */
+export type NetworkTotalsView = {
+  networks: { network: NetworkId; available: boolean; totalUsd: number | null; at: string | null }[];
+  fx: { currency: string; perUsd: number };
+};
 
 export type PortfolioView = {
   network: NetworkId;

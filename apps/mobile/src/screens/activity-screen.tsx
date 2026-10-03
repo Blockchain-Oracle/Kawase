@@ -3,8 +3,10 @@
 // (a send, a swap, a bridge, savings, Kawase Margin, an automation's run, a request paid, the faucet), with Kawase's
 // own outcomes that never touched the chain (a run skipped and why, a practice "would have", a step waiting for you,
 // a payment still being checked). Filters All · In · Out · Trades · Automations · Needs you (with its count); a row
-// opens its receipt and its why. The week's report and the export stay on top (B2). Rows are kept per network.
-import { useFocusEffect, useRouter } from "expo-router";
+// opens its receipt and its why. The week's report and the export stay on top (B2). Rows are kept per network. The tab
+// header is the shared one (avatar · network pill · inbox bell; Sign in for guests); `?filter=needs_you` opens on a
+// filter (Home's Needs you "See all").
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Download } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, RefreshControl, ScrollView, View } from "react-native";
@@ -24,6 +26,7 @@ import { ActivityRowSkeleton } from "@/activity/activity-row";
 import { FeedRow } from "@/activity/feed-row";
 import { FeedSheet } from "@/activity/feed-sheet";
 import { useFeed } from "@/activity/use-feed";
+import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { ExportSheet } from "@/history/export-sheet";
 import { ReportCard } from "@/history/report-card";
@@ -87,7 +90,13 @@ export function ActivityScreen() {
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
   const feed = useFeed(network);
-  const [filter, setFilter] = React.useState<Filter>("all");
+  const params = useLocalSearchParams<{ filter?: string }>();
+  const asked = FILTERS.find((entry) => entry === params.filter);
+  const [filter, setFilter] = React.useState<Filter>(asked ?? "all");
+  // Opened again with a filter (from Home): that filter.
+  React.useEffect(() => {
+    if (asked) setFilter(asked);
+  }, [asked]);
   const [open, setOpen] = React.useState<FeedItem>();
   const [refreshing, setRefreshing] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
@@ -120,6 +129,7 @@ export function ActivityScreen() {
         contentContainerStyle={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void pull()} tintColor={colors["muted-foreground"]} />}
       >
+        <TabHeader />
         <View className="flex-row items-center justify-between">
           <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
             {t("activity.title")}

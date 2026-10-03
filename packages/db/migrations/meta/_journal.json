@@ -351,6 +351,13 @@
       "when": 1791000092000,
       "tag": "0035_launchpad_watches",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791000093000,
+      "tag": "0026_batch_attempts",
+      "breakpoints": true
     }
   ]
 }

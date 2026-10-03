@@ -89,4 +89,5 @@ export const withdraw: Catalog["withdraw"] = {
   firstTimeTitle: "首次向这里发送",
   firstTimeBody: "先发送一小笔 {{amount}} USDC 测试金额，确认到账后再提现剩余部分。",
   sendTest: "先发送 {{amount}} USDC 测试金额",
+  oneTransaction: "这 {{n}} 步在 Arc 上作为一笔交易完成：要么全部完成，要么都不执行。",
 };

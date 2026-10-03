@@ -94,6 +94,7 @@ import { evaluateCrossChain, type CrossChainEvaluation, type CrossChainFacts, ty
 import type { BridgeEngine } from "../bridge/engine";
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { withCredit, type BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import type { Recipients } from "../send/recipients";
 import { VenueRefused, type SwapVenues } from "../swap/venues";
@@ -106,7 +107,11 @@ import { arcAsset, assetView, counterpartOnArc, counterpartThere, isBlocked, rem
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
 type AttemptRow = typeof txAttempts.$inferSelect;
-type StoredRequest = Required<{ [K in keyof CrossChainRequest]: Exclude<CrossChainRequest[K], undefined> }>;
+/**
+ * `credit`: USDC base units an earlier call in the same batch delivers first (a withdrawal's conversion), counted as
+ * held. Only the server sets it, for a batched step (intents/bundle.ts); on chain the batch is all or nothing.
+ */
+type StoredRequest = Required<{ [K in keyof CrossChainRequest]: Exclude<CrossChainRequest[K], undefined> }> & { credit?: string | null };
 type DraftPayload = { draft: StoredCrossChainDraft | null; view: CrossChainDraftView | null };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 /** Where the origin transaction is: the Arc batch, a transaction on the other chain, or a permit Relay executes. */
@@ -255,8 +260,8 @@ export class CrossChainService {
 
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  async create(user: SessionUser, request: CrossChainRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }) {
-    const stored = normalise(empty(), request);
+  async create(user: SessionUser, request: CrossChainRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }, options: { credit?: bigint } = {}) {
+    const stored = normalise(options.credit ? { ...empty(), credit: options.credit.toString() } : empty(), request);
     const [row] = await this.db
       .insert(intents)
       .values({ userId: user.id, threadId: origin.threadId ?? null, network: user.activeNetwork, kind: "crosschain", originSurface: origin.surface, state: "submitted", request: stored, expiresAt: later(INTENT_TTL_S) })
@@ -293,13 +298,13 @@ export class CrossChainService {
   }
 
   /** The USDC routes out of Arc for exactly `amount` (6 decimals), with `convert` set when a swap comes first. */
-  private usdcOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint; convert: Quote["convert"] }): Promise<Quote>[] {
+  private usdcOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint; convert: Quote["convert"]; credit?: bigint | undefined }): Promise<Quote>[] {
     const { network, chain, wallet, recipient, amount, convert } = input;
     const testnet = !network.isRealMoney;
     const output: MoveAsset = { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" };
     const base = (provider: CrossChainProvider, received: bigint, minReceived: bigint, etaSeconds: number | null, extra: Partial<Quote> = {}): Quote => ({ ...this.none(provider, output, null), received, minReceived, etaSeconds, convert, ...extra });
     const cctp = within(
-      this.engine.estimate({ network, client: input.client, from: wallet, destination: chain, recipient, amount: formatUnits(amount, USDC_DECIMALS) }).then((estimate) => {
+      this.engine.estimate({ network, client: withCredit(input.client, network.addresses.usdc, wallet, input.credit ?? ZERO), from: wallet, destination: chain, recipient, amount: formatUnits(amount, USDC_DECIMALS) }).then((estimate) => {
         const received = amount > estimate.maxFee ? amount - estimate.maxFee : ZERO;
         return base("cctp", received, received, null);
       }),
@@ -345,10 +350,11 @@ export class CrossChainService {
     );
     const best = swapped.quotes[0];
     if (!best || best.minOut === ZERO) return [];
-    return Promise.all(this.usdcOut({ ...input, amount: best.minOut, convert: { venue: best.venue, minOut: best.minOut } }));
+    // The bridge is quoted before the swap's USDC exists: its guaranteed minimum is counted as held.
+    return Promise.all(this.usdcOut({ ...input, amount: best.minOut, convert: { venue: best.venue, minOut: best.minOut }, credit: best.minOut }));
   }
 
-  private async quotesOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset | undefined; amount: bigint }): Promise<Quote[]> {
+  private async quotesOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset | undefined; amount: bigint; credit?: bigint | undefined }): Promise<Quote[]> {
     const { from, to } = input;
     const usdcThere: MoveAsset = { chainId: input.chain.chainId, address: input.chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" };
     if (from.usdc) {
@@ -426,11 +432,12 @@ export class CrossChainService {
         clients.client.readContract({ address: clients.network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] }),
       ]);
       setUp = isWalletSetUp(code);
-      usdcBalance = usdc;
+      // A batched step spends USDC an earlier call in the same transaction delivers.
+      usdcBalance = usdc + (outbound ? BigInt(request.credit ?? "0") : ZERO);
       if (outbound) {
         from = await arcAsset(clients.network, clients.client as PublicClient, this.assets?.directory, request.asset);
         if (from !== "unknown") {
-          balance = from.usdc ? usdc : await clients.client.readContract({ address: from.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
+          balance = from.usdc ? usdcBalance : await clients.client.readContract({ address: from.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
           if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
         }
         if (request.recipient) {
@@ -456,7 +463,7 @@ export class CrossChainService {
     const canQuote = clients && wallet && chain && recipient && asset && !isBlocked(asset) && amount.status === "ok" && amount.baseUnits > ZERO && (recipientFacts.status === "own" || recipientFacts.status === "resolved");
     if (canQuote) {
       quotes = outbound
-        ? await this.quotesOut({ network: clients.network, client: clients.client, chain: chain!, wallet, recipient: recipient!, from: asset, to, amount: amount.baseUnits })
+        ? await this.quotesOut({ network: clients.network, client: clients.client, chain: chain!, wallet, recipient: recipient!, from: asset, to, amount: amount.baseUnits, credit: BigInt(request.credit ?? "0") })
         : await this.quotesIn({ network: clients.network, chain: chain!, wallet, from: asset, to: to!, amount: amount.baseUnits });
     }
     const net = (quote: Quote) => (quote.received === null ? NO_QUOTE : quote.received - quote.extraCost);
@@ -691,7 +698,7 @@ export class CrossChainService {
     throw this.refused(provider, "not_an_aggregator");
   }
 
-  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination): Promise<Built> {
+  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination, credit = ZERO): Promise<Built> {
     const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
     if (draft.originChainId !== network.chainId) {
       if (provider === "lifi") {
@@ -731,14 +738,61 @@ export class CrossChainService {
           throw error;
         });
       if (!prepared || prepared.guaranteedOut < draft.swapMinOut) return { changed: true };
-      const bridged = await this.bridgeUsdc(provider, draft, network, client, chain, draft.swapMinOut);
+      // The bridge is built while the swap's USDC has not arrived yet: counted as held (the batch is atomic).
+      const bridged = await this.bridgeUsdc(provider, draft, network, withCredit(client, network.addresses.usdc, draft.from, draft.swapMinOut), chain, draft.swapMinOut);
       if ("changed" in bridged) return bridged;
       return { kind: "batch", calls: [...prepared.calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), ...bridged.calls], track: bridged.track };
     }
     const usdc = same(draft.token, network.addresses.usdc);
-    const built = usdc ? await this.bridgeUsdc(provider, draft, network, client, chain, draft.amount) : await this.aggregatorCalls(provider, draft, network, chain, { address: draft.token, usdc: false }, draft.amount);
+    const built = usdc ? await this.bridgeUsdc(provider, draft, network, withCredit(client, network.addresses.usdc, draft.from, credit), chain, draft.amount) : await this.aggregatorCalls(provider, draft, network, chain, { address: draft.token, usdc: false }, draft.amount);
     if ("changed" in built) return built;
     return { kind: "batch", calls: built.calls, track: built.track };
+  }
+
+  /**
+   * This version's part in a batch (intents/bundle.ts): the same re-check as an approval, and the exact calls it would
+   * sign on Arc. A route that starts on another chain (a permit, a transaction there) cannot share a transaction on Arc.
+   */
+  async bundlePart(user: SessionUser, intentId: string): Promise<BundlePart | "changed" | "final"> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || before.expiresAt.getTime() < Date.now()) return "final";
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    const current = await this.currentDraft(before);
+    const payload = current?.payload as DraftPayload | undefined;
+    const changed = async () => {
+      await this.redraft(user, intentId);
+      return "changed" as const;
+    };
+    if (!current?.draftHash || !payload?.draft || !payload.view || payload.view.direction !== "out") return changed();
+    const draft = loadCrossChainDraft(payload.draft);
+    if (crossChainDraftHash(draft) !== current.draftHash) return changed();
+    const { network, client } = this.clients(before.network);
+    const chain = this.engine.destinations(network).find((entry) => entry.chainId === draft.destinationChainId);
+    if (!chain || draft.originChainId !== network.chainId) return changed();
+    let built: Built;
+    try {
+      built = await this.build(draft, network, client, chain, BigInt((before.request as StoredRequest).credit ?? "0"));
+    } catch (error) {
+      if (error instanceof Error && "status" in error) throw error;
+      this.log.warn({ err: error, intentId }, "crosschain build failed");
+      throw problem(HTTP.badGateway, "quote_unavailable");
+    }
+    if ("changed" in built) return changed();
+    if (built.kind !== "batch") return "final";
+    const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
+    const progress: Progress = { provider, origin: "arc", ...built.track, status: "submitted" };
+    return {
+      intentId,
+      version: before.currentDraftVersion,
+      draftHash: current.draftHash as Hex,
+      from: draft.from,
+      chainId: draft.originChainId,
+      calls: built.calls.map((call) => ({ to: call.to, data: call.data.toLowerCase() as Hex, value: call.value })),
+      maxFee: draft.maxFee,
+      attemptKind: "crosschain_wallet",
+      attemptTo: draft.from,
+      attemptReceipt: jsonSafe(progress),
+    };
   }
 
   private refused(provider: string, reason: string) {
@@ -1095,7 +1149,7 @@ export class CrossChainService {
 const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null, toAsset: null });
 
 function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest {
-  const pick = <K extends keyof StoredRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
+  const pick = <K extends keyof StoredRequest & keyof CrossChainRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
   const text = (value: string | null | undefined) => (typeof value === "string" ? value.trim() || null : null);
   return {
     direction: pick("direction") === "in" ? "in" : "out",
@@ -1106,6 +1160,8 @@ function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest
     recipient: text(pick("recipient")),
     route: pick("route") ?? null,
     toAsset: text(pick("toAsset") ?? null),
+    // Only the server sets a credit (a batched withdrawal step); a revision keeps it, a request never brings one.
+    ...(base.credit ? { credit: base.credit } : {}),
   };
 }
 

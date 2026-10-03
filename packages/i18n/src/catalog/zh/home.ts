@@ -50,4 +50,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "开启",
   allowanceCue: "每日额度已开启 · 每天最多 {{amount}}",
   soon: "即将推出",
+  nextRun: "下次：{{when}}",
+  watching: "监控中",
+  stepFirstAutomation: "设置你的第一个自动化",
+  stepAutomationAction: "看看",
+  sendTo: "转给 {{name}}",
+  contactWaiting: "地址变更等待中",
 };

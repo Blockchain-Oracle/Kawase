@@ -34,4 +34,5 @@ export const markets: Catalog["markets"] = {
   watchHeld: "تملك منه",
   recent: "الأخيرة",
   recentClear: "مسح",
+  longShort: "شراء أو بيع على المكشوف",
 };
