@@ -10,7 +10,7 @@ export const request: Catalog["request"] = {
   yours: "Tus peticiones",
   new: "Nueva petición",
   emptyTitle: "Aún no hay peticiones",
-  emptyBody: "Pide USDC o EURC con un enlace que cualquiera puede pagar.",
+  emptyBody: "Pide cualquier token con un enlace que cualquiera puede pagar, o pídeselo directamente a alguien en Kawase.",
   linkCopied: "Enlace copiado",
   copyLink: "Copiar enlace",
   share: "Compartir",

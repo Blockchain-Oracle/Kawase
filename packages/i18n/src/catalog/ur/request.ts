@@ -10,7 +10,7 @@ export const request: Catalog["request"] = {
   yours: "آپ کی درخواستیں",
   new: "نئی درخواست",
   emptyTitle: "ابھی کوئی درخواست نہیں",
-  emptyBody: "ایک لنک سے USDC یا EURC مانگیں جسے کوئی بھی ادا کر سکے۔",
+  emptyBody: "کوئی بھی ٹوکن ایسے لنک سے مانگیں جسے کوئی بھی ادا کر سکے، یا Kawase پر کسی سے براہِ راست مانگیں۔",
   linkCopied: "لنک کاپی ہو گیا",
   copyLink: "لنک کاپی کریں",
   share: "شیئر کریں",

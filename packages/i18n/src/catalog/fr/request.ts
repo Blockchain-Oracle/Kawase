@@ -10,7 +10,7 @@ export const request: Catalog["request"] = {
   yours: "Vos demandes",
   new: "Nouvelle demande",
   emptyTitle: "Aucune demande pour l’instant",
-  emptyBody: "Demandez des USDC ou des EURC avec un lien que n’importe qui peut payer.",
+  emptyBody: "Demandez n’importe quel jeton avec un lien que tout le monde peut payer, ou directement à quelqu’un sur Kawase.",
   linkCopied: "Lien copié",
   copyLink: "Copier le lien",
   share: "Partager",

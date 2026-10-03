@@ -10,7 +10,7 @@ export const request: Catalog["request"] = {
   yours: "طلباتك",
   new: "طلب جديد",
   emptyTitle: "لا طلبات بعد",
-  emptyBody: "اطلب USDC أو EURC برابط يمكن لأي شخص الدفع منه.",
+  emptyBody: "اطلب أي رمز برابط يمكن لأي شخص الدفع منه، أو اطلبه مباشرةً من شخص على Kawase.",
   linkCopied: "تم نسخ الرابط",
   copyLink: "نسخ الرابط",
   share: "مشاركة",

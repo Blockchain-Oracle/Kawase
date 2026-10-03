@@ -8,7 +8,7 @@ export const request = {
   yours: "Your requests",
   new: "New request",
   emptyTitle: "No requests yet",
-  emptyBody: "Ask for USDC or EURC with a link anyone can pay.",
+  emptyBody: "Ask for any token with a link anyone can pay, or ask someone on Kawase directly.",
   linkCopied: "Link copied",
   copyLink: "Copy link",
   share: "Share",
