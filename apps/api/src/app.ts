@@ -389,7 +389,7 @@ export function createApp(deps: AppDeps) {
   // Everyday money (A5-2): scan to pay.
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
-  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp }));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);

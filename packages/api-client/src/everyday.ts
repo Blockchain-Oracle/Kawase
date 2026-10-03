@@ -1,7 +1,7 @@
 // Everyday money (A5-2): scan to pay, split a bill, open any intent by its id, and contacts from the device.
 // Client-safe shapes shared by the api, the agent and the app.
 import type { AgentNetwork } from "./agent-types";
-import type { OnrampOrderView } from "./rails";
+import type { CrossChainIntent, LendIntent, OnrampOrderView } from "./rails";
 import type { AutomationView, PaymentRequest, PublicPaymentRequest, RequestToken, SendIntent, SwapIntent, BridgeIntent, EarnIntent } from "./types";
 
 /** What a scanned or pasted code means, and where it goes. */
@@ -93,6 +93,8 @@ export type IntentLookup =
   | { kind: "bridge"; network: AgentNetwork; threadId: string | null; intent: BridgeIntent }
   | { kind: "earn"; network: AgentNetwork; threadId: string | null; intent: EarnIntent }
   | { kind: "margin"; network: AgentNetwork; threadId: string | null; positionId: string | null }
+  | { kind: "crosschain"; network: AgentNetwork; threadId: string | null; intent: CrossChainIntent }
+  | { kind: "lend"; network: AgentNetwork; threadId: string | null; intent: LendIntent }
   // Every other id a notification can carry lands on its own screen (A5-3): an automation's live card, a run's story,
   // an invoice, a Buy order, a split or one of the person's requests.
   | { kind: "automation"; network: AgentNetwork; threadId: string | null; automation: AutomationView }
@@ -100,7 +102,10 @@ export type IntentLookup =
   | { kind: "invoice"; network: AgentNetwork; threadId: null; invoiceId: string }
   | { kind: "onramp"; network: AgentNetwork; threadId: null; order: OnrampOrderView }
   | { kind: "split"; network: AgentNetwork; threadId: null; splitId: string }
-  | { kind: "request"; network: AgentNetwork; threadId: null; requestId: string };
+  | { kind: "request"; network: AgentNetwork; threadId: null; requestId: string }
+  // A withdrawal resumes on Withdraw ("Finish it"); a paid service call opens the agent wallet's history.
+  | { kind: "withdrawal"; network: AgentNetwork; threadId: null; withdrawalId: string }
+  | { kind: "purchase"; network: AgentNetwork; threadId: string | null; purchaseId: string };
 
 /** A device contact the person chose to check, as a hash of each email (the email never leaves the phone). */
 export type DiscoverInput = { contacts: { ref: string; emailHashes: string[] }[] };
