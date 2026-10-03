@@ -4,9 +4,27 @@ Kawase is an AI money agent for Arc: you chat with it or talk to it in any of te
 bridges, earns and runs automations from your own wallet. What it may do on its own is written on chain as signed
 delegations with caps, so it acts freely inside them, and anything outside them waits for your Face ID.
 
-<!-- Hero: add docs/media/kawase-hero.gif (guest chat → send card → Face ID → explorer), then uncomment:
-![Kawase: a send by chat, confirmed with Face ID and settled on Arc](docs/media/kawase-hero.gif)
--->
+<p align="center">
+  <img src="docs/media/phone-welcome.png" width="300" alt="Kawase's first screen: 'Send 10 USDC to @amina' becomes an exact payment card on Arc Testnet, with the language pill and 'Try it first, sign in later'" />
+</p>
+
+<table>
+  <tr>
+    <td><img src="docs/media/phone-home.png" width="200" alt="Home as a guest: Your money agent on Arc, Try in chat, and what is trending on Arc" /></td>
+    <td><img src="docs/media/phone-markets.png" width="200" alt="Markets: search, trending tokens on Arc and the heatmap" /></td>
+    <td><img src="docs/media/phone-token-argus.png" width="200" alt="ARGUS's token page on Arc mainnet: price, chart, stats and safety" /></td>
+    <td><img src="docs/media/phone-help.png" width="200" alt="Help and trust: what Kawase can and cannot do with your money and where it lives" /></td>
+  </tr>
+  <tr>
+    <td align="center">Home (guest)</td>
+    <td align="center">Markets</td>
+    <td align="center">A token page (ARGUS, mainnet)</td>
+    <td align="center">Help &amp; trust</td>
+  </tr>
+</table>
+
+Screenshots of the live web app, taken as a guest on 2026-10-03 with live prices (more, at phone and desktop width, in
+[`docs/media`](docs/media)).
 
 Built for the [Tameion Agents Hackathon](https://tameion.thecanteenapp.com/) (Canteen with Circle and Arc,
 2026-09-27 to 2026-10-10). The repository's history starts on 2026-09-30, inside the event. What existed before and what
