@@ -80,4 +80,5 @@ export const tokenPage = {
   tradesNote: "From your buys and sells in Kawase, at average cost. Tokens you received or bridged are not trades.",
   activity: "Your activity",
   seeAll: "See all",
+  onChain: "{{amount}} on {{chain}}",
 } as const;

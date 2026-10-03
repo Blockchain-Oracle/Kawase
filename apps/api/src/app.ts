@@ -63,6 +63,7 @@ import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
+import { venuePositions } from "./tokens/venue-positions";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
@@ -191,7 +192,16 @@ export function createApp(deps: AppDeps) {
   const requests = new RequestService(deps.db, deps.chains, wallets, inbox, deps.webUrl ?? DEFAULT_WEB_URL, (network, value) => tokenLookup(deps.chains, assets)(network, value), recipients);
   // The asset registry (any token, prices, positions). Positions come from earn, read only when a portfolio is asked
   // for (earn is created further down).
-  const assets = new AssetService(deps.db, deps.chains, wallets, deps.market ?? noMarketData, deps.log, async (user) => (await earn.overview(user)).positions);
+  const assets = new AssetService(
+    deps.db,
+    deps.chains,
+    wallets,
+    deps.market ?? noMarketData,
+    deps.log,
+    async (user) => (await earn.overview(user)).positions,
+    // Loans with their health and long/short positions with their P&L count in the total too (created further down).
+    venuePositions({ lend: () => lend, margin: () => margin }),
+  );
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(
     deps.db,
@@ -216,7 +226,7 @@ export function createApp(deps: AppDeps) {
   const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
-  const withdrawalRuns = new WithdrawalService(deps.db, withdraw);
+  const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
   withdrawalRuns.bind({ sends, swaps, crosschain });
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
   const automations = new AutomationService(

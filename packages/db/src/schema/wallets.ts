@@ -154,8 +154,9 @@ export const txAttempts = pgTable(
     uniqueIndex("tx_attempts_intent_attempt_idx")
       .on(table.intentId, table.attemptNo)
       .where(sql`${table.intentId} is not null`),
-    uniqueIndex("tx_attempts_chain_hash_idx")
-      .on(table.chainId, table.txHash)
+    // One transaction per intent; a batch (one EIP-7702 transaction carrying several intents) records it on each.
+    uniqueIndex("tx_attempts_chain_hash_intent_idx")
+      .on(table.chainId, table.txHash, sql`coalesce(${table.intentId}, '00000000-0000-0000-0000-000000000000'::uuid)`)
       .where(sql`${table.txHash} is not null`),
     uniqueIndex("tx_attempts_from_nonce_idx")
       .on(table.network, sql`lower(${table.fromAddress})`, table.nonce)

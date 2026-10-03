@@ -82,6 +82,7 @@ import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { tokenLookup } from "../tokens/lookup";
 import type { AssetService } from "../tokens/service";
+import type { BundlePart } from "../intents/bundle";
 import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
 import { grantFor } from "../safety/allowances";
 import { recordPractice, simulateCall } from "../safety/practice";
@@ -200,8 +201,8 @@ export class SendService {
 
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  async create(user: SessionUser, request: SendRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }) {
-    let stored = normaliseRequest({}, request);
+  async create(user: SessionUser, request: SendRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }, options: { credit?: bigint } = {}) {
+    let stored = normaliseRequest(options.credit ? { credit: options.credit.toString() } : {}, request);
     let paymentRequestId: string | null = null;
     // Paying a request: who, which asset and how much come from the request itself, not from the link's words.
     if (request.requestToken) {
@@ -778,6 +779,49 @@ export class SendService {
     };
   }
 
+  /**
+   * This version's part in a batch (intents/bundle.ts): the same re-check as an approval, and the exact call it would
+   * sign (the transfer, or the transfer inside Memo). A batch is always signed by the wallet, never on the allowance.
+   */
+  async bundlePart(user: SessionUser, intentId: string): Promise<BundlePart | "changed" | "final"> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || before.expiresAt.getTime() < Date.now()) return "final";
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    const fresh = await this.recheckForSignature(user, before);
+    if (fresh.kind === "changed") {
+      await this.redraft(user, intentId);
+      return "changed";
+    }
+    const { draft, ledger } = fresh;
+    const context = this.clients(before.network);
+    const current = await this.currentDraft(before);
+    const memo = (current?.payload as DraftPayload | undefined)?.memo ?? null;
+    if (memoReference(memo) !== draft.reference || !current?.draftHash) {
+      await this.redraft(user, intentId);
+      return "changed";
+    }
+    const call = sendCall(context.network, draft, memo);
+    return {
+      intentId,
+      version: before.currentDraftVersion,
+      draftHash: current.draftHash as Hex,
+      from: draft.from,
+      chainId: draft.chainId,
+      calls: [{ to: call.to, data: call.data.toLowerCase() as Hex, value: ZERO }],
+      // A draft made for the allowance carries no fee of its own; inside a batch the wallet pays, within the batch's cap.
+      maxFee: draft.maxFee,
+      attemptKind: "send_wallet",
+      attemptTo: draft.asset,
+      ledger: ledger.amount === null ? null : { asset: ledger.asset, amount: ledger.amount.toString() },
+    };
+  }
+
+  /** Whether a send still fits the person's limits, under the batch's lock (its spend is reserved with the batch). */
+  fitsLimitsFor(tx: Tx, userId: string, network: NetworkId, ledger: BundlePart["ledger"], intentId: string) {
+    if (!ledger) return Promise.resolve(true);
+    return fitsLimits(tx, userId, network, ledger.asset, BigInt(ledger.amount), intentId);
+  }
+
   /** Above the allowance: the exact transfer for the wallet to sign. Reuses a still-valid request for this version. */
   private async walletApproval(
     tx: Tx,
@@ -1145,7 +1189,7 @@ async function nextAttemptNo(executor: Executor, intentId: string) {
 }
 
 function normaliseRequest(base: Partial<StoredRequest>, patch: SendRequest): StoredRequest {
-  const pick = <K extends keyof StoredRequest>(key: K): StoredRequest[K] =>
+  const pick = <K extends keyof StoredRequest & keyof SendRequest>(key: K): StoredRequest[K] =>
     (patch[key] !== undefined ? patch[key] : (base[key] ?? null)) as StoredRequest[K];
   const note = pick("note");
   const memo = pick("memo");
@@ -1156,6 +1200,8 @@ function normaliseRequest(base: Partial<StoredRequest>, patch: SendRequest): Sto
     note: note ? note.trim().slice(0, NOTE_MAX) || null : null,
     memo: memo?.trim() || null,
     memoId: pick("memoId")?.toLowerCase() ?? null,
+    // Only the server sets a credit (a batched withdrawal step); a revision keeps it, a request never brings one.
+    ...(base.credit ? { credit: base.credit } : {}),
   };
 }
 

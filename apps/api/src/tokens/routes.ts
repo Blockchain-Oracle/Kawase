@@ -46,6 +46,8 @@ export function portfolioRoutes(assets: AssetService) {
   const app = new Hono<AppEnv>();
   app.use("*", requireUser);
   app.get("/", async (c) => c.json({ portfolio: await assets.portfolio(c.get("user")!) }));
+  /** Each network's own total (the network pill's sheet). */
+  app.get("/networks", async (c) => c.json(await assets.networkTotals(c.get("user")!)));
   /** Show a token the rules hid, hide one, or hand it back to the rules. */
   app.post("/visibility", requireAccount, async (c) => {
     const input = await parse(visibilitySchema, await c.req.json());

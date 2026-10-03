@@ -50,4 +50,6 @@ export const assets: Catalog["assets"] = {
   mainnetOnly: "仅主网",
   noPrice: "暂无价格",
   vault: "金库",
+  borrowed: "已借 {{assets}}",
+  owed: "欠款 {{amount}}",
 };

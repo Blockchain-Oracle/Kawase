@@ -53,4 +53,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "Activar",
   allowanceCue: "Límite diario activo · hasta {{amount}} al día",
   soon: "Pronto",
+  nextRun: "Próxima: {{when}}",
+  watching: "Vigilando",
+  stepFirstAutomation: "Crea tu primera automatización",
+  stepAutomationAction: "Muéstrame",
+  sendTo: "Enviar a {{name}}",
+  contactWaiting: "cambio de dirección en espera",
 };

@@ -7,26 +7,49 @@
 // amount known by then, and signed by the person's wallet in the app. The record follows the intents, so after the
 // app closes, "Finish it" asks for the next step: the same intent while it still stands, a fresh one if it lapsed.
 // When the last step lands the destination is saved to My places.
+//
+// One batch where it can be (money-out.md "How": one batch, swaps + transfers/burns): when every step still to go is
+// signed by the wallet on Arc — conversions, transfers, and the burn that starts a bridge — they become one EIP-7702
+// self-call, so the person signs once and the chain takes all of it or none. The step that spends what a conversion
+// delivers is drafted with that conversion's guaranteed minimum as a credit (intents/bundle.ts). Only what cannot
+// share a transaction stays a tracker step: the delivery on the other chain, followed after the burn.
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
-import { formatUnits } from "viem";
+import { formatUnits, keccak256, parseTransaction, recoverTransactionAddress, type Address, type Hex } from "viem";
 
-import type { PolicyResultView, WithdrawalNextView, WithdrawalStepView, WithdrawalView, WithdrawPlanInput, WithdrawPlanView } from "@kawase/api-client";
-import { withdrawals, type Db, type WithdrawalStep } from "@kawase/db";
-import { MS_PER_SECOND, SECONDS_PER_DAY, WITHDRAW_OPEN_DAYS } from "@kawase/config";
+import type { PolicyResultView, UnsignedTransaction, WithdrawalBatchResponse, WithdrawalNextView, WithdrawalStepView, WithdrawalView, WithdrawPlanInput, WithdrawPlanView } from "@kawase/api-client";
+import { approvals, txAttempts, withdrawals, type Db, type WithdrawalStep } from "@kawase/db";
+import { APPROVAL_TTL_S, GAS_ESTIMATE_HEADROOM_PERCENT, MS_PER_SECOND, SECONDS_PER_DAY, WITHDRAW_OPEN_DAYS } from "@kawase/config";
+import { encodeSelfBatch } from "@kawase/integrations-delegation";
 import { DRAFTABLE_STATES } from "@kawase/intents";
+import type { Logger } from "@kawase/log";
 import { hasBrake } from "@kawase/policy";
 
 import type { CrossChainService } from "../crosschain/service";
 import { HTTP, problem } from "../http/problem";
+import { failBundled, offerBundled, recordBundled, type BundleEngine, type BundlePart } from "../intents/bundle";
+import { refusedBeforeSending, walletGasPrice } from "../intents/chain";
+import { requireBrakeOverride } from "../safety/brake";
 import type { SendService } from "../send/service";
 import type { SwapService } from "../swap/service";
 import type { SessionUser } from "../types";
+import type { Chains } from "../wallet/chain";
 import type { WithdrawService } from "./service";
 
 type Row = typeof withdrawals.$inferSelect;
 type Services = { sends: SendService; swaps: SwapService; crosschain: CrossChainService };
 
 const ZERO = 0n;
+const PERCENT = 100n;
+/** A batch is two or more steps; one step goes as itself. */
+const MIN_BATCH = 2;
+/** When the node cannot estimate the batch: room for a conversion, a transfer and a burn. */
+const BATCH_GAS_FALLBACK = 900_000n;
+/** A part drafted for the allowance carries no fee of its own; inside a batch the wallet pays for its transfer. */
+const TRANSFER_GAS_ALLOWANCE = 120_000n;
+const FEE_ALLOWANCE_MULTIPLIER = 2n;
+const ERROR_MAX = 140;
+const FOLLOW_POLL_MS = 3_000;
+const FOLLOW_POLLS = 120;
 /** An unfinished withdrawal is offered to finish for a week. */
 const OPEN_WITHIN_MS = WITHDRAW_OPEN_DAYS * SECONDS_PER_DAY * MS_PER_SECOND;
 const MOVING = new Set(["approved", "executing", "unknown_outcome"]);
@@ -81,6 +104,7 @@ function stepView(step: WithdrawalStep): WithdrawalStepView {
     fillUrl: step.fillUrl ?? null,
     failure: step.failure ?? null,
     blocking: (step.blocking as PolicyResultView | null | undefined) ?? null,
+    batched: Boolean(step.batched),
   };
 }
 
@@ -103,6 +127,8 @@ export class WithdrawalService {
   constructor(
     private readonly db: Db,
     private readonly planner: WithdrawService,
+    private readonly chains?: Chains,
+    private readonly log?: Logger,
   ) {}
 
   /** The engines the steps run on (created after this service in the app). */
@@ -245,18 +271,23 @@ export class WithdrawalService {
     if (row.status === "canceled") throw problem(HTTP.conflict, "intent_final");
     if (row.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
     const index = row.steps.findIndex((step) => step.state !== "done");
-    if (index < 0) return { withdrawal: withdrawalView(row), step: null, intent: null };
+    if (index < 0) return { withdrawal: withdrawalView(row), step: null, intent: null, batch: null };
     const step = row.steps[index]!;
     const { sends, swaps, crosschain } = this.engines();
+    // Everything left signed on Arc: one transaction (the app asks `batch` for it).
+    if (await this.canBatch(user, row)) {
+      const left = row.steps.filter((entry) => entry.state !== "done");
+      return { withdrawal: withdrawalView(row), step: stepView(step), intent: null, batch: { steps: left.map((entry) => entry.id) } };
+    }
     const kindOf = step.kind === "bridge" ? ("crosschain" as const) : step.kind;
 
     // A step on its way is followed, never re-sent (R7).
     if (step.state === "active" && step.intentId) {
       const current = step.kind === "swap" ? await swaps.get(user.id, step.intentId) : step.kind === "send" ? await sends.get(user.id, step.intentId) : await crosschain.get(user.id, step.intentId);
       const standing = DRAFTABLE_STATES.has(current.state) || MOVING.has(current.state);
-      if (standing) return { withdrawal: withdrawalView(row), step: stepView(step), intent: { kind: kindOf, id: current.id, version: current.version, blocking: current.blocking, brake: hasBrake(current.results) } };
+      if (standing) return { withdrawal: withdrawalView(row), step: stepView(step), intent: { kind: kindOf, id: current.id, version: current.version, blocking: current.blocking, brake: hasBrake(current.results) }, batch: null };
     }
-    if (step.state === "failed" && step.failure === "checking") return { withdrawal: withdrawalView(row), step: stepView(step), intent: null };
+    if (step.state === "failed" && step.failure === "checking") return { withdrawal: withdrawalView(row), step: stepView(step), intent: null, batch: null };
 
     const destination = row.destination;
     const amount = step.amount === null ? this.pool(row.steps) : BigInt(step.amount);
@@ -280,7 +311,266 @@ export class WithdrawalService {
       at === index ? { ...entry, intentId: intent.id, state: "active" as const, failure: null, blocking: intent.blocking, moved: amount.toString() } : entry,
     );
     [row] = await this.db.update(withdrawals).set({ steps, status: "running" }).where(eq(withdrawals.id, row.id)).returning() as [Row];
-    return { withdrawal: withdrawalView(row), step: stepView(row.steps[index]!), intent: { kind: kindOf, id: intent.id, version: intent.version, blocking: intent.blocking, brake: hasBrake(intent.results) } };
+    return { withdrawal: withdrawalView(row), step: stepView(row.steps[index]!), intent: { kind: kindOf, id: intent.id, version: intent.version, blocking: intent.blocking, brake: hasBrake(intent.results) }, batch: null };
+  }
+
+  // ── One batch ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  private engineOf(kind: WithdrawalStep["kind"]) {
+    const { sends, swaps, crosschain } = this.engines();
+    return (kind === "swap" ? swaps : kind === "send" ? sends : crosschain) as BundleEngine & { get(userId: string, id: string): Promise<{ state: string }>; cancel(userId: string, id: string): Promise<unknown> };
+  }
+
+  /**
+   * Whether the steps still to go can be one transaction: two or more of them, at most one conversion (each receipt
+   * witness then reads exactly its own conversion), none on its way or being checked, and none standing as a step of
+   * its own (a lone step that was handed out is followed as itself).
+   */
+  private async canBatch(user: SessionUser, row: Row): Promise<boolean> {
+    if (!this.chains) return false;
+    const left = row.steps.filter((step) => step.state !== "done");
+    if (left.length < MIN_BATCH || left.filter((step) => step.kind === "swap").length > 1) return false;
+    for (const step of left) {
+      if (!step.intentId) continue;
+      if (step.state === "failed") {
+        if (step.failure === "checking") return false;
+        continue;
+      }
+      if (!step.batched || step.arriving) return false;
+      const current = await this.engineOf(step.kind).get(user.id, step.intentId);
+      if (!DRAFTABLE_STATES.has(current.state as never)) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Builds the batch: a fresh intent for every step still to go (an earlier batch's drafts are closed first, nothing
+   * of them moved), each re-checked by its own engine, then one transaction of all their calls, simulated as a whole.
+   */
+  async batch(user: SessionUser, id: string, override: boolean): Promise<WithdrawalBatchResponse> {
+    let row = await this.refresh(user, await this.own(user.id, id));
+    if (row.status === "canceled" || row.status === "done") throw problem(HTTP.conflict, "intent_final");
+    if (row.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (!(await this.canBatch(user, row))) return { status: "steps", withdrawal: withdrawalView(row) };
+    const { sends, swaps, crosschain } = this.engines();
+    const destination = row.destination;
+    const origin = { surface: "app" as const };
+
+    // An earlier batch's drafts close: the new one is drafted on fresh prices.
+    for (const step of row.steps)
+      if (step.batched && step.intentId && step.state === "active") await this.engineOf(step.kind).cancel(user.id, step.intentId).catch(() => undefined);
+
+    type Made = { index: number; intent: { id: string; version: number; blocking: PolicyResultView | null; results: PolicyResultView[] } };
+    const made: Made[] = [];
+    let credit = ZERO;
+    const order = row.steps.map((step, index) => ({ step, index })).filter(({ step }) => step.state !== "done");
+    // Conversions first: what they guarantee is what the last move may count on.
+    for (const { step, index } of order.filter(({ step }) => step.kind === "swap")) {
+      let created = await swaps.create(user, { tokenIn: step.token.address, tokenOut: "USDC", amount: formatUnits(BigInt(step.amount ?? "0"), step.token.decimals) }, origin);
+      if (created.blocking?.code === "QUOTE_UNAVAILABLE") created = await swaps.revise(user, created.id, {});
+      made.push({ index, intent: created });
+      if (created.draft) credit += BigInt(created.draft.minOut);
+    }
+    for (const { step, index } of order.filter(({ step }) => step.kind !== "swap")) {
+      if (step.id === "usdc") {
+        const amount = formatUnits(this.pool(row.steps) + credit, step.token.decimals);
+        if (step.kind === "send") made.push({ index, intent: await sends.create(user, { recipient: destination.address, amount, asset: "USDC" }, origin, { credit }) });
+        else {
+          let created = await crosschain.create(user, { direction: "out", asset: "USDC", amount, destination: destination.chain.key, recipient: destination.address }, origin, { credit });
+          if (created.blocking?.code === "QUOTE_UNAVAILABLE") created = await crosschain.revise(user, created.id, {});
+          made.push({ index, intent: created });
+        }
+      } else made.push({ index, intent: await sends.create(user, { recipient: destination.address, amount: formatUnits(BigInt(step.amount ?? "0"), step.token.decimals), asset: step.token.address }, origin) });
+    }
+    made.sort((a, b) => a.index - b.index);
+
+    const save = async (parts: Map<number, BundlePart>) => {
+      const steps = row.steps.map((entry, at) => {
+        const mine = made.find((item) => item.index === at);
+        if (!mine) return entry;
+        const part = parts.get(at);
+        return {
+          ...entry,
+          intentId: mine.intent.id,
+          state: "active" as const,
+          failure: null,
+          blocking: mine.intent.blocking,
+          batched: true,
+          bundle: part
+            ? { version: part.version, chainId: part.chainId, from: part.from, attemptKind: part.attemptKind, attemptTo: part.attemptTo, attemptReceipt: part.attemptReceipt, ledger: part.ledger ?? null }
+            : null,
+        };
+      });
+      [row] = (await this.db.update(withdrawals).set({ steps, status: "running" }).where(eq(withdrawals.id, row.id)).returning()) as [Row];
+    };
+
+    // A step that cannot go says why on its line; the rest wait with it (nothing is half sent).
+    if (made.some((item) => item.intent.blocking)) {
+      await save(new Map());
+      return { status: "stopped", withdrawal: withdrawalView(row) };
+    }
+    // The brake (most of the balance to an address that is new) was on the review the person confirmed.
+    for (const item of made) requireBrakeOverride(item.intent.results, override);
+
+    const parts = new Map<number, BundlePart>();
+    for (const item of made) {
+      const part = await this.engineOf(row.steps[item.index]!.kind).bundlePart(user, item.intent.id);
+      if (part === "changed" || part === "final") {
+        await save(parts);
+        return { status: part === "changed" ? "changed" : "stopped", withdrawal: withdrawalView(row) };
+      }
+      parts.set(item.index, part);
+    }
+    const ordered = made.map((item) => parts.get(item.index)!);
+    const from = ordered[0]!.from;
+    const client = this.chains!.get(row.network)?.client;
+    if (!client) throw problem(HTTP.unprocessable, "network_unavailable");
+    // Lower-case, as a parsed signed transaction reads it back.
+    const data = encodeSelfBatch(ordered.flatMap((part) => part.calls)).toLowerCase() as Hex;
+    try {
+      await client.call({ account: from, to: from, data });
+    } catch (error) {
+      this.log?.warn({ err: error, withdrawalId: id }, "withdraw batch simulation reverted");
+      await save(parts);
+      throw problem(HTTP.badGateway, "simulation_failed");
+    }
+    const [nonce, price, estimate] = await Promise.all([
+      client.getTransactionCount({ address: from, blockTag: "pending" }),
+      walletGasPrice(client),
+      client.estimateGas({ account: from, to: from, data }).catch(() => BATCH_GAS_FALLBACK),
+    ]);
+    const gas = (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT;
+    const cap = ordered.reduce((sum, part) => sum + (part.maxFee > ZERO ? part.maxFee : TRANSFER_GAS_ALLOWANCE * price.maxFeePerGas * FEE_ALLOWANCE_MULTIPLIER), ZERO);
+    if (gas * price.maxFeePerGas > cap) {
+      await save(parts);
+      return { status: "changed", withdrawal: withdrawalView(row) };
+    }
+    const transaction: UnsignedTransaction = {
+      type: "eip1559",
+      chainId: ordered[0]!.chainId,
+      nonce,
+      to: from,
+      data,
+      value: "0",
+      gas: gas.toString(),
+      maxFeePerGas: price.maxFeePerGas.toString(),
+      maxPriorityFeePerGas: price.maxPriorityFeePerGas.toString(),
+    };
+    const expiresAt = new Date(Date.now() + APPROVAL_TTL_S * MS_PER_SECOND);
+    const approvalIds = await this.db.transaction(async (tx) => {
+      const ids: string[] = [];
+      for (const part of ordered) ids.push(await offerBundled(tx, { userId: user.id, network: row.network, part, transaction, expiresAt, surface: "app" }));
+      return ids;
+    });
+    await save(parts);
+    return { status: "sign", withdrawal: withdrawalView(row), approvalId: approvalIds[0]!, transaction };
+  }
+
+  /**
+   * The wallet signed the batch: it must be exactly the transaction handed out (sender, chain, the self-call, data,
+   * nonce, no more fee); then every step's intent records it, it is broadcast once, and each engine follows its own
+   * part of the one receipt.
+   */
+  async batchSignature(user: SessionUser, id: string, input: { approvalId: string; signedTransaction: Hex }): Promise<WithdrawalBatchResponse> {
+    const row = await this.refresh(user, await this.own(user.id, id));
+    if (row.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    const batched = row.steps.filter((step) => step.batched && step.state === "active" && step.intentId && step.bundle);
+    if (batched.length < MIN_BATCH) throw problem(HTTP.conflict, "intent_stale");
+    const [offered] = await this.db.select().from(approvals).where(eq(approvals.id, input.approvalId));
+    if (!offered || offered.userId !== user.id || !batched.some((step) => step.intentId === offered.intentId)) throw problem(HTTP.conflict, "intent_stale");
+    const unsigned = offered.unsignedTransaction as unknown as UnsignedTransaction;
+    const from = batched[0]!.bundle!.from.toLowerCase();
+    const parsed = parseTransaction(input.signedTransaction);
+    const signer = await recoverTransactionAddress({ serializedTransaction: input.signedTransaction as never }).catch(() => undefined);
+    const matches =
+      signer?.toLowerCase() === from &&
+      parsed.chainId === unsigned.chainId &&
+      parsed.to?.toLowerCase() === from &&
+      parsed.data?.toLowerCase() === unsigned.data.toLowerCase() &&
+      (parsed.value ?? ZERO) === ZERO &&
+      parsed.nonce === unsigned.nonce &&
+      (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= BigInt(unsigned.gas) * BigInt(unsigned.maxFeePerGas);
+    if (!matches) {
+      this.log?.warn({ withdrawalId: id }, "security.draft_mismatch");
+      throw problem(HTTP.unprocessable, "transaction_mismatch");
+    }
+    const txHash = keccak256(input.signedTransaction);
+    const { sends } = this.engines();
+
+    // Every part records the one transaction, or none does (a part that moved on refuses the whole batch).
+    const recorded = await this.db.transaction(async (tx) => {
+      const out: { intentId: string; attemptId: string }[] = [];
+      for (const [at, step] of batched.entries()) {
+        const bundle = step.bundle!;
+        const [approval] = await tx
+          .select()
+          .from(approvals)
+          .where(and(eq(approvals.intentId, step.intentId!), eq(approvals.status, "pending_signature")))
+          .orderBy(desc(approvals.createdAt))
+          .limit(1);
+        if (!approval || (approval.unsignedTransaction as unknown as UnsignedTransaction | null)?.data?.toLowerCase() !== unsigned.data.toLowerCase()) throw problem(HTTP.conflict, "intent_stale");
+        const part: BundlePart = {
+          intentId: step.intentId!,
+          version: bundle.version,
+          draftHash: approval.draftHash as Hex,
+          from: bundle.from as Address,
+          chainId: bundle.chainId,
+          calls: [],
+          maxFee: ZERO,
+          attemptKind: bundle.attemptKind,
+          attemptTo: bundle.attemptTo as Address,
+          attemptReceipt: bundle.attemptReceipt,
+          ledger: bundle.ledger ?? null,
+        };
+        const attemptId = await recordBundled(tx, {
+          userId: user.id,
+          network: row.network,
+          part,
+          approvalId: approval.id,
+          nonce: at === 0 ? unsigned.nonce : null,
+          txHash,
+          ...(bundle.ledger ? { fitsLimits: (inner) => sends.fitsLimitsFor(inner, user.id, row.network, bundle.ledger, step.intentId!) } : {}),
+        });
+        out.push({ intentId: step.intentId!, attemptId });
+      }
+      return out;
+    });
+
+    const client = this.chains!.get(row.network)!.client;
+    try {
+      await client.sendRawTransaction({ serializedTransaction: input.signedTransaction });
+      await this.markSubmitted(recorded, null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const refused = refusedBeforeSending(message);
+      this.log?.warn({ withdrawalId: id, refused, message: message.slice(0, ERROR_MAX) }, "withdraw batch broadcast failed");
+      if (refused) await failBundled(this.db, recorded, message.slice(0, ERROR_MAX));
+      else await this.markSubmitted(recorded, "broadcast_unclear");
+    }
+    void this.followBatch(batched.map((step) => ({ kind: step.kind, intentId: step.intentId! })));
+    return { status: "executing", withdrawal: withdrawalView(await this.refresh(user, await this.own(user.id, id))) };
+  }
+
+  private async markSubmitted(parts: { attemptId: string }[], errorCode: string | null) {
+    await this.db
+      .update(txAttempts)
+      .set({ status: "submitted", ...(errorCode ? { errorCode } : {}) })
+      .where(inArray(txAttempts.id, parts.map((part) => part.attemptId)));
+  }
+
+  /** Each engine settles its own part of the one receipt (its sweeper would too; this is sooner). */
+  private async followBatch(parts: { kind: WithdrawalStep["kind"]; intentId: string }[]) {
+    const open = new Set(parts.map((part) => part.intentId));
+    for (let poll = 0; poll < FOLLOW_POLLS && open.size > 0; poll++) {
+      await new Promise((resolve) => setTimeout(resolve, FOLLOW_POLL_MS));
+      for (const part of parts) {
+        if (!open.has(part.intentId)) continue;
+        const settled = await this.engineOf(part.kind)
+          .track(part.intentId)
+          .catch(() => false);
+        if (settled) open.delete(part.intentId);
+      }
+    }
   }
 }
 

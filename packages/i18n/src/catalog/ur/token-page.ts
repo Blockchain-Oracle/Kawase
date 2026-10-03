@@ -83,4 +83,5 @@ export const tokenPage: Catalog["tokenPage"] = {
     "‏Kawase میں آپ کی خرید و فروخت سے، اوسط قیمتِ خرید پر۔ جو ٹوکن آپ کو ملے یا آپ نے برج کیے، وہ ٹریڈز نہیں ہیں۔",
   activity: "آپ کی سرگرمی",
   seeAll: "سب دیکھیں",
+  onChain: "{{chain}} پر {{amount}}",
 };

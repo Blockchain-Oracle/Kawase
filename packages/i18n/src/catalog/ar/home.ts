@@ -52,4 +52,10 @@ export const home: Catalog["home"] = {
   allowanceOffAction: "تفعيل",
   allowanceCue: "‏الحد اليومي مُفعّل · حتى {{amount}} يوميًا",
   soon: "قريبًا",
+  nextRun: "التالي: {{when}}",
+  watching: "قيد المراقبة",
+  stepFirstAutomation: "أنشئ أول أتمتة لك",
+  stepAutomationAction: "أرني",
+  sendTo: "إرسال إلى {{name}}",
+  contactWaiting: "تغيير العنوان قيد الانتظار",
 };

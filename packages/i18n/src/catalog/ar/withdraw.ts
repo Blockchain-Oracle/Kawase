@@ -90,4 +90,5 @@ export const withdraw: Catalog["withdraw"] = {
   firstTimeTitle: "أول إرسال إلى هنا",
   firstTimeBody: "أرسل أولًا مبلغًا تجريبيًا صغيرًا قدره {{amount}} USDC، وتأكد من وصوله، ثم اسحب الباقي.",
   sendTest: "أرسل أولًا مبلغًا تجريبيًا قدره {{amount}} USDC",
+  oneTransaction: "هذه الخطوات ({{n}}) تتم في معاملة واحدة على Arc: كلها أو لا شيء منها.",
 };

@@ -4,7 +4,7 @@
 // line cannot go), then slide → Face ID once → the tracker (21st Process Timeline) → the receipt. The destination is
 // saved to My places when it worked, so the next withdrawal is a tap.
 import { useRouter } from "expo-router";
-import { ArrowRight, ChevronLeft, ExternalLink, Plus, X } from "lucide-react-native";
+import { ArrowRight, ChevronLeft, ExternalLink, Layers, Plus, X } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -186,6 +186,8 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
     return units === null ? step.token.symbol : tokenAmount(units, step.token.decimals, step.token.symbol, locale);
   };
   const chainName = record?.destination.chain.name ?? plan?.destination?.chain.name ?? "";
+  // Steps signed together (one transaction on Arc): said once under the tracker.
+  const batchedCount = (record?.steps ?? []).filter((step) => step.batched).length;
   const timeline: TimelineStep[] = (record?.steps ?? []).map((step) => ({
     id: step.id,
     title: stepTitle(step, stepAmount(step), recordName, chainName),
@@ -232,6 +234,12 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
               <Text className={cn("text-foreground text-xl font-semibold", TEXT_START)}>{recordName}</Text>
             </View>
             <ProcessTimeline steps={timeline} spinnerColor={colors.foreground} />
+            {batchedCount > 1 ? (
+              <View className="bg-muted flex-row items-center gap-2 rounded-2xl px-4 py-3">
+                <Icon as={Layers} className="text-muted-foreground size-4" />
+                <Text className={cn("text-muted-foreground flex-1 text-sm leading-5", TEXT_START)}>{t("withdraw.oneTransaction", { count: batchedCount })}</Text>
+              </View>
+            ) : null}
             {run.phase === "stopped" && record ? (
               <Button onPress={() => void finish()}>
                 <Text>{t("withdraw.finishIt")}</Text>

@@ -50,4 +50,6 @@ export const assets: Catalog["assets"] = {
   mainnetOnly: "صرف مین نیٹ",
   noPrice: "ابھی قیمت نہیں",
   vault: "والٹ",
+  borrowed: "{{assets}} ادھار",
+  owed: "{{amount}} واجب الادا",
 };

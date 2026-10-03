@@ -3,7 +3,7 @@
 // and why a line cannot go. Kept apart from types.ts so the lanes merge cleanly; the client spreads
 // `withdrawEndpoints` into its routes.
 import type { TokenView } from "./assets";
-import type { NetworkId, PolicyResultView } from "./types";
+import type { NetworkId, PolicyResultView, UnsignedTransaction } from "./types";
 
 type Call = <T>(method: string, path: string, body?: unknown, options?: { idempotencyKey?: string | undefined }) => Promise<T>;
 
@@ -137,6 +137,8 @@ export type WithdrawalStepView = {
   fillUrl: string | null;
   failure: "changed" | "checking" | "not_sent" | "unavailable" | null;
   blocking: PolicyResultView | null;
+  /** Goes in one transaction with the other batched steps (one signature; all of them or none on chain). */
+  batched: boolean;
 };
 
 export type WithdrawalView = {
@@ -159,7 +161,21 @@ export type WithdrawalNextView = {
    * so (first-time destination) and its Face ID is the person's override.
    */
   intent: { kind: "swap" | "send" | "crosschain"; id: string; version: number; blocking: PolicyResultView | null; brake: boolean } | null;
+  /**
+   * Every step still to go is signed by the wallet on Arc, so they go as one transaction (an EIP-7702 batch): one
+   * signature, all or nothing on chain. Their ids in order; `withdrawals.batch` builds it.
+   */
+  batch: { steps: string[] } | null;
 };
+
+/**
+ * Building or signing the batch: `sign` hands out the one transaction; `executing` means it was broadcast; `changed`
+ * a price or fee moved (ask again); `stopped` a step cannot go (its reason is on the step); `steps` the withdrawal
+ * goes step by step after all.
+ */
+export type WithdrawalBatchResponse =
+  | { status: "sign"; withdrawal: WithdrawalView; approvalId: string; transaction: UnsignedTransaction }
+  | { status: "executing" | "changed" | "stopped" | "steps"; withdrawal: WithdrawalView };
 
 /** What propose_withdraw returns: the plan, and the card opens the Withdraw screen with it prefilled. */
 export type WithdrawProposalOutput = { withdraw: true; plan: WithdrawPlanView; input: WithdrawPlanInput; summary: string };
@@ -185,6 +201,11 @@ export function withdrawEndpoints(call: Call) {
       open: () => call<{ withdrawals: WithdrawalView[] }>("GET", "/withdrawals?open=1"),
       /** The next step's intent to sign. */
       next: (id: string) => call<WithdrawalNextView>("POST", `/withdrawals/${id}/next`),
+      /** The steps still to go as one transaction (when `next` offers a batch); `override`: the brake was on the review. */
+      batch: (id: string, override?: boolean) => call<WithdrawalBatchResponse>("POST", `/withdrawals/${id}/batch`, { override: Boolean(override) }),
+      /** The wallet signed the batch: checked against what was handed out, then broadcast once for every step. */
+      batchSignature: (id: string, approvalId: string, signedTransaction: string) =>
+        call<WithdrawalBatchResponse>("POST", `/withdrawals/${id}/batch/signature`, { approvalId, signedTransaction }),
       cancel: (id: string) => call<{ withdrawal: WithdrawalView }>("POST", `/withdrawals/${id}/cancel`),
     },
   };

@@ -33,6 +33,11 @@ export type StoredRequest = {
   /** A public reference written on chain with the payment (Arc Memo), and its bytes32 id. Absent on older rows. */
   memo?: string | null;
   memoId?: string | null;
+  /**
+   * USDC base units an earlier call in the same batch delivers before this send (a withdrawal's conversion): counted
+   * as held. Set only by the server for a batched step, never from a request; on chain the batch is all or nothing.
+   */
+  credit?: string | null;
 };
 
 /** What a send needs to know about its token. */
@@ -185,7 +190,7 @@ export async function gatherFacts(input: {
       balanceOf(clients.network.addresses.eurc),
       clients.client.getCode({ address: wallet }),
     ]);
-    balances = { USDC: usdc, EURC: eurc };
+    balances = { USDC: usdc + BigInt(request.credit ?? "0"), EURC: eurc };
     setUp = isWalletSetUp(code);
   }
 

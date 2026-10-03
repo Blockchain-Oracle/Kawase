@@ -75,6 +75,7 @@ import { evaluateCrossChain, type CrossChainEvaluation, type PolicyResult, type 
 import type { BridgeEngine } from "../bridge/engine";
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import { withCredit, type BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
 import type { Recipients } from "../send/recipients";
@@ -85,7 +86,11 @@ import type { WalletService } from "../wallet/service";
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
 type AttemptRow = typeof txAttempts.$inferSelect;
-type StoredRequest = Required<{ [K in keyof CrossChainRequest]: Exclude<CrossChainRequest[K], undefined> }>;
+/**
+ * `credit`: USDC base units an earlier call in the same batch delivers first (a withdrawal's conversion), counted as
+ * held. Only the server sets it, for a batched step; on chain the batch is all or nothing.
+ */
+type StoredRequest = Required<{ [K in keyof CrossChainRequest]: Exclude<CrossChainRequest[K], undefined> }> & { credit?: string | null };
 type DraftPayload = { draft: StoredCrossChainDraft | null; view: CrossChainDraftView | null };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 type Progress = { provider: CrossChainProvider; requestId?: string | null; status?: string; fillTx?: string | null; received?: string | null };
@@ -178,8 +183,8 @@ export class CrossChainService {
 
   // ── Drafting ────────────────────────────────────────────────────────────────────────────────────────────────
 
-  async create(user: SessionUser, request: CrossChainRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }) {
-    const stored = normalise(empty(), request);
+  async create(user: SessionUser, request: CrossChainRequest, origin: { surface: "app" | "chat" | "voice"; threadId?: string | undefined }, options: { credit?: bigint } = {}) {
+    const stored = normalise(options.credit ? { ...empty(), credit: options.credit.toString() } : empty(), request);
     const [row] = await this.db
       .insert(intents)
       .values({ userId: user.id, threadId: origin.threadId ?? null, network: user.activeNetwork, kind: "crosschain", originSurface: origin.surface, state: "submitted", request: stored, expiresAt: later(INTENT_TTL_S) })
@@ -196,7 +201,7 @@ export class CrossChainService {
     return this.draft(user, { ...intent, request: stored }, stored, "user");
   }
 
-  private async quotes(input: { network: NetworkContext; client: NetworkClients["client"]; direction: "out" | "in"; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint }): Promise<Quote[]> {
+  private async quotes(input: { network: NetworkContext; client: NetworkClients["client"]; direction: "out" | "in"; chain: BridgeDestination; wallet: Address; recipient: Address; amount: bigint; credit?: bigint }): Promise<Quote[]> {
     const { network, direction, chain, wallet, recipient, amount } = input;
     const testnet = !network.isRealMoney;
     const failed = (provider: CrossChainProvider, error: unknown): Quote => ({
@@ -221,7 +226,7 @@ export class CrossChainService {
     }
     const decimal = formatUnits(amount, USDC_DECIMALS);
     const cctp = within(
-      this.engine.estimate({ network, client: input.client, from: wallet, destination: chain, recipient, amount: decimal }).then((estimate): Quote => {
+      this.engine.estimate({ network, client: withCredit(input.client, network.addresses.usdc, wallet, input.credit ?? ZERO), from: wallet, destination: chain, recipient, amount: decimal }).then((estimate): Quote => {
         const received = amount > estimate.maxFee ? amount - estimate.maxFee : ZERO;
         return { provider: "cctp", received, minReceived: received, etaSeconds: null, reason: null };
       }),
@@ -276,7 +281,7 @@ export class CrossChainService {
       const code = await clients.client.getCode({ address: wallet });
       setUp = isWalletSetUp(code);
       if (direction === "out") {
-        balance = await clients.client.readContract({ address: clients.network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
+        balance = (await clients.client.readContract({ address: clients.network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet] })) + BigInt(request.credit ?? "0");
         if (request.recipient) {
           const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient);
           recipientFacts = resolution.facts.status === "self" ? { status: "own" } : resolution.facts;
@@ -290,7 +295,7 @@ export class CrossChainService {
 
     let quotes: Quote[] = [];
     const canQuote = clients && wallet && chain && recipient && amount.status === "ok" && amount.baseUnits > ZERO && (recipientFacts.status === "own" || recipientFacts.status === "resolved");
-    if (canQuote) quotes = await this.quotes({ network: clients.network, client: clients.client, direction, chain: chain!, wallet, recipient: recipient!, amount: amount.baseUnits });
+    if (canQuote) quotes = await this.quotes({ network: clients.network, client: clients.client, direction, chain: chain!, wallet, recipient: recipient!, amount: amount.baseUnits, credit: BigInt(request.credit ?? "0") });
     const net = (quote: Quote) => quote.received ?? NO_QUOTE;
     const executable = quotes.filter((quote) => quote.received !== null && quote.reason === null);
     const ranked = [...executable].sort((a, b) => (net(b) > net(a) ? 1 : net(b) < net(a) ? -1 : (a.etaSeconds ?? Infinity) - (b.etaSeconds ?? Infinity)));
@@ -452,7 +457,7 @@ export class CrossChainService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination): Promise<{ calls: BridgeCall[] } | { permit: RelayPermit; requestId: string } | { changed: true }> {
+  private async build(draft: CrossChainDraft, network: NetworkContext, client: NetworkClients["client"], chain: BridgeDestination, credit = ZERO): Promise<{ calls: BridgeCall[] } | { permit: RelayPermit; requestId: string } | { changed: true }> {
     const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
     if (draft.originChainId !== network.chainId) {
       // Bring to Arc: Relay's permit, checked: USDC's ReceiveWithAuthorization from the wallet to Relay's proxy.
@@ -481,10 +486,55 @@ export class CrossChainService {
       if (!check.ok) throw this.refused(provider, check.reason);
       return { calls: quote.calls };
     }
-    const calls = await this.engine.prepare({ network, client, from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(draft.amount, USDC_DECIMALS) });
+    const calls = await this.engine.prepare({ network, client: withCredit(client, network.addresses.usdc, draft.from, credit), from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(draft.amount, USDC_DECIMALS) });
     const check = checkBridgeCalls(network, calls, { usdc: network.addresses.usdc, amount: draft.amount, recipient: draft.recipient, domain: chain.domain, maxFee: draft.amount - draft.minReceived });
     if (!check.ok) throw this.refused(provider, check.reason);
     return { calls: calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })) };
+  }
+
+  /**
+   * This version's part in a batch (intents/bundle.ts): the same re-check as an approval, and the exact calls it would
+   * sign (out of Arc only: a route that starts on another chain cannot share a transaction on Arc).
+   */
+  async bundlePart(user: SessionUser, intentId: string): Promise<BundlePart | "changed" | "final"> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || before.expiresAt.getTime() < Date.now()) return "final";
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    const current = await this.currentDraft(before);
+    const payload = current?.payload as DraftPayload | undefined;
+    const changed = async () => {
+      await this.redraft(user, intentId);
+      return "changed" as const;
+    };
+    if (!current?.draftHash || !payload?.draft || !payload.view || payload.view.direction !== "out") return changed();
+    const draft = loadCrossChainDraft(payload.draft);
+    if (crossChainDraftHash(draft) !== current.draftHash) return changed();
+    const { network, client } = this.clients(before.network);
+    const chain = this.engine.destinations(network).find((entry) => entry.chainId === draft.destinationChainId);
+    if (!chain || draft.originChainId !== network.chainId) return changed();
+    let built: Awaited<ReturnType<CrossChainService["build"]>>;
+    try {
+      built = await this.build(draft, network, client, chain, BigInt((before.request as StoredRequest).credit ?? "0"));
+    } catch (error) {
+      if (error instanceof Error && "status" in error) throw error;
+      this.log.warn({ err: error, intentId }, "crosschain build failed");
+      throw problem(HTTP.badGateway, "quote_unavailable");
+    }
+    if ("changed" in built) return changed();
+    if ("permit" in built) return "final";
+    const provider = CROSSCHAIN_PROVIDERS[draft.provider]!;
+    return {
+      intentId,
+      version: before.currentDraftVersion,
+      draftHash: current.draftHash as Hex,
+      from: draft.from,
+      chainId: draft.originChainId,
+      calls: built.calls.map((call) => ({ to: call.to, data: call.data.toLowerCase() as Hex, value: call.value })),
+      maxFee: draft.maxFee,
+      attemptKind: "crosschain_wallet",
+      attemptTo: draft.from,
+      attemptReceipt: { provider, requestId: null, status: "submitted" } satisfies Progress as unknown as Record<string, unknown>,
+    };
   }
 
   private refused(provider: string, reason: string) {
@@ -789,7 +839,7 @@ export class CrossChainService {
 const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null });
 
 function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest {
-  const pick = <K extends keyof StoredRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
+  const pick = <K extends keyof StoredRequest & keyof CrossChainRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
   const text = (value: string | null) => (typeof value === "string" ? value.trim() || null : null);
   return {
     direction: pick("direction") === "in" ? "in" : "out",
@@ -799,6 +849,7 @@ function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest
     source: text(pick("source")),
     recipient: text(pick("recipient")),
     route: pick("route") ?? null,
+    ...(base.credit ? { credit: base.credit } : {}),
   };
 }
 
