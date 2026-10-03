@@ -12,6 +12,8 @@ import { automationTools } from "./automation-tools";
 import { intelligenceTools } from "./intelligence-tools";
 import { withQuarantine } from "./quarantine";
 import { moneyOutTools } from "./money-out-tools";
+import { ADDRESS_NOT_TYPED, addressTyped, turnTrust, type Hold, type TurnTrust } from "./trust";
+import type { ProposeSendOutput } from "./context";
 
 const ACTIVITY_DEFAULT = 5;
 const ACTIVITY_MAX = 20;
@@ -39,8 +41,21 @@ const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
 const INVOICE_DUE_MAX = 365;
 
-export function buildTools(context: AgentContext) {
-  // Outside text in any tool's result reaches the model fenced as data (quarantine.ts).
+/** What the model is told when a send inside the allowance waits for the person's tap (H2), by why it waits. */
+const HELD_APPROVAL: Record<Hold, string> = {
+  not_typed: "Inside the daily allowance, but it waits for their tap on the card: they did not name this recipient in their own message, so they check who it goes to first.",
+  outside_text: "Inside the daily allowance, but it waits for their tap on the card: content from outside Kawase (a seller, a token, a memo) was read after their message.",
+};
+
+/** A send that waited for the person's tap: the card says why, and so does the model's summary while it is ready. */
+export function heldSend(send: ProposeSendOutput, held: Hold): ProposeSendOutput {
+  const waiting = send.summary.status === "ready" && send.intent.route === "allowance";
+  return { ...send, held, summary: waiting ? { ...send.summary, approval: HELD_APPROVAL[held] } : send.summary };
+}
+
+export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(context.lastUserText)) {
+  // Outside text in any tool's result reaches the model fenced as data (quarantine.ts), and the turn's trust hears of
+  // it: after that, a send waits for the person's tap (trust.ts).
   return withQuarantine({
     ...railsTools(context),
     ...safetyTools(context),
@@ -92,7 +107,7 @@ export function buildTools(context: AgentContext) {
     }),
     propose_send: tool({
       description:
-        "Send any token the person holds on the active network (USDC, EURC, cirBTC, a meme coin…). Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\") in that token, the asset only if they named it (its symbol, name or address), and their note if they gave one. Every recipient is checked: a token contract, an address the token's issuer blocked or a look-alike of a saved contact is never paid; a contract that is not a wallet gets a warning. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once (their request is the instruction); above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
+        "Send any token the person holds on the active network (USDC, EURC, cirBTC, a meme coin…). Pass the recipient exactly as the person said it (a contact's name, an @handle, or an 0x address they typed), the amount as digits with a dot (\"10.5\") in that token, the asset only if they named it (its symbol, name or address), and their note if they gave one. Every recipient is checked: a token contract, an address the token's issuer blocked or a look-alike of a saved contact is never paid; a contract that is not a wallet gets a warning. Kawase resolves the recipient, runs every check and shows a card. Inside the person's daily allowance it goes at once when they named the recipient in their own message and nothing from outside Kawase was read since (their request is the instruction); otherwise, above it, to a new address over the first-payment threshold or to a look-alike address, it waits for their own confirmation on the card. You never confirm. The result's status says which happened: sending or sent, ready (waiting for their confirmation), or what it needs.",
       inputSchema: z.object({
         recipient: z.string().max(RECIPIENT_MAX).describe("As the person said it: a name, @handle or 0x address"),
         amount: z
@@ -105,15 +120,14 @@ export function buildTools(context: AgentContext) {
       }),
       execute: async (input) => {
         // K2: an address can only come from the person's own words, never from the model or a tool result.
-        if (/^0x/i.test(input.recipient.trim()) && !context.lastUserText.toLowerCase().includes(input.recipient.trim().toLowerCase())) {
-          throw new Error("An address must be typed by the person; ask them for it.");
-        }
-        return context.proposeSend({
-          recipient: input.recipient,
-          amount: input.amount ?? null,
-          asset: input.asset ?? null,
-          note: input.note ?? null,
-        });
+        if (!addressTyped(context.lastUserText, input.recipient)) throw new Error(ADDRESS_NOT_TYPED);
+        // H2: it goes at once (inside the allowance) only to someone the person named, with no outside text read since.
+        const held = trust.hold(input.recipient);
+        const send = await context.proposeSend(
+          { recipient: input.recipient, amount: input.amount ?? null, asset: input.asset ?? null, note: input.note ?? null },
+          { autoSend: held === null },
+        );
+        return held ? heldSend(send, held) : send;
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
@@ -408,10 +422,10 @@ export function buildTools(context: AgentContext) {
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     // Memory, history search, Arc knowledge and the extra cards (A5).
-    ...intelligenceTools(context),
+    ...intelligenceTools(context, trust),
     // Money out (A2): withdraw any asset anywhere.
     ...moneyOutTools(context),
-  });
+  }, trust.read);
 }
 
 export type AgentTools = ReturnType<typeof buildTools>;

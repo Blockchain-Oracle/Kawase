@@ -89,7 +89,13 @@ export type SendSummary = {
   warnings: string[];
 };
 
-export type ProposeSendOutput = { intent: import("./types").SendIntent; summary: SendSummary };
+/**
+ * Why a send inside the allowance waited for the person's tap instead of going at once (H2): they did not name the
+ * recipient in their own message, or content from outside Kawase was read after it.
+ */
+export type SendHold = "not_typed" | "outside_text";
+
+export type ProposeSendOutput = { intent: import("./types").SendIntent; summary: SendSummary; held?: SendHold | undefined };
 
 export type SwapSummary = {
   intentId: string;
