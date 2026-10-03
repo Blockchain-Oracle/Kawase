@@ -245,6 +245,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** One conversation with its messages (AI SDK UI messages). */
       thread: (id: string) => call<{ thread: ThreadSummary; messages: unknown[] }>("GET", `/agent/threads/${id}`),
       deleteThread: (id: string) => call<void>("DELETE", `/agent/threads/${id}`),
+      renameThread: (id: string, title: string) => call<{ thread: ThreadSummary }>("PATCH", `/agent/threads/${id}`, { title }),
     },
 
     contacts: {
