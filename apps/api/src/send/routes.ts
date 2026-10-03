@@ -30,7 +30,7 @@ const requestSchema = z.object({
 });
 /** `override`: the person confirmed a braked (risky) action on its card. */
 const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });
-const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: hex });
+const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: hex, kind: z.enum(["transaction", "typed"]).optional() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -66,6 +66,7 @@ export function sendRoutes(sends: SendService) {
       await sends.submitSignature(c.get("user")!, c.req.param("id"), {
         approvalId: input.approvalId,
         signedTransaction: input.signedTransaction as `0x${string}`,
+        kind: input.kind,
       }),
     );
   });

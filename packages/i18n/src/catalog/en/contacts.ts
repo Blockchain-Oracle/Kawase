@@ -44,7 +44,6 @@ export const contacts = {
   label: "Label",
   labelPlaceholder: "Supplier, landlord…",
   fromHandle: "@{{handle}}",
-  importSoon: "Import from your phone's contacts — coming soon",
   signInBody: "Sign in to keep an address book of the people you pay.",
   loadFailed: "Couldn't load your contacts.",
   noMatches: "No contacts match.",

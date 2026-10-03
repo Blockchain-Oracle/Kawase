@@ -23,6 +23,7 @@ import { allowanceRoom, tokenAllowance, type AllowanceRoom } from "../safety/all
 import { recipientTrust, safetySettingsOf } from "../safety/settings";
 import type { Chains } from "../wallet/chain";
 import { inspectRecipient, type Resolution, type RecipientInspection } from "./recipients";
+import { relayerReady, relaysLeft } from "./relayed";
 
 export type StoredRequest = {
   recipient: string | null;
@@ -217,7 +218,7 @@ export async function gatherFacts(input: {
         : null
       : undefined;
   const recipientAddress = input.resolution.facts.status === "resolved" ? input.resolution.facts.address : undefined;
-  const [limitValues, spentValues, settings, room, trust, inspection] = await Promise.all([
+  const [limitValues, spentValues, settings, room, trust, inspection, gasRelay] = await Promise.all([
     userLimits(db, userId, network),
     spent(db, userId, network, ledgerSymbol, input.exceptIntentId),
     safetySettingsOf(db, userId, network),
@@ -225,6 +226,9 @@ export async function gatherFacts(input: {
     clients && wallet && setUp && stableSymbol ? activeAllowance(db, chains, userId, network, assetToken(clients.network, stableSymbol)) : Promise.resolve(undefined),
     recipientAddress ? recipientTrust(db, userId, network, recipientAddress) : Promise.resolve(undefined),
     clients && recipientAddress ? inspectRecipient(db, clients.client, recipientAddress as Address, stableSymbol && token ? token.address : undefined) : Promise.resolve(undefined),
+    // USDC and EURC can go gas-free through the relayer (EIP-3009) while it has gas and the person has relays left.
+    // (Not with a memo: the Memo contract only takes calls from the wallet itself.)
+    clients && stableSymbol && !memo ? Promise.all([relayerReady(clients), relaysLeft(db, userId)]).then(([ready, left]) => ready && left) : Promise.resolve(false),
   ]);
   const grant = room?.base?.grant ?? room?.boost?.grant;
   const allowance: ActiveAllowance | undefined = grant && room ? { id: grant.id, delegation: grant.delegation, perPeriod: room.perPeriod } : undefined;
@@ -267,6 +271,7 @@ export async function gatherFacts(input: {
         firstTimeStepUp: DEFAULT_LIMITS[network].firstTimeRecipientApprovalThreshold,
         testAmount: DEFAULT_LIMITS[network].testAmount,
         gasFloat: GAS_FLOAT_USDC_BASE_UNITS,
+        gasRelay,
       },
     },
   };

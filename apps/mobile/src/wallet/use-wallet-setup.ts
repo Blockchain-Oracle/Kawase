@@ -8,7 +8,7 @@
 import * as React from "react";
 import type { TransactionSerializable, TypedDataDefinition } from "viem";
 
-import type { AllowanceRequestResponse, GrantReceipt, NetworkId, UnsignedTransaction } from "@kawase/api-client";
+import { ApiError, type AllowanceRequestResponse, type GrantReceipt, type NetworkId, type UnsignedTransaction } from "@kawase/api-client";
 import { APPROVAL_TTL_S, MS_PER_SECOND } from "@kawase/config";
 
 import { api } from "@/session/api";
@@ -61,6 +61,8 @@ export function useWalletSetup(network: NetworkId) {
   const { wallet, refresh, error: loadError } = useWalletStatus();
   const [running, setRunning] = React.useState<SetupStepKey>();
   const [failed, setFailed] = React.useState<Partial<Record<SetupStepKey, true>>>({});
+  /** The network is on but Kawase's relayer there has no gas yet (first mainnet days): a calm wait, not an error. */
+  const [notReady, setNotReady] = React.useState(false);
   const [proposal, setProposal] = React.useState<AllowanceProposal>();
   const [preparing, setPreparing] = React.useState(false);
   const [proposalError, setProposalError] = React.useState(false);
@@ -78,7 +80,9 @@ export function useWalletSetup(network: NetworkId) {
       try {
         await action();
         await refresh();
-      } catch {
+        setNotReady(false);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "network_not_ready") setNotReady(true);
         setFailed((current) => ({ ...current, [key]: true }));
       } finally {
         setRunning(undefined);
@@ -180,6 +184,7 @@ export function useWalletSetup(network: NetworkId) {
     proposalError,
     prepareAllowance,
     failed,
+    notReady,
     retry: { wallet: createWallet, setup: setUpWallet },
     acceptAllowance,
     refresh,

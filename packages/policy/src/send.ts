@@ -95,6 +95,8 @@ export type SendFacts = {
     firstTimeStepUp: bigint;
     /** USDC kept for network fees when the wallet pays them itself. */
     gasFloat: bigint;
+    /** Kawase's relayer can carry this send gas-free (EIP-3009, USDC or EURC) when the wallet cannot pay the fee. */
+    gasRelay?: boolean | undefined;
     /** A first payment above a few times this offers sending this much first (base units of the asset). */
     testAmount?: bigint | undefined;
   };
@@ -239,8 +241,9 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
 
   // Fees: on the wallet route the wallet pays them in USDC; on the allowance route Kawase does.
   const usdcLeft = facts.wallet.usdc - (facts.isUsdc ? amount : ZERO);
+  // Short of USDC for the fee: the relayer carries it when it can (no dead end); otherwise the fix is to add USDC.
   if (route === "wallet_signature" && usdcLeft < facts.thresholds.gasFloat && amount <= balance)
-    results.push(result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
+    results.push(facts.thresholds.gasRelay ? result("GAS_RELAYED") : result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
   if (route === "allowance" && usdcLeft < facts.thresholds.gasFloat) results.push(result("LEAVES_LITTLE_FOR_FEES"));
 
   return done(results, asset, route);

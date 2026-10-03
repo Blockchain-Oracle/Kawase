@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "লেবেল",
   labelPlaceholder: "সরবরাহকারী, বাড়িওয়ালা…",
   fromHandle: "@{{handle}}",
-  importSoon: "ফোনের পরিচিতি থেকে আমদানি — শিগগিরই আসছে",
   signInBody: "যাদের পেমেন্ট করেন তাদের ঠিকানার খাতা রাখতে সাইন ইন করুন।",
   loadFailed: "আপনার পরিচিতি লোড করা যায়নি।",
   noMatches: "কোনো পরিচিতি মেলেনি।",

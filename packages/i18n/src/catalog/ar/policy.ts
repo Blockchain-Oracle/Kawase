@@ -29,6 +29,7 @@ export const policy: Catalog["policy"] = {
   ABOVE_ALLOWANCE: "أكثر مما تبقّى من حدّك ({{available}})",
   NO_ALLOWANCE: "حدّك اليومي متوقف",
   LEAVES_LITTLE_FOR_FEES: "سيتبقّى قليل جدًا من USDC لرسوم الشبكة",
+  GAS_RELAYED: "لا تكفي محفظتك لرسوم الشبكة، لذا تدفعها Kawase عن هذا الإرسال",
   SCHEDULE_INVALID: "لا يمكن الالتزام بهذا الجدول (منطقة زمنية أو يوم غير معروف).",
   AUTO_SAVE_EXISTS: "الادخار التلقائي مفعّل بالفعل. أوقفه أولاً من الأتمتة، ثم أنشئ الجديد.",
   RULE_INCOMPLETE: "تحتاج هذه القاعدة رقماً آخر: خط الرصيد أو الحصة أو المبلغ.",

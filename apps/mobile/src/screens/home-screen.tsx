@@ -48,12 +48,15 @@ import { useFund } from "@/fund/fund-provider";
 import { BreakdownSheet } from "@/home/breakdown-sheet";
 import { ForYouSection } from "@/home/for-you";
 import { PortfolioHero } from "@/home/portfolio-hero";
+import { FeeReserveChip, useFeeReserve } from "@/wallet/fee-reserve";
+import { UpdatedAgo } from "@/session/updated-ago";
 import { YourAssets } from "@/home/your-assets";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { InboxBell } from "@/inbox/inbox-bell";
 import { useMarket } from "@/markets/use-markets";
-import { change, money, price, shortAddress, USD_FX } from "@/portfolio/format";
+import { change, money, price, shortAddress } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { StaleBanner } from "@/session/stale-banner";
@@ -84,12 +87,13 @@ const PREVIEW_SKELETON_HEIGHT = 64;
 type HomePhase = "guest" | "unknown" | "setup" | "fund" | "firstSend" | "ready";
 
 export function HomeScreen() {
+  const reserve = useFeeReserve();
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
-  const { status, user } = useSession();
+  const { status, user, stale } = useSession();
   const { wallet, error: walletError, refresh } = useWalletStatus();
   const portfolio = usePortfolio();
   const fund = useFund();
@@ -225,6 +229,7 @@ export function HomeScreen() {
         {phase === "guest" ? (
           <GuestHome onTry={() => router.navigate({ pathname: "/chat", params: { prompt: t("home.chipWhatCanYouDo") } })} onBuy={signIn.open} />
         ) : (
+          <>
           <PortfolioHero
             portfolio={view}
             name={name}
@@ -241,6 +246,13 @@ export function HomeScreen() {
               </Button>
             ))}
           </PortfolioHero>
+          {/* Arc fees are paid in USDC: how many actions the wallet can still pay for (B2-3). */}
+          <View className="flex-row flex-wrap items-center gap-3">
+            <FeeReserveChip reserve={reserve} />
+            {/* Offline or the last read failed: the values shown are the last good ones, and how old they are. */}
+            {portfolio.error || stale ? <UpdatedAgo at={portfolio.updatedAt} /> : null}
+          </View>
+          </>
         )}
         {funded ? (
           <Animated.View pointerEvents="none" entering={ZoomIn.springify()} exiting={FadeOut} className="absolute items-center" style={{ top: 0, start: 0, end: 0 }}>
@@ -322,6 +334,7 @@ export function HomeScreen() {
 
 /** Guest Home: what Kawase is, the two ways in, and real markets with no account (R13). */
 function GuestHome({ onTry, onBuy }: { onTry: () => void; onBuy: () => void }) {
+  const fx = useFx();
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
@@ -366,7 +379,7 @@ function GuestHome({ onTry, onBuy }: { onTry: () => void; onBuy: () => void }) {
                   key={row.token.address}
                   token={row.token}
                   amount={row.token.symbol}
-                  value={price(row.priceUsd, USD_FX, locale)}
+                  value={price(row.priceUsd, fx, locale)}
                   change24hPct={row.change24hPct}
                   {...(changeLabel ? { changeLabel } : {})}
                   {...(chip ? { chip } : {})}

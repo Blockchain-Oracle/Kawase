@@ -37,7 +37,7 @@ const invoiceSchema = z.object({
 });
 const line = z.object({ recipient: z.string().trim().min(1).max(RECIPIENT_MAX), amount: decimal });
 const payoutSchema = z.object({ asset: anyAsset, lines: z.array(line).min(1).max(PAYOUT_LINES_MAX) });
-const submitSchema = z.object({ requestId: z.uuid(), signedTransaction: hex });
+const submitSchema = z.object({ requestId: z.uuid(), signedTransaction: hex, kind: z.enum(["transaction", "typed"]).optional() });
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
   if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
@@ -62,7 +62,7 @@ export function businessRoutes(services: { invoices: InvoiceService; payouts: Pa
   app.post("/payouts/:id/sign", async (c) => c.json(await payouts.signRequest(c.get("user")!, c.req.param("id"))));
   app.post("/payouts/:id/submit", async (c) => {
     const input = await parse(submitSchema, await c.req.json());
-    return c.json({ payout: await payouts.submit(c.get("user")!, c.req.param("id"), { requestId: input.requestId, signedTransaction: input.signedTransaction as `0x${string}` }) });
+    return c.json({ payout: await payouts.submit(c.get("user")!, c.req.param("id"), { requestId: input.requestId, signedTransaction: input.signedTransaction as `0x${string}`, kind: input.kind }) });
   });
 
   return app;

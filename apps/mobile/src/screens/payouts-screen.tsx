@@ -21,13 +21,13 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Page, Section } from "@/account/page";
 import { assetParam, TokenChoice, USDC_CHOICE, type TokenChoiceValue } from "@/business/token-choice";
 import { parseLines } from "@/business/lines";
+import { signAndSubmitPayout } from "@/business/sign-payout";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const EXPLORER = { testnet: `${arcTestnet.blockExplorers?.default.url ?? ""}/tx/`, mainnet: `${arc.blockExplorers?.default.url ?? ""}/tx/` } as const;
@@ -75,9 +75,7 @@ export function PayoutsScreen() {
     if (yes !== "approved") return;
     setBusy(true);
     try {
-      const request = await api.business.signPayout(draft.id);
-      const signed = await signer.signTransaction(toSerializable(request.transaction));
-      const { payout } = await api.business.submitPayout(draft.id, request.requestId, signed);
+      const payout = await signAndSubmitPayout(signer, draft.id);
       toast(payout.status === "confirmed" ? t("business.payoutSent", { count: String(payout.lines.length) }) : t("business.payoutFailed"));
       setDraft(undefined);
       setText("");

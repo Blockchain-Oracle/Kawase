@@ -32,7 +32,8 @@ import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { InboxBell } from "@/inbox/inbox-bell";
 import { useMarket, useTokenSearch } from "@/markets/use-markets";
-import { change, money, price, USD_FX } from "@/portfolio/format";
+import { change, money, price } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -84,7 +85,7 @@ export function MarketsScreen() {
   // Markets live on mainnet; a testnet session still reads them, labelled.
   const { market, loading, error, refresh } = useMarket(segment === "watchlist" ? "trending" : segment, "mainnet");
   const { results, searching } = useTokenSearch(query, "mainnet");
-  const fx = USD_FX;
+  const fx = useFx();
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
   const rows = market?.rows ?? [];
   // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel or the map.
