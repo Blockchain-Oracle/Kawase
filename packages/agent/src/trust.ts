@@ -7,6 +7,8 @@
 // device) the person wrote nothing new, so nothing counts as typed.
 import type { SendHold } from "@kawase/api-client";
 
+import type { AgentContext } from "./context";
+
 /** Characters that show nothing on screen: soft hyphen, zero-width spaces and joiners, direction marks, the BOM. */
 const INVISIBLE = /[\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g;
 /** Scripts written without spaces between words: a name inside a sentence there has no word boundary to find. */
@@ -40,6 +42,18 @@ export function named(message: string, words: string): boolean {
 /** K2: an 0x address the model passes must be one the person typed, never one from a tool's result or the model. */
 export function addressTyped(message: string, words: string): boolean {
   return !/^0x/i.test(words.trim()) || named(message, words);
+}
+
+/**
+ * The address of a move out (a bridge's recipient, a withdrawal's destination): one the person typed goes as given;
+ * the person's own address (the model read it from their wallet) is them, for Kawase to resolve itself; anything else
+ * is refused (K2), with `ask` telling the model what to do instead.
+ */
+export async function destinationAddress(context: Pick<AgentContext, "lastUserText" | "wallet">, address: string, ask: string): Promise<"typed" | "own"> {
+  if (addressTyped(context.lastUserText, address)) return "typed";
+  const wallet = await context.wallet();
+  if (wallet.status === "ready" && asRead(wallet.address) === asRead(address)) return "own";
+  throw new Error(`${ADDRESS_NOT_TYPED} ${ask}`);
 }
 
 /** The @handles a sentence names. */

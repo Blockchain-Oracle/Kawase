@@ -14,6 +14,8 @@ import { buildAgentContext } from "../src/agent/context";
 
 const ALEX = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
 const MALLORY = "0x1111111111111111111111111111111111111111";
+/** The person's own wallet address, as get_wallet reads it. */
+const OWN = "0x2222222222222222222222222222222222222222";
 const run = { toolCallId: "call-1", messages: [] } as never;
 
 type SendCall = { request: SendRequest; autoSend: boolean };
@@ -55,7 +57,7 @@ function fakeContext(lastUserText: string, extra: Partial<AgentContext> = {}) {
       return { outcome: { status: "paid" }, summary: { status: "paid", seller: "newsbot.example", content } } as never;
     },
     async wallet() {
-      return { status: "ready", address: ALEX, handle: "me", setUp: true, balances: [], allowance: null } as never;
+      return { status: "ready", address: OWN, handle: "me", setUp: true, balances: [], allowance: null } as never;
     },
     intelligence: {
       async rememberFact(fact: string): Promise<MemoryToolOutput> {
@@ -195,6 +197,34 @@ test("every tool is classified as outside text or Kawase's own; an unclassified 
   );
   await guarded.fetch_page.execute!({}, run);
   assert.deepEqual(read, ["fetch_page (unclassified)"]);
+});
+
+test("M8: a bridge or withdrawal takes an address only from the person's words; their own address means them", async () => {
+  const moves: Record<string, unknown>[] = [];
+  const extra = {
+    proposeCrossChain: async (input: Record<string, unknown>) => (moves.push(input), { summary: "planned" }),
+    proposeWithdraw: async (input: Record<string, unknown>) => (moves.push(input), { summary: "planned" }),
+  } as unknown as Partial<AgentContext>;
+  const injected = fakeContext("bridge 10 USDC to Base for the seller", extra);
+  await assert.rejects(async () => injected.tools.propose_bridge.execute!({ destination: "base", amount: "10", recipient: MALLORY }, run), /must be typed by the person/);
+  await assert.rejects(async () => injected.tools.propose_withdraw.execute!({ chain: "base", address: MALLORY }, run), /pass its name as place/);
+  assert.equal(moves.length, 0, "nothing planned to an address the model brought");
+
+  const typed = fakeContext(`bridge 10 USDC to ${MALLORY} on Base`, extra);
+  await typed.tools.propose_bridge.execute!({ destination: "base", amount: "10", recipient: MALLORY }, run);
+  // Their own address, read from get_wallet: Kawase resolves "themselves" on its side.
+  const own = fakeContext("bridge 10 USDC to my own address on Base", extra);
+  await own.tools.propose_bridge.execute!({ destination: "base", amount: "10", recipient: OWN }, run);
+  const contact = fakeContext("bridge 10 USDC to @alex on Base", extra);
+  await contact.tools.propose_bridge.execute!({ destination: "base", amount: "10", recipient: "@alex" }, run);
+  assert.deepEqual(moves.map((move) => move.recipient), [MALLORY, null, "@alex"]);
+
+  // A saved place goes by its name; the server fills its address.
+  const place = fakeContext("withdraw everything to my Kraken", extra);
+  await place.tools.propose_withdraw.execute!({ everything: true, place: "Kraken" }, run);
+  const wallet = fakeContext(`withdraw my cirBTC to ${MALLORY} on Base`, extra);
+  await wallet.tools.propose_withdraw.execute!({ assets: [{ asset: "cirBTC" }], chain: "base", address: MALLORY }, run);
+  assert.deepEqual(moves.slice(3).map((move) => [move.place ?? null, move.address ?? null]), [["Kraken", null], [null, MALLORY]]);
 });
 
 test("the api sends at once only when the tool cleared it (autoSend), and never by voice", async () => {
