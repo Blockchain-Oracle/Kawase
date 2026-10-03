@@ -19,6 +19,15 @@ export type SafetySettings = {
   cooldown: { seconds: number; cap: bigint };
 };
 
+/**
+ * Whether the person paused everything, read now (never a session snapshot): every money path asks this, so "Pause
+ * everything" reaches each of them the moment it is set.
+ */
+export async function pausedAll(db: Executor, userId: string): Promise<boolean> {
+  const [person] = await db.select({ pausedAllAt: users.pausedAllAt }).from(users).where(eq(users.id, userId));
+  return Boolean(person?.pausedAllAt);
+}
+
 export async function safetySettingsOf(db: Executor, userId: string, network: NetworkId): Promise<SafetySettings> {
   const defaults = DEFAULT_LIMITS[network];
   const [[person], rows, [settings]] = await Promise.all([

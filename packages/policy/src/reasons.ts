@@ -59,6 +59,10 @@ export const REASONS = {
   ON_OTHER_NETWORK: "precondition",
   INSUFFICIENT_BALANCE: "precondition",
   INSUFFICIENT_GAS: "precondition",
+  /** Short of USDC for the fee, and Kawase's relayer has paid this person's fees as often or as much as it does in a day. */
+  GAS_RELAY_LIMIT: "precondition",
+  /** Short of USDC for the fee, and Kawase's relayer has spent its gas budget for the day (security review H5). */
+  GAS_RELAY_BUDGET_SPENT: "precondition",
   /** No swap price right now: "Try again" re-quotes the same request. */
   QUOTE_UNAVAILABLE: "precondition",
   /** The amount would not cover the route's fee: a bigger amount fixes it. */
@@ -130,6 +134,10 @@ export const REASONS = {
   BRAKE_LEVERAGE: "warning",
   /** Only allowlisted recipients go without the person; this one needs their Face ID. */
   NOT_ON_ALLOWLIST: "warning",
+  /** Above the human-approval threshold ($100 on mainnet): never on the allowance, whatever the risk dial. */
+  ABOVE_APPROVAL_THRESHOLD: "warning",
+  /** Past what one address gets in a week without the person ($200 on mainnet): this one needs their Face ID. */
+  OVER_RECIPIENT_WEEKLY: "warning",
   /** Leverage: the margin can be lost; the card names the liquidation price. */
   MARGIN_RISK: "warning",
   HEALTH_NEAR_LIMIT: "warning",

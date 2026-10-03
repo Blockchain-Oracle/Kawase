@@ -40,6 +40,11 @@ export const apiEnvSchema = z.object({
   CIRCLE_LIVE_API_KEY: z.string().optional(),
   CIRCLE_LIVE_ENTITY_SECRET: z.string().optional(),
   MAINNET_ENABLED: flag,
+  /**
+   * Spending within the allowance and deleting the account need a proof from the device's Turnkey key (security
+   * review M12). Off until the app that sends it is on people's phones; a proof that is sent is checked either way.
+   */
+  DEVICE_PROOF_REQUIRED: flag,
   /** The relayer key per network: a plain key on our server that pays for 7702 setups (spike 15). */
   RELAYER_PRIVATE_KEY_TESTNET: hexKey,
   RELAYER_PRIVATE_KEY_MAINNET: hexKey.optional(),

@@ -30,6 +30,8 @@ export const policy = {
   NO_ALLOWANCE: "Your daily allowance is off",
   LEAVES_LITTLE_FOR_FEES: "Very little USDC will be left for network fees",
   GAS_RELAYED: "Your wallet can't cover the network fee, so Kawase pays it for this send",
+  GAS_RELAY_LIMIT: "Kawase has paid your network fees as often as it can today. Keep about {{needed}} for the fee.",
+  GAS_RELAY_BUDGET_SPENT: "Kawase's free network fees are used up for today. Keep about {{needed}} for the fee.",
   FEE_PAID_BY_KAWASE: "Fee paid by Kawase: your wallet can't cover this network fee",
   SCHEDULE_INVALID: "That schedule can't be kept (an unknown time zone or day).",
   AUTO_SAVE_EXISTS: "Auto-save is already on. Turn it off in Automations first, then set the new one.",
@@ -46,6 +48,8 @@ export const policy = {
   fixOpenContact: "Open contact",
   AGENT_PAUSED: "Paused: this one needs your approval",
   NOT_ON_ALLOWLIST: "Not on your allowlist: this one needs your approval",
+  ABOVE_APPROVAL_THRESHOLD: "Above {{limit}}: this one needs your approval",
+  OVER_RECIPIENT_WEEKLY: "Over {{limit}} a week to one person ({{used}} already): this one needs your approval",
   NEW_RECIPIENT_COOLDOWN:
     "New to you: until {{until}}, more than {{cap}} to them needs your own approval. Change it in Wallet & limits.",
   TEST_AMOUNT_SUGGESTED: "First payment here. Send {{test}} first to check it arrives?",

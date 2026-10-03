@@ -40,6 +40,11 @@ export const DELEGATION_FRAMEWORK = {
     limitedCalls: "0x04658B29F6b82ed55274221a06Fc97D318E25416",
     valueLte: "0x92Bf12322527cAA612fd31a0e810472BBB106A8F",
     nativeTokenPeriodTransfer: "0x9BC0FAf4Aca5AE429F4c06aEEaC517520CB16BD9",
+    // Relayed batches pin their exact calls with these (code checked on both networks with eth_getCode, 2026-10-03;
+    // the same addresses as @metamask/smart-accounts-kit's environment for 5042 and 5042002).
+    exactExecution: "0x146713078D39eCC1F5338309c28405ccf85Abfbb",
+    exactExecutionBatch: "0x1e141e455d08721Dd5BCDA1BaA6Ea5633Afd5017",
+    exactCalldata: "0x99F2e9bF15ce5eC84685604836F71aB835DBBdED",
   },
 } as const;
 

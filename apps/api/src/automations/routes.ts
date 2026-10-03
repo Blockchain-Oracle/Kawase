@@ -4,6 +4,8 @@ import { z } from "zod";
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import { signedRevokeSchema } from "../wallet/routes";
+import type { SignedRevoke } from "../wallet/service";
 import type { NeedsYouService } from "./needs-you";
 import type { AutomationService } from "./service";
 
@@ -88,6 +90,8 @@ const activateSchema = z.object({
     .array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) }))
     .max(MAX_GRANTS),
 });
+/** A widened edit: the new grant, and the old one's revoke signed in the same yes (the api turns it off first). */
+const editActivateSchema = activateSchema.extend({ revoke: signedRevokeSchema.optional() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -128,9 +132,9 @@ export function automationRoutes(automations: AutomationService) {
     return c.json(await automations.edit(c.get("user")!, c.req.param("id"), input));
   });
   app.post("/:id/edit/activate", async (c) => {
-    const input = await parse(activateSchema, await c.req.json());
+    const input = await parse(editActivateSchema, await c.req.json());
     const signatures = input.signatures.map((entry) => ({ grantId: entry.grantId, signature: entry.signature as `0x${string}` }));
-    return c.json({ automation: await automations.editActivate(c.get("user")!, c.req.param("id"), { signatures }) });
+    return c.json({ automation: await automations.editActivate(c.get("user")!, c.req.param("id"), { signatures, revoke: input.revoke as SignedRevoke | undefined }) });
   });
   /** Practice first: on without a grant, every run a "would have". */
   app.post("/:id/practice", async (c) => c.json({ automation: await automations.practice(c.get("user")!, c.req.param("id")) }));

@@ -1,5 +1,6 @@
-// Practice mode never approves a swap, bridge, savings move or margin order for real: the api refuses before anything
-// is signed (sends and automations are dry-run in their own pipelines). And the risk dial and practice no longer change
+// Practice mode never moves money for real: on the money routes only drafting, revising, cancelling, asking for what to
+// sign and turning things off go through; every approve, signature, submit, batch, activation or top-up is refused
+// before anything is signed (sends and automations are dry-run in their own pipelines). And the risk dial and practice no longer change
 // through PATCH /me — only through /safety, where loosening needs the wallet's signature.
 // Runs against the local database: pnpm --filter @kawase/api test
 import assert from "node:assert/strict";
@@ -22,7 +23,7 @@ after(async () => {
   await close();
 });
 
-test("practice mode refuses real swaps, bridges, savings moves and margin orders", async () => {
+test("practice mode refuses every real money move, and lets drafting through", async () => {
   const { nonce } = (await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string };
   const body = JSON.stringify({ organizationId: subOrg, activityId: nonce });
   const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: turnkeyUser, device: { platform: "ios", installationId: "practice-guard-0001" } }));
@@ -37,11 +38,50 @@ test("practice mode refuses real swaps, bridges, savings moves and margin orders
 
   await db.update(users).set({ practiceMode: true }).where(eq(users.id, user.id));
   const id = randomUUID();
-  for (const path of [`/swaps/${id}/approve`, `/bridges/${id}/signature`, `/earn/intents/${id}/approve`, `/margin/orders/${id}/approve`]) {
+  const refusedInPractice = [
+    `/swaps/${id}/approve`,
+    `/bridges/${id}/signature`,
+    `/earn/intents/${id}/approve`,
+    `/margin/orders/${id}/approve`,
+    // What the old list missed (security review, Low): cross-chain, lend, the withdrawal batch, payouts, protection.
+    `/crosschain/orders/${id}/approve`,
+    `/crosschain/orders/${id}/signature`,
+    `/lend/orders/${id}/approve`,
+    `/lend/orders/${id}/signature`,
+    `/withdrawals/${id}/batch`,
+    `/withdrawals/${id}/batch/signature`,
+    `/business/payouts/${id}/sign`,
+    `/business/payouts/${id}/submit`,
+    "/margin/protection/grant/activate",
+    "/marketplace/agent-wallet/top-up",
+    "/marketplace/agent-wallet/grant/submit",
+    "/marketplace/agent-wallet/return",
+    // A write nobody listed yet is refused too (the list names what is safe, not what is not).
+    `/lend/orders/${id}/something-new`,
+  ];
+  for (const path of refusedInPractice) {
     const response = await app.request(path, jsonRequest("POST", { version: 1 }, token));
     assert.equal(response.status, 409, path);
     assert.match(((await response.json()) as { type: string }).type, /practice_mode/, path);
   }
+  // Drafting, revising, cancelling, targets and turning protection off still reach their routes while practising.
+  const reachable: [string, string][] = [
+    ["POST", "/crosschain/orders"],
+    ["POST", `/lend/orders/${id}/cancel`],
+    ["PATCH", `/swaps/${id}`],
+    ["POST", "/withdrawals/plan"],
+    ["POST", `/withdrawals/${id}/next`],
+    ["PUT", `/margin/positions/${id}/protection`],
+    ["DELETE", "/margin/protection/grant"],
+    ["POST", "/business/payouts"],
+  ];
+  for (const [method, path] of reachable) {
+    const response = await app.request(path, jsonRequest(method, {}, token));
+    const type = response.status === 409 ? ((await response.json()) as { type?: string }).type ?? "" : "";
+    assert.doesNotMatch(type, /practice_mode/, `${method} ${path}`);
+  }
+  // Reads are never refused.
+  assert.notEqual((await app.request("/withdrawals", { headers: { authorization: `Bearer ${token}` } })).status, 409);
   // Off again: the same calls reach their routes (which then say the intent does not exist).
   await db.update(users).set({ practiceMode: false }).where(eq(users.id, user.id));
   const real = await app.request(`/swaps/${id}/approve`, jsonRequest("POST", { version: 1 }, token));

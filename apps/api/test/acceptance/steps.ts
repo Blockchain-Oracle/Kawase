@@ -351,13 +351,13 @@ async function protectOn(ctx: Ctx, position: MarginPositionView): Promise<Margin
   return request.grants;
 }
 
-/** Off (H4): Kawase stops at once and hands back the grants' on-chain disable for the wallet to sign (its own transaction, or relayed when it can't pay the fee), confirmed on Arc. */
+/** Off (H4): Kawase stops at once and hands back the grants' on-chain disable for the wallet to sign (the shared revoke: relayed, or its own transaction while the relayer has no gas), confirmed on Arc. */
 async function protectOff(ctx: Ctx, position: MarginPositionView) {
   const off = await ctx.api.del<MarginProtectionOff>(`/margin/protection/grant?positionId=${position.id}`);
   check(off.revoke, "turning protection off handed back no on-chain disable");
   const sent =
     "relayed" in off.revoke
-      ? await ctx.api.post<{ tx: Hex; status: string }>("/margin/protection/disable", { requestId: off.revoke.requestId, signature: await signTypedData(ctx, off.revoke.typedData) })
+      ? await ctx.api.post<{ tx: Hex; status: string }>("/wallet/transactions/submit", { requestId: off.revoke.requestId, signature: await signTypedData(ctx, off.revoke.typedData) })
       : await ctx.api.post<{ tx: Hex; status: string }>("/wallet/transactions/submit", { requestId: off.revoke.requestId, signedTransaction: await signTransaction(ctx, off.revoke.transaction) });
   ctx.tx(`disable the protection grants${"relayed" in off.revoke ? " (relayed)" : ""}`, sent.tx);
   check(sent.status === "confirmed", `the on-chain disable ended ${sent.status}`);

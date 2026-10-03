@@ -47,8 +47,10 @@ export function evaluateMargin(facts: MarginFacts): MarginEvaluation {
     const elsewhere = facts.capability.other === "available";
     return done([result(elsewhere ? "ON_OTHER_NETWORK" : "NOT_AVAILABLE_YET", { capability: "margin" })]);
   }
-  // Pause all stops the agent and automations; this is always the person's own yes, so it is never blocked (D-pause).
   if (!facts.wallet.registered) return done([result("WALLET_NOT_READY")]);
+  // Pause all stops everything that would move without the person (X30); this is always the person's own yes, so it
+  // goes on, and the card says the pause is on.
+  if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   if (!facts.wallet.setUp) results.push(result("WALLET_NOT_SET_UP"));
 
   if (facts.market.status === "missing") return done([...results, result("MARKET_MISSING")]);

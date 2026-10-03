@@ -4,8 +4,8 @@
 // repay on that position's own reserves, one capped approval each to Uniswap's router and to the Spoke, taking those
 // approvals back, and Uniswap swaps of exactly that pair in one pool paying their wallet), redeemable only by the ops
 // wallet until they expire. The caps are the position's size as signed with some headroom; a position grown past them
-// asks again. Turning protection off, or signing again over live grants, also disables the old ones on chain (one Face
-// ID; Kawase's relayer pays when the wallet can't). Targets: a take-profit and a stop-loss per position (the asset's
+// asks again. Turning protection off, or signing again over live grants, also disables the old ones on chain through
+// the wallet's shared revoke (one Face ID; Kawase's relayer pays); a re-signing goes on only once the old ones are off. Targets: a take-profit and a stop-loss per position (the asset's
 // price), checked against the mark and the liquidation price, and against what Uniswap v3 can carry now (a close it
 // cannot route is refused up front, not promised). Monitor: every tick, an armed position whose oracle price crossed
 // its target is checked again on an executable quote (Uniswap's own for the whole size, in the pinned pool): a
@@ -19,7 +19,7 @@ import { and, eq, gt, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { formatUnits, hashTypedData, parseUnits, verifyTypedData, type Address, type Hex, type PublicClient, type TypedDataDefinition } from "viem";
 
 import { MARGIN, MARGIN_PROTECTION, MS_PER_SECOND } from "@kawase/config";
-import type { GrantDisableRequest, MarginProtectionChange, MarginProtectionGrantRequest, MarginProtectionOff, MarginProtectionResult, MarginProtectionView } from "@kawase/api-client";
+import type { MarginProtectionChange, MarginProtectionGrantRequest, MarginProtectionOff, MarginProtectionResult, MarginProtectionView } from "@kawase/api-client";
 import { accountHealth, grants, intents, marginPositions, type Db } from "@kawase/db";
 import { hasNoDebt, readAccount, valueOf } from "@kawase/integrations-aave-v4";
 import { buildProtectGrants, describeGrant, encodeRevoke, grantTypedData, isWalletSetUp, PROTECT_PURPOSES, withSignature, type ProtectGrants, type ProtectPurpose, type ProtectScope } from "@kawase/integrations-delegation";
@@ -32,7 +32,7 @@ import { jsonSafe } from "../intents/chain";
 import { safetySettingsOf } from "../safety/settings";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
-import type { WalletService } from "../wallet/service";
+import type { SignedRevoke, WalletService } from "../wallet/service";
 import type { MarginService } from "./service";
 import { uniswapQuote } from "./uniswap";
 
@@ -55,8 +55,6 @@ const ZERO = 0n;
 const HEALTH_DIGITS = 2;
 /** A short's buy-back is quoted with this much USDC over the debt's value, then priced per unit bought. */
 const SHORT_QUOTE_HEADROOM = 1.05;
-/** `disableDelegation` from the wallet as a transaction of its own (as WalletService sizes revokes); each more adds MARGIN_PROTECTION.disableGas. */
-const DISABLE_GAS = 200_000n;
 const NETWORK: NetworkId = "mainnet";
 const LEVELS: Record<Level, number> = { ok: 0, warning: 1, danger: 2 };
 const nowSeconds = () => Math.floor(Date.now() / MS_PER_SECOND);
@@ -87,9 +85,6 @@ function covers(scope: ProtectScope, context: CloseContext) {
 }
 
 export class MarginProtection {
-  /** On-chain disables handed out for the relayer to send, so the submit route sends nothing else. */
-  private readonly relayedDisables = new Set<string>();
-
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
@@ -110,6 +105,19 @@ export class MarginProtection {
       .where(and(eq(grants.userId, userId), eq(grants.network, network), eq(grants.kind, "margin_protection"), inArray(grants.status, ["pending", "active"])));
     if (!positionId) return rows;
     return rows.filter((row) => receiptOf(row).positionId === positionId || receiptOf(row).positionId === undefined);
+  }
+
+  /**
+   * Every protection grant of one position (and the account-wide ones from before), or of all, whatever its status
+   * here: the wallet's revoke covers each the chain still honours (a grant left after a manual close included).
+   */
+  private async heldIds(userId: string, network: NetworkId, positionId?: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ id: grants.id, receipt: grants.receipt })
+      .from(grants)
+      .where(and(eq(grants.userId, userId), eq(grants.network, network), eq(grants.kind, "margin_protection")));
+    const mine = (receipt: unknown) => !positionId || [positionId, undefined].includes((receipt as StoredReceipt).positionId);
+    return rows.filter((row) => mine(row.receipt)).map((row) => row.id);
   }
 
   /** A position's six grants, signed and unexpired, with what they pin; or nothing. */
@@ -173,8 +181,7 @@ export class MarginProtection {
       expiresAt,
       salts: Object.fromEntries(PROTECT_PURPOSES.map((purpose) => [purpose, salt()])) as Record<ProtectPurpose, Hex>,
     });
-    const replaced = (await this.rows(user.id, network, positionId)).filter((row) => row.status === "active");
-    const revoke = await this.disableRequest(user.id, network, replaced);
+    const revoke = await this.wallets.revokeGrantsRequest(user.id, await this.heldIds(user.id, network, positionId));
     const out: MarginProtectionGrantRequest = { grants: [], receipts: [], expiresAt: new Date(expiresAt * MS_PER_SECOND).toISOString(), revoke };
     await this.db.transaction(async (tx) => {
       await tx
@@ -210,8 +217,11 @@ export class MarginProtection {
     return out;
   }
 
-  /** Every signature checked against the wallet; then the position's grants are on (the old ones set aside) and its targets watched. */
-  async activate(user: SessionUser, signatures: { grantId: string; signature: Hex }[]): Promise<MarginProtectionView> {
+  /**
+   * Every signature checked against the wallet; the grants these replace are turned off on chain first (their revoke
+   * was signed in the same yes); then the position's grants are on and its targets watched.
+   */
+  async activate(user: SessionUser, signatures: { grantId: string; signature: Hex }[], revoke?: SignedRevoke): Promise<MarginProtectionView> {
     const network = user.activeNetwork;
     const clients = this.chains.get(network);
     const wallet = await this.wallets.userWallet(user.id);
@@ -231,9 +241,9 @@ export class MarginProtection {
       if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
       signed.push({ row, delegation });
     }
+    await this.wallets.revokeFirst(user.id, (await this.heldIds(user.id, network, positionId)).filter((id) => !asked.has(id)), revoke);
     const replaced = (await this.rows(user.id, network, positionId)).filter((row) => row.status === "active").map((row) => row.id);
     await this.db.transaction(async (tx) => {
-      // Their on-chain disable was signed with these (requestGrant); the app sends it once this answers.
       if (replaced.length > 0) await tx.update(grants).set({ status: "superseded" }).where(inArray(grants.id, replaced));
       for (const entry of signed) await tx.update(grants).set({ status: "active", delegation: jsonSafe(entry.delegation) }).where(eq(grants.id, entry.row.id));
       // Targets set before the grants were signed start being watched now.
@@ -253,7 +263,7 @@ export class MarginProtection {
   async revoke(user: SessionUser, positionId?: string): Promise<MarginProtectionOff> {
     const network = user.activeNetwork;
     const rows = await this.rows(user.id, network, positionId);
-    const revoke = await this.disableRequest(user.id, network, rows.filter((row) => row.status === "active"));
+    const revoke = await this.wallets.revokeGrantsRequest(user.id, await this.heldIds(user.id, network, positionId));
     await this.db.transaction(async (tx) => {
       if (rows.length > 0) await tx.update(grants).set({ status: "revoked" }).where(inArray(grants.id, rows.map((row) => row.id)));
       await tx
@@ -262,33 +272,6 @@ export class MarginProtection {
         .where(and(eq(marginPositions.userId, user.id), eq(marginPositions.network, network), eq(marginPositions.protection, "armed"), ...(positionId ? [eq(marginPositions.id, positionId)] : [])));
     });
     return { ...(await this.view(user, positionId)), revoke };
-  }
-
-  /** The relayed disable the wallet signed (it couldn't pay the fee): Kawase's relayer sends it. */
-  async submitDisable(user: SessionUser, requestId: string, signature: Hex) {
-    if (!this.relayedDisables.delete(requestId)) throw problem(HTTP.notFound, "not_found", "no such transaction request");
-    return this.wallets.submitRelayedBatch(user.id, requestId, signature);
-  }
-
-  /**
-   * `disableDelegation` for grants Kawase no longer uses, from the wallet: one transaction (several grants go as one
-   * self-batch), paid by the wallet when its USDC covers the fee, else a one-time delegation Kawase's relayer sends.
-   */
-  private async disableRequest(userId: string, network: NetworkId, rows: GrantRow[]): Promise<GrantDisableRequest | null> {
-    const unexpired = rows.filter(live);
-    const clients = this.chains.get(network);
-    if (unexpired.length === 0 || !clients) return null;
-    const gas = DISABLE_GAS + MARGIN_PROTECTION.disableGas * BigInt(unexpired.length - 1);
-    const ids = unexpired.map((row) => row.id);
-    if (await this.wallets.canPayFee(userId, network, ZERO, gas)) return (await this.wallets.revokeGrantsRequest(userId, ids)) as GrantDisableRequest | null;
-    const request = await this.wallets.relayedBatchRequest(
-      userId,
-      network,
-      "revoke_grant",
-      unexpired.map((row) => encodeRevoke(clients.network, row.delegation as never)),
-    );
-    this.relayedDisables.add(request.requestId);
-    return request;
   }
 
   /**

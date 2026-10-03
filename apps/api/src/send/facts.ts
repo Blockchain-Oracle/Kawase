@@ -9,10 +9,11 @@ import {
   DEFAULT_LIMITS,
   GAS_FLOAT_USDC_BASE_UNITS,
   MS_PER_SECOND,
+  RELAYED_SEND_GAS,
   SECONDS_PER_DAY,
   SECONDS_PER_WEEK,
 } from "@kawase/config";
-import { limits as limitsTable, spendLedger, type Db } from "@kawase/db";
+import { intentDrafts, intents, limits as limitsTable, spendLedger, type Db } from "@kawase/db";
 import { isWalletSetUp } from "@kawase/integrations-delegation";
 import { AmountParseError, decimalsOf, parseAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
@@ -23,7 +24,7 @@ import { allowanceRoom, tokenAllowance, type AllowanceRoom } from "../safety/all
 import { recipientTrust, safetySettingsOf } from "../safety/settings";
 import type { Chains } from "../wallet/chain";
 import { inspectRecipient, type Resolution, type RecipientInspection } from "./recipients";
-import { relayerReady, relaysLeft } from "./relayed";
+import { relayGasPrice, relayRefusal, relayerReady } from "./relayed";
 
 export type StoredRequest = {
   recipient: string | null;
@@ -61,6 +62,10 @@ export function parseTokenAmount(text: string | null, decimals: number): AmountF
 
 /** The ledger bucket a send's limits count in: USDC and EURC in their own units, every other token in dollars. */
 export const ledgerAsset = (symbol: string): string => (symbol === "USDC" || symbol === "EURC" ? symbol : USD_LEDGER_ASSET);
+
+/** A token amount's value in US dollars, in USDC base units (how the limits count tokens other than USDC and EURC). */
+export const usdValue = (baseUnits: bigint, decimals: number, priceUsd: number) =>
+  parseUnits((Number(formatUnits(baseUnits, decimals)) * priceUsd).toFixed(USD_DECIMALS), USD_DECIMALS);
 
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
 export const assetToken = (network: { addresses: { usdc: Address; eurc: Address } }, asset: AssetId) => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
@@ -109,7 +114,8 @@ export async function spent(db: Executor, userId: string, network: NetworkId, as
           eq(spendLedger.asset, asset),
           inArray(spendLedger.state, ["reserved", "committed"]),
           gt(spendLedger.createdAt, since(seconds)),
-          ...(exceptIntentId ? [ne(spendLedger.intentId, exceptIntentId)] : []),
+          // "Is distinct from": a payout's spend has no intent, and still counts.
+          ...(exceptIntentId ? [sql`${spendLedger.intentId} is distinct from ${exceptIntentId}`] : []),
         ),
       );
     return BigInt(row?.total ?? "0");
@@ -127,7 +133,7 @@ export async function userLimits(db: Executor, userId: string, network: NetworkI
     .from(limitsTable)
     .where(and(eq(limitsTable.userId, userId), eq(limitsTable.network, network)));
   const now = Date.now();
-  const value = (kind: "per_tx" | "daily" | "weekly", fallback: bigint) => {
+  const value = (kind: "per_tx" | "daily" | "weekly" | "approval_threshold", fallback: bigint) => {
     const row = rows.find((entry) => entry.kind === kind);
     if (!row) return fallback;
     return row.tempValue !== null && row.tempUntil && row.tempUntil.getTime() > now ? row.tempValue : row.value;
@@ -136,7 +142,33 @@ export async function userLimits(db: Executor, userId: string, network: NetworkI
     perTx: value("per_tx", defaults.perTransaction),
     daily: value("daily", defaults.daily),
     weekly: value("weekly", defaults.weekly),
+    perRecipientWeekly: defaults.perRecipientWeekly,
+    approvalThreshold: value("approval_threshold", defaults.approvalThreshold),
   };
+}
+
+/**
+ * What went, or is reserved to go, to one address in the last week (this asset, the ledger's units): the per-recipient
+ * cap counts it. The address is the one the send's current draft pays.
+ */
+export async function spentTo(db: Executor, userId: string, network: NetworkId, asset: string, recipient: string, exceptIntentId: string | undefined) {
+  const [row] = await db
+    .select({ total: sql<string>`coalesce(sum(${spendLedger.amount}), 0)` })
+    .from(spendLedger)
+    .innerJoin(intents, eq(intents.id, spendLedger.intentId))
+    .innerJoin(intentDrafts, and(eq(intentDrafts.intentId, intents.id), eq(intentDrafts.version, intents.currentDraftVersion)))
+    .where(
+      and(
+        eq(spendLedger.userId, userId),
+        eq(spendLedger.network, network),
+        eq(spendLedger.asset, asset),
+        inArray(spendLedger.state, ["reserved", "committed"]),
+        gt(spendLedger.createdAt, new Date(Date.now() - SECONDS_PER_WEEK * MS_PER_SECOND)),
+        sql`lower(${intentDrafts.payload}->'draft'->>'to') = ${recipient.toLowerCase()}`,
+        ...(exceptIntentId ? [ne(spendLedger.intentId, exceptIntentId)] : []),
+      ),
+    );
+  return BigInt(row?.total ?? "0");
 }
 
 /** The app limits again, under the approval lock: true when this amount still fits. */
@@ -223,17 +255,23 @@ export async function gatherFacts(input: {
         : null
       : undefined;
   const recipientAddress = input.resolution.facts.status === "resolved" ? input.resolution.facts.address : undefined;
-  const [limitValues, spentValues, settings, room, trust, inspection, gasRelay] = await Promise.all([
+  const [limitValues, spentValues, spentToRecipient, settings, room, trust, inspection, gasRelay] = await Promise.all([
     userLimits(db, userId, network),
     spent(db, userId, network, ledgerSymbol, input.exceptIntentId),
+    recipientAddress ? spentTo(db, userId, network, ledgerSymbol, recipientAddress, input.exceptIntentId) : Promise.resolve(ZERO),
     safetySettingsOf(db, userId, network),
     // The chosen token's own allowance (USDC and EURC each); without a wallet set up there is nothing to spend from.
     clients && wallet && setUp && stableSymbol ? activeAllowance(db, chains, userId, network, assetToken(clients.network, stableSymbol)) : Promise.resolve(undefined),
     recipientAddress ? recipientTrust(db, userId, network, recipientAddress) : Promise.resolve(undefined),
     clients && recipientAddress ? inspectRecipient(db, clients.client, recipientAddress as Address, stableSymbol && token ? token.address : undefined) : Promise.resolve(undefined),
-    // USDC and EURC can go gas-free through the relayer (EIP-3009) while it has gas and the person has relays left.
+    // USDC and EURC can go gas-free through the relayer (EIP-3009) while it has gas, the person has relays left and
+    // the day's relayer budget holds one more (the approval asks again under the lock, at the same price).
     // (Not with a memo: the Memo contract only takes calls from the wallet itself.)
-    clients && stableSymbol && !memo ? Promise.all([relayerReady(clients), relaysLeft(db, userId)]).then(([ready, left]) => ready && left) : Promise.resolve(false),
+    clients && stableSymbol && !memo
+      ? Promise.all([relayerReady(clients), relayGasPrice(clients).then((price) => relayRefusal(db, { userId, network, cost: RELAYED_SEND_GAS * price, counted: true }))]).then(
+          ([ready, refusal]) => (ready ? { relay: !refusal, refusal } : { relay: false, refusal: undefined }),
+        )
+      : Promise.resolve({ relay: false, refusal: undefined }),
   ]);
   const grant = room?.base?.grant ?? room?.boost?.grant;
   const allowance: ActiveAllowance | undefined = grant && room ? { id: grant.id, delegation: grant.delegation, perPeriod: room.perPeriod } : undefined;
@@ -270,13 +308,15 @@ export async function gatherFacts(input: {
       riskMode: settings.riskMode,
       cooldown: { seconds: settings.cooldown.seconds, cap: settings.cooldown.cap, now: new Date().toISOString() },
       allowlistOnly: settings.allowlistOnly,
-      limits: limitValues,
-      spent: spentValues,
+      limits: { perTx: limitValues.perTx, daily: limitValues.daily, weekly: limitValues.weekly, perRecipientWeekly: limitValues.perRecipientWeekly },
+      spent: { ...spentValues, recipientWeek: spentToRecipient },
       thresholds: {
+        approval: limitValues.approvalThreshold,
         firstTimeStepUp: DEFAULT_LIMITS[network].firstTimeRecipientApprovalThreshold,
         testAmount: DEFAULT_LIMITS[network].testAmount,
         gasFloat: GAS_FLOAT_USDC_BASE_UNITS,
-        gasRelay,
+        gasRelay: gasRelay.relay,
+        gasRelayRefusal: gasRelay.refusal,
       },
     },
   };

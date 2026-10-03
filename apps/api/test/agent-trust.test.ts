@@ -227,6 +227,21 @@ test("M8: a bridge or withdrawal takes an address only from the person's words; 
   assert.deepEqual(moves.slice(3).map((move) => [move.place ?? null, move.address ?? null]), [["Kraken", null], [null, MALLORY]]);
 });
 
+test("splits and payment requests ask in the app only people named as whole words in the person's message", async () => {
+  const asked: unknown[] = [];
+  const extra = {
+    createPaymentRequest: async (input: { payer: string | null }) => (asked.push(input.payer), { status: "needs_wallet" }),
+  } as unknown as Partial<AgentContext>;
+  const split = fakeContext("split 60 for dinner with Amina and @tunde", extra);
+  (split.context.intelligence as unknown as { splitBill: (input: unknown) => Promise<unknown> }).splitBill = async (input) => (asked.push((input as { people: { name: string; ask: boolean }[] }).people.map((person) => [person.name, person.ask])), { status: "needs_wallet" });
+  await split.tools.split_bill.execute!({ title: "Dinner", total: "60", people: [{ name: "Amina" }, { name: "@tunde" }, { name: "Ami" }, { name: "@mallory" }] }, run);
+  const request = fakeContext("ask kemi for 12 dollars", extra);
+  await request.tools.create_payment_request.execute!({ amount: "12", from: "kemi" }, run);
+  await request.tools.create_payment_request.execute!({ amount: "12", from: "kem" }, run);
+  await request.tools.create_payment_request.execute!({ amount: "12", from: "@kemi" }, run);
+  assert.deepEqual(asked, [[["Amina", true], ["@tunde", true], ["Ami", false], ["@mallory", false]], "kemi", null, null]);
+});
+
 test("the api sends at once only when the tool cleared it (autoSend), and never by voice", async () => {
   const approved: string[] = [];
   const draft = { id: "intent-1", version: 1, route: "allowance", state: "ready_for_approval", blocking: null, request: { recipient: "@alex" }, draft: null, results: [], network: "testnet" };

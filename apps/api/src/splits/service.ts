@@ -5,7 +5,7 @@
 // "@x asked you for 12 USDC" in their inbox and by push. Nobody is asked by a guess; everyone else gets the link.
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
-import type { PaymentRequest, RequestToken, SplitInput, SplitView } from "@kawase/api-client";
+import type { PaymentRequest, RequestToken, SplitInput, SplitReminders, SplitView } from "@kawase/api-client";
 import { REQUEST_NOTE_MAX } from "@kawase/config";
 import { paymentRequests, splitShares, splits, type Db } from "@kawase/db";
 
@@ -155,6 +155,23 @@ export class SplitService {
   async list(userId: string): Promise<SplitView[]> {
     const rows = await this.db.select().from(splits).where(eq(splits.userId, userId)).orderBy(desc(splits.createdAt));
     return Promise.all(rows.map((row) => this.view(userId, row)));
+  }
+
+  /**
+   * Reminds everyone whose share is still open: someone asked in the app is told there (once a day per share); the
+   * others' links come back for the app to share again in one message.
+   */
+  async remind(userId: string, id: string): Promise<{ split: SplitView; reminded: SplitReminders }> {
+    const split = await this.get(userId, id);
+    const reminded: SplitReminders = { inApp: 0, alreadyToday: 0, links: [] };
+    for (const share of split.shares) {
+      if (share.request.status !== "open") continue;
+      const { reminded: how } = await this.requests.remind(userId, share.request.id);
+      if (how === "in_app") reminded.inApp += 1;
+      else if (how === "already_today") reminded.alreadyToday += 1;
+      else reminded.links.push({ name: share.name, amount: share.amount, link: share.request.link });
+    }
+    return { split, reminded };
   }
 
   /** Cancels every share still open (paid ones stay paid) and the split. */

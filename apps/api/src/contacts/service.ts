@@ -6,7 +6,7 @@ import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { getAddress, isAddress, type Address } from "viem";
 
 import { CONTACT_ADDRESS_CHANGE_COOLDOWN_S, MS_PER_SECOND } from "@kawase/config";
-import type { AddressSource, Contact, ContactInput } from "@kawase/api-client";
+import type { AddressSource, Contact, ContactInput, VerifyMethod } from "@kawase/api-client";
 import {
   contactAddressEvents,
   contactAddresses,
@@ -316,6 +316,26 @@ export class ContactService {
         newAddressId: retired?.id ?? null,
         requestedBy: "user",
       });
+    });
+    return this.get(userId, id);
+  }
+
+  /**
+   * Marks the contact's current address verified on one network, or clears it (`method` null): the person checked it
+   * is really theirs — scanned the QR on their phone, in person, or by phone or video (capability matrix, Counterparts
+   * "Verify"). Recorded in the address's history; a new address starts unverified.
+   */
+  async verify(userId: string, id: string, network: NetworkId, method: VerifyMethod | null) {
+    const contact = await this.get(userId, id);
+    const current = contact.addresses.find((address) => address.status === "active");
+    if (!current) throw problem(HTTP.unprocessable, "validation", "the contact has no current address");
+    const at = method ? new Date() : null;
+    await this.db.transaction(async (tx) => {
+      await tx
+        .insert(contactAddressTrust)
+        .values({ contactAddressId: current.id, userId, network, verifiedAt: at, verifiedMethod: method })
+        .onConflictDoUpdate({ target: [contactAddressTrust.contactAddressId, contactAddressTrust.network], set: { verifiedAt: at, verifiedMethod: method, updatedAt: new Date() } });
+      await tx.insert(contactAddressEvents).values({ userId, contactId: id, kind: method ? "verified" : "unverified", newAddressId: current.id, requestedBy: "user" });
     });
     return this.get(userId, id);
   }

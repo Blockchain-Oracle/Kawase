@@ -6,15 +6,20 @@
 // is what the person reads, and exactly that payload is signed; a proposal older than the approval window is asked
 // for again and shown again instead of being signed. Only an explicit "approved" from the device check signs (R03).
 import * as React from "react";
-import type { TransactionSerializable, TypedDataDefinition } from "viem";
+import type { TypedDataDefinition } from "viem";
 
-import { ApiError, type AllowanceRequestResponse, type GrantReceipt, type NetworkId, type UnsignedTransaction } from "@kawase/api-client";
+import { ApiError, type AllowanceRequestResponse, type GrantReceipt, type NetworkId } from "@kawase/api-client";
 import { APPROVAL_TTL_S, MS_PER_SECOND } from "@kawase/config";
 
+import { checkTransferGrant } from "@kawase/wallet";
+
+import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
+import { sayIfRefused } from "@/wallet/refused";
+import { signRevoke } from "@/wallet/sign-revoke";
 import { useTurnkeyAccount } from "@/wallet/use-turnkey-account";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
@@ -37,23 +42,12 @@ export type AllowanceProposal = AllowanceRequestResponse & { fetchedAt: number }
 /** A proposal older than this is asked for again before it can be signed. */
 const PROPOSAL_MAX_AGE_MS = APPROVAL_TTL_S * MS_PER_SECOND;
 
-export function toSerializable(transaction: UnsignedTransaction): TransactionSerializable {
-  return {
-    type: "eip1559",
-    chainId: transaction.chainId,
-    nonce: transaction.nonce,
-    to: transaction.to,
-    data: transaction.data,
-    value: BigInt(transaction.value),
-    gas: BigInt(transaction.gas),
-    maxFeePerGas: BigInt(transaction.maxFeePerGas),
-    maxPriorityFeePerGas: BigInt(transaction.maxPriorityFeePerGas),
-  };
-}
+export { toSerializable } from "@/wallet/serializable";
 
 type Prompt = { message: string; cancel: string };
 
 export function useWalletSetup(network: NetworkId) {
+  const { t } = useT();
   const { status } = useSession();
   const turnkey = useTurnkeyAccount();
   // Passkeys need a real domain; until then the session key signs, behind the device's Face ID check.
@@ -82,13 +76,16 @@ export function useWalletSetup(network: NetworkId) {
         await refresh();
         setNotReady(false);
       } catch (error) {
-        if (error instanceof ApiError && error.code === "network_not_ready") setNotReady(true);
+        // No gas on the relayer yet, or its day's budget spent: the same calm wait, not an error.
+        if (error instanceof ApiError && (error.code === "network_not_ready" || error.code === "relayer_budget_spent")) setNotReady(true);
+        // The setup is signed only for the DeleGator on Arc; anything else is refused on the phone (M6).
+        sayIfRefused(error, t);
         setFailed((current) => ({ ...current, [key]: true }));
       } finally {
         setRunning(undefined);
       }
     },
-    [refresh],
+    [refresh, t],
   );
 
   const createWallet = React.useCallback(() => step("wallet", async () => void (await turnkey.ensureWallet())), [step, turnkey]);
@@ -153,20 +150,25 @@ export function useWalletSetup(network: NetworkId) {
       setRunning("allowance");
       setFailed((current) => ({ ...current, allowance: undefined }));
       try {
+        // The card reads this receipt; the phone decodes the grant itself and signs only if the two agree (M6).
+        checkTransferGrant(proposal.typedData, proposal.receipt, signer.address);
         const signature = await signer.signTypedData(proposal.typedData as unknown as TypedDataDefinition);
-        const accepted = await api.wallet.allowanceSubmit(proposal.grantId, signature);
+        // An allowance this one replaces is revoked in the same yes; the api turns it off on chain first.
+        const revoke = proposal.revoke ? await signRevoke(signer, proposal.revoke) : undefined;
+        const accepted = await api.wallet.allowanceSubmit(proposal.grantId, signature, revoke);
         // The status first, so the allowance is seen as on before the proposal is dropped (no needless re-request).
         await refresh();
         setProposal(undefined);
         return { status: "accepted", receipt: accepted.receipt as GrantReceipt };
-      } catch {
+      } catch (error) {
+        sayIfRefused(error, t);
         setFailed((current) => ({ ...current, allowance: true }));
         return { status: "failed" };
       } finally {
         setRunning(undefined);
       }
     },
-    [signer, proposal, prepareAllowance, refresh],
+    [signer, proposal, prepareAllowance, refresh, t],
   );
 
   return {

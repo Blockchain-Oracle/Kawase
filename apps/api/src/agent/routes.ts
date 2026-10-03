@@ -65,6 +65,7 @@ const messageSchema = z.object({
   metadata: z.unknown().optional(),
 });
 const chatSchema = z.object({ id: z.uuid(), message: messageSchema });
+const renameSchema = z.object({ title: z.string().trim().min(1).max(TITLE_MAX) });
 
 export type AgentDeps = {
   db: Db;
@@ -98,6 +99,8 @@ export type AgentDeps = {
   business?: BusinessAgentDeps | undefined;
   /** One US dollar in a display currency (B2-3); replies stay in dollars without it. */
   fx?: ((currency: string) => Promise<number | null>) | undefined;
+  /** M12: with device proofs required, a chat turn sends inside the allowance by itself only when it carried one. */
+  deviceProofRequired?: boolean | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -175,6 +178,8 @@ export function createTurnRunner(deps: AgentDeps) {
     surface: "chat" | "voice";
     signal?: AbortSignal | undefined;
     log: Logger;
+    /** The turn's request carried the proof from the person's own device (M12). */
+    deviceProven?: boolean | undefined;
   }) => {
     const { user, threadId, incoming, surface, log } = input;
     const startedAt = Date.now();
@@ -209,6 +214,8 @@ export function createTurnRunner(deps: AgentDeps) {
       lastUserText,
       log,
       surface,
+      // M12: without the device's proof (once required) a send inside the allowance waits for the tap on its card.
+      autoSendAllowed: !deps.deviceProofRequired || input.deviceProven === true,
     });
     // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
     if (fx && user.displayCurrency && user.displayCurrency !== "USD") {
@@ -352,6 +359,7 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
       surface: "chat",
       signal: c.req.raw.signal,
       log: c.get("log"),
+      deviceProven: c.get("deviceProven"),
     });
     return createUIMessageStreamResponse({ stream });
   });
@@ -375,6 +383,21 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
       thread: { id: thread.id, title: thread.title, network: thread.network, lastMessageAt: thread.lastMessageAt },
       messages: await loadMessages(thread.id),
     });
+  });
+
+  // Rename (capability matrix, Thread "rename"): the person's own title, in place of the first words.
+  app.patch("/threads/:id", async (c) => {
+    const id = z.uuid().safeParse(c.req.param("id"));
+    const body = renameSchema.safeParse(await c.req.json().catch(() => undefined));
+    if (!id.success) throw problem(HTTP.notFound, "not_found");
+    if (!body.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: body.error.issues });
+    const [renamed] = await db
+      .update(threads)
+      .set({ title: body.data.title })
+      .where(and(eq(threads.id, id.data), eq(threads.userId, c.get("userId")!)))
+      .returning({ id: threads.id, title: threads.title, network: threads.network, lastMessageAt: threads.lastMessageAt });
+    if (!renamed) throw problem(HTTP.notFound, "not_found");
+    return c.json({ thread: renamed });
   });
 
   app.delete("/threads/:id", async (c) => {

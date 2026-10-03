@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -85,6 +85,7 @@ import type { Discovery } from "@kawase/integrations-x402";
 import type { AgentWalletProvider } from "./marketplace/agent-wallets";
 import { marketplaceRoutes } from "./marketplace/routes";
 import { accountRoutes } from "./account/routes";
+import { markDeviceProof, requireDeviceProof } from "./auth/device-proof";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
@@ -174,6 +175,8 @@ export type AppDeps = {
   discovery?: Discovery | undefined;
   /** The oldest app version this api serves; older apps show "Update required" (cards/access.md). */
   minAppVersion?: string | undefined;
+  /** Allowance sends and account deletion refuse a request without the device's proof (M12; DEVICE_PROOF_REQUIRED). */
+  deviceProofRequired?: boolean | undefined;
 };
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
@@ -330,6 +333,13 @@ export function createApp(deps: AppDeps) {
   app.use("/auth/*", signIn.middleware);
   app.use("*", idempotency(deps.db));
   app.use("*", auditWrites(audit));
+  // M12: a leaked bearer token alone cannot spend within the allowance or delete the account; these also carry the
+  // proof from the signed-in device's own Turnkey key (after idempotency, so a retried request gets its first answer).
+  const deviceProof = requireDeviceProof(deps.db, deps.deviceProofRequired ?? false, deps.turnkey);
+  app.use("/sends/:id/approve", deviceProof);
+  app.use("/needs-you/:id/approve", deviceProof);
+  app.use("/account/delete", deviceProof);
+  app.use("/agent/chat", markDeviceProof(deps.db, deps.turnkey));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -354,11 +364,35 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
-  // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
-  // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
-  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$|^\/marketplace\/agent-wallet\/top-up$/;
+  // Practice mode (cards/automate-safety.md): nothing real moves while it is on. Sends and automations are dry-run in
+  // their own pipelines. On every other money route only the writes listed here go through — drafting, revising,
+  // cancelling, asking for what to sign, settings, turning something off — so approving, signing, submitting, activating
+  // or moving money for real is refused plainly, before anything is signed. A write added later is refused until listed.
+  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|business|marketplace)(\/|$)/;
+  const PRACTICE_SAFE: readonly (readonly [method: string, path: RegExp])[] = [
+    ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)$/],
+    ["PATCH", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+$/],
+    ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+\/cancel$/],
+    // Margin protection: the grants to sign (asked, not signed), turning it off, and the targets.
+    ["POST", /^\/margin\/protection\/grant$/],
+    ["DELETE", /^\/margin\/protection\/grant$/],
+    ["PUT", /^\/margin\/positions\/[^/]+\/protection$/],
+    // A withdrawal: its plan, starting it and drafting its next step (each step is approved on its own, guarded route).
+    ["POST", /^\/withdrawals(\/plan)?$/],
+    ["POST", /^\/withdrawals\/[^/]+\/(next|cancel)$/],
+    ["PUT", /^\/business\/profile$/],
+    ["POST", /^\/business\/(invoices|payouts)$/],
+    ["POST", /^\/business\/invoices\/[^/]+\/cancel$/],
+    // The agent wallet's settings and the grant to sign; a purchase decision only records it (a buy in practice pays nothing).
+    ["PATCH", /^\/marketplace\/agent-wallet\/settings$/],
+    ["POST", /^\/marketplace\/agent-wallet\/grant$/],
+    ["POST", /^\/marketplace\/purchases\/[^/]+\/decision$/],
+  ];
+  const READS = new Set(["GET", "HEAD", "OPTIONS"]);
+  const practiceRefuses = (method: string, path: string) =>
+    !READS.has(method) && PRACTICE_MONEY.test(path) && !PRACTICE_SAFE.some(([allowed, pattern]) => allowed === method && pattern.test(path));
   app.use("*", async (c, next) => {
-    if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
+    if (c.get("user")?.practiceMode && practiceRefuses(c.req.method, c.req.path.replace(/\/+$/, "")))
       throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");
     await next();
   });
@@ -387,13 +421,14 @@ export function createApp(deps: AppDeps) {
   const resolveToken = tokenResolver(assets);
   const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
   if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken);
+  if (deps.watchIntervalMs) requests.start(REQUEST_REMINDER_TICK_MS, deps.log);
+  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken, tokenLookup(deps.chains, assets));
   app.route("/business", businessRoutes({ invoices, payouts }));
   app.route("/invoices/public", publicInvoiceRoutes(invoices));
   // Everyday money (A5-2): scan to pay.
   app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
-  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp }));
+  app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
@@ -409,6 +444,7 @@ export function createApp(deps: AppDeps) {
   app.route("/privacy", privacyRoutes(privacy));
   app.route("/account", accountRoutes(deps.db, account));
   const agentDeps = {
+    deviceProofRequired: deps.deviceProofRequired,
     marketplace,
     invoices,
     history,

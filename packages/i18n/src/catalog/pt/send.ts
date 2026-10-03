@@ -75,6 +75,7 @@ export const send: Catalog["send"] = {
   faceIdCancelledWeb: "Não confirmado. Nada foi enviado.",
   faceIdCancelledAndroid: "Verificação cancelada. Nada foi enviado.",
   trustPaidBefore: "Já recebeu de você",
+  trustVerified: "Verificado",
   trustNew: "Novo destinatário",
   trustHandle: "Pelo @handle da pessoa",
   trustScanned: "Escaneado",

@@ -37,6 +37,8 @@ export const notify: Catalog["notify"] = {
   reminderShort: "В кошельке меньше, чем нужно для запуска",
   requestReceivedTitle: "{{name}} просит у вас {{amount}}",
   requestReceivedTitleHidden: "{{name}} просит у вас деньги",
+  requestReminderTitle: "Напоминание: {{name}} просит у вас {{amount}}",
+  requestReminderTitleHidden: "Напоминание: {{name}} просит у вас деньги",
   requestReceivedBody: "Нажмите, чтобы оплатить",
   receivedTitleHidden: "Вы получили деньги",
   sentTitleHidden: "Ваши деньги отправлены",

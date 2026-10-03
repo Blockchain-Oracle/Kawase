@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner-native";
 
-import type { SafetyChange, SafetyView, TransactionRequestResponse } from "@kawase/api-client";
+import type { SafetyChange, SafetyView, RevokeRequest } from "@kawase/api-client";
 
 import { useT } from "@/i18n";
 
@@ -13,7 +13,7 @@ export function useChangeRunner(onSafety?: (safety: SafetyView) => void, via: "a
   const { t } = useT();
   const { request, approve, revoke } = useSafetyChange();
   const [pending, setPending] = React.useState<Pending>();
-  const [revokeOffer, setRevokeOffer] = React.useState<TransactionRequestResponse>();
+  const [revokeOffer, setRevokeOffer] = React.useState<RevokeRequest>();
   const [busy, setBusy] = React.useState(false);
 
   const submit = React.useCallback(

@@ -53,6 +53,7 @@ import type { InboxService } from "../inbox/service";
 import { OpsAttempts } from "../intents/ops-attempts";
 import type { OpsExecutor } from "../send/ops";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { parseRequestAmount } from "../send/facts";
 import type { SessionUser } from "../types";
@@ -629,7 +630,7 @@ export class MarginService {
       network,
       capability: { here: view.margin[network].state, other: view.margin[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       wallet: { registered: Boolean(wallet), setUp, usdc: usdcBalance },
       action: request.action,
       market:

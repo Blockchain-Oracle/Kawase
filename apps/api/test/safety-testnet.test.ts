@@ -11,13 +11,13 @@ import { config } from "dotenv";
 import { createPublicClient, createWalletClient, erc20Abi, http, parseUnits, type Hex, type TypedDataDefinition } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { SafetyChangeResponse, SafetyView, SendApproveResponse, SendIntent, TransactionRequestResponse, ExitKitResponse } from "@kawase/api-client";
+import type { SafetyChangeResponse, SafetyView, SendApproveResponse, SendIntent, ExitKitResponse } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, revokeSubmitBody, signRevokeRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -106,10 +106,6 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
   const view = () => json<SafetyView>(call("GET", "/safety"), "safety");
   const change = (body: unknown) => json<SafetyChangeResponse>(call("POST", "/safety/changes", { change: body }), "change");
   const approve = (id: string, signature: Hex) => json<SafetyChangeResponse>(call("POST", `/safety/changes/${id}/approve`, { signature }), "approve");
-  const signTx = (request: TransactionRequestResponse) => {
-    const t = request.transaction;
-    return wallet.signTransaction({ type: "eip1559", chainId: t.chainId, nonce: t.nonce, to: t.to, data: t.data, value: 0n, gas: BigInt(t.gas), maxFeePerGas: BigInt(t.maxFeePerGas), maxPriorityFeePerGas: BigInt(t.maxPriorityFeePerGas) });
-  };
   const draftSend = async (recipient: string, amount: string, asset: "USDC" | "EURC" = "USDC") =>
     (await json<{ intent: SendIntent }>(call("POST", "/sends", { recipient, amount, asset }), "draft", 201)).intent;
   const waitFinal = async (id: string) => {
@@ -169,12 +165,10 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
   assert.equal(looser.after.amount, units("0.25").toString());
   assert.ok(looser.approval.revoke, "the old grant's revoke rides along");
   const looserSigned = await wallet.signTypedData(looser.approval.typedData as unknown as TypedDataDefinition);
-  const revokeSigned = await signTx(looser.approval.revoke!);
-  const applied = await approve(looser.changeId, looserSigned);
+  const revokeSigned = await signRevokeRequest(wallet, looser.approval.revoke!);
+  // The old grant goes off on chain inside the approval, before the new one goes on.
+  const applied = await json<SafetyChangeResponse>(call("POST", `/safety/changes/${looser.changeId}/approve`, { signature: looserSigned, revoke: revokeSigned }), "approve with revoke");
   assert.equal(applied.status === "applied" ? applied.safety.allowances.find((entry) => entry.symbol === "EURC")?.perDay : undefined, units("0.25").toString());
-  const oldRevoked = await json<{ tx: string; status: string }>(call("POST", "/wallet/transactions/submit", { requestId: looser.approval.revoke!.requestId, signedTransaction: revokeSigned }), "revoke old");
-  assert.equal(oldRevoked.status, "confirmed");
-  console.log("old EURC grant revoked on chain", oldRevoked.tx);
 
   // 6. The per-payment cap, tightened at once.
   assert.equal((await change({ kind: "per_payment", value: units("0.5").toString() })).status, "applied");
@@ -216,7 +210,7 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
   const kit = await json<ExitKitResponse>(call("POST", "/safety/exit-kit"), "exit kit");
   assert.ok(kit.user.pausedAllAt);
   assert.ok(kit.revoke);
-  const kitRevoked = await json<{ tx: string; status: string }>(call("POST", "/wallet/transactions/submit", { requestId: kit.revoke!.requestId, signedTransaction: await signTx(kit.revoke!) }), "revoke all");
+  const kitRevoked = await json<{ tx: string; status: string }>(call("POST", "/wallet/transactions/submit", revokeSubmitBody(kit.revoke!, await signRevokeRequest(wallet, kit.revoke!))), "revoke all");
   assert.equal(kitRevoked.status, "confirmed");
   console.log("exit kit: every grant revoked", kitRevoked.tx);
   const end = await view();

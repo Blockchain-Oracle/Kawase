@@ -1146,6 +1146,12 @@ importers:
         specifier: workspace:*
         version: link:../networks
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1318,10 +1324,19 @@ importers:
 
   packages/wallet:
     dependencies:
+      '@kawase/networks':
+        specifier: workspace:*
+        version: link:../networks
       viem:
         specifier: 'catalog:'
         version: 2.57.0(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@6.0.6)(zod@4.6.5)
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

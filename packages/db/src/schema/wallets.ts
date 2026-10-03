@@ -146,6 +146,11 @@ export const txAttempts = pgTable(
     receipt: jsonb().$type<Record<string, unknown>>(),
     errorCode: text(),
     lastReconciledAt: timestampTz(),
+    /**
+     * Relayer transactions only: the gas it reserved (Arc native units) before sending, then what the receipt says it
+     * paid. Summed per person and per network over a rolling day for the relayer's budget (security review H5).
+     */
+    gasCost: money(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -162,6 +167,9 @@ export const txAttempts = pgTable(
       .on(table.network, sql`lower(${table.fromAddress})`, table.nonce)
       .where(sql`${table.nonce} is not null and ${table.provider} = 'user_wallet'`),
     index("tx_attempts_status_idx").on(table.status),
+    index("tx_attempts_relayer_created_idx")
+      .on(table.network, table.createdAt)
+      .where(sql`${table.provider} = 'relayer'`),
   ],
 );
 

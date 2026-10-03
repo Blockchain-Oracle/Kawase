@@ -24,3 +24,21 @@ export const FEE_RESERVE_ACTIONS = 10;
 export const FEE_RESERVE_LOW_ACTIONS = 3;
 /** Gas-free sends through the EIP-3009 relayer (Kawase pays the fee) per person per day: a bound on what it can cost. */
 export const RELAYED_SENDS_PER_DAY = 20;
+
+/** Arc's native USDC (what gas is paid in) has 18 decimals. */
+const NATIVE_USDC = 10n ** 18n;
+/**
+ * What Kawase's relayer may spend on gas per network in a rolling day, in Arc's native units: gas-free sends, relayed
+ * batches, relayed revokes and wallet setups together (security review H5). Past it the relayer carries nothing new
+ * until older spending ages out, and the person is told why. Mainnet: 3 USDC, about 200 relayed sends at Arc's
+ * ~160 gwei base fee [INFERENCE: 65k–100k gas each]; testnet gas is free from the faucet.
+ */
+export const RELAYER_DAILY_GAS_BUDGET = { mainnet: 3n * NATIVE_USDC, testnet: 50n * NATIVE_USDC } as const;
+/** One person's share of it per rolling day, so one account's dust payouts cannot spend everyone's (0.25 USDC on mainnet). */
+export const RELAYER_GAS_PER_PERSON_DAY = { mainnet: NATIVE_USDC / 4n, testnet: 2n * NATIVE_USDC } as const;
+/** Relayed 7702 setups per wallet and network: the one that takes, with room for one that failed. */
+export const SPONSORED_SETUP_ATTEMPTS = 2;
+/** Gas reserved for a relayed transfer before its receipt says what it used (transferWithAuthorization ≈ 60k–90k). */
+export const RELAYED_SEND_GAS = 120_000n;
+/** Gas reserved for a relayed 7702 setup (one authorization ≈ 46k). */
+export const RELAYED_SETUP_GAS = 100_000n;

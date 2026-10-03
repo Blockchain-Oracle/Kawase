@@ -31,6 +31,8 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "آپ کی روزانہ کی حد بند ہے",
   LEAVES_LITTLE_FOR_FEES: "نیٹ ورک فیس کے لیے بہت کم USDC بچے گا",
   GAS_RELAYED: "آپ کا والیٹ نیٹ ورک فیس ادا نہیں کر سکتا، اس لیے اس بھیجنے کی فیس Kawase دے گا",
+  GAS_RELAY_LIMIT: "Kawase آج جتنی بار ہو سکتا تھا آپ کی نیٹ ورک فیس ادا کر چکا ہے۔ فیس کے لیے تقریباً {{needed}} رکھیں۔",
+  GAS_RELAY_BUDGET_SPENT: "Kawase کی مفت نیٹ ورک فیس آج کے لیے ختم ہو گئی ہے۔ فیس کے لیے تقریباً {{needed}} رکھیں۔",
   FEE_PAID_BY_KAWASE: "فیس Kawase ادا کرے گا: آپ کا والیٹ یہ نیٹ ورک فیس ادا نہیں کر سکتا",
   SCHEDULE_INVALID: "یہ شیڈول نہیں چل سکتا (نامعلوم ٹائم زون یا دن)۔",
   AUTO_SAVE_EXISTS: "آٹو سیو پہلے سے آن ہے۔ پہلے آٹومیشنز میں اسے بند کریں، پھر نیا سیٹ کریں۔",
@@ -47,6 +49,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "رابطہ کھولیں",
   AGENT_PAUSED: "رکا ہوا: اس کے لیے آپ کی منظوری چاہیے",
   NOT_ON_ALLOWLIST: "آپ کی اجازت فہرست میں نہیں: اس کے لیے آپ کی منظوری چاہیے",
+  ABOVE_APPROVAL_THRESHOLD: "{{limit}} سے زیادہ: اس کے لیے آپ کی منظوری درکار ہے",
+  OVER_RECIPIENT_WEEKLY: "ایک شخص کو ہفتے میں {{limit}} سے زیادہ (پہلے ہی {{used}} بھیجے جا چکے): اس کے لیے آپ کی منظوری درکار ہے",
   NEW_RECIPIENT_COOLDOWN:
     "نیا وصول کنندہ: {{until}} تک، انہیں {{cap}} سے زیادہ کے لیے آپ کی منظوری چاہیے۔ اسے والیٹ اور حدود میں بدلیں۔",
   TEST_AMOUNT_SUGGESTED: "یہاں پہلی ادائیگی۔ پہلے {{test}} بھیج کر دیکھیں کہ پہنچتا ہے؟",

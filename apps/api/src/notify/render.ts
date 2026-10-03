@@ -61,7 +61,14 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       break;
     // Someone on Kawase asked the person for money (a split share or a request): the tap opens the pay card.
     case "request_received":
-      title = hide ? text(locale, "notify", "requestReceivedTitleHidden", { name }) : text(locale, "notify", "requestReceivedTitle", { name, amount: sum });
+      // A reminder (the requester's Remind, or Kawase's own) says so in its title.
+      title = p.reminder
+        ? hide
+          ? text(locale, "notify", "requestReminderTitleHidden", { name })
+          : text(locale, "notify", "requestReminderTitle", { name, amount: sum })
+        : hide
+          ? text(locale, "notify", "requestReceivedTitleHidden", { name })
+          : text(locale, "notify", "requestReceivedTitle", { name, amount: sum });
       body = p.note || text(locale, "notify", "requestReceivedBody");
       path = p.token ? `/r/${p.token}` : "/inbox";
       break;

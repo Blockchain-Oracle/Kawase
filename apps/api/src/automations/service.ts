@@ -36,7 +36,7 @@ import type {
   RuleView,
   SimulatedRun,
   SimulationView,
-  TransactionRequestResponse,
+  RevokeRequest,
 } from "@kawase/api-client";
 import {
   attentionItems,
@@ -97,7 +97,7 @@ import type { Recipients } from "../send/recipients";
 import type { SendService } from "../send/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
-import type { WalletService } from "../wallet/service";
+import type { SignedRevoke, WalletService } from "../wallet/service";
 
 type AutomationRow = typeof automations.$inferSelect;
 type RunRow = typeof automationRuns.$inferSelect;
@@ -1039,14 +1039,12 @@ export class AutomationService {
   }
 
   /** Stops it at once (nothing runs again); the grant is revoked on chain by the wallet signing the returned call. */
-  async cancel(user: SessionUser, id: string): Promise<{ automation: AutomationView; revoke: TransactionRequestResponse | null }> {
+  async cancel(user: SessionUser, id: string): Promise<{ automation: AutomationView; revoke: RevokeRequest | null }> {
     const row = await this.own(user.id, id);
     if (row.status !== "canceled" && row.status !== "ended") await this.db.update(automations).set({ status: "canceled", nextRunAt: null }).where(eq(automations.id, id));
-    const active = await this.db
-      .select({ id: grants.id })
-      .from(grants)
-      .where(and(eq(grants.automationId, id), eq(grants.userId, user.id), eq(grants.status, "active")));
-    const revoke = (await this.wallets.revokeGrantsRequest(user.id, active.map((grant) => grant.id))) as TransactionRequestResponse | null;
+    // Every grant it ever held that the chain still honours (one an edit set aside included).
+    const held = await this.db.select({ id: grants.id }).from(grants).where(and(eq(grants.automationId, id), eq(grants.userId, user.id)));
+    const revoke = await this.wallets.revokeGrantsRequest(user.id, held.map((grant) => grant.id));
     return { automation: await this.get(user.id, id), revoke };
   }
 
@@ -1221,12 +1219,21 @@ export class AutomationService {
         status: "pending",
       })
       .returning({ id: grants.id });
-    const revoke = (await this.wallets.revokeGrantsRequest(user.id, [grant.id])) as TransactionRequestResponse | null;
+    const revoke = await this.wallets.revokeGrantsRequest(user.id, await this.otherGrantIds(id, inserted!.id));
     return { automation: await this.view(row), grant: { grants: [{ grantId: inserted!.id, typedData: jsonSafe(typedData) }], receipts: [jsonSafe(receipt)] }, revoke };
   }
 
-  /** The widened grant was signed: checked against the wallet, then the edit applies and the old grant stands down. */
-  async editActivate(user: SessionUser, id: string, input: { signatures: { grantId: string; signature: Hex }[] }) {
+  /** The automation's other grants: the ones a widened edit replaces (revoke covers those the chain still honours). */
+  private async otherGrantIds(automationId: string, keep: string) {
+    const rows = await this.db.select({ id: grants.id }).from(grants).where(and(eq(grants.automationId, automationId), ne(grants.id, keep)));
+    return rows.map((row) => row.id);
+  }
+
+  /**
+   * The widened grant was signed: checked against the wallet; the old grant is turned off on chain first (its revoke was
+   * signed in the same yes), then the edit applies.
+   */
+  async editActivate(user: SessionUser, id: string, input: { signatures: { grantId: string; signature: Hex }[]; revoke?: SignedRevoke | undefined }) {
     const row = await this.own(user.id, id);
     const [entry] = input.signatures;
     if (!entry || input.signatures.length !== 1) throw problem(HTTP.unprocessable, "grant_not_pending");
@@ -1240,6 +1247,7 @@ export class AutomationService {
     const typedData = grantTypedData(context, delegation) as TypedDataDefinition;
     const valid = await verifyTypedData({ address: wallet.address as Address, ...typedData, signature: entry.signature }).catch(() => false);
     if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
+    await this.wallets.revokeFirst(user.id, await this.otherGrantIds(id, pending.id), input.revoke);
     const action = row.action as AutomationAction;
     const nextRunAt = row.status === "active" ? (nextRuns(edit.schedule, new Date(), 1)[0] ?? null) : row.nextRunAt;
     await this.db.transaction(async (tx) => {

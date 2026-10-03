@@ -27,6 +27,7 @@ const createSchema = z.object({
 });
 const updateSchema = createSchema.omit({ address: true, source: true }).partial();
 const changeSchema = z.object({ address: z.string().trim().min(1).max(ADDRESS_INPUT_MAX), source: source.optional() });
+const verifySchema = z.object({ method: z.enum(["qr", "in_person", "call"]).nullable() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -52,6 +53,11 @@ export function contactRoutes(contacts: ContactService) {
   app.post("/:id/address", async (c) => {
     const input = await parse(changeSchema, await c.req.json());
     return c.json({ contact: await contacts.changeAddress(c.get("userId")!, c.req.param("id"), input) });
+  });
+  // Only the person: verification is what lets them trust an address, so no agent tool sets it.
+  app.post("/:id/verify", async (c) => {
+    const { method } = await parse(verifySchema, await c.req.json());
+    return c.json({ contact: await contacts.verify(c.get("userId")!, c.req.param("id"), c.get("user")!.activeNetwork, method) });
   });
   app.delete("/:id/address/pending", async (c) =>
     c.json({ contact: await contacts.cancelChange(c.get("userId")!, c.req.param("id")) }),

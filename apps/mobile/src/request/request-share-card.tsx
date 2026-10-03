@@ -1,10 +1,11 @@
 // The share card for a payment request (C3, revamp 10b): who asks and how much (the amount large, with the asset's
 // real mark), the note the payer will see, the network, the link with a scannable QR on an ink tile (it scans on
 // both themes, like Receive), Copy and Share, and the live status — waiting, paid by whom and when with the
-// explorer link, cancelled or expired. One lime action while it is open: Share. The same card sits in the chat
+// explorer link, cancelled or expired. One lime action while it is open: Share; Remind nudges the payer again (in
+// Kawase once a day when they were asked there, else the link again). The same card sits in the chat
 // (compact: no QR). Links and addresses stay left-to-right in every language.
 import * as Clipboard from "expo-clipboard";
-import { Check, Copy, ExternalLink, Share2 } from "lucide-react-native";
+import { BellRing, Check, Copy, ExternalLink, Share2 } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Share, View } from "react-native";
 import { toast } from "sonner-native";
@@ -20,6 +21,7 @@ import { tokens } from "@kawase/ui-tokens";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { api } from "@/session/api";
 import { shortAddress } from "@/send/copy";
 
 import { AskOnKawase } from "./ask-on-kawase";
@@ -65,6 +67,22 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
     await Share.share({
       message: t("request.shareMessage", { name: requester, amount: sum, network: networkName, link: request.link }),
     });
+  };
+  // Remind: someone asked in Kawase is told there (once a day); a link only is shared again with a reminder.
+  const [reminding, setReminding] = React.useState(false);
+  const remind = async () => {
+    setReminding(true);
+    try {
+      const { reminded } = await api.requests.remind(request.id);
+      const payer = request.payer?.handle ? `@${request.payer.handle}` : "";
+      if (reminded === "in_app") toast(t("request.reminded", { name: payer }));
+      else if (reminded === "already_today") toast(t("request.remindedAlready", { name: payer }));
+      else await Share.share({ message: t("request.reminderMessage", { name: requester, amount: sum, network: networkName, link: request.link }) });
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setReminding(false);
+    }
   };
 
   return (
@@ -147,6 +165,10 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
           <Button size={compact ? "default" : "lg"} onPress={() => void share()}>
             <Icon as={Share2} className="text-primary-foreground size-5" />
             <Text>{t("request.share")}</Text>
+          </Button>
+          <Button variant="secondary" disabled={reminding} onPress={() => void remind()}>
+            <Icon as={BellRing} className="size-4" />
+            <Text>{t("request.remind")}</Text>
           </Button>
           <AskOnKawase request={request} />
           {onCancel ? (

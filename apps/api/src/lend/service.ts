@@ -47,6 +47,7 @@ import { capabilityView } from "../capabilities/service";
 import type { EarnService } from "../earn/service";
 import type { LpService } from "../lp/service";
 import { HTTP, problem } from "../http/problem";
+import { pausedAll } from "../safety/settings";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
@@ -405,7 +406,7 @@ export class LendService {
       network,
       capability: { here: view.lend[network].state, other: view.lend[other].state },
       signedIn: !user.isAnonymous,
-      pausedAll: false,
+      pausedAll: await pausedAll(this.db, user.id),
       wallet: { registered: Boolean(wallet), setUp, usdc: usdcBalance },
       action,
       asset: !request.asset ? { status: "missing" } : !reserve ? { status: "unknown", name: request.asset } : { status: "found", symbol: reserve.symbol, decimals: reserve.decimals, borrowable: reserve.borrowable && !reserve.paused && !reserve.frozen, collateralOk: reserve.collateralFactorBps > 0 },

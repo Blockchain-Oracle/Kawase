@@ -21,7 +21,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Page, Section } from "@/account/page";
 import { assetParam, TokenChoice, USDC_CHOICE, type TokenChoiceValue } from "@/business/token-choice";
 import { parseLines } from "@/business/lines";
-import { signAndSubmitPayout } from "@/business/sign-payout";
+import { payoutFailedText, signAndSubmitPayout } from "@/business/sign-payout";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
@@ -32,6 +32,8 @@ import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const EXPLORER = { testnet: `${arcTestnet.blockExplorers?.default.url ?? ""}/tx/`, mainnet: `${arc.blockExplorers?.default.url ?? ""}/tx/` } as const;
 const TEXTAREA_LINES = 6;
+/** Line problems the api names (send rules included: a hold, a block, a limit); anything else reads as "unknown". */
+const PAYOUT_PROBLEMS = ["amount", "self", "lookalike", "token_contract", "invalid", "hold", "blocked", "limit", "changed", "rules"];
 
 export function PayoutsScreen() {
   const { t } = useT();
@@ -80,8 +82,8 @@ export function PayoutsScreen() {
       setDraft(undefined);
       setText("");
       await load();
-    } catch {
-      toast(t("business.payoutFailed"));
+    } catch (error) {
+      toast(payoutFailedText(error, t, locale));
     } finally {
       setBusy(false);
     }
@@ -106,7 +108,7 @@ export function PayoutsScreen() {
         {parsed.bad.length > 0 ? <Text className={cn("text-destructive text-sm", TEXT_START)}>{t("business.badLines", { lines: parsed.bad.join(", ") })}</Text> : null}
         {problems.map((entry) => (
           <Text key={entry.index} className={cn("text-destructive text-sm", TEXT_START)}>
-            {t("business.lineProblem", { who: entry.recipient, problem: t(`business.problem.${["amount", "self", "lookalike", "token_contract", "invalid"].includes(entry.problem) ? entry.problem : "unknown"}`) })}
+            {t("business.lineProblem", { who: entry.recipient, problem: t(`business.problem.${PAYOUT_PROBLEMS.includes(entry.problem) ? entry.problem : "unknown"}`) })}
           </Text>
         ))}
         {!draft ? (

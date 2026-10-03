@@ -46,7 +46,8 @@ export class InboxService {
     private readonly notify?: NotifyService,
   ) {}
 
-  async add(executor: Executor, item: NewInboxItem) {
+  /** Adds the item and queues its push and email; false when the same event (its dedupe key) was already told. */
+  async add(executor: Executor, item: NewInboxItem): Promise<boolean> {
     const [added] = await executor
       .insert(inboxItems)
       .values({
@@ -63,6 +64,7 @@ export class InboxService {
       .returning({ id: inboxItems.id });
     // The same event reported again is not told again.
     if (added && this.notify) await this.notify.enqueue(executor, added.id, item.userId);
+    return Boolean(added);
   }
 
   async list(userId: string): Promise<{ items: InboxItem[]; unread: number }> {

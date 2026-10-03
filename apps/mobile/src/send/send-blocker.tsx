@@ -132,6 +132,8 @@ export function SendBlocker({
       break;
     case "INSUFFICIENT_BALANCE":
     case "INSUFFICIENT_GAS":
+    case "GAS_RELAY_LIMIT":
+    case "GAS_RELAY_BUDGET_SPENT":
       fix = (
         <View className="flex-row gap-2">
           <Button className="flex-1" onPress={() => fund.open()}>

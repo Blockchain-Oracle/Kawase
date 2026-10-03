@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { inArray } from "drizzle-orm";
 
-import { users } from "@kawase/db";
+import { handleHolds, users } from "@kawase/db";
 
 import { deleteUser, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
@@ -92,9 +92,18 @@ test("a handle follows the rules, is unique without regard to case, and can be c
   assert.equal(taken.status, 409);
   assert.match(((await taken.json()) as { type: string }).type, /handle_taken$/);
 
+  // Cleared (or renamed away from), it is held: no one else can take it and be paid in Kenji's place, but he may
+  // take it back (security review 2026-10-03, low).
   const cleared = await setHandle(kenji.token, null);
   assert.equal(((await cleared.json()) as { user: { handle: string | null } }).user.handle, null);
-  assert.equal((await setHandle(fatima.token, name)).status, 200, "free again once cleared");
+  assert.equal((await availability(fatima.token, name)).reason, "taken");
+  assert.equal((await setHandle(fatima.token, name)).status, 409, "held after it was given up");
+  assert.equal((await setHandle(kenji.token, name)).status, 200, "the person who gave it up takes it back");
+  const renamed = `${name}_2`;
+  assert.equal((await setHandle(kenji.token, renamed)).status, 200);
+  assert.equal((await setHandle(fatima.token, name)).status, 409, "held after a rename too");
+  await db.delete(handleHolds).where(inArray(handleHolds.handle, [name, renamed]));
+  assert.equal((await setHandle(fatima.token, name)).status, 200, "free once the hold is over");
 });
 
 test("a guest cannot take a handle", async () => {

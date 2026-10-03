@@ -13,5 +13,6 @@ export const inbox: Catalog["inbox"] = {
   loadFailed: "No se pudo cargar tu bandeja.",
   bellUnread: "Bandeja, {{count}} nuevos",
   askedYou: "{{name}} te pidió {{amount}}",
+  remindedYou: "Recordatorio: {{name}} te pidió {{amount}}",
   pay: "Pagar",
 };

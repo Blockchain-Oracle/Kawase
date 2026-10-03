@@ -34,6 +34,11 @@ export const request = {
   askName: "Ask {{name}}",
   askedInApp: "Asked {{name}} in Kawase",
   askedToast: "{{name}} was asked in Kawase",
+  remind: "Remind",
+  reminding: "Reminding…",
+  reminded: "{{name}} was reminded in Kawase",
+  remindedAlready: "{{name}} was already reminded today",
+  reminderMessage: "Reminder: {{name}} requests {{amount}} on {{network}}. Pay here: {{link}}",
   askNotOnKawase: "{{name}} isn't someone on Kawase you've saved. Share the link instead.",
   askSomeoneElse: "Ask someone else",
 } as const;

@@ -77,6 +77,7 @@ export function usePolicyText() {
 export function useTrustLabel() {
   const { t } = useT();
   return (recipient: SendRecipientView) => {
+    if (recipient.verifiedMethod) return t("send.trustVerified");
     if (recipient.paidBefore) return t("send.trustPaidBefore");
     if (recipient.via === "address") return t("send.trustUnsaved");
     switch (recipient.source) {

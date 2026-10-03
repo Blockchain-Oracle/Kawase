@@ -4,20 +4,33 @@
 // wallet signing that transaction (if the person declines, Kawase still never uses it, and says so).
 import * as React from "react";
 import { toast } from "sonner-native";
-import type { TypedDataDefinition } from "viem";
+import type { Address, TypedDataDefinition } from "viem";
 
 import type { AutomationEdit, AutomationView, SimulationView } from "@kawase/api-client";
+import { SigningRefused, checkGrant, receiptOf, type ShownGrant } from "@kawase/wallet";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
-import { toSerializable } from "@/wallet/use-wallet-setup";
+import { sayIfRefused } from "@/wallet/refused";
+import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const POLL_MS = 5_000;
 /** After turning Auto-save on it checks at once: follow it for this long so the first move shows. */
 const FIRST_CHECK_MS = 90_000;
+
+/**
+ * One grant an automation asks for, as its card shows it: the receipt it came with, decoded again on the phone, and a
+ * scheduled send pinned to the person the card names.
+ */
+function checkAutomationGrant(typedData: unknown, receipt: unknown, automation: AutomationView, wallet: Address) {
+  if (!receipt) throw new SigningRefused("a grant without its receipt");
+  const decoded = checkGrant(typedData as Parameters<typeof checkGrant>[0], receipt as ShownGrant, wallet);
+  const recipient = automation.kind === "scheduled_send" ? automation.action?.recipientAddress : undefined;
+  if (recipient && receiptOf(decoded).recipient?.toLowerCase() !== recipient.toLowerCase()) throw new SigningRefused("the grant pays someone other than its card names");
+}
 
 export function useAutomation(initial: AutomationView | undefined) {
   const { t } = useT();
@@ -51,8 +64,8 @@ export function useAutomation(initial: AutomationView | undefined) {
     setBusy(true);
     try {
       await work();
-    } catch {
-      toast(t("automation.failed"));
+    } catch (error) {
+      if (!sayIfRefused(error, t)) toast(t("automation.failed"));
       await refresh();
     } finally {
       setBusy(false);
@@ -76,6 +89,8 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(check === "unavailable" ? t("send.approvalUnavailable") : check === "failed" ? t("send.approvalFailed") : t("send.faceIdCancelled"));
         return;
       }
+      // What the card shows is what is signed: every grant decoded on the phone and checked against its receipt (M6).
+      request.grants.forEach((entry, index) => checkAutomationGrant(entry.typedData, request.receipts[index], automation, signer.address));
       // One yes covers every grant this automation needs.
       const signatures: { grantId: string; signature: string }[] = [];
       for (const entry of request.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
@@ -106,8 +121,7 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(t("automation.revokeLater"));
         return;
       }
-      const signed = await signer.signTransaction(toSerializable(revoke.transaction));
-      const result = await api.wallet.submitTransaction(revoke.requestId, signed);
+      const result = await submitRevoke(revoke, await signRevoke(signer, revoke));
       toast(result.status === "confirmed" ? t("automation.revoked") : t("automation.revokeLater"));
       await refresh();
     });
@@ -143,12 +157,13 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(t("safety.notApproved"));
         return;
       }
+      answer.grant.grants.forEach((entry, index) => checkAutomationGrant(entry.typedData, answer.grant!.receipts[index], answer.automation, signer.address));
       const signatures: { grantId: string; signature: string }[] = [];
       for (const entry of answer.grant.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
-      const signedRevoke = answer.revoke ? await signer.signTransaction(toSerializable(answer.revoke.transaction)) : undefined;
-      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures);
+      // The old grant's revoke goes with the new one: the api turns it off on chain before the edit applies.
+      const signedRevoke = answer.revoke ? await signRevoke(signer, answer.revoke) : undefined;
+      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures, signedRevoke);
       setAutomation(edited);
-      if (answer.revoke && signedRevoke) await api.wallet.submitTransaction(answer.revoke.requestId, signedRevoke).catch(() => undefined);
       toast(t("automation.edited"));
     });
 

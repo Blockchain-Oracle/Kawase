@@ -30,6 +30,8 @@ export const policy: Catalog["policy"] = {
   NO_ALLOWANCE: "حدّك اليومي متوقف",
   LEAVES_LITTLE_FOR_FEES: "سيتبقّى قليل جدًا من USDC لرسوم الشبكة",
   GAS_RELAYED: "لا تكفي محفظتك لرسوم الشبكة، لذا تدفعها Kawase عن هذا الإرسال",
+  GAS_RELAY_LIMIT: "دفعت Kawase رسوم الشبكة عنك اليوم بالقدر الأقصى. احتفظ بنحو {{needed}} للرسوم.",
+  GAS_RELAY_BUDGET_SPENT: "نفدت رسوم الشبكة المجانية من Kawase لهذا اليوم. احتفظ بنحو {{needed}} للرسوم.",
   FEE_PAID_BY_KAWASE: "الرسوم تدفعها Kawase: لا تكفي محفظتك لرسوم الشبكة هذه",
   SCHEDULE_INVALID: "لا يمكن الالتزام بهذا الجدول (منطقة زمنية أو يوم غير معروف).",
   AUTO_SAVE_EXISTS: "الادخار التلقائي مفعّل بالفعل. أوقفه أولاً من الأتمتة، ثم أنشئ الجديد.",
@@ -46,6 +48,8 @@ export const policy: Catalog["policy"] = {
   fixOpenContact: "افتح جهة الاتصال",
   AGENT_PAUSED: "متوقف مؤقتًا: هذه الدفعة تحتاج موافقتك",
   NOT_ON_ALLOWLIST: "ليس في قائمة السماح: هذه الدفعة تحتاج موافقتك",
+  ABOVE_APPROVAL_THRESHOLD: "أكثر من {{limit}}: هذه تحتاج إلى موافقتك",
+  OVER_RECIPIENT_WEEKLY: "أكثر من {{limit}} أسبوعيًا لشخص واحد (أُرسل {{used}} بالفعل): هذه تحتاج إلى موافقتك",
   NEW_RECIPIENT_COOLDOWN:
     "مستلم جديد: حتى {{until}}، أي مبلغ يزيد على {{cap}} إليه يحتاج موافقتك. غيّر ذلك في المحفظة والحدود.",
   TEST_AMOUNT_SUGGESTED: "أول دفعة إلى هنا. هل ترسل {{test}} أولًا للتأكد من وصولها؟",

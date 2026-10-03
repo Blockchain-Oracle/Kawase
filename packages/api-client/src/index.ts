@@ -16,7 +16,8 @@ import type {
   SignedAuthorizationInput,
   SignInResponse,
   StampedProof,
-  TransactionRequestResponse,
+  RevokeRequest,
+  SignedRevokeInput,
   WalletStatus,
   FaucetClaim,
   FaucetStatus,
@@ -48,6 +49,8 @@ import type {
   BridgeRequest,
   PaymentRequest,
   PaymentRequestInput,
+  RequestReminder,
+  VerifyMethod,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -128,11 +131,17 @@ export type ApiClientOptions = {
   /** The Kawase session token, when signed in. */
   getToken: () => string | undefined | Promise<string | undefined>;
   fetch?: typeof fetch;
+  /**
+   * Headers proving a request comes from this device's own Turnkey key (security review M12), for the calls a bearer
+   * token alone may not make: approving a send (inside the allowance it goes at once), a waiting run, deleting the
+   * account. Without it those calls go unproven (older servers accept that until proofs are required).
+   */
+  prove?: (request: { method: string; path: string; body: string }) => Promise<Record<string, string>>;
 };
 
 const HTTP_NO_CONTENT = 204;
 
-export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }: ApiClientOptions) {
+export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, prove }: ApiClientOptions) {
   const base = baseUrl.replace(/\/$/, "");
 
   async function call<T>(
@@ -143,6 +152,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       idempotencyKey?: string | undefined;
       token?: string | undefined;
       authAttemptId?: string | undefined;
+      /** Carries the device's proof (M12). */
+      proven?: boolean | undefined;
     } = {},
   ): Promise<T> {
     const token = options.token ?? (await getToken());
@@ -151,8 +162,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     if (token) headers.authorization = `Bearer ${token}`;
     if (options.idempotencyKey) headers["idempotency-key"] = options.idempotencyKey;
     if (options.authAttemptId) headers["x-kawase-auth-attempt"] = options.authAttemptId;
+    const sent = body !== undefined ? JSON.stringify(body) : undefined;
+    // The proof covers this exact method, path and body; a device that cannot prove sends none (the api decides).
+    if (options.proven && prove) Object.assign(headers, await prove({ method, path, body: sent ?? "" }).catch(() => ({})));
     const init: RequestInit = { method, headers };
-    if (body !== undefined) init.body = JSON.stringify(body);
+    if (sent !== undefined) init.body = sent;
     const response = await fetchImpl(`${base}${path}`, init);
     if (response.status === HTTP_NO_CONTENT) return undefined as T;
     const text = await response.text();
@@ -215,7 +229,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input, { authAttemptId }),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
       setupSubmit: (network: NetworkId, authorization: SignedAuthorizationInput, idempotencyKey?: string) =>
-        call<{ tx: string; setUp: boolean }>(
+        call<{ tx: string | null; setUp: boolean }>(
           "POST",
           "/wallet/setup/submit",
           { network, authorization },
@@ -223,18 +237,23 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         ),
       allowanceRequest: (network: NetworkId, periodAmount?: string) =>
         call<AllowanceRequestResponse>("POST", "/wallet/allowance/request", { network, periodAmount }),
-      allowanceSubmit: (grantId: string, signature: string) =>
+      /** `revoke`: the allowance it replaces, signed in the same yes; the api turns it off on chain first. */
+      allowanceSubmit: (grantId: string, signature: string, revoke?: SignedRevokeInput) =>
         call<{ grantId: string; receipt: unknown; expiresAt: string }>("POST", "/wallet/allowance/submit", {
           grantId,
           signature,
+          revoke,
         }),
       revokeRequest: (network: NetworkId) =>
-        call<TransactionRequestResponse>("POST", "/wallet/allowance/revoke/request", { network }),
+        call<RevokeRequest>("POST", "/wallet/allowance/revoke/request", { network }),
       submitTransaction: (requestId: string, signedTransaction: string) =>
         call<{ tx: string; status: "confirmed" | "reverted" }>("POST", "/wallet/transactions/submit", {
           requestId,
           signedTransaction,
         }),
+      /** The wallet's signature on a relayed request (a RevokeRequest with `relayed`): Kawase's relayer sends it. */
+      submitSignature: (requestId: string, signature: string) =>
+        call<{ tx: string; status: "confirmed" | "reverted" }>("POST", "/wallet/transactions/submit", { requestId, signature }),
     },
 
     agent: {
@@ -243,6 +262,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** One conversation with its messages (AI SDK UI messages). */
       thread: (id: string) => call<{ thread: ThreadSummary; messages: unknown[] }>("GET", `/agent/threads/${id}`),
       deleteThread: (id: string) => call<void>("DELETE", `/agent/threads/${id}`),
+      renameThread: (id: string, title: string) => call<{ thread: ThreadSummary }>("PATCH", `/agent/threads/${id}`, { title }),
     },
 
     contacts: {
@@ -257,6 +277,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
         call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
       cancelChange: (id: string) => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending`),
+      /** Mark the current address verified on the active network (null clears it). */
+      verify: (id: string, method: VerifyMethod | null) => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method }),
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
     },
 
@@ -274,7 +296,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
       approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey, proven: true }),
       /** `kind: "typed"` for a gas-free send's EIP-3009 signature. */
       signature: (id: string, approvalId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction, ...(kind ? { kind } : {}) }),
@@ -365,7 +387,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       skip: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/skip`),
       /** Stops it at once; the answer carries the revoke transaction for the wallet to sign (the grant on chain). */
       cancel: (id: string) =>
-        call<{ automation: AutomationView; revoke: TransactionRequestResponse | null }>(
+        call<{ automation: AutomationView; revoke: RevokeRequest | null }>(
           "POST",
           `/automations/${id}/cancel`,
         ),
@@ -378,8 +400,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
       simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
       edit: (id: string, edit: AutomationEdit) => call<AutomationEditResponse>("PATCH", `/automations/${id}`, edit),
-      editActivate: (id: string, signatures: { grantId: string; signature: string }[]) =>
-        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures }),
+      editActivate: (id: string, signatures: { grantId: string; signature: string }[], revoke?: SignedRevokeInput) =>
+        call<{ automation: AutomationView }>("POST", `/automations/${id}/edit/activate`, { signatures, revoke }),
     } satisfies AutomationsMoreApi,
 
     /** Activity everywhere: every token's movements merged with Kawase's own outcomes, with their why. */
@@ -392,7 +414,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     needsYou: {
       list: () => call<{ items: NeedsYouItem[]; pending: number }>("GET", "/needs-you"),
       get: (id: string) => call<{ item: NeedsYouItem }>("GET", `/needs-you/${id}`),
-      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }),
+      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }, { proven: true }),
       decline: (id: string, via?: "app" | "push" | "web" | "chat") => call<{ item: NeedsYouItem }>("POST", `/needs-you/${id}/decline`, { via }),
     } satisfies NeedsYouApi,
 
@@ -409,6 +431,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/cancel`),
       /** Ask a Kawase user for an open request in the app (an @handle or a contact's name); the link still works. */
       ask: (id: string, payer: string) => call<{ request: PaymentRequest }>("POST", `/requests/${id}/ask`, { payer }),
+      /** Remind the payer: in the app once a day when they were asked there; otherwise "link" (share it again). */
+      remind: (id: string) => call<{ request: PaymentRequest; reminded: RequestReminder }>("POST", `/requests/${id}/remind`),
       /** No account needed: what the link shows to whoever opens it. */
       open: (token: string) => call<{ request: PublicPaymentRequest }>("GET", `/r/${encodeURIComponent(token)}`),
     },
@@ -491,8 +515,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       exportRecorded: () => call<void>("POST", "/account/export/recorded"),
       holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
       revokeAllRequest: (network: NetworkId) =>
-        call<{ revoke: TransactionRequestResponse | null }>("POST", "/account/grants/revoke/request", { network }),
-      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
+        call<{ revoke: RevokeRequest | null }>("POST", "/account/grants/revoke/request", { network }),
+      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }, { proven: true }),
     } satisfies AccountApi,
 
     /** Wallet & limits on the active network: tightening applies at once; loosening returns what to sign. */
@@ -500,7 +524,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       get: () => call<SafetyView>("GET", "/safety"),
       tokens: (address?: string) => call<{ tokens: TokenOption[] }>("GET", `/safety/tokens${address ? `?address=${encodeURIComponent(address)}` : ""}`),
       change: (change: SafetyChange, via?: "app" | "chat" | "voice") => call<SafetyChangeResponse>("POST", "/safety/changes", { change, via }),
-      approve: (changeId: string, signature: string) => call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature }),
+      approve: (changeId: string, signature: string, revoke?: SignedRevokeInput) =>
+        call<SafetyChangeResponse>("POST", `/safety/changes/${changeId}/approve`, { signature, revoke }),
       pause: () => call<SafetyChangeResponse>("POST", "/safety/changes", { change: { kind: "pause", on: true } }),
       exitKit: () => call<ExitKitResponse>("POST", "/safety/exit-kit"),
     } satisfies SafetyApi,
@@ -514,8 +539,9 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ settings: AgentWalletSettings }>("PATCH", "/marketplace/agent-wallet/settings", change),
       /** The marketplace grant to sign once (Face ID): USDC only to the agent wallet, capped per day. */
       grant: () => call<MarketplaceGrantRequest>("POST", "/marketplace/agent-wallet/grant"),
-      grantSubmit: (grantId: string, signature: string) =>
-        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", { grantId, signature }),
+      /** `revoke`: the request's revoke, signed in the same yes (the earlier grant it replaces is turned off on chain first). */
+      grantSubmit: (grantId: string, signature: string, revoke?: SignedRevokeInput) =>
+        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", revoke ? { grantId, signature, revoke } : { grantId, signature }),
       topUp: (amount: string, idempotencyKey?: string) =>
         call<TopUpResult>("POST", "/marketplace/agent-wallet/top-up", { amount }, { idempotencyKey }),
       /** Everything in the agent wallet back to the person's wallet. */

@@ -3,8 +3,10 @@
 import type { IntelligenceContext, MemoryFact } from "@kawase/agent";
 import { eq } from "drizzle-orm";
 
-import { threadDigests, type Db } from "@kawase/db";
+import { splitShares, splits, threadDigests, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
+import { formatTokenAmount } from "@kawase/money";
+import type { PaymentRequest } from "@kawase/api-client";
 
 import { MemoryService } from "../memory/service";
 import { SearchService } from "../search/service";
@@ -27,6 +29,10 @@ import { chartFor, decisionFor, settingDiff } from "./insight";
 import type { SessionUser } from "../types";
 
 const WORD_MIN = 2;
+/** Open requests listed for the person to pick from when a reminder matches several. */
+const REMIND_CHOICES = 5;
+/** Amounts for the model are canonical English digits; it says them in the person's language. */
+const DISPLAY_LOCALE = "en";
 /** Words of two or more letters, lowercased, for matching "forget my landlord" to a fact. */
 const words = (text: string) => new Set(text.toLowerCase().split(/[^\p{L}\p{N}@_]+/u).filter((word) => word.length >= WORD_MIN));
 
@@ -141,6 +147,45 @@ export function buildIntelligence(input: {
         if (error instanceof ProblemError && error.code === "validation") return { status: "invalid", problem: error.detail ?? "invalid" };
         throw error;
       }
+    },
+
+    async remindPayment({ who, about, requestId }) {
+      if (user.isAnonymous) return { status: "needs_sign_in" };
+      const open = (await input.requests.list(user.id)).filter((request) => request.status === "open" && request.network === user.activeNetwork);
+      // Who each request was for: the payer asked in Kawase, or the name on a split's share (and the split's title).
+      const shares = await db
+        .select({ requestId: splitShares.requestId, name: splitShares.name, handle: splitShares.handle, title: splits.title })
+        .from(splitShares)
+        .innerJoin(splits, eq(splits.id, splitShares.splitId))
+        .where(eq(splitShares.userId, user.id));
+      const byRequest = new Map(shares.map((share) => [share.requestId, share]));
+      const label = (request: PaymentRequest) => {
+        const share = byRequest.get(request.id);
+        return request.payer?.handle ? `@${request.payer.handle}` : (share?.name ?? null);
+      };
+      const wanted = who?.trim().replace(/^@/, "").toLowerCase();
+      const topic = about ? words(about) : undefined;
+      const matches = requestId
+        ? open.filter((request) => request.id === requestId)
+        : open.filter((request) => {
+            const share = byRequest.get(request.id);
+            const names = [request.payer?.handle, share?.name, share?.handle].flatMap((name) => (name ? [name.toLowerCase()] : []));
+            const said = words([request.note, share?.title].filter(Boolean).join(" "));
+            return (!wanted || names.includes(wanted)) && (!topic || [...topic].some((word) => said.has(word)));
+          });
+      if (matches.length === 0) return { status: "not_found" };
+      if (matches.length > 1)
+        return {
+          status: "choose",
+          requests: matches.slice(0, REMIND_CHOICES).map((request) => ({
+            requestId: request.id,
+            who: label(request),
+            amount: formatTokenAmount(BigInt(request.amount), request.assetToken.decimals, request.asset, DISPLAY_LOCALE, { trimZeros: true }),
+            note: request.note,
+          })),
+        };
+      const { request, reminded } = await input.requests.remind(user.id, matches[0]!.id);
+      return { status: "reminded", request, reminded, who: label(request) };
     },
 
     async payCode(code) {

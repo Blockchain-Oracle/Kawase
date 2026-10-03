@@ -86,17 +86,24 @@ export type SendFacts = {
   cooldown?: { seconds: number; cap: bigint; now: string } | undefined;
   /** Only allowlisted recipients may be paid inside the allowance (without the person). */
   allowlistOnly?: boolean | undefined;
-  /** The person's limits for this network, in the asset's own units. */
-  limits: { perTx: bigint; daily: bigint; weekly: bigint };
-  /** Reserved and committed sends of this asset in the last day and week. */
-  spent: { day: bigint; week: bigint };
+  /**
+   * The person's limits for this network, in the asset's own units. `perRecipientWeekly`: the most one address gets in
+   * a week without the person's own yes (limits-and-safety.md §1, "per-recipient cap").
+   */
+  limits: { perTx: bigint; daily: bigint; weekly: bigint; perRecipientWeekly: bigint };
+  /** Reserved and committed sends of this asset in the last day and week, and to this recipient in the last week. */
+  spent: { day: bigint; week: bigint; recipientWeek: bigint };
   thresholds: {
+    /** Above this a send always takes the person's own yes, whatever the risk dial (the human-approval threshold). */
+    approval: bigint;
     /** A first payment to a new address above this always takes Face ID. */
     firstTimeStepUp: bigint;
     /** USDC kept for network fees when the wallet pays them itself. */
     gasFloat: bigint;
     /** Kawase's relayer can carry this send gas-free (EIP-3009, USDC or EURC) when the wallet cannot pay the fee. */
     gasRelay?: boolean | undefined;
+    /** Why it cannot today, when it otherwise could: the person's relays are used, or the relayer's day's budget is. */
+    gasRelayRefusal?: "person_limit" | "budget_spent" | undefined;
     /** A first payment above a few times this offers sending this much first (base units of the asset). */
     testAmount?: bigint | undefined;
   };
@@ -122,6 +129,14 @@ function done(results: PolicyResult[], asset: string | undefined, route?: SendRo
   const blocking = blockingResult(results);
   return { results, blocking, route: blocking ? undefined : route, asset };
 }
+
+/** Short of USDC for the fee and the relayer cannot carry it: add USDC, said with the reason when there is one. */
+const noRelay = (refusal: SendFacts["thresholds"]["gasRelayRefusal"], needed: bigint) =>
+  refusal === "budget_spent"
+    ? result("GAS_RELAY_BUDGET_SPENT", { needed: s(needed), asset: "USDC" })
+    : refusal === "person_limit"
+      ? result("GAS_RELAY_LIMIT", { needed: s(needed), asset: "USDC" })
+      : result("INSUFFICIENT_GAS", { needed: s(needed), asset: "USDC" });
 
 export function evaluateSend(facts: SendFacts): SendEvaluation {
   const results: PolicyResult[] = [];
@@ -228,7 +243,14 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const offAllowlist = Boolean(facts.allowlistOnly) && !recipient.allowlisted;
   if (facts.pausedAll) results.push(result("AGENT_PAUSED"));
   if (offAllowlist) results.push(result("NOT_ON_ALLOWLIST", { name: recipient.name ?? "" }));
-  const allowanceCovers = facts.allowable && facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake;
+  // Above the approval threshold, or past what one address gets in a week, a send takes the person's own yes (never the
+  // allowance, whatever the risk dial). Like the cooldown, neither stops the person's own Face ID send (X31).
+  const aboveApproval = limitAmount !== null && limitAmount > facts.thresholds.approval;
+  if (aboveApproval) results.push(result("ABOVE_APPROVAL_THRESHOLD", { limit: s(facts.thresholds.approval), asset: limitAsset }));
+  const overRecipient = limitAmount !== null && spent.recipientWeek + limitAmount > limits.perRecipientWeekly;
+  if (overRecipient) results.push(result("OVER_RECIPIENT_WEEKLY", { limit: s(limits.perRecipientWeekly), used: s(spent.recipientWeek), asset: limitAsset, name: recipient.name ?? "" }));
+  const allowanceCovers =
+    facts.allowable && facts.wallet.setUp && facts.allowance.active && !facts.pausedAll && !offAllowlist && !cooling && !brake && !aboveApproval && !overRecipient;
   if (facts.allowable && !facts.allowance.active) results.push(result("NO_ALLOWANCE", { asset }));
   if (allowanceCovers && amount > facts.allowance.available)
     results.push(result("ABOVE_ALLOWANCE", { available: s(facts.allowance.available), asset }));
@@ -243,7 +265,7 @@ export function evaluateSend(facts: SendFacts): SendEvaluation {
   const usdcLeft = facts.wallet.usdc - (facts.isUsdc ? amount : ZERO);
   // Short of USDC for the fee: the relayer carries it when it can (no dead end); otherwise the fix is to add USDC.
   if (route === "wallet_signature" && usdcLeft < facts.thresholds.gasFloat && amount <= balance)
-    results.push(facts.thresholds.gasRelay ? result("GAS_RELAYED") : result("INSUFFICIENT_GAS", { needed: s(facts.thresholds.gasFloat), asset: "USDC" }));
+    results.push(facts.thresholds.gasRelay ? result("GAS_RELAYED") : noRelay(facts.thresholds.gasRelayRefusal, facts.thresholds.gasFloat));
   if (route === "allowance" && usdcLeft < facts.thresholds.gasFloat) results.push(result("LEAVES_LITTLE_FOR_FEES"));
 
   return done(results, asset, route);

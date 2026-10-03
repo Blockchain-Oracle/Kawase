@@ -5,6 +5,8 @@ import { requireBrakeOverride } from "../safety/brake";
 import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import { signedRevokeSchema } from "../wallet/routes";
+import type { SignedRevoke } from "../wallet/service";
 import type { MarginProtection } from "./protection";
 import type { MarginService } from "./service";
 
@@ -28,9 +30,9 @@ const PRICE_MAX = 32;
 const SIGNATURES_MAX = 10;
 const price = z.string().max(PRICE_MAX).nullable().optional();
 const protectSchema = z.object({ takeProfit: price, stopLoss: price });
-const activateSchema = z.object({ signatures: z.array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) })).max(SIGNATURES_MAX) });
+/** The six grants, and the revoke of the ones they replace, signed in the same yes (the api turns those off first). */
+const activateSchema = z.object({ signatures: z.array(z.object({ grantId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) })).max(SIGNATURES_MAX), revoke: signedRevokeSchema.optional() });
 const positionSchema = z.object({ positionId: z.uuid() });
-const disableSchema = z.object({ requestId: z.uuid(), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -60,14 +62,11 @@ export function marginRoutes(margin: MarginService, protection?: MarginProtectio
     });
     app.post("/protection/grant/activate", async (c) => {
       const input = await parse(activateSchema, await c.req.json());
-      return c.json(await protection.activate(c.get("user")!, input.signatures.map((entry) => ({ grantId: entry.grantId, signature: entry.signature as `0x${string}` }))));
+      const signatures = input.signatures.map((entry) => ({ grantId: entry.grantId, signature: entry.signature as `0x${string}` }));
+      return c.json(await protection.activate(c.get("user")!, signatures, input.revoke as SignedRevoke | undefined));
     });
     // No position named: every position's grants (and any from before grants were per position).
     app.delete("/protection/grant", async (c) => c.json(await protection.revoke(c.get("user")!, position(c.req.query("positionId")))));
-    app.post("/protection/disable", async (c) => {
-      const input = await parse(disableSchema, await c.req.json());
-      return c.json(await protection.submitDisable(c.get("user")!, input.requestId, input.signature as `0x${string}`));
-    });
     app.put("/positions/:id/protection", requireAccount, async (c) => {
       const input = await parse(protectSchema, await c.req.json());
       return c.json(await protection.protect(c.get("user")!, c.req.param("id"), input));
