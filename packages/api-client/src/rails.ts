@@ -309,6 +309,8 @@ export type CrossChainRouteView = {
   nativeFee?: string | null | undefined;
   /** Convert first: swapped to USDC on Arc in the same batch (venue, the least USDC), then bridged. */
   convertFirst?: { venue: string; minUsdc: string } | null | undefined;
+  /** Bring to Arc in two steps: the token's Permit2 approval on the source chain first (gas in that chain's coin), then one signature. */
+  approveFirst?: { coin: string; gas: string } | null | undefined;
 };
 
 export type CrossChainChainView = { chainId: number; name: string; key: string };

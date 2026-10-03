@@ -93,7 +93,7 @@ function RouteRow({ route, input, chosen, onPick, disabled }: { route: CrossChai
         <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t(`move.provider_${route.provider}`)}</Text>
         <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
           {route.executable
-            ? [route.via ? t("move.via", { bridge: route.via }) : t(`move.trust_${route.trust}`), route.convertFirst ? t("move.convertFirst", { venue: route.convertFirst.venue }) : null, eta].filter(Boolean).join(" · ")
+            ? [route.via ? t("move.via", { bridge: route.via }) : t(`move.trust_${route.trust}`), route.convertFirst ? t("move.convertFirst", { venue: route.convertFirst.venue }) : null, route.approveFirst ? t("move.approveFirst", { coin: route.approveFirst.coin }) : null, eta].filter(Boolean).join(" · ")
             : t(`move.reason_${route.reason ?? "no_quote"}`)}
         </Text>
       </View>

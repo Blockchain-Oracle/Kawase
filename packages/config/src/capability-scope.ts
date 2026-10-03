@@ -55,11 +55,11 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   bridge: {
     supports: [
       "any asset from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche: USDC through Circle CCTP, Across, Relay, LI.FI or deBridge; other assets (WETH, EURC, cirBTC, a meme by symbol or address) arrive as themselves through LI.FI or deBridge (cirBTC as cbBTC), or as USDC when nothing carries them, swapped on Arc in the same batch; ranked by what arrives after fees (deBridge's 1 USDC flat fee counted), up to three shown, one Face ID",
-      "Bring to Arc: USDC with Relay's permit (one signature, no gas there); the chain's own coin (ETH, POL, AVAX) in one transaction there, its gas from the coin, arriving as WETH etc.; other tokens with one signature once they are approved for Permit2 there",
+      "Bring to Arc: USDC with Relay's permit (one signature, no gas there); the chain's own coin (ETH, POL, AVAX) in one transaction there, its gas from the coin, arriving as WETH etc.; other tokens with one Permit2 signature, and when a token is not yet approved for Permit2 there, in two steps under one yes: that approval first (one transaction there, its gas in the chain's coin), then the signature",
       "following each move until delivered (Across, Relay, LI.FI, deBridge, CCTP status) and saying plainly when a provider refunds",
       "on Arc Testnet: CCTP only",
     ],
-    notYet: ["a token's first move in from another chain when it needs an approval there (two steps)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
+    notYet: ["Bring to Arc without the chain's coin for gas when the token still needs its approval there", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
   },
   yield: {
     supports: [
