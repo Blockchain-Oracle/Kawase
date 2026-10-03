@@ -1,9 +1,10 @@
-// Split a bill (plan §A.4.4, C3): what it was for, the whole bill and its currency, who shares it (contacts as quick
-// chips, or any name / @handle typed), equal or by hand, and whether the person keeps a share. Creating it makes one
-// payment request per person (each has its own link) and opens the split's progress page. "Your splits" lists the
-// earlier ones. Without an account or a wallet there is nothing to be paid into, so it says what to do instead.
+// Split a bill (plan §A.4.4, C3): what it was for, the whole bill in any token (R1, the universal asset picker), who
+// shares it (contacts as quick chips, or any name / @handle typed), equal or by hand, and whether the person keeps a
+// share. Creating it makes one payment request per person (each has its own link; someone on Kawase is also asked in
+// the app) and opens the split's progress page. "Your splits" lists the earlier ones. Without an account or a wallet
+// there is nothing to be paid into, so it says what to do instead.
 import { useFocusEffect, useRouter } from "expo-router";
-import { Plus, X } from "lucide-react-native";
+import { ChevronDown, Plus, X } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
@@ -11,6 +12,7 @@ import { toast } from "sonner-native";
 import { ApiError, type SplitView } from "@kawase/api-client";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Input } from "@kawase/ui-native/components/ui/input";
@@ -21,39 +23,41 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Page, Section } from "@/account/page";
 import { useContacts } from "@/contacts/use-contacts";
 import { useT } from "@/i18n";
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
 import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
-const AMOUNT = /^\d+(\.\d{0,6})?$/;
+const NUMBER = /^\d*(\.\d*)?$/;
 const PEOPLE_MAX = 20;
 const CHIPS = 8;
-const DECIMALS = 6;
-const UNIT = 1_000_000n;
+const CHIP_MARK = 22;
 const ZERO = 0n;
 
 type Person = { name: string; amount: string };
-
-/** A decimal string as base units (6 decimals), or undefined when it is not a number yet. */
-const toBase = (text: string) => {
-  if (!AMOUNT.test(text)) return undefined;
-  const [whole = "0", fraction = ""] = text.split(".");
-  return BigInt(whole) * UNIT + BigInt(fraction.padEnd(DECIMALS, "0").slice(0, DECIMALS));
-};
 
 export function SplitScreen() {
   const { t } = useT();
   const router = useRouter();
   const money = useMoney();
-  const { status } = useSession();
+  const { status, user } = useSession();
   const signIn = useSignIn();
   const { wallet } = useWalletStatus();
   const { contacts, refresh } = useContacts();
+  const network = user?.activeNetwork ?? "testnet";
   const [title, setTitle] = React.useState("");
   const [total, setTotal] = React.useState("");
-  const [asset, setAsset] = React.useState<"USDC" | "EURC">("USDC");
+  // Any token on this Arc network (R1): USDC unless the person picks another.
+  const [token, setToken] = React.useState<TicketToken>(() => stableToken(network, "USDC"));
+  const [picking, setPicking] = React.useState(false);
+  React.useEffect(() => setToken((current) => (current.symbol === "USDC" || current.symbol === "EURC" ? stableToken(network, current.symbol) : stableToken(network, "USDC"))), [network]);
+  const asset = token.symbol;
+  /** A decimal in the token's own decimals as base units, or undefined when it is not a number yet. */
+  const toBase = (text: string) => (text ? unitsFromCanonical(text, token.decimals) : undefined);
+  const amountOk = (text: string) => text === "" || (NUMBER.test(text) && (text.split(".")[1]?.length ?? 0) <= token.decimals);
   const [mode, setMode] = React.useState<"equal" | "custom">("equal");
   const [includeMe, setIncludeMe] = React.useState(true);
   const [people, setPeople] = React.useState<Person[]>([]);
@@ -93,7 +97,7 @@ export function SplitScreen() {
     try {
       const { split } = await api.splits.create({
         title: title.trim(),
-        asset,
+        asset: assetParam(token),
         total,
         includeMe,
         people: people.map((person) => (mode === "custom" ? { name: person.name, amount: person.amount } : { name: person.name })),
@@ -126,21 +130,22 @@ export function SplitScreen() {
         <View className="flex-row items-center gap-2">
           <Input
             value={total}
-            onChangeText={(text) => (text === "" || AMOUNT.test(text) ? setTotal(text) : undefined)}
+            onChangeText={(text) => (amountOk(text) ? setTotal(text) : undefined)}
             placeholder="0.00"
             keyboardType="decimal-pad"
             accessibilityLabel={t("split.total")}
             className="flex-1 font-mono"
           />
-          <SegmentedControl
-            label={t("split.currency")}
-            value={asset}
-            onValueChange={(value) => setAsset(value as "USDC" | "EURC")}
-            options={[
-              { value: "USDC", label: "USDC" },
-              { value: "EURC", label: "EURC" },
-            ]}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t("split.currency")}: ${token.name}`}
+            onPress={() => setPicking(true)}
+            className="border-border bg-secondary active:bg-muted h-12 flex-row items-center gap-2 rounded-full border pe-3 ps-2"
+          >
+            <TokenMark token={token} size={CHIP_MARK} />
+            <Text className="text-foreground text-base font-semibold">{asset}</Text>
+            <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+          </Pressable>
         </View>
       </Section>
 
@@ -185,7 +190,7 @@ export function SplitScreen() {
                   <Input
                     value={person.amount}
                     onChangeText={(text) =>
-                      text === "" || AMOUNT.test(text) ? setPeople((current) => current.map((entry, at) => (at === index ? { ...entry, amount: text } : entry))) : undefined
+                      amountOk(text) ? setPeople((current) => current.map((entry, at) => (at === index ? { ...entry, amount: text } : entry))) : undefined
                     }
                     placeholder="0.00"
                     keyboardType="decimal-pad"
@@ -193,7 +198,7 @@ export function SplitScreen() {
                     className="h-11 w-28 font-mono"
                   />
                 ) : (
-                  <Text className="text-muted-foreground font-mono text-sm">{each !== undefined ? money(asset, each.toString()) : "—"}</Text>
+                  <Text className="text-muted-foreground font-mono text-sm">{each !== undefined ? money(asset, each.toString(), token.decimals) : "—"}</Text>
                 )}
                 <Pressable accessibilityRole="button" accessibilityLabel={t("split.remove", { name: person.name })} hitSlop={10} onPress={() => setPeople((current) => current.filter((_, at) => at !== index))}>
                   <Icon as={X} className="text-muted-foreground size-4" />
@@ -220,10 +225,10 @@ export function SplitScreen() {
         <Text className={cn("text-muted-foreground px-1 text-sm", TEXT_START)}>
           {mode === "equal"
             ? each !== undefined && people.length > 0
-              ? t("split.eachPays", { amount: money(asset, each.toString()) })
+              ? t("split.eachPays", { amount: money(asset, each.toString(), token.decimals) })
               : t("split.hint")
             : totalBase !== undefined
-              ? t("split.customLeft", { amount: money(asset, (totalBase - customSum).toString()) })
+              ? t("split.customLeft", { amount: money(asset, (totalBase - customSum).toString(), token.decimals) })
               : t("split.hint")}
         </Text>
         <Button disabled={!ready || busy} onPress={() => void create()}>
@@ -238,7 +243,7 @@ export function SplitScreen() {
               <ListRow
                 key={split.id}
                 title={split.title}
-                subtitle={`${money(split.asset, split.total)} · ${t("split.paidOf", { paid: split.paidCount, count: split.shares.length })}`}
+                subtitle={`${money(split.asset, split.total, split.assetToken.decimals)} · ${t("split.paidOf", { paid: split.paidCount, count: split.shares.length })}`}
                 chevron
                 onPress={() => router.push({ pathname: "/split/[id]", params: { id: split.id } })}
               />
@@ -246,6 +251,20 @@ export function SplitScreen() {
           </ListGroup>
         </Section>
       ) : null}
+      <AssetPickerSheet
+        open={picking}
+        onClose={() => setPicking(false)}
+        title={t("assets.pickerTitle")}
+        mode="any"
+        selected={token.address.toLowerCase()}
+        onSelect={({ token: next }) => {
+          setToken(next);
+          // Amounts typed in more decimals than the new token has are cleared, never rounded.
+          if (total && unitsFromCanonical(total, next.decimals) === undefined) setTotal("");
+          setPeople((current) => current.map((person) => (person.amount && unitsFromCanonical(person.amount, next.decimals) === undefined ? { ...person, amount: "" } : person)));
+        }}
+        unavailable={(candidate) => (candidate.status === "impersonator" ? t("tokenPage.n_blocked") : candidate.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
+      />
     </Page>
   );
 }

@@ -1,8 +1,8 @@
-// A split bill's progress (C3): the bill, how much of it has come back (a bar that fills as people pay), and each
-// person's share with its state — paid (mint check), waiting, or expired — and a Share button that sends that
-// person their own link. It reads the split again every few seconds while shares are open, so a payment from any
+// A split bill's progress (C3): the bill in its token (R1), how much of it has come back (a bar that fills as people
+// pay), and each person's share with its state — paid (mint check), asked in Kawase (their inbox and a push), waiting,
+// or expired — and a Share button that sends that person their own link. It reads the split again every few seconds while shares are open, so a payment from any
 // wallet turns the row to Paid on its own. Used by the chat's split_bill card and the split page.
-import { Check, Clock, Share2, X } from "lucide-react-native";
+import { BellRing, Check, Clock, Share2, X } from "lucide-react-native";
 import * as React from "react";
 import { Share, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -43,7 +43,7 @@ export function useSplit(initial: SplitView) {
   return [split, setSplit] as const;
 }
 
-function ShareRow({ share, asset, title, network }: { share: SplitShare; asset: string; title: string; network: string }) {
+function ShareRow({ share, asset, decimals, title, network }: { share: SplitShare; asset: string; decimals: number; title: string; network: string }) {
   const { t } = useT();
   const money = useMoney();
   const { user } = useSession();
@@ -52,7 +52,7 @@ function ShareRow({ share, asset, title, network }: { share: SplitShare; asset: 
   const sendLink = async () => {
     const name = user?.handle ? `@${user.handle}` : t("split.someone");
     await Share.share({
-      message: t("split.shareMessage", { name, title, amount: money(asset, share.amount), network, link: share.request.link }),
+      message: t("split.shareMessage", { name, title, amount: money(asset, share.amount, decimals), network, link: share.request.link }),
     }).catch(() => undefined);
   };
   return (
@@ -63,10 +63,16 @@ function ShareRow({ share, asset, title, network }: { share: SplitShare; asset: 
           {share.name}
         </Text>
         <Text className={cn("text-muted-foreground text-xs", TEXT_START)} numberOfLines={1}>
-          {[share.handle ? `@${share.handle}` : null, paid ? t("split.paid") : status === "open" ? t("split.waiting") : t("split.closed")].filter(Boolean).join(" · ")}
+          {[
+            share.handle ? `@${share.handle}` : null,
+            paid ? t("split.paid") : status === "open" ? (share.askedInApp ? t("split.askedInApp") : t("split.waiting")) : t("split.closed"),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </Text>
       </View>
-      <Amount className={cn("text-sm font-semibold", paid ? "text-success" : "text-foreground")}>{money(asset, share.amount)}</Amount>
+      {share.askedInApp && status === "open" ? <Icon as={BellRing} className="text-muted-foreground size-4" /> : null}
+      <Amount className={cn("text-sm font-semibold", paid ? "text-success" : "text-foreground")}>{money(asset, share.amount, decimals)}</Amount>
       {paid ? (
         <Icon as={Check} className="text-success size-5" />
       ) : status === "open" ? (
@@ -113,7 +119,7 @@ export function SplitCard({ initial, framed = true }: { initial: SplitView; fram
         </Text>
         <Text className={cn("text-foreground text-lg font-semibold", TEXT_START)}>{split.title}</Text>
         <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>
-          {split.myShare ? t("split.billWithMine", { total: money(split.asset, split.total), mine: money(split.asset, split.myShare) }) : t("split.bill", { total: money(split.asset, split.total) })}
+          {split.myShare ? t("split.billWithMine", { total: money(split.asset, split.total, split.assetToken.decimals), mine: money(split.asset, split.myShare, split.assetToken.decimals) }) : t("split.bill", { total: money(split.asset, split.total, split.assetToken.decimals) })}
         </Text>
       </View>
 
@@ -126,13 +132,13 @@ export function SplitCard({ initial, framed = true }: { initial: SplitView; fram
             ? t("split.settled")
             : split.status === "canceled"
               ? t("split.canceled")
-              : t("split.progress", { collected: money(split.asset, split.collected), requested: money(split.asset, requested.toString()), paid: split.paidCount, count: split.shares.length })}
+              : t("split.progress", { collected: money(split.asset, split.collected, split.assetToken.decimals), requested: money(split.asset, requested.toString(), split.assetToken.decimals), paid: split.paidCount, count: split.shares.length })}
         </Text>
       </View>
 
       <View>
         {split.shares.map((entry) => (
-          <ShareRow key={entry.request.id} share={entry} asset={split.asset} title={split.title} network={network} />
+          <ShareRow key={entry.request.id} share={entry} asset={split.asset} decimals={split.assetToken.decimals} title={split.title} network={network} />
         ))}
       </View>
 
