@@ -130,6 +130,8 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
   if (!draft) return null;
   const ids = arcIdentity(intent.network);
   const recipient = draft.recipient;
+  // Paid before, or checked by the person (Verify on the contact): the chip is green.
+  const trusted = recipient.paidBefore || Boolean(recipient.verifiedMethod);
   const name = recipientName(recipient, intent.request.recipient);
   const secondary = recipient.name && recipient.handle ? `@${recipient.handle}` : shortAddress(recipient.address);
   const warnings = intent.results.filter((entry) => ROW_WARNINGS.has(entry.code));
@@ -183,15 +185,15 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
           <View
             className={cn(
               "flex-row items-center gap-1 rounded-full px-2.5 py-1",
-              recipient.paidBefore ? "bg-success/15" : "bg-muted",
+              trusted ? "bg-success/15" : "bg-muted",
             )}
           >
             <Icon
-              as={recipient.paidBefore ? BadgeCheck : Info}
-              className={cn("size-3.5", recipient.paidBefore ? "text-success" : "text-muted-foreground")}
+              as={trusted ? BadgeCheck : Info}
+              className={cn("size-3.5", trusted ? "text-success" : "text-muted-foreground")}
             />
             <Text
-              className={cn("text-xs font-semibold", recipient.paidBefore ? "text-success" : "text-muted-foreground")}
+              className={cn("text-xs font-semibold", trusted ? "text-success" : "text-muted-foreground")}
             >
               {trustLabel(recipient)}
             </Text>

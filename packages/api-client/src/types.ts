@@ -246,6 +246,9 @@ export type IntentState =
  */
 export type SendOutcome = "sent" | "not_sent" | "reverted" | "checking" | "canceled" | "expired" | "practiced";
 
+/** How the person checked a contact's address is really theirs: their QR scanned, in person, or by phone or video. */
+export type VerifyMethod = "qr" | "in_person" | "call";
+
 export type SendRecipientView = {
   via: "contact" | "handle" | "address";
   address: string;

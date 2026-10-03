@@ -49,6 +49,7 @@ import type {
   PaymentRequest,
   PaymentRequestInput,
   RequestReminder,
+  VerifyMethod,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -258,6 +259,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
         call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
       cancelChange: (id: string) => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending`),
+      /** Mark the current address verified on the active network (null clears it). */
+      verify: (id: string, method: VerifyMethod | null) => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method }),
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
     },
 
