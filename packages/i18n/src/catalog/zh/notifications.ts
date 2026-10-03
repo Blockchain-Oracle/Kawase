@@ -33,4 +33,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "以后再说",
   kindPositionHealth: "健康度提醒",
   kindPositionClosed: "止盈与止损",
+  kindRequestReceived: "有人请你付款",
+  lockTitle: "锁屏",
+  hideAmounts: "隐藏金额",
+  hideAmountsBody: "通知只显示“你收到了一笔钱”，不显示金额。收件箱和邮件仍会显示金额。",
 };

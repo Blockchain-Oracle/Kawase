@@ -37,11 +37,14 @@ export const paymentRequests = pgTable(
     paidByAddress: text(),
     /** The Kawase send that paid it, when the payer used Kawase. */
     paidIntentId: uuid(),
+    /** The Kawase user it was asked of in the app (an inbox item and push, "@x asked you for 12 USDC"); null for a link only. */
+    payerUserId: uuid().references(() => users.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
   (table) => [
     uniqueIndex("payment_requests_token_idx").on(table.token),
     index("payment_requests_user_status_idx").on(table.userId, table.status),
+    index("payment_requests_payer_idx").on(table.payerUserId, table.status),
   ],
 );
 
@@ -85,7 +88,7 @@ export const indexerCursors = pgTable(
   (table) => [primaryKey({ columns: [table.network, table.stream] })],
 );
 
-export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "needs_you", "automation_reminder", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue", "position_health", "position_closed"]);
+export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "needs_you", "automation_reminder", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue", "request_received", "position_health", "position_closed"]);
 
 /** The in-app inbox, the source of truth for what happened (push and email arrive in Stage 9). */
 export const inboxItems = pgTable(

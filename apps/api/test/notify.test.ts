@@ -42,3 +42,18 @@ test("a notification says what happened, in the person's language, testnet first
   assert.equal(alert.body, "Balance 15.00 USDC");
   assert.equal(alert.path, "/automations");
 });
+
+test("an in-app ask opens the pay card; hidden amounts leave no figure on the lock screen; a run opens its story", () => {
+  const ask = { kind: "request_received", network: "testnet", params: { amount: "12000000", asset: "USDC", from: "0x1111111111111111111111111111111111111111", name: "@kemi", token: "AbCdEfGh12345678" } } as const;
+  const shown = renderNotification(ask, "en");
+  assert.equal(shown.title, "Testnet · @kemi asked you for 12.00 USDC");
+  assert.equal(shown.body, "Tap to pay");
+  assert.equal(shown.path, "/r/AbCdEfGh12345678");
+  const hidden = renderNotification(ask, "en", { hideAmounts: true });
+  assert.equal(hidden.title, "Testnet · @kemi asked you for money");
+  const received = renderNotification({ kind: "payment_received", network: "mainnet", params: { amount: "1250000", asset: "USDC", name: "Alex" } }, "en", { hideAmounts: true });
+  assert.equal(received.title, "You received money");
+  assert.doesNotMatch(`${received.title} ${received.body}`, /1\.25/);
+  const skipped = renderNotification({ kind: "automation_skipped", network: "testnet", params: { runId: "0b6f3c1e-9a8d-4f7e-8c2b-1d2e3f4a5b6c" } }, "en");
+  assert.equal(skipped.path, "/why/run/0b6f3c1e-9a8d-4f7e-8c2b-1d2e3f4a5b6c");
+});

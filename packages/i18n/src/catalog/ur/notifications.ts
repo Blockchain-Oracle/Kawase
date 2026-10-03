@@ -34,4 +34,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "ابھی نہیں",
   kindPositionHealth: "صحت کی وارننگز",
   kindPositionClosed: "ٹیک پرافٹ اور اسٹاپ لاس",
+  kindRequestReceived: "کوئی آپ سے ادائیگی مانگے",
+  lockTitle: "لاک اسکرین",
+  hideAmounts: "رقم چھپائیں",
+  hideAmountsBody: "اطلاعات میں رقم کے بغیر صرف “آپ کو پیسے ملے” آئے گا۔ ان باکس اور ای میل میں رقم نظر آتی رہے گی۔",
 };

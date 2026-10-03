@@ -33,4 +33,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "ليس الآن",
   kindPositionHealth: "تنبيهات الصحة",
   kindPositionClosed: "جني الأرباح ووقف الخسارة",
+  kindRequestReceived: "شخص يطلب منك الدفع",
+  lockTitle: "شاشة القفل",
+  hideAmounts: "إخفاء المبالغ",
+  hideAmountsBody: "تقول الإشعارات «استلمت أموالًا» دون الرقم. يظل صندوق الوارد والبريد الإلكتروني يعرضان المبالغ.",
 };

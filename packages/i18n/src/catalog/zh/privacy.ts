@@ -15,4 +15,5 @@ export const privacy: Catalog["privacy"] = {
   deleted: "对话已删除",
   money: "资金记录",
   moneyBody: "你的交易记录在 Arc 上，可按月导出。",
+  findTitle: "让别人找到你",
 };

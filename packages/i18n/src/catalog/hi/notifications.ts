@@ -34,4 +34,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "अभी नहीं",
   kindPositionHealth: "हेल्थ अलर्ट",
   kindPositionClosed: "टेक-प्रॉफ़िट और स्टॉप-लॉस",
+  kindRequestReceived: "कोई आपसे भुगतान माँगे",
+  lockTitle: "लॉक स्क्रीन",
+  hideAmounts: "राशि छिपाएँ",
+  hideAmountsBody: "सूचनाएँ बिना राशि के “आपको पैसे मिले” कहेंगी। आपके इनबॉक्स और ईमेल में राशि दिखती रहेगी।",
 };

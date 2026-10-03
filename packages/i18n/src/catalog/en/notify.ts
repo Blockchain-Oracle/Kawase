@@ -28,4 +28,12 @@ export const notify = {
   reminderTitle: "Tomorrow, {{at}}",
   reminderPayroll: "Payroll for {{people}} people",
   reminderShort: "Your wallet holds less than this run",
+  requestReceivedTitle: "{{name}} asked you for {{amount}}",
+  requestReceivedTitleHidden: "{{name}} asked you for money",
+  requestReceivedBody: "Tap to pay",
+  receivedTitleHidden: "You received money",
+  sentTitleHidden: "Your money was sent",
+  needsYouSendHidden: "Send money to {{name}}",
+  needsYouSwapHidden: "Swap {{symbolIn}} to {{symbolOut}}",
+  ruleAlertHidden: "One of your rules went off",
 } as const;

@@ -33,4 +33,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "এখন নয়",
   kindPositionHealth: "হেলথ সতর্কতা",
   kindPositionClosed: "টেক-প্রফিট ও স্টপ-লস",
+  kindRequestReceived: "কেউ আপনাকে পেমেন্ট করতে বলছেন",
+  lockTitle: "লক স্ক্রিন",
+  hideAmounts: "পরিমাণ লুকান",
+  hideAmountsBody: "নোটিফিকেশনে পরিমাণ ছাড়া শুধু “আপনি টাকা পেয়েছেন” দেখাবে। ইনবক্স ও ইমেইলে পরিমাণ দেখা যাবে।",
 };

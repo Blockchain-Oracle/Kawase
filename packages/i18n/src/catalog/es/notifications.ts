@@ -33,4 +33,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "Ahora no",
   kindPositionHealth: "Alertas de salud",
   kindPositionClosed: "Toma de ganancias y stop-loss",
+  kindRequestReceived: "Alguien te pide un pago",
+  lockTitle: "Pantalla de bloqueo",
+  hideAmounts: "Ocultar importes",
+  hideAmountsBody: "Las notificaciones dicen «Recibiste dinero» sin la cifra. Tu bandeja y el correo siguen mostrando los importes.",
 };

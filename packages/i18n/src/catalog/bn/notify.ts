@@ -30,4 +30,12 @@ export const notify: Catalog["notify"] = {
   reminderTitle: "আগামীকাল, {{at}}",
   reminderPayroll: "{{people}} জনের বেতন",
   reminderShort: "আপনার ওয়ালেটে এই রানের চেয়ে কম আছে",
+  requestReceivedTitle: "{{name}} আপনার কাছে {{amount}} চেয়েছেন",
+  requestReceivedTitleHidden: "{{name}} আপনার কাছে টাকা চেয়েছেন",
+  requestReceivedBody: "পেমেন্ট করতে ট্যাপ করুন",
+  receivedTitleHidden: "আপনি টাকা পেয়েছেন",
+  sentTitleHidden: "আপনার টাকা পাঠানো হয়েছে",
+  needsYouSendHidden: "{{name}}-কে টাকা পাঠান",
+  needsYouSwapHidden: "{{symbolIn}} থেকে {{symbolOut}}-এ বদলান",
+  ruleAlertHidden: "আপনার একটি নিয়ম চালু হয়েছে",
 };

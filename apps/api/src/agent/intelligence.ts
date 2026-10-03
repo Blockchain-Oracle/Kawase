@@ -129,8 +129,13 @@ export function buildIntelligence(input: {
     async splitBill(split) {
       if (user.isAnonymous) return { status: "needs_sign_in" };
       if (!(await input.wallets.userWallet(user.id))) return { status: "needs_wallet" };
+      // "euros" is EURC; any other name is found like a request's token (held and verified first, R1).
+      const asked = split.asset.trim().replace(/^euros?$/i, "EURC").replace(/^dollars?$/i, "USDC");
+      const asset = /^(usdc|eurc|0x[0-9a-fA-F]{40})$/i.test(asked)
+        ? asked.replace(/^(usdc|eurc)$/i, (symbol) => symbol.toUpperCase())
+        : ((await input.assets.search(user, user.activeNetwork, asked).catch(() => []))[0]?.token.address ?? asked);
       try {
-        return { status: "created", split: await new SplitService(db, input.requests, input.recipients).create(user, split) };
+        return { status: "created", split: await new SplitService(db, input.requests, input.recipients).create(user, { ...split, asset }) };
       } catch (error) {
         // A share that does not add up is the person's to fix: say which rule, in their words via the model.
         if (error instanceof ProblemError && error.code === "validation") return { status: "invalid", problem: error.detail ?? "invalid" };

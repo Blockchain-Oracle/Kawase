@@ -34,11 +34,16 @@ function tokenAmount(baseUnits: string | undefined, decimals: string | undefined
   return formatTokenAmount(BigInt(baseUnits), places, symbol ?? "", locale, { fractionDigits: Math.min(places, MAX_SHOWN_DECIMALS), trimZeros: true }).trim();
 }
 
-export function renderNotification(item: Item, locale: CatalogLocale): RenderedNotification {
+/**
+ * `hideAmounts` (Settings → Notifications, plan §A.4.11 "hide amounts on the lock screen"): the words carry no figure —
+ * "You received money" — for a push that shows on a locked phone. The inbox and email keep the amounts.
+ */
+export function renderNotification(item: Item, locale: CatalogLocale, options: { hideAmounts?: boolean } = {}): RenderedNotification {
   const p = item.params;
+  const hide = options.hideAmounts === true;
   // Any token (R1): USDC/EURC by their ids, others by the decimals the item carries.
   const money = (asset: string | undefined, baseUnits: string | undefined) => {
-    if (!asset || !baseUnits) return "";
+    if (!asset || !baseUnits || hide) return "";
     if (asset in ASSETS) return formatAmount(amount(asset as AssetId, BigInt(baseUnits)), locale);
     return p.decimals ? formatTokenAmount(BigInt(baseUnits), Number(p.decimals), asset, locale, { fractionDigits: TOKEN_DIGITS, trimZeros: true }) : `${baseUnits} ${asset}`;
   };
@@ -51,15 +56,21 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
   let path = "/inbox";
   switch (item.kind) {
     case "payment_received":
-      title = text(locale, "notify", "receivedTitle", { amount: sum });
+      title = hide ? text(locale, "notify", "receivedTitleHidden") : text(locale, "notify", "receivedTitle", { amount: sum });
       body = text(locale, "notify", "receivedBody", { name });
+      break;
+    // Someone on Kawase asked the person for money (a split share or a request): the tap opens the pay card.
+    case "request_received":
+      title = hide ? text(locale, "notify", "requestReceivedTitleHidden", { name }) : text(locale, "notify", "requestReceivedTitle", { name, amount: sum });
+      body = p.note || text(locale, "notify", "requestReceivedBody");
+      path = p.token ? `/r/${p.token}` : "/inbox";
       break;
     case "request_paid":
       title = text(locale, "notify", "requestPaidTitle");
-      body = text(locale, "notify", "requestPaidBody", { amount: sum, name });
+      body = hide ? text(locale, "notify", "receivedBody", { name }) : text(locale, "notify", "requestPaidBody", { amount: sum, name });
       break;
     case "send_completed":
-      title = text(locale, "notify", "sentTitle", { amount: sum });
+      title = hide ? text(locale, "notify", "sentTitleHidden") : text(locale, "notify", "sentTitle", { amount: sum });
       body = text(locale, "notify", "sentBody", { name });
       break;
     case "automation_skipped":
@@ -71,8 +82,12 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
     case "needs_you": {
       const what =
         p.type === "swap"
-          ? text(locale, "notify", "needsYouSwap", { amount: p.decimalsIn ? trimUnits(p.amount ?? "0", Number(p.decimalsIn)) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
-          : text(locale, "notify", "needsYouSend", { amount: sum, name });
+          ? hide
+            ? text(locale, "notify", "needsYouSwapHidden", { symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
+            : text(locale, "notify", "needsYouSwap", { amount: p.decimalsIn ? trimUnits(p.amount ?? "0", Number(p.decimalsIn)) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
+          : hide
+            ? text(locale, "notify", "needsYouSendHidden", { name })
+            : text(locale, "notify", "needsYouSend", { amount: sum, name });
       title = text(locale, "notify", p.reminder ? "needsYouReminderTitle" : "needsYouTitle");
       body = what;
       path = p.itemId ? `/needs-you/${p.itemId}?from=push` : "/inbox";
@@ -81,7 +96,14 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
     // The 24 h reminder: tomorrow's run, with a heads-up when the wallet is short.
     case "automation_reminder": {
       const at = p.at ? new Intl.DateTimeFormat(locale, { weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date(p.at)) : "";
-      const what = p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : p.automationKind === "payroll" ? text(locale, "notify", "reminderPayroll", { people: p.people ?? "" }) : `${sum} → ${name}`;
+      const what =
+        p.automationKind === "dca"
+          ? `${hide ? "" : `${p.tokenAmount ?? ""} `}${p.symbolIn ?? ""} → ${p.name ?? ""}`
+          : p.automationKind === "payroll"
+            ? text(locale, "notify", "reminderPayroll", { people: p.people ?? "" })
+            : hide
+              ? `→ ${name}`
+              : `${sum} → ${name}`;
       title = text(locale, "notify", "reminderTitle", { at });
       body = [what, p.short ? text(locale, "notify", "reminderShort") : ""].filter(Boolean).join(" · ");
       path = "/automations";
@@ -90,6 +112,13 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
     case "rule_alert":
       if (p.trigger === "price") {
         title = text(locale, "automation", "ruleAlertPrice", { amountIn: p.amountIn ?? "", symbolIn: p.symbolIn ?? "", quotedOut: p.quotedOut ?? "", symbolOut: p.symbolOut ?? "" });
+        body = "";
+        path = "/automations";
+        break;
+      }
+      if (hide) {
+        // A balance line or money in, without the figures: just that a rule of theirs went off.
+        title = p.trigger === "money_in" ? text(locale, "notify", "receivedTitleHidden") : text(locale, "notify", "ruleAlertHidden");
         body = "";
         path = "/automations";
         break;
@@ -130,14 +159,22 @@ export function renderNotification(item: Item, locale: CatalogLocale): RenderedN
     case "invoice_overdue": {
       const owed = tokenAmount(p.amount, p.decimals, p.asset, locale);
       title = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueTitle" : p.stage === "due_today" ? "invoiceDueTodayTitle" : "invoiceDueSoonTitle", { number: p.number ?? "" });
-      body = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueBody" : "invoiceDueBody", {
-        client: p.client ?? "",
-        amount: owed,
-        date: p.due ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(p.due)) : "",
-      });
+      // Hidden amounts: the client only, no figure on the lock screen.
+      body = hide
+        ? (p.client ?? "")
+        : text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueBody" : "invoiceDueBody", {
+            client: p.client ?? "",
+            amount: owed,
+            date: p.due ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(p.due)) : "",
+          });
       path = p.invoiceId ? `/business/invoice/${p.invoiceId}` : "/business";
       break;
     }
+  }
+  // An automation's item opens that run's story, or that automation's own card; the list only when neither is known.
+  if (path === "/automations") {
+    if (p.runId) path = `/why/run/${p.runId}`;
+    else if (p.automationId) path = `/i/${p.automationId}`;
   }
   // The exact thing it is about (plan §A.4.11): the action's own card by id, the request, or why money arrived.
   if (path === "/inbox") {

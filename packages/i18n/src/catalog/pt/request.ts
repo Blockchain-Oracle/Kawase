@@ -29,4 +29,13 @@ export const request: Catalog["request"] = {
   signInTitle: "Entre para pedir dinheiro",
   signInBody: "Os pedidos são pagos na sua própria carteira, por isso precisam de uma conta.",
   loadFailed: "Não foi possível carregar seus pedidos.",
+  askOnKawase: "Pedir a alguém no Kawase",
+  askBody: "A pessoa recebe na caixa de entrada do Kawase e como notificação. Digite o @usuário ou escolha um contato.",
+  askPlaceholder: "@usuário ou nome do contato",
+  ask: "Pedir",
+  askName: "Pedir a {{name}}",
+  askedInApp: "Pedido a {{name}} no Kawase",
+  askedToast: "Pedido enviado a {{name}} no Kawase",
+  askNotOnKawase: "{{name}} não é alguém do Kawase que você salvou. Compartilhe o link.",
+  askSomeoneElse: "Pedir a outra pessoa",
 };

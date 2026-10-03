@@ -35,4 +35,8 @@ export const notifications: Catalog["notifications"] = {
   primerLater: "Plus tard",
   kindPositionHealth: "Alertes de santé",
   kindPositionClosed: "Prise de profit et stop-loss",
+  kindRequestReceived: "Quelqu’un vous demande de payer",
+  lockTitle: "Écran verrouillé",
+  hideAmounts: "Masquer les montants",
+  hideAmountsBody: "Les notifications disent « Vous avez reçu de l’argent » sans le montant. Votre boîte de réception et vos e-mails affichent toujours les montants.",
 };

@@ -31,4 +31,8 @@ export const notifications = {
   primerLater: "Not now",
   kindPositionHealth: "Health alerts",
   kindPositionClosed: "Take-profit and stop-loss",
+  kindRequestReceived: "Someone asks you to pay",
+  lockTitle: "Lock screen",
+  hideAmounts: "Hide amounts",
+  hideAmountsBody: "Notifications say “You received money” without the figure. Your inbox and email still show amounts.",
 } as const;

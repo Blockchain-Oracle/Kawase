@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "यह बँटवारा पढ़ा नहीं जा सका।",
   invalid: "हिस्से बिल के बराबर नहीं जुड़ते। बँटवारे के फ़ॉर्म में तय करें।",
   openForm: "बँटवारे का फ़ॉर्म खोलें",
+  askedInApp: "Kawase में माँगा गया",
 };

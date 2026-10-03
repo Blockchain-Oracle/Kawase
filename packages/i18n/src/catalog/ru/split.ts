@@ -38,4 +38,5 @@ export const split: Catalog["split"] = {
   failed: "Не удалось прочитать этот раздел.",
   invalid: "Доли не складываются в сумму счёта. Укажите их в форме.",
   openForm: "Открыть форму",
+  askedInApp: "Запрошено в Kawase",
 };

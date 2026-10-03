@@ -22,6 +22,7 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
 
+import { AskOnKawase } from "./ask-on-kawase";
 import { effectiveStatus, useRequestDates, useRequestStatusLabel } from "./copy";
 import { RequestTokenMark, requestFigures } from "./request-token";
 
@@ -147,6 +148,7 @@ export function RequestShareCard({ request, requester, compact, onCancel, cancel
             <Icon as={Share2} className="text-primary-foreground size-5" />
             <Text>{t("request.share")}</Text>
           </Button>
+          <AskOnKawase request={request} />
           {onCancel ? (
             <Button variant="ghost" disabled={cancelling} onPress={onCancel}>
               <Text className="text-muted-foreground">{t("request.cancel")}</Text>
