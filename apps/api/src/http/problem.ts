@@ -28,6 +28,8 @@ export type ProblemCode =
   | "conflict"
   | "nonce_invalid"
   | "proof_invalid"
+  /** Spending within the allowance or deleting the account needs the proof from the signed-in device (M12). */
+  | "device_proof_required"
   | "session_key_unknown"
   | "account_recovery_required"
   | "wallet_not_registered"
@@ -118,6 +120,7 @@ const TITLES: Record<ProblemCode, string> = {
   conflict: "Already exists",
   nonce_invalid: "The sign-in challenge is unknown, used or expired",
   proof_invalid: "The sign-in proof does not verify",
+  device_proof_required: "This needs the proof from your signed-in device",
   session_key_unknown: "The session key is not registered on this user",
   account_recovery_required: "Use the original sign-in method to recover this account",
   wallet_not_registered: "No wallet is registered for this account",

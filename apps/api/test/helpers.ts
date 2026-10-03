@@ -90,6 +90,8 @@ export function testApp(
     market?: AppDeps["market"];
     /** Real models for a live agent round trip (none by default: the chat answers "unavailable"). */
     models?: AppDeps["models"];
+    /** Allowance sends and account deletion need the device's proof (M12). */
+    deviceProofRequired?: boolean;
   } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;

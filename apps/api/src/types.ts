@@ -8,6 +8,8 @@ export type AppEnv = {
     userId?: string;
     sessionId?: string;
     user?: SessionUser;
+    /** This request carried a valid proof from the session's own device key (auth/device-proof.ts). */
+    deviceProven?: boolean;
   };
 };
 

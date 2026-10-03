@@ -22,6 +22,7 @@ import { SessionProvider } from "@/session/session-provider";
 import { SignInProvider } from "@/sign-in/sign-in-provider";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { ThemeSync } from "@/theme/theme-sync";
+import { DeviceProofSync } from "@/wallet/device-proof-sync";
 import { WalletProvider } from "@/wallet/wallet-provider";
 import { WebApprovalHost } from "@/wallet/web-approval-host";
 
@@ -38,6 +39,7 @@ export default function RootLayout() {
             <SessionProvider>
               <ThemeSync />
               <PushSync />
+              <DeviceProofSync />
               <LocaleProvider>
                 <BottomSheetModalProvider>
                   <SignInProvider>

@@ -129,11 +129,17 @@ export type ApiClientOptions = {
   /** The Kawase session token, when signed in. */
   getToken: () => string | undefined | Promise<string | undefined>;
   fetch?: typeof fetch;
+  /**
+   * Headers proving a request comes from this device's own Turnkey key (security review M12), for the calls a bearer
+   * token alone may not make: approving a send (inside the allowance it goes at once), a waiting run, deleting the
+   * account. Without it those calls go unproven (older servers accept that until proofs are required).
+   */
+  prove?: (request: { method: string; path: string; body: string }) => Promise<Record<string, string>>;
 };
 
 const HTTP_NO_CONTENT = 204;
 
-export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }: ApiClientOptions) {
+export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, prove }: ApiClientOptions) {
   const base = baseUrl.replace(/\/$/, "");
 
   async function call<T>(
@@ -144,6 +150,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       idempotencyKey?: string | undefined;
       token?: string | undefined;
       authAttemptId?: string | undefined;
+      /** Carries the device's proof (M12). */
+      proven?: boolean | undefined;
     } = {},
   ): Promise<T> {
     const token = options.token ?? (await getToken());
@@ -152,8 +160,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     if (token) headers.authorization = `Bearer ${token}`;
     if (options.idempotencyKey) headers["idempotency-key"] = options.idempotencyKey;
     if (options.authAttemptId) headers["x-kawase-auth-attempt"] = options.authAttemptId;
+    const sent = body !== undefined ? JSON.stringify(body) : undefined;
+    // The proof covers this exact method, path and body; a device that cannot prove sends none (the api decides).
+    if (options.proven && prove) Object.assign(headers, await prove({ method, path, body: sent ?? "" }).catch(() => ({})));
     const init: RequestInit = { method, headers };
-    if (body !== undefined) init.body = JSON.stringify(body);
+    if (sent !== undefined) init.body = sent;
     const response = await fetchImpl(`${base}${path}`, init);
     if (response.status === HTTP_NO_CONTENT) return undefined as T;
     const text = await response.text();
@@ -280,7 +291,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       cancel: (id: string) => call<{ intent: SendIntent }>("POST", `/sends/${id}/cancel`),
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
       approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
+        call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey, proven: true }),
       /** `kind: "typed"` for a gas-free send's EIP-3009 signature. */
       signature: (id: string, approvalId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction, ...(kind ? { kind } : {}) }),
@@ -398,7 +409,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     needsYou: {
       list: () => call<{ items: NeedsYouItem[]; pending: number }>("GET", "/needs-you"),
       get: (id: string) => call<{ item: NeedsYouItem }>("GET", `/needs-you/${id}`),
-      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }),
+      approve: (id: string, via?: "app" | "push" | "web" | "chat") => call<NeedsYouApproval>("POST", `/needs-you/${id}/approve`, { via }, { proven: true }),
       decline: (id: string, via?: "app" | "push" | "web" | "chat") => call<{ item: NeedsYouItem }>("POST", `/needs-you/${id}/decline`, { via }),
     } satisfies NeedsYouApi,
 
@@ -498,7 +509,7 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
       revokeAllRequest: (network: NetworkId) =>
         call<{ revoke: RevokeRequest | null }>("POST", "/account/grants/revoke/request", { network }),
-      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }),
+      deleteAccount: (confirm: string) => call<AccountDeleted>("POST", "/account/delete", { confirm }, { proven: true }),
     } satisfies AccountApi,
 
     /** Wallet & limits on the active network: tightening applies at once; loosening returns what to sign. */
