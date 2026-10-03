@@ -32,6 +32,8 @@ import { WEB_HOVER_MUTED, WEB_HOVER_SECONDARY } from "@kawase/ui-native/lib/wide
 import { tapFeedback } from "@/feedback/feedback";
 import { useFund } from "@/fund/fund-provider";
 import { useBuy } from "@/onramp/buy-provider";
+import { MainnetConsentSheet } from "@/components/network-pill";
+import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { BrakeNote } from "@/safety/brake-note";
@@ -104,6 +106,7 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const signIn = useSignIn();
   const fund = useFund();
   const buy = useBuy();
+  const networkSwitch = useNetworkSwitch();
   const { portfolio } = usePortfolio();
   const controller = useSwap();
   const policyText = useSwapPolicyText();
@@ -494,6 +497,18 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
         selected={tokenOut.address.toLowerCase()}
         onSelect={choose("out")}
         unavailable={(token) => (token.status === "impersonator" ? t("tokenPage.n_blocked") : testnet && token.kind !== "dollar" && token.kind !== "fiat" ? t("tokenPage.n_mainnet_only") : undefined)}
+        // Testnet trades dollars and euros only: a token mainnet's markets list is one switch away (R2's nearest path).
+        onUnavailable={(_token, reason) => {
+          if (reason !== t("tokenPage.n_mainnet_only")) return;
+          setPicker(undefined);
+          void networkSwitch.switchNetwork("mainnet");
+        }}
+      />
+      <MainnetConsentSheet
+        open={networkSwitch.consentNeeded}
+        busy={networkSwitch.busy}
+        onAccept={() => void networkSwitch.acceptMainnet()}
+        onClose={networkSwitch.dismissConsent}
       />
     </View>
   );

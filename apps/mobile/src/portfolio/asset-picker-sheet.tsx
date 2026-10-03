@@ -30,6 +30,8 @@ type AssetPickerSheetProps = {
   onSelect: (choice: AssetChoice) => void;
   /** This flow's reason a token cannot be chosen, if any (R2). */
   unavailable?: (token: TokenView) => string | undefined;
+  /** When a reason has a fix (testnet's "Mainnet only — switch?" switches), the greyed row stays tappable for it. */
+  onUnavailable?: ((token: TokenView, reason: string) => void) | undefined;
   /** The current choice (lower-case address). */
   selected?: string | undefined;
   onAddMoney?: () => void;
@@ -42,7 +44,7 @@ const matches = (token: TokenView, query: string) => {
   return !needle || token.symbol.toLowerCase().includes(needle) || token.name.toLowerCase().includes(needle) || token.address.toLowerCase() === needle;
 };
 
-export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavailable, selected, onAddMoney }: AssetPickerSheetProps) {
+export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavailable, onUnavailable, selected, onAddMoney }: AssetPickerSheetProps) {
   const { t } = useT();
   const { locale } = useLocale();
   const insets = useSafeAreaInsets();
@@ -106,7 +108,7 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
       ...(badge ? { chainBadge: badge } : {}),
       ...(reason ? { unavailable: reason } : {}),
       selected: holding.token.address.toLowerCase() === selected,
-      ...(reason ? {} : { onPress: () => choose({ token: holding.token, holding }) }),
+      ...(reason ? (onUnavailable && !other ? { onPress: () => onUnavailable(holding.token, reason) } : {}) : { onPress: () => choose({ token: holding.token, holding }) }),
     };
   };
 
@@ -126,7 +128,7 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
       ...(chip ? { chip } : {}),
       ...(reason ? { unavailable: reason } : {}),
       selected: result.token.address.toLowerCase() === selected,
-      ...(reason ? {} : { onPress: () => choose({ token: result.token, holding: null }) }),
+      ...(reason ? (onUnavailable ? { onPress: () => onUnavailable(result.token, reason) } : {}) : { onPress: () => choose({ token: result.token, holding: null }) }),
     };
   };
 
