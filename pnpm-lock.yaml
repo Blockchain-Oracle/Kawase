@@ -241,6 +241,12 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@kawase/wallet':
+        specifier: workspace:*
+        version: link:../../packages/wallet
+      '@turnkey/crypto':
+        specifier: 2.13.2
+        version: 2.13.2
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
