@@ -16,6 +16,7 @@ export const withdraw: Catalog["withdraw"] = {
   asCash: "نقدًا (USDC)",
   youReceive: "ستستلم",
   sendAsCash: "أرسله نقدًا بدلًا من ذلك",
+  moveAsItself: "انقل {{symbol}} كما هو",
   routeTransfer: "الإرسال على {{chain}}",
   routeBridge: "النقل عبر جسر إلى {{chain}}",
   routeConvertTransfer: "التحويل إلى USDC، ثم الإرسال على {{chain}}",

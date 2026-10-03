@@ -298,6 +298,16 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
                     onAmount={(text) => setLine(leg, { amount: text === "" ? null : text })}
                     onAs={(as) => setLine(leg, { as })}
                     onRemove={() => removeLine(leg)}
+                    // To the person's own wallet on another chain, on mainnet: the cross-chain routes take it as itself.
+                    onMove={
+                      !testnet && plan?.destination?.address && plan.destination.chain.key !== "arc" && !plan.destination.exchange
+                        ? () =>
+                            router.push({
+                              pathname: "/move",
+                              params: { direction: "out", chain: plan.destination!.chain.key, asset: leg.token.address, amount: leg.amountText, recipient: plan.destination!.address! },
+                            })
+                        : undefined
+                    }
                   />
                 ))
               )}
@@ -379,10 +389,12 @@ type LegRowProps = {
   onAmount: (text: string) => void;
   onAs: (as: "itself" | "cash") => void;
   onRemove: () => void;
+  /** The batch can't bridge this token, but the cross-chain routes carry it as itself (mainnet): Move, prefilled. */
+  onMove?: (() => void) | undefined;
 };
 
 /** One asset's line (21st Asset Card row): mark, amount (Max by default), as itself / as cash, the route, the reason. */
-function LegRow({ leg, amount, route, reason, value, locale, onAmount, onAs, onRemove }: LegRowProps) {
+function LegRow({ leg, amount, route, reason, value, locale, onAmount, onAs, onRemove, onMove }: LegRowProps) {
   const { t } = useT();
   const colors = useThemeColors();
   const cashable = leg.canGoAsCash || leg.as === "cash";
@@ -439,6 +451,11 @@ function LegRow({ leg, amount, route, reason, value, locale, onAmount, onAs, onR
         </Text>
       </View>
       {reason ? <Text className={cn("text-sm leading-5", leg.status === "blocked" ? "text-destructive" : "text-warning", TEXT_START)}>{reason}</Text> : null}
+      {onMove && leg.reason === "convert_first" ? (
+        <Button variant="secondary" size="sm" onPress={onMove}>
+          <Text>{t("withdraw.moveAsItself", { symbol: leg.token.symbol })}</Text>
+        </Button>
+      ) : null}
       {offerCash ? (
         <Button variant="secondary" size="sm" onPress={() => onAs("cash")}>
           <Text>{t("withdraw.sendAsCash")}</Text>

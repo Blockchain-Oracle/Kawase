@@ -76,6 +76,11 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const waiting = elsewhere?.chains ?? [];
   const onChain = waiting.filter((row) => row.key === chain);
   const held = (portfolio?.assets ?? []).filter((holding) => !holding.hidden && BigInt(holding.balance) > NOTHING).slice(0, ASSET_CHOICES);
+  // A link that named the asset by its Arc address (Send, a token page, Withdraw) gets that token's own decimals.
+  const named = (portfolio?.assets ?? []).find((holding) => holding.token.address.toLowerCase() === asset.symbol.toLowerCase());
+  React.useEffect(() => {
+    if (named && named.token.decimals !== asset.decimals) setAsset({ symbol: named.token.address, decimals: named.token.decimals });
+  }, [named, asset.decimals]);
   // Bring to Arc from where the money is: the chain holding the most, unless one was named.
   React.useEffect(() => {
     if (direction === "in" && !chain && waiting[0]) setChain(waiting[0].key);
