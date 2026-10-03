@@ -16,7 +16,9 @@ export const movePolicy: Catalog["movePolicy"] = {
   FIRST_TIME_RECIPIENT: "أول دفعة إلى هذا العنوان. تحقّق منه قبل الإرسال.",
   AMOUNT_MISSING: "كم؟",
   AMOUNT_INVALID: "هذا المبلغ غير صالح.",
-  INSUFFICIENT_BALANCE: "رصيد USDC هناك غير كافٍ. لديك {{balance}}.",
-  INSUFFICIENT_GAS: "احتفظ بنحو {{needed}} على Arc لرسوم الشبكة.",
+  INSUFFICIENT_BALANCE: "لا يكفي {{asset}} هناك. لديك {{balance}}.",
+  INSUFFICIENT_GAS: "احتفظ بنحو {{needed}} لرسوم الشبكة.",
   QUOTE_UNAVAILABLE: "لا يوجد مسار يمكنه نقله الآن.",
+  MOVE_ASSET_UNKNOWN: "لا تجد Kawase ‏{{asset}} هناك. أي أصل تقصد؟",
+  TOKEN_BLOCKED: "{{symbol}} يقلّد رمزًا آخر، لذا لن تنقله Kawase.",
 };

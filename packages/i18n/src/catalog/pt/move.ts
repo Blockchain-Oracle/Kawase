@@ -55,4 +55,13 @@ export const move: Catalog["move"] = {
   slideBring: "Deslize para trazer para Arc",
   slideSend: "Deslize para enviar",
   cancel: "Cancelar",
+  provider_lifi: "LI.FI",
+  provider_debridge: "deBridge",
+  via: "via {{bridge}}",
+  convertFirst: "trocado antes por USDC na {{venue}}",
+  feeOnTop: "+ {{amount}} de taxa",
+  arrivesAs: "Chega como {{asset}}",
+  gasThere: "Pago na {{chain}}",
+  asset: "O que mover",
+  amountOf: "Valor ({{asset}})",
 };

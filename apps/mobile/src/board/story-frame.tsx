@@ -49,7 +49,7 @@ export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: S
         { title: story.boundsTitle, body: story.boundsBody },
         { title: story.practiceTitle, body: story.practiceBody },
         { title: story.languageTitle, body: story.languageBody },
-        { title: story.firstTitle, body: story.firstBody },
+        { title: story.everythingTitle, body: story.everythingBody },
       ],
       example: story.example,
       request: story.exampleRequest,
@@ -63,7 +63,7 @@ export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: S
       allowance: { amount: "5,000", perDay: story.perDay, inside: story.boundsInside, above: story.boundsAbove, never: story.boundsNever },
       practice: { faucetLine: story.faucetLine, faucetAmount: "+20", testMoney: story.testMoney, realMoney: story.realMoney },
       sameMeaning: story.sameMeaning,
-      first: { step1: story.firstStep1, step2: story.firstStep2 },
+      everything: { buy: story.everythingBuy, trade: story.everythingTrade, earn: story.everythingEarn, automate: story.everythingAutomate },
     },
     { active: index, animate: autoAdvance && !reduced },
   );

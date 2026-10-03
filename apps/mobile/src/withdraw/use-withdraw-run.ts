@@ -72,7 +72,7 @@ export function useWithdrawRun() {
         intent.kind === "swap"
           ? await api.swaps.signature(intent.id, answer.approvalId, signed)
           : intent.kind === "send"
-            ? await api.sends.signature(intent.id, answer.approvalId, signed)
+            ? await api.sends.signature(intent.id, answer.approvalId, signed, typed ? "typed" : undefined)
             : await api.crosschain.signature(intent.id, answer.approvalId, typed ? { signature: signed } : { signedTransaction: signed });
       return submitted.status;
     },

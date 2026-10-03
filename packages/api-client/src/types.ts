@@ -112,6 +112,8 @@ export type UnsignedTransaction = {
 };
 
 export type TransactionRequestResponse = { requestId: string; transaction: UnsignedTransaction; grantId?: string };
+/** The wallet cannot pay the fee: it signs a one-time delegation for exactly this batch and Kawase's relayer sends it. */
+export type RelayedBatchRequest = { requestId: string; relayed: true; typedData: Record<string, unknown> };
 
 export type Problem = {
   type: string;
@@ -268,7 +270,8 @@ export type SendDraftView = {
   amount: string;
   note: string | null;
   /** Who pays the network fee, and about how much (USDC base units, 6 decimals). */
-  fee: { payer: "kawase" | "wallet"; estimate: string | null };
+  /** "relayer": the wallet cannot pay the fee, so the send goes gas-free (EIP-3009) and Kawase pays it. */
+  fee: { payer: "kawase" | "wallet" | "relayer"; estimate: string | null };
   /** The on-chain reference (Arc Memo) this send writes, when it has one. */
   memo?: { memoId: string; memoData: string } | null;
 };
@@ -315,7 +318,9 @@ export type SendRequest = {
 
 export type SendApproveResponse =
   | { status: "executing" | "changed" | "final"; intent: SendIntent }
-  | { status: "sign"; intent: SendIntent; approvalId: string; transaction: UnsignedTransaction };
+  | { status: "sign"; intent: SendIntent; approvalId: string; transaction: UnsignedTransaction }
+  /** Gas-free: one EIP-3009 authorization to sign; Kawase's relayer sends it and pays the fee. */
+  | { status: "sign_typed"; intent: SendIntent; approvalId: string; typedData: { domain: Record<string, unknown>; types: Record<string, { name: string; type: string }[]>; primaryType: string; message: Record<string, unknown> } };
 
 // ── Swaps (Stage 6) ─────────────────────────────────────────────────────────────────────────────────────────
 
@@ -760,7 +765,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue" | "request_received";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue" | "request_received" | "position_health" | "position_closed" | "token_graduated";
 
 export type InboxItem = {
   id: string;

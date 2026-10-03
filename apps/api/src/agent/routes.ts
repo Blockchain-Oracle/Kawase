@@ -96,6 +96,8 @@ export type AgentDeps = {
   history?: HistoryService | undefined;
   /** Payouts, payroll, devices and export links for chat (B2-2). */
   business?: BusinessAgentDeps | undefined;
+  /** One US dollar in a display currency (B2-3); replies stay in dollars without it. */
+  fx?: ((currency: string) => Promise<number | null>) | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -140,6 +142,7 @@ export function createTurnRunner(deps: AgentDeps) {
     invoices,
     history: historyService,
     business,
+    fx,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
   const conversations = new ConversationStore(db);
@@ -207,6 +210,11 @@ export function createTurnRunner(deps: AgentDeps) {
       log,
       surface,
     });
+    // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
+    if (fx && user.displayCurrency && user.displayCurrency !== "USD") {
+      const perUsd = await settleWithin(fx(user.displayCurrency), WALLET_FACTS_WAIT_MS).catch(() => undefined);
+      if (perUsd) context.display = { currency: user.displayCurrency, perUsd };
+    }
     // Talking: the wallet is read while the thread loads, so "how much do I have?" is answered in one model step
     // instead of a tool call and a second step (~2 s of silence). Never waited on for long, never fatal.
     let walletMs: number | undefined;

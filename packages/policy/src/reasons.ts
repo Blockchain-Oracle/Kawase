@@ -81,6 +81,8 @@ export const REASONS = {
   AMOUNT_MISSING: "clarification",
   AMOUNT_INVALID: "clarification",
   ASSET_UNCLEAR: "clarification",
+  /** A cross-chain move names an asset Kawase cannot find on that side. */
+  MOVE_ASSET_UNKNOWN: "clarification",
   SWAP_SAME_TOKEN: "clarification",
   DESTINATION_MISSING: "clarification",
   MARKET_MISSING: "clarification",
@@ -97,6 +99,8 @@ export const REASONS = {
   ABOVE_ALLOWANCE: "warning",
   NO_ALLOWANCE: "warning",
   LEAVES_LITTLE_FOR_FEES: "warning",
+  /** The wallet cannot pay this send's fee, so Kawase's EIP-3009 relayer carries it and pays the fee (no dead end). */
+  GAS_RELAYED: "warning",
   RATE_BELOW_REFERENCE: "warning",
   /** Buying a token Kawase does not vouch for (unverified or a lookalike): shown on the card. */
   TOKEN_UNVERIFIED: "warning",

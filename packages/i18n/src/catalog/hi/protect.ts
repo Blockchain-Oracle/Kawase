@@ -1,0 +1,29 @@
+import type { Catalog } from "../en/index";
+
+export const protect: Catalog["protect"] = {
+  title: "टेक-प्रॉफ़िट और स्टॉप-लॉस",
+  takeProfit: "टेक-प्रॉफ़िट",
+  stopLoss: "स्टॉप-लॉस",
+  takeProfitHint: "जब {{market}} यहाँ पहुँचे, सब बंद करें",
+  stopLossHint: "जब {{market}} यहाँ पहुँचे, सब बंद करें",
+  off: "बंद",
+  save: "सेव करें",
+  saved: "सेव हो गया। Kawase आपके लिए नज़र रखता है।",
+  needsGrant:
+    "एक कदम और: आपकी गैरमौजूदगी में Kawase को यह पोज़ीशन बंद करने दें। यह इसे सिर्फ़ बंद कर सकता है, आपके अपने वॉलेट में।",
+  turnOn: "सुरक्षा चालू करें",
+  turningOn: "चालू हो रही है…",
+  grantPrompt: "Kawase को आपकी पोज़ीशन बंद करने दें",
+  onUntil: "सुरक्षा {{date}} तक चालू",
+  turnOff: "बंद करें",
+  armed: "नज़र में",
+  closing: "बंद हो रही है…",
+  unavailable: "उचित कीमत पर बंद नहीं हो सकी",
+  liquidationNote: "लिक्विडेशन {{price}} पर: स्टॉप-लॉस उससे पहले होना चाहिए।",
+  route: "Arc पर Uniswap से बंद होती है, रकम आपके वॉलेट में।",
+  take_profit_wrong_side: "टेक-प्रॉफ़िट आज की कीमत से आगे होता है: लॉन्ग में ऊपर, शॉर्ट में नीचे।",
+  stop_loss_wrong_side: "स्टॉप-लॉस आज की कीमत से पहले होता है: लॉन्ग में नीचे, शॉर्ट में ऊपर।",
+  stop_loss_past_liquidation: "स्टॉप-लॉस लिक्विडेशन से पहले रखें।",
+  protection_unavailable: "Arc पर Uniswap अभी इस आकार की पोज़ीशन बंद नहीं कर सकता, इसलिए Kawase इसका वादा नहीं करता।",
+  failed: "सेव नहीं हो सका। फिर कोशिश करें।",
+};

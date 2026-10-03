@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "Étiquette",
   labelPlaceholder: "Fournisseur, propriétaire…",
   fromHandle: "@{{handle}}",
-  importSoon: "Importer depuis les contacts du téléphone — bientôt",
   signInBody: "Connectez-vous pour garder un carnet d'adresses des personnes que vous payez.",
   loadFailed: "Impossible de charger vos contacts.",
   noMatches: "Aucun contact ne correspond.",

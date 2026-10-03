@@ -1,7 +1,6 @@
 // The Profile tab (journey 13, P / S21): the profile header (the authored default avatar, the @handle or name,
-// how the person signed in), then every settings group the product has. Rows whose stage has shipped work; rows
-// for stages still being built are shown with an honest "Coming" badge and no fake values, so the map of the app
-// is visible from day one and nothing pretends to work. The network row repeats the header's toggle (D15).
+// how the person signed in), then every settings group the product has, each row working. The network row repeats
+// the header's toggle (D15).
 import * as Application from "expo-application";
 import { useRouter } from "expo-router";
 import {
@@ -45,6 +44,7 @@ import { Switch } from "@kawase/ui-native/components/ui/switch";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { CurrencySheet, useCurrencyName } from "@/components/currency-sheet";
 import { LanguageSheet } from "@/components/language-sheet";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { useDockClearance } from "@/dock/use-dock-clearance";
@@ -75,14 +75,6 @@ function RowIcon({ icon, className }: { icon: LucideIcon; className?: string }) 
   return <Icon as={icon} className={cn("text-muted-foreground size-5", className)} />;
 }
 
-function Coming({ label }: { label: string }) {
-  return (
-    <View className="bg-secondary rounded-full px-2.5 py-1">
-      <Text className="text-muted-foreground text-xs font-semibold">{label}</Text>
-    </View>
-  );
-}
-
 export function SettingsScreen() {
   const { t } = useT();
   const router = useRouter();
@@ -94,6 +86,9 @@ export function SettingsScreen() {
   const turnkey = useTurnkeyAccount();
   const { network, nextName, busy, toggle, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
   const [languageOpen, setLanguageOpen] = React.useState(false);
+  const [currencyOpen, setCurrencyOpen] = React.useState(false);
+  const currencyName = useCurrencyName();
+  const displayCurrency = (user?.displayCurrency || "USD").toUpperCase();
   const feedback = useFeedbackPreferences();
   const [feedbackError, setFeedbackError] = React.useState(false);
   const changeFeedback = (key: "sounds" | "haptics" | "narration", enabled: boolean) => {
@@ -103,7 +98,6 @@ export function SettingsScreen() {
   };
   const testnet = network === "testnet";
   const account = status === "account";
-  const coming = <Coming label={t("fund.coming")} />;
   const name = !account
     ? t("common.guest")
     : user?.handle
@@ -238,8 +232,9 @@ export function SettingsScreen() {
             <ListRow
               leading={<RowIcon icon={Coins} />}
               title={t("settings.displayCurrency")}
-              trailing={coming}
-              disabled
+              trailing={<Text className="text-muted-foreground text-base">{currencyName(displayCurrency)}</Text>}
+              chevron
+              onPress={() => setCurrencyOpen(true)}
             />
           </ListGroup>
         </Section>
@@ -361,7 +356,7 @@ export function SettingsScreen() {
 
         <Section title={t("settings.help")}>
           <ListGroup>
-            <ListRow leading={<RowIcon icon={LifeBuoy} />} title={t("settings.trust")} trailing={coming} disabled />
+            <ListRow leading={<RowIcon icon={LifeBuoy} />} title={t("settings.trust")} chevron onPress={() => router.push("/help")} />
             <ListRow
               title={t("settings.version")}
               trailing={
@@ -387,6 +382,7 @@ export function SettingsScreen() {
       </ScrollView>
 
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
+      <CurrencySheet open={currencyOpen} onClose={() => setCurrencyOpen(false)} />
       <MainnetConsentSheet
         open={consentNeeded}
         busy={busy}

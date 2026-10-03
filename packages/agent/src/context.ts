@@ -30,6 +30,7 @@ import type {
   MarginPositionsOutput,
   MarginRequest,
   ProposeMarginOutput,
+  ProtectPositionOutput,
   BuyProposalOutput,
   CrossChainRequest,
   ProposeCrossChainOutput,
@@ -64,6 +65,7 @@ import type {
   ExplainOutput,
   DeviceSignOutProposal,
   DeleteAccountProposal,
+  FeeReserveView,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -147,6 +149,8 @@ export type AgentContext = {
   marginPositions?(): Promise<MarginPositionsOutput>;
   /** Drafts a margin order (open or close); the person slides to confirm on the card. */
   proposeMargin?(input: MarginRequest): Promise<ProposeMarginOutput>;
+  /** Take-profit / stop-loss on an open position (USD prices; null clears one). */
+  protectPosition?(input: { positionId: string | null; market: string | null; side: "long" | "short" | null; takeProfit: string | null | undefined; stopLoss: string | null | undefined }): Promise<ProtectPositionOutput>;
   /** Buy with Apple Pay / Google Pay / debit (Circle Onramp): the card's button starts it; nothing is charged here. */
   proposeBuy?(input: { asset?: string | null; amount?: string | null; then?: string | null }): Promise<BuyProposalOutput>;
   /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */
@@ -170,6 +174,8 @@ export type AgentContext = {
   riskMode?: "careful" | "balanced" | "autonomous" | undefined;
   practice?: boolean | undefined;
   pausedAll?: boolean | undefined;
+  /** The person's display currency and today's rate (B2-3), when it is not US dollars. */
+  display?: { currency: string; perUsd: number } | undefined;
   /** The person's limits now. */
   safetyView?(): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   /** A change: tightening applies at once; loosening comes back as a card to approve with Face ID. */
@@ -202,6 +208,8 @@ export type AgentContext = {
   explainTransaction?(input: { txHash: string | null; which: "latest" | "latest_in" | "latest_out" }): Promise<{ output: ExplainOutput; summary: ModelSummary }>;
   /** The devices, for the person to sign one out on the card. */
   proposeDeviceSignOut?(input: { device: string | null }): Promise<{ proposal: DeviceSignOutProposal; summary: ModelSummary }>;
+  /** The fee reserve: Arc fees are USDC; "~N actions left" and the relayer for when it runs out (B2-3). */
+  feeReserve?(): Promise<{ reserve: FeeReserveView | null; summary: ModelSummary }>;
   /** What deleting the account means; the person does it on the delete screen with their @handle typed. */
   proposeDeleteAccount?(): Promise<{ proposal: DeleteAccountProposal; summary: ModelSummary }>;
 };

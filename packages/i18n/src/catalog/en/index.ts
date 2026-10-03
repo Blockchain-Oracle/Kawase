@@ -71,6 +71,7 @@ import { privacy } from "./privacy";
 import { memory } from "./memory";
 import { insight } from "./insight";
 import { forYou } from "./for-you";
+import { protect } from "./protect";
 import { withdraw } from "./withdraw";
 import { tokenRules } from "./token-rules";
 import { scan } from "./scan";
@@ -80,7 +81,11 @@ import { receipt } from "./receipt";
 import { importContacts } from "./import-contacts";
 import { alerts } from "./alerts";
 import { chatCards } from "./chat-cards";
+import { launchpad } from "./launchpad";
 import { places } from "./places";
+import { help } from "./help";
+import { fees } from "./fees";
+import { offline } from "./offline";
 
 export const en = {
   common,
@@ -153,6 +158,7 @@ export const en = {
   memory,
   insight,
   forYou,
+  protect,
   withdraw,
   tokenRules,
   scan,
@@ -162,7 +168,11 @@ export const en = {
   importContacts,
   alerts,
   chatCards,
+  launchpad,
   places,
+  help,
+  fees,
+  offline,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

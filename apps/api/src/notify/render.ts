@@ -130,6 +130,25 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       body = p.balance ? text(locale, "automation", "ruleAlertBalance", { amount: money("USDC", p.balance) }) : "";
       path = "/automations";
       break;
+    case "position_health":
+      // Aave V4 health is one per account: margin positions and borrowing share it.
+      title = text(locale, "notify", p.level === "danger" ? "healthDangerTitle" : "healthWarningTitle", { health: p.health ?? "" });
+      body = text(locale, "notify", "healthBody");
+      path = p.path || "/margin";
+      break;
+    case "position_closed": {
+      const position = `${p.market ?? ""} ${text(locale, "notify", `side_${p.side === "short" ? "short" : "long"}`)}`;
+      const closed = p.outcome === "closed";
+      title = closed ? text(locale, "notify", p.reason === "take_profit" ? "takeProfitTitle" : "stopLossTitle", { position }) : text(locale, "notify", "protectFailedTitle", { position });
+      body = closed ? text(locale, "notify", "protectClosedBody", { amount: sum }) : text(locale, "notify", "protectFailedBody");
+      path = "/margin";
+      break;
+    }
+    case "token_graduated":
+      title = text(locale, "notify", "graduatedTitle", { symbol: p.symbol ?? "", launchpad: p.launchpad ?? "" });
+      body = text(locale, "notify", "graduatedBody", { symbol: p.symbol ?? "" });
+      path = p.token ? `/token/5042/${p.token}` : "/markets";
+      break;
     case "device_signed_in":
     case "device_signed_out": {
       const device = p.name || text(locale, "alerts", "aDevice");

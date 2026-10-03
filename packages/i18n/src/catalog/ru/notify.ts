@@ -14,6 +14,16 @@ export const notify: Catalog["notify"] = {
   emailNeverApprove: "Kawase никогда не просит ничего подтверждать или подписывать по почте.",
   emailWhy:
     "Вы получили это письмо, потому что это включено в Kawase. Изменить можно в разделе Настройки → Уведомления.",
+  healthWarningTitle: "Здоровье счёта {{health}}: близко к пределу",
+  healthDangerTitle: "Здоровье счёта {{health}}: близко к ликвидации",
+  healthBody: "Погасите часть долга или добавьте залог, чтобы оставаться в безопасности.",
+  takeProfitTitle: "Тейк-профит: {{position}} закрыта",
+  stopLossTitle: "Стоп-лосс: {{position}} закрыта",
+  protectClosedBody: "{{amount}} вернулись в ваш кошелёк.",
+  protectFailedTitle: "Не удалось закрыть {{position}}",
+  protectFailedBody: "Цена, доступная Kawase, была недостаточно честной для продажи. Проверьте позицию.",
+  side_long: "лонг",
+  side_short: "шорт",
   needsYouTitle: "Ждёт вас",
   needsYouReminderTitle: "Всё ещё ждёт вас",
   needsYouSend: "Отправить {{amount}} получателю {{name}}",
@@ -29,4 +39,6 @@ export const notify: Catalog["notify"] = {
   needsYouSendHidden: "Отправить деньги: {{name}}",
   needsYouSwapHidden: "Обменять {{symbolIn}} на {{symbolOut}}",
   ruleAlertHidden: "Сработало одно из ваших правил",
+  graduatedTitle: "{{symbol}} вышел с кривой {{launchpad}}",
+  graduatedBody: "{{symbol}} теперь торгуется в обычном пуле.",
 };

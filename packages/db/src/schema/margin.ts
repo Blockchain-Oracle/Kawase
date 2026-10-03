@@ -3,7 +3,7 @@
 // market and side the amounts belong to (USDC debt is shared by every long, USDC collateral by every short and any
 // earn supply), what went in, and the average entry price. Amounts are written only from receipts (Spoke events).
 import { sql } from "drizzle-orm";
-import { index, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, money, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
@@ -35,6 +35,11 @@ export const marginPositions = pgTable(
     entryPrice: money().notNull(),
     /** USDC base units that came back on closes, in total. */
     returned: money().notNull().default(sql`0`),
+    /** Take-profit and stop-loss: the asset price (USD, 8 decimals) at which Kawase closes the whole position for the person. */
+    takeProfit: money(),
+    stopLoss: money(),
+    /** null; "armed" (watched); "closing" (a protective close is in flight); "unavailable" (no route can carry it now; told). */
+    protection: text(),
     openedAt: timestampTz().notNull(),
     closedAt: timestampTz(),
     createdAt: createdAt(),
@@ -46,4 +51,24 @@ export const marginPositions = pgTable(
       .on(table.userId, table.network, table.market, table.side)
       .where(sql`${table.status} = 'open'`),
   ],
+);
+
+/**
+ * The last account-health level Kawase told the person about (Aave V4 health is one per account, shared by margin and
+ * borrowing): "ok", "warning" (under 1.5) or "danger" (under 1.2). A level is told once on the way down; going back up
+ * resets it, so the next fall is told again.
+ */
+export const accountHealth = pgTable(
+  "account_health",
+  {
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    network: networkEnum().notNull(),
+    level: text().notNull(),
+    /** The health as last read, a decimal string. */
+    health: text(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.network] })],
 );

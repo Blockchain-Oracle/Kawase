@@ -55,4 +55,13 @@ export const move: Catalog["move"] = {
   slideBring: "滑动转回 Arc",
   slideSend: "滑动转出",
   cancel: "取消",
+  provider_lifi: "LI.FI",
+  provider_debridge: "deBridge",
+  via: "经由 {{bridge}}",
+  convertFirst: "先在 {{venue}} 换成 USDC",
+  feeOnTop: "+ {{amount}} 手续费",
+  arrivesAs: "到账为 {{asset}}",
+  gasThere: "在 {{chain}} 支付",
+  asset: "转移什么",
+  amountOf: "金额（{{asset}}）",
 };

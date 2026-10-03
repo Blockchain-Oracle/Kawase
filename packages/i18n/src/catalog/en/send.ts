@@ -28,6 +28,7 @@ export const send = {
   fee: "Network fee",
   feeKawase: "Paid by Kawase",
   feeWallet: "About {{amount}}",
+  feeRelayed: "About {{amount}}, paid by Kawase",
   note: "Note",
   allowanceInside: "Inside your daily allowance — sends without asking",
   allowanceAbove: "Above what's left of your allowance — needs your Face ID",

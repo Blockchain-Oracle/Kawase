@@ -16,7 +16,9 @@ export const movePolicy: Catalog["movePolicy"] = {
   FIRST_TIME_RECIPIENT: "Первый платёж на этот адрес. Проверьте перед отправкой.",
   AMOUNT_MISSING: "Сколько?",
   AMOUNT_INVALID: "Эта сумма недействительна.",
-  INSUFFICIENT_BALANCE: "Там недостаточно USDC. У вас {{balance}}.",
-  INSUFFICIENT_GAS: "Оставьте около {{needed}} в Arc на комиссию сети.",
+  INSUFFICIENT_BALANCE: "Недостаточно {{asset}}. У вас {{balance}}.",
+  INSUFFICIENT_GAS: "Оставьте около {{needed}} на комиссию сети.",
   QUOTE_UNAVAILABLE: "Сейчас ни один маршрут не может это перевести.",
+  MOVE_ASSET_UNKNOWN: "Kawase не находит там {{asset}}. Какой актив вы имеете в виду?",
+  TOKEN_BLOCKED: "{{symbol}} подражает другому токену, поэтому Kawase его не переведёт.",
 };

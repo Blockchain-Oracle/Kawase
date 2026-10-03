@@ -53,6 +53,8 @@ import MarkKyberswap from "./kyberswap";
 import MarkKyberswapMono from "./kyberswap-mono";
 import MarkLedger from "./ledger";
 import MarkLedgerMono from "./ledger-mono";
+import MarkLifi from "./lifi";
+import MarkLifiMono from "./lifi-mono";
 import MarkMetamask from "./metamask";
 import MarkMorpho from "./morpho";
 import MarkMorphoMono from "./morpho-mono";
@@ -68,6 +70,8 @@ import MarkQuicknode from "./quicknode";
 import MarkQuicknodeMono from "./quicknode-mono";
 import MarkRabby from "./rabby";
 import MarkRabbyMono from "./rabby-mono";
+import MarkRelay from "./relay";
+import MarkRelayMono from "./relay-mono";
 import MarkSolana from "./solana";
 import MarkSolanaMono from "./solana-mono";
 import MarkUnichain from "./unichain";
@@ -135,6 +139,8 @@ export const MARKS = {
   "kyberswap-mono": MarkKyberswapMono,
   "ledger": MarkLedger,
   "ledger-mono": MarkLedgerMono,
+  "lifi": MarkLifi,
+  "lifi-mono": MarkLifiMono,
   "metamask": MarkMetamask,
   "morpho": MarkMorpho,
   "morpho-mono": MarkMorphoMono,
@@ -150,6 +156,8 @@ export const MARKS = {
   "quicknode-mono": MarkQuicknodeMono,
   "rabby": MarkRabby,
   "rabby-mono": MarkRabbyMono,
+  "relay": MarkRelay,
+  "relay-mono": MarkRelayMono,
   "solana": MarkSolana,
   "solana-mono": MarkSolanaMono,
   "unichain": MarkUnichain,

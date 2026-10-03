@@ -60,7 +60,7 @@ export const userWalletSetup = pgTable(
   (table) => [uniqueIndex("user_wallet_setup_pk").on(table.userId, table.network)],
 );
 
-export const grantKindEnum = pgEnum("grant_kind", ["allowance", "automation", "marketplace"]);
+export const grantKindEnum = pgEnum("grant_kind", ["allowance", "automation", "marketplace", "margin_protection"]);
 export const grantStatusEnum = pgEnum("grant_status", ["pending", "active", "revoked", "expired", "superseded"]);
 
 /** A signed delegation (ERC-7710) from the user's wallet to one of our redeemers, with its caveats. */

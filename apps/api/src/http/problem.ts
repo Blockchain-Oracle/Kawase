@@ -36,6 +36,8 @@ export type ProblemCode =
   | "signature_mismatch"
   | "transaction_mismatch"
   | "network_unavailable"
+  /** The network is on, but Kawase's relayer there has no gas yet (a funded relayer makes it ready). */
+  | "network_not_ready"
   | "consent_required"
   | "handle_invalid"
   | "handle_reserved"
@@ -62,6 +64,12 @@ export type ProblemCode =
   | "simulation_failed"
   | "marketplace_unavailable"
   | "agent_wallet_short"
+  // Margin protection (take-profit / stop-loss): a target on the wrong side, or a close no route can carry now.
+  | "protection_unavailable"
+  | "take_profit_wrong_side"
+  | "stop_loss_wrong_side"
+  | "stop_loss_past_liquidation"
+  | "launchpad_unavailable"
   | "change_not_pending"
   | "practice_mode"
   | "brake_override"
@@ -108,6 +116,7 @@ const TITLES: Record<ProblemCode, string> = {
   signature_mismatch: "The signature does not match the wallet",
   transaction_mismatch: "The signed transaction differs from the request",
   network_unavailable: "This network is not available",
+  network_not_ready: "Kawase is getting this network ready",
   consent_required: "A consent is required first",
   handle_invalid: "The handle is not valid",
   handle_reserved: "The handle is reserved",
@@ -134,6 +143,11 @@ const TITLES: Record<ProblemCode, string> = {
   simulation_failed: "This would not go through right now; nothing was sent",
   marketplace_unavailable: "Paying for services is not available here",
   agent_wallet_short: "The agent wallet does not hold enough",
+  protection_unavailable: "Kawase cannot protect this position right now",
+  take_profit_wrong_side: "The take-profit is on the wrong side of the price",
+  stop_loss_wrong_side: "The stop-loss is on the wrong side of the price",
+  stop_loss_past_liquidation: "The stop-loss must come before liquidation",
+  launchpad_unavailable: "Launchpads are read on Arc mainnet",
   change_not_pending: "That change is no longer waiting for approval",
   practice_mode: "Practice mode is on: nothing real moves",
   brake_override: "A risky action: confirm it on its card",

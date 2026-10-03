@@ -69,6 +69,8 @@ export class PlanError extends Error {
 
 const ZERO = 0n;
 const ONE_BPS = BPS;
+/** A close loop sells for its slippage floor and as much again for its own price impact. */
+const IMPACT_FACTOR = 2n;
 const BPS_NUMBER = Number(BPS);
 const NO_DEBT_BPS = Number.MAX_SAFE_INTEGER;
 const weighted = (reserve: AaveReserve, amount: bigint) => (valueOf(amount, reserve.decimals, reserve.price) * BigInt(reserve.collateralFactorBps)) / ONE_BPS;
@@ -225,7 +227,9 @@ export async function planClose(input: CloseInput, swap: Swapper): Promise<Plan>
     const spareWeighted = collateralWeighted - (debtValue * BigInt(limits.loopHealthBps)) / ONE_BPS;
     const spare = spareWeighted > ZERO ? amountFor((spareWeighted * ONE_BPS) / BigInt(collateral.collateralFactorBps), collateral.decimals, collateral.price) : ZERO;
     // How much collateral buys what is left to repay (plus the buffer when repaying it all, plus slippage).
-    const needValue = (value(debtReserve, lastDebt ? buffer(remaining) : remaining) * (ONE_BPS + BigInt(limits.slippageBps))) / ONE_BPS;
+    // Enough that the leg's guaranteed output (quote × (1 − slippage)) still covers it, with as much again for the
+    // swap's own price impact; sizing by (1 + slippage) left (1 − s²) each loop, a residue that ended under the dust floor.
+    const needValue = (value(debtReserve, lastDebt ? buffer(remaining) : remaining) * ONE_BPS) / (ONE_BPS - IMPACT_FACTOR * BigInt(limits.slippageBps));
     const need = amountFor(needValue, collateral.decimals, collateral.price);
     const take = min(min(need, spare), toWithdraw - withdrawn);
     if (value(collateral, take) < limits.dustValue) throw new PlanError("loops_exhausted");

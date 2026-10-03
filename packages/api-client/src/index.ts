@@ -81,9 +81,11 @@ import type {
   InvoiceView,
   PayoutCreateResult,
   PayoutLineInput,
+  PayoutSignRequest,
   PayoutView,
 } from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
+import type { FeeReserveView, FxView } from "./fees";
 import { intelligenceApi } from "./intelligence";
 import { everydayApi } from "./everyday";
 
@@ -104,6 +106,7 @@ export * from "./history";
 export * from "./intelligence";
 export * from "./everyday";
 export * from "./chat-cards";
+export * from "./fees";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -272,8 +275,9 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       /** Approve one version; above the allowance the answer carries the transaction for the wallet to sign. */
       approve: (id: string, version: number, idempotencyKey?: string, override?: boolean) =>
         call<SendApproveResponse>("POST", `/sends/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
-      signature: (id: string, approvalId: string, signedTransaction: string) =>
-        call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction }),
+      /** `kind: "typed"` for a gas-free send's EIP-3009 signature. */
+      signature: (id: string, approvalId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
+        call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction, ...(kind ? { kind } : {}) }),
     },
 
     /** Every asset the person holds (Arc, other chains, positions), priced; and their show/hide choices. */
@@ -423,6 +427,12 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
     },
 
     /** Looking back: why one transaction happened, a month's export, the weekly report. */
+    /** The fee reserve ("~N actions left") and the display currency's rate. */
+    fees: {
+      reserve: () => call<{ reserve: FeeReserveView }>("GET", "/fees/reserve"),
+      fx: (currency?: string) => call<{ fx: FxView }>("GET", `/fx${currency ? `?currency=${encodeURIComponent(currency)}` : ""}`),
+    },
+
     history: {
       why: (txHash: string, network: NetworkId) => call<{ why: WhyView }>("GET", `/history/why/${txHash}?network=${network}`),
       report: (network: NetworkId, days?: number) => call<{ report: ReportView }>("GET", `/history/report?network=${network}${days ? `&days=${days}` : ""}`),
@@ -465,9 +475,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
       documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
       payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
       createPayout: (input: { asset: string; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
-      signPayout: (id: string) => call<TransactionRequestResponse>("POST", `/business/payouts/${id}/sign`),
-      submitPayout: (id: string, requestId: string, signedTransaction: string) =>
-        call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction }),
+      /** The transaction to sign, or (no USDC for the fee) the one-time delegation the relayer sends. */
+      signPayout: (id: string) => call<PayoutSignRequest>("POST", `/business/payouts/${id}/sign`),
+      submitPayout: (id: string, requestId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
+        call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction, ...(kind ? { kind } : {}) }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */

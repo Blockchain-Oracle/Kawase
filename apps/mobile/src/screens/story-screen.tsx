@@ -168,7 +168,7 @@ export function StoryScreen() {
         { title: t("story.boundsTitle"), body: t(BOUNDS_COPY.body) },
         { title: t("story.practiceTitle"), body: t("story.practiceBody") },
         { title: t("story.languageTitle"), body: t("story.languageBody") },
-        { title: t("story.firstTitle"), body: t("story.firstBody") },
+        { title: t("story.everythingTitle"), body: t("story.everythingBody") },
       ],
       example: t("story.example"),
       request: t("story.exampleRequest"),
@@ -194,7 +194,7 @@ export function StoryScreen() {
         realMoney: t("story.realMoney"),
       },
       sameMeaning: t("story.sameMeaning"),
-      first: { step1: t("story.firstStep1"), step2: t("story.firstStep2") },
+      everything: { buy: t("story.everythingBuy"), trade: t("story.everythingTrade"), earn: t("story.everythingEarn"), automate: t("story.everythingAutomate") },
     },
     { active: index, animate: !reduced && visible },
   );

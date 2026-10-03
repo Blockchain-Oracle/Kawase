@@ -31,8 +31,11 @@ export const notifications: Catalog["notifications"] = {
   primerBody: "有人付款给你、转账到账、自动化替你运行时，Kawase 都会通知你。",
   primerAllow: "开启通知",
   primerLater: "以后再说",
+  kindPositionHealth: "健康度提醒",
+  kindPositionClosed: "止盈与止损",
   kindRequestReceived: "有人请你付款",
   lockTitle: "锁屏",
   hideAmounts: "隐藏金额",
   hideAmountsBody: "通知只显示“你收到了一笔钱”，不显示金额。收件箱和邮件仍会显示金额。",
+  kindTokenGraduated: "代币毕业",
 };

@@ -145,7 +145,9 @@ export function SetupScreen() {
       label: t("setup.stepNetwork", { network: networkName }),
       state: setup.setUp ? "done" : setup.failed.setup ? "failed" : setup.running === "setup" ? "running" : "waiting",
       detail: setup.failed.setup
-        ? t("setup.failed")
+        ? setup.notReady
+          ? t("setup.notReady", { network: networkName })
+          : t("setup.failed")
         : setup.running === "setup"
           ? t("setup.settingUpDetail")
           : undefined,

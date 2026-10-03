@@ -77,6 +77,52 @@ export type MarginPositionView = {
   borrowApr: number;
   openedAt: string;
   closedAt: string | null;
+  /** Take-profit and stop-loss (the asset's price, USD 8 decimals) Kawase closes the whole position at, when set. */
+  takeProfit?: string | null | undefined;
+  stopLoss?: string | null | undefined;
+  /** "armed" (watched), "closing" (a protective close in flight), "unavailable" (no route can carry it now). */
+  protection?: "armed" | "closing" | "unavailable" | null | undefined;
+};
+
+/** Whether Kawase may close positions for the person (the grants signed once), and until when. */
+export type MarginProtectionView = {
+  network: NetworkId;
+  grant: "none" | "pending" | "active" | "expired" | "revoked";
+  expiresAt: string | null;
+  /** Mainnet only: Uniswap v3 on Arc is the route a protective close takes. */
+  available: boolean;
+};
+
+/** The grants to sign (one Face ID), each with what it allows, decoded for display. */
+export type MarginProtectionGrantRequest = { grants: { grantId: string; typedData: Record<string, unknown> }[]; receipts: Record<string, unknown>[]; expiresAt: string };
+
+/** Prices as the person types them, in US dollars ("92000"); null clears one. */
+export type MarginProtectionChange = { takeProfit?: string | null | undefined; stopLoss?: string | null | undefined };
+
+/** A token a launchpad launched (LIFT): its bonding curve, the fees a trade pays there, and whether the person watches it. */
+export type LaunchpadView = {
+  launchpad: string;
+  url: string;
+  graduated: boolean;
+  graduatedAt: string | null;
+  /** 0 to 1: how full the curve is (graduation at 1). */
+  progress: number;
+  marketCapUsd: number | null;
+  curveUsd: number | null;
+  /** What a trade pays on the curve, and the creator's share of it. */
+  buyFeeBps: number;
+  sellFeeBps: number;
+  creatorFeeBps: number;
+  watching: boolean;
+};
+
+/** protect_position: the saved targets (and whether the grants are still needed), or why they were refused. */
+export type ProtectPositionOutput = { network: NetworkId; result: MarginProtectionResult | null; refused: string | null; summary: string };
+
+export type MarginProtectionResult = {
+  position: MarginPositionView;
+  /** The grants are not signed yet: the targets are saved and watched once they are. */
+  needsGrant: boolean;
 };
 
 export type MarginRequest = {
@@ -136,7 +182,8 @@ export type MarginIntent = {
   state: IntentState;
   outcome: SendOutcome | null;
   version: number;
-  request: { action: "open" | "close"; market: string | null; side: MarginSide | null; margin: string | null; leverage: number | null; positionId: string | null; fraction: number | null };
+  /** `slippageBps` is Kawase's own: widened when the swap legs' impact on each other made the batch fall short (shown again first). */
+  request: { action: "open" | "close"; market: string | null; side: MarginSide | null; margin: string | null; leverage: number | null; positionId: string | null; fraction: number | null; slippageBps?: number | null };
   draft: MarginDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;
@@ -215,12 +262,15 @@ export type BuyProposalOutput = OnrampAvailability & { asset: string; amount: st
 
 // ── Cross-chain: out of Arc to anyone, and Bring to Arc (routes.md) ─────────────────────────────────────────
 
-export type CrossChainProvider = "cctp" | "across" | "relay";
+export type CrossChainProvider = "cctp" | "across" | "relay" | "lifi" | "debridge";
 export type CrossChainRouteReason = "needs_source_gas" | "not_on_arc_testnet" | "no_quote" | "amount_too_low" | "timeout" | "convert_first" | "own_address_only";
+
+/** An asset on one side of a move (the zero address for a chain's native coin). */
+export type CrossChainAssetView = { chainId: number; address: string; symbol: string; decimals: number };
 
 export type CrossChainRouteView = {
   provider: CrossChainProvider;
-  /** Base units that would arrive (6 decimals), when quoted. */
+  /** Base units that would arrive, in `output`'s decimals (6 for USDC), when quoted. */
   received: string | null;
   /** What the route takes, and what the person pays on top (gas they would pay elsewhere counts here). */
   fee: string | null;
@@ -232,14 +282,27 @@ export type CrossChainRouteView = {
   /** "burn_mint" (Circle burns and mints native USDC) or "solver" (a relayer fills and is repaid). */
   trust: "burn_mint" | "solver";
   reason: CrossChainRouteReason | null;
+  /** What arrives on this route (absent on routes drafted before any-asset moves: USDC). */
+  output?: CrossChainAssetView | undefined;
+  /** The bridge an aggregator chose ("Relay", "Across"…), and its steps ("swap:kyberswap", "cross:relaydepository"). */
+  via?: string | null | undefined;
+  steps?: string[] | undefined;
+  /** A flat fee paid on top in the origin's native coin (deBridge: 1 USDC on Arc), base units of that coin. */
+  nativeFee?: string | null | undefined;
+  /** Convert first: swapped to USDC on Arc in the same batch (venue, the least USDC), then bridged. */
+  convertFirst?: { venue: string; minUsdc: string } | null | undefined;
 };
 
 export type CrossChainChainView = { chainId: number; name: string; key: string };
 
 export type CrossChainDraftView = {
   direction: "out" | "in";
+  /** The asset that leaves (its symbol), and its amount in its own base units. */
   asset: string;
   amount: string;
+  /** The asset that leaves and the one that arrives, in full (absent on drafts from before any-asset moves: USDC). */
+  input?: CrossChainAssetView | undefined;
+  output?: CrossChainAssetView | undefined;
   source: CrossChainChainView;
   destination: CrossChainChainView;
   recipient: { address: string; label: string | null; own: boolean };
@@ -283,6 +346,8 @@ export type CrossChainRequest = {
   /** Out: an address, @handle or contact; own address when absent. */
   recipient?: string | null | undefined;
   route?: CrossChainProvider | null | undefined;
+  /** What should arrive: the same asset (default, when a route carries it) or "USDC". */
+  toAsset?: string | null | undefined;
 };
 
 export type CrossChainApproveResponse =
@@ -290,7 +355,8 @@ export type CrossChainApproveResponse =
   | { status: "sign"; intent: CrossChainIntent; approvalId: string; transaction: UnsignedTransaction }
   | { status: "sign_typed"; intent: CrossChainIntent; approvalId: string; typedData: { domain: Record<string, unknown>; types: Record<string, { name: string; type: string }[]>; primaryType: string; message: Record<string, unknown> } };
 
-export type ElsewhereView = { network: NetworkId; chains: { chainId: number; name: string; key: string; asset: string; balance: string }[] };
+/** Money at the person's own address on other chains: USDC (read directly) and, on mainnet, any other asset found there. */
+export type ElsewhereView = { network: NetworkId; chains: { chainId: number; name: string; key: string; asset: string; balance: string; address?: string; decimals?: number; usd?: number | null }[] };
 
 export type ProposeCrossChainOutput = { crosschain: true; intent: CrossChainIntent; summary: string };
 
@@ -406,6 +472,12 @@ export type ProposeLendOutput = { intent: LendIntent; summary: string };
 
 export function railsEndpoints(call: Call) {
   return {
+    launchpad: {
+      /** Public (R13): null when no launchpad Kawase reads launched it. */
+      token: (address: string) => call<{ launchpad: LaunchpadView | null }>("GET", `/launchpad/tokens/${address}`),
+      watch: (address: string) => call<{ launchpad: LaunchpadView | null }>("POST", `/launchpad/tokens/${address}/watch`),
+      unwatch: (address: string) => call<{ launchpad: LaunchpadView | null }>("DELETE", `/launchpad/tokens/${address}/watch`),
+    },
     lend: {
       /** Every source an asset can earn in, ranked among those that could give the amount back now. */
       options: (asset: string, amount?: string) => call<YieldOptionsView>("GET", `/lend/options?asset=${encodeURIComponent(asset)}${amount ? `&amount=${encodeURIComponent(amount)}` : ""}`),
@@ -449,6 +521,12 @@ export function railsEndpoints(call: Call) {
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/signature`, { approvalId, signedTransaction }),
+      /** Take-profit / stop-loss: the grants (signed once) and each position's targets. */
+      protection: () => call<MarginProtectionView>("GET", "/margin/protection"),
+      protectionGrant: () => call<MarginProtectionGrantRequest>("POST", "/margin/protection/grant"),
+      protectionActivate: (signatures: { grantId: string; signature: string }[]) => call<MarginProtectionView>("POST", "/margin/protection/grant/activate", { signatures }),
+      protectionRevoke: () => call<MarginProtectionView>("DELETE", "/margin/protection/grant"),
+      protect: (positionId: string, change: MarginProtectionChange) => call<MarginProtectionResult>("PUT", `/margin/positions/${positionId}/protection`, change),
     },
   };
 }

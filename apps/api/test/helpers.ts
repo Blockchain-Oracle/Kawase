@@ -84,6 +84,8 @@ export function testApp(
     discovery?: AppDeps["discovery"];
     onramp?: AppDeps["onramp"];
     alchemyApiKey?: string | undefined;
+    /** Live market data (prices, FX); none by default. */
+    market?: AppDeps["market"];
     /** Real models for a live agent round trip (none by default: the chat answers "unavailable"). */
     models?: AppDeps["models"];
   } = {},

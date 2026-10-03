@@ -52,9 +52,14 @@ import { EarnService } from "./earn/service";
 import { bridgeRoutes } from "./bridge/routes";
 import { BridgeService } from "./bridge/service";
 import { noMarketData, type MarketData } from "./market/sources";
+import { feeRoutes, fxRoutes } from "./fees/routes";
+import { FeeService } from "./fees/service";
 import { noSwaps, type SwapEngine } from "./swap/engine";
 import { swapRoutes } from "./swap/routes";
 import { SwapService } from "./swap/service";
+import { LaunchpadService } from "./launchpad/service";
+import { launchpadRoutes } from "./launchpad/routes";
+import { MarginProtection } from "./margin/protection";
 import { marginRoutes } from "./margin/routes";
 import { MarginService } from "./margin/service";
 import { noOnramp, type OnrampEngine } from "./onramp/engine";
@@ -220,10 +225,13 @@ export function createApp(deps: AppDeps) {
   const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
-  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log);
+  const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
+  const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);
+  margin.protection = protection;
+  const launchpads = new LaunchpadService(deps.db, deps.log, inbox);
+  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log, assets, createSwapVenues(deps.swaps ?? noSwaps));
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
-  const crosschain = new CrossChainService(deps.db, deps.chains, wallets, recipients, deps.bridges ?? noBridges, deps.log);
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
@@ -269,6 +277,8 @@ export function createApp(deps: AppDeps) {
     bridges.startSweeper(deps.reconcileIntervalMs);
     earn.startSweeper(deps.reconcileIntervalMs);
     margin.startSweeper(deps.reconcileIntervalMs);
+    protection.start();
+    launchpads.start();
     onramp.startReconciler(deps.reconcileIntervalMs);
     crosschain.startSweeper(deps.reconcileIntervalMs);
     lend.startSweeper(deps.reconcileIntervalMs);
@@ -351,7 +361,8 @@ export function createApp(deps: AppDeps) {
   app.route("/swaps", swapRoutes(swaps));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
-  app.route("/margin", marginRoutes(margin));
+  app.route("/margin", marginRoutes(margin, protection));
+  app.route("/launchpad", launchpadRoutes(launchpads));
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
@@ -383,6 +394,10 @@ export function createApp(deps: AppDeps) {
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
   app.route("/history", historyRoutes(history));
+  // Fees ("~N actions left") and the display currency's rate (B2-3).
+  const fees = new FeeService(deps.chains, wallets, deps.market ?? noMarketData);
+  app.route("/fees", feeRoutes(fees));
+  app.route("/fx", fxRoutes(fees));
   app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
   const exportLinks = new ExportLinks(deps.approvalSecret);
   app.route("/files/export", exportFileRoutes(history, exportLinks));
@@ -392,7 +407,8 @@ export function createApp(deps: AppDeps) {
     marketplace,
     invoices,
     history,
-    business: { payouts, account, exportLinks },
+    business: { payouts, account, exportLinks, fees },
+    fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,
     wallets,

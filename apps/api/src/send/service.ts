@@ -84,6 +84,7 @@ import { tokenLookup } from "../tokens/lookup";
 import type { AssetService } from "../tokens/service";
 import type { BundlePart } from "../intents/bundle";
 import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
+import { authorizationFor, relayAuthorization, serializableTypedData, signedBySender, type StoredAuthorization } from "./relayed";
 import { grantFor } from "../safety/allowances";
 import { recordPractice, simulateCall } from "../safety/practice";
 import type { OpsExecutor } from "./ops";
@@ -110,9 +111,11 @@ type DraftPayload = {
   memo?: SendMemo | null;
   amount: string | null;
   note: string | null;
-  fee: { payer: "kawase" | "wallet"; estimate: string | null };
+  fee: { payer: "kawase" | "wallet" | "relayer"; estimate: string | null };
   allowance: { active: boolean; available: string; perPeriod: string | null };
   suggestions: RecipientMatch[];
+  /** The wallet cannot pay the fee: the person signs an EIP-3009 authorization and the relayer sends it (relayed.ts). */
+  gasless?: boolean | undefined;
 };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null; route: SendRoute | null };
 
@@ -295,6 +298,7 @@ export class SendService {
 
     let draft: SendDraft | null = null;
     let feeEstimate: bigint | null = null;
+    const gasless = evaluation.route === "wallet_signature" && evaluation.results.some((entry) => entry.code === "GAS_RELAYED");
     if (walletAddress && asset && token && amount !== undefined && amount > ZERO && resolution.facts.status === "resolved") {
       const route = evaluation.route ?? "wallet_signature";
       let maxFee = ZERO;
@@ -324,7 +328,8 @@ export class SendService {
       ledger: gathered.ledger ? { asset: gathered.ledger.asset, amount: gathered.ledger.amount?.toString() ?? null } : null,
       amount: amount?.toString() ?? null,
       note: request.note,
-      fee: { payer: evaluation.route === "allowance" ? "kawase" : "wallet", estimate: feeEstimate?.toString() ?? null },
+      fee: { payer: evaluation.route === "allowance" ? "kawase" : gasless ? "relayer" : "wallet", estimate: feeEstimate?.toString() ?? null },
+      gasless,
       allowance: {
         active: facts.allowance.active,
         available: facts.allowance.available.toString(),
@@ -493,7 +498,7 @@ export class SendService {
         return { kind: "final" as const };
       }
       if (route === "wallet_signature") {
-        return { kind: "sign" as const, ...(await this.walletApproval(tx, user, intent, draft, draftHash, input)) };
+        return { kind: "sign" as const, ...(await this.walletApproval(tx, user, intent, draft, draftHash, input, fresh.gasless)) };
       }
       const { ledger } = fresh;
       if (ledger.amount !== null && !(await fitsLimits(tx, user.id, intent.network, ledger.asset, ledger.amount, intentId))) return { kind: "changed" as const };
@@ -539,7 +544,9 @@ export class SendService {
     if (outcome.kind === "changed") return this.redraft(user, intentId);
     if (outcome.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
     if (outcome.kind === "sign")
-      return { status: "sign", intent: await this.view(user.id, intentId), approvalId: outcome.approvalId, transaction: outcome.transaction };
+      return "authorization" in outcome
+        ? { status: "sign_typed", intent: await this.view(user.id, intentId), approvalId: outcome.approvalId, typedData: serializableTypedData(outcome.authorization) }
+        : { status: "sign", intent: await this.view(user.id, intentId), approvalId: outcome.approvalId, transaction: outcome.transaction };
 
     await this.submitToOps(intentId);
     void this.follow(intentId);
@@ -776,6 +783,7 @@ export class SendService {
       draftHash: current.draftHash as Hex,
       practice: gathered.practice,
       ledger: ledgerOf(current.payload as DraftPayload, this.clients(intent.network).network, draft),
+      gasless: Boolean((current.payload as DraftPayload).gasless),
     };
   }
 
@@ -830,7 +838,8 @@ export class SendService {
     draft: SendDraft,
     draftHash: Hex,
     input: { surface: "app" | "chat" | "voice"; deviceId?: string | undefined },
-  ): Promise<{ approvalId: string; transaction: UnsignedTransaction }> {
+    gasless = false,
+  ): Promise<{ approvalId: string; transaction: UnsignedTransaction } | { approvalId: string; authorization: StoredAuthorization }> {
     const [existing] = await tx
       .select()
       .from(approvals)
@@ -841,13 +850,41 @@ export class SendService {
           eq(approvals.status, "pending_signature"),
         ),
       );
-    if (existing && existing.expiresAt.getTime() > Date.now() && existing.unsignedTransaction)
-      return { approvalId: existing.id, transaction: existing.unsignedTransaction as unknown as UnsignedTransaction };
+    if (existing && existing.expiresAt.getTime() > Date.now() && existing.unsignedTransaction) {
+      const stored = existing.unsignedTransaction as unknown as UnsignedTransaction | StoredAuthorization;
+      if ("kind" in stored && stored.kind === "authorization") {
+        if (gasless) return { approvalId: existing.id, authorization: stored };
+      } else if (!gasless) return { approvalId: existing.id, transaction: stored as UnsignedTransaction };
+    }
     if (existing) await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, existing.id));
 
     const { client, network: context } = this.clients(intent.network);
     const memo = ((await this.currentDraft(intent))?.payload as DraftPayload | undefined)?.memo ?? null;
     if (memoReference(memo) !== draft.reference) throw problem(HTTP.conflict, "intent_stale", "the reference changed; review again");
+
+    // Gas-free only without a memo: a Memo call must come from the wallet itself (EOA), so the relayer cannot carry it.
+    if (gasless && !memo) {
+      // Exactly this transfer, valid until the approval expires, one fresh nonce: the relayer can do nothing else with it.
+      const authorization = await authorizationFor(this.clients(intent.network), draft, APPROVAL_TTL_S);
+      const id = newId();
+      await tx.insert(approvals).values({
+        id,
+        intentId: intent.id,
+        draftVersion: intent.currentDraftVersion,
+        draftHash,
+        userId: user.id,
+        network: intent.network,
+        route: "wallet_signature",
+        unsignedTransaction: authorization as unknown as Record<string, unknown>,
+        signerAddress: draft.from,
+        deviceId: input.deviceId ?? null,
+        status: "pending_signature",
+        decidedViaSurface: input.surface,
+        expiresAt: later(APPROVAL_TTL_S),
+      });
+      return { approvalId: id, authorization };
+    }
+
     const { to: target, data } = sendCall(context, draft, memo);
     const [nonce, fees, estimate] = await Promise.all([
       client.getTransactionCount({ address: draft.from, blockTag: "pending" }),
@@ -889,7 +926,8 @@ export class SendService {
   }
 
   /** The wallet signed: check it against the request and the draft, reserve, record the hash, broadcast. */
-  async submitSignature(user: SessionUser, intentId: string, input: { approvalId: string; signedTransaction: Hex }): Promise<SendApproveResponse> {
+  async submitSignature(user: SessionUser, intentId: string, input: { approvalId: string; signedTransaction: Hex; kind?: "transaction" | "typed" | undefined }): Promise<SendApproveResponse> {
+    if (input.kind === "typed") return this.submitAuthorization(user, intentId, { approvalId: input.approvalId, signature: input.signedTransaction });
     const before = await this.ownIntent(user.id, intentId);
     if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
     const fresh = await this.recheckForSignature(user, before);
@@ -971,6 +1009,85 @@ export class SendService {
       this.log.warn({ intentId, refused, message: message.slice(0, NOTE_MAX) }, "broadcast failed");
       if (refused) await this.settleFailed(intentId, prepared.attemptId, "not_sent", message.slice(0, NOTE_MAX));
       else await this.db.update(txAttempts).set({ status: "submitted", errorCode: "broadcast_unclear" }).where(eq(txAttempts.id, prepared.attemptId));
+    }
+    void this.follow(intentId);
+    return { status: "executing", intent: await this.view(user.id, intentId) };
+  }
+
+  /**
+   * A gas-free send's signature (EIP-3009): it must be the sender's over exactly the stored message, and the message
+   * exactly the draft (from, to, token, amount). Then it is reserved and recorded like a wallet send, and the relayer
+   * sends it, paying the fee. A refusal before broadcast means nothing moved.
+   */
+  private async submitAuthorization(user: SessionUser, intentId: string, input: { approvalId: string; signature: Hex }): Promise<SendApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    const fresh = await this.recheckForSignature(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft } = fresh;
+    const context = this.clients(before.network);
+
+    const prepared = await this.db.transaction(async (tx) => {
+      const intent = await this.lockIntent(tx, user.id, intentId);
+      if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== before.currentDraftVersion) return { kind: "final" as const };
+      const [approval] = await tx
+        .select()
+        .from(approvals)
+        .where(and(eq(approvals.id, input.approvalId), eq(approvals.intentId, intentId)));
+      if (!approval || approval.status !== "pending_signature" || approval.draftVersion !== intent.currentDraftVersion)
+        throw problem(HTTP.conflict, "intent_stale");
+      if (approval.expiresAt.getTime() < Date.now()) throw problem(HTTP.conflict, "intent_stale", "the approval expired");
+      const stored = approval.unsignedTransaction as unknown as StoredAuthorization | null;
+      const matches =
+        stored?.kind === "authorization" &&
+        stored.message.from.toLowerCase() === draft.from.toLowerCase() &&
+        stored.message.to.toLowerCase() === draft.to.toLowerCase() &&
+        stored.domain.verifyingContract.toLowerCase() === draft.asset.toLowerCase() &&
+        BigInt(stored.message.value) === draft.amount &&
+        stored.domain.chainId === draft.chainId &&
+        (await signedBySender(stored, input.signature));
+      if (!matches || !stored) {
+        this.log.warn({ intentId, approvalId: approval.id }, "security.draft_mismatch");
+        await tx.update(approvals).set({ status: "rejected" }).where(eq(approvals.id, approval.id));
+        return { kind: "mismatch" as const };
+      }
+      const { ledger } = fresh;
+      if (ledger.amount !== null && !(await fitsLimits(tx, user.id, intent.network, ledger.asset, ledger.amount, intentId))) return { kind: "changed" as const };
+      await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
+      if (ledger.amount !== null) await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset: ledger.asset, amount: ledger.amount });
+      const [attempt] = await tx
+        .insert(txAttempts)
+        .values({
+          userId: user.id,
+          intentId,
+          network: intent.network,
+          chainId: context.network.chainId,
+          attemptNo: await nextAttemptNo(tx, intentId),
+          kind: "send_relayed",
+          provider: "relayer",
+          idempotencyKey: randomUUID(),
+          fromAddress: context.relayerAddress,
+          toAddress: draft.asset,
+          status: "prepared",
+          receipt: { authorization: { nonce: stored.message.nonce, validBefore: stored.message.validBefore } },
+        })
+        .returning({ id: txAttempts.id });
+      await tx.update(intents).set({ state: "executing" }).where(eq(intents.id, intentId));
+      return { kind: "relay" as const, attemptId: attempt!.id, stored };
+    });
+
+    if (prepared.kind === "mismatch") throw problem(HTTP.unprocessable, "transaction_mismatch");
+    if (prepared.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (prepared.kind === "changed") return this.redraft(user, intentId);
+
+    try {
+      const hash = await relayAuthorization(context, prepared.stored, input.signature);
+      await this.db.update(txAttempts).set({ status: "submitted", txHash: hash }).where(eq(txAttempts.id, prepared.attemptId));
+    } catch (error) {
+      // The relayer could not send it (no gas, the node refused): nothing left the wallet, and the signature expires.
+      const message = error instanceof Error ? error.message : String(error);
+      this.log.warn({ intentId, message: message.slice(0, NOTE_MAX) }, "relay failed");
+      await this.settleFailed(intentId, prepared.attemptId, "not_sent", message.slice(0, NOTE_MAX));
     }
     void this.follow(intentId);
     return { status: "executing", intent: await this.view(user.id, intentId) };

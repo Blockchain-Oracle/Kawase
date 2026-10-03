@@ -39,8 +39,10 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { LaunchpadCard } from "@/launchpad/launchpad-card";
 import { useLocale } from "@/i18n/locale-provider";
-import { change, holdingAmount, money, price, shortAddress, USD_FX } from "@/portfolio/format";
+import { change, holdingAmount, money, price, shortAddress } from "@/portfolio/format";
+import { useFx } from "@/portfolio/use-fx";
 import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -73,6 +75,8 @@ const WRITES: ReadonlySet<TokenAction> = new Set([
   "long_short",
 ]);
 
+const ARC_MAINNET = 5042;
+
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
   const { locale } = useLocale();
@@ -96,7 +100,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const [candleScrub, setCandleScrub] = React.useState<CandlePoint | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
-  const fx = USD_FX;
+  const fx = useFx();
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/markets"));
 
   const activeChain = user?.activeNetwork === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
@@ -455,6 +459,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             ))}
           </View>
         </View>
+
+        {/* B1: a launchpad token's curve and graduation alert (LIFT on Arc mainnet). */}
+        {chainId === ARC_MAINNET ? <LaunchpadCard address={address} /> : null}
 
         <View className="gap-2">
           <Eyebrow className="px-1">{t("tokenPage.safety")}</Eyebrow>

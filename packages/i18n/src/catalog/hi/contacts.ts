@@ -46,7 +46,6 @@ export const contacts: Catalog["contacts"] = {
   label: "लेबल",
   labelPlaceholder: "सप्लायर, मकान मालिक…",
   fromHandle: "@{{handle}}",
-  importSoon: "फ़ोन के संपर्कों से आयात — जल्द आ रहा है",
   signInBody: "जिन्हें आप भुगतान करते हैं, उनकी पता-सूची रखने के लिए साइन इन करें।",
   loadFailed: "आपके संपर्क लोड नहीं हो सके।",
   noMatches: "कोई संपर्क मेल नहीं खाता।",
