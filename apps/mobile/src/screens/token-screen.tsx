@@ -95,6 +95,7 @@ const WRITES: ReadonlySet<TokenAction> = new Set([
 ]);
 
 const ARC_MAINNET = 5042;
+const NEVER_HIDDEN: ReadonlySet<string> = new Set(["dollar", "bitcoin", "ether"]);
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
@@ -239,6 +240,20 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     void networkSwitch.switchNetwork("mainnet");
   };
   const fixable = (entry: TokenActionView) => toMainnet && reasonFor(entry) === t("tokenPage.n_mainnet_only");
+  // Hide (capability-matrix H): a held token can leave Home's list for Hidden, and come back; the dollars, euros,
+  // Bitcoin and Ether are never hidden.
+  const hideable = Boolean(holds && detail.holding) && !NEVER_HIDDEN.has(token.kind) && token.symbol !== "EURC";
+  const hidden = detail.holding?.hidden ?? false;
+  const toggleHidden = async () => {
+    setMoreOpen(false);
+    try {
+      await portfolio.setVisibility(token.address, hidden ? "shown" : "hidden");
+      await refresh();
+      toast(hidden ? t("tokenPage.shownToast") : t("tokenPage.hiddenToast"));
+    } catch {
+      toast(t("common.error"));
+    }
+  };
   // The inline ticket's one way past its reason: a mainnet token from testnet switches (a guest signs in on the way),
   // a guest signs in, and nothing to sell turns the ticket to Buy.
   const sideFix =
@@ -727,6 +742,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
               />
             );
           })}
+          {hideable ? <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} chevron onPress={() => void toggleHidden()} /> : null}
         </ListGroup>
       </Sheet>
       <MainnetConsentSheet
