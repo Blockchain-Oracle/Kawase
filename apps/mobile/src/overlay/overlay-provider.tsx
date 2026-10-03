@@ -1,7 +1,8 @@
 // The overlays over the live page: the voice overlay (the orb rises from the dock, the page blurs) and the
 // quick-action fan (the plus becomes ×, four actions rise). They are not routes: the host renders them as a
-// layer above the tab pages and the dock inside the (tabs) layout, so `BlurView` sees the page on iOS, Android
-// and web. Any screen in the group can call `open("voice")`; only one overlay is open at a time.
+// layer above the tab pages and the dock inside the (tabs) layout (on a desktop window, above the sidebar and every
+// page), so `BlurView` sees the page on iOS, Android and web. The provider wraps the whole signed-in area; any screen
+// in it can call `open("voice")`; only one overlay is open at a time.
 //
 // An open overlay is the only surface (Codex review R13): `OverlayUnderlay` hides the pages and the dock from
 // assistive tech, Android's hardware Back and the web's Escape close the overlay before anything navigates, and the

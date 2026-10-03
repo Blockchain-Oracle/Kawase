@@ -34,6 +34,8 @@ export const home: Catalog["home"] = {
   dockVoice: "‏Kawase سے بات کریں",
   dockActivity: "سرگرمی",
   dockProfile: "پروفائل",
+  navigation: "مرکزی مینو",
+  moveMoney: "رقم کی منتقلی",
   funded: "پیسے آ گئے",
   guestTitle: "Arc پر آپ کا پیسوں کا ایجنٹ",
   guestBody:

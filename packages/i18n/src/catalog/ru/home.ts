@@ -34,6 +34,8 @@ export const home: Catalog["home"] = {
   dockVoice: "Поговорить с Kawase",
   dockActivity: "Активность",
   dockProfile: "Профиль",
+  navigation: "Главное меню",
+  moveMoney: "Движение денег",
   funded: "Средства поступили",
   guestTitle: "Ваш денежный агент в Arc",
   guestBody: "Спрашивайте про Arc, балансы и переводы — для пробы кошелёк не нужен. Войдите, когда захотите свой.",
