@@ -350,11 +350,35 @@ export function createApp(deps: AppDeps) {
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
   app.route("/sends", sendRoutes(sends));
-  // Practice mode (cards/automate-safety.md): sends and automations are dry-run in their own pipelines; a swap, bridge,
-  // savings move or margin order is never approved for real while it is on — refused plainly, before anything is signed.
-  const PRACTICE_GUARDED = /^\/(swaps|bridges|earn\/intents|margin\/orders)\/[^/]+\/(approve|signature)$|^\/marketplace\/agent-wallet\/top-up$/;
+  // Practice mode (cards/automate-safety.md): nothing real moves while it is on. Sends and automations are dry-run in
+  // their own pipelines. On every other money route only the writes listed here go through — drafting, revising,
+  // cancelling, asking for what to sign, settings, turning something off — so approving, signing, submitting, activating
+  // or moving money for real is refused plainly, before anything is signed. A write added later is refused until listed.
+  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|business|marketplace)(\/|$)/;
+  const PRACTICE_SAFE: readonly (readonly [method: string, path: RegExp])[] = [
+    ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)$/],
+    ["PATCH", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+$/],
+    ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+\/cancel$/],
+    // Margin protection: the grants to sign (asked, not signed), turning it off, and the targets.
+    ["POST", /^\/margin\/protection\/grant$/],
+    ["DELETE", /^\/margin\/protection\/grant$/],
+    ["PUT", /^\/margin\/positions\/[^/]+\/protection$/],
+    // A withdrawal: its plan, starting it and drafting its next step (each step is approved on its own, guarded route).
+    ["POST", /^\/withdrawals(\/plan)?$/],
+    ["POST", /^\/withdrawals\/[^/]+\/(next|cancel)$/],
+    ["PUT", /^\/business\/profile$/],
+    ["POST", /^\/business\/(invoices|payouts)$/],
+    ["POST", /^\/business\/invoices\/[^/]+\/cancel$/],
+    // The agent wallet's settings and the grant to sign; a purchase decision only records it (a buy in practice pays nothing).
+    ["PATCH", /^\/marketplace\/agent-wallet\/settings$/],
+    ["POST", /^\/marketplace\/agent-wallet\/grant$/],
+    ["POST", /^\/marketplace\/purchases\/[^/]+\/decision$/],
+  ];
+  const READS = new Set(["GET", "HEAD", "OPTIONS"]);
+  const practiceRefuses = (method: string, path: string) =>
+    !READS.has(method) && PRACTICE_MONEY.test(path) && !PRACTICE_SAFE.some(([allowed, pattern]) => allowed === method && pattern.test(path));
   app.use("*", async (c, next) => {
-    if (c.req.method === "POST" && PRACTICE_GUARDED.test(c.req.path) && c.get("user")?.practiceMode)
+    if (c.get("user")?.practiceMode && practiceRefuses(c.req.method, c.req.path.replace(/\/+$/, "")))
       throw problem(HTTP.conflict, "practice_mode", "practice mode is on: turn it off in Wallet & limits to do this for real");
     await next();
   });

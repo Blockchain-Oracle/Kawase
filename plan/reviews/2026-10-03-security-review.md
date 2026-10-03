@@ -26,7 +26,7 @@ Read-only review at `19b65f9` (main moved to `27ab8bc` during it). Production ha
 
 ## Low
 
-- Practice mode's regex (`app.ts:345`) misses `/crosschain`, `/lend`, the withdrawal batch, `/business/payouts`, margin protection — A3.
+- Practice mode's regex (`app.ts:345`) misses `/crosschain`, `/lend`, the withdrawal batch, `/business/payouts`, margin protection — A3. **Fixed:** the guard is now an allowlist: on the money prefixes (swaps, bridges, earn, margin, cross-chain, lend, withdrawals, business, marketplace) only drafting, revising, cancelling, asking for what to sign, targets and turning things off go through in practice; every other write (approve, signature, batch, payout sign/submit, protection activate, top-up, return) and any write added later is refused. Test: `apps/api/test/practice-guard.test.ts`.
 - Automated margin closes ignore pause and practice mode (`protection.ts:256-302`) — B1. **Merged `da2c8e6`.** Rule: practice mode never touches real money (a hit target is only told, once; the position stays watched); pause allows risk-reducing closes only (a stop-loss still closes, a take-profit waits and is told once). Test: `margin-protection-mainnet.test.ts`.
 - `pendingRelays`/`pendingTransactions` never expire; a double `submitRelayedBatch` makes the relayer pay for a reverted call — B2.
 - A webhook with a random `X-Circle-Key-Id` triggers an authenticated Circle fetch with the live key (`onramp/service.ts:259-268`) — B1. **Merged `da2c8e6`.** known keys stay cached; ids that aren't short and URL-safe are never looked up; new ids at most 6 a minute across everyone; an id Circle 404s is not asked again for an hour (bounded); 5 s fetch timeout. Test: `onramp-webhook-keys.test.ts`.
