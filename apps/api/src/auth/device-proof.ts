@@ -26,6 +26,8 @@ export const PROOF_BODY_HEADER = "x-kawase-proof-body";
 export const PROOF_STAMP_HEADER = "x-kawase-proof-stamp";
 /** How far a proof's time may be from the server's. */
 const PROOF_WINDOW_MS = 120_000;
+/** A used proof is remembered until it could no longer pass the time check from either side (twice the window). */
+const USED_MEMORY_MS = 240_000;
 const ACTIVITY = /^kawase:(\d{13}):([0-9a-f]{64})$/;
 
 /** The activity id a device signs for one request (the app computes the same). */
@@ -78,7 +80,7 @@ export async function checkDeviceProof(db: Db, c: Context<AppEnv>, turnkey?: Tur
   forgetOld(now);
   const key = `${stamp.publicKey}:${claims.nonce}`;
   if (used.has(key)) return "invalid";
-  used.set(key, now + 2 * PROOF_WINDOW_MS);
+  used.set(key, now + USED_MEMORY_MS);
   return "proven";
 }
 

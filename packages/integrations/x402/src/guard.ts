@@ -13,41 +13,27 @@ import { BlockList, isIP, type LookupFunction } from "node:net";
 import { Readable } from "node:stream";
 
 const NOT_PUBLIC = "ENOTPUBLIC";
-const REDIRECT_MIN = 300;
-const REDIRECT_MAX = 399;
+const HTTP_REDIRECTS = { from: 300, to: 399 } as const;
 /** Answers that carry no body by definition. */
-const BODILESS = new Set([204, 205, 304]);
+const BODILESS_STATUS = { noContent: 204, resetContent: 205, notModified: 304 } as const;
+const BODILESS = new Set<number>(Object.values(BODILESS_STATUS));
+/** `net.isIP` answers 4 or 6. */
+const IPV4 = 4;
+/** `rawHeaders` lists name, value, name, value… */
+const HEADER_PAIR = 2;
 
-/** Every range that is not the public internet: private, loopback, link-local, shared, multicast, reserved. */
+/** Every range that is not the public internet: private, loopback, link-local, shared, documentation, multicast, reserved. */
+const PRIVATE_RANGES = {
+  ipv4: ["0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4"],
+  ipv6: ["::/128", "::1/128", "64:ff9b::/96", "100::/64", "2001:db8::/32", "fc00::/7", "fe80::/10", "ff00::/8"],
+} as const;
 const PRIVATE = new BlockList();
-for (const [network, prefix] of [
-  ["0.0.0.0", 8],
-  ["10.0.0.0", 8],
-  ["100.64.0.0", 10],
-  ["127.0.0.0", 8],
-  ["169.254.0.0", 16],
-  ["172.16.0.0", 12],
-  ["192.0.0.0", 24],
-  ["192.0.2.0", 24],
-  ["192.168.0.0", 16],
-  ["198.18.0.0", 15],
-  ["198.51.100.0", 24],
-  ["203.0.113.0", 24],
-  ["224.0.0.0", 4],
-  ["240.0.0.0", 4],
-] as const)
-  PRIVATE.addSubnet(network, prefix, "ipv4");
-for (const [network, prefix] of [
-  ["::", 128],
-  ["::1", 128],
-  ["64:ff9b::", 96],
-  ["100::", 64],
-  ["2001:db8::", 32],
-  ["fc00::", 7],
-  ["fe80::", 10],
-  ["ff00::", 8],
-] as const)
-  PRIVATE.addSubnet(network, prefix, "ipv6");
+for (const family of ["ipv4", "ipv6"] as const) {
+  for (const range of PRIVATE_RANGES[family]) {
+    const [network, prefix] = range.split("/");
+    PRIVATE.addSubnet(network!, Number(prefix), family);
+  }
+}
 
 const MAPPED_V4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i;
 
@@ -58,7 +44,7 @@ export function isPublicAddress(address: string): boolean {
   if (mapped) return isPublicAddress(mapped);
   const family = isIP(bare);
   if (family === 0) return false;
-  return !PRIVATE.check(bare, family === 4 ? "ipv4" : "ipv6");
+  return !PRIVATE.check(bare, family === IPV4 ? "ipv4" : "ipv6");
 }
 
 /** The origin of a configured URL, or undefined when it is not one. */
@@ -112,7 +98,7 @@ export const publicOnlyLookup: LookupFunction = (hostname, options, callback) =>
 
 const headersOf = (response: IncomingMessage) => {
   const headers = new Headers();
-  for (let index = 0; index < response.rawHeaders.length; index += 2) headers.append(response.rawHeaders[index]!, response.rawHeaders[index + 1]!);
+  for (let index = 0; index < response.rawHeaders.length; index += HEADER_PAIR) headers.append(response.rawHeaders[index]!, response.rawHeaders[index + 1]!);
   return headers;
 };
 
@@ -126,7 +112,7 @@ function publicRequest(url: URL, init: RequestInit = {}): Promise<Response> {
       { method: init.method ?? "GET", headers: Object.fromEntries(headers.entries()), lookup: publicOnlyLookup, ...(init.signal ? { signal: init.signal } : {}) },
       (response) => {
         const status = response.statusCode ?? 0;
-        if (status >= REDIRECT_MIN && status <= REDIRECT_MAX) {
+        if (status >= HTTP_REDIRECTS.from && status <= HTTP_REDIRECTS.to) {
           response.resume();
           reject(new TypeError(`a seller answered with a redirect (${status}); not followed`));
           return;
