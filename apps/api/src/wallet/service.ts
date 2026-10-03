@@ -81,6 +81,9 @@ export type PendingRelay = { userId: string; network: NetworkId; kind: string; w
 /** The wallet's answer to an on-chain revoke handed to the app with a new grant: signed in the same yes. */
 export type SignedRevoke = { requestId: string; signed: Hex };
 
+/** `replacing`: the revoke makes way for a new grant (revokeFirst), so the automation it belonged to carries on. */
+type RevokeOptions = { replacing?: boolean };
+
 /** Which grants an on-chain revoke may cover: one kind, one token, everyday or raise. */
 export type GrantFilter = { kind?: (typeof grants.$inferSelect)["kind"]; token?: string; boost?: boolean };
 
@@ -542,35 +545,39 @@ export class WalletService {
   async revokeFirst(userId: string, grantIds: string[], revoke: SignedRevoke | undefined): Promise<void> {
     if ((await this.revocable(userId, grantIds)).length === 0) return;
     if (!revoke) throw problem(HTTP.unprocessable, "revoke_required", "the grant this replaces must be revoked in the same approval");
-    const sent = await this.submitSigned(userId, revoke.requestId, revoke.signed);
+    const sent = await this.submitSigned(userId, revoke.requestId, revoke.signed, { replacing: true });
     if (sent.status !== "confirmed") throw problem(HTTP.badGateway, "revoke_failed", "the old grant's revoke did not land; nothing changed", { tx: sent.tx });
     if ((await this.revocable(userId, grantIds)).length > 0) throw problem(HTTP.unprocessable, "revoke_required", "the revoke signed does not cover every grant this replaces");
   }
 
-  /** The wallet's answer to a request handed out here: its signature on a relayed batch, or a signed transaction. */
-  async submitSigned(userId: string, requestId: string, signed: Hex) {
+  /**
+   * The wallet's answer to a request handed out here: its signature on a relayed batch, or a signed transaction.
+   * `replacing`: the revoke makes way for a new grant, so an automation losing its old grant carries on.
+   */
+  async submitSigned(userId: string, requestId: string, signed: Hex, options: RevokeOptions = {}) {
     const revoking = this.pendingRevokes.get(requestId);
-    if (!revoking) return this.submitTransaction(userId, requestId, signed);
+    if (!revoking) return this.submitTransaction(userId, requestId, signed, options);
     if (revoking.userId !== userId) throw problem(HTTP.notFound, "not_found", "no such transaction request");
     const sent = await this.submitRelayedBatch(userId, requestId, signed);
     this.pendingRevokes.delete(requestId);
     if (sent.status === "confirmed") {
       const [attempt] = await this.db.select({ id: txAttempts.id }).from(txAttempts).where(eq(txAttempts.txHash, sent.tx));
-      await this.recordRevoked(userId, revoking.grantIds, attempt?.id ?? null);
+      await this.recordRevoked(userId, revoking.grantIds, attempt?.id ?? null, options);
     }
     return sent;
   }
 
   /**
    * Grants the chain confirmed revoked. An automation left with no grant can never run again: it ends now (the exit kit,
-   * a cancel). One that still holds another (a widened edit replaced the revoked one) carries on.
+   * a cancel). One that still holds another, or whose replacement is about to go on (a widened edit), carries on.
    */
-  private async recordRevoked(userId: string, grantIds: string[], attemptId: string | null) {
+  private async recordRevoked(userId: string, grantIds: string[], attemptId: string | null, options: RevokeOptions = {}) {
     const revoked = await this.db
       .update(grants)
       .set({ status: "revoked", revokeTxAttemptId: attemptId })
       .where(and(inArray(grants.id, grantIds), eq(grants.userId, userId)))
       .returning({ automationId: grants.automationId });
+    if (options.replacing) return;
     const touched = [...new Set(revoked.map((row) => row.automationId).filter((id): id is string => Boolean(id)))];
     const stillHeld = touched.length
       ? new Set((await this.db.select({ id: grants.automationId }).from(grants).where(and(inArray(grants.automationId, touched), eq(grants.status, "active")))).map((row) => row.id))
@@ -698,7 +705,7 @@ export class WalletService {
   }
 
   /** Checks a wallet-signed transaction against what was requested, then broadcasts it. */
-  async submitTransaction(userId: string, requestId: string, signedTransaction: Hex) {
+  async submitTransaction(userId: string, requestId: string, signedTransaction: Hex, options: RevokeOptions = {}) {
     const pending = this.pendingTransactions.get(requestId);
     if (!pending || pending.userId !== userId) throw problem(HTTP.notFound, "not_found", "no such transaction request");
     const { client, network: context } = this.clients(pending.network);
@@ -741,7 +748,7 @@ export class WalletService {
       .update(txAttempts)
       .set({ txHash: hash, status, receipt: jsonSafe(receipt) })
       .where(eq(txAttempts.id, attemptId));
-    if (pending.kind === "revoke_grant" && pending.grantIds?.length && status === "confirmed") await this.recordRevoked(userId, pending.grantIds, attemptId);
+    if (pending.kind === "revoke_grant" && pending.grantIds?.length && status === "confirmed") await this.recordRevoked(userId, pending.grantIds, attemptId, options);
     if (pending.kind === "revoke_allowance" && status === "confirmed") {
       await this.db
         .update(grants)
