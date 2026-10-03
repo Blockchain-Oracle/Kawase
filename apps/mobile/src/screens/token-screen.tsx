@@ -201,7 +201,8 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
         return;
       case "receive":
-        router.push("/wallet/receive");
+        // The receive page starts a request for this token (an amount QR any wallet fills in).
+        router.push({ pathname: "/wallet/receive", params: { asset: token.address, chainId: String(token.chainId), symbol: token.symbol, decimals: String(token.decimals), name: token.name } });
         return;
       case "bridge":
         // USDC by CCTP; any other token as itself through the cross-chain routes.
