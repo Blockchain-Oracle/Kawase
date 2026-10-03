@@ -57,6 +57,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   a_bridge: "跨链",
   a_earn: "赚取收益",
   a_long_short: "多空",
+  a_automate: "自动化",
   n_mainnet_only: "仅主网——切换吗？",
   n_blocked: "被 Kawase 安全规则拦截",
   n_permissioned: "仅限白名单持有人",

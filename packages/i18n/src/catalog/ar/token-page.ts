@@ -57,6 +57,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   a_bridge: "جسر",
   a_earn: "اكسب",
   a_long_short: "شراء/بيع على المكشوف",
+  a_automate: "أتمتة",
   n_mainnet_only: "الشبكة الرئيسية فقط — تنتقل؟",
   n_blocked: "محظور بقواعد أمان Kawase",
   n_permissioned: "للحائزين المصرّح لهم فقط",

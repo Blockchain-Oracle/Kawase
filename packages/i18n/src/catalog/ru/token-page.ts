@@ -57,6 +57,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   a_bridge: "Мост",
   a_earn: "Доход",
   a_long_short: "Лонг/шорт",
+  a_automate: "Автоматизировать",
   n_mainnet_only: "Только mainnet — переключиться?",
   n_blocked: "Заблокировано правилами безопасности Kawase",
   n_permissioned: "Только для допущенных держателей",

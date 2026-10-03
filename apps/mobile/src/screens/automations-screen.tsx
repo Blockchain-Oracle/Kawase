@@ -3,7 +3,7 @@
 // resume, skip the next run, cancel (which revokes its grant on chain with one more Face ID). Empty: what to ask
 // Kawase. Made in chat; managed here.
 import { useFocusEffect, useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Plus } from "lucide-react-native";
 import * as React from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -150,9 +150,15 @@ export function AutomationsScreen() {
         >
           <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
         </Button>
-        <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
+        <Text accessibilityRole="header" className="font-display text-foreground flex-1 text-2xl font-bold">
           {t("automation.title")}
         </Text>
+        {canLoad ? (
+          <Button size="sm" onPress={() => router.push("/new-automation")}>
+            <Icon as={Plus} className="text-primary-foreground size-4" />
+            <Text>{t("automation.new")}</Text>
+          </Button>
+        ) : null}
       </View>
       <ScrollView
         contentContainerClassName="gap-4 px-5 pt-4"
@@ -211,9 +217,14 @@ export function AutomationsScreen() {
               title={t("automation.emptyTitle")}
               body={t("automation.emptyBody")}
               action={
-                <Button onPress={() => router.push("/chat")}>
-                  <Text>{t("chat.title")}</Text>
-                </Button>
+                <View className="gap-2">
+                  <Button onPress={() => router.push("/new-automation")}>
+                    <Text>{t("automation.newTitle")}</Text>
+                  </Button>
+                  <Button variant="secondary" onPress={() => router.push("/chat")}>
+                    <Text>{t("chat.title")}</Text>
+                  </Button>
+                </View>
               }
             />
           </View>
