@@ -1,8 +1,9 @@
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { voicePrefs } from "@kawase/config";
-import type { Db } from "@kawase/db";
+import { devices, type Db } from "@kawase/db";
 
 import { clientIp } from "../account/location";
 import { FIELD } from "../http/fields";
@@ -61,7 +62,11 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook)
   app.post("/sign-out", async (c) => {
     const token = bearerToken(c.req.raw.headers);
     const current = token ? await findSession(db, token) : undefined;
-    if (current) await revokeSession(db, current.session.id);
+    if (current) {
+      await revokeSession(db, current.session.id);
+      // A phone signed out gets no more of this person's notifications (the next person on it can take the token).
+      await db.update(devices).set({ expoPushToken: null }).where(eq(devices.id, current.session.deviceId));
+    }
     return c.body(null, HTTP.noContent);
   });
 

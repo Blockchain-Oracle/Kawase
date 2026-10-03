@@ -31,7 +31,7 @@ Read-only review at `19b65f9` (main moved to `27ab8bc` during it). Production ha
 - `pendingRelays`/`pendingTransactions` never expire; a double `submitRelayedBatch` makes the relayer pay for a reverted call — B2. **Fixed in B2 branch (with H5):** both expire (relay TTL / 15 min), a request is claimed before any await and a second submit gets the first answer, and every relayed batch is simulated before it is sent.
 - A webhook with a random `X-Circle-Key-Id` triggers an authenticated Circle fetch with the live key (`onramp/service.ts:259-268`) — B1. **Merged `da2c8e6`.** known keys stay cached; ids that aren't short and URL-safe are never looked up; new ids at most 6 a minute across everyone; an id Circle 404s is not asked again for an hour (bounded); 5 s fetch timeout. Test: `onramp-webhook-keys.test.ts`.
 - Voice token key derived from the LiveKit secret; the token survives sign-out for 30 minutes — lane C (later).
-- A renamed @handle is free to take immediately; registering someone's push token removes it from their device — B2.
+- A renamed @handle is free to take immediately; registering someone's push token removes it from their device — B2. **Fixed in B2 branch:** a handle given up (renamed or cleared) is held 30 days for everyone but its last owner (`handle_holds.user_id`, migration 0081; `test/handle.test.ts`); a push token moves only from the same person's other device, the same installation, or a phone no one is signed in on (otherwise 409, theirs keeps it), and sign-out lets the token go (`test/security-push-token.test.ts`).
 
 ## Plausible, verify
 
