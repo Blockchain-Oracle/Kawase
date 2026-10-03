@@ -514,8 +514,9 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch }:
         call<{ settings: AgentWalletSettings }>("PATCH", "/marketplace/agent-wallet/settings", change),
       /** The marketplace grant to sign once (Face ID): USDC only to the agent wallet, capped per day. */
       grant: () => call<MarketplaceGrantRequest>("POST", "/marketplace/agent-wallet/grant"),
-      grantSubmit: (grantId: string, signature: string) =>
-        call<{ grantId: string; perDay: string; expiresAt: string }>("POST", "/marketplace/agent-wallet/grant/submit", { grantId, signature }),
+      /** `revoke`: the signed revoke the request carried (the earlier grant it replaces is disabled on chain). */
+      grantSubmit: (grantId: string, signature: string, revoke?: { requestId: string; signature: string }) =>
+        call<{ grantId: string; perDay: string; expiresAt: string; revoked?: boolean }>("POST", "/marketplace/agent-wallet/grant/submit", revoke ? { grantId, signature, revoke } : { grantId, signature }),
       topUp: (amount: string, idempotencyKey?: string) =>
         call<TopUpResult>("POST", "/marketplace/agent-wallet/top-up", { amount }, { idempotencyKey }),
       /** Everything in the agent wallet back to the person's wallet. */

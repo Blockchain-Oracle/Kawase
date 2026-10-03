@@ -90,7 +90,16 @@ export type ServiceListing = {
   payTo: string;
 };
 
-export type MarketplaceGrantRequest = { grantId: string; typedData: Record<string, unknown>; receipt: Record<string, unknown> };
+export type MarketplaceGrantRequest = {
+  grantId: string;
+  typedData: Record<string, unknown>;
+  receipt: Record<string, unknown>;
+  /**
+   * When an earlier marketplace grant still works on chain: its revoke, a one-time delegation the wallet signs in the
+   * same step (the relayer pays), so the new grant replaces the old one on chain. Absent on older servers.
+   */
+  revoke?: { requestId: string; typedData: Record<string, unknown> } | null;
+};
 
 export type TopUpResult =
   | { status: "needs_grant"; grant: MarketplaceGrantRequest }

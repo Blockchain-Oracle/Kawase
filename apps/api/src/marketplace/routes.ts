@@ -22,7 +22,8 @@ const settingsSchema = z.object({
   allowedCategories: z.array(z.enum(MARKETPLACE_CATEGORIES)).optional(),
   blockedSellers: z.array(z.object({ key: z.string().min(1).max(NAME_MAX), name: z.string().min(1).max(NAME_MAX) })).max(BLOCKED_MAX).optional(),
 });
-const grantSubmitSchema = z.object({ grantId: z.uuid(), signature: hex });
+/** `revoke`: the relayed revoke of the grant this one replaces, signed in the same step (when one was offered). */
+const grantSubmitSchema = z.object({ grantId: z.uuid(), signature: hex, revoke: z.object({ requestId: z.uuid(), signature: hex }).optional() });
 const topUpSchema = z.object({ amount: baseUnits });
 const decideSchema = z.object({ decision: z.enum(["approve", "decline"]) });
 const searchSchema = z.object({ q: z.string().max(QUERY_MAX).default(""), category: z.enum(MARKETPLACE_CATEGORIES).optional() });
@@ -58,7 +59,8 @@ export function marketplaceRoutes(marketplace: MarketplaceService) {
 
   app.post("/agent-wallet/grant/submit", async (c) => {
     const input = await parse(grantSubmitSchema, await c.req.json());
-    return c.json(await marketplace.grantSubmit(c.get("user")!, input.grantId, input.signature as `0x${string}`));
+    const revoke = input.revoke ? { requestId: input.revoke.requestId, signature: input.revoke.signature as `0x${string}` } : undefined;
+    return c.json(await marketplace.grantSubmit(c.get("user")!, input.grantId, input.signature as `0x${string}`, revoke));
   });
 
   app.post("/agent-wallet/top-up", async (c) => {

@@ -72,7 +72,11 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
           return false;
         }
         const signature = await signer.signTypedData(result.grant.typedData as unknown as TypedDataDefinition);
-        await api.marketplace.grantSubmit(result.grant.grantId, signature);
+        // The same yes also turns off an earlier grant that still works on chain (Kawase pays its fee).
+        const revoke = result.grant.revoke
+          ? { requestId: result.grant.revoke.requestId, signature: await signer.signTypedData(result.grant.revoke.typedData as unknown as TypedDataDefinition) }
+          : undefined;
+        await api.marketplace.grantSubmit(result.grant.grantId, signature, revoke);
         result = await api.marketplace.topUp(baseUnits);
       }
       if (result.status !== "topped_up") return false;

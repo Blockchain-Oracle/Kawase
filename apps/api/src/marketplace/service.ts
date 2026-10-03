@@ -82,6 +82,7 @@ import type { NetworkId } from "@kawase/networks";
 import { HTTP, problem } from "../http/problem";
 import { recordPractice } from "../safety/practice";
 import type { OpsExecutor } from "../send/ops";
+import { relayerReady } from "../send/relayed";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -375,12 +376,18 @@ export class MarketplaceService {
 
   // ── The marketplace grant ──────────────────────────────────────────────────────────────────────────────────────
 
-  /** The grant the person signs once (Face ID): Kawase may move up to the cap per day into their agent wallet only. */
+  /**
+   * The grant the person signs once (Face ID): Kawase may move up to the cap per day into their agent wallet only.
+   * When an earlier marketplace grant still works on chain, the same step carries its revoke (a one-time delegation
+   * for exactly that `disableDelegation`, relayed so it costs the person nothing): the new grant replaces the old one
+   * on chain, not only in the database (security review H4).
+   */
   async grantRequest(user: SessionUser) {
     const network = user.activeNetwork;
     const owner = await this.walletService.userWallet(user.id);
     if (!owner) throw problem(HTTP.unprocessable, "wallet_not_registered");
-    const { client, ops, network: context } = this.clients(network);
+    const clients = this.clients(network);
+    const { client, ops, network: context } = clients;
     if (!isWalletSetUp(await client.getCode({ address: owner.address as Address }))) throw problem(HTTP.unprocessable, "wallet_not_set_up");
     const agent = await this.ensureAgentWallet(user.id, network);
     const startsAt = nowSeconds();
@@ -418,10 +425,26 @@ export class MarketplaceService {
         status: "pending",
       })
       .returning({ id: grants.id });
-    return { grantId: row!.id, typedData: jsonSafe(typedData), receipt: jsonSafe(receipt) };
+    return { grantId: row!.id, typedData: jsonSafe(typedData), receipt: jsonSafe(receipt), revoke: await this.leftoverRevoke(user.id, network, clients) };
   }
 
-  async grantSubmit(user: SessionUser, grantId: string, signature: Hex) {
+  /** The relayed revoke of every earlier marketplace grant that still works on chain, when the relayer can carry it. */
+  private async leftoverRevoke(userId: string, network: NetworkId, clients: NetworkClients) {
+    const live = await this.walletService.liveGrants(userId, network, "marketplace");
+    if (live.length === 0 || !(await relayerReady(clients))) return null;
+    const request = await this.walletService.relayedRevokeRequest(userId, network, live.map((grant) => grant.id)).catch((error: unknown) => {
+      this.log.warn({ err: error, userId }, "marketplace grant revoke not offered");
+      return null;
+    });
+    return request ? { requestId: request.requestId, typedData: request.typedData } : null;
+  }
+
+  /**
+   * The signed grant becomes the active one. With `revoke` (the relayed revoke handed out with the request, signed in
+   * the same step), the grants it replaces are disabled on chain too; a revoke that does not go through leaves the
+   * new grant active and the old ones superseded (still offered for revoke next time, and in "revoke everything").
+   */
+  async grantSubmit(user: SessionUser, grantId: string, signature: Hex, revoke?: { requestId: string; signature: Hex }) {
     const [pending] = await this.db
       .select()
       .from(grants)
@@ -441,7 +464,16 @@ export class MarketplaceService {
         .where(and(eq(grants.userId, user.id), eq(grants.network, pending.network), eq(grants.kind, "marketplace"), eq(grants.status, "active")));
       await tx.update(grants).set({ status: "active", delegation: jsonSafe(grant) }).where(eq(grants.id, grantId));
     });
-    return { grantId, perDay: pending.periodAmount.toString(), expiresAt: pending.expiresAt.toISOString() };
+    const revoked = revoke
+      ? await this.walletService
+          .submitRelayedBatch(user.id, revoke.requestId, revoke.signature)
+          .then((sent) => sent.status === "confirmed")
+          .catch((error: unknown) => {
+            this.log.warn({ err: error, userId: user.id }, "marketplace grant revoke did not go through");
+            return false;
+          })
+      : false;
+    return { grantId, perDay: pending.periodAmount.toString(), expiresAt: pending.expiresAt.toISOString(), revoked };
   }
 
   // ── Moving money ───────────────────────────────────────────────────────────────────────────────────────────────

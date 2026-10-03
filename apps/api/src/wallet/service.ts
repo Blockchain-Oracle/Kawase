@@ -67,7 +67,16 @@ export type PendingTransaction = {
 };
 
 /** A batch the relayer will send for the wallet, waiting for the wallet's signature on its one-time delegation. */
-export type PendingRelay = { userId: string; network: NetworkId; kind: string; wallet: Address; grant: Delegation; calls: BatchCall[] };
+export type PendingRelay = {
+  userId: string;
+  network: NetworkId;
+  kind: string;
+  wallet: Address;
+  grant: Delegation;
+  calls: BatchCall[];
+  /** For a relayed revoke: the grants it disables, recorded as revoked once it confirms. */
+  grantIds?: string[] | undefined;
+};
 
 /** How long a relayed batch's delegation stays valid (it is also limited to one use). */
 const RELAY_TTL_SECONDS = 600;
@@ -490,11 +499,12 @@ export class WalletService {
    * The same batch, sent by Kawase's relayer: the wallet signs a one-time delegation that allows exactly these calls,
    * once, for ten minutes, redeemable only by the relayer (integrations-delegation relayed-batch.ts). The relayer pays.
    */
-  async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex }[]) {
+  async relayedBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex; value?: bigint | undefined }[], grantIds?: string[]) {
     const wallet = await this.requireWallet(userId);
     const clients = this.clients(network);
     if (!isWalletSetUp(await clients.client.getCode({ address: wallet.address as Address }))) throw problem(HTTP.conflict, "wallet_not_set_up");
-    const batch = calls.map((call) => ({ ...call, value: ZERO }));
+    // A call's value (Arc's native USDC, e.g. a bridge's flat fee) comes from the wallet's own balance, pinned like the rest.
+    const batch = calls.map((call) => ({ ...call, value: call.value ?? ZERO }));
     const grant = buildRelayedBatch({
       network: clients.network,
       wallet: wallet.address as Address,
@@ -504,7 +514,7 @@ export class WalletService {
       salt: `0x${randomBytes(SALT_BYTES).toString("hex")}`,
     });
     const id = newId();
-    this.pendingRelays.set(id, { userId, network, kind, wallet: wallet.address as Address, grant, calls: batch });
+    this.pendingRelays.set(id, { userId, network, kind, wallet: wallet.address as Address, grant, calls: batch, grantIds });
     // JSON for the app: uint256 fields as decimal strings (the signer reads them back as numbers).
     return { requestId: id, relayed: true as const, typedData: jsonSafe(grantTypedData(clients.network, grant)) as Record<string, unknown> };
   }
@@ -535,7 +545,54 @@ export class WalletService {
     const receipt = await clients.client.waitForTransactionReceipt({ hash });
     const status = receipt.status === "success" ? "confirmed" : "reverted";
     await this.db.update(txAttempts).set({ txHash: hash, status, receipt: jsonSafe(receipt) }).where(eq(txAttempts.id, attemptId));
+    if (pending.grantIds?.length && status === "confirmed")
+      await this.db
+        .update(grants)
+        .set({ status: "revoked", revokeTxAttemptId: attemptId })
+        .where(and(inArray(grants.id, pending.grantIds), eq(grants.userId, userId)));
     return { tx: hash, status };
+  }
+
+  /**
+   * Grants of one kind that still work on chain: signed (active, or superseded by a newer one), not expired, and not
+   * disabled by the DelegationManager. A grant replaced only in the database is still one of these until it is
+   * disabled on chain (security review H4).
+   */
+  async liveGrants(userId: string, network: NetworkId, kind: (typeof grants.$inferSelect)["kind"]) {
+    const { client } = this.clients(network);
+    const rows = await this.db
+      .select()
+      .from(grants)
+      .where(
+        and(
+          eq(grants.userId, userId),
+          eq(grants.network, network),
+          eq(grants.kind, kind),
+          inArray(grants.status, ["active", "superseded"]),
+          sql`${grants.expiresAt} > now()`,
+          sql`coalesce(${grants.delegation}->>'signature', '0x') <> '0x'`,
+        ),
+      );
+    const disabled = await Promise.all(rows.map((row) => this.disabledOnChain(client, row.delegation)));
+    return rows.filter((_, index) => !disabled[index]);
+  }
+
+  /**
+   * Disabling grants on chain through the relayer, so it can ride the same Face ID as the grant that replaces them:
+   * the wallet signs a one-time delegation for exactly these `disableDelegation` calls (the existing revoke encoding,
+   * run by the wallet's own DeleGator, so the DelegationManager sees the delegator), and the relayer pays. Once it
+   * confirms, the grants are recorded as revoked. Null when there is nothing to disable.
+   */
+  async relayedRevokeRequest(userId: string, network: NetworkId, grantIds: string[]) {
+    if (grantIds.length === 0) return null;
+    const rows = await this.db
+      .select()
+      .from(grants)
+      .where(and(inArray(grants.id, grantIds), eq(grants.userId, userId), eq(grants.network, network)));
+    if (rows.length === 0) return null;
+    const { network: context } = this.clients(network);
+    const calls = rows.map((row) => encodeRevoke(context, row.delegation as never));
+    return this.relayedBatchRequest(userId, network, "revoke_grant", calls, rows.map((row) => row.id));
   }
 
   private async unsignedTransaction(
