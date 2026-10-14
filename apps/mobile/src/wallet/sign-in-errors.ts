@@ -42,6 +42,7 @@ export function classifySignInFailure(failure: unknown): SignInFailure {
   if (EXPIRED_CODE.test(text) && /otp|code/i.test(text)) return "expiredCode";
   if (RATE_LIMITED.test(text) || statuses.includes(HTTP_TOO_MANY) || (failure instanceof ApiError && failure.code === "rate_limited"))
     return "rateLimited";
-  if (failure instanceof TypeError || OFFLINE.test(text)) return "offline";
+  // A failed fetch is a TypeError anywhere in the chain (a sign-in stage wraps it in an AuthStageError).
+  if (links.some((link) => link instanceof TypeError) || OFFLINE.test(text)) return "offline";
   return "other";
 }

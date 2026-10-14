@@ -1,11 +1,17 @@
-// Sign-in: a guest gets a user and a device session at once; a Turnkey sign-in proves the session key, links
-// the sub-organization to a Kawase user (moving a guest's data across if there is one) and issues a session.
+// Sign-in: a guest gets a user and a device session at once. An account sign-in links the wallet provider's identity
+// to a Kawase user (moving a guest's data across if there is one) and issues a session:
+// - Privy (D41): the app's Privy access and identity tokens, verified here (privy.ts); the Privy wallet is registered
+//   from the signed identity token in the same step. A Turnkey-era account is matched by the email Privy verified.
+// - Turnkey (the fallback for one build): a stamp by the session key over our single-use nonce.
 import { randomBytes } from "node:crypto";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, ne, sql } from "drizzle-orm";
 
+import { loadPrivyEnv } from "@kawase/env";
 import { devices, moveUserData, signInNonces, users, type Db } from "@kawase/db";
 
-import { HTTP, problem } from "../http/problem";
+import { HTTP, ProblemError, problem } from "../http/problem";
+import { registerUserWallet } from "../wallet/service";
+import { createPrivyVerifier, PrivyTokenError, type PrivyIdentity, type PrivyVerifier } from "./privy";
 import { createSession } from "./session";
 import { parseStamp, proofClaims, verifyStamp, type StampedProof } from "./turnkey-proof";
 import type { TurnkeyReader, TurnkeyUser } from "./turnkey";
@@ -23,11 +29,156 @@ export type DeviceInput = {
   locale?: string | undefined;
 };
 
+/** Privy sign-in as configured by WALLET_PROVIDER and the PRIVY_* variables; undefined while Turnkey is the provider. */
+export function privyFromEnv(source?: Record<string, string | undefined>): PrivyVerifier | undefined {
+  const env = loadPrivyEnv(source);
+  if (env.WALLET_PROVIDER !== "privy" || !env.PRIVY_APP_ID) return undefined;
+  return createPrivyVerifier({
+    appId: env.PRIVY_APP_ID,
+    verificationKey: env.PRIVY_VERIFICATION_KEY,
+    appSecret: env.PRIVY_APP_SECRET,
+  });
+}
+
+const PRIVY = "privy" as const;
+
 export class AuthService {
+  readonly privy: PrivyVerifier | undefined;
+
   constructor(
     private readonly db: Db,
     private readonly turnkey: TurnkeyReader,
-  ) {}
+    privy: PrivyVerifier | undefined = privyFromEnv(),
+  ) {
+    this.privy = privy;
+  }
+
+  /** The tokens' identity, or the problem the app shows (a bad or expired token is a 401; Privy unreachable a 502). */
+  private async privyIdentity(input: { accessToken: string; identityToken?: string | undefined }): Promise<PrivyIdentity> {
+    if (!this.privy) throw problem(HTTP.notFound, "not_found", "Privy sign-in is not on");
+    try {
+      return await this.privy.identify(input);
+    } catch (error) {
+      if (error instanceof PrivyTokenError) throw problem(HTTP.unauthorized, "proof_invalid", "the Privy tokens do not verify");
+      throw problem(HTTP.badGateway, "upstream", "Privy could not be reached");
+    }
+  }
+
+  private privyWallet(userId: string, identity: PrivyIdentity, wallet: NonNullable<PrivyIdentity["wallet"]>) {
+    return registerUserWallet(this.db, userId, {
+      address: wallet.address,
+      custody: PRIVY,
+      providerRef: { userId: identity.userId, ...(wallet.walletId ? { walletId: wallet.walletId } : {}) },
+    });
+  }
+
+  /**
+   * Privy sign-in (D41). The Privy DID is the identity. Without a Kawase user for it yet, the email Privy verified
+   * finds a Turnkey-era account (the move from Turnkey); an account already linked to another Privy identity is not
+   * taken over (recovery). The embedded wallet in the identity token is registered in the same step; a wallet that
+   * cannot be registered never fails the sign-in (the app registers it again after creating it).
+   */
+  async signInWithPrivy(input: {
+    accessToken: string;
+    identityToken?: string | undefined;
+    device: DeviceInput;
+    guestUserId?: string | undefined;
+  }) {
+    const identity = await this.privyIdentity(input);
+    const email = identity.email;
+    const user = await this.db.transaction(async (tx) => {
+      const [byIdentity] = await tx
+        .select()
+        .from(users)
+        .where(and(eq(users.identityProvider, PRIVY), eq(users.identitySubject, identity.userId)));
+      const [byEmail] = email
+        ? await tx
+            .select()
+            .from(users)
+            .where(sql`lower(${users.email}) = lower(${email})`)
+        : [];
+      let existing = byIdentity;
+      if (!existing && byEmail) {
+        if (byEmail.identityProvider === PRIVY) throw problem(HTTP.conflict, "account_recovery_required");
+        existing = byEmail;
+      }
+      // The email stays unique across accounts: another account's email is never copied onto this one.
+      const emailFree = !byEmail || byEmail.id === existing?.id;
+      const linked = { identityProvider: PRIVY, identitySubject: identity.userId, isAnonymous: false };
+      if (existing) {
+        if (input.guestUserId && input.guestUserId !== existing.id) await moveUserData(tx, input.guestUserId, existing.id);
+        const [updated] = await tx
+          .update(users)
+          .set({ ...linked, email: emailFree && email ? email : existing.email })
+          .where(eq(users.id, existing.id))
+          .returning();
+        return updated!;
+      }
+      if (input.guestUserId) {
+        // The guest becomes the account: nothing to move, the row is upgraded in place.
+        const [upgraded] = await tx
+          .update(users)
+          .set({ ...linked, email: emailFree ? (email ?? null) : null })
+          .where(and(eq(users.id, input.guestUserId), eq(users.isAnonymous, true)))
+          .returning();
+        if (upgraded) return upgraded;
+      }
+      const [created] = await tx
+        .insert(users)
+        .values({ ...linked, email: emailFree ? (email ?? null) : null, locale: input.device.locale ?? "en" })
+        .returning();
+      return created!;
+    });
+
+    const device = await this.upsertDevice(user.id, input.device);
+    await this.db.update(devices).set({ identitySessionId: identity.sessionId }).where(eq(devices.id, device.id));
+    const wallet = identity.wallet
+      ? await this.privyWallet(user.id, identity, identity.wallet).catch((error: unknown) => {
+          if (error instanceof ProblemError) return undefined;
+          throw error;
+        })
+      : undefined;
+    const { token } = await createSession(this.db, user.id, device.id);
+    return { token, user, device, wallet };
+  }
+
+  /**
+   * After the app created the embedded wallet (an account that signed in before it had one): fresh tokens for the
+   * same Privy identity register it. The address comes from the signed identity token, never from the body.
+   */
+  async linkPrivyWallet(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
+    const identity = await this.ownPrivyIdentity(userId, input);
+    if (!identity.wallet) throw problem(HTTP.unprocessable, "wallet_not_registered", "the Privy account has no wallet yet");
+    return this.privyWallet(userId, identity, identity.wallet);
+  }
+
+  /** The tokens' identity, refused unless it is the one this Kawase account is linked to. */
+  private async ownPrivyIdentity(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
+    const identity = await this.privyIdentity(input);
+    const [user] = await this.db
+      .select({ provider: users.identityProvider, subject: users.identitySubject })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (user?.provider !== PRIVY || user.subject !== identity.userId)
+      throw problem(HTTP.forbidden, "forbidden", "these tokens are for another account");
+    return identity;
+  }
+
+  /**
+   * After the person changed their email at Privy (a code to the new address): Kawase follows the verified address,
+   * unless it already belongs to another Kawase account (the same rule as the Turnkey sync).
+   */
+  async syncPrivyEmail(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
+    const { email } = await this.ownPrivyIdentity(userId, input);
+    if (!email) return { email: null };
+    const [other] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(sql`lower(${users.email}) = lower(${email})`, ne(users.id, userId)));
+    if (other) throw problem(HTTP.conflict, "account_recovery_required", "this email belongs to another account");
+    await this.db.update(users).set({ email }).where(eq(users.id, userId));
+    return { email };
+  }
 
   async issueNonce() {
     const nonce = randomBytes(NONCE_BYTES).toString("base64url");
@@ -131,6 +282,7 @@ export class AuthService {
             email: turnkeyUser.email ?? existing.email,
             turnkeySubOrganizationId: claims.organizationId,
             turnkeyUserId: turnkeyUser.userId,
+            ...(existing.identityProvider ? {} : { identityProvider: "turnkey" as const, identitySubject: claims.organizationId }),
             isAnonymous: false,
           })
           .where(eq(users.id, existing.id))
@@ -145,6 +297,8 @@ export class AuthService {
             email: turnkeyUser.email,
             turnkeySubOrganizationId: claims.organizationId,
             turnkeyUserId: turnkeyUser.userId,
+            identityProvider: "turnkey",
+            identitySubject: claims.organizationId,
             isAnonymous: false,
           })
           .where(and(eq(users.id, input.guestUserId), eq(users.isAnonymous, true)))
@@ -157,6 +311,8 @@ export class AuthService {
           email: turnkeyUser.email,
           turnkeySubOrganizationId: claims.organizationId,
           turnkeyUserId: turnkeyUser.userId,
+          identityProvider: "turnkey",
+          identitySubject: claims.organizationId,
           isAnonymous: false,
           locale: input.device.locale ?? "en",
         })

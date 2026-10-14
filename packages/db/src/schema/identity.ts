@@ -1,4 +1,5 @@
-// Kawase owns the user, the device sessions and the sign-in nonces. Turnkey owns the credentials.
+// Kawase owns the user, the device sessions and the sign-in nonces. The wallet provider (Privy, D41; Turnkey until it
+// is retired) owns the credentials and the user's key.
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
@@ -9,12 +10,14 @@ import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 export const themeEnum = pgEnum("theme", ["system", "light", "dark"]);
 export const riskModeEnum = pgEnum("risk_mode", ["careful", "balanced", "autonomous"]);
 export const platformEnum = pgEnum("platform", ["ios", "android", "web", "desktop"]);
+/** Who proved the person's identity at sign-in (D41). */
+export const identityProviderEnum = pgEnum("identity_provider", ["turnkey", "privy"]);
 
 export const users = pgTable(
   "users",
   {
     id: id(),
-    /** Present after the first Turnkey sign-in; null for guests. */
+    /** Present after the first account sign-in (an email the provider verified); null for guests. */
     email: text(),
     /** The optional public @handle (D35): lowercase, unique without regard to case, changeable. */
     handle: text(),
@@ -23,6 +26,12 @@ export const users = pgTable(
      * not at every sign-in (Codex review R07). It stays changeable in Settings.
      */
     handlePromptedAt: timestampTz(),
+    /**
+     * Provider-neutral identity (migration 0130): the provider and its id for the person (Privy: the user's DID;
+     * Turnkey: the sub-organization id, backfilled). The `turnkey*` columns below stay for the Turnkey fallback build.
+     */
+    identityProvider: identityProviderEnum(),
+    identitySubject: text(),
     turnkeySubOrganizationId: uuid(),
     turnkeyUserId: uuid(),
     isAnonymous: boolean().notNull().default(true),
@@ -57,6 +66,9 @@ export const users = pgTable(
     uniqueIndex("users_handle_idx")
       .on(sql`lower(${table.handle})`)
       .where(sql`${table.handle} is not null`),
+    uniqueIndex("users_identity_idx")
+      .on(table.identityProvider, table.identitySubject)
+      .where(sql`${table.identitySubject} is not null`),
     uniqueIndex("users_turnkey_sub_organization_idx")
       .on(table.turnkeySubOrganizationId)
       .where(sql`${table.turnkeySubOrganizationId} is not null`),
@@ -81,6 +93,8 @@ export const devices = pgTable(
     name: text(),
     /** The Turnkey session key that proved the latest sign-in here: the API key "sign out this device" deletes. */
     turnkeyPublicKey: text(),
+    /** The wallet provider's session that proved the latest sign-in here (Privy: the access token's session id). */
+    identitySessionId: text(),
     /** Where it last signed in or was seen, coarsely ("Lisbon, Portugal"), from its IP; the IP itself is never kept. */
     location: text(),
     locationAt: timestampTz(),
@@ -115,7 +129,7 @@ export const sessions = pgTable(
   (table) => [uniqueIndex("sessions_token_hash_idx").on(table.tokenHash), index("sessions_user_idx").on(table.userId)],
 );
 
-/** Single-use nonces the client signs with its Turnkey session key to prove the sign-in. */
+/** Single-use nonces the client signs with its Turnkey session key to prove the sign-in (Privy sign-in needs none). */
 export const signInNonces = pgTable("sign_in_nonces", {
   nonce: text().primaryKey(),
   expiresAt: timestampTz().notNull(),
