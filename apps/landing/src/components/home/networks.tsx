@@ -1,6 +1,6 @@
 "use client";
 
-// Mainnet and testnet, side by side: the same toggle the app has. The orb turns lime ↔ sky, testnet always carries
+// Mainnet and testnet, side by side: the same toggle the app has. The orb turns between the two networks' colours, testnet always carries
 // the words "Testnet · no real money" and mainnet the REAL MONEY eyebrow (DESIGN.md "Testnet layer"), and the list
 // shows what each network can do, from the registry.
 import { useState } from "react";

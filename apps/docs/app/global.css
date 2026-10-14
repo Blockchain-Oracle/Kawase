@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* Lime on Ink tokens (DESIGN.md): :root is paper (light), .dark is ink. Fumadocs' colours (neutral preset for the
+/* Senryo tokens (D40): :root is paper (light), .dark is ink. Fumadocs' colours (neutral preset for the
    full set) are re-pointed at them below; the rule comes last, so it wins in both themes. */
 @import "@kawase/ui-tokens/web.css";
 @import "fumadocs-ui/css/neutral.css";
@@ -19,7 +19,7 @@
   --color-fd-card: var(--card);
   --color-fd-card-foreground: var(--card-foreground);
   --color-fd-border: var(--border);
-  /* Fumadocs uses "primary" for links and the active sidebar item: the accent (lime on ink, olive on paper). */
+  /* Fumadocs uses "primary" for links and the active sidebar item: the accent (Senryo magenta). */
   --color-fd-primary: var(--accent);
   --color-fd-primary-foreground: var(--accent-foreground);
   --color-fd-secondary: var(--secondary);

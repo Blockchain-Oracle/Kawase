@@ -1,4 +1,4 @@
-// A capability state as a word plus a shape, never colour alone (DESIGN.md). Mint marks "available" so lime stays
+// A capability state as a word plus a shape, never colour alone (DESIGN.md). Mint marks "available" so the accent stays
 // for the one primary action and live state.
 import type { CapabilityState } from "@kawase/config";
 

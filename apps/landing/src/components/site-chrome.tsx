@@ -1,4 +1,4 @@
-// The header and footer every page shares: the glass header (one lime action: open the web app) and the footer.
+// The header and footer every page shares: the glass header (one primary action: open the web app) and the footer.
 import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FloatingHeader } from "@/components/ui/floating-header";
