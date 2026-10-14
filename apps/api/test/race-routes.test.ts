@@ -175,6 +175,9 @@ test("approval: inside the budget it goes without a tap; the trust rule asks fir
   const broken = fakeContext({ budget: { allows: async () => Promise.reject(new Error("ledger down")) } });
   assert.equal(await decideApproval(broken, clean, "propose_earn", { amount: "1" }), "not-applicable", "a failing budget check never approves");
   assert.equal(await decideApproval(fakeContext({ surface: "voice" }), read, "propose_trade", { from: "USDC", amount: "2" }), "not-applicable", "by voice the card's own confirm stays");
+  const continuation = fakeContext({ budget, lastUserText: "  " });
+  assert.equal(await decideApproval(continuation, turnTrust(""), "propose_bridge", { amount: "2" }), "not-applicable", "a continuation is never approved automatically");
+  assert.equal(await decideApproval(continuation, turnTrust(""), "propose_earn", { amount: "1" }), "not-applicable");
   assert.deepEqual(Object.keys(toolApprovals(context, clean)).sort(), ["bring_to_arc", "propose_bridge", "propose_earn", "propose_supply", "propose_swap", "propose_trade"]);
 });
 
@@ -216,4 +219,11 @@ test("in the stream: inside the budget the step is approved automatically and ru
   assert.equal(plain.some((chunk) => chunk.type === "tool-approval-request"), false, plain.map((chunk) => chunk.type).join(","));
   assert.ok(plain.some((chunk) => chunk.type === "tool-output-available"));
   assert.equal(trades.length, 2);
+  // A continuation (the person tapped Go ahead on an outside_text ask): no new words, and the outside text read on the
+  // turn that asked is unseen by this turn's fresh trust. A second budgeted step here is never approved automatically.
+  const continued = await turn(fakeContext({ proposeTrade, lastUserText: "", budget: { allows: async () => true } }));
+  const auto = continued.find((chunk) => chunk.type === "tool-approval-request") as { isAutomatic?: boolean } | undefined;
+  assert.notEqual(auto?.isAutomatic, true, continued.map((chunk) => chunk.type).join(","));
+  assert.ok(continued.some((chunk) => chunk.type === "tool-output-available"), "drafted: the card's own confirm is the ask");
+  assert.equal(trades.length, 3);
 });

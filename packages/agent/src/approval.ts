@@ -54,17 +54,21 @@ export function budgetAction(tool: BudgetedTool, input: StepInput, network: Agen
 
 /**
  * Whether one step may go without the person's tap, and how they are asked when it may not:
- * - `approved` only when the budget says it fits, with an amount, to the person themselves and with no outside text
- *   read this turn (the card then says "inside your budget");
+ * - `approved` only when the budget says it fits, with an amount, to the person themselves, on a turn the person
+ *   started with their own message and with no outside text read since it (the card then says "inside your budget");
  * - `user-approval` when the trust rule stops the step before it is even drafted: outside text was read this turn, or it
  *   would go to someone else (the card asks "go ahead?" first, then quotes);
  * - `not-applicable` when the budget has nothing to say (no budget yet, over it, a check that failed, no amount yet):
  *   the step is drafted and its card's own confirm is the one approval (D38: above the budget, Face ID on the card).
  *   Asking here as well would make the person confirm twice for one step.
+ * A turn that continues a card (their Go ahead / Not now, a network switch) carries no new words from the person, and
+ * the thread before it may hold outside text this turn's trust never saw (an x402 answer, a search result, read on the
+ * turn that asked). Its trust cannot be proven clean, so nothing on it is approved automatically: the card's own confirm
+ * is the ask. (Asking again here could loop on the very call the person just approved.)
  * By voice the transport cannot answer an approval request; the card's own confirm reaches the phone instead.
  */
 export async function decideApproval(
-  context: Pick<AgentContext, "budget" | "network" | "surface" | "intelligence">,
+  context: Pick<AgentContext, "budget" | "network" | "surface" | "intelligence" | "lastUserText">,
   trust: Pick<TurnTrust, "outside">,
   tool: BudgetedTool,
   input: StepInput,
@@ -75,6 +79,8 @@ export async function decideApproval(
   if (action.recipient === "other") return ask("other_recipient");
   // Nothing to approve yet: the card asks how much, and its own confirm follows.
   if (!input.amount || !context.budget) return "not-applicable";
+  // A continuation: the person wrote nothing new and the thread's earlier outside text is unseen here, so never automatic.
+  if (isContinuation(context)) return "not-applicable";
   const fits = await context.budget.allows(action).catch((error: unknown) => {
     context.intelligence.warn(error, "budget check failed");
     return false;
@@ -82,8 +88,13 @@ export async function decideApproval(
   return fits ? approved("inside_budget") : "not-applicable";
 }
 
+/** The turn continues a card (an approval answer, a tool output from the device) rather than a message the person wrote. */
+export function isContinuation(context: Pick<AgentContext, "lastUserText">): boolean {
+  return !context.lastUserText.trim();
+}
+
 /** The per-tool `toolApproval` map for one turn (the same trust the tools use, so outside text read mid-turn counts). */
-export function toolApprovals(context: Pick<AgentContext, "budget" | "network" | "surface" | "intelligence">, trust: Pick<TurnTrust, "outside">) {
+export function toolApprovals(context: Pick<AgentContext, "budget" | "network" | "surface" | "intelligence" | "lastUserText">, trust: Pick<TurnTrust, "outside">) {
   const entries = (Object.keys(BUDGETED_TOOLS) as BudgetedTool[]).map((tool) => [tool, (input: StepInput) => decideApproval(context, trust, tool, input)] as const);
   return Object.fromEntries(entries) as Record<BudgetedTool, (input: StepInput) => Promise<ToolApprovalStatus>>;
 }
