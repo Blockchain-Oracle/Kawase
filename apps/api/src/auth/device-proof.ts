@@ -49,7 +49,6 @@ const forgetOld = (now: number) => {
 
 export type DeviceProofOutcome = "proven" | "absent" | "invalid";
 
-/** Whether this request carries a valid proof from the device its session belongs to. */
 /**
  * Privy (D41): a Privy key is not bound to the device, so the proof is the person's own wallet signing this exact
  * request (EIP-191 personal message = the activity string above). A leaked Kawase token alone cannot make it; the
@@ -79,6 +78,7 @@ async function checkWalletProof(db: Db, c: Context<AppEnv>, activity: string | u
   return "proven";
 }
 
+/** Whether this request carries a valid proof from the device its session belongs to. */
 export async function checkDeviceProof(db: Db, c: Context<AppEnv>, turnkey?: TurnkeyReader): Promise<DeviceProofOutcome> {
   const activity = c.req.header(PROOF_ACTIVITY_HEADER);
   const walletSignature = c.req.header(PROOF_SIGNATURE_HEADER);
