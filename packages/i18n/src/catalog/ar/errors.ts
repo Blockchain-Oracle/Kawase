@@ -20,4 +20,5 @@ export const errors: Catalog["errors"] = {
   biometricUnavailableAndroid: "فعّل بصمة الإصبع أو قفل الشاشة في إعدادات هاتفك لتتمكن من الموافقة.",
   biometricFailed: "لم يتطابق. لم يتم توقيع أي شيء. حاول مرة أخرى.",
   tryAgainIn: "حاول مرة أخرى بعد {{time}}",
+  deviceProofNeeded: "سجّل الدخول مجددًا على هذا الهاتف للموافقة. لم يُرسل شيء.",
 };

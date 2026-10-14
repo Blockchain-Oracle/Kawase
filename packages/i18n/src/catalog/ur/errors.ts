@@ -22,4 +22,5 @@ export const errors: Catalog["errors"] = {
   biometricUnavailableAndroid: "منظوری کے لیے فون کی سیٹنگز میں فنگر پرنٹ یا اسکرین لاک سیٹ کریں۔",
   biometricFailed: "میل نہیں کھایا۔ کچھ بھی سائن نہیں ہوا۔ دوبارہ کوشش کریں۔",
   tryAgainIn: "{{time}} بعد دوبارہ کوشش کریں",
+  deviceProofNeeded: "منظوری کے لیے اس فون پر دوبارہ سائن ان کریں۔ کچھ نہیں بھیجا گیا۔",
 };

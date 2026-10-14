@@ -29,6 +29,7 @@ import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
+import { sayIfRefused } from "@/wallet/refused";
 
 const EXPLORER = { testnet: `${arcTestnet.blockExplorers?.default.url ?? ""}/tx/`, mainnet: `${arc.blockExplorers?.default.url ?? ""}/tx/` } as const;
 const TEXTAREA_LINES = 6;
@@ -77,13 +78,13 @@ export function PayoutsScreen() {
     if (yes !== "approved") return;
     setBusy(true);
     try {
-      const payout = await signAndSubmitPayout(signer, draft.id);
+      const payout = await signAndSubmitPayout(signer, draft);
       toast(payout.status === "confirmed" ? t("business.payoutSent", { count: String(payout.lines.length) }) : t("business.payoutFailed"));
       setDraft(undefined);
       setText("");
       await load();
     } catch (error) {
-      toast(payoutFailedText(error, t, locale));
+      if (!sayIfRefused(error, t)) toast(payoutFailedText(error, t, locale));
     } finally {
       setBusy(false);
     }

@@ -9,6 +9,7 @@ import * as React from "react";
 import { Platform } from "react-native";
 
 import { API_URL } from "@/session/api";
+import { provenFetch } from "@/session/device-proof";
 import { sessionStorage } from "@/session/storage";
 
 const CHAT_PATH = "/agent/chat";
@@ -18,7 +19,8 @@ export function useAgentChat(threadId: string, initialMessages: UIMessage[]) {
     () =>
       new DefaultChatTransport<UIMessage>({
         api: `${API_URL}${CHAT_PATH}`,
-        ...(Platform.OS === "web" ? {} : { fetch: expoFetch as unknown as typeof globalThis.fetch }),
+        // Each message carries this device's proof (M12), so a send inside the allowance can go at once.
+        fetch: provenFetch(Platform.OS === "web" ? globalThis.fetch.bind(globalThis) : (expoFetch as unknown as typeof globalThis.fetch), CHAT_PATH),
         headers: async (): Promise<Record<string, string>> => {
           const token = await sessionStorage.getToken();
           return token ? { authorization: `Bearer ${token}` } : {};

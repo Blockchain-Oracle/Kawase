@@ -1,11 +1,12 @@
 // Paying a checked payout (one Face ID, all or nothing): the wallet signs the self-batch transaction, or — when its
 // USDC cannot pay the fee (B2-3, no gas dead end) — the one-time delegation for exactly that batch, which Kawase's
 // relayer then sends and pays for.
-import type { TypedDataDefinition } from "viem";
+import type { Address, TypedDataDefinition } from "viem";
 
 import { ApiError, type PayoutView } from "@kawase/api-client";
 import { GAS_FLOAT_USDC_BASE_UNITS } from "@kawase/config";
 import { formatTokenAmount } from "@kawase/money";
+import { SigningRefused, arcStablecoin, checkBatch, transferCalls } from "@kawase/wallet";
 
 import type { useT } from "@/i18n";
 import { api } from "@/session/api";
@@ -27,8 +28,13 @@ export function payoutFailedText(error: unknown, t: ReturnType<typeof useT>["t"]
   return t(`policy.${code}`, { needed: formatTokenAmount(GAS_FLOAT_USDC_BASE_UNITS, USDC_DECIMALS, "USDC", locale) });
 }
 
-export async function signAndSubmitPayout(signer: Signer, payoutId: string): Promise<PayoutView> {
+export async function signAndSubmitPayout(signer: Signer, payout: PayoutView): Promise<PayoutView> {
+  const payoutId = payout.id;
   const request = await api.business.signPayout(payoutId);
+  // What is signed pays exactly the lines on the card, in order, and nothing else (M6).
+  const token = (payout.tokenAddress as Address | null) ?? arcStablecoin(payout.network, payout.asset);
+  if (!token) throw new SigningRefused("a payout in a token the card does not name");
+  checkBatch("relayed" in request ? { typedData: request.typedData } : { transaction: request.transaction }, transferCalls(token, payout.lines), signer.address);
   if ("relayed" in request) {
     const signature = await signer.signTypedData(request.typedData as unknown as TypedDataDefinition);
     return (await api.business.submitPayout(payoutId, request.requestId, signature, "typed")).payout;

@@ -20,4 +20,5 @@ export const errors: Catalog["errors"] = {
   biometricUnavailableAndroid: "请在手机设置中设置指纹或屏幕锁定后再批准。",
   biometricFailed: "验证不匹配，没有签署任何内容。请重试。",
   tryAgainIn: "{{time}} 后再试",
+  deviceProofNeeded: "请在这部手机上重新登录后再批准。没有发送任何款项。",
 };
