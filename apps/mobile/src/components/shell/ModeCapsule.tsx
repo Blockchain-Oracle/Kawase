@@ -81,7 +81,7 @@ export function ModeCapsule({
         onPressIn={press.onPressIn}
         onPressOut={press.onPressOut}
         onPress={() => {
-          fire("tick", { sound: "toggle" });
+          fire("tick");
           onToggle();
         }}
         {...(onLongPress

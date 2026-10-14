@@ -20,7 +20,8 @@ export const story: Catalog["story"] = {
   languageBody:
     "Dix langues, lues et écrites. Changez-la avec le bouton ci-dessus — tout suit, y compris l'écriture de droite à gauche.",
   everythingTitle: "Tout sur Arc.",
-  everythingBody: "Achetez avec Apple Pay, misez à la hausse ou à la baisse, faites fructifier ce que vous ne dépensez pas et laissez des paiements partir tout seuls, depuis un seul portefeuille.",
+  everythingBody:
+    "Achetez avec Apple Pay, misez à la hausse ou à la baisse, faites fructifier ce que vous ne dépensez pas et laissez des paiements partir tout seuls, depuis un seul portefeuille.",
   everythingBuy: "Acheter avec Apple Pay",
   everythingTrade: "Miser à la hausse ou à la baisse",
   everythingEarn: "Faire fructifier l'argent qui dort",
@@ -44,4 +45,31 @@ export const story: Catalog["story"] = {
   goTo: "Aller à l'étape {{n}}",
   canvasHint: "Balayez vers le haut ou le bas pour changer d'étape",
   readAloud: "Lire à voix haute",
+  lookAround: "Jeter un œil",
+  createAccount: "Créer un compte",
+  swipeHint: "Balayez à gauche ou à droite pour changer d'étape",
+  askTitle: "Demandez, c'est fait.",
+  askBody: "Écrivez ou dites ce qu'il vous faut. Kawase s'en charge sur Arc et vous montre chaque étape.",
+  askPrompt: "Ramène mes USDC de Base vers Arc",
+  askRouted: "5 itinéraires vérifiés",
+  askPicked: "Le meilleur choisi",
+  askArrived: "Arrivé sur Arc",
+  raceTitle: "Chaque itinéraire est vérifié.",
+  raceBody:
+    "Passerelles et plateformes d'échange se disputent votre ordre. Vous voyez chaque prix arriver, le meilleur l'emporte.",
+  raceBest: "Meilleur",
+  budgetTitle: "Un budget. Aucune demande.",
+  budgetBody:
+    "Fixez un budget hebdomadaire une fois. Dedans, Kawase agit sans demander. Tout ce qui est nouveau vous attend.",
+  budgetUsed: "sur {{limit}} cette semaine",
+  budgetSwaps: "Échanges et transferts",
+  budgetContacts: "Contacts enregistrés",
+  budgetServices: "Services d'IA",
+  budgetNew: "Quelqu'un de nouveau : vous confirmez",
+  arcTitle: "Tout Arc, dans une app.",
+  arcBody:
+    "Échangez, transférez, faites fructifier, prenez position à la hausse ou à la baisse, achetez avec Apple Pay et payez des services d'IA, sur de vraies plateformes.",
+  testTitle: "Commencez avec de l'argent de test.",
+  testBody:
+    "Le testnet est gratuit et fonctionne comme le vrai. Passez à l'argent réel en un geste, quand vous voulez.",
 };

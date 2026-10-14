@@ -23,7 +23,7 @@ export type DeferredAction = {
 
 const KEY = "kawase.deferredAction.v1";
 /** A tap older than this is not what the person is doing any more. */
-const FRESH_MS = 30 * 60 * 1_000;
+const FRESH_MS = 1_800_000; // 30 minutes
 
 let pending: DeferredAction | undefined;
 const listeners = new Set<() => void>();

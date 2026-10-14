@@ -47,7 +47,7 @@ export function Switch({
       disabled={disabled}
       hitSlop={PAD * HALF * HALF}
       onPress={() => {
-        fire("tick", { sound: "toggle" });
+        fire("tick");
         onValueChange(!value);
       }}
       style={[

@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "Котировка устарела", body: "Запросите новую котировку и попробуйте снова." },
     unknown: { title: "Что-то пошло не так", body: "Попробуйте чуть позже." },
   },
+  dock: {
+    home: "Главная",
+    markets: "Рынки",
+    activity: "Активность",
+    settings: "Настройки",
+    actions: "Действия",
+    voice: "Поговорить с Kawase",
+    navigation: "Навигация",
+  },
+  fan: {
+    send: "Отправить",
+    receive: "Получить",
+    addMoney: "Пополнить",
+    swap: "Обменять",
+    bridge: "Мост",
+    close: "Закрыть действия",
+  },
+  rail: {
+    moveMoney: "Перевести деньги",
+    profile: "Профиль и настройки",
+  },
 };

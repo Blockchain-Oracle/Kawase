@@ -22,5 +22,15 @@ export const signIn: Catalog["signIn"] = {
   codeTitle: "Revisa tu correo",
   resend: "Enviar un código nuevo",
   signingIn: "Iniciando sesión…",
-  webUnavailable: "Pronto podrás iniciar sesión en la web. Por ahora, usa la app de Kawase en tu teléfono.",
+  webUnavailable: "El inicio de sesión no está disponible en este sitio. Usa la app de Kawase en tu teléfono.",
+  createTitle: "Crea tu cuenta",
+  welcomeBack: "Hola de nuevo",
+  gateBody: "Un código por correo y se abre justo donde estás.",
+  gate: {
+    send: "Inicia sesión para enviar",
+    receive: "Inicia sesión para recibir",
+    fund: "Inicia sesión para añadir dinero",
+    swap: "Inicia sesión para cambiar",
+    bridge: "Inicia sesión para mover entre redes",
+  },
 };

@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "কোটের মেয়াদ শেষ", body: "নতুন কোট নিয়ে আবার চেষ্টা করুন।" },
     unknown: { title: "কিছু একটা ভুল হয়েছে", body: "একটু পরে আবার চেষ্টা করুন।" },
   },
+  dock: {
+    home: "হোম",
+    markets: "বাজার",
+    activity: "কার্যকলাপ",
+    settings: "সেটিংস",
+    actions: "কাজ",
+    voice: "Kawase-এর সাথে কথা বলুন",
+    navigation: "নেভিগেশন",
+  },
+  fan: {
+    send: "পাঠান",
+    receive: "গ্রহণ করুন",
+    addMoney: "টাকা যোগ করুন",
+    swap: "সোয়াপ",
+    bridge: "ব্রিজ",
+    close: "কাজগুলো বন্ধ করুন",
+  },
+  rail: {
+    moveMoney: "টাকা সরান",
+    profile: "প্রোফাইল ও সেটিংস",
+  },
 };

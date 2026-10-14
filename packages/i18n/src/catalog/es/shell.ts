@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "La cotización caducó", body: "Pide una cotización nueva y vuelve a intentarlo." },
     unknown: { title: "Algo salió mal", body: "Vuelve a intentarlo en un momento." },
   },
+  dock: {
+    home: "Inicio",
+    markets: "Mercados",
+    activity: "Actividad",
+    settings: "Ajustes",
+    actions: "Acciones",
+    voice: "Hablar con Kawase",
+    navigation: "Navegación",
+  },
+  fan: {
+    send: "Enviar",
+    receive: "Recibir",
+    addMoney: "Añadir dinero",
+    swap: "Cambiar",
+    bridge: "Puente",
+    close: "Cerrar acciones",
+  },
+  rail: {
+    moveMoney: "Mover dinero",
+    profile: "Perfil y ajustes",
+  },
 };

@@ -22,5 +22,15 @@ export const signIn: Catalog["signIn"] = {
   codeTitle: "Consultez vos e-mails",
   resend: "Envoyer un nouveau code",
   signingIn: "Connexion…",
-  webUnavailable: "La connexion sur le web arrive bientôt. Pour l'instant, utilisez l'app Kawase sur votre téléphone.",
+  webUnavailable: "La connexion n'est pas disponible sur ce site. Utilisez l'app Kawase sur votre téléphone.",
+  createTitle: "Créez votre compte",
+  welcomeBack: "Bon retour",
+  gateBody: "Un code par e-mail, puis tout s'ouvre là où vous êtes.",
+  gate: {
+    send: "Connectez-vous pour envoyer",
+    receive: "Connectez-vous pour recevoir",
+    fund: "Connectez-vous pour ajouter de l'argent",
+    swap: "Connectez-vous pour échanger",
+    bridge: "Connectez-vous pour transférer entre réseaux",
+  },
 };

@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "انتهت صلاحية عرض السعر", body: "احصل على عرض سعر جديد وحاول مجددًا." },
     unknown: { title: "حدث خطأ ما", body: "حاول مجددًا بعد قليل." },
   },
+  dock: {
+    home: "الرئيسية",
+    markets: "الأسواق",
+    activity: "النشاط",
+    settings: "الإعدادات",
+    actions: "الإجراءات",
+    voice: "تحدّث إلى Kawase",
+    navigation: "التنقّل",
+  },
+  fan: {
+    send: "إرسال",
+    receive: "استلام",
+    addMoney: "إضافة أموال",
+    swap: "مبادلة",
+    bridge: "جسر",
+    close: "إغلاق الإجراءات",
+  },
+  rail: {
+    moveMoney: "نقل الأموال",
+    profile: "الملف الشخصي والإعدادات",
+  },
 };

@@ -29,7 +29,17 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { OnboardingBar } from "@/components/onboarding-bar";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { finishOnboarding } from "@/onboarding/continuation";
+import { finishOnboarding, forgetReturnTo } from "@/onboarding/continuation";
+import { deferredAction } from "@/onboarding/deferred-action";
+import { markNotificationsOwed } from "@/onboarding/notifications-ask";
+import { arcIdentity } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
+import { Button as KitButton } from "@/components/kit/Button";
+import { ListRow } from "@/components/kit/ListRow";
+import { Panel } from "@/components/kit/Surface";
+import { SIZE, SPACE, TYPE, useTheme as useKitTheme } from "@/components/kit/theme";
+import { fire } from "@/feedback/fire";
+import { StyleSheet } from "react-native";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmedFeedback } from "@/feedback/feedback";
@@ -47,15 +57,16 @@ const SKELETON_ROWS = 3;
 const USDC_UNIT = 1_000_000n;
 const ZERO = 0n;
 const FLAG_WIDTH = 220;
-/** The onboarding steps after sign-in: handle · wallet · allowance. */
-const ONBOARDING_STEPS = 3;
+/** The onboarding steps after sign-in: handle · wallet · allowance · the first job. */
+const ONBOARDING_STEPS = 4;
 const WALLET_STEP = 1;
 const ALLOWANCE_STEP = 2;
+const FIRST_JOB_STEP = 3;
 const PHASE_FADE_MS = 220;
 /** One quiet second try of the terms record before saying it failed. */
 const CONSENT_RETRY_MS = 800;
 
-type Phase = "steps" | "primer" | "done";
+type Phase = "steps" | "primer" | "done" | "first";
 
 export function SetupScreen() {
   const { t } = useT();
@@ -73,6 +84,8 @@ export function SetupScreen() {
   const [outcome, setOutcome] = React.useState<Exclude<AcceptResult["status"], "accepted">>();
   const [leaving, setLeaving] = React.useState(false);
   const [consentFailed, setConsentFailed] = React.useState(false);
+  /** Setup's last step: the first real agent run (unless the person was already on their way to an action). */
+  const [firstJob, setFirstJob] = React.useState(false);
   // An allowance that was already on when this page opened belongs to a returning account: nothing to set up.
   const arrivedDone = React.useRef<boolean | undefined>(undefined);
 
@@ -94,7 +107,7 @@ export function SetupScreen() {
   if (status === "guest") return <Redirect href="/" />;
   if (nothingToDo) return null;
 
-  const phase: Phase = receipt ? "done" : setup.setUp && setup.hasWallet ? "primer" : "steps";
+  const phase: Phase = firstJob ? "first" : receipt ? "done" : setup.setUp && setup.hasWallet ? "primer" : "steps";
   const networkName = network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   // The amount in the system prompt is the proposal's own, never a default from config.
   const proposed = BigInt(setup.proposal?.receipt.amountPerPeriod ?? "0");
@@ -114,6 +127,21 @@ export function SetupScreen() {
   }[kind];
   const cannotCheck = kind === "none";
   const goHome = () => finishOnboarding();
+  /**
+   * Leaves setup. Its last step is the first real agent run — unless a money action the person tapped as a guest is
+   * waiting, which is their first real action and opens as soon as setup ends. Notifications are asked after either.
+   */
+  const leaveSetup = () => {
+    markNotificationsOwed();
+    if (deferredAction()) return goHome();
+    setFirstJob(true);
+  };
+  const startJob = (prompt: string) => {
+    fire("press");
+    forgetReturnTo();
+    if (router.canDismiss()) router.dismissAll();
+    router.push({ pathname: "/chat", params: { prompt } });
+  };
   const leading = router.canGoBack()
     ? { kind: "back" as const, onPress: () => router.back() }
     : { kind: "close" as const, onPress: goHome };
@@ -189,7 +217,7 @@ export function SetupScreen() {
         await new Promise((resolve) => setTimeout(resolve, CONSENT_RETRY_MS));
         return record();
       });
-      goHome();
+      leaveSetup();
     } catch {
       setConsentFailed(true);
       setLeaving(false);
@@ -206,7 +234,10 @@ export function SetupScreen() {
         {/* The language pill stays on the completion too; there is nothing to go back to once the allowance is on. */}
         <OnboardingBar
           leading={phase === "done" ? undefined : leading}
-          step={{ index: phase === "steps" ? WALLET_STEP : ALLOWANCE_STEP, total: ONBOARDING_STEPS }}
+          step={{
+            index: phase === "steps" ? WALLET_STEP : phase === "first" ? FIRST_JOB_STEP : ALLOWANCE_STEP,
+            total: ONBOARDING_STEPS,
+          }}
         />
       </View>
 
@@ -290,7 +321,7 @@ export function SetupScreen() {
               {accepting ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
               <Text>{accepting ? t("setup.approving") : acceptLabel}</Text>
             </Button>
-            <Button variant="ghost" disabled={accepting} onPress={goHome}>
+            <Button variant="ghost" disabled={accepting} onPress={leaveSetup}>
               <Text className="text-muted-foreground">{t("setup.notNow")}</Text>
             </Button>
           </View>
@@ -334,6 +365,68 @@ export function SetupScreen() {
           </View>
         </Animated.View>
       ) : null}
+
+      {phase === "first" ? (
+        <Animated.View key="first" entering={FadeIn.duration(PHASE_FADE_MS)} style={kit.first}>
+          <FirstJob network={network} onStart={startJob} onLater={goHome} bottom={insets.bottom + FOOTER_GAP} />
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
+
+/**
+ * Setup's last step (Senryo: "the first call is the celebration, no done page"): three real first jobs for Kawase,
+ * worded as the request itself, so a tap sends exactly that to the agent and the person watches it run.
+ */
+function FirstJob({
+  network,
+  onStart,
+  onLater,
+  bottom,
+}: {
+  network: "mainnet" | "testnet";
+  onStart: (prompt: string) => void;
+  onLater: () => void;
+  bottom: number;
+}) {
+  const { t } = useT();
+  const { color } = useKitTheme();
+  const arc = arcIdentity(network);
+  const jobs =
+    network === "testnet"
+      ? [
+          { prompt: t("setup.firstRunFaucet"), leading: <Mark entity="provider:circle" size={SIZE.markRow} /> },
+          { prompt: t("setup.firstRunTour"), leading: <Mark entity={arc.chain} size={SIZE.markRow} /> },
+          { prompt: t("setup.firstRunBring"), leading: <Mark entity={arc.usdc} size={SIZE.markRow} chainBadge={arc.chain} /> },
+        ]
+      : [
+          { prompt: t("setup.firstRunBring"), leading: <Mark entity={arc.usdc} size={SIZE.markRow} chainBadge={arc.chain} /> },
+          { prompt: t("setup.firstRunIdle"), leading: <Mark entity="provider:aave" size={SIZE.markRow} /> },
+          { prompt: t("setup.firstRunTour"), leading: <Mark entity={arc.chain} size={SIZE.markRow} /> },
+        ];
+  return (
+    <>
+      <ScrollView contentContainerStyle={kit.firstBody}>
+        <Text accessibilityRole="header" style={[TYPE.pageTitle, { color: color.ink }]}>
+          {t("setup.firstRunTitle")}
+        </Text>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{t("setup.firstRunBody")}</Text>
+        <Panel>
+          {jobs.map((job) => (
+            <ListRow key={job.prompt} leading={job.leading} title={job.prompt} onPress={() => onStart(job.prompt)} />
+          ))}
+        </Panel>
+      </ScrollView>
+      <View style={[kit.firstFooter, { paddingBottom: bottom }]}>
+        <KitButton label={t("setup.firstRunLater")} variant="ghost" onPress={onLater} />
+      </View>
+    </>
+  );
+}
+
+const kit = StyleSheet.create({
+  first: { flex: 1 },
+  firstBody: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.xl, paddingBottom: SPACE.xl },
+  firstFooter: { paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm },
+});

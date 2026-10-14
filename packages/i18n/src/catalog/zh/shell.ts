@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "报价已过期", body: "请获取新报价后重试。" },
     unknown: { title: "出了点问题", body: "请稍后重试。" },
   },
+  dock: {
+    home: "首页",
+    markets: "市场",
+    activity: "动态",
+    settings: "设置",
+    actions: "操作",
+    voice: "和 Kawase 说话",
+    navigation: "导航",
+  },
+  fan: {
+    send: "发送",
+    receive: "收款",
+    addMoney: "充值",
+    swap: "兑换",
+    bridge: "跨链",
+    close: "关闭操作",
+  },
+  rail: {
+    moveMoney: "转移资金",
+    profile: "个人资料与设置",
+  },
 };

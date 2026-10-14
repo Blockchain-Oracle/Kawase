@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "کوٹ کی میعاد ختم ہو گئی", body: "نیا کوٹ لیں اور دوبارہ کوشش کریں۔" },
     unknown: { title: "کچھ غلط ہو گیا", body: "تھوڑی دیر میں دوبارہ کوشش کریں۔" },
   },
+  dock: {
+    home: "ہوم",
+    markets: "مارکیٹس",
+    activity: "سرگرمی",
+    settings: "سیٹنگز",
+    actions: "کام",
+    voice: "‏Kawase سے بات کریں",
+    navigation: "نیویگیشن",
+  },
+  fan: {
+    send: "بھیجیں",
+    receive: "وصول کریں",
+    addMoney: "رقم شامل کریں",
+    swap: "سواپ",
+    bridge: "برج",
+    close: "کام بند کریں",
+  },
+  rail: {
+    moveMoney: "رقم منتقل کریں",
+    profile: "پروفائل اور سیٹنگز",
+  },
 };
