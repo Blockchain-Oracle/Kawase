@@ -51,6 +51,9 @@ const SERVER_ERROR = 500;
 const PAGE_RETRIES = 2;
 const RETRY_WAIT_BASE_MS = 500;
 const RETRY_WAIT_MAX_MS = 5_000;
+const MS_PER_SECOND = 1_000;
+/** Each retry waits twice as long as the one before. */
+const BACKOFF = 2;
 const caip2 = (network: NetworkContext) => `eip155:${network.chainId}`;
 const WORD = /[a-z0-9]+/g;
 const MIN_TOKEN = 2;
@@ -175,7 +178,7 @@ export class Discovery {
       const retryable = response.status === TOO_MANY_REQUESTS || response.status >= SERVER_ERROR;
       if (!retryable || attempt >= PAGE_RETRIES) throw new Error(`discovery answered ${response.status}`);
       const asked = Number(response.headers.get("retry-after"));
-      const wait = Number.isFinite(asked) && asked > 0 ? Math.min(asked * 1_000, RETRY_WAIT_MAX_MS) : RETRY_WAIT_BASE_MS * 2 ** attempt;
+      const wait = Number.isFinite(asked) && asked > 0 ? Math.min(asked * MS_PER_SECOND, RETRY_WAIT_MAX_MS) : RETRY_WAIT_BASE_MS * BACKOFF ** attempt;
       await new Promise((resolve) => setTimeout(resolve, wait));
     }
   }

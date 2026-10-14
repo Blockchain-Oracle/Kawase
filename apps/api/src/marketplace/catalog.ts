@@ -4,6 +4,7 @@
 // at 200 with 429 backoff, the last good copy served when a refresh fails), and the grouping is built once per read.
 import { X402_DISCOVERY_TTL_MS, type MarketplaceCategory } from "@kawase/config";
 import type { CatalogToolDetail, CatalogToolView, CatalogView, ServiceListing } from "@kawase/api-client";
+import { getExchangeIdentity, getProviderIdentity } from "@kawase/identity";
 import { amount, formatPrice } from "@kawase/money";
 import type { NetworkContext } from "@kawase/networks";
 import { buildCatalog, filterCatalog, toolOf, type Catalog, type CatalogFilter, type CatalogTool, type Discovery, type Listing, type Party, type Rail } from "@kawase/integrations-x402";
@@ -29,11 +30,21 @@ export type CatalogQuery = {
 
 const clamp = (value: number | undefined, fallback: number, max: number) => Math.min(Math.max(Math.trunc(value ?? fallback), 1), max);
 
+/** The registry entity for a word, when it holds a real mark (an entry with no mark file yet counts as none). */
+function markOf(slug: string): string | null {
+  const entity = getProviderIdentity(slug) ?? getExchangeIdentity(slug);
+  return entity && (entity.marks.color || entity.marks.mono) ? entity.id : null;
+}
+
 export function toolView(tool: CatalogTool): CatalogToolView {
+  const providerMark = markOf(tool.sellerSlug);
   return {
     key: tool.key,
     name: tool.name,
     provider: { name: tool.provider.name, website: tool.provider.website },
+    // A seller's own API carries the seller's mark; a reseller's tool only its own (never the reseller's in its place).
+    mark: markOf(tool.slug) ?? (tool.party === "first" ? providerMark : null),
+    providerMark,
     party: tool.party,
     category: tool.category,
     description: tool.description,

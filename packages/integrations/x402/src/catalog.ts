@@ -11,6 +11,11 @@ import type { Listing, Rail } from "./discovery";
 const USDC_PER_DOLLAR = 1_000_000n;
 const WORD = /[a-z0-9]+/g;
 const MIN_TOKEN = 2;
+/** A registrable domain is the last two labels of a host (enough for this catalog's sellers). */
+const DOMAIN_LABELS = 2;
+/** Tags kept per tool (the search reads them; a screen shows a few). */
+const TAGS_KEPT = 8;
+const NO_PRICE = 0n;
 /** Weights for how well a tool matches a search (a word in its name beats one in a tag). */
 const SCORE = { name: 6, provider: 3, sub: 3, description: 2, tag: 1 } as const;
 
@@ -18,24 +23,78 @@ const SCORE = { name: 6, provider: 3, sub: 3, description: 2, tag: 1 } as const;
 export type Party = "first" | "third";
 
 /** How a host's paths split into tools. `skip` leading segments are fixed ("apis", "v2"); the next `depth` name the tool. */
-type Collapse = { skip: readonly string[]; depth: 0 | 1; party: Party; subDepth: 0 | 1 | 2 };
+/**
+ * How a host's paths split into tools. `skip` leading segments are fixed ("apis", "v2"); the next `depth` name the tool.
+ * `as` keys several hosts of one seller as one (BlockRun serves the same tools on a plain-wallet host and a Gateway host,
+ * so a tool is one row that takes both rails, not two rows with the same name).
+ */
+type Collapse = { skip: readonly string[]; depth: 0 | 1; party: Party; subDepth: number; as?: string };
 
 /**
  * Hosts whose paths name a tool. Checked live 2026-10-14: api.aisa.one/apis/v2/<tool>/<sub>/..., np.orthogonal.com/<vendor>/...,
- * arc.blockrun.ai/api/v1/<tool>/..., and the RPC proxies, where the host is the tool and the first segment (a chain) is
- * the sub-group.
+ * {arc,nano}.blockrun.ai/api/v1/<tool>/..., and the RPC proxies, where the host is the tool and the first segment (a chain)
+ * is the sub-group.
  */
 const COLLAPSE: Record<string, Collapse> = {
   "api.aisa.one": { skip: ["apis", "v2"], depth: 1, party: "third", subDepth: 1 },
   "np.orthogonal.com": { skip: [], depth: 1, party: "third", subDepth: 1 },
-  "arc.blockrun.ai": { skip: ["api", "v1"], depth: 1, party: "first", subDepth: 1 },
-  "nano.blockrun.ai": { skip: ["api", "v1"], depth: 1, party: "first", subDepth: 1 },
+  "arc.blockrun.ai": { skip: ["api", "v1"], depth: 1, party: "first", subDepth: 1, as: "blockrun.ai" },
+  "nano.blockrun.ai": { skip: ["api", "v1"], depth: 1, party: "first", subDepth: 1, as: "blockrun.ai" },
   "x402.quicknode.com": { skip: [], depth: 0, party: "first", subDepth: 1 },
   "edge.goldsky.com": { skip: ["standard"], depth: 0, party: "first", subDepth: 2 },
 };
 
+/**
+ * How the upstream tools write their own names (a URL slug loses the casing and the dots): checked against each
+ * vendor's site. A slug not here is title-cased.
+ */
+const TOOL_NAME: Record<string, string> = {
+  tikhub: "TikHub",
+  dataforseo: "DataForSEO",
+  agentmail: "AgentMail",
+  agentphone: "AgentPhone",
+  coingecko: "CoinGecko",
+  openmeteo: "Open-Meteo",
+  "context-dev": "Context.dev",
+  "brand-dev": "Brand.dev",
+  "ocean-io": "Ocean.io",
+  "fantastic-jobs": "Fantastic.jobs",
+  "influencers-club": "Influencers Club",
+  "company-enrich": "CompanyEnrich",
+  "serper-scrape": "Serper Scrape",
+  peopledatalabs: "People Data Labs",
+  scrapegraphai: "ScrapeGraphAI",
+  scrapecreators: "ScrapeCreators",
+  rocketreach: "RocketReach",
+  contactout: "ContactOut",
+  predictleads: "PredictLeads",
+  captaindata: "Captain Data",
+  openfunnel: "OpenFunnel",
+  byteplus: "BytePlus",
+  waveinflu: "WaveInflu",
+  edinet: "EDINET",
+  cnpja: "CNPJá",
+  defillama: "DefiLlama",
+  "anthropic-websearch": "Anthropic Web Search",
+  "openai-websearch": "OpenAI Web Search",
+  // BlockRun's own tools are named by what they do.
+  pm: "Prediction Markets",
+  usstock: "US Stocks",
+  rpc: "RPC",
+};
+
 /** Tools whose catalog category is wrong or too coarse (Kawase's own call, from what each one does). */
 const TOOL_CATEGORY: Record<string, MarketplaceCategory> = {
+  openmeteo: "DATA",
+  apollo: "DATA",
+  chat: "CREATIVE",
+  messages: "CREATIVE",
+  responses: "CREATIVE",
+  search: "SEARCH",
+  voice: "INFRASTRUCTURE",
+  stocks: "FINANCIAL",
+  usstock: "FINANCIAL",
+  goldsky: "INFRASTRUCTURE",
   exa: "SEARCH",
   byteplus: "SEARCH",
   "anthropic-websearch": "SEARCH",
@@ -59,6 +118,10 @@ export type CatalogGroup = { key: string; name: string; endpoints: number };
 export type CatalogTool = {
   /** URL-safe and stable: `host~segment` for a collapsed tool, the registrable domain for a seller's own. */
   key: string;
+  /** The tool's own word: the path segment of a collapsed tool ("exa", "tikhub"), else the seller's domain label ("quicknode"). */
+  slug: string;
+  /** The seller's domain label ("aisa" for api.aisa.one): what a logo registry knows the seller by. */
+  sellerSlug: string;
   name: string;
   /** The seller as listed (the reseller for a third-party tool). */
   provider: { name: string; website: string | null; description: string | null };
@@ -94,7 +157,7 @@ const words = (text: string) => (text.toLowerCase().match(WORD) ?? []).filter((w
 /** `lonestaroracle.xyz` from `aero.lonestaroracle.xyz` (the last two labels; enough for this catalog). */
 export function registrableDomain(host: string): string {
   const labels = host.toLowerCase().split(".");
-  return labels.slice(-2).join(".");
+  return labels.slice(-DOMAIN_LABELS).join(".");
 }
 
 const hostOf = (url: string) => {
@@ -113,12 +176,19 @@ const segments = (url: string) => {
   }
 };
 
-const titled = (slug: string) => {
-  const spaced = slug.replace(/[-_]+/g, " ").trim();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-};
+/** A tool's display name: as its vendor writes it when known, else the slug's words title-cased. */
+const titled = (slug: string) =>
+  TOOL_NAME[slug] ??
+  slug
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
-type ToolRef = { key: string; slug: string; name: string; party: Party; sub: string | null };
+type ToolRef = { key: string; slug: string; sellerSlug: string; name: string; party: Party; sub: string | null };
+
+/** `aisa` from `api.aisa.one`: the label in front of the public suffix. */
+const domainLabel = (host: string) => registrableDomain(host).split(".")[0] || host;
 
 /** Which tool a listing belongs to, and which sub-group inside it. */
 export function toolOf(listing: Listing): ToolRef {
@@ -129,9 +199,11 @@ export function toolOf(listing: Listing): ToolRef {
     const rest = rule.skip.every((part, index) => path[index] === part) ? path.slice(rule.skip.length) : path;
     const slug = rule.depth === 1 ? (rest[0] ?? host) : host;
     const subs = rest.slice(rule.depth, rule.depth + rule.subDepth);
+    const keyHost = rule.as ?? host;
     return {
-      key: rule.depth === 1 ? `${host}~${slug}` : host,
-      slug,
+      key: rule.depth === 1 ? `${keyHost}~${slug}` : keyHost,
+      slug: rule.depth === 1 ? slug : domainLabel(host),
+      sellerSlug: domainLabel(host),
       name: rule.depth === 1 ? titled(slug) : listing.provider.name,
       party: rule.party,
       sub: subs.length > 0 ? subs.join("/") : null,
@@ -142,7 +214,7 @@ export function toolOf(listing: Listing): ToolRef {
   const subdomain = host.length > domain.length ? host.slice(0, host.length - domain.length - 1) : "";
   const website = listing.provider.website ? hostOf(listing.provider.website) : "";
   const own = !website || registrableDomain(website) === domain;
-  return { key: domain, slug: domain, name: listing.provider.name, party: own ? "first" : "third", sub: subdomain || path[0] || null };
+  return { key: domain, slug: domainLabel(host), sellerSlug: domainLabel(host), name: listing.provider.name, party: own ? "first" : "third", sub: subdomain || path[0] || null };
 }
 
 const cheapest = (a: Listing, b: Listing) => (a.price < b.price ? -1 : a.price > b.price ? 1 : 0);
@@ -164,7 +236,7 @@ function categoryOf(slug: string, listings: Listing[]): MarketplaceCategory {
   return best;
 }
 
-export const callsPerDollar = (price: bigint): number => (price > 0n ? Number(USDC_PER_DOLLAR / price) : 0);
+export const callsPerDollar = (price: bigint): number => (price > NO_PRICE ? Number(USDC_PER_DOLLAR / price) : 0);
 
 /** The catalog from every listing payable on the network: tools with counts, categories with tool and endpoint counts. */
 export function buildCatalog(all: readonly Listing[]): Catalog {
@@ -190,12 +262,14 @@ export function buildCatalog(all: readonly Listing[]): Catalog {
     const minPrice = first.price;
     tools.push({
       key,
+      slug: ref.slug,
+      sellerSlug: ref.sellerSlug,
       name: ref.name,
       provider: { name: first.provider.name, website: first.provider.website, description: first.provider.description },
       party: ref.party,
       category: categoryOf(ref.slug, members),
       description: ref.party === "third" && members.length > 0 ? (first.description || first.provider.description || "") : (first.provider.description ?? first.description),
-      tags: [...new Set(members.flatMap((member) => member.provider.tags))].slice(0, 8),
+      tags: [...new Set(members.flatMap((member) => member.provider.tags))].slice(0, TAGS_KEPT),
       endpoints: members.length,
       minPrice,
       maxPrice: members[members.length - 1]!.price,

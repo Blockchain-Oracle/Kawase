@@ -54,6 +54,11 @@ test("catalog: a reseller's endpoints collapse into upstream tools, sellers keep
   const lonestar = all.tools.find((tool) => tool.key === "lonestaroracle.xyz")!;
   assert.deepEqual([lonestar.party, lonestar.endpoints, lonestar.price, lonestar.callsPerDollar, lonestar.gatewayOnly], ["first", 2, "8500", 117, false]);
   assert.equal(all.tools.find((tool) => tool.key === "x402.quicknode.com")!.groups.length, 2);
+  // Real logos from the identity registry: a reseller's tool carries its own mark (Exa) or none (Tikhub), never the
+  // reseller's; the seller's mark rides along as the badge; a seller's own API takes the seller's mark.
+  assert.deepEqual([exa.mark, exa.providerMark], ["provider:exa", "provider:aisa"]);
+  assert.deepEqual([tikhub.mark, tikhub.providerMark], [null, "provider:aisa"]);
+  assert.deepEqual([all.tools.find((tool) => tool.key === "x402.quicknode.com")!.mark, lonestar.mark], ["provider:quicknode", null]);
 
   // Filters: categories keep counting what they would give; price and rail narrow the tools.
   const cheap = await catalog.list(mainnet, { maxPrice: 10_000n });
@@ -62,7 +67,7 @@ test("catalog: a reseller's endpoints collapse into upstream tools, sellers keep
   assert.deepEqual(plain.tools.map((tool) => tool.name), ["Quicknode"]);
   assert.ok(plain.categories.some((entry) => entry.id === "FINANCIAL"), "chips still show the other categories");
   const search = await catalog.list(mainnet, { q: "tikhub douyin" });
-  assert.equal(search.tools[0]?.name, "Tikhub");
+  assert.equal(search.tools[0]?.name, "TikHub", "named as the vendor writes it");
 
   const detail = (await catalog.tool(mainnet, "api.aisa.one~tikhub", { group: "douyin" }))!;
   assert.deepEqual([detail.page.total, detail.endpoints.length, detail.endpoints[0]!.priceDisplay], [2, 2, "0.10 USDC"]);
@@ -76,7 +81,9 @@ test("catalog: the live discovery API groups into tools with counts per category
   assert.ok(view.totals.tools < view.totals.endpoints / 4, "collapsed far below the endpoint count");
   console.log(`live catalog: ${view.totals.endpoints} endpoints -> ${view.totals.tools} tools, read ${view.readAt}`);
   console.log("categories (tools / endpoints):", view.categories.map((entry) => `${entry.id} ${entry.tools}/${entry.endpoints}`).join(", "));
-  for (const tool of view.tools) console.log(`  ${tool.name} [${tool.key}] ${tool.party === "third" ? "3P" : "1P"} ${tool.category} ${tool.endpoints} endpoints, from ${Number(tool.price) / 1e6} USDC (${tool.callsPerDollar}/$1), ${tool.gatewayOnly ? "Gateway only" : tool.rails.join("+")}`);
+  for (const tool of view.tools) console.log(`  ${tool.name} [${tool.key}] ${tool.party === "third" ? "3P" : "1P"} ${tool.category} ${tool.endpoints} endpoints, from ${Number(tool.price) / 1e6} USDC (${tool.callsPerDollar}/$1), ${tool.gatewayOnly ? "Gateway only" : tool.rails.join("+")}, mark ${tool.mark ?? "-"} / seller ${tool.providerMark ?? "-"}`);
+  const search = await catalog.list(mainnet, { q: "weather", limit: 3 });
+  console.log(`search "weather": ${search.page.total} tools, top ${search.tools.map((tool) => tool.name).join(", ")}`);
   const tikhub = view.tools.find((tool) => tool.key === "api.aisa.one~tikhub");
   assert.ok(tikhub && tikhub.endpoints > 900 && tikhub.groups.length > 10, "tikhub is one tool with its platforms inside");
 });

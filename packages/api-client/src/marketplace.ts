@@ -181,6 +181,12 @@ export type CatalogToolView = {
   key: string;
   name: string;
   provider: { name: string; website: string | null };
+  /**
+   * Real logos (packages/identity entity ids, for `<Mark entity=… />`): the tool's own, and the seller's. Null when the
+   * registry has no mark yet; the row then shows the tool's initials disc with the seller's mark as its badge.
+   */
+  mark: string | null;
+  providerMark: string | null;
   party: CatalogParty;
   category: MarketplaceCategory;
   description: string;
