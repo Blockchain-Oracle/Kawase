@@ -86,6 +86,7 @@ import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { SignedRevoke, WalletService } from "../wallet/service";
 import type { AgentWalletProvider } from "./agent-wallets";
+import { CatalogService } from "./catalog";
 
 const SALT_BYTES = 32;
 const MS_PER_SECOND = 1000;
@@ -209,6 +210,15 @@ export class MarketplaceService {
     sellerBase?: typeof fetch,
   ) {
     this.sellerFetch = discovery.sellerFetch(sellerBase);
+    this.catalog = new CatalogService(discovery);
+  }
+
+  /** The read model the screens browse (catalog.ts); read only, over the same cached discovery. */
+  readonly catalog: CatalogService;
+
+  /** A network's facts for a read; refused when the api does not serve it. */
+  context(network: NetworkId) {
+    return this.available(network);
   }
 
   private clients(network: NetworkId): NetworkClients {

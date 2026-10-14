@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "Маркетплейс",
+  searchPlaceholder: "Поиск сервисов",
+  categoryAll: "Все",
+  category_SOCIAL: "Соцсети",
+  category_SEARCH: "Поиск и исследования",
+  category_FINANCIAL: "Финансы",
+  category_DATA: "Данные",
+  category_INFRASTRUCTURE: "Инфраструктура",
+  category_PREDICTION: "Рынки прогнозов",
+  category_CREATIVE: "Творчество",
+  category_OTHER: "Другое",
+  party_first: "Напрямую",
+  party_third: "Через посредника",
+  rail_gateway: "Баланс Gateway",
+  rail_eip3009: "Любой кошелёк",
+  gatewayOnly: "Оплата с баланса Gateway",
+  callsPerDollar: "Около {{calls}} вызовов за $1",
+  pricePerCall: "{{price}} за вызов",
+  endpointsCount: "Эндпоинтов: {{n}}",
+  emptyTitle: "Ничего не найдено",
+  emptyBody: "Попробуйте другое слово или сбросьте фильтры.",
+  clearFilters: "Сбросить фильтры",
+  errorTitle: "Маркетплейс не загрузился",
+  errorBody: "Кошелёк агента и ваши балансы не затронуты.",
+  retry: "Повторить",
+  staleNote: "Показан список от {{time}}.",
+};

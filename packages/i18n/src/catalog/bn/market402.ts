@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "মার্কেটপ্লেস",
+  searchPlaceholder: "সেবা খুঁজুন",
+  categoryAll: "সব",
+  category_SOCIAL: "সোশ্যাল",
+  category_SEARCH: "সার্চ ও গবেষণা",
+  category_FINANCIAL: "অর্থ",
+  category_DATA: "ডেটা",
+  category_INFRASTRUCTURE: "ইনফ্রাস্ট্রাকচার",
+  category_PREDICTION: "প্রেডিকশন মার্কেট",
+  category_CREATIVE: "ক্রিয়েটিভ",
+  category_OTHER: "অন্যান্য",
+  party_first: "সরাসরি",
+  party_third: "তৃতীয় পক্ষ",
+  rail_gateway: "Gateway ব্যালেন্স",
+  rail_eip3009: "যেকোনো ওয়ালেট",
+  gatewayOnly: "Gateway ব্যালেন্স থেকে পেমেন্ট",
+  callsPerDollar: "$1-এ প্রায় {{calls}}টি কল",
+  pricePerCall: "প্রতি কলে {{price}}",
+  endpointsCount: "{{n}}টি এন্ডপয়েন্ট",
+  emptyTitle: "কোনো সেবা মেলেনি",
+  emptyBody: "অন্য শব্দ চেষ্টা করুন, বা ফিল্টার সরান।",
+  clearFilters: "ফিল্টার সরান",
+  errorTitle: "মার্কেটপ্লেস লোড হয়নি",
+  errorBody: "আপনার এজেন্ট ওয়ালেট ও ব্যালেন্স অক্ষত আছে।",
+  retry: "আবার চেষ্টা করুন",
+  staleNote: "{{time}}-এর তালিকা দেখানো হচ্ছে।",
+};
