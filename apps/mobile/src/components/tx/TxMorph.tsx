@@ -6,7 +6,15 @@
  */
 import { type ReactNode, useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
-import Animated, { FadeIn, FadeInDown, LinearTransition, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  LinearTransition,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { EASE, STAGGER_RISE } from "../kit/theme";
 
@@ -50,7 +58,9 @@ export function TxMorph({ morphed, receipt, children }: { morphed: boolean; rece
           entering={
             reduce
               ? FadeIn.duration(CROSSFADE_MS)
-              : FadeInDown.duration(ENTER_MS).delay(ENTER_DELAY_MS).withInitialValues({ transform: [{ translateY: STAGGER_RISE / HALF }] })
+              : FadeInDown.duration(ENTER_MS)
+                  .delay(ENTER_DELAY_MS)
+                  .withInitialValues({ transform: [{ translateY: STAGGER_RISE / HALF }] })
           }
         >
           {receipt}

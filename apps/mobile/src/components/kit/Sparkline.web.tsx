@@ -13,7 +13,13 @@ const FILL_ALPHA = 0.08;
 const BASE_ALPHA = 0.5;
 const DASH = "2 3";
 
-export function Sparkline({ points, baseline, width = SIZE.sparklineWidth, height = SIZE.sparkline, tone }: SparklineProps) {
+export function Sparkline({
+  points,
+  baseline,
+  width = SIZE.sparklineWidth,
+  height = SIZE.sparkline,
+  tone,
+}: SparklineProps) {
   const { color } = useTheme();
   const g = useMemo(() => sparkGeometry(points, width, height, PAD, baseline), [points, width, height, baseline]);
   if (!g) return null;
@@ -22,7 +28,13 @@ export function Sparkline({ points, baseline, width = SIZE.sparklineWidth, heigh
   return (
     <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden>
       <Path d={g.area} fill={withAlpha(hue, FILL_ALPHA)} />
-      <Path d={`M0 ${g.baseY} L${width} ${g.baseY}`} stroke={withAlpha(color.text3, BASE_ALPHA)} strokeWidth={1} strokeDasharray={DASH} fill="none" />
+      <Path
+        d={`M0 ${g.baseY} L${width} ${g.baseY}`}
+        stroke={withAlpha(color.text3, BASE_ALPHA)}
+        strokeWidth={1}
+        strokeDasharray={DASH}
+        fill="none"
+      />
       <Path d={g.d} stroke={hue} strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );

@@ -74,7 +74,8 @@ const pauseAll = () => {
   players.forEach((pool) => pool.forEach((player) => player.pause()));
   narrator?.pause();
 };
-const anyPlaying = () => [...players.values()].some((pool) => pool.some((p) => p.playing)) || Boolean(narrator?.playing);
+const anyPlaying = () =>
+  [...players.values()].some((pool) => pool.some((p) => p.playing)) || Boolean(narrator?.playing);
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") return;
@@ -231,7 +232,11 @@ export function narrate(source: number, events: NarrationEvents): () => void {
  * it out for momentary cues (send, voice, fan, error). The silent switch applies on iOS (`playsInSilentMode: false`).
  * On the web a browser may refuse a sound before the first tap; that is swallowed like every audio failure.
  */
-export async function cue(name: Cue, identity?: string, options: { haptic?: boolean | HapticEvent } = {}): Promise<void> {
+export async function cue(
+  name: Cue,
+  identity?: string,
+  options: { haptic?: boolean | HapticEvent } = {},
+): Promise<void> {
   if (identity) {
     if (completed.has(identity)) return;
     completed.add(identity);

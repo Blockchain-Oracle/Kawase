@@ -17,7 +17,18 @@ import { scheduleOnRN } from "react-native-worklets";
 import { SurfaceLevel } from "@/components/kit/Surface";
 import { SHEET_HOLD, useDock } from "@/components/shell/dock-context";
 import { fire } from "@/feedback/fire";
-import { EASE, EASE_SHEET, ELEVATION, HAIRLINE_PX, RADIUS, SHEET_SHAPE, SIZE, SPRING, TIMING, useTheme } from "@/components/kit/theme";
+import {
+  EASE,
+  EASE_SHEET,
+  ELEVATION,
+  HAIRLINE_PX,
+  RADIUS,
+  SHEET_SHAPE,
+  SIZE,
+  SPRING,
+  TIMING,
+  useTheme,
+} from "@/components/kit/theme";
 import { SHEET } from "./constants";
 import { ExpandContext, SheetContext, useSheetClose, useSheetExpand } from "./context";
 import { SheetDrawer } from "./SheetDrawer";
@@ -98,9 +109,11 @@ function SheetPanel({
       closing.current = true;
       const out = { duration: reduce ? TIMING.reducedMotion : TIMING.sheetExit, easing: EASE };
       scrim.set(withTiming(0, out));
-      drag.set(withTiming(reduce ? drag.get() : height.get() + SHEET_SHAPE.inset, out, (done) => {
-        if (done) scheduleOnRN(finish, after);
-      }));
+      drag.set(
+        withTiming(reduce ? drag.get() : height.get() + SHEET_SHAPE.inset, out, (done) => {
+          if (done) scheduleOnRN(finish, after);
+        }),
+      );
     },
     [drag, finish, height, reduce, scrim],
   );

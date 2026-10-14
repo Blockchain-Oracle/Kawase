@@ -30,7 +30,8 @@ type NetworkPillProps = {
 
 export function NetworkPill({ compact = false }: NetworkPillProps) {
   const { t } = useT();
-  const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
+  const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } =
+    useNetworkSwitch();
   const { availableNetworks } = useSession();
   const [sheetOpen, setSheetOpen] = React.useState(false);
   return (
@@ -56,7 +57,12 @@ export function NetworkPill({ compact = false }: NetworkPillProps) {
           void switchNetwork(target);
         }}
       />
-      <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
+      <MainnetConsentSheet
+        open={consentNeeded}
+        busy={busy}
+        onAccept={() => void acceptMainnet()}
+        onClose={dismissConsent}
+      />
     </>
   );
 }
@@ -100,7 +106,15 @@ function ConsentBody({ busy, onAccept }: { busy: boolean; onAccept: () => void }
         }}
         style={styles.check}
       >
-        <View style={[styles.box, { borderColor: checked ? color.primary : color.border, backgroundColor: checked ? color.primary : color.transparent }]}>
+        <View
+          style={[
+            styles.box,
+            {
+              borderColor: checked ? color.primary : color.border,
+              backgroundColor: checked ? color.primary : color.transparent,
+            },
+          ]}
+        >
           {checked ? <KitIcon icon={Check} size={SIZE.iconSm} tint={color.primaryForeground} strokeWidth={3} /> : null}
         </View>
         <Text style={[TYPE.body, styles.grow, { color: color.ink }]}>{t("network.consentCheck")}</Text>
@@ -115,6 +129,19 @@ const styles = StyleSheet.create({
   body: { gap: SPACE.lg },
   center: { textAlign: "center" },
   grow: { flex: 1 },
-  check: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.xs, minHeight: SIZE.touch },
-  box: { width: CHECK_SIZE, height: CHECK_SIZE, borderRadius: RADIUS.xs, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  check: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingVertical: SPACE.xs,
+    minHeight: SIZE.touch,
+  },
+  box: {
+    width: CHECK_SIZE,
+    height: CHECK_SIZE,
+    borderRadius: RADIUS.xs,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

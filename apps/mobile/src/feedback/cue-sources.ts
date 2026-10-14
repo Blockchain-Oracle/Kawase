@@ -10,5 +10,12 @@ export const RENDERED_CUES = {
   agentDone: require("../../assets/audio/cues/agentDone.wav") as number,
 } as const;
 
-export const CUE_MIX: Readonly<Record<keyof typeof RENDERED_CUES, number>> = {"tap":0.3,"toggle":0.25,"sheetOpen":0.22,"sheetClose":0.2,"agentStep":0.22,"agentDone":0.4};
+export const CUE_MIX: Readonly<Record<keyof typeof RENDERED_CUES, number>> = {
+  tap: 0.3,
+  toggle: 0.25,
+  sheetOpen: 0.22,
+  sheetClose: 0.2,
+  agentStep: 0.22,
+  agentDone: 0.4,
+};
 export const CUE_MASTER = 0.9;

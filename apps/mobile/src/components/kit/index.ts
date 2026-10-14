@@ -6,8 +6,15 @@ export { ActionCircle, ActionCircles } from "./ActionCircle";
 export { AmountPad, amountText, type AmountChip } from "./AmountPad";
 export { Button, type ButtonVariant } from "./Button";
 export { ChangeChip } from "./ChangeChip";
-export { CountdownRing } from "./CountdownRing";
-export { type Diagnosis, type DiagnosisKind, type BlockerFix, type BlockerFixKind, diagnose, fixForDiagnosis } from "./diagnosis";
+export { CountdownRing, type CountdownRingProps } from "./CountdownRing";
+export {
+  type Diagnosis,
+  type DiagnosisKind,
+  type BlockerFix,
+  type BlockerFixKind,
+  diagnose,
+  fixForDiagnosis,
+} from "./diagnosis";
 export { DisclosureRow } from "./DisclosureRow";
 export { FilterChips } from "./FilterChips";
 export { GlassPlate } from "./GlassPlate";

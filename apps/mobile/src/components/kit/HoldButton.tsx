@@ -66,12 +66,14 @@ export function HoldButton({
     if (!live) return;
     holding.set(true);
     fire("press");
-    progress.set(withTiming(1, { duration: HOLD_MS * (1 - progress.get()), easing: Easing.linear }, (finished) => {
-      if (!finished) return;
-      holding.set(false);
-      progress.set(0);
-      scheduleOnRN(done);
-    }));
+    progress.set(
+      withTiming(1, { duration: HOLD_MS * (1 - progress.get()), easing: Easing.linear }, (finished) => {
+        if (!finished) return;
+        holding.set(false);
+        progress.set(0);
+        scheduleOnRN(done);
+      }),
+    );
   };
   const stop = () => {
     if (!holding.get()) return;

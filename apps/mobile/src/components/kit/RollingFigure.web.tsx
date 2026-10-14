@@ -37,22 +37,36 @@ export function RollingFigure({
   const [hiddenAll] = useHideBalances();
   const hidden = sensitive && hiddenAll;
   const figure = parseFigure(text);
-  const style = { color, fontFamily: FONT.display, fontWeight: DISPLAY_WEIGHT, fontSize: height * FIGURE_SHARE, lineHeight: `${height}px` } as const;
+  const style = {
+    color,
+    fontFamily: FONT.display,
+    fontWeight: DISPLAY_WEIGHT,
+    fontSize: height * FIGURE_SHARE,
+    lineHeight: `${height}px`,
+  } as const;
   return (
     <View
       style={[styles.box, { height, alignItems: align === "right" ? "flex-end" : "flex-start" }]}
       accessible
-      accessibilityLabel={hidden ? t("shell.kit.hidden") : accessibilityLabel ?? text}
+      accessibilityLabel={hidden ? t("shell.kit.hidden") : (accessibilityLabel ?? text)}
     >
       <span style={style}>
         {hidden || !figure ? (
-          hidden ? HIDDEN_AMOUNT : text
+          hidden ? (
+            HIDDEN_AMOUNT
+          ) : (
+            text
+          )
         ) : (
           <Odometer
             value={figure.value}
             prefix={figure.prefix}
             suffix={figure.suffix}
-            format={{ minimumFractionDigits: figure.decimals, maximumFractionDigits: figure.decimals, useGrouping: figure.grouping }}
+            format={{
+              minimumFractionDigits: figure.decimals,
+              maximumFractionDigits: figure.decimals,
+              useGrouping: figure.grouping,
+            }}
           />
         )}
       </span>

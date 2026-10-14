@@ -19,7 +19,12 @@ export function ChangeChip({ change }: { change: number | null }) {
   const tone = Math.abs(change) < LEVEL ? "flat" : change > 0 ? "up" : "down";
   const plate = tone === "up" ? color.upSurface : tone === "down" ? color.downSurface : color.muted;
   const ink = tone === "up" ? color.up : tone === "down" ? color.down : color.inkMuted;
-  const text = new Intl.NumberFormat(i18n.language, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero" }).format(change);
+  const text = new Intl.NumberFormat(i18n.language, {
+    style: "percent",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    signDisplay: "exceptZero",
+  }).format(change);
   return (
     <View style={[styles.chip, { backgroundColor: plate }]}>
       <Text style={[TYPE.micro, styles.figure, { color: ink }]}>{text}</Text>

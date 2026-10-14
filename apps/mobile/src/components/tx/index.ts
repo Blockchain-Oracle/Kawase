@@ -21,5 +21,15 @@ export {
   useIntentRecovery,
   wasLost,
 } from "./journal";
-export { canConfirm, isInFlight, type MoneyMoved, reduceTx, TX_IDLE, type TxEvent, type TxState, txProgress, txReached } from "./tx-state";
+export {
+  canConfirm,
+  isInFlight,
+  type MoneyMoved,
+  reduceTx,
+  TX_IDLE,
+  type TxEvent,
+  type TxState,
+  txProgress,
+  txReached,
+} from "./tx-state";
 export { type TxOutcome, type TxProgress, type TxRunner, type TxRunOptions, useTxLifecycle } from "./useTxLifecycle";

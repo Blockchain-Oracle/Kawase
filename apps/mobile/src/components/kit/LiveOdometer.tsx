@@ -7,7 +7,13 @@
 import { Canvas, Picture, type SkFont, Skia } from "@shopify/react-native-skia";
 import { useEffect, useMemo } from "react";
 import { type LayoutChangeEvent, StyleSheet, View } from "react-native";
-import { type SharedValue, useDerivedValue, useFrameCallback, useReducedMotion, useSharedValue } from "react-native-reanimated";
+import {
+  type SharedValue,
+  useDerivedValue,
+  useFrameCallback,
+  useReducedMotion,
+  useSharedValue,
+} from "react-native-reanimated";
 import { useT } from "@/i18n";
 import { HIDDEN_AMOUNT, useHideBalances } from "./hide-balances";
 import { drawOdometer, emptyOdometer, odometerWidth, setOdometerTrend, stepOdometer } from "./odometer";

@@ -6,7 +6,18 @@
 // pushed pages included, so it navigates by route: inside the tabs it switches tab, from a pushed page it goes back down
 // to the tabs. An action that is not available on this network is not drawn (no "Soon"); a destination never is hidden.
 import { useRouter, useSegments } from "expo-router";
-import { Activity, ArrowDownToLine, ArrowLeftRight, ChartCandlestick, HandCoins, Home, MessageCircle, QrCode, Send, Settings } from "lucide-react-native";
+import {
+  Activity,
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ChartCandlestick,
+  HandCoins,
+  Home,
+  MessageCircle,
+  QrCode,
+  Send,
+  Settings,
+} from "lucide-react-native";
 import * as React from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 
@@ -38,7 +49,13 @@ const ORB = 20;
 const AVATAR = 36;
 const ORB_IDLE_LEVEL = 0.15;
 /** The tab pages and their paths. */
-const TAB_HREFS = { index: "/", markets: "/markets", chat: "/chat", activity: "/activity", settings: "/settings" } as const;
+const TAB_HREFS = {
+  index: "/",
+  markets: "/markets",
+  chat: "/chat",
+  activity: "/activity",
+  settings: "/settings",
+} as const;
 type TabKey = keyof typeof TAB_HREFS;
 
 function isTab(key: string): key is TabKey {
@@ -64,7 +81,11 @@ export function DesktopSidebar() {
   const path = segments as readonly string[];
   const onTabs = path[1] === "(tabs)";
   const activeKey = onTabs ? (path[2] ?? "index") : "";
-  const name = !account ? t("common.guest") : user?.handle ? `@${user.handle}` : (user?.email?.split("@")[0] ?? t("common.guest"));
+  const name = !account
+    ? t("common.guest")
+    : user?.handle
+      ? `@${user.handle}`
+      : (user?.email?.split("@")[0] ?? t("common.guest"));
 
   const go = (key: string) => {
     if (key === "voice") return overlay.open("voice");
@@ -101,7 +122,12 @@ export function DesktopSidebar() {
           slotRef: overlay.voiceTrigger,
           render: () => (
             <View style={{ width: ORB, height: ORB, opacity: overlay.shown === "voice" ? 0 : 1 }}>
-              <Orb colors={tokens.orb[network]} level={ORB_IDLE_LEVEL} paused={overlay.shown === "voice"} className="size-full" />
+              <Orb
+                colors={tokens.orb[network]}
+                level={ORB_IDLE_LEVEL}
+                paused={overlay.shown === "voice"}
+                className="size-full"
+              />
             </View>
           ),
         },
@@ -144,7 +170,11 @@ export function DesktopSidebar() {
               accessibilityLabel={`${name}, ${t("home.dockProfile")}`}
               accessibilityState={{ selected: activeKey === "settings" }}
               onPress={() => go("settings")}
-              className={cn("flex-row items-center gap-3 rounded-xl px-2 py-2", activeKey === "settings" ? "bg-secondary" : "active:bg-muted", WEB_PRESSABLE)}
+              className={cn(
+                "flex-row items-center gap-3 rounded-xl px-2 py-2",
+                activeKey === "settings" ? "bg-secondary" : "active:bg-muted",
+                WEB_PRESSABLE,
+              )}
             >
               <DefaultAvatar seed={user?.id ?? "guest"} size={AVATAR} />
               {compact ? null : (

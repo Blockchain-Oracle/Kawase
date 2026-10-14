@@ -56,7 +56,9 @@ export function BlockedCta({
             accessible
             accessibilityRole="button"
             accessibilityState={{ disabled: true, busy: blocker.busy === true }}
-            accessibilityLabel={reason ? `${blocker.label}. ${typeof reason === "string" ? reason : ""}` : blocker.label}
+            accessibilityLabel={
+              reason ? `${blocker.label}. ${typeof reason === "string" ? reason : ""}` : blocker.label
+            }
             style={[styles.plate, { backgroundColor: color.raised2 }]}
           >
             {blocker.busy ? (
@@ -64,7 +66,11 @@ export function BlockedCta({
                 {blocker.label}
               </WaitingText>
             ) : (
-              <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} numberOfLines={1} style={[TYPE.buttonLabel, { color: color.text2 }]}>
+              <Text
+                maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+                numberOfLines={1}
+                style={[TYPE.buttonLabel, { color: color.text2 }]}
+              >
                 {blocker.label}
               </Text>
             )}

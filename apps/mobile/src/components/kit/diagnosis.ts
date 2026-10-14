@@ -28,7 +28,8 @@ export type Diagnosis = {
 };
 
 /** The one action that can fix a blocker, named so the button wears it ("Add money", "Set a budget"). */
-export type BlockerFixKind = "add-money" | "sign-in" | "set-budget" | "raise-limit" | "switch-network" | "setup-wallet" | "retry";
+export type BlockerFixKind =
+  "add-money" | "sign-in" | "set-budget" | "raise-limit" | "switch-network" | "setup-wallet" | "retry";
 export type BlockerFix = { kind: BlockerFixKind };
 
 /** API error codes the app already speaks (use-resume's blocking codes) mapped to a kind. */
@@ -49,7 +50,15 @@ const CODE_KIND: Record<string, DiagnosisKind> = {
   USER_REJECTED: "rejected",
 };
 
-const RETRYABLE: ReadonlySet<DiagnosisKind> = new Set(["offline", "timeout", "server", "rate-limited", "expired", "slippage", "unknown"]);
+const RETRYABLE: ReadonlySet<DiagnosisKind> = new Set([
+  "offline",
+  "timeout",
+  "server",
+  "rate-limited",
+  "expired",
+  "slippage",
+  "unknown",
+]);
 
 const NETWORK_FAILURE = /network request failed|failed to fetch|networkerror|load failed|offline|internet/i;
 const TIMEOUT = /timed? ?out|aborterror|etimedout/i;
@@ -59,7 +68,10 @@ const RATE_LIMIT_STATUS = 429;
 
 /** Turns anything thrown (an api error with a `code`/`status`, a fetch failure, a cancelled prompt) into a Diagnosis. */
 export function diagnose(error: unknown, code?: string): Diagnosis {
-  const object = typeof error === "object" && error !== null ? (error as { code?: unknown; status?: unknown; name?: unknown; message?: unknown }) : {};
+  const object =
+    typeof error === "object" && error !== null
+      ? (error as { code?: unknown; status?: unknown; name?: unknown; message?: unknown })
+      : {};
   const message = typeof object.message === "string" ? object.message : typeof error === "string" ? error : "";
   const known = code ?? (typeof object.code === "string" ? object.code : undefined);
   const status = typeof object.status === "number" ? object.status : undefined;

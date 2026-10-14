@@ -6,7 +6,14 @@
  */
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { useT } from "@/i18n";
 
@@ -25,7 +32,10 @@ export type StepStatus = "done" | "active" | "pending";
 export function txSteps(state: TxState): readonly { id: (typeof STEPS)[number]; status: StepStatus }[] | null {
   const at = txReached(state);
   if (at < 0) return null;
-  return STEPS.map((id, i) => ({ id, status: i < at || (i === at && id === "confirmed") ? "done" : i === at ? "active" : "pending" }));
+  return STEPS.map((id, i) => ({
+    id,
+    status: i < at || (i === at && id === "confirmed") ? "done" : i === at ? "active" : "pending",
+  }));
 }
 
 export function TxSteps({ state }: { state: TxState }) {
@@ -37,7 +47,9 @@ export function TxSteps({ state }: { state: TxState }) {
     <View style={styles.row} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {steps.map((step, index) => (
         <View key={step.id} style={styles.step}>
-          {index > 0 ? <View style={[styles.line, { backgroundColor: step.status === "pending" ? color.skeleton : color.up }]} /> : null}
+          {index > 0 ? (
+            <View style={[styles.line, { backgroundColor: step.status === "pending" ? color.skeleton : color.up }]} />
+          ) : null}
           <StepMark status={step.status} />
           <Text style={[TYPE.meta, { color: step.status === "pending" ? color.text3 : color.ink }]}>
             {t(`shell.tx.steps.${step.id}`)}
@@ -54,7 +66,15 @@ function StepMark({ status }: { status: StepStatus }) {
   const pulse = useSharedValue(1);
   useEffect(() => {
     if (status !== "active" || reduce) return;
-    pulse.set(withRepeat(withSequence(withTiming(SKELETON.from, { duration: SKELETON.periodMs / HALF }), withTiming(1, { duration: SKELETON.periodMs / HALF })), -1));
+    pulse.set(
+      withRepeat(
+        withSequence(
+          withTiming(SKELETON.from, { duration: SKELETON.periodMs / HALF }),
+          withTiming(1, { duration: SKELETON.periodMs / HALF }),
+        ),
+        -1,
+      ),
+    );
   }, [status, reduce, pulse]);
   const style = useAnimatedStyle(() => ({ opacity: status === "active" && !reduce ? pulse.get() : 1 }));
   if (status === "done") {
@@ -65,7 +85,9 @@ function StepMark({ status }: { status: StepStatus }) {
     );
   }
   return (
-    <Animated.View style={[styles.mark, { borderWidth: 1.5, borderColor: status === "active" ? color.ink : color.skeleton }, style]}>
+    <Animated.View
+      style={[styles.mark, { borderWidth: 1.5, borderColor: status === "active" ? color.ink : color.skeleton }, style]}
+    >
       {status === "active" ? <View style={[styles.dot, { backgroundColor: color.ink }]} /> : null}
     </Animated.View>
   );

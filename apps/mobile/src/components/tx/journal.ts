@@ -129,7 +129,12 @@ const refusedBy = (error: unknown): boolean => {
  * words with a 4xx) settles what the journal needs to say, a refusal taking it out; an answer lost on the way (the
  * network, a 5xx) leaves it for recovery and returns null.
  */
-export async function sendJournalled<T>(mark: JournalMark, id: string, owner: string, send: () => Promise<T>): Promise<T | null> {
+export async function sendJournalled<T>(
+  mark: JournalMark,
+  id: string,
+  owner: string,
+  send: () => Promise<T>,
+): Promise<T | null> {
   journalIntent({ ...mark, id, owner: owner.toLowerCase(), sentAt: Date.now() });
   try {
     return await send();

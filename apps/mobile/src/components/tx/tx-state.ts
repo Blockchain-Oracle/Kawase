@@ -41,9 +41,13 @@ export function reduceTx(state: TxState, event: TxEvent): TxState {
     case "review":
       return state.kind === "idle" || state.kind === "blocked" || state.kind === "failed" ? { kind: "review" } : state;
     case "block":
-      return state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown" ? state : { kind: "blocked", reason: event.reason };
+      return state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown"
+        ? state
+        : { kind: "blocked", reason: event.reason };
     case "confirm":
-      return state.kind === "idle" || state.kind === "review" || state.kind === "failed" ? { kind: "signing", startedAt: event.nowMs } : state;
+      return state.kind === "idle" || state.kind === "review" || state.kind === "failed"
+        ? { kind: "signing", startedAt: event.nowMs }
+        : state;
     case "submitted":
       return state.kind === "signing" ? { kind: "submitted", txHash: event.txHash, startedAt: event.nowMs } : state;
     case "receipt":
@@ -58,10 +62,12 @@ export function reduceTx(state: TxState, event: TxEvent): TxState {
 }
 
 /** The CTA accepts a tap in these states only. */
-export const canConfirm = (state: TxState): boolean => state.kind === "idle" || state.kind === "review" || state.kind === "failed";
+export const canConfirm = (state: TxState): boolean =>
+  state.kind === "idle" || state.kind === "review" || state.kind === "failed";
 
 /** Something is in flight: the CTA never looks disabled, it shows the phase and absorbs the tap. */
-export const isInFlight = (state: TxState): boolean => state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown";
+export const isInFlight = (state: TxState): boolean =>
+  state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown";
 
 /** How far the action got: 0 signing, 1 sent (or still waiting), 2 confirmed; -1 when nothing is in flight. */
 const STEP_CONFIRMED = 2;

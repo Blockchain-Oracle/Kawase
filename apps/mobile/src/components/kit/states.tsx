@@ -10,7 +10,15 @@
  */
 import { type ReactNode, useEffect, useState } from "react";
 import { type DimensionValue, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 import { useT } from "@/i18n";
 
@@ -20,7 +28,15 @@ import { ChevronDown, CloudOff, Icon, RotateCw, type SymbolIcon, TriangleAlert }
 import { useGroupFill } from "./Surface";
 import { NUMERIC_VARIANT, RADIUS, SHEET_SHAPE, SIZE, SKELETON, SPACE, TYPE, useTheme } from "./theme";
 
-export function Skeleton({ width = "100%", height = SIZE.skeletonLine, radius = RADIUS.sm }: { width?: DimensionValue; height?: number; radius?: number }) {
+export function Skeleton({
+  width = "100%",
+  height = SIZE.skeletonLine,
+  radius = RADIUS.sm,
+}: {
+  width?: DimensionValue;
+  height?: number;
+  radius?: number;
+}) {
   const { color } = useTheme();
   const reduce = useReducedMotion();
   const pulse = useSharedValue<number>(SKELETON.from);
@@ -50,7 +66,7 @@ export function PixelLoader() {
   return (
     <View style={styles.pixels} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {Array.from({ length: PIXELS }, (_, i) => (
-        <Pixel key={i} delay={(((i % GRID) + Math.abs(Math.floor(i / GRID) - 1)) * WAVE_STEP_MS)} tint={color.ink} />
+        <Pixel key={i} delay={((i % GRID) + Math.abs(Math.floor(i / GRID) - 1)) * WAVE_STEP_MS} tint={color.ink} />
       ))}
     </View>
   );
@@ -61,7 +77,18 @@ function Pixel({ delay, tint }: { delay: number; tint: string }) {
   const level = useSharedValue(DIM_LEVEL);
   useEffect(() => {
     if (reduce) return;
-    level.set(withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: WAVE_MS / WAVE_THIRDS }), withTiming(DIM_LEVEL, { duration: (WAVE_MS * (WAVE_THIRDS - 1)) / WAVE_THIRDS })), -1)));
+    level.set(
+      withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: WAVE_MS / WAVE_THIRDS }),
+            withTiming(DIM_LEVEL, { duration: (WAVE_MS * (WAVE_THIRDS - 1)) / WAVE_THIRDS }),
+          ),
+          -1,
+        ),
+      ),
+    );
   }, [reduce, delay, level]);
   const style = useAnimatedStyle(() => ({ opacity: level.get() }));
   return <Animated.View style={[{ width: PIXEL, height: PIXEL, borderRadius: 1, backgroundColor: tint }, style]} />;
@@ -98,7 +125,13 @@ function ShapeBody({ shape }: { shape: LoadingShape }) {
     case "row":
       return <ListShape index={0} />;
     case "list":
-      return <View style={styles.stack}>{LIST_ROWS.map((i) => <ListShape key={i} index={i} />)}</View>;
+      return (
+        <View style={styles.stack}>
+          {LIST_ROWS.map((i) => (
+            <ListShape key={i} index={i} />
+          ))}
+        </View>
+      );
     case "plate":
       return <Skeleton height={SIZE.skeletonPlate} radius={SHEET_SHAPE.rowRadius} />;
     case "chart":
@@ -160,12 +193,25 @@ function ShapeBody({ shape }: { shape: LoadingShape }) {
  * The loader: skeletons of what will arrive. `named` adds the pixel loader, a shimmering label and the elapsed seconds
  * for a longer, named wait (an agent step, a quote race). Announced as busy; the label is what assistive tech reads.
  */
-export function LoadingState({ shape = "row", label, named = false }: { shape?: LoadingShape; label?: string; named?: boolean }) {
+export function LoadingState({
+  shape = "row",
+  label,
+  named = false,
+}: {
+  shape?: LoadingShape;
+  label?: string;
+  named?: boolean;
+}) {
   const { color } = useTheme();
   const { t } = useT();
   const words = label ?? t("shell.states.loading");
   return (
-    <View accessibilityRole="progressbar" accessibilityLabel={words} accessibilityState={{ busy: true }} style={styles.loading}>
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={words}
+      accessibilityState={{ busy: true }}
+      style={styles.loading}
+    >
       {named ? (
         <View style={styles.loadingHead}>
           <PixelLoader />
@@ -187,7 +233,11 @@ function Elapsed() {
     const id = setInterval(() => setNow(Date.now()), SECOND);
     return () => clearInterval(id);
   }, []);
-  return <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{t("shell.wait.elapsed", { seconds: Math.floor((now - start) / SECOND) })}</Text>;
+  return (
+    <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>
+      {t("shell.wait.elapsed", { seconds: Math.floor((now - start) / SECOND) })}
+    </Text>
+  );
 }
 
 export type StateAction = { label: string; onPress: () => void };
@@ -212,9 +262,20 @@ export function EmptyState({
   const fill = useGroupFill();
   const inline = size === "inline";
   return (
-    <View style={[styles.panel, inline ? styles.panelInline : null, size === "page" ? styles.panelPage : null, { backgroundColor: inline ? color.transparent : fill }]}>
+    <View
+      style={[
+        styles.panel,
+        inline ? styles.panelInline : null,
+        size === "page" ? styles.panelPage : null,
+        { backgroundColor: inline ? color.transparent : fill },
+      ]}
+    >
       {icon && !inline ? (
-        <View style={[styles.tile, { backgroundColor: color.raised2 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <View
+          style={[styles.tile, { backgroundColor: color.raised2 }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           <Icon icon={icon} size={SIZE.icon} tint={color.text2} />
         </View>
       ) : null}
@@ -225,7 +286,9 @@ export function EmptyState({
       {action || secondary ? (
         <View style={styles.actions}>
           {action ? <Button label={action.label} onPress={action.onPress} size="sm" block={false} /> : null}
-          {secondary ? <Button label={secondary.label} onPress={secondary.onPress} variant="ghost" size="sm" block={false} /> : null}
+          {secondary ? (
+            <Button label={secondary.label} onPress={secondary.onPress} variant="ghost" size="sm" block={false} />
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -266,21 +329,38 @@ export function ErrorState({
         <Text style={[TYPE.rowDetail, styles.grow, { color: color.ink }]} numberOfLines={2}>
           {title}
         </Text>
-        {offerRetry ? <Button label={t("shell.states.retry")} onPress={retry} variant="ghost" size="sm" block={false} /> : null}
+        {offerRetry ? (
+          <Button label={t("shell.states.retry")} onPress={retry} variant="ghost" size="sm" block={false} />
+        ) : null}
       </View>
     );
   }
   return (
     <View accessibilityRole="alert" style={[styles.panel, { backgroundColor: color.destructiveWash }]}>
-      <View style={[styles.tile, { backgroundColor: color.warnSurface }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View
+        style={[styles.tile, { backgroundColor: color.warnSurface }]}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
         <Icon icon={TriangleAlert} size={SIZE.icon} tint={color.warn} />
       </View>
       <Text style={[TYPE.sectionTitle, styles.center, { color: color.ink }]}>{title}</Text>
-      <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>{t(`shell.diagnosis.${diagnosis.kind}.body`)}</Text>
-      <Text style={[TYPE.rowDetail, styles.center, { color: color.text3 }]}>{stillWorks ?? t("shell.states.stillWorks")}</Text>
+      <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>
+        {t(`shell.diagnosis.${diagnosis.kind}.body`)}
+      </Text>
+      <Text style={[TYPE.rowDetail, styles.center, { color: color.text3 }]}>
+        {stillWorks ?? t("shell.states.stillWorks")}
+      </Text>
       {offerRetry || detour ? (
         <View style={styles.actions}>
-          {detour ? <Button label={t(`shell.fix.${detour.kind}`)} onPress={() => onFix?.(detour.kind)} size="sm" block={false} /> : null}
+          {detour ? (
+            <Button
+              label={t(`shell.fix.${detour.kind}`)}
+              onPress={() => onFix?.(detour.kind)}
+              size="sm"
+              block={false}
+            />
+          ) : null}
           {offerRetry ? (
             <Button
               label={t("shell.states.retry")}
@@ -294,7 +374,13 @@ export function ErrorState({
         </View>
       ) : null}
       {diagnosis.technical ? (
-        <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} hitSlop={SPACE.sm} style={styles.technical}>
+        <Pressable
+          onPress={() => setOpen((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          hitSlop={SPACE.sm}
+          style={styles.technical}
+        >
           <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("shell.states.technical")}</Text>
           <View style={open ? styles.flip : undefined}>
             <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.text2} />
@@ -312,17 +398,28 @@ export function ErrorState({
   );
 }
 
-const clock = (ms: number, locale: string) => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(new Date(ms));
+const clock = (ms: number, locale: string) =>
+  new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(new Date(ms));
 
 /** The previous value stays at full ink; this says how old it is, in the reader's own clock. A polite live region. */
-export function StaleTick({ asOf, reason = "refresh-failed", compact = false }: { asOf: number; reason?: "refresh-failed" | "offline" | "paused"; compact?: boolean }) {
+export function StaleTick({
+  asOf,
+  reason = "refresh-failed",
+  compact = false,
+}: {
+  asOf: number;
+  reason?: "refresh-failed" | "offline" | "paused";
+  compact?: boolean;
+}) {
   const { color } = useTheme();
   const { t, i18n } = useT();
   const why = t(`shell.stale.${reason}`);
   return (
     <View style={styles.stale} accessibilityLiveRegion="polite">
       <Icon icon={reason === "offline" ? CloudOff : TriangleAlert} size={SIZE.iconSm} tint={color.warn} />
-      <Text style={[TYPE.meta, { color: color.warn }]}>{compact ? why : t("shell.stale.line", { time: clock(asOf, i18n.language), reason: why })}</Text>
+      <Text style={[TYPE.meta, { color: color.warn }]}>
+        {compact ? why : t("shell.stale.line", { time: clock(asOf, i18n.language), reason: why })}
+      </Text>
     </View>
   );
 }
@@ -369,7 +466,9 @@ export function ReadView<T>({
   }
   return (
     <>
-      {error && asOf ? <StaleTick asOf={asOf} reason={error.kind === "offline" ? "offline" : "refresh-failed"} /> : null}
+      {error && asOf ? (
+        <StaleTick asOf={asOf} reason={error.kind === "offline" ? "offline" : "refresh-failed"} />
+      ) : null}
       {children(value)}
     </>
   );
@@ -388,10 +487,23 @@ const styles = StyleSheet.create({
   panel: { borderRadius: SHEET_SHAPE.rowRadius, padding: SPACE.xl, gap: SPACE.md, alignItems: "center" },
   panelInline: { paddingVertical: SPACE.xxl },
   panelPage: { paddingVertical: SPACE.xxxl },
-  tile: { width: SIZE.avatarLg, height: SIZE.avatarLg, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center" },
+  tile: {
+    width: SIZE.avatarLg,
+    height: SIZE.avatarLg,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   center: { textAlign: "center" },
   actions: { flexDirection: "row", gap: SPACE.sm, flexWrap: "wrap", justifyContent: "center" },
-  strip: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, borderRadius: SHEET_SHAPE.rowRadius },
+  strip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.sm,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.sm,
+    borderRadius: SHEET_SHAPE.rowRadius,
+  },
   technical: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   flip: { transform: [{ rotate: "180deg" }] },
   stale: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },

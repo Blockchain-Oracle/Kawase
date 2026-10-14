@@ -13,7 +13,18 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSprin
 import { fire } from "@/feedback/fire";
 
 import { Icon, type SymbolIcon } from "../kit/icons";
-import { CONTROL_FONT_SCALE, DISABLED_OPACITY, ELEVATION, LAYOUT, RADIUS, SIZE, SPACE, SPRING, TYPE, useTheme } from "../kit/theme";
+import {
+  CONTROL_FONT_SCALE,
+  DISABLED_OPACITY,
+  ELEVATION,
+  LAYOUT,
+  RADIUS,
+  SIZE,
+  SPACE,
+  SPRING,
+  TYPE,
+  useTheme,
+} from "../kit/theme";
 
 export type RailRow = {
   key: string;
@@ -81,11 +92,17 @@ export function Rail({
     <View
       accessibilityRole="menu"
       accessibilityLabel={label}
-      style={[styles.rail, ELEVATION.dock, { width: compact ? LAYOUT.railCompact : LAYOUT.railWide, backgroundColor: color.card }]}
+      style={[
+        styles.rail,
+        ELEVATION.dock,
+        { width: compact ? LAYOUT.railCompact : LAYOUT.railWide, backgroundColor: color.card },
+      ]}
     >
       {header ? <View style={[styles.header, compact ? styles.centered : null]}>{header}</View> : null}
       <View style={styles.body}>
-        {selectable && active ? <Animated.View pointerEvents="none" style={[styles.pill, { backgroundColor: color.raised2 }, pill]} /> : null}
+        {selectable && active ? (
+          <Animated.View pointerEvents="none" style={[styles.pill, { backgroundColor: color.raised2 }, pill]} />
+        ) : null}
         {sections.map((section) => (
           <View
             key={section.key}
@@ -96,7 +113,11 @@ export function Rail({
             }}
           >
             {section.label && !compact ? (
-              <Text accessibilityRole="header" maxFontSizeMultiplier={CONTROL_FONT_SCALE} style={[TYPE.meta, styles.sectionLabel, { color: color.text3 }]}>
+              <Text
+                accessibilityRole="header"
+                maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+                style={[TYPE.meta, styles.sectionLabel, { color: color.text3 }]}
+              >
                 {section.label}
               </Text>
             ) : null}
@@ -114,7 +135,11 @@ export function Rail({
                 onLayout={(e) => {
                   // Relative to its section; the pill adds the section's own offset.
                   const { y, height } = e.nativeEvent.layout;
-                  setRows((prev) => (prev[row.key]?.y === y && prev[row.key]?.h === height ? prev : { ...prev, [row.key]: { y, h: height } }));
+                  setRows((prev) =>
+                    prev[row.key]?.y === y && prev[row.key]?.h === height
+                      ? prev
+                      : { ...prev, [row.key]: { y, h: height } },
+                  );
                 }}
               />
             ))}
@@ -157,7 +182,11 @@ function RailItem({
         !selected && (pressed || hovered) ? { backgroundColor: color.rowPressed } : null,
       ]}
     >
-      {row.render ? row.render(selected) : row.icon ? <Icon icon={row.icon} size={ICON} tint={selected ? color.ink : color.text2} /> : null}
+      {row.render ? (
+        row.render(selected)
+      ) : row.icon ? (
+        <Icon icon={row.icon} size={ICON} tint={selected ? color.ink : color.text2} />
+      ) : null}
       {compact ? null : (
         <Text
           numberOfLines={1}
@@ -201,6 +230,13 @@ const styles = StyleSheet.create({
   },
   rowCompact: { justifyContent: "center", paddingHorizontal: 0 },
   label: { flex: 1 },
-  badge: { minWidth: BADGE, height: BADGE, borderRadius: BADGE / HALF, paddingHorizontal: SPACE.xs, alignItems: "center", justifyContent: "center" },
+  badge: {
+    minWidth: BADGE,
+    height: BADGE,
+    borderRadius: BADGE / HALF,
+    paddingHorizontal: SPACE.xs,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   badgeCompact: { position: "absolute", top: 4, end: 8 },
 });

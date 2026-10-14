@@ -112,7 +112,9 @@ export function AmountPad({
       >
         {figure}
       </Text>
-      <Text style={[TYPE.caption, styles.center, { color: problem ? color.down : color.inkMuted }]}>{problem ?? note ?? " "}</Text>
+      <Text style={[TYPE.caption, styles.center, { color: problem ? color.down : color.inkMuted }]}>
+        {problem ?? note ?? " "}
+      </Text>
       {shown.length > 0 ? (
         <View style={styles.chips}>
           {shown.map((c) => {

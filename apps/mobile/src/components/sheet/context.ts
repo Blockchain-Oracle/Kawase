@@ -12,4 +12,3 @@ export function useSheetClose(): (after?: () => void) => void {
 export function useSheetExpand(): () => void {
   return useContext(ExpandContext);
 }
-

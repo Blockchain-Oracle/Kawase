@@ -33,7 +33,15 @@ export function applyKey(text: string, key: KeypadKey, rules: KeyRules = {}): st
   return whole.length >= maxWhole ? text : `${text}${key}`;
 }
 
-export function Keypad({ onKey, disabled, allowDecimal = true }: { onKey: (key: KeypadKey) => void; disabled?: boolean; allowDecimal?: boolean }) {
+export function Keypad({
+  onKey,
+  disabled,
+  allowDecimal = true,
+}: {
+  onKey: (key: KeypadKey) => void;
+  disabled?: boolean;
+  allowDecimal?: boolean;
+}) {
   const { color } = useTheme();
   const { t } = useT();
   const rows = Array.from({ length: KEYS.length / COLUMNS }, (_, r) => KEYS.slice(r * COLUMNS, r * COLUMNS + COLUMNS));
@@ -52,13 +60,18 @@ export function Keypad({ onKey, disabled, allowDecimal = true }: { onKey: (key: 
                   onKey(key);
                 }}
                 accessibilityRole="keyboardkey"
-                accessibilityLabel={key === "del" ? t("shell.kit.delete") : key === "." ? t("shell.kit.decimalPoint") : key}
+                accessibilityLabel={
+                  key === "del" ? t("shell.kit.delete") : key === "." ? t("shell.kit.decimalPoint") : key
+                }
                 style={({ pressed }) => [styles.key, pressed ? { backgroundColor: color.rowPressed } : null]}
               >
                 {key === "del" ? (
                   <Icon icon={Delete} size={SIZE.icon} tint={color.ink} />
                 ) : (
-                  <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} style={[TYPE.sheetTitle, styles.digit, { color: off ? color.text3 : color.ink }]}>
+                  <Text
+                    maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+                    style={[TYPE.sheetTitle, styles.digit, { color: off ? color.text3 : color.ink }]}
+                  >
                     {key}
                   </Text>
                 )}

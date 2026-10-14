@@ -9,7 +9,13 @@ import { arcIdentity } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 import { fire } from "@/feedback/fire";
 import { useLocale } from "@/i18n/locale-provider";
@@ -28,7 +34,10 @@ const KNOB = 9;
 const KNOB_INSET = (TRACK_H - TRACK_BORDER * HALF - KNOB) / HALF;
 const TRAVEL = TRACK_W - TRACK_BORDER * HALF - KNOB - KNOB_INSET * HALF;
 /** The touch target reaches this far above and below the capsule (not sideways, where other pills sit close by). */
-const HIT_SLOP = { top: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF, bottom: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF } as const;
+const HIT_SLOP = {
+  top: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF,
+  bottom: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF,
+} as const;
 
 export function ModeCapsule({
   network,
@@ -75,28 +84,52 @@ export function ModeCapsule({
           fire("tick", { sound: "toggle" });
           onToggle();
         }}
-        {...(onLongPress ? { onLongPress: () => { fire("snap"); onLongPress(); } } : {})}
+        {...(onLongPress
+          ? {
+              onLongPress: () => {
+                fire("snap");
+                onLongPress();
+              },
+            }
+          : {})}
         accessibilityRole="switch"
         accessibilityLabel={switchLabel}
         accessibilityState={{ checked: !testnet, busy }}
-        {...(onLongPress && longPressLabel ? { accessibilityActions: [{ name: "longpress", label: longPressLabel }], onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => e.nativeEvent.actionName === "longpress" && onLongPress() } : {})}
+        {...(onLongPress && longPressLabel
+          ? {
+              accessibilityActions: [{ name: "longpress", label: longPressLabel }],
+              onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) =>
+                e.nativeEvent.actionName === "longpress" && onLongPress(),
+            }
+          : {})}
         hitSlop={HIT_SLOP}
         style={[
           styles.capsule,
           { backgroundColor: color.networkSurface },
-          testnet ? { borderWidth: 1, borderStyle: "dashed", borderColor: color.network } : { borderWidth: 1, borderColor: color.networkSurface },
+          testnet
+            ? { borderWidth: 1, borderStyle: "dashed", borderColor: color.network }
+            : { borderWidth: 1, borderColor: color.networkSurface },
         ]}
       >
         {compact ? null : <Mark entity={arcIdentity(network).chain} size={SIZE.iconSm} />}
-        <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} style={[TYPE.modeLabel, { color: color.network }]} numberOfLines={1}>
+        <Text
+          maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+          style={[TYPE.modeLabel, { color: color.network }]}
+          numberOfLines={1}
+        >
           {label}
         </Text>
         <View
-          style={[styles.track, { borderColor: color.network, backgroundColor: testnet ? color.transparent : color.network }]}
+          style={[
+            styles.track,
+            { borderColor: color.network, backgroundColor: testnet ? color.transparent : color.network },
+          ]}
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden
         >
-          <Animated.View style={[styles.knob, { backgroundColor: testnet ? color.network : color.networkForeground }, knobStyle]} />
+          <Animated.View
+            style={[styles.knob, { backgroundColor: testnet ? color.network : color.networkForeground }, knobStyle]}
+          />
         </View>
       </Pressable>
     </Animated.View>
@@ -114,6 +147,12 @@ const styles = StyleSheet.create({
     paddingStart: SPACE.md,
     paddingEnd: SPACE.sm,
   },
-  track: { width: TRACK_W, height: TRACK_H, borderRadius: RADIUS.pill, borderWidth: TRACK_BORDER, justifyContent: "center" },
+  track: {
+    width: TRACK_W,
+    height: TRACK_H,
+    borderRadius: RADIUS.pill,
+    borderWidth: TRACK_BORDER,
+    justifyContent: "center",
+  },
   knob: { width: KNOB, height: KNOB, borderRadius: RADIUS.pill, marginHorizontal: KNOB_INSET },
 });

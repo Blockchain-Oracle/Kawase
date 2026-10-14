@@ -29,10 +29,19 @@ export type SparklineProps = {
   tone?: SparkTone;
 };
 
-export function Sparkline({ points, baseline, width = SIZE.sparklineWidth, height = SIZE.sparkline, tone }: SparklineProps) {
+export function Sparkline({
+  points,
+  baseline,
+  width = SIZE.sparklineWidth,
+  height = SIZE.sparkline,
+  tone,
+}: SparklineProps) {
   const { color } = useTheme();
   const g = useMemo(() => sparkGeometry(points, width, height, PAD, baseline), [points, width, height, baseline]);
-  const paths = useMemo(() => (g ? { line: Skia.Path.MakeFromSVGString(g.d), area: Skia.Path.MakeFromSVGString(g.area) } : null), [g]);
+  const paths = useMemo(
+    () => (g ? { line: Skia.Path.MakeFromSVGString(g.d), area: Skia.Path.MakeFromSVGString(g.area) } : null),
+    [g],
+  );
   if (!g || !paths?.line || !paths.area) return null;
   const direction = tone ?? g.tone;
   const hue = direction === "up" ? color.up : direction === "down" ? color.down : color.text3;

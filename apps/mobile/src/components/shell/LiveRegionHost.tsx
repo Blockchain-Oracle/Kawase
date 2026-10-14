@@ -25,4 +25,6 @@ export function LiveRegionHost() {
   );
 }
 
-const styles = StyleSheet.create({ hidden: { position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 } });
+const styles = StyleSheet.create({
+  hidden: { position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 },
+});

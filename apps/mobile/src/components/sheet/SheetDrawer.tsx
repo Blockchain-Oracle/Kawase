@@ -66,7 +66,10 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
   }, [close, dismissible]);
 
   const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.get() }));
-  const panelStyle = useAnimatedStyle(() => ({ opacity: reduce ? scrim.get() : 1, transform: [{ translateX: slide.get() * side }] }));
+  const panelStyle = useAnimatedStyle(() => ({
+    opacity: reduce ? scrim.get() : 1,
+    transform: [{ translateX: slide.get() * side }],
+  }));
 
   return (
     <View style={styles.root}>
@@ -110,5 +113,9 @@ const styles = StyleSheet.create({
     borderRadius: LAYOUT.stageRadius,
     overflow: "hidden",
   },
-  content: { padding: SHEET_SHAPE.padding, paddingTop: SHEET_SHAPE.handleTop + SHEET_SHAPE.padding, gap: SHEET_SHAPE.padding },
+  content: {
+    padding: SHEET_SHAPE.padding,
+    paddingTop: SHEET_SHAPE.handleTop + SHEET_SHAPE.padding,
+    gap: SHEET_SHAPE.padding,
+  },
 });

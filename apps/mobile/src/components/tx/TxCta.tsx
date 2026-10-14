@@ -11,7 +11,13 @@
  */
 import { type ReactNode, useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
@@ -48,19 +54,37 @@ export type TxCtaProps = {
   caption?: string;
 };
 
-export function TxCta({ state, action, onConfirm, tone = "primary", blocker, onFix, steps = true, receipt, caption }: TxCtaProps) {
+export function TxCta({
+  state,
+  action,
+  onConfirm,
+  tone = "primary",
+  blocker,
+  onFix,
+  steps = true,
+  receipt,
+  caption,
+}: TxCtaProps) {
   const { t } = useT();
   const { color } = useTheme();
   const done = state.kind === "confirmed";
   if (state.kind === "blocked") {
-    return <BlockedCta blocker={blocker ?? { label: state.reason }} {...(onFix ? { onFix } : {})} {...(caption ? { caption } : {})} />;
+    return (
+      <BlockedCta
+        blocker={blocker ?? { label: state.reason }}
+        {...(onFix ? { onFix } : {})}
+        {...(caption ? { caption } : {})}
+      />
+    );
   }
   const cta = (
     <View style={styles.wrap}>
       <Plate state={state} action={action} tone={tone} onConfirm={onConfirm} />
       <View style={styles.caption} accessibilityLiveRegion={state.kind === "failed" ? "polite" : "none"}>
         {state.kind === "failed" ? (
-          <Text style={[TYPE.rowDetail, styles.center, { color: color.ink }]}>{t(`shell.tx.moneyMoved.${state.moneyMoved}`)}</Text>
+          <Text style={[TYPE.rowDetail, styles.center, { color: color.ink }]}>
+            {t(`shell.tx.moneyMoved.${state.moneyMoved}`)}
+          </Text>
         ) : state.kind === "unknown" ? (
           <Text style={[TYPE.caption, styles.center, { color: color.text2 }]}>{t("shell.tx.notResent")}</Text>
         ) : steps && (isInFlight(state) || done) ? (
@@ -79,7 +103,17 @@ export function TxCta({ state, action, onConfirm, tone = "primary", blocker, onF
   );
 }
 
-function Plate({ state, action, tone, onConfirm }: { state: TxState; action: string; tone: "primary" | "accent"; onConfirm: () => void }) {
+function Plate({
+  state,
+  action,
+  tone,
+  onConfirm,
+}: {
+  state: TxState;
+  action: string;
+  tone: "primary" | "accent";
+  onConfirm: () => void;
+}) {
   const { color } = useTheme();
   const { t } = useT();
   const reduce = useReducedMotion();
@@ -130,7 +164,11 @@ function Plate({ state, action, tone, onConfirm }: { state: TxState; action: str
         ) : (
           <View style={styles.face}>
             {state.kind === "confirmed" ? <Icon icon={Check} size={SIZE.icon} tint={ink} strokeWidth={3} /> : null}
-            <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} numberOfLines={1} style={[TYPE.buttonLabel, { color: ink }]}>
+            <Text
+              maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+              numberOfLines={1}
+              style={[TYPE.buttonLabel, { color: ink }]}
+            >
               {face}
             </Text>
           </View>

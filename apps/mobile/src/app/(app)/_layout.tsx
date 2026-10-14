@@ -89,7 +89,13 @@ export default function AppLayout() {
                 screenOptions={({ route }) => ({
                   headerShown: false,
                   ...(wide && route.name !== "(tabs)"
-                    ? { contentStyle: { width: "100%", alignSelf: "center", maxWidth: WIDE_PAGES.has(route.name) ? WIDE_PAGE_PX : WIDE_COLUMN_PX } }
+                    ? {
+                        contentStyle: {
+                          width: "100%",
+                          alignSelf: "center",
+                          maxWidth: WIDE_PAGES.has(route.name) ? WIDE_PAGE_PX : WIDE_COLUMN_PX,
+                        },
+                      }
                     : {}),
                 })}
               />
@@ -109,7 +115,10 @@ export default function AppLayout() {
 function SessionLoading() {
   const shown = useHeldLoading(true);
   return (
-    <View className="bg-background flex-1" style={{ paddingHorizontal: SPACE.inset, paddingTop: SPACE.xxxl + SPACE.xxxl }}>
+    <View
+      className="bg-background flex-1"
+      style={{ paddingHorizontal: SPACE.inset, paddingTop: SPACE.xxxl + SPACE.xxxl }}
+    >
       {shown ? (
         <View style={{ gap: SPACE.xl }}>
           <LoadingState shape="hero" />
@@ -134,10 +143,20 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
   // On a desktop window the rail and the one stage float on a slightly deeper ground, 16 px off the window's edge, with
   // the stage's 24 px corners (the Senryo/Mitoshi web shell); on a phone the page is the whole window.
   return (
-    <View className={wide ? "bg-secondary flex-1" : "bg-background flex-1"} style={wide ? { padding: LAYOUT.inset } : undefined}>
-      <View className="flex-1 flex-row" style={wide ? { gap: LAYOUT.inset } : undefined} aria-hidden={wide && overlay.current !== null}>
+    <View
+      className={wide ? "bg-secondary flex-1" : "bg-background flex-1"}
+      style={wide ? { padding: LAYOUT.inset } : undefined}
+    >
+      <View
+        className="flex-1 flex-row"
+        style={wide ? { gap: LAYOUT.inset } : undefined}
+        aria-hidden={wide && overlay.current !== null}
+      >
         {wide ? <DesktopSidebar /> : null}
-        <View className="bg-background flex-1" style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}>
+        <View
+          className="bg-background flex-1"
+          style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}
+        >
           {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
           {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
           <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>

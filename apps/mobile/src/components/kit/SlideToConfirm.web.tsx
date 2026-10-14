@@ -23,7 +23,14 @@ const TONE: Record<SlideTone, { thumb: string; fill: string; track: string }> = 
   down: { thumb: "bg-down text-down-foreground", fill: "bg-down", track: "bg-down/12" },
 };
 
-export function SlideToConfirm({ label, onConfirm, disabled = false, busy = false, tone = "primary", resetKey }: SlideToConfirmProps) {
+export function SlideToConfirm({
+  label,
+  onConfirm,
+  disabled = false,
+  busy = false,
+  tone = "primary",
+  resetKey,
+}: SlideToConfirmProps) {
   const { t } = useT();
   const { color } = useTheme();
   if (disabled || busy) {
@@ -36,7 +43,11 @@ export function SlideToConfirm({ label, onConfirm, disabled = false, busy = fals
         style={[styles.locked, { backgroundColor: color.raised2 }]}
       >
         {busy ? <ActivityIndicator color={color.text2} /> : null}
-        <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} numberOfLines={1} style={[TYPE.buttonLabel, { color: color.text3 }]}>
+        <Text
+          maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+          numberOfLines={1}
+          style={[TYPE.buttonLabel, { color: color.text3 }]}
+        >
           {label}
         </Text>
       </View>

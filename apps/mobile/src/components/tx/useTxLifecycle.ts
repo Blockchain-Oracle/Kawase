@@ -96,11 +96,19 @@ export function useTxLifecycle(): TxRunner {
           settle();
           dispatch({ type: "receipt", txHash: outcome.txHash ?? null, status: "success" });
           announce(t("shell.tx.confirmed"));
-          fire("filled", { sound: options.sound ?? "confirmed", ...(options.identity ? { identity: options.identity } : {}) });
+          fire("filled", {
+            sound: options.sound ?? "confirmed",
+            ...(options.identity ? { identity: options.identity } : {}),
+          });
           break;
         case "reverted":
           settle();
-          dispatch({ type: "receipt", txHash: outcome.txHash ?? null, status: "reverted", diagnosis: outcome.diagnosis });
+          dispatch({
+            type: "receipt",
+            txHash: outcome.txHash ?? null,
+            status: "reverted",
+            diagnosis: outcome.diagnosis,
+          });
           announce(t("shell.tx.moneyMoved.no"));
           fire("fail", { sound: "error" });
           break;

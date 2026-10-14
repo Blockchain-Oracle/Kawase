@@ -9,7 +9,13 @@
  */
 import { type ReactNode, type Ref, useEffect, useState } from "react";
 import { Keyboard, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { fire } from "@/feedback/fire";
@@ -43,7 +49,15 @@ export type DockItem = {
   slotRef?: Ref<View>;
 };
 
-export function Dock({ items, activeKey, onPress }: { items: readonly DockItem[]; activeKey: string; onPress: (key: string) => void }) {
+export function Dock({
+  items,
+  activeKey,
+  onPress,
+}: {
+  items: readonly DockItem[];
+  activeKey: string;
+  onPress: (key: string) => void;
+}) {
   const { hidden } = useDock();
   const reduce = useReducedMotion();
   const insets = useSafeAreaInsets();
@@ -63,7 +77,12 @@ export function Dock({ items, activeKey, onPress }: { items: readonly DockItem[]
     };
   }, []);
   useEffect(() => {
-    offset.set(withTiming(shown ? 0 : DOCK_HIDDEN_OFFSET, { duration: reduce ? TIMING.reducedMotion : TIMING.selection, easing: EASE }));
+    offset.set(
+      withTiming(shown ? 0 : DOCK_HIDDEN_OFFSET, {
+        duration: reduce ? TIMING.reducedMotion : TIMING.selection,
+        easing: EASE,
+      }),
+    );
   }, [shown, reduce, offset]);
 
   const active = slots[activeKey];
@@ -93,7 +112,10 @@ export function Dock({ items, activeKey, onPress }: { items: readonly DockItem[]
       <GlassPlate style={styles.bar}>
         <View style={styles.row} accessibilityRole="tablist">
           {activeSelectable && active ? (
-            <Animated.View pointerEvents="none" style={[styles.bubble, { backgroundColor: color.glassBubble, borderColor: color.glassBubbleRim }, bubble]} />
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.bubble, { backgroundColor: color.glassBubble, borderColor: color.glassBubbleRim }, bubble]}
+            />
           ) : null}
           {items.map((item) => (
             <DockSlot
@@ -102,7 +124,11 @@ export function Dock({ items, activeKey, onPress }: { items: readonly DockItem[]
               selected={!item.action && item.key === activeKey}
               onLayout={(e) => {
                 const { x, width } = e.nativeEvent.layout;
-                setSlots((prev) => (prev[item.key]?.x === x && prev[item.key]?.w === width ? prev : { ...prev, [item.key]: { x, w: width } }));
+                setSlots((prev) =>
+                  prev[item.key]?.x === x && prev[item.key]?.w === width
+                    ? prev
+                    : { ...prev, [item.key]: { x, w: width } },
+                );
               }}
               onPress={() => {
                 if (item.action || item.key !== activeKey) fire("tick");
@@ -116,7 +142,17 @@ export function Dock({ items, activeKey, onPress }: { items: readonly DockItem[]
   );
 }
 
-function DockSlot({ item, selected, onPress, onLayout }: { item: DockItem; selected: boolean; onPress: () => void; onLayout: (e: LayoutChangeEvent) => void }) {
+function DockSlot({
+  item,
+  selected,
+  onPress,
+  onLayout,
+}: {
+  item: DockItem;
+  selected: boolean;
+  onPress: () => void;
+  onLayout: (e: LayoutChangeEvent) => void;
+}) {
   const { color } = useTheme();
   const press = usePressScale();
   return (
@@ -132,11 +168,22 @@ function DockSlot({ item, selected, onPress, onLayout }: { item: DockItem; selec
       style={styles.slot}
     >
       <Animated.View style={press.style}>
-        {item.render ? item.render(selected) : item.icon ? <Icon icon={item.icon} size={ICON} tint={selected ? color.ink : color.text3} strokeWidth={selected ? ACTIVE_STROKE : undefined} /> : null}
+        {item.render ? (
+          item.render(selected)
+        ) : item.icon ? (
+          <Icon
+            icon={item.icon}
+            size={ICON}
+            tint={selected ? color.ink : color.text3}
+            strokeWidth={selected ? ACTIVE_STROKE : undefined}
+          />
+        ) : null}
       </Animated.View>
       {item.badge ? (
         <View style={[styles.badge, { backgroundColor: color.accent }]} pointerEvents="none">
-          <Text style={[TYPE.tabLabel, { color: color.accentForeground }]}>{item.badge > BADGE_MAX ? `${BADGE_MAX}+` : item.badge}</Text>
+          <Text style={[TYPE.tabLabel, { color: color.accentForeground }]}>
+            {item.badge > BADGE_MAX ? `${BADGE_MAX}+` : item.badge}
+          </Text>
         </View>
       ) : null}
     </Pressable>
@@ -145,7 +192,13 @@ function DockSlot({ item, selected, onPress, onLayout }: { item: DockItem; selec
 
 const styles = StyleSheet.create({
   position: { position: "absolute", alignSelf: "center" },
-  bar: { borderRadius: BAR_RADIUS, minHeight: DOCK.height - SPACE.sm, paddingHorizontal: SPACE.sm, justifyContent: "center", overflow: "hidden" },
+  bar: {
+    borderRadius: BAR_RADIUS,
+    minHeight: DOCK.height - SPACE.sm,
+    paddingHorizontal: SPACE.sm,
+    justifyContent: "center",
+    overflow: "hidden",
+  },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   bubble: { position: "absolute", top: 4, bottom: 4, left: 0, borderRadius: BAR_RADIUS, borderWidth: 1 },
   slot: { width: SLOT, minHeight: SIZE.touch, alignItems: "center", justifyContent: "center" },

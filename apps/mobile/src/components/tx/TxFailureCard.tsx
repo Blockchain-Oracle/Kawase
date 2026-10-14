@@ -48,14 +48,38 @@ export function TxFailureCard({
       </View>
       {detour || retry || explorerUrl ? (
         <View style={styles.actions}>
-          {detour ? <Button label={t(`shell.fix.${detour.kind}`)} onPress={() => onFix?.(detour)} size="sm" block={false} /> : null}
-          {retry ? <Button label={t("shell.tx.tryAgain")} onPress={retry} size="sm" variant={detour ? "ghost" : "secondary"} block={false} /> : null}
-          {explorerUrl ? <Button label={t("shell.tx.explorer")} onPress={() => void Linking.openURL(explorerUrl)} size="sm" variant="ghost" block={false} /> : null}
+          {detour ? (
+            <Button label={t(`shell.fix.${detour.kind}`)} onPress={() => onFix?.(detour)} size="sm" block={false} />
+          ) : null}
+          {retry ? (
+            <Button
+              label={t("shell.tx.tryAgain")}
+              onPress={retry}
+              size="sm"
+              variant={detour ? "ghost" : "secondary"}
+              block={false}
+            />
+          ) : null}
+          {explorerUrl ? (
+            <Button
+              label={t("shell.tx.explorer")}
+              onPress={() => void Linking.openURL(explorerUrl)}
+              size="sm"
+              variant="ghost"
+              block={false}
+            />
+          ) : null}
         </View>
       ) : null}
       {diagnosis.technical || state.txHash ? (
         <>
-          <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} hitSlop={SPACE.sm} style={styles.technical}>
+          <Pressable
+            onPress={() => setOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: open }}
+            hitSlop={SPACE.sm}
+            style={styles.technical}
+          >
             <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("shell.states.technical")}</Text>
             <View style={open ? styles.flip : undefined}>
               <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.text2} />

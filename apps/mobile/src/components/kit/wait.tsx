@@ -9,7 +9,13 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type StyleProp, StyleSheet, Text, type TextStyle, View } from "react-native";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 import { useT } from "@/i18n";
 
@@ -25,7 +31,11 @@ const HELD_DELAY_MS = 120;
 const HELD_MIN_MS = 300;
 
 /** True while the host should draw its skeleton: after `delayMs` of loading, for at least `minVisibleMs`. */
-export function useHeldLoading(loading: boolean, delayMs: number = HELD_DELAY_MS, minVisibleMs: number = HELD_MIN_MS): boolean {
+export function useHeldLoading(
+  loading: boolean,
+  delayMs: number = HELD_DELAY_MS,
+  minVisibleMs: number = HELD_MIN_MS,
+): boolean {
   const [visible, setVisible] = useState(false);
   const shownAt = useRef(0);
   useEffect(() => {
@@ -47,7 +57,11 @@ export function useHeldLoading(loading: boolean, delayMs: number = HELD_DELAY_MS
 export type WaitPhase = "quiet" | "elapsed" | "late";
 
 /** Pure: where a wait stands `elapsedMs` in (quiet, then the seconds show, then timed out). */
-export function waitPhase(elapsedMs: number, showElapsedAfterMs: number = SHOW_ELAPSED_AFTER_MS, timeoutMs: number | null = TIMEOUT_MS): WaitPhase {
+export function waitPhase(
+  elapsedMs: number,
+  showElapsedAfterMs: number = SHOW_ELAPSED_AFTER_MS,
+  timeoutMs: number | null = TIMEOUT_MS,
+): WaitPhase {
   if (timeoutMs !== null && elapsedMs >= timeoutMs) return "late";
   return elapsedMs >= showElapsedAfterMs ? "elapsed" : "quiet";
 }
@@ -55,7 +69,11 @@ export function waitPhase(elapsedMs: number, showElapsedAfterMs: number = SHOW_E
 export type WaitClock = { elapsedSec: number; late: boolean; timedOut: boolean; restart: () => void };
 
 /** The wait's clock: starts at `startedAtMs` or the first render, re-renders once a second only while it counts. */
-export function useWaitClock(startedAtMs?: number, timeoutMs: number | null = TIMEOUT_MS, showElapsedAfterMs: number = SHOW_ELAPSED_AFTER_MS): WaitClock {
+export function useWaitClock(
+  startedAtMs?: number,
+  timeoutMs: number | null = TIMEOUT_MS,
+  showElapsedAfterMs: number = SHOW_ELAPSED_AFTER_MS,
+): WaitClock {
   const [start, setStart] = useState(() => startedAtMs ?? Date.now());
   const [now, setNow] = useState(start);
   useEffect(() => {
@@ -116,7 +134,9 @@ export function WaitingText({
         <Icon icon={CircleAlert} size={16} tint={color.warn} />
         <View style={styles.lateCopy}>
           <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t("shell.wait.lateTitle")}</Text>
-          <Text style={[TYPE.caption, { color: color.text2 }]}>{t("shell.wait.lateBody", { seconds: clock.elapsedSec })}</Text>
+          <Text style={[TYPE.caption, { color: color.text2 }]}>
+            {t("shell.wait.lateBody", { seconds: clock.elapsedSec })}
+          </Text>
         </View>
         {onRetry ? (
           <Button
@@ -134,9 +154,18 @@ export function WaitingText({
     );
   }
   return (
-    <View accessibilityRole="progressbar" accessibilityLabel={words} accessibilityState={{ busy: true }} style={styles.line}>
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={words}
+      accessibilityState={{ busy: true }}
+      style={styles.line}
+    >
       <ShimmerText style={[style, { color: color.text2 }]}>{`${words}…`}</ShimmerText>
-      {clock.late ? <Text style={[style, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{`· ${t("shell.wait.elapsed", { seconds: clock.elapsedSec })}`}</Text> : null}
+      {clock.late ? (
+        <Text
+          style={[style, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}
+        >{`· ${t("shell.wait.elapsed", { seconds: clock.elapsedSec })}`}</Text>
+      ) : null}
     </View>
   );
 }

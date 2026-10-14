@@ -10,7 +10,9 @@ import { Easing, ReduceMotion, type WithSpringConfig } from "react-native-reanim
 
 import { useTheme as useAppTheme } from "@/theme/theme-provider";
 
-type CamelCase<S extends string> = S extends `${infer Head}-${infer Tail}` ? `${Head}${Capitalize<CamelCase<Tail>>}` : S;
+type CamelCase<S extends string> = S extends `${infer Head}-${infer Tail}`
+  ? `${Head}${Capitalize<CamelCase<Tail>>}`
+  : S;
 type TokenRoles = { [K in keyof (typeof tokens.themes)["light"] as CamelCase<K & string>]: string };
 
 const HEX_RADIX = 16;
@@ -40,7 +42,9 @@ function roles(themeName: ThemeName) {
       : themeName === "testnet-dark"
         ? { ...tokens.themes.dark, ...tokens.themes["testnet-dark"] }
         : tokens.themes[themeName];
-  const base = Object.fromEntries(Object.entries(source).map(([name, value]) => [camel(name), value])) as unknown as TokenRoles;
+  const base = Object.fromEntries(
+    Object.entries(source).map(([name, value]) => [camel(name), value]),
+  ) as unknown as TokenRoles;
   return {
     ...base,
     /** Senryo's app names for the same roles. */
@@ -88,7 +92,12 @@ const PALETTES: Record<ThemeName, KitPalette> = {
   "testnet-dark": roles("testnet-dark"),
 };
 
-export type KitTheme = { name: "light" | "dark"; themeName: ThemeName; network: "mainnet" | "testnet"; color: KitPalette };
+export type KitTheme = {
+  name: "light" | "dark";
+  themeName: ThemeName;
+  network: "mainnet" | "testnet";
+  color: KitPalette;
+};
 
 /** A subtree can pin a theme (the gallery shows every kit part in all four) without touching the app's own. */
 const KitThemeOverride = React.createContext<ThemeName | null>(null);
@@ -127,7 +136,11 @@ export const STACK_FONT_SCALE = 1.2;
 export const SHEET_SHAPE = S.sheet;
 export const DOCK = S.dock;
 export const LAYOUT = S.layout;
-export const SKELETON = { periodMs: S.motion.skeletonPeriodMs, from: S.motion.skeletonFrom, to: S.motion.skeletonTo } as const;
+export const SKELETON = {
+  periodMs: S.motion.skeletonPeriodMs,
+  from: S.motion.skeletonFrom,
+  to: S.motion.skeletonTo,
+} as const;
 
 export const BUTTON = {
   radius: { md: S.button.radiusMd, sm: S.button.radiusSm },
