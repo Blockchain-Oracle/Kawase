@@ -366,6 +366,8 @@ export type OnrampSessionView = {
   /** Circle's session object exactly as the kit minted it: the client kit's `mountIframe({ session })` takes it verbatim. */
   kitSession?: Record<string, unknown>;
 };
+/** Kawase's buy page for an order, with a fresh order key in its fragment (the previous key stops working). */
+export type OnrampPageView = { pageUrl: string };
 export type OnrampQuoteRequest = { engine: OnrampEngineId; amount: string; currency?: string | null | undefined; method?: OnrampMethod | null | undefined };
 /** The provider's price for a purchase (Coinbase only; Circle's widget shows its own). Decimals as strings. */
 export type OnrampQuoteView = {
@@ -732,6 +734,8 @@ export function railsEndpoints(call: Call) {
         call<OnrampVerificationDone>("POST", `/onramp/verifications/${encodeURIComponent(verificationId)}/submit?channel=${channel}`, { otpCode }),
       /** A fresh Circle session for an open order. */
       session: (id: string) => call<OnrampSessionView>("POST", `/onramp/orders/${id}/session`),
+      /** The buy page for an order of the signed-in person, with a new key (to open it again from the app). */
+      page: (id: string) => call<OnrampPageView>("POST", `/onramp/orders/${id}/page`),
     },
     /** The marketplace as tools (categories with counts, price per call, 1P/3P, rail); public data. */
     marketCatalog: {

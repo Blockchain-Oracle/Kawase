@@ -132,6 +132,16 @@ test("coinbase orders: Base delivery starts the Arc leg once, the Arc arrival se
   assert.equal(await service.pageKeyUser(order.id, `${key}x`), undefined);
   assert.equal(await service.pageKeyUser(order.id, "kbuy_nope"), undefined);
 
+  // The app opens the page again (a deep link): a new key for the owner, and the old one stops working. An order still
+  // being carried to Arc is open for it; a stranger is not.
+  const oldKey = second.pageUrl!.split("#k=")[1]!;
+  const reopened = await service.page(userId, second.order.id);
+  const newKey = reopened.pageUrl.split("#k=")[1]!;
+  assert.ok(reopened.pageUrl.startsWith(`https://app.test.local/buy/${second.order.id}#k=kbuy_`));
+  assert.equal(await service.pageKeyUser(second.order.id, newKey), userId);
+  assert.equal(await service.pageKeyUser(second.order.id, oldKey), undefined, "the old key is retired");
+  await assert.rejects(service.page(randomUUID(), second.order.id), /no such purchase/);
+
   // A sandbox order completes at Coinbase without any money: it ends as a test, never as funds.
   state.sandbox = true;
   state.current = { state: "pending", txHash: null, raw: "ONRAMP_ORDER_STATUS_PENDING_PAYMENT", purchaseAmount: "47.20" };
@@ -150,4 +160,5 @@ test("coinbase orders: Base delivery starts the Arc leg once, the Arc arrival se
   const cancelled = await service.start(user, { engine: "coinbase", amount: "10", coinbase: contact }, "app");
   const backed = (await service.event(userId, cancelled.order.id, { event: "onramp_api.cancel" })) as OnrampOrderView;
   assert.deepEqual([backed.status, backed.reason], ["not_completed", "onramp_api.cancel"]);
+  await assert.rejects(service.page(userId, cancelled.order.id), /no longer open/, "a closed purchase has no page to reopen");
 });

@@ -87,6 +87,8 @@ export function onrampRoutes(onramp: OnrampService) {
     return c.json({ order: await onramp.event(c.get("userId")!, c.req.param("id"), input) });
   });
   app.post("/orders/:id/session", async (c) => c.json(await onramp.session(c.get("userId")!, c.req.param("id"))));
+  // The page again, with a new key: signed-in people only (PAGE_PATH keeps a page key holder out of this one).
+  app.post("/orders/:id/page", async (c) => c.json(await onramp.page(c.get("userId")!, c.req.param("id"))));
   app.post("/quote", requireAccount, async (c) => c.json(await onramp.quote(c.get("user")!, await parse(quoteSchema, await c.req.json()))));
   app.post("/verifications", requireAccount, async (c) => {
     const input = await parse(verifySchema, await c.req.json());

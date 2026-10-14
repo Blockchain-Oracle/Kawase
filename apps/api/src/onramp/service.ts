@@ -22,6 +22,7 @@ import type {
   OnrampEventInput,
   OnrampMethod,
   OnrampOrderView,
+  OnrampPageView,
   OnrampQuoteRequest,
   OnrampQuoteView,
   OnrampSessionView,
@@ -304,6 +305,20 @@ export class OnrampService {
     const given = Buffer.from(sha256(key));
     const stored = Buffer.from(row.hash);
     return given.length === stored.length && timingSafeEqual(given, stored) ? row.userId : undefined;
+  }
+
+  /**
+   * Kawase's buy page for an order of the signed-in person, with a new order key (the old one stops working): how the app
+   * opens the page again for an order it did not just start (a deep link, a resumed purchase). Never for a page key holder.
+   */
+  async page(userId: string, id: string): Promise<OnrampPageView> {
+    const row = await this.own(userId, id);
+    if (!this.pageBaseUrl) throw problem(HTTP.unprocessable, "network_unavailable", "the buy page is not served here");
+    const watching = row.engine === "coinbase" && row.deliveryTx !== null && row.expiresAt.getTime() + BRIDGE_WATCH_MS > Date.now();
+    if (!watching && (!OPEN.includes(row.status as OnrampStatus) || row.expiresAt.getTime() < Date.now())) throw problem(HTTP.conflict, "conflict", "this purchase is no longer open");
+    const pageKey = `${PAGE_KEY_PREFIX}${randomBytes(PAGE_KEY_BYTES).toString("base64url")}`;
+    await this.db.update(onrampOrders).set({ pageKeyHash: sha256(pageKey) }).where(eq(onrampOrders.id, row.id));
+    return { pageUrl: `${this.pageBaseUrl}/buy/${row.id}#k=${pageKey}` };
   }
 
   /** A fresh Circle session for an open order (SESSION_TIMEOUT / INVALID_SESSION_TOKEN on the page): same address, same amount. */
