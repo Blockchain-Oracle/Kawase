@@ -52,7 +52,7 @@ const COPY: Record<SuggestionKind, Copy> = {
  * The words for one card: its kind's, with the reason it appears where a kind has more than one (a faster route rather
  * than a cheaper one; a trending token that is not on a verified list).
  */
-function copyFor(suggestion: Suggestion): Copy {
+export function copyFor(suggestion: Suggestion): Copy {
   const copy = COPY[suggestion.kind];
   if (suggestion.kind === "better_route" && suggestion.facts.why === "faster") return { ...copy, title: "forYou.routeTitleFaster", body: "forYou.routeBodyFaster" };
   if (suggestion.kind === "trending_token" && suggestion.facts.status !== "canonical" && suggestion.facts.status !== "listed") return { ...copy, body: "forYou.trendingBodyUnverified" };

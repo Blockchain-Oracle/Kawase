@@ -1,0 +1,70 @@
+// Home's one hero figure (D37 decision 1): the total of every asset, chain and position, rolling to each new value
+// (the Skia odometer on the phone, NumberFlow on the web), today's change as a word-and-sign chip and a sparkline of
+// the week beside it (Senryo: rolling digits and a sparkline beside every balance). Tapping it opens the portfolio
+// sheet (your assets, hidden ones, other chains with Bring to Arc, positions). Loading is the hero's own skeleton,
+// never a fake $0; a read that failed keeps the last total and says how old it is; hidden balances stay masked.
+import * as React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import type { PortfolioView } from "@kawase/api-client";
+
+import { ChangeChip, RollingFigure, Skeleton, Sparkline, SIZE, SPACE, StaleTick, TYPE, useTheme } from "@/components/kit";
+import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
+import { money } from "@/portfolio/format";
+
+const FIGURE_HEIGHT = TYPE.displayBalance.lineHeight ?? SIZE.avatarLg;
+const CENTS = 100;
+const PERCENT = 100;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const MIN_POINTS = 2;
+
+export function BalanceHero({
+  portfolio,
+  loading,
+  failedAt,
+  onOpen,
+}: {
+  portfolio: PortfolioView | undefined;
+  loading: boolean;
+  /** When the last good read was, if the latest one failed. */
+  failedAt?: number | undefined;
+  onOpen: () => void;
+}) {
+  const { t } = useT();
+  const { locale } = useLocale();
+  const { color } = useTheme();
+  const fx = portfolio?.fx ?? { currency: "USD", perUsd: 1 };
+  const total = portfolio?.totalUsd ?? 0;
+  const text = money(total, fx, locale);
+  const week = React.useMemo(() => {
+    const since = Date.now() - WEEK_MS;
+    const points = (portfolio?.history ?? []).filter((point) => new Date(point.t).getTime() >= since).map((point) => point.usd);
+    return points.length >= MIN_POINTS ? points : null;
+  }, [portfolio?.history]);
+  const pct = portfolio?.change24hPct;
+
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${t("feed.home.balance")} ${text}`} accessibilityHint={t("feed.home.balanceHint")} onPress={onOpen} style={({ pressed }) => [styles.hero, pressed ? styles.pressed : null]}>
+      <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.home.balance")}</Text>
+      {portfolio ? (
+        <RollingFigure text={text} value={BigInt(Math.round(total * CENTS))} color={total === 0 ? color.text3 : color.ink} height={FIGURE_HEIGHT} align="left" sensitive />
+      ) : loading ? (
+        <Skeleton width="60%" height={FIGURE_HEIGHT} />
+      ) : (
+        <Text style={[TYPE.body, { color: color.text3 }]}>{t("feed.home.balanceUnknown")}</Text>
+      )}
+      <View style={styles.row}>
+        {pct !== null && pct !== undefined ? <ChangeChip change={pct / PERCENT} /> : null}
+        {week ? <Sparkline points={week} /> : null}
+        {failedAt ? <StaleTick asOf={failedAt} reason="refresh-failed" compact /> : null}
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: { gap: SPACE.xs, paddingVertical: SPACE.sm },
+  pressed: { opacity: 0.8 },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: SIZE.sparkline },
+});
