@@ -20,12 +20,11 @@ Last updated: 2026-10-14 midday (revamp Stage 0 done, Stage 2 running; plan comp
 - Keys from Codex #1 are in `.env`: Privy (app id, secret, client id), Uniswap, 0x. Codex #2 (Coinbase CDP + Circle KYB read) and #3 (Resend) briefs are in `plan/prompts/`.
 - Local Postgres: OrbStack had stopped. Started `deploy-postgres-1` (5433).
 
-**Running:**
-- L6 business removal (Sonnet, worktree; agent background).
-- Stage 2 workflow `wf_74fe5a08-c7c`: L1 look, L3 budget, L4 routes, L5 buy-market, L7 wallet (builder → reviewer → fixer).
-- L2 front door and L6 desktop start after business removal merges, since they share agent/chat files.
-
-**Not yet pushed or deployed:** main has the merges and the shared base. Push once business removal is merged (Coolify auto-deploys api and web from main).
+**Afternoon:**
+- Business removal is merged and reconciled with the salvage (`2689e86e`; migration 0090 re-stamped after 0078; all 56 migrations apply to a fresh DB). It is pushed and deployed: the api applied the migrations, and web returns 404 at /business. Docs and landing were redeployed.
+- A session restart stopped Stage 2 and 2b mid-build. All work was saved on the lane branches `lane/{look,budget,routes,buy-market,wallet,front-door,desktop}-s2`. Budget's and Look's uncommitted work, lost by a force-remove, was replayed from the agent transcripts (see memory never-force-remove-worktrees).
+- **Running:** resume workflow `wf_26527e44-8e8`, script at the session scratchpad `stage2-resume.js`. It runs 7 lanes, all Opus, builder → reviewer → fixer. Each continues from its branch after `git merge main`. To resume after another restart: `Workflow({scriptPath, resumeFromRunId: "wf_26527e44-8e8"})`, after saving any loose worktree work one lane at a time.
+- Coinbase CDP keys are in `.env` (Codex #2): trial is 25 tx × $5. Circle shows bank transfer before KYB once the domain is registered: Codex brief `plan/prompts/codex-2026-10-14-circle-domain.md`. Resend (Codex #3) is still pending.
 
 **Owner:** run the Codex #2 and #3 briefs; back up `~/.kawase-secrets`; fund mainnet ops and relayer by Friday.
 
