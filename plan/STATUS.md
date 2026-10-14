@@ -1,7 +1,25 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-03 afternoon (security fixes running in 4 worktrees, desktop web in 1; OpenAI credit out; per-area truth in `plan/COVERAGE.md`)
+Last updated: 2026-10-14 morning (deadline moved to 2026-10-17; revamp research running; agent and voice back up with a new OpenAI key)
+
+## 2026-10-14 — back after ten days; deadline now 10-17
+
+- **Deadline:** extended to **2026-10-17 11:59 PM ET** (Abu). The repo `Blockchain-Oracle/kawase` is still private; it must be public by submission.
+- **Abu's direction** (verbatim in `context/08-product-research/ABU-BRIEF-VERBATIM.md`, 10-14):
+  - the agent is the front door and acts on its own within a budget, with no Face ID after every action; screens are add-ons;
+  - every venue reachable with real logos (swap, bridge, earn, perps, x402);
+  - buying with Apple Pay/card inside Kawase in our own design;
+  - a real marketplace surface;
+  - Move and long/short on desktop; the web app ships alongside the phone;
+  - remove business; meme coins stay;
+  - Senryo (metropolis) is the primary design and flow source, with 21st.dev components;
+  - replace Turnkey ("Tempo" by voice) with a free alternative.
+- **Production on 10-14:** api, app, landing and docs healthy; 2 accounts, 83 guests, 0 completed money actions.
+- **OpenAI:** a new key is in `.env` and on Coolify `kawase-api` + `kawase-voice` (runtime-only). A guest chat turn was verified in production.
+- **Voice:** `kawase-voice` had exited since 10-07. It was redeployed and has registered with LiveKit Cloud. Its health check stays off: another project's session disabled it on 10-07 because the box was overloaded (load ~10).
+- **Unmerged:** ~36 commits from the 10-03 builders sit in `.claude/worktrees/agent-*`. `agent-a276d…` is stuck mid-merge, with conflicts in two business files.
+- **Research workflow** `wf_4770cea0-c4d` (9 agents) is writing to the session scratchpad `research-2026-10-14/`. The revamp plan follows from it.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
