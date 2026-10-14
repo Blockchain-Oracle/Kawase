@@ -780,7 +780,7 @@ export class CrossChainService {
     }
     if ((provider as Provider) === "socket") {
       const slippageBps = token.usdc && same(draft.outputToken, chain.usdc) ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
-      const route = await socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: token.address, outputToken: same(draft.outputToken, zeroAddress) ? SOCKET_NATIVE : draft.outputToken, amount, user: draft.from, receiver: draft.recipient, slippageBps });
+      const route = await socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: token.address, outputToken: same(draft.outputToken, zeroAddress) ? SOCKET_NATIVE : draft.outputToken, amount, user: draft.from, receiver: draft.recipient, slippageBps, fresh: true });
       if (route.minOutputAmount < draft.minReceived) return { changed: true };
       const check = checkSocketCalls(route.calls, { token: token.address, amount, receiver: draft.recipient, expiresAt: route.expiresAt });
       if (!check.ok) throw this.refused(provider, check.reason);

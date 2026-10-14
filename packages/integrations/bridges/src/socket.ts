@@ -40,6 +40,8 @@ export type SocketQuoteInput = {
   user: Address;
   receiver: Address;
   slippageBps: number;
+  /** Building calls to sign: ask Socket again instead of the 15 s memory (the quote previews read). */
+  fresh?: boolean | undefined;
 };
 
 export type SocketRoute = {
@@ -110,10 +112,10 @@ const HTTP_TOO_MANY = 429;
 type Answer = Awaited<ReturnType<typeof get>>;
 const quoteState = { blockedUntil: 0, strikes: 0, cache: new Map<string, { at: number; value: Answer }>() };
 
-async function quoteGet(query: string): Promise<Answer> {
+async function quoteGet(query: string, fresh = false): Promise<Answer> {
   const now = Date.now();
   const cached = quoteState.cache.get(query);
-  if (cached && now - cached.at < QUOTE_CACHE_MS) return cached.value;
+  if (!fresh && cached && now - cached.at < QUOTE_CACHE_MS) return cached.value;
   if (quoteState.blockedUntil > now) return { ok: false, status: HTTP_TOO_MANY, body: {} };
   const answer = await get(`/swap/quote?${query}`);
   if (answer.status === HTTP_TOO_MANY) {
@@ -166,7 +168,7 @@ export async function socketRoutes(input: SocketQuoteInput): Promise<SocketRoute
     receiverAddress: input.receiver,
     slippage: String((input.slippageBps / BPS) * PERCENT),
   });
-  const { ok, status, body } = await quoteGet(query.toString());
+  const { ok, status, body } = await quoteGet(query.toString(), input.fresh === true);
   if (status === HTTP_TOO_MANY) throw new BridgeProviderError("Socket", "rate_limited", "Socket's shared public limit is reached");
   const result = body.result as { routes?: RawRoute[] } | undefined;
   const routes = (result?.routes ?? []).map((raw) => toRoute(raw, input)).filter((route): route is SocketRoute => Boolean(route));

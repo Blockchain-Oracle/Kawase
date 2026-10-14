@@ -127,7 +127,7 @@ export function createRouteRacer(deps: RouteRacerDeps) {
         .quoteEach(
           { network: context, client, from, tokenIn: tokenIn.address, tokenOut: tokenOut.address, amountIn, decimalsIn: tokenIn.decimals, decimalsOut: tokenOut.decimals, slippageBps },
           // A venue this server has no key for is not a row the person needs to see.
-          SWAP_VENUES.filter((venue) => deps.venues.configured?.(venue) ?? true),
+          SWAP_VENUES.filter((venue) => deps.venues.configured(venue)),
         )
         .map((attempt) => {
           const pending = checkingRow(attempt.venue, venueKey(attempt.venue), venueName(attempt.venue));

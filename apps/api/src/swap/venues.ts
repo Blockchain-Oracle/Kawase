@@ -79,7 +79,7 @@ export type SwapVenues = {
   /** The chosen venue's calls for exactly this swap, checked; throws `VenueRefused` when they do not hold. */
   prepare(venue: SwapVenue, input: VenueInput & { minOut: bigint }): Promise<PreparedSwap>;
   /** False for a keyed venue this server has no key for: it is not asked in a race and never shown as a row. */
-  configured?(venue: SwapVenue): boolean;
+  configured(venue: SwapVenue): boolean;
 };
 
 /** API keys for the keyed venues; a venue without its key reports `needs_key` and the others decide. */
@@ -157,9 +157,9 @@ async function lifiQuote(input: VenueInput, slippageBps: number, priority: LifiP
 }
 
 /** Socket's best same-chain route, held to its own minimum (Socket takes 20 bps, netted in the amounts). */
-async function socketSwap(input: VenueInput, slippageBps: number): Promise<SocketRoute> {
+async function socketSwap(input: VenueInput, slippageBps: number, fresh = false): Promise<SocketRoute> {
   if (input.network.isRealMoney === false) throw new VenueRefused("socket", "not_on_network");
-  const [best] = await socketRoutes({ originChainId: input.network.chainId, destinationChainId: input.network.chainId, inputToken: input.tokenIn, outputToken: input.tokenOut, amount: input.amountIn, user: input.from, receiver: input.from, slippageBps });
+  const [best] = await socketRoutes({ originChainId: input.network.chainId, destinationChainId: input.network.chainId, inputToken: input.tokenIn, outputToken: input.tokenOut, amount: input.amountIn, user: input.from, receiver: input.from, slippageBps, fresh });
   return best!;
 }
 
@@ -297,7 +297,8 @@ export function createSwapVenues(appKit: SwapEngine, keys: VenueKeys = appKit.ve
           return { calls: quoted.calls, guaranteedOut: check.guaranteedOut };
         }
         case "socket": {
-          const route = await socketSwap(input, input.slippageBps);
+          // The calls to sign come from a fresh quote, never the preview's memory (its quoteId and expiry are the live ones).
+          const route = await socketSwap(input, input.slippageBps, true);
           // Opaque calldata: the quote's own minimum stands for the on-chain one, and the receipt is witnessed.
           if (route.minOutputAmount < input.minOut) throw new VenueRefused(venue, "below_minimum");
           const check = checkSocketCalls(route.calls, { token: input.tokenIn, amount: input.amountIn, receiver: input.from, expiresAt: route.expiresAt });
