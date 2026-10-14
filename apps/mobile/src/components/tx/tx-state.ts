@@ -61,6 +61,33 @@ export function reduceTx(state: TxState, event: TxEvent): TxState {
   }
 }
 
+const CLIENT_ERROR = 400;
+const SERVER_ERROR = 500;
+
+/** A 4xx answer is the server refusing in words: the intent was read and turned down, so nothing moved. */
+export function isClientRefusal(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
+}
+
+/**
+ * How a thrown error ends a money action. Once the transaction has left the phone (`submitted`), nothing thrown after it
+ * can prove the money stayed: a 404 "not found yet" or a 409 "already known" from a later status or receipt read, a
+ * dropped connection, even a message that reads like a refusal. It ends `unknown`, stays in the journal and is never
+ * offered again from the same button. Before it left, a signed and journalled intent whose send failed without an
+ * answer is also `unknown` (the send may have landed). Only a refusal in words (a 4xx, a cancelled prompt) before
+ * anything left the phone, or any error before the intent was journalled, is a plain "no".
+ */
+export function endingOfThrow(at: {
+  left: boolean;
+  journalled: boolean;
+  refusedInWords: boolean;
+}): "unknown" | "refused" {
+  if (at.left) return "unknown";
+  if (at.journalled && !at.refusedInWords) return "unknown";
+  return "refused";
+}
+
 /** The CTA accepts a tap in these states only. A failure where money moved, or may have, is never retried from the same
  * button (a second tap could pay twice): recovery reads the status and the failure card names what to do. */
 export const canConfirm = (state: TxState): boolean =>

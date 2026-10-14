@@ -14,16 +14,7 @@ import { fire, type SoundName } from "@/feedback/fire";
 import { announce } from "../kit/announce";
 import { type Diagnosis, diagnose } from "../kit/diagnosis";
 import { answerLost, forgetIntent, journalIntent, type JournalMark, noteTxHash } from "./journal";
-import { reduceTx, type TxEvent, type TxState, TX_IDLE } from "./tx-state";
-
-const CLIENT_ERROR = 400;
-const SERVER_ERROR = 500;
-
-/** A 4xx answer is the server refusing in words: the intent was read and turned down, so nothing moved. */
-function isClientRefusal(error: unknown): boolean {
-  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
-  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
-}
+import { endingOfThrow, isClientRefusal, reduceTx, type TxEvent, type TxState, TX_IDLE } from "./tx-state";
 
 export type TxOutcome =
   | { status: "confirmed"; txHash?: string | null }
@@ -48,7 +39,8 @@ export type TxRunOptions = {
 export type TxRunner = {
   state: TxState;
   dispatch: (event: TxEvent) => void;
-  /** Runs one action; resolves with its outcome. A thrown error becomes a refused outcome with its diagnosis. */
+  /** Runs one action; resolves with its outcome. A thrown error becomes `unknown` once the action has left the phone (or
+   * was journalled and lost its answer), and `refused` only before that. */
   run: (send: (progress: TxProgress) => Promise<TxOutcome>, options?: TxRunOptions) => Promise<TxOutcome>;
   reset: () => void;
 };
@@ -78,12 +70,15 @@ export function useTxLifecycle(): TxRunner {
         outcome = await send(progress);
       } catch (error) {
         const diagnosis = diagnose(error);
-        // Once the signed intent is journalled or on its way, a thrown error (a dropped connection while waiting for the
-        // receipt, say) does not mean the money stayed: the answer was lost. It stays in the journal for recovery to read,
-        // and the card says "waiting on the chain", never "no money moved". Only a refusal in words (a 4xx, a cancelled
-        // prompt) before anything left the phone is a plain "no".
-        const refusedInWords = diagnosis.kind === "rejected" || isClientRefusal(error);
-        if ((left || journalId.current) && !refusedInWords) {
+        // Once the transaction left the phone, nothing thrown afterwards (a 404 or 409 from a later receipt read, a
+        // dropped connection) proves the money stayed: the answer was lost. It stays in the journal for recovery to read,
+        // and the card says "waiting on the chain", never "no money moved" (see `endingOfThrow`).
+        const ending = endingOfThrow({
+          left,
+          journalled: journalId.current !== null,
+          refusedInWords: diagnosis.kind === "rejected" || isClientRefusal(error),
+        });
+        if (ending === "unknown") {
           if (journalId.current) answerLost(journalId.current);
           outcome = { status: "unknown", diagnosis };
         } else outcome = { status: "refused", diagnosis };
