@@ -24,12 +24,12 @@
         },
         "deviations": [
           "one column list, not a table: Wise compare-sheet layout (plan/research 08-references #1) — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
-          "no ▲/▼ change glyphs or wash: a route row changes once (checking → quoted), so the light-up (mark opacity 0.38 → 1) carries it",
+          "no ▲/▼ change glyphs: a route row changes once (checking → quoted), so the light-up carries it: the mark goes 0.38 → 1 and 29368's ChangePulse wash (accent at 10%, 0.85 → 0 over 1.4 s, fade-out only) runs once; reduced motion skips the wash",
           "routes Kawase cannot run are never offered: they collapse into one 'Didn't quote' disclosure with their reason",
           "motion/react replaced by react-native-reanimated so one file serves iOS, Android and the web (react-native-web)",
           "token names only (bg-card, border-primary, text-muted-foreground…); values come from the Look lane"
         ],
-        "status": "built (Stage 2) — shown in /dev/gallery replaying races recorded on Arc mainnet; live via use-route-race.ts once POST /routes/race is mounted"
+        "status": "built (Stage 2) — shown in /dev/gallery replaying races recorded on Arc mainnet; live via use-route-race.ts + race-source.ts (expo/fetch NDJSON stream) once POST /routes/race is mounted"
       }
     ]
   }

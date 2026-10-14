@@ -18,7 +18,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { ChevronDown, CloudOff, RotateCw, SearchX } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, View } from "react-native";
-import Animated, { FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 
 import { tapFeedback } from "@/feedback/feedback";
 import { useLocale } from "@/i18n/locale-provider";
@@ -45,6 +45,9 @@ const ROTATE_OPEN = 180;
 const OTHER_MARKS = 5;
 /** Those marks sit halfway between dimmed and lit. */
 const OTHER_OPACITY = 0.69;
+/** The landing wash (21st 29368 `highlightDuration`): starts at this opacity and fades out over WASH_MS. */
+const WASH_FROM = 0.85;
+const WASH_MS = 1_400;
 
 export type RouteListState = "live" | "error" | "offline";
 
@@ -249,10 +252,18 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
   const reduced = useReducedMotionLive();
   const quoted = row.status === "quoted";
   const lit = useSharedValue(quoted ? 1 : DIM);
+  // 21st 29368's change pulse: when a quote lands, one accent wash that only fades out (it never blinks).
+  const wash = useSharedValue(0);
+  const wasQuoted = React.useRef(quoted);
   React.useEffect(() => {
     lit.value = withTiming(quoted ? 1 : DIM, { duration: reduced ? REDUCED_MS : MOTION.sheetMs });
-  }, [quoted, reduced, lit]);
+    if (quoted && !wasQuoted.current && !reduced) {
+      wash.value = withSequence(withTiming(WASH_FROM, { duration: 0 }), withTiming(0, { duration: WASH_MS, easing: Easing.out(Easing.quad) }));
+    }
+    wasQuoted.current = quoted;
+  }, [quoted, reduced, lit, wash]);
   const markStyle = useAnimatedStyle(() => ({ opacity: lit.value }));
+  const washStyle = useAnimatedStyle(() => ({ opacity: wash.value }));
 
   const delta = deltaToBest(row, best);
   const eta = etaWords(row.etaSeconds);
@@ -262,6 +273,7 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
 
   return (
     <View className={cn("bg-card overflow-hidden rounded-2xl border", selected ? "border-primary border-2" : "border-border")}>
+      <Animated.View pointerEvents="none" className="bg-primary/10 absolute inset-0" style={washStyle} />
       <Pressable
         accessibilityRole={readOnly ? "text" : "radio"}
         accessibilityState={{ checked: selected, disabled: !quoted }}
