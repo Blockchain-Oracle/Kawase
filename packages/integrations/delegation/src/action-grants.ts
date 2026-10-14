@@ -41,7 +41,6 @@ const NONCE_BYTES = 32;
 export const ERC4626_ABI = parseAbi([
   "function deposit(uint256 assets, address receiver) returns (uint256 shares)",
   "function withdraw(uint256 assets, address receiver, address owner) returns (uint256 shares)",
-  "function asset() view returns (address)",
 ]);
 
 /** 32 random bytes for a delegation's salt. */

@@ -14,7 +14,7 @@ import { intents, type Db } from "@kawase/db";
 import { encodeIncrementNonce } from "@kawase/integrations-delegation";
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
-import { BUDGET_CATEGORIES, budgetTypedData, isSaneBudget, verifyBudget, type BudgetCategory, type BudgetPolicy } from "@kawase/wallet";
+import { budgetTypedData, isSaneBudget, verifyBudget, type BudgetCategory, type BudgetPolicy } from "@kawase/wallet";
 
 import { HTTP, ProblemError, problem } from "../http/problem";
 import { safetySettingsOf } from "../safety/settings";
@@ -329,8 +329,6 @@ export class BudgetService {
     return new Set(rows.map((row) => row.intentId).filter((value): value is string => Boolean(value)));
   }
 }
-
-export const KNOWN_CATEGORIES = BUDGET_CATEGORIES;
 
 export function serializePolicy(policy: BudgetPolicy) {
   return { ...policy, weeklyCap: policy.weeklyCap.toString(), perActionCap: policy.perActionCap.toString() };

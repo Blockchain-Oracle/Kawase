@@ -5,7 +5,7 @@
 // Then the ledger shows the spend, a paused budget or an action over the per-action cap is "outside_budget", and the
 // kill-switch (incrementNonce, signed with no Face ID, relayed) pauses the budget and ends every grant at the old nonce.
 // Needs the testnet keys in the root .env and DATABASE_URL pointing at a migrated (scratch) database.
-// Run from apps/api: npx tsx src/budget/budget.testnet.ts
+// Run from apps/api: npx tsx test/budget.testnet.ts
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { writeFileSync } from "node:fs";
@@ -23,28 +23,28 @@ import { getNetwork } from "@kawase/networks";
 import { BUDGET_ENFORCERS, DELEGATION_FRAMEWORK_MANAGER, budgetTypedData, checkRevoke, reviveDelegationTypedData, venueRouters } from "@kawase/wallet";
 
 // The phone's own budget guard and its live inputs, exactly as the app runs them (a test-only import of app code).
-import { arcReads } from "../../../mobile/src/budget/chain";
-import { budgetAllows, type GuardContext, type GuardDeps } from "../../../mobile/src/budget/guard";
-import { kyberQuote } from "../../../mobile/src/budget/price";
+import { arcReads } from "../../mobile/src/budget/chain";
+import { budgetAllows, type GuardContext, type GuardDeps } from "../../mobile/src/budget/guard";
+import { kyberQuote } from "../../mobile/src/budget/price";
 
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "../../test/helpers";
-import { attachSession } from "../auth/middleware";
-import { appKitEarn } from "../earn/engine";
-import { EarnService } from "../earn/service";
-import { ProblemError, problemResponse } from "../http/problem";
-import { circleOps } from "../send/ops";
-import { appKitSwaps } from "../swap/engine";
-import { SwapService } from "../swap/service";
-import { AssetService } from "../tokens/service";
-import { noMarketData } from "../market/sources";
-import type { AppEnv } from "../types";
-import { createChains } from "../wallet/chain";
-import { WalletService } from "../wallet/service";
-import type { LeafResponse } from "./leaf";
-import { budgetRoutes } from "./routes";
-import { BudgetService, type BudgetView, type LedgerRow } from "./service";
+import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { attachSession } from "../src/auth/middleware";
+import { appKitEarn } from "../src/earn/engine";
+import { EarnService } from "../src/earn/service";
+import { ProblemError, problemResponse } from "../src/http/problem";
+import { circleOps } from "../src/send/ops";
+import { appKitSwaps } from "../src/swap/engine";
+import { SwapService } from "../src/swap/service";
+import { AssetService } from "../src/tokens/service";
+import { noMarketData } from "../src/market/sources";
+import type { AppEnv } from "../src/types";
+import { createChains } from "../src/wallet/chain";
+import { WalletService } from "../src/wallet/service";
+import type { LeafResponse } from "../src/budget/leaf";
+import { budgetRoutes } from "../src/budget/routes";
+import { BudgetService, type BudgetView, type LedgerRow } from "../src/budget/service";
 
-config({ path: new URL("../../../../.env", import.meta.url).pathname, quiet: true });
+config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
 const POLL_MS = 2000;
 const USDC_DECIMALS = 6;

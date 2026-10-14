@@ -163,7 +163,6 @@ const ERC4626_ABI = parseAbi([
   "function withdraw(uint256 assets, address receiver, address owner) returns (uint256 shares)",
 ]);
 
-
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
 const find = <T extends DecodedCaveat["type"]>(decoded: DecodedDelegation, type: T) =>
@@ -204,7 +203,6 @@ function checkLeafCommon(decoded: DecodedDelegation, expected: LeafExpectation, 
   // Two balance changes on one token in one delegation lock each other (enforcer-is-locked): never what Kawase sends.
   if (new Set(balance.map((change) => change.token.toLowerCase())).size !== balance.length) refuse("a leaf that watches one token twice");
 }
-
 
 /** Each leaf has its own salt: limits and balance caches are keyed by the delegation, so twins would share them. */
 function checkSalts(typedData: readonly TypedDataLike[]) {
@@ -345,7 +343,6 @@ export function checkContactGrant(typedData: TypedDataLike, expected: ContactGra
     refuse("a grant with terms its card does not show");
   return decoded;
 }
-
 
 /**
  * A delegation's typed data as the api sends it (JSON: the salt as a decimal string) back in the shape the wallet

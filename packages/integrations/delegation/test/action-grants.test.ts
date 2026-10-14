@@ -8,7 +8,7 @@ import type { Delegation } from "@metamask/smart-accounts-kit";
 import { encodeFunctionData, erc20Abi, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { getNetwork } from "@kawase/networks";
-import { SigningRefused, checkContactGrant, checkEarnLeaves, checkGrant, checkRevoke, checkSwapLeaves, type ShownGrant } from "@kawase/wallet";
+import { LEAF_TTL_SECONDS as PHONE_LEAF_TTL_SECONDS, SigningRefused, checkContactGrant, checkEarnLeaves, checkGrant, checkRevoke, checkSwapLeaves, type ShownGrant } from "@kawase/wallet";
 
 import {
   LEAF_TTL_SECONDS,
@@ -130,4 +130,8 @@ test("the kill-switch is a revoke the phone signs with no prompt; anything else 
   const sneaky = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [stranger as Address, 1n] });
   assert.throws(() => checkRevoke({ transaction: { to: wallet, data: encodeSelfBatch([{ to: kill.to, data: kill.data }, { to: usdc, data: sneaky }]), value: "0", chainId: network.chainId } }, wallet), SigningRefused);
   assert.equal(LEAF_TTL_SECONDS, 120);
+});
+
+test("the phone allows exactly the leaf life the builder gives (the two packages keep their own copy)", () => {
+  assert.equal(PHONE_LEAF_TTL_SECONDS, LEAF_TTL_SECONDS);
 });
