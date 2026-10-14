@@ -1,24 +1,26 @@
-// Swap and Bridge are two ways of moving value: one switch at the top of both screens (the fan's Swap opens it),
-// so the fan stays at five actions. Switching replaces the screen rather than stacking it.
+// Swap, Move and Long/Short are the ways of moving value: one switch at the top of each screen (the fan's Swap opens
+// it), so the fan stays at five actions. Switching replaces the screen rather than stacking it. The kit's Segmented
+// (21st #23552). Move is the one cross-chain screen (every bridge on the RouteList); /bridge only redirects to it.
 import { useRouter } from "expo-router";
 import * as React from "react";
 
-import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
-
+import { Segmented } from "@/components/kit";
 import { useCapability } from "@/home/use-capability";
 import { useT } from "@/i18n";
 
-export function TradeSwitch({ current }: { current: "swap" | "bridge" | "margin" }) {
+type Trade = "swap" | "bridge" | "margin";
+
+export function TradeSwitch({ current }: { current: Trade }) {
   const { t } = useT();
   const router = useRouter();
   const bridgeReady = useCapability("bridge") === "available";
   if (!bridgeReady && current === "swap") return null;
   return (
-    <SegmentedControl
+    <Segmented<Trade>
       label={t("swap.title")}
       value={current}
-      onValueChange={(value) => {
-        if (value !== current) router.replace(value === "bridge" ? "/bridge" : value === "margin" ? "/margin" : "/swap");
+      onChange={(value) => {
+        if (value !== current) router.replace(value === "bridge" ? "/move" : value === "margin" ? "/margin" : "/swap");
       }}
       options={[
         { value: "swap", label: t("swap.title") },
