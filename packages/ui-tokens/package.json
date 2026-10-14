@@ -2,7 +2,7 @@
   "name": "@kawase/ui-tokens",
   "version": "0.0.0",
   "private": true,
-  "description": "Design tokens (direction: Koe). tokens.json is the source; native.css, web.css and tokens.ts are generated.",
+  "description": "Design tokens (direction: Senryo, D40). tokens.json is the source; native.css, web.css and tokens.ts are generated.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs && node check-contrast.mjs",

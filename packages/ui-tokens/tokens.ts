@@ -564,13 +564,13 @@ export const tokens = {
     "disabledOpacity": 0.5
   },
   "story": {
-    "ink": "#0B0C10",
+    "ink": "#000000",
     "fields": {
-      "lime": "#D4FF3A",
-      "periwinkle": "#7C8CFF",
-      "mint": "#8CF2C9",
-      "coral": "#FF7D6B",
-      "ice": "#DCE4F5"
+      "lime": "#B5F543",
+      "periwinkle": "#3FE0F0",
+      "mint": "#FCE3FC",
+      "coral": "#FF647C",
+      "ice": "#ECECEC"
     }
   },
   "themes": {
