@@ -96,6 +96,8 @@ const MOVE_REASONS: Record<string, string> = {
   RECIPIENT_INVALID: "That address is not valid.",
   RECIPIENT_UNKNOWN: "Kawase does not know who that is; ask for a saved contact, a @handle or an address.",
   RECIPIENT_NO_WALLET: "That person has no Kawase wallet yet.",
+  RECIPIENT_BLOCKED: "The person blocked them, so Kawase will not pay them.",
+  ADDRESS_CHANGE_HOLD: "Their address there was added or changed recently, so payments wait out a safety hold.",
   AMOUNT_MISSING: "How much?",
   AMOUNT_INVALID: "The amount is not valid.",
   INSUFFICIENT_BALANCE: "Not enough of that asset there.",

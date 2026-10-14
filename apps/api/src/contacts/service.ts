@@ -6,7 +6,7 @@ import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import { getAddress, isAddress, type Address } from "viem";
 
 import { CONTACT_ADDRESS_CHANGE_COOLDOWN_S, MS_PER_SECOND } from "@kawase/config";
-import type { AddressSource, Contact, ContactInput, VerifyMethod } from "@kawase/api-client";
+import type { AddressSource, Contact, ContactChain, ContactInput, VerifyMethod } from "@kawase/api-client";
 import {
   contactAddressEvents,
   contactAddresses,
@@ -21,7 +21,7 @@ import type { NetworkId } from "@kawase/networks";
 import { HTTP, problem } from "../http/problem";
 import { blockedSets } from "./blocks";
 
-const ARC = "arc";
+const ARC: ContactChain = "arc";
 const HANDLE_PREFIX = "@";
 
 type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -134,8 +134,9 @@ export class ContactService {
     const blocked = await blockedSets(this.db, rows[0]!.userId);
     return rows.map((row) => {
       const own = addresses.filter((address) => address.contactId === row.id);
-      const active = own.find((address) => address.status === "active" && address.isPreferred);
-      const pending = own.find((address) => address.status === "pending_cooldown");
+      // The contact's address and its hold are its Arc one; addresses on other chains are listed with theirs.
+      const active = own.find((address) => address.chainKey === ARC && address.status === "active" && address.isPreferred);
+      const pending = own.find((address) => address.chainKey === ARC && address.status === "pending_cooldown");
       return {
         id: row.id,
         displayName: row.displayName,
@@ -148,6 +149,7 @@ export class ContactService {
         pendingChange: pending ? { address: pending.address, activatesAt: iso(pending.activatesAt)! } : null,
         addresses: own.map((address) => ({
           id: address.id,
+          chain: address.chainKey as ContactChain,
           address: address.address,
           version: address.version,
           status: address.status,
@@ -258,11 +260,13 @@ export class ContactService {
   }
 
   /** A new address for a contact: it waits out the cooldown, and the contact cannot be paid until then. */
-  async changeAddress(userId: string, id: string, input: { address: string; source?: AddressSource | undefined }, requestedBy: "user" | "agent" = "user") {
+  async changeAddress(userId: string, id: string, input: { address: string; source?: AddressSource | undefined }, requestedBy: "user" | "agent" = "user", chain: ContactChain = ARC) {
     const contact = await this.get(userId, id);
     const resolved = await this.resolveInput(userId, input.address, input.source);
-    const current = contact.addresses.find((address) => address.status === "active");
-    if (current && current.address.toLowerCase() === resolved.address.toLowerCase() && !contact.pendingChange)
+    // Per chain: a new or changed address on Base waits out the same hold as one on Arc (I4).
+    const current = contact.addresses.find((address) => address.chain === chain && address.status === "active");
+    const pendingHere = contact.addresses.some((address) => address.chain === chain && address.status === "pending_cooldown");
+    if (current && current.address.toLowerCase() === resolved.address.toLowerCase() && !pendingHere)
       throw problem(HTTP.unprocessable, "validation", "that is already the contact's address");
     const activatesAt = new Date(Date.now() + CONTACT_ADDRESS_CHANGE_COOLDOWN_S * MS_PER_SECOND);
     const nextVersion = Math.max(0, ...contact.addresses.map((address) => address.version)) + 1;
@@ -270,11 +274,11 @@ export class ContactService {
       await tx
         .update(contactAddresses)
         .set({ status: "retired", isPreferred: false })
-        .where(and(eq(contactAddresses.contactId, id), eq(contactAddresses.status, "pending_cooldown")));
+        .where(and(eq(contactAddresses.contactId, id), eq(contactAddresses.chainKey, chain), eq(contactAddresses.status, "pending_cooldown")));
       const [existing] = await tx
         .select({ id: contactAddresses.id })
         .from(contactAddresses)
-        .where(and(eq(contactAddresses.contactId, id), sql`lower(${contactAddresses.address}) = ${resolved.address.toLowerCase()}`));
+        .where(and(eq(contactAddresses.contactId, id), eq(contactAddresses.chainKey, chain), sql`lower(${contactAddresses.address}) = ${resolved.address.toLowerCase()}`));
       const values = {
         status: "pending_cooldown" as const,
         isPreferred: false,
@@ -289,7 +293,7 @@ export class ContactService {
         : (
             await tx
               .insert(contactAddresses)
-              .values({ contactId: id, userId, chainKey: ARC, address: resolved.address, ...values })
+              .values({ contactId: id, userId, chainKey: chain, address: resolved.address, ...values })
               .returning({ id: contactAddresses.id })
           )[0]!.id;
       await tx.insert(contactAddressEvents).values({
@@ -305,14 +309,14 @@ export class ContactService {
     return this.get(userId, id);
   }
 
-  async cancelChange(userId: string, id: string) {
+  async cancelChange(userId: string, id: string, chain: ContactChain = ARC) {
     const contact = await this.get(userId, id);
-    if (!contact.pendingChange) return contact;
+    if (!contact.addresses.some((address) => address.chain === chain && address.status === "pending_cooldown")) return contact;
     await this.db.transaction(async (tx) => {
       const [retired] = await tx
         .update(contactAddresses)
         .set({ status: "retired" })
-        .where(and(eq(contactAddresses.contactId, id), eq(contactAddresses.status, "pending_cooldown")))
+        .where(and(eq(contactAddresses.contactId, id), eq(contactAddresses.chainKey, chain), eq(contactAddresses.status, "pending_cooldown")))
         .returning({ id: contactAddresses.id });
       await tx.insert(contactAddressEvents).values({
         userId,
@@ -330,9 +334,9 @@ export class ContactService {
    * is really theirs — scanned the QR on their phone, in person, or by phone or video (capability matrix, Counterparts
    * "Verify"). Recorded in the address's history; a new address starts unverified.
    */
-  async verify(userId: string, id: string, network: NetworkId, method: VerifyMethod | null) {
+  async verify(userId: string, id: string, network: NetworkId, method: VerifyMethod | null, chain: ContactChain = ARC) {
     const contact = await this.get(userId, id);
-    const current = contact.addresses.find((address) => address.status === "active");
+    const current = contact.addresses.find((address) => address.chain === chain && address.status === "active");
     if (!current) throw problem(HTTP.unprocessable, "validation", "the contact has no current address");
     const at = method ? new Date() : null;
     await this.db.transaction(async (tx) => {
@@ -350,8 +354,8 @@ export class ContactService {
     await this.db.update(contacts).set({ deletedAt: new Date() }).where(eq(contacts.id, id));
   }
 
-  /** Every address in the person's book (live contacts only), for resolution and the lookalike check. */
-  async addressBook(userId: string) {
+  /** Every address in the person's book on one chain (Arc unless named; live contacts only), for resolution and the lookalike check. */
+  async addressBook(userId: string, chain: ContactChain = ARC) {
     await this.promoteDue(userId);
     return this.db
       .select({
@@ -367,7 +371,7 @@ export class ContactService {
         activatesAt: contactAddresses.activatesAt,
       })
       .from(contacts)
-      .innerJoin(contactAddresses, eq(contactAddresses.contactId, contacts.id))
+      .innerJoin(contactAddresses, and(eq(contactAddresses.contactId, contacts.id), eq(contactAddresses.chainKey, chain)))
       .where(and(eq(contacts.userId, userId), isNull(contacts.deletedAt)));
   }
 

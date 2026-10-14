@@ -60,6 +60,10 @@ export function evaluateCrossChain(facts: CrossChainFacts): CrossChainEvaluation
   else if (recipient.status === "no_wallet") results.push(result("RECIPIENT_NO_WALLET", { handle: recipient.handle }));
   else if (recipient.status === "ambiguous") results.push(result("RECIPIENT_AMBIGUOUS"));
   else if (recipient.status === "resolved") {
+    // As on Arc: someone the person blocked is never paid, and a new or changed address on the destination chain
+    // waits out its hold (I4).
+    if (recipient.blocked) results.push(result("RECIPIENT_BLOCKED", { name: recipient.name ?? "" }));
+    if (recipient.holdUntil) results.push(result("ADDRESS_CHANGE_HOLD", { name: recipient.name ?? "", until: recipient.holdUntil }));
     if (recipient.lookalikeOf) results.push(result("LOOKALIKE_ADDRESS", { name: recipient.lookalikeOf }));
     else if (!recipient.paidBefore && recipient.via === "address") results.push(result("FIRST_TIME_RECIPIENT"));
   }
