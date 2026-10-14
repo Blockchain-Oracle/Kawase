@@ -1,8 +1,10 @@
 // One send's life on the device, shared by the send screen and the chat card: the intent as the api sees it,
 // polled while it is moving; the fixes (a re-check after a saved contact, a chosen currency, a new amount) that make
-// a new version of the same send; and the approval. Inside the allowance the tap is the approval. Above it the
-// device owner confirms (only an explicit "approved" continues) and the wallet signs the exact transfer the api
-// built, which the api checks against the draft before anything is broadcast.
+// a new version of the same send; and the approval. Inside the weekly budget (D38), to a saved contact, the tap is the
+// approval: the phone's guard checks the contact and the dollars, the week is reserved, and the wallet signs exactly
+// the transfer on the card with no Face ID. A new person or address, or anything outside the budget, is the device
+// owner's confirm (only an explicit "approved" continues), then the same exact transfer, which the api checks against
+// the draft before anything is broadcast.
 //
 // Ownership of what is shown (Codex review R17): every read is tagged with the epoch it started in, and a newer
 // action (an edit, an approval, another intent) bumps the epoch, so a slow old answer can never replace a newer
@@ -14,8 +16,9 @@ import { toast } from "sonner-native";
 import type { TypedDataDefinition } from "viem";
 
 import { ApiError, hasBrake, type SendIntent, type SendRequest } from "@kawase/api-client";
-import { SigningRefused, arcStablecoin, checkTransferAuthorization } from "@kawase/wallet";
+import { SigningRefused, arcStablecoin, checkSendTransaction, checkTransferAuthorization } from "@kawase/wallet";
 
+import { releaseIfDead, silentSendVerdict } from "@/budget/silent";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
@@ -100,6 +103,11 @@ export function useSend(initial?: SendIntent | undefined): SendController {
     void refresh();
   }, [refresh]);
   const moving = intent ? isMoving(intent) : false;
+  // A silent send that ended without moving money gives its room in the phone's weekly ledger back.
+  const signerAddress = signer?.address;
+  React.useEffect(() => {
+    if (intent) releaseIfDead(intent, signerAddress);
+  }, [intent, signerAddress]);
   React.useEffect(() => {
     if (!moving) return undefined;
     const timer = setInterval(() => void refresh(), POLL_MS);
@@ -146,8 +154,10 @@ export function useSend(initial?: SendIntent | undefined): SendController {
         show(answer.intent);
         return;
       }
-      // Above the allowance: the owner confirms, then the wallet signs the exact transaction the api built.
-      const check = await confirmWithBiometrics(prompt, t("common.cancel"));
+      // Inside the budget, to a saved contact: no prompt (the guard and the api's ledger both said yes). Otherwise the
+      // owner confirms, then the wallet signs the exact transaction the api built.
+      const silent = signer && !hasBrake(answer.intent.results) ? (await silentSendVerdict(answer.intent, signer.address).catch(() => undefined))?.silent === true : false;
+      const check = silent ? "approved" : await confirmWithBiometrics(prompt, t("common.cancel"));
       if (check !== "approved" || !signer) {
         toast(
           check === "unavailable" || !signer
@@ -161,12 +171,16 @@ export function useSend(initial?: SendIntent | undefined): SendController {
       }
       // Gas-free (the wallet cannot pay the fee): one EIP-3009 authorization instead; Kawase's relayer sends it.
       const typed = answer.status === "sign_typed";
-      // A gas-free send's authorization moves exactly the card's amount of its token to its recipient (M6).
+      // What the wallet signs moves exactly the card's amount of its token to its recipient (M6): the gas-free
+      // authorization, and (signed with no prompt) the transfer itself.
+      const draft = answer.intent.draft;
+      const token = draft?.token?.address ?? (draft ? arcStablecoin(answer.intent.network, draft.asset) : undefined);
       if (answer.status === "sign_typed") {
-        const draft = answer.intent.draft;
-        const token = draft?.token?.address ?? (draft ? arcStablecoin(answer.intent.network, draft.asset) : undefined);
         if (!draft || !token) throw new SigningRefused("a gas-free send without its card");
         checkTransferAuthorization(answer.typedData, { token, to: draft.recipient.address, amount: draft.amount }, signer.address);
+      } else if (silent) {
+        if (!draft || !token) throw new SigningRefused("a send without its card");
+        checkSendTransaction(answer.transaction, { token: token as `0x${string}`, to: draft.recipient.address as `0x${string}`, amount: BigInt(draft.amount) });
       }
       const signed = typed ? await signer.signTypedData(answer.typedData as unknown as TypedDataDefinition) : await signer.signTransaction(toSerializable(answer.transaction));
       const submitted = await api.sends.signature(intent.id, answer.approvalId, signed, typed ? "typed" : undefined);
