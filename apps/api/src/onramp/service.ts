@@ -101,6 +101,9 @@ const sha256 = (value: string) => createHash("sha256").update(value).digest("hex
 function coinbaseProblem(error: unknown) {
   if (!(error instanceof CoinbaseError)) return problem(HTTP.badGateway, "upstream", "the payment provider did not answer; try again in a moment");
   const extra = { reason: error.errorType };
+  // A guest limit (weekly, daily, lifetime) comes back as a 429, but it is the person's limit, not a rate: waiting a
+  // moment does not fix it, a smaller amount or next week does. The reason says which.
+  if (error.errorType.startsWith("guest_") && error.errorType.includes("limit")) return problem(HTTP.forbidden, "forbidden", error.message, extra);
   if (error.status === HTTP.tooManyRequests) return problem(HTTP.tooManyRequests, "rate_limited", error.message, extra);
   if (error.errorType === "guest_region_forbidden" || error.errorType === "guest_permission_denied") return problem(HTTP.forbidden, "forbidden", error.message, extra);
   if (error.status >= HTTP.badRequest && error.status < HTTP.internal) return problem(HTTP.badRequest, "validation", error.message, extra);

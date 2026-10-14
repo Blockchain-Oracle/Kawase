@@ -8,6 +8,10 @@
 // - Verification (standard flow): the phone (US, not VoIP) and the email each get a six-digit code
 //   (`POST /v2/onramp/verifications`, `.../{id}/submit`); the ids go with the order. Production needs Coinbase to
 //   allowlist the project; the sandbox does not (any number starting +1000, any email ending @sandbox.test, code 000000).
+//   Live run 2026-10-14 with Kawase's CDP key: quote, both verifications and a sandbox order all answered as documented,
+//   but the order itself refuses the +1000 test number ("phone number is not a valid number"), so a sandbox order
+//   carries a real-format E.164 number with the sandbox verification ids; and a $25 sandbox order hit
+//   `guest_transaction_limit` while $5 went through (the project's trial limits), which the app words as a limit.
 // - Sandbox: there is no separate CDP sandbox. A `partnerUserRef` starting "sandbox-" always succeeds and nothing is charged
 //   or delivered, so such an order can never settle on chain (service.ts says so instead of pretending).
 // - Guest limits: $500 a week rolling, 10 a day, 15 for life. Prepaid cards are declined.
