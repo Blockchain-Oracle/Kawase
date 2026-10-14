@@ -5,6 +5,7 @@
 // (`appendCommentary`). A readback guard checks what GPT-Live actually said against those facts and corrects it.
 import { type JobContext, llm, voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
+import { RoomEvent, TrackSource } from "@livekit/rtc-node";
 
 import {
   GPT_LIVE_APPEND_MAX_CHARS,
@@ -22,6 +23,8 @@ import { runTurn, type Card, type SessionMeta } from "./turn";
 import { LANGUAGE_IN_ENGLISH, SORRY } from "./words";
 
 const READY_POLL_MS = 100;
+/** What the app sends when the person taps a suggestion or types inside voice mode (LiveKit's chat topic). */
+const CHAT_TOPIC = "lk.chat";
 const CONNECT = { maxRetry: 2, retryIntervalMs: 1000, timeoutMs: 10_000 };
 const PACE: Record<VoicePrefs["speed"], string> = {
   relaxed: "Speak a little slower than usual, calmly.",
@@ -122,7 +125,9 @@ export async function startGptLive(input: {
   };
   try {
     // Disable LiveKit SDK recording uploads. Provider retention is a separate, still-open dependency.
-    await session.start({ agent, room: ctx.room, record: false });
+    // Typed text is taken by our own handler below (the same Kawase turn as speech), not injected as a raw user
+    // message: GPT-Live with client delegation closed the session on that ("context_injection_incomplete").
+    await session.start({ agent, room: ctx.room, record: false, inputOptions: { textEnabled: false } });
     const live = agent.duplexSession as openai.realtime.GPTLiveSession;
     if (!(await waitUntil(() => live.sessionId !== undefined, GPT_LIVE_READY_TIMEOUT_MS)))
       throw new Error("GPT-Live did not start in time");
@@ -193,38 +198,74 @@ export async function startGptLive(input: {
       return text || lastUserText();
     };
 
-    live.on("delegation_created", ({ id, pendingTranscript }) => {
-      // A newer request replaces an older one still in flight (the person changed their mind or interrupted).
+    // One request to Kawase: the turn runs (cards go to the screen as they come), then GPT-Live gets the facts as silent
+    // context and Kawase's line to say. A newer request replaces an older one still in flight.
+    const answer = async (request: () => Promise<string>, key: string, delegationId?: string) => {
       current?.abort();
       const abort = new AbortController();
       current = abort;
-      void (async () => {
-        const text = await settledRequest(pendingTranscript);
+      const options = delegationId ? { delegationId } : undefined;
+      const text = await request();
+      if (abort.signal.aborted) return;
+      if (!text) {
+        live.appendCommentary(SORRY[locale], options);
+        return;
+      }
+      try {
+        const turn = await runTurn(meta, { text, key, signal: abort.signal }, { onCard: sendCard });
         if (abort.signal.aborted) return;
-        if (!text) {
-          live.appendCommentary(SORRY[locale], { delegationId: id });
-          return;
-        }
-        try {
-          const turn = await runTurn(meta, { text, key: `gpt-live:${id}`, signal: abort.signal }, { onCard: sendCard });
-          if (abort.signal.aborted) return;
-          const facts = canonicalFacts(turn.cards);
-          const line = turn.text || SORRY[locale];
-          if (facts)
-            live.appendThinking(
-              clip(`Kawase's canonical facts for this answer (exact; never contradict them):\n${facts}`),
-              {
-                delegationId: id,
-              },
-            );
-          live.appendCommentary(clip(line), { delegationId: id });
-          guard.expect(line, facts);
-        } catch (error) {
-          if (abort.signal.aborted) return;
-          console.error("voice turn failed", error);
-          live.appendCommentary(SORRY[locale], { delegationId: id });
-        }
-      })();
+        const facts = canonicalFacts(turn.cards);
+        const line = turn.text || SORRY[locale];
+        if (facts)
+          live.appendThinking(
+            clip(`Kawase's canonical facts for this answer (exact; never contradict them):\n${facts}`),
+            options,
+          );
+        live.appendCommentary(clip(line), options);
+        guard.expect(line, facts);
+      } catch (error) {
+        if (abort.signal.aborted) return;
+        console.error("voice turn failed", error);
+        live.appendCommentary(SORRY[locale], options);
+      }
+    };
+
+    live.on("delegation_created", ({ id, pendingTranscript }) => {
+      void answer(() => settledRequest(pendingTranscript), `gpt-live:${id}`, id);
+    });
+
+    // GPT-Live keeps time by the person's audio: with no live microphone (denied, none, or muted in the app) nothing
+    // arrives, and a typed request's answer never lands ("context_injection_incomplete"). While there is no live
+    // microphone, GPT-Live hears silence on its side (`muteInput`); when one is published and unmuted, it listens again.
+    let inputMuted = false;
+    const micLive = () =>
+      [...(ctx.room.remoteParticipants.get(meta.identity)?.trackPublications.values() ?? [])].some(
+        (publication) => publication.source === TrackSource.SOURCE_MICROPHONE && publication.muted === false,
+      );
+    const syncMicrophone = () => {
+      const live_ = micLive();
+      if (!live_ && !inputMuted) live.muteInput();
+      else if (live_ && inputMuted) live.unmuteInput();
+      inputMuted = !live_;
+    };
+    syncMicrophone();
+    for (const event of [
+      RoomEvent.ParticipantConnected,
+      RoomEvent.TrackPublished,
+      RoomEvent.TrackUnpublished,
+      RoomEvent.TrackSubscribed,
+      RoomEvent.TrackUnsubscribed,
+      RoomEvent.TrackMuted,
+      RoomEvent.TrackUnmuted,
+    ])
+      ctx.room.on(event, syncMicrophone);
+
+    // Typed inside voice mode (a tapped suggestion): only the person this session belongs to.
+    let typed = 0;
+    ctx.room.registerTextStreamHandler(CHAT_TOPIC, (reader, from) => {
+      if (from.identity !== meta.identity) return;
+      typed += 1;
+      void answer(async () => (await reader.readAll()).trim(), `gpt-live:text:${typed}:${Date.now()}`);
     });
 
     if (prefs.autoSpeak)

@@ -1,0 +1,13 @@
+# Kawase's voice worker on LiveKit Cloud (scripts/deploy-livekit.sh stages a copy of the workspace: every
+# manifest and the lockfile, the worker and the three packages it uses). Debian slim, not Alpine: LiveKit's native
+# WebRTC bindings ship for glibc only.
+FROM node:24-bookworm-slim
+# LiveKit's native client (rtc-node) verifies TLS against the system roots; the slim image ships none.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@11.28.2 --activate
+WORKDIR /app
+ENV NODE_ENV=production CI=true
+COPY . .
+RUN pnpm install --no-frozen-lockfile --filter @kawase/voice-agent... --prod
+USER node
+CMD ["pnpm", "--filter", "@kawase/voice-agent", "start"]

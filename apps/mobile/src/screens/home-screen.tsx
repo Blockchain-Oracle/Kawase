@@ -24,13 +24,25 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AgentFeedItem } from "@kawase/api-client";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
-import { Button, EmptyState, ErrorState, SectionLabel, ShimmerText, SPACE, StaleTick, TIMING, TYPE, useTheme } from "@/components/kit";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  SectionLabel,
+  ShimmerText,
+  SPACE,
+  StaleTick,
+  TIMING,
+  TYPE,
+  useTheme,
+} from "@/components/kit";
 import { TabHeaderEnd, TabHeaderStart } from "@/components/tab-header";
 import { ThreadHistorySheet } from "@/chat/thread-history-sheet";
 import { useFund } from "@/fund/fund-provider";
 import { BalanceHero } from "@/home/balance-hero";
 import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
+import { BottomFade } from "@/home/bottom-fade";
 import { HomeComposer, useComposerClearance } from "@/home/home-composer";
 import { HomeRun, type HomeRunHandle, type RunStatus } from "@/home/home-run";
 import { MarketsGlance, SignInPlate } from "@/home/markets-glance";
@@ -130,14 +142,35 @@ export function HomeScreen() {
         <SectionLabel>{t("feed.home.feedTitle")}</SectionLabel>
         {feed.error && feed.asOf ? <StaleTick asOf={feed.asOf} reason="refresh-failed" compact /> : null}
         <View style={styles.grow} />
-        {rows.length > FEED_ROWS ? <Button size="sm" block={false} variant="ghost" label={t("feed.home.seeAll")} onPress={() => router.navigate("/activity")} /> : null}
+        {rows.length > FEED_ROWS ? (
+          <Button
+            size="sm"
+            block={false}
+            variant="ghost"
+            label={t("feed.home.seeAll")}
+            onPress={() => router.navigate("/activity")}
+          />
+        ) : null}
       </View>
-      {feed.feed && rowsFor(feed.feed, "all").length > 0 ? <FeedFilters feed={feed.feed} value={filter} onChange={setFilter} /> : null}
-      {feed.feed && feed.feed.partial.length > 0 ? <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.home.partial")}</Text> : null}
+      {feed.feed && rowsFor(feed.feed, "all").length > 0 ? (
+        <FeedFilters feed={feed.feed} value={filter} onChange={setFilter} />
+      ) : null}
+      {feed.feed && feed.feed.partial.length > 0 ? (
+        <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.home.partial")}</Text>
+      ) : null}
       {!feed.feed && feed.error ? (
-        <ErrorState diagnosis={feed.error} retry={() => void feed.refresh()} stillWorks={t("feed.home.feedStillWorks")} variant="strip" />
+        <ErrorState
+          diagnosis={feed.error}
+          retry={() => void feed.refresh()}
+          stillWorks={t("feed.home.feedStillWorks")}
+          variant="strip"
+        />
       ) : feed.feed && rowsFor(feed.feed, "all").length === 0 ? (
-        <EmptyState why={t("feed.home.emptyWhy")} action={{ label: t("feed.home.emptyAction"), onPress: () => submit(t(EMPTY_PROMPT_KEY)) }} size="inline" />
+        <EmptyState
+          why={t("feed.home.emptyWhy")}
+          action={{ label: t("feed.home.emptyAction"), onPress: () => submit(t(EMPTY_PROMPT_KEY)) }}
+          size="inline"
+        />
       ) : (
         <FeedTimeline feed={feed.feed} filter={filter} limit={FEED_ROWS} onOpen={setOpen} />
       )}
@@ -198,11 +231,16 @@ export function HomeScreen() {
       </Animated.ScrollView>
 
       {scrolledPast && runStatus ? (
-        <Animated.View entering={FadeIn.duration(TIMING.selection)} exiting={FadeOut.duration(TIMING.press)} style={[styles.strip, { top: insets.top + SPACE.xs }]}>
+        <Animated.View
+          entering={FadeIn.duration(TIMING.selection)}
+          exiting={FadeOut.duration(TIMING.press)}
+          style={[styles.strip, { top: insets.top + SPACE.xs }]}
+        >
           <RunStrip status={runStatus} onPress={() => scroller.current?.scrollTo({ y: 0, animated: true })} />
         </Animated.View>
       ) : null}
 
+      <BottomFade height={composerClearance} color={color.background} />
       <HomeComposer
         value={draft}
         onChange={setDraft}
@@ -246,8 +284,17 @@ function RunStrip({ status, onPress }: { status: RunStatus; onPress: () => void 
   const verb = t(`feed.run.strip_${status.phase}`);
   const live = status.busy || status.phase === "race" || status.phase === "steps";
   return (
-    <Pressable accessibilityRole="button" accessibilityHint={t("feed.run.stripHint")} onPress={onPress} style={[styles.stripPlate, { backgroundColor: color.glassOpaque }]}>
-      {live ? <ShimmerText style={[TYPE.caption, { color: color.ink }]}>{verb}</ShimmerText> : <Text style={[TYPE.caption, { color: color.ink }]}>{verb}</Text>}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint={t("feed.run.stripHint")}
+      onPress={onPress}
+      style={[styles.stripPlate, { backgroundColor: color.glassOpaque }]}
+    >
+      {live ? (
+        <ShimmerText style={[TYPE.caption, { color: color.ink }]}>{verb}</ShimmerText>
+      ) : (
+        <Text style={[TYPE.caption, { color: color.ink }]}>{verb}</Text>
+      )}
       <Text numberOfLines={1} style={[TYPE.caption, styles.grow, { color: color.text3 }]}>
         {status.asked}
       </Text>
@@ -257,12 +304,25 @@ function RunStrip({ status, onPress }: { status: RunStatus; onPress: () => void 
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.xs },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.sm,
+    paddingHorizontal: SPACE.lgPlus,
+    paddingBottom: SPACE.xs,
+  },
   grow: { flex: 1 },
   content: { gap: SPACE.xl, paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm },
   wideContent: { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center", paddingTop: SPACE.xxl },
   section: { gap: SPACE.md },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   strip: { position: "absolute", start: SPACE.lgPlus, end: SPACE.lgPlus },
-  stripPlate: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, borderRadius: SPACE.xl, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm },
+  stripPlate: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.sm,
+    borderRadius: SPACE.xl,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.sm,
+  },
 });

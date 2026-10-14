@@ -1,12 +1,15 @@
 // The @handle field (Phantom P05–P08, Fomo F04/F05): the `@` sits inside the field, a clear button appears once
 // there is text, and a fixed-height line under the field carries the state — checking, the rule that is broken
-// (red ×), or available (green ✓) — so the layout never jumps while the user types. The handle is always typed
+// (red ×), or available (✓ in ink) — so the layout never jumps while the user types. The field has one ring: the
+// accent while it has focus, the destructive colour for a broken rule, never the success colour (in the dark theme
+// that is Senryo's lime, which clashed with the magenta focus ring; Abu's review 10-14). The handle is always typed
 // and shown left-to-right, whatever the app's language.
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { Check, X } from "lucide-react-native";
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import * as React from "react";
+import { ActivityIndicator, Platform, Pressable, TextInput, View } from "react-native";
 
 type HandleFieldState = "idle" | "checking" | "available" | "problem";
 
@@ -29,14 +32,29 @@ type HandleFieldProps = {
 
 const STATE_LINE_HEIGHT = 24;
 const ICON_STROKE = 3;
+/** The browser's own outline is replaced by the field's ring. */
+const NO_OUTLINE = Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : null;
 
-function HandleField({ value, onChangeText, state, message, placeholder, clearLabel, label, maxLength, autoFocus, onSubmit, className }: HandleFieldProps) {
+function HandleField({
+  value,
+  onChangeText,
+  state,
+  message,
+  placeholder,
+  clearLabel,
+  label,
+  maxLength,
+  autoFocus,
+  onSubmit,
+  className,
+}: HandleFieldProps) {
+  const [focused, setFocused] = React.useState(false);
   return (
     <View className={cn("gap-2", className)}>
       <View
         className={cn(
-          "bg-muted h-16 flex-row items-center gap-1 rounded-2xl border px-4",
-          state === "problem" ? "border-destructive" : state === "available" ? "border-success" : "border-transparent",
+          "bg-muted h-16 flex-row items-center gap-1 rounded-2xl border-2 px-4",
+          state === "problem" ? "border-destructive" : focused ? "border-ring" : "border-transparent",
         )}
         // The handle reads left-to-right in every language.
         style={{ direction: "ltr" }}
@@ -57,21 +75,46 @@ function HandleField({ value, onChangeText, state, message, placeholder, clearLa
           maxLength={maxLength}
           autoFocus={autoFocus}
           onSubmitEditing={onSubmit}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           className="text-foreground font-display h-full flex-1 text-left text-2xl font-bold"
-          style={{ writingDirection: "ltr" }}
+          style={[{ writingDirection: "ltr" }, NO_OUTLINE]}
         />
         {value.length > 0 ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={clearLabel} onPress={() => onChangeText("")} hitSlop={12} className="bg-secondary size-7 items-center justify-center rounded-full">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={clearLabel}
+            onPress={() => onChangeText("")}
+            hitSlop={12}
+            className="bg-secondary size-7 items-center justify-center rounded-full"
+          >
             <Icon as={X} className="text-muted-foreground size-4" />
           </Pressable>
         ) : null}
       </View>
-      <View accessibilityLiveRegion="polite" className="flex-row items-center gap-1.5 px-1" style={{ height: STATE_LINE_HEIGHT }}>
+      <View
+        accessibilityLiveRegion="polite"
+        className="flex-row items-center gap-1.5 px-1"
+        style={{ height: STATE_LINE_HEIGHT }}
+      >
         {state === "checking" ? <ActivityIndicator size="small" /> : null}
-        {state === "available" ? <Icon as={Check} className="text-success size-4" strokeWidth={ICON_STROKE} /> : null}
+        {state === "available" ? (
+          <Icon as={Check} className="text-foreground size-4" strokeWidth={ICON_STROKE} />
+        ) : null}
         {state === "problem" ? <Icon as={X} className="text-destructive size-4" strokeWidth={ICON_STROKE} /> : null}
         {message ? (
-          <Text className={cn("text-sm", state === "available" ? "text-success" : state === "problem" ? "text-destructive" : "text-muted-foreground")}>{message}</Text>
+          <Text
+            className={cn(
+              "text-sm",
+              state === "available"
+                ? "text-foreground"
+                : state === "problem"
+                  ? "text-destructive"
+                  : "text-muted-foreground",
+            )}
+          >
+            {message}
+          </Text>
         ) : null}
       </View>
     </View>

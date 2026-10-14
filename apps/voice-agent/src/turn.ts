@@ -30,7 +30,14 @@ export const turnId = (meta: SessionMeta, key: string) =>
     .digest("hex");
 
 /** `preliminary`: a live tool's snapshot (the route race while venues answer); only its final output is a card. */
-type StreamChunk = { type: string; delta?: string; toolCallId?: string; toolName?: string; output?: unknown; preliminary?: boolean };
+type StreamChunk = {
+  type: string;
+  delta?: string;
+  toolCallId?: string;
+  toolName?: string;
+  output?: unknown;
+  preliminary?: boolean;
+};
 
 export async function runTurn(
   meta: SessionMeta,

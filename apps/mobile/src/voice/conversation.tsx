@@ -189,7 +189,8 @@ export function Conversation({
   // A tapped suggestion stands for the person's line until they speak again; Kawase's reply to it comes after it.
   if (typed && (!you || you.at < typed.after)) you = typed.line;
   const answer = kawase && (!you || kawase.at > you.at) ? kawase : undefined;
-  const said = Boolean(you?.text.trim() || answer?.text.trim());
+  // The suggestions stay until the person has said something (Kawase's greeting doesn't count).
+  const said = Boolean(you?.text.trim());
 
   const busy = state === "thinking" || state === "speaking";
   const label =

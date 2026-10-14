@@ -10,7 +10,7 @@
 // five lines, Send once there is text (Enter on a keyboard), the suggestions above it while it is empty. The + steps
 // aside while it is open. Leaving it empty closes it back into the capsule.
 import { useIsFocused, useRouter } from "expo-router";
-import { ArrowUp, AudioLines, History, Mic, Square } from "lucide-react-native";
+import { ArrowUp, History, Mic, Square } from "lucide-react-native";
 import * as React from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardStickyView } from "react-native-keyboard-controller";
@@ -18,7 +18,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  FadeOutUp,
   runOnJS,
   type SharedValue,
   useAnimatedReaction,
@@ -30,10 +29,24 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
+import { tokens } from "@kawase/ui-tokens";
 import { FAN_END_INSET, FAN_PLUS_SIZE } from "@kawase/ui-native/components/quick-action-fan";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
-import { ELEVATION, FONT, HAIRLINE_PX, Icon, ShimmerText, SIZE, SPACE, TIMING, TYPE, usePressScale, useTheme } from "@/components/kit";
+import {
+  ELEVATION,
+  FONT,
+  HAIRLINE_PX,
+  Icon,
+  ShimmerText,
+  SIZE,
+  SPACE,
+  TIMING,
+  TYPE,
+  usePressScale,
+  useTheme,
+} from "@/components/kit";
+import { Orb } from "@/components/orb";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { cue } from "@/feedback/feedback";
 import { fire } from "@/feedback/fire";
@@ -51,6 +64,11 @@ const HALO_PEAK = 0.24;
 const TUCK_SCALE = 0.9;
 const SHOWN_AT = 0.5;
 const HINT_MS = 3_200;
+/** The hint's change: it sinks a few points as it fades out, and the next rises into place. */
+const HINT_SHIFT = 6;
+/** The mic as Kawase's live orb, small (the same presence as voice mode and the dock). */
+const ORB_MINI = 30;
+const ORB_MINI_LEVEL = 0.18;
 /** The open field: one line at rest, up to about five as you type. */
 const FIELD_MIN = 24;
 const FIELD_MAX = 120;
@@ -172,7 +190,11 @@ function Launcher({
   // Beside the + on a phone (centred on it); centred in the page's column on a desktop window, where there is no dock.
   const place = wide
     ? { bottom: DESKTOP_END_GAP, start: SPACE.lgPlus, end: SPACE.lgPlus }
-    : { bottom: clearance.dock + FAN_GAP + (FAN_PLUS_SIZE - LAUNCHER_H) / HALF, start: SPACE.lgPlus, end: FAN_END_INSET + FAN_PLUS_SIZE + SPACE.md };
+    : {
+        bottom: clearance.dock + FAN_GAP + (FAN_PLUS_SIZE - LAUNCHER_H) / HALF,
+        start: SPACE.lgPlus,
+        end: FAN_END_INSET + FAN_PLUS_SIZE + SPACE.md,
+      };
 
   return (
     <Animated.View
@@ -182,8 +204,13 @@ function Launcher({
       style={[styles.launcherWrap, place, tuck]}
     >
       <View style={[styles.launcherColumn, wide ? styles.wideColumn : null]}>
-        <Animated.View pointerEvents="none" style={[styles.halo, { boxShadow: `0 0 ${HALO}px ${HALO / HALF}px ${color.accent}` }, haloStyle]} />
-        <Animated.View style={[styles.pill, ELEVATION.dock, { backgroundColor: dark ? color.glassOpaque : color.card }, press.style]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.halo, { boxShadow: `0 0 ${HALO}px ${HALO / HALF}px ${color.accent}` }, haloStyle]}
+        />
+        <Animated.View
+          style={[styles.pill, ELEVATION.dock, { backgroundColor: dark ? color.glassOpaque : color.card }, press.style]}
+        >
           <Pressable
             accessibilityRole="search"
             accessibilityLabel={t("feed.home.placeholder")}
@@ -191,22 +218,31 @@ function Launcher({
             onPressOut={press.onPressOut}
             onPress={() => {
               fire("press", { sound: "sheetOpen" });
-              halo.value = withSequence(withTiming(HALO_PEAK, { duration: TIMING.press }), withTiming(0, { duration: TIMING.selection }));
+              halo.value = withSequence(
+                withTiming(HALO_PEAK, { duration: TIMING.press }),
+                withTiming(0, { duration: TIMING.selection }),
+              );
               onOpen();
             }}
             style={styles.pillPress}
           >
             <KawaseMark size={MARK} />
-            {/* One line tall: the outgoing words rise out as the next rise in, layered, never side by side. */}
+            {/* One line, one text: the words fade and shift as they change, so nothing can show outside the capsule
+                (layered enter/exit copies escaped the clip on the web and spilled a second line under it). */}
             <View style={styles.hintBox}>
               {busy ? (
                 <Animated.View key="busy" entering={FadeIn.duration(TIMING.selection)} style={styles.hintLine}>
-                  <ShimmerText style={[TYPE.body, { color: color.ink }]}>{busyLabel ?? t("feed.run.strip_steps")}</ShimmerText>
+                  <ShimmerText style={[TYPE.body, { color: color.ink }]}>
+                    {busyLabel ?? t("feed.run.strip_steps")}
+                  </ShimmerText>
                 </Animated.View>
               ) : (
-                <Animated.View key={hint} entering={FadeInDown} exiting={FadeOutUp} style={styles.hintLine}>
-                  <Text numberOfLines={1} style={[TYPE.body, { color: hint === t("feed.home.placeholder") ? color.text3 : color.ink }]}>
-                    {hint}
+                <Animated.View style={[styles.hintLine, hint.style]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[TYPE.body, { color: hint.text === t("feed.home.placeholder") ? color.text3 : color.ink }]}
+                  >
+                    {hint.text}
                   </Text>
                 </Animated.View>
               )}
@@ -218,7 +254,9 @@ function Launcher({
             </RoundAction>
           ) : (
             <RoundAction label={t("home.dockVoice")} onPress={onTalk}>
-              <Icon icon={AudioLines} size={SIZE.icon} tint={color.ink} />
+              <View style={styles.miniOrb}>
+                <Orb colors={tokens.orb.mainnet} level={ORB_MINI_LEVEL} paused={!interactive} className="size-full" />
+              </View>
             </RoundAction>
           )}
         </Animated.View>
@@ -227,24 +265,46 @@ function Launcher({
   );
 }
 
-/** The words the capsule walks through: the base line, then what Kawase can do right now. */
-function useHint(active: boolean): string {
+/** The words the capsule walks through: the base line, then what Kawase can do right now, one at a time. */
+function useHint(active: boolean) {
   const { t } = useT();
   const reduce = useReducedMotion();
   const hints = React.useMemo(
-    () => [t("feed.home.placeholder"), t("feed.home.chipBring"), t("feed.home.chipIdle"), t("feed.home.chipBuy"), t("feed.home.chipSend"), t("feed.home.chipBridge")],
+    () => [
+      t("feed.home.placeholder"),
+      t("feed.home.chipBring"),
+      t("feed.home.chipIdle"),
+      t("feed.home.chipBuy"),
+      t("feed.home.chipSend"),
+      t("feed.home.chipBridge"),
+    ],
     [t],
   );
   const [index, setIndex] = React.useState(0);
+  const shown = useSharedValue(1);
+  const next = React.useCallback(() => setIndex((n) => n + 1), []);
   React.useEffect(() => {
     if (reduce || !active) {
       setIndex(0);
+      shown.value = 1;
       return undefined;
     }
-    const timer = setInterval(() => setIndex((n) => n + 1), HINT_MS);
+    // Fade the current words out, swap them while invisible, fade the next ones in (the effect below).
+    const timer = setInterval(() => {
+      shown.value = withTiming(0, { duration: TIMING.press }, (done) => {
+        if (done) runOnJS(next)();
+      });
+    }, HINT_MS);
     return () => clearInterval(timer);
-  }, [reduce, active]);
-  return hints[index % hints.length] ?? t("feed.home.placeholder");
+  }, [reduce, active, shown, next]);
+  React.useEffect(() => {
+    shown.value = withTiming(1, { duration: TIMING.selection });
+  }, [index, shown]);
+  const style = useAnimatedStyle(() => ({
+    opacity: shown.value,
+    transform: [{ translateY: (1 - shown.value) * HINT_SHIFT }],
+  }));
+  return { text: hints[index % hints.length] ?? t("feed.home.placeholder"), style };
 }
 
 /** The typing bar, open. */
@@ -323,11 +383,19 @@ function OpenField({
   };
 
   return (
-    <KeyboardStickyView offset={{ closed: 0, opened: wide ? 0 : clearance.dock - SPACE.md }} style={styles.openDock} pointerEvents="box-none">
+    <KeyboardStickyView
+      offset={{ closed: 0, opened: wide ? 0 : clearance.dock - SPACE.md }}
+      style={styles.openDock}
+      pointerEvents="box-none"
+    >
       <Animated.View
         entering={reduce ? undefined : FadeInDown.duration(TIMING.selection)}
         exiting={reduce ? undefined : FadeOut.duration(TIMING.press)}
-        style={[styles.openBlock, { paddingBottom: wide ? DESKTOP_END_GAP : clearance.dock + SPACE.md }, wide ? styles.wideColumn : null]}
+        style={[
+          styles.openBlock,
+          { paddingBottom: wide ? DESKTOP_END_GAP : clearance.dock + SPACE.md },
+          wide ? styles.wideColumn : null,
+        ]}
         pointerEvents="box-none"
       >
         {showChips && value.length === 0 && !busy ? (
@@ -343,7 +411,11 @@ function OpenField({
                 key={chip.key}
                 accessibilityRole="button"
                 onPress={() => pick(chip)}
-                style={({ pressed }) => [styles.chip, ELEVATION.button, { backgroundColor: pressed ? color.rowPressed : dark ? color.glassOpaque : color.card }]}
+                style={({ pressed }) => [
+                  styles.chip,
+                  ELEVATION.button,
+                  { backgroundColor: pressed ? color.rowPressed : dark ? color.glassOpaque : color.card },
+                ]}
               >
                 <Text style={[TYPE.chipLabel, { color: color.ink }]}>{chip.label}</Text>
               </Pressable>
@@ -361,7 +433,13 @@ function OpenField({
           >
             <Icon icon={History} size={SIZE.iconSm} tint={color.ink} />
           </RoundAction>
-          <View style={[styles.field, ELEVATION.dock, { backgroundColor: dark ? color.glassOpaque : color.card, borderColor: color.border }]}>
+          <View
+            style={[
+              styles.field,
+              ELEVATION.dock,
+              { backgroundColor: dark ? color.glassOpaque : color.card, borderColor: color.border },
+            ]}
+          >
             <TextInput
               ref={input}
               autoFocus
@@ -373,12 +451,18 @@ function OpenField({
               onBlur={() => {
                 if (value.trim().length === 0) onClose();
               }}
-              onContentSizeChange={(event) => setHeight(Math.min(FIELD_MAX, Math.max(FIELD_MIN, event.nativeEvent.contentSize.height)))}
+              onContentSizeChange={(event) =>
+                setHeight(Math.min(FIELD_MAX, Math.max(FIELD_MIN, event.nativeEvent.contentSize.height)))
+              }
               multiline
               scrollEnabled
               submitBehavior="newline"
               {...(Platform.OS === "web" ? { onKeyPress: sendOnEnter } : {})}
-              style={[styles.input, { color: color.ink, height, fontFamily: FONT.sans }, Platform.OS === "web" ? WEB_INPUT : null]}
+              style={[
+                styles.input,
+                { color: color.ink, height, fontFamily: FONT.sans },
+                Platform.OS === "web" ? WEB_INPUT : null,
+              ]}
             />
             {busy ? (
               <RoundAction label={t("common.stop")} onPress={onStop} filled>
@@ -390,7 +474,10 @@ function OpenField({
                   accessibilityRole="button"
                   accessibilityLabel={t("home.send")}
                   onPress={submit}
-                  style={({ pressed }) => [styles.send, { backgroundColor: color.primary, opacity: pressed ? PRESSED : 1 }]}
+                  style={({ pressed }) => [
+                    styles.send,
+                    { backgroundColor: color.primary, opacity: pressed ? PRESSED : 1 },
+                  ]}
                 >
                   <ArrowUp size={SIZE.iconSm} color={color.primaryForeground} strokeWidth={2.5} />
                 </Pressable>
@@ -410,16 +497,37 @@ function OpenField({
 const PRESSED = 0.8;
 const WEB_INPUT = { outlineStyle: "none", resize: "none" } as object;
 
-function RoundAction({ label, onPress, children, filled, plate }: { label: string; onPress: () => void; children: React.ReactNode; filled?: boolean; plate?: boolean }) {
+function RoundAction({
+  label,
+  onPress,
+  children,
+  filled,
+  plate,
+}: {
+  label: string;
+  onPress: () => void;
+  children: React.ReactNode;
+  filled?: boolean;
+  plate?: boolean;
+}) {
   const { name, color } = useTheme();
-  const background = plate ? (name === "dark" ? color.glassOpaque : color.card) : filled ? color.raised2 : "transparent";
+  const background = plate
+    ? name === "dark"
+      ? color.glassOpaque
+      : color.card
+    : filled
+      ? color.raised2
+      : "transparent";
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={SPACE.xs}
       onPress={onPress}
-      style={({ pressed }) => [plate ? [styles.plate, ELEVATION.dock] : styles.round, { backgroundColor: pressed ? color.rowPressed : background }]}
+      style={({ pressed }) => [
+        plate ? [styles.plate, ELEVATION.dock] : styles.round,
+        { backgroundColor: pressed ? color.rowPressed : background },
+      ]}
     >
       {children}
     </Pressable>
@@ -445,11 +553,22 @@ const styles = StyleSheet.create({
   hintLine: { position: "absolute", top: 0, bottom: 0, start: 0, end: 0, justifyContent: "center" },
   pillPress: { flex: 1, height: "100%", flexDirection: "row", alignItems: "center", gap: SPACE.md, overflow: "hidden" },
   round: { width: ACTION, height: ACTION, borderRadius: ACTION / HALF, alignItems: "center", justifyContent: "center" },
-  plate: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / HALF, alignItems: "center", justifyContent: "center" },
+  plate: {
+    width: SIZE.touch,
+    height: SIZE.touch,
+    borderRadius: SIZE.touch / HALF,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   openDock: { position: "absolute", start: 0, end: 0, bottom: 0 },
   openBlock: { gap: SPACE.sm, paddingTop: SPACE.sm },
   chips: { gap: SPACE.sm, paddingHorizontal: SPACE.lgPlus, paddingVertical: SPACE.xs },
-  chip: { height: SIZE.chipHeight, borderRadius: SIZE.chipHeight / HALF, paddingHorizontal: SPACE.md, justifyContent: "center" },
+  chip: {
+    height: SIZE.chipHeight,
+    borderRadius: SIZE.chipHeight / HALF,
+    paddingHorizontal: SPACE.md,
+    justifyContent: "center",
+  },
   openRow: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.sm, paddingHorizontal: SPACE.lg },
   field: {
     flex: 1,
@@ -465,4 +584,5 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, ...TYPE.body, paddingVertical: SPACE.xs, marginVertical: SPACE.xxs },
   send: { width: ACTION, height: ACTION, borderRadius: ACTION / HALF, alignItems: "center", justifyContent: "center" },
+  miniOrb: { width: ORB_MINI, height: ORB_MINI, borderRadius: ORB_MINI / HALF, overflow: "hidden" },
 });

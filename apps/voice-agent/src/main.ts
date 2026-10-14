@@ -10,6 +10,7 @@
 // `start` (production). `KAWASE_VOICE_ENGINE=cascade` forces the fallback pipeline.
 import { fileURLToPath } from "node:url";
 import { type JobContext, ServerOptions, cli, defineAgent } from "@livekit/agents";
+import { RoomEvent, TrackSource } from "@livekit/rtc-node";
 import { config } from "dotenv";
 
 import {
@@ -29,7 +30,31 @@ import type { Card, SessionMeta } from "./turn";
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
 const RPC_TIMEOUT_MS = 5000;
+/** How long a new session waits for the person's microphone before choosing an engine. */
+const MIC_WAIT_MS = 2500;
 const ENGINE = process.env.KAWASE_VOICE_ENGINE === "cascade" ? "cascade" : "gpt-live";
+
+/** True once the person publishes a live microphone, false if none comes within `ms` (denied, absent, muted). */
+function microphoneWithin(ctx: JobContext, identity: string, ms: number): Promise<boolean> {
+  const live = () =>
+    [...(ctx.room.remoteParticipants.get(identity)?.trackPublications.values() ?? [])].some(
+      (publication) => publication.source === TrackSource.SOURCE_MICROPHONE && publication.muted === false,
+    );
+  if (live()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const events = [RoomEvent.ParticipantConnected, RoomEvent.TrackPublished, RoomEvent.TrackUnmuted] as const;
+    const done = (result: boolean) => {
+      clearTimeout(timer);
+      for (const event of events) ctx.room.off(event, check);
+      resolve(result);
+    };
+    const check = () => {
+      if (live()) done(true);
+    };
+    const timer = setTimeout(() => done(false), ms);
+    for (const event of events) ctx.room.on(event, check);
+  });
+}
 
 export default defineAgent({
   entry: async (ctx: JobContext) => {
@@ -76,6 +101,14 @@ export default defineAgent({
     });
 
     if (ENGINE === "cascade") {
+      active = await startCascade({ ctx, meta, locale, prefs, sendCard });
+      return;
+    }
+    // GPT-Live keeps time by the person's audio and can't answer typed requests without it (a browser that denied the
+    // microphone, a tapped suggestion): with no live microphone the session runs on the pipeline, which reads typed
+    // text and speaks with the chosen TTS voice.
+    if (!(await microphoneWithin(ctx, meta.identity, MIC_WAIT_MS))) {
+      console.info("voice: no live microphone, starting on the pipeline");
       active = await startCascade({ ctx, meta, locale, prefs, sendCard });
       return;
     }
