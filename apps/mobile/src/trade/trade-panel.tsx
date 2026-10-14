@@ -16,6 +16,7 @@ import { formatUnits } from "viem";
 
 import type { MarginSide, PolicyResultView } from "@kawase/api-client";
 import { MARGIN } from "@kawase/config";
+import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { LeverageRuler } from "@kawase/ui-native/components/leverage-ruler";
 import { SheetInput } from "@kawase/ui-native/components/sheet";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
@@ -36,6 +37,7 @@ import { rulerHaptic, slideHaptic } from "@/margin/haptics";
 import { MarginTrace } from "@/margin/margin-ticket";
 import { isMarginFinished, isMarginMoving } from "@/margin/use-margin";
 import { BrakeNote } from "@/safety/brake-note";
+import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useTheme } from "@/theme/theme-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
@@ -119,6 +121,7 @@ export function TradePanel({ trade, inSheet = false, compact = false }: { trade:
   const format = useMarginFormat();
   const policyText = useMarginPolicyText();
   const prompt = useMarginPrompt();
+  const { user } = useSession();
   const [details, setDetails] = React.useState(false);
   const { controller, draft } = trade;
   const intent = controller.intent;
@@ -134,7 +137,11 @@ export function TradePanel({ trade, inSheet = false, compact = false }: { trade:
 
   const mark = usdOf(draft?.markPrice ?? trade.view?.price ?? null);
   const liquidation = usdOf(draft?.liquidationPrice ?? null);
+  // The hero is the api draft's figure; until one arrives for these inputs it shows the plain product, muted.
   const exposure = draft ? draft.notionalUsd : trade.marginValue * trade.leverage;
+  const pricing = !draft && trade.marginValue > 0 && trade.signedIn && Boolean(trade.sideView?.available) && !trade.draftFailed;
+  // Kawase Margin moves real money (Aave V4 on Arc mainnet): said on the ticket itself, as on every money surface.
+  const realMoney = (intent?.network ?? user?.activeNetwork) === "mainnet";
   const AmountField = inSheet ? SheetInput : TextInput;
 
   const fixFor = (result: PolicyResultView) => {
@@ -202,11 +209,12 @@ export function TradePanel({ trade, inSheet = false, compact = false }: { trade:
       </View>
     );
 
-  const quotedAt = draft ? Date.parse(draft.quotedAt) : undefined;
+  const quotedAt = draft ? trade.quoteFrom : undefined;
   const heroSize = compact ? HERO_SIZE_COMPACT : HERO_SIZE;
 
   return (
     <View className="gap-5">
+      {realMoney ? <Eyebrow className="text-foreground">{`${t("margin.title")} · ${t("network.realMoney")}`}</Eyebrow> : null}
       {editing ? <SideSwitch trade={trade} /> : null}
 
       {editing ? (
@@ -267,13 +275,13 @@ export function TradePanel({ trade, inSheet = false, compact = false }: { trade:
         <View accessible accessibilityLabel={t("desktop.heroLabel", { margin: format.usd(trade.marginValue), exposure: format.usd(exposure) })} className="gap-1">
           <View className="flex-row items-center justify-between">
             <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("desktop.youPutIn", { amount: format.usd(trade.marginValue) })}</Text>
-            {quotedAt && intent && !trade.drafting ? <DrainRing from={quotedAt} to={quotedAt + QUOTE_FRESH_MS} accessibilityLabel={t("desktop.quoteFresh")} onDone={trade.requote} /> : null}
+            {quotedAt !== undefined && intent && !trade.drafting && trade.foreground ? <DrainRing from={quotedAt} to={quotedAt + QUOTE_FRESH_MS} accessibilityLabel={t("desktop.quoteFresh")} onDone={trade.requote} /> : null}
           </View>
-          {trade.drafting && !draft && trade.marginValue > 0 ? (
+          {pricing ? (
             <Skeleton className="rounded-xl" style={{ height: heroSize * SKELETON_LINE, width: SKELETON_WIDTH }} />
           ) : (
             <View className="flex-row flex-wrap items-baseline gap-x-2">
-              <RollingNumber text={format.usd(exposure)} value={exposure} size={heroSize} className={cn("font-display font-bold", trade.marginValue > 0 ? "text-foreground" : "text-muted-foreground")} />
+              <RollingNumber text={format.usd(exposure)} value={exposure} size={heroSize} className={cn("font-display font-bold", draft ? "text-foreground" : "text-muted-foreground")} />
               <Text className="text-muted-foreground text-base">{t("desktop.exposure")}</Text>
             </View>
           )}
