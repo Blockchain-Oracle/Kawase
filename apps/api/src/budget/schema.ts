@@ -93,3 +93,37 @@ export const budgetLeafRequests = pgTable(
   },
   (table) => [index("budget_leaf_requests_intent_idx").on(table.intentId)],
 );
+
+/**
+ * The away pack (D38; migration 0101_budget_away): the standing grants signed in the same approval as the budget, so
+ * Kawase can act inside it while the phone is closed. Each carries the kill-switch nonce it was signed for.
+ * proposed → signed (the wallet's signature checked) → active (the wallet's nonce reached it on chain) → superseded or
+ * revoked.
+ */
+export const budgetGrants = pgTable(
+  "budget_grants",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    network: networkEnum().notNull(),
+    /** The proposal it was handed out with: every grant of one pack shares it. */
+    proposalId: uuid().notNull(),
+    budgetId: uuid().references(() => budgets.id, { onDelete: "set null" }),
+    /** contact_send · vault_approve · vault_deposit · vault_withdraw · bridge_allowance · bridge_burn */
+    purpose: text().notNull(),
+    /** The saved contact's address, the vault, or the CCTP domain. */
+    subject: text().notNull(),
+    /** The delegation (bigints as decimal strings), with its signature once the wallet signed it. */
+    delegation: jsonb().$type<Record<string, unknown>>().notNull(),
+    delegationHash: text().notNull(),
+    /** The NonceEnforcer nonce the grant is bound to: it is live only while the wallet's nonce is exactly this. */
+    nonce: money().notNull(),
+    status: text().notNull().default("proposed"),
+    expiresAt: timestampTz().notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [index("budget_grants_user_status_idx").on(table.userId, table.network, table.status), index("budget_grants_proposal_idx").on(table.proposalId)],
+);

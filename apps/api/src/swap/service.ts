@@ -44,7 +44,8 @@ import {
 import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, SwapRouteView, TokenView, UnsignedTransaction } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import type { SwapCall } from "@kawase/integrations-app-kit";
-import { buildSwapLeaves, encodeRedeemLeaves, encodeSelfBatch, isWalletSetUp, randomSalt, readGrantNonce } from "@kawase/integrations-delegation";
+import { LeafPlanRefused, buildSwapLeaves, encodeRedeemLeaves, encodeSelfBatch, isWalletSetUp, planSwapLeaves, readGrantNonce, type SwapLeafPlan } from "@kawase/integrations-delegation";
+import { PERMIT2_ADDRESS } from "@kawase/wallet";
 import {
   DRAFTABLE_STATES,
   loadSwapDraft,
@@ -86,6 +87,10 @@ type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 
 const ZERO = 0n;
 const ONE = 1n;
+/** Arc USDC as the native coin has 18 decimals; its ERC-20 view has 6. */
+const DECIMAL_BASE = 10n;
+const NATIVE_USDC_EXTRA_DECIMALS = 12n;
+const NATIVE_USDC_SCALE = DECIMAL_BASE ** NATIVE_USDC_EXTRA_DECIMALS;
 const PERCENT = 100n;
 const BPS = 10_000;
 const RATE_DIGITS = 6;
@@ -729,8 +734,18 @@ export class SwapService {
     const { before, current, draft, calls, venue } = fresh;
     const { network, client, ops } = this.clients(before.network);
     if (!this.ops) throw problem(HTTP.serviceUnavailable, "network_unavailable", "silent swaps are not available here");
-    const swap = calls[calls.length - 1]!;
-    if (swap.value !== ZERO) throw problem(HTTP.badGateway, "quote_unavailable", "the swap route carries native value");
+    // Every venue's checked calls as leaves: exact approvals, the venue's own call pinned, the allowance back to zero
+    // after. A shape the plan does not recognise is not silent: the person confirms the swap the ordinary way.
+    let plan: SwapLeafPlan;
+    try {
+      plan = planSwapLeaves(calls, { tokenIn: draft.tokenIn, amountIn: draft.amountIn, permit2: PERMIT2_ADDRESS });
+    } catch (error) {
+      if (!(error instanceof LeafPlanRefused)) throw error;
+      this.log.warn({ intentId, venue, reason: error.message }, "swap leaf plan refused");
+      return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: "venue_off" };
+    }
+    const nativeIn = plan.swap.value !== ZERO;
+    if (nativeIn && (draft.tokenIn.toLowerCase() !== network.addresses.usdc.toLowerCase() || plan.swap.value !== draft.amountIn * NATIVE_USDC_SCALE)) throw problem(HTTP.badGateway, "quote_unavailable", "the swap route carries native value");
 
     // A token Kawase does not vouch for is never silent (the token rules, D12): the person confirms it on the card.
     if ((current.payload as DraftPayload).view?.unverifiedOut) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: "token_unvetted" };
@@ -743,20 +758,7 @@ export class SwapService {
     if (!fits.ok) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: fits.reason };
 
     const [nonce, now] = await Promise.all([readGrantNonce(client, network, draft.from), chainNow(client)]);
-    const leaves = buildSwapLeaves({
-      network,
-      wallet: draft.from,
-      ops: ops.address,
-      router: swap.to,
-      tokenIn: draft.tokenIn,
-      tokenOut: draft.tokenOut,
-      amountIn: draft.amountIn,
-      minOut: draft.minOut,
-      routerCalldata: swap.data,
-      nonce,
-      now,
-      salts: [randomSalt(), randomSalt()],
-    });
+    const leaves = buildSwapLeaves({ network, wallet: draft.from, ops: ops.address, tokenIn: draft.tokenIn, tokenOut: draft.tokenOut, amountIn: draft.amountIn, minOut: draft.minOut, plan, nonce, now });
     const approvalId = await this.db.transaction(async (tx) => {
       const intent = await this.lockIntent(tx, user.id, intentId);
       if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== input.version) return undefined;

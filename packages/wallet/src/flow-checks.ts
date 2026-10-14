@@ -9,9 +9,10 @@
 // the server sent. The server proposes the leaves; the phone decodes every caveat itself (checks.ts) and compares them
 // with what it expects on its own: its own quote's minimum, the venue on its allowlist, its own clock. Only a leaf that
 // passes is signed with no Face ID; anything else is refused, never shown as "inside the budget".
-//  - a swap is two leaves redeemed together by the ops wallet: approve (ExactExecution of `tokenIn.approve(router,
-//    amountIn)`) and swap (AllowedTargets [router], ValueLte 0, tokenOut up by at least the phone's own minimum,
-//    tokenIn down by at most amountIn);
+//  - a swap is a few leaves redeemed together by the ops wallet, every call pinned exactly (ExactExecution): the
+//    approvals (`tokenIn.approve(spender, amountIn)` to the venue's own spender, and Uniswap's Permit2 approve), the
+//    venue's call (its contract, no value, tokenOut up by at least the phone's own minimum, tokenIn down by at most
+//    amountIn), then `tokenIn.approve(spender, 0)` for every spender so no allowance outlives the swap;
 //  - both: from this wallet, to the ops wallet, Redeemer [ops], LimitedCalls 1, a Timestamp no later than now + 120 s
 //    (+ slack), the Nonce kill-switch, and a salt of their own;
 //  - an earn move is the same with the vault's ERC-4626 call pinned exactly (receiver and owner the wallet) and the
@@ -23,11 +24,13 @@ import {
   erc20Abi,
   getAddress,
   hexToBigInt,
+  isAddress,
   isAddressEqual,
   parseAbi,
   recoverTypedDataAddress,
   size,
   slice,
+  toFunctionSelector,
   type Address,
   type Hex,
 } from "viem";
@@ -222,32 +225,100 @@ const decrease = (decoded: DecodedDelegation, token: Address) => find(decoded, "
 
 // ── Swap ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+/** Uniswap's Permit2 (the same address on every chain). */
+export const PERMIT2_ADDRESS: Address = getAddress("0x000000000022D473030F116dDEE9F6B43aC78BA3");
+const PERMIT2_APPROVE_ABI = parseAbi(["function approve(address token, address spender, uint160 amount, uint48 expiration)"]);
+/** Arc's USDC is the native coin (18 decimals) and an ERC-20 view of it (6 decimals). */
+const TEN = 10n;
+/** USDC's native decimals (18) less its ERC-20 view's (6). */
+const NATIVE_USDC_EXTRA_DECIMALS = 12n;
+const NATIVE_USDC_SCALE = TEN ** NATIVE_USDC_EXTRA_DECIMALS;
+
+/** The contracts one swap venue's leaves may name: the call's target, and the spender its approval goes to. */
+export type SwapVenueContracts = { targets: readonly Address[]; spenders: readonly Address[] };
+
 export type SwapLeafExpectation = LeafExpectation & {
-  /** Venue contracts the person's budget allows (the venue allowlist, as contracts on this network). */
-  routers: readonly Address[];
+  /** The venue's contracts on this network, compiled into the app (`swapVenueContracts`); a venue on the budget's allowlist. */
+  venue: SwapVenueContracts;
   tokenIn: Address;
   tokenOut: Address;
   amountIn: bigint;
   /** The least the phone accepts: from its own quote, less the budget's slippage. Never the server's number. */
   minOut: bigint;
+  /** This network's USDC: a swap of USDC may pay it as Arc's native coin (Uniswap), exactly the amount. */
+  usdc?: Address | undefined;
 };
 
-export type CheckedSwapLeaves = { approve: DecodedDelegation; swap: DecodedDelegation; router: Address; guaranteedOut: bigint };
+export type CheckedSwapLeaves = { leaves: DecodedDelegation[]; swap: DecodedDelegation; router: Address; guaranteedOut: bigint };
 
-/** The two leaves of a swap (approve, then swap), as typed data, checked against what the phone expects. */
-export function checkSwapLeaves(typedData: readonly [TypedDataLike, TypedDataLike], expected: SwapLeafExpectation): CheckedSwapLeaves {
-  const approve = decodeDelegation(typedData[0], expected.wallet);
-  const swap = decodeDelegation(typedData[1], expected.wallet);
+const approvalOf = (callData: Hex): { spender: Address; amount: bigint } | undefined => {
+  try {
+    const decoded = decodeFunctionData({ abi: erc20Abi, data: callData });
+    return decoded.functionName === "approve" ? { spender: getAddress(decoded.args[0]), amount: decoded.args[1] } : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * A swap's leaves (approvals, the venue's call, the resets), as typed data, checked against what the phone expects:
+ * every leaf from this wallet to ops with the common terms; every call pinned exactly; the approvals only of tokenIn,
+ * only for exactly the amount, only to the venue's own spender (or Uniswap's Permit2 approving exactly the amount to
+ * the venue's router); the venue's call to its own contract, no value (USDC as Arc's native coin only for exactly the
+ * amount), tokenOut up by at least the phone's own minimum and tokenIn down by at most the amount; then every spender
+ * approved is set back to zero. Whatever the venue's calldata does, it cannot take a third token's leftover allowance
+ * (it is pinned, so a leaked ops key cannot change it) or leave one behind (the resets).
+ */
+export function checkSwapLeaves(typedData: readonly TypedDataLike[], expected: SwapLeafExpectation): CheckedSwapLeaves {
+  const decoded = typedData.map((entry) => decodeDelegation(entry, expected.wallet));
   checkSalts(typedData);
-  checkLeafCommon(approve, expected, ["exactExecution"]);
-  checkLeafCommon(swap, expected, ["allowedTargets", "valueLte", "erc20BalanceChange"]);
+  const swapIndex = decoded.findIndex((leaf) => find(leaf, "erc20BalanceChange").length > 0);
+  if (swapIndex < 0 || decoded.filter((leaf) => find(leaf, "erc20BalanceChange").length > 0).length !== 1) refuse("a swap without exactly one call that checks its output");
+  const swap = decoded[swapIndex]!;
+  checkLeafCommon(swap, expected, ["exactExecution", "erc20BalanceChange"]);
+  const call = one(swap, "exactExecution", "pinned call").execution;
+  const router = getAddress(call.target);
+  if (!expected.venue.targets.some((allowed) => isAddressEqual(allowed, router))) refuse("a venue outside the budget's allowlist");
+  const native = call.value !== ZERO;
+  if (native && !(expected.usdc && isAddressEqual(expected.usdc, expected.tokenIn) && call.value === expected.amountIn * NATIVE_USDC_SCALE)) refuse("a swap leaf that can move native value");
 
-  const targets = one(swap, "allowedTargets", "target list").targets;
-  if (targets.length !== 1) refuse("a swap leaf that can call more than its venue");
-  const router = getAddress(targets[0]!);
-  if (!expected.routers.some((allowed) => isAddressEqual(allowed, router))) refuse("a venue outside the budget's allowlist");
-  if (one(swap, "valueLte", "value limit").maxValue !== ZERO) refuse("a swap leaf that can move native value");
-  checkApprove(approve, expected.tokenIn, router, expected.amountIn);
+  const approved: Address[] = [];
+  for (const leaf of decoded.slice(0, swapIndex)) {
+    checkLeafCommon(leaf, expected, ["exactExecution"]);
+    const pinned = one(leaf, "exactExecution", "pinned call").execution;
+    if (pinned.value !== ZERO) refuse("an approval that moves value");
+    if (isAddressEqual(pinned.target, expected.tokenIn)) {
+      const approval = approvalOf(pinned.callData);
+      if (!approval || approval.amount !== expected.amountIn) refuse("an approval of another spender or amount");
+      if (!expected.venue.spenders.some((spender) => isAddressEqual(spender, approval!.spender))) refuse("an approval of another spender or amount");
+      approved.push(approval!.spender);
+      continue;
+    }
+    if (isAddressEqual(pinned.target, PERMIT2_ADDRESS) && expected.venue.spenders.some((spender) => isAddressEqual(spender, PERMIT2_ADDRESS))) {
+      let args;
+      try {
+        args = decodeFunctionData({ abi: PERMIT2_APPROVE_ABI, data: pinned.callData }).args;
+      } catch {
+        return refuse("a Permit2 call that is not its approve");
+      }
+      if (!isAddressEqual(args[0], expected.tokenIn) || !isAddressEqual(args[1], router) || args[2] !== expected.amountIn) refuse("a Permit2 approval for something else");
+      continue;
+    }
+    refuse("an approval of another token");
+  }
+  if (!native && approved.length === 0) refuse("a swap that relies on an older allowance");
+  if (native && approved.length > 0) refuse("a native swap with an approval");
+
+  const reset: Address[] = [];
+  for (const leaf of decoded.slice(swapIndex + 1)) {
+    checkLeafCommon(leaf, expected, ["exactExecution"]);
+    const pinned = one(leaf, "exactExecution", "pinned call").execution;
+    const approval = isAddressEqual(pinned.target, expected.tokenIn) && pinned.value === ZERO ? approvalOf(pinned.callData) : undefined;
+    if (!approval || approval.amount !== ZERO) refuse("a call after the swap that is not an allowance reset");
+    reset.push(approval!.spender);
+  }
+  const key = (list: readonly Address[]) => [...new Set(list.map((address) => address.toLowerCase()))].sort().join(",");
+  if (key(reset) !== key(approved)) refuse("an allowance the swap leaves standing");
 
   const out = increase(swap, expected.tokenOut);
   const spent = decrease(swap, expected.tokenIn);
@@ -255,7 +326,7 @@ export function checkSwapLeaves(typedData: readonly [TypedDataLike, TypedDataLik
   if (out!.amount < expected.minOut) refuse("a swap leaf that accepts less than the phone's own quote");
   if (out!.amount === ZERO) refuse("a swap leaf that accepts nothing back");
   if (spent!.amount > expected.amountIn) refuse("a swap leaf that can spend more than the amount");
-  return { approve, swap, router, guaranteedOut: out!.amount };
+  return { leaves: decoded, swap, router, guaranteedOut: out!.amount };
 }
 
 // ── Earn ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -342,6 +413,168 @@ export function checkContactGrant(typedData: TypedDataLike, expected: ContactGra
   if (decoded.caveats.some((caveat) => caveat.type === "exactExecution" || caveat.type === "exactExecutionBatch" || caveat.type === "exactCalldata" || caveat.type === "erc20BalanceChange"))
     refuse("a grant with terms its card does not show");
   return decoded;
+}
+
+// ── The rest of the away pack: vaults and moves to the wallet's own address ───────────────────────────────────────
+
+const VAULT_SELECTORS = {
+  approve: toFunctionSelector("approve(address,uint256)"),
+  deposit: toFunctionSelector("deposit(uint256,address)"),
+  withdraw: toFunctionSelector("withdraw(uint256,address,address)"),
+} as const;
+const BRIDGE_ALLOWANCE_SELECTORS = [toFunctionSelector("increaseAllowance(address,uint256)"), toFunctionSelector("approve(address,uint256)")];
+const BRIDGE_BURN_SELECTOR = toFunctionSelector("bridgeWithPreapprovalAndHook((uint256,uint256,uint256,bytes32,bytes32,address,address,uint32,uint32),bytes)");
+/** Where an argument word starts in calldata: after the selector, one word per earlier argument. */
+const SELECTOR_LENGTH = 4;
+const HEX_PER_BYTE = 2;
+const HEX_PREFIX = 2;
+/** The three arguments a vault grant may pin: assets/spender, receiver, owner. */
+const ARG = { first: 0, receiver: 1, owner: 2 } as const;
+const argumentAt = (position: number) => SELECTOR_LENGTH + position * WORD_BYTES;
+/** `BridgeParams` words (bridge-grants.ts): 2 fee, 3 mintRecipient, 4 destinationCaller, 5 burnToken, 7 destinationDomain. */
+const BRIDGE_WORDS = { fee: 2, mintRecipient: 3, destinationCaller: 4, burnToken: 5, domain: 7 } as const;
+
+export type AwayGrantExpectation = {
+  wallet: Address;
+  ops: Address;
+  /** The wallet's current NonceEnforcer nonce: every grant in the pack must carry it. */
+  nonce: bigint;
+  usdc: Address;
+  chainId: number;
+  /** The latest end the phone accepts (the pack's own end, at most weeks away). */
+  latestEnd: number;
+};
+
+/** What every standing grant in the pack must be: ops only, no native value, bound to this kill-switch, no leaf terms. */
+function checkStanding(typedData: TypedDataLike, expected: AwayGrantExpectation) {
+  const decoded = decodeDelegation(typedData, expected.wallet);
+  const receipt = receiptOf(decoded);
+  if (!isAddressEqual(decoded.delegate, expected.ops)) refuse("a grant for someone other than Kawase's ops wallet");
+  if (receipt.redeemers.length !== 1 || !isAddressEqual(receipt.redeemers[0] as Address, expected.ops)) refuse("a grant someone else could redeem");
+  if (BigInt(receipt.maxNativeValue ?? "-1") !== ZERO) refuse("a grant that can move native value");
+  if (receipt.nonce === undefined || BigInt(receipt.nonce) !== expected.nonce) refuse("a grant bound to another kill-switch nonce");
+  if (receipt.expiresAt === undefined || receipt.expiresAt === 0 || receipt.expiresAt > expected.latestEnd) refuse("a grant that lives too long");
+  if (decoded.caveats.some((caveat) => caveat.type === "exactExecution" || caveat.type === "exactExecutionBatch" || caveat.type === "exactCalldata" || caveat.type === "erc20BalanceChange" || caveat.type === "erc20PeriodTransfer"))
+    refuse("a grant with terms its card does not show");
+  return { decoded, receipt };
+}
+
+const wordAt = (receipt: ReturnType<typeof receiptOf>, offset: number) => receipt.pins.find((pin) => pin.startIndex === offset)?.value?.toLowerCase();
+const addressWord = (address: Address) => `0x${address.slice(HEX_PREFIX).toLowerCase().padStart(WORD_BYTES * HEX_PER_BYTE, "0")}`;
+const ZERO_WORD = `0x${"0".repeat(WORD_BYTES * HEX_PER_BYTE)}`;
+
+/**
+ * A vault grant of the away pack: `usdc.approve(vault, …)`, `vault.deposit(…, wallet)` or `vault.withdraw(…, wallet,
+ * wallet)`, nothing else, the receiver (and owner) pinned to the wallet: any redeem only moves the person's USDC into
+ * their own position in this vault and back.
+ */
+export function checkVaultGrant(typedData: TypedDataLike, expected: AwayGrantExpectation & { vault: Address; purpose: "approve" | "deposit" | "withdraw" }) {
+  const { decoded, receipt } = checkStanding(typedData, expected);
+  const target = expected.purpose === "approve" ? expected.usdc : expected.vault;
+  if (receipt.targets.length !== 1 || !isAddressEqual(receipt.targets[0] as Address, target)) refuse("a vault grant that can call another contract");
+  if (receipt.methods.length !== 1 || receipt.methods[0]!.toLowerCase() !== VAULT_SELECTORS[expected.purpose]) refuse("a vault grant that can do something else");
+  const pins: [number, Address][] =
+    expected.purpose === "approve"
+      ? [[argumentAt(ARG.first), expected.vault]]
+      : expected.purpose === "deposit"
+        ? [[argumentAt(ARG.receiver), expected.wallet]]
+        : [
+            [argumentAt(ARG.receiver), expected.wallet],
+            [argumentAt(ARG.owner), expected.wallet],
+          ];
+  if (receipt.pins.length !== pins.length || pins.some(([offset, address]) => wordAt(receipt, offset) !== addressWord(address))) refuse("a vault grant that pays someone else");
+  return decoded;
+}
+
+/**
+ * A move of the away pack: App Kit's bridge (compiled into the app) burning USDC on Arc through CCTP with the mint
+ * pinned to the wallet's own address, no fee, USDC only, to one destination; or the allowance for exactly that bridge.
+ */
+export function checkBridgeSelfGrant(typedData: TypedDataLike, expected: AwayGrantExpectation & { domain: number; purpose: "allowance" | "burn" }) {
+  const { decoded, receipt } = checkStanding(typedData, expected);
+  const bridge = APP_KIT_BRIDGES[expected.chainId];
+  if (!bridge) refuse("a move on a chain the app does not know");
+  if (expected.purpose === "allowance") {
+    if (receipt.targets.length !== 1 || !isAddressEqual(receipt.targets[0] as Address, expected.usdc)) refuse("an allowance on another token");
+    if (!sameSet(receipt.methods, BRIDGE_ALLOWANCE_SELECTORS)) refuse("an allowance grant that can do something else");
+    if (receipt.pins.length !== 1 || wordAt(receipt, argumentAt(0)) !== addressWord(bridge!)) refuse("an allowance for another spender");
+    return decoded;
+  }
+  if (receipt.targets.length !== 1 || !isAddressEqual(receipt.targets[0] as Address, bridge!)) refuse("a move through another contract");
+  if (receipt.methods.length !== 1 || receipt.methods[0]!.toLowerCase() !== BRIDGE_BURN_SELECTOR) refuse("a move grant that can do something else");
+  if (wordAt(receipt, argumentAt(BRIDGE_WORDS.mintRecipient)) !== addressWord(expected.wallet)) refuse("a move to someone else's address");
+  if (wordAt(receipt, argumentAt(BRIDGE_WORDS.fee)) !== ZERO_WORD) refuse("a move that pays a fee");
+  if (wordAt(receipt, argumentAt(BRIDGE_WORDS.destinationCaller)) !== ZERO_WORD) refuse("a move only one caller can finish");
+  if (wordAt(receipt, argumentAt(BRIDGE_WORDS.burnToken)) !== addressWord(expected.usdc)) refuse("a move of another token");
+  if (BigInt(wordAt(receipt, argumentAt(BRIDGE_WORDS.domain)) ?? "-1") !== BigInt(expected.domain)) refuse("a move to another chain");
+  return decoded;
+}
+
+const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((entry) => b.some((other) => other.toLowerCase() === entry.toLowerCase()));
+
+/** One away-pack grant as the api hands it out: its typed data and what it is for. */
+export type AwayOffer = { purpose: string; subject: string; typedData: TypedDataLike };
+
+/**
+ * The whole away pack, checked on the phone before the one approval signs it: per-contact sends only to contacts the
+ * phone itself has saved (USDC, at most `perContactPerWeek`), vault grants only for vaults the budget lists, moves only
+ * to the wallet's own address. Anything else (a stranger, another vault, an unknown purpose) refuses the whole pack.
+ */
+export function checkAwayPack(offers: readonly AwayOffer[], expected: AwayGrantExpectation & { contacts: readonly string[]; perContactPerWeek: bigint; vaults: readonly string[] }) {
+  for (const offer of offers) {
+    const subject = offer.subject;
+    switch (offer.purpose) {
+      case "contact_send": {
+        if (!isAddress(subject) || !expected.contacts.some((contact) => same(contact, subject))) refuse("a send grant for someone who is not a saved contact");
+        const decoded = checkContactGrant(offer.typedData, { wallet: expected.wallet, ops: expected.ops, token: expected.usdc, recipient: subject as Address, maxPerPeriod: expected.perContactPerWeek, nonce: expected.nonce });
+        const receipt = receiptOf(decoded);
+        if (receipt.expiresAt === undefined || receipt.expiresAt > expected.latestEnd) refuse("a grant that lives too long");
+        break;
+      }
+      case "vault_approve":
+      case "vault_deposit":
+      case "vault_withdraw":
+        if (!isAddress(subject) || !expected.vaults.some((vault) => same(vault, subject))) refuse("a vault outside the budget");
+        checkVaultGrant(offer.typedData, { ...expected, vault: subject as Address, purpose: offer.purpose.slice("vault_".length) as "approve" | "deposit" | "withdraw" });
+        break;
+      case "bridge_allowance":
+      case "bridge_burn":
+        if (!/^\d+$/.test(subject)) refuse("a move without its destination");
+        checkBridgeSelfGrant(offer.typedData, { ...expected, domain: Number(subject), purpose: offer.purpose === "bridge_burn" ? "burn" : "allowance" });
+        break;
+      default:
+        refuse("a grant the app does not know");
+    }
+  }
+  checkSalts(offers.map((offer) => offer.typedData));
+}
+
+// ── A send the phone signs with no prompt (inside the budget, to a saved contact) ─────────────────────────────────
+
+const MEMO_ABI = parseAbi(["function memo(address target, bytes data, bytes32 memoId, bytes memoData)"]);
+
+/**
+ * The transaction a send asks the wallet to sign moves exactly its card: on Arc, no native value, `token.transfer(to,
+ * amount)` sent to the token itself, or the same transfer through Arc's Memo contract (the reference written beside it).
+ */
+export function checkSendTransaction(transaction: { to: string; data: Hex; value: string; chainId: number }, shown: { token: Address; to: Address; amount: bigint }) {
+  if (!ARC_CHAIN_IDS.includes(transaction.chainId)) refuse("a send for a chain other than Arc");
+  if (BigInt(transaction.value) !== ZERO) refuse("a send that moves native value");
+  const transfer = encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [shown.to, shown.amount] }).toLowerCase();
+  if (isAddressEqual(transaction.to as Address, shown.token)) {
+    if (transaction.data.toLowerCase() !== transfer) refuse("a send of another amount or to someone else");
+    return;
+  }
+  const network = Object.values(NETWORKS).find((entry) => entry.chainId === transaction.chainId);
+  const memo = network?.addresses.memo as Address | undefined;
+  if (!memo || !isAddressEqual(transaction.to as Address, memo)) refuse("a send through another contract");
+  let args;
+  try {
+    args = decodeFunctionData({ abi: MEMO_ABI, data: transaction.data }).args;
+  } catch {
+    return refuse("a send through another contract");
+  }
+  if (!isAddressEqual(args[0], shown.token) || args[1].toLowerCase() !== transfer) refuse("a send of another amount or to someone else");
 }
 
 /**
@@ -441,6 +674,8 @@ export async function verifyBudget(policy: BudgetPolicy, signature: Hex): Promis
 // ── What the app compiles in for the budget guard (never taken from a response) ──────────────────────────────────
 
 const MAINNET_CHAIN_ID = NETWORKS.mainnet.chainId;
+/** A venue whose contract is both the call's target and the approval's spender. */
+const same2 = (contract: Address): SwapVenueContracts => ({ targets: [contract], spenders: [contract] });
 const TESTNET_CHAIN_ID = NETWORKS.testnet.chainId;
 
 /**
@@ -453,21 +688,41 @@ export const KAWASE_OPS_WALLETS: Readonly<Record<number, Address>> = {
 };
 
 /**
- * The contract each swap venue's leaf may call (its router), per Arc network. A venue missing here is never silent,
- * whatever the budget lists: the phone cannot tell its router from anyone else's.
+ * The contracts each swap venue's leaves may name, per Arc network: the call's target and the approval's spender. A
+ * venue missing here is never silent, whatever the budget lists: the phone cannot tell its contract from anyone else's.
  *  - kyberswap: MetaAggregationRouterV2 (@kawase/integrations-kyberswap KYBERSWAP_ROUTER; KyberSwap does not serve testnet);
  *  - app_kit:   Circle App Kit's swap adapter (`swapAdapterContract`, read from the kit 2026-10-14);
- *  - lifi:      LI.FI's diamond on Arc mainnet (@kawase/config LIFI_DIAMOND_ARC).
+ *  - lifi:      LI.FI's diamond on Arc mainnet (@kawase/config LIFI_DIAMOND_ARC);
+ *  - uniswap:   the Universal Router on Arc (api routing/uniswap.ts UNISWAP_ROUTERS), its approval through Permit2;
+ *  - zerox:     0x's AllowanceHolder (api routing/zerox.ts), the call's target and the spender;
+ *  - socket:    Socket's allowance holder (@kawase/integrations-bridges SOCKET_ALLOWANCE_HOLDER), the same.
  */
-export const BUDGET_SWAP_ROUTERS: Readonly<Record<number, Readonly<Record<string, readonly Address[]>>>> = {
+export const BUDGET_SWAP_VENUES: Readonly<Record<number, Readonly<Record<string, SwapVenueContracts>>>> = {
   [MAINNET_CHAIN_ID]: {
-    kyberswap: [getAddress("0x6131B5fae19EA4f9D964eAc0408E4408b66337b5")],
-    app_kit: [getAddress("0x7FB8c7260b63934d8da38aF902f87ae6e284a845")],
-    lifi: [getAddress("0xA4072583658Fae592A3506A42431cb6316a8d40b")],
+    kyberswap: same2(getAddress("0x6131B5fae19EA4f9D964eAc0408E4408b66337b5")),
+    app_kit: same2(getAddress("0x7FB8c7260b63934d8da38aF902f87ae6e284a845")),
+    lifi: same2(getAddress("0xA4072583658Fae592A3506A42431cb6316a8d40b")),
+    uniswap: { targets: [getAddress("0x8702463e73f74d0b6765aBceb314Ef07aCb92650")], spenders: [PERMIT2_ADDRESS] },
+    zerox: same2(getAddress("0x0000000000001fF3684f28c67538d4D072C22734")),
+    socket: same2(getAddress("0x50c4E75a512F2A14A7b304787Adf79C4531A5909")),
   },
   [TESTNET_CHAIN_ID]: {
-    app_kit: [getAddress("0xBBD70b01a1CAbc96d5b7b129Ae1AAabdf50dd40b")],
+    app_kit: same2(getAddress("0xBBD70b01a1CAbc96d5b7b129Ae1AAabdf50dd40b")),
   },
+};
+
+/** The routers (call targets) of every venue, as before (kept for the screens that list venues). */
+export const BUDGET_SWAP_ROUTERS: Readonly<Record<number, Readonly<Record<string, readonly Address[]>>>> = Object.fromEntries(
+  Object.entries(BUDGET_SWAP_VENUES).map(([chainId, venues]) => [chainId, Object.fromEntries(Object.entries(venues).map(([venue, contracts]) => [venue, contracts.targets]))]),
+);
+
+/**
+ * App Kit's bridge contract on Arc (`bridgeContract` from @kawase/integrations-app-kit, read 2026-10-14): the only
+ * contract an away-pack move to the wallet's own address may call.
+ */
+export const APP_KIT_BRIDGES: Readonly<Record<number, Address>> = {
+  [MAINNET_CHAIN_ID]: getAddress("0xB3FA262d0fB521cc93bE83d87b322b8A23DAf3F0"),
+  [TESTNET_CHAIN_ID]: getAddress("0xC5567a5E3370d4DBfB0540025078e283e36A363d"),
 };
 
 /** The Arc network a chain id is, if it is one. */
@@ -480,7 +735,12 @@ export const opsWalletFor = (chainId: number): Address | undefined => KAWASE_OPS
 
 /** The routers of one swap venue on this chain (empty when the app does not know the venue there). */
 export function venueRouters(chainId: number, venue: string): readonly Address[] {
-  return BUDGET_SWAP_ROUTERS[chainId]?.[venue.toLowerCase()] ?? [];
+  return BUDGET_SWAP_VENUES[chainId]?.[venue.toLowerCase()]?.targets ?? [];
+}
+
+/** One swap venue's contracts on this chain, or undefined when the app does not know the venue there. */
+export function swapVenueContracts(chainId: number, venue: string): SwapVenueContracts | undefined {
+  return BUDGET_SWAP_VENUES[chainId]?.[venue.toLowerCase()];
 }
 
 /** A token Kawase vouches for on this chain (the compiled registry), or undefined. */

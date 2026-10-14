@@ -26,7 +26,7 @@ import {
   leafGuarantees,
   opsWalletFor,
   reviveDelegationTypedData,
-  venueRouters,
+  swapVenueContracts,
   verifyBudget,
   vouchedToken,
   type BudgetCategory,
@@ -44,8 +44,8 @@ const BPS = 10_000n;
 const VAULT_DRIFT_BPS = 10n;
 const MS_PER_SECOND = 1000;
 const ZERO = 0n;
-/** A swap is two leaves: the exact approve, then the router call. */
-const SWAP_LEAVES = 2;
+/** A swap is the exact approval, the venue's call and the allowance reset (USDC paid as Arc's native coin: one call). */
+const MIN_SWAP_LEAVES = 3;
 
 /** Leaf typed data as the api sends it (the salt as a decimal string). */
 export type LeafTypedData = Record<string, unknown>;
@@ -175,8 +175,9 @@ export async function budgetAllows(action: GuardAction, context: GuardContext, d
       const tokenIn = vouchedToken(chainId, action.tokenIn);
       const tokenOut = vouchedToken(chainId, action.tokenOut);
       if (!tokenIn || !tokenOut || !SILENT_KINDS.has(tokenIn.kind) || !SILENT_KINDS.has(tokenOut.kind)) return refuse("token_unvetted");
-      const routers = venueRouters(chainId, action.venue);
-      if (routers.length === 0) return refuse("venue_off", action.venue);
+      const venueContracts = swapVenueContracts(chainId, action.venue);
+      if (!venueContracts) return refuse("venue_off", action.venue);
+      const usdc = arcStablecoin(network, "USDC");
       const market = await deps.quote({ chainId, tokenIn: action.tokenIn, tokenOut: action.tokenOut, amountIn: action.amountIn });
       if (market === undefined) return refuse("unpriced");
       const stable = STABLE_KINDS.has(tokenIn.kind) && STABLE_KINDS.has(tokenOut.kind);
@@ -190,9 +191,10 @@ export async function budgetAllows(action: GuardAction, context: GuardContext, d
       if (nonce === undefined) return refuse("settings_unknown", "kill-switch nonce unreadable");
       leaves = async () => {
         const typed = leavesFor(action.leaves, chainId);
-        if (typed.length !== SWAP_LEAVES) throw new SigningRefused("a swap that is not approve + swap");
-        const checked = checkSwapLeaves([typed[0]!, typed[1]!], { wallet, ops, now: nowSeconds, nonce, routers, tokenIn: action.tokenIn, tokenOut: action.tokenOut, amountIn: action.amountIn, minOut: action.minOut });
-        return [checked.approve, checked.swap];
+        const nativeUsdc = typed.length === 1 && usdc !== undefined && isAddressEqual(usdc, action.tokenIn);
+        if (typed.length < MIN_SWAP_LEAVES && !nativeUsdc) throw new SigningRefused("a swap without its approval and reset");
+        const checked = checkSwapLeaves(typed, { wallet, ops, now: nowSeconds, nonce, venue: venueContracts, usdc, tokenIn: action.tokenIn, tokenOut: action.tokenOut, amountIn: action.amountIn, minOut: action.minOut });
+        return [checked.swap];
       };
       break;
     }

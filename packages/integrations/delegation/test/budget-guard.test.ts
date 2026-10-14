@@ -15,7 +15,7 @@ import { budgetAllows, type GuardAction, type GuardContext, type GuardDeps } fro
 import { createPhoneLedger, spentIn, weekStart } from "../../../../apps/mobile/src/budget/ledger.ts";
 import type { BudgetView } from "../../../../apps/mobile/src/budget/types.ts";
 import { swapAdapterContract } from "../../app-kit/src/index.ts";
-import { buildEarnLeaves, buildSwapLeaves, grantTypedData, randomSalt } from "../src";
+import { buildEarnLeaves, buildSwapLeaves, grantTypedData, randomSalt, simpleSwapPlan } from "../src";
 
 const network = getNetwork("testnet");
 const chainId = network.chainId;
@@ -51,8 +51,9 @@ async function signedBudget(overrides: Partial<BudgetPolicy> = {}, view: Partial
 }
 
 const swapLeaves = (overrides: { minOut?: bigint; ops?: Address; router?: Address } = {}) => {
-  const leaves = buildSwapLeaves({ network, wallet, ops: overrides.ops ?? ops, router: overrides.router ?? router, tokenIn: usdc, tokenOut: eurc, amountIn: 10n * USD, minOut: overrides.minOut ?? 8_500_000n, routerCalldata: "0xdeadbeef" as Hex, nonce, now, salts: [randomSalt(), randomSalt()] });
-  return [typed(leaves.approveLeaf), typed(leaves.swapLeaf)];
+  const plan = simpleSwapPlan(usdc, overrides.router ?? router, 10n * USD, "0xdeadbeef" as Hex);
+  const leaves = buildSwapLeaves({ network, wallet, ops: overrides.ops ?? ops, tokenIn: usdc, tokenOut: eurc, amountIn: 10n * USD, minOut: overrides.minOut ?? 8_500_000n, plan, nonce, now });
+  return leaves.leaves.map(typed);
 };
 const swap = (overrides: Partial<Extract<GuardAction, { kind: "swap" }>> = {}): GuardAction => ({ kind: "swap", venue: "app_kit", tokenIn: usdc, tokenOut: eurc, amountIn: 10n * USD, minOut: 8_500_000n, leaves: swapLeaves(), ...overrides });
 

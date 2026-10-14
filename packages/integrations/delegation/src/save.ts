@@ -8,7 +8,7 @@
 // different argument for each (and would let the vault's own shares be approved away).
 import { CaveatType, ExecutionMode, ScopeType, createDelegation, createExecution, type Delegation } from "@metamask/smart-accounts-kit";
 import { DelegationManager } from "@metamask/smart-accounts-kit/contracts";
-import { encodeFunctionData, erc20Abi, pad, type Address, type Hex } from "viem";
+import { encodeFunctionData, erc20Abi, pad, toHex, type Address, type Hex } from "viem";
 import type { NetworkContext } from "@kawase/networks";
 
 import { delegationEnvironment } from "./environment";
@@ -60,6 +60,8 @@ export type SaveGrantTerms = {
   expiresAt: number;
   /** Random 32 bytes each; makes every grant unique. */
   salts: { approve: Hex; deposit: Hex; withdraw: Hex };
+  /** The wallet's NonceEnforcer nonce (D38 away pack): when set, every grant dies with the kill-switch. */
+  nonce?: bigint | undefined;
 };
 
 export type SaveGrants = { approve: Delegation; deposit: Delegation; withdraw: Delegation };
@@ -81,6 +83,7 @@ function grant(terms: SaveGrantTerms, target: Address, selector: string, pins: {
     caveats: [
       { type: CaveatType.Timestamp, afterThreshold: 0, beforeThreshold: terms.expiresAt },
       { type: CaveatType.Redeemer, redeemers: [terms.redeemer] },
+      ...(terms.nonce === undefined ? [] : [{ type: CaveatType.Nonce, nonce: toHex(terms.nonce, { size: ABI_WORD_BYTES }) } as const]),
     ],
     salt,
   });

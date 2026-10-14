@@ -48,11 +48,17 @@ export type BridgeGrantTerms = {
   domain: number;
   expiresAt: number;
   salts: { allowance: Hex; burn: Hex };
+  /** The wallet's NonceEnforcer nonce (D38 away pack): when set, both grants die with the kill-switch. */
+  nonce?: bigint | undefined;
 };
 
 export type BridgeGrants = { allowance: Delegation; burn: Delegation };
 export type BridgePurpose = keyof BridgeGrants;
 export const BRIDGE_PURPOSES: readonly BridgePurpose[] = ["allowance", "burn"];
+
+const NONCE_BYTES = 32;
+/** The Nonce caveat when the grant is bound to the kill-switch (D38). */
+const killSwitch = (nonce: bigint | undefined) => (nonce === undefined ? [] : [{ type: CaveatType.Nonce, nonce: toHex(nonce, { size: NONCE_BYTES }) } as const]);
 
 export function buildBridgeGrants(terms: BridgeGrantTerms): BridgeGrants {
   const environment = delegationEnvironment(terms.network);
@@ -70,6 +76,7 @@ export function buildBridgeGrants(terms: BridgeGrantTerms): BridgeGrants {
     caveats: [
       { type: CaveatType.Timestamp, afterThreshold: 0, beforeThreshold: terms.expiresAt },
       { type: CaveatType.Redeemer, redeemers: [terms.redeemer] },
+      ...killSwitch(terms.nonce),
     ],
     salt: terms.salts.allowance,
   });
@@ -96,6 +103,7 @@ export function buildBridgeGrants(terms: BridgeGrantTerms): BridgeGrants {
     caveats: [
       { type: CaveatType.Timestamp, afterThreshold: 0, beforeThreshold: terms.expiresAt },
       { type: CaveatType.Redeemer, redeemers: [terms.redeemer] },
+      ...killSwitch(terms.nonce),
     ],
     salt: terms.salts.burn,
   });
