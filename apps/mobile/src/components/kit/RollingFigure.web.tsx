@@ -11,6 +11,10 @@ import { parseFigure } from "./figure";
 import { HIDDEN_AMOUNT, useHideBalances } from "./hide-balances";
 import { FONT } from "./theme";
 
+/** The digits fill this share of the figure's line height. */
+const FIGURE_SHARE = 0.9;
+const DISPLAY_WEIGHT = 900;
+
 export function RollingFigure({
   text,
   height,
@@ -33,7 +37,7 @@ export function RollingFigure({
   const [hiddenAll] = useHideBalances();
   const hidden = sensitive && hiddenAll;
   const figure = parseFigure(text);
-  const style = { color, fontFamily: FONT.display, fontWeight: 900, fontSize: height * 0.9, lineHeight: `${height}px` } as const;
+  const style = { color, fontFamily: FONT.display, fontWeight: DISPLAY_WEIGHT, fontSize: height * FIGURE_SHARE, lineHeight: `${height}px` } as const;
   return (
     <View
       style={[styles.box, { height, alignItems: align === "right" ? "flex-end" : "flex-start" }]}

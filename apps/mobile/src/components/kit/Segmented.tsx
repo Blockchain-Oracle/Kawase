@@ -4,6 +4,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-na
 import { fire } from "@/feedback/fire";
 import { BUTTON, CONTROL_FONT_SCALE, EASE, RADIUS, SIZE, SPACE, TIMING, TYPE, useTheme } from "./theme";
 
+const HALF = 2;
+
 /**
  * Segmented control (asset filter, Long/Short, timeframe; Fomo F37's keypad/chart switch, Codex consult 1 Oct): a
  * 44 pt borderless track with a raised plate that slides to the selection in 170 ms while the labels change colour.
@@ -43,7 +45,7 @@ export function Segmented<T extends string>({
       accessibilityRole="tablist"
       accessibilityLabel={label}
       onLayout={(e) => {
-        const inner = e.nativeEvent.layout.width - 2 * SPACE.xs - (options.length - 1) * SPACE.xs;
+        const inner = e.nativeEvent.layout.width - HALF * SPACE.xs - (options.length - 1) * SPACE.xs;
         cell.value = inner / options.length;
       }}
       style={[styles.track, { backgroundColor: color.muted }]}

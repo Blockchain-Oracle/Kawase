@@ -32,7 +32,13 @@ export function Skeleton({ width = "100%", height = SIZE.skeletonLine, radius = 
 }
 
 const CIRCLE = RADIUS.pill;
-const PIXELS = 9;
+const GRID = 3;
+const LIST_COUNT = 4;
+const PIXELS = GRID * GRID;
+const DIM_LEVEL = 0.15;
+const HALF = 2;
+const SECOND = 1000;
+const WAVE_THIRDS = 3;
 const PIXEL = 4;
 const PIXEL_GAP = 1.5;
 const WAVE_MS = 650;
@@ -44,7 +50,7 @@ export function PixelLoader() {
   return (
     <View style={styles.pixels} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {Array.from({ length: PIXELS }, (_, i) => (
-        <Pixel key={i} delay={(((i % 3) + Math.abs(Math.floor(i / 3) - 1)) * WAVE_STEP_MS)} tint={color.ink} />
+        <Pixel key={i} delay={(((i % GRID) + Math.abs(Math.floor(i / GRID) - 1)) * WAVE_STEP_MS)} tint={color.ink} />
       ))}
     </View>
   );
@@ -52,19 +58,19 @@ export function PixelLoader() {
 
 function Pixel({ delay, tint }: { delay: number; tint: string }) {
   const reduce = useReducedMotion();
-  const level = useSharedValue(0.15);
+  const level = useSharedValue(DIM_LEVEL);
   useEffect(() => {
     if (reduce) return;
-    level.set(withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: WAVE_MS / 3 }), withTiming(0.15, { duration: (WAVE_MS * 2) / 3 })), -1)));
+    level.set(withDelay(delay, withRepeat(withSequence(withTiming(1, { duration: WAVE_MS / WAVE_THIRDS }), withTiming(DIM_LEVEL, { duration: (WAVE_MS * (WAVE_THIRDS - 1)) / WAVE_THIRDS })), -1)));
   }, [reduce, delay, level]);
   const style = useAnimatedStyle(() => ({ opacity: level.get() }));
   return <Animated.View style={[{ width: PIXEL, height: PIXEL, borderRadius: 1, backgroundColor: tint }, style]} />;
 }
 
 export type LoadingShape = "line" | "row" | "list" | "plate" | "chart" | "hero" | "feed" | "routes" | "detail";
-const LIST_ROWS = [0, 1, 2, 3] as const;
-const FEED_ROWS = [0, 1, 2] as const;
-const ROUTE_ROWS = [0, 1, 2] as const;
+const LIST_ROWS = Array.from({ length: LIST_COUNT }, (_, i) => i);
+const FEED_ROWS = Array.from({ length: GRID }, (_, i) => i);
+const ROUTE_ROWS = Array.from({ length: GRID }, (_, i) => i);
 const MARK = SIZE.markRow;
 const HERO_FIGURE_H = 52;
 
@@ -96,7 +102,7 @@ function ShapeBody({ shape }: { shape: LoadingShape }) {
     case "plate":
       return <Skeleton height={SIZE.skeletonPlate} radius={SHEET_SHAPE.rowRadius} />;
     case "chart":
-      return <Skeleton height={SIZE.skeletonPlate * 2} radius={SHEET_SHAPE.rowRadius} />;
+      return <Skeleton height={SIZE.skeletonPlate * HALF} radius={SHEET_SHAPE.rowRadius} />;
     case "hero":
       // The balance hero: a big figure, its change chip and a sparkline's outline.
       return (
@@ -141,7 +147,7 @@ function ShapeBody({ shape }: { shape: LoadingShape }) {
     case "detail":
       return (
         <View style={styles.stack}>
-          <Skeleton width="38%" height={HERO_FIGURE_H / 2} radius={RADIUS.md} />
+          <Skeleton width="38%" height={HERO_FIGURE_H / HALF} radius={RADIUS.md} />
           <Skeleton height={SIZE.skeletonPlate} radius={SHEET_SHAPE.rowRadius} />
           <Skeleton width="62%" />
           <Skeleton width="48%" />
@@ -177,10 +183,10 @@ function Elapsed() {
   const [start] = useState(() => Date.now());
   const [now, setNow] = useState(start);
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setNow(Date.now()), SECOND);
     return () => clearInterval(id);
   }, []);
-  return <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{`${Math.floor((now - start) / 1000)}s`}</Text>;
+  return <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{`${Math.floor((now - start) / SECOND)}s`}</Text>;
 }
 
 export type StateAction = { label: string; onPress: () => void };
@@ -371,7 +377,7 @@ export function ReadView<T>({
 const styles = StyleSheet.create({
   loading: { gap: SPACE.sm, paddingVertical: SPACE.sm },
   loadingHead: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
-  pixels: { width: PIXEL * 3 + PIXEL_GAP * 2, flexDirection: "row", flexWrap: "wrap", gap: PIXEL_GAP },
+  pixels: { width: PIXEL * GRID + PIXEL_GAP * (GRID - 1), flexDirection: "row", flexWrap: "wrap", gap: PIXEL_GAP },
   stack: { gap: SPACE.md },
   hero: { gap: SPACE.md },
   listRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md, minHeight: SIZE.skeletonRow },

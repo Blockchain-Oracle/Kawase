@@ -24,6 +24,7 @@ const DOCK_HIDDEN_OFFSET = 120;
 const SLOT = SIZE.touch + SPACE.sm;
 const BADGE_MAX = 99;
 const BADGE = 16;
+const HALF = 2;
 const ICON = 24;
 const ACTIVE_STROKE = 2.4;
 const BAR_RADIUS = 40;
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     end: 4,
     minWidth: BADGE,
     height: BADGE,
-    borderRadius: BADGE / 2,
+    borderRadius: BADGE / HALF,
     paddingHorizontal: SPACE.xs,
     alignItems: "center",
     justifyContent: "center",

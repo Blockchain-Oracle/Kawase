@@ -34,6 +34,7 @@ export type RailSection = { key: string; label?: string; rows: readonly RailRow[
 const ROW_H = SIZE.touch + SPACE.xs;
 const ICON = 20;
 const BADGE = 18;
+const HALF = 2;
 
 export function Rail({
   label,
@@ -200,6 +201,6 @@ const styles = StyleSheet.create({
   },
   rowCompact: { justifyContent: "center", paddingHorizontal: 0 },
   label: { flex: 1 },
-  badge: { minWidth: BADGE, height: BADGE, borderRadius: BADGE / 2, paddingHorizontal: SPACE.xs, alignItems: "center", justifyContent: "center" },
+  badge: { minWidth: BADGE, height: BADGE, borderRadius: BADGE / HALF, paddingHorizontal: SPACE.xs, alignItems: "center", justifyContent: "center" },
   badgeCompact: { position: "absolute", top: 4, end: 8 },
 });

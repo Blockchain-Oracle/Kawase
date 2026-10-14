@@ -25,6 +25,7 @@ import { useT } from "@/i18n";
 import { BUTTON, CONTROL_FONT_SCALE, SIZE, SPACE, TYPE, useTheme } from "./theme";
 
 const RAIL_HEIGHT = 56;
+const HALF = 2;
 const THUMB = 48;
 const INSET = 4;
 const ACTIVATE_X = 8;
@@ -187,7 +188,7 @@ export function SlideToConfirm({
       { scale: pressed.value && !reduce ? PRESSED_SCALE : 1 },
     ],
   }));
-  const fillStyle = useAnimatedStyle(() => ({ width: travel.value + THUMB + INSET * 2 }));
+  const fillStyle = useAnimatedStyle(() => ({ width: travel.value + THUMB + INSET * HALF }));
   const labelStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress(), LABEL_FADE, LABEL_OPACITY, "clamp"),
   }));
@@ -198,7 +199,7 @@ export function SlideToConfirm({
         p,
         GLYPH_STEPS,
         GLYPH_POINTS.map((points, step) =>
-          left && step === 0 && i % 2 === 0 ? GLYPH_BOX - (points[i] ?? 0) : (points[i] ?? 0),
+          left && step === 0 && i % HALF === 0 ? GLYPH_BOX - (points[i] ?? 0) : (points[i] ?? 0),
         ),
         "clamp",
       );
@@ -233,7 +234,7 @@ export function SlideToConfirm({
         if (event.nativeEvent.actionName === "activate") review();
       }}
       onLayout={(event) => {
-        width.value = Math.max(0, event.nativeEvent.layout.width - THUMB - INSET * 2);
+        width.value = Math.max(0, event.nativeEvent.layout.width - THUMB - INSET * HALF);
       }}
       style={[styles.rail, { backgroundColor: locked ? color.raised2 : filled ? solid : wash }]}
     >

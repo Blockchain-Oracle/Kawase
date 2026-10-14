@@ -16,15 +16,18 @@ import { fire } from "@/feedback/fire";
 import { usePressScale } from "../kit/usePressScale";
 import { BUTTON, CONTROL_FONT_SCALE, RADIUS, SIZE, SPACE, SPRING, TYPE, useTheme } from "../kit/theme";
 
+const HALF = 2;
+const BUSY_OPACITY = 0.6;
+const BUSY_MS = 120;
 const TRACK_W = 28;
 const TRACK_H = 16;
 const TRACK_BORDER = 1.5;
 const KNOB = 9;
 /** Inside the border: the knob sits a hair from the track's edge, and travels the rest. */
-const KNOB_INSET = (TRACK_H - TRACK_BORDER * 2 - KNOB) / 2;
-const TRAVEL = TRACK_W - TRACK_BORDER * 2 - KNOB - KNOB_INSET * 2;
+const KNOB_INSET = (TRACK_H - TRACK_BORDER * HALF - KNOB) / HALF;
+const TRAVEL = TRACK_W - TRACK_BORDER * HALF - KNOB - KNOB_INSET * HALF;
 /** The touch target reaches this far above and below the capsule (not sideways, where other pills sit close by). */
-const HIT_SLOP = { top: (SIZE.touch - SIZE.modeCapsuleHeight) / 2, bottom: (SIZE.touch - SIZE.modeCapsuleHeight) / 2 } as const;
+const HIT_SLOP = { top: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF, bottom: (SIZE.touch - SIZE.modeCapsuleHeight) / HALF } as const;
 
 export function ModeCapsule({
   network,
@@ -58,7 +61,7 @@ export function ModeCapsule({
     knob.set(reduce ? (testnet ? 0 : 1) : withSpring(testnet ? 0 : 1, SPRING.railPill));
   }, [testnet, reduce, knob]);
   const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: knob.get() * TRAVEL }] }));
-  const dim = useAnimatedStyle(() => ({ opacity: withTiming(busy ? 0.6 : 1, { duration: 120 }) }));
+  const dim = useAnimatedStyle(() => ({ opacity: withTiming(busy ? BUSY_OPACITY : 1, { duration: BUSY_MS }) }));
   return (
     <Animated.View style={[styles.shrink, press.style, dim]}>
       <Pressable

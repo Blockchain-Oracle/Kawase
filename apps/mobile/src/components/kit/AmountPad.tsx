@@ -17,6 +17,8 @@ import { HERO_FONT_SCALE, SIZE, SPACE, TYPE, useTheme } from "./theme";
 
 const CHIP_HEIGHT = SIZE.touch - SPACE.sm;
 const DEFAULT_DECIMALS = 6;
+const ZERO = 0n;
+const HALF = 2;
 const DEFAULT_FRACTION = 2;
 const SHARES = [
   { key: "quarter", numerator: 1n, denominator: 4n },
@@ -68,17 +70,17 @@ export function AmountPad({
 }) {
   const { color } = useTheme();
   const { t } = useT();
-  const [text, setText] = useState(() => (value > 0n ? amountText(value, decimals, fraction) : ""));
+  const [text, setText] = useState(() => (value > ZERO ? amountText(value, decimals, fraction) : ""));
   const set = (next: string) => {
     setText(next);
     try {
-      onChange(next === "" || next === "." ? 0n : parseUnits(next.endsWith(".") ? next.slice(0, -1) : next, decimals));
+      onChange(next === "" || next === "." ? ZERO : parseUnits(next.endsWith(".") ? next.slice(0, -1) : next, decimals));
     } catch {
-      onChange(0n);
+      onChange(ZERO);
     }
   };
   const shown =
-    balance !== undefined && balance > 0n
+    balance !== undefined && balance > ZERO
       ? SHARES.map((s) => ({ label: t(`shell.kit.share.${s.key}`), value: (balance * s.numerator) / s.denominator }))
       : (chips ?? []);
   const figure = `${prefix}${text === "" ? "0" : text}${suffix ? ` ${suffix}` : ""}`;
@@ -98,7 +100,7 @@ export function AmountPad({
       {shown.length > 0 ? (
         <View style={styles.chips}>
           {shown.map((c) => {
-            const on = c.value === value && value > 0n;
+            const on = c.value === value && value > ZERO;
             return (
               <Pressable
                 key={c.label}
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     minHeight: CHIP_HEIGHT,
-    borderRadius: CHIP_HEIGHT / 2,
+    borderRadius: CHIP_HEIGHT / HALF,
     alignItems: "center",
     justifyContent: "center",
   },

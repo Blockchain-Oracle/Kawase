@@ -17,6 +17,7 @@ import { type TxState, txReached } from "./tx-state";
 const STEPS = ["signing", "submitted", "confirmed"] as const;
 const MARK = 16;
 const DOT = 6;
+const HALF = 2;
 
 export type StepStatus = "done" | "active" | "pending";
 
@@ -53,7 +54,7 @@ function StepMark({ status }: { status: StepStatus }) {
   const pulse = useSharedValue(1);
   useEffect(() => {
     if (status !== "active" || reduce) return;
-    pulse.set(withRepeat(withSequence(withTiming(SKELETON.from, { duration: SKELETON.periodMs / 2 }), withTiming(1, { duration: SKELETON.periodMs / 2 })), -1));
+    pulse.set(withRepeat(withSequence(withTiming(SKELETON.from, { duration: SKELETON.periodMs / HALF }), withTiming(1, { duration: SKELETON.periodMs / HALF })), -1));
   }, [status, reduce, pulse]);
   const style = useAnimatedStyle(() => ({ opacity: status === "active" && !reduce ? pulse.get() : 1 }));
   if (status === "done") {

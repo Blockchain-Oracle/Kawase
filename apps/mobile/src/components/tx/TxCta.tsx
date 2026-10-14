@@ -27,6 +27,8 @@ import { TxSteps } from "./TxSteps";
 import { canConfirm, isInFlight, type TxState, txProgress } from "./tx-state";
 
 const BAR = 3;
+const WAITING_OPACITY = 0.85;
+const PERCENT = 100;
 
 export type TxCtaProps = {
   state: TxState;
@@ -92,9 +94,9 @@ function Plate({ state, action, tone, onConfirm }: { state: TxState; action: str
     bar.set(reduce ? txProgress(state) : withSpring(txProgress(state), SPRING.compactSelector));
   }, [state, reduce, bar]);
   useEffect(() => {
-    dim.set(withTiming(state.kind === "unknown" ? 0.85 : 1, { duration: TIMING.selection }));
+    dim.set(withTiming(state.kind === "unknown" ? WAITING_OPACITY : 1, { duration: TIMING.selection }));
   }, [state.kind, dim]);
-  const barStyle = useAnimatedStyle(() => ({ width: `${Math.min(1, bar.get()) * 100}%` }));
+  const barStyle = useAnimatedStyle(() => ({ width: `${Math.min(1, bar.get()) * PERCENT}%` }));
   const plateStyle = useAnimatedStyle(() => ({ opacity: dim.get() }));
 
   const face =

@@ -96,8 +96,11 @@ export default function AppLayout() {
  * breakpoint keeps its navigation.
  */
 function DesktopFrame({ children }: { children: React.ReactNode }) {
+  const { t } = useT();
   const wide = useWide();
   const overlay = useOverlay();
+  const { user } = useSession();
+  const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   // On a desktop window the rail and the one stage float on a slightly deeper ground, 16 px off the window's edge, with
   // the stage's 24 px corners (the Senryo/Mitoshi web shell); on a phone the page is the whole window.
   return (
@@ -105,7 +108,9 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
       <View className="flex-1 flex-row" style={wide ? { gap: LAYOUT.inset } : undefined} aria-hidden={wide && overlay.current !== null}>
         {wide ? <DesktopSidebar /> : null}
         <View className="bg-background flex-1" style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}>
-          {children}
+          {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
+          {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
+          <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>
         </View>
       </View>
       {wide ? <OverlayHost /> : null}

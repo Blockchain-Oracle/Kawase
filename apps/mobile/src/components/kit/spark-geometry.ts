@@ -7,6 +7,8 @@ export type SparkGeometry = { d: string; area: string; baseY: number; tone: Spar
 
 const FLAT_EPSILON = 1e-12;
 const DECIMALS = 2;
+const MIN_POINTS = 2;
+const BOTH_SIDES = 2;
 const fmt = (n: number) => n.toFixed(DECIMALS);
 
 export function sparkGeometry(
@@ -17,13 +19,13 @@ export function sparkGeometry(
   baseline?: number,
 ): SparkGeometry | null {
   const known = points.filter((p): p is number => p !== null && Number.isFinite(p));
-  if (known.length < 2) return null;
+  if (known.length < MIN_POINTS) return null;
   const base = baseline ?? (known[0] as number);
   const lo = Math.min(...known, base);
   const hi = Math.max(...known, base);
   const span = hi - lo < FLAT_EPSILON ? 1 : hi - lo;
-  const innerW = width - pad * 2;
-  const innerH = height - pad * 2;
+  const innerW = width - pad * BOTH_SIDES;
+  const innerH = height - pad * BOTH_SIDES;
   const x = (i: number) => pad + (points.length === 1 ? 0 : (i / (points.length - 1)) * innerW);
   const y = (v: number) => pad + innerH - ((v - lo) / span) * innerH;
   let d = "";

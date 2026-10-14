@@ -64,6 +64,9 @@ export const canConfirm = (state: TxState): boolean => state.kind === "idle" || 
 export const isInFlight = (state: TxState): boolean => state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown";
 
 /** How far the action got: 0 signing, 1 sent (or still waiting), 2 confirmed; -1 when nothing is in flight. */
+const STEP_CONFIRMED = 2;
+const THIRDS = 3;
+
 export function txReached(state: TxState): number {
   switch (state.kind) {
     case "signing":
@@ -72,7 +75,7 @@ export function txReached(state: TxState): number {
     case "unknown":
       return 1;
     case "confirmed":
-      return 2;
+      return STEP_CONFIRMED;
     default:
       return -1;
   }
@@ -82,10 +85,10 @@ export function txReached(state: TxState): number {
 export function txProgress(state: TxState): number {
   switch (state.kind) {
     case "signing":
-      return 1 / 3;
+      return 1 / THIRDS;
     case "submitted":
     case "unknown":
-      return 2 / 3;
+      return STEP_CONFIRMED / THIRDS;
     case "confirmed":
       return 1;
     default:

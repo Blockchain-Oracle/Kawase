@@ -8,6 +8,7 @@ import { fire } from "@/feedback/fire";
 import { SIZE, SPACE, TYPE, useTheme } from "./theme";
 
 const CHIP_HEIGHT = SIZE.touch - SPACE.sm;
+const HALF = 2;
 
 export function FilterChips<T extends string>({
   options,
@@ -61,6 +62,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: CHIP_HEIGHT,
     paddingHorizontal: SPACE.md,
-    borderRadius: CHIP_HEIGHT / 2,
+    borderRadius: CHIP_HEIGHT / HALF,
   },
 });

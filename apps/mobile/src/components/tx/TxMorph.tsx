@@ -15,6 +15,7 @@ const ENTER_MS = 220;
 const ENTER_DELAY_MS = 60;
 const BOX_MS = 240;
 const CROSSFADE_MS = 100;
+const HALF = 2;
 
 type Phase = "from" | "leaving" | "to";
 
@@ -49,7 +50,7 @@ export function TxMorph({ morphed, receipt, children }: { morphed: boolean; rece
           entering={
             reduce
               ? FadeIn.duration(CROSSFADE_MS)
-              : FadeInDown.duration(ENTER_MS).delay(ENTER_DELAY_MS).withInitialValues({ transform: [{ translateY: STAGGER_RISE / 2 }] })
+              : FadeInDown.duration(ENTER_MS).delay(ENTER_DELAY_MS).withInitialValues({ transform: [{ translateY: STAGGER_RISE / HALF }] })
           }
         >
           {receipt}

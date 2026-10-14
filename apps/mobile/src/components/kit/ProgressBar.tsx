@@ -10,6 +10,7 @@ import { SPACE, TYPE, useTheme } from "./theme";
 
 const FILL = { damping: 34, stiffness: 210, mass: 0.9 };
 const TRACK = 4;
+const HALF = 2;
 const PERCENT = 100;
 
 export function ProgressBar(p: {
@@ -53,6 +54,6 @@ const styles = StyleSheet.create({
   wrap: { gap: SPACE.xs },
   row: { flexDirection: "row", gap: SPACE.sm },
   flex: { flex: 1 },
-  track: { height: TRACK, borderRadius: TRACK / 2, overflow: "hidden" },
-  fill: { height: TRACK, borderRadius: TRACK / 2 },
+  track: { height: TRACK, borderRadius: TRACK / HALF, overflow: "hidden" },
+  fill: { height: TRACK, borderRadius: TRACK / HALF },
 });

@@ -34,6 +34,7 @@ const MAX_ENTRIES = 20;
 /** An intent's deadline is minutes; a day covers any launch gap worth telling about. */
 const MAX_AGE_MS = 86_400_000;
 const SERVER_ERROR = 500;
+const CLIENT_ERROR = 400;
 
 let entries: JournalEntry[] = [];
 let hydrating: Promise<void> | undefined;
@@ -120,7 +121,7 @@ export const wasLost = (id: string): boolean => lost.has(id);
 /** A 4xx answer names why the server refused: the intent did not go through, so the journal lets go of it. */
 const refusedBy = (error: unknown): boolean => {
   const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
-  return typeof status === "number" && status >= 400 && status < SERVER_ERROR;
+  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
 };
 
 /**

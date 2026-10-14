@@ -17,6 +17,8 @@ import { ExpandContext, SheetContext } from "./context";
 import type { SheetProps } from "./types";
 
 const NOOP = () => undefined;
+const REDUCED_MS = 100;
+const BOTH_SIDES = 2;
 
 export function SheetDrawer({ onClose, children, closeLabel, dismissible = true }: SheetProps) {
   const { color } = useTheme();
@@ -28,7 +30,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
 
   useEffect(() => {
     fire("snap");
-    scrim.set(withTiming(1, { duration: reduce ? 100 : LAYOUT.drawerInMs, easing: EASE }));
+    scrim.set(withTiming(1, { duration: reduce ? REDUCED_MS : LAYOUT.drawerInMs, easing: EASE }));
     slide.set(reduce ? 0 : withTiming(0, { duration: LAYOUT.drawerInMs, easing: EASE_SHEET }));
   }, [reduce, scrim, slide]);
 
@@ -36,7 +38,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
     (after?: () => void) => {
       if (closing.current) return;
       closing.current = true;
-      const out = { duration: reduce ? 100 : LAYOUT.drawerOutMs, easing: EASE };
+      const out = { duration: reduce ? REDUCED_MS : LAYOUT.drawerOutMs, easing: EASE };
       scrim.set(withTiming(0, out));
       slide.set(
         withTiming(reduce ? 0 : LAYOUT.drawer + LAYOUT.inset, out, (done) => {
@@ -81,7 +83,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
             style={[
               styles.panel,
               ELEVATION.sheet,
-              { backgroundColor: color.popover, height: windowHeight - LAYOUT.inset * 2 },
+              { backgroundColor: color.popover, height: windowHeight - LAYOUT.inset * BOTH_SIDES },
               panelStyle,
             ]}
           >

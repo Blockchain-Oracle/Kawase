@@ -14,7 +14,9 @@ const PAD = 2;
 const STROKE = 1.6;
 const FILL_ALPHA = 0.08;
 const BASE_ALPHA = 0.5;
-const DASH = [2, 3];
+const DASH_ON = 2;
+const DASH_OFF = 3;
+const DASH = [DASH_ON, DASH_OFF];
 
 export type SparklineProps = {
   /** The series, oldest first; null is a gap. */
