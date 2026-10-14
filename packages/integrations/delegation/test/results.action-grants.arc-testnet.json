@@ -1,0 +1,116 @@
+{
+  "at": "2026-10-14T08:44:18.718Z",
+  "user": "0x410b4b052063D8020551d0550942fEBfAd6F8b5c",
+  "ops": "0x2d9b5452178316e064d10e1424e8acf65a71b6b9",
+  "relayer": "0xA0f081bECEA5227A929cd8b8a3572D1FB4d1148a",
+  "contact": "0xD70bf88D73687c1c04F7617F1A6c92A5380C2015",
+  "results": [
+    {
+      "name": "relayed EIP-7702 setup",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xb7de2f38461f51367b4b4c9986893cd09a3666905a3e4b8c9b8f3b47317b687a"
+    },
+    {
+      "name": "ops funds the wallet with 1.2 USDC",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xab2becd2981b2dc4c4cc0ac6af13e7767b39a435796835bfdd58414fccc7de9c"
+    },
+    {
+      "name": "phone checks the swap leaves against its own quote",
+      "expected": "pass",
+      "ok": true,
+      "detail": "guaranteed 0.374792 EURC"
+    },
+    {
+      "name": "the signed swap leaf decodes to its guarantees",
+      "expected": "pass",
+      "ok": true,
+      "detail": "[{\"token\":\"0x89b50855aa3be2f677cd6303cec089b5f319d72a\",\"recipient\":\"0x410b4b052063d8020551d0550942febfad6f8b5c\",\"amount\":\"374792\",\"direction\":\"increase\"},{\"token\":\"0x3600000000000000000000000000000000000000\",\"recipient\":\"0x410b4b052063d8020551d0550942febfad6f8b5c\",\"amount\":\"300000\",\"direction\":\"decrease\"}]"
+    },
+    {
+      "name": "(1) USDC→EURC through the leaf pair, redeemed by ops, no prompt",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0x6717c85ad8700285be38a4a5ad4f35184fe8a0024050b771bfc12aba9d3ffd16",
+      "detail": "spent 0.3 USDC, got 0.377161 EURC (min 0.374792)"
+    },
+    {
+      "name": "the same leaves cannot be redeemed twice",
+      "expected": "fail",
+      "ok": true,
+      "detail": "LimitedCallsEnforcer:limit-exceeded"
+    },
+    {
+      "name": "control: the redirected calls run when the wallet sends them itself",
+      "expected": "pass",
+      "ok": true,
+      "detail": "eth_call succeeds, output to the redeemer"
+    },
+    {
+      "name": "(2) a redirected output reverts on chain",
+      "expected": "fail",
+      "ok": true,
+      "tx": "0xd7595a3d519e25a77510165b5aeecb8fc21bb7aa748fecc87bd02448e7840465",
+      "detail": "ERC20BalanceChangeEnforcer:insufficient-balance-increase"
+    },
+    {
+      "name": "(3) a too-small output reverts on chain",
+      "expected": "fail",
+      "ok": true,
+      "tx": "0x16cd3787e5a74b2c6cc76dd7d15ccc2b04d45974733a2d4c3040d031010089d9",
+      "detail": "ERC20BalanceChangeEnforcer:insufficient-balance-increase (asked ≥ 0.251416 EURC)"
+    },
+    {
+      "name": "phone checks the contact grant (pinned recipient, kill-switch)",
+      "expected": "pass",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "(4) ops pays the pinned contact under the grant",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xab362899b403a20d538b8931099126856afa1c99fb9319365f62c2c1da80e129"
+    },
+    {
+      "name": "(4) the same grant refuses another address",
+      "expected": "fail",
+      "ok": true,
+      "detail": "AllowedCalldataEnforcer:invalid-calldata | ops: ESTIMATION_ERROR"
+    },
+    {
+      "name": "control: a fresh leaf at the current nonce would redeem",
+      "expected": "pass",
+      "ok": true,
+      "detail": "eth_call succeeds"
+    },
+    {
+      "name": "phone accepts incrementNonce as a revoke (no Face ID needed)",
+      "expected": "pass",
+      "ok": true,
+      "detail": "ok"
+    },
+    {
+      "name": "(5) the wallet sends incrementNonce",
+      "expected": "pass",
+      "ok": true,
+      "tx": "0xd55eb656079984da366b793c26705e5d0947fb08178e60b92c3c6207cfb2d200",
+      "detail": "nonce 0 → 1"
+    },
+    {
+      "name": "(5) the contact grant is dead after the kill-switch",
+      "expected": "fail",
+      "ok": true,
+      "detail": "NonceEnforcer:invalid-nonce | ops: ESTIMATION_ERROR"
+    },
+    {
+      "name": "(5) a leaf signed before the kill-switch reverts on chain",
+      "expected": "fail",
+      "ok": true,
+      "tx": "0x99ea25b2989bf7abfd3c93277851b5df5a01d05f76ba1fd6f1cd23418f7426cf",
+      "detail": "NonceEnforcer:invalid-nonce"
+    }
+  ]
+}

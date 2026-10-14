@@ -3,10 +3,21 @@
 // - an EIP-7702 authorization only ever points the wallet at MetaMask's EIP7702StatelessDeleGator, on Arc;
 // - a delegation is only ever signed for Kawase's DelegationManager on Arc, from this wallet, with caveats the phone
 //   decodes itself (an enforcer it does not know is refused);
-// - a flow then compares what it decoded with what its confirm card shows (checkGrant, checkRevoke).
-import { decodeAbiParameters, decodeFunctionData, getAddress, hexToBigInt, isAddressEqual, size, slice, toFunctionSelector, type Address, type Hex } from "viem";
+// - a flow then compares what it decoded with what its confirm card shows (checkGrant, checkRevoke), and the budget's
+//   one-shot leaves are checked against what the phone itself expects (flow-checks.ts).
+import { decodeAbiParameters, decodeFunctionData, encodeFunctionData, getAddress, hexToBigInt, isAddressEqual, size, slice, toFunctionSelector, type Address, type Hex } from "viem";
 
 import { DELEGATION_FRAMEWORK, NETWORKS } from "@kawase/networks";
+
+/**
+ * The budget's enforcers (D38), from @metamask/delegation-deployments 2.1.0, the same on Arc mainnet and testnet and
+ * the same addresses the kit's environment returns (docs pack budget.md §2; testnet bytecode seen live 2026-10-14).
+ * Kept here until @kawase/networks lists them beside the others.
+ */
+export const BUDGET_ENFORCERS = {
+  erc20BalanceChange: "0xcdF6aB796408598Cea671d79506d7D48E97a5437",
+  nonce: "0xDE4f2FAC4B3D87A1d9953Ca5FC09FCa7F366254f",
+} as const satisfies Record<string, Address>;
 
 /** The only chains this wallet signs an authorization or a delegation for. */
 export const ARC_CHAIN_IDS: readonly number[] = Object.values(NETWORKS).map((network) => network.chainId);
@@ -23,6 +34,13 @@ const PERIOD_TRANSFER_BYTES = ADDRESS_BYTES + PERIOD_WORDS * WORD_BYTES;
 const TRANSFER_AMOUNT_BYTES = ADDRESS_BYTES + WORD_BYTES;
 /** NativeTokenPeriodTransferEnforcer terms: amount, period, start (32 each). */
 const NATIVE_PERIOD_BYTES = PERIOD_WORDS * WORD_BYTES;
+/** ERC20BalanceChangeEnforcer terms: a direction byte (0 increase, 1 decrease) + token (20) + recipient (20) + amount (32). */
+const BALANCE_CHANGE_BYTES = 1 + ADDRESS_BYTES + ADDRESS_BYTES + WORD_BYTES;
+const BALANCE_INCREASE = 0;
+const BALANCE_DECREASE = 1;
+/** Where a balance change's recipient and amount start: after the direction byte and the token. */
+const BALANCE_RECIPIENT_AT = 1 + ADDRESS_BYTES;
+const BALANCE_AMOUNT_AT = BALANCE_RECIPIENT_AT + ADDRESS_BYTES;
 const ZERO = 0n;
 /** A delegation signed by its delegator directly (not a re-delegation of another one). */
 const ROOT_AUTHORITY = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
@@ -95,7 +113,11 @@ export type DecodedCaveat =
   | { type: "timestamp"; after: number; before: number }
   | { type: "redeemer"; redeemers: Address[] }
   | { type: "valueLte"; maxValue: bigint }
-  | { type: "limitedCalls"; limit: number };
+  | { type: "limitedCalls"; limit: number }
+  /** The wallet's `token` balance must rise by at least (increase) or fall by at most (decrease) `amount`. */
+  | { type: "erc20BalanceChange"; direction: "increase" | "decrease"; token: Address; recipient: Address; amount: bigint }
+  /** The kill-switch: valid only while the wallet's NonceEnforcer nonce is still `nonce`. */
+  | { type: "nonce"; nonce: bigint };
 
 export type DecodedDelegation = { delegate: Address; delegator: Address; caveats: DecodedCaveat[] };
 
@@ -149,6 +171,22 @@ function decodeCaveat(enforcer: string, terms: Hex): DecodedCaveat {
     const callData = size(terms) > ADDRESS_BYTES + WORD_BYTES ? slice(terms, ADDRESS_BYTES + WORD_BYTES) : "0x";
     return { type: "exactExecution", execution: { target: getAddress(slice(terms, 0, ADDRESS_BYTES)), value: word(terms, ADDRESS_BYTES), callData } };
   }
+  if (is(BUDGET_ENFORCERS.erc20BalanceChange)) {
+    exactly(terms, BALANCE_CHANGE_BYTES);
+    const flag = Number(hexToBigInt(slice(terms, 0, 1)));
+    if (flag !== BALANCE_INCREASE && flag !== BALANCE_DECREASE) refuse("a balance change of neither direction");
+    return {
+      type: "erc20BalanceChange",
+      direction: flag === BALANCE_INCREASE ? "increase" : "decrease",
+      token: getAddress(slice(terms, 1, BALANCE_RECIPIENT_AT)),
+      recipient: getAddress(slice(terms, BALANCE_RECIPIENT_AT, BALANCE_AMOUNT_AT)),
+      amount: word(terms, BALANCE_AMOUNT_AT),
+    };
+  }
+  if (is(BUDGET_ENFORCERS.nonce)) {
+    exactly(terms, WORD_BYTES);
+    return { type: "nonce", nonce: word(terms, 0) };
+  }
   if (is(known.exactExecutionBatch)) {
     const [executions] = decodeAbiParameters(EXECUTIONS, terms);
     return { type: "exactExecutionBatch", executions: executions.map((entry) => ({ target: getAddress(entry.target), value: entry.value, callData: entry.callData })) };
@@ -201,6 +239,8 @@ export type ShownGrant = {
   maxNativeValue?: string | undefined;
   redeemers: string[];
   maxCalls?: number | undefined;
+  /** The NonceEnforcer nonce the grant is bound to, as the api's receipt carries it (32-byte hex). */
+  nonce?: string | undefined;
   unknownCaveats: string[];
 };
 
@@ -246,6 +286,9 @@ export function receiptOf(decoded: DecodedDelegation): Omit<ShownGrant, "unknown
       case "limitedCalls":
         receipt.maxCalls = caveat.limit;
         break;
+      case "nonce":
+        receipt.nonce = caveat.nonce.toString();
+        break;
       case "allowedCalldata":
         for (const pin of pinsOf(caveat.startIndex, caveat.value)) {
           receipt.pins.push(pin);
@@ -272,7 +315,17 @@ export function checkGrant(typedData: TypedDataLike, shown: ShownGrant, wallet: 
   const decoded = decodeDelegation(typedData, wallet);
   const mine = receiptOf(decoded);
   if (shown.unknownCaveats.length > 0) refuse("the card shows terms it could not read");
-  if (decoded.caveats.some((caveat) => caveat.type === "exactCalldata" || caveat.type === "exactExecution" || caveat.type === "exactExecutionBatch" || caveat.type === "nativeTokenPeriodTransfer"))
+  if (
+    decoded.caveats.some(
+      (caveat) =>
+        caveat.type === "exactCalldata" ||
+        caveat.type === "exactExecution" ||
+        caveat.type === "exactExecutionBatch" ||
+        caveat.type === "nativeTokenPeriodTransfer" ||
+        // Balance changes belong to one-shot leaves (flow-checks.ts), never to a standing grant.
+        caveat.type === "erc20BalanceChange",
+    )
+  )
     refuse("a grant with terms its card does not show");
   // Whole words when the card's receipt carries them, addresses otherwise.
   const words = (pins: readonly { startIndex: number; address: string; value?: string | undefined }[], whole: boolean) =>
@@ -291,6 +344,7 @@ export function checkGrant(typedData: TypedDataLike, shown: ShownGrant, wallet: 
     ["pinned arguments", shown.pins === undefined || sameList(words(mine.pins, whole), words(shown.pins, whole))],
     ["native value", sameOptional(mine.maxNativeValue ?? "0", shown.maxNativeValue ?? "0")],
     ["uses", shown.maxCalls === undefined || mine.maxCalls === shown.maxCalls],
+    ["kill-switch", shown.nonce === undefined || (mine.nonce !== undefined && BigInt(shown.nonce) === BigInt(mine.nonce))],
   ];
   const differs = checks.filter(([, ok]) => !ok).map(([name]) => name);
   if (differs.length > 0) refuse(`the grant differs from its card in: ${differs.join(", ")}`);
@@ -311,10 +365,23 @@ export function checkTransferGrant(typedData: TypedDataLike, shown: ShownGrant, 
   return decoded;
 }
 
-/** The disableDelegation calls in a batch, each turning off a delegation from this wallet, with no value. */
+const INCREMENT_NONCE_ABI = [{ type: "function", name: "incrementNonce", stateMutability: "nonpayable", inputs: [{ name: "_delegationManager", type: "address" }], outputs: [] }] as const;
+/** The kill-switch call: `NonceEnforcer.incrementNonce(DelegationManager)`, exactly. */
+const INCREMENT_NONCE_CALL = encodeFunctionData({ abi: INCREMENT_NONCE_ABI, functionName: "incrementNonce", args: [DELEGATION_FRAMEWORK.delegationManager as Address] }).toLowerCase();
+
+/** The kill-switch: ends every grant this wallet signed at the current nonce. It only ever makes the wallet safer. */
+export function isKillSwitch(execution: Execution) {
+  return isAddressEqual(execution.target, BUDGET_ENFORCERS.nonce) && execution.value === ZERO && execution.callData.toLowerCase() === INCREMENT_NONCE_CALL;
+}
+
+/**
+ * The calls in a revoke, each one only taking power away, with no value: `disableDelegation` of one of this wallet's
+ * grants, or the kill-switch `NonceEnforcer.incrementNonce(DelegationManager)` (it moves only the caller's own nonce).
+ */
 function checkDisables(executions: readonly Execution[], wallet: Address) {
   if (executions.length === 0) refuse("a revoke with nothing in it");
   for (const execution of executions) {
+    if (isKillSwitch(execution)) continue;
     if (!isAddressEqual(execution.target, DELEGATION_FRAMEWORK.delegationManager as Address) || execution.value !== ZERO) refuse("a revoke that calls something else");
     let decoded;
     try {
@@ -342,7 +409,8 @@ export function checkRevoke(request: { typedData: TypedDataLike } | { transactio
   const { transaction } = request;
   if (!ARC_CHAIN_IDS.includes(transaction.chainId)) refuse("a revoke for a chain other than Arc");
   if (BigInt(transaction.value) !== ZERO) refuse("a revoke that moves money");
-  if (isAddressEqual(transaction.to as Address, DELEGATION_FRAMEWORK.delegationManager as Address)) return checkDisables([{ target: transaction.to as Address, value: ZERO, callData: transaction.data }], wallet);
+  if (isAddressEqual(transaction.to as Address, DELEGATION_FRAMEWORK.delegationManager as Address) || isAddressEqual(transaction.to as Address, BUDGET_ENFORCERS.nonce))
+    return checkDisables([{ target: transaction.to as Address, value: ZERO, callData: transaction.data }], wallet);
   if (!isAddressEqual(transaction.to as Address, wallet)) refuse("a revoke sent somewhere else");
   // The wallet's own batch: execute(mode, executionCalldata), one call packed or several ABI-encoded.
   let call;

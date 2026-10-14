@@ -2,7 +2,7 @@
 // here, in code, never by the model (K2). The wallet signs the typed data; the chain enforces the caveats.
 import { CaveatType, ScopeType, createDelegation, type Delegation } from "@metamask/smart-accounts-kit";
 import { SIGNABLE_DELEGATION_TYPED_DATA, toDelegationStruct } from "@metamask/smart-accounts-kit/utils";
-import { pad, type Address, type Hex, type TypedDataDefinition } from "viem";
+import { pad, toHex, type Address, type Hex, type TypedDataDefinition } from "viem";
 import type { NetworkContext } from "@kawase/networks";
 
 import { delegationEnvironment } from "./environment";
@@ -14,6 +14,7 @@ const ABI_WORD_BYTES = 32;
 const DELEGATION_DOMAIN_NAME = "DelegationManager";
 const DELEGATION_DOMAIN_VERSION = "1";
 const UNSIGNED: Hex = "0x";
+const NONCE_BYTES = 32;
 
 export type GrantTerms = {
   network: NetworkContext;
@@ -32,6 +33,12 @@ export type GrantTerms = {
   expiresAt: number;
   /** Random 32 bytes; makes each grant unique. */
   salt: Hex;
+  /**
+   * The wallet's current NonceEnforcer nonce (action-grants.ts `readGrantNonce`). When set, the grant carries the Nonce
+   * kill-switch: one `incrementNonce` from the wallet ends it together with every other grant signed at that nonce.
+   * Every new grant should set it (D38); it is optional only so grants signed before the budget still decode.
+   */
+  nonce?: bigint | undefined;
 };
 
 function build(terms: GrantTerms, recipient: Address | undefined): Delegation {
@@ -62,12 +69,18 @@ function build(terms: GrantTerms, recipient: Address | undefined): Delegation {
             } as const,
           ]
         : []),
+      ...(terms.nonce !== undefined ? [{ type: CaveatType.Nonce, nonce: toHex(terms.nonce, { size: NONCE_BYTES }) } as const] : []),
     ],
     salt: terms.salt,
   });
 }
 
-/** The everyday allowance: up to `amountPerPeriod` of one token per period, to any recipient. */
+/**
+ * The everyday allowance: up to `amountPerPeriod` of one token per period, to any recipient.
+ * @deprecated D38: it can pay anyone, so a leaked ops key could drain it every period. New wallets get per-contact
+ * grants (`buildContactSendGrants`, action-grants.ts) with the Nonce kill-switch instead; this stays only so grants
+ * already signed keep decoding until the budget screen replaces them.
+ */
 export function buildAllowanceGrant(terms: GrantTerms): Delegation {
   return build(terms, undefined);
 }
