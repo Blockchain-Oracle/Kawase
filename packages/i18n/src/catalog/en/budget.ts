@@ -61,6 +61,13 @@ export const budget = {
     emailCode: "a code",
     none: "a confirm",
   },
+  intro: {
+    eyebrow: "Your weekly budget",
+    body: "Kawase swaps, moves and earns for you inside it, up to {{action}} at a time, without asking each time.",
+    asks: "Paying someone new, opening a position or raising a limit always asks.",
+    customise: "Change the numbers",
+    later: "Not now",
+  },
   screen: {
     title: "Budget",
     loading: "Loading your budget",

@@ -61,6 +61,13 @@ export const budget: Catalog["budget"] = {
     emailCode: "um código",
     none: "uma confirmação",
   },
+  intro: {
+    eyebrow: "Seu orçamento semanal",
+    body: "A Kawase troca, move e rende por você dentro dele, até {{action}} por vez, sem perguntar toda vez.",
+    asks: "Pagar alguém novo, abrir uma posição ou aumentar um limite sempre pergunta.",
+    customise: "Mudar os valores",
+    later: "Agora não",
+  },
   screen: {
     title: "Orçamento",
     loading: "Carregando seu orçamento",

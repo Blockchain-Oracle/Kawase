@@ -94,6 +94,7 @@ export const send = {
   sendFace: "Send with face unlock",
   sendFingerprint: "Send with your fingerprint",
   sendPasscode: "Send with your passcode",
+  budgetInside: "Inside your weekly budget — sends without asking",
   sendEmailCode: "Send with an email code",
   showFullAddress: "Shows the full address",
   youWrote: "You wrote “{{words}}”",

@@ -96,6 +96,7 @@ export const send: Catalog["send"] = {
   sendFace: "फ़ेस अनलॉक से भेजें",
   sendFingerprint: "अपने फ़िंगरप्रिंट से भेजें",
   sendPasscode: "अपने पासकोड से भेजें",
+  budgetInside: "आपके साप्ताहिक बजट के भीतर — बिना पूछे भेजा जाएगा",
   sendEmailCode: "ईमेल कोड से भेजें",
   showFullAddress: "पूरा पता दिखाता है",
   youWrote: "आपने लिखा “{{words}}”",

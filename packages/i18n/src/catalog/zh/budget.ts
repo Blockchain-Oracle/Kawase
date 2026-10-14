@@ -61,6 +61,13 @@ export const budget: Catalog["budget"] = {
     emailCode: "验证码",
     none: "确认",
   },
+  intro: {
+    eyebrow: "你的每周预算",
+    body: "在预算内，Kawase 为你兑换、转移和赚取收益，每次最多 {{action}}，无需每次询问。",
+    asks: "向新的人付款、开仓或提高限额时，总会先问你。",
+    customise: "修改金额",
+    later: "以后再说",
+  },
   screen: {
     title: "预算",
     loading: "正在加载你的预算",

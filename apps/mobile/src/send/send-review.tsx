@@ -63,7 +63,11 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
   );
 }
 
-export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compact?: boolean }) {
+/**
+ * `budget`: the weekly budget would send this without asking (useBudgetCoversSend): that is what the line says, and the
+ * old per-day allowance is not mentioned at all.
+ */
+export function AllowanceMeter({ intent, compact, budget }: { intent: SendIntent; compact?: boolean; budget?: boolean | undefined }) {
   const { t } = useT();
   const money = useMoney();
   const policyText = usePolicyText();
@@ -88,6 +92,13 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
           : stepUp
             ? t("send.allowanceStepUp")
             : t("send.allowanceAbove");
+  if (budget)
+    return (
+      <View className="bg-muted flex-row items-start gap-2 rounded-2xl px-4 py-3">
+        <Icon as={BadgeCheck} className="text-success mt-0.5 size-4" />
+        <Text className={cn("text-foreground flex-1 text-sm leading-5", TEXT_START)}>{t("send.budgetInside")}</Text>
+      </View>
+    );
   const total = allowance.perPeriod ? BigInt(allowance.perPeriod) : ZERO;
   const left = BigInt(allowance.available);
   const share = total > ZERO ? Number((left * BigInt(PERCENT)) / total) : 0;
@@ -121,7 +132,18 @@ export function AllowanceMeter({ intent, compact }: { intent: SendIntent; compac
  * `onRevise`: change the amount here (the "send a test amount first?" offer on a first payment). Without it the offer
  * is said but not offered as a button.
  */
-export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; compact?: boolean; onRevise?: ((patch: SendRequest) => void) | undefined }) {
+export function SendReview({
+  intent,
+  compact,
+  onRevise,
+  budget,
+}: {
+  intent: SendIntent;
+  compact?: boolean;
+  onRevise?: ((patch: SendRequest) => void) | undefined;
+  /** The weekly budget would send it without asking. */
+  budget?: boolean | undefined;
+}) {
   const { t } = useT();
   const { locale } = useLocale();
   const policyText = usePolicyText();
@@ -292,7 +314,7 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
         {draft.memo ? <DetailRow label={t("send.referenceLabel")} value={draft.memo.memoData || shortAddress(draft.memo.memoId)} /> : null}
       </View>
 
-      <AllowanceMeter intent={intent} compact={compact ?? false} />
+      <AllowanceMeter intent={intent} compact={compact ?? false} budget={budget} />
     </View>
   );
 }

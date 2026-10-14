@@ -20,6 +20,7 @@ import { useWide } from "@kawase/ui-native/lib/wide";
 import { Button, EmptyState, KeyValue, ListRow, Panel, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { useFund } from "@/fund/fund-provider";
+import { useBudgetCoversSend } from "@/budget/use-budget-covers";
 import { useT } from "@/i18n";
 import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
 import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
@@ -112,6 +113,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   // A send the person is done with (Done, or Cancel on a desktop window) leaves the ticket; the next review drafts anew.
   const [dismissed, setDismissed] = React.useState<string>();
   const intent = controller.intent && controller.intent.id !== dismissed ? controller.intent : undefined;
+  const budgetCovers = useBudgetCoversSend(intent);
   const settled = intent && (isMoving(intent) || isFinished(intent));
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
   const back = () => {
@@ -197,7 +199,8 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     const draft = intent.draft;
     const name = recipientName(draft?.recipient, intent.request.recipient);
     const what = t("send.signPrompt", { amount: money(draft?.asset, draft?.amount, draft?.token?.decimals), name });
-    const faceId = intent.route === "wallet_signature";
+    // The weekly budget sends a card it covers without asking, whatever the old allowance says.
+    const faceId = intent.route === "wallet_signature" && budgetCovers !== true;
     const saveable = intent.outcome === "sent" && draft?.recipient.via === "address";
     const receipt = (
       <Panel style={styles.receipt}>
@@ -211,7 +214,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     ticket = (
       <View style={styles.group}>
         {!testnet && !isFinished(intent) ? <RealMoney /> : null}
-        <SendReview intent={intent} onRevise={(patch) => void controller.revise(patch)} />
+        <SendReview intent={intent} budget={budgetCovers} onRevise={(patch) => void controller.revise(patch)} />
         {intent.blocking && isOpen(intent) ? (
           <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} />
         ) : (

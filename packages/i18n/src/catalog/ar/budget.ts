@@ -61,6 +61,13 @@ export const budget: Catalog["budget"] = {
     emailCode: "رمز",
     none: "تأكيد",
   },
+  intro: {
+    eyebrow: "ميزانيتك الأسبوعية",
+    body: "ضمنها يبدّل Kawase وينقل ويستثمر لك، حتى {{action}} في كل مرة، دون أن يسألك كل مرة.",
+    asks: "الدفع لشخص جديد أو فتح مركز أو رفع حدّ يسألك دائمًا.",
+    customise: "تغيير المبالغ",
+    later: "ليس الآن",
+  },
   screen: {
     title: "الميزانية",
     loading: "جارٍ تحميل ميزانيتك",

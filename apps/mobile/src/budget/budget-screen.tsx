@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { EarnVaultView, RiskMode } from "@kawase/api-client";
 import { getEntity, getProviderIdentity, tokenKey, venueKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { BUDGET_SWAP_VENUES, arcStablecoin, type BudgetCategory } from "@kawase/wallet";
+import { arcStablecoin, type BudgetCategory } from "@kawase/wallet";
 
 import {
   AmountPad,
@@ -55,28 +55,20 @@ import { chainIdOf, invalidateGuardContext } from "./silent";
 import { isLoosening, revokeAll, signBudget, type BudgetDraft } from "./sign-budget";
 import type { BudgetView } from "./types";
 import { BudgetRing } from "./budget-ring";
+import { defaultDraft, MOVE_VENUES, useAllBudgetVenues } from "./defaults";
 import { formatUsd } from "./format";
-import { useBudget, useBudgetLedger, useBudgetVaults } from "./use-budget";
+import { useBudget, useBudgetLedger } from "./use-budget";
 
-const USD = 1_000_000n;
-/** A first budget's numbers, before the person changes them: $200 a week, $50 at a time. */
-const DEFAULT_WEEKLY_DOLLARS = 200n;
-const DEFAULT_PER_ACTION_DOLLARS = 50n;
-const DEFAULT_WEEKLY = DEFAULT_WEEKLY_DOLLARS * USD;
-const DEFAULT_PER_ACTION = DEFAULT_PER_ACTION_DOLLARS * USD;
 const NONE = 0n;
 const PERCENT = 100;
-const DEFAULT_CATEGORIES: BudgetCategory[] = ["swap", "bridge", "earn", "send"];
 const CATEGORY_ORDER: BudgetCategory[] = ["swap", "bridge", "earn", "send", "x402"];
-/** The move venue: CCTP to the wallet's own address. */
-const MOVE_VENUES = ["cctp"];
 const RISK_MODES: RiskMode[] = ["careful", "balanced", "autonomous"];
 const MARK = SIZE.markRow;
 
 type Phase = "idle" | "signing" | "pausing" | "revoking";
 
 function draftOf(view: BudgetView | null, venues: readonly string[]): BudgetDraft {
-  if (!view) return { weeklyCap: DEFAULT_WEEKLY, perActionCap: DEFAULT_PER_ACTION, categories: DEFAULT_CATEGORIES, venues: [...venues] };
+  if (!view) return defaultDraft(venues);
   return { weeklyCap: BigInt(view.policy.weeklyCap), perActionCap: BigInt(view.policy.perActionCap), categories: [...view.policy.categories], venues: [...view.policy.venues] };
 }
 
@@ -97,7 +89,7 @@ export function BudgetScreen() {
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
   const ready = state.status === "ready";
   const view = ready ? state.view : null;
-  const vaults = useBudgetVaults(ready);
+  const { venues: allVenues, vaults, swapVenues } = useAllBudgetVenues(network, ready);
   const ledger = useBudgetLedger(ready && Boolean(view), view?.spentThisWeek ?? "");
   const held = useHeldLoading(state.status === "loading");
   const [kind, setKind] = React.useState<BiometricKind>("none");
@@ -105,8 +97,6 @@ export function BudgetScreen() {
     void biometricKind().then(setKind);
   }, []);
 
-  const swapVenues = React.useMemo(() => Object.keys(BUDGET_SWAP_VENUES[chainIdOf(network)] ?? {}), [network]);
-  const allVenues = React.useMemo(() => [...swapVenues, ...MOVE_VENUES, ...(vaults ?? []).map((vault) => vault.address.toLowerCase())], [swapVenues, vaults]);
   const signed = React.useMemo(() => draftOf(view, allVenues), [view, allVenues]);
   const [draft, setDraft] = React.useState<BudgetDraft>(signed);
   // A fresh answer from the api (or the venues arriving) resets the editor to what is signed.

@@ -95,6 +95,7 @@ export const send: Catalog["send"] = {
   sendFace: "用面部解锁发送",
   sendFingerprint: "用指纹发送",
   sendPasscode: "用设备密码发送",
+  budgetInside: "在你的每周预算内——无需询问即可发送",
   sendEmailCode: "用邮箱验证码发送",
   showFullAddress: "显示完整地址",
   youWrote: "你输入的是“{{words}}”",

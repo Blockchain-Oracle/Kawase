@@ -148,6 +148,20 @@ export async function silentSendVerdict(intent: SendIntent, wallet: Address): Pr
   return verdict;
 }
 
+/**
+ * What the review says before the tap: would the budget send this without asking? The same checks as
+ * `silentSendVerdict`, with no reservation and nothing recorded (a preview, never the decision).
+ */
+export async function previewSendVerdict(intent: SendIntent, wallet: Address): Promise<boolean> {
+  const draft = intent.draft;
+  const context = await loadGuardContext(wallet, intent.network).catch(() => undefined);
+  if (!draft || !context || !mayCover(context, "send")) return false;
+  const token = (draft.token?.address ?? arcStablecoin(intent.network, draft.asset)) as Address | undefined;
+  if (!token) return false;
+  const verdict = await budgetAllows({ kind: "send", token, to: draft.recipient.address as Address, amount: BigInt(draft.amount) }, context, deps);
+  return verdict.silent;
+}
+
 /** An action the phone counted ended without moving money: its room comes back (a no-op for one it never counted). */
 export function releaseIfDead(intent: { id: string; state: IntentState; network: NetworkId }, wallet: Address | undefined) {
   if (!wallet || !DEAD.has(intent.state)) return;
