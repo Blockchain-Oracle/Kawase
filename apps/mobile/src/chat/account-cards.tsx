@@ -38,7 +38,6 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 
 import { FeeReserveChip } from "@/wallet/fee-reserve";
-import { sayIfRefused } from "@/wallet/refused";
 
 import { AgentCard } from "./card";
 

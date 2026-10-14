@@ -62,9 +62,18 @@ import type {
   DeviceSignOutProposal,
   DeleteAccountProposal,
   FeeReserveView,
+  BudgetAction,
+  RouteRace,
+  RouteRaceRequest,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
+
+/** The weekly budget (D38), as the agent asks it: may this step go without the person's tap? The Budget lane binds it. */
+export type AgentBudget = {
+  /** True only when the step fits the person's signed budget (week, per action, category, venue). */
+  allows(action: BudgetAction): Promise<boolean>;
+};
 
 export type {
   ActivityLine,
@@ -153,7 +162,7 @@ export type AgentContext = {
   /** Drafts a cross-chain move with route options: out of Arc to anyone, or Bring to Arc (gasless). */
   proposeCrossChain?(input: CrossChainRequest): Promise<ProposeCrossChainOutput>;
   /** Where an asset can earn: Aave V4, Morpho vaults (liquid ones), LP shown as advanced; ranked by rate among liquid. */
-  compareYield?(input: { asset: string; amount: string | null }): Promise<CompareYieldOutput>;
+  compareYield?(input: { asset: string; amount: string | null; venue?: string | null | undefined }): Promise<CompareYieldOutput>;
   /** Drafts an Aave V4 action: supply, withdraw, borrow (collateral in the same batch) or repay; approved on the card. */
   proposeLend?(input: LendRequest): Promise<ProposeLendOutput>;
   /** Aero LP: a deposit quoted (one asset in, the range inferred), or the positions to withdraw or claim; the card opens the LP screen. */
@@ -167,7 +176,15 @@ export type AgentContext = {
   /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
   tokenDetail(address: string): Promise<TokenDetailView>;
   /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */
-  proposeTrade(input: { from: string | null; to: string | null; amount: string | null }): Promise<ProposeSwapOutput>;
+  proposeTrade(input: { from: string | null; to: string | null; amount: string | null; venue?: string | null | undefined }): Promise<ProposeSwapOutput>;
+  // Watching it work (front-door lane). Optional so a context without them still builds.
+  /**
+   * Every venue's quote as it lands (the Routes lane's race, bound by the api): one snapshot per answer, the last with
+   * `done`. Without it race_routes says "routes_unavailable".
+   */
+  raceRoutes?(request: RouteRaceRequest, options: { signal?: AbortSignal | undefined }): AsyncIterable<RouteRace>;
+  /** The weekly budget's yes (D38). Without it every money step waits for the person's tap. */
+  budget?: AgentBudget | undefined;
   // Wallet & limits (A3). Optional so a context without them still builds; the tools say so when one is missing.
   /** The risk dial, practice mode and pause, read from the session for the instructions (X11). */
   riskMode?: "careful" | "balanced" | "autonomous" | undefined;

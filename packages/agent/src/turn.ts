@@ -20,6 +20,8 @@ import { foldThread, windowFor } from "./threads";
 import type { Models } from "./models";
 import { instructions } from "./prompt";
 import { buildTools } from "./tools";
+import { toolApprovals } from "./approval";
+import { turnTrust } from "./trust";
 
 /** Tool calls and replies in one turn before it stops (a guard against loops). */
 const MAX_STEPS = 6;
@@ -85,7 +87,9 @@ export async function agentTurn({
   const startedAt = Date.now();
   let firstChunk = true;
   let stepStartedAt = startedAt;
-  const tools = buildTools(context);
+  // One account of the turn's trust for the tools and for who approves a money step (H2 + D38).
+  const trust = turnTrust(context.lastUserText);
+  const tools = buildTools(context, trust);
   const voice = context.surface === "voice";
   // What the person asked Kawase to remember, and a long thread's summary (A5); a failed read never stops the turn.
   const [memory, digest] = await Promise.all([
@@ -105,6 +109,8 @@ export async function agentTurn({
     messages: await convertToModelMessages(window, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     experimental_toolApprovalSecret: approvalSecret,
+    // Inside the weekly budget a money step goes without a tap; otherwise the card asks first (approval.ts).
+    toolApproval: toolApprovals(context, trust),
     stopWhen: isStepCount(MAX_STEPS),
     ...(abortSignal ? { abortSignal } : {}),
     // Short answers fast: little reasoning, terse text (spike 7: most latency was reasoning).

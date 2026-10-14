@@ -10,7 +10,8 @@ import type { CapabilityId } from "@kawase/config";
 import { intents, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
-import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/api-client";
+import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, RouteRace, RouteRaceRequest, SwapRequest } from "@kawase/api-client";
+import type { AgentBudget } from "@kawase/agent";
 
 import type { MarketplaceService } from "../marketplace/service";
 import type { HistoryService } from "../history/service";
@@ -72,6 +73,15 @@ const money = (asset: AssetId, baseUnits: string): Money => ({
 
 const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawase agent", kawase_relayer: "Kawase", self: "yourself", swap: "a swap (Circle App Kit)", bridge: "a bridge to another chain (Circle CCTP)", earn: "their own earn vault" } as const;
 
+/**
+ * The route race as the api binds it (the Routes lane's apps/api/src/routing/race.ts): one person's request, every
+ * venue asked at once, a snapshot per answer. The lead passes it to createApp as `raceRoutes`.
+ */
+export type AgentRaceRoutes = (user: SessionUser, request: RouteRaceRequest, signal: AbortSignal | undefined) => AsyncIterable<RouteRace>;
+
+/** The race scoped to the person of this turn (K2: no tool chooses whose money is quoted). */
+const raceFor = (race: AgentRaceRoutes, user: SessionUser) => (request: RouteRaceRequest, options: { signal?: AbortSignal | undefined }) => race(user, request, options.signal);
+
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const DRAFTABLE = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"] as const;
@@ -111,6 +121,10 @@ export function buildAgentContext(input: {
   surface?: "chat" | "voice" | undefined;
   /** False when this turn may not send inside the allowance by itself (no device proof while one is required, M12). */
   autoSendAllowed?: boolean | undefined;
+  /** Every venue's quote as it lands (the Routes lane's race, bound in app.ts); race_routes says "unavailable" without it. */
+  raceRoutes?: AgentRaceRoutes | undefined;
+  /** The person's weekly budget (the Budget lane); without it every money step waits for their tap. */
+  budget?: AgentBudget | undefined;
 }): AgentContext {
   const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
@@ -133,6 +147,8 @@ export function buildAgentContext(input: {
     handle: user.handle,
     lastUserText: input.lastUserText,
     surface: input.surface ?? "chat",
+    ...(input.raceRoutes ? { raceRoutes: raceFor(input.raceRoutes, user) } : {}),
+    ...(input.budget ? { budget: input.budget } : {}),
     ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
     ...automationsContext({ user, automations, threadId }),
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
@@ -206,7 +222,10 @@ export function buildAgentContext(input: {
         .update(intents)
         .set({ state: "canceled" })
         .where(and(eq(intents.userId, user.id), eq(intents.threadId, threadId), eq(intents.kind, "swap"), inArray(intents.state, [...DRAFTABLE])));
-      const intent = await swaps.create(user, { tokenIn: await resolve(request.from), tokenOut: await resolve(request.to), amount: request.amount }, { surface: "chat", threadId });
+      // The venue a race suggested or the person picked rides along and the swap service quotes it again (the Routes
+      // lane's venue field on SwapRequest; until it lands, the best fresh quote is used as before).
+      const swapRequest: SwapRequest & { venue?: string } = { tokenIn: await resolve(request.from), tokenOut: await resolve(request.to), amount: request.amount, ...(request.venue ? { venue: request.venue } : {}) };
+      const intent = await swaps.create(user, swapRequest, { surface: "chat", threadId });
       return { intent, summary: summarizeSwap(intent) };
     },
 

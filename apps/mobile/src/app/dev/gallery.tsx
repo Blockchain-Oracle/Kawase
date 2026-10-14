@@ -73,6 +73,7 @@ import { Dock, type DockItem } from "@/components/shell/Dock";
 import { DockProvider } from "@/components/shell/dock-context";
 import { ModeCapsule } from "@/components/shell/ModeCapsule";
 import { Rail, type RailSection } from "@/components/shell/Rail";
+import { RaceGallery } from "@/chat/race-gallery";
 import { RouteListGallery } from "@/routes/route-list-gallery";
 import { notify } from "@/components/toast/notify";
 import { BlockedCta, TxCta, TxFailureCard, TxSteps, type TxState, useTxLifecycle } from "@/components/tx";
@@ -275,6 +276,9 @@ function Gallery() {
         <TxSection />
         <Section title="Route race">
           <RouteListGallery />
+        </Section>
+        <Section title="Agent at work">
+          <RaceGallery />
         </Section>
         <SheetsSection />
         <ShellSection dock={dock} setDock={setDock} />
