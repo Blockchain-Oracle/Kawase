@@ -29,4 +29,17 @@ export const forYou: Catalog["forYou"] = {
   moveAction: "Demander pourquoi",
   movePrompt:
     "Pourquoi {{asset}} a-t-il bougé de {{change}} aujourd’hui, et qu’est-ce que cela change pour mes {{held}} {{asset}} ?",
+  routeTitleCheaper: "{{better}} coûte moins cher pour vos envois vers {{chain}}",
+  routeBodyCheaper: "Vous avez envoyé des USDC vers {{chain}} {{times}} fois ce mois-ci, la dernière avec {{used}}. Pour vos {{amount}} USDC habituels, {{better}} livre {{saving}} USDC de plus en ce moment (cotations en direct).",
+  routeTitleFaster: "{{better}} est plus rapide pour vos envois vers {{chain}}",
+  routeBodyFaster: "Vous avez envoyé des USDC vers {{chain}} {{times}} fois ce mois-ci, la dernière avec {{used}} (environ {{usedSeconds}} s). Pour vos {{amount}} USDC habituels, {{better}} annonce environ {{seconds}} s pour à peu près le même prix.",
+  routeAction: "Envoyer avec {{better}}",
+  routePrompt: "Envoie {{amount}} USDC vers ma propre adresse sur {{chain}} avec {{better}}.",
+  trendingTitle: "{{token}} est tendance sur Arc",
+  trendingBodyListed: "{{tokenName}} est à {{change}} aujourd’hui avec {{liquidity}} de liquidité, et figure sur une liste vérifiée. Vous n’en détenez pas. Ce n’est pas un conseil : consultez sa page d’abord.",
+  trendingBodyUnverified: "{{tokenName}} est à {{change}} aujourd’hui avec {{liquidity}} de liquidité. Il n’est pas vérifié et vous n’en détenez pas. Ce n’est pas un conseil : vérifiez sa sécurité d’abord.",
+  trendingAction: "Voir {{token}}",
+  serviceTitle: "Un service payant sur votre {{token}}",
+  serviceBody: "Vous détenez du {{token}}. {{service}} répond pour {{price}} l’appel, payé depuis votre portefeuille d’agent : « {{what}} »",
+  serviceAction: "Ouvrir le portefeuille d’agent",
 };

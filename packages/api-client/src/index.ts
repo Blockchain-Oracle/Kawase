@@ -51,6 +51,7 @@ import type {
   PaymentRequestInput,
   RequestReminder,
   VerifyMethod,
+  BlockView,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -280,6 +281,15 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       /** Mark the current address verified on the active network (null clears it). */
       verify: (id: string, method: VerifyMethod | null) => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method }),
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
+    },
+
+    /** Who the person blocked: payments to them are refused; their asks and reminders never reach the inbox. */
+    blocks: {
+      list: () => call<{ blocks: BlockView[] }>("GET", "/blocks"),
+      /** Exactly one of a saved contact, an @handle or an address. */
+      block: (target: { contactId?: string; handle?: string; address?: string }) => call<{ blocks: BlockView[] }>("POST", "/blocks", target),
+      unblock: (target: { contactId?: string; handle?: string; address?: string }) => call<{ blocks: BlockView[] }>("POST", "/blocks/remove", target),
+      remove: (id: string) => call<{ blocks: BlockView[] }>("DELETE", `/blocks/${id}`),
     },
 
     /** The send screen's search: contacts by name, alias or handle, then an exact Kawase @handle. */

@@ -1,10 +1,10 @@
 // "For you" (surfaces.md Home §8; cards/agent-business.md, Proactive suggestions): the agent's proactive cards,
 // computed by the api from the person's holdings, positions and events on the active network. Each card states one
-// fact and offers one action (open chat with the request already written, open the conversation or screen it is
+// fact, says why it appears, and offers one action (open chat with the request already written, open the conversation or screen it is
 // about, or share a link). The × hides it (for a week, or until its situation changes) or hides its whole kind.
 // Builder A places `ForYouSection` on Home; the chat's get_for_you card reuses `ForYouCard`.
 import { useFocusEffect, useRouter } from "expo-router";
-import { HandCoins, HeartPulse, Route, Sprout, TrendingDown, TrendingUp, X, type LucideIcon } from "lucide-react-native";
+import { Flame, HandCoins, HeartPulse, Route, ShoppingBag, Sprout, TrendingDown, TrendingUp, Waypoints, X, type LucideIcon } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, Share, View } from "react-native";
 import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
@@ -29,16 +29,35 @@ const ICONS: Record<SuggestionKind, LucideIcon> = {
   stuck_bridge: Route,
   health_drop: HeartPulse,
   big_move: TrendingUp,
+  better_route: Waypoints,
+  trending_token: Flame,
+  service_pick: ShoppingBag,
 };
 
+type Copy = { title: string; body: string; action: string; prompt?: string };
+
 /** The kind's sentence keys in the `forYou` namespace. */
-const COPY: Record<SuggestionKind, { title: string; body: string; action: string; prompt?: string }> = {
+const COPY: Record<SuggestionKind, Copy> = {
   idle_cash: { title: "forYou.idleTitle", body: "forYou.idleBody", action: "forYou.idleAction", prompt: "forYou.idlePrompt" },
   expiring_request: { title: "forYou.requestTitle", body: "forYou.requestBody", action: "forYou.requestAction" },
   stuck_bridge: { title: "forYou.bridgeTitle", body: "forYou.bridgeBody", action: "forYou.bridgeAction" },
   health_drop: { title: "forYou.healthTitle", body: "forYou.healthBody", action: "forYou.healthAction", prompt: "forYou.healthPrompt" },
   big_move: { title: "forYou.moveTitle", body: "forYou.moveBody", action: "forYou.moveAction", prompt: "forYou.movePrompt" },
+  better_route: { title: "forYou.routeTitleCheaper", body: "forYou.routeBodyCheaper", action: "forYou.routeAction", prompt: "forYou.routePrompt" },
+  trending_token: { title: "forYou.trendingTitle", body: "forYou.trendingBodyListed", action: "forYou.trendingAction" },
+  service_pick: { title: "forYou.serviceTitle", body: "forYou.serviceBody", action: "forYou.serviceAction" },
 };
+
+/**
+ * The words for one card: its kind's, with the reason it appears where a kind has more than one (a faster route rather
+ * than a cheaper one; a trending token that is not on a verified list).
+ */
+function copyFor(suggestion: Suggestion): Copy {
+  const copy = COPY[suggestion.kind];
+  if (suggestion.kind === "better_route" && suggestion.facts.why === "faster") return { ...copy, title: "forYou.routeTitleFaster", body: "forYou.routeBodyFaster" };
+  if (suggestion.kind === "trending_token" && suggestion.facts.status !== "canonical" && suggestion.facts.status !== "listed") return { ...copy, body: "forYou.trendingBodyUnverified" };
+  return copy;
+}
 
 /** One proactive card. `onHidden` runs after it was dismissed or its kind muted. */
 export function ForYouCard({ suggestion, onHidden }: { suggestion: Suggestion; onHidden?: (kindMuted: boolean) => void }) {
@@ -46,7 +65,7 @@ export function ForYouCard({ suggestion, onHidden }: { suggestion: Suggestion; o
   const router = useRouter();
   const [choosing, setChoosing] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  const copy = COPY[suggestion.kind];
+  const copy = copyFor(suggestion);
   const facts = suggestion.facts;
   const falling = suggestion.kind === "big_move" && facts.change?.startsWith("-");
 

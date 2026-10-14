@@ -103,7 +103,7 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   get_agent_wallet: { source: "x402 seller", keys: ["seller"] },
   // Vault names are set by their curators; token names and symbols by whoever deployed the token.
   get_earn: { source: "vault curator", keys: ["name", "protocol"] },
-  get_for_you: { source: "vault curator", keys: ["vault"] },
+  get_for_you: { source: "vault, token or seller", keys: ["vault", "token", "tokenName", "service", "what"] },
   explain_choice: { source: "vault curator", keys: ["name"] },
   compare_yield: { source: "vault curator", keys: ["name"] },
   propose_earn: { source: "vault curator", keys: ["name"] },

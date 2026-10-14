@@ -117,6 +117,7 @@ import { PayCodeService } from "./paycodes/service";
 import { splitRoutes } from "./splits/routes";
 import { SplitService } from "./splits/service";
 import { intentRoutes } from "./intents/routes";
+import { BlockService, blockRoutes } from "./contacts/blocks";
 import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
@@ -431,6 +432,7 @@ export function createApp(deps: AppDeps) {
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
   app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
+  app.route("/blocks", blockRoutes(new BlockService(deps.db)));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
@@ -479,7 +481,7 @@ export function createApp(deps: AppDeps) {
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
   app.route("/search", searchRoutes(new SearchService(deps.db)));
-  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin)));
+  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin, { bridges, marketplace })));
   // Dependency health, public (the status card, docs and landing), cached for half a minute.
   const status = new StatusService(deps.db, deps.chains);
   app.get("/status", async (c) => c.json(await status.view()));

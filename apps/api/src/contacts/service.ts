@@ -19,6 +19,7 @@ import {
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import { blockedSets } from "./blocks";
 
 const ARC = "arc";
 const HANDLE_PREFIX = "@";
@@ -130,6 +131,7 @@ export class ContactService {
             ),
           )
       : [];
+    const blocked = await blockedSets(this.db, rows[0]!.userId);
     return rows.map((row) => {
       const own = addresses.filter((address) => address.contactId === row.id);
       const active = own.find((address) => address.status === "active" && address.isPreferred);
@@ -162,6 +164,9 @@ export class ContactService {
               ]),
           ),
         })),
+        blocked:
+          Boolean(row.handle && blocked.handles.has(row.handle.toLowerCase())) ||
+          own.some((address) => address.status !== "retired" && blocked.addresses.has(address.address.toLowerCase())),
         createdAt: row.createdAt.toISOString(),
       };
     });

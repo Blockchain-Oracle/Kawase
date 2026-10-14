@@ -141,7 +141,7 @@ export function intelligenceTools(context: AgentContext, trust: TurnTrust) {
     }),
     get_for_you: tool({
       description:
-        "What is worth the person's attention now, the same cards as Home's \"For you\": USDC sitting idle next to a vault that can pay it back at once, their payment request about to expire, a bridge that has not arrived, a move in a currency they hold. Use it for \"anything I should know?\", \"what should I do with my money?\" (state facts and options, never advice to buy or sell). Each card has its one action.",
+        "What is worth the person's attention now, the same cards as Home's \"For you\": USDC sitting idle next to a vault that can pay it back at once, their payment request about to expire, a bridge that has not arrived, a move in a currency they hold, a route that now beats the one they keep using for a move, a token trending on Arc they do not hold (a fact, never a tip), a paid service about what they hold. Use it for \"anything I should know?\", \"what should I do with my money?\" (state facts and options, never advice to buy or sell). Each card has its one action.",
       inputSchema: z.object({}),
       execute: async () => intelligence.forYou(),
       toModelOutput: ({ output }) => ({
