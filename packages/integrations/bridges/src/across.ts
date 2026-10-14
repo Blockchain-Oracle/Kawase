@@ -39,7 +39,7 @@ export type AcrossQuote = {
 export class BridgeProviderError extends Error {
   constructor(
     readonly provider: string,
-    readonly code: "no_quote" | "amount_too_low" | "timeout" | "refused",
+    readonly code: "no_quote" | "amount_too_low" | "timeout" | "refused" | "rate_limited",
     message: string,
   ) {
     super(message);

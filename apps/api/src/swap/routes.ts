@@ -6,6 +6,7 @@ import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { SwapService } from "./service";
+import { SWAP_VENUES } from "./venues";
 
 const AMOUNT_MAX = 40;
 
@@ -15,7 +16,8 @@ const asset = z
   .regex(/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9.]{1,16})$/)
   .nullable()
   .optional();
-const requestSchema = z.object({ tokenIn: asset, tokenOut: asset, amount: z.string().max(AMOUNT_MAX).nullable().optional() });
+/** `venue`: the swap venue the person picked from the route list; absent or null = the best. */
+const requestSchema = z.object({ tokenIn: asset, tokenOut: asset, amount: z.string().max(AMOUNT_MAX).nullable().optional(), venue: z.enum(SWAP_VENUES).nullable().optional() });
 /** `override`: the person confirmed a braked (risky) action on its card. */
 const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });

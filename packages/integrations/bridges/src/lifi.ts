@@ -46,6 +46,8 @@ export type LifiQuoteInput = {
   from: Address;
   to: Address;
   slippageBps: number;
+  /** "execute" for the quote an approval builds its calls from (it may use the reserved budget). */
+  priority?: LifiPriority;
 };
 
 export type LifiQuote = {
@@ -67,10 +69,60 @@ export type LifiQuote = {
 async function get(path: string) {
   try {
     const response = await fetch(`${API}${path}`, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(TIMEOUT_MS) });
-    return { ok: response.ok, body: (await response.json().catch(() => ({}))) as Record<string, unknown> };
+    return { ok: response.ok, status: response.status, retryAfter: response.headers.get("retry-after"), body: (await response.json().catch(() => ({}))) as Record<string, unknown> };
   } catch {
     throw new BridgeProviderError("LI.FI", "timeout", "LI.FI did not answer in time");
   }
+}
+
+// LI.FI's keyless allowance is 75 `/quote` calls per 2 hours (docs.li.fi/api-reference/rate-limits), shared by every
+// swap and move this process quotes. Previews (screens, the agent's route race) may use all but a reserve that is
+// kept for the quote an approval builds from; the same question within 15 s is answered from memory; a 429 stops
+// LI.FI quotes until its retry-after (or a doubling back-off) passes, so the other venues answer instead.
+const QUOTE_WINDOW_MS = 7_200_000;
+const QUOTE_LIMIT = 75;
+const EXECUTE_RESERVE = 15;
+const QUOTE_CACHE_MS = 15_000;
+const BACKOFF_BASE_MS = 60_000;
+const BACKOFF_MAX_MS = 1_800_000;
+const MS_PER_SECOND = 1_000;
+const HTTP_TOO_MANY = 429;
+
+/** "preview": a quote to show; "execute": the quote the calls are built from at approval. */
+export type LifiPriority = "preview" | "execute";
+
+type Answer = Awaited<ReturnType<typeof get>>;
+const quoteBudget = { spent: [] as number[], blockedUntil: 0, strikes: 0, cache: new Map<string, { at: number; value: Answer }>() };
+
+/** How much of LI.FI's keyless allowance is left in the current window, and whether it is backing off. */
+export function lifiQuoteBudget(now = Date.now()) {
+  quoteBudget.spent = quoteBudget.spent.filter((at) => now - at < QUOTE_WINDOW_MS);
+  return { used: quoteBudget.spent.length, limit: QUOTE_LIMIT, reserve: EXECUTE_RESERVE, blockedUntil: quoteBudget.blockedUntil > now ? quoteBudget.blockedUntil : null };
+}
+
+/** A `/quote` within the keyless budget: cached for previews, refused (rate_limited) rather than spending the reserve. */
+export async function lifiQuoteGet(query: URLSearchParams, priority: LifiPriority = "preview"): Promise<Answer> {
+  const now = Date.now();
+  const key = query.toString();
+  const cached = quoteBudget.cache.get(key);
+  if (priority === "preview" && cached && now - cached.at < QUOTE_CACHE_MS) return cached.value;
+  const budget = lifiQuoteBudget(now);
+  if (budget.blockedUntil) throw new BridgeProviderError("LI.FI", "rate_limited", "LI.FI is backing off");
+  if (budget.used >= QUOTE_LIMIT - (priority === "preview" ? EXECUTE_RESERVE : 0)) throw new BridgeProviderError("LI.FI", "rate_limited", "LI.FI's keyless quotes are used up for now");
+  quoteBudget.spent.push(now);
+  const answer = await get(`/quote?${key}`);
+  if (answer.status === HTTP_TOO_MANY) {
+    const retry = Number(answer.retryAfter);
+    quoteBudget.strikes += 1;
+    quoteBudget.blockedUntil = now + (Number.isFinite(retry) && retry > 0 ? retry * MS_PER_SECOND : Math.min(BACKOFF_BASE_MS * 2 ** (quoteBudget.strikes - 1), BACKOFF_MAX_MS));
+    throw new BridgeProviderError("LI.FI", "rate_limited", "LI.FI asked to slow down");
+  }
+  quoteBudget.strikes = 0;
+  if (answer.ok) {
+    for (const [stale, entry] of quoteBudget.cache) if (now - entry.at >= QUOTE_CACHE_MS) quoteBudget.cache.delete(stale);
+    quoteBudget.cache.set(key, { at: now, value: answer });
+  }
+  return answer;
 }
 
 /** A token on a chain by symbol or address ("WETH" on Base), as LI.FI lists it. */
@@ -93,7 +145,7 @@ export async function lifiQuote(input: LifiQuoteInput): Promise<LifiQuote> {
     integrator: INTEGRATOR,
     allowDestinationCall: "false",
   });
-  const { ok, body } = await get(`/quote?${query}`);
+  const { ok, body } = await lifiQuoteGet(query, input.priority);
   const estimate = body.estimate as { toAmount?: string; toAmountMin?: string; approvalAddress?: string; executionDuration?: number; feeCosts?: { amountUSD?: string }[]; gasCosts?: { amountUSD?: string; amount?: string }[] } | undefined;
   const request = body.transactionRequest as { to?: string; data?: Hex; value?: string } | undefined;
   const toToken = (body.action as { toToken?: { address?: string; symbol?: string; decimals?: number; priceUSD?: string } } | undefined)?.toToken;

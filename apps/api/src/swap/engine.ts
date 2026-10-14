@@ -22,6 +22,8 @@ export type SwapEngine = {
   prepare(input: SwapEngineInput & { slippageBps: number }): Promise<SwapCall[]>;
   /** USD price per token address (lowercased), for the market-rate comparison. */
   prices(network: NetworkContext, tokens: readonly Address[]): Promise<Map<string, number>>;
+  /** API keys for the keyed swap venues (Uniswap Trading API, 0x); they never leave the server. */
+  venueKeys?: { uniswap?: string | undefined; zerox?: string | undefined };
 };
 
 export function appKitSwaps(env: ApiEnv): SwapEngine {
@@ -31,6 +33,8 @@ export function appKitSwaps(env: ApiEnv): SwapEngine {
     quote: (input) => quoteSwap({ ...input, apiKey: key(input.network) }),
     prepare: (input) => prepareSwap({ ...input, apiKey: key(input.network) }),
     prices: (network, tokens) => marketPrices(network, key(network), tokens),
+    // Read straight from the process until @kawase/env lists them (requested from the Wallet lane, which owns env).
+    venueKeys: { uniswap: process.env.UNISWAP_API_KEY || undefined, zerox: process.env.ZEROX_API_KEY || undefined },
   };
 }
 
