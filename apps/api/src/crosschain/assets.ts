@@ -14,7 +14,7 @@ export type MoveAsset = CrossChainAssetView & { native: boolean; usdc: boolean; 
 
 const NATIVE_DECIMALS = 18;
 /** Each chain's native coin, by chain id. */
-const NATIVE_SYMBOLS: Readonly<Record<number, string>> = { 1: "ETH", 8453: "ETH", 42161: "ETH", 10: "ETH", 137: "POL", 43114: "AVAX" };
+export const NATIVE_SYMBOLS: Readonly<Record<number, string>> = { 1: "ETH", 8453: "ETH", 42161: "ETH", 10: "ETH", 137: "POL", 43114: "AVAX" };
 /** The same asset under the names other chains give it (first found wins). */
 const SAME_ASSET: Readonly<Record<string, readonly string[]>> = {
   cirbtc: ["cbBTC", "WBTC", "BTC.b"],

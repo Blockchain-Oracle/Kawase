@@ -14,16 +14,17 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
     supports: [
       "any token the person holds on Arc, to a saved contact, a Kawase @handle, an address they type or scan, with the recipient check on every payment: a token contract or a look-alike of a saved contact is refused, a non-wallet contract is warned about, the issuer's blocklist is checked where the token has one, and their own address is named",
       "inside the daily allowance it goes at once; above it, to a new address or for a token outside the allowance, the person confirms with Face ID (an email code on the web)",
-      "USDC to someone on another chain (Base, Ethereum, Arbitrum, OP Mainnet, Polygon, Avalanche) through the best bridge route",
+      "USDC to someone on another chain (Base, Ethereum, Arbitrum, OP Mainnet, Polygon, Avalanche) through the best bridge route; on mainnet any other token too, as itself, through the cross-chain routes (the Move screen)",
       "Withdraw: one token, several or everything, each as itself or as cash, to an exchange (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, Coinbase via Base), the person's own wallet on Arc or another chain, or their bank through an exchange; the route is planned per token (transfer, bridge or convert first) and confirmed once",
     ],
-    notYet: ["tokens other than USDC crossing chains as themselves (they convert to USDC first)", "a test-amount offer for a first-time withdraw destination", "exchanges on testnet (withdraw goes to the person's own wallet there)"],
+    notYet: [
+      "inside one withdraw batch, tokens other than USDC go to another chain as cash (converted); as themselves they go as a separate move (the line offers it, mainnet)",
+      "exchanges on testnet (withdraw goes to the person's own wallet there)",
+    ],
   },
   request: {
     supports: [
       "a payment request with a shareable link in any token on Arc; marked paid by a Kawase send or a matching plain transfer",
-      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll as a scheduled automation",
-      "invoices and payouts in any token on Arc (a verified symbol or an exact address; look-alikes refused), and invoice reminders: the day before it is due and once overdue (inbox and push; overdue also by email)",
     ],
     notYet: [],
   },
@@ -34,17 +35,17 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
       "safety on every buy: GoPlus checks (honeypot, taxes, owner), Kawase's copycat rule (a token using a stablecoin's name at another address is never bought; lookalikes are named as such) and the person's token rules (unverified tokens at most $50 a trade and $200 a day; price impact at most 5%), which they change on the Token rules screen (tightening at once, loosening with their wallet's signature)",
       "price, 24-hour change, a price chart and safety for any token on Arc; the Markets tab (trending, new, heatmap) and search by name, symbol or address",
       "a token still on LIFT's bonding curve shows its progress to graduation and the fees a trade pays there, and can be watched for a graduation alert",
+      "candlestick charts and profit and loss from the person's own trades on every token page; a price alert from the token page (above or below a dollar price, on the executable quote)",
     ],
     notYet: [
       "limit orders that fill by themselves (DCA and price-triggered swaps run as automations, and each one waits for the person's tap)",
       "buying on a launchpad's curve before the token graduates (the token page shows it and links the launchpad)",
-      "candlestick charts and profit and loss from the person's own trades",
     ],
   },
   buy: {
     supports: [
       "buying USDC or EURC with a debit card, Apple Pay or Google Pay through Circle's Onramp, delivered to the person's own wallet on Arc and confirmed when it lands on chain",
-      "buying another token with a card: the USDC that arrives is swapped with one more approval (both fees shown first)",
+      "buying another token with a card: the Buy sheet's \"You get\" takes any token on Arc; the USDC that arrives is swapped with one more approval (both fees shown first), and a swap that is short of dollars offers the card",
       "on Arc Testnet: Circle's sandbox with test cards, no real money",
     ],
     notYet: [
@@ -55,23 +56,24 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   bridge: {
     supports: [
       "any asset from Arc to anyone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche: USDC through Circle CCTP, Across, Relay, LI.FI or deBridge; other assets (WETH, EURC, cirBTC, a meme by symbol or address) arrive as themselves through LI.FI or deBridge (cirBTC as cbBTC), or as USDC when nothing carries them, swapped on Arc in the same batch; ranked by what arrives after fees (deBridge's 1 USDC flat fee counted), up to three shown, one Face ID",
-      "Bring to Arc: USDC with Relay's permit (one signature, no gas there); the chain's own coin (ETH, POL, AVAX) in one transaction there, its gas from the coin, arriving as WETH etc.; other tokens with one signature once they are approved for Permit2 there",
+      "Bring to Arc: USDC with Relay's permit (one signature, no gas there); the chain's own coin (ETH, POL, AVAX) in one transaction there, its gas from the coin, arriving as WETH etc.; other tokens with one Permit2 signature, and when a token is not yet approved for Permit2 there, in two steps under one yes: that approval first (one transaction there, its gas in the chain's coin), then the signature",
       "following each move until delivered (Across, Relay, LI.FI, deBridge, CCTP status) and saying plainly when a provider refunds",
       "on Arc Testnet: CCTP only",
     ],
-    notYet: ["a token's first move in from another chain when it needs an approval there (two steps)", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
+    notYet: ["Bring to Arc without the chain's coin for gas when the token still needs its approval there", "Bring to Arc on testnet", "recovering a stuck transfer beyond the provider's own refund"],
   },
   yield: {
     supports: [
       "depositing USDC into and withdrawing from Morpho vaults listed by Circle's App Kit Earn on Arc, ranked by what they could give back now; vaults that could not are hidden (mock vaults on Arc Testnet)",
-      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP campaigns from Merkl (advanced, shown only), ranked by rate among sources that could return the amount",
+      "a yield-options comparison for an asset: Aave V4 supply, those vaults, and Aero LP pools with Merkl rewards (advanced), ranked by rate among sources that could return the amount",
       "supplying to and withdrawing from Aave V4 on Arc mainnet (see lend)",
+      "Aero LP on Arc mainnet (advanced): depositing into USDC-EURC, cirBTC-USDC or WETH-USDC from one asset of the pair (the other side bought in the same batch, a range set around today's price), the position's value, fees and whether it is in range on Home and Earn, withdrawing a whole position in one batch, and claiming Merkl's USDC rewards; impermanent loss and range risk are named",
     ],
-    notYet: ["LP deposits and claiming rewards", "Morpho Blue markets directly", "depositing from another chain"],
+    notYet: ["choosing an LP range by hand, or adding to an existing LP position", "Morpho Blue markets directly", "depositing from another chain"],
   },
   automations: {
     supports: [
-      "scheduled sends of a fixed amount to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period; payroll to several people the same way",
+      "scheduled sends of a fixed amount to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
       "Auto-save and round-ups into the person's own vault savings, bounded on chain to the wallet and its own savings",
       "rules: when the balance crosses a line, when money arrives, or when a price crosses a level — bridge USDC to the person's own address on another chain (fee bounded on chain), save, alert, or send to someone; DCA buys on a schedule",
       "a step an automation may not take alone (every swap or DCA buy, anything above its grant, a payment held by the allowlist or cooldown) waits in Needs you: inbox, push and Activity; answered once from any device, reminded at 12 hours, expired at 24",
@@ -82,12 +84,12 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   lend: {
     supports: [
-      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP campaigns from Merkl shown as advanced, read-only",
+      "a yield-options comparison for an asset: Aave V4 supply (live rate, what the hub can pay out now), Circle App Kit's Morpho vaults ranked by withdrawable liquidity (stuck ones hidden), and Aero LP pools with Merkl rewards as advanced (see yield)",
       "supplying to and withdrawing from Aave V4 directly through its Main Spoke on Arc mainnet (USDC, EURC, cirBTC, WETH)",
       "borrowing USDC, EURC, cirBTC or WETH against collateral (USDC, cirBTC or WETH; EURC cannot be collateral), with the collateral put in the same batch, a live health gauge, the liquidation price when the collateral is one asset, a health check (refused below 1.25, warned below 1.5) and the rate; repaying part or all",
       "health alerts by push and email under 1.5 and 1.2",
     ],
-    notYet: ["Morpho Blue markets directly", "LP deposits", "Aave V4 on testnet (it is mainnet only)"],
+    notYet: ["Morpho Blue markets directly", "Aave V4 on testnet (it is mainnet only)"],
   },
   margin: {
     supports: [

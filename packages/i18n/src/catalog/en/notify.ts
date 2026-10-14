@@ -30,7 +30,6 @@ export const notify = {
   needsYouSend: "Send {{amount}} to {{name}}",
   needsYouSwap: "Swap {{amount}} {{symbolIn}} to {{symbolOut}}",
   reminderTitle: "Tomorrow, {{at}}",
-  reminderPayroll: "Payroll for {{people}} people",
   reminderShort: "Your wallet holds less than this run",
   requestReceivedTitle: "{{name}} asked you for {{amount}}",
   requestReceivedTitleHidden: "{{name}} asked you for money",

@@ -21,4 +21,5 @@ export const errors: Catalog["errors"] = {
   biometricUnavailableAndroid: "অনুমোদন দিতে ফোনের সেটিংসে আঙুলের ছাপ বা স্ক্রিন লক সেট করুন।",
   biometricFailed: "মেলেনি। কিছুই সই করা হয়নি। আবার চেষ্টা করুন।",
   tryAgainIn: "{{time}} পরে আবার চেষ্টা করুন",
+  deviceProofNeeded: "অনুমোদন করতে এই ফোনে আবার সাইন ইন করুন। কিছুই পাঠানো হয়নি।",
 };

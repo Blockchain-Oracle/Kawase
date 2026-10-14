@@ -1,6 +1,6 @@
 // Scan to pay: a code (scanned, pasted) → what it means on the active network (the api reads it, so the scanner and
 // the chat agree) → the flow it opens. Send opens filled in (the recipient check runs there, as always); a Kawase
-// request or invoice opens its pay page; anything else stays on the scanner with the reason and its fix.
+// request opens its pay page; anything else stays on the scanner with the reason and its fix.
 import { useRouter } from "expo-router";
 import * as React from "react";
 

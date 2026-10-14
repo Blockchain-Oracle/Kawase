@@ -3,7 +3,8 @@
 // the send screen and the chat ("Alex isn't in your contacts" → Add Alex). Loading shows skeleton rows, an error
 // keeps what was already shown with a retry, a guest is asked to sign in, and an empty book says why it is worth
 // filling. Import from the phone's contacts (I7) arrives in Stage 5c, and the page says so instead of hiding it.
-// A second tab, My places (surfaces.md Contacts), lists the exchanges and own wallets money is taken out to.
+// A second tab, My places (surfaces.md Contacts), lists the exchanges and own wallets money is taken out to. Under the
+// contacts, Blocked lists who the person blocked, each with Unblock.
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { ContactRound, Search, UserPlus } from "lucide-react-native";
 import * as React from "react";
@@ -22,6 +23,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
+import { BlockedList } from "@/contacts/blocked-list";
 import { ContactRow, ContactRowSkeleton } from "@/contacts/contact-row";
 import { ContactsHeader } from "@/contacts/screen-header";
 import { contactAddress, useContacts } from "@/contacts/use-contacts";
@@ -174,6 +176,7 @@ export function ContactsScreen() {
         ) : (
           <Text className="text-muted-foreground py-6 text-center text-base">{t("contacts.noMatches")}</Text>
         )}
+        <BlockedList onChanged={() => void refresh()} />
         <Button variant="ghost" onPress={() => router.push("/contacts/import")}>
           <Text className="text-muted-foreground">{t("importContacts.title")}</Text>
         </Button>

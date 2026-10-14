@@ -61,7 +61,7 @@ export type HistoryHit = {
 export type HistorySearchOutput = { query: string; hits: HistoryHit[] };
 
 /** The kinds of "For you" suggestion (cards/agent-business.md, Proactive suggestions). */
-export const SUGGESTION_KINDS = ["idle_cash", "expiring_request", "stuck_bridge", "health_drop", "big_move"] as const;
+export const SUGGESTION_KINDS = ["idle_cash", "expiring_request", "stuck_bridge", "health_drop", "big_move", "better_route", "trending_token", "service_pick"] as const;
 export type SuggestionKind = (typeof SUGGESTION_KINDS)[number];
 
 /**

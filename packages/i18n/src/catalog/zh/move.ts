@@ -59,6 +59,7 @@ export const move: Catalog["move"] = {
   provider_debridge: "deBridge",
   via: "经由 {{bridge}}",
   convertFirst: "先在 {{venue}} 换成 USDC",
+  approveFirst: "两步：先在那条链上授权（用 {{coin}} 付费），再签一次名",
   feeOnTop: "+ {{amount}} 手续费",
   arrivesAs: "到账为 {{asset}}",
   gasThere: "在 {{chain}} 支付",

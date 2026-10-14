@@ -81,3 +81,6 @@ export const CONTACT_ADDRESS_CHANGE_COOLDOWN_S = SECONDS_PER_DAY;
 /** An address whose first and last characters match a saved contact's this far is flagged as a lookalike (I5). */
 export const LOOKALIKE_PREFIX_CHARS = 4;
 export const LOOKALIKE_SUFFIX_CHARS = 4;
+
+/** Days of the month offered for a monthly automation (1–28, so every month has them). */
+export const MONTHLY_RUN_DAYS = [1, 15, 28] as const;

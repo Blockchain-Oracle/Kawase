@@ -1,6 +1,6 @@
 // What a scanned or pasted payment code says (scan to pay, plan §A.4.4; C1): a bare address, an EIP-681 link
-// (`ethereum:` with an optional chain, token, recipient and amount), or a Kawase link to a payment request or an
-// invoice (`/r/<token>` on Kawase's own hosts, `kawase://r/<token>`, the invoice document link). Pure: no network
+// (`ethereum:` with an optional chain, token, recipient and amount), or a Kawase link to a payment request
+// (`/r/<token>` on Kawase's own hosts, `kawase://r/<token>`). Pure: no network
 // calls, so the scanner, the chat and the tests read codes the same way. A Kawase-looking path on any other host is
 // not trusted (a lookalike site could print one).
 import { getAddress, isAddress } from "viem";
@@ -93,7 +93,7 @@ function parseEip681(code: string, decimalsOf: (token: string) => number | null)
 }
 
 /**
- * Reads one code. `hosts` are Kawase's own web and api hosts (only their `/r/` and invoice links are trusted);
+ * Reads one code. `hosts` are Kawase's own web and api hosts (only their `/r/` links are trusted);
  * `decimalsOf` gives a known token's decimals (USDC and EURC are 6) for EIP-681 amounts.
  */
 export function parsePayCode(input: string, hosts: readonly string[], decimalsOf: (token: string) => number | null): ParsedCode {
@@ -115,6 +115,6 @@ export function parsePayCode(input: string, hosts: readonly string[], decimalsOf
   if (url.protocol !== "https:" && url.protocol !== "http:") return { kind: "unknown" };
   if (!hosts.includes(url.host.toLowerCase())) return { kind: "unknown" };
   const path = url.pathname.replace(/\/+$/, "");
-  const request = /^\/r\/([^/]+)$/.exec(path) ?? /^\/invoices\/public\/([^/]+)(?:\/document)?$/.exec(path);
+  const request = /^\/r\/([^/]+)$/.exec(path);
   return request && TOKEN_PATTERN.test(request[1]!) ? { kind: "request", token: request[1]! } : { kind: "unknown" };
 }

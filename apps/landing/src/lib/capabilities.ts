@@ -172,13 +172,7 @@ export const AREAS: readonly Area[] = [
     title: "Borrow",
     body: "Borrow against USDC, cirBTC or WETH on Aave V4, with a live health gauge and the liquidation price shown first.",
     marks: ["aave"],
-  },
-  {
-    id: "request",
-    docs: "/docs/features/business",
-    title: "Business",
-    body: "Invoices with an on-chain reference that marks them paid, batch payouts signed once, payroll bounded per person.",
-    today: 1,
+    wide: true,
   },
   {
     id: "marketplace",
@@ -190,7 +184,7 @@ export const AREAS: readonly Area[] = [
     id: "automations",
     docs: "/docs/features/automations",
     title: "Automations",
-    body: "Scheduled payments, Auto-save, payroll, DCA and rules, each bounded on chain, with practice runs first and Needs you for the rest.",
+    body: "Scheduled payments, Auto-save, DCA and rules, each bounded on chain, with practice runs first and Needs you for the rest.",
     wide: true,
   },
   {

@@ -4,8 +4,10 @@
 // Where a checklist line needs a person (an Apple Pay sheet, a web wallet, a Kraken account, a phone's push), the step
 // does every part the api can and says what is left to do by hand.
 import type { Address, Hex } from "viem";
-import { formatUnits, keccak256, parseUnits } from "viem";
+import { formatUnits, keccak256, parseUnits, toHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { DelegationManager } from "@metamask/smart-accounts-kit/contracts";
+import { hashDelegation } from "@metamask/smart-accounts-kit/utils";
 
 import type {
   CrossChainApproveResponse,
@@ -22,6 +24,8 @@ import type {
   UnsignedTransaction,
   YieldOptionsView,
 } from "@kawase/api-client";
+
+import { DELEGATION_FRAMEWORK } from "@kawase/networks";
 
 import { ApiError, check, fail, idem, signTransaction, signTypedData, StepSkipped, waitFor, type Ctx, type Step } from "./context";
 
@@ -309,15 +313,17 @@ const borrowRepay: Step = {
 
 const PRICE_SCALE = 1e8;
 const PROTECT_GRANTS = 6;
+/** MetaMask Delegation Framework v1.3 on Arc (packages/networks DELEGATION_FRAMEWORK). */
+const DELEGATION_MANAGER = DELEGATION_FRAMEWORK.delegationManager;
 const TAKE_PROFIT_STEP = 0.9;
 const STOP_LOSS_STEP = 1.05;
 
 /**
- * Take-profit and stop-loss on an open short (H3, H4): targets saved, the position's six grants signed with one yes and
- * on (the position watched); then off, which hands back their on-chain disable for the wallet to sign (the shared
- * revoke: relayed, or its own transaction while the relayer has no gas), confirmed on Arc.
+ * Take-profit and stop-loss on an open short (H3): targets saved, the position's six grants signed with one yes and
+ * on (the position watched). Returns the grants as signed, to check on chain later; undefined when Uniswap on Arc
+ * can't carry the close (protection isn't offered then).
  */
-async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
+async function protectOn(ctx: Ctx, position: MarginPositionView): Promise<MarginProtectionGrantRequest["grants"] | undefined> {
   const mark = Number(position.markPrice) / PRICE_SCALE;
   const liquidation = position.liquidationPrice ? Number(position.liquidationPrice) / PRICE_SCALE : Number.POSITIVE_INFINITY;
   // A short: the take-profit below the price, the stop-loss above it and short of liquidation.
@@ -328,7 +334,7 @@ async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
   } catch (error) {
     if (error instanceof ApiError && String(error.body.type ?? "").endsWith("/protection_unavailable")) {
       ctx.note("protection: Uniswap on Arc can't close this size right now, so it isn't offered (nothing to sign)");
-      return;
+      return undefined;
     }
     throw error;
   }
@@ -342,6 +348,11 @@ async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
   const watched = (await ctx.api.get<{ positions: MarginPositionView[] }>("/margin/positions")).positions.find((p) => p.id === position.id);
   check(watched?.protection === "armed", `the position reads ${watched?.protection} with protection on`);
   ctx.note(`protection on until ${on.expiresAt}: take-profit $${targets.takeProfit}, stop-loss $${targets.stopLoss}, watched`);
+  return request.grants;
+}
+
+/** Off (H4): Kawase stops at once and hands back the grants' on-chain disable for the wallet to sign (the shared revoke: relayed, or its own transaction while the relayer has no gas), confirmed on Arc. */
+async function protectOff(ctx: Ctx, position: MarginPositionView) {
   const off = await ctx.api.del<MarginProtectionOff>(`/margin/protection/grant?positionId=${position.id}`);
   check(off.revoke, "turning protection off handed back no on-chain disable");
   const sent =
@@ -354,10 +365,22 @@ async function protectAndRelease(ctx: Ctx, position: MarginPositionView) {
   check(after.grant === "none", `protection reads ${after.grant} after turning it off`);
 }
 
+/** Whether the DelegationManager holds every one of these signed grants as disabled. */
+async function allDisabled(ctx: Ctx, signed: MarginProtectionGrantRequest["grants"]) {
+  const reads = await Promise.all(
+    signed.map((grant) => {
+      const message = grant.typedData.message as { delegate: Address; delegator: Address; authority: Hex; caveats: { enforcer: Address; terms: Hex; args?: Hex }[]; salt: string };
+      const delegation = { ...message, caveats: message.caveats.map((caveat) => ({ ...caveat, args: caveat.args ?? "0x" })), salt: toHex(BigInt(message.salt)), signature: "0x" as Hex };
+      return DelegationManager.read.disabledDelegations({ client: ctx.arc, contractAddress: DELEGATION_MANAGER, delegationHash: hashDelegation(delegation) });
+    }),
+  );
+  return reads.every(Boolean);
+}
+
 const shortWeth: Step = {
   id: "trade.short-weth",
   card: "trade",
-  title: "Short WETH 2× with $5: liquidation price on the ticket → position with health → TP/SL on and off (grants disabled on Arc) → close all",
+  title: "Short WETH 2× with $5: liquidation price on the ticket → position with health → TP/SL on and off (disabled on Arc) → on again → close all (its batch disables the grants)",
   worstCaseUsd: 2,
   async run(ctx) {
     const { intent } = await ctx.api.post<{ intent: MarginIntent }>("/margin/orders", { market: "WETH", side: "short", margin: "5", leverage: 2 });
@@ -368,9 +391,17 @@ const shortWeth: Step = {
     const position = positions.find((p) => p.status === "open" && p.side === "short");
     check(position, `no open short after ${opened.id}`);
     ctx.note(`position ${position.id}: ${JSON.stringify({ health: (position as unknown as { health?: number }).health }).slice(0, 80)}`);
-    await protectAndRelease(ctx, position);
+    // TP/SL on, then off (the disable sent on its own); on again, then the close itself takes the grants with it.
+    const first = await protectOn(ctx, position);
+    if (first) await protectOff(ctx, position);
+    const second = first ? await protectOn(ctx, position) : undefined;
     const close = (await ctx.api.post<{ intent: MarginIntent }>("/margin/orders", { action: "close", positionId: position.id, fraction: 1 })).intent;
+    if (second) check(close.draft?.protectionOff, "the close of a protected position doesn't say it ends the protection");
     await drive(ctx, "/margin/orders", close as unknown as Intent, "close the WETH short");
+    if (second) {
+      check(await allDisabled(ctx, second), "grants still live on Arc after the close that should have disabled them");
+      ctx.note("the close's own batch disabled the position's six protection grants on Arc (one signature)");
+    }
     const after = (await ctx.api.get<{ positions: MarginPositionView[] }>("/margin/positions")).positions.find((p) => p.id === position.id);
     // The positions list carries open ones only: a closed position leaves it.
     check(!after || after.status === "closed", `position reads ${after?.status} after closing`);

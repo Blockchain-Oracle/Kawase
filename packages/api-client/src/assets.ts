@@ -73,6 +73,8 @@ export type PositionSummary = {
   leverage?: number | null;
   pnlUsd?: number | null;
   pnlPct?: number | null;
+  /** LP: the price is inside the position's range (earning fees and rewards). */
+  inRange?: boolean | null;
 };
 
 export type PortfolioPoint = { t: string; usd: number };
@@ -131,7 +133,7 @@ export type SafetyVerdict = {
 export type ChartRange = "1H" | "1D" | "1W" | "1M" | "1Y" | "ALL";
 export type Candle = { t: number; o: number; h: number; l: number; c: number; v: number };
 
-export type TokenAction = "buy" | "sell" | "send" | "receive" | "withdraw" | "bridge" | "earn" | "long_short";
+export type TokenAction = "buy" | "sell" | "send" | "receive" | "withdraw" | "bridge" | "earn" | "borrow" | "long_short" | "alert";
 
 /** One action on a token page: available, or unavailable with its reason (R2). */
 export type TokenActionView = { id: TokenAction; available: boolean; reason: string | null };

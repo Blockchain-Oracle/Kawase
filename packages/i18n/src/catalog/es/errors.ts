@@ -23,4 +23,5 @@ export const errors: Catalog["errors"] = {
     "Configura una huella o un bloqueo de pantalla en los Ajustes del teléfono para aprobar.",
   biometricFailed: "No coincidió. No se firmó nada. Inténtalo de nuevo.",
   tryAgainIn: "Inténtalo de nuevo en {{time}}",
+  deviceProofNeeded: "Vuelve a iniciar sesión en este teléfono para aprobarlo. No se envió nada.",
 };

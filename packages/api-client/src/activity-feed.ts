@@ -29,7 +29,7 @@ export type FeedItem = {
   explorerUrl: string | null;
   /** Kawase's own record behind the row, when there is one. */
   intentId: string | null;
-  /** Set when an automation made it (also for a payroll line). */
+  /** Set when an automation made it. */
   fromAutomation: boolean;
   automationId: string | null;
   runId: string | null;

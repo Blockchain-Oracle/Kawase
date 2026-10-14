@@ -51,6 +51,7 @@ import type {
   PaymentRequestInput,
   RequestReminder,
   VerifyMethod,
+  BlockView,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -72,21 +73,10 @@ import type {
 import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
 import type { ActivityFeedApi, FeedPage } from "./activity-feed";
 import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
-import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, PayrollAutomationInput, SimulationView } from "./automations-8c";
+import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, SimulationView } from "./automations-8c";
 import { railsEndpoints } from "./rails";
 import { withdrawEndpoints } from "./withdraw";
 import { tokenRulesEndpoints } from "./token-rules";
-import type {
-  BusinessProfile,
-  BusinessProfileInput,
-  InvoiceInput,
-  InvoicePublicView,
-  InvoiceView,
-  PayoutCreateResult,
-  PayoutLineInput,
-  PayoutSignRequest,
-  PayoutView,
-} from "./business";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import type { FeeReserveView, FxView } from "./fees";
 import { intelligenceApi } from "./intelligence";
@@ -96,6 +86,7 @@ export * from "./types";
 export * from "./agent-types";
 export * from "./assets";
 export * from "./client-events";
+export * from "./routes";
 export * from "./marketplace";
 export * from "./account";
 export * from "./safety";
@@ -104,7 +95,6 @@ export * from "./activity-feed";
 export * from "./rails";
 export * from "./withdraw";
 export * from "./token-rules";
-export * from "./business";
 export * from "./history";
 export * from "./intelligence";
 export * from "./everyday";
@@ -282,6 +272,15 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
     },
 
+    /** Who the person blocked: payments to them are refused; their asks and reminders never reach the inbox. */
+    blocks: {
+      list: () => call<{ blocks: BlockView[] }>("GET", "/blocks"),
+      /** Exactly one of a saved contact, an @handle or an address. */
+      block: (target: { contactId?: string; handle?: string; address?: string }) => call<{ blocks: BlockView[] }>("POST", "/blocks", target),
+      unblock: (target: { contactId?: string; handle?: string; address?: string }) => call<{ blocks: BlockView[] }>("POST", "/blocks/remove", target),
+      remove: (id: string) => call<{ blocks: BlockView[] }>("DELETE", `/blocks/${id}`),
+    },
+
     /** The send screen's search: contacts by name, alias or handle, then an exact Kawase @handle. */
     recipients: {
       search: (query: string) =>
@@ -393,9 +392,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         ),
     },
 
-    /** Automations 8c: payroll, DCA, practice runs, the dry run, editing in place. */
+    /** Automations 8c: DCA, practice runs, the dry run, editing in place. */
     automationsMore: {
-      payroll: (input: PayrollAutomationInput) => call<{ automation: AutomationView }>("POST", "/automations/payroll", input),
       dca: (input: DcaInput) => call<{ automation: AutomationView }>("POST", "/automations/dca", input),
       practice: (id: string) => call<{ automation: AutomationView }>("POST", `/automations/${id}/practice`),
       simulate: (id: string) => call<SimulationView>("POST", `/automations/${id}/simulate`),
@@ -483,26 +481,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         if (!response.ok) throw new ApiError((await response.json()) as Problem);
         return response.text();
       },
-    },
-
-    /** Business mode: profile, invoices (paid through their link, matched by an on-chain Memo reference), payouts. */
-    business: {
-      profile: () => call<{ profile: BusinessProfile | null }>("GET", "/business/profile"),
-      saveProfile: (input: BusinessProfileInput) => call<{ profile: BusinessProfile }>("PUT", "/business/profile", input),
-      invoices: () => call<{ invoices: InvoiceView[] }>("GET", "/business/invoices"),
-      createInvoice: (input: InvoiceInput) => call<{ invoice: InvoiceView }>("POST", "/business/invoices", input),
-      invoice: (id: string) => call<{ invoice: InvoiceView }>("GET", `/business/invoices/${id}`),
-      cancelInvoice: (id: string) => call<{ invoice: InvoiceView }>("POST", `/business/invoices/${id}/cancel`),
-      /** No account needed: what the client sees on the link. */
-      publicInvoice: (token: string) => call<{ invoice: InvoicePublicView }>("GET", `/invoices/public/${encodeURIComponent(token)}`),
-      /** The printable invoice (HTML) for a PDF or a browser. */
-      documentUrl: (token: string) => `${base}/invoices/public/${encodeURIComponent(token)}/document`,
-      payouts: () => call<{ payouts: PayoutView[] }>("GET", "/business/payouts"),
-      createPayout: (input: { asset: string; lines: PayoutLineInput[] }) => call<PayoutCreateResult>("POST", "/business/payouts", input),
-      /** The transaction to sign, or (no USDC for the fee) the one-time delegation the relayer sends. */
-      signPayout: (id: string) => call<PayoutSignRequest>("POST", `/business/payouts/${id}/sign`),
-      submitPayout: (id: string, requestId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
-        call<{ payout: PayoutView }>("POST", `/business/payouts/${id}/submit`, { requestId, signedTransaction, ...(kind ? { kind } : {}) }),
     },
 
     /** Settings → Account: devices, email, export record, deleting the account. */

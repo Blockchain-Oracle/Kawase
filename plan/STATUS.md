@@ -1,7 +1,33 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-03 afternoon (security fixes running in 4 worktrees, desktop web in 1; OpenAI credit out; per-area truth in `plan/COVERAGE.md`)
+Last updated: 2026-10-14 midday (revamp Stage 0 done, Stage 2 running; plan compressed-dreaming-yao)
+
+## 2026-10-14 — revamp underway (deadline 10-17 11:59 PM ET = Sun 10-18 04:59 WAT)
+
+**The plan:** `/Users/abu/.claude/plans/compressed-dreaming-yao.md`. Decisions D37–D43 are in `context/08-product-research/DECISIONS-FROM-ABU.md`. Research is in `plan/research/2026-10-14/`, docs packs per lane in `plan/docs-packs/`.
+
+**Stage 0 (lead) done on main:**
+- Salvage merges `a08e`, `a835`, `a48b`, `affd`, `a276`. Conflicts resolved by keeping both sides. affd's `0078_blocks` was re-stamped to `when` 1791000103000.
+- Shared base `909b9f2f`:
+  - six i18n namespaces ×10 languages;
+  - the `RouteQuote`/`RouteRace` type;
+  - the `prompt-budget.ts` hook;
+  - a native batch (react-native-webview 13.16.1, Privy expo/react-auth/node, Coinbase cdp-sdk, Inter + Roboto Condensed);
+  - Expo 57 patch updates and an expo-constants pin to 57.0.21;
+  - expo-doctor 21/21, typecheck 31/31.
+- Not merged (left in their worktrees): a48b's "relayed gas" WIP (the budget design supersedes it) and affd's "contacts on other chains" WIP (the Routes lane finishes it in Stage 3).
+- Keys from Codex #1 are in `.env`: Privy (app id, secret, client id), Uniswap, 0x. Codex #2 (Coinbase CDP + Circle KYB read) and #3 (Resend) briefs are in `plan/prompts/`.
+- Local Postgres: OrbStack had stopped. Started `deploy-postgres-1` (5433).
+
+**Running:**
+- L6 business removal (Sonnet, worktree; agent background).
+- Stage 2 workflow `wf_74fe5a08-c7c`: L1 look, L3 budget, L4 routes, L5 buy-market, L7 wallet (builder → reviewer → fixer).
+- L2 front door and L6 desktop start after business removal merges, since they share agent/chat files.
+
+**Not yet pushed or deployed:** main has the merges and the shared base. Push once business removal is merged (Coolify auto-deploys api and web from main).
+
+**Owner:** run the Codex #2 and #3 briefs; back up `~/.kawase-secrets`; fund mainnet ops and relayer by Friday.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 

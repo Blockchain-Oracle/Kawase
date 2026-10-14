@@ -16,6 +16,7 @@ export const withdraw: Catalog["withdraw"] = {
   asCash: "En liquidités (USDC)",
   youReceive: "Vous recevez",
   sendAsCash: "L'envoyer plutôt en liquidités",
+  moveAsItself: "Déplacer {{symbol}} tel quel",
   routeTransfer: "Transfert sur {{chain}}",
   routeBridge: "Pont vers {{chain}}",
   routeConvertTransfer: "Conversion en USDC, puis transfert sur {{chain}}",

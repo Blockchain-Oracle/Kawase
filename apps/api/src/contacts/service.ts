@@ -19,6 +19,7 @@ import {
 import type { NetworkId } from "@kawase/networks";
 
 import { HTTP, problem } from "../http/problem";
+import { blockedSets } from "./blocks";
 
 const ARC = "arc";
 const HANDLE_PREFIX = "@";
@@ -44,6 +45,9 @@ export async function addressForHandle(db: Executor, handle: string) {
 }
 
 export class ContactService {
+  /** Told when a contact's address changes (automations paying the old one pause until reviewed). */
+  onAddressChange?: (userId: string, oldAddress: string, name: string) => Promise<void>;
+
   constructor(private readonly db: Db) {}
 
   /** A pending address whose cooldown has passed becomes the contact's address; the old one is retired. */
@@ -130,6 +134,7 @@ export class ContactService {
             ),
           )
       : [];
+    const blocked = await blockedSets(this.db, rows[0]!.userId);
     return rows.map((row) => {
       const own = addresses.filter((address) => address.contactId === row.id);
       const active = own.find((address) => address.status === "active" && address.isPreferred);
@@ -162,6 +167,9 @@ export class ContactService {
               ]),
           ),
         })),
+        blocked:
+          Boolean(row.handle && blocked.handles.has(row.handle.toLowerCase())) ||
+          own.some((address) => address.status !== "retired" && blocked.addresses.has(address.address.toLowerCase())),
         createdAt: row.createdAt.toISOString(),
       };
     });
@@ -297,6 +305,8 @@ export class ContactService {
         cooldownEndsAt: activatesAt,
       });
     });
+    // Anything that pays the old address on its own stops until the person looks at it.
+    if (current && this.onAddressChange) await this.onAddressChange(userId, current.address, contact.displayName);
     return this.get(userId, id);
   }
 

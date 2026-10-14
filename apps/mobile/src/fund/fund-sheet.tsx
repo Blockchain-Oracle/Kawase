@@ -34,7 +34,9 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
+import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { MainnetConsentSheet } from "@/components/network-pill";
 
 const ROW_MARK = 36;
 const CHAIN_MARK = 28;
@@ -85,6 +87,13 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
 
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
+  // Exchanges and other chains carry real money only: on testnet the panel says so and offers the switch (R2).
+  const networkSwitch = useNetworkSwitch();
+  const switchRow = testnet ? (
+    <Button variant="secondary" disabled={networkSwitch.busy} onPress={() => void networkSwitch.switchNetwork("mainnet")}>
+      <Text>{t("markets.switchToMainnet")}</Text>
+    </Button>
+  ) : null;
   const account = status === "account";
   const hasWallet = Boolean(wallet?.address && wallet.networks[network]?.setUp);
   const networkName = testnet ? t("network.arcTestnet") : t("network.arc");
@@ -297,6 +306,7 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
             })}
           </ListGroup>
           <Text className={cn("text-muted-foreground px-1 text-sm leading-5", TEXT_START)}>{testnet ? t("fund.chainsTestnet") : t("fund.chainsHow")}</Text>
+          {switchRow}
           <Button variant="secondary" onPress={() => go("/wallet/receive")}>
             <Icon as={QrCode} className="size-5" />
             <Text>{t("fund.receiveTitle")}</Text>
@@ -332,6 +342,7 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
             })}
           </View>
           <Text className={cn("text-muted-foreground px-1 text-sm leading-5", TEXT_START)}>{testnet ? t("fund.exchangesTestnet") : t("fund.exchangeNoEurc")}</Text>
+          {switchRow}
         </>
       ) : exchange ? (
         <>
@@ -378,6 +389,7 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
           )}
         </>
       ) : null}
+      <MainnetConsentSheet open={networkSwitch.consentNeeded} busy={networkSwitch.busy} onAccept={() => void networkSwitch.acceptMainnet()} onClose={networkSwitch.dismissConsent} />
     </Sheet>
   );
 }

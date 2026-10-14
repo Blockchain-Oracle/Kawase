@@ -10,6 +10,7 @@ import { contactAddressTrust, intentDrafts, intents, users, wallets, type Db } f
 import type { NetworkId } from "@kawase/networks";
 import type { RecipientFacts } from "@kawase/policy";
 
+import { blockedRecipient } from "../contacts/blocks";
 import { addressForHandle, type ContactService } from "../contacts/service";
 
 const HEX_PREFIX = 2;
@@ -151,7 +152,16 @@ export class Recipients {
     };
   }
 
+  /**
+   * Who `input` is: a contact, an @handle or an address, with the facts the send rules read. Someone the person blocked
+   * comes back marked, so every rule that reads `blocked` refuses them (sends, automations, the agent).
+   */
   async resolve(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined): Promise<Resolution> {
+    const found = await this.find(user, network, input);
+    return found.facts.status === "resolved" && (await blockedRecipient(this.db, user.id, found.facts.address)) ? { ...found, facts: { ...found.facts, blocked: true } } : found;
+  }
+
+  private async find(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined): Promise<Resolution> {
     const text = (input ?? "").trim();
     if (!text) return { facts: { status: "missing" }, view: null, suggestions: [] };
     const self = user.walletAddress?.toLowerCase();

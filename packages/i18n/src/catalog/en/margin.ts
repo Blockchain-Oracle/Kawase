@@ -27,6 +27,8 @@ export const margin = {
   route: "Route",
   routeValue: "Aave V4 · {{venues}} · {{loops}} steps",
   risk: "Leverage can lose your whole margin. Liquidated at {{price}}.",
+  closeEndsProtection:
+    "Its take-profit and stop-loss end with it: the same signature switches off Kawase's permission to close it, on Arc.",
   slideLong: "Slide to open Long",
   slideShort: "Slide to open Short",
   slideClose: "Slide to close",

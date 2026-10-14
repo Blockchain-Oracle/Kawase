@@ -28,7 +28,7 @@ const inputSchema = z.object({
   timezone: z.string().max(ZONE_MAX).optional(),
   note: z.string().max(NOTE_MAX).nullable().optional(),
 });
-/** Payroll signs one grant per person. */
+/** The most grants one activation can sign. */
 const MAX_GRANTS = 20;
 const MAX_PERCENT = 100;
 const autoSaveSchema = z.object({
@@ -60,7 +60,6 @@ const ruleSchema = z.object({
   minOut: z.string().max(AMOUNT_MAX).optional(),
   roundTo: z.string().max(AMOUNT_MAX).optional(),
 });
-const TOKEN_MAX_LINES = 20;
 const scheduleFields = {
   every: z.enum(["day", "week", "month"]),
   weekday: z.number().int().min(0).max(MAX_WEEKDAY).optional(),
@@ -68,11 +67,6 @@ const scheduleFields = {
   time: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
   timezone: z.string().max(ZONE_MAX).optional(),
 };
-const payrollSchema = z.object({
-  ...scheduleFields,
-  lines: z.array(z.object({ recipient: z.string().min(1).max(RECIPIENT_MAX), amount: z.string().max(AMOUNT_MAX), asset: z.enum(["USDC", "EURC"]).optional() })).min(1).max(TOKEN_MAX_LINES),
-  note: z.string().max(NOTE_MAX).nullable().optional(),
-});
 const dcaSchema = z.object({ ...scheduleFields, from: z.string().min(1).max(TOKEN_MAX), to: z.string().min(1).max(TOKEN_MAX), amount: z.string().max(AMOUNT_MAX) });
 const editSchema = z.object({
   ...scheduleFields,
@@ -116,10 +110,6 @@ export function automationRoutes(automations: AutomationService) {
   app.post("/rule", async (c) => {
     const input = await parse(ruleSchema, await c.req.json());
     return c.json({ automation: await automations.createRule(c.get("user")!, input) }, HTTP.created);
-  });
-  app.post("/payroll", async (c) => {
-    const input = await parse(payrollSchema, await c.req.json());
-    return c.json({ automation: await automations.createPayroll(c.get("user")!, input) }, HTTP.created);
   });
   app.post("/dca", async (c) => {
     const input = await parse(dcaSchema, await c.req.json());

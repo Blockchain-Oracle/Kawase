@@ -62,7 +62,6 @@ import { movePolicy } from "./move-policy";
 import { lend } from "./lend";
 import { lendPolicy } from "./lend-policy";
 import { yieldOptions } from "./yield-options";
-import { business } from "./business";
 import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
@@ -85,6 +84,13 @@ import { places } from "./places";
 import { help } from "./help";
 import { fees } from "./fees";
 import { offline } from "./offline";
+import { lp } from "./lp";
+import { shell } from "./shell";
+import { feed } from "./feed";
+import { budget } from "./budget";
+import { routes } from "./routes";
+import { market402 } from "./market402";
+import { desktop } from "./desktop";
 
 export const zh: Catalog = {
   common,
@@ -149,7 +155,6 @@ export const zh: Catalog = {
   lend,
   lendPolicy,
   yieldOptions,
-  business,
   why,
   report,
   history,
@@ -172,4 +177,11 @@ export const zh: Catalog = {
   help,
   fees,
   offline,
+  lp,
+  shell,
+  feed,
+  budget,
+  routes,
+  market402,
+  desktop,
 };

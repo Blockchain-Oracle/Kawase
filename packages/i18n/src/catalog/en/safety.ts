@@ -125,4 +125,7 @@ export const safety = {
   practiceBuyAsk: "It would wait for your tap first. Nothing was paid.",
   practiceBuyTopUp: "Your agent wallet would need a top-up first. Nothing was paid.",
   practiceBuyNothing: "From your agent wallet. Nothing was paid.",
+  /** A real move refused because practice mode is on (409 practice_mode), and the way to turn it off. */
+  practiceRefused: "Practice mode is on, so nothing real moves. Turn it off in Wallet & limits to do this for real.",
+  practiceOpen: "Wallet & limits",
 } as const;

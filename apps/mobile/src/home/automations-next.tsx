@@ -3,7 +3,7 @@
 // rules that are watching, up to three rows; each opens Automations. Hidden while there are none (First steps
 // carries the first one).
 import { useFocusEffect, useRouter } from "expo-router";
-import { ArrowLeftRight, FlaskConical, PiggyBank, Radar, Send, Users } from "lucide-react-native";
+import { ArrowLeftRight, FlaskConical, PiggyBank, Radar, Send } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
 
@@ -34,7 +34,6 @@ export function useAutomationTitle() {
   const rule = useRuleText();
   return (automation: AutomationView): string => {
     if (automation.save) return t("automation.saveKeep", { amount: money("USDC", automation.save.keep) });
-    if (automation.payroll) return t("automation.payroll", { count: automation.payroll.lines.length });
     if (automation.dca)
       return t("automation.dca", {
         amount: formatTokenAmount(
@@ -61,13 +60,11 @@ const iconOf = (automation: AutomationView) =>
     ? FlaskConical
     : automation.save
       ? PiggyBank
-      : automation.payroll
-        ? Users
-        : automation.dca
-          ? ArrowLeftRight
-          : automation.rule
-            ? Radar
-            : Send;
+      : automation.dca
+        ? ArrowLeftRight
+        : automation.rule
+          ? Radar
+          : Send;
 
 /** The person's automations on this network, read when Home is in front (First steps and the section share it). */
 export function useHomeAutomations() {

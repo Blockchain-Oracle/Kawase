@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -68,7 +68,9 @@ import { OnrampService } from "./onramp/service";
 import { crossChainRoutes } from "./crosschain/routes";
 import { CrossChainService } from "./crosschain/service";
 import { lendRoutes } from "./lend/routes";
-import { venuePositions } from "./tokens/venue-positions";
+import { lpRoutes } from "./lp/routes";
+import { LpService } from "./lp/service";
+import { venueMarkets, venuePositions } from "./tokens/venue-positions";
 import { LendService } from "./lend/service";
 import { placeRoutes, withdrawRoutes } from "./withdraw/routes";
 import { WithdrawService } from "./withdraw/service";
@@ -87,10 +89,6 @@ import { markDeviceProof, requireDeviceProof } from "./auth/device-proof";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
-import { InvoiceService } from "./business/invoices";
-import { PayoutService } from "./business/payouts";
-import { tokenResolver } from "./business/tokens";
-import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { PrivacyService } from "./history/privacy";
 import { ExportLinks } from "./history/export-link";
 import { exportFileRoutes, historyRoutes, privacyRoutes } from "./history/routes";
@@ -115,6 +113,7 @@ import { PayCodeService } from "./paycodes/service";
 import { splitRoutes } from "./splits/routes";
 import { SplitService } from "./splits/service";
 import { intentRoutes } from "./intents/routes";
+import { BlockService, blockRoutes } from "./contacts/blocks";
 import { discoveryRoutes } from "./contacts/discovery";
 import { WalletService } from "./wallet/service";
 
@@ -209,6 +208,7 @@ export function createApp(deps: AppDeps) {
     async (user) => (await earn.overview(user)).positions,
     // Loans with their health and long/short positions with their P&L count in the total too (created further down).
     venuePositions({ lend: () => lend, margin: () => margin }),
+    venueMarkets(() => margin),
   );
   if (deps.marketWarmMs) assets.startWarmer(deps.marketWarmMs);
   const sends = new SendService(
@@ -236,6 +236,8 @@ export function createApp(deps: AppDeps) {
   const needsYou = new NeedsYouService(deps.db, inbox, deps.log);
   needsYou.bind({ sends, swaps });
   const lend = new LendService(deps.db, deps.chains, wallets, earn, deps.log);
+  // Aero LP rides with earn and borrow: its pools are yield options, its positions count with the others.
+  lend.lp = new LpService(deps.chains, wallets, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
   withdrawalRuns.bind({ sends, swaps, crosschain });
@@ -255,6 +257,8 @@ export function createApp(deps: AppDeps) {
   );
   // Round-ups: each of the person's own completed sends gives every round-up rule one run.
   sends.onSent((sent) => automations.queueRoundUps(sent));
+  // A contact's new address: the automations paying the old one pause until the person reviews them.
+  contacts.onAddressChange = (userId, oldAddress, name) => automations.pauseForAddressChange(userId, oldAddress, name);
   if (deps.automationTickMs) automations.start(deps.automationTickMs);
   const audit = new AuditWriter(deps.db, deps.log);
   needsYou.setAudit(audit);
@@ -364,7 +368,7 @@ export function createApp(deps: AppDeps) {
   // their own pipelines. On every other money route only the writes listed here go through — drafting, revising,
   // cancelling, asking for what to sign, settings, turning something off — so approving, signing, submitting, activating
   // or moving money for real is refused plainly, before anything is signed. A write added later is refused until listed.
-  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|business|marketplace)(\/|$)/;
+  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|marketplace)(\/|$)/;
   const PRACTICE_SAFE: readonly (readonly [method: string, path: RegExp])[] = [
     ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)$/],
     ["PATCH", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+$/],
@@ -376,9 +380,6 @@ export function createApp(deps: AppDeps) {
     // A withdrawal: its plan, starting it and drafting its next step (each step is approved on its own, guarded route).
     ["POST", /^\/withdrawals(\/plan)?$/],
     ["POST", /^\/withdrawals\/[^/]+\/(next|cancel)$/],
-    ["PUT", /^\/business\/profile$/],
-    ["POST", /^\/business\/(invoices|payouts)$/],
-    ["POST", /^\/business\/invoices\/[^/]+\/cancel$/],
     // The agent wallet's settings and the grant to sign; a purchase decision only records it (a buy in practice pays nothing).
     ["PATCH", /^\/marketplace\/agent-wallet\/settings$/],
     ["POST", /^\/marketplace\/agent-wallet\/grant$/],
@@ -400,6 +401,7 @@ export function createApp(deps: AppDeps) {
   app.route("/onramp", onrampRoutes(onramp));
   app.route("/crosschain", crossChainRoutes(crosschain));
   app.route("/lend", lendRoutes(lend));
+  app.route("/lp", lpRoutes(lend.lp));
   app.route("/withdrawals", withdrawRoutes(withdraw, withdrawalRuns));
   app.route("/places", placeRoutes(withdraw));
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
@@ -413,18 +415,13 @@ export function createApp(deps: AppDeps) {
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
   app.route("/safety", safetyRoutes(safety));
-  const resolveToken = tokenResolver(assets);
-  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
-  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
   if (deps.watchIntervalMs) requests.start(REQUEST_REMINDER_TICK_MS, deps.log);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken, tokenLookup(deps.chains, assets));
-  app.route("/business", businessRoutes({ invoices, payouts }));
-  app.route("/invoices/public", publicInvoiceRoutes(invoices));
   // Everyday money (A5-2): scan to pay.
-  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
+  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
   app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
+  app.route("/blocks", blockRoutes(new BlockService(deps.db)));
   const history = new HistoryService(deps.db, deps.chains, wallets, contacts, deps.log);
   const privacy = new PrivacyService(deps.db, audit, deps.log);
   if (deps.watchIntervalMs) privacy.start(RETENTION_SWEEP_MS);
@@ -441,9 +438,8 @@ export function createApp(deps: AppDeps) {
   const agentDeps = {
     deviceProofRequired: deps.deviceProofRequired,
     marketplace,
-    invoices,
     history,
-    business: { payouts, account, exportLinks, fees },
+    account: { service: account, exportLinks, fees },
     fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,
@@ -473,7 +469,7 @@ export function createApp(deps: AppDeps) {
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
   app.route("/search", searchRoutes(new SearchService(deps.db)));
-  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin)));
+  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin, { bridges, marketplace })));
   // Dependency health, public (the status card, docs and landing), cached for half a minute.
   const status = new StatusService(deps.db, deps.chains);
   app.get("/status", async (c) => c.json(await status.view()));

@@ -1,15 +1,14 @@
 // Scan to pay (plan §A.4.4): a code read by the scanner (or pasted, or seen in chat) becomes the flow it asks for,
 // on the active network: an address (with the amount and currency an EIP-681 link carried) opens Send filled in —
-// where the recipient check runs as always —, a Kawase request or invoice link opens its pay page. What cannot be
+// where the recipient check runs as always —, a Kawase request link opens its pay page. What cannot be
 // paid here says why (R2): the other Arc network (switch first), another chain, a token Kawase does not send here,
 // a request that is paid, expired or cancelled.
-import { erc20Abi, formatUnits, getAddress } from "viem";
+import { erc20Abi, getAddress } from "viem";
 
 import type { PayCodeView } from "@kawase/api-client";
 import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES, type NetworkId } from "@kawase/networks";
 import { PUBLIC_LINKS } from "@kawase/config";
 
-import type { InvoiceService } from "../business/invoices";
 import type { RequestService } from "../requests/service";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
@@ -46,7 +45,6 @@ export class PayCodeService {
 
   constructor(
     private readonly requests: RequestService,
-    private readonly invoices: InvoiceService | undefined,
     webUrl: string | undefined,
     /** For an unknown token's decimals (any ERC-20 on Arc). */
     private readonly chains?: Chains | undefined,
@@ -74,31 +72,10 @@ export class PayCodeService {
       try {
         request = await this.requests.openPublic(parsed.token);
       } catch {
-        // An invoice in any token has its own link and no payment request: pay what is left of it with Send, carrying
-        // the invoice's on-chain reference (Arc Memo), so the business's books match it by memoId.
-        const invoice = this.invoices ? await this.invoices.publicView(parsed.token).catch(() => undefined) : undefined;
-        if (!invoice) return { status: "unsupported", reason: "not_found" };
-        if (invoice.status === "paid" || invoice.status === "canceled") return { status: "unsupported", reason: "request_closed", network: invoice.network };
-        if (invoice.network !== network) return { status: "unsupported", reason: "other_network", network: invoice.network };
-        const remaining = BigInt(invoice.remaining);
-        return {
-          status: "send",
-          network,
-          to: invoice.payTo,
-          amount: remaining > BigInt(0) ? formatUnits(remaining, invoice.decimals) : null,
-          asset: invoice.tokenAddress ?? invoice.asset,
-          memo: invoice.number,
-          memoId: invoice.memoId,
-        };
+        return { status: "unsupported", reason: "not_found" };
       }
       if (request.status !== "open") return { status: "unsupported", reason: "request_closed", network: request.network };
-      const invoice = this.invoices ? await this.invoices.publicView(parsed.token).catch(() => undefined) : undefined;
-      return {
-        status: "request",
-        token: parsed.token,
-        request,
-        invoice: invoice ? { number: invoice.number, business: invoice.business.name ?? null } : null,
-      };
+      return { status: "request", token: parsed.token, request };
     }
 
     if (parsed.kind !== "address") return { status: "unsupported", reason: "not_a_payment" };

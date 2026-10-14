@@ -22,6 +22,7 @@ import {
   INTENT_TTL_S,
   MARGIN,
   MARGIN_MARKET_ALIASES,
+  MARGIN_PROTECTION,
   MAX_FEE_DRAFT_MULTIPLIER,
   MS_PER_SECOND,
   SEND_UNKNOWN_AFTER_S,
@@ -660,7 +661,8 @@ export class MarginService {
     let view: MarginDraftView | null = null;
     if (wallet && venue && usdc && market && side && plan && clients) {
       const { maxFeePerGas } = await walletGasPrice(clients.client);
-      const gas = MARGIN.gasBase + MARGIN.gasPerLoop * BigInt(plan.loops + 1);
+      const disables = await this.protectionDisables(user.id, intent.network, request.action, fractionBps, position);
+      const gas = MARGIN.gasBase + MARGIN.gasPerLoop * BigInt(plan.loops + 1) + MARGIN_PROTECTION.disableGas * BigInt(disables.length);
       const fee = ((gas * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
       const open = request.action === "open";
       const collateralReserve = side === "long" ? market : usdc;
@@ -716,6 +718,7 @@ export class MarginService {
         loops: plan.loops,
         venues: plan.venues,
         fees: { network: feeInUsdc(fee).toString() },
+        protectionOff: disables.length > 0,
         provider: PROVIDER,
         quotedAt: new Date().toISOString(),
       };
@@ -844,7 +847,8 @@ export class MarginService {
     if (!holds) return this.redraft(user, intentId);
 
     const { network, client } = this.clients(before.network);
-    const data = encodeSelfBatch(plan.calls).toLowerCase() as Hex;
+    const disables = await this.protectionDisables(user.id, before.network, (before.request as StoredRequest).action, fresh.fractionBps, fresh.position);
+    const data = encodeSelfBatch([...plan.calls, ...disables]).toLowerCase() as Hex;
     // The whole batch, run against the chain as it is now, from the wallet: a revert stops it here, not on chain.
     try {
       await client.call({ account: draft.from, to: draft.from, data });
@@ -865,7 +869,7 @@ export class MarginService {
       walletGasPrice(client),
       client.estimateGas({ account: draft.from, to: draft.from, data }).catch((error: unknown) => {
         this.log.warn({ err: error, intentId }, "margin gas estimate failed");
-        return MARGIN.gasBase + MARGIN.gasPerLoop * BigInt(plan.loops + 1);
+        return MARGIN.gasBase + MARGIN.gasPerLoop * BigInt(plan.loops + 1) + MARGIN_PROTECTION.disableGas * BigInt(disables.length);
       }),
     ]);
     const gas = (estimate * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT;
@@ -909,6 +913,12 @@ export class MarginService {
     });
     if (outcome.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
     return { status: "sign", intent: await this.view(user.id, intentId), approvalId: outcome.approvalId, transaction };
+  }
+
+  /** A full close of a position that has take-profit/stop-loss grants: their on-chain disables, carried by the close's own batch. */
+  private async protectionDisables(userId: string, network: NetworkId, action: StoredRequest["action"], fractionBps: number, position: PositionRow | undefined) {
+    if (action !== "close" || fractionBps < FULL_BPS || !position || !this.protection) return [];
+    return this.protection.disableCalls(userId, network, position.id);
   }
 
   private async redraft(user: SessionUser, intentId: string): Promise<MarginApproveResponse> {
@@ -1085,6 +1095,8 @@ export class MarginService {
       return id;
     });
     if (!open) await this.tellProtective(intent, "closed", BigInt(view.returnedMin));
+    // Closed for good: its protection grants are done (disabled in the person's own batch, or spent by Kawase's close).
+    if (!open && positionId && draft.fractionBps >= FULL_BPS) await this.protection?.closed(intent.userId, intent.network, positionId, attempt).catch((error: unknown) => this.log.warn({ err: error, positionId }, "protection grants not set aside"));
     // Added to: past what its protection grants let Kawase move, the position stops being watched and asks again.
     if (open && positionId) await this.protection?.resized(intent.userId, intent.network, positionId).catch((error: unknown) => this.log.warn({ err: error, positionId }, "protection resize check failed"));
   }

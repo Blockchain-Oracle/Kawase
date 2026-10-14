@@ -10,6 +10,5 @@ export const report: Catalog["report"] = {
   earn: "Операции со сбережениями: {{count}}",
   services: "{{amount}} на сервисы ({{count}})",
   automations: "Автоматизации: выполнено {{ran}}, пропущено {{skipped}}",
-  invoices: "Оплачено счетов: {{count}} ({{amount}})",
   partial: "Удалось прочитать только последнюю часть этой недели.",
 };

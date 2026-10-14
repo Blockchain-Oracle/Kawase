@@ -20,4 +20,5 @@ export const errors: Catalog["errors"] = {
   biometricUnavailableAndroid: "स्वीकार करने के लिए फ़ोन की सेटिंग्स में फ़िंगरप्रिंट या स्क्रीन लॉक सेट करें।",
   biometricFailed: "मेल नहीं खाया। कुछ भी साइन नहीं हुआ। फिर कोशिश करें।",
   tryAgainIn: "{{time}} बाद फिर कोशिश करें",
+  deviceProofNeeded: "इसे मंज़ूर करने के लिए इस फ़ोन पर फिर से साइन इन करें। कुछ भी नहीं भेजा गया।",
 };

@@ -22,7 +22,7 @@ import { MARGIN, MARGIN_PROTECTION, MS_PER_SECOND } from "@kawase/config";
 import type { MarginProtectionChange, MarginProtectionGrantRequest, MarginProtectionOff, MarginProtectionResult, MarginProtectionView } from "@kawase/api-client";
 import { accountHealth, grants, intents, marginPositions, type Db } from "@kawase/db";
 import { hasNoDebt, readAccount, valueOf } from "@kawase/integrations-aave-v4";
-import { buildProtectGrants, describeGrant, grantTypedData, isWalletSetUp, PROTECT_PURPOSES, withSignature, type ProtectGrants, type ProtectPurpose, type ProtectScope } from "@kawase/integrations-delegation";
+import { buildProtectGrants, describeGrant, encodeRevoke, grantTypedData, isWalletSetUp, PROTECT_PURPOSES, withSignature, type ProtectGrants, type ProtectPurpose, type ProtectScope } from "@kawase/integrations-delegation";
 import type { Logger } from "@kawase/log";
 import { AAVE_V4, type NetworkId } from "@kawase/networks";
 
@@ -272,6 +272,31 @@ export class MarginProtection {
         .where(and(eq(marginPositions.userId, user.id), eq(marginPositions.network, network), eq(marginPositions.protection, "armed"), ...(positionId ? [eq(marginPositions.id, positionId)] : [])));
     });
     return { ...(await this.view(user, positionId)), revoke };
+  }
+
+  /**
+   * The person's own full close takes the position's protection grants with it: the `disableDelegation` calls its batch
+   * carries (live grants only, the account-wide ones from before included; expired ones are dead on chain already), so
+   * nothing stays signed behind a closed position. One signature for both.
+   */
+  async disableCalls(userId: string, network: NetworkId, positionId: string): Promise<{ to: Address; data: Hex }[]> {
+    const clients = this.chains.get(network);
+    if (!clients) return [];
+    return (await this.rows(userId, network, positionId)).filter(live).map((row) => encodeRevoke(clients.network, row.delegation as never));
+  }
+
+  /**
+   * The position closed. The person's own close disabled its grants in the same batch: revoked. A protective close spent
+   * the capped approvals (what is left can move nothing): set aside, and the account-wide ones from before stay as they were.
+   */
+  async closed(userId: string, network: NetworkId, positionId: string, attempt: { id: string; kind: string }) {
+    const protective = attempt.kind === "margin_protect";
+    const rows = (await this.rows(userId, network, positionId)).filter((row) => !protective || receiptOf(row).positionId === positionId);
+    if (rows.length === 0) return;
+    await this.db
+      .update(grants)
+      .set(protective ? { status: "superseded" } : { status: "revoked", revokeTxAttemptId: attempt.id })
+      .where(inArray(grants.id, rows.map((row) => row.id)));
   }
 
   /** A position just grew (the person added to it): past what its grants let Kawase move, it stops being watched and its page asks again. */

@@ -1,4 +1,4 @@
-// Automations 8c (cards/automate-safety.md "Automate anything"): payroll and DCA, rules that send to others, swap, act
+// Automations 8c (cards/automate-safety.md "Automate anything"): DCA, rules that send to others, swap, act
 // on a price or round up, practice runs, editing in place, and the Needs-you queue.
 import type { AutomationGrantRequest, NetworkId, SendIntent, SwapIntent, RevokeRequest, SignedRevokeInput } from "./types";
 
@@ -11,19 +11,9 @@ type ScheduleFields = {
   timezone?: string | undefined;
 };
 
-/** Payroll: several people on one schedule; each line is its own grant pinned to that person. */
-export type PayrollAutomationInput = ScheduleFields & {
-  lines: { recipient: string; amount: string; asset?: "USDC" | "EURC" | undefined }[];
-  note?: string | null | undefined;
-};
-
 /** DCA: "buy $10 of ARGUS every day". Tokens as the person said them (a symbol, USDC/EURC, or an address). */
 export type DcaInput = ScheduleFields & { from: string; to: string; amount: string };
 
-export type PayrollAutomationView = {
-  lines: { recipientWords: string; recipientName: string | null; recipientAddress: string | null; asset: "USDC" | "EURC"; amount: string }[];
-  note: string | null;
-};
 export type DcaView = { tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amount: string };
 
 /** An edit in place: narrowing applies at once; widening answers with the new grant to sign (and the old one's revoke). */
@@ -97,7 +87,6 @@ export type NeedsYouApi = {
 };
 
 export type AutomationsMoreApi = {
-  payroll: (input: PayrollAutomationInput) => Promise<{ automation: import("./types").AutomationView }>;
   dca: (input: DcaInput) => Promise<{ automation: import("./types").AutomationView }>;
   /** Turn a draft on in practice: no grant; runs are "would have". */
   practice: (id: string) => Promise<{ automation: import("./types").AutomationView }>;

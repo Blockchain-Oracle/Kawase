@@ -127,4 +127,6 @@ export const safety: Catalog["safety"] = {
   practiceBuyAsk: "كان سينتظر نقرتك أولًا. لم يُدفع شيء.",
   practiceBuyTopUp: "كانت محفظة الوكيل ستحتاج إلى تعبئة أولًا. لم يُدفع شيء.",
   practiceBuyNothing: "من محفظة الوكيل. لم يُدفع شيء.",
+  practiceRefused: "وضع التدريب مُفعَّل، لذلك لا يتحرك أي مال فعليًا. أوقفه من «المحفظة والحدود» لتنفيذ ذلك فعليًا.",
+  practiceOpen: "المحفظة والحدود",
 };

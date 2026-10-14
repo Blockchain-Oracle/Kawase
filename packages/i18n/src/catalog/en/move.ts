@@ -57,6 +57,7 @@ export const move = {
   provider_debridge: "deBridge",
   via: "via {{bridge}}",
   convertFirst: "swapped to USDC on {{venue}} first",
+  approveFirst: "two steps: an approval there first (paid in {{coin}}), then one signature",
   feeOnTop: "+ {{amount}} fee",
   arrivesAs: "Arrives as {{asset}}",
   gasThere: "Paid on {{chain}}",

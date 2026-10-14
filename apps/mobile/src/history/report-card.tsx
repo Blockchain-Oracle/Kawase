@@ -1,6 +1,6 @@
 // The weekly report card (cards/automate-safety.md "Records: weekly report card"): what came in and went out per
 // currency, then the week's moves in one line each — swaps, bridges, earn, what the agent spent on services,
-// automations that ran or skipped, invoices paid. Shown on Activity and in chat.
+// automations that ran or skipped. Shown on Activity and in chat.
 import { View } from "react-native";
 
 import type { ReportView } from "@kawase/api-client";
@@ -22,7 +22,7 @@ export function ReportCard({ report, compact }: { report: ReportView; compact?: 
   const price = usePrice();
   const sums = (bucket: Record<string, string>) =>
     Object.entries(bucket)
-      .map(([asset, baseUnits]) => formatTokenAmount(BigInt(baseUnits), report.decimals?.[asset] ?? STABLE_DECIMALS, asset, locale))
+      .map(([asset, baseUnits]) => formatTokenAmount(BigInt(baseUnits), STABLE_DECIMALS, asset, locale))
       .join(" · ") || "—";
   const lines = [
     report.counts.swaps > 0 ? t("report.swaps", { count: String(report.counts.swaps) }) : null,
@@ -30,7 +30,6 @@ export function ReportCard({ report, compact }: { report: ReportView; compact?: 
     report.counts.earn > 0 ? t("report.earn", { count: String(report.counts.earn) }) : null,
     report.services.purchases > 0 ? t("report.services", { amount: price(report.services.spent), count: String(report.services.purchases) }) : null,
     report.automations.ran + report.automations.skipped > 0 ? t("report.automations", { ran: String(report.automations.ran), skipped: String(report.automations.skipped) }) : null,
-    report.invoices.paid > 0 ? t("report.invoices", { count: String(report.invoices.paid), amount: sums(report.invoices.amount) }) : null,
   ].filter((line): line is string => Boolean(line));
   return (
     <View className={cn("bg-card border-border gap-3 rounded-3xl border", compact ? "p-0 border-0 bg-transparent" : "p-4")}>

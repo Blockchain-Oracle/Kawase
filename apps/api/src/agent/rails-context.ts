@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { formatUnits } from "viem";
 
 import type { AgentContext } from "@kawase/agent";
-import type { CrossChainIntent, LendIntent, YieldOptionsView, MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
+import type { CrossChainIntent, LendIntent, LpPositionsView, LpQuoteView, YieldOptionsView, MarginIntent, MarginMarketsView, MarginPositionView, MarginSummary } from "@kawase/api-client";
 import { intents, type Db } from "@kawase/db";
 
 import type { MarginService } from "../margin/service";
@@ -152,6 +152,34 @@ function summarizeLend(intent: LendIntent): string {
   return blocking ? `${line} Blocked: ${blocking}` : line;
 }
 
+const LP_REASONS: Record<string, string> = {
+  insufficient_balance: "Not enough in the wallet for that.",
+  below_minimum: "That is too little to provide liquidity with (under $1).",
+};
+
+/** Significant digits for an LP amount or price in a summary. */
+const LP_DIGITS = 4;
+const ZERO_UNITS = 0n;
+const LP_PRICE_DIGITS = 5;
+const whole = (raw: string, decimals: number) => Number(formatUnits(BigInt(raw), decimals)).toPrecision(LP_DIGITS);
+
+function summarizeLpQuote(quote: LpQuoteView): string {
+  const { pool, range } = quote;
+  const put = `${whole(quote.deposit.amount0, pool.token0.decimals)} ${pool.token0.symbol} + ${whole(quote.deposit.amount1, pool.token1.decimals)} ${pool.token1.symbol}`;
+  const bought = quote.swap ? ` (buying the ${quote.swap.symbolOut} side with ${whole(quote.swap.amountIn, quote.swap.decimalsIn)} ${quote.swap.symbolIn} in the same batch)` : "";
+  const rewards = pool.rewardApr !== null ? ` and Merkl's about ${pct(pool.rewardApr)} a year in USDC` : "";
+  const line = `Aero ${pool.pair}: ${whole(quote.amount, pool.token0.symbol === quote.asset ? pool.token0.decimals : pool.token1.decimals)} ${quote.asset} goes in as about ${put}${bought}, in a range of ${pool.base} ${range.lower.toPrecision(LP_PRICE_DIGITS)}–${range.upper.toPrecision(LP_PRICE_DIGITS)} USDC (now ${range.price.toPrecision(LP_PRICE_DIGITS)}). It earns the pool's fees${rewards} while ${pool.base} stays in that range; outside it earns nothing and ends all in one side (impermanent loss). The card opens the LP screen; one Face ID.`;
+  return quote.reason ? `${line} Blocked: ${LP_REASONS[quote.reason] ?? quote.reason}` : line;
+}
+
+function summarizeLpPositions(view: LpPositionsView, action: "withdraw" | "claim"): string {
+  const positions = view.positions.map((position) => `#${position.id} ${position.pool.pair} ${dollars(position.valueUsd)} (${position.inRange ? "in range" : "out of range"})`).join("; ");
+  const claimable = view.rewards.filter((reward) => BigInt(reward.claimable) > ZERO_UNITS).map((reward) => `${whole(reward.claimable, reward.token.decimals)} ${reward.token.symbol}`).join(", ");
+  const head = positions ? `Aero positions: ${positions}.` : "No Aero positions in this wallet.";
+  const rewards = claimable ? ` Merkl rewards claimable now: ${claimable}.` : " No Merkl rewards to claim yet (they arrive in Merkl's next update after fees are earned in range).";
+  return `${head}${rewards} The card opens the LP screen to ${action === "withdraw" ? "withdraw a position (both sides back, fees included)" : "claim"}; one Face ID.`;
+}
+
 const BUY_REASONS = {
   sign_in: "The person must sign in first; the card opens sign-in and comes back.",
   no_wallet: "The wallet is not set up yet.",
@@ -205,6 +233,23 @@ export function railsContext(input: {
         async compareYield(request) {
           const view = await lend.options(user, request.asset, request.amount);
           return { ...view, summary: summarizeOptions(view) };
+        },
+        async proposeLp(request) {
+          const lp = lend.lp;
+          if (!lp || network !== "mainnet") return { network, action: request.action, pools: [], quote: null, positions: null, refused: "lp_unavailable", summary: "Aero LP is on Arc mainnet; offer to switch." };
+          const pools = await lp.pools();
+          if (request.action !== "deposit") {
+            const positions = await lp.positions(user);
+            return { network, action: request.action, pools, quote: null, positions, refused: null, summary: summarizeLpPositions(positions, request.action) };
+          }
+          if (!request.amount) return { network, action: "deposit", pools, quote: null, positions: null, refused: "amount_missing", summary: `How much? Pools: ${pools.map((pool) => `${pool.pair} ${pool.rewardApr !== null ? pct(pool.rewardApr) : "—"} rewards a year`).join("; ")}.` };
+          try {
+            const quote = await lp.quote(user, { pool: request.pool, asset: request.asset, amount: request.amount });
+            return { network, action: "deposit", pools, quote, positions: null, refused: quote.reason, summary: summarizeLpQuote(quote) };
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+            return { network, action: "deposit", pools, quote: null, positions: null, refused: "not_found", summary: `Could not quote that: ${detail}. Kawase deposits into ${pools.map((pool) => pool.pair).join(", ")}.` };
+          }
         },
         async proposeLend(request) {
           await db

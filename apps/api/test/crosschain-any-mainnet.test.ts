@@ -1,7 +1,8 @@
 // Any asset across chains through the api, against Arc mainnet and the providers (no funds move): WETH out to a
 // friend on Base arrives as WETH; a meme with no route as itself arrives as USDC (an aggregator's own swap or Kawase's
 // convert-first plan); USDC out now compares five providers with deBridge's flat fee counted; Bring to Arc of Base's
-// own ETH is one LI.FI transaction there and arrives as WETH. The wallet holds nothing, so drafts wait for money; the
+// own ETH is one LI.FI transaction there and arrives as WETH; Base's WETH, never approved to Permit2, comes in two
+// steps through Relay. The wallet holds nothing, so drafts wait for money; the
 // batches run in test/crosschain-any.sim.ts. Run: tsx --test test/crosschain-any-mainnet.test.ts (DATABASE_URL set).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -96,6 +97,14 @@ test("crosschain: any asset out of Arc as itself or as USDC, and the chain's own
   assert.equal(eth.draft?.output?.symbol, "WETH");
   assert.deepEqual([eth.draft?.source.key, eth.draft?.networkFee], ["base", "0"]);
   assert.ok(eth.results.some((result) => result.code === "INSUFFICIENT_BALANCE"), JSON.stringify(eth.results));
+
+  // Bring Base's WETH to Arc from an address that never approved it to Permit2: Relay in two steps (the approval there,
+  // paid in ETH, then the signature), offered rather than refused; this wallet holds none, so it waits for money.
+  const wethIn = await order({ direction: "in", source: "base", asset: "WETH", amount: "0.001" });
+  const relay = wethIn.draft?.routes.find((route) => route.provider === "relay");
+  console.log(`0.001 WETH from Base: ${describe(wethIn)}; two steps: ${JSON.stringify(relay?.approveFirst)}; blocked by ${wethIn.blocking?.code}`);
+  assert.ok(relay?.executable && relay.approveFirst?.coin === "ETH" && BigInt(relay.approveFirst.gas) > 0n, JSON.stringify(wethIn.draft?.routes));
+  assert.ok(wethIn.results.some((result) => result.code === "INSUFFICIENT_BALANCE"), JSON.stringify(wethIn.results));
 
   // An asset Kawase cannot find asks which one.
   const unknown = await order({ asset: "NOPE-TOKEN", destination: "base", amount: "1" });

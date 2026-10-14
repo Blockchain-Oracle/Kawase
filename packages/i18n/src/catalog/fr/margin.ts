@@ -29,6 +29,8 @@ export const margin: Catalog["margin"] = {
   route: "Itinéraire",
   routeValue: "Aave V4 · {{venues}} · {{loops}} étapes",
   risk: "Le levier peut vous faire perdre toute votre marge. Liquidation à {{price}}.",
+  closeEndsProtection:
+    "Sa prise de profit et son stop-loss s'arrêtent avec elle : la même signature retire sur Arc la permission de Kawase de la clôturer.",
   slideLong: "Glissez pour ouvrir le long",
   slideShort: "Glissez pour ouvrir le short",
   slideClose: "Glissez pour fermer",

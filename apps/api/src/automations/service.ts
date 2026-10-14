@@ -16,7 +16,7 @@
 // automation and time), checks the send rules again on fresh facts, and has the ops wallet redeem that grant; a
 // run that cannot go is skipped with its reason and the person is told. Pausing stops runs at once; cancelling
 // stops them and hands the wallet the revoke transaction for the grant.
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { encodeFunctionData, erc20Abi, formatUnits, getAddress, hashTypedData, parseUnits, verifyTypedData, type Address, type Hex, type TypedDataDefinition } from "viem";
 
@@ -31,7 +31,6 @@ import type {
   AutomationEdit,
   AutomationEditResponse,
   DcaInput,
-  PayrollAutomationInput,
   RuleInput,
   RuleView,
   SimulatedRun,
@@ -52,7 +51,6 @@ import {
   type AutoSaveAction,
   type AutomationAction,
   type DcaAction,
-  type PayrollAction,
   type RuleAction,
   type AutomationMove,
   type AutomationSchedule,
@@ -78,7 +76,7 @@ import { isValidTimeZone, nextRuns, schedulePeriodSeconds } from "@kawase/intent
 import type { Logger } from "@kawase/log";
 import type { AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
-import { evaluateAutoSave, evaluateAutomation, evaluateDca, evaluateRule, result as policyResult, type AmountFacts, type PolicyResult } from "@kawase/policy";
+import { evaluateAutoSave, evaluateAutomation, evaluateDca, evaluateRule, type AmountFacts, type PolicyResult } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
 import type { BridgeService } from "../bridge/service";
@@ -122,6 +120,8 @@ const nowSeconds = () => Math.floor(Date.now() / MS_PER_SECOND);
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 /** Auto-save's runs that found nothing to move: kept (each check is claimed once) but not shown. */
 const NOTHING_TO_MOVE = "NOTHING_TO_MOVE";
+/** The recipient's address changed: paused until the person reviews it. */
+const CONTACT_ADDRESS_CHANGED = "CONTACT_ADDRESS_CHANGED";
 /** Reasons a run stops without telling the person (they chose it, or there was nothing to do). */
 const QUIET_REASONS = new Set([NOTHING_TO_MOVE, "PAUSED_ALL"]);
 /** A balance rule is looked at this often (and at once when money arrives). */
@@ -142,16 +142,9 @@ const PRICE_CHECK_MS = 120_000;
 const REMIND_AHEAD_MS = 86_400_000;
 const REMINDED_SCHEDULES: ReadonlySet<string> = new Set(["week", "month"]);
 const SIMULATED_RUNS = 3;
-const UUID_HEX = 32;
-const PAYROLL_MAX_LINES = 20;
 const MS_PER_DAY = SECONDS_PER_DAY * MS_PER_SECOND;
-
-/** A payroll line's own intent id, fixed by the run's id and the line: a retried run resumes each line, never repeats it. */
-export function lineIntentId(runIntentId: string, line: number): string {
-  const hex = createHash("sha256").update(`${runIntentId}:line:${line}`).digest("hex").slice(0, UUID_HEX);
-  // Shaped as a version-4, RFC 4122 variant uuid: the version nibble is 4 and the variant nibble 8 (Postgres stores any).
-  return hex.replace(/^(.{8})(.{4}).(.{3}).(.{3})(.{12})$/, "$1-$2-4$3-8$4-$5");
-}
+/** Payroll is retired (migration 0090): Postgres cannot drop an enum value, so rows of this kind may remain; they stay out of sight. */
+const RETIRED_KIND = "payroll";
 
 /**
  * What an Auto-save check does now: above what it keeps (never less than the gas float the wallet needs for its own
@@ -364,11 +357,9 @@ export class AutomationService {
         ? await this.draftSave(user, row.network, row.request as AutoSaveInput, row.id)
         : row.kind === "rule"
           ? await this.draftRule(user, row.network, row.request as unknown as RuleInput)
-          : row.kind === "payroll"
-            ? await this.draftPayroll(user, row.network, row.request as unknown as PayrollAutomationInput)
-            : row.kind === "dca"
-              ? await this.draftDca(user, row.network, row.request as unknown as DcaInput)
-              : await this.draftSend(user, row.network, row.request as AutomationInput);
+          : row.kind === "dca"
+            ? await this.draftDca(user, row.network, row.request as unknown as DcaInput)
+            : await this.draftSend(user, row.network, row.request as AutomationInput);
     const [updated] = await this.db.update(automations).set(drafted).where(eq(automations.id, row.id)).returning();
     return this.view(updated!);
   }
@@ -498,84 +489,6 @@ export class AutomationService {
   }
 
   /**
-   * Payroll's draft (R, the freelancer persona): several people on one schedule. Each line is checked by the send rules
-   * like a scheduled send of its own and becomes its own grant pinned to that person, so one Face ID covers them all
-   * and no line can ever pay more, or anyone else, than it says.
-   */
-  private async draftPayroll(user: SessionUser, network: NetworkId, input: PayrollAutomationInput) {
-    const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
-    const wallet = (await this.wallets.userWallet(user.id))?.address as Address | undefined;
-    const { schedule, valid } = this.schedule(user, input);
-    const view = await capabilityView(this.db, this.chains.available);
-    const { client, network: context } = this.clients(network);
-    let setUp = false;
-    const balances: Record<AssetId, bigint> = { USDC: ZERO, EURC: ZERO };
-    if (wallet) {
-      const [code, usdc, eurc] = await Promise.all([
-        client.getCode({ address: wallet }),
-        client.readContract({ address: context.addresses.usdc, abi: ERC20_BALANCE, functionName: "balanceOf", args: [wallet] }),
-        client.readContract({ address: context.addresses.eurc, abi: ERC20_BALANCE, functionName: "balanceOf", args: [wallet] }),
-      ]);
-      setUp = isWalletSetUp(code);
-      balances.USDC = usdc;
-      balances.EURC = eurc;
-    }
-    const limits = await userLimits(this.db, user.id, network);
-    const lines: PayrollAction["lines"] = [];
-    const results: PolicyResult[] = [];
-    let blocking: PolicyResult | null = null;
-    const totals: Record<AssetId, bigint> = { USDC: ZERO, EURC: ZERO };
-    for (const [index, line] of input.lines.slice(0, PAYROLL_MAX_LINES).entries()) {
-      const asset: AssetId = line.asset ?? "USDC";
-      const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, line.recipient);
-      const amount = parseRequestAmount(line.amount, asset);
-      // Each line on its own; the wallet's balance is checked once against the whole run below.
-      const evaluation = evaluateAutomation({
-        network,
-        capability: { here: view.automations[network].state, other: view.automations[other].state },
-        signedIn: !user.isAnonymous,
-        wallet: { registered: Boolean(wallet), setUp, balance: amount.status === "ok" ? amount.baseUnits : ZERO },
-        recipient: resolution.facts,
-        amount,
-        asset,
-        schedule: { valid },
-        limits: { perTx: limits.perTx },
-      });
-      const tag = { line: String(index + 1), who: line.recipient };
-      for (const entry of evaluation.results) results.push({ ...entry, params: { ...(entry.params ?? {}), ...tag } });
-      if (!blocking && evaluation.blocking) blocking = { ...evaluation.blocking, params: { ...(evaluation.blocking.params ?? {}), ...tag } };
-      const resolved = resolution.facts.status === "resolved" ? resolution.facts : undefined;
-      lines.push({
-        recipientWords: line.recipient,
-        recipientAddress: resolved ? getAddress(resolved.address) : "",
-        recipientName: resolved?.name ?? (resolution.view?.handle ? `@${resolution.view.handle}` : null),
-        asset,
-        amount: amount.status === "ok" ? amount.baseUnits.toString() : "0",
-      });
-      if (amount.status === "ok") totals[asset] += amount.baseUnits;
-    }
-    if (lines.length === 0) {
-      const missing = policyResult("RECIPIENT_MISSING");
-      results.push(missing);
-      blocking ??= missing;
-    }
-    for (const asset of ["USDC", "EURC"] as const)
-      if (totals[asset] > balances[asset]) results.push(policyResult("FIRST_RUN_UNDERFUNDED", { balance: balances[asset].toString(), asset }));
-    const action: PayrollAction = { lines, note: input.note?.trim() || null };
-    return { schedule, action, report: { results, blocking } };
-  }
-
-  async createPayroll(user: SessionUser, input: PayrollAutomationInput, origin: { threadId?: string | undefined } = {}): Promise<AutomationView> {
-    const network = user.activeNetwork;
-    const drafted = await this.draftPayroll(user, network, input);
-    const [row] = await this.db
-      .insert(automations)
-      .values({ userId: user.id, network, kind: "payroll", status: "draft", threadId: origin.threadId ?? null, ...drafted, request: { ...input }, endsAt: new Date(Date.now() + LIFETIME_DAYS * MS_PER_DAY) })
-      .returning();
-    return this.view(row!);
-  }
-
-  /**
    * DCA's draft ("buy $10 of ARGUS every day"): the tokens as the person said them, an amount of the token paid, a
    * schedule. It holds no grant: a swap route cannot be pinned by caveats, and every swap is the person's own yes
    * (R5) — so each run waits in Needs you with a fresh quote, one tap and Face ID away.
@@ -695,12 +608,13 @@ export class AutomationService {
     const [row] = await this.db
       .select()
       .from(automations)
-      .where(and(eq(automations.id, id), eq(automations.userId, userId)));
+      .where(and(eq(automations.id, id), eq(automations.userId, userId), ne(automations.kind, RETIRED_KIND)));
     if (!row) throw problem(HTTP.notFound, "not_found", "no such automation");
     return row;
   }
 
   async view(row: AutomationRow): Promise<AutomationView> {
+    if (row.kind === RETIRED_KIND) throw problem(HTTP.notFound, "not_found", "no such automation");
     const explorer = this.chains.get(row.network)?.network.viemChain.blockExplorers?.default.url;
     const [grant] = row.grantId ? await this.db.select().from(grants).where(eq(grants.id, row.grantId)) : [];
     const runs = await this.db
@@ -714,7 +628,6 @@ export class AutomationService {
     const live = row.status === "draft" || row.status === "active";
     const upcoming = live && row.kind !== "rule" ? (row.status === "active" && row.nextRunAt ? [row.nextRunAt, ...nextRuns(row.schedule, row.nextRunAt, NEXT_RUNS_SHOWN - 1)] : nextRuns(row.schedule, new Date(), NEXT_RUNS_SHOWN)) : [];
     const send = row.kind === "scheduled_send" ? (row.action as AutomationAction) : null;
-    const payroll = row.kind === "payroll" ? (row.action as PayrollAction) : null;
     const dca = row.kind === "dca" ? (row.action as DcaAction) : null;
     const ruleSend = row.kind === "rule" && (row.action as RuleAction).step.type === "send" ? ((row.action as RuleAction).step as { capPerDay: string }) : null;
     const attention = runs.length
@@ -735,7 +648,6 @@ export class AutomationService {
       status: row.status,
       kind: row.kind,
       practice: row.practice,
-      payroll: payroll ? { lines: payroll.lines.map((line) => ({ ...line, recipientAddress: line.recipientAddress || null })), note: payroll.note } : null,
       dca,
       schedule: row.schedule,
       save: row.kind === "auto_save" ? await this.saveView(row) : null,
@@ -801,7 +713,7 @@ export class AutomationService {
     const rows = await this.db
       .select()
       .from(automations)
-      .where(and(eq(automations.userId, user.id), eq(automations.network, user.activeNetwork), inArray(automations.status, ["active", "paused", "draft"])))
+      .where(and(eq(automations.userId, user.id), eq(automations.network, user.activeNetwork), ne(automations.kind, RETIRED_KIND), inArray(automations.status, ["active", "paused", "draft"])))
       .orderBy(desc(automations.createdAt));
     // Drafts nobody turned on stay out of the list after a day; they live on in the chat card.
     const fresh = rows.filter((row) => row.status !== "draft" || row.createdAt.getTime() > Date.now() - SECONDS_PER_DAY * MS_PER_SECOND);
@@ -840,24 +752,6 @@ export class AutomationService {
     };
 
     if (row.kind === "dca") return { grants: [], receipts: [] };
-    if (row.kind === "payroll") {
-      const action = row.action as PayrollAction;
-      const out: AutomationGrantRequest = { grants: [], receipts: [] };
-      const periodSeconds = schedulePeriodSeconds(row.schedule);
-      for (const [index, line] of action.lines.entries()) {
-        const amountPerPeriod = BigInt(line.amount);
-        const grant = buildAutomationGrant({ network: context, wallet: wallet.address as Address, redeemer: ops.address, token: line.asset === "USDC" ? context.addresses.usdc : context.addresses.eurc, amountPerPeriod, periodSeconds, startsAt, expiresAt, salt: salt(), recipient: line.recipientAddress as Address });
-        const typedData = grantTypedData(context, grant);
-        const receipt = { purpose: `line:${index}`, ...describeGrant(context, grant) };
-        const [inserted] = await this.db
-          .insert(grants)
-          .values({ ...base, delegation: jsonSafe(grant), delegationHash: hashTypedData(typedData), receipt: jsonSafe(receipt), periodAmount: amountPerPeriod, periodSeconds, recipientAddress: line.recipientAddress })
-          .returning({ id: grants.id });
-        out.grants.push({ grantId: inserted!.id, typedData: jsonSafe(typedData) });
-        out.receipts.push(jsonSafe(receipt));
-      }
-      return out;
-    }
     if (row.kind === "rule") {
       const action = row.action as RuleAction;
       const out: AutomationGrantRequest = { grants: [], receipts: [] };
@@ -970,11 +864,9 @@ export class AutomationService {
         ? SAVE_PURPOSES.length
         : row.kind === "rule"
           ? RULE_PURPOSES[(row.action as RuleAction).step.type].length
-          : row.kind === "payroll"
-            ? (row.action as PayrollAction).lines.length
-            : row.kind === "dca"
-              ? 0
-              : 1;
+          : row.kind === "dca"
+            ? 0
+            : 1;
     const purposes = new Set(pending.map((grant) => (grant.receipt as { purpose?: string }).purpose));
     if (pending.length !== needed || new Set(ids).size !== needed || (row.kind !== "scheduled_send" && purposes.size !== needed)) throw problem(HTTP.unprocessable, "grant_not_pending");
     // Going live from practice: the same automation, now under its grants.
@@ -1007,6 +899,35 @@ export class AutomationService {
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * A contact's address changed (cards/automate-safety.md "What if"): every automation still paying their old address
+   * pauses until the person reviews it, with a run that says why and an inbox item. Its grant stays pinned to the old
+   * address (the chain allows nothing else), so resuming keeps paying it, and paying the new one is a new automation.
+   */
+  async pauseForAddressChange(userId: string, oldAddress: string, name: string) {
+    const old = oldAddress.toLowerCase();
+    const rows = await this.db
+      .select()
+      .from(automations)
+      .where(and(eq(automations.userId, userId), eq(automations.status, "active"), inArray(automations.kind, ["scheduled_send", "rule"])));
+    const paysOld = (row: AutomationRow) => {
+      if (row.kind === "scheduled_send") return (row.action as AutomationAction).recipientAddress?.toLowerCase() === old;
+      const step = (row.action as RuleAction).step;
+      return step.type === "send" && step.recipientAddress.toLowerCase() === old;
+    };
+    for (const row of rows.filter(paysOld)) {
+      const paused = await this.db.update(automations).set({ status: "paused" }).where(and(eq(automations.id, row.id), eq(automations.status, "active"))).returning({ id: automations.id });
+      if (paused.length === 0) continue;
+      const [run] = await this.db
+        .insert(automationRuns)
+        .values({ automationId: row.id, userId, scheduledFor: new Date(), status: "executing" })
+        .onConflictDoNothing()
+        .returning({ id: automationRuns.id });
+      if (run) await this.skipRun(row, run.id, CONTACT_ADDRESS_CHANGED, { name });
+      this.log.info({ automationId: row.id }, "automation paused: its recipient's address changed");
+    }
+  }
 
   async pause(user: SessionUser, id: string) {
     const row = await this.own(user.id, id);
@@ -1086,12 +1007,6 @@ export class AutomationService {
       const chain = await transfer(token, action.recipientAddress, BigInt(action.amount));
       const short = (await balanceOf(token)) < BigInt(action.amount);
       first = { outcome: chain.ok && !short ? "would_send" : "would_skip", amount: action.amount, asset: action.asset, to: action.recipientName ?? action.recipientWords, reason: short ? "INSUFFICIENT_BALANCE" : chain.ok ? null : "CHAIN_REFUSED", chain: { ok: chain.ok, error: chain.error } };
-    } else if (row.kind === "payroll") {
-      const action = row.action as PayrollAction;
-      const checks = await Promise.all(action.lines.map((line) => transfer(line.asset === "USDC" ? context.addresses.usdc : context.addresses.eurc, line.recipientAddress, BigInt(line.amount))));
-      const ok = checks.every((entry) => entry.ok);
-      const total = action.lines.filter((line) => line.asset === "USDC").reduce((sum, line) => sum + BigInt(line.amount), ZERO);
-      first = { outcome: ok ? "would_send" : "would_skip", amount: total.toString(), asset: "USDC", to: String(action.lines.length), reason: ok ? null : "CHAIN_REFUSED", chain: { ok, error: checks.find((entry) => !entry.ok)?.error ?? null } };
     } else if (row.kind === "dca") {
       const action = row.action as DcaAction;
       const quote = wallet ? await this.quoteDca(row.network, wallet, action) : undefined;
@@ -1143,11 +1058,9 @@ export class AutomationService {
       // A draft is simply drafted again with the new words, on its own network.
       const request = { ...(row.request ?? {}), ...Object.fromEntries(Object.entries(edit).filter(([, value]) => value !== undefined)) };
       const drafted =
-        row.kind === "payroll"
-          ? await this.draftPayroll(user, row.network, request as unknown as PayrollAutomationInput)
-          : row.kind === "dca"
-            ? await this.draftDca(user, row.network, request as unknown as DcaInput)
-            : await this.draftSend(user, row.network, request as unknown as AutomationInput);
+        row.kind === "dca"
+          ? await this.draftDca(user, row.network, request as unknown as DcaInput)
+          : await this.draftSend(user, row.network, request as unknown as AutomationInput);
       const [updated] = await this.db.update(automations).set({ ...drafted, request }).where(eq(automations.id, id)).returning();
       return { automation: await this.view(updated!), grant: null, revoke: null };
     }
@@ -1164,15 +1077,6 @@ export class AutomationService {
       await this.db.update(automations).set({ schedule, nextRunAt, action: { ...action, amount: amount.baseUnits.toString() } }).where(eq(automations.id, id));
       return { automation: await this.get(user.id, id), grant: null, revoke: null };
     }
-    if (row.kind === "payroll") {
-      const action = row.action as PayrollAction;
-      const held = await this.db.select({ periodSeconds: grants.periodSeconds }).from(grants).where(and(eq(grants.automationId, id), eq(grants.status, "active")));
-      if (edit.amount !== undefined) throw problem(HTTP.unprocessable, "validation", "change one person's amount by drafting the payroll again");
-      if (!row.practice && held.some((grant) => period < grant.periodSeconds)) throw problem(HTTP.unprocessable, "validation", "a shorter period needs new grants: draft the payroll again");
-      await this.db.update(automations).set({ schedule, nextRunAt, action: { ...action, note: edit.note === undefined ? action.note : edit.note?.trim() || null } }).where(eq(automations.id, id));
-      return { automation: await this.get(user.id, id), grant: null, revoke: null };
-    }
-
     const action = row.action as AutomationAction;
     const amount = edit.amount ? parseRequestAmount(edit.amount, action.asset) : ({ status: "ok", baseUnits: BigInt(action.amount) } as const);
     if (amount.status !== "ok" || amount.baseUnits <= ZERO) throw problem(HTTP.unprocessable, "validation", "that amount is not valid");
@@ -1280,7 +1184,7 @@ export class AutomationService {
     const rows = await this.db
       .select()
       .from(automations)
-      .where(and(eq(automations.status, "active"), eq(automations.practice, false), inArray(automations.kind, ["scheduled_send", "payroll", "dca"]), lte(automations.nextRunAt, soon), inArray(automations.network, this.chains.available)));
+      .where(and(eq(automations.status, "active"), eq(automations.practice, false), inArray(automations.kind, ["scheduled_send", "dca"]), lte(automations.nextRunAt, soon), inArray(automations.network, this.chains.available)));
     for (const row of rows) {
       if (!row.nextRunAt || !REMINDED_SCHEDULES.has(row.schedule.every) || row.nextRunAt.getTime() < Date.now()) continue;
       if (row.remindedFor && row.remindedFor.getTime() === row.nextRunAt.getTime()) continue;
@@ -1316,11 +1220,6 @@ export class AutomationService {
       return { amount: move?.amount ?? "0", asset: "USDC", to: "", name: step.type === "bridge" ? step.destinationName : step.type === "save" ? step.vaultName : step.type === "swap" ? step.symbolOut : "" };
     }
     if (row.kind === "auto_save") return { amount: move?.amount ?? "0", asset: "USDC", to: (row.action as AutoSaveAction).vault, name: (row.action as AutoSaveAction).vaultName };
-    if (row.kind === "payroll") {
-      const action = row.action as PayrollAction;
-      const total = action.lines.filter((line) => line.asset === "USDC").reduce((sum, line) => sum + BigInt(line.amount), ZERO);
-      return { amount: total.toString(), asset: "USDC", to: "", name: action.lines.map((line) => line.recipientName ?? line.recipientWords).join(", "), people: String(action.lines.length) };
-    }
     if (row.kind === "dca") {
       const action = row.action as DcaAction;
       // Not USDC/EURC in general: the words carry the symbols, the amount stays out of the shared money formatter.
@@ -1411,7 +1310,6 @@ export class AutomationService {
     if (row.practice || owner?.practice) return this.drivePractice(row, run);
     if (row.kind === "auto_save") return this.driveSave(row, run);
     if (row.kind === "rule") return this.driveRule(row, run);
-    if (row.kind === "payroll") return this.drivePayroll(row, run);
     if (row.kind === "dca") return this.driveDca(row, run);
     // Missed (the runner was down for longer than a period): not made up later, said plainly.
     if (run.scheduledFor.getTime() < Date.now() - schedulePeriodSeconds(row.schedule) * MS_PER_SECOND) return this.skipRun(row, run.id, "MISSED_RUN");
@@ -1434,62 +1332,6 @@ export class AutomationService {
       return this.skipRun(row, run.id, outcome.reason, outcome.params);
     }
     if (!outcome.resumed) await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, row.id));
-  }
-
-  /**
-   * One payroll run: each line is its own send under its own grant, with its own intent id (fixed by the run and the
-   * line), so a run driven again resumes every line and never pays one twice. A line its safety rules hold back waits
-   * in Needs you; the run settles when every line it sent has an outcome.
-   */
-  private async drivePayroll(row: AutomationRow, run: RunRow): Promise<void> {
-    if (run.scheduledFor.getTime() < Date.now() - schedulePeriodSeconds(row.schedule) * MS_PER_SECOND) return this.skipRun(row, run.id, "MISSED_RUN");
-    const action = row.action as PayrollAction;
-    const held = await this.db.select().from(grants).where(and(eq(grants.automationId, row.id), eq(grants.status, "active")));
-    const byPurpose = new Map(held.map((grant) => [(grant.receipt as { purpose?: string }).purpose, grant]));
-    const lines: Record<string, string> = { lines: String(action.lines.length) };
-    let firstReason: string | undefined;
-    for (const [index, line] of action.lines.entries()) {
-      const grant = byPurpose.get(`line:${index}`);
-      if (!grant) {
-        lines[`line${index}`] = "skipped:GRANT_INACTIVE";
-        firstReason ??= "GRANT_INACTIVE";
-        continue;
-      }
-      const outcome = await this.sends.runAutomation({
-        userId: row.userId,
-        network: row.network,
-        intentId: lineIntentId(run.intentId!, index),
-        grant: { id: grant.id, delegation: grant.delegation },
-        to: line.recipientAddress as Address,
-        asset: line.asset,
-        amount: BigInt(line.amount),
-        note: action.note,
-      });
-      if (outcome.status !== "skipped") {
-        lines[`line${index}`] = "sent";
-        continue;
-      }
-      lines[`line${index}`] = `skipped:${outcome.reason}`;
-      firstReason ??= outcome.reason;
-      if (ATTENDED_REASONS.has(outcome.reason) && this.needsYou) {
-        const [waiting] = await this.db
-          .select({ id: attentionItems.id })
-          .from(attentionItems)
-          .where(and(eq(attentionItems.automationId, row.id), sql`${attentionItems.reasonParams}->>'runId' = ${run.id}`, sql`${attentionItems.reasonParams}->>'line' = ${String(index + 1)}`));
-        if (!waiting)
-          await this.needsYou.open({
-            userId: row.userId,
-            network: row.network,
-            automationId: row.id,
-            runId: null,
-            reason: outcome.reason,
-            reasonParams: { ...(outcome.params ?? {}), runId: run.id, line: String(index + 1) },
-            request: { type: "send", recipient: line.recipientWords, recipientAddress: line.recipientAddress, name: line.recipientName, asset: line.asset, amount: line.amount, note: action.note },
-          });
-      }
-    }
-    await this.db.update(automationRuns).set({ trigger: lines, updatedAt: new Date() }).where(eq(automationRuns.id, run.id));
-    if (!Object.values(lines).includes("sent")) return this.skipRun(row, run.id, firstReason ?? "SEND_FAILED");
   }
 
   /** One DCA run: a fresh quote, and the swap waits for the person (Needs you): every swap is their own yes (R5). */
@@ -1529,12 +1371,6 @@ export class AutomationService {
       const action = row.action as AutomationAction;
       result = await transfer(tokenOf(action.asset), action.recipientAddress, BigInt(action.amount));
       summary = { amount: action.amount, asset: action.asset, to: action.recipientAddress, name: action.recipientName ?? action.recipientWords };
-    } else if (row.kind === "payroll") {
-      const action = row.action as PayrollAction;
-      const checks = await Promise.all(action.lines.map((line) => transfer(tokenOf(line.asset), line.recipientAddress, BigInt(line.amount))));
-      const refused = checks.find((entry) => !entry.ok);
-      result = { ok: !refused, error: refused?.error ?? null, simulatedAt: new Date().toISOString() };
-      summary = this.shownFor(row);
     } else if (row.kind === "dca") {
       const action = row.action as DcaAction;
       const quote = await this.quoteDca(row.network, wallet, action);
@@ -1773,11 +1609,6 @@ export class AutomationService {
       .where(eq(automationRuns.status, "executing"));
     for (const { run, state } of open) {
       try {
-        // A payroll run settles when every line it sent has an outcome.
-        if (run.trigger?.lines !== undefined && run.intentId) {
-          await this.settlePayroll(run);
-          continue;
-        }
         if (state && UNCONFIRMED_STATES.has(state)) {
           // A Needs-you payment the person opened but never confirmed: not done, not failed.
           await this.db.update(automationRuns).set({ status: "skipped", reason: "NOT_COMPLETED" }).where(eq(automationRuns.id, run.id));
@@ -1808,22 +1639,6 @@ export class AutomationService {
         this.log.warn({ err: error, runId: run.id }, "automation run reconcile failed");
       }
     }
-  }
-
-  private async settlePayroll(run: RunRow) {
-    const lines = run.trigger ?? {};
-    const count = Number(lines.lines);
-    const sent = Array.from({ length: count }, (_, index) => index).filter((index) => lines[`line${index}`] === "sent");
-    if (sent.length === 0) return;
-    const ids = sent.map((index) => lineIntentId(run.intentId!, index));
-    const states = await this.db.select({ id: intents.id, state: intents.state }).from(intents).where(inArray(intents.id, ids));
-    if (states.length < ids.length || states.some((entry) => !FINAL_INTENT_STATES.has(entry.state))) return;
-    const paid = states.filter((entry) => entry.state === "completed").length;
-    await this.db
-      .update(automationRuns)
-      .set(paid === count ? { status: "succeeded" } : paid > 0 ? { status: "succeeded", reason: "PAYROLL_PARTIAL", reasonParams: { paid: String(paid), of: String(count) } } : { status: "failed", reason: "SEND_FAILED" })
-      .where(eq(automationRuns.id, run.id));
-    if (paid > 0) await this.db.update(automations).set({ runsDone: sql`${automations.runsDone} + 1` }).where(eq(automations.id, run.automationId));
   }
 
   start(intervalMs: number) {

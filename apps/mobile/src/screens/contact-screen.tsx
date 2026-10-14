@@ -7,7 +7,7 @@
 // cannot be undone and is not a payment (DESIGN.md).
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { BadgeCheck, Clock, Copy, ScanLine, Send } from "lucide-react-native";
+import { Ban, BadgeCheck, Clock, Copy, ScanLine, Send } from "lucide-react-native";
 import * as React from "react";
 import { Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -346,6 +346,23 @@ export function ContactScreen({ id }: { id: string | undefined }) {
     }
   };
 
+  // Block: Kawase won't pay them, and their asks and reminders stop reaching the person (Counterparts "Block").
+  const [blocking, setBlocking] = React.useState(false);
+  const toggleBlock = async () => {
+    if (!contact) return;
+    setBlocking(true);
+    try {
+      if (contact.blocked) await api.blocks.unblock({ contactId: contact.id });
+      else await api.blocks.block({ contactId: contact.id });
+      toast(t(contact.blocked ? "contacts.unblockedToast" : "contacts.blockedToast", { name: contact.displayName }));
+      await refresh();
+    } catch {
+      toast(t("common.error"));
+    } finally {
+      setBlocking(false);
+    }
+  };
+
   const remove = async () => {
     if (!contact) return;
     setDeleting(true);
@@ -431,6 +448,13 @@ export function ContactScreen({ id }: { id: string | undefined }) {
           </View>
         </View>
 
+        {contact.blocked ? (
+          <View accessibilityRole="alert" className="bg-muted flex-row items-start gap-2 rounded-2xl px-4 py-3">
+            <Icon as={Ban} className="text-foreground mt-0.5 size-4" />
+            <Text className={cn("text-foreground flex-1 text-sm leading-5", TEXT_START)}>{t("contacts.blockedBanner")}</Text>
+          </View>
+        ) : null}
+
         {contact.pendingChange ? (
           <View accessibilityRole="alert" className="bg-muted gap-3 rounded-2xl px-4 py-3">
             <View className="flex-row items-start gap-2">
@@ -466,7 +490,7 @@ export function ContactScreen({ id }: { id: string | undefined }) {
         <View className="gap-2">
           <Button
             size="lg"
-            disabled={Boolean(contact.pendingChange)}
+            disabled={Boolean(contact.pendingChange) || contact.blocked}
             onPress={() => router.push({ pathname: "/send", params: { to: contact.displayName } })}
           >
             <Icon as={Send} className="text-primary-foreground size-5" />
@@ -495,6 +519,11 @@ export function ContactScreen({ id }: { id: string | undefined }) {
             numberOfLines={NOTES_LINES}
           />
         </View>
+
+        <Button variant="ghost" disabled={blocking} onPress={() => void toggleBlock()}>
+          <Icon as={Ban} className="text-muted-foreground size-4" />
+          <Text className="text-muted-foreground">{contact.blocked ? t("contacts.unblock") : t("contacts.block", { name: contact.displayName })}</Text>
+        </Button>
 
         <HoldToConfirm onConfirm={() => void remove()} confirmLabel={t("contacts.deleting")} done={false} resetKey={deleteAttempt} disabled={deleting} hint={t("limits.holdHint")}>
           {t("contacts.holdToDelete")}

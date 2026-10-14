@@ -11,6 +11,8 @@ export const buy: Catalog["buy"] = {
   realMoney: "真实资金。Circle 结账页会在浏览器面板中打开。",
   delivers: "{{asset}} 会到账你在 {{network}} 上的钱包。",
   thenNote: "然后用它购买 {{token}}（再确认一次）。",
+  get: "你将获得",
+  thenEstimate: "按今天的价格约 {{amount}}。",
   byCircle: "由 Circle 提供结账",
   opening: "正在打开 Circle 结账…",
   waiting: "正在到账",

@@ -34,7 +34,7 @@ const NATIVE_USDC = 10n ** 18n;
  * ~160 gwei base fee [INFERENCE: 65k–100k gas each]; testnet gas is free from the faucet.
  */
 export const RELAYER_DAILY_GAS_BUDGET = { mainnet: 3n * NATIVE_USDC, testnet: 50n * NATIVE_USDC } as const;
-/** One person's share of it per rolling day, so one account's dust payouts cannot spend everyone's (0.25 USDC on mainnet). */
+/** One person's share of it per rolling day, so one account's dust sends cannot spend everyone's (0.25 USDC on mainnet). */
 export const RELAYER_GAS_PER_PERSON_DAY = { mainnet: NATIVE_USDC / 4n, testnet: 2n * NATIVE_USDC } as const;
 /** Relayed 7702 setups per wallet and network: the one that takes, with room for one that failed. */
 export const SPONSORED_SETUP_ATTEMPTS = 2;

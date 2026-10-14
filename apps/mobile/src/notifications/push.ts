@@ -82,9 +82,8 @@ const OPENABLE = [
   // A5-3: an automation run's story, and someone on Kawase asking the person to pay (the public pay card).
   /^\/why\/run\/[0-9a-f-]{36}$/i,
   /^\/r\/[A-Za-z0-9_-]{8,64}$/,
-  // Security and business notices (the api already sends these paths): the devices list and the invoice itself.
+  // Security notices (the api already sends this path): the devices list.
   /^\/account\/devices$/,
-  /^\/business\/invoice\/[0-9a-f-]{36}$/i,
 ];
 
 export function pathOf(response: Notifications.NotificationResponse | null | undefined): string | undefined {

@@ -7,9 +7,11 @@ import type { InboxItem, InboxKind } from "@kawase/api-client";
 import { inboxItems, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 
+import { blockedAddresses } from "../contacts/blocks";
 import type { NotifyService } from "../notify/service";
 import type { Executor } from "../send/facts";
 import type { Chains } from "../wallet/chain";
+import { liveKind } from "./kinds";
 
 const PAGE = 100;
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -78,15 +80,19 @@ export class InboxService {
       .select({ unread: sql<number>`count(*)::int` })
       .from(inboxItems)
       .where(and(eq(inboxItems.userId, userId), isNull(inboxItems.readAt)));
+    // Asks from someone blocked since are not shown either (new ones never arrive: RequestService).
+    const blocked = await blockedAddresses(this.db, userId);
+    const shown = rows.filter((row) => !(row.kind === "request_received" && blocked.has(String((row.params as Record<string, string>).from ?? "").toLowerCase())));
+    const hiddenUnread = rows.filter((row) => !row.readAt).length - shown.filter((row) => !row.readAt).length;
     return {
-      unread: count?.unread ?? 0,
-      items: rows.map((row) => {
+      unread: Math.max(0, (count?.unread ?? 0) - hiddenUnread),
+      items: shown.map((row) => {
         const explorer = this.chains.get(row.network)?.network.viemChain.blockExplorers?.default.url;
         return {
           id: row.id,
-          kind: row.kind,
+          kind: liveKind(row.kind),
           network: row.network,
-          params: { ...subjectOf(row.kind, row.dedupeKey), ...row.params },
+          params: { ...subjectOf(liveKind(row.kind), row.dedupeKey), ...row.params },
           requestId: row.requestId,
           intentId: row.intentId,
           txHash: row.txHash,

@@ -22,4 +22,5 @@ export const errors: Catalog["errors"] = {
     "Configure uma digital ou um bloqueio de tela nas Configurações do celular para aprovar.",
   biometricFailed: "Não correspondeu. Nada foi assinado. Tente de novo.",
   tryAgainIn: "Tente de novo em {{time}}",
+  deviceProofNeeded: "Entre de novo neste telefone para aprovar. Nada foi enviado.",
 };

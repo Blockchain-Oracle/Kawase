@@ -127,4 +127,6 @@ export const safety: Catalog["safety"] = {
   practiceBuyAsk: "会先等你点按确认。没有支付任何费用。",
   practiceBuyTopUp: "代理钱包需要先充值。没有支付任何费用。",
   practiceBuyNothing: "从代理钱包支付。没有支付任何费用。",
+  practiceRefused: "练习模式已开启，因此不会真正转移任何资金。请在“钱包与限额”中关闭它，以真实执行此操作。",
+  practiceOpen: "钱包与限额",
 };

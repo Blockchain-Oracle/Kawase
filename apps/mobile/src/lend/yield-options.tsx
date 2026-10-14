@@ -1,7 +1,8 @@
 // The yield-options card's body (earn-borrow.md "Which"): every place an asset can earn on Arc, each with its
 // protocol's mark, the rate now, what could be withdrawn now and the size, and a risk chip, ranked by rate among those
 // that could give the amount back; the best liquid one is marked. Aave opens the supply ticket, a Morpho vault the
-// Earn ticket for that vault; an LP campaign is shown as advanced and read-only (impermanent loss, range risk).
+// Earn ticket for that vault, an Aero pool Kawase deposits into the LP screen (advanced: impermanent loss, range
+// risk); other LP campaigns are shown, read-only.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, View } from "react-native";
@@ -29,13 +30,14 @@ const RISK_CHIP: Record<YieldOptionView["risk"], { bg: string; text: string }> =
   advanced: { bg: "bg-destructive/15", text: "text-destructive" },
 };
 
-/** Where choosing an option goes: Aave's supply ticket, a vault's Earn ticket; LP stays read-only. */
+/** Where choosing an option goes: Aave's supply ticket, a vault's Earn ticket, an Aero pool's deposit on the LP screen. */
 export function useChooseYield() {
   const router = useRouter();
   return (option: YieldOptionView, amount: string | null) => {
     if (!option.executable) return;
     const tail = amount ? `&amount=${encodeURIComponent(amount)}` : "";
     if (option.kind === "aave_v4") router.push(`/borrow?action=supply&asset=${encodeURIComponent(option.asset)}${tail}`);
+    else if (option.kind === "lp") router.push(`/lp?pool=${encodeURIComponent(option.id)}&asset=${encodeURIComponent(option.asset)}${tail}`);
     else router.push(`/earn?vault=${encodeURIComponent(option.id)}${tail}`);
   };
 }

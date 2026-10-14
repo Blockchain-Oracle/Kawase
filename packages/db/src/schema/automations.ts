@@ -9,6 +9,7 @@ import { createdAt, id, networkEnum, timestampTz, updatedAt } from "./common";
 import { users } from "./identity";
 
 export const automationStatusEnum = pgEnum("automation_status", ["draft", "active", "paused", "canceled", "ended"]);
+/** "payroll" is retired (migration 0090): Postgres cannot drop an enum value, so it stays here, unused. */
 export const automationKindEnum = pgEnum("automation_kind", ["scheduled_send", "auto_save", "rule", "payroll", "dca"]);
 /** "pending": an event (money in) has triggered a run that the runner has not taken yet. */
 /** "needs_you": waiting for the person (an attended step); "practiced": a practice run's "would have". */
@@ -86,10 +87,6 @@ export type RuleAction = {
   armed: boolean;
 };
 
-/** Payroll: several people paid on one schedule, each line under its own grant pinned to that person. */
-export type PayrollLine = { recipientWords: string; recipientAddress: string; recipientName: string | null; asset: "USDC" | "EURC"; amount: string };
-export type PayrollAction = { lines: PayrollLine[]; note: string | null };
-
 /** DCA: a swap on a schedule ("buy $10 of ARGUS every day"). Each run waits in Needs you with a fresh quote. */
 export type DcaAction = { tokenIn: string; tokenOut: string; symbolIn: string; symbolOut: string; decimalsIn: number; decimalsOut: number; amount: string };
 
@@ -110,7 +107,7 @@ export const automations = pgTable(
     threadId: uuid(),
     schedule: jsonb().$type<AutomationSchedule>().notNull(),
     /** A scheduled send's `AutomationAction`, or Auto-save's `AutoSaveAction` (by `kind`). */
-    action: jsonb().$type<AutomationAction | AutoSaveAction | RuleAction | PayrollAction | DcaAction>().notNull(),
+    action: jsonb().$type<AutomationAction | AutoSaveAction | RuleAction | DcaAction>().notNull(),
     /** The grant that bounds it on chain (set when it is turned on). */
     grantId: uuid(),
     /** The request as it was asked, so a draft can be checked again after a fix without asking again. */

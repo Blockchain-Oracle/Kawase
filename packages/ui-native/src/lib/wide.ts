@@ -1,6 +1,7 @@
 // The desktop layout (Stage 13): a web window at least as wide as Tailwind's `lg` breakpoint — a laptop, or the Tauri
 // app at 1280×820 — gets the sidebar, a centred content column, two-column pages and sheets as dialogs. Narrower
 // windows and every phone keep the phone layout. Structure switches on this hook; spacing uses `lg:` classes.
+import * as React from "react";
 import { Platform, useWindowDimensions } from "react-native";
 
 /** Tailwind's `lg` breakpoint, in CSS pixels. */
@@ -15,6 +16,12 @@ export function useWide(): boolean {
   const { width } = useWindowDimensions();
   return Platform.OS === "web" && width >= WIDE_MIN_PX;
 }
+
+/**
+ * True inside the desktop frame (the sidebar and the content beside it). Chrome the frame draws once for every page —
+ * the testnet strip across the whole content area — steps aside in the pages under it.
+ */
+export const WideFrameContext = React.createContext(false);
 
 /** Hover and keyboard focus for a pressable row or card on the web (mouse users; a visible focus ring). */
 export const WEB_PRESSABLE = Platform.select({

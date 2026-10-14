@@ -29,6 +29,8 @@ export const margin: Catalog["margin"] = {
   route: "রুট",
   routeValue: "Aave V4 · {{venues}} · {{loops}} ধাপ",
   risk: "লিভারেজে আপনার পুরো মার্জিন হারাতে পারেন। {{price}}-এ লিকুইডেশন।",
+  closeEndsProtection:
+    "এর টেক-প্রফিট ও স্টপ-লসও এর সঙ্গে শেষ: একই সইয়ে Arc-এ Kawase-এর এটি বন্ধ করার অনুমতি বন্ধ হয়।",
   slideLong: "লং খুলতে স্লাইড করুন",
   slideShort: "শর্ট খুলতে স্লাইড করুন",
   slideClose: "বন্ধ করতে স্লাইড করুন",

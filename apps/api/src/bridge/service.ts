@@ -71,7 +71,7 @@ import { parseRequestAmount } from "../send/facts";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
-import { compareRoutes } from "./compare";
+import { compareRoutes, type RouteQuote } from "./compare";
 import type { BridgeEngine } from "./engine";
 
 type IntentRow = typeof intents.$inferSelect;
@@ -136,6 +136,18 @@ export class BridgeService {
 
   private destination(network: NetworkContext, id: BridgeDestinationId | null | undefined): BridgeDestination | undefined {
     return id ? this.engine.destinations(network).find((entry) => entry.id === id) : undefined;
+  }
+
+  /**
+   * Live quotes for moving `amount` USDC to the person's own address on `destinationId`, every route ranked (the same
+   * comparison a bridge card shows; nothing is drafted). Undefined when the chain is not served here. For "For you"'s
+   * better-route card (A5).
+   */
+  async compareFor(network: NetworkId, destinationId: string, amount: bigint, wallet: Address): Promise<RouteQuote[] | undefined> {
+    const context = this.clients(network).network;
+    const destination = this.destination(context, destinationId as BridgeDestinationId);
+    if (!destination) return undefined;
+    return compareRoutes({ network: context, from: wallet, recipient: wallet, amount, destinationChainId: destination.chainId, destinationUsdc: destination.usdc }, amount);
   }
 
   /** Where USDC can go from this network, named as the identity registry names them. */

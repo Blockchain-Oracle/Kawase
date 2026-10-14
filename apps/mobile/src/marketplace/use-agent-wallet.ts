@@ -8,17 +8,21 @@ import type { TypedDataDefinition } from "viem";
 
 import type { AgentWalletSettingsChange, AgentWalletView } from "@kawase/api-client";
 import { amount, formatPrice } from "@kawase/money";
+import { SigningRefused, checkTransferGrant, receiptOf, type ShownGrant } from "@kawase/wallet";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
 import { signRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
+import { sayIfRefused } from "@/wallet/refused";
 
 const ZERO = BigInt(0);
+const HEX_PREFIX = "0x".length;
 
 /** "0.006 USDC" in the person's locale (sub-cent prices keep their digits). */
 export function usePrice() {
@@ -72,6 +76,9 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
           toast(check === "unavailable" ? t("send.approvalUnavailable") : check === "failed" ? t("send.approvalFailed") : t("send.faceIdCancelled"));
           return false;
         }
+        // What is signed is what the grant card says (M6): USDC transfers only, to this person's agent wallet, capped a day.
+        const grant = checkTransferGrant(result.grant.typedData, result.grant.receipt as unknown as ShownGrant, signer.address);
+        if (view?.address && !receiptOf(grant).recipient?.toLowerCase().endsWith(view.address.slice(HEX_PREFIX).toLowerCase())) throw new SigningRefused("a top-up grant to another wallet than the agent wallet");
         const signature = await signer.signTypedData(result.grant.typedData as unknown as TypedDataDefinition);
         // The same yes also turns off an earlier grant that still works on chain (Kawase pays its fee when it can).
         const revoke = result.grant.revoke ? await signRevoke(signer, result.grant.revoke) : undefined;
@@ -82,8 +89,8 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
       setView(result.wallet);
       toast(t("agentWallet.toppedUp", { amount: price(baseUnits) }));
       return true;
-    } catch {
-      toast(t("agentWallet.topUpFailed"));
+    } catch (error) {
+      if (!sayIfRefused(error, t) && !sayIfPractice(error, t)) toast(t("agentWallet.topUpFailed"));
       await refresh();
       return false;
     } finally {
@@ -100,8 +107,8 @@ export function useAgentWallet(options: { load?: boolean } = {}) {
       if (result.status === "nothing_to_return") toast(t("agentWallet.nothingToReturn"));
       else if (result.moves.some((move) => move.status === "failed")) toast(t("agentWallet.returnFailed"));
       else toast(t("agentWallet.returned", { amount: price(back.toString()) }));
-    } catch {
-      toast(t("agentWallet.returnFailed"));
+    } catch (error) {
+      if (!sayIfPractice(error, t)) toast(t("agentWallet.returnFailed"));
       await refresh();
     } finally {
       setBusy(undefined);

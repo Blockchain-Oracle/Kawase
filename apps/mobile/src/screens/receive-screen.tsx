@@ -2,9 +2,11 @@
 // centre, the identity row (name · short address · network) whose chevron opens the network selector, the
 // "Arc only" warning, Copy and Share. The QR always encodes the live wallet address, never a fixture, and stays
 // left-to-right in every language. Without a wallet the page says what to do instead of showing a fake code.
+// "Ask for an amount" turns the code into a request: any token on Arc and an amount, as an EIP-681 transfer URI that
+// any wallet fills in (gaps.md G10); a token page's Receive starts it on that token.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronLeft, Copy, Share2, TriangleAlert } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, Copy, HandCoins, Share2, TriangleAlert, Waypoints, X } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, Share, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,7 +20,8 @@ import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { NetworkChip, TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Sheet } from "@kawase/ui-native/components/sheet";
+import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
@@ -26,6 +29,11 @@ import { tokens } from "@kawase/ui-tokens";
 
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { tokenAmount } from "@/portfolio/format";
+import { stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { transferUri } from "@/receive/request-uri";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
@@ -45,10 +53,15 @@ const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const ROW_MARK = 32;
 const ART_WIDTH = 160;
+const ZERO = 0n;
 
 const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
-export function ReceiveScreen() {
+type Ask = { token: TicketToken; units: bigint };
+
+/** `prefill`: a token page's Receive starts the request on that token. */
+export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined } = {}) {
+  const { locale } = useLocale();
   const { t } = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -59,6 +72,12 @@ export function ReceiveScreen() {
   const { wallet } = useWalletStatus();
   const { network, switchNetwork, busy, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
   const [chooserOpen, setChooserOpen] = React.useState(false);
+  // The request: none (the bare address), or a token and an amount; the sheet edits a draft of it.
+  const [ask, setAsk] = React.useState<Ask | null>(null);
+  const [askOpen, setAskOpen] = React.useState(Boolean(prefill));
+  const [askToken, setAskToken] = React.useState<TicketToken | undefined>(prefill);
+  const [askText, setAskText] = React.useState("");
+  const [picking, setPicking] = React.useState(false);
 
   const testnet = network === "testnet";
   const ids = arcIdentity(network);
@@ -69,14 +88,29 @@ export function ReceiveScreen() {
   // The code sits on an ink tile so it scans on both themes.
   const ink = tokens.themes.dark;
 
+  const chainId = stableToken(network, "USDC").chainId;
+  // A request made on the other network no longer matches the code's chain: it goes back to the bare address.
+  const asking = ask && ask.token.chainId === chainId ? ask : null;
+  const askLabel = asking ? tokenAmount(asking.units.toString(), asking.token.decimals, asking.token.symbol, locale) : "";
+  const uri = asking && address ? transferUri(asking.token.address, chainId, address, asking.units) : null;
+  const draftToken = askToken && askToken.chainId === chainId ? askToken : stableToken(network, "USDC");
+  const draftUnits = unitsFromCanonical(askText.trim().replace(",", "."), draftToken.decimals);
+
   const copy = async () => {
     if (!address) return;
-    await Clipboard.setStringAsync(address);
+    await Clipboard.setStringAsync(uri ?? address);
     toast(t("home.addressCopied"));
   };
   const share = async () => {
     if (!address) return;
-    await Share.share({ message: t("receive.shareMessage", { network: networkLabel, address }) });
+    await Share.share({
+      message: uri ? t("receive.shareAsk", { amount: askLabel, network: networkLabel, address, uri }) : t("receive.shareMessage", { network: networkLabel, address }),
+    });
+  };
+  const showAsk = () => {
+    if (draftUnits === undefined || draftUnits === ZERO) return;
+    setAsk({ token: draftToken, units: draftUnits });
+    setAskOpen(false);
   };
 
   const header = (
@@ -117,7 +151,7 @@ export function ReceiveScreen() {
       <View className="flex-1 items-center justify-center gap-6 px-5">
         <View className="items-center justify-center rounded-lg" style={{ padding: QR_PADDING, backgroundColor: ink.background }}>
           <DottedQr
-            value={address}
+            value={uri ?? address}
             size={qrSize}
             dotColor={ink.foreground}
             background={ink.background}
@@ -148,10 +182,29 @@ export function ReceiveScreen() {
             <NetworkChip label={networkLabel} />
             <Icon as={ChevronDown} className="text-muted-foreground size-4" />
           </Pressable>
-          <View className="bg-network-surface flex-row items-start gap-2 rounded-2xl px-4 py-3">
-            <Icon as={TriangleAlert} className="text-network mt-0.5 size-4" />
-            <Text className="text-network flex-1 text-sm">{t("receive.anyToken")}</Text>
-          </View>
+          {asking ? (
+            <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border py-2 pe-2 ps-3">
+              <TokenMark token={asking.token} size={ROW_MARK} />
+              <View className="min-w-0 flex-1">
+                <Text className="text-foreground text-base font-semibold">{askLabel}</Text>
+                <Text className="text-muted-foreground text-xs">{t("receive.askHint", { amount: askLabel, network: networkLabel })}</Text>
+              </View>
+              <Button variant="ghost" size="icon" className="size-10" accessibilityLabel={t("receive.askClear")} onPress={() => setAsk(null)}>
+                <Icon as={X} className="size-5" />
+              </Button>
+            </View>
+          ) : (
+            <>
+              <View className="bg-network-surface flex-row items-start gap-2 rounded-2xl px-4 py-3">
+                <Icon as={TriangleAlert} className="text-network mt-0.5 size-4" />
+                <Text className="text-network flex-1 text-sm">{t("receive.anyToken")}</Text>
+              </View>
+              <Button variant="ghost" onPress={() => setAskOpen(true)}>
+                <Icon as={HandCoins} className="size-5" />
+                <Text>{t("receive.askAmount")}</Text>
+              </Button>
+            </>
+          )}
         </View>
       </View>
 
@@ -184,8 +237,58 @@ export function ReceiveScreen() {
             />
           ))}
         </ListGroup>
+        {/* The same address on the other chains (surfaces.md Receive: "a chain chooser … other chains get Bring to Arc"). */}
+        <ListGroup label={t("assets.otherChainsTotal")}>
+          <ListRow
+            leading={<Icon as={Waypoints} className="text-muted-foreground size-5" />}
+            title={t("receive.otherChains")}
+            subtitle={t("receive.otherChainsBody")}
+            chevron
+            onPress={() => {
+              setChooserOpen(false);
+              router.push({ pathname: "/move", params: { direction: "in" } });
+            }}
+          />
+        </ListGroup>
       </Sheet>
       <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
+      <Sheet open={askOpen} onClose={() => setAskOpen(false)} title={t("receive.askAmount")} colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }} closeLabel={t("common.close")} bottomInset={insets.bottom}>
+        <View className="gap-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t("receive.askAsset")}: ${draftToken.symbol}`}
+            onPress={() => setPicking(true)}
+            className="bg-muted active:bg-secondary flex-row items-center gap-3 rounded-2xl px-4 py-3"
+          >
+            <TokenMark token={draftToken} size={ROW_MARK} />
+            <Text className="text-foreground flex-1 text-base font-semibold">{draftToken.symbol}</Text>
+            <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+          </Pressable>
+          <SheetInput
+            value={askText}
+            onChangeText={setAskText}
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            placeholder="0"
+            accessibilityLabel={t("receive.askAmount")}
+            onSubmitEditing={showAsk}
+          />
+          <Button disabled={draftUnits === undefined || draftUnits === ZERO} onPress={showAsk}>
+            <Text>{t("receive.askShow")}</Text>
+          </Button>
+        </View>
+      </Sheet>
+      <AssetPickerSheet
+        open={picking}
+        onClose={() => setPicking(false)}
+        title={t("receive.askAsset")}
+        mode="any"
+        selected={draftToken.address.toLowerCase()}
+        onSelect={(choice) => {
+          setAskToken(choice.token);
+          setPicking(false);
+        }}
+      />
     </View>
   );
 }

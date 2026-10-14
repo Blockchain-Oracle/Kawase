@@ -20,6 +20,7 @@ import { MarketHeatmap } from "@kawase/ui-native/components/market-heatmap";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Amount } from "@kawase/ui-native/components/amount";
+import { Sparkline } from "@kawase/ui-native/components/area-chart";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
@@ -64,6 +65,9 @@ const WIDE_ROW_COLUMNS = 2;
 const SKELETON_ROWS = 6;
 const SKELETON_ROW_HEIGHT = 64;
 const HOT_CARD_WIDTH = 148;
+/** The card's own padding on both sides (p-4), and its sparkline's height. */
+const HOT_CARD_PADDING = 32;
+const HOT_SPARK_HEIGHT = 28;
 const HOT_MARK = 32;
 const EDGE_INSET = 12;
 const STRIP_INSET = 6;
@@ -96,6 +100,7 @@ export function MarketsScreen() {
   // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel or the map.
   const promoted = rows.filter((row) => row.token.status !== "impersonator");
 
+  const sparkColors = { up: colors.success, down: colors.destructive };
   const rowProps = (row: MarketRow) => {
     const chip = tokenChip(row.token, t);
     const changeLabel = change(row.change24hPct, locale);
@@ -116,6 +121,8 @@ export function MarketsScreen() {
       change24hPct: row.change24hPct,
       ...(changeLabel ? { changeLabel } : {}),
       ...(chip ? { chip } : {}),
+      // Hourly closes over 24 h, when the api's cache has them (it fills them in a few minutes).
+      ...(row.spark ? { spark: { values: row.spark, colors: sparkColors } } : {}),
       onPress: () => open(row.token),
     };
   };
@@ -316,6 +323,7 @@ export function MarketsScreen() {
                               </Amount>
                             ) : null}
                           </View>
+                          {row.spark ? <Sparkline values={row.spark} width={HOT_CARD_WIDTH - HOT_CARD_PADDING} height={HOT_SPARK_HEIGHT} colors={sparkColors} /> : null}
                         </Pressable>
                       );
                     })}

@@ -13,6 +13,8 @@ import type { TypedDataDefinition } from "viem";
 
 import type { UnsignedTransaction, WithdrawalNextView, WithdrawalView, WithdrawPlanInput } from "@kawase/api-client";
 
+import { useT } from "@/i18n";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
@@ -33,6 +35,7 @@ type Answer = { status: string; approvalId?: string; transaction?: UnsignedTrans
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function useWithdrawRun() {
+  const { t } = useT();
   const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
   const [withdrawal, setWithdrawal] = React.useState<WithdrawalView>();
   const [phase, setPhase] = React.useState<RunPhase>("idle");
@@ -166,14 +169,15 @@ export function useWithdrawRun() {
             return "stopped" as const;
           }
         }
-      } catch {
+      } catch (error) {
+        sayIfPractice(error, t);
         setPhase("stopped");
         return "stopped" as const;
       } finally {
         running.current = false;
       }
     },
-    [follow, sign, signBatch],
+    [follow, sign, signBatch, t],
   );
 
   const confirm = React.useCallback(

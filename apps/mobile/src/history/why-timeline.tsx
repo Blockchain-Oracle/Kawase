@@ -34,7 +34,7 @@ export function useStepText() {
       case "sent":
         return { title: t(`why.sentBy.${step.by}`), detail: t(`why.status.${step.status}`) };
       case "matched":
-        return { title: step.what === "invoice" ? t("why.matchedInvoice") : t("why.matchedRequest"), detail: step.reference ? t("why.byReference") : undefined };
+        return { title: t("why.matchedRequest"), detail: step.reference ? t("why.byReference") : undefined };
       case "audit":
         return { title: t(`why.audit.${step.action.replace(/[^a-z_.]/gi, "_")}`, { defaultValue: t("why.recorded") }) };
     }

@@ -128,4 +128,6 @@ export const safety: Catalog["safety"] = {
   practiceBuyAsk: "Il attendrait d'abord votre accord. Rien n'a été payé.",
   practiceBuyTopUp: "Votre portefeuille d'agent devrait d'abord être rechargé. Rien n'a été payé.",
   practiceBuyNothing: "Depuis votre portefeuille d'agent. Rien n'a été payé.",
+  practiceRefused: "Le mode entraînement est activé : rien ne bouge pour de vrai. Désactivez-le dans Portefeuille et limites pour le faire réellement.",
+  practiceOpen: "Portefeuille et limites",
 };

@@ -48,7 +48,6 @@ import {
   type Db,
   intentDrafts,
   intents,
-  invoices,
   newId,
   practiceRuns,
   spendLedger,
@@ -215,16 +214,13 @@ export class SendService {
       const asked = payable.request;
       // USDC/EURC by name; any other token by its address, in its own decimals (R1).
       const stableAsk = asked.asset === "USDC" || asked.asset === "EURC";
-      // An invoice's request is paid with the invoice's own on-chain reference (Arc Memo), so the business's books
-      // match it by memoId too, in any token and for part payments (B2's invoice watcher).
-      const [invoice] = await this.db.select({ memoId: invoices.memoId, number: invoices.number }).from(invoices).where(eq(invoices.requestId, asked.id)).limit(1);
       stored = {
         recipient: payable.handle ? `@${payable.handle}` : asked.payTo,
         amount: stableAsk ? canonicalAmount(amount(asked.asset as AssetId, asked.amount)).replace(/ [A-Z]+$/, "") : formatUnits(asked.amount, asked.assetDecimals ?? 0),
         asset: asked.asset,
         note: stored.note,
-        memo: invoice ? invoice.number : (stored.memo ?? null),
-        memoId: invoice ? invoice.memoId.toLowerCase() : (stored.memoId ?? null),
+        memo: stored.memo ?? null,
+        memoId: stored.memoId ?? null,
       };
       paymentRequestId = asked.id;
     }

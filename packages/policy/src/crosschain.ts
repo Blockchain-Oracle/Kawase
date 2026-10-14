@@ -30,6 +30,8 @@ export type CrossChainFacts = {
   nativeFee?: bigint | undefined;
   /** In from another chain's own coin: the gas that transaction costs there, paid from the same coin. */
   sourceGas?: bigint | undefined;
+  /** In with a token that needs its Permit2 approval there first: that transaction's gas, paid in the chain's coin, and what the person holds of it. */
+  sourceCoin?: { symbol: string; decimals: number; balance: bigint; needed: bigint } | undefined;
   /** Whether at least one route can carry it now, and why not. */
   route: { status: "ok" } | { status: "none"; reason: string } | { status: "not_requested" };
 };
@@ -72,6 +74,7 @@ export function evaluateCrossChain(facts: CrossChainFacts): CrossChainEvaluation
     else if (facts.direction === "out" && asset.usdc && facts.balance - amount < facts.gasFloat + (facts.nativeFee ?? ZERO)) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.gasFloat), asset: "USDC" }));
     else if (facts.direction === "out" && !asset.usdc && (facts.usdc ?? ZERO) < facts.gasFloat + (facts.nativeFee ?? ZERO)) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.gasFloat + (facts.nativeFee ?? ZERO)), asset: "USDC" }));
     else if (facts.direction === "in" && facts.sourceGas && amount + facts.sourceGas > facts.balance) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.sourceGas), asset: asset.symbol, decimals: String(asset.decimals) }));
+    else if (facts.direction === "in" && facts.sourceCoin && facts.sourceCoin.balance < facts.sourceCoin.needed) results.push(result("INSUFFICIENT_GAS", { needed: s(facts.sourceCoin.needed), asset: facts.sourceCoin.symbol, decimals: String(facts.sourceCoin.decimals) }));
   }
   if (facts.route.status === "none") results.push(result("QUOTE_UNAVAILABLE", { reason: facts.route.reason }));
   return done(results);

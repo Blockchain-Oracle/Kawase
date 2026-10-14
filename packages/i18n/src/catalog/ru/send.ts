@@ -103,6 +103,7 @@ export const send: Catalog["send"] = {
   otherChain: "Кошелёк получателя в другой сети?",
   otherChainBridge: "Отправьте туда USDC через мост: вы выбираете сеть и маршрут.",
   otherChainConvert: "Между сетями переходит только USDC. Сначала обменяйте {{asset}} на USDC.",
+  otherChainAsItself: "Отправьте {{asset}} туда как есть: сеть и маршрут выбираете вы.",
   referenceAdd: "Добавить номер платежа в блокчейн",
   referencePlaceholder: "Номер счёта или заказа",
   referenceHint:

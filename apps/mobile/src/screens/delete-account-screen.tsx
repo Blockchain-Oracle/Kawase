@@ -34,6 +34,7 @@ import { PASSKEY_RP_ID } from "@/wallet/config";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
+import { sayIfProofNeeded } from "@/session/device-proof";
 
 const MARK_SIZE = 24;
 const SKELETON_HEIGHT = 140;
@@ -111,8 +112,8 @@ export function DeleteAccountScreen() {
       await api.account.deleteAccount(confirm);
       toast(t("deleteAccount.done"));
       await leave();
-    } catch {
-      toast(t("deleteAccount.failed"));
+    } catch (error) {
+      if (!sayIfProofNeeded(error, t)) toast(t("deleteAccount.failed"));
       setBusy(undefined);
     }
   };

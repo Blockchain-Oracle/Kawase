@@ -1,4 +1,4 @@
-// The 8c automation part of the agent's view (builder A3): payroll and DCA drafts, edits, the dry run and the run
+// The 8c automation part of the agent's view (builder A3): DCA drafts, edits, the dry run and the run
 // history with why. Kept apart from context.ts so the lanes merge cleanly; context.ts spreads it in.
 import { formatUnits } from "viem";
 
@@ -38,9 +38,6 @@ export function automationsContext(input: { user: SessionUser; automations: Auto
   const card = (automation: AutomationView) => ({ automation, summary: summarizeAutomation(automation) });
 
   return {
-    async draftPayroll(request) {
-      return card(await automations.createPayroll(user, request, { threadId }));
-    },
     async draftDca(request) {
       return card(await automations.createDca(user, request, { threadId }));
     },
@@ -64,9 +61,10 @@ export function automationsContext(input: { user: SessionUser; automations: Auto
     async simulateAutomation({ automationId }) {
       return guard<SimulateOut>(
         async () => {
-          const simulation = await automations.simulate(user, automationId);
+          const [simulation, automation] = await Promise.all([automations.simulate(user, automationId), automations.get(user.id, automationId)]);
           return {
             simulation,
+            automation,
             summary: {
               network: simulation.network,
               runs: simulation.runs.map((run) => ({

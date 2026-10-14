@@ -1,9 +1,10 @@
 // Positions beyond the earn vaults (surfaces.md Home §7 "Positions: earn, borrow (health), perps (P&L)"; the hero's
 // "total of every asset, every chain, every position"): what the person has on Aave V4 outside Kawase Margin —
-// supplied (earning) and, with a loan, the net of it with the account's health — and every open Kawase Margin
-// position by its equity, side, leverage and profit or loss. Read only when a portfolio is asked for; a venue that
+// supplied (earning) and, with a loan, the net of it with the account's health — every open Kawase Margin position by
+// its equity, side, leverage and profit or loss, and every Aero LP position by its value (fees owed included), its
+// reward rate and whether it is in range. Read only when a portfolio is asked for; a venue that
 // does not answer in time leaves its rows out (the portfolio says it is not fresh).
-import type { PositionSummary } from "@kawase/api-client";
+import type { NetworkId, PositionSummary } from "@kawase/api-client";
 
 import type { LendService } from "../lend/service";
 import type { MarginService } from "../margin/service";
@@ -17,7 +18,7 @@ export type VenuePositions = (user: SessionUser) => Promise<PositionSummary[]>;
 
 export function venuePositions(sources: { lend: () => LendService; margin: () => MarginService }): VenuePositions {
   return async (user) => {
-    const [account, margin] = await Promise.all([
+    const [account, margin, lp] = await Promise.all([
       sources
         .lend()
         .account(user)
@@ -26,6 +27,7 @@ export function venuePositions(sources: { lend: () => LendService; margin: () =>
         .margin()
         .positions(user)
         .catch(() => []),
+      user.activeNetwork === "mainnet" ? (sources.lend().lp?.positions(user).catch(() => null) ?? Promise.resolve(null)) : Promise.resolve(null),
     ]);
     const out: PositionSummary[] = [];
     if (account?.available) {
@@ -79,6 +81,28 @@ export function venuePositions(sources: { lend: () => LendService; margin: () =>
         health: position.health,
       });
     }
+    for (const position of lp?.positions ?? []) {
+      out.push({
+        kind: "lp",
+        id: `aero:${position.id}`,
+        title: `${position.pool.token0.symbol} · ${position.pool.token1.symbol}`,
+        provider: "aero",
+        valueUsd: round(position.valueUsd),
+        apyPct: position.inRange && position.pool.rewardApr !== null ? round(position.pool.rewardApr * PERCENT) : null,
+        token: null,
+        inRange: position.inRange,
+      });
+    }
     return out;
+  };
+}
+
+/** Which tokens Aave V4's Main Spoke lists on a network, and which sides Kawase Margin opens on each (token page). */
+export type VenueMarkets = (network: NetworkId) => Promise<{ available: boolean; reason: string | null; markets: { asset: string; long: boolean; short: boolean }[] }>;
+
+export function venueMarkets(margin: () => MarginService): VenueMarkets {
+  return async (network) => {
+    const view = await margin().markets(network);
+    return { available: view.available, reason: view.reason, markets: view.markets.map((market) => ({ asset: market.asset, long: market.long.available, short: market.short.available })) };
   };
 }
