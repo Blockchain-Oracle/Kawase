@@ -10,9 +10,9 @@
 // Both: from this wallet, to the ops wallet, Redeemer [ops], LimitedCalls 1, a Timestamp no later than now + 120 s
 // (+ slack), the Nonce kill-switch, and a salt of their own. An earn move is the same with the vault's ERC-4626 call
 // pinned exactly (receiver and owner the wallet) and the share/asset balance changes.
-import { decodeFunctionData, encodeFunctionData, erc20Abi, getAddress, isAddressEqual, parseAbi, type Address } from "viem";
+import { decodeFunctionData, encodeFunctionData, erc20Abi, getAddress, isAddressEqual, parseAbi, recoverTypedDataAddress, type Address, type Hex } from "viem";
 
-import { SigningRefused, decodeDelegation, receiptOf, type DecodedCaveat, type DecodedDelegation } from "./checks";
+import { ARC_CHAIN_IDS, SigningRefused, decodeDelegation, receiptOf, type DecodedCaveat, type DecodedDelegation } from "./checks";
 
 /** A leaf lives this long (action-grants.ts LEAF_TTL_SECONDS); the phone allows a little clock skew on top. */
 export const LEAF_TTL_SECONDS = 120;
@@ -218,8 +218,167 @@ export function checkContactGrant(typedData: TypedDataLike, expected: ContactGra
 }
 
 
+/**
+ * A delegation's typed data as the api sends it (JSON: the salt as a decimal string) back in the shape the wallet
+ * signs (the salt as a bigint). Everything else is already hex, numbers or strings.
+ */
+export function reviveDelegationTypedData<T extends { message?: Record<string, unknown> | undefined }>(typedData: T): T {
+  const message = typedData.message;
+  if (!message || typeof message.salt !== "string") return typedData;
+  return { ...typedData, message: { ...message, salt: BigInt(message.salt) } };
+}
+
 /** The balance-change terms a leaf carries, for a receipt line ("Output had to land in your wallet: at least …"). */
 export function leafGuarantees(decoded: DecodedDelegation): { token: Address; amount: bigint; direction: "increase" | "decrease" }[] {
   return find(decoded, "erc20BalanceChange").map((change) => ({ token: change.token, amount: change.amount, direction: change.direction }));
 }
 
+// ── The signed budget (D38) ───────────────────────────────────────────────────────────────────────────────────────
+
+/** What a budget can let Kawase do with no prompt. Perps opens, borrowing and new people are never in it. */
+export const BUDGET_CATEGORIES = ["swap", "bridge", "earn", "x402", "send"] as const;
+export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
+
+/**
+ * The person's weekly budget as their wallet signs it (EIP-712, one Face ID): dollars a week, dollars an action, the
+ * categories and the venues. Amounts are US dollars in 6-decimal base units (like USDC). The phone checks the
+ * signature itself before it trusts a budget the server returns, so the server can never raise one.
+ */
+export type BudgetPolicy = {
+  wallet: Address;
+  chainId: number;
+  weeklyCap: bigint;
+  perActionCap: bigint;
+  categories: BudgetCategory[];
+  /** Venue ids ("kyberswap", "app_kit", "lifi", "cctp", a vault address…), lower-case. */
+  venues: string[];
+  /** Unix seconds. */
+  issuedAt: number;
+  /** Goes up by one with every new budget the wallet signs. */
+  version: number;
+};
+
+const BUDGET_DOMAIN_NAME = "Kawase Budget";
+const BUDGET_DOMAIN_VERSION = "1";
+export const BUDGET_TYPES = {
+  Budget: [
+    { name: "wallet", type: "address" },
+    { name: "weeklyCap", type: "uint256" },
+    { name: "perActionCap", type: "uint256" },
+    { name: "categories", type: "string[]" },
+    { name: "venues", type: "string[]" },
+    { name: "issuedAt", type: "uint64" },
+    { name: "version", type: "uint32" },
+  ],
+} as const;
+
+/** The typed data the wallet signs for a budget (no verifying contract: it is a statement, never sent to a chain). */
+export function budgetTypedData(policy: BudgetPolicy) {
+  return {
+    domain: { name: BUDGET_DOMAIN_NAME, version: BUDGET_DOMAIN_VERSION, chainId: policy.chainId },
+    types: BUDGET_TYPES,
+    primaryType: "Budget" as const,
+    message: {
+      wallet: policy.wallet,
+      weeklyCap: policy.weeklyCap,
+      perActionCap: policy.perActionCap,
+      categories: policy.categories,
+      venues: policy.venues,
+      issuedAt: BigInt(policy.issuedAt),
+      version: policy.version,
+    },
+  };
+}
+
+/** The budget's numbers make sense: a per-action cap above zero and within the week, only known categories. */
+export function isSaneBudget(policy: BudgetPolicy): boolean {
+  return (
+    ARC_CHAIN_IDS.includes(policy.chainId) &&
+    policy.perActionCap > ZERO &&
+    policy.perActionCap <= policy.weeklyCap &&
+    policy.categories.every((category) => BUDGET_CATEGORIES.includes(category)) &&
+    new Set(policy.categories).size === policy.categories.length
+  );
+}
+
+/** A budget the person's wallet really signed, with sane numbers. */
+export async function verifyBudget(policy: BudgetPolicy, signature: Hex): Promise<boolean> {
+  if (!isSaneBudget(policy)) return false;
+  try {
+    const signer = await recoverTypedDataAddress({ ...budgetTypedData(policy), signature });
+    return isAddressEqual(signer, policy.wallet);
+  } catch {
+    return false;
+  }
+}
+
+
+// ── The signed budget (D38) ───────────────────────────────────────────────────────────────────────────────────────
+
+/** What a budget can let Kawase do with no prompt. Perps opens, borrowing and new people are never in it. */
+export const BUDGET_CATEGORIES = ["swap", "bridge", "earn", "x402", "send"] as const;
+export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
+
+/**
+ * The person's weekly budget as their wallet signs it (EIP-712, one Face ID): dollars a week, dollars an action, the
+ * categories and the venues. Amounts are US dollars in 6-decimal base units (like USDC). The phone checks the
+ * signature itself before it trusts a budget the server returns, so the server can never raise one.
+ */
+export type BudgetPolicy = {
+  wallet: Address;
+  chainId: number;
+  weeklyCap: bigint;
+  perActionCap: bigint;
+  categories: BudgetCategory[];
+  /** Venue ids ("kyberswap", "app_kit", "lifi", "cctp", vault addresses…), lower-case. */
+  venues: string[];
+  /** Unix seconds. */
+  issuedAt: number;
+  /** Goes up by one with every new budget the wallet signs. */
+  version: number;
+};
+
+const BUDGET_DOMAIN_NAME = "Kawase Budget";
+const BUDGET_DOMAIN_VERSION = "1";
+export const BUDGET_TYPES = {
+  Budget: [
+    { name: "wallet", type: "address" },
+    { name: "weeklyCap", type: "uint256" },
+    { name: "perActionCap", type: "uint256" },
+    { name: "categories", type: "string[]" },
+    { name: "venues", type: "string[]" },
+    { name: "issuedAt", type: "uint64" },
+    { name: "version", type: "uint32" },
+  ],
+} as const;
+
+/** The typed data the wallet signs for a budget (no verifying contract: it is a statement, never sent to a chain). */
+export function budgetTypedData(policy: BudgetPolicy) {
+  return {
+    domain: { name: BUDGET_DOMAIN_NAME, version: BUDGET_DOMAIN_VERSION, chainId: policy.chainId },
+    types: BUDGET_TYPES,
+    primaryType: "Budget" as const,
+    message: {
+      wallet: policy.wallet,
+      weeklyCap: policy.weeklyCap,
+      perActionCap: policy.perActionCap,
+      categories: policy.categories,
+      venues: policy.venues,
+      issuedAt: BigInt(policy.issuedAt),
+      version: policy.version,
+    },
+  };
+}
+
+/** A budget the person's wallet really signed, on a chain this wallet signs for, with sane numbers. */
+export async function verifyBudget(policy: BudgetPolicy, signature: Hex): Promise<boolean> {
+  if (!ARC_CHAIN_IDS.includes(policy.chainId)) return false;
+  if (policy.perActionCap <= ZERO || policy.weeklyCap < ZERO || policy.perActionCap > policy.weeklyCap) return false;
+  if (policy.categories.some((category) => !BUDGET_CATEGORIES.includes(category))) return false;
+  try {
+    const signer = await recoverTypedDataAddress({ ...budgetTypedData(policy), signature });
+    return isAddressEqual(signer, policy.wallet);
+  } catch {
+    return false;
+  }
+}
