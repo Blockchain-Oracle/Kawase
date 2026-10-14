@@ -1,12 +1,11 @@
-// The composer, "the orb capsule": a native twin of 21st.dev zochory/prompt-input-dynamic-grow (grow on focus, a
-// subtle glow, a ripple where the finger lands, shrink back when empty and unfocused), joined to Kawase's voice
-// button. At rest it is a compact glass capsule beside the round voice button; focused, the capsule springs to full
-// width, the voice button folds into a mic inside it, Send scales in once there is text, and the field grows up to
-// about five lines. Optional action chips ride above while focused and insert a template. Stop replaces Send while
-// the agent is answering. Layout changes run as UI-thread layout animations, never a per-frame width tween.
-import { ArrowUp, AudioLines, Mic, Square, type LucideIcon } from "lucide-react-native";
+// The composer: a native twin of 21st.dev zochory/prompt-input-dynamic-grow (the field grows with its text up to about
+// five lines), in Senryo's calm material — one capsule on a hairline, no glow and no ring (the owner's review, 14 Oct:
+// the glowing capsule beside a ringed voice button read as a gimmick). The mic sits inside the capsule while it is
+// empty, Send scales in once there is text (Enter on a keyboard), Stop replaces it while the agent answers. Optional
+// action chips ride above while it is focused and empty and insert a template.
+import { ArrowUp, Mic, Square, type LucideIcon } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Pressable, ScrollView, TextInput, View, type GestureResponderEvent } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 import Animated, {
   FadeInDown,
   FadeOutDown,
@@ -32,7 +31,6 @@ const WEB_NO_RESIZE = { resize: "none" } as object;
 const AUTOCORRECT_ECHO_MS = 400;
 /** An autocorrection can shorten a word or two. */
 const ECHO_SLACK_CHARS = 4;
-const HALF = 2;
 
 type ComposerLabels = {
   placeholder: string;
@@ -63,7 +61,7 @@ type ComposerProps = {
   /** Shown above the capsule while it is focused and empty. */
   actions?: ComposerAction[];
   /** Theme colours as hex (the caller passes the active theme's tokens). */
-  colors?: { glow: string; border: string; card: string; send: string; onSend: string };
+  colors?: { glow: string; border: string; card: string; send: string; onSend: string; focus?: string };
   /** Light haptic, sound, etc. on send; the caller owns feedback. */
   onSent?: () => void;
   className?: string;
@@ -94,18 +92,16 @@ function Composer({
   const reduced = useReducedMotionLive();
   const input = React.useRef<TextInput>(null);
   const [focused, setFocused] = React.useState(false);
-  const expanded = focused || value.length > 0;
   const canSend = !disabled && value.trim().length > 0;
   const layout = reduced ? undefined : LinearTransition.springify().damping(SPRING.layout.damping).stiffness(SPRING.layout.stiffness);
 
-  // Focus glow: the hairline warms to the accent and a soft halo appears (on the UI thread).
-  const glow = useSharedValue(0);
+  // Focus: the hairline darkens a step (no glow).
+  const focus = useSharedValue(0);
   React.useEffect(() => {
-    glow.value = withTiming(focused ? 1 : 0, { duration: reduced ? 0 : MOTION.composerGlowMs });
-  }, [focused, reduced, glow]);
+    focus.value = withTiming(focused ? 1 : 0, { duration: reduced ? 0 : MOTION.composerGlowMs });
+  }, [focused, reduced, focus]);
   const capsuleStyle = useAnimatedStyle(() => ({
-    borderColor: interpolateColor(glow.value, [0, 1], [colors.border, colors.glow]),
-    shadowOpacity: glow.value * COMPOSER.glowOpacity,
+    borderColor: interpolateColor(focus.value, [0, 1], [colors.border, colors.focus ?? colors.border]),
   }));
 
   // The field grows with its text up to the cap, smoothly.
@@ -119,25 +115,7 @@ function Composer({
     if (value.length === 0) height.value = reduced ? COMPOSER.minHeightPt : withSpring(COMPOSER.minHeightPt, SPRING.layout);
   }, [value.length, reduced, height]);
 
-  // A ripple from where the finger landed (the 21st component's onFocus ripple).
-  const ripple = useSharedValue(0);
-  const rippleAt = useSharedValue({ x: 0, y: 0 });
-  const rippleStyle = useAnimatedStyle(() => ({
-    opacity: (1 - ripple.value) * COMPOSER.glowOpacity,
-    transform: [
-      { translateX: rippleAt.value.x - COMPOSER.rippleSizePt / HALF },
-      { translateY: rippleAt.value.y - COMPOSER.rippleSizePt / HALF },
-      { scale: ripple.value * COMPOSER.rippleScale },
-    ],
-  }));
-  const touch = (event: GestureResponderEvent) => {
-    if (!reduced) {
-      rippleAt.value = { x: event.nativeEvent.locationX, y: event.nativeEvent.locationY };
-      ripple.value = 0;
-      ripple.value = withTiming(1, { duration: MOTION.composerRippleMs });
-    }
-    input.current?.focus();
-  };
+  const touch = () => input.current?.focus();
 
   // iOS commits a pending autocorrection after the field was cleared on send, which would put the sent message
   // back ("arbitrum" returning as "Arboretum"). A change that brings back a whole message right after a send is
@@ -201,24 +179,14 @@ function Composer({
           style={[
             capsuleStyle,
             {
-              // At rest it takes every point beside the voice orb (a fixed share was too narrow on a phone); focused, the
-              // orb leaves and it grows to the whole row.
               flexGrow: 1,
               flexBasis: 0,
               flexShrink: 1,
               backgroundColor: colors.card,
-              shadowColor: colors.glow,
-              shadowRadius: COMPOSER.glowRadiusPt,
-              shadowOffset: { width: 0, height: 0 },
             },
           ]}
           className="overflow-hidden rounded-[28px] border"
         >
-          <Animated.View
-            pointerEvents="none"
-            style={[rippleStyle, { backgroundColor: colors.glow, width: COMPOSER.rippleSizePt, height: COMPOSER.rippleSizePt }]}
-            className="absolute rounded-full"
-          />
           <Pressable onPressIn={touch} accessible={false} className="flex-row items-end gap-1 py-1 ps-4 pe-1.5">
             <Animated.View style={fieldStyle} className="flex-1 justify-center">
               <TextInput
@@ -241,7 +209,7 @@ function Composer({
               />
             </Animated.View>
             <View className="h-12 flex-row items-center gap-1">
-              {expanded && onTalk && !generating ? (
+              {onTalk && !generating && !canSend ? (
                 <Animated.View entering={reduced ? undefined : ZoomIn.duration(MOTION.pressMs)} exiting={reduced ? undefined : ZoomOut.duration(MOTION.pressMs)}>
                   <Pressable
                     accessibilityRole="button"
@@ -281,19 +249,6 @@ function Composer({
             </View>
           </Pressable>
         </Animated.View>
-        {!expanded && onTalk ? (
-          <Animated.View entering={reduced ? undefined : ZoomIn.duration(MOTION.composerMs)} exiting={reduced ? undefined : ZoomOut.duration(MOTION.pressMs)} layout={layout}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={labels.talk}
-              onPress={onTalk}
-              style={{ width: COMPOSER.voiceButtonPt, height: COMPOSER.voiceButtonPt, borderColor: colors.glow, backgroundColor: colors.card }}
-              className="items-center justify-center rounded-full border-2 active:opacity-80"
-            >
-              <AudioLines size={22} color={colors.glow} strokeWidth={2.25} />
-            </Pressable>
-          </Animated.View>
-        ) : null}
       </Animated.View>
     </View>
   );

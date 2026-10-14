@@ -6,7 +6,7 @@
 //   Apple coming back to the page are finished by privy-oauth-return.tsx, which has a surface to show it on.
 import { useTurnkey } from "@turnkey/react-wallet-kit";
 
-import { isPrivy, isTurnkeyConfigured } from "./config";
+import { isDev, isPrivy, isTurnkeyConfigured } from "./config";
 import { useDeviceProver } from "./turnkey-account-core";
 
 function TurnkeySync() {
@@ -16,6 +16,6 @@ function TurnkeySync() {
 
 // Without the provider's ids there is no provider above this (see wallet-provider.tsx), so it must not call the kit.
 export function DeviceProofSync() {
-  if (isPrivy) return null;
+  if (isPrivy || isDev) return null;
   return isTurnkeyConfigured ? <TurnkeySync /> : null;
 }

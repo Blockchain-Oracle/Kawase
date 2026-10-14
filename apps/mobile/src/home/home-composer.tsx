@@ -197,17 +197,20 @@ function Launcher({
             style={styles.pillPress}
           >
             <KawaseMark size={MARK} />
-            {busy ? (
-              <Animated.View key="busy" entering={FadeIn.duration(TIMING.selection)} style={styles.grow}>
-                <ShimmerText style={[TYPE.body, { color: color.ink }]}>{busyLabel ?? t("feed.run.strip_steps")}</ShimmerText>
-              </Animated.View>
-            ) : (
-              <Animated.View key={hint} entering={FadeInDown} exiting={FadeOutUp} style={styles.grow}>
-                <Text numberOfLines={1} style={[TYPE.body, { color: hint === t("feed.home.placeholder") ? color.text3 : color.ink }]}>
-                  {hint}
-                </Text>
-              </Animated.View>
-            )}
+            {/* One line tall: the outgoing words rise out as the next rise in, layered, never side by side. */}
+            <View style={styles.hintBox}>
+              {busy ? (
+                <Animated.View key="busy" entering={FadeIn.duration(TIMING.selection)} style={styles.hintLine}>
+                  <ShimmerText style={[TYPE.body, { color: color.ink }]}>{busyLabel ?? t("feed.run.strip_steps")}</ShimmerText>
+                </Animated.View>
+              ) : (
+                <Animated.View key={hint} entering={FadeInDown} exiting={FadeOutUp} style={styles.hintLine}>
+                  <Text numberOfLines={1} style={[TYPE.body, { color: hint === t("feed.home.placeholder") ? color.text3 : color.ink }]}>
+                    {hint}
+                  </Text>
+                </Animated.View>
+              )}
+            </View>
           </Pressable>
           {busy ? (
             <RoundAction label={t("common.stop")} onPress={onStop} filled>
@@ -276,6 +279,12 @@ function OpenField({
   const [height, setHeight] = React.useState(FIELD_MIN);
   const canSend = !busy && value.trim().length > 0;
   const dark = name === "dark";
+  // The field takes the keyboard as it opens (autoFocus alone loses to the entering animation on the web, and the
+  // keys would go to the page's shortcuts instead).
+  React.useEffect(() => {
+    const frame = requestAnimationFrame(() => input.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const chips: Chip[] = [
     { key: "bring", label: t("feed.home.chipBring"), prompt: t("feed.home.chipBringPrompt") },
@@ -432,6 +441,8 @@ const styles = StyleSheet.create({
     paddingEnd: SPACE.xs + HAIRLINE_PX,
     overflow: "hidden",
   },
+  hintBox: { flex: 1, height: LAUNCHER_H, overflow: "hidden" },
+  hintLine: { position: "absolute", top: 0, bottom: 0, start: 0, end: 0, justifyContent: "center" },
   pillPress: { flex: 1, height: "100%", flexDirection: "row", alignItems: "center", gap: SPACE.md, overflow: "hidden" },
   round: { width: ACTION, height: ACTION, borderRadius: ACTION / HALF, alignItems: "center", justifyContent: "center" },
   plate: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / HALF, alignItems: "center", justifyContent: "center" },

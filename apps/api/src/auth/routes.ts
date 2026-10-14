@@ -32,6 +32,15 @@ const JWT_MAX_CHARS = 16_384;
 const jwt = z.string().max(JWT_MAX_CHARS).regex(/^[\w-]+\.[\w-]+\.[\w-]+$/);
 const privyTokensSchema = z.object({ accessToken: jwt, identityToken: jwt.optional() });
 const privySchema = privyTokensSchema.extend({ device: deviceSchema });
+const HEX_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+const HEX_SIGNATURE = /^0x[0-9a-fA-F]{130}$/;
+const devSchema = z.object({
+  email: z.email().max(FIELD.emailMax),
+  address: z.string().regex(HEX_ADDRESS).transform((value) => value as `0x${string}`),
+  nonce: z.string().min(1).max(FIELD.nonceMax),
+  signature: z.string().regex(HEX_SIGNATURE).transform((value) => value as `0x${string}`),
+  device: deviceSchema,
+});
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -42,7 +51,7 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
 /** After an account sign-in: the device's place and the "new sign-in" notice (never delays or fails the sign-in). */
 export type SignedInHook = (input: { userId: string; deviceId: string; deviceCreatedAt: Date; ip: string | undefined }) => Promise<void>;
 
-export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook) {
+export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook, options: { devSignIn?: boolean } = {}) {
   const app = new Hono<AppEnv>();
 
   app.post("/nonce", async (c) => c.json(await auth.issueNonce()));
@@ -76,6 +85,19 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook)
     if (onSignedIn) void onSignedIn({ userId: user.id, deviceId: device.id, deviceCreatedAt: device.createdAt, ip: clientIp(c) }).catch(() => undefined);
     return c.json({ token, user: publicUser(user), wallet: wallet ? { id: wallet.id, address: wallet.address } : null }, HTTP.created);
   });
+
+  /** Local development only (app.ts decides): a throwaway testnet key signs the nonce; see AuthService.signInWithDevKey. */
+  if (options.devSignIn) {
+    app.post("/dev", async (c) => {
+      const input = await parse(devSchema, await c.req.json());
+      const guestToken = bearerToken(c.req.raw.headers);
+      const guest = guestToken ? await findSession(db, guestToken) : undefined;
+      const guestUserId = guest?.user.isAnonymous ? guest.user.id : undefined;
+      const { token, user, wallet } = await auth.signInWithDevKey({ ...input, guestUserId });
+      if (guest) await revokeSession(db, guest.session.id);
+      return c.json({ token, user: publicUser(user), wallet: { id: wallet.id, address: wallet.address } }, HTTP.created);
+    });
+  }
 
   /** The signed-in account, for the two calls below (they sit under /auth, outside requireAccount). */
   const account = (c: Context<AppEnv>) => {

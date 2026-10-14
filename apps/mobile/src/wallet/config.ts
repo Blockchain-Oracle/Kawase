@@ -4,8 +4,15 @@
  * Which wallet provider signs people in and holds their key (D41): Privy, with Turnkey kept as the fallback for one
  * build. Set at build time with EXPO_PUBLIC_WALLET_PROVIDER (the api's WALLET_PROVIDER turns its side on).
  */
-export const WALLET_PROVIDER: "privy" | "turnkey" = process.env.EXPO_PUBLIC_WALLET_PROVIDER === "privy" ? "privy" : "turnkey";
+export const WALLET_PROVIDER: "privy" | "turnkey" | "dev" =
+  process.env.EXPO_PUBLIC_WALLET_PROVIDER === "privy" ? "privy" : process.env.EXPO_PUBLIC_WALLET_PROVIDER === "dev" ? "dev" : "turnkey";
 export const isPrivy = WALLET_PROVIDER === "privy";
+/**
+ * Dev mode (local development only, EXPO_PUBLIC_WALLET_PROVIDER=dev against an api started with KAWASE_DEV_AUTH=1):
+ * sign-in takes any `@kawase.test` email and any code, the wallet is a throwaway testnet key kept in this browser, and
+ * approvals pass by themselves — so every flow (budget, automations, contacts, sends, swaps) can be tried end to end.
+ */
+export const isDev = WALLET_PROVIDER === "dev";
 
 /** Privy: the app id and, for the native app, the app client id (dashboard → App clients). */
 export const PRIVY_APP_ID = process.env.EXPO_PUBLIC_PRIVY_APP_ID ?? "";
@@ -29,4 +36,4 @@ export const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://app.getka
 export const isTurnkeyConfigured = TURNKEY_ORGANIZATION_ID !== "" && TURNKEY_AUTH_PROXY_CONFIG_ID !== "";
 export const isPrivyConfigured = PRIVY_APP_ID !== "";
 /** The chosen provider has its ids; without them the app still runs (guest look-around). */
-export const isWalletConfigured = isPrivy ? isPrivyConfigured : isTurnkeyConfigured;
+export const isWalletConfigured = isDev || (isPrivy ? isPrivyConfigured : isTurnkeyConfigured);

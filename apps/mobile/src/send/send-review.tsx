@@ -138,8 +138,12 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
   const trusted = recipient.paidBefore || Boolean(recipient.verifiedMethod);
   const name = recipientName(recipient, intent.request.recipient);
   const secondary = recipient.name && recipient.handle ? `@${recipient.handle}` : shortAddress(recipient.address);
-  const warnings = intent.results.filter((entry) => ROW_WARNINGS.has(entry.code));
   const test = intent.results.find((entry) => entry.code === "TEST_AMOUNT_SUGGESTED");
+  // A new address is said once: the trust chip says it isn't saved, and the test-amount offer (when there is one) says
+  // it is the first payment — so those two rows don't repeat what is already on screen.
+  const warnings = intent.results.filter(
+    (entry) => ROW_WARNINGS.has(entry.code) && entry.code !== "UNSAVED_ADDRESS" && !(entry.code === "FIRST_TIME_RECIPIENT" && test?.params?.test),
+  );
   // Any token (R1): its own decimals and mark; drafts from before any-asset sends are USDC/EURC.
   const decimals = draft.token?.decimals ?? (draft.asset === "USDC" || draft.asset === "EURC" ? undefined : DEFAULT_TOKEN_DECIMALS);
   const figures =
@@ -169,8 +173,10 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
         </View>
       </View>
 
+      <Text className={cn("text-muted-foreground -mb-2 px-1 text-sm", TEXT_START)}>{t("send.to")}</Text>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={`${t("send.to")} ${name}`}
         accessibilityState={{ expanded }}
         accessibilityHint={t("send.showFullAddress")}
         onPress={() => setExpanded((open) => !open)}
@@ -178,29 +184,21 @@ export function SendReview({ intent, compact, onRevise }: { intent: SendIntent; 
       >
         <View className="flex-row items-center gap-3">
           <DefaultAvatar seed={recipient.address.toLowerCase()} size={AVATAR} label={name} />
-          <View className="min-w-0 flex-1 gap-0.5">
+          <View className="min-w-0 flex-1 gap-1">
             <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
-              {t("send.to")} {name}
+              {name}
             </Text>
-            <Amount numberOfLines={1} className="text-muted-foreground text-sm">
-              {secondary}
-            </Amount>
-          </View>
-          <View
-            className={cn(
-              "flex-row items-center gap-1 rounded-full px-2.5 py-1",
-              trusted ? "bg-success/15" : "bg-muted",
-            )}
-          >
-            <Icon
-              as={trusted ? BadgeCheck : Info}
-              className={cn("size-3.5", trusted ? "text-success" : "text-muted-foreground")}
-            />
-            <Text
-              className={cn("text-xs font-semibold", trusted ? "text-success" : "text-muted-foreground")}
-            >
-              {trustLabel(recipient)}
-            </Text>
+            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+              <Amount numberOfLines={1} className="text-muted-foreground text-sm">
+                {secondary}
+              </Amount>
+              <View className={cn("flex-row items-center gap-1 rounded-full px-2 py-0.5", trusted ? "bg-success/15" : "bg-muted")}>
+                <Icon as={trusted ? BadgeCheck : Info} className={cn("size-3", trusted ? "text-success" : "text-muted-foreground")} />
+                <Text numberOfLines={1} className={cn("text-xs font-semibold", trusted ? "text-success" : "text-muted-foreground")}>
+                  {trustLabel(recipient)}
+                </Text>
+              </View>
+            </View>
           </View>
           <Icon as={ChevronDown} className={cn("text-muted-foreground size-4", expanded ? "rotate-180" : "")} />
         </View>

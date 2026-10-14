@@ -1,7 +1,19 @@
-# Interface confirmation sound
+# Kawase sounds — Senryo's kit
 
-`confirmed.wav` is a 0.5-second mono PCM effect generated with ElevenLabs Sound Effects v2 on 2026-10-02. Prompt: a quiet, soft rounded two-tone confirmation chime, warm and reassuring, without voice, music, harsh clicks or alarms.
+Every sound here is Senryo's (`metropolis/apps/mobile/assets/sounds`, the owner's own project), at Senryo's levels
+(`src/feedback/feedback.ts` `RECORDED_VOLUME`; Senryo `feedback/constants.ts` and `@senryo/tokens` `SOUND_MIX`):
 
-The generated MP3 was converted to 44.1 kHz mono WAV with loudness normalization (`I=-26`, `TP=-9`, `LRA=3`), another -3 dB of gain, and a 140 ms fade out. It has been decode-checked; listening and physical-device silent-mode/Bluetooth acceptance remain open.
+| File | Senryo source | Plays when |
+|---|---|---|
+| `send.wav` | `send.wav` (variant 1) | money sent (finalized) |
+| `received.wav` | `deposit.wav` (variant 1) | money arrived |
+| `error.wav` | `error.wav` (variant 2) | a failed action |
+| `confirmed.wav` | `cues/success.wav` | a result confirmed |
+| `fan-open.wav` | `cues/sheetOpen.wav` | the + fan opens |
+| `voice-start.wav` | `unlock.wav` (variant 3) | voice starts listening |
+| `voice-end.wav` | `cues/sheetClose.wav` | voice ends |
+| `cues/scene.wav` | `scene.wav` (variant 2) | a welcome scene settles |
 
-Interface sounds default off, haptics default on. Both have persistent independent switches. Confirmed feedback uses a stable result identity, stays silent during communication audio, and never replays when an old sent card opens. Local audio and communication startup are serialized. Narration is still pending the accepted speech configuration and localized bundled assets; it must remain opt-in.
+`cues/{tap,toggle,sheetOpen,sheetClose}.wav` are rendered from the same voice definitions as Senryo's
+(`packages/ui-tokens/sound.json`, byte-identical to Senryo's files). Sounds follow the ringer switch, mix with other
+audio, never play in the background, and play once per finalized outcome.

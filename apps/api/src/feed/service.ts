@@ -16,6 +16,14 @@ import { getNetwork, type NetworkId } from "@kawase/networks";
 
 import type { SessionUser } from "../types";
 
+/**
+ * Home never waits long on one source: a slow one (the chain's transfer index when it is rate-limited) is marked
+ * partial and the feed answers with the rest; its read carries on and fills the cache for the next look.
+ */
+const SOURCE_WAIT_MS = 4_000;
+const within = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([promise, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`no answer within ${ms} ms`)), ms).unref())]);
+
 /** Rows per group (the feed is a glance; Activity keeps the full history). */
 const GROUP_ROWS = 30;
 /** Open proposals still worth showing: the newest few. */
@@ -126,7 +134,7 @@ export class FeedService {
   async get(user: SessionUser, network: NetworkId, now: Date = new Date()): Promise<AgentFeed> {
     const partial: AgentFeed["partial"] = [];
     const [activity, proposals, watched, found] = await Promise.all([
-      this.sources.activity.list(user, network).catch((error: unknown) => {
+      within(this.sources.activity.list(user, network), SOURCE_WAIT_MS).catch((error: unknown) => {
         this.log.warn({ err: error }, "feed: activity unavailable");
         partial.push("activity");
         return null;
@@ -135,7 +143,7 @@ export class FeedService {
       this.watched(user, network),
       // For you reads the session's network; on the other one it has nothing to say here.
       network === user.activeNetwork && this.sources.suggestions
-        ? this.sources.suggestions.list(user).catch((error: unknown) => {
+        ? within(this.sources.suggestions.list(user), SOURCE_WAIT_MS).catch((error: unknown) => {
             this.log.warn({ err: error }, "feed: suggestions unavailable");
             partial.push("suggestions");
             return null;

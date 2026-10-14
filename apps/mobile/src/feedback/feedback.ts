@@ -34,12 +34,12 @@ export type Cue =
 /* eslint-disable @typescript-eslint/no-require-imports */
 const CUE_ASSETS: Record<Cue, number> = {
   confirmed: require("../../assets/audio/confirmed.wav"),
-  send: require("../../assets/audio/send.mp3"),
-  received: require("../../assets/audio/received.mp3"),
-  voiceStart: require("../../assets/audio/voice-start.mp3"),
-  voiceEnd: require("../../assets/audio/voice-end.mp3"),
-  fanOpen: require("../../assets/audio/fan-open.mp3"),
-  error: require("../../assets/audio/error.mp3"),
+  send: require("../../assets/audio/send.wav"),
+  received: require("../../assets/audio/received.wav"),
+  voiceStart: require("../../assets/audio/voice-start.wav"),
+  voiceEnd: require("../../assets/audio/voice-end.wav"),
+  fanOpen: require("../../assets/audio/fan-open.wav"),
+  error: require("../../assets/audio/error.wav"),
   ...RENDERED_CUES,
 };
 /* eslint-enable @typescript-eslint/no-require-imports */
@@ -56,8 +56,21 @@ const CUE_HAPTIC: Partial<Record<Cue, HapticEvent>> = {
   agentDone: "agentDone",
 };
 
-/** The level of a synthesised cue under the master, so the palette sits together; recorded files are levelled already. */
-const cueVolume = (name: Cue): number => (name in CUE_MIX ? CUE_MASTER * CUE_MIX[name as keyof typeof CUE_MIX] : 1);
+/** Senryo's `success` cue level (`@senryo/tokens` SOUND_MIX). */
+const SENRYO_SUCCESS_MIX = 0.45;
+/** Senryo's levels for its files (assets/audio/README.md): its UI palette's volumes, and its cue mix under the master. */
+const RECORDED_VOLUME: Partial<Record<Cue, number>> = {
+  send: 0.28,
+  received: 0.3,
+  error: 0.4,
+  voiceStart: 0.35,
+  confirmed: CUE_MASTER * SENRYO_SUCCESS_MIX,
+  fanOpen: CUE_MASTER * CUE_MIX.sheetOpen,
+  voiceEnd: CUE_MASTER * CUE_MIX.sheetClose,
+};
+
+/** The level of each cue, so the palette sits together. */
+const cueVolume = (name: Cue): number => RECORDED_VOLUME[name] ?? (name in CUE_MIX ? CUE_MASTER * CUE_MIX[name as keyof typeof CUE_MIX] : 1);
 
 const ownership = new AudioOwnership();
 const completed = new Set<string>();

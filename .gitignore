@@ -18,3 +18,4 @@ refs/*/
 # Local agent worktrees and the local pnpm store
 .claude/worktrees/
 .pnpm-store/
+.dev-pg/

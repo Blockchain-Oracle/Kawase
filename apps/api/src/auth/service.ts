@@ -5,6 +5,7 @@
 // - Turnkey (the fallback for one build): a stamp by the session key over our single-use nonce.
 import { randomBytes } from "node:crypto";
 import { and, eq, gt, isNull, ne, sql } from "drizzle-orm";
+import { verifyMessage, type Address, type Hex } from "viem";
 
 import { loadPrivyEnv } from "@kawase/env";
 import { devices, moveUserData, signInNonces, users, type Db } from "@kawase/db";
@@ -42,6 +43,10 @@ export function privyFromEnv(source?: Record<string, string | undefined>): Privy
 }
 
 const PRIVY = "privy" as const;
+/** Dev accounts live on this domain only (RFC 2606 reserves .test), so no real address is ever signed into this way. */
+export const DEV_EMAIL_DOMAIN = "@kawase.test";
+/** What a dev key signs to sign in: the api's nonce, in words. */
+export const devSignInMessage = (nonce: string) => `Kawase dev sign-in\n${nonce}`;
 /** The unique indexes two concurrent first sign-ins can collide on (the identity, the email, the device). */
 const RACED_INDEXES = ["users_identity_idx", "users_email_idx", "devices_installation_idx"] as const;
 const raceConflict = () => problem(HTTP.conflict, "conflict", "this sign-in is already being finished; try again");
@@ -234,6 +239,47 @@ export class AuthService {
       })
       .returning();
     return device!;
+  }
+
+  /**
+   * Dev sign-in (local development only; app.ts mounts it only outside production with mainnet off): a throwaway
+   * testnet key proves itself by signing the api's single-use nonce, and its `@kawase.test` email names the account.
+   * The key is the account's wallet (custody "external"), so every flow can be tried end to end without a provider.
+   */
+  async signInWithDevKey(input: {
+    email: string;
+    address: Address;
+    nonce: string;
+    signature: Hex;
+    device: DeviceInput;
+    guestUserId?: string | undefined;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    if (!email.endsWith(DEV_EMAIL_DOMAIN)) throw problem(HTTP.badRequest, "validation", `a dev account's email ends in ${DEV_EMAIL_DOMAIN}`);
+    await this.consumeNonce(input.nonce);
+    const valid = await verifyMessage({ address: input.address, message: devSignInMessage(input.nonce), signature: input.signature });
+    if (!valid) throw problem(HTTP.unauthorized, "proof_invalid", "the signature does not match the key");
+    const user = await retryOnRace(() => this.db.transaction(async (tx) => {
+      const [existing] = await tx.select().from(users).where(sql`lower(${users.email}) = ${email}`);
+      if (existing) {
+        if (input.guestUserId && input.guestUserId !== existing.id) await moveUserData(tx, input.guestUserId, existing.id);
+        return existing;
+      }
+      if (input.guestUserId) {
+        const [upgraded] = await tx
+          .update(users)
+          .set({ email, isAnonymous: false })
+          .where(and(eq(users.id, input.guestUserId), eq(users.isAnonymous, true)))
+          .returning();
+        if (upgraded) return upgraded;
+      }
+      const [created] = await tx.insert(users).values({ email, isAnonymous: false, locale: input.device.locale ?? "en" }).returning();
+      return created!;
+    }), RACED_INDEXES, raceConflict);
+    const device = await retryOnRace(() => this.upsertDevice(user.id, input.device), RACED_INDEXES, raceConflict);
+    const wallet = await registerUserWallet(this.db, user.id, { address: input.address, custody: "external", providerRef: { kind: "dev" } });
+    const { token } = await createSession(this.db, user.id, device.id);
+    return { token, user, device, wallet };
   }
 
   async signInAsGuest(input: { device: DeviceInput; locale?: string | undefined }) {

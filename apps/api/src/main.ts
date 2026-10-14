@@ -53,6 +53,7 @@ const onrampPageUrl = env.ONRAMP_PAGE_URL ?? (env.ONRAMP_REFERRER_DOMAIN ? `http
 const app = createApp({
   db,
   log,
+  devSignIn: env.KAWASE_DEV_AUTH && env.NODE_ENV !== "production",
   turnkey: createTurnkeyReader({
     baseUrl: env.TURNKEY_API_BASE_URL,
     apiPublicKey: env.TURNKEY_API_PUBLIC_KEY,

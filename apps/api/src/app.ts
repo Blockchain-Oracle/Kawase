@@ -13,6 +13,7 @@ import type { Models } from "@kawase/agent";
 import { agentRoutes, createTurnRunner } from "./agent/routes";
 import type { ModelHealth } from "./agent/health";
 import { attachSession } from "./auth/middleware";
+import { agentBudgetFor } from "./budget/agent-budget";
 import { budgetRoutes } from "./budget/routes";
 import { BudgetService } from "./budget/service";
 import { feedRoutes } from "./feed/routes";
@@ -128,6 +129,8 @@ import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
   db: Db;
+  /** Local development's dev sign-in (main.ts: KAWASE_DEV_AUTH outside production). */
+  devSignIn?: boolean;
   log: Logger;
   turnkey: TurnkeyReader;
   chains: Chains;
@@ -398,7 +401,9 @@ export function createApp(deps: AppDeps) {
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/client-events", clientEventRoutes());
   app.route("/public", publicRoutes(new PublicStatsService(deps.db)));
-  app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input)));
+  // Dev sign-in exists only on a developer's machine: asked for, outside production, and never beside mainnet.
+  const devSignIn = deps.devSignIn === true && !deps.chains.available.includes("mainnet");
+  app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input), { devSignIn }));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/notifications", notifyRoutes(deps.db, notify));
   app.route("/wallet", walletRoutes(wallets, deps.turnkey));
@@ -513,8 +518,9 @@ export function createApp(deps: AppDeps) {
     approvalSecret: deps.approvalSecret,
     // race_routes: the same racer and per-person race budget as POST /routes/race.
     raceRoutes: agentRaceRoutes({ racer, assets, allow: (user) => races.take(user.id) }),
-    // The weekly budget stays unbound until the silent send and bridge paths exist (Stage 3): every money step the
-    // agent proposes waits for the person's own confirm on its card.
+    // The weekly budget (D38): a swap, earn, own-wallet move or paid call inside it is approved without a tap; the
+    // card then signs through the phone's own guard (silent leaves) or asks. A send to a person always asks.
+    budget: agentBudgetFor({ budget, db: deps.db, assets }),
     health: deps.health,
   };
   // One turn runner for chat and voice: the same brain, the same threads, the same approval key.

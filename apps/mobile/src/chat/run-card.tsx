@@ -359,7 +359,9 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
         )
       ) : null}
 
-      {pieces.text ? <Text style={[TYPE.caption, { color: color.text2 }]}>{pieces.text}</Text> : streaming && !step && !raceLive ? <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.thinking")}</ShimmerText> : null}
+      {/* The agent's words describe the step as it was proposed; once it is moving or done, the steps and the receipt
+          speak instead (never "ready for your confirmation" under a receipt). */}
+      {pieces.text && !(step && (phase === "steps" || phase === "receipt")) ? <Text style={[TYPE.caption, { color: color.text2 }]}>{pieces.text}</Text> : streaming && !step && !raceLive ? <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.thinking")}</ShimmerText> : null}
     </Animated.View>
   );
 }

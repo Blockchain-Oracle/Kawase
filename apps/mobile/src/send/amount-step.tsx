@@ -163,13 +163,36 @@ export function AmountStep(props: AmountStepProps) {
         note={balance !== undefined ? t("send.available", { amount: money(asset, balance.toString(), token.decimals) }) : undefined}
       />
 
-      <View style={styles.fields}>
-        <Field value={props.note} onChange={props.onNote} placeholder={t("send.notePlaceholder")} maxLength={NOTE_MAX} />
-        <Text style={[TYPE.caption, { color: color.text3 }]}>{t("send.noteHint")}</Text>
-        <ReferenceField value={props.reference} onChange={props.onReference} fromCode={props.referenceFromCode} />
-      </View>
+      <Extras {...props} />
 
       {cta}
+    </View>
+  );
+}
+
+/**
+ * The private note and the on-chain reference, behind one quiet row until asked for (the amount and the keypad keep the
+ * screen; Senryo: detail behind one disclosure). Open when either already has words, or a code brought a reference.
+ */
+function Extras(props: AmountStepProps) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const [open, setOpen] = React.useState(Boolean(props.note || props.reference));
+  if (!open)
+    return (
+      <Button
+        label={t("send.notePlaceholder")}
+        variant="ghost"
+        size="sm"
+        block={false}
+        onPress={() => setOpen(true)}
+      />
+    );
+  return (
+    <View style={styles.fields}>
+      <Field value={props.note} onChange={props.onNote} placeholder={t("send.notePlaceholder")} maxLength={NOTE_MAX} />
+      <Text style={[TYPE.caption, { color: color.text3 }]}>{t("send.noteHint")}</Text>
+      <ReferenceField value={props.reference} onChange={props.onReference} fromCode={props.referenceFromCode} />
     </View>
   );
 }

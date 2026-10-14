@@ -17,7 +17,7 @@ import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 
 import type { BiometricResult } from "./biometric";
-import { isPrivy, isWalletConfigured } from "./config";
+import { isDev, isPrivy, isWalletConfigured } from "./config";
 import { PrivyOAuthReturn } from "./privy-oauth-return";
 import { RootSheetLayer } from "./root-sheet-layer";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
@@ -201,8 +201,22 @@ function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: 
  * Mounted once inside the session provider; without the provider's ids there is nothing to verify with. On Privy it
  * also hosts the Google/Apple return (privy-oauth-return.tsx), which needs the same sheet surface.
  */
+/** Dev mode: the key is a throwaway testnet key on this machine, so an approval passes by itself (said in the console). */
+function DevHost() {
+  React.useEffect(() => {
+    const approver: WebApprover = (promptMessage) => {
+      console.info(`[dev] approved: ${promptMessage}`);
+      return Promise.resolve<BiometricResult>("approved");
+    };
+    setWebApprover(approver);
+    return () => clearWebApprover(approver);
+  }, []);
+  return null;
+}
+
 export function WebApprovalHost() {
   if (!isWalletConfigured) return null;
+  if (isDev) return <DevHost />;
   if (!isPrivy) return <TurnkeyHost />;
   return (
     <>

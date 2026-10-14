@@ -140,7 +140,8 @@ export function SetupScreen() {
     fire("press");
     forgetReturnTo();
     if (router.canDismiss()) router.dismissAll();
-    router.push({ pathname: "/chat", params: { prompt } });
+    // Home is the agent: the first job runs there, as the run card, and stays in its feed.
+    router.replace({ pathname: "/", params: { run: prompt } });
   };
   const leading = router.canGoBack()
     ? { kind: "back" as const, onPress: () => router.back() }

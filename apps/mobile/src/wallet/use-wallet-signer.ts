@@ -2,11 +2,14 @@
 // Turnkey's (turnkey-signer.ts, the fallback for one build). Undefined while there is no wallet to sign with.
 import type { ApprovalStrength, WalletSigner } from "@kawase/wallet";
 
-import { isPrivy, isWalletConfigured } from "./config";
+import { isDev, isPrivy, isWalletConfigured } from "./config";
+import { useDevWalletSigner } from "./dev-signer";
 import { usePrivyWalletSigner } from "./privy-signer";
 import { useTurnkeyWalletSigner } from "./turnkey-signer";
 
-export const useWalletSigner: (approval?: ApprovalStrength) => WalletSigner | undefined = !isPrivy
+export const useWalletSigner: (approval?: ApprovalStrength) => WalletSigner | undefined = isDev
+  ? useDevWalletSigner
+  : !isPrivy
   ? useTurnkeyWalletSigner
   : isWalletConfigured
     ? usePrivyWalletSigner

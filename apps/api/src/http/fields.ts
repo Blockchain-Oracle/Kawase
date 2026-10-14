@@ -9,4 +9,8 @@ export const FIELD = {
   consentVersionMax: 20,
   /** Generous on purpose: the handle rules (3–20, a-z 0-9 _) answer with their own problem codes. */
   handleInputMax: 64,
+  /** RFC 5321's limit on an address. */
+  emailMax: 254,
+  /** The api's sign-in nonces are 43 base64url characters; room for a change of length. */
+  nonceMax: 128,
 } as const;

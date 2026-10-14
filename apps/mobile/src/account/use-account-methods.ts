@@ -11,7 +11,7 @@ import {
   useUser,
 } from "@privy-io/react-auth";
 
-import { isPrivy, isWalletConfigured } from "@/wallet/config";
+import { isDev, isPrivy, isWalletConfigured } from "@/wallet/config";
 import { accountMethodsCore, type AccountMethods, type TurnkeyAccountApi } from "./account-methods-core";
 import {
   privyAccountMethods,
@@ -63,7 +63,9 @@ function usePrivyAccountMethods(): PrivyAccountMethods {
   });
 }
 
-export const useAccountMethods: () => AccountMethods | PrivyAccountMethods = !isPrivy
+export const useAccountMethods: () => AccountMethods | PrivyAccountMethods = isDev
+  ? () => UNCONFIGURED_METHODS
+  : !isPrivy
   ? useTurnkeyAccountMethods
   : isWalletConfigured
     ? usePrivyAccountMethods

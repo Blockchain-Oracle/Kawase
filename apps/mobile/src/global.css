@@ -20,3 +20,12 @@
 @theme {
   --spacing-hairline: hairlineWidth();
 }
+
+/* A text field shows focus on its own rounded plate (its border, the caret), never a square browser ring drawn
+   inside the plate (the owner's review, 14 Oct). */
+@layer base {
+  input:focus,
+  textarea:focus {
+    outline: none;
+  }
+}

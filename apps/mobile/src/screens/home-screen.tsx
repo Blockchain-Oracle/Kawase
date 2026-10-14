@@ -12,7 +12,8 @@
 //      contact · Bridge.
 // A guest sees real markets, the composer and "your money appears here after you sign in" — never a fake balance.
 // Every surface has its designed states (skeletons held 300 ms, empty with the next action, errors that say what still
-// works, stale values marked). `?ask=` (Ask Kawase from another screen) puts that request in the composer, unsent.
+// works, stale values marked). `?ask=` (Ask Kawase from another screen) puts that request in the composer, unsent;
+// `?run=` (setup's first job) runs it at once.
 import * as Crypto from "expo-crypto";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
@@ -58,7 +59,7 @@ export function HomeScreen() {
   const portfolio = usePortfolio();
   const wallet = useWalletStatus();
   const fund = useFund();
-  const { ask } = useLocalSearchParams<{ ask?: string }>();
+  const { ask, run: runNow } = useLocalSearchParams<{ ask?: string; run?: string }>();
 
   const run = useRunPointer(network);
   const runRef = React.useRef<HomeRunHandle>(null);
@@ -86,6 +87,15 @@ export function HomeScreen() {
   React.useEffect(() => {
     if (runStatus?.phase === "receipt") void refreshPortfolio();
   }, [runStatus?.phase, refreshPortfolio]);
+
+  // A job started elsewhere (setup's "Give Kawase its first job") runs here at once, as the run card.
+  const startedRun = React.useRef<string | undefined>(undefined);
+  React.useEffect(() => {
+    if (!runNow || startedRun.current === runNow) return;
+    startedRun.current = runNow;
+    router.setParams({ run: undefined });
+    run.start(Crypto.randomUUID(), runNow);
+  }, [runNow, router, run]);
 
   // Ask Kawase from another screen: the request waits in the composer for the person's send.
   React.useEffect(() => {

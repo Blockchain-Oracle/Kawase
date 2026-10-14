@@ -1,13 +1,13 @@
 // Who (revamp journey 10, the recipient step), on the Senryo kit (21st.dev felipemenezes098 "People Picker" 24801 as the
-// spec): the kit's SearchField for a name, a @handle or a pasted address, with Paste and Scan beside it; results in
-// filled groups (a full address, contacts, handles) as kit rows with each person's avatar; a contact on hold says so.
-// Loading is the list's own skeleton; nothing found says so; no contacts yet says why and offers Add a contact. On a
-// phone the search sits above the keyboard; on a desktop window it sits at the top of the column (the stage of Send).
+// spec): the search for a name, a @handle or a pasted address leads the page at full width under the title, with one
+// row of pills under it — Paste · Scan · Add contact (each said once); results follow in filled groups (a full address,
+// contacts, handles) as kit rows with each person's avatar; a contact on hold says so. Loading is the list's own
+// skeleton; nothing found says so; no contacts yet says why in one quiet line (the pills are the actions).
 import * as Clipboard from "expo-clipboard";
 import { ClipboardPaste, Clock, ScanLine, UserPlus } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { KeyboardStickyView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isAddress } from "viem";
@@ -16,7 +16,7 @@ import type { Contact, RecipientMatch } from "@kawase/api-client";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { Button, EmptyState, Icon, LoadingState, Panel, RADIUS, SearchField, SectionLabel, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
+import { EmptyState, Icon, LoadingState, Panel, RADIUS, SearchField, SectionLabel, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
@@ -100,19 +100,21 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function SquareAction({ icon, label, onPress }: { icon: typeof ClipboardPaste; label: string; onPress: () => void }) {
+function PillAction({ icon, label, onPress }: { icon: typeof ClipboardPaste; label: string; onPress: () => void }) {
   const { color } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
       onPress={() => {
         fire("tick");
         onPress();
       }}
-      style={({ pressed }) => [styles.square, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+      style={({ pressed }) => [styles.pill, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
     >
-      <Icon icon={icon} size={SIZE.icon} />
+      <Icon icon={icon} size={SIZE.iconSm} tint={color.ink} />
+      <Text numberOfLines={1} style={[TYPE.chipLabel, { color: color.ink }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -164,14 +166,12 @@ export function RecipientStep({ onPick, selected }: { onPick: (choice: Recipient
 
   const search = (
     <View style={styles.search}>
-      <View style={styles.searchRow}>
-        <View style={styles.grow}>
-          <SearchField value={query} onChange={(next) => setQuery(next.slice(0, QUERY_MAX))} placeholder={t("send.searchPlaceholder")} />
-        </View>
-        <SquareAction icon={ClipboardPaste} label={t("send.paste")} onPress={() => void paste()} />
-        <SquareAction icon={ScanLine} label={t("send.scan")} onPress={() => setScanning(true)} />
-      </View>
-      <Button label={t("send.addContact")} variant="ghost" size="sm" leading={<Icon icon={UserPlus} size={SIZE.iconSm} />} onPress={() => setAdding(true)} />
+      <SearchField value={query} onChange={(next) => setQuery(next.slice(0, QUERY_MAX))} placeholder={t("send.searchPlaceholder")} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pills}>
+        <PillAction icon={ClipboardPaste} label={t("send.paste")} onPress={() => void paste()} />
+        <PillAction icon={ScanLine} label={t("send.scan")} onPress={() => setScanning(true)} />
+        <PillAction icon={UserPlus} label={t("send.addContact")} onPress={() => setAdding(true)} />
+      </ScrollView>
     </View>
   );
 
@@ -203,7 +203,7 @@ export function RecipientStep({ onPick, selected }: { onPick: (choice: Recipient
         </Group>
       ) : null}
       {nothing && trimmed ? <EmptyState why={t("send.notFound")} action={{ label: t("send.addContact"), onPress: () => setAdding(true) }} size="inline" /> : null}
-      {nothing && !trimmed ? <EmptyState icon={UserPlus} why={t("send.emptyTitle")} detail={t("send.emptyBody")} action={{ label: t("send.addContact"), onPress: () => setAdding(true) }} /> : null}
+      {nothing && !trimmed ? <EmptyState icon={UserPlus} why={t("send.emptyTitle")} detail={t("send.emptyBody")} size="inline" /> : null}
     </>
   );
 
@@ -235,13 +235,11 @@ export function RecipientStep({ onPick, selected }: { onPick: (choice: Recipient
   }
   return (
     <View style={styles.flex}>
-      <ScrollView style={styles.flex} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <View style={[styles.header, { backgroundColor: color.ground }]}>{search}</View>
+      <ScrollView style={styles.flex} contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + SPACE.xl }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         {results}
         <Animated.View style={spacer} />
       </ScrollView>
-      <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
-        <View style={[styles.footer, { paddingBottom: insets.bottom + SPACE.md, backgroundColor: color.ground }]}>{search}</View>
-      </KeyboardStickyView>
       {sheets}
     </View>
   );
@@ -250,13 +248,13 @@ export function RecipientStep({ onPick, selected }: { onPick: (choice: Recipient
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   wide: { gap: SPACE.lg },
-  list: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.lg },
-  footer: { paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm },
-  search: { gap: SPACE.xs },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  list: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm },
+  header: { paddingHorizontal: SPACE.inset, paddingTop: SPACE.xs, paddingBottom: SPACE.sm },
+  search: { gap: SPACE.md },
+  pills: { gap: SPACE.sm },
+  pill: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: SIZE.chipHeight, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md },
   group: { gap: SPACE.sm },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, minHeight: SIZE.rowMinHeight },
   grow: { flex: 1, minWidth: 0 },
   note: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs },
-  square: { width: SIZE.inputHeight, height: SIZE.inputHeight, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center" },
 });

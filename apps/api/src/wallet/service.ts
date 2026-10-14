@@ -130,7 +130,7 @@ type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 export async function registerUserWallet(
   db: DbOrTx,
   userId: string,
-  input: { address: Address; custody: "turnkey" | "privy"; providerRef: Record<string, string> },
+  input: { address: Address; custody: "turnkey" | "privy" | "external"; providerRef: Record<string, string> },
 ) {
   const run = async (tx: DbOrTx) => {
     const [existing] = await tx

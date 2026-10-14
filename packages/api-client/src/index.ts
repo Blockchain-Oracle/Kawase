@@ -192,6 +192,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         guestToken?: string,
         authAttemptId?: string,
       ) => call<SignInResponse>("POST", "/auth/turnkey", input, { token: guestToken, authAttemptId }),
+      /** Local development only: a throwaway testnet key signs the nonce (`Kawase dev sign-in\n<nonce>`). */
+      dev: (
+        input: { email: string; address: string; nonce: string; signature: string; device: DeviceInfo },
+        guestToken?: string,
+      ) => call<SignInResponse & { wallet: { id: string; address: string } }>("POST", "/auth/dev", input, { token: guestToken }),
       signOut: () => call<void>("POST", "/auth/sign-out"),
     },
 

@@ -298,6 +298,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
               card: colors.card,
               send: colors.primary,
               onSend: colors["primary-foreground"],
+              focus: colors["muted-foreground"],
             }}
             labels={{
               placeholder: t("chatHome.placeholder"),
