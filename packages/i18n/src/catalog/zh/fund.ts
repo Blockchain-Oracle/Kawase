@@ -48,4 +48,9 @@ export const fund: Catalog["fund"] = {
   chainWaitingRow: "{{chain}} 上有 {{amount}} 待转入",
   chainsHow: "把 USDC 发送到你在那条链上的同一地址，然后转到这里。只需签名一次；那边无需 Gas。",
   chainsTestnet: "转回 Arc 在 Arc 主网上运行（通过 Relay 免 Gas）。在测试网上，请使用测试币。",
+  closeNamed: "关闭充值",
+  buyDetail: "Apple Pay、Google Pay、银行卡或银行 · 在 Kawase 内完成",
+  switchMainnet: "切换到 Arc 主网",
+  bringRow: "把 USDC 转到 Arc · 那边无需 gas",
+  exchangesFailed: "交易所列表未能加载。",
 };

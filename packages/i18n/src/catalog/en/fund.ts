@@ -47,4 +47,9 @@ export const fund = {
   chainWaitingRow: "{{amount}} waiting on {{chain}}",
   chainsHow: "Send USDC to your same address on that chain, then bring it here. You sign once; no gas needed there.",
   chainsTestnet: "Bring to Arc runs on Arc mainnet (gasless with Relay). On testnet, use test money.",
+  closeNamed: "Close add money",
+  buyDetail: "Apple Pay, Google Pay, card or bank · inside Kawase",
+  switchMainnet: "Switch to Arc mainnet",
+  bringRow: "Bring USDC to Arc · no gas there",
+  exchangesFailed: "The exchange list didn't load.",
 } as const;

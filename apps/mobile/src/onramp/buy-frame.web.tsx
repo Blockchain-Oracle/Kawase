@@ -2,26 +2,26 @@
 // WebView loads from the web). A Coinbase payment link (a provider page) goes in an iframe that is allowed to pay,
 // with its events read from the window and sent to the api.
 import * as React from "react";
-import { View } from "react-native";
-
-import { cn } from "@kawase/ui-native/lib/utils";
+import { StyleSheet, View } from "react-native";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
 import { BuyPage } from "./buy-page";
 import { readBuyEvent } from "./order-events";
-import type { BuyFrameProps } from "./buy-frame";
+import type { BuyFrameProps } from "./buy-frame-types";
 
-export type { BuyFrameProps, BuySource } from "./buy-frame";
+export type { BuyFrameProps, BuySource } from "./buy-frame-types";
 
 /** The page URL's fragment carries the order key (`#k=kbuy_…`). */
 const keyOf = (pageUrl: string): string | undefined => {
   const hash = pageUrl.split("#")[1];
-  return hash ? new URLSearchParams(hash).get("k") ?? undefined : undefined;
+  return hash ? (new URLSearchParams(hash).get("k") ?? undefined) : undefined;
 };
 
-function LinkFrame({ orderId, url, onEvent, className }: { orderId: string; url: string; onEvent: BuyFrameProps["onEvent"]; className: string | undefined }) {
+const FRAME_MIN_HEIGHT = 640;
+
+function LinkFrame({ orderId, url, onEvent }: { orderId: string; url: string; onEvent: BuyFrameProps["onEvent"] }) {
   const { t } = useT();
   const origin = React.useMemo(() => new URL(url).origin, [url]);
   React.useEffect(() => {
@@ -29,24 +29,35 @@ function LinkFrame({ orderId, url, onEvent, className }: { orderId: string; url:
       if (message.origin !== origin) return;
       const event = readBuyEvent(message.data);
       if (!event) return;
-      onEvent?.(event);
-      void api.onramp.event(orderId, { event: event.event, code: event.code, ...(event.payload ? { payload: event.payload } : {}) }).catch(() => undefined);
+      void api.onramp
+        .event(orderId, { event: event.event, code: event.code, ...(event.payload ? { payload: event.payload } : {}) })
+        .catch(() => undefined)
+        .then(() => onEvent?.(event));
     };
     globalThis.addEventListener("message", listen);
     return () => globalThis.removeEventListener("message", listen);
   }, [onEvent, orderId, origin]);
   return (
-    <View className={cn("flex-1", className)}>
-      {React.createElement("iframe", { src: url, title: t("buy.widgetTitle"), allow: "payment; camera; clipboard-write", style: { border: 0, width: "100%", height: "100%", minHeight: 640 } })}
+    <View style={styles.fill}>
+      {React.createElement("iframe", { src: url, title: t("buy.widgetTitle"), allow: "payment; camera; clipboard-write", style: { border: 0, width: "100%", height: "100%", minHeight: FRAME_MIN_HEIGHT } })}
     </View>
   );
 }
 
-export function BuyFrame({ orderId, source, onEvent, onClose, className }: BuyFrameProps) {
-  if (source.kind === "link") return <LinkFrame orderId={orderId} url={source.url} onEvent={onEvent} className={className} />;
+export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, embedded }: BuyFrameProps) {
+  if (source.kind === "link") return <LinkFrame orderId={orderId} url={source.url} onEvent={onEvent} />;
   return (
-    <View className={cn("flex-1", className)}>
-      <BuyPage orderId={orderId} pageKey={keyOf(source.pageUrl)} onClose={(options) => onClose?.(options)} />
+    <View style={styles.fill}>
+      <BuyPage
+        orderId={orderId}
+        pageKey={keyOf(source.pageUrl)}
+        embedded={embedded === true}
+        onEvent={onEvent}
+        onSettled={onSettled}
+        onClose={(options) => onClose?.(options)}
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });

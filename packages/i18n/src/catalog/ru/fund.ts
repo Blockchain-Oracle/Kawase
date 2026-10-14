@@ -52,4 +52,9 @@ export const fund: Catalog["fund"] = {
   chainsHow: "Отправьте USDC на тот же адрес в той сети, затем переведите сюда. Одна подпись; газ там не нужен.",
   chainsTestnet:
     "«Перевести в Arc» работает в mainnet Arc (без газа через Relay). В тестовой сети используйте тестовые деньги.",
+  closeNamed: "Закрыть пополнение",
+  buyDetail: "Apple Pay, Google Pay, карта или банк · внутри Kawase",
+  switchMainnet: "Перейти в Arc mainnet",
+  bringRow: "Перевести USDC в Arc · без газа там",
+  exchangesFailed: "Список бирж не загрузился.",
 };

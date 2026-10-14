@@ -34,4 +34,5 @@ export const markets: Catalog["markets"] = {
   recent: "最近",
   recentClear: "清除",
   longShort: "做多或做空",
+  services: "服务",
 };

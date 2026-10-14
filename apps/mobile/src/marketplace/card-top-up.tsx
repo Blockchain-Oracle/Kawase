@@ -1,15 +1,14 @@
-// "Top up your agent wallet with Apple Pay" (B2-2): the express wallet buttons (21st 25102 twin) open B1's one buy
-// flow with the agent wallet as the destination — Circle's checkout in the browser sheet, USDC delivered on Arc
-// straight to the agent wallet, watched until it lands, then put into Gateway like any top-up. No grant or Face ID
-// first: the money comes from the card, not from the person's Kawase wallet.
+// "Top up your agent wallet with Apple Pay or card" (B2-2): the one Buy flow (D42) with the agent wallet as the
+// destination — USDC delivered on Arc straight to the agent wallet, watched until it lands, then put into Gateway like
+// any top-up. No grant or Face ID first: the money comes from the card, not from the person's Kawase wallet. The wallet
+// marks this device can pay with sit on the button (felipemenezes098/payment-3 #25102's express row, as one plate).
 import * as React from "react";
-import { View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { formatUnits } from "viem";
 
-import { ExpressPay } from "@kawase/ui-native/components/express-pay";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-
+import { Button } from "@/components/kit";
+import { SPACE } from "@/components/kit/theme";
+import { MarkStack } from "@/fund/sheet-parts";
 import { useT } from "@/i18n";
 import { useBuy } from "@/onramp/buy-provider";
 
@@ -19,16 +18,18 @@ export function CardTopUp({ amount, disabled }: { amount: string; disabled?: boo
   const { t } = useT();
   const buy = useBuy();
   const dollars = formatUnits(BigInt(amount || "0"), USDC_DECIMALS);
+  const marks = Platform.OS === "android" ? ["pay:googlepay"] : Platform.OS === "ios" ? ["pay:applepay"] : ["pay:applepay", "pay:googlepay"];
   return (
-    <View className="gap-2">
-      <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("agentWallet.cardTopUp")}</Text>
-      <ExpressPay
-        payLabel={t("agentWallet.expressPay")}
-        orCardLabel={t("agentWallet.orCard")}
-        cardLabel={t("agentWallet.cardButton")}
+    <View style={styles.row}>
+      <Button
+        label={t("agentWallet.cardButton")}
+        variant="secondary"
+        leading={<MarkStack entities={marks} />}
         disabled={disabled}
-        onPay={() => buy.open({ asset: "USDC", amount: dollars, destination: "agent_wallet" })}
+        onPress={() => buy.open({ asset: "USDC", amount: dollars, destination: "agent_wallet" })}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({ row: { gap: SPACE.xs } });

@@ -50,4 +50,9 @@ export const fund: Catalog["fund"] = {
   chainsHow:
     "সেই চেইনে আপনার একই ঠিকানায় USDC পাঠান, তারপর এখানে আনুন। একবার স্বাক্ষর করলেই হবে; সেখানে গ্যাস লাগবে না।",
   chainsTestnet: "“Arc-এ আনুন” Arc মেইননেটে চলে (Relay দিয়ে গ্যাস ছাড়াই)। টেস্টনেটে টেস্ট টাকা ব্যবহার করুন।",
+  closeNamed: "টাকা যোগ বন্ধ করুন",
+  buyDetail: "Apple Pay, Google Pay, কার্ড বা ব্যাংক · Kawase-এর ভেতরে",
+  switchMainnet: "Arc mainnet-এ যান",
+  bringRow: "USDC Arc-এ আনুন · সেখানে গ্যাস লাগে না",
+  exchangesFailed: "এক্সচেঞ্জের তালিকা লোড হয়নি।",
 };

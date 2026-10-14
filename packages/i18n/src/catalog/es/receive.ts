@@ -21,4 +21,11 @@ export const receive: Catalog["receive"] = {
   setUpFirstBody: "Un paso y tu dirección estará lista para recibir.",
   anyToken:
     "Cualquier token en Arc llega aquí. ¿Lo enviaron por otra red? Llega a esta misma dirección allí: tráelo a Arc desde Añadir dinero.",
+  back: "Atrás",
+  closeAsk: "Cerrar pedir un importe",
+  closeNetwork: "Cerrar red",
+  qrAddress: "Código QR de tu dirección",
+  qrAsk: "Código QR que pide {{amount}}",
+  setUp: "Configura tu billetera",
+  signIn: "Iniciar sesión",
 };

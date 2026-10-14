@@ -1,19 +1,17 @@
 // The Markets tab (surfaces.md "Markets tab"; plan §D; D1, D36): the shared tab header (Sign in for guests); search by
 // name, symbol or address, the Long/Short markets it names on top; segments Watchlist · Trending · Meme · Long/Short ·
-// Stocks & FX · New; on Trending the Long or short cards, a hot-markets carousel and the heatmap (21st.dev 30551); then rows
+// Services (the x402 marketplace, Stage 3) · Stocks & FX · New; on Trending the Long or short cards, a hot-markets carousel and the heatmap (21st.dev 30551); then rows
 // with price, 24 h change, volume and liquidity, copycats flagged. Public market data (R13): guests and testnet
 // users see mainnet's markets, and testnet says so with the switch. Rate-limited data shows its last snapshot
 // with the time. Every row opens the token page. On a desktop window (Stage 13) the page is a wide centred column,
 // the heatmap larger, and the rows in two columns; the sidebar carries the header's pills.
 import { useRouter } from "expo-router";
-import { Search, X } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { MarketRow, MarketSegment, TokenView } from "@kawase/api-client";
 import { AssetRow } from "@kawase/ui-native/components/asset-row";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
 import { MarketHeatmap } from "@kawase/ui-native/components/market-heatmap";
@@ -21,13 +19,12 @@ import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Sparkline } from "@kawase/ui-native/components/area-chart";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
 import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { cn } from "@kawase/ui-native/lib/utils";
 import { useWide, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
+import { Button as KitButton, EmptyState as KitEmptyState, ErrorState, FilterChips, LoadingState, Panel, SearchField, StaleTick } from "@/components/kit";
+import { SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
@@ -44,15 +41,17 @@ import { LongShortMatches, LongShortRow } from "@/markets/long-short-row";
 import { LongShortSegment } from "@/markets/long-short-segment";
 import { useRecentSearches } from "@/markets/recent-searches";
 import { WatchlistSegment } from "@/markets/watchlist-segment";
+import { ServicesSection } from "@/marketplace/services-section";
 
 /** The Markets segments, the person's Watchlist first (the stars from token pages). */
-type Segment = MarketSegment | "watchlist";
-const SEGMENTS: readonly Segment[] = ["watchlist", "trending", "meme", "perps", "fx", "new"];
+type Segment = MarketSegment | "watchlist" | "services";
+const SEGMENTS: readonly Segment[] = ["watchlist", "trending", "meme", "perps", "services", "fx", "new"];
 const SEGMENT_KEYS: Record<Segment, string> = {
   watchlist: "markets.watchlist",
   trending: "markets.trending",
   meme: "markets.meme",
   perps: "markets.perps",
+  services: "markets.services",
   fx: "markets.fx",
   new: "markets.new",
 };
@@ -62,8 +61,6 @@ const HEAT_COUNT = 16;
 const WIDE_HEAT_COUNT = 28;
 const WIDE_HEAT_HEIGHT = 380;
 const WIDE_ROW_COLUMNS = 2;
-const SKELETON_ROWS = 6;
-const SKELETON_ROW_HEIGHT = 64;
 const HOT_CARD_WIDTH = 148;
 /** The card's own padding on both sides (p-4), and its sparkline's height. */
 const HOT_CARD_PADDING = 32;
@@ -83,6 +80,7 @@ export function MarketsScreen() {
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
   const colors = useThemeColors();
+  const { color: kit } = useTheme();
   const wide = useWide();
   const { user } = useSession();
   const networkSwitch = useNetworkSwitch();
@@ -92,7 +90,7 @@ export function MarketsScreen() {
   const recentSearches = useRecentSearches();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   // Markets live on mainnet; a testnet session still reads them, labelled.
-  const { market, loading, error, refresh } = useMarket(segment === "watchlist" ? "trending" : segment, "mainnet");
+  const { market, loading, error, refresh } = useMarket(segment === "watchlist" || segment === "services" ? "trending" : segment, "mainnet");
   const { results, searching } = useTokenSearch(query, "mainnet");
   const fx = useFx();
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
@@ -140,36 +138,16 @@ export function MarketsScreen() {
         contentContainerStyle={[{ paddingBottom: clearance.scroll }, wide ? { width: "100%", maxWidth: WIDE_PAGE_PX, alignSelf: "center" } : null]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text accessibilityRole="header" className={cn("font-display text-foreground text-3xl font-bold", TEXT_START)}>
+        <Text accessibilityRole="header" style={[TYPE.pageTitle, { color: kit.ink }]}>
           {t("markets.title")}
         </Text>
 
-        <View className="bg-muted flex-row items-center gap-2 rounded-2xl px-4">
-          <Icon as={Search} className="text-muted-foreground size-5" />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t("markets.search")}
-            placeholderTextColor={colors["muted-foreground"]}
-            accessibilityLabel={t("markets.search")}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            className={cn("text-foreground h-12 flex-1 text-base", INPUT_TEXT_START)}
-          />
-          {query ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={t("common.close")} onPress={() => setQuery("")}>
-              <Icon as={X} className="text-muted-foreground size-5" />
-            </Pressable>
-          ) : null}
-        </View>
+        <SearchField value={query} onChange={setQuery} onFocus={() => setSearchFocused(true)} placeholder={t("markets.search")} />
 
         {query.trim() ? <LongShortMatches query={query.trim()} /> : null}
         {query.trim() ? (
           searching && results.length === 0 ? (
-            <SkeletonRows />
+            <LoadingState shape="list" />
           ) : results.length > 0 ? (
             <ListGroup>
               {results.map((result) => {
@@ -220,73 +198,40 @@ export function MarketsScreen() {
               </View>
             ) : null}
             {testnet ? (
-              <View className="bg-card border-border gap-3 rounded-2xl border p-4">
-                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>
-                  {t("markets.testnetTitle")}
-                </Text>
-                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
-                  {t("markets.testnetBody")}
-                </Text>
+              <Panel style={styles.testnet}>
+                <Text style={[TYPE.rowTitle, { color: kit.ink }]}>{t("markets.testnetTitle")}</Text>
+                <Text style={[TYPE.body, { color: kit.text2 }]}>{t("markets.testnetBody")}</Text>
                 {networkSwitch.nextAvailable ? (
-                  <Button
-                    variant="secondary"
-                    onPress={() => void networkSwitch.switchNetwork("mainnet")}
-                    disabled={networkSwitch.busy}
-                  >
-                    <Text>{t("markets.switchToMainnet")}</Text>
-                  </Button>
+                  <KitButton label={t("markets.switchToMainnet")} variant="secondary" loading={networkSwitch.busy} onPress={() => void networkSwitch.switchNetwork("mainnet")} />
                 ) : null}
-              </View>
+              </Panel>
             ) : null}
 
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerClassName="gap-2"
-              accessibilityRole="tablist"
-              accessibilityLabel={t("markets.segmentsLabel")}
-            >
-              {SEGMENTS.map((value) => {
-                const active = value === segment;
-                return (
-                  <Pressable
-                    key={value}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setSegment(value)}
-                    className={cn("rounded-full px-4 py-2", active ? "bg-foreground" : "bg-muted active:bg-secondary")}
-                  >
-                    <Text className={cn("text-sm font-semibold", active ? "text-background" : "text-muted-foreground")}>
-                      {t(SEGMENT_KEYS[value])}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            <FilterChips
+              options={SEGMENTS.map((value) => ({ value, label: t(SEGMENT_KEYS[value]) }))}
+              value={segment}
+              onChange={(next) => {
+                setSearchFocused(false);
+                setSegment(next);
+              }}
+              label={t("markets.segmentsLabel")}
+              bleed={wide ? 0 : SPACE.inset}
+            />
 
-            {market?.stale ? (
-              <Text className="text-muted-foreground text-xs">
-                {t("markets.stale", { time: new Date(market.pricedAt).toLocaleTimeString(locale) })}
-              </Text>
-            ) : null}
+            {market?.stale && segment !== "services" ? <StaleTick asOf={Date.parse(market.pricedAt)} reason="refresh-failed" /> : null}
 
-            {segment === "watchlist" ? (
+            {segment === "services" ? (
+              <ServicesSection />
+            ) : segment === "watchlist" ? (
               <WatchlistSegment />
             ) : segment === "perps" ? (
               <LongShortSegment />
             ) : loading && rows.length === 0 ? (
-              <SkeletonRows />
+              <LoadingState shape="list" />
             ) : error && rows.length === 0 ? (
-              <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
-                <Text className="text-muted-foreground flex-1 text-sm">{t("markets.loadFailed")}</Text>
-                <Button size="sm" variant="secondary" onPress={() => void refresh()}>
-                  <Text>{t("common.retry")}</Text>
-                </Button>
-              </View>
+              <ErrorState diagnosis={{ kind: "server", retryable: true }} stillWorks={t("markets.loadFailed")} retry={() => void refresh()} />
             ) : rows.length === 0 ? (
-              <View className="bg-card border-border rounded-2xl border">
-                <EmptyState layout="section" title={t("markets.empty")} />
-              </View>
+              <KitEmptyState why={t("markets.empty")} size="inline" />
             ) : (
               <>
                 {segment === "trending" ? <LongShortRow onSeeAll={() => setSegment("perps")} /> : null}
@@ -392,12 +337,6 @@ export function MarketsScreen() {
   );
 }
 
-function SkeletonRows() {
-  return (
-    <View className="bg-card border-border gap-px overflow-hidden rounded-2xl border">
-      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-        <Skeleton key={index} className="rounded-none" style={{ height: SKELETON_ROW_HEIGHT }} />
-      ))}
-    </View>
-  );
-}
+const styles = StyleSheet.create({
+  testnet: { padding: SPACE.lg, gap: SPACE.sm },
+});

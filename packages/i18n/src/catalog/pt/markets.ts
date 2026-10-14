@@ -35,4 +35,5 @@ export const markets: Catalog["markets"] = {
   recent: "Recentes",
   recentClear: "Limpar",
   longShort: "Comprado ou vendido",
+  services: "Serviços",
 };

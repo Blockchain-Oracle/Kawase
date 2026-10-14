@@ -8,48 +8,33 @@
 // - The default user agent stays: the providers warn that Apple Pay breaks with a custom one.
 // - A Coinbase payment link (a provider page, not ours) is loaded as is and its own events are read here.
 // Whether Circle's widget (Transak inside) takes Apple Pay inside a WKWebView is unverified until a real iPhone tries
-// it; when it does not, the same page opens in the system sheet (`onNeedsBrowser`), still on our URL.
-import { RotateCw } from "lucide-react-native";
+// it; when it does not, the same page opens in the system sheet, still on our URL.
 import * as React from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-
+import { ErrorState, LoadingState } from "@/components/kit";
+import { SPACE, useTheme } from "@/components/kit/theme";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
-import { HOST_EVENTS, readBuyEvent, type BuyEvent } from "./order-events";
+import type { BuyFrameProps } from "./buy-frame-types";
+import { embeddedUrl, HOST_EVENTS, readBuyEvent } from "./order-events";
 
-/** What the frame shows: Kawase's page for the order (Circle), or a provider's payment link (Coinbase). */
-export type BuySource = { kind: "page"; pageUrl: string } | { kind: "link"; url: string };
 
-export type BuyFrameProps = {
-  orderId: string;
-  source: BuySource;
-  /** Every provider event, as soon as it happens (the screen around moves its rail; the order itself is read from the api). */
-  onEvent?: ((event: BuyEvent) => void) | undefined;
-  /** The page says the money arrived (the screen plays its own confirmation). */
-  onSettled?: (() => void) | undefined;
-  /** The person closed the page; `retry` asks the screen around to start the purchase again. */
-  onClose?: ((options?: { retry?: boolean }) => void) | undefined;
-  className?: string | undefined;
-};
+export type { BuyFrameProps, BuySource } from "./buy-frame-types";
 
 const ALLOWED_ORIGINS = ["https://*", "apple-pay://*"];
 /** A server error (5xx) on the page means it did not load; a 4xx is the page's own state to show. */
 const SERVER_ERROR = 500;
 const ALLOWED_SCHEMES = /^(https:|apple-pay:|about:)/i;
 
-export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, className }: BuyFrameProps) {
+export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, embedded }: BuyFrameProps) {
   const { t } = useT();
+  const { color } = useTheme();
   const [failed, setFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
-  const uri = source.kind === "page" ? source.pageUrl : source.url;
+  const uri = source.kind === "page" ? (embedded ? embeddedUrl(source.pageUrl) : source.pageUrl) : source.url;
 
   const onMessage = React.useCallback(
     (message: WebViewMessageEvent) => {
@@ -65,33 +50,30 @@ export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, classNa
       else if (name === HOST_EVENTS.close) onClose?.({ retry: hostMessage?.retry === true });
       const event = readBuyEvent(parsed);
       if (!event || event.event.startsWith("KAWASE_")) return;
-      onEvent?.(event);
-      // Our page reports to the api itself; a provider's own page cannot, so the app does it for that one.
-      if (source.kind === "link") void api.onramp.event(orderId, { event: event.event, code: event.code, ...(event.payload ? { payload: event.payload } : {}) }).catch(() => undefined);
+      // A provider's own page cannot report to the api; the app does it for that one (our page reports itself).
+      const report = source.kind === "link" ? api.onramp.event(orderId, { event: event.event, code: event.code, ...(event.payload ? { payload: event.payload } : {}) }).catch(() => undefined) : Promise.resolve();
+      void report.then(() => onEvent?.(event));
     },
     [onClose, onEvent, onSettled, orderId, source.kind],
   );
 
   if (failed) {
     return (
-      <View className={cn("flex-1 items-center justify-center gap-3 p-6", className)} accessibilityRole="alert">
-        <Text className={cn("font-display text-foreground text-xl font-bold", TEXT_START)}>{t("buy.loadFailedTitle")}</Text>
-        <Text className={cn("text-muted-foreground text-center text-sm", TEXT_START)}>{t("buy.loadFailedBody")}</Text>
-        <Button
-          onPress={() => {
+      <View style={styles.fill}>
+        <ErrorState
+          diagnosis={{ kind: "server", retryable: true }}
+          stillWorks={t("buy.loadFailedBody")}
+          retry={() => {
             setFailed(false);
             setAttempt((value) => value + 1);
           }}
-        >
-          <Icon as={RotateCw} className="text-primary-foreground size-4" />
-          <Text>{t("buy.tryAgain")}</Text>
-        </Button>
+        />
       </View>
     );
   }
 
   return (
-    <View className={cn("flex-1", className)}>
+    <View style={[styles.fill, { backgroundColor: color.card }]}>
       <WebView
         key={attempt}
         source={{ uri }}
@@ -108,10 +90,8 @@ export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, classNa
         }}
         startInLoadingState
         renderLoading={() => (
-          <View className="bg-background absolute inset-0 gap-6 p-4" accessibilityRole="progressbar" accessibilityLabel={t("buy.loadingPage")}>
-            <Skeleton className="h-9 w-2/3" />
-            <Skeleton className="h-7 w-full" />
-            <Skeleton className="h-96 w-full rounded-3xl" />
+          <View style={[StyleSheet.absoluteFill, styles.loading, { backgroundColor: color.card }]}>
+            <LoadingState shape="detail" label={t("buy.loadingPage")} named />
           </View>
         )}
         allowsInlineMediaPlayback
@@ -121,3 +101,8 @@ export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, classNa
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  loading: { padding: SPACE.lg },
+});

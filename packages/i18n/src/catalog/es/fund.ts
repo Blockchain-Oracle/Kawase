@@ -51,4 +51,9 @@ export const fund: Catalog["fund"] = {
   chainsHow: "Envía USDC a tu misma dirección en esa red y luego tráelo aquí. Firmas una vez; no necesitas gas allí.",
   chainsTestnet:
     "Traer a Arc funciona en la mainnet de Arc (sin gas con Relay). En la red de pruebas, usa dinero de prueba.",
+  closeNamed: "Cerrar añadir dinero",
+  buyDetail: "Apple Pay, Google Pay, tarjeta o banco · dentro de Kawase",
+  switchMainnet: "Cambiar a Arc mainnet",
+  bringRow: "Trae USDC a Arc · sin gas allí",
+  exchangesFailed: "La lista de exchanges no cargó.",
 };

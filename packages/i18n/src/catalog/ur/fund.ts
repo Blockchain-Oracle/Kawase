@@ -51,4 +51,9 @@ export const fund: Catalog["fund"] = {
   chainsHow: "اس چین پر اپنے اسی پتے پر USDC بھیجیں، پھر اسے یہاں لائیں۔ ایک بار دستخط کریں؛ وہاں گیس کی ضرورت نہیں۔",
   chainsTestnet:
     "‏“Arc پر لائیں” Arc مین نیٹ پر چلتا ہے (Relay کے ذریعے بغیر گیس)۔ ٹیسٹ نیٹ پر ٹیسٹ پیسے استعمال کریں۔",
+  closeNamed: "رقم شامل کریں بند کریں",
+  buyDetail: "Apple Pay، Google Pay، کارڈ یا بینک · Kawase کے اندر",
+  switchMainnet: "Arc mainnet پر جائیں",
+  bringRow: "USDC کو Arc پر لائیں · وہاں گیس نہیں",
+  exchangesFailed: "ایکسچینجز کی فہرست لوڈ نہیں ہوئی۔",
 };
