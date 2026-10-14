@@ -1,8 +1,9 @@
 // Who says yes to a money step (D38, AI SDK 7 `toolApproval`): inside the person's weekly budget, and with nothing read
 // from outside Kawase since their message (trust rule H2), the step goes without a tap — the SDK records an automatic
-// approval and the card says "inside your budget". Anything else waits for the person: the SDK emits an approval
-// request, the card shows its confirm, and the turn continues once they answer. With no budget bound (the Budget lane
-// supplies `context.budget`), every step waits: that is the safe default.
+// approval and the card says "inside your budget". Anything else waits for the person, asked exactly once: when the
+// trust rule stops the step (outside text, someone else's address) the SDK emits an approval request and the card asks
+// "go ahead?" before anything is drafted; otherwise the step's own card and its confirm are that one ask. Nothing is
+// ever approved without a budget bound (the Budget lane supplies `context.budget`): that is the safe default.
 //
 // The tools gated here only prepare a step (a fresh quote and every check); the money itself still moves on the card
 // through the person's own wallet. Sends keep their own allowance rule (trust.ts) until per-contact grants replace it;
@@ -52,9 +53,15 @@ export function budgetAction(tool: BudgetedTool, input: StepInput, network: Agen
 }
 
 /**
- * Whether one step may go without the person's tap. Never on outside text, never to someone else, never without an
- * amount; otherwise only when the budget says it fits. By voice a step that is not inside the budget keeps its card's
- * own confirm (the voice transport cannot answer an approval request; the card reaches the phone).
+ * Whether one step may go without the person's tap, and how they are asked when it may not:
+ * - `approved` only when the budget says it fits, with an amount, to the person themselves and with no outside text
+ *   read this turn (the card then says "inside your budget");
+ * - `user-approval` when the trust rule stops the step before it is even drafted: outside text was read this turn, or it
+ *   would go to someone else (the card asks "go ahead?" first, then quotes);
+ * - `not-applicable` when the budget has nothing to say (no budget yet, over it, a check that failed, no amount yet):
+ *   the step is drafted and its card's own confirm is the one approval (D38: above the budget, Face ID on the card).
+ *   Asking here as well would make the person confirm twice for one step.
+ * By voice the transport cannot answer an approval request; the card's own confirm reaches the phone instead.
  */
 export async function decideApproval(
   context: Pick<AgentContext, "budget" | "network" | "surface" | "intelligence">,
@@ -62,18 +69,17 @@ export async function decideApproval(
   tool: BudgetedTool,
   input: StepInput,
 ): Promise<ToolApprovalStatus> {
-  // Nothing to approve yet: the card asks how much, and its own confirm follows.
-  if (!input.amount) return "not-applicable";
-  const wait = (reason: ApprovalReason): ToolApprovalStatus => (context.surface === "voice" ? "not-applicable" : waits(reason));
-  if (trust.outside.length > 0) return wait("outside_text");
   const action = budgetAction(tool, input, context.network);
-  if (action.recipient === "other") return wait("other_recipient");
-  if (!context.budget) return wait("no_budget");
+  const ask = (reason: ApprovalReason): ToolApprovalStatus => (context.surface === "voice" ? "not-applicable" : waits(reason));
+  if (trust.outside.length > 0) return ask("outside_text");
+  if (action.recipient === "other") return ask("other_recipient");
+  // Nothing to approve yet: the card asks how much, and its own confirm follows.
+  if (!input.amount || !context.budget) return "not-applicable";
   const fits = await context.budget.allows(action).catch((error: unknown) => {
     context.intelligence.warn(error, "budget check failed");
     return false;
   });
-  return fits ? approved("inside_budget") : wait("over_budget");
+  return fits ? approved("inside_budget") : "not-applicable";
 }
 
 /** The per-tool `toolApproval` map for one turn (the same trust the tools use, so outside text read mid-turn counts). */

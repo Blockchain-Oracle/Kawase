@@ -11,6 +11,7 @@ import { z } from "zod";
 import type { RaceRoutesOutput, RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
+import { BARE } from "./quarantine";
 
 const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
 const ASSET_MAX = 64;
@@ -29,19 +30,44 @@ export function decimalOf(amount: string, decimals: number): string {
   return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
-/** Whether a row can be Kawase's pick: quoted, executable, with a net amount to rank by. */
-const pickable = (row: RouteQuote) => row.status === "quoted" && row.executable && row.net !== null && /^\d+$/.test(row.net);
+const hasNet = (row: RouteQuote) => row.net !== null && /^\d+$/.test(row.net);
+const hasRate = (row: RouteQuote) => typeof row.apyBps === "number";
+
+/** Whether a row can be Kawase's pick: quoted, executable, with something to rank by (what arrives; a yield's rate). */
+const pickable = (kind: RouteRace["kind"]) => (row: RouteQuote) =>
+  row.status === "quoted" && row.executable && (kind === "yield" ? hasRate(row) || hasNet(row) : hasNet(row));
+
+const byLowerCost = (a: RouteQuote, b: RouteQuote) =>
+  (a.feeUsd ?? Number.POSITIVE_INFINITY) - (b.feeUsd ?? Number.POSITIVE_INFINITY) || (a.etaSeconds ?? Number.POSITIVE_INFINITY) - (b.etaSeconds ?? Number.POSITIVE_INFINITY);
 
 /**
- * The race as the card and the model may trust it: `best` must name a pickable row (never a failed or checking one),
- * and a finished race has no row left "checking" (a venue that never answered timed out).
+ * The leader among pickable rows, when the race's own pick cannot stand: a yield's highest rate; otherwise the most that
+ * arrives (rows in the same asset only: amounts in different assets are never compared), then the lower fee, then the
+ * faster.
+ */
+function leader(kind: RouteRace["kind"], rows: readonly RouteQuote[]): string | null {
+  const candidates = rows.filter(pickable(kind));
+  if (kind === "yield") return [...candidates].sort((a, b) => (b.apyBps ?? 0) - (a.apyBps ?? 0) || byLowerCost(a, b))[0]?.venue ?? null;
+  const asset = candidates[0]?.receive?.symbol;
+  const comparable = candidates.filter((row) => row.receive?.symbol === asset);
+  const ranked = comparable.sort((a, b) => {
+    const more = BigInt(b.net!) - BigInt(a.net!);
+    return more === 0n ? byLowerCost(a, b) : more > 0n ? 1 : -1;
+  });
+  return ranked[0]?.venue ?? null;
+}
+
+/**
+ * The race as the card and the model may trust it: `best` must name a pickable row (never a failed or checking one;
+ * when the race's own pick is not one, the leader among the quoted rows takes its place), and a finished race has no
+ * row left "checking" (a venue that never answered timed out).
  */
 export function settleRace(race: RouteRace, finished: boolean): RouteRace {
   const rows = finished
     ? race.rows.map((row) => (row.status === "checking" ? { ...row, status: "failed" as const, reason: row.reason ?? "timeout" } : row))
     : race.rows;
   const named = rows.find((row) => row.venue === race.best);
-  const best = named && pickable(named) ? named.venue : null;
+  const best = named && pickable(race.kind)(named) ? named.venue : leader(race.kind, rows);
   return { ...race, rows, best, done: finished || race.done };
 }
 
@@ -59,7 +85,20 @@ const NEXT_STEP: Record<RouteRaceRequest["kind"], string> = {
   yield: "compare_yield, then propose_earn or propose_supply",
 };
 
-/** What the model reads of a race: the quoted rows, best first, and what to do next. Never the logos or the raw rows. */
+/**
+ * One amount as the model reads it: "1.7125 EURC" when the symbol is a bare one (it cannot carry a sentence), else the
+ * number with the symbol apart under `symbol`, where the quarantine fences it as outside text.
+ */
+function amountForModel(amount: RouteQuote["receive"]): { receive: string | null; symbol?: string } {
+  if (!amount) return { receive: null };
+  const value = decimalOf(amount.amount, amount.decimals);
+  return BARE.test(amount.symbol) ? { receive: `${value} ${amount.symbol}` } : { receive: value, symbol: amount.symbol };
+}
+
+/**
+ * What the model reads of a race: venue ids and numbers, the quoted rows best first, and what to do next. Never the
+ * venues' display names, the rows' facts or the logos: the card has those, and a vault's name is its curator's text.
+ */
 export function raceForModel(output: RaceRoutesOutput) {
   if (output.status === "routes_unavailable")
     return {
@@ -77,8 +116,7 @@ export function raceForModel(output: RaceRoutesOutput) {
     .slice(0, MODEL_ROWS)
     .map((row) => ({
       venue: row.venue,
-      label: row.label,
-      receive: row.receive ? `${decimalOf(row.receive.amount, row.receive.decimals)} ${row.receive.symbol}` : null,
+      ...amountForModel(row.receive),
       feeUsd: row.feeUsd,
       etaSeconds: row.etaSeconds,
       apyPct: row.apyBps === null || row.apyBps === undefined ? null : row.apyBps / BPS_PER_PERCENT,

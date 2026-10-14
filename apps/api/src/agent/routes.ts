@@ -354,7 +354,8 @@ export function createTurnRunner(deps: AgentDeps) {
         })) {
           // Commit tool transitions immediately; throttle partial text. A process crash must not erase a submitted
           // action's card just because the final assistant sentence had not arrived.
-          const nextTools = JSON.stringify(message.parts.filter(isToolUIPart));
+          // A live tool's preliminary snapshots (race_routes: one per venue answer) are not transitions: the final one is.
+          const nextTools = JSON.stringify(message.parts.filter((part) => isToolUIPart(part) && !(part.state === "output-available" && part.preliminary === true)));
           if (nextTools !== tools || Date.now() - checkpointAt >= TRANSCRIPT_CHECKPOINT_MS) {
             await conversations.checkpoint(claim, message);
             tools = nextTools;

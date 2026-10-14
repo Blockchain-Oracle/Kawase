@@ -74,7 +74,7 @@ export function fence(
 }
 
 /** A bare symbol or name (USDC, cirBTC, Morpho) cannot carry a sentence: inside a summary it is left as it is. */
-const BARE = /^[\p{L}\p{N}.$_-]{1,12}$/u;
+export const BARE = /^[\p{L}\p{N}.$_-]{1,12}$/u;
 
 /** The outside strings in a tool's own output (the card's), to fence again wherever the model's sentence quotes them. */
 function outsideStrings(output: unknown, keys: ReadonlySet<string>): string[] {
@@ -137,9 +137,10 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   find_contacts: { source: "contact book", keys: ["notes", "note"] },
   // Past conversations can quote any of the above.
   search_history: { source: "past messages", keys: ["words", "title"] },
-  // A race's rows carry token symbols (set by whoever deployed the token) and, for yield, vault names and facts
-  // written by curators; venue ids and numbers are Kawase's own.
-  race_routes: { source: "token contract or vault curator", keys: ["symbol", "label", "detail"] },
+  // The model reads a race as venue ids and numbers (Kawase's own) with each amount's symbol inline; a symbol that is
+  // not a bare one (it could carry a sentence) goes under `symbol` instead and is fenced (race-tools.ts raceForModel).
+  // Vault names and the rows' facts stay on the card: the model never reads them.
+  race_routes: TOKEN_IN_SENTENCE,
 };
 
 /**

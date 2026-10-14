@@ -199,7 +199,7 @@ export type BudgetAction = {
 };
 
 /** Why an agent step goes without a tap, or waits for one (the run card says which). */
-export type ApprovalReason = "inside_budget" | "no_budget" | "over_budget" | "outside_text" | "other_recipient" | "amount_missing";
+export type ApprovalReason = "inside_budget" | "outside_text" | "other_recipient";
 
 /** The configured model, checked with one tiny tool call at start and every 10 minutes. */
 export type AgentHealth = { status: "online" | "offline" | "unknown"; checkedAt: string | null; model: string; reason: string | null };
