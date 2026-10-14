@@ -72,15 +72,70 @@ test("checks never pile up, and a passing check brings the agent back", async ()
   let calls = 0;
   const slow = () => (calls++, new Promise<SelfTestResult>((resolve) => (release = resolve)));
   const health = createModelHealth({ models: keyed as never, modelId: "openai:gpt-5.6-luna", log, selfTest: slow });
-  health.reportFailure("http_429");
-  assert.equal(health.status().status, "offline", "a live turn that hit the provider wall marks it offline");
   const first = health.check();
   const second = health.check();
-  assert.equal(calls, 1, "one check at a time");
+  health.reportFailure("http_429");
+  assert.equal(calls, 1, "one check at a time, a failed turn's confirm included");
   release({ ok: true, ms: 800 });
   assert.equal((await first).status, "online");
   assert.equal((await second).status, "online");
   assert.equal(health.status().reason, null);
+});
+
+test("one failed turn never takes everyone offline: it asks for a check at once, and the check decides", async () => {
+  const results: SelfTestResult[] = [{ ok: true, ms: 1 }, { ok: true, ms: 1 }];
+  let calls = 0;
+  const health = createModelHealth({ models: keyed as never, modelId: "m", log, selfTest: async () => (calls++, results.shift() ?? { ok: true, ms: 1 }), minCheckGapMs: 0 });
+  await health.check();
+  assert.equal(health.status().status, "online");
+  health.reportFailure("http_429");
+  assert.equal(health.status().status, "online", "one turn's 429 is not the provider's verdict");
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(calls, 2, "a confirming check ran at once");
+  assert.equal(health.status().status, "online", "the check passed: still online for everyone");
+});
+
+test("a failure confirmed by the check retries within the offline interval, and a passing check brings it back", async () => {
+  const results: SelfTestResult[] = [{ ok: true, ms: 1 }, { ok: false, ms: 1, reason: "http_401" }, { ok: true, ms: 1 }];
+  let calls = 0;
+  const health = createModelHealth({
+    models: keyed as never,
+    modelId: "m",
+    log,
+    selfTest: async () => (calls++, results.shift() ?? { ok: true, ms: 1 }),
+    intervalMs: 60_000,
+    retryOfflineMs: 20,
+    minCheckGapMs: 0,
+  });
+  const stop = health.start();
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(health.status().status, "online", "start-up check");
+  // The 10-minute timer is pending; a turn fails on the provider and the confirming check fails too.
+  health.reportFailure("http_401");
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(health.status().status, "offline");
+  assert.equal(calls, 2);
+  // The pending 10-minute timer was replaced by the offline retry: back online well before it.
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  stop();
+  assert.equal(calls, 3, "retried within the offline interval");
+  assert.equal(health.status().status, "online");
+});
+
+test("Check again runs a fresh check while offline, at most once per gap for the whole api; online it makes no call", async () => {
+  const results: SelfTestResult[] = [{ ok: false, ms: 1, reason: "http_500" }, { ok: true, ms: 1 }];
+  let calls = 0;
+  const health = createModelHealth({ models: keyed as never, modelId: "m", log, selfTest: async () => (calls++, results.shift() ?? { ok: true, ms: 1 }), minCheckGapMs: 30 });
+  await health.check();
+  const app = agentApp(health);
+  const read = async () => ((await (await app.request("/agent/health")).json()) as { health: AgentHealth }).health;
+  assert.equal((await read()).status, "offline", "inside the gap: the latest result, no call");
+  assert.equal(calls, 1);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal((await read()).status, "online", "after the gap: a fresh check brings it back");
+  assert.equal(calls, 2);
+  assert.equal((await read()).status, "online");
+  assert.equal(calls, 2, "online: no call");
 });
 
 test("the timer checks at start and keeps checking until stopped", async () => {

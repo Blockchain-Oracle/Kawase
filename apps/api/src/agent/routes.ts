@@ -330,7 +330,8 @@ export function createTurnRunner(deps: AgentDeps) {
         onError: (error) => {
           failed = true;
           log.error({ err: error }, "agent turn failed");
-          // The provider refused or broke (a dead key, no credit, an outage): offline until the next check passes.
+          // The provider refused or broke (a dead key, no credit, an outage, or one big turn's 429): a check confirms at
+          // once and decides for everyone; this one failure never takes the agent offline by itself.
           const providerDown = providerFailure(error);
           if (providerDown) deps.health?.reportFailure(providerDown);
         },
@@ -387,8 +388,9 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
   app.use("*", requireUser);
   const { run, ownThread, loadMessages } = runner;
 
-  // Whether the agent can answer now, before the person types (the app's offline state).
-  app.get("/health", (c) => c.json({ health: deps.health?.status() ?? { status: "unknown", checkedAt: null, model: "", reason: null } }));
+  // Whether the agent can answer now, before the person types (the app's offline state). While it is not online this is
+  // also the app's "Check again": it runs a fresh self-test, at most one every few seconds for the whole api (health.ts).
+  app.get("/health", async (c) => c.json({ health: (await deps.health?.recheck()) ?? { status: "unknown", checkedAt: null, model: "", reason: null } }));
 
   app.post("/chat", async (c) => {
     if (!models.hasKeyFor("agentChat")) throw problem(HTTP.internal, "agent_unavailable");
