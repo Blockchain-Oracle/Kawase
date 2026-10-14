@@ -78,6 +78,35 @@ async function get(path: string) {
   }
 }
 
+// The public tier's limit is shared by every caller (Cloudflare answers 429, "error code: 1015", when it is hit). The
+// same question within 15 s is answered from memory (a swap preview and the route race often ask it twice), and a
+// 429 pauses Socket quotes with a doubling back-off so the other venues answer instead of Socket failing slowly.
+const QUOTE_CACHE_MS = 15_000;
+const BACKOFF_BASE_MS = 30_000;
+const BACKOFF_MAX_MS = 600_000;
+const HTTP_TOO_MANY = 429;
+type Answer = Awaited<ReturnType<typeof get>>;
+const quoteState = { blockedUntil: 0, strikes: 0, cache: new Map<string, { at: number; value: Answer }>() };
+
+async function quoteGet(query: string): Promise<Answer> {
+  const now = Date.now();
+  const cached = quoteState.cache.get(query);
+  if (cached && now - cached.at < QUOTE_CACHE_MS) return cached.value;
+  if (quoteState.blockedUntil > now) return { ok: false, status: HTTP_TOO_MANY, body: {} };
+  const answer = await get(`/swap/quote?${query}`);
+  if (answer.status === HTTP_TOO_MANY) {
+    quoteState.strikes += 1;
+    quoteState.blockedUntil = now + Math.min(BACKOFF_BASE_MS * 2 ** (quoteState.strikes - 1), BACKOFF_MAX_MS);
+    return answer;
+  }
+  quoteState.strikes = 0;
+  if (answer.ok) {
+    for (const [stale, entry] of quoteState.cache) if (now - entry.at >= QUOTE_CACHE_MS) quoteState.cache.delete(stale);
+    quoteState.cache.set(query, { at: now, value: answer });
+  }
+  return answer;
+}
+
 function toRoute(raw: RawRoute, input: SocketQuoteInput): SocketRoute | undefined {
   const tx = raw.txData?.object;
   if (raw.txData?.kind !== "evm_tx" || !tx?.to || !tx.data || !raw.output?.amount || !raw.output.minAmountOut || !raw.quoteId) return undefined;
@@ -115,7 +144,8 @@ export async function socketRoutes(input: SocketQuoteInput): Promise<SocketRoute
     receiverAddress: input.receiver,
     slippage: String((input.slippageBps / BPS) * PERCENT),
   });
-  const { ok, body } = await get(`/swap/quote?${query}`);
+  const { ok, status, body } = await quoteGet(query.toString());
+  if (status === HTTP_TOO_MANY) throw new BridgeProviderError("Socket", "rate_limited", "Socket's shared public limit is reached");
   const result = body.result as { routes?: RawRoute[] } | undefined;
   const routes = (result?.routes ?? []).map((raw) => toRoute(raw, input)).filter((route): route is SocketRoute => Boolean(route));
   if (!ok || routes.length === 0) {

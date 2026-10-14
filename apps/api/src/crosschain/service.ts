@@ -190,7 +190,8 @@ const TRUST: Record<Provider, CrossChainRouteView["trust"]> = { cctp: "burn_mint
 const EXTRA_BATCH_GAS: Record<ExtraProvider, bigint> = { socket: 900_000n, gaszip: 120_000n };
 /** A provider the draft format can store (its index in CROSSCHAIN_PROVIDERS), so it can be chosen and executed. */
 const registered = (provider: Provider): provider is CrossChainProvider => (CROSSCHAIN_PROVIDERS as readonly string[]).includes(provider);
-const batchGasOf = (provider: Provider) => (registered(provider) ? CROSSCHAIN.batchGas[provider] : EXTRA_BATCH_GAS[provider]);
+// Read loosely so appending socket/gaszip to CROSSCHAIN_PROVIDERS (without a config entry yet) still compiles and prices.
+const batchGasOf = (provider: Provider): bigint => (CROSSCHAIN.batchGas as Partial<Record<Provider, bigint>>)[provider] ?? EXTRA_BATCH_GAS[provider as ExtraProvider];
 const isConvertVenue = (venue: string): venue is (typeof CONVERT_VENUES)[number] => (CONVERT_VENUES as readonly string[]).includes(venue);
 type ShownQuote = Quote & { provider: CrossChainProvider };
 const shownRoute = (quote: Quote): quote is ShownQuote => registered(quote.provider);
@@ -948,7 +949,7 @@ export class CrossChainService {
         this.log.warn({ err: error, intentId }, "crosschain simulation reverted");
         throw problem(HTTP.badGateway, "simulation_failed");
       }
-      const fallbackGas = onArc ? CROSSCHAIN.batchGas[CROSSCHAIN_PROVIDERS[draft.provider]!] + (draft.swapMinOut > ZERO ? CROSSCHAIN.convertGas : ZERO) : CROSSCHAIN.sourceGasFallback;
+      const fallbackGas = onArc ? batchGasOf(CROSSCHAIN_PROVIDERS[draft.provider]!) + (draft.swapMinOut > ZERO ? CROSSCHAIN.convertGas : ZERO) : CROSSCHAIN.sourceGasFallback;
       const [nonce, price, estimate] = await Promise.all([
         origin.getTransactionCount({ address: draft.from, blockTag: "pending" }),
         onArc ? walletGasPrice(client) : origin.estimateFeesPerGas().then((fees) => ({ maxFeePerGas: fees.maxFeePerGas ?? ZERO, maxPriorityFeePerGas: fees.maxPriorityFeePerGas ?? ZERO })),

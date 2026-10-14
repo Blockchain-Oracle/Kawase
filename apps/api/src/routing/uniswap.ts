@@ -12,6 +12,8 @@ import { decodeAbiParameters, decodeFunctionData, encodeFunctionData, erc20Abi, 
 
 const API = "https://trade-api.gateway.uniswap.org/v1";
 const TIMEOUT_MS = 6_000;
+const RETRY_AFTER_MS = 400;
+const HTTP_SERVER_ERROR = 500;
 const NO_VALUE = 0n;
 /** Arc's native face of USDC has 18 decimals, its ERC-20 face 6. */
 const NATIVE_SCALE = 10n ** 12n;
@@ -73,7 +75,19 @@ export type UniswapQuote = {
 
 type Call = { to: Address; data: Hex; value: bigint };
 
+/**
+ * One POST, asked once more when Uniswap says the failure was its own and passing ("A routing dependency timed out
+ * or failed; the request may succeed on retry", seen live 2026-10-14 on /swap): a 5xx or that wording.
+ */
 async function post(path: string, apiKey: string, body: unknown) {
+  const first = await postOnce(path, apiKey, body);
+  const transient = first.status >= HTTP_SERVER_ERROR || /may succeed on retry|timed out/i.test(String(first.body.detail ?? ""));
+  if (first.ok || !transient) return first;
+  await new Promise((resolve) => setTimeout(resolve, RETRY_AFTER_MS));
+  return postOnce(path, apiKey, body);
+}
+
+async function postOnce(path: string, apiKey: string, body: unknown) {
   if (!apiKey) throw new UniswapError("needs_key", "UNISWAP_API_KEY is not set");
   try {
     const response = await fetch(`${API}${path}`, {
