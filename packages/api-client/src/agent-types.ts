@@ -156,3 +156,50 @@ export type AutomationSummary = {
 
 export type ProposeAutomationOutput = { automation: import("./types").AutomationView; summary: AutomationSummary };
 export type ListAutomationsOutput = { network: AgentNetwork; automations: ProposeAutomationOutput[] };
+
+// ── Watching the agent work: the route race, the budget's yes, the model's health (front-door lane) ─────────────
+
+/** What race_routes asks every venue for. Amounts are decimals as the person said them ("2.5"); tokens as named. */
+export type RouteRaceRequest = {
+  kind: "swap" | "bridge" | "yield";
+  /** Swap: what goes out (a symbol or 0x address); bridge and yield: the asset (USDC when not said). */
+  from: string | null;
+  /** Swap: what comes in. */
+  to: string | null;
+  amount: string | null;
+  /** Bridge out of Arc: the chain it lands on ("base"). */
+  destination: string | null;
+  /** Bring to Arc: the chain it leaves. */
+  source: string | null;
+};
+
+/**
+ * Every snapshot race_routes yields (the AI SDK sends all but the last as preliminary). `racing`: venues are still
+ * answering; `done`: every venue answered or timed out, and `race.best` is Kawase's suggestion (the propose step
+ * re-quotes it before anything moves); `routes_unavailable`: no race ran, and the card says so instead of showing rows.
+ * A race never invents a quote.
+ */
+export type RaceRoutesOutput =
+  | { status: "racing" | "done"; request: RouteRaceRequest; race: import("./routes").RouteRace }
+  | { status: "routes_unavailable"; request: RouteRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" };
+
+/** One money step the agent wants to take, as the weekly budget sees it (D38). The Budget lane answers allows(). */
+export type BudgetAction = {
+  /** The tool that would act. */
+  tool: string;
+  kind: "swap" | "bridge" | "bring_in" | "earn" | "send" | "x402";
+  /** Decimal amount in `asset`, as asked; null when the person did not say (never inside a budget). */
+  amount: string | null;
+  asset: string | null;
+  /** The venue the race picked or the person chose, when there is one. */
+  venue: string | null;
+  /** Bridges and sends: who receives ("self" is the person's own address). */
+  recipient: "self" | "other" | null;
+  network: AgentNetwork;
+};
+
+/** Why an agent step goes without a tap, or waits for one (the run card says which). */
+export type ApprovalReason = "inside_budget" | "no_budget" | "over_budget" | "outside_text" | "other_recipient" | "amount_missing";
+
+/** The configured model, checked with one tiny tool call at start and every 10 minutes. */
+export type AgentHealth = { status: "online" | "offline" | "unknown"; checkedAt: string | null; model: string; reason: string | null };

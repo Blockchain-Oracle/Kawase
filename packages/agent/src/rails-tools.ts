@@ -14,6 +14,9 @@ const UNAVAILABLE = { summary: "This is not available here." };
 
 const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
 const RECIPIENT_MAX = 80;
+const VENUE_MAX = 32;
+/** The routes a move can be pinned to (CrossChainProvider); a race's pick is passed as one of these. */
+const BRIDGE_VENUES = ["cctp", "across", "relay", "lifi", "debridge"] as const;
 
 /** A symbol, a 0x address (42), or an amount. */
 const ASSET_MAX = 64;
@@ -23,8 +26,12 @@ export function railsTools(context: AgentContext) {
     compare_yield: tool({
       description:
         "Where an asset can earn now, compared: Aave V4 (supply rate, what it can pay out right now), Morpho vaults (only those that could give the money back; low liquidity flagged) and Aero LP pools with Merkl rewards (advanced: impermanent loss and range risk; propose_lp deposits). Ranked by yield among sources that could return the amount. Pass the asset (USDC by default) and the amount if they said one. The card lets them deposit.",
-      inputSchema: z.object({ asset: z.string().max(ASSET_MAX).optional(), amount: z.string().regex(/^\d+(\.\d+)?$/).optional() }),
-      execute: async ({ asset, amount }) => (context.compareYield ? context.compareYield({ asset: asset ?? "USDC", amount: amount ?? null }) : UNAVAILABLE),
+      inputSchema: z.object({
+        asset: z.string().max(ASSET_MAX).optional(),
+        amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+        venue: z.string().max(VENUE_MAX).optional().describe("The venue race_routes suggested or the person picked (aave, morpho, merkl); it is quoted again and shown first"),
+      }),
+      execute: async ({ asset, amount, venue }) => (context.compareYield ? context.compareYield({ asset: asset ?? "USDC", amount: amount ?? null, venue: venue ?? null }) : UNAVAILABLE),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     propose_supply: tool({
@@ -74,12 +81,13 @@ export function railsTools(context: AgentContext) {
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("In that asset, digits with a dot; omit if they did not say"),
         recipient: z.string().max(RECIPIENT_MAX).optional().describe("Only who they named: a contact, @handle or address; omit for themselves"),
         toAsset: z.literal("USDC").optional().describe("Only if they asked for it to arrive as USDC"),
+        venue: z.enum(BRIDGE_VENUES).optional().describe("The route race_routes suggested or the person picked; Kawase quotes it again"),
       }),
-      execute: async ({ destination, asset, amount, recipient, toAsset }) => {
+      execute: async ({ destination, asset, amount, recipient, toAsset, venue }) => {
         if (!context.proposeCrossChain) return UNAVAILABLE;
         // K2 (M8): an address must be the person's own words; their own address means themselves (Kawase fills it in).
         const own = recipient && /^0x/i.test(recipient.trim()) ? (await destinationAddress(context, recipient, "Omit the recipient for themselves.")) === "own" : false;
-        return context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: own ? null : (recipient ?? null), toAsset: toAsset ?? null });
+        return context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: own ? null : (recipient ?? null), toAsset: toAsset ?? null, route: venue ?? null });
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
@@ -90,9 +98,10 @@ export function railsTools(context: AgentContext) {
         source: z.enum(CHAINS).optional(),
         asset: z.string().max(ASSET_MAX).optional().describe("\"ETH\", \"EURC\", \"WETH\"…; omit for USDC"),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
+        venue: z.enum(BRIDGE_VENUES).optional().describe("The route race_routes suggested or the person picked; Kawase quotes it again"),
       }),
-      execute: async ({ source, asset, amount }) =>
-        context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, asset: asset ?? null, amount: amount ?? null }) : UNAVAILABLE,
+      execute: async ({ source, asset, amount, venue }) =>
+        context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, asset: asset ?? null, amount: amount ?? null, route: venue ?? null }) : UNAVAILABLE,
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     start_buy: tool({

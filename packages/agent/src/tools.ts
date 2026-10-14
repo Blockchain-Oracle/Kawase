@@ -12,6 +12,7 @@ import { accountTools } from "./everyday-tools";
 import { intelligenceTools } from "./intelligence-tools";
 import { withQuarantine } from "./quarantine";
 import { moneyOutTools } from "./money-out-tools";
+import { raceTools } from "./race-tools";
 import { ADDRESS_NOT_TYPED, addressTyped, turnTrust, type Hold, type TurnTrust } from "./trust";
 import type { ProposeSendOutput } from "./context";
 
@@ -35,6 +36,7 @@ async function resolveToken(context: AgentContext, query: string) {
   const [best] = await context.searchTokens(text);
   return best ? context.tokenDetail(best.token.address) : null;
 }
+const VENUE_MAX = 32;
 const SERVICE_QUERY_MAX = 120;
 const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
@@ -56,6 +58,8 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
   // Outside text in any tool's result reaches the model fenced as data (quarantine.ts), and the turn's trust hears of
   // it: after that, a send waits for the person's tap (trust.ts).
   return withQuarantine({
+    // Every venue raced live; the card watches the quotes land (front door, D37).
+    ...raceTools(context),
     ...railsTools(context),
     ...safetyTools(context),
     ...automationTools(context),
@@ -285,8 +289,9 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
         from: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they give up; omit for a buy paid in dollars"),
         to: z.string().max(TOKEN_QUERY_MAX).optional().describe("What they want; omit for a sale to dollars"),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("Digits with a dot, in the from token; omit if they did not say"),
+        venue: z.string().max(VENUE_MAX).optional().describe("The venue race_routes suggested or the person picked (its id, e.g. kyberswap); Kawase quotes it again"),
       }),
-      execute: async ({ from, to, amount }) => context.proposeTrade({ from: from ?? null, to: to ?? null, amount: amount ?? null }),
+      execute: async ({ from, to, amount, venue }) => context.proposeTrade({ from: from ?? null, to: to ?? null, amount: amount ?? null, venue: venue ?? null }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     get_portfolio: tool({
