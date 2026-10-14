@@ -5,7 +5,7 @@
 import { formatUnits, getAddress, isAddress, parseUnits, type Address, type PublicClient } from "viem";
 
 import type { RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
-import { CROSSCHAIN, DEFAULT_LIMITS } from "@kawase/config";
+import { APP_KIT_RACE_TIMEOUT_MS, CROSSCHAIN, DEFAULT_LIMITS } from "@kawase/config";
 import type { BridgeDestination } from "@kawase/integrations-app-kit";
 import { acrossQuote, BridgeProviderError, DEBRIDGE_NATIVE, debridgeQuote, gasZipQuote, LIFI_NATIVE, lifiQuote, relayQuote, SOCKET_NATIVE, socketQuote } from "@kawase/integrations-bridges";
 import { CROSSCHAIN_PROVIDERS } from "@kawase/intents";
@@ -133,6 +133,7 @@ export function createRouteRacer(deps: RouteRacerDeps) {
           const pending = checkingRow(attempt.venue, venueKey(attempt.venue), venueName(attempt.venue));
           return {
             pending: [pending],
+            ...(attempt.venue === "app_kit" ? { timeoutMs: APP_KIT_RACE_TIMEOUT_MS } : {}),
             result: attempt.result.then(
               (quote) => [quote.estimatedOut > ZERO ? routeFromVenueQuote(quote, out) : failedRow(pending, "no_route")],
               (error: unknown) => {

@@ -1,6 +1,7 @@
 // The route race (plan decision 7): every venue for one request is asked at once, and a RouteRace snapshot is yielded
 // each time one answers, so the agent's run card and the RouteList light rows up as quotes land; a final snapshot
-// says `done`. Each venue gets 4 s; one that has not answered by then is a failed row (`timeout`) and the others
+// says `done`. Each venue gets 4 s (App Kit, which retries "no route yet" itself, gets its own longer cap); one that
+// has not answered by then is a failed row (`timeout`) and the others
 // decide. `best` is the highest net among executable quoted rows. The race only reads: nothing here builds or signs.
 import type { RouteKind, RouteQuote, RouteRace } from "@kawase/api-client";
 
@@ -11,7 +12,12 @@ export const RACE_VENUE_TIMEOUT_MS = 4_000;
  * One thing being asked: the rows it fills (one per venue, or several for a source that answers for many, such as
  * the yield list) shown as `checking` until `result` settles.
  */
-export type RaceAttempt = { pending: RouteQuote[]; result: Promise<RouteQuote[]> };
+export type RaceAttempt = {
+  pending: RouteQuote[];
+  result: Promise<RouteQuote[]>;
+  /** This attempt's own cap, for a venue known to answer slowly (Circle App Kit); the race's default otherwise. */
+  timeoutMs?: number | undefined;
+};
 
 export type RaceOptions = {
   timeoutMs?: number;
@@ -93,7 +99,7 @@ export async function* raceRoutes(kind: RouteKind, attempts: readonly RaceAttemp
   attempts.forEach((attempt, index) => {
     waiting.set(
       index,
-      within(attempt.result, timeoutMs).then(
+      within(attempt.result, attempt.timeoutMs ?? timeoutMs).then(
         (rows): Settled => ({ index, rows: rows.map((row) => ({ ...row, answeredMs: row.answeredMs ?? now() - started })) }),
         (error: unknown): Settled => ({ index, rows: attempt.pending.map((row) => failedRow(row, error instanceof Error && error.message === "timeout" ? "timeout" : "failed")) }),
       ),

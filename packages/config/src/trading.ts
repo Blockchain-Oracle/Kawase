@@ -51,6 +51,8 @@ export const LIFI_DIAMOND_ARC = "0xA4072583658Fae592A3506A42431cb6316a8d40b";
 export const SWAP_VENUE_TIMEOUT_MS = 7_000;
 /** Circle App Kit retries "no route yet" itself (up to four tries, 2026-10-01), so it gets longer. */
 export const APP_KIT_QUOTE_TIMEOUT_MS = 30_000;
+/** In a route race App Kit's row keeps checking this long (production quotes took over 4 s on testnet, 2026-10-14). */
+export const APP_KIT_RACE_TIMEOUT_MS = 12_000;
 /** Gas for an approve + aggregator swap batch when an estimate is not possible yet. */
 export const AGGREGATOR_BATCH_GAS_ESTIMATE = 900_000n;
 
