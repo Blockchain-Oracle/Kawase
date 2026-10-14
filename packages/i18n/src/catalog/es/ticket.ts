@@ -45,5 +45,6 @@ export const ticket: Catalog["ticket"] = {
   reason_no_route: "Sin ruta",
   reason_timeout: "Sin respuesta a tiempo",
   reason_failed: "No pudo cotizar",
+  reason_rate_limited: "Saturado ahora",
   ruleVerifiedOnly: "Tus reglas solo permiten tokens verificados",
 };
