@@ -10,6 +10,7 @@ import { createPublicClient, createWalletClient, http, type Address } from "viem
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import type { LendAccountView, LendIntent, YieldOptionsView } from "@kawase/api-client";
+import { AERO_LP } from "@kawase/config";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork, type NetworkId } from "@kawase/networks";
 
@@ -62,6 +63,11 @@ test("lend: yield options, a borrow with its health, the floor and the collatera
   assert.ok(options.options.some((option) => option.kind === "aave_v4" && option.executable));
   assert.ok(options.best);
   assert.ok(!options.options.some((option) => option.name.includes("Galaxy USDC")), "stuck vaults are not offered");
+  // Aero's cirBTC-USDC pool is one Kawase deposits into: offered, executable, by its address (the LP screen opens it).
+  const forBtc = (await (await call("GET", "/lend/options?asset=cirBTC")).json()) as YieldOptionsView;
+  const aero = forBtc.options.find((option) => option.kind === "lp" && option.executable);
+  assert.ok(aero && AERO_LP.pools.some((pool) => pool.address.toLowerCase() === aero.id.toLowerCase()), JSON.stringify(forBtc.options));
+  console.log(`cirBTC: ${aero.name} ${(aero.rate * 100).toFixed(1)}% ${aero.rateKind}, executable [${aero.note}]`);
 
   const borrow = (await (await call("POST", "/lend/orders", { action: "borrow", asset: "USDC", amount: "5", collateralAsset: "cirBTC", collateralAmount: "0.0002" })).json()) as { intent: LendIntent };
   const draft = borrow.intent.draft;

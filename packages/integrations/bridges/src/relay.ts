@@ -163,6 +163,25 @@ export function checkRelayPermit2(permit: RelayPermit, expected: { chainId: numb
   );
 }
 
+/**
+ * Bring to Arc, the first of two steps: the one transaction Relay asks for before a Permit2 transfer when the token is
+ * not yet approved to Permit2 at that address — exactly `token.approve(Permit2, ≥ amount)`, no native value. Permit2 then
+ * moves nothing without the person's own signature for each transfer (the second step).
+ */
+export function checkPermit2Approval(calls: readonly BridgeCall[], expected: { token: Address; amount: bigint }): boolean {
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  const [approve] = calls;
+  if (calls.length !== 1 || !approve || approve.value !== NO_VALUE || !same(approve.to, expected.token)) return false;
+  const decoded = (() => {
+    try {
+      return decodeFunctionData({ abi: erc20Abi, data: approve.data });
+    } catch {
+      return undefined;
+    }
+  })();
+  return decoded?.functionName === "approve" && same(decoded.args[0] as Address, PERMIT2) && (decoded.args[1] as bigint) >= expected.amount;
+}
+
 /** Hands the signed permit to Relay, which executes it on the origin chain. */
 export async function submitRelayPermit(permit: RelayPermit, signature: Hex): Promise<void> {
   const { ok, body } = await call(`${permit.post.endpoint}?signature=${signature}`, {

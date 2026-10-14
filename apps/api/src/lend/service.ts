@@ -1,7 +1,8 @@
 // Earn and borrow on Aave V4 directly (earn-borrow.md), and the yield options card that compares every source.
 //
 // Options: for an asset, Aave V4's Main Spoke (supply rate, what the hub can pay out now, size), App Kit's Morpho
-// vaults (G1's liquidity ranking; stuck ones never offered) and Merkl's LP campaigns (shown as advanced, read-only),
+// vaults (G1's liquidity ranking; stuck ones never offered) and Merkl's Aero LP campaigns (advanced: the pools Kawase
+// deposits into are executable through lp/service.ts, the rest shown only),
 // ranked by rate among sources that could give the amount back now. Actions on the person's own Aave account —
 // supply, withdraw, borrow (with collateral put in the same batch when asked), repay — are intents built like swaps:
 // a hashed version, the calls built at approval, simulated from the wallet, one self-batch (one Face ID), settled on
@@ -11,7 +12,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { erc20Abi, formatUnits, keccak256, maxUint256, parseTransaction, parseUnits, recoverTransactionAddress, type Address, type Hex, type TransactionReceipt } from "viem";
 
-import { APPROVAL_TTL_S, GAS_ESTIMATE_HEADROOM_PERCENT, GAS_FLOAT_USDC_BASE_UNITS, INTENT_TTL_S, LEND, MAX_FEE_DRAFT_MULTIPLIER, MS_PER_SECOND, SEND_UNKNOWN_AFTER_S } from "@kawase/config";
+import { AERO_LP, APPROVAL_TTL_S, GAS_ESTIMATE_HEADROOM_PERCENT, GAS_FLOAT_USDC_BASE_UNITS, INTENT_TTL_S, LEND, MAX_FEE_DRAFT_MULTIPLIER, MS_PER_SECOND, SEND_UNKNOWN_AFTER_S } from "@kawase/config";
 import type { LendAccountView, LendApproveResponse, LendDraftView, LendIntent, LendRequest, UnsignedTransaction, YieldOptionView, YieldOptionsView } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, marginPositions, newId, txAttempts, type Db } from "@kawase/db";
 import {
@@ -44,6 +45,7 @@ import { evaluateLend, type LendEvaluation, type LendFacts, type PolicyResult } 
 
 import { capabilityView } from "../capabilities/service";
 import type { EarnService } from "../earn/service";
+import type { LpService } from "../lp/service";
 import { HTTP, problem } from "../http/problem";
 import { pausedAll } from "../safety/settings";
 import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
@@ -116,6 +118,8 @@ function liquidationOf(market: AaveMarket, account: AaveAccount, action: StoredR
 export class LendService {
   private readonly tracking = new Set<string>();
   private readonly marketCache = new Map<NetworkId, { at: number; market: AaveMarket }>();
+  /** Aero LP (lp/service.ts), attached by the app: its pools are offered here, executable. */
+  lp: LpService | undefined;
 
   constructor(
     private readonly db: Db,
@@ -294,12 +298,14 @@ export class LendService {
   private async merkl(symbol: string): Promise<YieldOptionView[]> {
     try {
       const response = await fetch(`${LEND.merklApi}?chainId=${this.clients("mainnet").network.chainId}&status=LIVE`, { signal: AbortSignal.timeout(MERKL_TIMEOUT_MS) });
-      const items = (await response.json()) as { id?: string; name?: string; apr?: number; tvl?: number; type?: string; protocol?: { name?: string }; tokens?: { symbol?: string }[] }[];
+      const items = (await response.json()) as { id?: string; name?: string; apr?: number; tvl?: number; type?: string; identifier?: string; protocol?: { name?: string }; tokens?: { symbol?: string }[] }[];
+      const deposits = new Set<string>(this.lp ? AERO_LP.pools.map((pool) => pool.address.toLowerCase()) : []);
       return items
         .filter((item) => item.type === "AERO" && (item.tokens ?? []).some((token) => token.symbol?.toLowerCase() === symbol.toLowerCase()))
         .map((item) => ({
           kind: "lp" as const,
-          id: `merkl:${item.id ?? item.name}`,
+          // A pool Kawase deposits into goes by its address (the LP screen opens it); the others stay Merkl's.
+          id: item.identifier && deposits.has(item.identifier.toLowerCase()) ? item.identifier : `merkl:${item.id ?? item.name}`,
           name: item.name ?? "LP",
           protocol: item.protocol?.name ?? "Aero",
           curator: null,
@@ -309,7 +315,7 @@ export class LendService {
           withdrawableUsd: null,
           tvlUsd: item.tvl ?? null,
           risk: "advanced" as const,
-          executable: false,
+          executable: Boolean(item.identifier && deposits.has(item.identifier.toLowerCase())),
           note: "advanced" as const,
         }));
     } catch {

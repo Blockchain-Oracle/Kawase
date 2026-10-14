@@ -9,9 +9,10 @@
 // built at approval, checked against the version (recipient, amounts, destination, the provider's own contracts),
 // simulated from the wallet, and sent by the wallet to itself.
 // In: "Bring to Arc" from a chain where the person holds money at the same address: USDC with Relay's permit (one
-// EIP-712 signature, no gas there); another token with Relay's Permit2 signature once that token is approved to
-// Permit2 there; the chain's own coin (ETH, POL, AVAX) through LI.FI as one transaction on that chain, its gas paid
-// from the coin itself. Tracking: the origin receipt must show exactly the amount leaving (on Arc, USDC is measured
+// EIP-712 signature, no gas there); another token with Relay's Permit2 signature — in two steps when that token is not
+// yet approved to Permit2 there: the approval first (one transaction there, its gas in that chain's coin, checked to be
+// exactly that approval), then the signature, both under one yes; the chain's own coin (ETH, POL, AVAX) through LI.FI
+// as one transaction on that chain, its gas paid from the coin itself. Tracking: the origin receipt must show exactly the amount leaving (on Arc, USDC is measured
 // by the chain's own native-transfer log, which covers both its native and ERC-20 faces, plus any flat fee); the fill
 // is followed through the provider until it is delivered. A move that is not filled says so and how it ends
 // (refunded by the provider), never re-sent on its own (R7).
@@ -58,6 +59,7 @@ import {
   checkAcrossCalls,
   checkDebridgeCalls,
   checkLifiCalls,
+  checkPermit2Approval,
   checkRelayCalls,
   checkRelayPermit,
   checkRelayPermit2,
@@ -103,7 +105,7 @@ import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
-import { arcAsset, assetView, counterpartOnArc, counterpartThere, isBlocked, remoteAsset, type MoveAsset } from "./assets";
+import { arcAsset, assetView, counterpartOnArc, counterpartThere, isBlocked, NATIVE_SYMBOLS, remoteAsset, type MoveAsset } from "./assets";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
@@ -136,10 +138,14 @@ type Quote = {
   convert: { venue: SwapVenueId; minOut: bigint } | null;
   /** In, from the chain's own coin: the gas the source transaction costs there. */
   sourceGas: bigint | null;
+  /** Bring to Arc with a token not yet approved to Permit2 there: that approval's gas first, in the chain's coin. */
+  approval: { coin: string; gas: bigint } | null;
 };
 type Built =
   | { kind: "batch"; calls: BridgeCall[]; track: Track }
   | { kind: "source"; call: BridgeCall; track: Track }
+  /** The first of a two-step Bring to Arc: the token's Permit2 approval, one transaction on the other chain. */
+  | { kind: "approval"; call: BridgeCall; track: Track }
   | { kind: "permit"; permit: RelayPermit; requestId: string }
   | { changed: true };
 
@@ -148,6 +154,11 @@ const ONE = 1n;
 const PERCENT = 100n;
 const USDC_DECIMALS = decimalsOf("USDC");
 const SHOWN_ROUTES = 3;
+/** An ERC-20 `approve` on the source chain (~46k measured; room for tokens that do more). */
+const PERMIT2_APPROVAL_GAS = 80_000n;
+const NATIVE_DECIMALS = 18;
+/** How long the first of two steps (the approval there) is waited for before the signature is asked. */
+const APPROVAL_WAIT_MS = 120_000;
 const TRACK_POLL_MS = 3_000;
 const TRACK_POLL_ATTEMPTS = 120;
 const ERROR_MAX = 140;
@@ -228,6 +239,12 @@ export class CrossChainService {
     return createPublicClient({ transport: http(chain.rpcUrl, { timeout: QUOTE_TIMEOUT_MS }) });
   }
 
+  /** What a Permit2 approval costs on that chain now, in its coin's base units (with headroom). */
+  private async approvalGas(chain: BridgeDestination) {
+    const fees = await this.remote(chain).estimateFeesPerGas();
+    return ((fees.maxFeePerGas ?? ZERO) * PERMIT2_APPROVAL_GAS * BigInt(CROSSCHAIN.sourceGasHeadroomPercent)) / PERCENT;
+  }
+
   private remoteBalance(chain: BridgeDestination, asset: MoveAsset, owner: Address) {
     const client = this.remote(chain);
     return asset.native ? client.getBalance({ address: owner }) : client.readContract({ address: asset.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
@@ -281,7 +298,7 @@ export class CrossChainService {
 
   /** A quote that did not happen, with why. */
   private none(provider: CrossChainProvider, output: MoveAsset, reason: CrossChainRouteView["reason"]): Quote {
-    return { provider, received: null, minReceived: null, etaSeconds: null, reason, output, nativeFee: ZERO, extraCost: ZERO, via: null, steps: [], convert: null, sourceGas: null };
+    return { provider, received: null, minReceived: null, etaSeconds: null, reason, output, nativeFee: ZERO, extraCost: ZERO, via: null, steps: [], convert: null, sourceGas: null, approval: null };
   }
 
   private failed(provider: CrossChainProvider, output: MoveAsset, error: unknown): Quote {
@@ -386,11 +403,15 @@ export class CrossChainService {
       ).catch((error: unknown) => this.failed("lifi", to, error));
       return [quote];
     }
-    // A token: Relay's signature (EIP-3009 for USDC; Permit2 for others, gasless once the token is approved to Permit2).
+    // A token: Relay's signature (EIP-3009 for USDC; Permit2 for others). A token not yet approved to Permit2 there comes
+    // in two steps: that approval (one transaction there, its gas in the chain's coin), then the signature.
     const relay = await within(
-      relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: from.address as Address, destinationCurrency: to.address as Address, amount, user: wallet, recipient: wallet, usePermit: true }).then(
-        (quote): Quote => ({ ...this.none("relay", to, quote.permit && quote.calls.length === 0 ? null : "needs_source_gas"), received: quote.outputAmount, minReceived: quote.outputAmount, etaSeconds: quote.fillSeconds }),
-      ),
+      relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: from.address as Address, destinationCurrency: to.address as Address, amount, user: wallet, recipient: wallet, usePermit: true }).then(async (quote): Promise<Quote> => {
+        const approveFirst = Boolean(quote.permit) && quote.calls.length > 0 && checkPermit2Approval(quote.calls, { token: from.address as Address, amount });
+        const approval = approveFirst ? { coin: NATIVE_SYMBOLS[chain.chainId] ?? "ETH", gas: await this.approvalGas(chain) } : null;
+        const reason = quote.permit && (quote.calls.length === 0 || approveFirst) ? null : "needs_source_gas";
+        return { ...this.none("relay", to, reason), received: quote.outputAmount, minReceived: quote.outputAmount, etaSeconds: quote.fillSeconds, approval };
+      }),
       this.failed("relay", to, { code: "timeout" }),
     ).catch((error: unknown) => this.failed("relay", to, error));
     // Across and CCTP start with a transaction on the other chain, which needs its gas: offered once Kawase can sponsor it.
@@ -471,6 +492,8 @@ export class CrossChainService {
     const executable = quotes.filter((quote) => quote.received !== null && quote.reason === null);
     const ranked = [...executable].sort((a, b) => (net(b) > net(a) ? 1 : net(b) < net(a) ? -1 : (a.etaSeconds ?? Infinity) - (b.etaSeconds ?? Infinity)));
     const chosen = ranked.find((quote) => quote.provider === request.route) ?? ranked[0];
+    // Two steps in: the approval's gas is paid in the chain's coin, which the person must hold there.
+    const coinThere = chosen?.approval && chain && wallet ? await within(this.remote(chain).getBalance({ address: wallet }), ZERO) : undefined;
 
     const evaluation = evaluateCrossChain({
       network,
@@ -488,6 +511,7 @@ export class CrossChainService {
       usdc: usdcBalance,
       nativeFee: chosen && outbound ? feeInUsdc(chosen.nativeFee) : ZERO,
       sourceGas: chosen && !outbound ? (chosen.sourceGas ?? undefined) : undefined,
+      sourceCoin: chosen?.approval && coinThere !== undefined ? { symbol: chosen.approval.coin, decimals: NATIVE_DECIMALS, balance: coinThere, needed: chosen.approval.gas } : undefined,
       route: canQuote ? (chosen ? { status: "ok" } : { status: "none", reason: quotes.find((quote) => quote.reason)?.reason ?? "no_quote" }) : { status: "not_requested" },
     });
     return { wallet, clients, direction, chain, recipient, recipientLabel, asset, amount, quotes, ranked, chosen, evaluation };
@@ -507,6 +531,8 @@ export class CrossChainService {
         const gas = CROSSCHAIN.batchGas[chosen.provider] + (chosen.convert ? CROSSCHAIN.convertGas : ZERO);
         fee = ((gas * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
       } else if (sourceTx) fee = chosen.sourceGas ?? ZERO;
+      // The first of two steps is paid there, in its coin: the version bounds it.
+      else if (chosen.approval) fee = chosen.approval.gas;
       draft = {
         originChainId: outbound ? clients.network.chainId : chain.chainId,
         destinationChainId: outbound ? chain.chainId : clients.network.chainId,
@@ -548,6 +574,7 @@ export class CrossChainService {
           steps: quote.steps,
           nativeFee: quote.nativeFee > ZERO ? quote.nativeFee.toString() : null,
           convertFirst: quote.convert ? { venue: SWAP_VENUE_LABELS[quote.convert.venue], minUsdc: quote.convert.minOut.toString() } : null,
+          approveFirst: quote.approval ? { coin: quote.approval.coin, gas: quote.approval.gas.toString() } : null,
         })),
         chosen: chosen.provider,
         minReceived: chosen.minReceived.toString(),
@@ -712,6 +739,14 @@ export class CrossChainService {
       }
       // Relay's signature: USDC's ReceiveWithAuthorization, or a Permit2 transfer for any other token.
       const quote = await relayQuote({ originChainId: chain.chainId, destinationChainId: network.chainId, originCurrency: draft.token, destinationCurrency: draft.outputToken, amount: draft.amount, user: draft.from, recipient: draft.recipient, usePermit: true });
+      if (quote.permit && quote.calls.length > 0) {
+        // Not yet approved to Permit2 there: the first step is exactly that approval, nothing else.
+        if (!checkPermit2Approval(quote.calls, { token: draft.token, amount: draft.amount })) {
+          this.log.error({ provider }, "security.permit_refused");
+          throw problem(HTTP.badGateway, "quote_unavailable", "the route asked for a transaction Kawase does not accept");
+        }
+        return { kind: "approval", call: quote.calls[0]!, track: {} };
+      }
       if (!quote.permit || quote.calls.length > 0) throw problem(HTTP.badGateway, "quote_unavailable");
       if (quote.outputAmount < draft.minReceived) return { changed: true };
       const contracts = await relayContracts(chain.chainId);
@@ -941,7 +976,8 @@ export class CrossChainService {
         progress = { provider, origin: "permit", requestId: String(unsigned.requestId), status: "submitted" };
       } else {
         const transaction = unsigned as unknown as UnsignedTransaction;
-        const onArc = unsigned.kind !== "source";
+        const onArc = unsigned.kind === "batch";
+        const approvalStep = unsigned.kind === "approval";
         if (!input.signedTransaction) throw problem(HTTP.badRequest, "validation", "a signed transaction is needed");
         const parsed = parseTransaction(input.signedTransaction);
         const signer = await recoverTransactionAddress({ serializedTransaction: input.signedTransaction as never }).catch(() => undefined);
@@ -952,7 +988,7 @@ export class CrossChainService {
           (onArc ? parsed.to?.toLowerCase() === draft.from.toLowerCase() : true) &&
           parsed.data?.toLowerCase() === transaction.data.toLowerCase() &&
           (parsed.value ?? ZERO) === BigInt(transaction.value) &&
-          (onArc ? (parsed.value ?? ZERO) === ZERO : (parsed.value ?? ZERO) === draft.amount) &&
+          (onArc || approvalStep ? (parsed.value ?? ZERO) === ZERO : (parsed.value ?? ZERO) === draft.amount) &&
           parsed.nonce === transaction.nonce &&
           (parsed.gas ?? ZERO) * (parsed.maxFeePerGas ?? ZERO) <= draft.maxFee;
         if (!ok) {
@@ -961,6 +997,15 @@ export class CrossChainService {
           return { kind: "mismatch" as const };
         }
         txHash = keccak256(input.signedTransaction);
+        if (approvalStep) {
+          // The first of two steps: recorded, the intent stays ready for its signature (asked as soon as this lands).
+          await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
+          const [attempt] = await tx
+            .insert(txAttempts)
+            .values({ userId: user.id, intentId, network: intent.network, chainId: draft.originChainId, attemptNo: await nextAttemptNo(tx, intentId), kind: "crosschain_approval", provider: "user_wallet", idempotencyKey: randomUUID(), fromAddress: draft.from, toAddress: transaction.to, txHash, status: "prepared" })
+            .returning({ id: txAttempts.id });
+          return { kind: "approval" as const, attemptId: attempt!.id };
+        }
         progress = { provider, origin: onArc ? "arc" : "source", ...((unsigned.track as Track | undefined) ?? {}), status: "submitted" };
       }
       await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
@@ -988,6 +1033,7 @@ export class CrossChainService {
 
     if (prepared.kind === "mismatch") throw problem(HTTP.unprocessable, "transaction_mismatch");
     if (prepared.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (prepared.kind === "approval") return this.afterApproval(user, intentId, before.currentDraftVersion, prepared.attemptId, input.signedTransaction!, chain);
     try {
       if (prepared.permit) await submitRelayPermit(prepared.permit, input.signature!);
       else if (prepared.origin === "source" && chain) await this.remote(chain).sendRawTransaction({ serializedTransaction: input.signedTransaction! });
@@ -1003,6 +1049,26 @@ export class CrossChainService {
     }
     void this.follow(intentId);
     return { status: "executing", intent: await this.view(user.id, intentId) };
+  }
+
+  /**
+   * The first of two steps was signed: broadcast there and waited for; once it has landed, the second (the transfer's
+   * Permit2 signature) is built and handed back to sign under the same yes. Nothing has moved until that one is sent.
+   */
+  private async afterApproval(user: SessionUser, intentId: string, version: number, attemptId: string, signed: Hex, chain: BridgeDestination | undefined): Promise<CrossChainApproveResponse> {
+    if (!chain) throw problem(HTTP.unprocessable, "network_unavailable");
+    const remote = this.remote(chain);
+    let status: "confirmed" | "reverted" | "unknown" = "unknown";
+    try {
+      const hash = await remote.sendRawTransaction({ serializedTransaction: signed });
+      const receipt = await remote.waitForTransactionReceipt({ hash, timeout: APPROVAL_WAIT_MS });
+      status = receipt.status === "success" ? "confirmed" : "reverted";
+    } catch (error) {
+      this.log.warn({ intentId, message: (error instanceof Error ? error.message : String(error)).slice(0, ERROR_MAX) }, "crosschain approval not confirmed");
+    }
+    await this.db.update(txAttempts).set({ status }).where(eq(txAttempts.id, attemptId));
+    if (status !== "confirmed") throw problem(HTTP.badGateway, "simulation_failed", `the approval on ${chain.id} did not go through; nothing moved`);
+    return this.approve(user, intentId, { version, surface: "app" });
   }
 
   // ── Tracking ────────────────────────────────────────────────────────────────────────────────────────────────

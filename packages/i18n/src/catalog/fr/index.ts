@@ -85,6 +85,7 @@ import { places } from "./places";
 import { help } from "./help";
 import { fees } from "./fees";
 import { offline } from "./offline";
+import { lp } from "./lp";
 
 export const fr: Catalog = {
   common,
@@ -172,4 +173,5 @@ export const fr: Catalog = {
   help,
   fees,
   offline,
+  lp,
 };

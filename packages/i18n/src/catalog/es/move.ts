@@ -59,6 +59,7 @@ export const move: Catalog["move"] = {
   provider_debridge: "deBridge",
   via: "vía {{bridge}}",
   convertFirst: "se cambia antes a USDC en {{venue}}",
+  approveFirst: "dos pasos: primero una aprobación allí (pagada en {{coin}}), luego una firma",
   feeOnTop: "+ {{amount}} de comisión",
   arrivesAs: "Llega como {{asset}}",
   gasThere: "Se paga en {{chain}}",

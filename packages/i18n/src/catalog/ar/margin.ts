@@ -29,6 +29,7 @@ export const margin: Catalog["margin"] = {
   route: "المسار",
   routeValue: "Aave V4 · {{venues}} · {{loops}} خطوات",
   risk: "قد تخسر هامشك كله مع الرافعة. التصفية عند {{price}}.",
+  closeEndsProtection: "ينتهي جني الأرباح ووقف الخسارة معها: التوقيع نفسه يُلغي على Arc إذن Kawase بإغلاقها.",
   slideLong: "اسحب لفتح مركز شراء",
   slideShort: "اسحب لفتح مركز بيع",
   slideClose: "اسحب للإغلاق",

@@ -21,6 +21,8 @@ import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const POLL_MS = 2_000;
+/** Signatures one approval may chain (a two-step Bring to Arc is two). */
+const MAX_STEPS = 2;
 const MOVING: ReadonlySet<IntentState> = new Set(["approved", "executing", "unknown_outcome"]);
 const OPEN: ReadonlySet<IntentState> = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
 
@@ -173,11 +175,17 @@ export function useWalletIntent<T extends Intent, R>(
         show(answer.intent);
         return;
       }
-      const typed = answer.status === "sign_typed";
-      const signed = typed ? await signer.signTypedData(answer.typedData as unknown as TypedDataDefinition) : await signer.signTransaction(toSerializable(answer.transaction));
-      const submitted = await calls.signature(intent.id, answer.approvalId, signed, typed ? "typed" : "transaction");
-      if (submitted.status === "changed") toast(messages.changed);
-      show(submitted.intent);
+      // A move in two steps (Bring to Arc: the token's approval there, then the transfer's signature) comes back with
+      // its next signature: the same yes covers it.
+      let step: Approve<T> = answer;
+      for (let index = 0; index < MAX_STEPS; index++) {
+        const current = step;
+        if (current.status === "sign_typed") step = await calls.signature(intent.id, current.approvalId, await signer.signTypedData(current.typedData as unknown as TypedDataDefinition), "typed");
+        else if (current.status === "sign") step = await calls.signature(intent.id, current.approvalId, await signer.signTransaction(toSerializable(current.transaction)), "transaction");
+        else break;
+      }
+      if (step.status === "changed") toast(messages.changed);
+      show(step.intent);
     });
   };
 

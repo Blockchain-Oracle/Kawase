@@ -29,6 +29,7 @@ export const margin: Catalog["margin"] = {
   route: "路径",
   routeValue: "Aave V4 · {{venues}} · {{loops}} 步",
   risk: "杠杆可能让你损失全部保证金。强平价格 {{price}}。",
+  closeEndsProtection: "它的止盈和止损也随之结束：同一个签名会在 Arc 上关闭 Kawase 平仓的权限。",
   slideLong: "滑动开多",
   slideShort: "滑动开空",
   slideClose: "滑动平仓",

@@ -29,6 +29,8 @@ export const margin: Catalog["margin"] = {
   route: "Rota",
   routeValue: "Aave V4 · {{venues}} · {{loops}} etapas",
   risk: "A alavancagem pode fazer você perder toda a margem. Liquidação em {{price}}.",
+  closeEndsProtection:
+    "O take-profit e o stop-loss terminam com ela: a mesma assinatura desliga na Arc a permissão da Kawase para fechá-la.",
   slideLong: "Deslize para abrir comprado",
   slideShort: "Deslize para abrir vendido",
   slideClose: "Deslize para fechar",

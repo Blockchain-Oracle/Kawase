@@ -107,6 +107,8 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   explain_choice: { source: "vault curator", keys: ["name"] },
   compare_yield: { source: "vault curator", keys: ["name"] },
   propose_earn: { source: "vault curator", keys: ["name"] },
+  // Pool and token names come from the pool's tokens and Merkl's listing.
+  propose_lp: { source: "pool and token names", keys: ["pair", "symbol", "base", "asset", "symbolIn", "symbolOut"] },
   show_chart: { source: "token contract", keys: ["chart"] },
   pay_from_code: { source: "payment code", keys: ["note", "symbol"] },
   get_portfolio: { source: "token contract", keys: ["name", "symbol", "description"] },
