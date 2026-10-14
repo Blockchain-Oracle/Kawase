@@ -92,8 +92,7 @@ import { MoveCard } from "./move-card";
 import { LendOrderCard, YieldOptionsCard } from "./lend-card";
 import { WithdrawCard } from "./withdraw-card";
 import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "./marketplace-card";
-import { InvoiceCard } from "./invoice-card";
-import { BUSINESS_LOADING_LABELS, BusinessToolCard } from "./business-cards";
+import { ACCOUNT_LOADING_LABELS, AccountToolCard } from "./account-cards";
 import { ReportCard } from "@/history/report-card";
 import type { ReportView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
@@ -613,7 +612,6 @@ const LOADING_LABELS: Record<string, string> = {
   buy_service: "market.loadingBuy",
   get_agent_wallet: "market.loadingWallet",
   top_up_agent_wallet: "market.loadingWallet",
-  create_invoice: "business.loadingInvoice",
   get_report: "report.loading",
   remember_fact: "memory.loadingRemember",
   forget_fact: "memory.loadingForget",
@@ -627,7 +625,7 @@ const LOADING_LABELS: Record<string, string> = {
   pay_from_code: "scan.reading",
   split_bill: "split.loading",
   remind_payment: "request.reminding",
-  ...BUSINESS_LOADING_LABELS,
+  ...ACCOUNT_LOADING_LABELS,
 };
 
 /** One tool part, as a card (or its loading or error state). */
@@ -744,8 +742,6 @@ export function ToolCard({
     case "propose_allowlist_change":
     case "revoke_grant":
       return <SafetyCard output={part.output as SafetyToolOutput} />;
-    case "create_invoice":
-      return <InvoiceCard output={part.output as Parameters<typeof InvoiceCard>[0]["output"]} />;
     // Cards stored before the tool became weekly_report.
     case "get_report": {
       const report = (part.output as { report: ReportView | null }).report;
@@ -784,6 +780,6 @@ export function ToolCard({
       return paid.send ? <SendCard output={paid.send} /> : <PayCodeCard view={paid.code} />;
     }
     default:
-      return <BusinessToolCard tool={tool} output={part.output} />;
+      return <AccountToolCard tool={tool} output={part.output} />;
   }
 }

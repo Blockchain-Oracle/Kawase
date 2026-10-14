@@ -121,10 +121,6 @@ export const automation = {
   editTime: "Time",
   editPrompt: "Approve the new permission",
   edited: "Changed",
-  payroll: "Pay {{count}} people",
-  payrollLine: "{{amount}} to {{name}}",
-  payrollBound:
-    "Each person can get at most their own amount {{per}}, only at their own address, enforced on Arc; until {{date}}.",
   dca: "Swap {{amount}} to {{symbolOut}}",
   dcaBound: "Holds no permission: each swap waits for your yes in Needs you.",
   rulePrice: "When {{amountIn}} buys at least {{minOut}}",
@@ -139,7 +135,6 @@ export const automation = {
   runPracticedRefused: "Practice: Arc would have refused it ({{error}})",
   runNeedsYou: "Waiting for you",
   runSwapOpened: "Swap sent to you to confirm",
-  reason_PAYROLL_PARTIAL: "Paid {{paid}} of {{of}}",
   reason_DECLINED_BY_YOU: "You declined it",
   reason_NOT_ANSWERED: "Not answered in time",
   reason_NOT_COMPLETED: "Approved, but not confirmed",

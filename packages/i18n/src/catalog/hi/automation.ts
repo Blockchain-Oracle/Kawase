@@ -124,10 +124,6 @@ export const automation: Catalog["automation"] = {
   editTime: "समय",
   editPrompt: "नई अनुमति मंज़ूर करें",
   edited: "बदल गया",
-  payroll: "{{count}} लोगों को भुगतान",
-  payrollLine: "{{name}} को {{amount}}",
-  payrollBound:
-    "हर व्यक्ति {{per}} ज़्यादा से ज़्यादा अपनी राशि, सिर्फ़ अपने पते पर पा सकता है, Arc पर लागू; {{date}} तक।",
   dca: "{{amount}} को {{symbolOut}} में बदलें",
   dcaBound: "कोई अनुमति नहीं रखता: हर अदला-बदली “आपका इंतज़ार” में आपकी हाँ का इंतज़ार करती है।",
   rulePrice: "जब {{amountIn}} से कम से कम {{minOut}} मिले",
@@ -142,7 +138,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "अभ्यास: Arc इसे अस्वीकार कर देता ({{error}})",
   runNeedsYou: "आपका इंतज़ार",
   runSwapOpened: "अदला-बदली आपकी पुष्टि के लिए भेजी",
-  reason_PAYROLL_PARTIAL: "{{of}} में से {{paid}} को भुगतान",
   reason_DECLINED_BY_YOU: "आपने मना किया",
   reason_NOT_ANSWERED: "समय पर जवाब नहीं",
   reason_NOT_COMPLETED: "मंज़ूर, पर पुष्टि नहीं",

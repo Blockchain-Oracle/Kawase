@@ -126,10 +126,6 @@ export const automation: Catalog["automation"] = {
   editTime: "Hora",
   editPrompt: "Aprobar el permiso nuevo",
   edited: "Cambiado",
-  payroll: "Pagar a {{count}} personas",
-  payrollLine: "{{amount}} a {{name}}",
-  payrollBound:
-    "Cada persona puede recibir como máximo su propio importe {{per}}, solo en su dirección, impuesto por Arc; hasta el {{date}}.",
   dca: "Cambiar {{amount}} a {{symbolOut}}",
   dcaBound: "No guarda ningún permiso: cada cambio espera tu sí en «Te espera».",
   rulePrice: "Cuando {{amountIn}} compre al menos {{minOut}}",
@@ -144,7 +140,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "Práctica: Arc lo habría rechazado ({{error}})",
   runNeedsYou: "Te espera",
   runSwapOpened: "Cambio enviado para que lo confirmes",
-  reason_PAYROLL_PARTIAL: "Pagados {{paid}} de {{of}}",
   reason_DECLINED_BY_YOU: "Lo rechazaste",
   reason_NOT_ANSWERED: "Sin respuesta a tiempo",
   reason_NOT_COMPLETED: "Aprobado, pero no confirmado",

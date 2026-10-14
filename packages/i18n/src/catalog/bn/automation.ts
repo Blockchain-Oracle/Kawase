@@ -123,10 +123,6 @@ export const automation: Catalog["automation"] = {
   editTime: "সময়",
   editPrompt: "নতুন অনুমতি অনুমোদন দিন",
   edited: "বদলানো হয়েছে",
-  payroll: "{{count}} জনকে পেমেন্ট",
-  payrollLine: "{{name}}-কে {{amount}}",
-  payrollBound:
-    "প্রত্যেকে {{per}} সর্বোচ্চ নিজের পরিমাণ, শুধু নিজের ঠিকানায় পেতে পারে, Arc-এ নিশ্চিত; {{date}} পর্যন্ত।",
   dca: "{{amount}} {{symbolOut}}-এ বদলান",
   dcaBound: "কোনো অনুমতি রাখে না: প্রতিটি অদলবদল “আপনার অপেক্ষায়”-তে আপনার হ্যাঁর অপেক্ষা করে।",
   rulePrice: "যখন {{amountIn}} দিয়ে অন্তত {{minOut}} পাওয়া যায়",
@@ -141,7 +137,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "অনুশীলন: Arc প্রত্যাখ্যান করত ({{error}})",
   runNeedsYou: "আপনার অপেক্ষায়",
   runSwapOpened: "অদলবদল আপনার নিশ্চিতকরণের জন্য পাঠানো",
-  reason_PAYROLL_PARTIAL: "{{of}} জনের মধ্যে {{paid}} জনকে দেওয়া",
   reason_DECLINED_BY_YOU: "আপনি প্রত্যাখ্যান করেছেন",
   reason_NOT_ANSWERED: "সময়মতো উত্তর নেই",
   reason_NOT_COMPLETED: "অনুমোদিত, কিন্তু নিশ্চিত নয়",

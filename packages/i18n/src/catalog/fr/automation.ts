@@ -129,10 +129,6 @@ export const automation: Catalog["automation"] = {
   editTime: "Heure",
   editPrompt: "Approuver la nouvelle permission",
   edited: "Modifié",
-  payroll: "Payer {{count}} personnes",
-  payrollLine: "{{amount}} à {{name}}",
-  payrollBound:
-    "Chaque personne peut recevoir au plus son propre montant {{per}}, uniquement à son adresse, imposé par Arc ; jusqu'au {{date}}.",
   dca: "Échanger {{amount}} contre {{symbolOut}}",
   dcaBound: "Ne détient aucune permission : chaque échange attend votre accord dans « Vous attend ».",
   rulePrice: "Quand {{amountIn}} achète au moins {{minOut}}",
@@ -147,7 +143,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "Entraînement : Arc l'aurait refusé ({{error}})",
   runNeedsYou: "Vous attend",
   runSwapOpened: "Échange proposé à votre confirmation",
-  reason_PAYROLL_PARTIAL: "{{paid}} sur {{of}} payés",
   reason_DECLINED_BY_YOU: "Vous l'avez refusé",
   reason_NOT_ANSWERED: "Pas de réponse à temps",
   reason_NOT_COMPLETED: "Approuvé, mais pas confirmé",
