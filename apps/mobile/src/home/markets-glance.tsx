@@ -42,7 +42,7 @@ export function MarketsGlance() {
               key={row.token.address}
               title={row.token.symbol}
               detail={row.token.name}
-              leading={<TokenMark token={{ chainId: row.token.chainId, address: row.token.address, symbol: row.token.symbol }} size={SIZE.markToken} />}
+              leading={<TokenMark token={{ chainId: row.token.chainId, address: row.token.address, symbol: row.token.symbol, logoUrl: row.token.logoUrl }} size={SIZE.markToken} />}
               trailing={
                 <View style={styles.end}>
                   {row.spark ? <Sparkline points={row.spark} /> : null}

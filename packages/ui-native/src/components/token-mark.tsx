@@ -7,6 +7,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 import * as React from "react";
 import { Image, View } from "react-native";
+import { rememberTokenLogo, rememberedTokenLogo } from "../lib/token-logos";
 
 const DEFAULT_SIZE = 44;
 const BADGE_RATIO = 0.42;
@@ -28,13 +29,16 @@ function TokenMark({ token, size = DEFAULT_SIZE, chainBadge, className }: TokenM
   const badgeSize = Math.round(size * BADGE_RATIO);
   const delivered = entity && markFile(entity, "color");
   const label = token.symbol.slice(0, LABEL_MAX).toUpperCase() || "?";
+  // A logo handed here is remembered for every other place this token appears; one not handed is looked up.
+  if (token.logoUrl) rememberTokenLogo(token.chainId, token.address, token.logoUrl);
+  const logoUrl = token.logoUrl ?? rememberedTokenLogo(token.chainId, token.address);
 
   let body: React.ReactNode;
   if (entity && delivered) body = <Mark entity={entity} size={size} />;
-  else if (token.logoUrl && !failed)
+  else if (logoUrl && !failed)
     body = (
       <View className="bg-muted border-border overflow-hidden rounded-full border" style={{ width: size, height: size }}>
-        <Image source={{ uri: token.logoUrl }} style={{ width: size, height: size }} onError={() => setFailed(true)} accessibilityIgnoresInvertColors />
+        <Image source={{ uri: logoUrl }} style={{ width: size, height: size }} onError={() => setFailed(true)} accessibilityIgnoresInvertColors />
       </View>
     );
   else

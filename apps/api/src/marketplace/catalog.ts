@@ -30,9 +30,13 @@ export type CatalogQuery = {
 
 const clamp = (value: number | undefined, fallback: number, max: number) => Math.min(Math.max(Math.trunc(value ?? fallback), 1), max);
 
+/** Domain labels whose brand goes by another name in the registry (Kawase's own demo seller lives on getkawase.xyz). */
+const DOMAIN_ALIASES: Readonly<Record<string, string>> = { getkawase: "kawase" };
+
 /** The registry entity for a word, when it holds a real mark (an entry with no mark file yet counts as none). */
 function markOf(slug: string): string | null {
-  const entity = getProviderIdentity(slug) ?? getExchangeIdentity(slug);
+  const name = DOMAIN_ALIASES[slug] ?? slug;
+  const entity = getProviderIdentity(name) ?? getExchangeIdentity(name);
   return entity && (entity.marks.color || entity.marks.mono) ? entity.id : null;
 }
 
