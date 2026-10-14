@@ -76,6 +76,20 @@ type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 const VENUE = "Aave V4";
 const PROVIDER = "Aave V4 · KyberSwap";
 const PROTECT_PROVIDER = "Aave V4 · Uniswap v3";
+
+/** A KyberSwap hop's exchange id as words: "uniswap-v3" → "Uniswap v3". */
+const exchangeName = (id: string) =>
+  id
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((part) => (/^v\d+$/i.test(part) ? part.toLowerCase() : `${part.charAt(0).toUpperCase()}${part.slice(1)}`))
+    .join(" ");
+
+/**
+ * What a draft says runs it, matching `venues`: KyberSwap builds the swap legs and routes them through those pools
+ * ("Aave V4 · KyberSwap via Uniswap v3"); with no swap leg, only the aggregator is named.
+ */
+const providerOf = (venues: readonly string[]) => (venues.length > 0 ? `${PROVIDER} via ${venues.map(exchangeName).join(", ")}` : PROVIDER);
 const ZERO = 0n;
 const ONE = 1n;
 const PERCENT = 100n;
@@ -719,7 +733,7 @@ export class MarginService {
         venues: plan.venues,
         fees: { network: feeInUsdc(fee).toString() },
         protectionOff: disables.length > 0,
-        provider: PROVIDER,
+        provider: providerOf(plan.venues),
         quotedAt: new Date().toISOString(),
       };
     }
