@@ -5,12 +5,18 @@
 // the request body.
 //
 // The key is PRIVY_VERIFICATION_KEY when set; otherwise it is read once from the app's public Privy config (the same
-// PEM the dashboard shows) and kept for the life of the process, re-read once if a token stops verifying (key rotation).
+// PEM the dashboard shows) and kept for the life of the process. Only a signature that fails against it re-reads it
+// (Privy rotated the key), at most once a minute: expired or malformed tokens never cause an outbound request. A key
+// that cannot be loaded is an outage (502), never a bad token (401).
 import { getAddress, isAddress, type Address } from "viem";
 import { verifyAccessToken, verifyIdentityToken, type LinkedAccount, type User } from "@privy-io/node";
 
 const PRIVY_AUTH_URL = "https://auth.privy.io/api/v1";
 const PRIVY_API_URL = "https://api.privy.io/v1";
+/** A rotated key is looked for at most this often, however many bad signatures arrive. */
+const KEY_REFETCH_COOLDOWN_MS = 60_000;
+/** What @privy-io/node says when the signature (not the expiry or the claims) fails: the only case a new key could fix. */
+const SIGNATURE_FAILED = /failed to verify/i;
 
 export type PrivyIdentity = {
   /** The Privy user id (a DID, "did:privy:…"): the identity Kawase links to. */
@@ -67,6 +73,8 @@ export function createPrivyVerifier(config: {
   /** Only for reading a user whose identity token was not sent (Basic auth to Privy's REST API). */
   appSecret?: string | undefined;
   fetch?: typeof fetch;
+  /** The clock for the key re-read cooldown (tests). */
+  now?: () => number;
 }): PrivyVerifier {
   const fetchImpl = config.fetch ?? fetch;
   let key: Promise<string> | undefined = config.verificationKey ? Promise.resolve(config.verificationKey) : undefined;
@@ -86,29 +94,40 @@ export function createPrivyVerifier(config: {
     return key;
   };
 
-  /** Runs a check with the key; a fetched key that no longer verifies is re-read once (Privy rotated it). */
-  const withKey = async <T>(check: (verificationKey: string) => Promise<T>): Promise<T> => {
+  let lastRefetch = 0;
+  const now = config.now ?? Date.now;
+
+  /**
+   * Runs a check with the key. A failing check is a PrivyTokenError; a key that cannot be loaded is not (the caller
+   * answers 502). A signature that fails against a fetched key re-reads the key once, if none was read in the last
+   * minute (Privy rotated it).
+   */
+  const withKey = async <T>(check: (verificationKey: string) => Promise<T>, what: string): Promise<T> => {
     const first = await loadKey();
+    const asTokenError = (error: unknown) => new PrivyTokenError(error instanceof Error ? error.message : `${what} invalid`);
     try {
       return await check(first);
     } catch (error) {
-      if (config.verificationKey) throw error;
+      const signature = error instanceof Error && SIGNATURE_FAILED.test(error.message);
+      if (config.verificationKey || !signature || now() - lastRefetch < KEY_REFETCH_COOLDOWN_MS) throw asTokenError(error);
+      lastRefetch = now();
       key = undefined;
       const second = await loadKey();
-      if (second === first) throw error;
-      return check(second);
+      if (second === first) throw asTokenError(error);
+      try {
+        return await check(second);
+      } catch (retryError) {
+        throw asTokenError(retryError);
+      }
     }
   };
 
   const verifyAccess = async (accessToken: string) => {
-    try {
-      const claims = await withKey((verification_key) =>
-        verifyAccessToken({ access_token: accessToken, app_id: config.appId, verification_key }),
-      );
-      return { userId: claims.user_id, sessionId: claims.session_id };
-    } catch (error) {
-      throw new PrivyTokenError(error instanceof Error ? error.message : "access token invalid");
-    }
+    const claims = await withKey(
+      (verification_key) => verifyAccessToken({ access_token: accessToken, app_id: config.appId, verification_key }),
+      "access token",
+    );
+    return { userId: claims.user_id, sessionId: claims.session_id };
   };
 
   const fetchUser = async (userId: string): Promise<Pick<User, "linked_accounts">> => {
@@ -129,13 +148,10 @@ export function createPrivyVerifier(config: {
       const access = await verifyAccess(accessToken);
       let user: Pick<User, "id" | "linked_accounts"> | Pick<User, "linked_accounts">;
       if (identityToken) {
-        try {
-          user = await withKey((verification_key) =>
-            verifyIdentityToken({ identity_token: identityToken, app_id: config.appId, verification_key }),
-          );
-        } catch (error) {
-          throw new PrivyTokenError(error instanceof Error ? error.message : "identity token invalid");
-        }
+        user = await withKey(
+          (verification_key) => verifyIdentityToken({ identity_token: identityToken, app_id: config.appId, verification_key }),
+          "identity token",
+        );
         // Both tokens must be about the same person.
         if ("id" in user && user.id !== access.userId) throw new PrivyTokenError("the tokens name different users");
       } else {
