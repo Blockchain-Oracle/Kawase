@@ -17,6 +17,8 @@ const RECIPIENT_MAX = 80;
 const VENUE_MAX = 32;
 /** The routes a move can be pinned to (CrossChainProvider); a race's pick is passed as one of these. */
 const BRIDGE_VENUES = ["cctp", "across", "relay", "lifi", "debridge"] as const;
+/** A race may name a bridge Kawase cannot pin a move to yet: then the move takes the best fresh quote, as before. */
+const pinnable = (venue: string | undefined) => (BRIDGE_VENUES as readonly string[]).includes(venue ?? "") ? (venue as (typeof BRIDGE_VENUES)[number]) : null;
 
 /** A symbol, a 0x address (42), or an amount. */
 const ASSET_MAX = 64;
@@ -81,13 +83,13 @@ export function railsTools(context: AgentContext) {
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("In that asset, digits with a dot; omit if they did not say"),
         recipient: z.string().max(RECIPIENT_MAX).optional().describe("Only who they named: a contact, @handle or address; omit for themselves"),
         toAsset: z.literal("USDC").optional().describe("Only if they asked for it to arrive as USDC"),
-        venue: z.enum(BRIDGE_VENUES).optional().describe("The route race_routes suggested or the person picked; Kawase quotes it again"),
+        venue: z.string().max(VENUE_MAX).optional().describe("The route race_routes suggested or the person picked (its id, e.g. relay); Kawase quotes it again"),
       }),
       execute: async ({ destination, asset, amount, recipient, toAsset, venue }) => {
         if (!context.proposeCrossChain) return UNAVAILABLE;
         // K2 (M8): an address must be the person's own words; their own address means themselves (Kawase fills it in).
         const own = recipient && /^0x/i.test(recipient.trim()) ? (await destinationAddress(context, recipient, "Omit the recipient for themselves.")) === "own" : false;
-        return context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: own ? null : (recipient ?? null), toAsset: toAsset ?? null, route: venue ?? null });
+        return context.proposeCrossChain({ direction: "out", destination: destination ?? null, asset: asset ?? null, amount: amount ?? null, recipient: own ? null : (recipient ?? null), toAsset: toAsset ?? null, route: pinnable(venue) });
       },
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
@@ -98,10 +100,10 @@ export function railsTools(context: AgentContext) {
         source: z.enum(CHAINS).optional(),
         asset: z.string().max(ASSET_MAX).optional().describe("\"ETH\", \"EURC\", \"WETH\"…; omit for USDC"),
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional(),
-        venue: z.enum(BRIDGE_VENUES).optional().describe("The route race_routes suggested or the person picked; Kawase quotes it again"),
+        venue: z.string().max(VENUE_MAX).optional().describe("The route race_routes suggested or the person picked (its id, e.g. relay); Kawase quotes it again"),
       }),
       execute: async ({ source, asset, amount, venue }) =>
-        context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, asset: asset ?? null, amount: amount ?? null, route: venue ?? null }) : UNAVAILABLE,
+        context.proposeCrossChain ? context.proposeCrossChain({ direction: "in", source: source ?? null, asset: asset ?? null, amount: amount ?? null, route: pinnable(venue) }) : UNAVAILABLE,
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     start_buy: tool({
