@@ -24,6 +24,8 @@ const SESSION_CODES = new Set(["INVALID_SESSION_TOKEN", "SESSION_TIMEOUT"]);
 
 export function CircleWidget({ session, sandbox, onReady, onEvent, onFailed, onSessionExpired }: CircleWidgetProps) {
   const { t } = useT();
+  const label = React.useRef(t("buy.widgetTitle"));
+  label.current = t("buy.widgetTitle");
   const box = React.useRef<View>(null);
   // The handlers change every render; the widget is mounted once per session.
   const handlers = React.useRef({ onReady, onEvent, onFailed, onSessionExpired });
@@ -43,7 +45,8 @@ export function CircleWidget({ session, sandbox, onReady, onEvent, onFailed, onS
         // The session exactly as the server kit minted it.
         session: session.kitSession as never,
         container,
-        title: "Kawase",
+        // The iframe's accessible name, in the person's language (read once per mount).
+        title: label.current,
         loadTimeout: LOAD_TIMEOUT_MS,
         onSessionExpired: () => handlers.current.onSessionExpired(),
       });

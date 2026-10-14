@@ -6,6 +6,7 @@ import { View } from "react-native";
 
 import { cn } from "@kawase/ui-native/lib/utils";
 
+import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
 import { BuyPage } from "./buy-page";
@@ -21,6 +22,7 @@ const keyOf = (pageUrl: string): string | undefined => {
 };
 
 function LinkFrame({ orderId, url, onEvent, className }: { orderId: string; url: string; onEvent: BuyFrameProps["onEvent"]; className: string | undefined }) {
+  const { t } = useT();
   const origin = React.useMemo(() => new URL(url).origin, [url]);
   React.useEffect(() => {
     const listen = (message: MessageEvent) => {
@@ -35,7 +37,7 @@ function LinkFrame({ orderId, url, onEvent, className }: { orderId: string; url:
   }, [onEvent, orderId, origin]);
   return (
     <View className={cn("flex-1", className)}>
-      {React.createElement("iframe", { src: url, title: "Kawase", allow: "payment; camera; clipboard-write", style: { border: 0, width: "100%", height: "100%", minHeight: 640 } })}
+      {React.createElement("iframe", { src: url, title: t("buy.widgetTitle"), allow: "payment; camera; clipboard-write", style: { border: 0, width: "100%", height: "100%", minHeight: 640 } })}
     </View>
   );
 }

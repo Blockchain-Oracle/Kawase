@@ -10,6 +10,7 @@ import * as React from "react";
 import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
 
 import { createApiClient, type OnrampSessionView } from "@kawase/api-client";
+import { exchangeKey, getEntity, providerKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -32,6 +33,11 @@ const HOLD_MS = 300;
 const ELAPSED_AFTER_MS = 3_000;
 const STILL_WAITING_AFTER_MS = 15_000;
 const COLUMN_MAX = 480;
+const MS_PER_SECOND = 1_000;
+/** The rail skeleton: three discs, two bars between them. */
+const RAIL_STEPS = 3;
+const RAIL_DISCS = Array.from({ length: RAIL_STEPS }, (_, index) => index);
+const RAIL_LAST = RAIL_STEPS - 1;
 const MARK = 24;
 const HEADER_MARK = 28;
 
@@ -78,7 +84,7 @@ function useElapsedMs(since: string | undefined, active: boolean): number {
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => {
     if (!active) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    const timer = setInterval(() => setNow(Date.now()), MS_PER_SECOND);
     return () => clearInterval(timer);
   }, [active]);
   return since && active ? Math.max(0, now - new Date(since).getTime()) : 0;
@@ -90,10 +96,10 @@ function PageSkeleton() {
   return (
     <View className="gap-6" accessibilityRole="progressbar" accessibilityLabel={t("buy.loadingPage")}>
       <View className="flex-row items-center gap-2">
-        {[0, 1, 2].map((index) => (
+        {RAIL_DISCS.map((index) => (
           <React.Fragment key={index}>
             <Skeleton className="size-7 rounded-full" />
-            {index < 2 ? <Skeleton className="h-1 flex-1 rounded-full" /> : null}
+            {index < RAIL_LAST ? <Skeleton className="h-1 flex-1 rounded-full" /> : null}
           </React.Fragment>
         ))}
       </View>
@@ -182,8 +188,9 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
   const items = order
     ? railSteps(order).map((step) => ({ id: step.id, state: step.state, label: t(`buy.rail_${step.id}`) }))
     : [];
-  const provider = order?.engine === "coinbase" ? "exchange:coinbase" : "provider:circle";
-  const providerName = order?.engine === "coinbase" ? "Coinbase" : "Circle";
+  // The licensed party's mark and name come from the identity registry (real logos, one source of names).
+  const provider = order?.engine === "coinbase" ? exchangeKey("coinbase") : providerKey("circle");
+  const providerName = getEntity(provider)?.name ?? "";
 
   let body: React.ReactNode;
   if (held && !order) {
@@ -280,7 +287,7 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
                 </Button>
               </View>
             ) : elapsed >= ELAPSED_AFTER_MS ? (
-              <Text className="text-muted-foreground text-sm">{t("buy.elapsed", { seconds: Math.floor(elapsed / 1_000) })}</Text>
+              <Text className="text-muted-foreground text-sm">{t("buy.elapsed", { seconds: Math.floor(elapsed / MS_PER_SECOND) })}</Text>
             ) : null}
             {order.bridge?.intentId ? (
               <Text className="text-muted-foreground text-xs">{t("buy.bridgeNote")}</Text>

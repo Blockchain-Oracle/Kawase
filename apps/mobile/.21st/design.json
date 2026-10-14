@@ -28,7 +28,7 @@
       {
         "name": "StateCard (failure, waiting, receipt)",
         "file": "apps/mobile/src/onramp/buy-page.tsx",
-        "source": { "id": 333, "author": "serafimcloud", "name": "Alert", "url": "https://21st.dev/community/components/serafimcloud/alert" },
+        "source": { "id": 335, "author": "serafimcloud", "name": "Alert", "url": "https://21st.dev/community/components/serafimcloud/alert" },
         "port": "reconstruction: a rounded bordered card with a title, a line of body and the action, in the Alert's hierarchy; composed from packages/ui-native Button and Text",
         "deviations": "21st has no payment-state card; this is composed from existing twins, with the tone (neutral, error, success) as a border and title colour; always says whether money moved",
         "usedBy": "buy page: widget failed, order not completed or expired, read failed, waiting, receipt",
@@ -46,7 +46,7 @@
       { "query": "stepper progress steps", "chosen": 3734, "alsoSeen": [769, 29815, 29925] },
       { "query": "skeleton loading", "chosen": 1588, "alsoSeen": [1767, 23557, 29863, 19999] },
       { "query": "payment checkout status", "chosen": null, "reason": "checkout cards found (109, 36084, 25322, 18876) are forms and summaries, not provider-hosted payment states", "alsoSeen": [109, 36084, 18876, 25322] },
-      { "query": "alert error retry", "chosen": 333, "alsoSeen": [19161, 706] }
+      { "query": "alert", "chosen": 335, "alsoSeen": [3587, 1170, 34381], "verified": "2026-10-14 with the 21st CLI (ids 3734, 1588 and 335 re-checked by search)" }
     ]
   }
 }

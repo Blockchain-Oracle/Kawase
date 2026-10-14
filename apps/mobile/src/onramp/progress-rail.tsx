@@ -18,6 +18,7 @@ const DISC = 28;
 const BAR = 3;
 const FILL_MS = 480;
 const FILL_REDUCED_MS = 100;
+const PERCENT = 100;
 
 /** The bar between two steps, filling left to right once the step before it is done. */
 function Connector({ filled }: { filled: boolean }) {
@@ -26,7 +27,7 @@ function Connector({ filled }: { filled: boolean }) {
   React.useEffect(() => {
     progress.value = withTiming(filled ? 1 : 0, { duration: reduced ? FILL_REDUCED_MS : FILL_MS });
   }, [filled, progress, reduced]);
-  const style = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+  const style = useAnimatedStyle(() => ({ width: `${progress.value * PERCENT}%` }));
   return (
     <View className="bg-muted mx-1 flex-1 overflow-hidden rounded-full" style={{ height: BAR }}>
       <Animated.View className="bg-primary h-full" style={style} />

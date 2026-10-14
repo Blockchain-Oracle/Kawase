@@ -39,6 +39,8 @@ export type BuyFrameProps = {
 };
 
 const ALLOWED_ORIGINS = ["https://*", "apple-pay://*"];
+/** A server error (5xx) on the page means it did not load; a 4xx is the page's own state to show. */
+const SERVER_ERROR = 500;
 const ALLOWED_SCHEMES = /^(https:|apple-pay:|about:)/i;
 
 export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, className }: BuyFrameProps) {
@@ -99,7 +101,7 @@ export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, classNa
         onMessage={onMessage}
         onError={() => setFailed(true)}
         onHttpError={(event) => {
-          if (event.nativeEvent.statusCode >= 500) setFailed(true);
+          if (event.nativeEvent.statusCode >= SERVER_ERROR) setFailed(true);
         }}
         startInLoadingState
         renderLoading={() => (

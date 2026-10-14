@@ -18,6 +18,5 @@ export type CircleWidgetProps = {
   onSessionExpired: () => void;
 };
 
-export function CircleWidget(_props: CircleWidgetProps): React.ReactElement | null {
-  return null;
-}
+/** Native has no widget (the WebView shows the web page instead), so this renders nothing. */
+export const CircleWidget: (props: CircleWidgetProps) => React.ReactElement | null = () => null;
