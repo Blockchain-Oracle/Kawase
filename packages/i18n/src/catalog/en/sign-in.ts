@@ -20,5 +20,15 @@ export const signIn = {
   codeTitle: "Check your email",
   resend: "Send a new code",
   signingIn: "Signing in…",
-  webUnavailable: "Signing in on the web is coming soon. For now, use the Kawase app on your phone.",
+  webUnavailable: "Sign-in isn't available on this site. Use the Kawase app on your phone.",
+  createTitle: "Create your account",
+  welcomeBack: "Welcome back",
+  gateBody: "One email code, then it opens right where you are.",
+  gate: {
+    send: "Sign in to send",
+    receive: "Sign in to receive",
+    fund: "Sign in to add money",
+    swap: "Sign in to swap",
+    bridge: "Sign in to bridge",
+  },
 } as const;

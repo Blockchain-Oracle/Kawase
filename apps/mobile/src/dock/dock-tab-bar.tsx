@@ -1,68 +1,59 @@
-// The glass dock as the tab bar (Senryo's Dock, kept as Kawase's current tab set for now: Home · Markets · orb · Chat ·
-// Activity; the tab change to Home · Markets · centre · Activity · Settings is Stage 3). The four tabs are the (tabs)
-// routes; the orb in the centre is not a route, it opens the voice overlay over the live page. Given to expo-router's
-// `Tabs` as `tabBar`, so tab state, deep links and the hardware back button keep working; the dock floats over the pages,
-// which pad themselves with `useDockClearance`. The dock hides under every sheet (the dock context) and while the keyboard
-// is up. The orb slot is the voice overlay's trigger, and its orb steps aside while the overlay's orb is up so there is
-// only ever one.
+// The glass dock as the tab bar (decision 1): Home · Markets · centre · Activity · Settings, icons only. The four tabs
+// are the (tabs) routes; the centre is not a route: a tap opens the + fan (Send · Receive · Add money · Swap · Bridge),
+// a hold opens the voice orb, which rises from it. Chat is not in the dock: Home's composer and feed open it as a page.
+// Given to expo-router's `Tabs` as `tabBar`, so tab state, deep links and the hardware back button keep working; the
+// dock floats over the pages, which pad themselves with `useDockClearance`. It hides under every sheet (the dock
+// context) and while the keyboard is up, and stays up under its own fan (the × closes it).
 import type { Tabs } from "expo-router";
 import type * as React from "react";
-import { View } from "react-native";
 
-import { tokens } from "@kawase/ui-tokens";
-
-import { Orb } from "@/components/orb";
-import { Activity, Home, LineChart, MessageCircle } from "@/components/kit/icons";
+import { Activity, Home, LineChart, Settings } from "@/components/kit/icons";
 import { Dock, type DockItem } from "@/components/shell/Dock";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
-import { ORB_DOCK_SIZE } from "@/overlay/voice-overlay";
-import { useTheme } from "@/theme/theme-provider";
+
+import { CentreGlyph } from "./centre-button";
 
 /** What `Tabs` hands its custom tab bar (expo-router does not export the type by name). */
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
-const ORB_KEY = "voice";
-const ORB_IDLE_LEVEL = 0.15;
+export const CENTRE_KEY = "centre";
 
-/** Route names in the (tabs) group, in dock order; the orb sits in the centre. Settings is a tab without a slot. */
-const TAB_ORDER = ["index", "markets", ORB_KEY, "chat", "activity"] as const;
-const ICONS = { index: Home, markets: LineChart, chat: MessageCircle, activity: Activity } as const;
+/** Route names in the (tabs) group, in dock order, with the centre between Markets and Activity. */
+const TAB_ORDER = ["index", "markets", CENTRE_KEY, "activity", "settings"] as const;
+const ICONS = { index: Home, markets: LineChart, activity: Activity, settings: Settings } as const;
 
 export function DockTabBar({ state, navigation }: TabBarProps) {
   const { t } = useT();
-  const { network } = useTheme();
   const overlay = useOverlay();
   const activeKey = state.routes[state.index]?.name ?? "index";
-  const orbAway = overlay.shown === "voice";
+  const fanOpen = overlay.current === "fan";
 
-  const labels: Record<string, string> = {
-    index: t("home.dockHome"),
-    markets: t("markets.dock"),
-    chat: t("home.dockChat"),
-    [ORB_KEY]: t("home.dockVoice"),
-    activity: t("home.dockActivity"),
+  const labels: Record<(typeof TAB_ORDER)[number], string> = {
+    index: t("shell.dock.home"),
+    markets: t("shell.dock.markets"),
+    [CENTRE_KEY]: t("shell.dock.actions"),
+    activity: t("shell.dock.activity"),
+    settings: t("shell.dock.settings"),
   };
 
   const items: DockItem[] = TAB_ORDER.map((key) =>
-    key === ORB_KEY
+    key === CENTRE_KEY
       ? {
           key,
-          label: labels[key]!,
+          label: fanOpen ? t("shell.fan.close") : labels[key],
           action: true,
+          expanded: fanOpen,
           slotRef: overlay.voiceTrigger,
-          render: () => (
-            <View style={{ width: ORB_DOCK_SIZE, height: ORB_DOCK_SIZE, opacity: orbAway ? 0 : 1 }}>
-              <Orb colors={tokens.orb[network]} level={ORB_IDLE_LEVEL} paused={orbAway} className="size-full" />
-            </View>
-          ),
+          hold: { label: t("shell.dock.voice"), run: () => overlay.open("voice") },
+          render: () => <CentreGlyph open={fanOpen} away={overlay.shown === "voice"} />,
         }
-      : { key, label: labels[key]!, icon: ICONS[key] },
+      : { key, label: labels[key], icon: ICONS[key] },
   );
 
   const onPress = (key: string) => {
-    if (key === ORB_KEY) {
-      overlay.open("voice");
+    if (key === CENTRE_KEY) {
+      overlay.toggle("fan");
       return;
     }
     const route = state.routes.find((candidate) => candidate.name === key);

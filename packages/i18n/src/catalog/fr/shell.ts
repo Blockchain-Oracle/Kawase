@@ -92,4 +92,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "Ce devis a expiré", body: "Demandez un nouveau devis et réessayez." },
     unknown: { title: "Un problème est survenu", body: "Réessayez dans un instant." },
   },
+  dock: {
+    home: "Accueil",
+    markets: "Marchés",
+    activity: "Activité",
+    settings: "Réglages",
+    actions: "Actions",
+    voice: "Parler à Kawase",
+    navigation: "Navigation",
+  },
+  fan: {
+    send: "Envoyer",
+    receive: "Recevoir",
+    addMoney: "Ajouter de l'argent",
+    swap: "Échanger",
+    bridge: "Passerelle",
+    close: "Fermer les actions",
+  },
+  rail: {
+    moveMoney: "Déplacer de l'argent",
+    profile: "Profil et réglages",
+  },
 };

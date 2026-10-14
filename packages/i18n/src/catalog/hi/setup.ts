@@ -7,7 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "{{network}} पर सेट अप करें",
   settingUpDetail: "Kawase के रिले से साइन करके भेजा जा रहा है…",
   failed: "यह पूरा नहीं हुआ। फिर से कोशिश करें।",
-  notReady: "Kawase अभी {{network}} तैयार कर रहा है। कुछ भी साइन नहीं हुआ और आपका पैसा सुरक्षित है — थोड़ी देर बाद फिर कोशिश करें।",
+  notReady:
+    "Kawase अभी {{network}} तैयार कर रहा है। कुछ भी साइन नहीं हुआ और आपका पैसा सुरक्षित है — थोड़ी देर बाद फिर कोशिश करें।",
   primerTitle: "दैनिक सीमा के लिए एक Face ID",
   primerTitleAndroid: "दैनिक सीमा के लिए एक मंज़ूरी",
   primerBody:
@@ -31,4 +32,14 @@ export const setup: Catalog["setup"] = {
   terms: "आगे बढ़कर आप Kawase की उपयोग शर्तों से सहमत होते हैं।",
   readTerms: "शर्तें पढ़ें",
   termsFailed: "आपकी सहमति सहेजी नहीं जा सकी। कनेक्शन जाँचें और फिर कोशिश करें।",
+  firstRunTitle: "Kawase को पहला काम दीजिए",
+  firstRunBody: "एक चुनिए और उसे काम करते देखिए।",
+  firstRunFaucet: "मुझे मुफ़्त टेस्ट USDC दिलाओ",
+  firstRunTour: "दिखाओ मैं Arc पर क्या कर सकता हूँ",
+  firstRunBring: "मेरे USDC को Arc पर लाओ",
+  firstRunIdle: "मेरे पड़े हुए USDC से कमाई करवाओ",
+  firstRunLater: "बाद में",
+  notifyTitle: "काम पूरा होते ही जानें",
+  notifyBody: "पैसे आने पर, और कोई काम पूरा होने या आपकी ज़रूरत होने पर Kawase बताता है।",
+  notifyAllow: "सूचनाएँ चालू करें",
 };

@@ -1019,6 +1019,89 @@
         ],
         "port": "One stroke, one size scale; never a stand-in for a token, chain or venue mark.",
         "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ActionFan (+ fan)",
+        "native": "apps/mobile/src/overlay/action-fan.tsx",
+        "source": [
+          {
+            "21st": 782,
+            "slug": "chetanverma16/floating-action-menu",
+            "url": "https://21st.dev/r/chetanverma16/floating-action-menu",
+            "role": "spec"
+          },
+          {
+            "senryo": "git show ad694498^:apps/mobile/src/components/shell/ActionFan.tsx (metropolis)"
+          }
+        ],
+        "port": "Five labelled plates (Send, Receive, Add money, Swap, Bridge) rise and scale from the dock's centre disc into one centred column; 200 ms per plate, 25 ms stagger, overshoot spring (fanLead) on Send only; reverse on close; blur + scrim (BlurOverlay); the disc is redrawn above the scrim turned to ×.",
+        "deviations": "The 21st menu slides in from the side with a CSS blur filter; ours rises from the dock centre (Senryo) with Reanimated, crossfades in 100 ms under Reduce Motion, is a dialog to assistive tech, and every action runs through the account gate.",
+        "status": "built (Stage 3, look lane)"
+      },
+      {
+        "name": "Dock centre (CentreGlyph) + DockTabBar",
+        "native": "apps/mobile/src/dock/centre-button.tsx, apps/mobile/src/dock/dock-tab-bar.tsx, apps/mobile/src/components/shell/Dock.tsx",
+        "source": [
+          {
+            "21st": 10458,
+            "slug": "0xUrvish/bottom-menu",
+            "role": "seen"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/Dock.tsx"
+          }
+        ],
+        "port": "Home · Markets · centre · Activity · Settings, icon-only glass; the centre is a black disc whose plus turns to × (fanLead spring); tap = fan, hold (350 ms) = voice orb.",
+        "deviations": "Bubble placed from the reading edge with a measured row width (RTL fix); slots accept a hold action with an accessibility action.",
+        "status": "built (Stage 3, look lane)"
+      },
+      {
+        "name": "StoryPager + StoryScreen + story art",
+        "native": "apps/mobile/src/onboarding/{story-pager,story-screen,story-art}.tsx",
+        "source": [
+          {
+            "21st": 19097,
+            "slug": "cnippet-dev/onboarding-steps-carousel",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/features/onboarding/Story.tsx"
+          }
+        ],
+        "port": "Senryo's story: position as a float on the UI thread, Pan + Tap exclusive, flick velocity, spring settle; copy travels at 0.35 depth and fades; segments; adjustable for assistive tech; scene cue on landing.",
+        "deviations": "Art is drawn from Kawase's kit and real marks (venue race, budget ring, mark grid, testnet capsule, Circle faucet) instead of raster layers; RTL mirrors the swipe; three footer actions (Look around first).",
+        "status": "built (Stage 3, look lane)"
+      },
+      {
+        "name": "Settings screen",
+        "native": "apps/mobile/src/screens/settings-screen.tsx",
+        "source": [
+          {
+            "21st": 24937,
+            "slug": "cnippet-dev/vertical-settings-tabs",
+            "role": "seen"
+          },
+          {
+            "21st": 28284,
+            "slug": "sean0205/item-action-list",
+            "role": "spec"
+          }
+        ],
+        "port": "Grouped kit ListRows on Panels with glyph plates and real marks (Arc chain, USDC), trailing live values (budget spend, agent wallet balance) with skeletons and an in-place load error, kit Switch/Segmented/ModeCapsule.",
+        "deviations": "No explainer subtitles; tabs are a single scroll on the phone.",
+        "status": "built (Stage 3, look lane)"
+      },
+      {
+        "name": "Notifications ask + first-job step",
+        "native": "apps/mobile/src/onboarding/notifications-ask.tsx, apps/mobile/src/screens/setup-screen.tsx (FirstJob)",
+        "source": [
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/features/setup/setup-order.ts"
+          }
+        ],
+        "port": "Setup ends on the first agent run (three real requests by network, real marks); notifications asked once in a kit Sheet after it.",
+        "deviations": "Hand-built from the kit (no 21st match for a permission primer that fits the sheet grammar).",
+        "status": "built (Stage 3, look lane)"
       }
     ],
     "sourced": [
@@ -1028,9 +1111,9 @@
         "source": "composed from 21st.dev parts (research found no single 21st route-race component): rmahammad/streaming-data-rows (id 29368), sean0205/c-radio-group-17 (id 28337), prebuiltui/badge-tag (id 6955); retrieved 2026-10-14 via `21st get`",
         "file": "apps/mobile/src/routes/route-list.tsx",
         "port": {
-          "29368": "rows insert, re-rank and light up as the stream changes them: Reanimated LinearTransition (spring) for the re-rank, a fade-in of the new value instead of the number morph, shaped skeletons for rows still pricing, loading/empty/error states and reduced motion (100 ms) from its contract",
+          "6955": "the 'Best' mark: an inset pill on the accent token with the label in its foreground",
           "28337": "each choice is a radio card: whole row pressable, ring + filled dot when picked, accessibilityRole radio inside a radiogroup",
-          "6955": "the 'Best' mark: an inset pill on the accent token with the label in its foreground"
+          "29368": "rows insert, re-rank and light up as the stream changes them: Reanimated LinearTransition (spring) for the re-rank, a fade-in of the new value instead of the number morph, shaped skeletons for rows still pricing, loading/empty/error states and reduced motion (100 ms) from its contract"
         },
         "deviations": [
           "one column list, not a table: Wise compare-sheet layout (plan/research 08-references #1) — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
@@ -1207,6 +1290,48 @@
           34381
         ],
         "verified": "2026-10-14 with the 21st CLI (ids 3734, 1588 and 335 re-checked by search)"
+      },
+      {
+        "query": "fab speed dial menu / floating action menu / radial action menu",
+        "chosen": 782,
+        "alsoSeen": [
+          28373,
+          24691,
+          9518,
+          5357,
+          16369,
+          25320
+        ]
+      },
+      {
+        "query": "onboarding carousel / stories progress",
+        "chosen": 19097,
+        "alsoSeen": [
+          10480,
+          8364,
+          6187,
+          29469
+        ]
+      },
+      {
+        "query": "settings list / settings page / profile settings",
+        "chosen": 28284,
+        "alsoSeen": [
+          28596,
+          26523,
+          24937,
+          25058,
+          28426
+        ]
+      },
+      {
+        "query": "bottom navigation",
+        "chosen": null,
+        "alsoSeen": [
+          808,
+          10458,
+          1024
+        ]
       }
     ],
     "desktop": [

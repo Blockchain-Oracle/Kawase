@@ -7,7 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "Configurá-la na {{network}}",
   settingUpDetail: "Assinando e enviando pelo relayer do Kawase…",
   failed: "Não deu certo. Tente de novo.",
-  notReady: "A Kawase está preparando a {{network}}. Nada foi assinado e seu dinheiro está seguro — tente de novo em breve.",
+  notReady:
+    "A Kawase está preparando a {{network}}. Nada foi assinado e seu dinheiro está seguro — tente de novo em breve.",
   primerTitle: "Um Face ID para o seu limite diário",
   primerTitleAndroid: "Uma aprovação para o seu limite diário",
   primerBody:
@@ -31,4 +32,14 @@ export const setup: Catalog["setup"] = {
   terms: "Ao continuar, você concorda com os termos de uso do Kawase.",
   readTerms: "Ler os termos",
   termsFailed: "Não foi possível salvar sua concordância. Verifique sua conexão e tente de novo.",
+  firstRunTitle: "Dê à Kawase a primeira tarefa",
+  firstRunBody: "Escolha uma e veja funcionar.",
+  firstRunFaucet: "Me dê USDC de teste grátis",
+  firstRunTour: "Mostre o que posso fazer na Arc",
+  firstRunBring: "Traga meus USDC para a Arc",
+  firstRunIdle: "Ponha meus USDC parados para render",
+  firstRunLater: "Depois",
+  notifyTitle: "Saiba quando terminar",
+  notifyBody: "A Kawase avisa quando chega dinheiro e quando uma tarefa termina ou precisa de você.",
+  notifyAllow: "Ativar notificações",
 };

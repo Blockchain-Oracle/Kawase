@@ -86,4 +86,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "कोट की अवधि ख़त्म हो गई", body: "नया कोट लें और फिर कोशिश करें।" },
     unknown: { title: "कुछ गड़बड़ हो गई", body: "थोड़ी देर में फिर कोशिश करें।" },
   },
+  dock: {
+    home: "होम",
+    markets: "बाज़ार",
+    activity: "गतिविधि",
+    settings: "सेटिंग्स",
+    actions: "कार्य",
+    voice: "Kawase से बात करें",
+    navigation: "नेविगेशन",
+  },
+  fan: {
+    send: "भेजें",
+    receive: "पाएँ",
+    addMoney: "पैसे जोड़ें",
+    swap: "स्वैप",
+    bridge: "ब्रिज",
+    close: "कार्य बंद करें",
+  },
+  rail: {
+    moveMoney: "पैसे भेजें-लाएँ",
+    profile: "प्रोफ़ाइल और सेटिंग्स",
+  },
 };

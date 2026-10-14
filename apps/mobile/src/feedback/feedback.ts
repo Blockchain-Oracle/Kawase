@@ -26,7 +26,9 @@ export type Cue =
   | "sheetOpen"
   | "sheetClose"
   | "agentStep"
-  | "agentDone";
+  | "agentDone"
+  /** A story scene settling (onboarding), soft and short. */
+  | "scene";
 
 // Metro resolves bundled native assets through static requires.
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -63,7 +65,7 @@ const completed = new Set<string>();
  * after the first does not wait for the first to rewind (Senryo's pool); the rest have one. */
 const players = new Map<Cue, AudioPlayer[]>();
 const turn = new Map<Cue, number>();
-const HOT_CUES: ReadonlySet<Cue> = new Set<Cue>(["agentStep", "tap", "toggle", "sheetOpen", "sheetClose"]);
+const HOT_CUES: ReadonlySet<Cue> = new Set<Cue>(["agentStep", "tap", "toggle", "sheetOpen", "sheetClose", "scene"]);
 const POOL = 2;
 /** The onboarding narrator: one player, one clip at a time (see `narrate`). */
 let narrator: AudioPlayer | undefined;

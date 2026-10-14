@@ -89,4 +89,25 @@ export const shell: Catalog["shell"] = {
     expired: { title: "A cotação expirou", body: "Peça uma nova cotação e tente de novo." },
     unknown: { title: "Algo deu errado", body: "Tente de novo em instantes." },
   },
+  dock: {
+    home: "Início",
+    markets: "Mercados",
+    activity: "Atividade",
+    settings: "Ajustes",
+    actions: "Ações",
+    voice: "Falar com a Kawase",
+    navigation: "Navegação",
+  },
+  fan: {
+    send: "Enviar",
+    receive: "Receber",
+    addMoney: "Adicionar dinheiro",
+    swap: "Trocar",
+    bridge: "Ponte",
+    close: "Fechar ações",
+  },
+  rail: {
+    moveMoney: "Movimentar dinheiro",
+    profile: "Perfil e ajustes",
+  },
 };

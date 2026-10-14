@@ -28,6 +28,8 @@ import { classifySignInFailure, type SignInFailure } from "@/wallet/sign-in-erro
 import { useTurnkeyAccount, type SocialProvider } from "@/wallet/use-turnkey-account";
 import { AuthStageError } from "@/wallet/auth-stage";
 
+import type { SignInReason } from "./sign-in-provider";
+
 const CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** A new code can be asked for this long after the last one was sent. */
@@ -56,9 +58,11 @@ type SignInSheetProps = {
   onClose: () => void;
   /** Called once the api knows the account and its wallet exists. */
   onSignedIn: (user: ApiUser) => void;
+  /** Why it opened: its title names the action a guest started ("Sign in to send") or the story's door. */
+  reason?: SignInReason;
 };
 
-export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
+export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetProps) {
   const { t } = useT();
   const { mode } = useTheme();
   const colors = useThemeColors();
@@ -244,6 +248,14 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
 
   const sheetColors = { background: colors.card, handle: colors.muted, scrim: colors.scrim };
   const languagePill = <LanguagePill onPress={() => setLanguageOpen(true)} />;
+  const methodsTitle =
+    reason?.kind === "verb"
+      ? t(`signIn.gate.${reason.verb}`)
+      : reason?.kind === "create"
+        ? t("signIn.createTitle")
+        : reason?.kind === "signIn"
+          ? t("signIn.welcomeBack")
+          : t("signIn.sheetTitle");
   const working =
     pending === "wallet"
       ? t("wallet.creating")
@@ -257,13 +269,15 @@ export function SignInSheet({ open, onClose, onSignedIn }: SignInSheetProps) {
         open={open}
         onClose={onClose}
         title={
-          walletFor ? t("setup.stepWallet") : step.name === "methods" ? t("signIn.sheetTitle") : t("signIn.codeTitle")
+          walletFor ? t("setup.stepWallet") : step.name === "methods" ? methodsTitle : t("signIn.codeTitle")
         }
         subtitle={
           walletFor
             ? undefined
             : step.name === "methods"
-              ? t("signIn.subtitle")
+              ? reason?.kind === "verb"
+                ? t("signIn.gateBody")
+                : t("signIn.subtitle")
               : t("signIn.codeSent", { email: step.email })
         }
         colors={sheetColors}

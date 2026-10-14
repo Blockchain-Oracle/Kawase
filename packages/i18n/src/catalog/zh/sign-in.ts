@@ -21,5 +21,15 @@ export const signIn: Catalog["signIn"] = {
   codeTitle: "查看你的邮箱",
   resend: "重新发送验证码",
   signingIn: "正在登录…",
-  webUnavailable: "网页登录即将推出。目前请在手机上使用 Kawase 应用。",
+  webUnavailable: "此网站暂不支持登录。请在手机上使用 Kawase 应用。",
+  createTitle: "创建账户",
+  welcomeBack: "欢迎回来",
+  gateBody: "一个邮箱验证码，随后就在原处继续。",
+  gate: {
+    send: "登录后发送",
+    receive: "登录后收款",
+    fund: "登录后充值",
+    swap: "登录后兑换",
+    bridge: "登录后跨链",
+  },
 };

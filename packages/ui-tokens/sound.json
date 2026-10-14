@@ -1,8 +1,13 @@
 {
   "_note": "Interface cues, one definition (Senryo's sound.ts voice model: an oscillator or noise with a pitch glide, an envelope and an optional filter). `node render-sounds.mjs` renders each to apps/mobile/assets/audio/cues/<cue>.wav and writes apps/mobile/src/feedback/cue-sources.ts. Our own audio, synthesised offline; no model API. The older outcome cues (confirmed, send, received, error, fan, voice) stay as the recorded files they are.",
   "master": 0.9,
-  "mix": { "tap": 0.3, "toggle": 0.25, "sheetOpen": 0.22, "sheetClose": 0.2, "agentStep": 0.22, "agentDone": 0.4 },
+  "mix": { "tap": 0.3, "toggle": 0.25, "sheetOpen": 0.22, "sheetClose": 0.2, "agentStep": 0.22, "agentDone": 0.4, "scene": 0.18 },
   "cues": {
+    "scene": [
+      { "type": "sine", "from": 659.25, "to": 659.25, "at": 0, "dur": 0.16, "gain": 0.6 },
+      { "type": "sine", "from": 987.77, "to": 987.77, "at": 0.05, "dur": 0.22, "gain": 0.4 },
+      { "type": "noise", "from": 0, "to": 0, "at": 0, "dur": 0.09, "gain": 0.08, "filter": { "type": "highpass", "from": 3000, "to": 6000 } }
+    ],
     "tap": [
       { "type": "sine", "from": 1100, "to": 1100, "at": 0, "dur": 0.045, "gain": 0.9 },
       { "type": "sine", "from": 2200, "to": 2200, "at": 0, "dur": 0.03, "gain": 0.3 }

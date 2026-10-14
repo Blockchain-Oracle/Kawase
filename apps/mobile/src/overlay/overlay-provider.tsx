@@ -1,5 +1,5 @@
 // The overlays over the live page: the voice overlay (the orb rises from the dock, the page blurs) and the
-// quick-action fan (the plus becomes ×, four actions rise). They are not routes: the host renders them as a
+// + fan (the dock's centre turns to ×, five actions rise). They are not routes: the host renders them as a
 // layer above the tab pages and the dock inside the (tabs) layout (on a desktop window, above the sidebar and every
 // page), so `BlurView` sees the page on iOS, Android and web. The provider wraps the whole signed-in area; any screen
 // in it can call `open("voice")`; only one overlay is open at a time.
@@ -10,8 +10,6 @@
 // to it. `shown` stays set through an overlay's exit (until it reports `exited`), so the dock's orb is not drawn
 // twice while the overlay's orb travels home (R16).
 import * as React from "react";
-
-import { cue } from "@/feedback/feedback";
 import { BackHandler, Platform, View, type ViewProps } from "react-native";
 
 import { BlurTarget, BlurTargetProvider } from "@kawase/ui-native/components/blur-target";
@@ -51,14 +49,11 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
     return {
       current,
       shown: current ?? leaving,
-      open: (kind) => {
-        if (kind === "fan") void cue("fanOpen");
-        setCurrent(kind);
-      },
+      // Opening the fan commits to nothing: the dock's tick is its only feedback (no sound for navigation).
+      open: (kind) => setCurrent(kind),
       close,
       toggle: (kind) => {
         if (current === kind) return close();
-        if (kind === "fan") void cue("fanOpen");
         setCurrent(kind);
       },
       exited: (kind) => setLeaving((was) => (was === kind ? null : was)),

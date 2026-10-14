@@ -2,6 +2,27 @@
 // states, the money action lifecycle, diagnoses and their fixes). Owned by the look lane; keys are added here first,
 // then in every language.
 export const shell = {
+  dock: {
+    home: "Home",
+    markets: "Markets",
+    activity: "Activity",
+    settings: "Settings",
+    actions: "Actions",
+    voice: "Talk to Kawase",
+    navigation: "Navigation",
+  },
+  fan: {
+    send: "Send",
+    receive: "Receive",
+    addMoney: "Add money",
+    swap: "Swap",
+    bridge: "Bridge",
+    close: "Close actions",
+  },
+  rail: {
+    moveMoney: "Move money",
+    profile: "Profile and settings",
+  },
   kit: {
     amount: "Amount",
     back: "Back",
