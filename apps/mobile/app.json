@@ -110,7 +110,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Kawase uses Face ID to approve your daily allowance and anything above it."
+          "faceIDPermission": "Kawase uses Face ID to approve your weekly budget and anything outside it."
         }
       ],
       [
@@ -124,7 +124,7 @@
         "expo-notifications",
         {
           "icon": "./assets/brand/notification-icon.png",
-          "color": "#3F6600",
+          "color": "#111111",
           "defaultChannel": "default"
         }
       ],
