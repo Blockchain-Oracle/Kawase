@@ -41,9 +41,16 @@ import { BudgetService, type BudgetView, type LedgerRow } from "./service";
 config({ path: new URL("../../../../.env", import.meta.url).pathname, quiet: true });
 
 const POLL_MS = 2000;
+const USDC_DECIMALS = 6;
+const HTTP_OK = 200;
+const HTTP_CREATED = 201;
+const HTTP_UNPROCESSABLE = 422;
+const HTTP_SERVER_ERROR = 500;
+const NONE = 0n;
+const JSON_INDENT = 2;
 const POLL_ATTEMPTS = 60;
 const DONE_STATES = ["COMPLETE", "CONFIRMED", "FAILED", "CANCELLED", "DENIED"];
-const usdc = (value: string) => parseUnits(value, 6);
+const usdc = (value: string) => parseUnits(value, USDC_DECIMALS);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const evidence: Record<string, unknown> = {};
 
@@ -81,7 +88,7 @@ budgetApp.use("*", async (c, next) => {
 });
 budgetApp.use("*", attachSession(db));
 budgetApp.route("/budget", budgetRoutes({ budget, swaps, earn }));
-budgetApp.onError((error, c) => (error instanceof ProblemError ? problemResponse(c, error, "test") : c.json({ error: String(error) }, 500)));
+budgetApp.onError((error, c) => (error instanceof ProblemError ? problemResponse(c, error, "test") : c.json({ error: String(error) }, HTTP_SERVER_ERROR)));
 
 let userId = "";
 let token = "";
@@ -98,14 +105,14 @@ try {
   const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
   const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
   const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "budget-test-phone-01" } }));
-  await expectStatus(signIn, 201, "sign-in");
+  await expectStatus(signIn, HTTP_CREATED, "sign-in");
   ({ token, user: { id: userId } } = (await signIn.json()) as { token: string; user: { id: string } });
-  await expectStatus(await call(app, "POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
+  await expectStatus(await call(app, "POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), HTTP_CREATED, "register");
   const { authorization } = await json<{ authorization: { contractAddress: Hex; chainId: number; nonce: number } }>(call(app, "POST", "/wallet/setup/request", { network: "testnet" }));
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(
     await call(app, "POST", "/wallet/setup/submit", { network: "testnet", authorization: { address: signedAuth.address, chainId: signedAuth.chainId, nonce: signedAuth.nonce, r: signedAuth.r, s: signedAuth.s, yParity: signedAuth.yParity } }),
-    200,
+    HTTP_OK,
     "setup",
   );
   const drip = await circle.createTransaction({ walletAddress: OPS, blockchain: network.circleBlockchain, tokenAddress: network.addresses.usdc, destinationAddress: wallet.address, amount: ["0.8"], fee: { type: "level", config: { feeLevel: "MEDIUM" } }, idempotencyKey: randomUUID() });
@@ -198,7 +205,7 @@ try {
   // 4. The ledger counts it; over the per-action cap and a paused budget are "outside_budget".
   const view = await json<{ budget: BudgetView }>(call(budgetApp, "GET", "/budget"));
   const ledger = await json<{ rows: LedgerRow[] }>(call(budgetApp, "GET", "/budget/ledger"));
-  assert.ok(BigInt(view.budget.spentThisWeek) > 0n, JSON.stringify(view));
+  assert.ok(BigInt(view.budget.spentThisWeek) > NONE, JSON.stringify(view));
   evidence.ledger = { spentThisWeek: view.budget.spentThisWeek, leftThisWeek: view.budget.leftThisWeek, rows: ledger.rows };
   const big = (await json<{ intent: SwapIntent }>(call(app, "POST", "/swaps", { amount: "0.15", tokenIn: "USDC" }))).intent;
   assert.equal(big.state, "ready_for_approval", JSON.stringify(big.blocking));
@@ -211,22 +218,22 @@ try {
     call(budgetApp, "POST", "/budget/proposal", { weeklyCap: usdc("5").toString(), perActionCap: usdc("0.1").toString(), categories: ["swap", "earn"], venues: ["app_kit", ...vaults] }),
   );
   const lower = { ...smaller.policy, weeklyCap: BigInt(smaller.policy.weeklyCap), perActionCap: BigInt(smaller.policy.perActionCap) };
-  await expectStatus(await call(budgetApp, "PUT", "/budget", { policy: smaller.policy, signature: await wallet.signTypedData(budgetTypedData(lower)) }), 200, "lower the budget");
+  await expectStatus(await call(budgetApp, "PUT", "/budget", { policy: smaller.policy, signature: await wallet.signTypedData(budgetTypedData(lower)) }), HTTP_OK, "lower the budget");
   const capped = await json<LeafResponse<SwapIntent>>(call(budgetApp, "POST", `/budget/swaps/${big.id}/leaf`, { version: big.version }));
   assert.equal(capped.status, "outside_budget");
   evidence.overCap = (capped as { reason?: string }).reason;
   const forged = await call(budgetApp, "PUT", "/budget", { policy: { ...smaller.policy, version: smaller.policy.version + 1, perActionCap: usdc("4").toString() }, signature: budgetSignature });
   evidence.forgedBudget = forged.status;
-  assert.equal(forged.status, 422, "a budget whose signature does not match its terms is refused");
+  assert.equal(forged.status, HTTP_UNPROCESSABLE, "a budget whose signature does not match its terms is refused");
   console.log("paused →", evidence.paused, "| over the cap →", evidence.overCap, "| forged budget →", forged.status);
   console.log("ledger", JSON.stringify(evidence.ledger));
 } finally {
   for (const tokenAddress of [network.addresses.eurc, network.addresses.usdc]) {
     const left = await client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: "balanceOf", args: [wallet.address] });
-    const keep = tokenAddress === network.addresses.usdc ? usdc("0.02") : 0n;
+    const keep = tokenAddress === network.addresses.usdc ? usdc("0.02") : NONE;
     if (left > keep) await client.waitForTransactionReceipt({ hash: await signer.writeContract({ address: tokenAddress, abi: erc20Abi, functionName: "transfer", args: [OPS, left - keep] }) });
   }
-  writeFileSync(new URL("./budget.testnet.results.json", import.meta.url), JSON.stringify({ at: new Date().toISOString(), wallet: wallet.address, ...evidence }, (_, v) => (typeof v === "bigint" ? v.toString() : v), 2));
+  writeFileSync(new URL("./budget.testnet.results.json", import.meta.url), JSON.stringify({ at: new Date().toISOString(), wallet: wallet.address, ...evidence }, (_, v) => (typeof v === "bigint" ? v.toString() : v), JSON_INDENT));
   if (userId) await deleteUser(db, userId);
   await close();
 }
