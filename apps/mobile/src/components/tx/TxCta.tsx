@@ -147,7 +147,8 @@ function Plate({
                 ? t("shell.tx.tryAgain")
                 : state.moneyMoved === "unknown"
                   ? t("shell.tx.waiting")
-                  : t("shell.tx.done")
+                  : // Money moved on a failure (a partial fill): say what happened, never a success word.
+                    t("shell.tx.sent")
               : action;
   return (
     <Animated.View style={[styles.plateWrap, ELEVATION.button, press.style, plateStyle]}>

@@ -20,21 +20,13 @@
       "packages/ui-tokens/sound.json",
       "apps/mobile/src/components/kit/theme.ts"
     ],
-    "components": [
-      "apps/mobile/src/components/{kit,sheet,shell,toast,tx}",
-      "packages/ui-web/src/components/ui"
-    ],
+    "components": ["apps/mobile/src/components/{kit,sheet,shell,toast,tx}", "packages/ui-web/src/components/ui"],
     "senryo": "/Users/abu/dev/hackathon/metropolis (packages/tokens/src, apps/mobile/src/components)",
     "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/{states,tx}"
   },
   "design": {
     "colorMode": "light-default-with-dark",
-    "themes": [
-      "light",
-      "dark",
-      "testnet",
-      "testnet-dark"
-    ],
+    "themes": ["light", "dark", "testnet", "testnet-dark"],
     "colors": {
       "--background": {
         "light": "#F5F5F5",
@@ -300,13 +292,7 @@
     "fonts": {
       "ui": "Inter 400-700",
       "money": "Roboto Condensed Black 900",
-      "scripts": [
-        "Noto Sans Arabic",
-        "Noto Nastaliq Urdu",
-        "Noto Sans Devanagari",
-        "Noto Sans Bengali",
-        "Noto Sans SC"
-      ]
+      "scripts": ["Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC"]
     },
     "radius": {
       "none": 0,
@@ -338,18 +324,8 @@
       "sheetExitMs": 240,
       "staggerMs": 40,
       "reducedMotionMs": 100,
-      "easing": [
-        0.2,
-        0.8,
-        0.2,
-        1
-      ],
-      "sheetEasing": [
-        0.32,
-        0.72,
-        0,
-        1
-      ]
+      "easing": [0.2, 0.8, 0.2, 1],
+      "sheetEasing": [0.32, 0.72, 0, 1]
     }
   },
   "components": {
@@ -862,6 +838,9 @@
         "source": [
           {
             "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxMorph.tsx"
+          },
+          {
+            "composedFrom": "Mitoshi tx/TxMorph.tsx with Reanimated layout transitions (a motion wrapper with no look of its own; it morphs the CTA and the host's receipt)"
           }
         ],
         "port": "The CTA fades out (160 ms) and the receipt rises in (220 ms, 60 ms late) while the box eases height (240 ms); 100 ms crossfade under Reduce Motion.",
@@ -890,6 +869,9 @@
         "source": [
           {
             "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/useTxLifecycle.ts"
+          },
+          {
+            "composedFrom": "Mitoshi tx/useTxLifecycle.ts and its TxState reducer (logic, no visible part)"
           }
         ],
         "port": "One reducer for idle, review, blocked, signing, submitted, unknown, confirmed, failed; plays the money cue once per identity; a lost answer after the send is \"unknown\" and stays in the journal.",
@@ -901,6 +883,9 @@
         "source": [
           {
             "senryo": "/Users/abu/dev/hackathon/metropolis/packages/calls/src/{intent-journal.ts,use-intent-recovery.ts}"
+          },
+          {
+            "composedFrom": "Senryo packages/calls intent-journal.ts and use-intent-recovery.ts (logic, no visible part); the reader lives in tx/recovery.ts"
           }
         ],
         "port": "Written after the signature, before the send; mirrored to AsyncStorage; recovery only READS status by id, so nothing is ever sent twice.",
@@ -976,7 +961,8 @@
             "21st": 1600,
             "slug": "haydenbleasel/pill",
             "url": "https://21st.dev/r/haydenbleasel/pill",
-            "role": "spec"
+            "role": "spec",
+            "verified": "21st get 1600 returns haydenbleasel/pill (2026-10-14)"
           },
           {
             "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/ModeCapsule.tsx"
@@ -991,6 +977,9 @@
         "source": [
           {
             "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/LiveRegion.tsx"
+          },
+          {
+            "composedFrom": "Mitoshi states/LiveRegion.tsx (an accessibility live region, no visible part)"
           }
         ],
         "port": "One polite live region on the web; the platform announcer on the phone.",

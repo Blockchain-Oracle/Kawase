@@ -101,7 +101,8 @@ function ConsentBody({ busy, onAccept }: { busy: boolean; onAccept: () => void }
         accessibilityState={{ checked }}
         accessibilityLabel={t("network.consentCheck")}
         onPress={() => {
-          fire("tick", { sound: "toggle" });
+          // A tick is a haptic only (fire.ts: no sound for ticks); the sound belongs to the switch itself.
+          fire("tick");
           setChecked((value) => !value);
         }}
         style={styles.check}
