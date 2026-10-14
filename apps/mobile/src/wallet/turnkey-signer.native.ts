@@ -7,7 +7,7 @@ import type { Address, Hex } from "viem";
 const ETHEREUM_FORMAT = "ADDRESS_FORMAT_ETHEREUM";
 const HEX_PREFIX = "0x";
 
-export function useWalletSigner(approval: ApprovalStrength = "session"): WalletSigner | undefined {
+export function useTurnkeyWalletSigner(approval: ApprovalStrength = "session"): WalletSigner | undefined {
   const { wallets, httpClient, signTransaction } = useTurnkey();
   const account = wallets
     .flatMap((wallet) => wallet.accounts)

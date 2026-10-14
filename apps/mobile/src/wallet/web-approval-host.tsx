@@ -2,6 +2,8 @@
 // no Face ID, so a fresh email code to the account's own address stands in: Turnkey's enclave verifies it (`initOtp`
 // + `verifyOtp`, which returns a verification token and logs nothing in), and only a verified code resolves
 // "approved". Closing the sheet is "cancelled"; nothing is signed either way until then (Codex review R03).
+// With Privy (D41) the wallet's session lives in this browser and Privy has no code check outside a login, so the
+// sheet is the explicit confirm D38 keeps above the budget: what is being approved, then Confirm or Cancel.
 import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit";
 import * as React from "react";
 import { View } from "react-native";
@@ -16,7 +18,7 @@ import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 import type { BiometricResult } from "./biometric";
-import { isWalletConfigured } from "./config";
+import { isPrivy, isWalletConfigured } from "./config";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
 
 const CODE_LENGTH = 6;
@@ -131,7 +133,47 @@ function ConfiguredHost() {
   );
 }
 
-/** Mounted once inside the sheet and session providers; without Turnkey configured there is nothing to verify with. */
+/** Privy: the explicit confirm, registered the same way (only "approved" signs). */
+function PrivyHost() {
+  const { t } = useT();
+  const colors = useThemeColors();
+  const [pending, setPending] = React.useState<Pending>();
+
+  React.useEffect(() => {
+    const approver: WebApprover = (prompt) => new Promise<BiometricResult>((resolve) => setPending({ prompt, resolve }));
+    setWebApprover(approver);
+    return () => clearWebApprover(approver);
+  }, []);
+
+  const finish = (result: BiometricResult) => {
+    pending?.resolve(result);
+    setPending(undefined);
+  };
+
+  return (
+    <Sheet
+      open={Boolean(pending)}
+      onClose={() => finish("cancelled")}
+      title={t("approval.title")}
+      subtitle={pending?.prompt}
+      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
+      closeLabel={t("common.close")}
+    >
+      <View className="gap-4">
+        <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{t("wallet.confirmInBrowser")}</Text>
+        <Button size="lg" onPress={() => finish("approved")}>
+          <Text>{t("approval.confirm")}</Text>
+        </Button>
+        <Button variant="ghost" onPress={() => finish("cancelled")}>
+          <Text className="text-muted-foreground">{t("common.cancel")}</Text>
+        </Button>
+      </View>
+    </Sheet>
+  );
+}
+
+/** Mounted once inside the sheet and session providers; without the provider's ids there is nothing to verify with. */
 export function WebApprovalHost() {
-  return isWalletConfigured ? <ConfiguredHost /> : null;
+  if (!isWalletConfigured) return null;
+  return isPrivy ? <PrivyHost /> : <ConfiguredHost />;
 }

@@ -10,7 +10,7 @@ import {
   PASSKEY_RP_ID,
   TURNKEY_AUTH_PROXY_CONFIG_ID,
   TURNKEY_ORGANIZATION_ID,
-  isWalletConfigured,
+  isTurnkeyConfigured,
 } from "./config";
 import { reportClientEvent } from "@/session/client-events";
 import { describeError, summarize } from "./error-detail";
@@ -42,9 +42,9 @@ const callbacks: TurnkeyCallbacks = {
   },
 };
 
-export function WalletProvider({ children }: { children: ReactNode }) {
+export function TurnkeyWalletProvider({ children }: { children: ReactNode }) {
   // Without the two ids there is no wallet to talk to; the app still runs (guest look-around).
-  if (!isWalletConfigured) return <>{children}</>;
+  if (!isTurnkeyConfigured) return <>{children}</>;
   return (
     <TurnkeyProvider config={config} callbacks={callbacks}>
       {children}

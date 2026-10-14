@@ -97,11 +97,26 @@ export function useDeviceProver(turnkey: Pick<TurnkeyKit, "session" | "httpClien
     }
     setDeviceProver(async (activityId) => {
       const signed = await httpClient.stampGetActivity({ organizationId: session.organizationId, activityId });
-      return signed ? { body: signed.body, stamp: signed.stamp.stampHeaderValue } : undefined;
+      return signed ? { "x-kawase-proof-body": signed.body, "x-kawase-proof-stamp": signed.stamp.stampHeaderValue } : undefined;
     });
     return () => setDeviceProver(undefined);
   }, [session, httpClient]);
 }
+
+const unavailable = () => Promise.reject(new Error("Sign in is not configured on this build"));
+/** What sign-in offers on a build without the provider's ids: the app still runs as a guest. */
+export const UNCONFIGURED_ACCOUNT: TurnkeyAccount = {
+  available: false,
+  providers: [],
+  signedIn: false,
+  email: undefined,
+  sendCode: unavailable,
+  verifyCode: unavailable,
+  signInWith: unavailable,
+  linkSession: unavailable,
+  ensureWallet: unavailable,
+  signOutTurnkey: () => Promise.resolve(),
+};
 
 export function useTurnkeyAccountCore(
   turnkey: TurnkeyKit,
