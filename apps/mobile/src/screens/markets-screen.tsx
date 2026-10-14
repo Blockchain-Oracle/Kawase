@@ -97,16 +97,13 @@ export function MarketsScreen() {
   const rowProps = (row: MarketRow) => {
     const chip = tokenChip(row.token, t);
     const changeLabel = change(row.change24hPct, locale);
-    const details = [
-      row.volume24hUsd !== null
-        ? t("markets.vol", { value: money(row.volume24hUsd, fx, locale, { compact: true }) })
-        : null,
-      row.liquidityUsd !== null
-        ? t("markets.liq", { value: money(row.liquidityUsd, fx, locale, { compact: true }) })
-        : null,
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    // One fact that always fits under the name: market cap, else the day's volume (liquidity is on the token page).
+    const details =
+      row.marketCapUsd !== null
+        ? t("markets.mcap", { value: money(row.marketCapUsd, fx, locale, { compact: true }) })
+        : row.volume24hUsd !== null
+          ? t("markets.vol", { value: money(row.volume24hUsd, fx, locale, { compact: true }) })
+          : "";
     return {
       token: row.token,
       amount: details,
