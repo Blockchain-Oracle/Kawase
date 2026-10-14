@@ -90,7 +90,7 @@ import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
-import type { AppEnv } from "./types";
+import type { AppEnv, SessionUser } from "./types";
 import type { Discovery } from "@kawase/integrations-x402";
 import type { AgentWalletProvider } from "./marketplace/agent-wallets";
 import { marketplaceRoutes } from "./marketplace/routes";
@@ -521,6 +521,7 @@ export function createApp(deps: AppDeps) {
     // The weekly budget (D38): a swap, earn, own-wallet move or paid call inside it is approved without a tap; the
     // card then signs through the phone's own guard (silent leaves) or asks. A send to a person always asks.
     budget: agentBudgetFor({ budget, db: deps.db, assets }),
+    budgetSummary: (user: SessionUser) => budget.summary(user),
     health: deps.health,
   };
   // One turn runner for chat and voice: the same brain, the same threads, the same approval key.

@@ -37,7 +37,7 @@ import type { SafetyService } from "../safety/service";
 import type { HistoryService } from "../history/service";
 import type { AccountAgentDeps } from "./account-context";
 import type { Context } from "hono";
-import type { AgentBudget } from "@kawase/agent";
+import type { AgentBudget, BudgetPromptContext, BudgetSummary } from "@kawase/agent";
 import type { AgentHealth } from "@kawase/api-client";
 
 import { buildAgentContext, type AgentRaceRoutes } from "./context";
@@ -133,6 +133,8 @@ export type AgentDeps = {
   raceRoutes?: AgentRaceRoutes | undefined;
   /** The person's weekly budget (the Budget lane); without it every money step waits for their tap (the safe default). */
   budget?: ((user: SessionUser) => AgentBudget | undefined) | undefined;
+  /** The signed budget in plain numbers for the prompt (prompt-budget.ts); without it the agent knows no budget. */
+  budgetSummary?: ((user: SessionUser) => Promise<BudgetSummary | null>) | undefined;
   /** The meme/copycat check before a buy; one is made per runner when not given (tests pass their own). */
   memeCheck?: MemeCheck | undefined;
   /** The model's self-test (health.ts): while it fails, /chat answers "agent_offline" at once. */
@@ -258,6 +260,11 @@ export function createTurnRunner(deps: AgentDeps) {
       budget: deps.budget?.(user),
       memeCheck,
     });
+    // The weekly budget's numbers and rules for the prompt, read quickly; without them every step is described as asking.
+    if (deps.budgetSummary) {
+      const summary = await settleWithin(deps.budgetSummary(user), WALLET_FACTS_WAIT_MS).catch(() => null);
+      if (summary) (context as BudgetPromptContext).budgetSummary = summary;
+    }
     // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
     if (fx && user.displayCurrency && user.displayCurrency !== "USD") {
       const perUsd = await settleWithin(fx(user.displayCurrency), WALLET_FACTS_WAIT_MS).catch(() => undefined);
