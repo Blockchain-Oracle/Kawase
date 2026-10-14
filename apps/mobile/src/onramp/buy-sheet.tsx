@@ -12,7 +12,7 @@ import { arcIdentity } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 
 import { AmountPad, Button, ErrorState, KeyValue, LoadingState, Panel, Rule, Segmented, Skeleton, Switch, WaitingText } from "@/components/kit";
-import { ChevronLeft, Icon, X } from "@/components/kit/icons";
+import { Icon, X } from "@/components/kit/icons";
 import { RollingFigure } from "@/components/kit/RollingFigure";
 import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { Sheet } from "@/components/sheet/Sheet";
@@ -20,6 +20,7 @@ import { SheetHeading } from "@/components/sheet/SheetRoute";
 import { SheetRow } from "@/components/sheet/SheetRow";
 import { BlockedCta, TxMorph } from "@/components/tx";
 import { fire } from "@/feedback/fire";
+import { SheetHeaderRow } from "@/fund/sheet-parts";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { useMoney } from "@/send/copy";
@@ -68,31 +69,6 @@ export function BuySheet({ flow }: { flow: BuyFlow }) {
       {flow.step === "pay" ? <PayStep flow={flow} /> : null}
       {flow.step === "arriving" ? <ArrivingStep flow={flow} /> : null}
     </Sheet>
-  );
-}
-
-/** A small back affordance at the sheet's leading edge (the sheet's own handle and scrim still close it). */
-function BackRow({ label, onPress, title }: { label: string; onPress: () => void; title: string }) {
-  const { color } = useTheme();
-  return (
-    <View style={styles.backRow}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        hitSlop={SPACE.sm}
-        onPress={() => {
-          fire("tick");
-          onPress();
-        }}
-        style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
-      >
-        <Icon icon={ChevronLeft} size={SIZE.iconSm} tint={color.ink} />
-      </Pressable>
-      <Text accessibilityRole="header" numberOfLines={1} style={[TYPE.sheetHeading, styles.grow, { color: color.ink }]}>
-        {title}
-      </Text>
-      <View style={styles.backButton} />
-    </View>
   );
 }
 
@@ -190,7 +166,7 @@ function MethodStep({ flow }: { flow: BuyFlow }) {
   const sandbox = flow.availability.state === "ready" ? flow.availability.value.sandbox : true;
   return (
     <>
-      <BackRow label={t("buy.back")} title={t("buy.payWith", { amount: fiat(flow.cents) })} onPress={() => flow.goTo("amount")} />
+      <SheetHeaderRow title={t("buy.payWith", { amount: fiat(flow.cents) })} back={{ label: t("buy.back"), onPress: () => flow.goTo("amount") }} />
       {flow.availability.state === "loading" ? <LoadingState shape="list" /> : null}
       {flow.availability.state === "ready" && flow.options.length === 0 ? (
         <ErrorState diagnosis={{ kind: "unknown", retryable: false }} stillWorks={t("buy.noMethods")} />
@@ -323,7 +299,7 @@ function ContactStep({ flow }: { flow: BuyFlow }) {
 
   return (
     <>
-      <BackRow label={t("buy.back")} title={t("buy.contactTitle")} onPress={() => flow.goTo("method")} />
+      <SheetHeaderRow title={t("buy.contactTitle")} back={{ label: t("buy.back"), onPress: () => flow.goTo("method") }} />
       <View style={styles.contactHead}>
         <Mark entity="provider:coinbase" size={SIZE.markRow} />
         <Text style={[TYPE.body, styles.grow, { color: color.text2 }]}>{t("buy.contactWhy")}</Text>

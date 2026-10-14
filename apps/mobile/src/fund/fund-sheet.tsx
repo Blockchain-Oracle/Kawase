@@ -1,31 +1,30 @@
-// The Add money hub (money-in.md; surfaces.md "Add money"; journey 9; Fomo F20/F21 / M12 / M16, Solflare S15's
-// method rows, 21st Item Action List 28284): every way money gets into the wallet, each row with its availability
-// (R2). Buy with Apple Pay / Google Pay / card (Circle Onramp) first; Receive (any token on Arc, the bare-address
-// QR); From an exchange — the exchange table's logos, then that exchange's own steps (network "Arc", or Coinbase's
-// Base followed by Bring to Arc), with the address to copy; From another chain — Bring to Arc (B1's gasless Relay
-// permit), listing the chains where USDC is waiting at the same address; on testnet, "Get test USDC" is Circle's
-// faucet dripping to the person's own address, with every state drawn: ready · sending · sent · claimed today ·
-// refused (with Circle's own faucet as the way out) · no wallet yet. Nested panels come back as they were.
+// The Add money hub on the Senryo kit (money-in.md; D42; Fomo F20/F21 method rows, 21st Item Action List #28284 and
+// cnippet-dev payment-method rows #24917): every way money gets into the wallet, each row with its real marks and its
+// availability said in words (R2). On testnet, Test money (Circle's faucet to the person's own address) comes first, with
+// every state drawn: ready · sending · sent · claimed today · refused (Circle's own faucet as the way out) · no wallet.
+// Then Buy (Apple Pay / Google Pay / card inside Kawase, D42), Receive (the bare QR and the amount QR), From an exchange
+// (their marks, then that exchange's own three steps, with the address to copy), From another chain (Bring to Arc: the
+// route race on /move picks the venue). Exchanges and other chains move real money: on testnet they say so and offer
+// the switch. Nested panels come back to where they were.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { ArrowDownToLine, ArrowLeftRight, Building2, ChevronRight, Copy, ExternalLink, QrCode } from "lucide-react-native";
 import * as React from "react";
-import { ActivityIndicator, Linking, Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ApiError, type ElsewhereView, type ExchangeView, type FaucetStatus } from "@kawase/api-client";
 import { arcIdentity, CHAIN_IDS, entitiesOfKind, exchangeKey } from "@kawase/identity";
 import { amount, formatAmount } from "@kawase/money";
-import { Koban } from "@kawase/ui-native/components/art/koban";
-import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { Sheet } from "@kawase/ui-native/components/sheet";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-import { toast } from "sonner-native";
 
+import { Button, EmptyState, LoadingState, Skeleton, WaitingText } from "@/components/kit";
+import { Check, Icon } from "@/components/kit/icons";
+import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { Sheet } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
+import { SheetRow } from "@/components/sheet/SheetRow";
+import { notify } from "@/components/toast/notify";
+import { MainnetConsentSheet } from "@/components/network-pill";
+import { fire } from "@/feedback/fire";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useBuy } from "@/onramp/buy-provider";
@@ -33,15 +32,16 @@ import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
-import { MainnetConsentSheet } from "@/components/network-pill";
 
-const ROW_MARK = 36;
-const CHAIN_MARK = 28;
-const ART_WIDTH = 40;
-const TILE_MARK = 40;
+import { MarkStack, SheetHeaderRow } from "./sheet-parts";
+
+const CIRCLE_FAUCET = "https://faucet.circle.com";
+const TILE_COLUMNS = 3;
+const PERCENT = 100;
+const TILE_GUTTER_PERCENT = 2;
+const TILE_WIDTH = `${Math.floor(PERCENT / TILE_COLUMNS) - TILE_GUTTER_PERCENT}%` as const;
 /** Bring to Arc's chain keys (the /move route and the crosschain api name chains so). */
 const CHAIN_KEYS: Record<number, string> = {
   [CHAIN_IDS.base]: "base",
@@ -70,45 +70,51 @@ type FundSheetProps = {
 
 export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
   const { t } = useT();
+  if (!open) return null;
+  return (
+    <Sheet onClose={onClose} closeLabel={t("fund.closeNamed")} maxHeight={0.92}>
+      <FundBody onClose={onClose} onFunded={onFunded} />
+    </Sheet>
+  );
+}
+
+function FundBody({ onClose, onFunded }: Omit<FundSheetProps, "open">) {
+  const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
+  const { color } = useTheme();
   const signIn = useSignIn();
   const buy = useBuy();
+  const money = useMoney();
   const { status, user } = useSession();
   const { wallet } = useWalletStatus();
+  const networkSwitch = useNetworkSwitch();
   const [panel, setPanel] = React.useState<Panel>("root");
   const [faucet, setFaucet] = React.useState<Faucet>({ state: "loading" });
-  const [exchanges, setExchanges] = React.useState<ExchangeView[]>([]);
+  const [exchanges, setExchanges] = React.useState<{ state: "loading" } | { state: "ready"; list: ExchangeView[] } | { state: "failed" }>({ state: "loading" });
   const [exchange, setExchange] = React.useState<ExchangeView>();
   const [elsewhere, setElsewhere] = React.useState<ElsewhereView>();
-  const money = useMoney();
 
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
-  // Exchanges and other chains carry real money only: on testnet the panel says so and offers the switch (R2).
-  const networkSwitch = useNetworkSwitch();
-  const switchRow = testnet ? (
-    <Button variant="secondary" disabled={networkSwitch.busy} onPress={() => void networkSwitch.switchNetwork("mainnet")}>
-      <Text>{t("markets.switchToMainnet")}</Text>
-    </Button>
-  ) : null;
   const account = status === "account";
   const hasWallet = Boolean(wallet?.address && wallet.networks[network]?.setUp);
-  const networkName = testnet ? t("network.arcTestnet") : t("network.arc");
   const ids = arcIdentity(network);
-  const sources = entitiesOfKind("chain").filter((entity) => entity.role === "bridge-source" && (entity.environment ?? "mainnet") === network);
+  const sources = entitiesOfKind("chain").filter((entity) => entity.role === "bridge-source" && (entity.environment ?? "mainnet") === "mainnet");
   const address = wallet?.address;
+  const waiting = elsewhere?.chains ?? [];
 
-  // Each opening starts at the top panel with fresh faucet and capability states.
-  React.useEffect(() => {
-    if (!open) return;
-    setPanel("root");
-    void api.withdrawals
+  const loadExchanges = React.useCallback(() => {
+    setExchanges({ state: "loading" });
+    api.withdrawals
       .exchanges()
-      .then((result) => setExchanges(result.exchanges))
-      .catch(() => undefined);
+      .then((result) => setExchanges({ state: "ready", list: result.exchanges }))
+      .catch(() => setExchanges({ state: "failed" }));
+  }, []);
+
+  // Each opening reads fresh faucet and capability states.
+  React.useEffect(() => {
+    loadExchanges();
     if (account)
       void api.crosschain
         .elsewhere()
@@ -119,8 +125,8 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
     void api.faucet
       .status()
       .then((result) => setFaucet(result.eligible || !result.nextAt ? { state: "ready", status: result } : { state: "claimed", nextAt: result.nextAt }))
-      .catch(() => setFaucet({ state: "failed", fallbackUrl: "https://faucet.circle.com" }));
-  }, [open, account, testnet, network]);
+      .catch(() => setFaucet({ state: "failed", fallbackUrl: CIRCLE_FAUCET }));
+  }, [account, testnet, network, loadExchanges]);
 
   const go = (path: "/wallet/receive" | "/wallet") => {
     onClose();
@@ -132,11 +138,12 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
       signIn.open();
       return;
     }
+    // The move screen races the bridges (RouteList) and brings it to Arc.
     router.push({ pathname: "/move", params: { direction: "in", chain } });
   };
   const copyAddress = () => {
     if (!address) return;
-    void Clipboard.setStringAsync(address).then(() => toast(t("fund.copied")));
+    void Clipboard.setStringAsync(address).then(() => notify.success(t("fund.copied")));
   };
 
   const claim = async () => {
@@ -153,251 +160,254 @@ export function FundSheet({ open, onClose, onFunded }: FundSheetProps) {
     try {
       const result = await api.faucet.claim();
       setFaucet({ state: "sent", nextAt: result.nextAt });
+      fire("filled", { sound: "received", identity: `faucet:${result.nextAt}` });
       onFunded();
     } catch (failure) {
+      fire("fail");
       if (failure instanceof ApiError && failure.code === "faucet_claimed_today") {
         setFaucet({ state: "claimed", nextAt: String(failure.problem.nextAt ?? "") });
       } else {
-        setFaucet({ state: "failed", fallbackUrl: failure instanceof ApiError && typeof failure.problem.fallbackUrl === "string" ? failure.problem.fallbackUrl : "https://faucet.circle.com" });
+        setFaucet({ state: "failed", fallbackUrl: failure instanceof ApiError && typeof failure.problem.fallbackUrl === "string" ? failure.problem.fallbackUrl : CIRCLE_FAUCET });
       }
     }
   };
 
   const time = (iso: string) => (iso ? new Intl.DateTimeFormat(locale, { weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso)) : "");
-  const dripAmounts =
-    faucet.state === "ready"
-      ? { usdc: formatAmount(amount("USDC", BigInt(faucet.status.amounts.USDC ?? "0")), locale, { withSymbol: false, fractionDigits: 0 }), eurc: formatAmount(amount("EURC", BigInt(faucet.status.amounts.EURC ?? "0")), locale, { withSymbol: false, fractionDigits: 0 }) }
-      : undefined;
+  const drip = (asset: "USDC" | "EURC", status: FaucetStatus) => formatAmount(amount(asset, BigInt(status.amounts[asset] ?? "0")), locale, { withSymbol: false, fractionDigits: 0 });
+  const wallets = Platform.OS === "android" ? ["pay:googlepay"] : Platform.OS === "ios" ? ["pay:applepay"] : ["pay:applepay", "pay:googlepay"];
+  const exchangeList = exchanges.state === "ready" ? exchanges.list : [];
+  const back = { label: t("buy.back"), onPress: () => setPanel(panel === "exchange" ? "exchanges" : "root") };
+  const switchButton = testnet ? <Button label={t("fund.switchMainnet")} variant="secondary" loading={networkSwitch.busy} onPress={() => void networkSwitch.switchNetwork("mainnet")} /> : null;
 
-  const faucetLine = (() => {
-    if (!account) return t("fund.testSignIn");
-    if (!hasWallet) return t("fund.testSetUpFirst");
-    switch (faucet.state) {
-      case "loading":
-        return t("common.loading");
-      case "ready":
-        return t("fund.testBody", { usdc: dripAmounts?.usdc ?? "", eurc: dripAmounts?.eurc ?? "" });
-      case "sending":
-        return t("fund.testSending");
-      case "sent":
-        return t("fund.testSent");
-      case "claimed":
-        return t("fund.testClaimed", { time: time(faucet.nextAt) });
-      case "failed":
-        return t("fund.testFailed");
-    }
-  })();
-
-  // Bring to Arc is Relay's gasless permit: Relay does not serve Arc Testnet (routes.md), so it is mainnet only.
-  const bringBadge = testnet ? t("fund.mainnetOnly") : undefined;
-  const waiting = elsewhere?.chains ?? [];
-  const supportBadge = (entry: ExchangeView) =>
-    entry.unavailable ? t("fund.mainnetOnly") : entry.withdraw === "live" ? undefined : t(`fund.support_${entry.withdraw}`);
-  const title = panel === "root" ? t("fund.title") : panel === "bridge" ? t("fund.bridgeTitle") : panel === "exchanges" ? t("fund.exchangeTitle") : (exchange?.name ?? "");
-  const subtitle = panel === "root" ? t("fund.subtitle", { network: networkName }) : panel === "bridge" ? t("fund.bridgeSubtitle") : panel === "exchanges" ? t("fund.exchangeSubtitle") : t("fund.exchangeSteps");
+  let body: React.ReactNode;
+  if (panel === "root") {
+    body = (
+      <>
+        <SheetHeading title={t("fund.title")} body={t("fund.subtitle", { network: testnet ? t("network.arcTestnet") : t("network.arc") })} />
+        {testnet ? <FaucetRow faucet={faucet} account={account} hasWallet={hasWallet} drip={drip} time={time} onClaim={() => void claim()} /> : null}
+        <SheetRow
+          index={1}
+          title={t("buy.rowTitle")}
+          detail={t("fund.buyDetail")}
+          leading={<MarkStack entities={wallets} />}
+          onPress={() => {
+            onClose();
+            buy.open();
+          }}
+        />
+        <SheetRow index={2} title={t("fund.receiveTitle")} detail={t("fund.receiveBody")} leading={<Mark entity={ids.chain} size={SIZE.markToken} />} onPress={() => go("/wallet/receive")} />
+        <SheetRow
+          index={3}
+          title={t("fund.exchangeTitle")}
+          detail={testnet ? t("fund.mainnetOnly") : t("fund.exchangeBody")}
+          leading={exchangeList.length > 0 ? <MarkStack entities={exchangeList.map((entry) => exchangeKey(entry.slug))} /> : <Skeleton width={SIZE.markToken} height={SIZE.markToken} radius={RADIUS.pill} />}
+          onPress={() => setPanel("exchanges")}
+        />
+        <SheetRow
+          index={4}
+          title={t("fund.bridgeTitle")}
+          detail={testnet ? t("fund.mainnetOnly") : waiting.length > 0 ? t("fund.chainWaitingRow", { amount: money("USDC", waiting[0]!.balance), chain: waiting[0]!.name }) : t("fund.bridgeBody")}
+          leading={<MarkStack entities={sources.map((entity) => entity.id)} />}
+          onPress={() => setPanel("bridge")}
+        />
+      </>
+    );
+  } else if (panel === "bridge") {
+    body = (
+      <>
+        <SheetHeaderRow title={t("fund.bridgeTitle")} back={back} />
+        {sources.map((entity, index) => {
+          const key = CHAIN_KEYS[entity.chainId ?? 0] ?? String(entity.chainId);
+          const found = waiting.find((row) => row.chainId === entity.chainId);
+          return (
+            <SheetRow
+              key={entity.id}
+              index={index}
+              title={entity.name}
+              detail={found ? t("fund.chainWaiting", { amount: money("USDC", found.balance) }) : testnet ? t("fund.mainnetOnly") : t("fund.bringRow")}
+              leading={<Mark entity={entity.id} size={SIZE.markToken} />}
+              disabled={testnet}
+              onPress={() => bringFrom(found?.key ?? key)}
+            />
+          );
+        })}
+        <Text style={[TYPE.meta, styles.center, { color: color.text3 }]}>{testnet ? t("fund.chainsTestnet") : t("fund.chainsHow")}</Text>
+        {switchButton}
+      </>
+    );
+  } else if (panel === "exchanges") {
+    body = (
+      <>
+        <SheetHeaderRow title={t("fund.exchangeTitle")} back={back} />
+        {exchanges.state === "loading" ? <LoadingState shape="list" /> : null}
+        {exchanges.state === "failed" ? <EmptyState why={t("fund.exchangesFailed")} action={{ label: t("common.retry"), onPress: loadExchanges }} size="inline" /> : null}
+        <View style={styles.tiles}>
+          {exchangeList.map((entry) => {
+            const badge = entry.unavailable ? t("fund.mainnetOnly") : entry.withdraw === "live" ? undefined : t(`fund.support_${entry.withdraw}`);
+            return (
+              <Pressable
+                key={entry.slug}
+                accessibilityRole="button"
+                accessibilityLabel={badge ? `${entry.name}. ${badge}` : entry.name}
+                onPress={() => {
+                  fire("tick");
+                  setExchange(entry);
+                  setPanel("exchange");
+                }}
+                style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+              >
+                <Mark entity={exchangeKey(entry.slug)} size={SIZE.markDetail - SPACE.sm} />
+                <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
+                  {entry.name}
+                </Text>
+                {badge ? (
+                  <Text numberOfLines={1} style={[TYPE.meta, { color: color.text3 }]}>
+                    {badge}
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[TYPE.meta, styles.center, { color: color.text3 }]}>{testnet ? t("fund.exchangesTestnet") : t("fund.exchangeNoEurc")}</Text>
+        {switchButton}
+      </>
+    );
+  } else if (exchange) {
+    const onArc = exchange.chain.key === "arc";
+    body = (
+      <>
+        <SheetHeaderRow title={exchange.name} back={back} />
+        <View style={styles.exchangeHead}>
+          <Mark entity={exchangeKey(exchange.slug)} size={SIZE.markDetail} />
+          <Text style={[TYPE.rowTitle, styles.grow, { color: color.ink }]}>
+            {onArc ? t("fund.exchangeOnArc", { asset: exchange.asset, network: exchange.networkLabel }) : t("fund.exchangeOnChain", { asset: exchange.asset, chain: exchange.chain.name })}
+          </Text>
+        </View>
+        <View style={[styles.steps, { backgroundColor: color.raised2 }]}>
+          {onArc ? (
+            <>
+              <Text style={[TYPE.body, { color: color.ink }]}>{t("fund.exchangeStep1", { exchange: exchange.name, asset: exchange.asset })}</Text>
+              <Text style={[TYPE.body, { color: color.ink }]}>{t("fund.exchangeStep2", { network: exchange.networkLabel })}</Text>
+              <Text style={[TYPE.body, { color: color.ink }]}>{t("fund.exchangeStep3")}</Text>
+            </>
+          ) : (
+            <Text style={[TYPE.body, { color: color.ink }]}>{t("fund.exchangeViaChain", { exchange: exchange.name, asset: exchange.asset, chain: exchange.chain.name })}</Text>
+          )}
+        </View>
+        {address ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={t("fund.copy")} onPress={copyAddress} style={({ pressed }) => [styles.address, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}>
+            <Text selectable style={[TYPE.rowDetail, styles.grow, styles.mono, { color: color.ink }]}>
+              {address}
+            </Text>
+            <Text style={[TYPE.chipLabel, { color: color.link }]}>{t("fund.copy")}</Text>
+          </Pressable>
+        ) : (
+          <Text style={[TYPE.body, { color: color.text2 }]}>{account ? t("fund.testSetUpFirst") : t("fund.testSignIn")}</Text>
+        )}
+        {exchange.withdraw !== "live" && !exchange.unavailable ? <Text style={[TYPE.rowDetail, { color: color.warn }]}>{t(`fund.supportNote_${exchange.withdraw}`, { exchange: exchange.name })}</Text> : null}
+        <Text style={[TYPE.meta, { color: color.text3 }]}>{exchange.unavailable ? t("fund.exchangesTestnet") : t("fund.exchangeNoMemo")}</Text>
+        {onArc ? (
+          <Button label={t("fund.showQr")} variant="secondary" onPress={() => go("/wallet/receive")} />
+        ) : testnet ? (
+          switchButton
+        ) : (
+          <Button label={t("fund.bringFrom", { chain: exchange.chain.name })} onPress={() => bringFrom(exchange.chain.key)} />
+        )}
+      </>
+    );
+  }
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={title}
-      subtitle={subtitle}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-      closeLabel={t("common.close")}
-      bottomInset={insets.bottom}
-      onBack={panel === "exchange" ? () => setPanel("exchanges") : panel !== "root" ? () => setPanel("root") : undefined}
-      backLabel={t("common.back")}
-      className="gap-3"
-    >
-      {panel === "root" ? (
-        <>
-          {testnet ? (
-            <View className="bg-muted gap-3 rounded-3xl p-4">
-              <View className="flex-row items-center gap-3">
-                <Koban width={ART_WIDTH} id="fund-koban" />
-                <View className="min-w-0 flex-1 gap-0.5">
-                  <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("fund.testTitle")}</Text>
-                  <Text accessibilityLiveRegion="polite" className={cn("text-sm", faucet.state === "failed" ? "text-destructive" : faucet.state === "sent" ? "text-success" : "text-muted-foreground", TEXT_START)}>
-                    {faucetLine}
-                  </Text>
-                </View>
-              </View>
-              {faucet.state === "failed" ? (
-                <View className="flex-row gap-2">
-                  <Button className="flex-1" variant="secondary" onPress={() => void claim()}>
-                    <Text>{t("common.retry")}</Text>
-                  </Button>
-                  <Button className="flex-1" variant="secondary" onPress={() => void Linking.openURL(faucet.fallbackUrl)}>
-                    <Icon as={ExternalLink} className="size-4" />
-                    <Text>{t("fund.openCircle")}</Text>
-                  </Button>
-                </View>
-              ) : faucet.state === "sent" || faucet.state === "claimed" ? null : (
-                <Button disabled={faucet.state === "sending" || (account && hasWallet && faucet.state === "loading")} onPress={() => void claim()}>
-                  {faucet.state === "sending" ? <ActivityIndicator color={colors["primary-foreground"]} /> : <Icon as={ArrowDownToLine} className="text-primary-foreground size-5" />}
-                  <Text>{!account ? t("signIn.title") : !hasWallet ? t("wallet.setUp") : t("fund.testClaim")}</Text>
-                </Button>
-              )}
-            </View>
-          ) : null}
-
-          <ListGroup>
-            {/* Buying is the primary way in (D36): first row, real marks, Circle's checkout. */}
-            <ListRow
-              leading={<Mark entity="provider:apple" size={ROW_MARK} variant="mono" tint={colors.foreground} disc />}
-              title={t("buy.rowTitle")}
-              subtitle={t("buy.rowBody")}
-              trailing={<Icon as={ChevronRight} className="text-muted-foreground size-5 rtl:-scale-x-100" />}
-              onPress={() => {
-                onClose();
-                buy.open();
-              }}
-            />
-            <ListRow
-              leading={<Mark entity={ids.chain} size={ROW_MARK} />}
-              title={t("fund.receiveTitle")}
-              subtitle={t("fund.receiveBody")}
-              trailing={<Icon as={QrCode} className="text-muted-foreground size-5" />}
-              onPress={() => go("/wallet/receive")}
-            />
-            <ListRow
-              leading={
-                <View className="bg-secondary items-center justify-center rounded-full" style={{ width: ROW_MARK, height: ROW_MARK }}>
-                  <Icon as={Building2} className="size-5" />
-                </View>
-              }
-              title={t("fund.exchangeTitle")}
-              subtitle={t("fund.exchangeBody")}
-              trailing={testnet ? <Badge label={t("fund.mainnetOnly")} /> : undefined}
-              chevron
-              onPress={() => setPanel("exchanges")}
-            />
-            <ListRow
-              leading={
-                <View className="bg-secondary items-center justify-center rounded-full" style={{ width: ROW_MARK, height: ROW_MARK }}>
-                  <Icon as={ArrowLeftRight} className="size-5" />
-                </View>
-              }
-              title={t("fund.bridgeTitle")}
-              subtitle={waiting.length > 0 ? t("fund.chainWaitingRow", { amount: money("USDC", waiting[0]!.balance), chain: waiting[0]!.name }) : t("fund.bridgeBody")}
-              trailing={bringBadge ? <Badge label={bringBadge} /> : undefined}
-              chevron
-              onPress={() => setPanel("bridge")}
-            />
-          </ListGroup>
-        </>
-      ) : panel === "bridge" ? (
-        <>
-          <ListGroup>
-            {sources.map((entity) => {
-              const key = CHAIN_KEYS[entity.chainId ?? 0] ?? String(entity.chainId);
-              const found = waiting.find((row) => row.chainId === entity.chainId);
-              return (
-                <ListRow
-                  key={entity.id}
-                  leading={<Mark entity={entity} size={CHAIN_MARK} variant="mono" tint={colors.foreground} disc />}
-                  title={entity.name}
-                  subtitle={found ? t("fund.chainWaiting", { amount: money("USDC", found.balance) }) : undefined}
-                  trailing={bringBadge ? <Badge label={bringBadge} /> : <Icon as={ChevronRight} className="text-muted-foreground size-4 rtl:-scale-x-100" />}
-                  disabled={testnet}
-                  onPress={() => bringFrom(found?.key ?? key)}
-                />
-              );
-            })}
-          </ListGroup>
-          <Text className={cn("text-muted-foreground px-1 text-sm leading-5", TEXT_START)}>{testnet ? t("fund.chainsTestnet") : t("fund.chainsHow")}</Text>
-          {switchRow}
-          <Button variant="secondary" onPress={() => go("/wallet/receive")}>
-            <Icon as={QrCode} className="size-5" />
-            <Text>{t("fund.receiveTitle")}</Text>
-          </Button>
-        </>
-      ) : panel === "exchanges" ? (
-        <>
-          <View className="flex-row flex-wrap gap-2">
-            {exchanges.map((entry) => {
-              const badge = supportBadge(entry);
-              return (
-                <Pressable
-                  key={entry.slug}
-                  accessibilityRole="button"
-                  accessibilityLabel={badge ? `${entry.name}. ${badge}` : entry.name}
-                  onPress={() => {
-                    setExchange(entry);
-                    setPanel("exchange");
-                  }}
-                  className={cn("bg-muted active:bg-secondary w-[31%] items-center gap-1.5 rounded-2xl py-3", entry.unavailable && "opacity-60")}
-                >
-                  <Mark entity={exchangeKey(entry.slug)} size={TILE_MARK} />
-                  <Text numberOfLines={1} className="text-foreground text-sm font-semibold">
-                    {entry.name}
-                  </Text>
-                  {badge ? (
-                    <Text numberOfLines={1} className="text-muted-foreground text-xs">
-                      {badge}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-          <Text className={cn("text-muted-foreground px-1 text-sm leading-5", TEXT_START)}>{testnet ? t("fund.exchangesTestnet") : t("fund.exchangeNoEurc")}</Text>
-          {switchRow}
-        </>
-      ) : exchange ? (
-        <>
-          <View className="flex-row items-center gap-3">
-            <Mark entity={exchangeKey(exchange.slug)} size={ROW_MARK} />
-            <Text className={cn("text-foreground min-w-0 flex-1 text-base font-semibold", TEXT_START)}>
-              {exchange.chain.key === "arc" ? t("fund.exchangeOnArc", { asset: exchange.asset, network: exchange.networkLabel }) : t("fund.exchangeOnChain", { asset: exchange.asset, chain: exchange.chain.name })}
-            </Text>
-          </View>
-          {exchange.unavailable ? <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("fund.exchangesTestnet")}</Text> : null}
-          {exchange.chain.key === "arc" ? (
-            <View className="bg-muted gap-2 rounded-3xl p-4">
-              <Text className={cn("text-foreground text-sm leading-5", TEXT_START)}>{t("fund.exchangeStep1", { exchange: exchange.name, asset: exchange.asset })}</Text>
-              <Text className={cn("text-foreground text-sm leading-5", TEXT_START)}>{t("fund.exchangeStep2", { network: exchange.networkLabel })}</Text>
-              <Text className={cn("text-foreground text-sm leading-5", TEXT_START)}>{t("fund.exchangeStep3")}</Text>
-            </View>
-          ) : (
-            <View className="bg-muted gap-2 rounded-3xl p-4">
-              <Text className={cn("text-foreground text-sm leading-5", TEXT_START)}>{t("fund.exchangeViaChain", { exchange: exchange.name, asset: exchange.asset, chain: exchange.chain.name })}</Text>
-            </View>
-          )}
-          {address ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={t("fund.copy")} onPress={copyAddress} className="border-border active:bg-secondary flex-row items-center gap-3 rounded-2xl border px-4 py-3">
-              <Text selectable className="text-foreground min-w-0 flex-1 font-mono text-sm">
-                {address}
-              </Text>
-              <Icon as={Copy} className="text-muted-foreground size-4" />
-            </Pressable>
-          ) : (
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{account ? t("fund.testSetUpFirst") : t("fund.testSignIn")}</Text>
-          )}
-          {exchange.withdraw !== "live" && !exchange.unavailable ? <Text className={cn("text-warning text-sm leading-5", TEXT_START)}>{t(`fund.supportNote_${exchange.withdraw}`, { exchange: exchange.name })}</Text> : null}
-          <Text className={cn("text-muted-foreground px-1 text-xs leading-4", TEXT_START)}>{t("fund.exchangeNoMemo")}</Text>
-          {exchange.chain.key === "arc" ? (
-            <Button variant="secondary" onPress={() => go("/wallet/receive")}>
-              <Icon as={QrCode} className="size-5" />
-              <Text>{t("fund.showQr")}</Text>
-            </Button>
-          ) : (
-            <Button disabled={testnet} onPress={() => bringFrom(exchange.chain.key)}>
-              <Icon as={ArrowLeftRight} className="text-primary-foreground size-5" />
-              <Text>{t("fund.bringFrom", { chain: exchange.chain.name })}</Text>
-            </Button>
-          )}
-        </>
-      ) : null}
+    <>
+      {body}
       <MainnetConsentSheet open={networkSwitch.consentNeeded} busy={networkSwitch.busy} onAccept={() => void networkSwitch.acceptMainnet()} onClose={networkSwitch.dismissConsent} />
-    </Sheet>
+    </>
   );
 }
 
-function Badge({ label }: { label: string }) {
+/** Test money from Circle's faucet: one row with its state in words and the one action it allows. */
+function FaucetRow({
+  faucet,
+  account,
+  hasWallet,
+  drip,
+  time,
+  onClaim,
+}: {
+  faucet: Faucet;
+  account: boolean;
+  hasWallet: boolean;
+  drip: (asset: "USDC" | "EURC", status: FaucetStatus) => string;
+  time: (iso: string) => string;
+  onClaim: () => void;
+}) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { user } = useSession();
+  const ids = arcIdentity(user?.activeNetwork ?? "testnet");
+  const line = !account
+    ? t("fund.testSignIn")
+    : !hasWallet
+      ? t("fund.testSetUpFirst")
+      : faucet.state === "ready"
+        ? t("fund.testBody", { usdc: drip("USDC", faucet.status), eurc: drip("EURC", faucet.status) })
+        : faucet.state === "sent"
+          ? t("fund.testSent")
+          : faucet.state === "claimed"
+            ? t("fund.testClaimed", { time: time(faucet.nextAt) })
+            : faucet.state === "failed"
+              ? t("fund.testFailed")
+              : "";
   return (
-    <View className="bg-secondary rounded-full px-2.5 py-1">
-      <Text className="text-muted-foreground text-xs font-semibold">{label}</Text>
+    <View style={[styles.faucet, { backgroundColor: color.raised2 }]}>
+      <View style={styles.faucetHead}>
+        <MarkStack entities={[ids.usdc, ids.eurc]} />
+        <View style={styles.grow}>
+          <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("fund.testTitle")}</Text>
+          {faucet.state === "loading" && account && hasWallet ? (
+            <Skeleton width="70%" height={SIZE.skeletonSmall} />
+          ) : faucet.state === "sending" ? (
+            <WaitingText>{t("fund.testSending")}</WaitingText>
+          ) : (
+            <Text accessibilityLiveRegion="polite" style={[TYPE.rowDetail, { color: faucet.state === "failed" ? color.down : color.text3 }]}>
+              {line}
+            </Text>
+          )}
+        </View>
+        {faucet.state === "sent" ? <Icon icon={Check} size={SIZE.icon} tint={color.up} /> : null}
+      </View>
+      {faucet.state === "failed" ? (
+        <View style={styles.faucetActions}>
+          <View style={styles.grow}>
+            <Button label={t("common.retry")} variant="secondary" size="sm" onPress={onClaim} />
+          </View>
+          <View style={styles.grow}>
+            <Button label={t("fund.openCircle")} variant="secondary" size="sm" onPress={() => void Linking.openURL(faucet.fallbackUrl)} />
+          </View>
+        </View>
+      ) : faucet.state === "sent" || faucet.state === "claimed" ? null : (
+        <Button
+          label={!account ? t("signIn.title") : !hasWallet ? t("wallet.setUp") : t("fund.testClaim")}
+          loading={faucet.state === "sending"}
+          disabled={account && hasWallet && faucet.state === "loading"}
+          onPress={onClaim}
+        />
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  grow: { flex: 1 },
+  center: { textAlign: "center" },
+  mono: { fontVariant: ["tabular-nums"] },
+  tiles: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm, justifyContent: "space-between" },
+  tile: { width: TILE_WIDTH, alignItems: "center", gap: SPACE.xs, paddingVertical: SPACE.md, borderRadius: RADIUS.md },
+  exchangeHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  steps: { gap: SPACE.sm, padding: SPACE.lg, borderRadius: RADIUS.md },
+  address: { flexDirection: "row", alignItems: "center", gap: SPACE.md, padding: SPACE.lg, borderRadius: RADIUS.md },
+  faucet: { gap: SPACE.md, padding: SPACE.lg, borderRadius: RADIUS.md },
+  faucetHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  faucetActions: { flexDirection: "row", gap: SPACE.sm },
+});

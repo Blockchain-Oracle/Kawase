@@ -50,4 +50,9 @@ export const fund: Catalog["fund"] = {
   chainWaitingRow: "{{chain}} पर {{amount}} इंतज़ार में",
   chainsHow: "उस चेन पर अपने उसी पते पर USDC भेजें, फिर उसे यहाँ लाएँ। एक बार हस्ताक्षर करें; वहाँ गैस की ज़रूरत नहीं।",
   chainsTestnet: "“Arc पर लाएँ” Arc मेननेट पर चलता है (Relay से बिना गैस)। टेस्टनेट पर टेस्ट पैसे इस्तेमाल करें।",
+  closeNamed: "पैसे जोड़ें बंद करें",
+  buyDetail: "Apple Pay, Google Pay, कार्ड या बैंक · Kawase के अंदर",
+  switchMainnet: "Arc mainnet पर जाएं",
+  bringRow: "USDC को Arc पर लाएं · वहां गैस नहीं",
+  exchangesFailed: "एक्सचेंज की सूची लोड नहीं हुई।",
 };
