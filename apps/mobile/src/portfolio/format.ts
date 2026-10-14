@@ -40,9 +40,36 @@ function currency(code: string) {
 }
 
 /** A value in the display currency, e.g. "€4.20". */
+const COMPACT_PROBE = 1_234_567;
+const COMPACT_PROBE_LONG = "1,234,567";
+const COMPACT_DIGITS_FALLBACK = 2;
+
+/** Whether this engine's Intl knows compact notation (Hermes on a phone does not: it prints "$1,257,855.0"). */
+const COMPACT_SUPPORTED = (() => {
+  try {
+    return new Intl.NumberFormat("en", { notation: "compact" }).format(COMPACT_PROBE) !== COMPACT_PROBE_LONG;
+  } catch {
+    return false;
+  }
+})();
+const COMPACT_STEPS = [
+  { at: 1e12, suffix: "T" },
+  { at: 1e9, suffix: "B" },
+  { at: 1e6, suffix: "M" },
+  { at: 1e3, suffix: "K" },
+] as const;
+
 export function money(usd: number | null | undefined, fx: Fx, locale: string, options: { compact?: boolean } = {}): string {
   if (usd === null || usd === undefined) return "—";
   const value = usd * fx.perUsd;
+  if (options.compact && !COMPACT_SUPPORTED) {
+    // $1.26M the same way on a phone: scale by hand, let Intl place the currency and the decimal separator.
+    const step = COMPACT_STEPS.find((entry) => Math.abs(value) >= entry.at);
+    if (step) {
+      const scaled = new Intl.NumberFormat(locale, { style: "currency", currency: currency(fx.currency), maximumFractionDigits: COMPACT_DIGITS_FALLBACK }).format(value / step.at);
+      return scaled.replace(/([\d.,\u00a0\u202f]*\d)/, `$1${step.suffix}`);
+    }
+  }
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: currency(fx.currency),
