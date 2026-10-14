@@ -1114,6 +1114,65 @@
         "source": "Kawase state pattern (premium bar §2: what still works + one action), no 21st match for an inline status strip",
         "port": "apps/mobile/src/chat/agent-offline.tsx: AgentOffline + useAgentHealth",
         "status": "built (Stage 2)"
+      },
+      {
+        "name": "account-methods",
+        "lane": "wallet",
+        "source": "21st sean0205/item-action-list (id 28284) as the spec for a settings row with a trailing action; composed from the kit's ListRow, Panel, Button and the real Google/Apple marks (@kawase/identity)",
+        "ids": [
+          28284
+        ],
+        "port": "apps/mobile/src/account/account-screen.tsx: one filled group of ways in (email, Google, Apple) each with Link / Change / Remove at the trailing edge; removing asks once in a kit Sheet",
+        "deviations": "No row borders or icons-in-boxes from the spec (Senryo: depth by fill); the last way in shows 'Your only way in' instead of a Remove action"
+      },
+      {
+        "name": "code-field",
+        "lane": "wallet",
+        "source": "21st ddoemonn/otp-input (id 23543)",
+        "ids": [
+          23543
+        ],
+        "port": "apps/mobile/src/account/fields.tsx CodeField: six cells over one real TextInput (paste and one-time-code autofill work), the active cell carries the ring token, verifies on the sixth digit",
+        "deviations": "Native twin only (RN TextInput, kit tokens); no separator group"
+      },
+      {
+        "name": "delete-account-gate",
+        "lane": "wallet",
+        "source": "21st cnippet-dev/v-form-12 Delete Account Form (id 25081): a typed phrase gates the destructive action; 21st arihantcodes_1f7b8c4d/account-access-card (id 29951) for the danger row",
+        "ids": [
+          25081,
+          29951
+        ],
+        "port": "apps/mobile/src/account/delete-account-screen.tsx: numbered steps, per-network revoke as a TxCta money action (TxSteps, receipt, TxFailureCard), then the typed @handle unlocks the kit HoldButton (21st 23527)",
+        "deviations": "The submit is a hold, not a click; the revoke is a real on-chain action with the tx kit lifecycle"
+      },
+      {
+        "name": "devices-list",
+        "lane": "wallet",
+        "source": "composed from kit parts (no 21st sessions/devices list matched: 'sessions devices', 'active sessions' searches returned dialogs and tabs)",
+        "ids": [],
+        "port": "apps/mobile/src/account/devices-screen.tsx: this device first, others with system, place and last active; sign out asks once in a kit Sheet; cached list kept stale offline",
+        "deviations": "n/a"
+      },
+      {
+        "name": "privy-approval-sheet",
+        "lane": "wallet",
+        "source": "kit SlideToConfirm (21st 29304) inside the kit Sheet",
+        "ids": [
+          29304
+        ],
+        "port": "apps/mobile/src/wallet/web-approval-host.tsx PrivyHost: the web's explicit confirm above the budget (D38) is a slide, not a plain button",
+        "deviations": "none"
+      },
+      {
+        "name": "key-reveal",
+        "lane": "wallet",
+        "source": "kit HoldButton (21st ddoemonn/hold-to-confirm 23527)",
+        "ids": [
+          23527
+        ],
+        "port": "apps/mobile/src/account/export-wallet-screen.tsx: a deliberate hold opens Privy's export window (web) / shows the Turnkey phrase",
+        "deviations": "none"
       }
     ],
     "ports": [
@@ -1207,6 +1266,50 @@
           34381
         ],
         "verified": "2026-10-14 with the 21st CLI (ids 3734, 1588 and 335 re-checked by search)"
+      },
+      {
+        "query": "connected accounts / linked accounts",
+        "chosen": 28284,
+        "alsoSeen": [
+          29951,
+          9053,
+          9102,
+          2689
+        ]
+      },
+      {
+        "query": "sessions devices / active sessions",
+        "chosen": null,
+        "alsoSeen": [
+          2412,
+          23558,
+          2618,
+          8372
+        ]
+      },
+      {
+        "query": "delete account",
+        "chosen": 25081,
+        "alsoSeen": [
+          13182,
+          2411
+        ]
+      },
+      {
+        "query": "otp input",
+        "chosen": 23543,
+        "alsoSeen": [
+          28263,
+          34833
+        ]
+      },
+      {
+        "query": "export private key",
+        "chosen": null,
+        "alsoSeen": [
+          27018,
+          19045
+        ]
       }
     ],
     "desktop": [

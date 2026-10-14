@@ -19,6 +19,7 @@ import { useSession } from "@/session/session-provider";
 import type { BiometricResult } from "./biometric";
 import { isPrivy, isWalletConfigured } from "./config";
 import { PrivyOAuthReturn } from "./privy-oauth-return";
+import { RootSheetLayer } from "./root-sheet-layer";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
 
 type Pending = { prompt: string; resolve: (result: BiometricResult) => void };
@@ -27,7 +28,8 @@ type Pending = { prompt: string; resolve: (result: BiometricResult) => void };
 function usePendingApproval() {
   const [pending, setPending] = React.useState<Pending>();
   React.useEffect(() => {
-    const approver: WebApprover = (prompt) => new Promise<BiometricResult>((resolve) => setPending({ prompt, resolve }));
+    const approver: WebApprover = (prompt) =>
+      new Promise<BiometricResult>((resolve) => setPending({ prompt, resolve }));
     setWebApprover(approver);
     return () => clearWebApprover(approver);
   }, []);
@@ -52,10 +54,12 @@ function PrivyHost() {
   const { pending, answer, closed } = usePendingApproval();
   if (!pending) return null;
   return (
-    <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("wallet.approveTitle") })}>
-      <SheetHeading title={t("wallet.approveTitle")} body={pending.prompt} />
-      <PrivyActions prompt={pending.prompt} onAnswer={answer} />
-    </Sheet>
+    <RootSheetLayer>
+      <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("wallet.approveTitle") })}>
+        <SheetHeading title={t("wallet.approveTitle")} body={pending.prompt} />
+        <PrivyActions prompt={pending.prompt} onAnswer={answer} />
+      </Sheet>
+    </RootSheetLayer>
   );
 }
 
@@ -94,9 +98,11 @@ function TurnkeyHost() {
   const { pending, answer, closed } = usePendingApproval();
   if (!pending) return null;
   return (
-    <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("approval.title") })}>
-      <TurnkeyCode prompt={pending.prompt} onAnswer={answer} />
-    </Sheet>
+    <RootSheetLayer>
+      <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("approval.title") })}>
+        <TurnkeyCode prompt={pending.prompt} onAnswer={answer} />
+      </Sheet>
+    </RootSheetLayer>
   );
 }
 
@@ -138,7 +144,11 @@ function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: 
     setBusy(true);
     setError(undefined);
     try {
-      const result = await verifyOtp({ otpId: otp.otpId, otpCode: value.trim(), otpEncryptionTargetBundle: otp.otpEncryptionTargetBundle });
+      const result = await verifyOtp({
+        otpId: otp.otpId,
+        otpCode: value.trim(),
+        otpEncryptionTargetBundle: otp.otpEncryptionTargetBundle,
+      });
       if (result.verificationToken) return finish("approved");
       setError(t("signIn.invalidCode"));
     } catch {
@@ -153,9 +163,18 @@ function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: 
       <SheetHeading title={t("approval.title")} body={otp ? t("signIn.codeSent", { email: email ?? "" }) : prompt} />
       <View style={styles.actions}>
         {otp ? (
-          <CodeField value={code} onChange={setCode} onFilled={(digits) => void verify(digits)} label={t("signIn.code")} invalid={Boolean(error)} disabled={busy} />
+          <CodeField
+            value={code}
+            onChange={setCode}
+            onFilled={(digits) => void verify(digits)}
+            label={t("signIn.code")}
+            invalid={Boolean(error)}
+            disabled={busy}
+          />
         ) : (
-          <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>{t("approval.body", { email: email ?? "" })}</Text>
+          <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>
+            {t("approval.body", { email: email ?? "" })}
+          </Text>
         )}
         {error ? (
           <Text accessibilityRole="alert" style={[TYPE.rowDetail, styles.center, { color: color.destructive }]}>
@@ -163,7 +182,12 @@ function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: 
           </Text>
         ) : null}
         {otp ? (
-          <Button label={t("approval.confirm")} loading={busy} disabled={code.length !== CODE_LENGTH} onPress={() => void verify(code)} />
+          <Button
+            label={t("approval.confirm")}
+            loading={busy}
+            disabled={code.length !== CODE_LENGTH}
+            onPress={() => void verify(code)}
+          />
         ) : (
           <Button label={t("signIn.sendCode")} loading={busy} disabled={!email} onPress={() => void send()} />
         )}

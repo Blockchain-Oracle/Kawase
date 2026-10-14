@@ -13,7 +13,20 @@ import { RefreshControl, StyleSheet, View } from "react-native";
 
 import type { DeviceView } from "@kawase/api-client";
 
-import { Button, EmptyState, ErrorState, Icon, ListRow, LoadingState, RADIUS, SIZE, SPACE, StaleTick, useHeldLoading, useTheme } from "@/components/kit";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  Icon,
+  ListRow,
+  LoadingState,
+  RADIUS,
+  SIZE,
+  SPACE,
+  StaleTick,
+  useHeldLoading,
+  useTheme,
+} from "@/components/kit";
 import { diagnose, type Diagnosis } from "@/components/kit/diagnosis";
 import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
@@ -75,7 +88,9 @@ export function DevicesScreen() {
   const skeleton = useHeldLoading(read.loading && !read.list);
 
   const when = (iso: string) =>
-    new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+    new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(
+      new Date(iso),
+    );
   const nameOf = (device: DeviceView) => device.name ?? PLATFORM_NAMES[device.platform];
 
   const signedIn = (read.list ?? []).filter((device) => device.signedIn || device.current);
@@ -94,7 +109,15 @@ export function DevicesScreen() {
       ]
         .filter(Boolean)
         .join(" · ")}
-      trailing={<Button label={t("devices.signOut")} size="sm" variant="ghost" block={false} onPress={() => setAsk({ kind: "one", device })} />}
+      trailing={
+        <Button
+          label={t("devices.signOut")}
+          size="sm"
+          variant="ghost"
+          block={false}
+          onPress={() => setAsk({ kind: "one", device })}
+        />
+      }
     />
   );
 
@@ -124,19 +147,32 @@ export function DevicesScreen() {
               {current ? row(current) : null}
               {others.map(row)}
             </Group>
-            {read.error && read.at ? <StaleTick asOf={read.at} reason={read.error.kind === "offline" ? "offline" : "refresh-failed"} /> : null}
+            {read.error && read.at ? (
+              <StaleTick asOf={read.at} reason={read.error.kind === "offline" ? "offline" : "refresh-failed"} />
+            ) : null}
           </View>
           {others.length === 0 ? (
             <EmptyState size="inline" why={t("devices.onlyThis")} detail={t("devices.onlyThisDetail")} />
           ) : (
             <View style={styles.block}>
-              <Button label={t("devices.signOutEverywhere")} variant="destructive" onPress={() => setAsk({ kind: "others", count: others.length })} />
+              <Button
+                label={t("devices.signOutEverywhere")}
+                variant="destructive"
+                onPress={() => setAsk({ kind: "others", count: others.length })}
+              />
               <GroupNote>{t("devices.lostPhone")}</GroupNote>
             </View>
           )}
         </>
       )}
-      {ask ? <SignOutSheet ask={ask} name={ask.kind === "one" ? nameOf(ask.device) : ""} onClose={() => setAsk(undefined)} onDone={() => void load()} /> : null}
+      {ask ? (
+        <SignOutSheet
+          ask={ask}
+          name={ask.kind === "one" ? nameOf(ask.device) : ""}
+          onClose={() => setAsk(undefined)}
+          onDone={() => void load()}
+        />
+      ) : null}
     </Page>
   );
 }
@@ -151,7 +187,17 @@ function PlatformGlyph({ device }: { device: DeviceView }) {
 }
 
 /** One question before a device leaves: who, what happens (the wallet and the money stay), then the action. */
-function SignOutSheet({ ask, name, onClose, onDone }: { ask: Ask; name: string; onClose: () => void; onDone: () => void }) {
+function SignOutSheet({
+  ask,
+  name,
+  onClose,
+  onDone,
+}: {
+  ask: Ask;
+  name: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const { t } = useT();
   const title =
     ask.kind === "others"
@@ -198,7 +244,12 @@ function SignOutActions({ ask, name, onDone }: { ask: Ask; name: string; onDone:
   };
   return (
     <View style={styles.sheetActions}>
-      <Button label={ask.kind === "others" ? t("devices.signOutEverywhere") : t("devices.signOut")} variant="destructive" loading={busy} onPress={() => void run()} />
+      <Button
+        label={ask.kind === "others" ? t("devices.signOutEverywhere") : t("devices.signOut")}
+        variant="destructive"
+        loading={busy}
+        onPress={() => void run()}
+      />
       <Button label={t("common.cancel")} variant="ghost" disabled={busy} onPress={() => close()} />
     </View>
   );
@@ -206,6 +257,12 @@ function SignOutActions({ ask, name, onDone }: { ask: Ask; name: string; onDone:
 
 const styles = StyleSheet.create({
   block: { gap: SPACE.sm },
-  glyph: { width: SIZE.markRow, height: SIZE.markRow, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  glyph: {
+    width: SIZE.markRow,
+    height: SIZE.markRow,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   sheetActions: { gap: SPACE.md, paddingTop: SPACE.md },
 });

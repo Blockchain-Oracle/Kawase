@@ -6,7 +6,13 @@
 //   links one the same way; either way Kawase then follows the verified address;
 // - devices: Privy sessions are not per-device API keys, so "sign out this device" ends the Kawase session only;
 // - export: Privy shows the private key in its own secure window (web) and never hands it to the app.
-import { methodCount, type AccountMethods, type LinkProvider, type LoginMethod, type SignInMethods } from "./account-methods-core";
+import {
+  methodCount,
+  type AccountMethods,
+  type LinkProvider,
+  type LoginMethod,
+  type SignInMethods,
+} from "./account-methods-core";
 import { privyApi, type PrivyTokens } from "@/wallet/privy-api";
 import { api } from "@/session/api";
 

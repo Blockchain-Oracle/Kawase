@@ -67,7 +67,7 @@ export function Page({
         </Text>
       </View>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: (footer ? SPACE.lg : insets.bottom + SPACE.xl) }]}
+        contentContainerStyle={[styles.content, { paddingBottom: footer ? SPACE.lg : insets.bottom + SPACE.xl }]}
         keyboardShouldPersistTaps="handled"
         {...(refreshControl ? { refreshControl } : {})}
       >
@@ -96,8 +96,20 @@ export function GroupNote({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
-  back: { width: SIZE.touch, height: SIZE.touch, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingHorizontal: SPACE.inset,
+    paddingBottom: SPACE.sm,
+  },
+  back: {
+    width: SIZE.touch,
+    height: SIZE.touch,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   // The chevron points the way back in either reading direction.
   flip: { transform: [{ scaleX: -1 }] },
   title: { flex: 1 },

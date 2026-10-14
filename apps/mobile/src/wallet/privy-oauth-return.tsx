@@ -27,6 +27,7 @@ import { describeError, summarize } from "./error-detail";
 import { usePrivyAccount } from "./privy-account";
 import { browserStorage, OAUTH_RETURN_KEY, takeOAuthReturn, usePrivyOAuth, withoutOAuthParams } from "./privy-oauth";
 import { classifySignInFailure } from "./sign-in-errors";
+import { RootSheetLayer } from "./root-sheet-layer";
 
 /** How long Privy gets to turn the provider's answer into a login before the sheet calls it failed. */
 const PROVIDER_WAIT_MS = 30_000;
@@ -61,7 +62,9 @@ export function PrivyOAuthReturn() {
   const oauth = usePrivyOAuth();
   const [provider] = React.useState(takeOAuthReturn);
   const [deadline] = React.useState(() => Date.now() + PROVIDER_WAIT_MS);
-  const [phase, setPhase] = React.useState<Phase>(() => (provider ? { name: "working", step: "provider" } : { name: "idle" }));
+  const [phase, setPhase] = React.useState<Phase>(() =>
+    provider ? { name: "working", step: "provider" } : { name: "idle" },
+  );
   /** Closed by the person while a step runs: hidden until the outcome, which reopens it on a failure. */
   const [hidden, setHidden] = React.useState(false);
 
@@ -75,7 +78,11 @@ export function PrivyOAuthReturn() {
   const fail = React.useCallback(
     (problem: unknown, step: Step) => {
       setHidden(false);
-      if (problem instanceof AuthStageError && problem.cause instanceof ApiError && problem.cause.code === "account_recovery_required") {
+      if (
+        problem instanceof AuthStageError &&
+        problem.cause instanceof ApiError &&
+        problem.cause.code === "account_recovery_required"
+      ) {
         setPhase({ name: "failed", message: t("signIn.recoveryRequired"), retry: undefined, recovery: true });
         return;
       }
@@ -206,25 +213,40 @@ export function PrivyOAuthReturn() {
   const title = failedRetry === "wallet" ? t("setup.stepWallet") : t("wallet.oauthReturnTitle");
 
   return (
-    <Sheet onClose={close} closeLabel={t("shell.kit.closeNamed", { name: title })}>
-      <SheetHeading title={title} body={provider === "apple" ? t("wallet.oauthReturnApple") : t("wallet.oauthReturnGoogle")} />
-      <View style={styles.body}>
-        {working ? (
-          <View accessibilityLiveRegion="polite" style={styles.wait}>
-            <PixelLoader />
-            {/* Each step is its own named wait; the provider's own deadline turns a stuck one into a failure with Retry. */}
-            <WaitingText key={working} size="body" timeoutMs={null}>
-              {working === "wallet" ? t("wallet.creatingVerb") : t("wallet.signingInVerb")}
-            </WaitingText>
-          </View>
-        ) : null}
-        {phase.name === "failed" ? <FailedActions message={phase.message} retry={failedRetry} onRetry={(step) => void retry(step)} /> : null}
-      </View>
-    </Sheet>
+    <RootSheetLayer>
+      <Sheet onClose={close} closeLabel={t("shell.kit.closeNamed", { name: title })}>
+        <SheetHeading
+          title={title}
+          body={provider === "apple" ? t("wallet.oauthReturnApple") : t("wallet.oauthReturnGoogle")}
+        />
+        <View style={styles.body}>
+          {working ? (
+            <View accessibilityLiveRegion="polite" style={styles.wait}>
+              <PixelLoader />
+              {/* Each step is its own named wait; the provider's own deadline turns a stuck one into a failure with Retry. */}
+              <WaitingText key={working} size="body" timeoutMs={null}>
+                {working === "wallet" ? t("wallet.creatingVerb") : t("wallet.signingInVerb")}
+              </WaitingText>
+            </View>
+          ) : null}
+          {phase.name === "failed" ? (
+            <FailedActions message={phase.message} retry={failedRetry} onRetry={(step) => void retry(step)} />
+          ) : null}
+        </View>
+      </Sheet>
+    </RootSheetLayer>
   );
 }
 
-function FailedActions({ message, retry, onRetry }: { message: string; retry: Step | undefined; onRetry: (step: Step) => void }) {
+function FailedActions({
+  message,
+  retry,
+  onRetry,
+}: {
+  message: string;
+  retry: Step | undefined;
+  onRetry: (step: Step) => void;
+}) {
   const { t } = useT();
   const { color } = useTheme();
   const closeSheet = useSheetClose();
@@ -241,7 +263,12 @@ function FailedActions({ message, retry, onRetry }: { message: string; retry: St
 
 const styles = StyleSheet.create({
   body: { gap: SPACE.md, paddingTop: SPACE.md },
-  wait: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, paddingVertical: SPACE.md },
+  wait: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.sm,
+    paddingVertical: SPACE.md,
+  },
   center: { textAlign: "center" },
 });
-

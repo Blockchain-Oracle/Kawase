@@ -16,7 +16,20 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import { providerKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 
-import { Button, EmptyState, Icon, ListRow, LoadingState, RADIUS, SIZE, SPACE, StaleTick, TYPE, useHeldLoading, useTheme } from "@/components/kit";
+import {
+  Button,
+  EmptyState,
+  Icon,
+  ListRow,
+  LoadingState,
+  RADIUS,
+  SIZE,
+  SPACE,
+  StaleTick,
+  TYPE,
+  useHeldLoading,
+  useTheme,
+} from "@/components/kit";
 import { diagnose } from "@/components/kit/diagnosis";
 import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
@@ -86,7 +99,9 @@ export function AccountScreen() {
         setMethods(fresh);
         setRefresh({ state: "done" });
       })
-      .catch((error: unknown) => setRefresh({ state: "done", failedAt: Date.now(), offline: diagnose(error).kind === "offline" }));
+      .catch((error: unknown) =>
+        setRefresh({ state: "done", failedAt: Date.now(), offline: diagnose(error).kind === "offline" }),
+      );
   }, [reload, manageable]);
   const firstLoad = useHeldLoading(refresh.state === "loading" && methodCount(methods) === 0);
 
@@ -100,7 +115,9 @@ export function AccountScreen() {
       const message = String((error as { message?: string }).message ?? "");
       if (diagnose(error).kind === "rejected" || /cancel/i.test(message)) return;
       // An identity that already belongs to another account: say so, and where it signs in.
-      notify.error(/already|associated|another|linked to/i.test(message) ? t("account.linkTaken") : t("account.linkFailed"));
+      notify.error(
+        /already|associated|another|linked to/i.test(message) ? t("account.linkTaken") : t("account.linkFailed"),
+      );
     } finally {
       setLinking(undefined);
     }
@@ -131,7 +148,13 @@ export function AccountScreen() {
         trailing={
           linked ? (
             removable ? (
-              <Button label={t("account.remove")} size="sm" variant="ghost" block={false} onPress={() => setSheet({ kind: "unlink", method: provider })} />
+              <Button
+                label={t("account.remove")}
+                size="sm"
+                variant="ghost"
+                block={false}
+                onPress={() => setSheet({ kind: "unlink", method: provider })}
+              />
             ) : undefined
           ) : (
             <Button
@@ -177,7 +200,13 @@ export function AccountScreen() {
                 trailing={
                   <View style={styles.actions}>
                     {emailRemovable ? (
-                      <Button label={t("account.remove")} size="sm" variant="ghost" block={false} onPress={() => setSheet({ kind: "unlink", method: "email" })} />
+                      <Button
+                        label={t("account.remove")}
+                        size="sm"
+                        variant="ghost"
+                        block={false}
+                        onPress={() => setSheet({ kind: "unlink", method: "email" })}
+                      />
                     ) : null}
                     <Button
                       label={methods.email ? t("account.change") : t("account.add")}
@@ -194,13 +223,23 @@ export function AccountScreen() {
             </>
           )}
         </Group>
-        {refresh.failedAt ? <StaleTick asOf={refresh.failedAt} reason={refresh.offline ? "offline" : "refresh-failed"} /> : null}
+        {refresh.failedAt ? (
+          <StaleTick asOf={refresh.failedAt} reason={refresh.offline ? "offline" : "refresh-failed"} />
+        ) : null}
         {manageable ? <GroupNote>{t("account.methodsBody")}</GroupNote> : null}
       </View>
 
       <Group label={t("account.security")}>
-        <ListRow leading={<MethodIcon icon={Laptop} />} title={t("account.devices")} onPress={() => router.push("/account/devices")} />
-        <ListRow leading={<MethodIcon icon={KeyRound} />} title={t("account.export")} onPress={() => router.push("/account/export")} />
+        <ListRow
+          leading={<MethodIcon icon={Laptop} />}
+          title={t("account.devices")}
+          onPress={() => router.push("/account/devices")}
+        />
+        <ListRow
+          leading={<MethodIcon icon={KeyRound} />}
+          title={t("account.export")}
+          onPress={() => router.push("/account/export")}
+        />
         <ListRow leading={<DangerIcon />} title={t("account.delete")} onPress={() => router.push("/account/delete")} />
       </Group>
 
@@ -220,7 +259,11 @@ export function AccountScreen() {
             void account
               .refresh()
               .then(setMethods)
-              .catch(() => setMethods((current) => (sheet.method === "email" ? { ...current, email: null } : { ...current, [sheet.method]: false })))
+              .catch(() =>
+                setMethods((current) =>
+                  sheet.method === "email" ? { ...current, email: null } : { ...current, [sheet.method]: false },
+                ),
+              )
           }
         />
       ) : null}
@@ -238,12 +281,28 @@ function DangerIcon() {
 }
 
 /** Removing a way in: one sheet, one destructive action, nothing else (D38: no Face ID to lower what is possible). */
-function UnlinkSheet({ method, email, onClose, onDone }: { method: LoginMethod; email: string | null; onClose: () => void; onDone: () => void }) {
+function UnlinkSheet({
+  method,
+  email,
+  onClose,
+  onDone,
+}: {
+  method: LoginMethod;
+  email: string | null;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const { t } = useT();
   const name = method === "email" ? (email ?? t("account.email")) : PROVIDER_NAME[method];
   return (
-    <Sheet onClose={onClose} closeLabel={t("shell.kit.closeNamed", { name: t("account.unlinkTitle", { method: name }) })}>
-      <SheetHeading title={t("account.unlinkTitle", { method: name })} body={t("account.unlinkBody", { method: name })} />
+    <Sheet
+      onClose={onClose}
+      closeLabel={t("shell.kit.closeNamed", { name: t("account.unlinkTitle", { method: name }) })}
+    >
+      <SheetHeading
+        title={t("account.unlinkTitle", { method: name })}
+        body={t("account.unlinkBody", { method: name })}
+      />
       <UnlinkActions method={method} name={name} onDone={onDone} />
     </Sheet>
   );
@@ -274,7 +333,15 @@ function UnlinkActions({ method, name, onDone }: { method: LoginMethod; name: st
 }
 
 /** Change (or add) the email: the new address, then the six-digit code sent to it, verified the moment it is typed. */
-function EmailSheet({ adding, onClose, onDone }: { adding: boolean; onClose: () => void; onDone: (email: string | null) => void }) {
+function EmailSheet({
+  adding,
+  onClose,
+  onDone,
+}: {
+  adding: boolean;
+  onClose: () => void;
+  onDone: (email: string | null) => void;
+}) {
   const { t } = useT();
   const title = adding ? t("account.addEmailTitle") : t("account.changeEmailTitle");
   return (
@@ -316,7 +383,13 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
       setCode("");
     } catch (failure) {
       const message = String((failure as Error).message ?? "");
-      setError(/max number|too many|rate/i.test(message) ? t("errors.rateLimited") : diagnose(failure).kind === "offline" ? t("errors.offlineAction") : t("account.codeFailed"));
+      setError(
+        /max number|too many|rate/i.test(message)
+          ? t("errors.rateLimited")
+          : diagnose(failure).kind === "offline"
+            ? t("errors.offlineAction")
+            : t("account.codeFailed"),
+      );
     } finally {
       setBusy(undefined);
     }
@@ -341,10 +414,20 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
   const valid = EMAIL_PATTERN.test(email.trim());
   return (
     <>
-      <SheetHeading title={title} body={sentTo ? t("account.codeSent", { email: sentTo }) : t("account.newEmailBody")} />
+      <SheetHeading
+        title={title}
+        body={sentTo ? t("account.codeSent", { email: sentTo }) : t("account.newEmailBody")}
+      />
       <View style={styles.sheetActions}>
         {sentTo ? (
-          <CodeField value={code} onChange={setCode} onFilled={(digits) => void verify(digits)} label={t("signIn.code")} invalid={Boolean(error)} disabled={busy === "verify"} />
+          <CodeField
+            value={code}
+            onChange={setCode}
+            onFilled={(digits) => void verify(digits)}
+            label={t("signIn.code")}
+            invalid={Boolean(error)}
+            disabled={busy === "verify"}
+          />
         ) : (
           <Field
             value={email}
@@ -381,7 +464,12 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
             />
           </>
         ) : (
-          <Button label={valid ? t("account.sendCode") : t("account.enterEmail")} loading={busy === "send"} disabled={!valid} onPress={() => void send(email.trim())} />
+          <Button
+            label={valid ? t("account.sendCode") : t("account.enterEmail")}
+            loading={busy === "send"}
+            disabled={!valid}
+            onPress={() => void send(email.trim())}
+          />
         )}
       </View>
     </>
@@ -391,7 +479,13 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
 const styles = StyleSheet.create({
   block: { gap: SPACE.sm },
   inset: { padding: SPACE.lg },
-  glyph: { width: SIZE.markRow, height: SIZE.markRow, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  glyph: {
+    width: SIZE.markRow,
+    height: SIZE.markRow,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   actions: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   sheetActions: { gap: SPACE.md, paddingTop: SPACE.md },
   center: { textAlign: "center" },

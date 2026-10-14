@@ -7,7 +7,12 @@ import { api } from "@/session/api";
 
 type OauthProvider = { providerId: string; providerName: string; issuer: string };
 type ApiKey = { apiKeyId: string; apiKeyName?: string; credential?: { publicKey?: string } };
-type TurnkeyUser = { userId: string; userEmail?: string | undefined; oauthProviders?: OauthProvider[]; apiKeys?: ApiKey[] };
+type TurnkeyUser = {
+  userId: string;
+  userEmail?: string | undefined;
+  oauthProviders?: OauthProvider[];
+  apiKeys?: ApiKey[];
+};
 type OauthSuccess = { oidcToken: string; providerName: string };
 
 /** The parts of either Turnkey kit's `useTurnkey()` this module uses (react-native-wallet-kit and react-wallet-kit agree). */
@@ -16,15 +21,26 @@ export type TurnkeyAccountApi = {
   session: { organizationId: string; userId: string } | undefined;
   wallets: { walletId: string; accounts: { addressFormat: string }[] }[];
   fetchUser: () => Promise<TurnkeyUser>;
-  initOtp: (input: { otpType: string; contact: string }) => Promise<{ otpId: string; otpEncryptionTargetBundle: string }>;
-  verifyOtp: (input: { otpId: string; otpCode: string; contact: string; otpType: string; otpEncryptionTargetBundle: string }) => Promise<{ verificationToken: string }>;
+  initOtp: (input: {
+    otpType: string;
+    contact: string;
+  }) => Promise<{ otpId: string; otpEncryptionTargetBundle: string }>;
+  verifyOtp: (input: {
+    otpId: string;
+    otpCode: string;
+    contact: string;
+    otpType: string;
+    otpEncryptionTargetBundle: string;
+  }) => Promise<{ verificationToken: string }>;
   updateUserEmail: (input: { email: string; verificationToken: string }) => Promise<string>;
   addOauthProvider: (input: { providerName: string; oidcToken: string }) => Promise<string[]>;
   handleGoogleOauth: (input: { onOauthSuccess: (result: OauthSuccess) => void }) => Promise<void>;
   handleAppleOauth: (input: { onOauthSuccess: (result: OauthSuccess) => void }) => Promise<void>;
   exportWallet: (input: { walletId: string }) => Promise<string>;
   removeOauthProviders?: (input: { providerIds: string[] }) => Promise<string[]>;
-  httpClient: { deleteApiKeys: (input: { organizationId: string; userId: string; apiKeyIds: string[] }) => Promise<unknown> } | undefined;
+  httpClient:
+    | { deleteApiKeys: (input: { organizationId: string; userId: string; apiKeyIds: string[] }) => Promise<unknown> }
+    | undefined;
 };
 
 export type LinkProvider = "google" | "apple";
@@ -59,7 +75,9 @@ export function accountMethodsCore(turnkey: TurnkeyAccountApi, emailOtp: string)
     async unlink(method: LoginMethod): Promise<void> {
       if (method === "email" || !turnkey.removeOauthProviders) throw new Error("this sign-in method can't be removed");
       const user = await turnkey.fetchUser();
-      const ids = (user.oauthProviders ?? []).filter((provider) => ISSUERS[method].test(provider.issuer)).map((provider) => provider.providerId);
+      const ids = (user.oauthProviders ?? [])
+        .filter((provider) => ISSUERS[method].test(provider.issuer))
+        .map((provider) => provider.providerId);
       if (ids.length > 0) await turnkey.removeOauthProviders({ providerIds: ids });
       await api.account.syncEmail().catch(() => undefined);
     },
@@ -103,15 +121,23 @@ export function accountMethodsCore(turnkey: TurnkeyAccountApi, emailOtp: string)
       if (!session || !turnkey.httpClient || publicKeys.length === 0) return 0;
       const user = await turnkey.fetchUser();
       const wanted = new Set(publicKeys.map((key) => key.toLowerCase()));
-      const ids = (user.apiKeys ?? []).filter((key) => key.credential?.publicKey && wanted.has(key.credential.publicKey.toLowerCase())).map((key) => key.apiKeyId);
+      const ids = (user.apiKeys ?? [])
+        .filter((key) => key.credential?.publicKey && wanted.has(key.credential.publicKey.toLowerCase()))
+        .map((key) => key.apiKeyId);
       if (ids.length === 0) return 0;
-      await turnkey.httpClient.deleteApiKeys({ organizationId: session.organizationId, userId: session.userId, apiKeyIds: ids });
+      await turnkey.httpClient.deleteApiKeys({
+        organizationId: session.organizationId,
+        userId: session.userId,
+        apiKeyIds: ids,
+      });
       return ids.length;
     },
 
     /** The wallet's recovery phrase, decrypted on this device (never sent anywhere). */
     async exportPhrase(): Promise<string> {
-      const wallet = turnkey.wallets.find((entry) => entry.accounts.some((account) => account.addressFormat === ETHEREUM_FORMAT));
+      const wallet = turnkey.wallets.find((entry) =>
+        entry.accounts.some((account) => account.addressFormat === ETHEREUM_FORMAT),
+      );
       if (!wallet) throw new Error("no wallet to export");
       const phrase = await turnkey.exportWallet({ walletId: wallet.walletId });
       await api.account.exportRecorded().catch(() => undefined);

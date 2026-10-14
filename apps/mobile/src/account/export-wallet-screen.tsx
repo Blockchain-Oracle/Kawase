@@ -13,7 +13,19 @@ import { ShieldAlert } from "lucide-react-native";
 import * as React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
-import { Button, EmptyState, HoldButton, Icon, NUMERIC_VARIANT, Panel, RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
+import {
+  Button,
+  EmptyState,
+  HoldButton,
+  Icon,
+  NUMERIC_VARIANT,
+  Panel,
+  RADIUS,
+  SIZE,
+  SPACE,
+  TYPE,
+  useTheme,
+} from "@/components/kit";
 import { diagnose } from "@/components/kit/diagnosis";
 import { notify } from "@/components/toast/notify";
 import { useT } from "@/i18n";
@@ -64,7 +76,11 @@ function NoWallet() {
       size="page"
       why={guest ? t("exportWallet.guestTitle") : t("exportWallet.noWalletTitle")}
       detail={guest ? t("exportWallet.guestDetail") : t("exportWallet.noWalletDetail")}
-      action={guest ? { label: t("signIn.title"), onPress: signIn.open } : { label: t("exportWallet.setUpWallet"), onPress: () => router.push("/wallet") }}
+      action={
+        guest
+          ? { label: t("signIn.title"), onPress: signIn.open }
+          : { label: t("exportWallet.setUpWallet"), onPress: () => router.push("/wallet") }
+      }
     />
   );
 }
@@ -74,6 +90,7 @@ function PrivyExport({ account }: { account: PrivyAccountMethods }) {
   const { t } = useT();
   const signer = useWalletSigner();
   const signIn = useSignIn();
+  const { user } = useSession();
   const [busy, setBusy] = React.useState(false);
   const onWeb = account.walletExport === "privyWindow";
 
@@ -88,21 +105,44 @@ function PrivyExport({ account }: { account: PrivyAccountMethods }) {
     }
   };
 
-  if (!signer) return <Page title={t("exportWallet.keyTitle")}><NoWallet /></Page>;
-  // Signed in to Kawase, but Privy's session is not in this browser: its window can't open until it is.
-  if (onWeb && !account.manageable) {
+  const guest = !user || user.isGuest;
+  if (guest)
     return (
       <Page title={t("exportWallet.keyTitle")}>
-        <EmptyState size="page" why={t("account.reconnectTitle")} detail={t("exportWallet.reconnectDetail")} action={{ label: t("signIn.title"), onPress: signIn.open }} />
+        <NoWallet />
+      </Page>
+    );
+  // Signed in to Kawase, but Privy's session is not on this device: the key can't be reached until it is.
+  if (!account.manageable) {
+    return (
+      <Page title={t("exportWallet.keyTitle")}>
+        <EmptyState
+          size="page"
+          why={t("account.reconnectTitle")}
+          detail={t("exportWallet.reconnectDetail")}
+          action={{ label: t("signIn.title"), onPress: signIn.open }}
+        />
       </Page>
     );
   }
+  if (!signer)
+    return (
+      <Page title={t("exportWallet.keyTitle")}>
+        <NoWallet />
+      </Page>
+    );
   return (
     <Page
       title={t("exportWallet.keyTitle")}
       footer={
         onWeb ? (
-          <HoldButton label={t("exportWallet.holdToReveal")} holdingLabel={t("exportWallet.keepHolding")} ready busy={busy} onConfirm={() => void open()} />
+          <HoldButton
+            label={t("exportWallet.holdToReveal")}
+            holdingLabel={t("exportWallet.keepHolding")}
+            ready
+            busy={busy}
+            onConfirm={() => void open()}
+          />
         ) : (
           <Button label={t("wallet.exportKeyOpenWeb")} loading={busy} onPress={() => void open()} />
         )
@@ -110,7 +150,11 @@ function PrivyExport({ account }: { account: PrivyAccountMethods }) {
     >
       <Warning
         title={t("wallet.exportKeyTitle")}
-        lines={[t("wallet.exportKeyWarning1"), t("wallet.exportKeyWarning2"), onWeb ? t("wallet.exportKeyWindow") : t("wallet.exportKeyOnWeb")]}
+        lines={[
+          t("wallet.exportKeyWarning1"),
+          t("wallet.exportKeyWarning2"),
+          onWeb ? t("wallet.exportKeyWindow") : t("wallet.exportKeyOnWeb"),
+        ]}
       />
     </Page>
   );
@@ -156,7 +200,12 @@ function PhraseExport({ exportPhrase }: { exportPhrase: () => Promise<string> })
     }
   };
 
-  if (!signer) return <Page title={t("exportWallet.title")}><NoWallet /></Page>;
+  if (!signer)
+    return (
+      <Page title={t("exportWallet.title")}>
+        <NoWallet />
+      </Page>
+    );
   const words = phrase?.trim().split(/\s+/) ?? [];
   return (
     <Page
@@ -172,11 +221,20 @@ function PhraseExport({ exportPhrase }: { exportPhrase: () => Promise<string> })
             <Button label={t("exportWallet.hide")} variant="ghost" onPress={() => setPhrase(undefined)} />
           </>
         ) : (
-          <HoldButton label={t("exportWallet.holdToRevealPhrase")} holdingLabel={t("exportWallet.keepHolding")} ready busy={busy} onConfirm={() => void reveal()} />
+          <HoldButton
+            label={t("exportWallet.holdToRevealPhrase")}
+            holdingLabel={t("exportWallet.keepHolding")}
+            ready
+            busy={busy}
+            onConfirm={() => void reveal()}
+          />
         )
       }
     >
-      <Warning title={t("exportWallet.warningTitle")} lines={[t("exportWallet.warning1"), t("exportWallet.warning2"), t("exportWallet.warning3")]} />
+      <Warning
+        title={t("exportWallet.warningTitle")}
+        lines={[t("exportWallet.warning1"), t("exportWallet.warning2"), t("exportWallet.warning3")]}
+      />
       {phrase ? (
         <Panel>
           <View style={styles.words} accessibilityLabel={t("exportWallet.phrase")}>
@@ -197,13 +255,31 @@ function PhraseExport({ exportPhrase }: { exportPhrase: () => Promise<string> })
 
 export function ExportWalletScreen() {
   const account = useAccountMethods();
-  return isPrivyMethods(account) ? <PrivyExport account={account} /> : <PhraseExport exportPhrase={account.exportPhrase} />;
+  return isPrivyMethods(account) ? (
+    <PrivyExport account={account} />
+  ) : (
+    <PhraseExport exportPhrase={account.exportPhrase} />
+  );
 }
 
 const styles = StyleSheet.create({
   warning: { padding: SPACE.lg, gap: SPACE.sm },
-  mark: { width: SIZE.touch, height: SIZE.touch, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", marginBottom: SPACE.xs },
+  mark: {
+    width: SIZE.touch,
+    height: SIZE.touch,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: SPACE.xs,
+  },
   words: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm, padding: SPACE.lg },
-  word: { flexDirection: "row", alignItems: "baseline", gap: SPACE.xs, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
+  word: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: SPACE.xs,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
+  },
   figure: { fontVariant: NUMERIC_VARIANT },
 });

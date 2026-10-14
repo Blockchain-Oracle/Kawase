@@ -44,13 +44,17 @@ function usePrivyAccountMethods(): PrivyAccountMethods {
     unlinkEmail: async (address) => {
       await unlinkEmail({ address });
     },
-    sendEmailCode: (email, mode) => (mode === "update" ? update.sendCode({ newEmailAddress: email }) : link.sendCode({ email })),
+    sendEmailCode: (email, mode) =>
+      mode === "update" ? update.sendCode({ newEmailAddress: email }) : link.sendCode({ email }),
     confirmEmailCode: async (_email, code, mode) => {
       if (mode === "update") await update.verifyCode({ code });
       else await link.linkWithCode({ code });
     },
     tokens: async () => {
-      const [accessToken, identityToken] = await Promise.all([privy.getAccessToken(), getIdentityToken().catch(() => null)]);
+      const [accessToken, identityToken] = await Promise.all([
+        privy.getAccessToken(),
+        getIdentityToken().catch(() => null),
+      ]);
       if (!accessToken) throw new Error("Privy: not signed in");
       return { accessToken, ...(identityToken ? { identityToken } : {}) };
     },

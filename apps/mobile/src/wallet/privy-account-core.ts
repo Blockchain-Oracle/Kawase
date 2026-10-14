@@ -71,7 +71,10 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
   /** Fresh tokens for the signed-in Privy user (the access token refreshes itself; about an hour of life). */
   const tokens = React.useCallback(async (): Promise<PrivyTokens> => {
     const current = await waitFor((state) => state.ready && state.authenticated, "session");
-    const [accessToken, identityToken] = await Promise.all([current.getAccessToken(), current.getIdentityToken().catch(() => null)]);
+    const [accessToken, identityToken] = await Promise.all([
+      current.getAccessToken(),
+      current.getIdentityToken().catch(() => null),
+    ]);
     if (!accessToken) throw new Error("Privy: no access token");
     return { accessToken, ...(identityToken ? { identityToken } : {}) };
   }, [waitFor]);
@@ -86,7 +89,8 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
         return await privyApi.registerWallet(await tokens(), attemptId.current);
       } catch (error) {
         // A 409 is another registration of the same wallet finishing at this moment: the next try reads its row.
-        const again = error instanceof ApiError && (error.code === WALLET_NOT_IN_TOKEN || error.status === HTTP_CONFLICT);
+        const again =
+          error instanceof ApiError && (error.code === WALLET_NOT_IN_TOKEN || error.status === HTTP_CONFLICT);
         if (!again || attempt >= REGISTER_ATTEMPTS) throw error;
         await new Promise((resolve) => setTimeout(resolve, REGISTER_BACKOFF_MS * attempt));
         await latest.current.refreshUser().catch(() => undefined);
@@ -178,7 +182,8 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
           if (created) await latest.current.refreshUser().catch(() => undefined);
           // The api reads the address from the signed identity token, never from this body.
           const { wallet } = await registerFresh();
-          if (wallet.address.toLowerCase() !== walletAddress!.toLowerCase()) throw new Error("Privy: the registered wallet differs");
+          if (wallet.address.toLowerCase() !== walletAddress!.toLowerCase())
+            throw new Error("Privy: the registered wallet differs");
           return { address: wallet.address, walletId: wallet.id };
         }).finally(() => {
           if (activeWallet.current === pending) activeWallet.current = undefined;

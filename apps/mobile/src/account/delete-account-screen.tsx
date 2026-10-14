@@ -61,8 +61,12 @@ function Step({ n, title, done, children }: { n: number; title: string; done: bo
   return (
     <View style={styles.step}>
       <View style={styles.stepHead}>
-        <View style={[styles.stepMark, { backgroundColor: done ? color.upFill : color.raised2 }]}>
-          {done ? <Icon icon={Check} size={SIZE.iconSm} tint={color.onFill} /> : <Text style={[TYPE.rowStrong, styles.figure, { color: color.ink }]}>{n}</Text>}
+        <View style={[styles.stepMark, { backgroundColor: done ? color.primary : color.raised2 }]}>
+          {done ? (
+            <Icon icon={Check} size={SIZE.iconSm} tint={color.primaryForeground} />
+          ) : (
+            <Text style={[TYPE.rowStrong, styles.figure, { color: color.ink }]}>{n}</Text>
+          )}
         </View>
         <Text accessibilityRole="header" style={[TYPE.rowTitle, styles.grow, { color: color.ink }]}>
           {title}
@@ -105,7 +109,10 @@ export function DeleteAccountScreen() {
   const holdings = read.holdings;
   const grantsLeft = holdings?.networks.some((entry) => entry.activeGrants.length > 0) ?? false;
   const held =
-    holdings?.networks.some((entry) => BigInt(entry.balances.USDC) > ZERO || BigInt(entry.balances.EURC) > ZERO || BigInt(entry.agentWallet) > ZERO) ?? false;
+    holdings?.networks.some(
+      (entry) =>
+        BigInt(entry.balances.USDC) > ZERO || BigInt(entry.balances.EURC) > ZERO || BigInt(entry.agentWallet) > ZERO,
+    ) ?? false;
   const typed = Boolean(expected) && confirm.trim().toLowerCase() === expected.toLowerCase();
 
   const remove = async () => {
@@ -144,7 +151,9 @@ export function DeleteAccountScreen() {
         ) : null
       ) : (
         <>
-          {read.error && read.at ? <StaleTick asOf={read.at} reason={read.error.kind === "offline" ? "offline" : "refresh-failed"} /> : null}
+          {read.error && read.at ? (
+            <StaleTick asOf={read.at} reason={read.error.kind === "offline" ? "offline" : "refresh-failed"} />
+          ) : null}
           <Step n={1} title={t("deleteAccount.holdings")} done={!held}>
             {holdings.networks.map((entry) => {
               const ids = arcIdentity(entry.network);
@@ -153,14 +162,32 @@ export function DeleteAccountScreen() {
                   {(["USDC", "EURC"] as const).map((asset) => (
                     <ListRow
                       key={asset}
-                      leading={<Mark entity={asset === "USDC" ? ids.usdc : ids.eurc} chainBadge={ids.chain} size={SIZE.markRow} />}
+                      leading={
+                        <Mark
+                          entity={asset === "USDC" ? ids.usdc : ids.eurc}
+                          chainBadge={ids.chain}
+                          size={SIZE.markRow}
+                        />
+                      }
                       title={asset}
                       detail={networkName(entry.network)}
-                      trailing={<Text style={[TYPE.rowAmount, styles.figure, { color: color.ink }]}>{money(asset, entry.balances[asset])}</Text>}
+                      trailing={
+                        <Text style={[TYPE.rowAmount, styles.figure, { color: color.ink }]}>
+                          {money(asset, entry.balances[asset])}
+                        </Text>
+                      }
                     />
                   ))}
                   {BigInt(entry.agentWallet) > ZERO ? (
-                    <ListRow title={t("deleteAccount.agentWalletRow")} detail={t("deleteAccount.agentWalletBack")} trailing={<Text style={[TYPE.rowAmount, styles.figure, { color: color.ink }]}>{money("USDC", entry.agentWallet)}</Text>} />
+                    <ListRow
+                      title={t("deleteAccount.agentWalletRow")}
+                      detail={t("deleteAccount.agentWalletBack")}
+                      trailing={
+                        <Text style={[TYPE.rowAmount, styles.figure, { color: color.ink }]}>
+                          {money("USDC", entry.agentWallet)}
+                        </Text>
+                      }
+                    />
                   ) : null}
                 </Panel>
               );
@@ -171,11 +198,21 @@ export function DeleteAccountScreen() {
             {grantsLeft ? (
               holdings.networks
                 .filter((entry) => entry.activeGrants.length > 0)
-                .map((entry) => <RevokeOn key={entry.network} network={entry.network} name={networkName(entry.network)} count={entry.activeGrants.length} onDone={() => void load()} />)
+                .map((entry) => (
+                  <RevokeOn
+                    key={entry.network}
+                    network={entry.network}
+                    name={networkName(entry.network)}
+                    count={entry.activeGrants.length}
+                    onDone={() => void load()}
+                  />
+                ))
             ) : (
               <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("deleteAccount.noGrants")}</Text>
             )}
-            {grantsLeft ? <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("deleteAccount.revokeNote")}</Text> : null}
+            {grantsLeft ? (
+              <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("deleteAccount.revokeNote")}</Text>
+            ) : null}
           </Step>
 
           <Step n={3} title={t("deleteAccount.takeOut")} done={!held}>
@@ -185,7 +222,11 @@ export function DeleteAccountScreen() {
                 <Button label={t("deleteAccount.send")} variant="secondary" onPress={() => router.push("/send")} />
               </View>
               <View style={styles.grow}>
-                <Button label={t("account.export")} variant="secondary" onPress={() => router.push("/account/export")} />
+                <Button
+                  label={t("account.export")}
+                  variant="secondary"
+                  onPress={() => router.push("/account/export")}
+                />
               </View>
             </View>
           </Step>
@@ -212,7 +253,17 @@ export function DeleteAccountScreen() {
  * silently (D38: turning things off never asks), the relayer sends, and the CTA runs Signing → Sent → Confirmed into
  * its receipt. A failure says whether anything moved and links the transaction when there is one.
  */
-function RevokeOn({ network, name, count, onDone }: { network: NetworkId; name: string; count: number; onDone: () => void }) {
+function RevokeOn({
+  network,
+  name,
+  count,
+  onDone,
+}: {
+  network: NetworkId;
+  name: string;
+  count: number;
+  onDone: () => void;
+}) {
   const { t } = useT();
   const signer = useWalletSigner();
   const tx = useTxLifecycle();
@@ -236,7 +287,11 @@ function RevokeOn({ network, name, count, onDone }: { network: NetworkId; name: 
           setHash(result.tx);
           return result.status === "confirmed"
             ? { status: "confirmed", txHash: result.tx }
-            : { status: "reverted", diagnosis: { kind: "unknown", retryable: true, technical: "reverted" }, txHash: result.tx };
+            : {
+                status: "reverted",
+                diagnosis: { kind: "unknown", retryable: true, technical: "reverted" },
+                txHash: result.tx,
+              };
         },
         { identity: `revoke:${network}:${count}` },
       )
@@ -247,7 +302,11 @@ function RevokeOn({ network, name, count, onDone }: { network: NetworkId; name: 
   if (tx.state.kind === "failed") {
     return (
       <View style={styles.block}>
-        <TxFailureCard state={tx.state} onRetry={() => (tx.reset(), run())} explorerUrl={tx.state.txHash ?? hash ? explorerTxUrl(explorer, (tx.state.txHash ?? hash)!) : null} />
+        <TxFailureCard
+          state={tx.state}
+          onRetry={() => (tx.reset(), run())}
+          explorerUrl={(tx.state.txHash ?? hash) ? explorerTxUrl(explorer, (tx.state.txHash ?? hash)!) : null}
+        />
       </View>
     );
   }
@@ -257,7 +316,9 @@ function RevokeOn({ network, name, count, onDone }: { network: NetworkId; name: 
       action={t("deleteAccount.revokeOn", { network: name, count: String(count) })}
       onConfirm={run}
       receipt={<Receipt label={t("deleteAccount.revoked")} />}
-      {...(!signer ? { blocker: { label: t("deleteAccount.needsWallet"), fix: { kind: "setup-wallet" as const } } } : {})}
+      {...(!signer
+        ? { blocker: { label: t("deleteAccount.needsWallet"), fix: { kind: "setup-wallet" as const } } }
+        : {})}
     />
   );
 }
@@ -265,8 +326,8 @@ function RevokeOn({ network, name, count, onDone }: { network: NetworkId; name: 
 function Receipt({ label }: { label: string }) {
   const { color } = useTheme();
   return (
-    <View style={[styles.receipt, { backgroundColor: color.upWash }]}>
-      <Icon icon={Check} size={SIZE.iconSm} tint={color.up} />
+    <View style={[styles.receipt, { backgroundColor: color.raised2 }]}>
+      <Icon icon={Check} size={SIZE.iconSm} tint={color.ink} />
       <Text style={[TYPE.rowStrong, { color: color.ink }]}>{label}</Text>
     </View>
   );
@@ -275,10 +336,23 @@ function Receipt({ label }: { label: string }) {
 const styles = StyleSheet.create({
   step: { gap: SPACE.md },
   stepHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
-  stepMark: { width: SIZE.markRow, height: SIZE.markRow, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  stepMark: {
+    width: SIZE.markRow,
+    height: SIZE.markRow,
+    borderRadius: RADIUS.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   grow: { flex: 1 },
   figure: { fontVariant: NUMERIC_VARIANT },
   pair: { flexDirection: "row", gap: SPACE.sm },
   block: { gap: SPACE.sm },
-  receipt: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, borderRadius: RADIUS.lg, minHeight: SIZE.buttonHeight },
+  receipt: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACE.sm,
+    borderRadius: RADIUS.lg,
+    minHeight: SIZE.buttonHeight,
+  },
 });
