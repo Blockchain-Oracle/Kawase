@@ -63,10 +63,6 @@ export function parseTokenAmount(text: string | null, decimals: number): AmountF
 /** The ledger bucket a send's limits count in: USDC and EURC in their own units, every other token in dollars. */
 export const ledgerAsset = (symbol: string): string => (symbol === "USDC" || symbol === "EURC" ? symbol : USD_LEDGER_ASSET);
 
-/** A token amount's value in US dollars, in USDC base units (how the limits count tokens other than USDC and EURC). */
-export const usdValue = (baseUnits: bigint, decimals: number, priceUsd: number) =>
-  parseUnits((Number(formatUnits(baseUnits, decimals)) * priceUsd).toFixed(USD_DECIMALS), USD_DECIMALS);
-
 export type ActiveAllowance = { id: string; delegation: Record<string, unknown>; perPeriod: bigint };
 export const assetToken = (network: { addresses: { usdc: Address; eurc: Address } }, asset: AssetId) => (asset === "USDC" ? network.addresses.usdc : network.addresses.eurc);
 

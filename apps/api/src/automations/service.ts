@@ -76,7 +76,7 @@ import { isValidTimeZone, nextRuns, schedulePeriodSeconds } from "@kawase/intent
 import type { Logger } from "@kawase/log";
 import type { AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
-import { evaluateAutoSave, evaluateAutomation, evaluateDca, evaluateRule, result as policyResult, type AmountFacts, type PolicyResult } from "@kawase/policy";
+import { evaluateAutoSave, evaluateAutomation, evaluateDca, evaluateRule, type AmountFacts, type PolicyResult } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
 import type { BridgeService } from "../bridge/service";
