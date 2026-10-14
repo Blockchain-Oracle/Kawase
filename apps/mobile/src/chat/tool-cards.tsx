@@ -97,7 +97,7 @@ import { AgentWalletCard, BuyCard, ServiceCard, ServicesCard, TopUpCard } from "
 import { InvoiceCard } from "./invoice-card";
 import { BUSINESS_LOADING_LABELS, BusinessToolCard } from "./business-cards";
 import { ReportCard } from "@/history/report-card";
-import type { ReportView } from "@kawase/api-client";
+import type { AutomationEditResponse, AutomationView, ReportView, SimulationView } from "@kawase/api-client";
 import { useChatResume } from "./resume";
 import { SafetyCard } from "./safety-card";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceSearchResult } from "@kawase/api-client";
@@ -691,8 +691,21 @@ export function ToolCard({
     case "draft_automation":
     case "draft_auto_save":
     case "draft_rule":
+    case "draft_dca":
+    case "draft_payroll":
     case "change_automation":
-      return <AutomationCard output={part.output as ProposeAutomationOutput} />;
+      return (part.output as Partial<ProposeAutomationOutput>).automation ? <AutomationCard output={part.output as ProposeAutomationOutput} /> : null;
+    // An edit: the automation as changed, and its new permission to sign when it gives Kawase more.
+    case "edit_automation": {
+      const out = part.output as Partial<ProposeAutomationOutput> & { edit?: AutomationEditResponse };
+      return out.automation ? <AutomationCard output={{ automation: out.automation, edit: out.edit }} /> : null;
+    }
+    // What the next runs would do, on the automation's own card.
+    case "simulate_automation": {
+      const out = part.output as { automation?: AutomationView; simulation?: SimulationView };
+      return out.automation && out.simulation ? <AutomationCard output={{ automation: out.automation, simulation: out.simulation }} /> : null;
+    }
+    case "get_automation_runs":
     case "list_automations": {
       const list = part.output as ListAutomationsOutput;
       return list.automations.length > 0 ? (

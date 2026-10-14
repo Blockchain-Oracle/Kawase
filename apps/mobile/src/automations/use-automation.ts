@@ -6,7 +6,7 @@ import * as React from "react";
 import { toast } from "sonner-native";
 import type { Address, TypedDataDefinition } from "viem";
 
-import type { AutomationEdit, AutomationView, SimulationView } from "@kawase/api-client";
+import type { AutomationEdit, AutomationEditResponse, AutomationView, SimulationView } from "@kawase/api-client";
 import { SigningRefused, checkGrant, receiptOf, type ShownGrant } from "@kawase/wallet";
 
 import { useT } from "@/i18n";
@@ -60,13 +60,14 @@ export function useAutomation(initial: AutomationView | undefined) {
     return () => clearInterval(timer);
   }, [inFlight, firstCheck, followUntil, refresh]);
 
-  const act = async (work: () => Promise<void>) => {
+  const act = async <T,>(work: () => Promise<T>): Promise<T | undefined> => {
     setBusy(true);
     try {
-      await work();
+      return await work();
     } catch (error) {
       if (!sayIfRefused(error, t)) toast(t("automation.failed"));
       await refresh();
+      return undefined;
     } finally {
       setBusy(false);
     }
@@ -148,24 +149,34 @@ export function useAutomation(initial: AutomationView | undefined) {
         toast(t("automation.edited"));
         return;
       }
-      if (!signer) {
-        toast(t("send.approvalUnavailable"));
-        return;
-      }
-      const check = await confirmWithBiometrics(prompt, t("common.cancel"));
-      if (check !== "approved") {
-        toast(t("safety.notApproved"));
-        return;
-      }
-      answer.grant.grants.forEach((entry, index) => checkAutomationGrant(entry.typedData, answer.grant!.receipts[index], answer.automation, signer.address));
-      const signatures: { grantId: string; signature: string }[] = [];
-      for (const entry of answer.grant.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
-      // The old grant's revoke goes with the new one: the api turns it off on chain before the edit applies.
-      const signedRevoke = answer.revoke ? await signRevoke(signer, answer.revoke) : undefined;
-      const { automation: edited } = await api.automationsMore.editActivate(id!, signatures, signedRevoke);
-      setAutomation(edited);
-      toast(t("automation.edited"));
+      await signEdit(answer, prompt);
     });
 
-  return { automation, set: setAutomation, busy, refresh, recheck, turnOn, pause, resume, skip, cancel, practice, simulate, simulation, edit };
+  /** A widening edit the api already prepared (from chat): its new grant and the old one's revoke, one Face ID. */
+  const approveEdit = (answer: AutomationEditResponse, prompt: string) => act(() => signEdit(answer, prompt));
+
+  /** True once the change is on. */
+  const signEdit = async (answer: AutomationEditResponse, prompt: string): Promise<boolean> => {
+    if (!answer.grant) return false;
+    if (!signer) {
+      toast(t("send.approvalUnavailable"));
+      return false;
+    }
+    const check = await confirmWithBiometrics(prompt, t("common.cancel"));
+    if (check !== "approved") {
+      toast(t("safety.notApproved"));
+      return false;
+    }
+    answer.grant.grants.forEach((entry, index) => checkAutomationGrant(entry.typedData, answer.grant!.receipts[index], answer.automation, signer.address));
+    const signatures: { grantId: string; signature: string }[] = [];
+    for (const entry of answer.grant.grants) signatures.push({ grantId: entry.grantId, signature: await signer.signTypedData(entry.typedData as TypedDataDefinition) });
+    // The old grant's revoke goes with the new one: the api turns it off on chain before the edit applies.
+    const signedRevoke = answer.revoke ? await signRevoke(signer, answer.revoke) : undefined;
+    const { automation: edited } = await api.automationsMore.editActivate(answer.automation.id, signatures, signedRevoke);
+    setAutomation(edited);
+    toast(t("automation.edited"));
+    return true;
+  };
+
+  return { automation, set: setAutomation, busy, refresh, recheck, turnOn, pause, resume, skip, cancel, practice, simulate, simulation, edit, approveEdit };
 }

@@ -199,7 +199,7 @@ export type AgentContext = {
   draftPayroll?(input: PayrollAutomationInput): Promise<ProposeAutomationOutput>;
   draftDca?(input: DcaInput): Promise<ProposeAutomationOutput>;
   editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
-  simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;
+  simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; automation?: AutomationEditResponse["automation"] | undefined; summary: ModelSummary }>;
   automationRuns?(input: { automationId?: string | undefined; limit: number }): Promise<{ network: AgentNetwork; automations: ProposeAutomationOutput[]; summary: ModelSummary }>;
   // Business, history and account from chat (builder B2). Optional so a context without them still builds.
   /** A checked batch payout (any Arc token); one Face ID on the card pays everyone. */

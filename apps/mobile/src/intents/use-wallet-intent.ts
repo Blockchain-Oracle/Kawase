@@ -15,6 +15,7 @@ import { ApiError, hasBrake, type IntentState, type UnsignedTransaction } from "
 import type { TypedDataDefinition } from "viem";
 
 import { useT } from "@/i18n";
+import { sayIfPractice } from "@/safety/practice-refusal";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
@@ -127,7 +128,9 @@ export function useWalletIntent<T extends Intent, R>(
     try {
       return await work();
     } catch (error) {
-      if (error instanceof ApiError) {
+      if (sayIfPractice(error, t)) {
+        // Practice mode: said with the way to turn it off.
+      } else if (error instanceof ApiError) {
         toast(
           error.code === "quote_unavailable"
             ? messages.unavailable

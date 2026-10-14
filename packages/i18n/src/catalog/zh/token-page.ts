@@ -59,6 +59,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   a_long_short: "多空",
   a_borrow: "借款",
   a_alert: "价格提醒",
+  a_automate: "自动化",
   n_mainnet_only: "仅主网——切换吗？",
   n_blocked: "被 Kawase 安全规则拦截",
   n_permissioned: "仅限白名单持有人",

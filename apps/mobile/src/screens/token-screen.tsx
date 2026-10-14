@@ -743,6 +743,18 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
             );
           })}
           {hideable ? <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} chevron onPress={() => void toggleHidden()} /> : null}
+          {/* A recurring buy of this token (DCA), drafted on the New automation screen. */}
+          <ListRow
+            title={t("tokenPage.a_automate")}
+            {...(reasonFor(buy) ? { subtitle: reasonFor(buy)! } : {})}
+            disabled={Boolean(reasonFor(buy))}
+            chevron={!reasonFor(buy)}
+            onPress={() => {
+              setMoreOpen(false);
+              if (status !== "account") signIn.open();
+              else router.push({ pathname: "/new-automation", params: { template: "dca", token: token.address, symbol: token.symbol } });
+            }}
+          />
         </ListGroup>
       </Sheet>
       <MainnetConsentSheet

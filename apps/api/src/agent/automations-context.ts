@@ -64,9 +64,10 @@ export function automationsContext(input: { user: SessionUser; automations: Auto
     async simulateAutomation({ automationId }) {
       return guard<SimulateOut>(
         async () => {
-          const simulation = await automations.simulate(user, automationId);
+          const [simulation, automation] = await Promise.all([automations.simulate(user, automationId), automations.get(user.id, automationId)]);
           return {
             simulation,
+            automation,
             summary: {
               network: simulation.network,
               runs: simulation.runs.map((run) => ({

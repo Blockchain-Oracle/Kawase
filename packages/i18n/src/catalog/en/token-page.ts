@@ -57,6 +57,7 @@ export const tokenPage = {
   a_long_short: "Long/Short",
   a_borrow: "Borrow",
   a_alert: "Price alert",
+  a_automate: "Automate",
   n_mainnet_only: "Mainnet only — switch?",
   n_blocked: "Blocked by Kawase's safety rules",
   n_permissioned: "Allowlisted holders only",

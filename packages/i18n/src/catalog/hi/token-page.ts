@@ -59,6 +59,7 @@ export const tokenPage: Catalog["tokenPage"] = {
   a_long_short: "लॉन्ग/शॉर्ट",
   a_borrow: "उधार लें",
   a_alert: "कीमत अलर्ट",
+  a_automate: "ऑटोमेट करें",
   n_mainnet_only: "सिर्फ़ मेननेट — बदलें?",
   n_blocked: "Kawase के सुरक्षा नियमों ने रोका",
   n_permissioned: "सिर्फ़ अनुमति वाले होल्डर",

@@ -45,6 +45,9 @@ export async function addressForHandle(db: Executor, handle: string) {
 }
 
 export class ContactService {
+  /** Told when a contact's address changes (automations paying the old one pause until reviewed). */
+  onAddressChange?: (userId: string, oldAddress: string, name: string) => Promise<void>;
+
   constructor(private readonly db: Db) {}
 
   /** A pending address whose cooldown has passed becomes the contact's address; the old one is retired. */
@@ -302,6 +305,8 @@ export class ContactService {
         cooldownEndsAt: activatesAt,
       });
     });
+    // Anything that pays the old address on its own stops until the person looks at it.
+    if (current && this.onAddressChange) await this.onAddressChange(userId, current.address, contact.displayName);
     return this.get(userId, id);
   }
 
