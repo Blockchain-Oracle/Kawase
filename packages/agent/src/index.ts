@@ -9,6 +9,6 @@ export * from "./models";
 export { instructions } from "./prompt";
 export { buildTools, type AgentTools } from "./tools";
 export { agentTurn, type TurnInput } from "./turn";
-export { decimalOf, raceForModel, raceTools, settleRace } from "./race-tools";
+export { decimalOf, RaceRefused, raceForModel, raceTools, settleRace } from "./race-tools";
 export { BUDGETED_TOOLS, budgetAction, decideApproval, toolApprovals, type BudgetedTool } from "./approval";
 export { selfTestModel, type SelfTestResult } from "./self-test";

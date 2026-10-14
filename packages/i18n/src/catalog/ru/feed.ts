@@ -16,6 +16,7 @@ export const feed: Catalog["feed"] = {
   raceNone: "Сейчас ни одна площадка не может это сделать.",
   raceNoAnswer: "Ни одна площадка не ответила. Ничего не перемещено.",
   raceDirect: "Котировка напрямую",
+  raceUnknownToken: "Токен не найден",
   raceTryAgain: "Повторить",
   raceTryAgainPrompt: "Попробуй ещё раз",
   reasonTimeout: "Слишком медленно",

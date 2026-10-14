@@ -16,6 +16,7 @@ export const feed: Catalog["feed"] = {
   raceNone: "ابھی کوئی آپشن یہ نہیں کر سکتا۔",
   raceNoAnswer: "کسی آپشن نے جواب نہیں دیا۔ کچھ نہیں بھیجا گیا۔",
   raceDirect: "براہ راست قیمت لے رہے ہیں",
+  raceUnknownToken: "یہ ٹوکن نہیں ملا",
   raceTryAgain: "دوبارہ کوشش کریں",
   raceTryAgainPrompt: "دوبارہ کوشش کرو",
   reasonTimeout: "بہت سست",
