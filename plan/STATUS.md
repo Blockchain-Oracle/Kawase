@@ -26,6 +26,15 @@ Last updated: 2026-10-14 midday (revamp Stage 0 done, Stage 2 running; plan comp
 - **Running:** resume workflow `wf_26527e44-8e8`, script at the session scratchpad `stage2-resume.js`. It runs 7 lanes, all Opus, builder → reviewer → fixer. Each continues from its branch after `git merge main`. To resume after another restart: `Workflow({scriptPath, resumeFromRunId: "wf_26527e44-8e8"})`, after saving any loose worktree work one lane at a time.
 - Coinbase CDP keys are in `.env` (Codex #2): trial is 25 tx × $5. Circle shows bank transfer before KYB once the domain is registered: Codex brief `plan/prompts/codex-2026-10-14-circle-domain.md`. Resend (Codex #3) is still pending.
 
+**Evening:**
+- Stage 2 is merged: 7 lanes plus the integration pass (`f13c59a2`, pushed). Typecheck 31/31, lint 31/31, i18n 5/5, expo-doctor 21/21, 59 migrations.
+  - Live local proof: "swap 2 USDC to EURC" raced the venues (7 streaming snapshots), picked App Kit, then asked a guest to sign in.
+- Production env: Uniswap, 0x, CDP, Privy keys; AGENT_APPROVAL_SECRET (new); ONRAMP_PAGE_URL; web build EXPO_PUBLIC_PRIVY_* with EXPO_PUBLIC_WALLET_PROVIDER=turnkey until Privy's success path is proven. api and web were deploying at the time of writing.
+- **Stage 3 running:** workflow `wf_2f182424-d2b`, script `plan/workflows/stage3-surfaces.js`. 7 Opus lanes: look, front-door, budget, routes, buy-market, desktop, wallet, on branches `lane/<x>-s3`.
+  - To resume: `Workflow({scriptPath: "plan/workflows/stage3-surfaces.js", resumeFromRunId: "wf_2f182424-d2b"})`, after saving loose worktree work one lane at a time (never force-remove).
+- The old "contacts on other chains" WIP is now on branch `wip/contacts-other-chains`; the Routes lane merges it in Stage 3.
+- Codex brief #5 (`plan/prompts/codex-2026-10-14-privy-socket.md`): Privy test accounts and a Socket key.
+
 **Owner:** run the Codex #2 and #3 briefs; back up `~/.kawase-secrets`; fund mainnet ops and relayer by Friday.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
