@@ -36,6 +36,7 @@ import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 import { MarkStack, SheetHeaderRow } from "./sheet-parts";
+import { WalletPanel } from "./wallet-panel";
 
 const CIRCLE_FAUCET = "https://faucet.circle.com";
 const TILE_COLUMNS = 3;
@@ -52,7 +53,7 @@ const CHAIN_KEYS: Record<number, string> = {
   [CHAIN_IDS.avalanche]: "avalanche",
 };
 
-type Panel = "root" | "bridge" | "exchanges" | "exchange";
+type Panel = "root" | "bridge" | "exchanges" | "exchange" | "wallet";
 type Faucet =
   | { state: "loading" }
   | { state: "ready"; status: FaucetStatus }
@@ -210,7 +211,34 @@ function FundBody({ onClose, onFunded }: Omit<FundSheetProps, "open">) {
           leading={<MarkStack entities={sources.map((entity) => entity.id)} />}
           onPress={() => setPanel("bridge")}
         />
+        {/* A browser's own wallets pay in on the web; on a phone the Receive code is the way for any wallet app. */}
+        {Platform.OS === "web" ? (
+          <SheetRow
+            index={5}
+            title={t("fund.walletTitle")}
+            detail={t("fund.walletBody")}
+            leading={<MarkStack entities={["wallet:metamask", "wallet:rabby", "wallet:phantom"]} />}
+            onPress={() => {
+              if (!account || !address) {
+                onClose();
+                signIn.open();
+                return;
+              }
+              setPanel("wallet");
+            }}
+          />
+        ) : null}
       </>
+    );
+  } else if (panel === "wallet" && address) {
+    body = (
+      <WalletPanel
+        network={network}
+        to={address as `0x${string}`}
+        back={{ label: t("buy.back"), onPress: () => setPanel("root") }}
+        onReceive={() => go("/wallet/receive")}
+        onArrived={onFunded}
+      />
     );
   } else if (panel === "bridge") {
     body = (
