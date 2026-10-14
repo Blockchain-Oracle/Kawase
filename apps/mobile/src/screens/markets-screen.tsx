@@ -22,7 +22,17 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { useWide, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
-import { Button as KitButton, EmptyState as KitEmptyState, ErrorState, FilterChips, LoadingState, Panel, SearchField, StaleTick } from "@/components/kit";
+import {
+  Button as KitButton,
+  EmptyState as KitEmptyState,
+  ErrorState,
+  FilterChips,
+  LiveDot,
+  LoadingState,
+  RADIUS,
+  SearchField,
+  StaleTick,
+} from "@/components/kit";
 import { SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { TabHeader } from "@/components/tab-header";
@@ -85,7 +95,10 @@ export function MarketsScreen() {
   const recentSearches = useRecentSearches();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   // Markets live on mainnet; a testnet session still reads them, labelled.
-  const { market, loading, error, refresh } = useMarket(segment === "watchlist" || segment === "services" ? "trending" : segment, "mainnet");
+  const { market, loading, error, refresh } = useMarket(
+    segment === "watchlist" || segment === "services" ? "trending" : segment,
+    "mainnet",
+  );
   const { results, searching } = useTokenSearch(query, "mainnet");
   const fx = useFx();
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
@@ -123,19 +136,29 @@ export function MarketsScreen() {
       {testnet ? (
         <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} />
       ) : null}
-      {wide ? null : <TabHeader className="px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }} />}
+      {wide ? null : (
+        <TabHeader className="px-5 pb-2" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }} />
+      )}
 
       <ScrollView
         className="flex-1"
         contentContainerClassName={cn("gap-5 px-5 pt-2", wide && "px-10 pt-8")}
-        contentContainerStyle={[{ paddingBottom: clearance.scroll }, wide ? { width: "100%", maxWidth: WIDE_PAGE_PX, alignSelf: "center" } : null]}
+        contentContainerStyle={[
+          { paddingBottom: clearance.scroll },
+          wide ? { width: "100%", maxWidth: WIDE_PAGE_PX, alignSelf: "center" } : null,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         <Text accessibilityRole="header" style={[TYPE.pageTitle, { color: kit.ink }]}>
           {t("markets.title")}
         </Text>
 
-        <SearchField value={query} onChange={setQuery} onFocus={() => setSearchFocused(true)} placeholder={t("markets.search")} />
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          onFocus={() => setSearchFocused(true)}
+          placeholder={t("markets.search")}
+        />
 
         {query.trim() ? <LongShortMatches query={query.trim()} /> : null}
         {query.trim() ? (
@@ -190,14 +213,27 @@ export function MarketsScreen() {
                 </ListGroup>
               </View>
             ) : null}
+            {/* One line, not a panel (the plan's Markets rule): the prices below are mainnet's, and one tap goes there. */}
             {testnet ? (
-              <Panel style={styles.testnet}>
-                <Text style={[TYPE.rowTitle, { color: kit.ink }]}>{t("markets.testnetTitle")}</Text>
-                <Text style={[TYPE.body, { color: kit.text2 }]}>{t("markets.testnetBody")}</Text>
+              <View
+                style={[styles.testnetLine, { backgroundColor: kit.raised2 }]}
+                accessibilityHint={t("markets.testnetBody")}
+              >
+                <LiveDot />
+                <Text numberOfLines={1} style={[TYPE.label, styles.grow, { color: kit.ink }]}>
+                  {t("markets.testnetTitle")}
+                </Text>
                 {networkSwitch.nextAvailable ? (
-                  <KitButton label={t("markets.switchToMainnet")} variant="secondary" loading={networkSwitch.busy} onPress={() => void networkSwitch.switchNetwork("mainnet")} />
+                  <KitButton
+                    label={t("markets.switchToMainnet")}
+                    size="sm"
+                    block={false}
+                    variant="primary"
+                    loading={networkSwitch.busy}
+                    onPress={() => void networkSwitch.switchNetwork("mainnet")}
+                  />
                 ) : null}
-              </Panel>
+              </View>
             ) : null}
 
             <FilterChips
@@ -211,7 +247,9 @@ export function MarketsScreen() {
               bleed={wide ? 0 : SPACE.inset}
             />
 
-            {market?.stale && segment !== "services" ? <StaleTick asOf={Date.parse(market.pricedAt)} reason="refresh-failed" /> : null}
+            {market?.stale && segment !== "services" ? (
+              <StaleTick asOf={Date.parse(market.pricedAt)} reason="refresh-failed" />
+            ) : null}
 
             {segment === "services" ? (
               <ServicesSection />
@@ -222,7 +260,11 @@ export function MarketsScreen() {
             ) : loading && rows.length === 0 ? (
               <LoadingState shape="list" />
             ) : error && rows.length === 0 ? (
-              <ErrorState diagnosis={{ kind: "server", retryable: true }} stillWorks={t("markets.loadFailed")} retry={() => void refresh()} />
+              <ErrorState
+                diagnosis={{ kind: "server", retryable: true }}
+                stillWorks={t("markets.loadFailed")}
+                retry={() => void refresh()}
+              />
             ) : rows.length === 0 ? (
               <KitEmptyState why={t("markets.empty")} size="inline" />
             ) : (
@@ -261,7 +303,14 @@ export function MarketsScreen() {
                               </Amount>
                             ) : null}
                           </View>
-                          {row.spark ? <Sparkline values={row.spark} width={HOT_CARD_WIDTH - HOT_CARD_PADDING} height={HOT_SPARK_HEIGHT} colors={sparkColors} /> : null}
+                          {row.spark ? (
+                            <Sparkline
+                              values={row.spark}
+                              width={HOT_CARD_WIDTH - HOT_CARD_PADDING}
+                              height={HOT_SPARK_HEIGHT}
+                              colors={sparkColors}
+                            />
+                          ) : null}
                         </Pressable>
                       );
                     })}
@@ -271,7 +320,10 @@ export function MarketsScreen() {
                 {wide ? (
                   // Two columns of rows on a desktop window: the list reads down the first, then the second.
                   <View className="flex-row items-start gap-4">
-                    {[rows.slice(0, Math.ceil(rows.length / WIDE_ROW_COLUMNS)), rows.slice(Math.ceil(rows.length / WIDE_ROW_COLUMNS))].map((half, column) => (
+                    {[
+                      rows.slice(0, Math.ceil(rows.length / WIDE_ROW_COLUMNS)),
+                      rows.slice(Math.ceil(rows.length / WIDE_ROW_COLUMNS)),
+                    ].map((half, column) => (
                       <View key={column} className="min-w-0 flex-1">
                         <ListGroup>
                           {half.map((row) => (
@@ -309,5 +361,14 @@ export function MarketsScreen() {
 }
 
 const styles = StyleSheet.create({
-  testnet: { padding: SPACE.lg, gap: SPACE.sm },
+  testnetLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.sm,
+    borderRadius: RADIUS.pill,
+    paddingStart: SPACE.lg,
+    paddingEnd: SPACE.xs,
+    minHeight: 48,
+  },
+  grow: { flex: 1 },
 });
