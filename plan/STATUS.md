@@ -110,6 +110,24 @@ Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compre
   account; the Turnkey wallet is retired and the Privy one registered (`registerUserWallet`).
 - The desktop rail scrolls between its pinned header and footer.
 - Still Turnkey: the native builds (EAS env), so the next TestFlight/APK needs `EXPO_PUBLIC_WALLET_PROVIDER=privy`.
+- **Voice runs on LiveKit Cloud** (agent `CA_QF67rYjca7Hy`, eu-central; free Build plan: 1,000 agent minutes, 5
+  concurrent, 10–20 s cold start). On agari-box its job processes were OOM-killed. Deploy:
+  `apps/voice-agent/scripts/deploy-livekit.sh` (stages the worker + config/money/networks, `Dockerfile.livekit`).
+  Secrets (OPENAI_API_KEY, ELEVENLABS_API_KEY, KAWASE_API_URL) via `lk agent update-secrets`. The Coolify voice app is
+  stopped. A session with no live microphone starts on the pipeline engine (typed text + TTS); GPT-Live can't answer
+  typed requests without audio.
+- **Voice mode redesigned:** full screen, a fluid magenta orb (web WebGL + native Skia, same shader), live captions
+  (Kawase's answer large), "Try saying" chips that send typed text into the session, one round dock (type, mute, stop,
+  End). Verified live on the web: the pipeline greets and captions.
+- **Live markets:** `apps/api/src/market/live.ts` subscribes once to every Uniswap v2/v3/v4 Swap log on Arc mainnet
+  (`wss://rpc.mainnet.arc.io`; v4 PoolManager `0x8366…0951`) and decodes trades for watched pools;
+  `GET /markets/live?tokens=` streams NDJSON (snapshot of the last ~30 min, then trades). Prices match DexScreener to
+  4 digits (`apps/api/test/live-swaps.live.ts`). The token page opens on Live; Markets/Home rows take each trade.
+  Token pages link to BasedBot, DexScreener and Arc's explorer ("Look closer").
+- Composer hint no longer spills; mic is a mini live orb; a fade under Home's bottom controls; handle field has one
+  ring; the phone header is avatar · solid network chip · Sign in. Web publishes reload in place (SIGHUP, no 502s).
+- **Found:** the web's first paint is ~19 s (one 24 MB script: viem's chains, lucide, all 10 catalogs, LiveKit,
+  Turnkey on a Privy build). Tree shaking (`EXPO_UNSTABLE_TREE_SHAKING`) is being measured.
 - **The plan now:** `/Users/abu/.claude/plans/breezy-puzzling-starfish.md`: the open parts of `compressed-dreaming-yao.md`
   merged with Abu's 10-14 design review (voice mode, composer, live markets with on-chain ticks, BasedBot links, logos,
   lime purge, mobile header), in order A money path → B voice → C composer → D live markets → E sweep → F mainnet/submit.

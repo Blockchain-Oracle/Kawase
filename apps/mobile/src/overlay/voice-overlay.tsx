@@ -12,7 +12,7 @@
 import { MOTION } from "@kawase/config";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Platform, useWindowDimensions, View } from "react-native";
+import { Platform, Text, useWindowDimensions, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -26,12 +26,18 @@ import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
 import { focusElement, useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { tokens } from "@kawase/ui-tokens";
 
+import { TYPE, useTheme as useKitTheme } from "@/components/kit";
 import { Orb } from "@/components/orb";
-import { VoiceSession } from "@/voice/voice-session";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
+
+// LiveKit (the room, its React hooks, WebRTC) is about 1.6 MB of script: it loads when voice mode first opens, not
+// with the app (the web's first paint waited on it).
+const VoiceSession = React.lazy(() =>
+  import("@/voice/voice-session").then((module) => ({ default: module.VoiceSession })),
+);
 
 export const ORB_DOCK_SIZE = 40;
 /** The orb in the overlay: the screen's one figure (ChatGPT's voice mode), about two thirds of a phone's width. */
@@ -172,9 +178,19 @@ export function VoiceOverlay({ open }: VoiceOverlayProps) {
           </View>
         </View>
         <Animated.View style={words} className="w-full flex-1 items-center">
-          {open ? <VoiceSession level={level} onTypeInstead={typeInstead} onEnd={overlay.close} /> : null}
+          {open ? (
+            <React.Suspense fallback={<StateLine label={t("voice.connecting")} />}>
+              <VoiceSession level={level} onTypeInstead={typeInstead} onEnd={overlay.close} />
+            </React.Suspense>
+          ) : null}
         </Animated.View>
       </View>
     </BlurOverlay>
   );
+}
+
+/** The status line while voice mode's code loads (the first time it opens). */
+function StateLine({ label }: { label: string }) {
+  const { color } = useKitTheme();
+  return <Text style={[TYPE.label, { color: color.text2 }]}>{label}</Text>;
 }

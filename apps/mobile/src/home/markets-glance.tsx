@@ -7,7 +7,20 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
-import { Button, ErrorState, ListRow, LoadingState, Panel, SectionLabel, SIZE, SPACE, Sparkline, TYPE, useTheme } from "@/components/kit";
+import {
+  Button,
+  ErrorState,
+  ListRow,
+  LiveDot,
+  LoadingState,
+  Panel,
+  SectionLabel,
+  SIZE,
+  SPACE,
+  Sparkline,
+  TYPE,
+  useTheme,
+} from "@/components/kit";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { useMarket } from "@/markets/use-markets";
@@ -23,13 +36,30 @@ export function MarketsGlance() {
   const { color } = useTheme();
   const router = useRouter();
   const fx = useFx();
-  const { market, loading, error, refresh } = useMarket("trending", "mainnet");
-  const rows = (market?.rows ?? []).filter((row) => row.token.status !== "impersonator" && row.token.status !== "lookalike").slice(0, ROWS);
+  const { market, loading, error, refresh, live } = useMarket("trending", "mainnet");
+  const rows = (market?.rows ?? [])
+    .filter((row) => row.token.status !== "impersonator" && row.token.status !== "lookalike")
+    .slice(0, ROWS);
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <SectionLabel>{t("feed.home.markets")}</SectionLabel>
-        <Button size="sm" block={false} variant="ghost" label={t("feed.home.seeMarkets")} onPress={() => router.navigate("/markets")} />
+        <View style={styles.title}>
+          <SectionLabel>{t("feed.home.markets")}</SectionLabel>
+          {/* Every trade on these pools moves the rows as it lands (useMarket's live stream). */}
+          {live ? (
+            <View style={styles.live} accessibilityLabel={t("tokenPage.live")}>
+              <LiveDot />
+              <Text style={[TYPE.label, { color: color.text2 }]}>{t("tokenPage.live")}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Button
+          size="sm"
+          block={false}
+          variant="ghost"
+          label={t("feed.home.seeMarkets")}
+          onPress={() => router.navigate("/markets")}
+        />
       </View>
       {loading && rows.length === 0 ? (
         <LoadingState shape="list" />
@@ -42,7 +72,18 @@ export function MarketsGlance() {
               key={row.token.address}
               title={row.token.symbol}
               detail={row.token.name}
-              leading={<TokenMark token={{ chainId: row.token.chainId, address: row.token.address, symbol: row.token.symbol, logoUrl: row.token.logoUrl }} size={SIZE.markToken} />}
+              detailLines={1}
+              leading={
+                <TokenMark
+                  token={{
+                    chainId: row.token.chainId,
+                    address: row.token.address,
+                    symbol: row.token.symbol,
+                    logoUrl: row.token.logoUrl,
+                  }}
+                  size={SIZE.markToken}
+                />
+              }
               trailing={
                 <View style={styles.end}>
                   {row.spark ? <Sparkline points={row.spark} /> : null}
@@ -77,5 +118,7 @@ const styles = StyleSheet.create({
   wrap: { gap: SPACE.sm },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   end: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  title: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  live: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   plate: { gap: SPACE.md, padding: SPACE.lg },
 });

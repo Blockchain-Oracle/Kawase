@@ -12,12 +12,15 @@ import { ChevronRight, Icon } from "./icons";
 export function ListRow({
   title,
   detail,
+  detailLines,
   onPress,
   leading,
   trailing,
 }: {
   title: string;
   detail?: string | undefined;
+  /** Clip the detail to this many lines (a token's name beside its price); unclipped by default (reasons wrap). */
+  detailLines?: number | undefined;
   onPress?: () => void;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -28,7 +31,11 @@ export function ListRow({
       {leading}
       <View style={styles.text}>
         <Text style={[TYPE.row, { color: color.ink }]}>{title}</Text>
-        {detail ? <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{detail}</Text> : null}
+        {detail ? (
+          <Text numberOfLines={detailLines} style={[TYPE.rowDetail, { color: color.text3 }]}>
+            {detail}
+          </Text>
+        ) : null}
       </View>
       {trailing ?? (onPress ? <Icon icon={ChevronRight} size={SIZE.iconSm} tint={color.text3} /> : null)}
     </>
