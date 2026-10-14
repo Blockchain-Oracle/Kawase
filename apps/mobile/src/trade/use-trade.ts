@@ -7,8 +7,10 @@
 // switching Kawase's permission to close it on is one more yes on the position page.
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as React from "react";
+import { AppState } from "react-native";
 import { formatUnits } from "viem";
 
+import { ApiError } from "@kawase/api-client";
 import type { MarginIntent, MarginMarketView, MarginRequest, MarginSide } from "@kawase/api-client";
 import { GAS_FLOAT_USDC_BASE_UNITS, MARGIN, MARGIN_PROTECTION } from "@kawase/config";
 
@@ -53,6 +55,9 @@ export function targetSteps(target: keyof TradeTargets, side: MarginSide, mark: 
 }
 
 const normalise = (text: string) => text.replace(",", ".").replace(/^\./, "0.");
+const keyOf = (request: MarginRequest) => `${request.market}:${request.side}:${request.margin}:${request.leverage}`;
+/** A revise refused for these starts a fresh order: the old one went final, expired, moved network or is gone. */
+const RESTART_CODES = new Set(["intent_final", "intent_stale", "not_found", "network_mismatch"]);
 
 export function useTrade(markets: readonly MarginMarketView[] | undefined, prefill: { market?: string | undefined; side?: MarginSide | undefined }) {
   const { status } = useSession();
@@ -113,13 +118,18 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
     () => (view && marginValue > 0 && sideView?.available ? { action: "open", market: view.market, side, margin: normalise(amount), leverage: chosenLeverage } : undefined),
     [amount, chosenLeverage, marginValue, side, sideView?.available, view],
   );
-  const requestKey = request ? `${request.market}:${request.side}:${request.margin}:${request.leverage}` : "";
+  const requestKey = request ? keyOf(request) : "";
 
-  // Drafting: the newest request wins; one call in flight; a revise that the api refuses (the order went final or
-  // expired) starts a fresh order instead.
+  // Drafting: the newest request wins; one call in flight; each request's content goes out once (re-renders, polls
+  // and the wallet's status never re-send it; only `requote` prices the same inputs again). A revise that the api
+  // refuses because the order went final, expired or is gone starts a fresh order; any other failure (offline, a 5xx)
+  // keeps the order and says so, so a blip never leaves an orphaned draft behind a duplicate.
+  const controllerRef = React.useRef(controller);
+  controllerRef.current = controller;
   const intentRef = React.useRef<MarginIntent | undefined>(undefined);
   intentRef.current = controller.intent;
   const wanted = React.useRef<MarginRequest | undefined>(undefined);
+  const lastSentKey = React.useRef<string | undefined>(undefined);
   const running = React.useRef(false);
   const pump = React.useCallback(async () => {
     if (running.current) return;
@@ -128,15 +138,20 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
     try {
       let sent: MarginRequest | undefined;
       while (wanted.current && wanted.current !== sent) {
-        sent = wanted.current;
+        const request = wanted.current;
+        sent = request;
+        lastSentKey.current = keyOf(request);
         const current = intentRef.current;
         try {
           const next =
             current && isMarginOpen(current)
-              ? await api.margin.revise(current.id, sent).catch(() => api.margin.create(sent!))
-              : await api.margin.create(sent);
+              ? await api.margin.revise(current.id, request).catch((error: unknown) => {
+                  if (error instanceof ApiError && RESTART_CODES.has(error.code)) return api.margin.create(request);
+                  throw error;
+                })
+              : await api.margin.create(request);
           intentRef.current = next.intent;
-          controller.set(next.intent);
+          controllerRef.current.set(next.intent);
           setDraftFailed(false);
         } catch {
           setDraftFailed(true);
@@ -146,10 +161,12 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
       running.current = false;
       setDrafting(false);
     }
-  }, [controller]);
+  }, []);
 
   React.useEffect(() => {
-    if (!request || !signedIn) return undefined;
+    // Signing out forgets what was sent, so the same inputs are priced again for whoever signs in.
+    if (!signedIn) lastSentKey.current = undefined;
+    if (!request || !signedIn || requestKey === lastSentKey.current) return undefined;
     const current = intentRef.current;
     // An order on its way, or its receipt, is never redrafted underneath the person.
     if (current && !isMarginOpen(current) && !isMarginFinished(current)) return undefined;
@@ -163,22 +180,39 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
   }, [requestKey, signedIn, pump]);
 
   // Price the same inputs again (the ring ran out, or "Try again"): a fresh object, so the pump sends it once more.
+  // Not while the app is in the background or the browser tab is hidden: coming back prices it then.
   const requestRef = React.useRef<MarginRequest | undefined>(undefined);
   requestRef.current = request;
+  const ready = React.useRef({ signedIn, busy: controller.busy });
+  ready.current = { signedIn, busy: controller.busy };
   const requote = React.useCallback(() => {
     const current = intentRef.current;
     const latest = requestRef.current;
-    if (!latest || !signedIn || running.current || controller.busy) return;
+    if (!latest || !ready.current.signedIn || running.current || ready.current.busy || AppState.currentState !== "active") return;
     if (current && !isMarginOpen(current)) return;
     wanted.current = { ...latest };
     void pump();
-  }, [controller.busy, pump, signedIn]);
+  }, [pump]);
+  const [foreground, setForeground] = React.useState(AppState.currentState === "active");
+  React.useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => setForeground(state === "active"));
+    return () => subscription.remove();
+  }, []);
 
   // The draft matches what the ticket shows only when it was drafted from these very inputs.
   const intent = controller.intent;
   const draft = intent?.draft ?? null;
   const current =
     Boolean(draft && request) && draft!.market === request!.market && draft!.side === request!.side && Number(formatUnits(BigInt(draft!.margin), USDC_DECIMALS)) === marginValue && draft!.leverage === request!.leverage;
+
+  // The quote's freshness runs on this device's clock from the moment the draft arrived (the server's `quotedAt` would
+  // drain the ring at once on a device whose clock runs ahead, and every requote would fire the next).
+  const quotedKey = current ? `${intent!.id}:${draft!.quotedAt}` : undefined;
+  const [arrived, setArrived] = React.useState<{ key: string; at: number }>();
+  React.useEffect(() => {
+    if (quotedKey) setArrived((was) => (was?.key === quotedKey ? was : { key: quotedKey, at: Date.now() }));
+  }, [quotedKey]);
+  const quoteFrom = arrived && arrived.key === quotedKey ? arrived.at : undefined;
 
   // After an open completes: the chosen targets go onto the new position (watched once Kawase may close it).
   const completedPosition = intent?.state === "completed" && intent.request.action === "open" ? intent.positionId : null;
@@ -238,6 +272,10 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
     draftFailed,
     /** The order's draft, when it was priced from exactly what the ticket shows. */
     draft: current ? draft : null,
+    /** When this device received the draft shown (the ring drains QUOTE_FRESH_MS from it). */
+    quoteFrom,
+    /** The app is in front (a hidden tab or a backgrounded app never re-prices). */
+    foreground,
     requote,
     targetsSaved,
     /** Start over after a receipt. */
@@ -245,6 +283,7 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
       controller.reset();
       intentRef.current = undefined;
       wanted.current = undefined;
+      lastSentKey.current = undefined;
       setAmountText("");
       setTargets({ takeProfit: null, stopLoss: null });
       setTargetsSaved(undefined);
