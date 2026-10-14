@@ -78,6 +78,8 @@ export type SwapVenues = {
   quoteAll(input: VenueInput, only?: readonly SwapVenue[]): Promise<{ quotes: VenueQuote[]; failures: VenueFailure[] }>;
   /** The chosen venue's calls for exactly this swap, checked; throws `VenueRefused` when they do not hold. */
   prepare(venue: SwapVenue, input: VenueInput & { minOut: bigint }): Promise<PreparedSwap>;
+  /** False for a keyed venue this server has no key for: it is not asked in a race and never shown as a row. */
+  configured?(venue: SwapVenue): boolean;
 };
 
 /** API keys for the keyed venues; a venue without its key reports `needs_key` and the others decide. */
@@ -229,6 +231,8 @@ export function createSwapVenues(appKit: SwapEngine, keys: VenueKeys = appKit.ve
 
   return {
     quoteEach,
+
+    configured: (venue) => (venue === "uniswap" ? Boolean(keys.uniswap) : venue === "zerox" ? Boolean(keys.zerox) : true),
 
     async quoteAll(input, only) {
       const attempts = quoteEach(input, only);

@@ -124,14 +124,21 @@ export function createRouteRacer(deps: RouteRacerDeps) {
       const slippageBps = tokenIn.stable && tokenOut.stable ? limits.maxSlippageStableBps : limits.maxSlippageOtherBps;
       const out: TokenMeta = { symbol: tokenOut.symbol, decimals: tokenOut.decimals };
       const attempts: RaceAttempt[] = deps.venues
-        .quoteEach({ network: context, client, from, tokenIn: tokenIn.address, tokenOut: tokenOut.address, amountIn, decimalsIn: tokenIn.decimals, decimalsOut: tokenOut.decimals, slippageBps }, SWAP_VENUES)
+        .quoteEach(
+          { network: context, client, from, tokenIn: tokenIn.address, tokenOut: tokenOut.address, amountIn, decimalsIn: tokenIn.decimals, decimalsOut: tokenOut.decimals, slippageBps },
+          // A venue this server has no key for is not a row the person needs to see.
+          SWAP_VENUES.filter((venue) => deps.venues.configured?.(venue) ?? true),
+        )
         .map((attempt) => {
           const pending = checkingRow(attempt.venue, venueKey(attempt.venue), venueName(attempt.venue));
           return {
             pending: [pending],
             result: attempt.result.then(
               (quote) => [quote.estimatedOut > ZERO ? routeFromVenueQuote(quote, out) : failedRow(pending, "no_route")],
-              (error: unknown) => [routeFromVenueFailure(failureOf(attempt.venue, error))],
+              (error: unknown) => {
+                const failure = failureOf(attempt.venue, error);
+                return failure.reason === "needs_key" ? [] : [routeFromVenueFailure(failure)];
+              },
             ),
           };
         });

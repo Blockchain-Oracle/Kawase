@@ -893,6 +893,25 @@ function routeViews(quotes: readonly VenueQuote[], failures: readonly VenueFailu
       quoteId: entry.quoteId,
       reason: entry.venue === chosen ? (best && best.venue !== chosen ? "picked" : null) : "less_out",
     })),
-    ...failures.map((entry) => ({ venue: entry.venue, label: SWAP_VENUE_NAMES[entry.venue], status: "unavailable" as const, estimatedOut: null, minOut: null, via: [], feeUsd: null, feeBps: null, fee: null, feeToken: null, quoteId: null, reason: entry.reason })),
+    ...failures.flatMap((entry) => {
+      const reason = shownReason(entry.reason);
+      return reason === null ? [] : [{ venue: entry.venue, label: SWAP_VENUE_NAMES[entry.venue], status: "unavailable" as const, estimatedOut: null, minOut: null, via: [], feeUsd: null, feeBps: null, fee: null, feeToken: null, quoteId: null, reason }];
+    }),
   ];
+}
+
+/**
+ * A failure as the review shows it, in the reasons the ticket catalog words (not_on_network, no_route, timeout,
+ * failed). A venue this server has no key for is not a fact the person needs, so it is left out; a venue that turned
+ * the request away for its rate limit did not answer in time, as far as the person is concerned.
+ */
+function shownReason(reason: VenueFailure["reason"]): "not_on_network" | "no_route" | "timeout" | "failed" | null {
+  switch (reason) {
+    case "needs_key":
+      return null;
+    case "rate_limited":
+      return "timeout";
+    default:
+      return reason;
+  }
 }
