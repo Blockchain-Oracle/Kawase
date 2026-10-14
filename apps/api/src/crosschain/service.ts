@@ -52,9 +52,11 @@ import type {
   CrossChainRequest,
   CrossChainRouteView,
   CrossChainStage,
+  ContactChain,
   ElsewhereView,
   UnsignedTransaction,
 } from "@kawase/api-client";
+import { CONTACT_CHAINS } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import { checkBridgeCalls, forwardDelivered, type BridgeDestination } from "@kawase/integrations-app-kit";
 import {
@@ -515,7 +517,8 @@ export class CrossChainService {
           else if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
         }
         if (request.recipient) {
-          const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient);
+          // A contact's address on the destination chain, when they have one (A5); their Arc one otherwise.
+          const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient, contactChain(chain?.id));
           recipientFacts = resolution.facts.status === "self" ? { status: "own" } : resolution.facts;
           if (resolution.facts.status === "resolved") {
             recipient = getAddress(resolution.facts.address);
@@ -1295,6 +1298,9 @@ export class CrossChainService {
 }
 
 const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null, toAsset: null });
+
+/** A destination as a contact's chain, when contacts can hold an address there. */
+const contactChain = (id: string | undefined): ContactChain => ((CONTACT_CHAINS as readonly string[]).includes(id ?? "") ? (id as ContactChain) : "arc");
 
 function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest {
   const pick = <K extends keyof StoredRequest & keyof CrossChainRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);
