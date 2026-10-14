@@ -490,8 +490,8 @@ export const tokens = {
       "drawerWide": 560,
       "drawerInMs": 380,
       "drawerOutMs": 240,
-      "dockBelow": 768,
-      "railCompactBelow": 1200
+      "dockBelow": 1024,
+      "railCompactBelow": 1280
     },
     "sheet": {
       "detents": [
@@ -499,6 +499,7 @@ export const tokens = {
         0.88,
         1
       ],
+      "inset": 0,
       "closeAt": 0.25,
       "flickVelocity": 900,
       "upwardResist": 6,
@@ -512,6 +513,7 @@ export const tokens = {
     },
     "size": {
       "touch": 44,
+      "dot": 6,
       "rowMinHeight": 64,
       "strip": 48,
       "icon": 24,
