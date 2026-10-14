@@ -16,6 +16,8 @@ import { circleOnramp } from "../src/onramp/engine";
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
+// Kawase's buy page lives here in this test; the order's page URL is built from it.
+process.env.ONRAMP_PAGE_URL = "https://app.test.local";
 const live = Boolean(process.env.DATABASE_URL && process.env.CIRCLE_TEST_API_KEY);
 
 test("onramp: a sandbox session, hints that only move the status, settlement by the chain", { skip: !live, timeout: 120_000 }, async () => {
@@ -49,14 +51,33 @@ test("onramp: a sandbox session, hints that only move the status, settlement by 
 
   const availability = (await (await call("GET", "/onramp")).json()) as OnrampAvailability;
   assert.deepEqual([availability.available, availability.sandbox], [true, true]);
+  assert.deepEqual(availability.engines?.map((engine) => [engine.id, engine.delivers, engine.bridgesToArc]), [["circle", "arc", false]], "Coinbase is not offered without CDP keys");
 
-  const started = await call("POST", "/onramp/orders", { amount: "20", then: "cirBTC" });
+  const started = await call("POST", "/onramp/orders", { amount: "20", then: "cirBTC", frame: "page" });
   await expectStatus(started, 201, "start");
-  const { order, widgetUrl } = (await started.json()) as OnrampStartResponse;
+  const { order, widgetUrl, pageUrl, destinationChain, engine } = (await started.json()) as OnrampStartResponse;
+  assert.deepEqual([engine, destinationChain, order.engine, order.stage, order.deliveryChain], ["circle", "Arc", "circle", "paying", "arc"]);
   assert.equal(new URL(widgetUrl).origin, "https://onramp-sandbox.arc.io");
   assert.ok(new URL(widgetUrl).searchParams.get("sessionToken"));
   assert.deepEqual([order.asset, order.thenToken, order.status], ["USDC", "cirBTC", "created"]);
-  console.log(`sandbox session: ${new URL(widgetUrl).origin}, order ${order.id}`);
+  console.log(`sandbox session: ${new URL(widgetUrl).origin}, destinationChain ${destinationChain}, pairs ${new URL(widgetUrl).searchParams.get("pairs")}, order ${order.id}`);
+
+  // Kawase's buy page has no sign-in: its key (in the URL fragment, sent as the bearer) opens exactly this order.
+  assert.ok(pageUrl?.startsWith(`https://app.test.local/buy/${order.id}#k=kbuy_`), "page url");
+  const pageKey = pageUrl!.split("#k=")[1]!;
+  const page = (method: string, path: string, payload?: unknown, bearer = pageKey) =>
+    app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${bearer}` } } : jsonRequest(method, payload, bearer));
+  assert.equal(((await (await page("GET", `/onramp/orders/${order.id}`)).json()) as { order: OnrampOrderView }).order.id, order.id);
+  const remint = await page("POST", `/onramp/orders/${order.id}/session`);
+  await expectStatus(remint, 200, "re-mint");
+  const fresh = (await remint.json()) as { widgetUrl: string; destinationChain: string; engine: string };
+  assert.deepEqual([new URL(fresh.widgetUrl).origin, fresh.destinationChain, fresh.engine], ["https://onramp-sandbox.arc.io", "Arc", "circle"]);
+  await expectStatus(await page("POST", `/onramp/orders/${order.id}/events`, { event: "INITIALIZATION_SUCCESS" }), 200, "page event");
+  assert.equal((await page("GET", "/onramp")).status, 200, "public availability is open to anyone");
+  assert.equal((await page("POST", "/onramp/orders", { amount: "20" })).status, 401, "the key cannot start a purchase");
+  assert.equal((await page("GET", `/onramp/orders/${order.id}`, undefined, `${pageKey}x`)).status, 401, "a wrong key is refused");
+  assert.equal((await page("GET", `/onramp/orders/${randomUUID()}`)).status, 401, "the key opens only its own order");
+  assert.equal((await page("GET", "/wallet")).status, 401, "and nothing outside the onramp's order paths");
 
   const hinted = (await (await call("POST", `/onramp/orders/${order.id}/events`, { event: "DEPOSIT_SUBMITTED", code: "DEPOSIT_SUBMITTED" })).json()) as { order: OnrampOrderView };
   assert.equal(hinted.order.status, "submitted");

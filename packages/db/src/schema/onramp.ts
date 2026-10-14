@@ -39,6 +39,18 @@ export const onrampOrders = pgTable(
     receivedTx: text(),
     receivedLogIndex: text(),
     settledAt: timestampTz(),
+    /** Which engine runs it ("circle", "coinbase"), how it is paid (apple_pay, google_pay, card, bank) and where the provider delivers ("arc", or "base" when a Bring-to-Arc leg follows). */
+    engine: text().notNull().default("circle"),
+    method: text(),
+    deliveryChain: text().notNull().default("arc"),
+    /** The provider's own order id (Coinbase), and the delivery it made on `deliveryChain` once it has. */
+    providerOrderId: text(),
+    deliveryTx: text(),
+    /** The leg after a Base delivery: null → "starting" (claimed once) → "started" (`crosschainIntentId`) or "failed". */
+    bridgeState: text(),
+    crosschainIntentId: uuid(),
+    /** sha256 of the key the buy page holds in its URL fragment: it may read this order, send its events, re-mint its session. */
+    pageKeyHash: text(),
     /** The browser's lifecycle hints and webhook notes, newest last (diagnostics only). */
     events: jsonb().$type<Record<string, unknown>[]>().notNull().default([]),
     expiresAt: timestampTz().notNull(),
@@ -48,5 +60,6 @@ export const onrampOrders = pgTable(
   (table) => [
     index("onramp_orders_user_idx").on(table.userId, table.network, table.createdAt),
     uniqueIndex("onramp_orders_received_idx").on(table.receivedTx, table.receivedLogIndex),
+    uniqueIndex("onramp_orders_provider_idx").on(table.engine, table.providerOrderId),
   ],
 );

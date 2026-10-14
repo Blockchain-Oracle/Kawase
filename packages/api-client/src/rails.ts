@@ -1,6 +1,25 @@
 // Money rails (builder B1): Kawase Margin (long/short on Aave V4), and the endpoints that serve it. Kept apart from
 // types.ts so the lanes merge cleanly; the client spreads `railsEndpoints` into its routes.
+import type { CatalogParty, CatalogToolDetail, CatalogView, MarketplaceCategory, PaymentRail } from "./marketplace";
 import type { IntentState, NetworkId, PolicyResultView, RevokeRequest, SendOutcome, SignedRevokeInput, TransactionRequestResponse, UnsignedTransaction } from "./types";
+
+export type CatalogQueryInput = {
+  category?: MarketplaceCategory | undefined;
+  q?: string | undefined;
+  /** USDC base units. */
+  maxPrice?: string | undefined;
+  party?: CatalogParty | undefined;
+  rail?: PaymentRail | undefined;
+  network?: NetworkId | undefined;
+  limit?: number | undefined;
+  offset?: number | undefined;
+};
+export type CatalogToolQueryInput = { group?: string | undefined; q?: string | undefined; network?: NetworkId | undefined; limit?: number | undefined; offset?: number | undefined };
+
+const queryString = (query: object): string => {
+  const parts = Object.entries(query).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`);
+  return parts.length > 0 ? `?${parts.join("&")}` : "";
+};
 
 type Call = <T>(method: string, path: string, body?: unknown, options?: { idempotencyKey?: string | undefined }) => Promise<T>;
 
@@ -233,6 +252,15 @@ export type MarginPositionsOutput = { network: NetworkId; positions: MarginPosit
 
 export type OnrampStatus = "created" | "opened" | "submitted" | "settled" | "not_completed" | "expired";
 
+/** The engines behind buying inside Kawase (D42): Circle's Onramp Kit (Arc direct) and Coinbase's Apple Pay (Base, then Arc). */
+export type OnrampEngineId = "circle" | "coinbase";
+export type OnrampMethod = "apple_pay" | "google_pay" | "card" | "bank";
+/**
+ * Where a purchase stands, in the three words the progress rail shows: Paying (card/ID step) → Buying (the provider
+ * is filling it) → On Arc. A Coinbase order passes through `on_base` and `bridging` on the way (the same run).
+ */
+export type OnrampStage = "paying" | "buying" | "on_base" | "bridging" | "arrived";
+
 export type OnrampOrderView = {
   id: string;
   network: NetworkId;
@@ -252,6 +280,28 @@ export type OnrampOrderView = {
   settledAt: string | null;
   createdAt: string;
   expiresAt: string;
+  /** Which engine runs it, how it is paid, where the provider delivers, and the stage the progress rail shows. */
+  engine?: OnrampEngineId;
+  method?: OnrampMethod | null;
+  deliveryChain?: "arc" | "base";
+  stage?: OnrampStage;
+  /** Coinbase: the delivery on Base and the Bring-to-Arc leg that carries it to Arc (an intent the app opens). */
+  deliveryTx?: string | null;
+  bridge?: { state: "starting" | "started" | "failed"; intentId: string | null } | null;
+};
+
+/** One engine as the Buy sheet lists it: which methods it takes here, where it delivers, why it is not offered. */
+export type OnrampEngineView = {
+  id: OnrampEngineId;
+  available: boolean;
+  /** Why not: the engine is not set up here, or it only serves the US (Coinbase). */
+  reason: "not_configured" | "region" | null;
+  methods: OnrampMethod[];
+  delivers: "arc" | "base";
+  /** True when the money arrives on Base first and a Bring-to-Arc leg follows in the same order. */
+  bridgesToArc: boolean;
+  /** A guest limit the provider enforces, in whole dollars per week (Coinbase: 500). */
+  weeklyLimitUsd: number | null;
 };
 
 export type OnrampAvailability = {
@@ -262,6 +312,20 @@ export type OnrampAvailability = {
   reason: "sign_in" | "no_wallet" | "not_configured" | null;
   deliverable: readonly string[];
   defaultAmount: string;
+  /** Every engine and what it offers (absent on older servers: Circle only). */
+  engines?: OnrampEngineView[];
+};
+
+/** What Coinbase needs from the person before it will sell: both contacts verified by a code, and the terms accepted. */
+export type OnrampCoinbaseContact = {
+  /** E.164 US number. */
+  phone: string;
+  smsVerificationId: string;
+  /** Defaults to the account's email. */
+  email?: string | null | undefined;
+  emailVerificationId: string;
+  /** The person accepted Coinbase's Guest Checkout terms, User Agreement and Privacy Policy. */
+  acceptedTerms: true;
 };
 
 export type OnrampDestination = "wallet" | "agent_wallet";
@@ -272,8 +336,44 @@ export type OnrampStartRequest = {
   then?: string | null | undefined;
   /** Where it lands: the person's own wallet (default), or their agent wallet that pays for services (USDC only). */
   destination?: OnrampDestination | null | undefined;
+  /** Which engine and how to pay; the api picks (Circle) when absent. */
+  engine?: OnrampEngineId | null | undefined;
+  method?: OnrampMethod | null | undefined;
+  coinbase?: OnrampCoinbaseContact | null | undefined;
+  /** Circle: "page" mints for Kawase's buy page (the widget in an iframe on our host); "browser" (default) for a top-level window. */
+  frame?: "page" | "browser" | null | undefined;
 };
-export type OnrampStartResponse = { order: OnrampOrderView; widgetUrl: string; expiresAt: string };
+export type OnrampStartResponse = {
+  order: OnrampOrderView;
+  /** Circle: the widget URL (open it through the Kawase buy page). Coinbase: the Apple Pay payment link. */
+  widgetUrl: string;
+  expiresAt: string;
+  engine?: OnrampEngineId;
+  /**
+   * Kawase's own buy page for this order (`app.getkawase.xyz/buy/:id`) with the order key in its fragment: the page
+   * carries no sign-in, the key lets it read this one order, report its events and re-mint its session. Absent on older servers.
+   */
+  pageUrl?: string;
+  /** What Circle's session was minted for (the kit's destination chain), for the record. */
+  destinationChain?: string;
+};
+/** A fresh Circle session for an open order (the 30-minute one ran out: SESSION_TIMEOUT / INVALID_SESSION_TOKEN). */
+export type OnrampSessionView = { widgetUrl: string; expiresAt: string; engine: OnrampEngineId; destinationChain: string };
+export type OnrampQuoteRequest = { engine: OnrampEngineId; amount: string; currency?: string | null | undefined; method?: OnrampMethod | null | undefined };
+/** The provider's price for a purchase (Coinbase only; Circle's widget shows its own). Decimals as strings. */
+export type OnrampQuoteView = {
+  engine: OnrampEngineId;
+  payTotal: string;
+  payCurrency: string;
+  receive: string;
+  asset: string;
+  fees: { type: "network" | "exchange"; amount: string; currency: string }[];
+  /** Crypto per one unit of fiat. */
+  rate: string;
+};
+export type OnrampVerificationChannel = "sms" | "email";
+export type OnrampVerificationStarted = { verificationId: string; channel: OnrampVerificationChannel; expiresAt: string };
+export type OnrampVerificationDone = { verificationId: string; channel: OnrampVerificationChannel; verifiedUntil: string };
 export type OnrampEventInput = { event: string; code?: string | null | undefined; payload?: Record<string, unknown> | undefined };
 
 /** What start_buy proposes: the card's button mints the session when tapped (sessions live 30 minutes). */
@@ -617,6 +717,19 @@ export function railsEndpoints(call: Call) {
       get: (id: string) => call<{ order: OnrampOrderView }>("GET", `/onramp/orders/${id}`),
       /** The widget's lifecycle hints (UX only; settlement comes from the chain). */
       event: (id: string, input: OnrampEventInput) => call<{ order: OnrampOrderView }>("POST", `/onramp/orders/${id}/events`, input),
+      /** Coinbase's price for an amount (pay total, what arrives, fees). */
+      quote: (request: OnrampQuoteRequest) => call<OnrampQuoteView>("POST", "/onramp/quote", request),
+      /** Coinbase verifies a phone (sms) and an email with a code each; the ids go with the order. */
+      verify: (channel: OnrampVerificationChannel, destination?: string) => call<OnrampVerificationStarted>("POST", "/onramp/verifications", { channel, ...(destination ? { destination } : {}) }),
+      verifySubmit: (verificationId: string, otpCode: string, channel: OnrampVerificationChannel) =>
+        call<OnrampVerificationDone>("POST", `/onramp/verifications/${encodeURIComponent(verificationId)}/submit?channel=${channel}`, { otpCode }),
+      /** A fresh Circle session for an open order. */
+      session: (id: string) => call<OnrampSessionView>("POST", `/onramp/orders/${id}/session`),
+    },
+    /** The marketplace as tools (categories with counts, price per call, 1P/3P, rail); public data. */
+    marketCatalog: {
+      list: (query: CatalogQueryInput = {}) => call<CatalogView>("GET", `/marketplace/catalog${queryString(query)}`),
+      tool: (key: string, query: CatalogToolQueryInput = {}) => call<CatalogToolDetail>("GET", `/marketplace/catalog/${encodeURIComponent(key)}${queryString(query)}`),
     },
     margin: {
       /** Markets, sides and leverage caps from the venue's live reserves; no account needed (R13). */
