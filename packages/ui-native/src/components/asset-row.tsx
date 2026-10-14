@@ -8,6 +8,7 @@ import { TokenMark, type TokenLike } from "@kawase/ui-native/components/token-ma
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 import { WEB_PRESSABLE } from "@kawase/ui-native/lib/wide";
+import * as React from "react";
 import { Pressable, View } from "react-native";
 
 type AssetRowProps = {
@@ -26,6 +27,8 @@ type AssetRowProps = {
   spark?: { values: readonly number[]; colors: { up: string; down: string } };
   /** Why it cannot be chosen here (R2): shown instead of the value, and the row is dimmed. */
   unavailable?: string;
+  /** The live number behind `value` (a price): when a refresh moves it, the value flashes up or down for a moment. */
+  tick?: number | null;
   selected?: boolean;
   onPress?: () => void;
   accessibilityLabel?: string;
@@ -35,8 +38,26 @@ type AssetRowProps = {
 const ROW_MIN_HEIGHT = 64;
 const SPARK_WIDTH = 56;
 const SPARK_HEIGHT = 24;
+/** How long a live price keeps the colour of its move. */
+const FLASH_MS = 700;
 
-function AssetRow({ token, amount, value, change24hPct, changeLabel, chip, chainBadge, spark, unavailable, selected, onPress, accessibilityLabel, className }: AssetRowProps) {
+/** "up" or "down" for a moment after the number moves; null at rest and on the first read. */
+function useTickFlash(tick: number | null | undefined) {
+  const last = React.useRef(tick);
+  const [flash, setFlash] = React.useState<"up" | "down" | null>(null);
+  React.useEffect(() => {
+    const was = last.current;
+    last.current = tick;
+    if (tick === null || tick === undefined || was === null || was === undefined || tick === was) return undefined;
+    setFlash(tick > was ? "up" : "down");
+    const timer = setTimeout(() => setFlash(null), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [tick]);
+  return flash;
+}
+
+function AssetRow({ token, amount, value, change24hPct, changeLabel, chip, chainBadge, spark, unavailable, tick, selected, onPress, accessibilityLabel, className }: AssetRowProps) {
+  const flash = useTickFlash(tick);
   const changeTone = change24hPct === null || change24hPct === undefined ? "text-muted-foreground" : change24hPct >= 0 ? "text-success" : "text-destructive";
   return (
     <Pressable
@@ -80,7 +101,9 @@ function AssetRow({ token, amount, value, change24hPct, changeLabel, chip, chain
           </Text>
         ) : (
           <>
-            {value ? <Amount className="text-foreground text-base font-medium">{value}</Amount> : null}
+            {value ? (
+              <Amount className={cn("text-base font-medium", flash === "up" ? "text-success" : flash === "down" ? "text-destructive" : "text-foreground")}>{value}</Amount>
+            ) : null}
             {changeLabel ? <Amount className={cn("text-sm", changeTone)}>{changeLabel}</Amount> : null}
           </>
         )}

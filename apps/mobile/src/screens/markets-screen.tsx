@@ -111,6 +111,7 @@ export function MarketsScreen() {
       token: row.token,
       amount: details,
       value: price(row.priceUsd, fx, locale),
+      tick: row.priceUsd,
       change24hPct: row.change24hPct,
       ...(changeLabel ? { changeLabel } : {}),
       ...(chip ? { chip } : {}),
