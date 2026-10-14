@@ -6,8 +6,10 @@
 //   (`Permit2.approve(token, router, amount, expiration)`), so approve-to-Permit2 + permit + swap fit one EIP-7702
 //   batch with no signature.
 // The swap is `execute(commands, inputs, deadline)` at the router: Kawase decodes every command and V4 action, holds
-// every recipient to the wallet (or the router's own placeholders that mean "the caller" / "the router"), the input
-// to exactly the amount, and sums the route's own on-chain minimums.
+// every swap to tokenIn → tokenOut (V2 and V3 paths end to end, V4 currencies), every payout to the wallet (or the
+// router's MSG_SENDER placeholder), the input to exactly the amount, and sums the route's own on-chain minimums. A
+// V2/V3 swap that leaves its output in the router (ADDRESS_THIS) counts only through a later SWEEP of tokenOut to the
+// wallet, whose own minimum is what is counted.
 import { decodeAbiParameters, decodeFunctionData, encodeFunctionData, erc20Abi, getAddress, parseAbi, parseAbiParameters, type Address, type Hex } from "viem";
 
 const API = "https://trade-api.gateway.uniswap.org/v1";
@@ -43,6 +45,11 @@ const CMD = { V3_SWAP_EXACT_IN: 0x00, SWEEP: 0x04, V2_SWAP_EXACT_IN: 0x08, V4_SW
 // V4 router actions Kawase accepts.
 const ACT = { SWAP_EXACT_IN_SINGLE: 0x06, SWAP_EXACT_IN: 0x07, SETTLE: 0x0b, SETTLE_ALL: 0x0c, TAKE: 0x0e, TAKE_ALL: 0x0f } as const;
 const COMMAND_MASK = 0x3f;
+/** A V3 path is token (20 bytes), then fee (3) + token (20) per hop; a V2 path lists at least two tokens. */
+const ADDRESS_BYTES = 20;
+const V3_HOP_BYTES = 23;
+const HEX_PER_BYTE = 2;
+const MIN_V2_PATH = 2;
 
 export class UniswapError extends Error {
   constructor(
@@ -163,6 +170,14 @@ export async function uniswapCalls(apiKey: string, quoted: UniswapQuote, tokenIn
   return quoted.permitTransaction ? [approve, quoted.permitTransaction, main] : [approve, main];
 }
 
+/** The first and last token of a V3 path, or null when it is not a whole number of hops. */
+function v3PathEnds(path: Hex): readonly [Address, Address] | null {
+  const bytes = (path.length - HEX_PREFIX) / HEX_PER_BYTE;
+  if (bytes < ADDRESS_BYTES + V3_HOP_BYTES || (bytes - ADDRESS_BYTES) % V3_HOP_BYTES !== 0) return null;
+  const hex = path.slice(HEX_PREFIX);
+  return [getAddress(`0x${hex.slice(0, ADDRESS_BYTES * HEX_PER_BYTE)}`), getAddress(`0x${hex.slice(hex.length - ADDRESS_BYTES * HEX_PER_BYTE)}`)];
+}
+
 export type UniswapCheckReason = "wrong_shape" | "wrong_target" | "wrong_approval" | "wrong_permit" | "native_value" | "wrong_command" | "wrong_recipient" | "wrong_amount" | "below_minimum" | "unreadable";
 
 /**
@@ -203,10 +218,11 @@ export function checkUniswapCalls(
     }
   }
 
-  const payee = (address: string) => same(address, expected.recipient) || same(address, MSG_SENDER) || same(address, ADDRESS_THIS);
   const paysWallet = (address: string) => same(address, expected.recipient) || same(address, MSG_SENDER);
   let guaranteed = NO_VALUE;
   let spent = NO_VALUE;
+  /** A V2/V3 swap left tokenOut in the router and no SWEEP to the wallet has followed it yet. */
+  let heldInRouter = false;
   try {
     const { args } = decodeFunctionData({ abi: routerAbi, data: main.data });
     const commands = (args[0] as Hex).slice(HEX_PREFIX).match(/../g) ?? [];
@@ -242,13 +258,31 @@ export function checkUniswapCalls(
           }
         }
       } else if (command === CMD.V3_SWAP_EXACT_IN || command === CMD.V2_SWAP_EXACT_IN) {
-        const [recipient, amountIn, amountOutMin] = decodeAbiParameters(parseAbiParameters(command === CMD.V3_SWAP_EXACT_IN ? "address, uint256, uint256, bytes, bool" : "address, uint256, uint256, address[], bool"), data);
-        if (!payee(recipient)) return { ok: false, reason: "wrong_recipient" };
+        let recipient: Address;
+        let amountIn: bigint;
+        let amountOutMin: bigint;
+        let ends: readonly [Address, Address] | null;
+        if (command === CMD.V3_SWAP_EXACT_IN) {
+          const [to, amount, minimum, path] = decodeAbiParameters(parseAbiParameters("address, uint256, uint256, bytes, bool"), data);
+          [recipient, amountIn, amountOutMin, ends] = [to, amount, minimum, v3PathEnds(path)];
+        } else {
+          const [to, amount, minimum, path] = decodeAbiParameters(parseAbiParameters("address, uint256, uint256, address[], bool"), data);
+          [recipient, amountIn, amountOutMin, ends] = [to, amount, minimum, path.length >= MIN_V2_PATH ? [path[0]!, path[path.length - 1]!] : null];
+        }
+        // Only tokenIn → tokenOut, so its minimum is in tokenOut's units.
+        if (!ends || !same(ends[0], expected.tokenIn) || !same(ends[1], expected.tokenOut)) return { ok: false, reason: "wrong_amount" };
         spent += amountIn;
-        guaranteed += amountOutMin;
+        if (paysWallet(recipient)) guaranteed += amountOutMin;
+        else if (same(recipient, ADDRESS_THIS)) heldInRouter = true;
+        else return { ok: false, reason: "wrong_recipient" };
       } else if (command === CMD.SWEEP) {
-        const [, recipient] = decodeAbiParameters(parseAbiParameters("address, address, uint256"), data);
+        const [token, recipient, amountMin] = decodeAbiParameters(parseAbiParameters("address, address, uint256"), data);
         if (!paysWallet(recipient)) return { ok: false, reason: "wrong_recipient" };
+        // The sweep pays the router's whole balance of the token, at least `amountMin`, to the wallet.
+        if (same(token, expected.tokenOut)) {
+          guaranteed += amountMin;
+          heldInRouter = false;
+        }
       } else {
         return { ok: false, reason: "wrong_command" };
       }
@@ -256,6 +290,8 @@ export function checkUniswapCalls(
   } catch {
     return { ok: false, reason: "unreadable" };
   }
+  // Output left in the router can be swept by anyone.
+  if (heldInRouter) return { ok: false, reason: "wrong_recipient" };
   if (spent !== expected.amountIn) return { ok: false, reason: "wrong_amount" };
   if (guaranteed < expected.minOut) return { ok: false, reason: "below_minimum" };
   return { ok: true, guaranteedOut: guaranteed };
