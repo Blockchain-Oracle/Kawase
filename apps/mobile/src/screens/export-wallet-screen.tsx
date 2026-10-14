@@ -24,6 +24,8 @@ import { Page, Section } from "@/account/page";
 import { useAccountMethods } from "@/account/use-account-methods";
 import type { PrivyAccountMethods } from "@/account/use-account-methods-privy-core";
 import { useT } from "@/i18n";
+import { useSession } from "@/session/session-provider";
+import { useSignIn } from "@/sign-in/sign-in-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
@@ -49,8 +51,12 @@ function Warning({ title, lines }: { title: string; lines: string[] }) {
 function PrivyExport({ account }: { account: PrivyAccountMethods }) {
   const { t } = useT();
   const signer = useWalletSigner();
+  const { user } = useSession();
+  const signIn = useSignIn();
   const [busy, setBusy] = React.useState(false);
   const onWeb = account.walletExport === "privyWindow";
+  // A phone sends the person here to sign in with the same email; a guest gets the sign-in sheet right on this page.
+  const guest = !user || user.isGuest;
 
   const open = async () => {
     setBusy(true);
@@ -75,8 +81,15 @@ function PrivyExport({ account }: { account: PrivyAccountMethods }) {
           <Text>{busy ? t("common.loading") : onWeb ? t("wallet.exportKeyReveal") : t("wallet.exportKeyOpenWeb")}</Text>
         </Button>
       ) : (
-        // No wallet on this session yet: say why, and nothing to press.
-        <Text className={cn("text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm", TEXT_START)}>{t("wallet.noWallet")}</Text>
+        <>
+          {/* No wallet on this session yet: say why; a guest can sign in from here. */}
+          <Text className={cn("text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm", TEXT_START)}>{t("wallet.noWallet")}</Text>
+          {guest ? (
+            <Button onPress={signIn.open}>
+              <Text>{t("signIn.title")}</Text>
+            </Button>
+          ) : null}
+        </>
       )}
     </Page>
   );
