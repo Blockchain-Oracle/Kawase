@@ -17,7 +17,7 @@ import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp,
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 // Kawase's buy page lives here in this test; the order's page URL is built from it.
-process.env.ONRAMP_PAGE_URL = "https://app.test.local";
+const PAGE_URL = "https://app.test.local";
 const live = Boolean(process.env.DATABASE_URL && process.env.CIRCLE_TEST_API_KEY);
 
 test("onramp: a sandbox session, hints that only move the status, settlement by the chain", { skip: !live, timeout: 120_000 }, async () => {
@@ -29,7 +29,7 @@ test("onramp: a sandbox session, hints that only move the status, settlement by 
     { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "buyer", email: `buy-${SUB_ORG}@example.test`, sessionPublicKeys: [key.publicKeyHex] } },
     { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet }] },
   );
-  const { app, db, close } = testApp(turnkey, undefined, undefined, undefined, undefined, undefined, undefined, { onramp: circleOnramp(loadApiEnv()) });
+  const { app, db, close } = testApp(turnkey, undefined, undefined, undefined, undefined, undefined, undefined, { onramp: circleOnramp(loadApiEnv()), onrampPageUrl: PAGE_URL });
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);

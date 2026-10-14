@@ -9,10 +9,7 @@
     "@config-plugins/react-native-webrtc": "15.0.2",
     "@ethersproject/shims": "^5.8.0",
     "@expo-google-fonts/inter": "^0.4.2",
-    "@expo-google-fonts/jetbrains-mono": "^0.4.1",
-    "@expo-google-fonts/manrope": "^0.4.2",
     "@expo-google-fonts/roboto-condensed": "^0.4.2",
-    "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@expo/ui": "~57.0.23",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@invertase/react-native-apple-authentication": "^2.5.1",
@@ -124,7 +121,8 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "phone:ios": "EXPO_PUBLIC_API_URL=https://kawase-api.84.46.247.92.sslip.io expo run:ios --device --configuration Release",
-    "narration": "tsx scripts/narration.mts"
+    "narration": "tsx scripts/narration.mts",
+    "test": "tsx --test test/*.test.ts"
   },
   "private": true
 }

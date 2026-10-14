@@ -61,3 +61,27 @@ test("Privy is off by default and needs its app id when chosen (D41)", () => {
   assert.equal(loadPrivyEnv({ WALLET_PROVIDER: "privy", PRIVY_APP_ID: "app-id" }).PRIVY_APP_ID, "app-id");
   assert.throws(() => loadPrivyEnv({ WALLET_PROVIDER: "privy" }), /PRIVY_APP_ID/);
 });
+
+test("production needs the approval secret", () => {
+  assert.throws(() => loadApiEnv({ ...base, NODE_ENV: "production" }), /AGENT_APPROVAL_SECRET/);
+  const env = loadApiEnv({ ...base, NODE_ENV: "production", AGENT_APPROVAL_SECRET: "s".repeat(32) });
+  assert.equal(env.NODE_ENV, "production");
+});
+
+test("the buy and venue keys are optional, blank is unset, and a one-line PEM keeps its newlines", () => {
+  const unset = loadApiEnv({ ...base, UNISWAP_API_KEY: "", SOCKET_API_KEY: "" });
+  assert.equal(unset.UNISWAP_API_KEY, undefined);
+  assert.equal(unset.SOCKET_API_KEY, undefined);
+  assert.equal(unset.ONRAMP_PAGE_URL, undefined);
+  const env = loadApiEnv({
+    ...base,
+    ONRAMP_PAGE_URL: "https://app.getkawase.xyz",
+    CDP_API_KEY_ID: "key-id",
+    CDP_API_KEY_SECRET: "-----BEGIN EC PRIVATE KEY-----\\nABC\\n-----END EC PRIVATE KEY-----",
+    ZEROX_API_KEY: "zx",
+  });
+  assert.equal(env.ONRAMP_PAGE_URL, "https://app.getkawase.xyz");
+  assert.equal(env.CDP_API_KEY_SECRET, "-----BEGIN EC PRIVATE KEY-----\nABC\n-----END EC PRIVATE KEY-----");
+  assert.equal(env.ZEROX_API_KEY, "zx");
+  assert.throws(() => loadApiEnv({ ...base, ONRAMP_PAGE_URL: "not a url" }), /ONRAMP_PAGE_URL/);
+});

@@ -77,6 +77,8 @@ function useRaceFormat() {
           return t("feed.reasonNotOnNetwork");
         case "amount_too_low":
           return t("feed.reasonAmountTooLow");
+        case "rate_limited":
+          return t("routes.reason_rate_limited");
         default:
           return t("feed.reasonUnavailable");
       }
@@ -239,12 +241,13 @@ export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | nu
   const resume = useChatResume();
   if (!output) return <RaceSkeleton kind={kind} />;
   if (output.status === "routes_unavailable") {
-    // Not bound here: the propose step quotes on its own, so this is only a quiet note on the way.
-    if (output.reason === "not_bound")
+    // Not raced (no race here, or not this request): the propose step quotes on its own, so this is only a quiet note
+    // on the way. A token that was not found is a quiet note too: the agent asks which one was meant.
+    if (output.reason === "not_bound" || output.reason === "direct" || output.reason === "unknown_token")
       return (
         <View className="bg-card border-border flex-row items-center gap-2 self-start rounded-full border py-2 pe-4 ps-3">
           <Icon as={RouteIcon} className="text-muted-foreground size-4" />
-          <Text className="text-muted-foreground text-sm">{t("feed.raceDirect")}</Text>
+          <Text className="text-muted-foreground text-sm">{t(output.reason === "unknown_token" ? "feed.raceUnknownToken" : "feed.raceDirect")}</Text>
         </View>
       );
     return (

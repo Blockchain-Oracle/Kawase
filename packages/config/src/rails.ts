@@ -116,7 +116,7 @@ export const CROSSCHAIN = {
   /** Gas a source-chain bridge transaction is assumed to take when the chain will not estimate it. */
   sourceGasFallback: 300_000n,
   /** Gas the Arc batch is drafted at, per provider (an aggregator swaps inside its call), and what a swap first adds. */
-  batchGas: { cctp: 400_000n, across: 400_000n, relay: 400_000n, lifi: 1_000_000n, debridge: 800_000n },
+  batchGas: { cctp: 400_000n, across: 400_000n, relay: 400_000n, lifi: 1_000_000n, debridge: 800_000n, socket: 900_000n, gaszip: 120_000n },
   convertGas: 700_000n,
 } as const;
 

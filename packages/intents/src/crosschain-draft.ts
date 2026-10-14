@@ -7,7 +7,7 @@
 // because the built calls (or the provider's fill) are checked against them.
 import { hashStruct, zeroAddress, type Address, type Hex } from "viem";
 
-export const CROSSCHAIN_PROVIDERS = ["cctp", "across", "relay", "lifi", "debridge"] as const;
+export const CROSSCHAIN_PROVIDERS = ["cctp", "across", "relay", "lifi", "debridge", "socket", "gaszip"] as const;
 export type CrossChainProvider = (typeof CROSSCHAIN_PROVIDERS)[number];
 /** Where a convert-first swap runs on Arc (the swap fan-out's venues). */
 export const CONVERT_VENUES = ["kyberswap", "app_kit", "lifi"] as const;

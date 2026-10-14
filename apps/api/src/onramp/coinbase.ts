@@ -53,8 +53,8 @@ export function signableSecret(secret: string): string {
 
 export type CdpKeys = { apiKeyId: string; apiKeySecret: string; projectId?: string | undefined };
 
-/** The keys from the environment, or undefined while either is missing (the engine is then simply not offered). */
-export function cdpKeysFromEnv(env: Record<string, string | undefined> = process.env): CdpKeys | undefined {
+/** The keys from the api's environment (@kawase/env), or undefined while either is missing (the engine is then simply not offered). */
+export function cdpKeysFromEnv(env: Partial<Record<"CDP_API_KEY_ID" | "CDP_API_KEY_SECRET" | "CDP_PROJECT_ID", string | undefined>>): CdpKeys | undefined {
   const apiKeyId = env.CDP_API_KEY_ID?.trim();
   const secret = env.CDP_API_KEY_SECRET?.trim();
   if (!apiKeyId || !secret) return undefined;

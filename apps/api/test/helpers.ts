@@ -85,6 +85,8 @@ export function testApp(
     agentWallets?: AppDeps["agentWallets"];
     discovery?: AppDeps["discovery"];
     onramp?: AppDeps["onramp"];
+    /** Where Kawase's buy page is served (order page links); none by default. */
+    onrampPageUrl?: string | undefined;
     alchemyApiKey?: string | undefined;
     /** Live market data (prices, FX); none by default. */
     market?: AppDeps["market"];

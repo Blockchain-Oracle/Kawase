@@ -147,8 +147,8 @@ export class OnrampService {
   ) {
     this.providerPollMs = options.providerPollMs ?? PROVIDER_POLL_MS;
     this.bridgeRetryMs = options.bridgeRetryMs ?? BRIDGE_RETRY_FIRST_MS;
-    const host = process.env.ONRAMP_REFERRER_DOMAIN;
-    this.pageBaseUrl = (options.pageBaseUrl ?? process.env.ONRAMP_PAGE_URL ?? (host ? `https://${host}` : undefined))?.replace(/\/$/, "");
+    // main.ts passes ONRAMP_PAGE_URL, else https://<ONRAMP_REFERRER_DOMAIN>; with neither there is no page link.
+    this.pageBaseUrl = options.pageBaseUrl?.replace(/\/$/, "");
   }
 
   /** Lets a Coinbase delivery on Base carry on to Arc (the crosschain service answers). */

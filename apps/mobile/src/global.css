@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "uniwind";
 @import "tw-animate-css";
-/* Design tokens (direction: Koe). Generated from packages/ui-tokens/tokens.json; do not edit the values here. */
+/* Design tokens (direction: Senryo, D40). Generated from packages/ui-tokens/tokens.json; do not edit the values here. */
 @import "../../../packages/ui-tokens/native.css";
 
 /* Tailwind only scans this folder by default; shared UI packages are listed here. */

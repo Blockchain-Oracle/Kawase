@@ -6,9 +6,6 @@ import type { WhyView } from "./history";
 import type { NetworkId } from "./types";
 import type { WithdrawalView } from "./withdraw";
 
-// The agent's feed (Done · Held · Skipped · Watching · Found), built over these rows; exported with them.
-export * from "./feed";
-
 export type FeedKind = "receive" | "send" | "swap" | "bridge" | "earn" | "margin" | "automation" | "request_paid" | "faucet" | "practice" | "withdraw" | "other";
 export type FeedStatus = "confirmed" | "checking" | "skipped" | "failed" | "practiced" | "waiting";
 export type FeedToken = { address: string; symbol: string; decimals: number };

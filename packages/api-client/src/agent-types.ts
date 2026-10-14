@@ -176,12 +176,13 @@ export type AgentRaceRequest = {
 /**
  * Every snapshot race_routes yields (the AI SDK sends all but the last as preliminary). `racing`: venues are still
  * answering; `done`: every venue answered or timed out, and `race.best` is Kawase's suggestion (the propose step
- * re-quotes it before anything moves); `routes_unavailable`: no race ran, and the card says so instead of showing rows.
- * A race never invents a quote.
+ * re-quotes it before anything moves); `routes_unavailable`: no race ran, and the card says so instead of showing rows
+ * (`direct`: this request is not raced and the propose step quotes it itself; `unknown_token`: a token named was not
+ * found). A race never invents a quote.
  */
 export type RaceRoutesOutput =
   | { status: "racing" | "done"; request: AgentRaceRequest; race: import("./routes").RouteRace }
-  | { status: "routes_unavailable"; request: AgentRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" };
+  | { status: "routes_unavailable"; request: AgentRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" | "direct" | "unknown_token" };
 
 /** One money step the agent wants to take, as the weekly budget sees it (D38). The Budget lane answers allows(). */
 export type BudgetAction = {

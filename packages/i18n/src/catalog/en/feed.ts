@@ -17,6 +17,7 @@ export const feed = {
   raceNone: "No venue can do this right now.",
   raceNoAnswer: "No venue answered. Nothing moved.",
   raceDirect: "Quoting directly",
+  raceUnknownToken: "Couldn't find that token",
   raceTryAgain: "Try again",
   raceTryAgainPrompt: "Try that again",
   // Why a venue did not quote (RouteQuote.reason).

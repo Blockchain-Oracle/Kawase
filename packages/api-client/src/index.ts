@@ -77,6 +77,8 @@ import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInp
 import { railsEndpoints } from "./rails";
 import { withdrawEndpoints } from "./withdraw";
 import { tokenRulesEndpoints } from "./token-rules";
+import { feedEndpoints } from "./feed";
+import { budgetEndpoints } from "./budget";
 import type { PrivacySettings, ReportView, WhyView } from "./history";
 import type { FeeReserveView, FxView } from "./fees";
 import { intelligenceApi } from "./intelligence";
@@ -92,6 +94,8 @@ export * from "./account";
 export * from "./safety";
 export * from "./automations-8c";
 export * from "./activity-feed";
+export * from "./feed";
+export * from "./budget";
 export * from "./rails";
 export * from "./withdraw";
 export * from "./token-rules";
@@ -169,6 +173,10 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
     ...railsEndpoints(call),
     ...withdrawEndpoints(call),
     ...tokenRulesEndpoints(call),
+    // The agent's feed and its model's health (front door): api.feed.get(), api.agentHealth.health().
+    ...feedEndpoints(call),
+    // The weekly budget (D38): terms, pause, ledger, kill-switch and the swap/earn leaf path.
+    ...budgetEndpoints(call),
     /** `minAppVersion`: older apps must update (cards/access.md). */
     health: () => call<{ ok: boolean; networks: NetworkId[]; minAppVersion?: string }>("GET", "/health"),
     capabilities: () => call<{ capabilities: Capabilities }>("GET", "/capabilities"),

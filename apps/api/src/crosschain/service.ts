@@ -18,9 +18,8 @@
 // (refunded by the provider), never re-sent on its own (R7).
 // Socket (its own routes through Across, CCTP, Relay…; 20 bps; opaque calldata, checked for target, spender, token,
 // amount and receiver, then witnessed) and Gas.zip (USDC on Arc → the gas coin on another chain, one native-value
-// deposit) are quoted next to the five above. They rank and execute once the draft format lists them
-// (@kawase/intents CROSSCHAIN_PROVIDERS, append-only); until then they are left out of the choice, never shown as
-// "quote only".
+// deposit) are quoted next to the five above, and rank and execute like them: the draft format lists them
+// (@kawase/intents CROSSCHAIN_PROVIDERS, append-only: socket = 5, gaszip = 6).
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {

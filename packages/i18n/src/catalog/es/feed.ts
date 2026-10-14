@@ -16,6 +16,7 @@ export const feed: Catalog["feed"] = {
   raceNone: "Ninguna opción puede hacerlo ahora.",
   raceNoAnswer: "Ninguna opción respondió. No se movió nada.",
   raceDirect: "Cotizando directamente",
+  raceUnknownToken: "No encontré ese token",
   raceTryAgain: "Reintentar",
   raceTryAgainPrompt: "Inténtalo de nuevo",
   reasonTimeout: "Demasiado lento",

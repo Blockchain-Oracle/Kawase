@@ -390,7 +390,7 @@ export type BuyProposalOutput = OnrampAvailability & { asset: string; amount: st
 
 // ── Cross-chain: out of Arc to anyone, and Bring to Arc (routes.md) ─────────────────────────────────────────
 
-export type CrossChainProvider = "cctp" | "across" | "relay" | "lifi" | "debridge";
+export type CrossChainProvider = "cctp" | "across" | "relay" | "lifi" | "debridge" | "socket" | "gaszip";
 export type CrossChainRouteReason = "needs_source_gas" | "not_on_arc_testnet" | "no_quote" | "amount_too_low" | "timeout" | "convert_first" | "own_address_only";
 
 /** An asset on one side of a move (the zero address for a chain's native coin). */

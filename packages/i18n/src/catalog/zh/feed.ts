@@ -16,6 +16,7 @@ export const feed: Catalog["feed"] = {
   raceNone: "目前没有渠道能完成这笔操作。",
   raceNoAnswer: "没有渠道回复。资金未移动。",
   raceDirect: "直接报价",
+  raceUnknownToken: "未找到该代币",
   raceTryAgain: "重试",
   raceTryAgainPrompt: "再试一次",
   reasonTimeout: "太慢",

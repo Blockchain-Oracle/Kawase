@@ -74,7 +74,22 @@ export function settleRace(race: RouteRace, finished: boolean): RouteRace {
   return { ...race, rows, best, done: finished || race.done };
 }
 
-const unavailable = (request: AgentRaceRequest, reason: "not_bound" | "failed" | "no_venues"): RaceRoutesOutput => ({
+/**
+ * What the api's race (context.raceRoutes) throws when it will not race a request, instead of failing it:
+ *   direct        the propose step quotes it on its own (bringing money to Arc, no amount yet, a chain or asset the race
+ *                 does not cover, or too many races from this person just now);
+ *   unknown_token a token the person named was not found on this network, so nothing is quoted until they say which.
+ */
+export class RaceRefused extends Error {
+  constructor(readonly reason: "direct" | "unknown_token") {
+    super(reason);
+    this.name = "RaceRefused";
+  }
+}
+
+type Unavailable = Extract<RaceRoutesOutput, { status: "routes_unavailable" }>["reason"];
+
+const unavailable = (request: AgentRaceRequest, reason: Unavailable): RaceRoutesOutput => ({
   status: "routes_unavailable",
   request,
   race: null,
@@ -108,9 +123,11 @@ export function raceForModel(output: RaceRoutesOutput) {
       status: output.status,
       kind: output.request.kind,
       summary:
-        output.reason === "not_bound"
-          ? "Kawase cannot compare venues live right now. Do not name venues or prices; go straight to the propose step, which quotes on its own."
-          : "No venue answered. Do not invent a quote; say so and offer to try again.",
+        output.reason === "not_bound" || output.reason === "direct"
+          ? "Kawase cannot compare venues for this right now. Do not name venues or prices; go straight to the propose step, which quotes on its own."
+          : output.reason === "unknown_token"
+            ? "Kawase could not find that token on this network. Ask which one they mean (its symbol as it shows in their portfolio, or its 0x address); do not guess one, and do not call the propose step until they say."
+            : "No venue answered. Do not invent a quote; say so and offer to try again.",
     };
   const { race } = output;
   const quoted = race.rows
@@ -172,6 +189,11 @@ export function raceTools(context: AgentContext) {
             if (race.done) return;
           }
         } catch (error) {
+          // A refusal is an answer, not a failure: nothing was asked, so there is nothing to show as quoted.
+          if (error instanceof RaceRefused && !last) {
+            yield unavailable(request, error.reason);
+            return;
+          }
           context.intelligence.warn(error, "route race failed");
           // The quotes that did land stay real; the rest timed out. With none, nothing is shown as a quote.
           yield last ? { status: "done", request, race: settleRace(last, true) } : unavailable(request, "failed");

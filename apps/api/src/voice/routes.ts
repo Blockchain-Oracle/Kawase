@@ -21,7 +21,8 @@ import { HTTP, problem } from "../http/problem";
 import type { AppEnv, SessionUser } from "../types";
 import { signVoiceToken, verifyVoiceToken } from "./token";
 
-export type LiveKitConfig = { url: string; apiKey: string; apiSecret: string };
+/** `agentName`: the worker voice sessions dispatch (KAWASE_VOICE_AGENT); the default name when unset. */
+export type LiveKitConfig = { url: string; apiKey: string; apiSecret: string; agentName?: string | undefined };
 
 const ROOM_SUFFIX_BYTES = 6;
 const TEXT_MAX = 2000;
@@ -67,7 +68,7 @@ export function voiceRoutes(deps: {
     token.roomConfig = new RoomConfiguration({
       agents: [
         new RoomAgentDispatch({
-          agentName: voiceAgentName(process.env),
+          agentName: livekit.agentName ?? voiceAgentName({}),
           metadata: JSON.stringify({
             voiceToken,
             threadId,

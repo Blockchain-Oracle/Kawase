@@ -1,4 +1,4 @@
-// Socket v3 (public-backend.socket.tech, keyless, a shared rate limit): one API for swaps on a chain and moves between
+// Socket v3 (public-backend.socket.tech, keyless, a shared rate limit; the dedicated tier once configured): one API for swaps on a chain and moves between
 // chains. A quote lists routes (0x, KyberSwap, Bitget for swaps; Across, CCTP V2, Relay, Socket Intents, Symbiosis for
 // moves), each with its approval and one transaction to Socket's own allowance holder. Checked live on Arc mainnet
 // 2026-10-14: every route's transaction is `exec(operator, token, amount, target, data)` at 0x50c4…5909 (the approval's
@@ -72,9 +72,28 @@ type RawRoute = {
   };
 };
 
+/**
+ * Which Socket tier is asked: the shared public one (keyless) until the api calls `configureSocket` with a dedicated
+ * key and the affiliate id issued with it (dedicated-backend.socket.tech, `x-api-key` + `affiliate`, 20 rps; docs
+ * "Get API access"). Both are needed; one alone keeps the public tier.
+ */
+const DEDICATED_API = "https://dedicated-backend.socket.tech/v3";
+const access: { base: string; headers: Record<string, string> } = { base: API, headers: {} };
+
+export function configureSocket(keys: { apiKey?: string | undefined; affiliate?: string | undefined }): "dedicated" | "public" {
+  if (keys.apiKey && keys.affiliate) {
+    access.base = DEDICATED_API;
+    access.headers = { "x-api-key": keys.apiKey, affiliate: keys.affiliate };
+    return "dedicated";
+  }
+  access.base = API;
+  access.headers = {};
+  return "public";
+}
+
 async function get(path: string) {
   try {
-    const response = await fetch(`${API}${path}`, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const response = await fetch(`${access.base}${path}`, { headers: { accept: "application/json", ...access.headers }, signal: AbortSignal.timeout(TIMEOUT_MS) });
     return { ok: response.ok, status: response.status, body: (await response.json().catch(() => ({}))) as Record<string, unknown> };
   } catch {
     throw new BridgeProviderError("Socket", "timeout", "Socket did not answer in time");

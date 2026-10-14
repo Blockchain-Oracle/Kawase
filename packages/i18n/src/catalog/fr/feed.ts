@@ -16,6 +16,7 @@ export const feed: Catalog["feed"] = {
   raceNone: "Aucune option ne peut le faire pour l’instant.",
   raceNoAnswer: "Aucune option n’a répondu. Rien n’a bougé.",
   raceDirect: "Devis direct",
+  raceUnknownToken: "Jeton introuvable",
   raceTryAgain: "Réessayer",
   raceTryAgainPrompt: "Réessaie",
   reasonTimeout: "Trop lent",
