@@ -1,53 +1,44 @@
-// Send any asset (journey 10; R1; C1, C5, C7, I5, N5): who → which token and how much → review → sending → the ending. The steps cross-fade in
-// place under one header. Review shows exactly what will move (SendReview) and, when something stops it, the one
-// fix next to it (SendBlocker); the one lime button names the route — "Send" inside the allowance (the tap is the
-// approval), "Send with Face ID" above it — or, when blocked, the first fixable reason. Going back to change the
-// amount or the recipient makes a new version of the same send instead of a second one. Once it moves, the plane
-// and the money ending take over (SendStatus), with "Save as contact" after a send to a raw address.
+// Send any asset (journey 10; R1; C1, C5, C7, I5, N5), on the Senryo kit: who → which token and how much → review →
+// sending → the ending. Review shows exactly what will move (SendReview) and, when something stops it, the one fix
+// (SendBlocker). Otherwise the tx kit's CTA names the route, "Send" inside the allowance (the tap is the approval) or
+// "Send with Face ID" above it, runs Signing → Sent → Confirmed under the plate, and morphs into the receipt (with
+// "Save as contact" after a send to a raw address); a failure card says whether money moved. Going back to change the
+// amount or the recipient makes a new version of the same send instead of a second one.
+// Phone: the steps crossfade under one header. Desktop: two columns, the people on the stage (search, contacts,
+// handles, a pasted address) and the ticket beside them (amount, review, the lifecycle), so changing who is one click.
 import { useRouter } from "expo-router";
-import { ChevronLeft, ScanFace, Send } from "lucide-react-native";
+import { UserPlus } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { SendRequest } from "@kawase/api-client";
 import { CHAIN_IDS } from "@kawase/identity";
-import { MOTION } from "@kawase/config";
-import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
-import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
+import { Button, EmptyState, KeyValue, ListRow, Panel, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
-import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
-import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
-import { useFeeReserve } from "@/wallet/fee-reserve";
-import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
-import { api } from "@/session/api";
-import { useSession } from "@/session/session-provider";
-import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useWalletStatus } from "@/wallet/use-wallet-status";
-
+import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
+import { assetParam, stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { usePortfolio } from "@/portfolio/use-portfolio";
 import { AmountStep } from "@/send/amount-step";
-import { recipientName, useMoney, useApproveLabel, usePolicyText } from "@/send/copy";
+import { recipientName, useApproveLabel, useMoney } from "@/send/copy";
 import { choiceFromText, RecipientStep, type RecipientChoice } from "@/send/recipient-step";
 import { SendBlocker } from "@/send/send-blocker";
 import { SendReview } from "@/send/send-review";
-import { SendStatus } from "@/send/send-status";
 import { isFinished, isMoving, isOpen, useSend } from "@/send/use-send";
+import { api } from "@/session/api";
+import { useSession } from "@/session/session-provider";
+import { useSignIn } from "@/sign-in/sign-in-provider";
+import { RealMoney } from "@/trade/bits";
+import { IntentCta, openExplorer } from "@/trade/intent-cta";
+import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
+import { useFeeReserve } from "@/wallet/fee-reserve";
+import { useWalletStatus } from "@/wallet/use-wallet-status";
 
-const STRIP_INSET = 6;
-const EDGE_INSET = 12;
-const FOOTER_GAP = 12;
-const ART_WIDTH = 170;
 const ZERO = 0n;
 
 type Step = "recipient" | "amount" | "review";
@@ -67,24 +58,22 @@ export type SendPrefill = {
 export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   const feeReserve = useFeeReserve();
   const { t } = useT();
+  const { color } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const wide = useWide();
   const reduced = useReducedMotion();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const { wallet } = useWalletStatus();
   const controller = useSend();
   const money = useMoney();
-  const policyText = usePolicyText();
   const approveLabel = useApproveLabel();
   const network = user?.activeNetwork ?? "testnet";
   const testnet = network === "testnet";
 
   const [step, setStep] = React.useState<Step>(prefill.to ? "amount" : "recipient");
   const [recipient, setRecipient] = React.useState<RecipientChoice | undefined>(prefill.to ? choiceFromText(prefill.to) : undefined);
-  const [picked, setPicked] = React.useState<TicketToken | undefined>(
-    prefill.asset === "USDC" || prefill.asset === "EURC" ? stableToken(network, prefill.asset) : undefined,
-  );
+  const [picked, setPicked] = React.useState<TicketToken | undefined>(prefill.asset === "USDC" || prefill.asset === "EURC" ? stableToken(network, prefill.asset) : undefined);
   const [picking, setPicking] = React.useState(false);
   const { portfolio } = usePortfolio();
   const fund = useFund();
@@ -120,12 +109,13 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     };
   }, [prefill.asset, network]);
 
-  const intent = controller.intent;
+  // A send the person is done with (Done, or Cancel on a desktop window) leaves the ticket; the next review drafts anew.
+  const [dismissed, setDismissed] = React.useState<string>();
+  const intent = controller.intent && controller.intent.id !== dismissed ? controller.intent : undefined;
   const settled = intent && (isMoving(intent) || isFinished(intent));
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
-
   const back = () => {
-    if (settled || step === "recipient") leave();
+    if (wide || settled || step === "recipient") leave();
     else setStep(step === "review" ? "amount" : "recipient");
   };
 
@@ -159,35 +149,24 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
     }
   };
 
-  const cancel = async () => {
-    await controller.cancel();
-    leave();
+  const startOver = () => {
+    setDismissed(controller.intent?.id);
+    setValue("");
+    setStep(wide ? "amount" : "recipient");
   };
 
   // The recipient's wallet is on another chain (money-out.md "From → To"): the Move screen (same amount and recipient)
-  // with its route options — USDC by a bridge on both networks, any other token as itself where the cross-chain routes
-  // quote it (they run on mainnet); on testnet any other token converts to USDC first.
+  // with its route options; on testnet any other token converts to USDC first.
   const isUsdc = token.address.toLowerCase() === stableToken(network, "USDC").address.toLowerCase();
   const asItself = isUsdc || !testnet;
   const otherChain = async () => {
     if (!recipient) return;
     if (intent && isOpen(intent)) await controller.cancel();
-    if (asItself)
-      router.push({ pathname: "/move", params: { direction: "out", amount: value, recipient: recipient.text, ...(isUsdc ? {} : { asset: token.address }) } });
+    if (asItself) router.push({ pathname: "/move", params: { direction: "out", amount: value, recipient: recipient.text, ...(isUsdc ? {} : { asset: token.address }) } });
     else router.push({ pathname: "/swap", params: { sell: token.address } });
   };
 
-  const header = (
-    <>
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={back}>
-          <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-        </Button>
-        <Text className="font-display text-foreground text-2xl font-bold">{t("send.title")}</Text>
-      </View>
-    </>
-  );
+  const header = <PageHeader title={t("send.title")} onBack={back} />;
 
   // Without an account or a wallet there is nothing to send from; say what to do instead.
   const blockedPage =
@@ -198,86 +177,77 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
         : undefined;
   if (blockedPage) {
     return (
-      <View className="bg-background flex-1">
+      <View style={styles.page}>
         {header}
-        <View className="flex-1" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <EmptyState
-            art={<PaperPlane width={ART_WIDTH} id="send-blocked-plane" />}
-            title={blockedPage.title}
-            action={
-              <Button onPress={blockedPage.onPress}>
-                <Text>{blockedPage.action}</Text>
-              </Button>
-            }
-          />
+        <View style={styles.plain}>
+          <EmptyState size="page" icon={UserPlus} why={blockedPage.title} action={{ label: blockedPage.action, onPress: blockedPage.onPress }} />
         </View>
       </View>
     );
   }
 
-  const enter = reduced ? undefined : FadeIn.duration(MOTION.sheetMs);
-  const exit = reduced ? undefined : FadeOut.duration(MOTION.sheetMs);
-  const visible: Step | "status" = settled ? "status" : step;
+  const pickRecipient = (choice: RecipientChoice) => {
+    // A new person on an open draft: the next review revises it (a new version), never a second send.
+    setRecipient(choice);
+    setStep("amount");
+  };
 
-  let body: React.ReactNode;
-  if (visible === "status" && intent) {
-    const saveable = intent.outcome === "sent" && intent.draft?.recipient.via === "address";
-    body = (
-      <ScrollView className="flex-1" contentContainerClassName="flex-grow justify-center px-5" contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-        <SendStatus
-          connectionLost={controller.connectionLost}
-          intent={intent}
-          actions={
-            isFinished(intent) ? (
-              <>
-                <Button size="lg" onPress={leave}>
-                  <Text>{t("send.done")}</Text>
-                </Button>
-                {saveable ? (
-                  <Button size="lg" variant="secondary" onPress={() => setSaving(true)}>
-                    <Text>{t("send.saveContact")}</Text>
-                  </Button>
-                ) : null}
-              </>
-            ) : null
-          }
-        />
-      </ScrollView>
-    );
-  } else if (visible === "review" && intent) {
+  let ticket: React.ReactNode = null;
+  if ((step === "review" || settled) && intent) {
     const draft = intent.draft;
-    const blocking = intent.blocking;
     const name = recipientName(draft?.recipient, intent.request.recipient);
-    const prompt = t("send.signPrompt", { amount: money(draft?.asset, draft?.amount, draft?.token?.decimals), name });
+    const what = t("send.signPrompt", { amount: money(draft?.asset, draft?.amount, draft?.token?.decimals), name });
     const faceId = intent.route === "wallet_signature";
-    body = (
-      <View className="flex-1">
-        <ScrollView className="flex-1" contentContainerClassName="gap-4 px-5 pt-4 pb-4">
-          {!testnet ? <Eyebrow className="text-foreground">{t("network.realMoney")}</Eyebrow> : null}
-          <SendReview intent={intent} onRevise={(patch) => void controller.revise(patch)} />
-          {blocking ? <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} /> : null}
-          {!blocking && draft ? (
-            <Pressable accessibilityRole="button" onPress={() => void otherChain()} className="active:bg-muted gap-0.5 rounded-2xl px-1 py-2">
-              <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("send.otherChain")}</Text>
-              <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>{isUsdc ? t("send.otherChainBridge") : asItself ? t("send.otherChainAsItself", { asset: token.symbol }) : t("send.otherChainConvert", { asset: token.symbol })}</Text>
-            </Pressable>
-          ) : null}
-        </ScrollView>
-        <View className="gap-2 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <Button size="lg" disabled={Boolean(blocking) || controller.busy} onPress={() => void controller.approve(prompt)}>
-            {blocking ? null : <Icon as={faceId ? ScanFace : Send} className="text-primary-foreground size-5" />}
-            <Text numberOfLines={2} className="text-center">
-              {blocking ? policyText(blocking, intent.network) : controller.busy ? t("send.sending") : faceId ? approveLabel : t("send.sendNow")}
-            </Text>
-          </Button>
-          <Button variant="ghost" disabled={controller.busy} onPress={() => void cancel()}>
-            <Text className="text-muted-foreground">{t("send.cancelSend")}</Text>
-          </Button>
-        </View>
+    const saveable = intent.outcome === "sent" && draft?.recipient.via === "address";
+    const receipt = (
+      <Panel style={styles.receipt}>
+        <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{t("send.sentTitle")}</Text>
+        {draft ? <KeyValue label={name} value={money(draft.asset, draft.amount, draft.token?.decimals)} /> : null}
+        <Button label={t("send.done")} onPress={wide ? startOver : leave} />
+        {saveable ? <Button label={t("send.saveContact")} variant="secondary" onPress={() => setSaving(true)} /> : null}
+        {intent.tx ? <Button label={t("desktop.explorer")} variant="ghost" onPress={() => openExplorer(intent.tx?.explorerUrl)} /> : null}
+      </Panel>
+    );
+    ticket = (
+      <View style={styles.group}>
+        {!testnet && !isFinished(intent) ? <RealMoney /> : null}
+        <SendReview intent={intent} onRevise={(patch) => void controller.revise(patch)} />
+        {intent.blocking && isOpen(intent) ? (
+          <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} />
+        ) : (
+          <IntentCta
+            intent={intent}
+            busy={controller.busy}
+            connectionLost={controller.connectionLost}
+            blocker={!draft ? { label: t("desktop.pricing"), busy: true } : null}
+            confirm={{ kind: "press", label: faceId ? approveLabel : t("send.sendNow") }}
+            onConfirm={() => void controller.approve(what)}
+            onRetry={() => setStep("amount")}
+            receipt={receipt}
+            journal={{ what, kind: "send", network: intent.network, owner: wallet?.address }}
+            sound="send"
+          />
+        )}
+        {!intent.blocking && draft && isOpen(intent) ? (
+          <ListRow title={t("send.otherChain")} detail={isUsdc ? t("send.otherChainBridge") : asItself ? t("send.otherChainAsItself", { asset: token.symbol }) : t("send.otherChainConvert", { asset: token.symbol })} onPress={() => void otherChain()} />
+        ) : null}
+        {isOpen(intent) ? (
+          <Button
+            label={t("send.cancelSend")}
+            variant="ghost"
+            disabled={controller.busy}
+            onPress={() =>
+              void controller.cancel().then(() => {
+                if (wide) startOver();
+                else leave();
+              })
+            }
+          />
+        ) : null}
       </View>
     );
-  } else if (visible === "amount" && recipient) {
-    body = (
+  } else if (step !== "recipient" && recipient) {
+    ticket = (
       <AmountStep
         network={network}
         recipient={recipient}
@@ -294,26 +264,14 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
         balance={balance}
         reserve={feeReserve && isUsdc ? BigInt(feeReserve.reserve) : undefined}
         onReview={() => void review()}
+        onAddMoney={fund.open}
         busy={creating || controller.busy}
-      />
-    );
-  } else {
-    body = (
-      <RecipientStep
-        onPick={(choice) => {
-          setRecipient(choice);
-          setStep("amount");
-        }}
       />
     );
   }
 
-  return (
-    <View className="bg-background flex-1">
-      {header}
-      <Animated.View key={visible} entering={enter} exiting={exit} className="flex-1">
-        {body}
-      </Animated.View>
+  const sheets = (
+    <>
       <AssetPickerSheet
         open={picking}
         onClose={() => setPicking(false)}
@@ -328,15 +286,38 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
         unavailable={(candidate) => (candidate.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
         onAddMoney={fund.open}
       />
-      {intent?.draft ? (
-        <AddContactSheet
-          open={saving}
-          onClose={() => setSaving(false)}
-          initialAddress={intent.draft.recipient.address}
-          initialSource="pasted"
-          onSaved={() => setSaving(false)}
+      {intent?.draft ? <AddContactSheet open={saving} onClose={() => setSaving(false)} initialAddress={intent.draft.recipient.address} initialSource="pasted" onSaved={() => setSaving(false)} /> : null}
+    </>
+  );
+
+  if (wide) {
+    return (
+      <View style={styles.page}>
+        {header}
+        <Columns
+          stage={<RecipientStep onPick={pickRecipient} selected={recipient?.text} />}
+          ticket={ticket ?? <EmptyState icon={UserPlus} why={t("desktop.sendPickWho")} detail={t("desktop.sendPickWhoBody")} />}
         />
-      ) : null}
+        {sheets}
+      </View>
+    );
+  }
+
+  const visible: Step | "status" = settled ? "status" : step;
+  return (
+    <View style={styles.page}>
+      {header}
+      <Animated.View key={visible} entering={reduced ? undefined : FadeIn.duration(TIMING.sheetEnter)} exiting={reduced ? undefined : FadeOut.duration(TIMING.sheetExit)} style={styles.page}>
+        {ticket ? <PhoneScroll>{ticket}</PhoneScroll> : <RecipientStep onPick={pickRecipient} />}
+      </Animated.View>
+      {sheets}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  plain: { flex: 1, paddingHorizontal: SPACE.inset, paddingTop: SPACE.lg },
+  group: { gap: SPACE.lg },
+  receipt: { gap: SPACE.md, padding: SPACE.lg },
+});

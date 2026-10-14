@@ -1,43 +1,37 @@
-// How much (revamp journey 10, the amount ticket): who it goes to at the top (tap to change), the asset — any token
-// the person holds, from the universal picker (R1) — with its real mark and what is available, the amount itself large in the display face (64 pt, tabular), Max, an
-// optional private note, the keypad, and one button that carries the validation in words ("Enter an amount",
-// "Not enough USDC", "Review"). Balances come from the wallet status; the policy checks everything again at review.
+// How much (revamp journey 10, the amount ticket), on the Senryo kit: who it goes to at the top (tap to change), the
+// asset (any token the person holds, from the universal picker, R1) with its real mark, the amount as the kit's
+// AmountPad on a phone (the figure in the money face, ¼ ½ ¾ All of what is available, the keypad) or a typed figure
+// on a desktop window, an optional private note and on-chain reference, and one CTA that carries the validation in
+// words: "Enter an amount", "Add money" when there is not enough (and it does it), else "Review". Balances come from
+// the wallet status; the policy checks everything again at review.
 import { ChevronDown } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import type { NetworkId } from "@kawase/api-client";
 import { AmountParseError, decimalsOf, parseAmount, type AssetId } from "@kawase/money";
-import { Amount } from "@kawase/ui-native/components/amount";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Input } from "@kawase/ui-native/components/ui/input";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { Button, Icon, RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
+import { BlockedCta } from "@/components/tx";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
-import { useLocale } from "@/i18n/locale-provider";
-
-import { canonicalUnits, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { TicketAmount } from "@/trade/ticket-amount";
 
 import { useMoney } from "./copy";
-import { applyKey, decimalSeparator, displayAmount, Keypad } from "./keypad";
 import type { RecipientChoice } from "./recipient-step";
 
 const AVATAR = 32;
 const CHIP_MARK = 24;
 const NOTE_MAX = 140;
-const FOOTER_GAP = 12;
+const REFERENCE_MAX = 64;
 const TEN = 10n;
 const ZERO = 0n;
-/** The amount on a ticket (DESIGN.md type scale). */
-const TICKET_SIZE = 64;
-const TICKET_LINE_HEIGHT = 76;
-/** Long amounts shrink to stay on one line. */
-const TICKET_MIN_SCALE = 0.5;
+/** A dollar amount takes cents; a volatile token up to this many decimals on the pad. */
+const STABLE_FRACTION = 2;
+const TOKEN_FRACTION = 6;
 
 /** Base units → the canonical decimal the keypad builds ("12.5"). */
 export function canonicalFromBase(baseUnits: bigint, asset: AssetId): string {
@@ -77,149 +71,136 @@ export type AmountStepProps = {
   referenceFromCode: boolean;
   /** The token's balance in base units; undefined while loading. */
   balance: bigint | undefined;
-  /** USDC kept for network fees when this is USDC ("Send max" leaves it, plan §A.4 12); typing more still works. */
+  /** USDC kept for network fees when this is USDC ("All" leaves it, plan §A.4 12); typing more still works. */
   reserve?: bigint | undefined;
   onReview: () => void;
+  /** Opens Add money (the fix when there is not enough). */
+  onAddMoney?: () => void;
   busy: boolean;
 };
+
+function Chip({ children, label, onPress }: { children: React.ReactNode; label: string; onPress: () => void }) {
+  const { color } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={({ pressed }) => [styles.chip, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+    >
+      {children}
+      <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.text2} />
+    </Pressable>
+  );
+}
+
+function Field({ value, onChange, placeholder, maxLength, upper }: { value: string; onChange: (text: string) => void; placeholder: string; maxLength: number; upper?: boolean }) {
+  const { color } = useTheme();
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder}
+      placeholderTextColor={color.text3}
+      accessibilityLabel={placeholder}
+      maxLength={maxLength}
+      autoCapitalize={upper ? "characters" : "sentences"}
+      returnKeyType="done"
+      style={[TYPE.body, styles.field, { color: color.ink, backgroundColor: color.input }, Platform.OS === "web" ? WEB_FIELD : null]}
+    />
+  );
+}
+
+/** No browser focus box: the field's own plate carries focus. */
+const WEB_FIELD = { outlineStyle: "none" } as unknown as object;
 
 export function AmountStep(props: AmountStepProps) {
   const { recipient, token, value, balance, busy } = props;
   const asset = token.symbol;
   const { t } = useT();
-  const { locale } = useLocale();
-  const insets = useSafeAreaInsets();
+  const { color } = useTheme();
   const money = useMoney();
-  const separator = decimalSeparator(locale);
   const base = unitsFromCanonical(value, token.decimals);
+  const stable = asset === "USDC" || asset === "EURC";
+  // "All" keeps the fee reserve back on USDC; typing more is still allowed (the policy says if it can't go).
+  const spendable = balance !== undefined && props.reserve !== undefined && balance > props.reserve ? balance - props.reserve : balance;
 
-  const cta =
-    base === undefined || base === ZERO
-      ? { label: t("send.enterAmount"), enabled: false }
-      : balance !== undefined && base > balance
-        ? { label: t("send.notEnough", { asset }), enabled: false }
-        : { label: t("send.review"), enabled: true };
+  let cta: React.ReactNode;
+  if (base === undefined || base === ZERO) cta = <BlockedCta blocker={{ label: t("send.enterAmount") }} />;
+  else if (balance !== undefined && base > balance)
+    cta = props.onAddMoney ? (
+      <BlockedCta blocker={{ label: t("policy.fixAddMoney"), reason: t("send.notEnough", { asset }), fix: { kind: "add-money" } }} onFix={props.onAddMoney} />
+    ) : (
+      <BlockedCta blocker={{ label: t("send.notEnough", { asset }) }} />
+    );
+  else cta = <Button label={busy ? t("common.loading") : t("send.review")} loading={busy} onPress={props.onReview} />;
 
   return (
-    <View className="flex-1">
-      <View className="flex-1 gap-5 px-5 pt-4">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${t("send.to")} ${recipient.title}`}
-          onPress={props.onChangeRecipient}
-          className="bg-card border-border active:bg-muted flex-row items-center gap-3 self-start rounded-full border py-1.5 pe-4 ps-1.5"
-        >
+    <View style={styles.step}>
+      <View style={styles.chips}>
+        <Chip label={`${t("send.to")} ${recipient.title}`} onPress={props.onChangeRecipient}>
           <DefaultAvatar seed={recipient.seed} size={AVATAR} />
-          <Text numberOfLines={1} className="text-foreground shrink text-base font-semibold">
-            {t("send.to")} {recipient.title}
-          </Text>
-          {recipient.subtitle && recipient.subtitle !== recipient.title ? (
-            <Amount numberOfLines={1} className="text-muted-foreground shrink text-sm">
-              {recipient.subtitle}
-            </Amount>
-          ) : null}
-          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${t("assets.pickerTitle")}: ${token.name}`}
-          onPress={props.onPickAsset}
-          className="border-border bg-secondary active:bg-muted flex-row items-center justify-center gap-2 self-center rounded-full border py-2 pe-4 ps-2"
-        >
+          <Text numberOfLines={1} style={[TYPE.rowStrong, styles.shrink, { color: color.ink }]}>{`${t("send.to")} ${recipient.title}`}</Text>
+        </Chip>
+        <Chip label={`${t("assets.pickerTitle")}: ${token.name}`} onPress={props.onPickAsset}>
           <TokenMark token={token} size={CHIP_MARK} />
-          <Text className="text-foreground text-base font-semibold">{asset}</Text>
-          <Icon as={ChevronDown} className="text-muted-foreground size-4" />
-        </Pressable>
+          <Text style={[TYPE.rowStrong, { color: color.ink }]}>{asset}</Text>
+        </Chip>
+      </View>
 
-        <View className="items-center gap-2 py-2">
-          <View className="flex-row items-baseline gap-2" style={{ direction: "ltr" }}>
-            <Text
-              accessibilityLiveRegion="polite"
-              accessibilityLabel={`${value || "0"} ${asset}`}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={TICKET_MIN_SCALE}
-              className={cn("font-display font-bold", value ? "text-foreground" : "text-muted-foreground")}
-              style={{ fontSize: TICKET_SIZE, lineHeight: TICKET_LINE_HEIGHT, fontVariant: ["tabular-nums"] }}
-            >
-              {displayAmount(value, locale)}
-            </Text>
-            <Text className="font-display text-muted-foreground text-2xl font-semibold">{asset}</Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <Text className="text-muted-foreground text-sm">
-              {balance !== undefined ? t("send.available", { amount: money(asset, balance.toString(), token.decimals) }) : " "}
-            </Text>
-            {balance !== undefined && balance > ZERO ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => props.onValue(canonicalUnits(props.reserve && balance > props.reserve ? balance - props.reserve : balance, token.decimals))}
-                className="bg-muted active:bg-secondary rounded-full px-3 py-1"
-              >
-                <Text className="text-foreground text-xs font-semibold">{t("send.max")}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
+      <TicketAmount
+        label={t("send.amountTitle")}
+        value={value}
+        onChange={props.onValue}
+        decimals={token.decimals}
+        fraction={Math.min(token.decimals, stable ? STABLE_FRACTION : TOKEN_FRACTION)}
+        prefix=""
+        suffix={asset}
+        balance={spendable}
+        note={balance !== undefined ? t("send.available", { amount: money(asset, balance.toString(), token.decimals) }) : undefined}
+      />
 
-        <View className="gap-1">
-          <Input
-            value={props.note}
-            onChangeText={props.onNote}
-            placeholder={t("send.notePlaceholder")}
-            accessibilityLabel={t("send.notePlaceholder")}
-            maxLength={NOTE_MAX}
-            returnKeyType="done"
-          />
-          <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("send.noteHint")}</Text>
-        </View>
+      <View style={styles.fields}>
+        <Field value={props.note} onChange={props.onNote} placeholder={t("send.notePlaceholder")} maxLength={NOTE_MAX} />
+        <Text style={[TYPE.caption, { color: color.text3 }]}>{t("send.noteHint")}</Text>
         <ReferenceField value={props.reference} onChange={props.onReference} fromCode={props.referenceFromCode} />
       </View>
 
-      <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-        <Keypad decimal={separator} backspaceLabel={t("send.deleteDigit")} onKey={(key) => props.onValue(applyKey(value, key, token.decimals))} />
-        <Button size="lg" disabled={!cta.enabled || busy} onPress={props.onReview}>
-          <Text>{busy ? t("common.loading") : cta.label}</Text>
-        </Button>
-      </View>
+      {cta}
     </View>
   );
 }
-
-const REFERENCE_MAX = 64;
 
 /** The on-chain reference (Arc Memo): public, so only an invoice or order number. Hidden until asked for. */
 function ReferenceField({ value, onChange, fromCode }: { value: string; onChange: (value: string) => void; fromCode: boolean }) {
   const { t } = useT();
+  const { color } = useTheme();
   const [open, setOpen] = React.useState(Boolean(value));
   if (fromCode && value)
     return (
-      <View className="bg-muted flex-row items-center gap-2 rounded-2xl px-3 py-2">
-        <Text className={cn("text-foreground min-w-0 flex-1 text-sm", TEXT_START)}>{t("send.referenceFromCode", { reference: value })}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={t("send.referenceRemove")} hitSlop={10} onPress={() => onChange("")}>
-          <Text className="text-muted-foreground text-xs font-semibold">{t("send.referenceRemove")}</Text>
-        </Pressable>
+      <View style={[styles.fromCode, { backgroundColor: color.raised2 }]}>
+        <Text style={[TYPE.rowDetail, styles.shrink, { color: color.ink }]}>{t("send.referenceFromCode", { reference: value })}</Text>
+        <Button label={t("send.referenceRemove")} variant="ghost" size="sm" block={false} onPress={() => onChange("")} />
       </View>
     );
-  if (!open)
-    return (
-      <Pressable accessibilityRole="button" onPress={() => setOpen(true)} className="self-start px-1">
-        <Text className="text-muted-foreground text-xs font-semibold">{t("send.referenceAdd")}</Text>
-      </Pressable>
-    );
+  if (!open) return <Button label={t("send.referenceAdd")} variant="ghost" size="sm" block={false} onPress={() => setOpen(true)} />;
   return (
-    <View className="gap-1">
-      <Input
-        value={value}
-        onChangeText={(text) => onChange(text.replace(/[^\x20-\x7E]/g, ""))}
-        placeholder={t("send.referencePlaceholder")}
-        accessibilityLabel={t("send.referencePlaceholder")}
-        maxLength={REFERENCE_MAX}
-        autoCapitalize="characters"
-        returnKeyType="done"
-      />
-      <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("send.referenceHint")}</Text>
+    <View style={styles.fields}>
+      <Field value={value} onChange={(text) => onChange(text.replace(/[^\x20-\x7E]/g, ""))} placeholder={t("send.referencePlaceholder")} maxLength={REFERENCE_MAX} upper />
+      <Text style={[TYPE.caption, { color: color.text3 }]}>{t("send.referenceHint")}</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  step: { gap: SPACE.lg },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  chip: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, borderRadius: RADIUS.pill, paddingVertical: SPACE.xs, paddingStart: SPACE.xs, paddingEnd: SPACE.md, maxWidth: "100%" },
+  shrink: { flexShrink: 1, minWidth: 0 },
+  fields: { gap: SPACE.xs },
+  field: { minHeight: SIZE.inputHeight, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg },
+  fromCode: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, borderRadius: RADIUS.md, paddingStart: SPACE.md },
+});
