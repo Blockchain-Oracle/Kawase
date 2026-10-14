@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-14 midday (revamp Stage 0 done, Stage 2 running; plan compressed-dreaming-yao)
+Last updated: 2026-10-14 night (Stage 3 merged and live; plan compressed-dreaming-yao)
 
 ## 2026-10-14 — revamp underway (deadline 10-17 11:59 PM ET = Sun 10-18 04:59 WAT)
 
@@ -25,6 +25,28 @@ Last updated: 2026-10-14 midday (revamp Stage 0 done, Stage 2 running; plan comp
 - A session restart stopped Stage 2 and 2b mid-build. All work was saved on the lane branches `lane/{look,budget,routes,buy-market,wallet,front-door,desktop}-s2`. Budget's and Look's uncommitted work, lost by a force-remove, was replayed from the agent transcripts (see memory never-force-remove-worktrees).
 - **Running:** resume workflow `wf_26527e44-8e8`, script at the session scratchpad `stage2-resume.js`. It runs 7 lanes, all Opus, builder → reviewer → fixer. Each continues from its branch after `git merge main`. To resume after another restart: `Workflow({scriptPath, resumeFromRunId: "wf_26527e44-8e8"})`, after saving any loose worktree work one lane at a time.
 - Coinbase CDP keys are in `.env` (Codex #2): trial is 25 tx × $5. Circle shows bank transfer before KYB once the domain is registered: Codex brief `plan/prompts/codex-2026-10-14-circle-domain.md`. Resend (Codex #3) is still pending.
+
+**Night (lead works directly: no workflows or background agents, per Abu):**
+- Stage 3 lanes were stopped by a restart. Each lane's loose work was saved one at a time, then I reviewed and merged all 7 myself (`lane/*-s3`).
+  - Checks: typecheck 31/31, lint 31/31, i18n 5/5, 61 migrations on a throwaway native Postgres. OrbStack stays stopped.
+  - 14 stale worktrees were removed (no --force).
+- Fixed after reviewing live (in-app browser + iOS Simulator):
+  - budget migration 0101 re-stamped (Drizzle would have skipped it);
+  - App Kit gets 12 s in a race;
+  - light-first theme: migration 0102 (users default light, old dark default moved);
+  - composer: Enter sends on web; at rest it fills the row; "Tell Kawase what to do";
+  - a guest can look around mainnet;
+  - TokenMark remembers logos (Home trending and drafts were showing lettered discs); Kawase's demo seller gets the Kawase mark;
+  - brand: icon, splash, Android and favicon are a black tile, white 為替, magenta ring.
+- Verified in production: the welcome story; guest Home; "swap 2 USDC to EURC" races 6 venues → App Kit → a one-tap Sign in that resumes; RouteList with logos; Markets + Services; the + fan; the native app on the iPhone 17 Pro simulator.
+- Builds: TestFlight 12 (`74f56eca`, Turnkey sign-in). Queued: TestFlight 13 (`aec92e84`) and simulator (`94c591e8`) with all fixes. api and web deploys are queued at HEAD.
+- Open:
+  - Privy proof needs the Codex #5 test accounts, then flip EXPO_PUBLIC_WALLET_PROVIDER;
+  - native Markets "switch to mainnet" card has no button;
+  - the + fan's first open takes ~1 s;
+  - landing/docs still carry the old lime brand;
+  - mainnet funding + acceptance run (Friday);
+  - repo public, demo video, submission.
 
 **Owner:** run the Codex #2 and #3 briefs; back up `~/.kawase-secrets`; fund mainnet ops and relayer by Friday.
 
