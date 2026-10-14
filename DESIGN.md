@@ -1,140 +1,98 @@
-# Kawase design system: Lime on Ink
+# Kawase design system: Senryo
 
-Purpose: the single source for every visual decision. Every colour, font, radius and motion value in the apps resolves to a token defined here. The values live in `packages/ui-tokens/tokens.json`; `pnpm --filter @kawase/ui-tokens build` generates `native.css` (Uniwind), `web.css` (docs and landing) and `tokens.ts`, then `check-contrast.mjs` fails the build if any text pair drops below 4.5:1.
-Last updated: 2026-09-30 (the revamp, D34/D35)
-Decision: Abu chose Koe (amber orb on a dark stage) on 2026-09-30, then, after seeing it built, rejected its colours and design intention and asked for a revamp from Codex's reference study of Solflare, Phantom and Fomo (`docs/design/reference-study-2026-09-30/`). The plan and the per-screen fidelity ledger are in `plan/design/REVAMP-PLAN.md`; the old system is tagged `koe-v0`.
-Sources: the reference study (screen IDs S/P/F, motion M, components C, identity LG); `context/08-product-research/DECISIONS-FROM-ABU.md` (D15, D33, D35); the premium-ui skill (`blocklist.md`); Google Fonts axes (checked 2026-09-30).
+Purpose: the single source for every visual decision. Every colour, font, radius, space, elevation, motion and spring value in the apps resolves to a token in `packages/ui-tokens/tokens.json`. `pnpm --filter @kawase/ui-tokens build` generates `native.css` (Uniwind), `web.css` (docs and landing) and `tokens.ts`, then `check-contrast.mjs` fails the build if any text pair in any of the four themes drops below 4.5:1.
+Last updated: 2026-10-14 (D40, Stage 2 look lane)
+Decision: D40, Abu on 2026-10-14: "Exactly Senryo, magenta"; every component from 21st.dev; designed loading, empty, error and offline states everywhere; no mocks. This replaces "Lime on Ink" (D35); the orb stays as the voice symbol. Token **names** did not change; their values did.
+Sources: Senryo (`/Users/abu/dev/hackathon/metropolis`: `packages/tokens/src/{palette,scale,fonts,sound}.ts`, `apps/mobile/src/components`), Mitoshi (`crypto-world-fair/web/src/components/{states,tx}`), `plan/research/2026-10-14/03-senryo-design.md` and `05-21st-components.md`, the look docs pack (`plan/docs-packs/look.md`). Component provenance: `apps/mobile/.21st/design.json`.
 
 ## Direction
-- One line: **electric lime on ink, silver objects that catch light, and real logos — money that moves when you speak.**
-- The app is an ink stage with textured black cards, a floating glass dock and blur overlays. Lime is the one loud colour and is rationed to the primary action, the active dock item and live voice state. Real entity marks (USDC, Arc, Ethereum, Apple, Google…) keep their own colours; nothing is tinted.
-- The orb is the voice symbol, not the home: it lives in the dock centre and rises over a blurred page when the user speaks.
-- Onboarding is a story on colour fields with layered, stippled-silver objects; the app itself stays ink.
-- Typing is always available; nothing depends on a microphone.
+- One line: **quiet light plates, black actions, one magenta for the moment that matters, money in condensed black figures that roll.**
+- The agent is the front door (D37): the shell is calm so the agent's work (venues lighting up, steps, receipts) is what moves.
+- Light is the default; dark is an adaptation, not an inversion. Depth is one step lighter fill, never a border or a shadow (shadows only on the dock, sheets, the primary plate and a receipt).
+- Real marks keep their own colours (packages/identity); nothing is tinted.
 
-## Palette
-Default mode: **dark** (ink). Light (paper) is a full second theme with its own relationships, not an inversion.
-
-| Token | Dark | Light | Used for |
+## Palette (light / dark)
+| Token | Light | Dark | Used for |
 |---|---|---|---|
-| background | `#0B0C10` ink | `#F7F8F4` paper | the stage |
-| card | `#14161C` | `#FFFFFF` | cards and sheets |
-| popover | `#171A21` | `#FFFFFF` | menus, the language sheet |
-| foreground | `#F4F5F7` | `#101210` | primary text |
-| muted-foreground | `#A0A6B4` | `#5C6158` | secondary text |
-| secondary / muted | `#1C1F27` | `#ECEEE7` | quiet buttons, chips, input fills |
-| border / input | `#262A34` | `#D9DCD2` | hairlines (deliberately faint; fills carry the shape) |
-| primary | `#D4FF3A` lime | `#101210` ink | the one main action per screen |
-| primary-foreground | `#0B0C10` | `#D4FF3A` | text on primary (lime is never text on white: 1.9:1) |
-| accent | `#D4FF3A` | `#3F6600` olive | links, the active dock item, the live state |
-| accent-foreground | `#0B0C10` | `#FFFFFF` | text on accent |
-| destructive | `#FF5C5C` | `#C4262E` | errors and irreversible actions only; never lime |
-| destructive-foreground | `#2A0505` | `#FFFFFF` | text on destructive |
-| success | `#35D39B` mint | `#1A7F56` | confirmed, received, "available" — mint so lime stays exclusive |
-| network | `#D4FF3A` | `#101210` | the network pill and the confirm button on mainnet |
-| network-foreground | `#0B0C10` | `#D4FF3A` | text on the pill |
-| network-surface | `#1E2A0A` | `#E6F5C2` | the pill's quiet background |
-| glass | `#14161CA6` | `#FFFFFFB8` | the dock and blur overlays (over a blur) |
-| glass-border | `#FFFFFF1F` | `#00000014` | the glass rim |
-| scrim | `#000000A6` | `#0B0C1099` | behind sheets (dim, not blur) |
-| texture | `#FFFFFF14` | `#0000000F` | the wave/stipple lines of the textured card |
-| silver / silver-deep | `#C9CDD3` / `#6E7279` | `#9AA0A8` / `#5B6067` | the silver objects' light and shade |
+| background | `#F5F5F5` | `#111111` | the page |
+| card | `#FFFFFF` | `#1C1C1C` | a group on a page (level 1) |
+| raised-2 / secondary / muted / input | `#ECECEC` | `#292929` | a group inside a sheet (level 2), quiet plates, inputs |
+| row-pressed | `#E2E2E2` | `#363636` | pressed rows, the segmented plate |
+| foreground | `#000000` | `#F5F5F5` | text 1 |
+| muted-foreground (text 2) / text-3 | `#666666` / `#6E6E6E` | `#B8B8B8` / `#A0A0A0` | secondary and tertiary text (both ≥ 4.5:1) |
+| primary / primary-foreground | `#000000` / `#FFFFFF` | `#F5F5F5` / `#000000` | the one main action; pressed `#252525` / `#DEDEDE` |
+| accent / accent-foreground | `#FA00FF` / `#000000` | same | trade, publish, selected controls, the focus ring (`ring`), badges. Black label always |
+| selected-row / link | `#FCE3FC` / `#99009C` | `#3C203C` / `#FF75FF` | a selected row, links |
+| up / down | `#2F7A00` / `#C8283F` | `#B5F543` / `#FF647C` | direction only (P&L, price change, swap outcome) |
+| up-fill / down-fill (+ `-edge`, `on-fill`) | `#B5F543` / `#FF647C` | same | vivid direction plates with black labels and a darker 3 px edge |
+| up-, down-, warn-, destructive-surface | washes | washes | change chips, error panels, warnings |
+| warn / destructive | `#8A5800` / `#C83225` | `#F2B85C` / `#FF5A48` | warnings; destructive actions and failures (never the accent) |
+| glass / glass-border / glass-opaque | `#ECECECEB` / `#FFFFFFB3` / `#ECECEC` | `#292929EB` / `#FFFFFF24` / `#292929` | the dock and capsule material; opaque under Reduce Transparency |
+| scrim / sheet-handle / skeleton | `#000000B3` / `#999999` / `#DEDEDE` | `#000000B3` / `#999999` / `#363636` | sheets and loading geometry |
+| network / network-foreground / network-surface | neutral | neutral | the mode capsule |
 
-**Testnet layer** (changes only `network`, `network-foreground`, `network-surface` and `ring`): sky `#4CC2FF` on `#0D2A3A` in dark, `#0A6AAB` on `#DDF0FB` in light. Sky is far from both lime and red, so the three states never blur into each other. The words "Testnet · no real money" are always shown with it; on mainnet, money cards carry a REAL MONEY eyebrow instead.
-
-**The orb** takes three colours from `tokens.json`: lime `#D4FF3A`, `#F0FFC4`, `#5A7A12` on mainnet; sky `#4CC2FF`, `#C7ECFF`, `#0A4A7A` on testnet — the orb itself tells you which network you are on.
-
-**Story fields** (`tokens.story.fields`, onboarding panels only, ink text on each): lime `#D4FF3A`, periwinkle `#7C8CFF`, mint `#8CF2C9`, coral `#FF7D6B`, ice `#DCE4F5`.
-
-Contrast: every text pair is at least 4.5:1 (WCAG AA) in all four themes, plus ink on every story field, checked by `packages/ui-tokens/check-contrast.mjs` on every build. Hairlines are reported, not enforced.
+**Testnet** is a layer over light or dark that changes only the mode capsule's plates (`network`, `network-surface`): neutral greys, never a hue wash. The mode is in the words ("Testnet") and in the shape (a dashed rim and a hollow switch), never in colour alone. Four themes: `light`, `dark`, `testnet`, `testnet-dark`.
 
 ## Typography
-- Display: **Space Grotesk** (500–700). Screen titles, the big amount on tickets, the agent's spoken line. Bold, plain and geometric like the references' hierarchy, without being Inter.
-- Body: **Manrope** (400–700, Latin + Cyrillic). Everything else.
-- Mono: **JetBrains Mono** (400–600). Amounts in lists, addresses, codes; tabular figures; always left-to-right.
-- Other scripts fall back to Noto on web: Noto Sans Arabic, Noto Nastaliq Urdu, Noto Sans Devanagari, Noto Sans Bengali, Noto Sans SC. Native uses the system fonts for those scripts (React Native takes one family per text style).
-- Scale (px): 12 / 14 / 16 / 20 / 26 / 32 / 48 / 64 (64 is the amount on a ticket).
-- Classes: `font-sans` (body), `font-display`, `font-mono`, with the normal weight classes. The family names come from `tokens.json`.
-- How the fonts load: **native** — embedded at build time by the `expo-font` plugin in `apps/mobile/app.json` (a weight change needs a native rebuild); **web** — one Google Fonts stylesheet linked from `apps/mobile/src/app/+html.tsx`, generated into `tokens.ts` (`fonts.googleFontsHref`).
+- **Inter** 400/500/600/700 for the interface; **Roboto Condensed Black** (900) for money and page titles. Both embedded by the expo-font plugin on native and loaded from Google Fonts on the web. Arabic, Urdu, Hindi, Bengali and Chinese use the Noto families on the web and the system fonts on native.
+- Roles (`tokens.scale.type`, read as `TYPE.*` in the kit): `displayBalance` 52/56 and `displayMargin` 64/68 (money, condensed), `pageTitle` 32/38 (condensed), `sheetTitle` 24, `rowTitle` 17/600, `row` 16, `rowDetail` 14, `buttonLabel` 17/600, `meta` 12. Display tracking −0.02 em; everything else 0. Sentence case; no tracked uppercase labels.
+- Every money figure is tabular with lining figures. Dynamic Type caps: hero 1.3, controls 1.35.
 
-## Materials
-- **Ink card**: `card` on `background` with a `border` hairline; no shadow.
-- **Textured card**: black with a wave/stipple pattern in `texture` (Skia on native, an SVG pattern on web), for the balance card and receipts (Solflare S15's material).
-- **Glass**: `glass` over a blur (`expo-glass-effect` on iOS 26+, `expo-blur` elsewhere, `backdrop-filter` on web) with a `glass-border` rim: the dock, the fan's backdrop, the voice overlay.
-- **Scrim**: `scrim` behind sheets; sheets dim the page, overlays blur it.
-- **Silver objects**: stippled/engraved monochrome vectors (dot size follows the light) — the koban coin, hanko seal, paper plane, glass orb, QR tile, silver flag, brand mark. Vector first (react-native-svg + Skia), one still frame each for reduced motion. Briefs in `plan/design/artwork/`.
-- **Real marks**: from `@kawase/identity` only, with provenance; colour or mono variants; a labelled neutral disc when unknown; never a Lucide icon in a mark's place and never tinted lime.
-
-## Spacing and shape
-- Base unit 4px; scale 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64.
-- Radius: 24px cards and sheets (28px on the top corners of a bottom sheet), 16px inputs and rows, full pills for buttons, chips and the dock.
-- Shadow: none. Depth comes from the card colour, hairlines, glass and blur. The only glow is the orb's core.
-- Density: low. One primary action per screen; lists breathe (rows 56–64px, marks 44px).
-- Logical spacing only (`ps-`/`pe-`/`ms-`/`me-`), so Arabic and Urdu mirror without per-screen work. Right-to-left is set per screen with `Direction` (ui-native) or `dir` (web), so the language can change without restarting the app. On native, text alignment comes from the `Text` component (never `text-start`, which React Native ignores), and anything moved with a transform needs an `rtl:` class.
-- Uppercase and letter-spacing are for scripts that have capitals. Use `StateLabel`; never letter-space Arabic, Urdu, Hindi, Bengali or Chinese.
-- No `dark:` classes: there are two dark themes (dark, testnet-dark) and `dark:` reaches only one. Colours come from tokens.
+## Shape, space, elevation
+- Radius: 8 / 12 / 16 / 24 / 32 / pill (`--radius-s-*`). Buttons 56 high (48 secondary, 44 compact) with 28 / 22 corners; groups and sheet rows 20; sheet tops and the desktop stage 24; chips 32 high.
+- Space: a 4 grid, 2 / 4 / 8 / 12 / 16 / 20 (gutter) / 24 / 32 / 48. Touch targets ≥ 44.
+- Elevation: dock `0 8 24 #0003`, sheet `0 −4 16 #0000001F`, primary plate `0 2 4`, receipt. Everything else is flat.
 
 ## Motion
-Durations live in `packages/config/src/motion.ts` (no magic numbers). Starting points, declared as adaptations of the study's clips:
-- Presses and hovers: 150ms ease-out. Sheets rising: 250ms with a dim scrim; nested child panels animate height; the parent is restored with its values.
-- Story panel change (M01): the colour field and art travel horizontally inside the clipped canvas, the copy changes mid-travel, the footer never moves; ~900ms.
-- Quick-action fan (M06): the plus becomes ×, the page blurs, five circles (Send, Receive, Swap, Request, Fund) rise and scale with a 20–35ms stagger and a small overshoot into a vertical trailing column; 220–300ms.
-- Voice overlay: the page blurs and darkens in 120–200ms; the orb rises from the dock to the centre; captions fade in by word; × restores the page.
-- Page push (M11): native stack push with rounded moving corners.
-- Dock (M09/M10): the active bubble slides with a spring; the header collapses on scroll.
-- QR (M04): dots resolve from particles in ~700ms; a static dotted code with reduced motion.
-- Completion (M18): the silver flag waves once, then the precise receipt.
-- Ambient art (M05): slow float with independent phase; still with reduced motion.
-- The orb reacts to voice level; with reduced motion it becomes a still ring and the state is carried by the label ("Listening", "Thinking", "Speaking").
-- Money-moving confirmations never auto-dismiss. Reduced motion never shortens the hold time.
+- Press 100 ms in / 160 ms out to 0.97 scale; selection 170 ms; number change 160 ms; sheet enter 480 / exit 240 on the drawer curve `(0.32, 0.72, 0, 1)`; stagger 40 ms, items rise 10 pt over 320 ms; default ease `(0.2, 0.8, 0.2, 1)`.
+- Springs (mass 1): selector 260/30, detail 240/30, dock bubble 420/30 (overshoot), dock and rail active pill 500/36, sheet release 320/32 (slight overshoot).
+- Reduced motion: travel becomes a 100 ms crossfade; skeletons and shimmer stand still; rolling digits swap.
+- Live numbers roll (Skia odometer on the phone, NumberFlow on the web), and a sparkline sits beside every price and balance.
+
+## Sound and haptics
+- One call site: `fire(event, { sound?, identity? })` (`apps/mobile/src/feedback/fire.ts`). Haptic words: tick (selection), press (light), snap (rigid), confirm (soft), filled (success), warn, fail (error), close (medium), surge (heavy), agentStep (selection), agentDone (success).
+- **No sound for ticks or navigation**; a sound is for money arrived, sent, confirmed, failed, and the agent finishing a step or its run. Outcome sounds play once per identity (a remount never replays them). Cues obey the silent switch and the person's Sound and touch switches; hot cues have a two-player pool; players load at launch.
+- Synthesised interface cues are defined once in `packages/ui-tokens/sound.json` and rendered to WAV by `render-sounds.mjs`.
+
+## The kit (apps/mobile/src/components)
+Every lane builds from these; `/dev/gallery` shows each in every state.
+- **kit/**: Button, Surface (Panel, SectionLabel, KeyValue, Rule), ListRow, Segmented, Switch, SearchField, FilterChips, Keypad, AmountPad (viem base units, 1/4 1/2 3/4 All), HoldButton, SlideToConfirm, DisclosureRow, QuietLine, ProgressBar, ChangeChip, ActionCircle, CountdownRing, LiveOdometer / RollingFigure, Sparkline, GlassPlate, the states (Skeleton, LoadingState with shaped skeletons, EmptyState, ErrorState, StaleTick, OfflineStrip, ReadView) and the waits (useHeldLoading, useWaitClock, WaitingText). Colours, sizes and motion come from `kit/theme.ts`, a thin shim over the tokens.
+- **tx/**: BlockedCta, TxCta, TxSteps, TxMorph, TxFailureCard, useTxLifecycle, and the intent journal with recovery.
+- **sheet/**: the root sheet host (detents 0.62 / 0.88 / 1, closes past 25 % or on a flick, the page steps back to 0.96, the dock hides), and the same API as a 384 px right drawer on a desktop window.
+- **shell/**: the Dock, the desktop Rail (248 / 88 px, springing active pill), the ModeCapsule, the live region.
+- **toast/**: ToastHost and `notify` (a toast with its cue).
+- Skia parts have `.web.tsx` twins (NumberFlow, SVG) so the web build never loads CanvasKit.
 
 ## Page grammar
-- **Pushed page**: back chevron in a dim circle, a small illustration top-start, a large display heading, a muted one-line subtitle, content, the primary action fixed above the keyboard.
-- **Method list**: full-width rounded rows, a leading functional icon or a trailing real provider mark, one dominant row, "or" before social options.
-- **Amount ticket**: the amount alone in display type, dim while zero; preset chips; a custom keypad; the primary button carries the validation state.
-- **Field with a state slot**: prefix inside the field, clear button, a fixed-height line under it for checking / error (×) / available (✓); the button dims until valid.
-- **List row**: a 44px mark (real artwork; badges as separate overlays), title + muted sub-line, amount right-aligned in mono, status coloured with text; skeleton rows while loading; an inline error row with Retry on failure.
-- **Sheet**: grab handle, title, optional subtitle, dim scrim, content-sized; tall sheets for detail; nested child with an explicit back chevron.
-- **Context banner**: an info row at the top of the page — the testnet strip, "checking N pending…", a degraded dependency.
+- **One hero figure per surface**; detail behind one disclosure; at most four facts at rest; no explainer sentence under controls.
+- **Inputs and the CTA fit 375 × 812**; the action is a 56 pt plate pinned above the keyboard.
+- **Sheets** open at their content size or at 0.62 for lists; the heading is centred under the handle; the scrim and Back close it.
+- **Desktop**: a floating rail and one stage with 24 px corners, 16 px off the window; sheets become right drawers.
 
-## Copy
-- Short verbs, the amount first ("Send 20 USDC to Alex"), "network" not "chain", "your allowance" not "delegation".
-- State names: Listening / Thinking / Speaking; money endings: pending / confirmed / reverted / unknown outcome.
-- A disabled button names the first fixable reason ("Above your allowance — Face ID", "Not enough USDC for fees — top up", "Mainnet only — switch network"); the same words in UI, chat and voice.
-- The product is Kawase (為替); the mark carries 為替, the wordmark is "Kawase".
-- Every string exists in all ten catalogs; each language is listed in its own name and script.
+## States (every surface, designed)
+- **Loading**: a skeleton shaped like the real layout, held at least 300 ms, never a spinner page, never a fake $0.
+- **Empty**: says why and names the next action.
+- **Error**: says what still works, plus one action (the fix, or Retry); technical text behind a disclosure.
+- **Offline**: cached values stay at full ink, marked stale with their time.
+- **Waits**: a short verb that shimmers ("Pricing", "Bridging"), elapsed seconds after 3 s, "Still waiting · Retry" at about 15 s.
 
-## Interaction states
-Every interactive component has hover, a visible focus ring (`ring`), active, disabled, loading, empty and error states. Every screen has its guest, loading, empty, error, offline, testnet, mainnet, light, dark, LTR and RTL states.
+## Money lifecycle
+- A blocked CTA names its fix ("Add money", "Set a budget") and does it. Never "Soon", never a grey ghost.
+- In flight the CTA never looks disabled: the face names the phase, a bar fills its edge, Signing → Sent → Confirmed run under it.
+- It morphs into its receipt. A failure card always says whether money moved; a lost answer is "waiting on the chain" and is never re-sent.
+- The intent is journalled after the signature and before the send, survives a kill, and recovery only reads its status.
 
 ## Rules
-- **One primary action per screen.** Lime is for that action, the active dock item and live state, nothing else. Never for errors.
-- **The language pill is on the first onboarding panel** and every onboarding screen, guest home and Settings; a change is instant, including direction.
-- **The network pill in the header is the toggle** (D15): one tap, instant both ways; the first mainnet switch raises the consent sheet; strip + pill + eyebrow are the three indicators, never colour alone.
-- **Voice is never the only way.** Every voice action has a tap equivalent, and the keyboard button is always visible.
-- **What was heard is always shown** before anything is confirmed, and the confirm card shows the exact amount, asset, recipient and network.
-- **No prompt inside the allowance; Face ID above it** (D33). Inside the allowance the agent just sends and says so. Above it, the confirm card shows the exact amount, asset and recipient, and one Face ID approves. A spoken "yes" alone never approves a payment.
-  - In chat the person's message is the request: a proposal that the policy routes inside the allowance is approved as it is made, and the card opens on the moving plane. After a fix made on a card (a saved contact, a chosen currency, a sign-in) the same request carries on by itself. Anything routed to Face ID (above what is left of the allowance, EURC, a first payment above the new-recipient threshold, a lookalike address) waits on the card.
-  - On the send screen the Send button is not a prompt: it is the person's request itself (they typed the amount and chose the recipient there).
-  - The button names the device's real check (Face ID, Touch ID, face unlock, fingerprint, passcode). Only an explicit approval continues; a device with nothing to check with cannot approve and says how to fix that.
-- **Hold-to-confirm is for actions that cannot be undone and do not go through Face ID** (revoking the agent, removing a contact). Payments use the Face ID button. The hold time is never shortened by reduced motion, and a screen reader's double tap counts as the deliberate gesture.
-- **Quiet states are grey, not lime.** Hover and pressed states of secondary, outline and ghost buttons use `muted`.
-- **Real marks, distinct roles.** Asset mark ≠ chain badge ≠ status chip ≠ avatar. Generic icons never stand in for a known entity.
-- **Motion on wrappers, colour on inner views**, so a theme change during an animation cannot leave stale colours.
+- Magenta only for trade, publish, selected controls, badges and focus. Never for errors, never as text on white.
+- Up and down only for direction. Never colour alone: a sign, a word or a mark goes with it.
+- The mode capsule is one tap (like dark/light) on Home and the desktop rail; the first switch to mainnet raises the consent sheet.
+- No hex outside `packages/ui-tokens` and `kit/theme.ts`; no hard-coded strings (the `shell`, `feedback` and `network` catalogues, in all ten languages).
+- Real marks for every token, chain, venue and pay method; generic icons are utility glyphs only.
+- Motion on wrappers, colour on inner views.
 
-## Components
-- Web: 21st.dev and the premium registries, installed into `packages/ui-web/src/components/ui` and reskinned to these tokens (picks listed in `plan/stages/02-design-system-component-sourcing.md`). Kawase compositions sit one folder up, in `packages/ui-web/src/components`.
-- Native: React Native Reusables on Uniwind in `packages/ui-native/src/components/ui`, and the native twins one folder up, built to match the web components prop for prop. Never AI-generated designs (D28).
-- Identity: `packages/identity` — the registry of real marks keyed by chain id / token address / provider slug, with `PROVENANCE.md`, and the `Mark` component for both platforms.
-- The orb is the same shader on both platforms: WebGL on web, Skia on native. Its three colours come from `tokens.json`, and the voice level is a prop.
-- Every state of every base component is visible at `/dev/gallery`, and the whole direction at `/dev/board`, with `?mode=light|dark&network=mainnet|testnet&lang=en|ar`.
-
-## Banned (on top of the premium-ui blocklist)
-- Inter, Roboto, Arial or the system font as the brand font.
-- Purple or blue-to-pink gradients; gradient text.
-- Amber accents (the previous direction), and lime for anything that is not the primary action, the active dock item or live state.
-- The same colour for brand accent and for errors.
-- Generic coin, dollar or wallet icons where a real entity mark exists; tinting a logo; taking marks from screenshots.
-- Placeholder people, amounts or copy from installed components.
-- Colour as the only signal for network, success or error.
-- A spinner where a skeleton or an inline error belongs.
+## Banned
+- Borders on content, shadows on groups, gradients, glow.
+- Tracked uppercase section labels, explainer sentences under controls, text dumps.
+- A spinner where a skeleton or an inline error belongs; "Soon", "Quote only" or a placeholder figure anywhere outside `/dev/gallery`.
+- Colour as the only signal for network, direction, success or error.
+- Tinting a logo or drawing a letter disc where a real mark exists.
