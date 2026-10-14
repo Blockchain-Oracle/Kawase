@@ -3,7 +3,7 @@
 // plus is blurred away while the orb is up. Rendered once: by the (tabs) layout, or on a desktop window by the
 // signed-in area's layout over the sidebar and every page (no plus there: the sidebar lists the same actions). The
 // plus steps aside on Chat, where the composer sits in its place. Send leads; an action that has not shipped on this network (Request until
-// Stage 5b) says "Soon" in the fan itself instead of toasting after the tap (review R12). The closed plus is quiet
+// Stage 5b) is not drawn at all: no "Soon" and no dead row. The closed plus is quiet
 // glass, so the screen's own main action stays the only lime one (R09). The fan's blur is only its backdrop (the
 // actions are the surface) and leaves over the fan's own exit, so both end together (R16). Opening the fan commits
 // to nothing, so it has no haptic: haptics are kept for real outcomes (the allowance accepted, money arrived).
@@ -49,13 +49,12 @@ export function OverlayHost() {
     { key: "fund", label: t("assets.addMoney"), icon: ArrowDownToLine },
     { key: "send", label: t("home.send"), icon: Send },
     { key: "receive", label: t("home.receive"), icon: QrCode },
-    { key: "swap", label: t("home.swap"), icon: ArrowLeftRight, ...(swapReady ? {} : { soon: t("home.soon") }) },
-    { key: "request", label: t("home.request"), icon: HandCoins, ...(requestReady ? {} : { soon: t("home.soon") }) },
+    ...(swapReady ? [{ key: "swap", label: t("home.swap"), icon: ArrowLeftRight }] : []),
+    ...(requestReady ? [{ key: "request", label: t("home.request"), icon: HandCoins }] : []),
     { key: "scan", label: t("scan.fanLabel"), icon: ScanLine },
   ];
 
   const onAction = (key: string) => {
-    if ((key === "request" && !requestReady) || (key === "swap" && !swapReady)) return;
     overlay.close();
     if (key === "receive") router.push("/wallet/receive");
     else if (key === "fund") fund.open();

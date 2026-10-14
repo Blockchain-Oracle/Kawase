@@ -21,6 +21,10 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { useWide, WideFrameContext, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
+import { LAYOUT } from "@/components/kit/theme";
+import { SheetPortalProvider } from "@/components/sheet/SheetHost";
+import { DockProvider } from "@/components/shell/dock-context";
+import { LiveRegionHost } from "@/components/shell/LiveRegionHost";
 import { DesktopSidebar } from "@/dock/desktop-sidebar";
 import { useT } from "@/i18n";
 import { OverlayHost } from "@/overlay/overlay-host";
@@ -65,6 +69,8 @@ export default function AppLayout() {
   // Paused or practising: one strip above every screen says so (cards/automate-safety.md).
   return (
     <OverlayProvider>
+      <DockProvider>
+        <SheetPortalProvider>
       <SafetyStripFrame>
         <DesktopFrame>
           <Stack
@@ -77,6 +83,9 @@ export default function AppLayout() {
           />
         </DesktopFrame>
       </SafetyStripFrame>
+        </SheetPortalProvider>
+      </DockProvider>
+      <LiveRegionHost />
     </OverlayProvider>
   );
 }
@@ -87,19 +96,16 @@ export default function AppLayout() {
  * breakpoint keeps its navigation.
  */
 function DesktopFrame({ children }: { children: React.ReactNode }) {
-  const { t } = useT();
   const wide = useWide();
   const overlay = useOverlay();
-  const { user } = useSession();
-  const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
+  // On a desktop window the rail and the one stage float on a slightly deeper ground, 16 px off the window's edge, with
+  // the stage's 24 px corners (the Senryo/Mitoshi web shell); on a phone the page is the whole window.
   return (
-    <View className="bg-background flex-1">
-      <View className="flex-1 flex-row" aria-hidden={wide && overlay.current !== null}>
+    <View className={wide ? "bg-secondary flex-1" : "bg-background flex-1"} style={wide ? { padding: LAYOUT.inset } : undefined}>
+      <View className="flex-1 flex-row" style={wide ? { gap: LAYOUT.inset } : undefined} aria-hidden={wide && overlay.current !== null}>
         {wide ? <DesktopSidebar /> : null}
-        <View className="flex-1">
-          {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
-          {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
-          <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>
+        <View className="bg-background flex-1" style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}>
+          {children}
         </View>
       </View>
       {wide ? <OverlayHost /> : null}
