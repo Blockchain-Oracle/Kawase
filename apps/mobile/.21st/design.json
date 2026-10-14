@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "project": {
+    "name": "@kawase/mobile",
+    "productType": "AI-agent money app on Arc (Circle's L1): the agent is the front door; one Expo app for iOS, Android and the web",
+    "stack": ["expo-57", "react-native-0.86", "expo-router", "react-native-web", "uniwind", "reanimated-4", "react-native-svg"]
+  },
+  "direction": {
+    "name": "Senryo",
+    "summary": "Senryo's look exactly (plan D5): light-first neutrals, magenta accent with black labels, condensed display type for money; token values change, names stay.",
+    "approved": "plan compressed-dreaming-yao, Decision 5; DECISIONS-FROM-ABU D37-D43"
+  },
+  "components": {
+    "desktop": [
+      {
+        "name": "trade-panel",
+        "id": 27122,
+        "author": "ssychui",
+        "source": "21st.dev ssychui/swap-ticket (Swap Ticket)",
+        "port": "apps/mobile/src/trade/trade-panel.tsx: caption row with what's available, a big tabular amount, presets (1/4 1/2 3/4 All), a CTA whose label is the state",
+        "deviations": "Long / Short segmented instead of the token flip; leverage opt-in (Senryo D-344); one hero figure (You put in -> exposure); liquidation, health, rates and fees behind one disclosure; SlideToConfirm instead of a button; tokens only (no brand hex)",
+        "status": "built (Stage 2)"
+      },
+      {
+        "name": "trade-chart",
+        "id": 20107,
+        "author": "ssychui",
+        "source": "21st.dev ssychui/candle-chart (Candle Chart)",
+        "port": "apps/mobile/src/trade/trade-chart.tsx: candles over a volume strip, price axis on the end edge, OHLC readout under the pointer",
+        "deviations": "react-native-svg instead of DOM SVG, so one drawing serves iOS, Android and the web (desktop docs pack section 4); entry, liquidation (with the danger zone washed), take-profit and stop-loss drawn as levels; the live price moves the last bar; wicks merged into one path and bodies into two, capped at 150 bars",
+        "status": "built (Stage 2)"
+      },
+      {
+        "name": "positions-panel",
+        "id": 27124,
+        "author": "ssychui",
+        "source": "21st.dev ssychui/trade-journal-table (Trade Journal Table)",
+        "port": "apps/mobile/src/trade/positions-panel.tsx: table columns on desktop (market, size, entry, mark, liquidation, P&L), two-line rows on the phone, the outcome as a signed figure",
+        "deviations": "live P&L in rolling digits; the order being priced shown first with a draining freshness ring; sign and colour together, never colour alone",
+        "status": "built (Stage 2)"
+      },
+      {
+        "name": "drain-ring",
+        "id": 1737,
+        "author": "hihahihahoho",
+        "source": "21st.dev Circle Progress (countdown variant), drawn the way Senryo's CountdownRing draws it",
+        "port": "apps/mobile/src/trade/drain-ring.tsx: react-native-svg arc that drains counter-clockwise over a time window",
+        "deviations": "the last fifth thickens instead of changing hue, so time never reads as gain or loss; replaced by the Look lane's CountdownRing when the kit lands",
+        "status": "built (Stage 2)"
+      },
+      {
+        "name": "rolling-number",
+        "id": 20071,
+        "author": "unlumen",
+        "source": "21st.dev unlumen/animate-digits (Animate Digits)",
+        "port": "apps/mobile/src/trade/rolling-number.tsx: only changed digits roll, up on a rise and down on a fall; Reanimated on the UI thread",
+        "deviations": "reduced motion shows the new figure at once; screen readers hear the whole figure once; replaced by the Look lane's RollingFigure when the kit lands",
+        "status": "built (Stage 2)"
+      }
+    ]
+  }
+}
