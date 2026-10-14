@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 
 import { SendScreen } from "@/screens/send-screen";
+import { WidePage } from "@/trade/page-frame";
 
 const CANONICAL_AMOUNT = /^\d+(\.\d+)?$/;
 
@@ -11,5 +12,10 @@ export default function SendRoute() {
   const asset = params.asset === "USDC" || params.asset === "EURC" || (params.asset && /^0x[0-9a-fA-F]{40}$/.test(params.asset)) ? params.asset : undefined;
   const memo = params.memo && /^[\x20-\x7E]{1,64}$/.test(params.memo) ? params.memo : undefined;
   const memoId = params.memoId && /^0x[0-9a-fA-F]{64}$/.test(params.memoId) ? params.memoId : undefined;
-  return <SendScreen prefill={{ to: params.to?.trim() || undefined, amount, asset, requestToken: params.request?.trim() || undefined, memo, memoId }} />;
+  return (
+    <>
+      <WidePage />
+      <SendScreen prefill={{ to: params.to?.trim() || undefined, amount, asset, requestToken: params.request?.trim() || undefined, memo, memoId }} />
+    </>
+  );
 }

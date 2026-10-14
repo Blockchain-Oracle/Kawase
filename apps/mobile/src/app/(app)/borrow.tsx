@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
 
 import { BorrowScreen } from "@/screens/borrow-screen";
+import { WidePage } from "@/trade/page-frame";
 
 const ACTIONS = new Set(["supply", "withdraw", "borrow", "repay"]);
 
@@ -11,5 +12,10 @@ const ACTIONS = new Set(["supply", "withdraw", "borrow", "repay"]);
 export default function BorrowRoute() {
   const params = useLocalSearchParams<{ action?: string; asset?: string; amount?: string; collateral?: string }>();
   const action = params.action && ACTIONS.has(params.action) ? (params.action as "supply" | "withdraw" | "borrow" | "repay") : undefined;
-  return <BorrowScreen prefill={{ action, asset: params.asset, amount: params.amount, collateral: params.collateral }} />;
+  return (
+    <>
+      <WidePage />
+      <BorrowScreen prefill={{ action, asset: params.asset, amount: params.amount, collateral: params.collateral }} />
+    </>
+  );
 }
