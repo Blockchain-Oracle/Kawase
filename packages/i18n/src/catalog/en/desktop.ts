@@ -37,6 +37,7 @@ export const desktop = {
   chartEmpty: "No history for {{market}} yet",
   priceNow: "{{market}} price",
   mainnetOnlyTitle: "Mainnet only",
+  unavailableTitle: "Long and short aren't available right now",
   mainnetClosed: "Mainnet opens once Circle approves Kawase.",
   marketsFailed: "Markets didn't load",
   marketsFailedStill: "Your positions and money are safe. Try again in a moment.",

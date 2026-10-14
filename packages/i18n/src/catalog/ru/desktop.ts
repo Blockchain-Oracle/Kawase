@@ -37,6 +37,7 @@ export const desktop: Catalog["desktop"] = {
   chartEmpty: "Истории {{market}} пока нет",
   priceNow: "Цена {{market}}",
   mainnetOnlyTitle: "Только основная сеть",
+  unavailableTitle: "Лонг и шорт сейчас недоступны",
   mainnetClosed: "Основная сеть откроется, когда Circle одобрит Kawase.",
   marketsFailed: "Рынки не загрузились",
   marketsFailedStill: "Ваши позиции и деньги в безопасности. Попробуйте ещё раз чуть позже.",

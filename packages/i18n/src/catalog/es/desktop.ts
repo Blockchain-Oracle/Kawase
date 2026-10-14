@@ -37,6 +37,7 @@ export const desktop: Catalog["desktop"] = {
   chartEmpty: "Aún no hay historial de {{market}}",
   priceNow: "Precio de {{market}}",
   mainnetOnlyTitle: "Solo red principal",
+  unavailableTitle: "Largo y corto no están disponibles ahora",
   mainnetClosed: "La red principal se abre cuando Circle apruebe Kawase.",
   marketsFailed: "Los mercados no cargaron",
   marketsFailedStill: "Tus posiciones y tu dinero están a salvo. Inténtalo de nuevo en un momento.",

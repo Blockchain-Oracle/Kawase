@@ -37,6 +37,7 @@ export const desktop: Catalog["desktop"] = {
   chartEmpty: "{{market}} 暂无历史",
   priceNow: "{{market}} 价格",
   mainnetOnlyTitle: "仅限主网",
+  unavailableTitle: "做多和做空暂时不可用",
   mainnetClosed: "Circle 批准 Kawase 后即开放主网。",
   marketsFailed: "市场未能加载",
   marketsFailedStill: "你的仓位和资金是安全的，请稍后重试。",

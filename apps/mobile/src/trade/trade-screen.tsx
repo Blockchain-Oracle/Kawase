@@ -3,14 +3,17 @@
 // as the right column, positions under the chart. Narrower desktop pages stack them with the ticket inline. The
 // phone: the chart and positions scroll, and a pinned Long / Short bar opens the same ticket as a bottom sheet (the
 // ticket is mounted once per layout, so nothing polls twice). Testnet gets the designed "Mainnet only" state with
-// the switch, never an empty page; a failed markets read says what still works. On the web, L and S pick a side.
+// the switch, never an empty page; on mainnet, a venue that can't lend right now says why, with Retry and a way back
+// (never a network switch that goes nowhere); a failed markets read says what still works. On the web, L and S pick a
+// side. On the phone the Swap / Bridge / Long-Short switch stays at the top (the desktop has the sidebar).
 import { useRouter } from "expo-router";
-import { ChevronLeft, Globe } from "lucide-react-native";
+import { ChevronLeft, CircleSlash, Globe } from "lucide-react-native";
 import * as React from "react";
 import { Platform, Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { MarginSide } from "@kawase/api-client";
+import type { MarginSide, MarginUnavailable } from "@kawase/api-client";
+import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Sheet } from "@kawase/ui-native/components/sheet";
@@ -26,6 +29,7 @@ import { useT } from "@/i18n";
 import { useMarginFormat } from "@/margin/copy";
 import { isMarginFinished, isMarginOpen, useMarginMarkets, useMarginPositions } from "@/margin/use-margin";
 import { useSession } from "@/session/session-provider";
+import { TradeSwitch } from "@/swap/trade-switch";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
@@ -35,8 +39,8 @@ import { TradePanel } from "./trade-panel";
 import { useHeld } from "./use-held";
 import { useTrade } from "./use-trade";
 
-/** The page width at which the chart and the ticket sit side by side. */
-const TERMINAL_MIN_PX = 900;
+/** The page width at which the chart and the ticket sit side by side: every desktop window (1024+, less the sidebar). */
+const TERMINAL_MIN_PX = 720;
 /** How wide the terminal page grows on a desktop window (the stack's usual column is narrower). */
 export const TERMINAL_PAGE_PX = 1440;
 /** The ticket column; wider on an xl window (1280+). */
@@ -100,6 +104,34 @@ function MainnetOnly() {
   );
 }
 
+/** Mainnet, but the venue can't take a new long or short right now: why, Retry, and the way back. No network switch. */
+function Unavailable({ reason, onRetry, onBack }: { reason: MarginUnavailable | null; onRetry: () => void; onBack: () => void }) {
+  const { t } = useT();
+  return (
+    <View className="bg-card border-border items-start gap-4 rounded-3xl border p-6">
+      <View className="flex-row items-center gap-3">
+        <Mark entity="provider:aave" size={PROVIDER_MARK} />
+        <Icon as={CircleSlash} className="text-muted-foreground size-5" />
+      </View>
+      <View className="gap-1">
+        {reason && reason !== "mainnet_only" ? <Eyebrow className={TEXT_START}>{t(`margin.unavailable_${reason}`)}</Eyebrow> : null}
+        <Text accessibilityRole="header" className={cn("font-display text-foreground text-2xl font-bold", TEXT_START)}>
+          {t("desktop.unavailableTitle")}
+        </Text>
+        <Text className={cn("text-muted-foreground text-base", TEXT_START)}>{t("desktop.marketsFailedStill")}</Text>
+      </View>
+      <View className="flex-row gap-2">
+        <Button size="lg" onPress={onRetry}>
+          <Text>{t("common.retry")}</Text>
+        </Button>
+        <Button size="lg" variant="secondary" onPress={onBack}>
+          <Text>{t("common.back")}</Text>
+        </Button>
+      </View>
+    </View>
+  );
+}
+
 function MarketsFailed({ onRetry }: { onRetry: () => void }) {
   const { t } = useT();
   return (
@@ -148,13 +180,17 @@ export function TradeScreen({ prefill }: { prefill: TradePrefill }) {
     setSheet(true);
   }, [markets.view?.available, prefill.side, wide]);
 
+  // Stable, so the web's L / S listener is added once, not on every render.
+  const tradeRef = React.useRef(trade);
+  tradeRef.current = trade;
   const pick = React.useCallback(
     (side: MarginSide) => {
-      if (trade.view && !trade.view[side].available) return;
-      trade.setSide(side);
+      const current = tradeRef.current;
+      if (current.view && !current.view[side].available) return;
+      current.setSide(side);
       if (!wide) setSheet(true);
     },
-    [trade, wide],
+    [wide],
   );
   useSideKeys(pick, wide && Boolean(markets.view?.available) && (!intent || isMarginOpen(intent)));
 
@@ -174,6 +210,11 @@ export function TradeScreen({ prefill }: { prefill: TradePrefill }) {
         </Text>
         <Mark entity="provider:aave" size={PROVIDER_MARK} />
       </View>
+      {!wide && (!intent || isMarginOpen(intent)) ? (
+        <View className="px-5 pt-3">
+          <TradeSwitch current="margin" />
+        </View>
+      ) : null}
     </>
   );
 
@@ -191,11 +232,18 @@ export function TradeScreen({ prefill }: { prefill: TradePrefill }) {
   );
 
   let body: React.ReactNode;
-  if (markets.view && !markets.view.available) {
+  if (markets.view && !markets.view.available && testnet) {
     body = (
       <View className="gap-4 px-5 pt-4 lg:px-6">
         <MainnetOnly />
       </View>
+    );
+  } else if (markets.view && !markets.view.available) {
+    body = (
+      <ScrollView className="flex-1" contentContainerClassName="gap-4 px-5 pb-8 pt-4 lg:px-6">
+        <Unavailable reason={markets.view.reason} onRetry={() => void markets.refresh()} onBack={leave} />
+        {positionsPanel}
+      </ScrollView>
     );
   } else if (loadingMarkets || (!markets.view && !markets.failed)) {
     body = (

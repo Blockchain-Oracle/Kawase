@@ -37,6 +37,7 @@ export const desktop: Catalog["desktop"] = {
   chartEmpty: "{{market}} का अभी कोई इतिहास नहीं",
   priceNow: "{{market}} की कीमत",
   mainnetOnlyTitle: "सिर्फ़ मेननेट",
+  unavailableTitle: "लॉन्ग और शॉर्ट अभी उपलब्ध नहीं हैं",
   mainnetClosed: "Circle की मंज़ूरी मिलते ही Kawase पर मेननेट खुलेगा।",
   marketsFailed: "बाज़ार लोड नहीं हुए",
   marketsFailedStill: "आपकी पोज़िशन और पैसे सुरक्षित हैं। थोड़ी देर में फिर कोशिश करें।",

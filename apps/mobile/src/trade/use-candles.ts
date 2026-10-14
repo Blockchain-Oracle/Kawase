@@ -4,10 +4,9 @@
 import * as React from "react";
 
 import type { Candle, ChartRange } from "@kawase/api-client";
+import { CHAIN_IDS } from "@kawase/identity";
 
 import { api } from "@/session/api";
-
-const ARC_MAINNET = 5042;
 
 export const TRADE_RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M"];
 
@@ -20,7 +19,7 @@ export function useCandles(asset: string | undefined, range: ChartRange) {
     let live = true;
     setFailed(false);
     api.tokens
-      .chart(ARC_MAINNET, asset, range)
+      .chart(CHAIN_IDS.arc, asset, range)
       .then((result) => {
         if (live) setCandles(result.candles);
       })
