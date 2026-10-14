@@ -115,6 +115,9 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
       email: kit.email,
       async sendCode(email) {
         await waitFor((state) => state.ready, "start-up");
+        // A Privy login left over from a sign-in that never reached Kawase (the app closed in between) would make
+        // Privy refuse a new code; it is ended first, so the person simply starts again.
+        if (latest.current.authenticated) await latest.current.logout();
         await latest.current.sendCode(email.trim());
         // Privy keeps the pending code on its side; the sheet's step only needs the email.
         return { otpId: "", otpEncryptionTargetBundle: "" };
@@ -131,6 +134,7 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
           fresh();
           await authStage("provider", attemptId.current, async () => {
             await waitFor((state) => state.ready, "start-up");
+            if (latest.current.authenticated) await latest.current.logout();
             await latest.current.oauth(provider);
           });
           return proveSession();
