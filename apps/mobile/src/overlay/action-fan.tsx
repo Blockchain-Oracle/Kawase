@@ -104,21 +104,19 @@ export function ActionFan({
   const first = React.useRef<View>(null);
   const [anchor, setAnchor] = React.useState<Anchor>();
 
-  // Where the dock's centre is, measured against this layer once it is up (never assumed from the screen's middle).
+  // Where the dock's centre is, measured against this layer once it has laid out (the blur mounts its content a frame
+  // after opening), never assumed from the screen's middle. Measured again on every opening (a rotation, a resize).
+  const place = React.useCallback(() => {
+    void Promise.all([measure(frame.current), measure(origin.current)]).then(([layer, slot]) => {
+      if (!layer || !slot) return;
+      setAnchor({ centreX: slot.x - layer.x + slot.w / HALF, top: slot.y - layer.y, height: slot.h });
+    });
+  }, [origin]);
   React.useEffect(() => {
     if (!open) return undefined;
-    let cancelled = false;
-    const raf = requestAnimationFrame(() => {
-      void Promise.all([measure(frame.current), measure(origin.current)]).then(([layer, slot]) => {
-        if (cancelled || !layer || !slot) return;
-        setAnchor({ centreX: slot.x - layer.x + slot.w / HALF, top: slot.y - layer.y, height: slot.h });
-      });
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-    };
-  }, [open, origin]);
+    const raf = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(raf);
+  }, [open, place]);
 
   return (
     <BlurOverlay
@@ -132,7 +130,7 @@ export function ActionFan({
       exitMs={fanExitMs(actions.length)}
       contentFades={false}
     >
-      <View ref={frame} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+      <View ref={frame} pointerEvents="box-none" style={StyleSheet.absoluteFill} onLayout={place}>
         {anchor ? (
           <>
             <View

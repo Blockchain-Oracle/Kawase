@@ -262,7 +262,7 @@ export function BudgetArt({ copy, playing, still }: SceneProps) {
             />
           </Svg>
           <View style={[StyleSheet.absoluteFill, styles.ringLabel]}>
-            <Text style={[TYPE.numLg, { color: color.ink }]}>{copy.budget.spent}</Text>
+            <Text numberOfLines={1} style={[TYPE.numMd, { color: color.ink }]}>{copy.budget.spent}</Text>
             <Text style={[TYPE.meta, styles.centre, { color: color.text3 }]}>{copy.budget.of}</Text>
           </View>
         </View>

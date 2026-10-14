@@ -312,10 +312,10 @@ function Segments({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, gap: SPACE.lg },
+  wrap: { flex: 1, gap: SPACE.lg, overflow: "hidden" },
   stage: { flex: 1, overflow: "hidden" },
   sceneArt: { justifyContent: "center", paddingHorizontal: SPACE.inset },
-  copyArea: { position: "relative" },
+  copyArea: { position: "relative", overflow: "hidden" },
   copy: { gap: SPACE.sm, paddingHorizontal: SPACE.xl },
   sizer: { opacity: 0 },
   centre: { textAlign: "center" },

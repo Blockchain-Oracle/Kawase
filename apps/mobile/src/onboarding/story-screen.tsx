@@ -14,7 +14,7 @@
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { Globe, Volume2, VolumeOff } from "lucide-react-native";
 import * as React from "react";
-import { AccessibilityInfo, AppState, Pressable, StyleSheet, Text, View } from "react-native";
+import { AccessibilityInfo, AppState, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -67,6 +67,8 @@ function useAppActive() {
 function useScreenReader() {
   const [on, setOn] = React.useState(false);
   React.useEffect(() => {
+    // react-native-web answers "yes" whatever the browser does, so the web never holds the story for it.
+    if (Platform.OS === "web") return undefined;
     void AccessibilityInfo.isScreenReaderEnabled().then(setOn);
     const subscription = AccessibilityInfo.addEventListener("screenReaderChanged", setOn);
     return () => subscription.remove();
@@ -247,7 +249,7 @@ export function StoryScreen() {
         onInteraction={onInteraction}
         rtl={isRtlLocale(locale)}
         reduce={reduce}
-        animate={!paused || reduce}
+        animate={visible}
         progressLabel={(n, total) => t("story.panelOf", { n, total })}
         segmentLabel={(n) => t("story.goTo", { n })}
         hint={t("story.swipeHint")}
