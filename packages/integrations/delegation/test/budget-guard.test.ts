@@ -132,6 +132,19 @@ test("leaves that bend the card are refused on the phone: a lower minimum, anoth
   assert.equal((await budgetAllows(swap(), await context(), deps({ reads: { nonce: async () => nonce + 1n, vaultPreview: async () => undefined } }))).reason, "leaf_refused");
 });
 
+test("a kill-switch nonce the phone could not read is never silent, for swaps and vault moves alike", async () => {
+  // Otherwise a leaf bound to the next nonce would pass now and come alive the moment the person pulls the switch.
+  const unread = deps({ reads: { nonce: async () => undefined, vaultPreview: async (_chain, _vault, assets) => ({ sharesIn: assets * 1000n, sharesOut: assets * 1000n }) } });
+  const swapVerdict = await budgetAllows(swap({ leaves: swapLeaves() }), await context(), unread);
+  assert.equal(swapVerdict.silent, false);
+  assert.equal(swapVerdict.reason, "settings_unknown");
+  const leaves = buildEarnLeaves({ network, wallet, ops, action: "deposit", vault, asset: usdc, amount: 5n * USD, minOut: 4_950_000_000n, nonce: nonce + 1n, now, salts: [randomSalt(), randomSalt()] });
+  const deposit: GuardAction = { kind: "earn", action: "deposit", vault, amount: 5n * USD, leaves: leaves.leaves.map(typed) };
+  const earnVerdict = await budgetAllows(deposit, await context(), unread);
+  assert.equal(earnVerdict.silent, false);
+  assert.equal(earnVerdict.reason, "settings_unknown");
+});
+
 test("a vault deposit inside the budget is silent; without the vault's own preview it asks", async () => {
   const leaves = buildEarnLeaves({ network, wallet, ops, action: "deposit", vault, asset: usdc, amount: 5n * USD, minOut: 4_950_000_000n, nonce, now, salts: [randomSalt(), randomSalt()] });
   const deposit: GuardAction = { kind: "earn", action: "deposit", vault, amount: 5n * USD, leaves: leaves.leaves.map(typed) };

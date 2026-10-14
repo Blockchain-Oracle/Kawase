@@ -184,10 +184,13 @@ export async function budgetAllows(action: GuardAction, context: GuardContext, d
       const floor = (market * (BPS - tolerance)) / BPS;
       if (action.minOut < floor || action.minOut === ZERO) return refuse("price_off", `${action.minOut} < ${floor}`);
       amountUsd = await usdValueOf(chainId, action.tokenIn, action.amountIn, deps.quote);
+      // The leaf must be bound to the kill-switch as it stands now; without that read a leaf for the next nonce would
+      // pass and come alive the moment the person pulls the switch.
+      const nonce = await deps.reads.nonce(chainId, wallet);
+      if (nonce === undefined) return refuse("settings_unknown", "kill-switch nonce unreadable");
       leaves = async () => {
         const typed = leavesFor(action.leaves, chainId);
         if (typed.length !== SWAP_LEAVES) throw new SigningRefused("a swap that is not approve + swap");
-        const nonce = await deps.reads.nonce(chainId, wallet);
         const checked = checkSwapLeaves([typed[0]!, typed[1]!], { wallet, ops, now: nowSeconds, nonce, routers, tokenIn: action.tokenIn, tokenOut: action.tokenOut, amountIn: action.amountIn, minOut: action.minOut });
         return [checked.approve, checked.swap];
       };
@@ -202,8 +205,9 @@ export async function budgetAllows(action: GuardAction, context: GuardContext, d
       const minOut = deposit ? (preview.sharesIn * EARN_FLOOR_BPS * (BPS - VAULT_DRIFT_BPS)) / (BPS * BPS) : (action.amount * EARN_FLOOR_BPS) / BPS;
       const maxSharesIn = deposit ? undefined : (preview.sharesOut * (EARN_SHARES_CEILING_BPS + VAULT_DRIFT_BPS)) / BPS;
       amountUsd = action.amount;
+      const nonce = await deps.reads.nonce(chainId, wallet);
+      if (nonce === undefined) return refuse("settings_unknown", "kill-switch nonce unreadable");
       leaves = async () => {
-        const nonce = await deps.reads.nonce(chainId, wallet);
         return checkEarnLeaves(leavesFor(action.leaves, chainId), { wallet, ops, now: nowSeconds, nonce, action: action.action, vaults: [action.vault], vault: action.vault, asset: usdc, amount: action.amount, minOut, maxSharesIn });
       };
       break;
