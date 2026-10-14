@@ -159,7 +159,9 @@ export function meRoutes(db: Db, chains: Chains) {
     if (!chains.available.includes(network))
       throw problem(HTTP.unprocessable, "network_unavailable", `${network} is not available`);
     const userId = c.get("userId")!;
-    if (network === "mainnet") {
+    // A guest may look around mainnet (value first, sign last): every money route needs an account, so nothing can
+    // move. Their account starts on testnet when they sign up and asks for this consent before real money.
+    if (network === "mainnet" && !c.get("user")!.isAnonymous) {
       const [consent] = await db
         .select()
         .from(consents)

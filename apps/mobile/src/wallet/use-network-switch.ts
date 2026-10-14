@@ -12,7 +12,6 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
-import { useSignIn } from "@/sign-in/sign-in-provider";
 
 const other = (network: NetworkId): NetworkId => (network === "testnet" ? "mainnet" : "testnet");
 type Translate = ReturnType<typeof useT>["t"];
@@ -22,7 +21,6 @@ export function useNetworkSwitch() {
   const { t } = useT();
   const { locale } = useLocale();
   const { status, user, availableNetworks, setNetwork } = useSession();
-  const signIn = useSignIn();
   const [busy, setBusy] = React.useState(false);
   const [consentNeeded, setConsentNeeded] = React.useState(false);
 
@@ -36,15 +34,12 @@ export function useNetworkSwitch() {
         toast(t("network.unavailable", { network: networkName(t, target) }));
         return;
       }
-      // A guest signs in first (the sheet opens); the switch is then one more tap.
-      if (target === "mainnet" && status !== "account") {
-        toast(t("network.signInForMainnet"));
-        signIn.open();
-        return;
-      }
+      // A guest looks around mainnet freely (value first, sign last); the first money action signs them in, and their
+      // account asks for the real-money consent before anything moves.
+      const guest = status !== "account";
       setBusy(true);
       try {
-        if (target === "mainnet") {
+        if (target === "mainnet" && !guest) {
           const { consents } = await api.me.consents();
           const accepted = consents.some((consent) => consent.kind === "mainnet_real_money" && consent.version === MAINNET_CONSENT_VERSION);
           if (!accepted) {
@@ -59,7 +54,7 @@ export function useNetworkSwitch() {
         setBusy(false);
       }
     },
-    [network, busy, availableNetworks, status, setNetwork, signIn, t],
+    [network, busy, availableNetworks, status, setNetwork, t],
   );
 
   const acceptMainnet = React.useCallback(async () => {
