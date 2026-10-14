@@ -1,4 +1,4 @@
-import type { CatalogLocale } from "./catalog/index";
+import type { CatalogLocale } from "./catalog/names";
 
 const RTL: ReadonlySet<string> = new Set<CatalogLocale>(["ar", "ur"]);
 

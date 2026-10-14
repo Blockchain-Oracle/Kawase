@@ -6,7 +6,7 @@ import { Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@kawase/config";
-import { LANGUAGE_NAMES } from "@kawase/i18n";
+import { LANGUAGE_NAMES } from "@kawase/i18n/names";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Sheet } from "@kawase/ui-native/components/sheet";
 import { Icon } from "@kawase/ui-native/components/ui/icon";

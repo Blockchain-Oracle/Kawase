@@ -19,7 +19,8 @@ import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FAUCET, MOTION } from "@kawase/config";
-import { isRtlLocale, LANGUAGE_NAMES } from "@kawase/i18n";
+import { isRtlLocale } from "@kawase/i18n/direction";
+import { LANGUAGE_NAMES } from "@kawase/i18n/names";
 import { amount, formatAmount } from "@kawase/money";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 

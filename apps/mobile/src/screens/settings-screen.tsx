@@ -33,7 +33,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEFAULT_VOICE_PREFS } from "@kawase/config";
-import { LANGUAGE_NAMES } from "@kawase/i18n";
+import { LANGUAGE_NAMES } from "@kawase/i18n/names";
 import { arcIdentity } from "@kawase/identity";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";

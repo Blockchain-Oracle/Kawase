@@ -16,6 +16,11 @@
     "typescript": "catalog:"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./names": "./src/catalog/names.ts",
+    "./lazy": "./src/catalog/lazy.ts",
+    "./en": "./src/catalog/en/index.ts",
+    "./direction": "./src/direction.ts",
+    "./scripts": "./src/scripts.ts"
   }
 }

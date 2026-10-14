@@ -17,7 +17,7 @@ import type {
   StatusView,
   SuggestionsView,
 } from "@kawase/api-client";
-import { LANGUAGE_NAMES } from "@kawase/i18n";
+import { LANGUAGE_NAMES } from "@kawase/i18n/names";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { AreaChart, RangePills, type ChartPoint } from "@kawase/ui-native/components/area-chart";
 import { ListRow } from "@kawase/ui-native/components/list-row";

@@ -17,7 +17,7 @@ import Animated, {
 
 import type { SendIntent } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
-import { isRtlLocale } from "@kawase/i18n";
+import { isRtlLocale } from "@kawase/i18n/direction";
 import { Float } from "@kawase/ui-native/components/art/float";
 import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
 import { StateLabel } from "@kawase/ui-native/components/state-label";

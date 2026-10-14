@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { DEFAULT_LOCALE, isSupportedLocale, type SupportedLocale } from "@kawase/config";
-import { isRtlLocale } from "@kawase/i18n";
+import { isRtlLocale } from "@kawase/i18n/direction";
 import { Direction } from "@kawase/ui-native/components/direction";
 
 import { deviceLocale, initI18n, setLocale as applyLocale } from "@/i18n";
@@ -27,9 +27,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     void sessionStorage
       .getLocale()
       .catch(() => undefined)
-      .then((stored) => {
+      .then(async (stored) => {
         const initial = stored && isSupportedLocale(stored) ? stored : deviceLocale();
-        initI18n(initial);
+        // The person's language is loaded before the first screen, so nothing shows in English first.
+        await initI18n(initial);
         setLocaleState(initial);
       });
   }, []);
