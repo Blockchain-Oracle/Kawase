@@ -115,7 +115,7 @@ test("a Turnkey-era account is matched by the verified email: its wallet is reti
       delegation: {},
       delegationHash: `0x${createHash("sha256").update(randomUUID()).digest("hex")}`,
       receipt: {},
-      periodAmount: "1",
+      periodAmount: 1n,
       periodSeconds: 86400,
       startsAt: new Date(),
       expiresAt: new Date(Date.now() + 86_400_000),
@@ -181,4 +181,18 @@ test("M12 with Privy: the registered wallet signs the request; a missing, foreig
   // Past the proof gate: the handler itself refuses the wrong confirmation text.
   assert.ok(![401, 403].includes(proven.status), `proof should hold, got ${proven.status}: ${await proven.clone().text()}`);
   await expectStatus(await send({ "x-kawase-proof-activity": activity, "x-kawase-proof-signature": signature }), 401, "replayed");
+});
+
+test("an email changed at Privy is followed, unless another account holds it", async () => {
+  const person: Person = { did: `did:privy:${randomUUID()}`, email: `before-${randomUUID()}@example.test` };
+  const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("h") }));
+  await expectStatus(signIn, 201);
+  const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
+  created.push(user.id);
+  const changed = `after-${randomUUID()}@example.test`;
+  const synced = await app.request("/auth/privy/sync", jsonRequest("POST", tokens({ ...person, email: changed }), token));
+  await expectStatus(synced, 200);
+  assert.equal(((await synced.json()) as { email: string }).email, changed);
+  const taken = await app.request("/auth/privy/sync", jsonRequest("POST", tokens({ ...person, email: EMAIL }), token));
+  await expectStatus(taken, 409);
 });

@@ -4,7 +4,7 @@
 //   from the signed identity token in the same step. A Turnkey-era account is matched by the email Privy verified.
 // - Turnkey (the fallback for one build): a stamp by the session key over our single-use nonce.
 import { randomBytes } from "node:crypto";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, ne, sql } from "drizzle-orm";
 
 import { loadPrivyEnv } from "@kawase/env";
 import { devices, moveUserData, signInNonces, users, type Db } from "@kawase/db";
@@ -147,6 +147,13 @@ export class AuthService {
    * same Privy identity register it. The address comes from the signed identity token, never from the body.
    */
   async linkPrivyWallet(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
+    const identity = await this.ownPrivyIdentity(userId, input);
+    if (!identity.wallet) throw problem(HTTP.unprocessable, "wallet_not_registered", "the Privy account has no wallet yet");
+    return this.privyWallet(userId, identity, identity.wallet);
+  }
+
+  /** The tokens' identity, refused unless it is the one this Kawase account is linked to. */
+  private async ownPrivyIdentity(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
     const identity = await this.privyIdentity(input);
     const [user] = await this.db
       .select({ provider: users.identityProvider, subject: users.identitySubject })
@@ -154,8 +161,23 @@ export class AuthService {
       .where(eq(users.id, userId));
     if (user?.provider !== PRIVY || user.subject !== identity.userId)
       throw problem(HTTP.forbidden, "forbidden", "these tokens are for another account");
-    if (!identity.wallet) throw problem(HTTP.unprocessable, "wallet_not_registered", "the Privy account has no wallet yet");
-    return this.privyWallet(userId, identity, identity.wallet);
+    return identity;
+  }
+
+  /**
+   * After the person changed their email at Privy (a code to the new address): Kawase follows the verified address,
+   * unless it already belongs to another Kawase account (the same rule as the Turnkey sync).
+   */
+  async syncPrivyEmail(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
+    const { email } = await this.ownPrivyIdentity(userId, input);
+    if (!email) return { email: null };
+    const [other] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(sql`lower(${users.email}) = lower(${email})`, ne(users.id, userId)));
+    if (other) throw problem(HTTP.conflict, "account_recovery_required", "this email belongs to another account");
+    await this.db.update(users).set({ email }).where(eq(users.id, userId));
+    return { email };
   }
 
   async issueNonce() {

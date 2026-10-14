@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { z } from "zod";
 
 import { voicePrefs } from "@kawase/config";
@@ -77,14 +77,27 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook)
     return c.json({ token, user: publicUser(user), wallet: wallet ? { id: wallet.id, address: wallet.address } : null }, HTTP.created);
   });
 
-  /** After the app created the Privy wallet: fresh tokens for the signed-in account register it. */
-  app.post("/privy/wallet", async (c) => {
+  /** The signed-in account, for the two calls below (they sit under /auth, outside requireAccount). */
+  const account = (c: Context<AppEnv>) => {
     const user = c.get("user");
     if (!user) throw problem(HTTP.unauthorized, "unauthenticated");
     if (user.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to do this");
+    return user;
+  };
+
+  /** After the app created the Privy wallet: fresh tokens for the signed-in account register it. */
+  app.post("/privy/wallet", async (c) => {
+    const user = account(c);
     const input = await parse(privyTokensSchema, await c.req.json());
     const wallet = await auth.linkPrivyWallet(user.id, input);
     return c.json({ wallet: { id: wallet.id, address: wallet.address } }, HTTP.created);
+  });
+
+  /** After the email changed at Privy: Kawase follows the verified address (the Privy twin of /account/email/sync). */
+  app.post("/privy/sync", async (c) => {
+    const user = account(c);
+    const input = await parse(privyTokensSchema, await c.req.json());
+    return c.json(await auth.syncPrivyEmail(user.id, input));
   });
 
   app.post("/sign-out", async (c) => {
