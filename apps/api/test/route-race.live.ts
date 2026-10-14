@@ -60,7 +60,16 @@ async function run(label: string, race: AsyncGenerator<RouteRace>) {
   return last;
 }
 
+/** The RouteList's view of a finished race: each row's logo key, whether it is a choice, and what it delivers. */
+function rowsTable(race: RouteRace | undefined) {
+  if (!race) return;
+  console.log(`best=${race.best}`);
+  for (const row of race.rows) console.log(`  ${row.venue.padEnd(10)} mark=${row.mark.padEnd(16)} ${row.status.padEnd(8)} executable=${row.executable} receive=${row.receive ? `${row.receive.amount} ${row.receive.symbol}` : "-"}${row.reason ? ` reason=${row.reason}` : ""}`);
+  console.log(`executable venues: ${race.rows.filter((row) => row.status === "quoted" && row.executable).length}`);
+}
+
 const swapRace = await run("swap 10 USDC → EURC", await racer.swap(user, { kind: "swap", tokenIn: "USDC", tokenOut: "EURC", amount: "10" }));
+rowsTable(swapRace);
 
 console.log("\n== new venues build for the requester", requester);
 const USDC = network.addresses.usdc;

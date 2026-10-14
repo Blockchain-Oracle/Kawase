@@ -52,6 +52,7 @@ import type {
   RequestReminder,
   VerifyMethod,
   BlockView,
+  ContactChain,
   PublicPaymentRequest,
   InboxItem,
   NotificationSettings,
@@ -272,11 +273,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         patch: Partial<Pick<ContactInput, "displayName" | "aliases" | "notes" | "label" | "kind">>,
       ) => call<{ contact: Contact }>("PATCH", `/contacts/${id}`, patch),
       /** The new address waits out a cooldown; the contact cannot be paid until then. */
-      changeAddress: (id: string, input: { address: string; source?: AddressSource }) =>
+      changeAddress: (id: string, input: { address: string; source?: AddressSource; chain?: ContactChain }) =>
         call<{ contact: Contact }>("POST", `/contacts/${id}/address`, input),
-      cancelChange: (id: string) => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending`),
-      /** Mark the current address verified on the active network (null clears it). */
-      verify: (id: string, method: VerifyMethod | null) => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method }),
+      cancelChange: (id: string, chain: ContactChain = "arc") => call<{ contact: Contact }>("DELETE", `/contacts/${id}/address/pending?chain=${chain}`),
+      /** Mark the current address on a chain (Arc unless named) verified on the active network (null clears it). */
+      verify: (id: string, method: VerifyMethod | null, chain: ContactChain = "arc") => call<{ contact: Contact }>("POST", `/contacts/${id}/verify`, { method, chain }),
       remove: (id: string) => call<void>("DELETE", `/contacts/${id}`),
     },
 

@@ -6,9 +6,8 @@
 // cards and the "Best" mark is 21st 6955's badge tag. Routes Kawase cannot run are never offered: they are listed once,
 // below, with why. Native and web (react-native-web) from this one file; token names only, so the Look lane's values
 // apply as they land.
-import type { RouteQuote, RouteRace } from "@kawase/api-client";
+import type { RouteFact, RouteQuote, RouteRace } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
-import { hasUncasedScript } from "@kawase/i18n";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -150,6 +149,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
                 open={openVenue === row.venue}
                 readOnly={readOnly}
                 locale={locale}
+                showYearly={Boolean(race.ask)}
                 onPress={() => pick(row.venue)}
                 onToggle={() => setOpenVenue((current) => (current === row.venue ? null : row.venue))}
               />
@@ -158,7 +158,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
         </View>
       )}
       {others.length > 0 ? (
-        <Animated.View layout={layout} className="border-border bg-card rounded-2xl border px-4 py-3">
+        <Animated.View layout={layout} className="bg-card rounded-2xl px-4 py-3">
           <Pressable accessibilityRole="button" accessibilityState={{ expanded: othersOpen }} onPress={() => setOthersOpen((open) => !open)} className="flex-row items-center gap-2">
             <View className="flex-row">
               {others.slice(0, OTHER_MARKS).map((row, index) => (
@@ -245,12 +245,14 @@ type RowProps = {
   open: boolean;
   readOnly: boolean;
   locale: string;
+  /** Yield: the race was asked for an amount, so each row's year of earnings is worth saying. */
+  showYearly: boolean;
   onPress: () => void;
   onToggle: () => void;
 };
 
 /** One venue: a radio card (21st 28337) that shimmers while pricing and lights up when its quote lands. */
-function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress, onToggle }: RowProps) {
+function RouteRow({ row, best, isBest, selected, open, readOnly, locale, showYearly, onPress, onToggle }: RowProps) {
   const { t } = useT();
   const reduced = useReducedMotionLive();
   const quoted = row.status === "quoted";
@@ -272,11 +274,12 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
   const eta = etaWords(row.etaSeconds);
   const receive = row.receive ? formatAmount(row.receive, locale) : null;
   const yieldRow = row.apyBps !== undefined && row.apyBps !== null;
+  const risk = row.facts?.find((fact): fact is RiskFact => fact.kind === "risk")?.value ?? null;
   const label = quoted && receive ? t("routes.pickA11y", { name: row.label, amount: receive }) : t("routes.checkingA11y", { name: row.label });
 
   return (
-    <View className={cn("bg-card overflow-hidden rounded-2xl border", selected ? "border-primary border-2" : "border-border")}>
-      <Animated.View className="bg-primary/10 absolute inset-0" style={[washStyle, NO_TOUCH]} />
+    <View className={cn("overflow-hidden rounded-2xl", selected ? "bg-selected-row" : "bg-card")}>
+      <Animated.View className="bg-accent/15 absolute inset-0" style={[washStyle, NO_TOUCH]} />
       <Pressable
         accessibilityRole={readOnly ? "text" : "radio"}
         accessibilityState={{ checked: selected, disabled: !quoted }}
@@ -293,11 +296,12 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
             {row.label}
           </Text>
           {quoted ? (
-            // The name keeps the whole first line at 375 pt; "Best" leads the second, before the ETA.
+            // The name keeps the whole first line at 375 pt; "Best" leads the second, then the risk (yield), the ETA.
             <View className="flex-row items-center gap-1.5">
               {isBest ? <BestBadge /> : null}
+              {risk ? <RiskChip risk={risk} /> : null}
               <Text numberOfLines={1} className={cn("text-muted-foreground shrink text-xs", TEXT_START)}>
-                {[eta ? t(`routes.${eta.key}`, { count: eta.count }) : null, yieldRow ? t("routes.perYear", { rate: `${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%` }) : null].filter(Boolean).join(" · ")}
+                {yieldRow ? (receive && showYearly ? t("routes.perYear", { rate: receive }) : null) : eta ? t(`routes.${eta.key}`, { count: eta.count }) : null}
               </Text>
             </View>
           ) : (
@@ -305,10 +309,16 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
           )}
         </View>
         <View className="items-end gap-1">
-          {quoted && receive ? (
+          {quoted && yieldRow ? (
+            // Yield: the rate is the figure; what a year brings on the amount sits on the second line.
+            <Animated.View key={row.apyBps} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
+              <Amount className="font-display text-foreground text-lg font-bold">{`${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%`}</Amount>
+              <Text className="text-muted-foreground text-xs">{t("routes.apy")}</Text>
+            </Animated.View>
+          ) : quoted && receive ? (
             <Animated.View key={row.receive?.amount} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
               <Amount className="text-foreground text-base font-semibold">{receive}</Amount>
-              <Text className="text-muted-foreground text-xs">{delta ? t("routes.deltaToBest", { amount: formatAmount(delta, locale) }) : yieldRow ? t("routes.earnsYearly") : t("routes.youReceive")}</Text>
+              <Text className="text-muted-foreground text-xs">{delta ? t("routes.deltaToBest", { amount: formatAmount(delta, locale) }) : t("routes.youReceive")}</Text>
             </Animated.View>
           ) : (
             <View className="items-end gap-1.5">
@@ -320,7 +330,7 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
         {!readOnly ? <Radio on={selected} /> : null}
       </Pressable>
       {quoted ? (
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle} className="border-border flex-row items-center gap-2 border-t px-4 py-2">
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle} className="flex-row items-center gap-2 px-4 pt-0 pb-2.5">
           <Text className={cn("text-muted-foreground flex-1 text-xs", TEXT_START)}>{feeLine(row, locale, t)}</Text>
           <Text className="text-muted-foreground text-xs">{open ? t("routes.hideDetails") : t("routes.showDetails")}</Text>
           <Chevron open={open} />
@@ -382,18 +392,37 @@ function BestBadge() {
   const { t } = useT();
   const label = t("routes.best");
   return (
-    <View className="bg-primary rounded-full px-2 py-0.5">
+    <View className="bg-accent rounded-full px-2 py-0.5">
       {/* Joined and uncased scripts are never letter-spaced (packages/i18n/src/scripts.ts). */}
-      <Text className={cn("text-primary-foreground text-xs font-bold", hasUncasedScript(label) ? null : "uppercase tracking-wider")}>{label}</Text>
+      <Text className="text-accent-foreground text-xs font-bold">{label}</Text>
     </View>
   );
 }
 
-/** 21st 28337's radio: ring, filled dot when picked. */
+export type RiskFact = Extract<RouteFact, { kind: "risk" }>;
+
+/** The yield source's risk, a word on a quiet plate (never colour alone): blue chip on the up wash, advanced on warn. */
+const RISK_TONE: Record<RiskFact["value"], { plate: string; ink: string }> = {
+  blue_chip: { plate: "bg-up-surface", ink: "text-up" },
+  curated: { plate: "bg-secondary", ink: "text-foreground" },
+  rwa_credit: { plate: "bg-secondary", ink: "text-foreground" },
+  advanced: { plate: "bg-warn-surface", ink: "text-warn" },
+};
+
+export function RiskChip({ risk }: { risk: RiskFact["value"] }) {
+  const { t } = useT();
+  return (
+    <View className={cn("rounded-full px-2 py-0.5", RISK_TONE[risk].plate)}>
+      <Text className={cn("text-xs font-semibold", RISK_TONE[risk].ink)}>{t(`routes.risk_${risk}`)}</Text>
+    </View>
+  );
+}
+
+/** 21st 28337's radio: ring, filled dot when picked (the accent: a selected control). */
 function Radio({ on }: { on: boolean }) {
   return (
-    <View className={cn("size-5 items-center justify-center rounded-full border-2", on ? "border-primary" : "border-border")}>
-      {on ? <View className="bg-primary size-2.5 rounded-full" /> : null}
+    <View className={cn("size-5 items-center justify-center rounded-full border-2", on ? "border-accent bg-accent" : "border-text-3")}>
+      {on ? <View className="bg-accent-foreground size-2 rounded-full" /> : null}
     </View>
   );
 }
@@ -407,7 +436,7 @@ export function RouteListSkeleton({ className }: { className?: string | undefine
         <Skeleton className="h-3 w-16 rounded-full" />
       </View>
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-        <View key={index} className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
+        <View key={index} className="bg-card flex-row items-center gap-3 rounded-2xl px-4 py-3">
           <Skeleton className="rounded-full" style={{ width: MARK_SIZE, height: MARK_SIZE }} />
           <View className="flex-1 gap-1.5">
             <Skeleton className="h-4 w-24 rounded-full" />
@@ -427,7 +456,7 @@ export function RouteListSkeleton({ className }: { className?: string | undefine
 function RouteListEmpty({ onRetry }: { onRetry?: (() => void) | undefined }) {
   const { t } = useT();
   return (
-    <View className="bg-card border-border items-center gap-2 rounded-2xl border px-6 py-6">
+    <View className="bg-card items-center gap-2 rounded-2xl px-6 py-6">
       <Icon as={SearchX} className="text-muted-foreground size-6" />
       <Text className="text-foreground text-base font-semibold">{t("routes.emptyTitle")}</Text>
       <Text className="text-muted-foreground text-center text-sm">{t("routes.emptyBody")}</Text>
@@ -440,7 +469,7 @@ function RouteListEmpty({ onRetry }: { onRetry?: (() => void) | undefined }) {
 function RouteListError({ onRetry, className }: { onRetry?: (() => void) | undefined; className?: string | undefined }) {
   const { t } = useT();
   return (
-    <View className={cn("bg-card border-border items-center gap-2 rounded-2xl border px-6 py-6", className)} accessibilityRole="alert">
+    <View className={cn("bg-card items-center gap-2 rounded-2xl px-6 py-6", className)} accessibilityRole="alert">
       <Icon as={CloudOff} className="text-muted-foreground size-6" />
       <Text className="text-foreground text-base font-semibold">{t("routes.errorTitle")}</Text>
       <Text className="text-muted-foreground text-center text-sm">{t("routes.errorBody")}</Text>

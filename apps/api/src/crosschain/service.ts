@@ -52,9 +52,11 @@ import type {
   CrossChainRequest,
   CrossChainRouteView,
   CrossChainStage,
+  ContactChain,
   ElsewhereView,
   UnsignedTransaction,
 } from "@kawase/api-client";
+import { CONTACT_CHAINS } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import { checkBridgeCalls, forwardDelivered, type BridgeDestination } from "@kawase/integrations-app-kit";
 import {
@@ -515,7 +517,8 @@ export class CrossChainService {
           else if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
         }
         if (request.recipient) {
-          const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient);
+          // A contact's address on the destination chain, when they have one (A5); their Arc one otherwise.
+          const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient, contactChain(chain?.id));
           recipientFacts = resolution.facts.status === "self" ? { status: "own" } : resolution.facts;
           if (resolution.facts.status === "resolved") {
             recipient = getAddress(resolution.facts.address);
@@ -750,6 +753,9 @@ export class CrossChainService {
     if (provider === "cctp") {
       const calls = await this.engine.prepare({ network, client, from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(amount, USDC_DECIMALS) });
       const check = checkBridgeCalls(network, calls, { usdc, amount, recipient: draft.recipient, domain: chain.domain, maxFee: amount > draft.minReceived ? amount - draft.minReceived : ZERO });
+      // Circle's fast-transfer fee moves between the quote and the yes: a higher cap than the version promised is a
+      // new version with the new numbers (like any route whose output fell), not a security refusal.
+      if (!check.ok && check.reason === "above_fee_cap") return { changed: true };
       if (!check.ok) throw this.refused(provider, check.reason);
       return { calls: calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), track: {} };
     }
@@ -777,7 +783,7 @@ export class CrossChainService {
     }
     if ((provider as Provider) === "socket") {
       const slippageBps = token.usdc && same(draft.outputToken, chain.usdc) ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
-      const route = await socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: token.address, outputToken: same(draft.outputToken, zeroAddress) ? SOCKET_NATIVE : draft.outputToken, amount, user: draft.from, receiver: draft.recipient, slippageBps });
+      const route = await socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: token.address, outputToken: same(draft.outputToken, zeroAddress) ? SOCKET_NATIVE : draft.outputToken, amount, user: draft.from, receiver: draft.recipient, slippageBps, fresh: true });
       if (route.minOutputAmount < draft.minReceived) return { changed: true };
       const check = checkSocketCalls(route.calls, { token: token.address, amount, receiver: draft.recipient, expiresAt: route.expiresAt });
       if (!check.ok) throw this.refused(provider, check.reason);
@@ -1295,6 +1301,9 @@ export class CrossChainService {
 }
 
 const empty = (): StoredRequest => ({ direction: "out", asset: "USDC", amount: null, destination: null, source: null, recipient: null, route: null, toAsset: null });
+
+/** A destination as a contact's chain, when contacts can hold an address there. */
+const contactChain = (id: string | undefined): ContactChain => ((CONTACT_CHAINS as readonly string[]).includes(id ?? "") ? (id as ContactChain) : "arc");
 
 function normalise(base: StoredRequest, patch: CrossChainRequest): StoredRequest {
   const pick = <K extends keyof StoredRequest & keyof CrossChainRequest>(key: K): StoredRequest[K] => (patch[key] !== undefined ? (patch[key] as StoredRequest[K]) : base[key]);

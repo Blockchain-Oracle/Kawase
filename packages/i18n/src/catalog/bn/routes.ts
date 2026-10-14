@@ -58,4 +58,8 @@ export const routes: Catalog["routes"] = {
   offline: "অফলাইন · {{time}}-এর দাম",
   pickA11y: "{{name}}: আপনি {{amount}} পাবেন",
   checkingA11y: "{{name}} এখনও দাম হিসাব করছে",
+  apy: "বার্ষিক আয়",
+  quoteAge: "{{seconds}} সেকেন্ড আগের দাম",
+  refreshHint: "এখনই নতুন দাম আনে",
+  refreshing: "নতুন দাম আনা হচ্ছে",
 };

@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { CONTACT_CHAINS } from "@kawase/api-client";
+
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { Recipients } from "../send/recipients";
@@ -26,8 +28,9 @@ const createSchema = z.object({
   aliases: z.array(z.string().trim().min(1).max(ALIAS_MAX)).max(ALIASES_MAX).optional(),
 });
 const updateSchema = createSchema.omit({ address: true, source: true }).partial();
-const changeSchema = z.object({ address: z.string().trim().min(1).max(ADDRESS_INPUT_MAX), source: source.optional() });
-const verifySchema = z.object({ method: z.enum(["qr", "in_person", "call"]).nullable() });
+const chain = z.enum(CONTACT_CHAINS);
+const changeSchema = z.object({ address: z.string().trim().min(1).max(ADDRESS_INPUT_MAX), source: source.optional(), chain: chain.optional() });
+const verifySchema = z.object({ method: z.enum(["qr", "in_person", "call"]).nullable(), chain: chain.optional() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -52,15 +55,15 @@ export function contactRoutes(contacts: ContactService) {
   /** A new address waits out the cooldown; payments to the contact are frozen until then. */
   app.post("/:id/address", async (c) => {
     const input = await parse(changeSchema, await c.req.json());
-    return c.json({ contact: await contacts.changeAddress(c.get("userId")!, c.req.param("id"), input) });
+    return c.json({ contact: await contacts.changeAddress(c.get("userId")!, c.req.param("id"), input, "user", input.chain) });
   });
   // Only the person: verification is what lets them trust an address, so no agent tool sets it.
   app.post("/:id/verify", async (c) => {
-    const { method } = await parse(verifySchema, await c.req.json());
-    return c.json({ contact: await contacts.verify(c.get("userId")!, c.req.param("id"), c.get("user")!.activeNetwork, method) });
+    const { method, chain: on } = await parse(verifySchema, await c.req.json());
+    return c.json({ contact: await contacts.verify(c.get("userId")!, c.req.param("id"), c.get("user")!.activeNetwork, method, on) });
   });
   app.delete("/:id/address/pending", async (c) =>
-    c.json({ contact: await contacts.cancelChange(c.get("userId")!, c.req.param("id")) }),
+    c.json({ contact: await contacts.cancelChange(c.get("userId")!, c.req.param("id"), chain.safeParse(c.req.query("chain")).data ?? "arc") }),
   );
   app.delete("/:id", async (c) => {
     await contacts.remove(c.get("userId")!, c.req.param("id"));

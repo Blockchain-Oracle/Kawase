@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "目前 Arc 上没有为 {{asset}} 支付收益的地方。",
   chooseHint: "打开存入",
   moreWays: "更多赚取方式",
+  earnWith: "通过 {{name}} 赚取收益",
 };

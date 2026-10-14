@@ -1,162 +1,165 @@
-// What a swap will do, exactly, before the person says yes (DESIGN.md: the confirm card shows the exact amounts,
-// assets and network). Shared by the swap screen and the chat card. A ticket in two halves joined by the direction
-// arrow: what leaves (exact), what comes back (about, and the least it may be, which the chain enforces). Then the
-// rate next to Circle's market rate, with the gap said in words (a warning row when it is wide, never colour alone),
-// the route and network fees, who priced it, and when. One quiet line says approve + swap are one transaction.
-// Any pair (R1): each side carries its token's own mark and decimals; the venues asked (R3) are listed under a
-// "N routes" disclosure, the recommended one first, the others with what they would have given or why they could not.
-import { ArrowDown, ChevronDown, CircleAlert, Info, RefreshCw } from "lucide-react-native";
+// What a swap will do, exactly, before the person says yes (Senryo grammar: one hero figure, at most four facts at
+// rest, the rest behind one disclosure). The hero is what comes back, rolling as the price refreshes; under it the
+// least that may arrive (the chain enforces it) and the price impact as a chip (amber past the warning line, the
+// error tone when the rule refuses it, always with its words). Then every venue asked for this version on the one
+// RouteList (21st 29368 / 28337 / 6955): real logos, what each delivers, how far below the best, the venue fee behind
+// the chevron; a tap picks it (SwapRequest.venue, honoured by the api end to end). The quote's age drains in a ring and
+// a fresh price is fetched when it runs out. Rate, market rate and fees open from one "Details" line. Shared by the
+// swap screen and the chat card (`compact`: the picked venue in one line instead of the list).
 import * as React from "react";
-import { Pressable, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import type { SwapIntent } from "@kawase/api-client";
-import { amount as toAmount, formatAmount } from "@kawase/money";
-import { Amount } from "@kawase/ui-native/components/amount";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { SWAP_QUOTE_TTL_S } from "@kawase/config";
+import { amount as toAmount, formatAmount, formatTokenAmount } from "@kawase/money";
+import { Mark } from "@kawase/ui-native/components/mark";
 
+import { DisclosureRow, KeyValue, Panel, RollingFigure, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { swapRace, venueName } from "@/routes/from-draft";
+import { QuoteAge } from "@/routes/quote-age";
+import { RouteList } from "@/routes/route-list";
 
 import { useRateLines, useSwapPolicyText } from "./copy";
-import { SwapTokenMark, useSwapMoney } from "./swap-tokens";
+import { sideToken, SwapTokenMark, useSwapMoney } from "./swap-tokens";
 
-const MARK = 36;
-const MARK_COMPACT = 28;
-const ARROW = 32;
 const ZERO = 0n;
 /** Fees on Arc are fractions of a cent, so they get four places instead of two. */
 const FEE_DIGITS = 4;
 const PERCENT_BPS = 100;
 const IMPACT_DIGITS = 2;
+const HERO_DIGITS = 4;
+const MARK = SIZE.markToken;
 
-function DetailRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+export type ImpactTone = "calm" | "warn" | "blocked";
+
+/** The impact's tone from the policy: refused (PRICE_IMPACT_HIGH), braked or wide (amber), else calm. */
+export function impactTone(intent: SwapIntent): ImpactTone {
+  const codes = new Set(intent.results.map((entry) => entry.code));
+  if (codes.has("PRICE_IMPACT_HIGH") || intent.blocking?.code === "PRICE_IMPACT_HIGH") return "blocked";
+  if (codes.has("RATE_BELOW_REFERENCE") || codes.has("BRAKE_PRICE_IMPACT")) return "warn";
+  return "calm";
+}
+
+function ImpactChip({ intent }: { intent: SwapIntent }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const gap = intent.draft?.rateGapBps;
+  if (gap === null || gap === undefined) return null;
+  const tone = impactTone(intent);
+  const plate = tone === "blocked" ? color.destructiveSurface : tone === "warn" ? color.warnSurface : color.raised2;
+  const ink = tone === "blocked" ? color.destructive : tone === "warn" ? color.warn : color.text2;
+  const value = `${(Math.max(0, gap) / PERCENT_BPS).toFixed(IMPACT_DIGITS)}%`;
   return (
-    <View className="flex-row items-baseline justify-between gap-4">
-      <Text className="text-muted-foreground text-sm">{label}</Text>
-      <Text className={cn("text-foreground shrink text-end text-sm", strong && "font-semibold")}>{value}</Text>
+    <View style={[styles.chip, { backgroundColor: plate }]} accessibilityRole={tone === "calm" ? "text" : "alert"}>
+      <Text style={[TYPE.chipLabel, { color: ink }]}>{tone === "blocked" ? t("swap.impactBlocked", { value }) : t("swap.impact", { value })}</Text>
     </View>
   );
 }
 
-function Side({ label, mark, amount, sub, compact }: { label: string; mark: React.ReactNode; amount: string; sub?: string | undefined; compact?: boolean | undefined }) {
-  return (
-    <View className="gap-1">
-      <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{label}</Text>
-      <View className="flex-row items-center gap-3">
-        {mark}
-        <Amount numberOfLines={1} adjustsFontSizeToFit className={cn("font-display text-foreground shrink font-bold", compact ? "text-2xl" : "text-3xl")}>
-          {amount}
-        </Amount>
-      </View>
-      {sub ? <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{sub}</Text> : null}
-    </View>
-  );
-}
-
-export function SwapReview({ intent, compact, onRefresh, refreshing }: { intent: SwapIntent; compact?: boolean; onRefresh?: () => void; refreshing?: boolean }) {
+export function SwapReview({
+  intent,
+  compact,
+  onRefresh,
+  refreshing,
+  onPick,
+  hideRoutes = false,
+  paused = false,
+}: {
+  intent: SwapIntent;
+  compact?: boolean;
+  /** A fresh price (the ring ran out, or a tap on the age). */
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  /** Pick a venue: a new version priced by it. Without it the list is read only. */
+  onPick?: (venue: string) => void;
+  /** The routes are drawn elsewhere (the desktop's right column). */
+  hideRoutes?: boolean;
+  /** Hold the price still (a slide or an approval in progress). */
+  paused?: boolean;
+}) {
   const { t } = useT();
   const { locale } = useLocale();
+  const { color } = useTheme();
   const tokenMoney = useSwapMoney();
   const rateLines = useRateLines();
   const policyText = useSwapPolicyText();
-  const [routesOpen, setRoutesOpen] = React.useState(false);
+  const race = React.useMemo(() => swapRace(intent), [intent]);
   const draft = intent.draft;
   if (!draft) return null;
-  const markOf = (side: "in" | "out") => <SwapTokenMark draft={draft} side={side} network={intent.network} size={compact ? MARK_COMPACT : MARK} />;
+  const out = sideToken(draft, "out", intent.network);
   const lines = rateLines(draft);
   const wide = intent.results.find((entry) => entry.code === "RATE_BELOW_REFERENCE" || entry.code === "TOKEN_UNVERIFIED");
-  const routes = draft.routes ?? [];
-  const impact = draft.rateGapBps !== null && draft.tokens ? `${(Math.max(0, draft.rateGapBps) / PERCENT_BPS).toFixed(IMPACT_DIGITS)}%` : null;
-  const networkName = intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
-  const quotedAt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(draft.quotedAt));
   const fee = (baseUnits: string) => formatAmount(toAmount("USDC", BigInt(baseUnits)), locale, { fractionDigits: FEE_DIGITS });
   const routeFee = BigInt(draft.fees.route) > ZERO ? tokenMoney(draft, "in", draft.fees.route, intent.network) : null;
+  const figure = formatTokenAmount(BigInt(draft.estimatedOut), out.decimals, "", locale, { fractionDigits: HERO_DIGITS, trimZeros: true }).trim();
+  const heroHeight = (compact ? TYPE.numLg.lineHeight : TYPE.displayBalance.lineHeight) ?? SIZE.buttonHeight;
+  const venue = draft.venue ?? race?.best ?? null;
 
   return (
-    <View className="gap-4">
-      <View className="bg-muted gap-3 rounded-3xl p-4">
-        <Side label={t("swap.youPay")} mark={markOf("in")} amount={tokenMoney(draft, "in", draft.amountIn, intent.network)} compact={compact} />
-        <View className="flex-row items-center gap-3">
-          <View className="bg-border h-px flex-1" />
-          <View className="bg-card border-border items-center justify-center rounded-full border" style={{ width: ARROW, height: ARROW }}>
-            <Icon as={ArrowDown} className="text-foreground size-4" />
+    <View style={styles.wrap}>
+      <View style={styles.hero}>
+        <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("swap.youGet")}</Text>
+        <View style={styles.heroRow}>
+          <SwapTokenMark draft={draft} side="out" network={intent.network} size={MARK} />
+          <View style={styles.figure}>
+            <RollingFigure text={figure} value={BigInt(draft.estimatedOut)} color={color.ink} height={heroHeight} align="left" accessibilityLabel={tokenMoney(draft, "out", draft.estimatedOut, intent.network)} />
           </View>
-          <View className="bg-border h-px flex-1" />
+          <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{out.symbol}</Text>
         </View>
-        <Side
-          label={t("swap.youGet")}
-          mark={markOf("out")}
-          amount={tokenMoney(draft, "out", draft.estimatedOut, intent.network)}
-          sub={t("swap.atLeast", { amount: tokenMoney(draft, "out", draft.minOut, intent.network) })}
-          compact={compact}
-        />
+        <View style={styles.subRow}>
+          <Text style={[TYPE.rowDetail, styles.grow, { color: color.text2 }]}>
+            {t("swap.forPaid", { paid: tokenMoney(draft, "in", draft.amountIn, intent.network), min: tokenMoney(draft, "out", draft.minOut, intent.network) })}
+          </Text>
+          <ImpactChip intent={intent} />
+        </View>
       </View>
 
       {wide ? (
-        <View className="flex-row items-start gap-2">
-          <Icon as={CircleAlert} className="text-foreground mt-0.5 size-4" />
-          <Text className={cn("text-foreground flex-1 text-sm", TEXT_START)}>
+        <Panel style={[styles.note, { backgroundColor: color.warnSurface }]}>
+          <Text style={[TYPE.rowDetail, { color: color.ink }]}>
             {policyText(wide, intent.network)}
             {intent.network === "testnet" ? ` ${t("swap.testnetPools")}` : ""}
           </Text>
-        </View>
+        </Panel>
       ) : null}
 
-      <View className="gap-2">
-        <DetailRow label={t("swap.rate")} value={lines.rate} />
-        {lines.market ? <DetailRow label={t("swap.market")} value={lines.gap && !wide ? `${lines.market} · ${lines.gap}` : lines.market} /> : null}
-        {routeFee ? <DetailRow label={t("swap.routeFee")} value={routeFee} /> : null}
-        {impact ? <DetailRow label={t("ticket.impact")} value={impact} /> : null}
-        {draft.fees.network ? <DetailRow label={t("swap.networkFee")} value={t("swap.networkFeeValue", { amount: fee(draft.fees.network) })} /> : null}
-        <DetailRow label={t("swap.provider")} value={`${draft.provider} · ${networkName}`} strong />
-      </View>
-
-      {routes.length > 1 ? (
-        <View className="gap-2">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: routesOpen }}
-            onPress={() => setRoutesOpen((open) => !open)}
-            className="flex-row items-center justify-between py-1 active:opacity-70"
-          >
-            <Text className="text-muted-foreground text-sm">{t("ticket.routes", { count: routes.length })}</Text>
-            <Icon as={ChevronDown} className={cn("text-muted-foreground size-4", routesOpen && "rotate-180")} />
-          </Pressable>
-          {routesOpen
-            ? routes.map((route) => (
-                <View key={route.venue} className="flex-row items-baseline justify-between gap-4">
-                  <Text className={cn("text-sm", route.status === "chosen" ? "text-foreground font-semibold" : "text-muted-foreground")}>
-                    {route.status === "chosen" ? `${route.label} · ${t("ticket.recommended")}` : route.label}
-                  </Text>
-                  <Text className="text-muted-foreground shrink text-end text-sm">
-                    {route.estimatedOut ? tokenMoney(draft, "out", route.estimatedOut, intent.network) : t(`ticket.reason_${route.reason ?? "failed"}`, { defaultValue: route.reason ?? "" })}
-                  </Text>
-                </View>
-              ))
-            : null}
-        </View>
+      {compact || hideRoutes ? (
+        venue ? (
+          <View style={styles.via}>
+            <Mark entity={`venue:${venue}`} size={SIZE.markInline} />
+            <Text style={[TYPE.rowDetail, styles.grow, { color: color.text2 }]}>{t("swap.pricedBy", { venue: venueName(venue, draft.provider) })}</Text>
+          </View>
+        ) : null
+      ) : race ? (
+        <RouteList race={race} selected={venue} readOnly={!onPick} {...(onPick ? { onSelect: onPick } : {})} {...(onRefresh ? { onRetry: onRefresh } : {})} />
       ) : null}
 
-      <View className="flex-row items-center justify-between gap-3">
-        <View className="flex-1 flex-row items-start gap-2">
-          <Icon as={Info} className="text-muted-foreground mt-0.5 size-4" />
-          <Text className={cn("text-muted-foreground flex-1 text-xs", TEXT_START)}>{t("swap.together")}</Text>
-        </View>
-        {onRefresh ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${t("swap.refresh")}, ${t("swap.quotedAt", { time: quotedAt })}`}
-            disabled={refreshing}
-            onPress={onRefresh}
-            className="bg-muted active:bg-secondary min-h-11 flex-row items-center gap-1.5 rounded-full px-3"
-          >
-            <Icon as={RefreshCw} className={cn("text-foreground size-3.5", refreshing && "opacity-50")} />
-            <Text className="text-foreground text-xs font-semibold">{quotedAt}</Text>
-          </Pressable>
-        ) : null}
+      <View style={styles.footer}>
+        {onRefresh ? <QuoteAge quotedAt={draft.quotedAt} ttlSeconds={SWAP_QUOTE_TTL_S} refreshing={Boolean(refreshing)} paused={paused} onExpire={onRefresh} /> : <View />}
       </View>
+
+      <DisclosureRow title={t("swap.details")} value={lines.rate}>
+        {lines.market ? <KeyValue label={t("swap.market")} value={lines.gap ? `${lines.market} · ${lines.gap}` : lines.market} /> : null}
+        {routeFee ? <KeyValue label={t("swap.routeFee")} value={routeFee} /> : null}
+        {draft.fees.network ? <KeyValue label={t("swap.networkFee")} value={t("swap.networkFeeValue", { amount: fee(draft.fees.network) })} /> : null}
+        <KeyValue label={t("swap.network")} value={intent.network === "testnet" ? t("network.arcTestnet") : t("network.arc")} />
+        <Text style={[TYPE.caption, { color: color.text3 }]}>{t("swap.together")}</Text>
+      </DisclosureRow>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { gap: SPACE.md },
+  hero: { gap: SPACE.xs },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  figure: { flex: 1, minWidth: 0 },
+  subRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  grow: { flex: 1 },
+  chip: { borderRadius: SIZE.chipHeight, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs },
+  note: { padding: SPACE.md },
+  via: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  footer: { flexDirection: "row", justifyContent: "flex-end" },
+});

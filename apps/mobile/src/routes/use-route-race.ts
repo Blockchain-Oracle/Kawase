@@ -15,6 +15,8 @@ export function useRouteRace(start: RaceSource | null) {
   const [round, setRound] = React.useState(0);
 
   React.useEffect(() => {
+    // A new ask (another amount, pair or chain) never shows the last ask's rows as its own.
+    setRace(null);
     if (!start) return;
     const controller = new AbortController();
     let got = false;

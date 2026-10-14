@@ -1,16 +1,15 @@
-import { useLocalSearchParams } from "expo-router";
-
-import type { BridgeDestinationId } from "@kawase/api-client";
-
-import { BridgeScreen } from "@/screens/bridge-screen";
+import { Redirect, useLocalSearchParams } from "expo-router";
 
 const CANONICAL_AMOUNT = /^\d+(\.\d+)?$/;
-const DESTINATIONS: readonly BridgeDestinationId[] = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"];
+const CHAIN = /^[a-z]+$/;
 
-/** `/bridge?to=base&amount=10` prefills the bridge (from chat or a balance row). */
+/**
+ * `/bridge` is Move now (plan F: one cross-chain screen, every bridge on its RouteList). Older links and chat cards
+ * (`/bridge?to=base&amount=10`) land on the same move, prefilled.
+ */
 export default function BridgeRoute() {
   const params = useLocalSearchParams<{ to?: string; amount?: string }>();
-  const destination = DESTINATIONS.find((id) => id === params.to);
+  const chain = params.to && CHAIN.test(params.to) ? params.to : undefined;
   const amount = params.amount && CANONICAL_AMOUNT.test(params.amount) ? params.amount : undefined;
-  return <BridgeScreen prefill={{ destination, amount }} />;
+  return <Redirect href={{ pathname: "/move", params: { direction: "out", ...(chain ? { chain } : {}), ...(amount ? { amount } : {}) } }} />;
 }

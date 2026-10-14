@@ -13,7 +13,6 @@ export const bridge: Catalog["bridge"] = {
   routes: "जाँचे गए रूट",
   routeChosen: "चुना गया",
   routeWouldArrive: "{{amount}} पहुँचते",
-  reason_quote_only: "सिर्फ़ कोटेशन: Kawase अभी यह रूट इस्तेमाल नहीं करता",
   reason_no_quote: "अभी कोई कोटेशन नहीं",
   reason_timeout: "समय पर जवाब नहीं दिया",
   reason_not_on_arc_testnet: "Arc Testnet पर काम नहीं करता",

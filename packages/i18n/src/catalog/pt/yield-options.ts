@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "Nada na Arc rende sobre {{asset}} agora.",
   chooseHint: "Abre o depósito",
   moreWays: "Mais formas de render",
+  earnWith: "Render com {{name}}",
 };

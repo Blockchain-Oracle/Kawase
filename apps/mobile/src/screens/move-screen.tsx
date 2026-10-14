@@ -1,79 +1,89 @@
-// Move between chains (surfaces.md "Bridge"; routes.md): any asset out of Arc to anyone on another chain, or Bring to
-// Arc. The form asks only what it cannot infer: the asset (what they hold on Arc, USDC first; for Bring to Arc what is
-// waiting at their address on the chosen chain), the chain (marks; for Bring to Arc the chains holding something, with
-// how much), the amount (Max from what is held), and for a move out who receives it (themselves unless they say a
-// contact, @handle or address). Review is the bridge card: route options, the slide, the tracker.
+// Move between chains, on the Senryo kit (plan F; surfaces.md "Bridge"): the one cross-chain screen — /bridge redirects
+// here, and every bridge Kawase runs is a row on its RouteList. Out of Arc to anyone on another chain, or Bring to Arc.
+// It asks only what it cannot infer: the chain (a grid of real marks, only chains with a working route on this
+// network; for Bring to Arc, what is waiting on each), the asset (what they hold on Arc, USDC first; for Bring to Arc
+// what is at their address there), the amount (the kit's AmountPad with 1/4 1/2 3/4 All), and for a move out who
+// receives it — themselves unless they pick a contact (one with an address saved on that chain is paid there), an
+// @handle or an address. Review is the move ticket: the bridges racing on the RouteList, slide to confirm, the four
+// steps, the receipt. The intent is journalled before the yes, so a kill mid-move reopens on the same move (read only).
+// Desktop (a window ≥ 1024): two columns, the ticket on the left, the live race (or the version's routes) on the right.
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, ScrollView, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
+import { formatUnits, parseUnits } from "viem";
 
-import type { CrossChainRequest } from "@kawase/api-client";
-import { formatUnits } from "viem";
-import { CHAIN_IDS, chainKey } from "@kawase/identity";
-import { Mark } from "@kawase/ui-native/components/mark";
+import type { CrossChainRequest, RouteRaceRequest } from "@kawase/api-client";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
-import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
+import { AmountPad, Button, Panel, SectionLabel, Segmented, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { type Blocker, BlockedCta } from "@/components/tx";
+import { ChainGrid, destinationMark, useDestinations } from "@/crosschain/chain-grid";
+import { useAssetMoney } from "@/crosschain/move-copy";
 import { MoveTicket } from "@/crosschain/move-ticket";
+import { moveEnded } from "@/crosschain/move-tx";
+import { RecipientField } from "@/crosschain/recipient-field";
 import { useCrossChain, useElsewhere } from "@/crosschain/use-crosschain";
+import { fire } from "@/feedback/fire";
+import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
-import { useMarginFormat } from "@/margin/copy";
 import { usePortfolio } from "@/portfolio/use-portfolio";
-import { useMoney } from "@/send/copy";
+import { moveRace } from "@/routes/from-draft";
+import { useTicketJournal } from "@/routes/intent-tx";
+import { LiveRace } from "@/routes/live-race";
+import { RouteList } from "@/routes/route-list";
+import { TicketHeader } from "@/routes/ticket-header";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
+import { TradeSwitch } from "@/swap/trade-switch";
 
-const STRIP_INSET = 6;
-const EDGE_INSET = 12;
-const FOOTER_GAP = 24;
-const CHAIN_MARK = 32;
-const TOKEN_MARK = 24;
-/** Assets offered for a move out: the largest holdings on Arc. */
-const ASSET_CHOICES = 6;
 const USDC_DECIMALS = 6;
 const NOTHING = 0n;
-const CHAINS = [
-  { key: "base", chainId: CHAIN_IDS.base },
-  { key: "ethereum", chainId: CHAIN_IDS.ethereum },
-  { key: "arbitrum", chainId: CHAIN_IDS.arbitrum },
-  { key: "optimism", chainId: CHAIN_IDS.optimism },
-  { key: "polygon", chainId: CHAIN_IDS.polygon },
-  { key: "avalanche", chainId: CHAIN_IDS.avalanche },
-] as const;
+/** Assets offered for a move out: the largest holdings on Arc. */
+const ASSET_CHOICES = 6;
+const MAX_FRACTION = 6;
+const TICKET_COLUMN = 460;
+const HALF = 2;
 
 export type MovePrefill = { direction?: "out" | "in" | undefined; chain?: string | undefined; amount?: string | undefined; recipient?: string | undefined; asset?: string | undefined };
 
+type Asset = { symbol: string; decimals: number };
+
+const units = (value: string | undefined, decimals: number) => {
+  try {
+    return value ? parseUnits(value, decimals) : NOTHING;
+  } catch {
+    return NOTHING;
+  }
+};
+
 export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const { t } = useT();
+  const { color } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
-  const money = useMoney();
-  const format = useMarginFormat();
+  const reduced = useReducedMotion();
+  const wide = useWide();
+  const fund = useFund();
+  const money = useAssetMoney();
   const { portfolio } = usePortfolio();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const elsewhere = useElsewhere();
+  const destinations = useDestinations();
   const controller = useCrossChain();
-  const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
+  const network = user?.activeNetwork ?? "testnet";
+  const testnet = network === "testnet";
+  const journal = useTicketJournal("bridge", network, status === "account" ? user?.id : undefined);
   const [direction, setDirection] = React.useState<"out" | "in">(prefill.direction ?? "out");
   const [chain, setChain] = React.useState<string | undefined>(prefill.chain);
-  const [amount, setAmount] = React.useState(prefill.amount ?? "");
+  const [asset, setAsset] = React.useState<Asset>({ symbol: prefill.asset ?? "USDC", decimals: USDC_DECIMALS });
+  const [amount, setAmount] = React.useState<bigint>(() => units(prefill.amount, USDC_DECIMALS));
   const [recipient, setRecipient] = React.useState(prefill.recipient ?? "");
-  // The asset as its symbol (what the api resolves), with the decimals the amount is typed in.
-  const [asset, setAsset] = React.useState<{ symbol: string; decimals: number }>({ symbol: prefill.asset ?? "USDC", decimals: USDC_DECIMALS });
   const [creating, setCreating] = React.useState(false);
-  const waiting = elsewhere?.chains ?? [];
+
+  const waiting = React.useMemo(() => elsewhere?.chains ?? [], [elsewhere]);
   const onChain = waiting.filter((row) => row.key === chain);
   const held = (portfolio?.assets ?? []).filter((holding) => !holding.hidden && BigInt(holding.balance) > NOTHING).slice(0, ASSET_CHOICES);
   // A link that named the asset by its Arc address (Send, a token page, Withdraw) gets that token's own decimals.
@@ -85,161 +95,267 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   React.useEffect(() => {
     if (direction === "in" && !chain && waiting[0]) setChain(waiting[0].key);
   }, [direction, chain, waiting]);
+  // A chain the routes cannot reach on this network is never kept selected.
+  React.useEffect(() => {
+    if (chain && destinations.status === "ready" && !destinations.list.some((entry) => entry.id === chain)) setChain(undefined);
+  }, [chain, destinations.status, destinations.list]);
+
+  // A move left in flight (the app was closed after the yes): read it back, never send it again.
+  const intent = controller.intent;
+  const setIntent = controller.set;
+  React.useEffect(() => {
+    if (!journal.resumable || intent) return;
+    let live = true;
+    api.crosschain
+      .get(journal.resumable)
+      .then(({ intent: found }) => live && setIntent(found))
+      .catch(() => journal.forget(journal.resumable!));
+    return () => {
+      live = false;
+    };
+  }, [journal, intent, setIntent]);
+  React.useEffect(() => {
+    if (intent && moveEnded(intent)) journal.forget(intent.id);
+  }, [intent, journal]);
 
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
+  const back = () => {
+    if (!intent) leave();
+    else if (["submitted", "working", "input_required", "auth_required", "ready_for_approval"].includes(intent.state)) {
+      void controller.cancel();
+      controller.reset();
+    } else leave();
+  };
+
+  const decimal = formatUnits(amount, asset.decimals);
+  const request: CrossChainRequest =
+    direction === "in" ? { direction, source: chain ?? null, asset: asset.symbol, amount: decimal } : { direction, destination: chain ?? null, asset: asset.symbol, amount: decimal, recipient: recipient.trim() || null };
   const review = async () => {
     if (status !== "account") {
       signIn.open();
       return;
     }
-    const request: CrossChainRequest =
-      direction === "in" ? { direction, source: chain ?? null, asset: asset.symbol, amount } : { direction, destination: chain ?? null, asset: asset.symbol, amount, recipient: recipient.trim() || null };
     setCreating(true);
     try {
-      const { intent } = await api.crosschain.create(request);
-      controller.set(intent);
+      const { intent: created } = await api.crosschain.create(request);
+      controller.set(created);
     } catch {
-      toast(t("move.unavailable"));
+      fire("fail", { sound: "error" });
     } finally {
       setCreating(false);
     }
   };
 
-  const intent = controller.intent;
-  const decimalsOk = (amount.split(".")[1]?.length ?? 0) <= asset.decimals;
-  const valid = /^\d+(\.\d+)?$/.test(amount) && decimalsOk && Number(amount) > 0 && Boolean(chain);
-  return (
-    <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={intent ? () => controller.reset() : leave}>
-          <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-        </Button>
-        <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
-          {direction === "in" ? t("move.bringTitle") : t("move.title")}
-        </Text>
-      </View>
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4" contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }} keyboardShouldPersistTaps="handled">
-        {intent ? (
-          <MoveTicket controller={controller} onRetry={() => controller.reset()} />
-        ) : (
-          <>
-            <SegmentedControl
-              label={t("move.title")}
-              value={direction}
-              onValueChange={(value) => {
-                setDirection(value as "out" | "in");
-                setChain(undefined);
-                setAsset({ symbol: "USDC", decimals: USDC_DECIMALS });
-                setAmount("");
-              }}
-              options={[
-                { value: "out", label: t("move.directionOut") },
-                { value: "in", label: t("move.directionIn") },
-              ]}
-            />
-            <View className="gap-2">
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{direction === "in" ? t("move.from") : t("move.to")}</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {CHAINS.map((entry) => {
-                  const there = waiting.find((row) => row.key === entry.key && row.asset === "USDC") ?? waiting.find((row) => row.key === entry.key);
-                  const dim = direction === "in" && !there;
-                  return (
-                    <Pressable
-                      key={entry.key}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: chain === entry.key }}
-                      onPress={() => {
-                        setChain(entry.key);
-                        if (direction === "in" && there && !amount) {
-                          setAsset({ symbol: there.asset, decimals: there.decimals ?? USDC_DECIMALS });
-                          setAmount(formatUnits(BigInt(there.balance), there.decimals ?? USDC_DECIMALS));
-                        }
-                      }}
-                      className={cn("flex-row items-center gap-2 rounded-full border px-3 py-2", chain === entry.key ? "border-foreground bg-secondary" : "border-border", dim && "opacity-50")}
-                    >
-                      <Mark entity={chainKey(entry.chainId)} size={CHAIN_MARK} />
-                      <Text className="text-foreground text-sm font-semibold">{t(`move.chain_${entry.key}`)}</Text>
-                      {there ? <Text className="text-muted-foreground text-xs">{there.asset === "USDC" ? money("USDC", there.balance) : format.amount(there.balance, there.decimals ?? USDC_DECIMALS, there.asset)}</Text> : null}
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {direction === "in" && elsewhere && waiting.length === 0 ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("move.nothingElsewhere")}</Text> : null}
-            </View>
-            {/* What moves: out, what they hold on Arc; in, what is waiting on the chosen chain. */}
-            {(direction === "out" ? held.length > 1 : onChain.length > 1) ? (
-              <View className="gap-2">
-                <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.asset")}</Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {direction === "out"
-                    ? held.map((holding) => (
-                        <Pressable
-                          key={holding.token.address}
-                          accessibilityRole="radio"
-                          accessibilityState={{ checked: asset.symbol === holding.token.symbol }}
-                          onPress={() => setAsset({ symbol: holding.token.symbol === "USDC" ? "USDC" : holding.token.address, decimals: holding.token.decimals })}
-                          className={cn("flex-row items-center gap-2 rounded-full border px-3 py-2", asset.symbol === holding.token.symbol || asset.symbol === holding.token.address ? "border-foreground bg-secondary" : "border-border")}
-                        >
-                          <TokenMark token={holding.token} size={TOKEN_MARK} />
-                          <Text className="text-foreground text-sm font-semibold">{holding.token.symbol}</Text>
-                          <Text className="text-muted-foreground text-xs">{format.amount(holding.balance, holding.token.decimals, "")}</Text>
-                        </Pressable>
-                      ))
-                    : onChain.map((row) => (
-                        <Pressable
-                          key={`${row.key}:${row.asset}`}
-                          accessibilityRole="radio"
-                          accessibilityState={{ checked: asset.symbol === row.asset }}
-                          onPress={() => {
-                            setAsset({ symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS });
-                            setAmount(formatUnits(BigInt(row.balance), row.decimals ?? USDC_DECIMALS));
-                          }}
-                          className={cn("rounded-full border px-3 py-2", asset.symbol === row.asset ? "border-foreground bg-secondary" : "border-border")}
-                        >
-                          <Text className="text-foreground text-sm font-semibold">{`${row.asset} · ${format.amount(row.balance, row.decimals ?? USDC_DECIMALS, "")}`}</Text>
-                        </Pressable>
-                      ))}
-                </View>
-              </View>
-            ) : null}
-            <View className="gap-2">
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.amountOf", { asset: asset.symbol.startsWith("0x") ? (held.find((holding) => holding.token.address === asset.symbol)?.token.symbol ?? "") : asset.symbol })}</Text>
-              <TextInput
-                accessibilityLabel={t("move.amount")}
-                value={amount}
-                onChangeText={(text) => setAmount(text.replace(",", ".").replace(/[^\d.]/g, ""))}
-                keyboardType="decimal-pad"
-                placeholder="0"
-                placeholderTextColor={colors["muted-foreground"]}
-                className="font-display text-4xl font-bold"
-                style={{ color: colors.foreground }}
-              />
-            </View>
-            {direction === "out" ? (
-              <View className="gap-2">
-                <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.recipient")}</Text>
-                <TextInput
-                  accessibilityLabel={t("move.recipient")}
-                  value={recipient}
-                  onChangeText={setRecipient}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholder={t("move.recipientPlaceholder")}
-                  placeholderTextColor={colors["muted-foreground"]}
-                  className="border-border rounded-2xl border px-4 py-3 text-base"
-                  style={{ color: colors.foreground }}
+  const balance =
+    direction === "out"
+      ? (() => {
+          const holding = (portfolio?.assets ?? []).find((entry) => entry.token.symbol === asset.symbol || entry.token.address.toLowerCase() === asset.symbol.toLowerCase());
+          return holding ? BigInt(holding.balance) : portfolio ? NOTHING : undefined;
+        })()
+      : (() => {
+          const row = onChain.find((entry) => entry.asset === asset.symbol);
+          return row ? BigInt(row.balance) : undefined;
+        })();
+  const short = amount > NOTHING && balance !== undefined && amount > balance;
+  const blocker: Blocker | null = !chain
+    ? { label: direction === "in" ? t("move.pickSource") : t("move.pickChain") }
+    : amount === NOTHING
+      ? { label: t("move.needAmount") }
+      : status !== "account"
+        ? { label: t("move.needAmount"), fix: { kind: "sign-in" } }
+        : short
+          ? { label: t("move.notEnough", { asset: assetLabel(asset, held) }), ...(direction === "out" ? { fix: { kind: "add-money" as const } } : {}) }
+          : null;
+  const raceRequest: RouteRaceRequest | null = direction === "out" && chain && amount > NOTHING && !short ? { kind: "bridge", destination: chain, amount: decimal, asset: asset.symbol, recipient: recipient.trim() || null } : null;
+  const chainMark = (() => {
+    const entry = destinations.list.find((destination) => destination.id === chain);
+    return entry ? destinationMark(entry) : undefined;
+  })();
+
+  const assetChips =
+    (direction === "out" ? held.length > 1 : onChain.length > 1) ? (
+      <View style={styles.section}>
+        <SectionLabel>{t("move.asset")}</SectionLabel>
+        <View style={styles.chips}>
+          {direction === "out"
+            ? held.map((holding) => {
+                const on = asset.symbol === holding.token.symbol || asset.symbol === holding.token.address;
+                return (
+                  <Chip
+                    key={holding.token.address}
+                    on={on}
+                    label={holding.token.symbol}
+                    mark={<TokenMark token={holding.token} size={SIZE.markChip} />}
+                    onPress={() => {
+                      setAsset({ symbol: holding.token.symbol === "USDC" ? "USDC" : holding.token.address, decimals: holding.token.decimals });
+                      setAmount(NOTHING);
+                    }}
+                  />
+                );
+              })
+            : onChain.map((row) => (
+                <Chip
+                  key={`${row.key}:${row.asset}`}
+                  on={asset.symbol === row.asset}
+                  label={`${row.asset} · ${money(row.balance, { symbol: "", decimals: row.decimals ?? USDC_DECIMALS }).trim()}`}
+                  onPress={() => {
+                    setAsset({ symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS });
+                    setAmount(BigInt(row.balance));
+                  }}
                 />
-              </View>
-            ) : (
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.bringNote")}</Text>
-            )}
-            <Button size="lg" disabled={!valid || creating} onPress={() => void review()}>
-              <Text>{creating ? t("common.loading") : t("move.review")}</Text>
-            </Button>
-          </>
-        )}
+              ))}
+        </View>
+      </View>
+    ) : null;
+
+  const form = (
+    <View style={styles.grow}>
+      <ScrollView style={styles.grow} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <Segmented<"out" | "in">
+          label={t("move.title")}
+          value={direction}
+          onChange={(value) => {
+            setDirection(value);
+            setChain(undefined);
+            setAsset({ symbol: "USDC", decimals: USDC_DECIMALS });
+            setAmount(NOTHING);
+          }}
+          options={[
+            { value: "out", label: t("move.directionOut") },
+            { value: "in", label: t("move.directionIn") },
+          ]}
+        />
+        <View style={styles.section}>
+          <SectionLabel>{direction === "in" ? t("move.from") : t("move.to")}</SectionLabel>
+          <ChainGrid
+            destinations={destinations.list}
+            status={destinations.status}
+            onRetry={destinations.retry}
+            selected={chain}
+            onSelect={(id) => {
+              setChain(id);
+              const there = waiting.find((row) => row.key === id && row.asset === "USDC") ?? waiting.find((row) => row.key === id);
+              if (direction === "in" && there) {
+                setAsset({ symbol: there.asset, decimals: there.decimals ?? USDC_DECIMALS });
+                setAmount(BigInt(there.balance));
+              }
+            }}
+            {...(direction === "in" ? { waiting, amountOf: (row: (typeof waiting)[number]) => money(row.balance, { symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS }) } : {})}
+          />
+        </View>
+        {direction === "out" ? (
+          <View style={styles.section}>
+            <SectionLabel>{t("move.recipient")}</SectionLabel>
+            <RecipientField value={recipient} onChange={setRecipient} chain={chain} chainMark={chainMark} />
+          </View>
+        ) : null}
+        {assetChips}
+        <AmountPad
+          value={amount}
+          onChange={setAmount}
+          decimals={asset.decimals}
+          fraction={Math.min(asset.decimals, MAX_FRACTION)}
+          prefix=""
+          suffix={assetLabel(asset, held)}
+          {...(balance !== undefined && balance > NOTHING ? { balance } : {})}
+          problem={short ? t("move.notEnough", { asset: assetLabel(asset, held) }) : null}
+          note={direction === "in" ? t("move.bringNote") : undefined}
+          label={t("move.amount")}
+        />
       </ScrollView>
+      <View style={styles.footer}>
+        {blocker ? (
+          <BlockedCta
+            blocker={blocker}
+            onFix={(fix) => {
+              if (fix.kind === "sign-in") signIn.open();
+              else if (fix.kind === "add-money") fund.open();
+            }}
+          />
+        ) : (
+          <Button label={creating ? t("move.pricing") : t("move.review")} loading={creating} onPress={() => void review()} />
+        )}
+      </View>
+    </View>
+  );
+
+  const ticket = intent ? (
+    <ScrollView style={styles.grow} contentContainerStyle={styles.scroll}>
+      <MoveTicket controller={controller} hideRoutes={wide} onMark={journal.mark} onDone={leave} onRetry={() => controller.reset()} />
+    </ScrollView>
+  ) : null;
+
+  const body = (
+    <Animated.View key={intent ? "ticket" : "form"} entering={reduced ? undefined : FadeIn.duration(TIMING.sheetEnter)} style={styles.grow}>
+      {ticket ?? form}
+    </Animated.View>
+  );
+  const draftRace = intent?.draft ? moveRace(intent.draft) : null;
+  const open = intent ? ["submitted", "working", "input_required", "auth_required", "ready_for_approval"].includes(intent.state) : false;
+
+  return (
+    <View style={[styles.page, { backgroundColor: color.ground }]}>
+      <TicketHeader title={direction === "in" ? t("move.bringTitle") : t("move.title")} onBack={back} testnet={testnet} />
+      {!intent && direction === "out" ? (
+        <View style={styles.switch}>
+          <TradeSwitch current="bridge" />
+        </View>
+      ) : null}
+      {wide ? (
+        <View style={styles.columns}>
+          <View style={styles.ticketColumn}>{body}</View>
+          <Panel style={styles.raceColumn}>
+            <SectionLabel>{t("routes.title")}</SectionLabel>
+            <ScrollView contentContainerStyle={styles.raceScroll}>
+              {draftRace && intent?.draft ? (
+                <RouteList race={draftRace} selected={intent.draft.chosen} readOnly={!open || controller.busy} onSelect={(route) => void controller.revise({ route: route as NonNullable<typeof intent.draft>["chosen"] })} />
+              ) : (
+                <LiveRace request={raceRequest} idleTitle={direction === "in" ? t("move.raceIdleInTitle") : t("move.raceIdleTitle")} idleBody={direction === "in" ? t("move.raceIdleInBody") : t("move.raceIdleBody")} />
+              )}
+            </ScrollView>
+          </Panel>
+        </View>
+      ) : (
+        body
+      )}
     </View>
   );
 }
+
+/** The asset's symbol for words (an Arc address resolves to its holding's symbol). */
+function assetLabel(asset: Asset, held: readonly { token: { address: string; symbol: string } }[]) {
+  return asset.symbol.startsWith("0x") ? (held.find((holding) => holding.token.address === asset.symbol)?.token.symbol ?? "") : asset.symbol;
+}
+
+function Chip({ on, label, mark, onPress }: { on: boolean; label: string; mark?: React.ReactNode; onPress: () => void }) {
+  const { color } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: on }}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={[styles.chip, { backgroundColor: on ? color.ink : color.raised2 }]}
+    >
+      {mark}
+      <Text style={[TYPE.chipLabel, { color: on ? color.ground : color.ink }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  grow: { flex: 1 },
+  scroll: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm, paddingBottom: SPACE.lg },
+  section: { gap: SPACE.sm },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  chip: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: SIZE.chipHeight, borderRadius: SIZE.chipHeight / HALF, paddingHorizontal: SPACE.md },
+  switch: { paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
+  footer: { gap: SPACE.xs, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.xl },
+  columns: { flex: 1, flexDirection: "row", gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.lg },
+  ticketColumn: { width: TICKET_COLUMN, maxWidth: "45%" },
+  raceColumn: { flex: 1, padding: SPACE.lg, gap: SPACE.md },
+  raceScroll: { gap: SPACE.md, paddingBottom: SPACE.lg },
+});

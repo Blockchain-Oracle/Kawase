@@ -21,4 +21,6 @@ export const movePolicy: Catalog["movePolicy"] = {
   QUOTE_UNAVAILABLE: "لا يوجد مسار يمكنه نقله الآن.",
   MOVE_ASSET_UNKNOWN: "لا تجد Kawase ‏{{asset}} هناك. أي أصل تقصد؟",
   TOKEN_BLOCKED: "{{symbol}} يقلّد رمزًا آخر، لذا لن تنقله Kawase.",
+  ADDRESS_CHANGE_HOLD: "عنوان {{name}} على تلك الشبكة جديد أو تغيّر. تنتظر المدفوعات حتى {{until}} حفاظًا على أمانك.",
+  RECIPIENT_BLOCKED: "{{name}} محظور، لذا لن يدفع له Kawase.",
 };

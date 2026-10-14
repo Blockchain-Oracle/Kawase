@@ -21,4 +21,6 @@ export const movePolicy: Catalog["movePolicy"] = {
   QUOTE_UNAVAILABLE: "Nenhuma rota pode levar isso agora.",
   MOVE_ASSET_UNKNOWN: "A Kawase não encontra {{asset}} lá. Qual ativo você quer dizer?",
   TOKEN_BLOCKED: "{{symbol}} imita outro token, então a Kawase não vai movê-lo.",
+  ADDRESS_CHANGE_HOLD: "O endereço de {{name}} nessa rede é novo ou mudou. Os pagamentos esperam até {{until}}, para sua segurança.",
+  RECIPIENT_BLOCKED: "{{name}} está bloqueado, então a Kawase não vai pagar.",
 };

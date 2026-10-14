@@ -21,4 +21,6 @@ export const movePolicy: Catalog["movePolicy"] = {
   QUOTE_UNAVAILABLE: "Aucun itinéraire ne peut le porter pour l'instant.",
   MOVE_ASSET_UNKNOWN: "Kawase ne trouve pas {{asset}} là-bas. De quel actif s'agit-il ?",
   TOKEN_BLOCKED: "{{symbol}} imite un autre jeton, Kawase ne le déplacera pas.",
+  ADDRESS_CHANGE_HOLD: "L'adresse de {{name}} sur ce réseau est nouvelle ou a changé. Les paiements attendent jusqu'à {{until}}, pour votre sécurité.",
+  RECIPIENT_BLOCKED: "{{name}} est bloqué, Kawase ne le paiera pas.",
 };

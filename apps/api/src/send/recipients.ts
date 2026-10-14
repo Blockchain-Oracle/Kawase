@@ -5,7 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { erc20Abi, getAddress, isAddress, parseAbi, type Address, type PublicClient } from "viem";
 
 import { LOOKALIKE_PREFIX_CHARS, LOOKALIKE_SUFFIX_CHARS } from "@kawase/config";
-import type { AddressSource, RecipientMatch, SendRecipientView } from "@kawase/api-client";
+import type { AddressSource, ContactChain, RecipientMatch, SendRecipientView } from "@kawase/api-client";
 import { contactAddressTrust, intentDrafts, intents, users, wallets, type Db } from "@kawase/db";
 import type { NetworkId } from "@kawase/networks";
 import type { RecipientFacts } from "@kawase/policy";
@@ -156,16 +156,24 @@ export class Recipients {
    * Who `input` is: a contact, an @handle or an address, with the facts the send rules read. Someone the person blocked
    * comes back marked, so every rule that reads `blocked` refuses them (sends, automations, the agent).
    */
-  async resolve(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined): Promise<Resolution> {
-    const found = await this.find(user, network, input);
+  async resolve(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined, chain: ContactChain = "arc"): Promise<Resolution> {
+    const found = await this.find(user, network, input, chain);
     return found.facts.status === "resolved" && (await blockedRecipient(this.db, user.id, found.facts.address)) ? { ...found, facts: { ...found.facts, blocked: true } } : found;
   }
 
-  private async find(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined): Promise<Resolution> {
+  /**
+   * `chain`: where the money goes. On another chain a contact's address there wins (with its own hold); a contact
+   * without one keeps their Arc address, as before (a Kawase user's address is the same on every EVM chain).
+   */
+  private async find(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined, chain: ContactChain): Promise<Resolution> {
     const text = (input ?? "").trim();
     if (!text) return { facts: { status: "missing" }, view: null, suggestions: [] };
     const self = user.walletAddress?.toLowerCase();
-    const book = await this.contacts.addressBook(user.id);
+    const arc = await this.contacts.addressBook(user.id);
+    // Only a live address there (current, or waiting out its hold) speaks for the contact on that chain: one that was
+    // retired or blocked must not hide their Arc address.
+    const there = chain === "arc" ? [] : (await this.contacts.addressBook(user.id, chain)).filter((entry) => entry.status === "active" || entry.status === "pending_cooldown");
+    const book = [...there, ...arc.filter((entry) => !there.some((onChain) => onChain.contactId === entry.contactId))];
 
     // A pasted or typed address.
     if (/^0x/i.test(text)) {

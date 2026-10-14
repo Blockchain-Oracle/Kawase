@@ -184,8 +184,16 @@ export type ThreadSummary = { id: string; title: string | null; network: Network
 export type AddressSource = "typed" | "pasted" | "scanned" | "handle" | "received" | "agent";
 export type ContactAddressStatus = "pending_cooldown" | "active" | "retired" | "blocked";
 
+/**
+ * Where a contact's address is for: "arc" (one address on Arc and Arc Testnet), or another chain the cross-chain rails
+ * reach. A send to the contact there goes through the cross-chain move.
+ */
+export const CONTACT_CHAINS = ["arc", "base", "ethereum", "arbitrum", "optimism", "polygon", "avalanche"] as const;
+export type ContactChain = (typeof CONTACT_CHAINS)[number];
+
 export type ContactAddress = {
   id: string;
+  chain: ContactChain;
   address: string;
   version: number;
   status: ContactAddressStatus;
