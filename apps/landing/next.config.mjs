@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+import { URL, fileURLToPath } from "node:url";
 
 /** @type {import('next').NextConfig} */
 const config = {
