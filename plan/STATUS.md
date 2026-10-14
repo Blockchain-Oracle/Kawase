@@ -95,6 +95,24 @@ Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compre
 - Still open: RouteList polish; Privy proof and flip; mainnet funding and acceptance run; README (stale, 10-03);
   repo public; demo video; submission.
 
+**10-14 night — production unblocked:**
+- Abu's live try failed on Turnkey's quota (429 "Signing is disabled … over its allotted quota") because app.getkawase.xyz
+  still served the 13:34 UTC build `0ec04289`; two later web builds had been cancelled on the starved agari-box
+  (8 GB RAM, swap full, disk 97%).
+- **Web now ships from the Mac:** `apps/mobile/scripts/publish-web.sh` exports with `deploy/web.public.env` and rsyncs to
+  agari-box `/data/kawase-web/releases/<sha>` (a link into Docker volume `jq8rxr24…-kawase-web-releases`, mounted at
+  `/srv`); kawase-web builds `apps/mobile/Dockerfile.prebuilt` (the Node server only, ~1 min). Check
+  `https://app.getkawase.xyz/version.txt` after every publish.
+- **Privy is the web default** (`EXPO_PUBLIC_WALLET_PROVIDER=privy`); verified live: no override, Privy's embedded-wallet
+  frame loads, no Turnkey calls. `apps/api/test/privy-signer.live.ts`: an app-owned Privy wallet behind `privySigner`
+  signs the 7702 setup and the relayer lands it on Arc testnet (`0x5e7c89bb…`, delegated), message and transaction
+  signatures recover, an unlimited grant is refused. A Turnkey-era account signing in with the same email keeps its
+  account; the Turnkey wallet is retired and the Privy one registered (`registerUserWallet`).
+- The desktop rail scrolls between its pinned header and footer.
+- Still Turnkey: the native builds (EAS env), so the next TestFlight/APK needs `EXPO_PUBLIC_WALLET_PROVIDER=privy`.
+- Abu's 10-14 design review (composer, voice orb, trending, live charts, BasedBot links, handle input, testnet toggle)
+  goes into one combined plan with `compressed-dreaming-yao.md`.
+
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
 **Read first:**
