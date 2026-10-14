@@ -140,9 +140,12 @@ export function circleOnramp(env: ApiEnv): OnrampEngine {
   return onrampRouter([circleProvider(env)]);
 }
 
-/** Circle, and Coinbase when its CDP keys are present (CDP_API_KEY_ID + CDP_API_KEY_SECRET); without them there is no Coinbase. */
+/**
+ * Circle, and Coinbase when its CDP keys are present (CDP_API_KEY_ID + CDP_API_KEY_SECRET in `env`); without them there
+ * is no Coinbase. `options.cdp` replaces the keys from `env` (tests); passing it as undefined means none.
+ */
 export function onrampEngines(env: ApiEnv, options: { cdp?: CdpKeys | undefined; fetch?: typeof fetch | undefined } = {}): OnrampEngine {
-  const cdp = options.cdp ?? cdpKeysFromEnv();
+  const cdp = "cdp" in options ? options.cdp : cdpKeysFromEnv(env);
   return onrampRouter([circleProvider(env), ...(cdp ? [coinbaseProvider({ keys: cdp, ...(options.fetch ? { fetch: options.fetch } : {}) })] : [])]);
 }
 

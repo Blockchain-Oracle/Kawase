@@ -11,7 +11,16 @@ import { requestLogger, type Logger } from "@kawase/log";
 import type { Models } from "@kawase/agent";
 
 import { agentRoutes, createTurnRunner } from "./agent/routes";
+import type { ModelHealth } from "./agent/health";
 import { attachSession } from "./auth/middleware";
+import { budgetRoutes } from "./budget/routes";
+import { BudgetService } from "./budget/service";
+import { feedRoutes } from "./feed/routes";
+import { FeedService } from "./feed/service";
+import { crossChainPort } from "./onramp/bridge-port";
+import { agentRaceRoutes } from "./routing/agent-race";
+import { createRouteRacer } from "./routing/racer";
+import { routeRaceRoutes } from "./routing/routes";
 import { authRoutes } from "./auth/routes";
 import { AuthService } from "./auth/service";
 import type { TurnkeyReader } from "./auth/turnkey";
@@ -142,8 +151,14 @@ export type AppDeps = {
   bridges?: BridgeEngine | undefined;
   /** Earn vaults (Circle App Kit Earn in production); earning is refused when unset. */
   earn?: EarnEngine | undefined;
-  /** Buy with Apple Pay / card (Circle Onramp Kit in production); buying is refused when unset. */
+  /** Buy with Apple Pay / card (Circle Onramp Kit, and Coinbase with its keys, in production); buying is refused when unset. */
   onramp?: OnrampEngine | undefined;
+  /** Where Kawase's buy page is served (https://app.getkawase.xyz); purchases carry no page link when unset. */
+  onrampPageUrl?: string | undefined;
+  /** The agent model's self-test (started by main.ts); /agent/health answers "unknown" and chat never goes offline without it. */
+  health?: ModelHealth | undefined;
+  /** Route races per minute per person (POST /routes/race and the agent's race_routes share it). */
+  raceLimitPerMinute?: number | undefined;
   /** Circle's API key for verifying its webhook signatures (the LIVE key in production). */
   circleWebhookKey?: string | undefined;
   /** Token lists, prices, pools, safety and other-chain balances (LI.FI, GeckoTerminal, GoPlus); none when unset. */
@@ -178,6 +193,13 @@ export type AppDeps = {
 
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 120;
 const SIGN_IN_LIMIT_PER_MINUTE = 10;
+/**
+ * A race asks about six outside venues at once, and the LI.FI and Socket budgets in this process are everyone's: a
+ * person gets this many races a minute (the app's RouteList and the agent's race_routes together), and one address
+ * (guests are cheap to make) a few people's worth.
+ */
+const RACES_PER_MINUTE = 10;
+const RACES_PER_IP_PER_MINUTE = 30;
 const SECONDS_PER_MINUTE = 60;
 const DEFAULT_WEB_URL = "http://localhost:8081";
 
@@ -225,7 +247,8 @@ export function createApp(deps: AppDeps) {
   );
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
-  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets);
+  // The ops wallet redeems a swap's signed leaves inside the weekly budget (D38); the leaf path is 503 without it.
+  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets, deps.ops);
   const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
@@ -241,7 +264,9 @@ export function createApp(deps: AppDeps) {
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
   const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
   withdrawalRuns.bind({ sends, swaps, crosschain });
-  const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey);
+  const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey, { pageBaseUrl: deps.onrampPageUrl });
+  // A Coinbase delivery lands on Base; its Bring-to-Arc leg is a cross-chain intent (without this it waits forever).
+  onramp.setCrossChain(crossChainPort(deps.db, crosschain));
   const automations = new AutomationService(
     deps.db,
     deps.chains,
@@ -298,13 +323,30 @@ export function createApp(deps: AppDeps) {
     limit: deps.signInLimitPerMinute ?? SIGN_IN_LIMIT_PER_MINUTE,
     windowSeconds: SECONDS_PER_MINUTE,
   });
+  // The route race (D7): read-only quotes from every venue, for the RouteList and the agent's race_routes alike.
+  const racer = createRouteRacer({
+    chains: deps.chains,
+    wallets,
+    venues: createSwapVenues(deps.swaps ?? noSwaps),
+    bridges: deps.bridges ?? noBridges,
+    assets,
+    yieldOptions: (user, asset, amount) => lend.options(user, asset, amount),
+  });
+  // Per person (the default key: the signed-in user, else the address) and per address, so new guests cannot multiply it.
+  const races = createRateLimit({ limit: deps.raceLimitPerMinute ?? RACES_PER_MINUTE, windowSeconds: SECONDS_PER_MINUTE });
+  const racesPerIp = createRateLimit({
+    limit: RACES_PER_IP_PER_MINUTE,
+    windowSeconds: SECONDS_PER_MINUTE,
+    keyOf: (headers) => `ip:${headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"}`,
+  });
 
   app.use("*", requestId());
   app.use(
     "*",
     cors({
       origin: (origin) => (deps.webOrigins?.includes(origin) ? origin : null),
-      allowHeaders: ["authorization", "content-type", "idempotency-key", "x-kawase-auth-attempt"],
+      // The device proof (M12) rides on four headers: Turnkey's web build sends body + stamp, Privy's activity + signature.
+      allowHeaders: ["authorization", "content-type", "idempotency-key", "x-kawase-auth-attempt", "x-kawase-proof-activity", "x-kawase-proof-signature", "x-kawase-proof-body", "x-kawase-proof-stamp"],
       exposeHeaders: ["x-request-id", "idempotent-replayed"],
       credentials: true,
     }),
@@ -394,6 +436,12 @@ export function createApp(deps: AppDeps) {
     await next();
   });
   app.route("/swaps", swapRoutes(swaps));
+  // The weekly budget (D38) and its leaf path for swaps and earn. Its kill-switch relays through this WalletService's
+  // own pending requests, so it shares the instance.
+  const budget = new BudgetService(deps.db, deps.chains, wallets, deps.log);
+  app.route("/budget", budgetRoutes({ budget, swaps, earn }));
+  app.use("/routes/race", racesPerIp.middleware, races.middleware);
+  app.route("/routes", routeRaceRoutes(racer));
   app.route("/bridges", bridgeRoutes(bridges));
   app.route("/earn", earnRoutes(earn));
   app.route("/margin", marginRoutes(margin, protection));
@@ -430,7 +478,8 @@ export function createApp(deps: AppDeps) {
   const fees = new FeeService(deps.chains, wallets, deps.market ?? noMarketData);
   app.route("/fees", feeRoutes(fees));
   app.route("/fx", fxRoutes(fees));
-  app.route("/activity", activityRoutes(new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey)));
+  const activityFeed = new ActivityFeedService(deps.db, deps.chains, wallets, contacts, deps.log, deps.alchemyApiKey);
+  app.route("/activity", activityRoutes(activityFeed));
   const exportLinks = new ExportLinks(deps.approvalSecret);
   app.route("/files/export", exportFileRoutes(history, exportLinks));
   app.route("/privacy", privacyRoutes(privacy));
@@ -462,6 +511,11 @@ export function createApp(deps: AppDeps) {
     safety,
     models: deps.models,
     approvalSecret: deps.approvalSecret,
+    // race_routes: the same racer and per-person race budget as POST /routes/race.
+    raceRoutes: agentRaceRoutes({ racer, assets, allow: (user) => races.take(user.id) }),
+    // The weekly budget stays unbound until the silent send and bridge paths exist (Stage 3): every money step the
+    // agent proposes waits for the person's own confirm on its card.
+    health: deps.health,
   };
   // One turn runner for chat and voice: the same brain, the same threads, the same approval key.
   const runner = createTurnRunner(agentDeps);
@@ -469,7 +523,10 @@ export function createApp(deps: AppDeps) {
   app.route("/voice", voiceRoutes({ db: deps.db, models: deps.models, livekit: deps.livekit, runner }));
   app.route("/memory", memoryRoutes(new MemoryService(deps.db)));
   app.route("/search", searchRoutes(new SearchService(deps.db)));
-  app.route("/suggestions", suggestionRoutes(new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin, { bridges, marketplace })));
+  const suggestions = new SuggestionService(deps.db, wallets, earn, requests, deps.log, assets, margin, { bridges, marketplace });
+  app.route("/suggestions", suggestionRoutes(suggestions));
+  // The agent's feed (D37): Done · Held · Skipped · Watching · Found, over Activity, proposals, automations and For you.
+  app.route("/feed", feedRoutes(new FeedService(deps.db, { activity: activityFeed, suggestions }, deps.log)));
   // Dependency health, public (the status card, docs and landing), cached for half a minute.
   const status = new StatusService(deps.db, deps.chains);
   app.get("/status", async (c) => c.json(await status.view()));
