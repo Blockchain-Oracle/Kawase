@@ -7,34 +7,25 @@
  * kit needs come from memory, hydrated once at launch.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
-export type IntentKind = "send" | "swap" | "bridge" | "earn" | "buy" | "trade" | "service" | "other";
-export type JournalNetwork = "mainnet" | "testnet";
+import { isClientRefusal } from "./tx-state";
+import type { IntentReading, JournalEntry, JournalMark, JournalNetwork, RecoveryNote } from "./journal-types";
+import { createRecoveryReader, type RecoveryReader } from "./recovery";
 
-/** What the flow knows about an action before it is signed. */
-export interface JournalMark {
-  /** In words, for the recovery message: "Swap 2 USDC to EURC", "Send 5 USDC to Ada". */
-  what: string;
-  kind: IntentKind;
-  network: JournalNetwork;
-}
-
-export interface JournalEntry extends JournalMark {
-  /** The intent's id or digest: what the status is read by. */
-  id: string;
-  /** Lower-case wallet address. */
-  owner: string;
-  sentAt: number;
-  txHash?: string;
-}
+export type {
+  IntentKind,
+  IntentReading,
+  JournalEntry,
+  JournalMark,
+  JournalNetwork,
+  RecoveryNote,
+} from "./journal-types";
 
 const KEY = "kawase.intents.v1";
 const MAX_ENTRIES = 20;
 /** An intent's deadline is minutes; a day covers any launch gap worth telling about. */
 const MAX_AGE_MS = 86_400_000;
-const SERVER_ERROR = 500;
-const CLIENT_ERROR = 400;
 
 let entries: JournalEntry[] = [];
 let hydrating: Promise<void> | undefined;
@@ -66,7 +57,11 @@ export function hydrateJournal(): Promise<void> {
       const stored = Array.isArray(parsed) ? parsed.filter(valid) : [];
       // Anything written before the read finished stays; stored entries fill in around it.
       const have = new Set(entries.map((e) => e.id));
-      entries = [...stored.filter((e) => !have.has(e.id)), ...entries];
+      const wroteEarly = have.size > 0;
+      entries = [...stored.filter((e) => !have.has(e.id)), ...entries].slice(-MAX_ENTRIES);
+      // A write before the read finished stored only this run's entries: store the merged journal at once, so a kill
+      // now cannot lose the older ones.
+      if (wroteEarly) persist();
       bump();
     })
     .catch(() => undefined);
@@ -118,12 +113,6 @@ export function answerLost(id: string): void {
 
 export const wasLost = (id: string): boolean => lost.has(id);
 
-/** A 4xx answer names why the server refused: the intent did not go through, so the journal lets go of it. */
-const refusedBy = (error: unknown): boolean => {
-  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
-  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
-};
-
 /**
  * Sends a signed intent with the journal around it: written before the send; a server that answers (taken, or refused in
  * words with a 4xx) settles what the journal needs to say, a refusal taking it out; an answer lost on the way (the
@@ -139,7 +128,7 @@ export async function sendJournalled<T>(
   try {
     return await send();
   } catch (error) {
-    if (refusedBy(error)) {
+    if (isClientRefusal(error)) {
       forgetIntent(id);
       throw error;
     }
@@ -154,22 +143,17 @@ const LAUNCHED_AT = Date.now();
 const POLL_MS = 5000;
 const MAX_POLLS = 24;
 
-/** What reading an intent's status said. "pending" is read again; the rest end it. */
-export type IntentReading = "settled" | "failed" | "missing" | "pending" | "unreadable";
-
-export type RecoveryNote = {
-  entry: JournalEntry;
-  outcome: Exclude<IntentReading, "pending">;
-  /** Why this device did not see it: the app was closed, or only the answer was lost on the way. */
-  unseen: "closed" | "lost";
-};
+const inJournal = (id: string): boolean => entries.some((e) => e.id === id);
+const unseenOf = (entry: JournalEntry): RecoveryNote["unseen"] | null =>
+  entry.sentAt < LAUNCHED_AT ? "closed" : wasLost(entry.id) ? "lost" : null;
 
 /**
  * Reads, once per launch and then every few seconds, each journalled intent whose ending this device did not see (from
  * before this launch, or whose answer was lost in this run). `check` is the app's own read of an intent's status by id
  * (it must only read). A settled, failed or missing intent leaves the journal and is said once through `onNote`; an
- * unreadable one stays, and the person can ask again with the returned `recheck`. This run's other intents are followed
- * quietly (their own flows speak) and leave the journal once they settle.
+ * unreadable one stays, and the person can ask again with the returned `recheck`. This run's other intents are left to
+ * their own flows, which take them out of the journal when they settle, until an answer is lost. The reader outlives journal writes (see
+ * `recovery.ts`): a write while a read is out never drops that read.
  */
 export function useIntentRecovery(options: {
   network: JournalNetwork;
@@ -180,51 +164,36 @@ export function useIntentRecovery(options: {
   const { network, owner, check, onNote } = options;
   const current = useSyncExternalStore(subscribeJournal, journalVersion, journalVersion);
   const open = useMemo(() => (owner ? intentsOf(network, owner) : []), [network, owner, current]);
-  const said = useRef(new Set<string>());
-  const polls = useRef(new Map<string, number>());
   const latest = useRef({ check, onNote });
   latest.current = { check, onNote };
-  const [tick, setTick] = useState(0);
+  const reader = useRef<RecoveryReader | null>(null);
 
   useEffect(() => {
     void hydrateJournal();
   }, []);
 
+  // One reader per mount; journal writes only re-sync it.
   useEffect(() => {
-    let alive = true;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const read = async (entry: JournalEntry) => {
-      const count = (polls.current.get(entry.id) ?? 0) + 1;
-      polls.current.set(entry.id, count);
-      let reading: IntentReading;
-      try {
-        reading = await latest.current.check(entry);
-      } catch {
-        reading = "unreadable";
-      }
-      if (!alive) return;
-      if (reading === "pending" && count < MAX_POLLS) {
-        timers.push(setTimeout(() => void read(entry), POLL_MS));
-        return;
-      }
-      if (reading === "pending" || reading === "unreadable") return;
-      forgetIntent(entry.id);
-      const unseen = entry.sentAt < LAUNCHED_AT ? "closed" : wasLost(entry.id) ? "lost" : null;
-      if (unseen && !said.current.has(entry.id)) {
-        said.current.add(entry.id);
-        latest.current.onNote({ entry, outcome: reading, unseen });
-      }
-    };
-    for (const entry of open) if (!polls.current.has(entry.id)) void read(entry);
+    const created = createRecoveryReader({
+      check: (entry) => latest.current.check(entry),
+      onNote: (note) => latest.current.onNote(note),
+      has: inJournal,
+      forget: forgetIntent,
+      unseenOf,
+      pollMs: POLL_MS,
+      maxPolls: MAX_POLLS,
+    });
+    reader.current = created;
     return () => {
-      alive = false;
-      for (const timer of timers) clearTimeout(timer);
+      created.dispose();
+      if (reader.current === created) reader.current = null;
     };
-  }, [open, tick]);
+  }, []);
 
-  const recheck = () => {
-    polls.current.clear();
-    setTick((n) => n + 1);
-  };
+  useEffect(() => {
+    reader.current?.sync(open);
+  }, [open]);
+
+  const recheck = () => reader.current?.recheck();
   return { pending: open, recheck };
 }
