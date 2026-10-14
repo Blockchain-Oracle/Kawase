@@ -37,6 +37,8 @@ import { useTrade } from "./use-trade";
 
 /** The page width at which the chart and the ticket sit side by side. */
 const TERMINAL_MIN_PX = 900;
+/** How wide the terminal page grows on a desktop window (the stack's usual column is narrower). */
+export const TERMINAL_PAGE_PX = 1440;
 /** The ticket column; wider on an xl window (1280+). */
 const TICKET_W = 360;
 const TICKET_W_XL = 400;
