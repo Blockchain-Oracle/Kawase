@@ -57,6 +57,8 @@ export const move: Catalog["move"] = {
   cancel: "Cancelar",
   provider_lifi: "LI.FI",
   provider_debridge: "deBridge",
+  provider_socket: "Socket",
+  provider_gaszip: "Gas.zip",
   via: "vía {{bridge}}",
   convertFirst: "se cambia antes a USDC en {{venue}}",
   approveFirst: "dos pasos: primero una aprobación allí (pagada en {{coin}}), luego una firma",

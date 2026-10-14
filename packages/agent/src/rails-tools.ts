@@ -16,7 +16,7 @@ const CHAINS = ["base", "ethereum", "arbitrum", "optimism", "polygon", "avalanch
 const RECIPIENT_MAX = 80;
 const VENUE_MAX = 32;
 /** The routes a move can be pinned to (CrossChainProvider); a race's pick is passed as one of these. */
-const BRIDGE_VENUES = ["cctp", "across", "relay", "lifi", "debridge"] as const;
+const BRIDGE_VENUES = ["cctp", "across", "relay", "lifi", "debridge", "socket", "gaszip"] as const;
 /** A race may name a bridge Kawase cannot pin a move to yet: then the move takes the best fresh quote, as before. */
 const pinnable = (venue: string | undefined) => (BRIDGE_VENUES as readonly string[]).includes(venue ?? "") ? (venue as (typeof BRIDGE_VENUES)[number]) : null;
 

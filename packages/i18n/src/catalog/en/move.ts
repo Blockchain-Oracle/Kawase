@@ -55,6 +55,8 @@ export const move = {
   cancel: "Cancel",
   provider_lifi: "LI.FI",
   provider_debridge: "deBridge",
+  provider_socket: "Socket",
+  provider_gaszip: "Gas.zip",
   via: "via {{bridge}}",
   convertFirst: "swapped to USDC on {{venue}} first",
   approveFirst: "two steps: an approval there first (paid in {{coin}}), then one signature",
