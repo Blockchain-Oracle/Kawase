@@ -97,6 +97,7 @@ export * from "./types";
 export * from "./agent-types";
 export * from "./assets";
 export * from "./client-events";
+export * from "./routes";
 export * from "./marketplace";
 export * from "./account";
 export * from "./safety";

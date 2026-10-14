@@ -4,6 +4,7 @@ import type { CapabilityLine, WalletSummary } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { memoryLines, type MemoryFact } from "./intelligence";
+import { budgetLines } from "./prompt-budget";
 import { digestLines, type ThreadDigest } from "./threads";
 
 const PREFIX = `You are Kawase (為替), a money agent on Arc, Circle's stablecoin network. You help one person with their own wallet.
@@ -179,6 +180,7 @@ export function instructions(
     `Today is ${now.toISOString().slice(0, DATE_CHARS)}.`,
     ...displayLines(context),
     ...safetyLines(context),
+    ...budgetLines(context),
     ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet), ...capabilityLines(capabilities)] : []),
     ...memoryLines(extras.memory ?? []),
     ...digestLines(extras.digest),

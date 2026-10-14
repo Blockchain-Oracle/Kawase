@@ -87,6 +87,12 @@ import { help } from "./help";
 import { fees } from "./fees";
 import { offline } from "./offline";
 import { lp } from "./lp";
+import { shell } from "./shell";
+import { feed } from "./feed";
+import { budget } from "./budget";
+import { routes } from "./routes";
+import { market402 } from "./market402";
+import { desktop } from "./desktop";
 
 export const en = {
   common,
@@ -175,6 +181,12 @@ export const en = {
   fees,
   offline,
   lp,
+  shell,
+  feed,
+  budget,
+  routes,
+  market402,
+  desktop,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

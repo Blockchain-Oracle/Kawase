@@ -81,13 +81,17 @@ minimumReleaseAgeExclude:
 
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:
-  expo-constants: 57.0.20
+  expo-constants: 57.0.21
   # uniwind 1.12.0's web build breaks on react-native-web 0.21.3 (uni-stack/uniwind#695; fixed on main by #697,
   # not released yet). Remove this pin when a uniwind release after 1.12.0 is installed (spike 08).
   react-native-web: 0.21.2
 
 # Install scripts: false = knowingly skipped (this one only prints a funding banner).
 allowBuilds:
+  # Pulled in by @privy-io/react-auth (web sign-in). keccak's native addon has a pure-JS fallback; @reown/appkit's
+  # install script is not needed at runtime (Kawase uses Privy's embedded wallet, not Reown's connector UI).
+  keccak: false
+  '@reown/appkit': false
   react-native-inappbrowser-reborn: false
   # Optional native speed-ups for `ws` (pulled in by App Kit's Solana deps); the pure-JS fallback is fine on the api.
   bufferutil: false
