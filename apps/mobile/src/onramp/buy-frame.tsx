@@ -18,30 +18,11 @@ import { SPACE, useTheme } from "@/components/kit/theme";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 
-import { HOST_EVENTS, readBuyEvent, type BuyEvent } from "./order-events";
+import type { BuyFrameProps } from "./buy-frame-types";
+import { embeddedUrl, HOST_EVENTS, readBuyEvent } from "./order-events";
 
-/** What the frame shows: Kawase's page for the order (Circle), or a provider's payment link (Coinbase). */
-export type BuySource = { kind: "page"; pageUrl: string } | { kind: "link"; url: string };
 
-export type BuyFrameProps = {
-  orderId: string;
-  source: BuySource;
-  /** Every provider event, as soon as it happens (the screen around moves its steps; the order itself is read from the api). */
-  onEvent?: ((event: BuyEvent) => void) | undefined;
-  /** The page says the money arrived (the screen plays its own confirmation). */
-  onSettled?: (() => void) | undefined;
-  /** The person closed the page; `retry` asks the screen around to start the purchase again. */
-  onClose?: ((options?: { retry?: boolean }) => void) | undefined;
-  /** Inside the Buy sheet, which draws the title, the close and the steps itself: the page leaves out its own. */
-  embedded?: boolean | undefined;
-};
-
-/** Kawase's page with `?embed=1` before the fragment (the order key stays in the fragment, never sent to a server). */
-export function embeddedUrl(pageUrl: string): string {
-  const [head = "", hash] = pageUrl.split("#");
-  const url = `${head}${head.includes("?") ? "&" : "?"}embed=1`;
-  return hash ? `${url}#${hash}` : url;
-}
+export type { BuyFrameProps, BuySource } from "./buy-frame-types";
 
 const ALLOWED_ORIGINS = ["https://*", "apple-pay://*"];
 /** A server error (5xx) on the page means it did not load; a 4xx is the page's own state to show. */

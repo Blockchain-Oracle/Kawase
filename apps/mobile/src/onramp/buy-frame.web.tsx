@@ -9,10 +9,9 @@ import { api } from "@/session/api";
 
 import { BuyPage } from "./buy-page";
 import { readBuyEvent } from "./order-events";
-import type { BuyFrameProps } from "./buy-frame";
+import type { BuyFrameProps } from "./buy-frame-types";
 
-export type { BuyFrameProps, BuySource } from "./buy-frame";
-export { embeddedUrl } from "./buy-frame";
+export type { BuyFrameProps, BuySource } from "./buy-frame-types";
 
 /** The page URL's fragment carries the order key (`#k=kbuy_…`). */
 const keyOf = (pageUrl: string): string | undefined => {

@@ -8,6 +8,13 @@ import type { OnrampOrderView, OnrampStage } from "@kawase/api-client";
 /** The post-message the page sends the app; Circle's and Coinbase's own events keep their names. */
 export const HOST_EVENTS = { close: "KAWASE_CLOSE", settled: "KAWASE_SETTLED", expired: "KAWASE_SESSION_EXPIRED" } as const;
 
+/** Kawase's page with `?embed=1` before the fragment (the order key stays in the fragment, never sent to a server). */
+export function embeddedUrl(pageUrl: string): string {
+  const [head = "", hash] = pageUrl.split("#");
+  const url = `${head}${head.includes("?") ? "&" : "?"}embed=1`;
+  return hash ? `${url}#${hash}` : url;
+}
+
 /** A provider event reduced to what `POST /onramp/orders/:id/events` takes. */
 export type BuyEvent = { event: string; code: string | null; payload?: Record<string, unknown> | undefined };
 

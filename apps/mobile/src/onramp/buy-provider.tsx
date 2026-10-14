@@ -23,7 +23,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
-import type { BuySource } from "./buy-frame";
+import type { BuySource } from "./buy-frame-types";
 import { BuySheet } from "./buy-sheet";
 import { payOptions, type PayOption } from "./methods";
 import { useOrderWatch } from "./order-events";
