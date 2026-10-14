@@ -1,240 +1,503 @@
-// The Buy sheet: how much (presets or typed, in dollars or euros), the methods with their real marks, the network
-// said plainly (real money on Arc, or Circle's sandbox on testnet), and one button that opens Circle's checkout.
-// Then the states, each in words: opening → on its way (watching the chain) → "You're funded" with the koban (once,
-// with the confirmed sound) and, for a token buy, "Buy {token} now" → or why it did not complete and Try again.
-// "You get" picks what the money becomes (capability-matrix "buy with fiat … then swaps, so any listed token can be
-// bought"): USDC or EURC straight from Circle, or any token on Arc — the card buys USDC, then the swap ticket opens on
-// that token once the dollars land (one more approval), with today's rough size said up front.
-import { ChevronDown, CreditCard } from "lucide-react-native";
+// The Buy sheet on the Senryo kit (D42; docs pack buy-market; 21st: bankkroll/number-pad #3711 via AmountPad,
+// ssychui/swap-ticket #27122's receive line for "You get", cnippet-dev/payment-method-card-checkbox #24917 and
+// felipemenezes098/payment-3 #25102 for the method rows, the tx kit for the steps and the receipt). One hero figure per
+// step, detail behind the rows, the CTA names its blocker. The provider's card/ID step is the only part not ours, and it
+// runs inside our frame (`/buy/:orderId`).
+import { CreditCard, Landmark } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Linking, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 
-import type { OnrampOrderView, OnrampStartRequest, TokenView } from "@kawase/api-client";
-import { ONRAMP } from "@kawase/config";
-import { Amount } from "@kawase/ui-native/components/amount";
-import { Koban } from "@kawase/ui-native/components/art/koban";
+import type { OnrampOrderView } from "@kawase/api-client";
+import { arcIdentity } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { Sheet } from "@kawase/ui-native/components/sheet";
-import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { useLocale } from "@/i18n/locale-provider";
+import { AmountPad, Button, ErrorState, KeyValue, LoadingState, Panel, Rule, Segmented, Skeleton, Switch, WaitingText } from "@/components/kit";
+import { ChevronLeft, Icon, X } from "@/components/kit/icons";
+import { RollingFigure } from "@/components/kit/RollingFigure";
+import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { Sheet } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
+import { SheetRow } from "@/components/sheet/SheetRow";
+import { BlockedCta, TxMorph } from "@/components/tx";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
-import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
-import { stableToken, type TicketToken } from "@/portfolio/ticket-token";
+import { useLocale } from "@/i18n/locale-provider";
 import { useMoney } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
-import type { BuyPhase } from "./buy-provider";
+import { BuyFrame } from "./buy-frame";
+import type { BuyFlow, VerifiedContact } from "./buy-provider";
+import { BuySteps } from "./buy-steps";
+import { engineMark, methodMark, type PayOption } from "./methods";
+import { KNOWN_REASONS, RETRYABLE_REASONS } from "./order-events";
 
-const PRESETS = ["20", "50", "100"] as const;
-const METHOD_MARK = 24;
-const KOBAN_WIDTH = 96;
-const AMOUNT_MAX_LENGTH = 8;
-/** Only a token Kawase knows is the real one is named by symbol for the swap after (the copycat rule). */
-const TRUSTED: ReadonlySet<string> = new Set(["canonical", "listed"]);
-const SIGNIFICANT = 4;
-const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
-const KNOWN_REASONS = new Set(["SESSION_TIMEOUT", "CANCELED_BY_CUSTOMER", "NO_PAYMENT_OPTIONS", "CUSTOMER_PENDING_REVIEW", "CUSTOMER_REJECTED", "PAYMENT_PROVIDER_ERROR"]);
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers -- the preset dollar amounts
+const PRESETS = [25n, 50n, 100n, 250n] as const;
+const ZERO = 0n;
+const PHONE_PREFIX = "+1";
+const CENTS = 100n;
+const FIAT_DECIMALS = 2;
+const MAX_CENTS = 1_000_000n;
+const FRAME_SHARE = 0.74;
+const FRAME_MIN = 560;
+const CODE_LENGTH = 6;
+const US_PHONE = /^\+1\d{10}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COINBASE_TERMS = "https://www.coinbase.com/legal/guest-checkout/us";
+const SANDBOX_REASONS = new Set(["SANDBOX_NO_FUNDS"]);
 
-export function BuySheet({
-  open,
-  onClose,
-  prefill,
-  phase,
-  order,
-  onStart,
-  onThen,
-}: {
-  open: boolean;
-  onClose: () => void;
-  prefill: OnrampStartRequest;
-  phase: BuyPhase;
-  order: OnrampOrderView | undefined;
-  onStart: (request: OnrampStartRequest) => void;
-  onThen: () => void;
-}) {
-  const { t } = useT();
+/** "$1,234.50" in the person's language for a cents value. */
+function useFiat(currency: "USD" | "EUR") {
   const { locale } = useLocale();
-  const colors = useThemeColors();
-  const insets = useSafeAreaInsets();
-  const money = useMoney();
-  const { user } = useSession();
-  const network = user?.activeNetwork ?? "testnet";
-  const [amount, setAmount] = React.useState(prefill.amount ?? ONRAMP.defaultAmount);
-  // What the money becomes: USDC or EURC as Circle delivers it, or any token the swap then buys with the dollars.
-  const [target, setTarget] = React.useState<(TicketToken & { status?: TokenView["status"] }) | undefined>();
-  const [picking, setPicking] = React.useState(false);
-  const [thenInfo, setThenInfo] = React.useState<{ address: string; symbol: string; priceUsd: number | null }>();
-  React.useEffect(() => {
-    if (!open) return;
-    setAmount(prefill.amount ?? ONRAMP.defaultAmount);
-    setTarget(undefined);
-  }, [open, prefill.amount]);
-  const stable = !target || target.symbol === "USDC" || target.symbol === "EURC";
-  const asset = target?.symbol === "EURC" || (!target && prefill.asset?.toUpperCase() === "EURC") ? "EURC" : "USDC";
-  const currency = asset === "EURC" ? "EUR" : "USD";
-  const shown = target ?? stableToken(network, asset);
-  const then = target ? (stable ? undefined : target.status && TRUSTED.has(target.status) ? target.symbol : target.address) : prefill.then;
-  // A token buy is sized at today's price before checkout; the swap ticket quotes it for real once the dollars land.
-  const thenAddress = target && !stable ? target.address : prefill.then && ADDRESS.test(prefill.then) ? prefill.then : undefined;
-  React.useEffect(() => {
-    if (!thenAddress) return undefined;
-    let live = true;
-    api.tokens
-      .get(target?.chainId ?? stableToken(network, "USDC").chainId, thenAddress)
-      .then(({ token }) => {
-        if (live) setThenInfo({ address: thenAddress, symbol: token.token.symbol, priceUsd: token.market.priceUsd });
-      })
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [thenAddress, target?.chainId, network]);
-  const info = thenInfo && thenAddress && thenInfo.address === thenAddress ? thenInfo : undefined;
-  const thenName = target ? (stable ? undefined : target.symbol) : (info?.symbol ?? prefill.then ?? undefined);
-  const targetPrice = info?.priceUsd ?? null;
-  const fiat = (value: string) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }).format(Number(value));
-  const valid = /^\d+(\.\d{1,2})?$/.test(amount) && Number(amount) > 0;
-  const reason = order?.reason && KNOWN_REASONS.has(order.reason) ? order.reason : "other";
+  return React.useCallback(
+    (cents: bigint, whole = false) =>
+      new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: whole ? 0 : FIAT_DECIMALS, maximumFractionDigits: FIAT_DECIMALS }).format(Number(cents) / Number(CENTS)),
+    [currency, locale],
+  );
+}
 
-  let body: React.ReactNode;
-  if (phase === "settled" && order) {
-    body = (
-      <View className="items-center gap-3 py-2">
-        <Koban width={KOBAN_WIDTH} id="buy-funded" metal="gold" />
-        <Text className="font-display text-foreground text-2xl font-bold">{t("buy.funded")}</Text>
-        <Text className="text-muted-foreground text-base">{t("buy.fundedBody", { amount: money(order.asset, order.received) })}</Text>
-        {order.thenToken ? (
-          <Button className="self-stretch" onPress={onThen}>
-            <Text>{t("buy.thenAction", { token: order.thenToken })}</Text>
-          </Button>
-        ) : null}
-        <Button variant={order.thenToken ? "ghost" : "default"} className="self-stretch" onPress={onClose}>
-          <Text>{t("buy.done")}</Text>
-        </Button>
-      </View>
-    );
-  } else if (phase === "watching" || phase === "checkout" || phase === "starting") {
-    body = (
-      <View className="gap-3 py-2">
-        <Text className={cn("font-display text-foreground text-xl font-bold", TEXT_START)}>{phase === "watching" ? t("buy.waiting") : t("buy.opening")}</Text>
-        {phase === "watching" ? <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("buy.stillWatching")}</Text> : null}
-        <Button variant="secondary" onPress={onClose}>
-          <Text>{t("buy.done")}</Text>
-        </Button>
-      </View>
-    );
-  } else if (phase === "not_completed" || phase === "failed") {
-    body = (
-      <View className="gap-3 py-2">
-        <Text className={cn("font-display text-foreground text-xl font-bold", TEXT_START)}>{t("buy.notCompleted")}</Text>
-        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{phase === "failed" ? t("buy.failedStart") : order?.status === "expired" ? t("buy.expired") : t(`buy.reason_${reason}`)}</Text>
-        <Button onPress={() => onStart({ ...prefill, amount, asset, then })}>
-          <Text>{t("buy.tryAgain")}</Text>
-        </Button>
-      </View>
-    );
-  } else {
-    body = (
-      <View className="gap-4">
-        <View className="gap-2">
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("buy.amount")}</Text>
-          <View className="flex-row items-center gap-2">
-            <TextInput
-              accessibilityLabel={t("buy.amount")}
-              value={amount}
-              onChangeText={(text) => setAmount(text.replace(",", ".").replace(/[^\d.]/g, ""))}
-              keyboardType="decimal-pad"
-              maxLength={AMOUNT_MAX_LENGTH}
-              className="font-display text-foreground flex-1 text-4xl font-bold"
-              style={{ color: colors.foreground }}
-            />
-            <Text className="font-display text-muted-foreground text-xl font-semibold">{currency}</Text>
-          </View>
-          <View className="flex-row gap-2">
-            {PRESETS.map((preset) => (
-              <Pressable key={preset} accessibilityRole="button" onPress={() => setAmount(preset)} className={cn("bg-muted active:bg-secondary flex-1 items-center rounded-full py-2", amount === preset && "bg-secondary")}>
-                <Amount className="text-foreground text-sm font-semibold">{fiat(preset)}</Amount>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-        {prefill.destination === "agent_wallet" ? null : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${t("buy.get")}: ${shown.symbol}`}
-            onPress={() => setPicking(true)}
-            className="bg-muted active:bg-secondary flex-row items-center gap-3 rounded-2xl px-4 py-3"
-          >
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("buy.get")}</Text>
-            <View className="flex-1 flex-row items-center justify-end gap-2">
-              <TokenMark token={shown} size={METHOD_MARK} />
-              <Text className="text-foreground text-base font-semibold">{shown.symbol}</Text>
-              <Icon as={ChevronDown} className="text-muted-foreground size-4" />
-            </View>
-          </Pressable>
-        )}
-        <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-3">
-          <Mark entity="provider:apple" size={METHOD_MARK} variant="mono" tint={colors.foreground} />
-          <Mark entity="provider:google" size={METHOD_MARK} />
-          <Icon as={CreditCard} className="text-foreground size-5" />
-          <Text className={cn("text-foreground flex-1 text-sm", TEXT_START)}>{t("buy.methods")}</Text>
-        </View>
-        <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
-          {[
-            network === "testnet" ? t("buy.sandbox") : t("buy.realMoney"),
-            // Into the agent wallet (B2-2) or the person's own wallet.
-            prefill.destination === "agent_wallet"
-              ? t("agentWallet.deliversAgent", { network: network === "testnet" ? t("network.arcTestnet") : t("network.arc") })
-              : t("buy.delivers", { asset, network: network === "testnet" ? t("network.arcTestnet") : t("network.arc") }),
-            thenName ? t("buy.thenNote", { token: thenName }) : null,
-            thenName && targetPrice && valid ? t("buy.thenEstimate", { amount: `${Number((Number(amount) / targetPrice).toPrecision(SIGNIFICANT)).toLocaleString(locale)} ${thenName}` }) : null,
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        </Text>
-        <Button size="lg" disabled={!valid} onPress={() => onStart({ ...prefill, amount, asset, currency, then })}>
-          <Text>{t("buy.continue", { amount: valid ? fiat(amount) : "" })}</Text>
-        </Button>
-        <View className="flex-row items-center justify-center gap-1">
-          <Mark entity="provider:circle" size={16} />
-          <Text className="text-muted-foreground text-xs">{t("buy.byCircle")}</Text>
-        </View>
-      </View>
-    );
-  }
-
+export function BuySheet({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const busy = flow.starting !== null;
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={t("buy.title")}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-      closeLabel={t("common.close")}
-      bottomInset={insets.bottom}
-      className="gap-3"
-    >
-      {body}
-      <AssetPickerSheet
-        open={picking}
-        onClose={() => setPicking(false)}
-        title={t("buy.get")}
-        mode="any"
-        selected={shown.address.toLowerCase()}
-        // Testnet's card sandbox delivers test dollars, and the swap after runs on mainnet's markets only.
-        unavailable={(token) => (token.status === "impersonator" ? t("tokenPage.n_blocked") : network === "testnet" && token.kind !== "dollar" && token.symbol !== "EURC" ? t("tokenPage.n_mainnet_only") : undefined)}
-        onSelect={(choice) => {
-          setTarget({ ...choice.token, status: choice.token.status });
-          setPicking(false);
-        }}
-      />
+    <Sheet onClose={flow.close} closeLabel={t("buy.closeNamed")} dismissible={!busy} maxHeight={0.94}>
+      {flow.step === "amount" ? <AmountStep flow={flow} /> : null}
+      {flow.step === "method" ? <MethodStep flow={flow} /> : null}
+      {flow.step === "contact" ? <ContactStep flow={flow} /> : null}
+      {flow.step === "pay" ? <PayStep flow={flow} /> : null}
+      {flow.step === "arriving" ? <ArrivingStep flow={flow} /> : null}
     </Sheet>
   );
 }
+
+/** A small back affordance at the sheet's leading edge (the sheet's own handle and scrim still close it). */
+function BackRow({ label, onPress, title }: { label: string; onPress: () => void; title: string }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.backRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        hitSlop={SPACE.sm}
+        onPress={() => {
+          fire("tick");
+          onPress();
+        }}
+        style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+      >
+        <Icon icon={ChevronLeft} size={SIZE.iconSm} tint={color.ink} />
+      </Pressable>
+      <Text accessibilityRole="header" numberOfLines={1} style={[TYPE.sheetHeading, styles.grow, { color: color.ink }]}>
+        {title}
+      </Text>
+      <View style={styles.backButton} />
+    </View>
+  );
+}
+
+// ── 1. Amount ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+function AmountStep({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const fiat = useFiat(flow.currency);
+  const toAgent = flow.prefill.destination === "agent_wallet";
+  const valid = flow.cents > ZERO && flow.cents <= MAX_CENTS;
+  if (flow.availability.state === "failed") {
+    return (
+      <>
+        <SheetHeading title={t("buy.pageTitle", { asset: flow.asset })} />
+        <ErrorState diagnosis={{ kind: "server", retryable: true }} stillWorks={t("buy.stillWorks")} retry={() => flow.goTo("amount")} />
+      </>
+    );
+  }
+  if (flow.availability.state === "ready" && !flow.availability.value.available) {
+    return (
+      <>
+        <SheetHeading title={t("buy.pageTitle", { asset: flow.asset })} />
+        <ErrorState diagnosis={{ kind: "unknown", retryable: false, technical: flow.availability.value.reason ?? "" }} stillWorks={t("buy.notHere")} />
+      </>
+    );
+  }
+  return (
+    <>
+      <SheetHeading title={toAgent ? t("buy.agentTitle") : t("buy.pageTitle", { asset: flow.asset })} />
+      {toAgent || flow.prefill.then ? null : (
+        <Segmented
+          options={[
+            { value: "USDC", label: "USDC" },
+            { value: "EURC", label: "EURC" },
+          ]}
+          value={flow.asset}
+          onChange={(next) => flow.setAsset(next)}
+          label={t("buy.get")}
+        />
+      )}
+      <AmountPad
+        value={flow.cents}
+        onChange={flow.setCents}
+        decimals={FIAT_DECIMALS}
+        prefix={flow.currency === "EUR" ? "€" : "$"}
+        chips={PRESETS.map((preset) => ({ label: fiat(preset * CENTS, true), value: preset * CENTS }))}
+        problem={flow.cents > MAX_CENTS ? t("buy.tooMuch", { max: fiat(MAX_CENTS, true) }) : null}
+        label={t("buy.amount")}
+      />
+      <YouGet flow={flow} />
+      {valid ? (
+        <Button label={t("buy.continue", { amount: fiat(flow.cents) })} onPress={() => flow.goTo("method")} />
+      ) : (
+        <BlockedCta blocker={{ label: t("buy.enterAmount") }} />
+      )}
+    </>
+  );
+}
+
+/** "You get": Coinbase's live quote where it is offered; otherwise the amount as Circle prices it, before its fee. */
+function YouGet({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { user } = useSession();
+  const ids = arcIdentity(user?.activeNetwork ?? "testnet");
+  const quoted = flow.quote.state === "ready" ? flow.quote.value : null;
+  const figure = quoted ? Number(quoted.receive) : Number(flow.cents) / Number(CENTS);
+  const text = `${figure.toLocaleString(undefined, { minimumFractionDigits: FIAT_DECIMALS, maximumFractionDigits: FIAT_DECIMALS })} ${flow.asset}`;
+  const units = BigInt(Math.round(figure * Number(CENTS)));
+  const caption = quoted ? t("buy.afterFeesCoinbase") : flow.quote.state === "loading" ? t("buy.pricing") : t("buy.beforeFee");
+  return (
+    <View style={[styles.youGet, { backgroundColor: color.raised2 }]}>
+      <Mark entity={flow.asset === "EURC" ? ids.eurc : ids.usdc} size={SIZE.markRow} />
+      <View style={styles.grow}>
+        <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{flow.then ? t("buy.thenChip", { token: flow.then }) : t("buy.get")}</Text>
+        {flow.quote.state === "loading" ? (
+          <Skeleton width="60%" height={TYPE.rowAmount.lineHeight ?? SIZE.icon} />
+        ) : (
+          <RollingFigure text={text} value={units} color={color.ink} height={TYPE.rowAmount.lineHeight ?? SIZE.icon} align="left" accessibilityLabel={`${t("buy.get")} ${text}`} />
+        )}
+      </View>
+      <Text numberOfLines={2} style={[TYPE.meta, styles.youGetCaption, { color: color.text3 }]}>
+        {caption}
+      </Text>
+    </View>
+  );
+}
+
+// ── 2. Method ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+function MethodStep({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const fiat = useFiat(flow.currency);
+  const sandbox = flow.availability.state === "ready" ? flow.availability.value.sandbox : true;
+  return (
+    <>
+      <BackRow label={t("buy.back")} title={t("buy.payWith", { amount: fiat(flow.cents) })} onPress={() => flow.goTo("amount")} />
+      {flow.availability.state === "loading" ? <LoadingState shape="list" /> : null}
+      {flow.availability.state === "ready" && flow.options.length === 0 ? (
+        <ErrorState diagnosis={{ kind: "unknown", retryable: false }} stillWorks={t("buy.noMethods")} />
+      ) : null}
+      {flow.options.map((option, index) => (
+        <MethodRow key={option.key} option={option} index={index} flow={flow} />
+      ))}
+      <Text style={[TYPE.meta, styles.center, { color: color.text3 }]}>{sandbox ? t("buy.sandbox") : t("buy.realMoneyShort")}</Text>
+    </>
+  );
+}
+
+function MethodRow({ option, index, flow }: { option: PayOption; index: number; flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const over = option.weeklyLimitUsd !== null && flow.cents > BigInt(option.weeklyLimitUsd) * CENTS;
+  const failed = flow.startError?.key === option.key ? flow.startError : null;
+  const mark = methodMark(option.method);
+  const detail = over
+    ? t("buy.overWeekly", { limit: option.weeklyLimitUsd })
+    : failed
+      ? failed.message
+      : [option.engine === "coinbase" ? t("buy.viaCoinbase") : t("buy.viaCircle"), option.method === "bank" ? t("buy.bankWhere") : null].filter(Boolean).join(" · ");
+  const quoted = option.engine === "coinbase" && flow.quote.state === "ready" ? `${Number(flow.quote.value.receive).toFixed(FIAT_DECIMALS)} ${flow.asset}` : null;
+  return (
+    <SheetRow
+      index={index}
+      title={t(`buy.method_${option.method}`)}
+      detail={detail}
+      disabled={flow.starting !== null && flow.starting !== option.key}
+      leading={
+        <View style={[styles.methodMark, { backgroundColor: color.card }]}>
+          {mark ? <Mark entity={mark} size={SIZE.markToken} /> : <Icon icon={option.method === "bank" ? Landmark : CreditCard} size={SIZE.icon} tint={color.ink} />}
+        </View>
+      }
+      badge={<Mark entity={engineMark(option.engine)} size={SIZE.markChip} />}
+      trailing={
+        flow.starting === option.key ? (
+          <WaitingText>{t("buy.opening")}</WaitingText>
+        ) : quoted ? (
+          <Text style={[TYPE.rowAmount, { color: color.ink }]}>{quoted}</Text>
+        ) : undefined
+      }
+      onPress={() => {
+        if (over && option.weeklyLimitUsd !== null) {
+          // The fix the row names: the most this provider takes this week.
+          flow.setCents(BigInt(option.weeklyLimitUsd) * CENTS);
+          return;
+        }
+        if (failed?.limit) {
+          flow.goTo("amount");
+          return;
+        }
+        flow.choose(option);
+      }}
+    />
+  );
+}
+
+// ── 3. Contact (Coinbase) ────────────────────────────────────────────────────────────────────────────────────────
+
+function Field({ label, value, onChange, keyboard, autoComplete, maxLength, problem }: { label: string; value: string; onChange: (next: string) => void; keyboard: "phone-pad" | "email-address" | "number-pad"; autoComplete: "tel" | "email" | "one-time-code"; maxLength?: number; problem?: string | null }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.field}>
+      <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{label}</Text>
+      <TextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboard}
+        autoComplete={autoComplete}
+        textContentType={autoComplete === "tel" ? "telephoneNumber" : autoComplete === "email" ? "emailAddress" : "oneTimeCode"}
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={maxLength}
+        placeholderTextColor={color.text3}
+        style={[TYPE.field, styles.input, { backgroundColor: color.raised2, color: color.ink }]}
+      />
+      {problem ? <Text style={[TYPE.meta, { color: color.down }]}>{problem}</Text> : null}
+    </View>
+  );
+}
+
+function ContactStep({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { user } = useSession();
+  const [phone, setPhone] = React.useState(PHONE_PREFIX);
+  const [email, setEmail] = React.useState(user?.email ?? "");
+  const [terms, setTerms] = React.useState(false);
+  const [ids, setIds] = React.useState<{ sms: string; email: string } | null>(null);
+  const [smsCode, setSmsCode] = React.useState("");
+  const [emailCode, setEmailCode] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [problem, setProblem] = React.useState<string | null>(null);
+  const cleanPhone = phone.replace(/[^\d+]/g, "");
+  const phoneOk = US_PHONE.test(cleanPhone);
+  const emailOk = EMAIL.test(email.trim());
+
+  const send = async () => {
+    setBusy(true);
+    setProblem(null);
+    try {
+      const [sms, mail] = await Promise.all([api.onramp.verify("sms", cleanPhone), api.onramp.verify("email", email.trim())]);
+      setIds({ sms: sms.verificationId, email: mail.verificationId });
+      fire("confirm");
+    } catch {
+      setProblem(t("buy.sendFailed"));
+      fire("fail");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const confirm = async () => {
+    if (!ids) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      await Promise.all([api.onramp.verifySubmit(ids.sms, smsCode, "sms"), api.onramp.verifySubmit(ids.email, emailCode, "email")]);
+      const verified: VerifiedContact = { phone: cleanPhone, email: email.trim(), smsVerificationId: ids.sms, emailVerificationId: ids.email };
+      flow.confirmContact(verified);
+    } catch {
+      setProblem(t("buy.codeWrong"));
+      fire("fail");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <BackRow label={t("buy.back")} title={t("buy.contactTitle")} onPress={() => flow.goTo("method")} />
+      <View style={styles.contactHead}>
+        <Mark entity="provider:coinbase" size={SIZE.markRow} />
+        <Text style={[TYPE.body, styles.grow, { color: color.text2 }]}>{t("buy.contactWhy")}</Text>
+      </View>
+      {ids ? (
+        <>
+          <Field label={t("buy.smsCode", { phone: cleanPhone })} value={smsCode} onChange={(next) => setSmsCode(next.replace(/\D/g, ""))} keyboard="number-pad" autoComplete="one-time-code" maxLength={CODE_LENGTH} />
+          <Field label={t("buy.emailCode", { email: email.trim() })} value={emailCode} onChange={(next) => setEmailCode(next.replace(/\D/g, ""))} keyboard="number-pad" autoComplete="one-time-code" maxLength={CODE_LENGTH} problem={problem} />
+          {smsCode.length === CODE_LENGTH && emailCode.length === CODE_LENGTH ? (
+            <Button label={t("buy.confirmAndPay")} loading={busy || flow.starting !== null} onPress={() => void confirm()} />
+          ) : (
+            <BlockedCta blocker={{ label: t("buy.enterCodes") }} />
+          )}
+          <Button label={t("buy.sendAgain")} variant="ghost" disabled={busy} onPress={() => void send()} />
+        </>
+      ) : (
+        <>
+          <Field label={t("buy.phone")} value={phone} onChange={setPhone} keyboard="phone-pad" autoComplete="tel" problem={phone.length > PHONE_PREFIX.length && !phoneOk ? t("buy.phoneInvalid") : null} />
+          <Field label={t("buy.email")} value={email} onChange={setEmail} keyboard="email-address" autoComplete="email" problem={problem} />
+          <View style={styles.termsRow}>
+            <Switch value={terms} onValueChange={setTerms} accessibilityLabel={t("buy.terms")} />
+            <Text style={[TYPE.rowDetail, styles.grow, { color: color.ink }]}>{t("buy.terms")}</Text>
+          </View>
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(COINBASE_TERMS)}>
+            <Text style={[TYPE.meta, { color: color.link }]}>{t("buy.termsLink")}</Text>
+          </Pressable>
+          {phoneOk && emailOk && terms ? (
+            <Button label={t("buy.sendCodes")} loading={busy} onPress={() => void send()} />
+          ) : (
+            <BlockedCta blocker={{ label: !phoneOk ? t("buy.phoneInvalid") : !emailOk ? t("buy.emailInvalid") : t("buy.acceptTerms") }} />
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+// ── 4. Pay (the provider's step, inside our frame) ───────────────────────────────────────────────────────────────
+
+function PayStep({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { height } = useWindowDimensions();
+  const fiat = useFiat(flow.currency);
+  if (!flow.source || !flow.order) return <LoadingState shape="detail" />;
+  return (
+    <>
+      <View style={styles.backRow}>
+        <View style={styles.backButton} />
+        <Text accessibilityRole="header" numberOfLines={1} style={[TYPE.sheetHeading, styles.grow, styles.center, { color: color.ink }]}>
+          {t("buy.payTitle", { amount: fiat(flow.cents) })}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("buy.close")}
+          hitSlop={SPACE.sm}
+          onPress={() => flow.onFrameClose()}
+          style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+        >
+          <Icon icon={X} size={SIZE.iconSm} tint={color.ink} />
+        </Pressable>
+      </View>
+      <BuySteps order={flow.order} />
+      <View style={[styles.frame, { height: Math.max(FRAME_MIN, height * FRAME_SHARE), backgroundColor: color.card }]}>
+        <BuyFrame orderId={flow.order.id} source={flow.source} onEvent={flow.onFrameEvent} onSettled={() => flow.reloadOrder()} onClose={flow.onFrameClose} embedded />
+      </View>
+    </>
+  );
+}
+
+// ── 5. Arriving, then the receipt (or what went wrong, and whether money moved) ──────────────────────────────────
+
+function ArrivingStep({ flow }: { flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const order = flow.order;
+  const startedAt = React.useRef(Date.now()).current;
+  if (!order) return <LoadingState shape="detail" />;
+  const failed = order.status === "not_completed" || order.status === "expired";
+  if (failed) return <BuyFailure order={order} flow={flow} />;
+  const settled = order.status === "settled";
+  const waitingKey = order.stage === "on_base" || order.stage === "bridging" ? `buy.wait_${order.stage}` : order.status === "submitted" ? "buy.wait_buying" : "buy.wait_paying";
+  return (
+    <TxMorph morphed={settled} receipt={<BuyReceipt order={order} flow={flow} />}>
+      <View style={styles.stack}>
+        <SheetHeading title={t(waitingKey, { asset: order.asset })} />
+        <BuySteps order={order} />
+        <WaitingText startedAtMs={startedAt} onRetry={flow.reloadOrder}>
+          {order.stage === "bridging" || order.stage === "on_base" ? t("buy.verbMoving") : order.status === "submitted" ? t("buy.verbBuying") : t("buy.verbPaying")}
+        </WaitingText>
+        {flow.orderStale ? <Text style={[TYPE.meta, styles.center, { color: color.text3 }]}>{t("buy.stale")}</Text> : null}
+        <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>{order.network === "testnet" ? t("buy.sandboxArrival") : t("buy.safeToLeave")}</Text>
+        <Button label={t("buy.done")} variant="secondary" onPress={flow.close} />
+      </View>
+    </TxMorph>
+  );
+}
+
+function BuyReceipt({ order, flow }: { order: OnrampOrderView; flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const money = useMoney();
+  const { locale } = useLocale();
+  const received = BigInt(order.received ?? "0");
+  const [shown, setShown] = React.useState(ZERO);
+  // The figure rolls in from zero once the receipt is up.
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShown(received), 0);
+    return () => clearTimeout(timer);
+  }, [received]);
+  const paid = order.fiatAmount && order.fiatCurrency ? new Intl.NumberFormat(locale, { style: "currency", currency: order.fiatCurrency }).format(Number(order.fiatAmount)) : null;
+  return (
+    <View style={styles.stack}>
+      <SheetHeading title={t("buy.funded")} />
+      <View style={styles.centerRow}>
+        <RollingFigure text={money(order.asset, shown.toString())} value={shown} color={color.ink} height={TYPE.displayBalance.lineHeight ?? SIZE.avatarLg} align="left" sensitive />
+      </View>
+      <Panel style={styles.receiptPanel}>
+        {paid ? <KeyValue label={t("buy.paid")} value={paid} /> : null}
+        <KeyValue label={t("buy.receivedOn")} value={order.network === "mainnet" ? t("buy.onArc") : t("buy.onArcTestnet")} />
+        {order.engine ? <KeyValue label={t("buy.provider")} value={order.engine === "coinbase" ? "Coinbase" : "Circle"} /> : null}
+        {order.tx ? (
+          <>
+            <Rule />
+            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(order.tx!.explorerUrl)}>
+              <Text style={[TYPE.rowDetail, { color: color.link }]}>{t("buy.viewTx")}</Text>
+            </Pressable>
+          </>
+        ) : null}
+      </Panel>
+      {order.thenToken ? <Button label={t("buy.thenAction", { token: order.thenToken })} onPress={flow.thenAction} /> : null}
+      <Button label={t("buy.done")} variant={order.thenToken ? "ghost" : "primary"} onPress={flow.close} />
+    </View>
+  );
+}
+
+function BuyFailure({ order, flow }: { order: OnrampOrderView; flow: BuyFlow }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const reason = order.reason && KNOWN_REASONS.has(order.reason) ? order.reason : "other";
+  const retry = order.status === "expired" || !order.reason || RETRYABLE_REASONS.has(order.reason) || SANDBOX_REASONS.has(order.reason);
+  const pending = reason === "CUSTOMER_PENDING_REVIEW";
+  React.useEffect(() => {
+    fire("fail", { sound: "error", identity: `onramp-failed:${order.id}` });
+  }, [order.id]);
+  return (
+    <View style={styles.stack}>
+      <BuySteps order={order} />
+      <View style={[styles.failure, { backgroundColor: color.destructiveSurface }]} accessibilityRole="alert">
+        <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("buy.notCompleted")}</Text>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{order.status === "expired" ? t("buy.expired") : t(`buy.reason_${reason}`)}</Text>
+        <Text style={[TYPE.rowStrong, { color: color.ink }]}>{pending ? t("buy.moneyPending") : t("buy.moneyNone")}</Text>
+      </View>
+      {retry ? <Button label={t("buy.tryAgain")} onPress={flow.retry} /> : null}
+      <Button label={t("buy.done")} variant={retry ? "ghost" : "primary"} onPress={flow.close} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  grow: { flex: 1 },
+  center: { textAlign: "center" },
+  stack: { gap: SPACE.lg },
+  centerRow: { alignItems: "center" },
+  backRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  backButton: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  youGet: { flexDirection: "row", alignItems: "center", gap: SPACE.md, padding: SPACE.lg, borderRadius: RADIUS.md },
+  youGetCaption: { maxWidth: SIZE.avatarXl + SIZE.avatarLg, textAlign: "right" },
+  methodMark: { width: SIZE.avatarMd, height: SIZE.avatarMd, borderRadius: RADIUS.sm, alignItems: "center", justifyContent: "center" },
+  field: { gap: SPACE.xs },
+  input: { minHeight: SIZE.inputHeight, borderRadius: RADIUS.md, paddingHorizontal: SPACE.lg },
+  termsRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  contactHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  frame: { borderRadius: RADIUS.lg, overflow: "hidden" },
+  receiptPanel: { padding: SPACE.lg, gap: SPACE.sm },
+  failure: { padding: SPACE.lg, gap: SPACE.sm, borderRadius: RADIUS.md },
+});

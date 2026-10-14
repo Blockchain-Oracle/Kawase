@@ -101,8 +101,11 @@ export type OrderWatch = {
   accept: (order: OnrampOrderView) => void;
 };
 
-/** Reads the order, then again every few seconds while it is open. A missed read keeps the last order and says so. */
-export function useOrderWatch(orderId: string, api: OrderApi): OrderWatch {
+/**
+ * Reads the order, then again every few seconds while it is open. A missed read keeps the last order and says so.
+ * No id: nothing is read (the buy flow before a purchase exists).
+ */
+export function useOrderWatch(orderId: string | undefined, api: OrderApi): OrderWatch {
   const [order, setOrder] = React.useState<OnrampOrderView>();
   const [loading, setLoading] = React.useState(true);
   const [failed, setFailed] = React.useState(false);
@@ -110,6 +113,12 @@ export function useOrderWatch(orderId: string, api: OrderApi): OrderWatch {
   const open = !order || OPEN_STATUSES.has(order.status) || order.stage === "bridging";
 
   React.useEffect(() => {
+    setOrder((previous) => (previous && previous.id !== orderId ? undefined : previous));
+    if (!orderId) {
+      setLoading(false);
+      return undefined;
+    }
+    setLoading(true);
     let live = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const read = async () => {
@@ -132,5 +141,6 @@ export function useOrderWatch(orderId: string, api: OrderApi): OrderWatch {
     };
   }, [api, orderId, open, tick]);
 
-  return { order, loading, failed, reload: () => setTick((value) => value + 1), accept: setOrder };
+  const shown = order && order.id === orderId ? order : undefined;
+  return { order: shown, loading, failed, reload: () => setTick((value) => value + 1), accept: setOrder };
 }

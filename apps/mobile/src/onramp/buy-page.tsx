@@ -1,67 +1,45 @@
 // Kawase's own checkout page for a purchase (`app.getkawase.xyz/buy/:orderId`, D42). The card and ID step belongs to a
-// licensed provider; everything around it is ours: the Kawase header, the progress rail (Paying · Buying · On Arc), the
-// loading, failure, waiting and receipt states, and what the person is told about their money at every point.
+// licensed provider; everything around it is ours: the Kawase header, the steps (Paying · Buying · On Arc), the loading,
+// failure, waiting and receipt states, and what the person is told about their money at every point.
 // It runs in three places: a browser tab, a WebView inside the app (react-native-webview, no sign-in: the order's key
-// travels in the URL fragment) and, rendered by the same code, inline in the web app. Circle's widget (web only) is
-// the one provider part; its events are forwarded to the api (`POST /onramp/orders/:id/events`) and to the app around
-// the page, which moves the rail at once. The order settles only when the money is seen arriving on chain.
-import { ExternalLink, X } from "lucide-react-native";
+// travels in the URL fragment) and, rendered by the same code, inline in the web app's Buy sheet. Embedded (`?embed=1`,
+// or inline in the sheet) it leaves the header and the steps to the sheet around it. Circle's widget (web only) is the
+// one provider part; its events are forwarded to the api (`POST /onramp/orders/:id/events`) and to the app around the
+// page. The order settles only when the money is seen arriving on chain. Built on the Senryo kit.
 import * as React from "react";
-import { Linking, Platform, Pressable, ScrollView, View } from "react-native";
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { createApiClient, type OnrampSessionView } from "@kawase/api-client";
 import { exchangeKey, getEntity, providerKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { confirmedFeedback } from "@/feedback/feedback";
+import { Button, ErrorState, LoadingState, OfflineStrip, Panel, useHeldLoading, WaitingText } from "@/components/kit";
+import { Icon, X } from "@/components/kit/icons";
+import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { useMoney } from "@/send/copy";
 import { API_URL, api } from "@/session/api";
 
+import { BuySteps } from "./buy-steps";
 import { CircleWidget } from "./circle-widget";
-import { HOST_EVENTS, KNOWN_REASONS, OPEN_STATUSES, RETRYABLE_REASONS, postToHost, railSteps, useOrderWatch, type BuyEvent } from "./order-events";
-import { ProgressRail } from "./progress-rail";
+import { HOST_EVENTS, KNOWN_REASONS, OPEN_STATUSES, RETRYABLE_REASONS, postToHost, useOrderWatch, type BuyEvent } from "./order-events";
 
-/** A skeleton stays up at least this long so it never flashes (the premium bar's held loading). */
-const HOLD_MS = 300;
-/** After this long in "Buying" the page shows the seconds; after the next it offers a retry of the read. */
-const ELAPSED_AFTER_MS = 3_000;
-const STILL_WAITING_AFTER_MS = 15_000;
 const COLUMN_MAX = 480;
-const MS_PER_SECOND = 1_000;
-/** The rail skeleton: three discs, two bars between them. */
-const RAIL_STEPS = 3;
-const RAIL_DISCS = Array.from({ length: RAIL_STEPS }, (_, index) => index);
-const RAIL_LAST = RAIL_STEPS - 1;
-const MARK = 24;
-const HEADER_MARK = 28;
+const WIDGET_HEIGHT = 720;
 
 export type BuyPageProps = {
   orderId: string;
   /** The order's key from the URL fragment; absent when the person is signed in on this device. */
   pageKey?: string | undefined;
+  /** Inside the app's Buy sheet: no header or steps of its own. */
+  embedded?: boolean | undefined;
+  /** Every provider event, after the api has it. */
+  onEvent?: ((event: BuyEvent) => void) | undefined;
+  onSettled?: (() => void) | undefined;
   /** The person is done or wants out; `retry` asks the screen around to start the purchase again. */
   onClose: (options?: { retry?: boolean }) => void;
 };
-
-/** True after `loading` has been true for HOLD_MS, so a quick answer does not flash the skeleton. */
-function useHeld(loading: boolean): boolean {
-  const [held, setHeld] = React.useState(loading);
-  React.useEffect(() => {
-    if (loading) {
-      setHeld(true);
-      return undefined;
-    }
-    const timer = setTimeout(() => setHeld(false), HOLD_MS);
-    return () => clearTimeout(timer);
-  }, [loading]);
-  return held;
-}
 
 function useOnline(): boolean {
   const [online, setOnline] = React.useState(true);
@@ -79,69 +57,29 @@ function useOnline(): boolean {
   return online;
 }
 
-/**
- * Time spent in the current waiting step, measured from when this page first saw it (not from the order's creation:
- * a Circle order reaches "submitted" only after the ID and card steps, a Coinbase one reaches "bridging" only after the
- * delivery on Base). `step` names the step (status and stage); a new step starts the count again, none stops it.
- */
-function useWaitingMs(step: string | undefined): number {
-  const [since, setSince] = React.useState<number>();
-  const [now, setNow] = React.useState(Date.now());
-  React.useEffect(() => {
-    if (!step) {
-      setSince(undefined);
-      return undefined;
-    }
-    const start = Date.now();
-    setSince(start);
-    setNow(start);
-    const timer = setInterval(() => setNow(Date.now()), MS_PER_SECOND);
-    return () => clearInterval(timer);
-  }, [step]);
-  return step && since !== undefined ? Math.max(0, now - since) : 0;
-}
-
-/** The skeleton shaped like the page: header, rail, the widget's box. */
-function PageSkeleton() {
+/** The widget's box while the session is minted and the kit mounts: shaped like the checkout, never a spinner page. */
+function WidgetSkeleton() {
   const { t } = useT();
   return (
-    <View className="gap-6" accessibilityRole="progressbar" accessibilityLabel={t("buy.loadingPage")}>
-      <View className="flex-row items-center gap-2">
-        {RAIL_DISCS.map((index) => (
-          <React.Fragment key={index}>
-            <Skeleton className="size-7 rounded-full" />
-            {index < RAIL_LAST ? <Skeleton className="h-1 flex-1 rounded-full" /> : null}
-          </React.Fragment>
-        ))}
-      </View>
-      <Skeleton className="h-6 w-2/3" />
-      <Skeleton className="h-96 w-full rounded-3xl" />
+    <View style={styles.widgetSkeleton}>
+      <LoadingState shape="detail" label={t("buy.loadingPage")} named />
     </View>
   );
 }
 
-function StateCard({ title, body, children, tone = "neutral" }: { title: string; body?: string | undefined; children?: React.ReactNode; tone?: "neutral" | "error" | "success" }) {
-  return (
-    <View className={cn("gap-3 rounded-3xl border p-5", tone === "error" ? "border-destructive/40 bg-card" : "border-border bg-card")} accessibilityRole="alert">
-      <Text className={cn("font-display text-xl font-bold", tone === "error" ? "text-destructive" : "text-foreground", TEXT_START)}>{title}</Text>
-      {body ? <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{body}</Text> : null}
-      {children}
-    </View>
-  );
-}
-
-export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
+export function BuyPage({ orderId, pageKey, embedded = false, onEvent: relay, onSettled, onClose }: BuyPageProps) {
   const { t } = useT();
+  const { color } = useTheme();
   const money = useMoney();
   const online = useOnline();
   // The page in a WebView has no sign-in: its order key is the bearer, good for this order's three calls only.
   const client = React.useMemo(() => (pageKey ? createApiClient({ baseUrl: API_URL, getToken: () => pageKey }) : api), [pageKey]);
   const watch = useOrderWatch(orderId, client.onramp);
   const { order, accept } = watch;
-  const held = useHeld(watch.loading);
+  const held = useHeldLoading(watch.loading && !order);
 
   // Circle's session for the widget: minted fresh by the api for this open order (it re-mints on SESSION_TIMEOUT). Once
-  // the order is submitted the widget is hidden behind the waiting card, so no session is minted for it.
+  // the order is submitted the widget gives way to the waiting state, so no session is minted for it.
   const [session, setSession] = React.useState<OnrampSessionView>();
   const [sessionTry, setSessionTry] = React.useState(0);
   const [widgetState, setWidgetState] = React.useState<"minting" | "mounting" | "ready" | "failed">("minting");
@@ -181,9 +119,10 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
       void client.onramp
         .event(orderId, { event: event.event, code: event.code, ...(event.payload ? { payload: event.payload } : {}) })
         .then((answer) => accept(answer.order))
-        .catch(() => undefined);
+        .catch(() => undefined)
+        .then(() => relay?.(event));
     },
-    [accept, client, orderId],
+    [accept, client, orderId, relay],
   );
 
   // Every way out (the X, Done, Try again) tells the app around the page first, so a WebView closes its sheet instead
@@ -201,170 +140,131 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
   React.useEffect(() => {
     if (order?.status !== "settled" || settledOnce.current) return;
     settledOnce.current = true;
-    if (!postToHost({ event: HOST_EVENTS.settled, orderId })) void confirmedFeedback(`onramp:${orderId}`);
-  }, [order?.status, orderId]);
+    onSettled?.();
+    if (!postToHost({ event: HOST_EVENTS.settled, orderId }) && !embedded) fire("filled", { sound: "received", identity: `onramp:${orderId}` });
+  }, [embedded, onSettled, order?.status, orderId]);
 
-  const waitingStep = order && (order.status === "submitted" || order.stage === "bridging" || order.stage === "on_base") ? `${order.status}:${order.stage ?? ""}` : undefined;
-  const elapsed = useWaitingMs(waitingStep);
+  const waitingSince = React.useRef(Date.now());
   const sandbox = order?.network === "testnet";
   const open = !!order && OPEN_STATUSES.has(order.status);
-  const items = order
-    ? railSteps(order).map((step) => ({ id: step.id, state: step.state, label: t(`buy.rail_${step.id}`) }))
-    : [];
   // The licensed party's mark and name come from the identity registry (real logos, one source of names).
   const provider = order?.engine === "coinbase" ? exchangeKey("coinbase") : providerKey("circle");
   const providerName = getEntity(provider)?.name ?? "";
 
   let body: React.ReactNode;
-  if (held && !order) {
-    body = <PageSkeleton />;
+  if (!order && (held || watch.loading)) {
+    body = <WidgetSkeleton />;
   } else if (!order) {
     // The read failed and there is no earlier answer: say what still holds, offer the one action.
-    body = (
-      <StateCard title={t("buy.loadFailedTitle")} body={t("buy.loadFailedBody")} tone="error">
-        <Button onPress={watch.reload}>
-          <Text>{t("buy.tryAgain")}</Text>
-        </Button>
-      </StateCard>
-    );
+    body = <ErrorState diagnosis={{ kind: "server", retryable: true }} stillWorks={t("buy.loadFailedBody")} retry={watch.reload} />;
   } else if (order.status === "settled") {
     body = (
-      <StateCard title={t("buy.funded")} body={t("buy.fundedBody", { amount: money(order.asset, order.received) })} tone="success">
+      <Panel style={styles.panel}>
+        <Text accessibilityRole="header" style={[TYPE.sheetTitle, { color: color.ink }]}>
+          {t("buy.funded")}
+        </Text>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{t("buy.fundedBody", { amount: money(order.asset, order.received) })}</Text>
         {order.tx ? (
-          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(order.tx!.explorerUrl)} className="flex-row items-center gap-2">
-            <Icon as={ExternalLink} className="text-muted-foreground size-4" />
-            <Text className="text-muted-foreground text-sm underline">{t("buy.viewTx")}</Text>
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(order.tx!.explorerUrl)}>
+            <Text style={[TYPE.rowDetail, { color: color.link }]}>{t("buy.viewTx")}</Text>
           </Pressable>
         ) : null}
-        <Button onPress={() => leave()}>
-          <Text>{t("buy.done")}</Text>
-        </Button>
-      </StateCard>
+        <Button label={t("buy.done")} onPress={() => leave()} />
+      </Panel>
     );
   } else if (order.status === "not_completed" || order.status === "expired") {
     const reason = order.reason && KNOWN_REASONS.has(order.reason) ? order.reason : "other";
     const retry = order.status === "expired" || !order.reason || RETRYABLE_REASONS.has(order.reason);
     body = (
-      <StateCard title={t("buy.notCompleted")} body={order.status === "expired" ? t("buy.expired") : t(`buy.reason_${reason}`)} tone="error">
-        <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t(reason === "CUSTOMER_PENDING_REVIEW" ? "buy.moneyPending" : "buy.moneyNone")}</Text>
-        {retry ? (
-          <Button onPress={() => leave({ retry: true })}>
-            <Text>{t("buy.tryAgain")}</Text>
-          </Button>
-        ) : null}
-        <Button variant="ghost" onPress={() => leave()}>
-          <Text>{t("buy.done")}</Text>
-        </Button>
-      </StateCard>
-    );
-  } else {
-    const waiting = waitingStep !== undefined;
-    body = (
-      <View className="gap-4">
-        {order.engine !== "coinbase" ? (
-          <View className={cn(waiting && "hidden")}>
-            {widgetState === "failed" ? (
-              <StateCard title={t("buy.widgetFailedTitle")} body={t("buy.widgetFailedBody")} tone="error">
-                {session?.widgetUrl && Platform.OS === "web" ? (
-                  <Button variant="outline" onPress={() => globalThis.open?.(session.widgetUrl, "_blank", "noopener")}>
-                    <Text>{t("buy.openInBrowser")}</Text>
-                  </Button>
-                ) : null}
-                {widgetFailure?.retry !== false ? (
-                  <Button onPress={reopen}>
-                    <Text>{t("buy.tryAgain")}</Text>
-                  </Button>
-                ) : null}
-              </StateCard>
-            ) : session ? (
-              <View className="overflow-hidden rounded-3xl">
-                <CircleWidget
-                  session={session}
-                  sandbox={sandbox}
-                  onReady={() => setWidgetState("ready")}
-                  onEvent={onEvent}
-                  onFailed={(code, retry) => {
-                    setWidgetFailure({ code, retry });
-                    setWidgetState("failed");
-                  }}
-                  onSessionExpired={reopen}
-                />
-                {widgetState !== "ready" ? (
-                  <View className="bg-background absolute inset-0 p-2" pointerEvents="none">
-                    <PageSkeleton />
-                  </View>
-                ) : null}
-              </View>
-            ) : (
-              <PageSkeleton />
-            )}
-          </View>
-        ) : null}
-        {waiting || order.engine === "coinbase" ? (
-          <StateCard title={t(`buy.wait_${order.stage ?? "buying"}`, { asset: order.asset })} body={t("buy.safeToLeave")}>
-            {elapsed >= STILL_WAITING_AFTER_MS ? (
-              <View className="flex-row items-center justify-between gap-3">
-                <Text className="text-muted-foreground text-sm">{t("buy.stillWaiting")}</Text>
-                <Button size="sm" variant="secondary" onPress={watch.reload}>
-                  <Text>{t("buy.retryRead")}</Text>
-                </Button>
-              </View>
-            ) : elapsed >= ELAPSED_AFTER_MS ? (
-              <Text className="text-muted-foreground text-sm">{t("buy.elapsed", { seconds: Math.floor(elapsed / MS_PER_SECOND) })}</Text>
-            ) : null}
-            {order.bridge?.intentId ? (
-              <Text className="text-muted-foreground text-xs">{t("buy.bridgeNote")}</Text>
-            ) : null}
-          </StateCard>
-        ) : null}
+      <View style={[styles.panel, styles.failure, { backgroundColor: color.destructiveSurface }]} accessibilityRole="alert">
+        <Text accessibilityRole="header" style={[TYPE.rowTitle, { color: color.ink }]}>
+          {t("buy.notCompleted")}
+        </Text>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{order.status === "expired" ? t("buy.expired") : t(`buy.reason_${reason}`)}</Text>
+        <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t(reason === "CUSTOMER_PENDING_REVIEW" ? "buy.moneyPending" : "buy.moneyNone")}</Text>
+        {retry ? <Button label={t("buy.tryAgain")} onPress={() => leave({ retry: true })} /> : null}
+        <Button label={t("buy.done")} variant="ghost" onPress={() => leave()} />
       </View>
+    );
+  } else if (order.engine !== "coinbase" && (order.status === "created" || order.status === "opened")) {
+    body =
+      widgetState === "failed" ? (
+        <View style={styles.stack}>
+          <ErrorState diagnosis={{ kind: "server", retryable: widgetFailure?.retry !== false, technical: widgetFailure?.code ?? "" }} stillWorks={t("buy.widgetFailedBody")} {...(widgetFailure?.retry !== false ? { retry: reopen } : {})} />
+          {session?.widgetUrl && Platform.OS === "web" ? <Button label={t("buy.openInBrowser")} variant="secondary" onPress={() => globalThis.open?.(session.widgetUrl, "_blank", "noopener")} /> : null}
+        </View>
+      ) : session ? (
+        <View style={styles.widget}>
+          <CircleWidget
+            session={session}
+            sandbox={sandbox}
+            onReady={() => setWidgetState("ready")}
+            onEvent={onEvent}
+            onFailed={(code, retry) => {
+              setWidgetFailure({ code, retry });
+              setWidgetState("failed");
+            }}
+            onSessionExpired={reopen}
+          />
+          {widgetState !== "ready" ? (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: color.background }]} pointerEvents="none">
+              <WidgetSkeleton />
+            </View>
+          ) : null}
+        </View>
+      ) : (
+        <WidgetSkeleton />
+      );
+  } else {
+    // Submitted, or a Coinbase order between its payment and Arc: the wait, said in words.
+    const stage = order.stage ?? "buying";
+    body = (
+      <Panel style={styles.panel}>
+        <Text accessibilityRole="header" style={[TYPE.sheetTitle, { color: color.ink }]}>
+          {t(`buy.wait_${stage}`, { asset: order.asset })}
+        </Text>
+        <WaitingText startedAtMs={waitingSince.current} onRetry={watch.reload}>
+          {stage === "bridging" || stage === "on_base" ? t("buy.verbMoving") : t("buy.verbBuying")}
+        </WaitingText>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{sandbox ? t("buy.sandboxArrival") : t("buy.safeToLeave")}</Text>
+        {order.bridge?.intentId ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("buy.bridgeNote")}</Text> : null}
+      </Panel>
     );
   }
 
   return (
-    <View className="bg-background flex-1">
-      <ScrollView contentContainerClassName="items-center px-4 py-4" keyboardShouldPersistTaps="handled">
-        <View className="w-full gap-5" style={{ maxWidth: COLUMN_MAX }}>
-          <View className="flex-row items-center gap-3">
-            <Mark entity="provider:kawase" size={HEADER_MARK} />
-            <View className="flex-1">
-              <Text className={cn("font-display text-foreground text-lg font-bold", TEXT_START)} numberOfLines={1}>
+    <View style={[styles.fill, { backgroundColor: embedded ? color.card : color.background }]}>
+      <ScrollView contentContainerStyle={[styles.scroll, embedded ? styles.scrollEmbedded : null]} keyboardShouldPersistTaps="handled">
+        <View style={styles.column}>
+          {embedded ? null : (
+            <View style={styles.header}>
+              <Mark entity="provider:kawase" size={SIZE.avatarSm} />
+              <Text accessibilityRole="header" numberOfLines={1} style={[TYPE.sheetHeading, styles.grow, { color: color.ink }]}>
                 {t("buy.pageTitle", { asset: order?.asset ?? "USDC" })}
               </Text>
+              {sandbox ? (
+                <View style={[styles.chip, { backgroundColor: color.networkSurface }]}>
+                  <Text style={[TYPE.chipLabel, { color: color.network }]}>{t("buy.sandboxChip")}</Text>
+                </View>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("buy.close")}
+                hitSlop={SPACE.md}
+                onPress={() => leave()}
+                style={({ pressed }) => [styles.close, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+              >
+                <Icon icon={X} size={SIZE.iconSm} tint={color.ink} />
+              </Pressable>
             </View>
-            {sandbox ? (
-              <View className="bg-secondary rounded-full px-3 py-1">
-                <Text className="text-secondary-foreground text-xs font-semibold">{t("buy.sandboxChip")}</Text>
-              </View>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("buy.close")}
-              hitSlop={12}
-              onPress={() => leave()}
-              className="bg-secondary size-9 items-center justify-center rounded-full"
-            >
-              <Icon as={X} className="text-foreground size-4" />
-            </Pressable>
-          </View>
-
-          {!online ? (
-            <View className="bg-muted rounded-2xl px-4 py-3" accessibilityRole="alert">
-              <Text className="text-muted-foreground text-sm">{t("buy.offline")}</Text>
-            </View>
-          ) : watch.failed && order && open ? (
-            <View className="bg-muted rounded-2xl px-4 py-3">
-              <Text className="text-muted-foreground text-sm">{t("buy.stale")}</Text>
-            </View>
-          ) : null}
-
-          {order ? <ProgressRail items={items} /> : null}
+          )}
+          {!online ? <OfflineStrip /> : watch.failed && order && open ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("buy.stale")}</Text> : null}
+          {order && !embedded ? <BuySteps order={order} /> : null}
           {body}
-
           {order ? (
-            <View className="flex-row items-center justify-center gap-2 pt-2">
-              <Mark entity={provider} size={MARK} variant="mono" />
-              <Text className="text-muted-foreground text-xs">{t("buy.checkedBy", { provider: providerName })}</Text>
+            <View style={styles.footer}>
+              <Mark entity={provider} size={SIZE.markChip} variant="mono" tint={color.text3} />
+              <Text style={[TYPE.meta, { color: color.text3 }]}>{t("buy.checkedBy", { provider: providerName })}</Text>
             </View>
           ) : null}
         </View>
@@ -372,3 +272,20 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  grow: { flex: 1 },
+  stack: { gap: SPACE.md },
+  scroll: { alignItems: "center", paddingHorizontal: SPACE.lg, paddingVertical: SPACE.lg },
+  scrollEmbedded: { paddingHorizontal: SPACE.none, paddingVertical: SPACE.sm },
+  column: { width: "100%", maxWidth: COLUMN_MAX, gap: SPACE.lg },
+  header: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  chip: { height: SIZE.chipHeight, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, justifyContent: "center" },
+  close: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  panel: { padding: SPACE.xl, gap: SPACE.md },
+  failure: { borderRadius: RADIUS.md },
+  widget: { borderRadius: RADIUS.lg, overflow: "hidden", minHeight: WIDGET_HEIGHT },
+  widgetSkeleton: { minHeight: WIDGET_HEIGHT, paddingTop: SPACE.sm },
+  footer: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.xs, paddingTop: SPACE.sm },
+});
