@@ -21,4 +21,11 @@ export const receive: Catalog["receive"] = {
   setUpFirstBody: "एक कदम, और आपका पता पैसे लेने को तैयार।",
   anyToken:
     "Arc पर कोई भी टोकन यहाँ आता है। दूसरी चेन पर भेजा गया? वह वहाँ इसी पते पर पहुँचता है: “पैसे जोड़ें” से उसे Arc पर लाएँ।",
+  back: "वापस",
+  closeAsk: "राशि मांगना बंद करें",
+  closeNetwork: "नेटवर्क बंद करें",
+  qrAddress: "आपके पते का QR कोड",
+  qrAsk: "{{amount}} मांगने वाला QR कोड",
+  setUp: "अपना वॉलेट सेट करें",
+  signIn: "साइन इन",
 };

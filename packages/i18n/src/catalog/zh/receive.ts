@@ -20,4 +20,11 @@ export const receive: Catalog["receive"] = {
   setUpFirst: "请先设置钱包",
   setUpFirstBody: "只需一步，你的地址即可收款。",
   anyToken: "Arc 上的任意代币都会到账这里。在其他链上发送的？它会到达那条链上的同一地址：在“充值”中把它转回 Arc。",
+  back: "返回",
+  closeAsk: "关闭请求金额",
+  closeNetwork: "关闭网络选择",
+  qrAddress: "你的地址二维码",
+  qrAsk: "请求 {{amount}} 的二维码",
+  setUp: "设置你的钱包",
+  signIn: "登录",
 };

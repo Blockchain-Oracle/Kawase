@@ -1,59 +1,48 @@
-// Receive (journey 8, C32 / M04 / S21 / P21): the dotted QR assembling from particles with the Arc mark at the
-// centre, the identity row (name · short address · network) whose chevron opens the network selector, the
-// "Arc only" warning, Copy and Share. The QR always encodes the live wallet address, never a fixture, and stays
-// left-to-right in every language. Without a wallet the page says what to do instead of showing a fake code.
-// "Ask for an amount" turns the code into a request: any token on Arc and an amount, as an EIP-681 transfer URI that
-// any wallet fills in (gaps.md G10); a token page's Receive starts it on that token.
+// Receive on the Senryo kit (journey 8, C32 / M04 / S21 / P21; 21st.dev designali-in/qr-code #1706 as the spec): the
+// dotted QR with the Arc mark at its centre on a plate that stays light in both themes (it scans), the identity row
+// (name · short address · network) whose chevron opens the network sheet, the "any token on Arc" line, Copy and Share.
+// The QR always encodes the live wallet address, never a fixture, and stays left-to-right in every language. Without a
+// wallet the page says what to do instead of showing a fake code. "Ask for an amount" turns the code into a request:
+// any token on Arc and an amount (the kit's pad), as an EIP-681 transfer URI any wallet fills in (gaps.md G10); a token
+// page's Receive starts it on that token. Other chains: the same address works there, then Bring to Arc.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { ChevronDown, ChevronLeft, Copy, HandCoins, Share2, TriangleAlert, Waypoints, X } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, Share, useWindowDimensions, View } from "react-native";
+import { Pressable, Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
 
 import { arcIdentity } from "@kawase/identity";
-import { Amount } from "@kawase/ui-native/components/amount";
-import { Koban } from "@kawase/ui-native/components/art/koban";
 import { DottedQr } from "@kawase/ui-native/components/dotted-qr";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { NetworkChip, TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { tokens } from "@kawase/ui-tokens";
 
+import { AmountPad, Button, EmptyState } from "@/components/kit";
+import { Check, ChevronDown, ChevronLeft, Icon, X } from "@/components/kit/icons";
+import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { Sheet } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
+import { SheetRow } from "@/components/sheet/SheetRow";
+import { notify } from "@/components/toast/notify";
 import { MainnetConsentSheet } from "@/components/network-pill";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
 import { tokenAmount } from "@/portfolio/format";
-import { stableToken, unitsFromCanonical, type TicketToken } from "@/portfolio/ticket-token";
+import { stableToken, type TicketToken } from "@/portfolio/ticket-token";
 import { transferUri } from "@/receive/request-uri";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
-const STRIP_INSET = 6;
-const EDGE_INSET = 12;
-const QR_MARGIN = 40;
-const QR_MAX = 300;
-const QR_PADDING = 20;
-const CENTER_MARK = 44;
-const CENTER_PADDING = 6;
-const FOOTER_GAP = 16;
-const HALF = 0.5;
+const QR_MAX = 280;
+const SIDES = 2;
+const QR_GUTTER = (SPACE.inset + SPACE.xl) * SIDES;
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
-const ROW_MARK = 32;
-const ART_WIDTH = 160;
 const ZERO = 0n;
+const TOKEN_FRACTION = 6;
 
 const shortAddress = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
@@ -63,10 +52,10 @@ type Ask = { token: TicketToken; units: bigint };
 export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined } = {}) {
   const { locale } = useLocale();
   const { t } = useT();
+  const { color } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const colors = useThemeColors();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const { wallet } = useWalletStatus();
@@ -76,7 +65,7 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
   const [ask, setAsk] = React.useState<Ask | null>(null);
   const [askOpen, setAskOpen] = React.useState(Boolean(prefill));
   const [askToken, setAskToken] = React.useState<TicketToken | undefined>(prefill);
-  const [askText, setAskText] = React.useState("");
+  const [draftUnits, setDraftUnits] = React.useState<bigint>(ZERO);
   const [picking, setPicking] = React.useState(false);
 
   const testnet = network === "testnet";
@@ -84,9 +73,7 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
   const networkLabel = testnet ? t("network.arcTestnet") : t("network.arc");
   const address = wallet?.address;
   const account = status === "account";
-  const qrSize = Math.min(QR_MAX, width - (QR_MARGIN + QR_PADDING) / HALF);
-  // The code sits on an ink tile so it scans on both themes.
-  const ink = tokens.themes.dark;
+  const qrSize = Math.min(QR_MAX, width - QR_GUTTER);
 
   const chainId = stableToken(network, "USDC").chainId;
   // A request made on the other network no longer matches the code's chain: it goes back to the bare address.
@@ -94,51 +81,57 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
   const askLabel = asking ? tokenAmount(asking.units.toString(), asking.token.decimals, asking.token.symbol, locale) : "";
   const uri = asking && address ? transferUri(asking.token.address, chainId, address, asking.units) : null;
   const draftToken = askToken && askToken.chainId === chainId ? askToken : stableToken(network, "USDC");
-  const draftUnits = unitsFromCanonical(askText.trim().replace(",", "."), draftToken.decimals);
 
   const copy = async () => {
     if (!address) return;
     await Clipboard.setStringAsync(uri ?? address);
-    toast(t("home.addressCopied"));
+    notify.success(t("home.addressCopied"));
   };
   const share = async () => {
     if (!address) return;
+    fire("press");
     await Share.share({
       message: uri ? t("receive.shareAsk", { amount: askLabel, network: networkLabel, address, uri }) : t("receive.shareMessage", { network: networkLabel, address }),
     });
   };
   const showAsk = () => {
-    if (draftUnits === undefined || draftUnits === ZERO) return;
+    if (draftUnits === ZERO) return;
     setAsk({ token: draftToken, units: draftUnits });
     setAskOpen(false);
+    fire("confirm");
   };
 
   const header = (
-    <>
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={() => router.back()}>
-          <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-        </Button>
-        <Text className="font-display text-foreground text-2xl font-bold">{t("receive.title")}</Text>
-      </View>
-    </>
+    <View style={[styles.header, { paddingTop: insets.top + SPACE.md }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("receive.back")}
+        hitSlop={SPACE.sm}
+        onPress={() => {
+          fire("tick");
+          if (router.canGoBack()) router.back();
+          else router.replace("/");
+        }}
+        style={({ pressed }) => [styles.round, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+      >
+        <Icon icon={ChevronLeft} size={SIZE.iconSm} tint={color.ink} />
+      </Pressable>
+      <Text accessibilityRole="header" style={[TYPE.pageTitle, { color: color.ink }]}>
+        {t("receive.title")}
+      </Text>
+    </View>
   );
 
   if (!address) {
     return (
-      <View className="bg-background flex-1">
+      <View style={[styles.fill, { backgroundColor: color.background }]}>
         {header}
-        <View className="flex-1" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
+        <View style={[styles.fill, styles.pad]}>
           <EmptyState
-            art={<Koban width={ART_WIDTH} />}
-            title={account ? t("receive.setUpFirst") : t("receive.noWallet")}
-            body={account ? t("receive.setUpFirstBody") : t("receive.noWalletBody")}
-            action={
-              <Button onPress={() => (account ? router.push("/wallet") : signIn.open())}>
-                <Text>{account ? t("wallet.setUp") : t("signIn.title")}</Text>
-              </Button>
-            }
+            why={account ? t("receive.setUpFirst") : t("receive.noWallet")}
+            detail={account ? t("receive.setUpFirstBody") : t("receive.noWalletBody")}
+            action={{ label: account ? t("receive.setUp") : t("receive.signIn"), onPress: () => (account ? router.push("/wallet") : signIn.open()) }}
+            size="page"
           />
         </View>
       </View>
@@ -146,138 +139,119 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
   }
 
   return (
-    <View className="bg-background flex-1">
+    <View style={[styles.fill, { backgroundColor: color.background }]}>
       {header}
-      <View className="flex-1 items-center justify-center gap-6 px-5">
-        <View className="items-center justify-center rounded-lg" style={{ padding: QR_PADDING, backgroundColor: ink.background }}>
+      <View style={[styles.fill, styles.center, styles.pad]}>
+        <View style={[styles.qr, { backgroundColor: color.paper }]} accessible accessibilityLabel={uri ? t("receive.qrAsk", { amount: askLabel }) : t("receive.qrAddress")}>
           <DottedQr
             value={uri ?? address}
             size={qrSize}
-            dotColor={ink.foreground}
-            background={ink.background}
+            dotColor={color.paperInk}
+            background={color.paper}
             center={
-              <View className="items-center justify-center rounded-2xl" style={{ backgroundColor: ink.background, padding: CENTER_PADDING }}>
-                <Mark entity={ids.chain} size={CENTER_MARK} />
+              <View style={[styles.qrCenter, { backgroundColor: color.paper }]}>
+                <Mark entity={ids.chain} size={SIZE.markDetail} />
               </View>
             }
           />
         </View>
 
-        <View className="w-full gap-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("receive.network")}
-            onPress={() => setChooserOpen(true)}
-            className="bg-card border-border active:bg-muted flex-row items-center gap-3 rounded-full border py-3 pe-4 ps-3"
-          >
-            <Mark entity={ids.chain} size={ROW_MARK} />
-            <View className="min-w-0 flex-1 flex-row items-center gap-2">
-              {user?.handle ? (
-                <Text numberOfLines={1} className="text-foreground shrink text-base font-semibold">
-                  @{user.handle}
-                </Text>
-              ) : null}
-              <Amount className={user?.handle ? "text-muted-foreground text-sm" : "text-foreground text-base"}>{shortAddress(address)}</Amount>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("receive.network")}
+          onPress={() => {
+            fire("tick");
+            setChooserOpen(true);
+          }}
+          style={({ pressed }) => [styles.identity, { backgroundColor: pressed ? color.rowPressed : color.card }]}
+        >
+          <Mark entity={ids.chain} size={SIZE.markToken} />
+          <View style={styles.grow}>
+            {user?.handle ? <Text numberOfLines={1} style={[TYPE.rowTitle, { color: color.ink }]}>{`@${user.handle}`}</Text> : null}
+            <Text style={[TYPE.rowDetail, styles.mono, { color: user?.handle ? color.text3 : color.ink }]}>{shortAddress(address)}</Text>
+          </View>
+          <View style={[styles.capsule, { backgroundColor: color.networkSurface }]}>
+            <Text style={[TYPE.chipLabel, { color: color.network }]}>{networkLabel}</Text>
+          </View>
+          <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.text3} />
+        </Pressable>
+
+        {asking ? (
+          <View style={[styles.identity, { backgroundColor: color.card }]}>
+            <TokenMark token={asking.token} size={SIZE.markToken} />
+            <View style={styles.grow}>
+              <Text style={[TYPE.rowTitle, { color: color.ink }]}>{askLabel}</Text>
+              <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("receive.askHint", { amount: askLabel, network: networkLabel })}</Text>
             </View>
-            <NetworkChip label={networkLabel} />
-            <Icon as={ChevronDown} className="text-muted-foreground size-4" />
-          </Pressable>
-          {asking ? (
-            <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border py-2 pe-2 ps-3">
-              <TokenMark token={asking.token} size={ROW_MARK} />
-              <View className="min-w-0 flex-1">
-                <Text className="text-foreground text-base font-semibold">{askLabel}</Text>
-                <Text className="text-muted-foreground text-xs">{t("receive.askHint", { amount: askLabel, network: networkLabel })}</Text>
-              </View>
-              <Button variant="ghost" size="icon" className="size-10" accessibilityLabel={t("receive.askClear")} onPress={() => setAsk(null)}>
-                <Icon as={X} className="size-5" />
-              </Button>
-            </View>
-          ) : (
-            <>
-              <View className="bg-network-surface flex-row items-start gap-2 rounded-2xl px-4 py-3">
-                <Icon as={TriangleAlert} className="text-network mt-0.5 size-4" />
-                <Text className="text-network flex-1 text-sm">{t("receive.anyToken")}</Text>
-              </View>
-              <Button variant="ghost" onPress={() => setAskOpen(true)}>
-                <Icon as={HandCoins} className="size-5" />
-                <Text>{t("receive.askAmount")}</Text>
-              </Button>
-            </>
-          )}
-        </View>
+            <Pressable accessibilityRole="button" accessibilityLabel={t("receive.askClear")} hitSlop={SPACE.sm} onPress={() => setAsk(null)} style={({ pressed }) => [styles.round, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}>
+              <Icon icon={X} size={SIZE.iconSm} tint={color.ink} />
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <Text style={[TYPE.rowDetail, styles.centerText, { color: color.text2 }]}>{t("receive.anyToken")}</Text>
+            <Button label={t("receive.askAmount")} variant="ghost" block={false} onPress={() => setAskOpen(true)} />
+          </>
+        )}
       </View>
 
-      <View className="gap-3 px-5" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-        <Button size="lg" onPress={() => void copy()}>
-          <Icon as={Copy} className="text-primary-foreground size-5" />
-          <Text>{t("receive.copy")}</Text>
-        </Button>
-        <Button size="lg" variant="secondary" onPress={() => void share()}>
-          <Icon as={Share2} className="size-5" />
-          <Text>{t("receive.share")}</Text>
-        </Button>
+      <View style={[styles.actions, { paddingBottom: insets.bottom + SPACE.lg }]}>
+        <Button label={t("receive.copy")} onPress={() => void copy()} />
+        <Button label={t("receive.share")} variant="secondary" onPress={() => void share()} />
       </View>
 
-      <Sheet open={chooserOpen} onClose={() => setChooserOpen(false)} title={t("network.chooseNetwork")} colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }} closeLabel={t("common.close")} bottomInset={insets.bottom}>
-        <ListGroup>
-          {(["testnet", "mainnet"] as const).map((id) => (
-            <ListRow
+      {chooserOpen ? (
+        <Sheet onClose={() => setChooserOpen(false)} closeLabel={t("receive.closeNetwork")}>
+          <SheetHeading title={t("network.chooseNetwork")} />
+          {(["testnet", "mainnet"] as const).map((id, index) => (
+            <SheetRow
               key={id}
-              leading={<Mark entity={arcIdentity(id).chain} size={ROW_MARK} />}
+              index={index}
               title={id === "testnet" ? t("network.arcTestnet") : t("network.arc")}
-              subtitle={id === "testnet" ? t("network.testnetStrip") : t("network.realMoney")}
+              detail={id === "testnet" ? t("network.testnetStrip") : t("network.realMoney")}
+              leading={<Mark entity={arcIdentity(id).chain} size={SIZE.markToken} />}
+              trailing={id === network ? <Icon icon={Check} size={SIZE.icon} tint={color.ink} /> : undefined}
               selected={id === network}
               disabled={busy}
-              accessibilityRole="radio"
               onPress={() => {
                 setChooserOpen(false);
                 void switchNetwork(id);
               }}
             />
           ))}
-        </ListGroup>
-        {/* The same address on the other chains (surfaces.md Receive: "a chain chooser … other chains get Bring to Arc"). */}
-        <ListGroup label={t("assets.otherChainsTotal")}>
-          <ListRow
-            leading={<Icon as={Waypoints} className="text-muted-foreground size-5" />}
+          {/* The same address on the other chains (surfaces.md Receive: "a chain chooser … other chains get Bring to Arc"). */}
+          <SheetRow
+            index={2}
             title={t("receive.otherChains")}
-            subtitle={t("receive.otherChainsBody")}
-            chevron
+            detail={t("receive.otherChainsBody")}
             onPress={() => {
               setChooserOpen(false);
               router.push({ pathname: "/move", params: { direction: "in" } });
             }}
           />
-        </ListGroup>
-      </Sheet>
+        </Sheet>
+      ) : null}
       <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
-      <Sheet open={askOpen} onClose={() => setAskOpen(false)} title={t("receive.askAmount")} colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }} closeLabel={t("common.close")} bottomInset={insets.bottom}>
-        <View className="gap-4">
+      {askOpen ? (
+        <Sheet onClose={() => setAskOpen(false)} closeLabel={t("receive.closeAsk")}>
+          <SheetHeading title={t("receive.askAmount")} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${t("receive.askAsset")}: ${draftToken.symbol}`}
-            onPress={() => setPicking(true)}
-            className="bg-muted active:bg-secondary flex-row items-center gap-3 rounded-2xl px-4 py-3"
+            onPress={() => {
+              fire("tick");
+              setPicking(true);
+            }}
+            style={({ pressed }) => [styles.identity, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
           >
-            <TokenMark token={draftToken} size={ROW_MARK} />
-            <Text className="text-foreground flex-1 text-base font-semibold">{draftToken.symbol}</Text>
-            <Icon as={ChevronDown} className="text-muted-foreground size-4" />
+            <TokenMark token={draftToken} size={SIZE.markToken} />
+            <Text style={[TYPE.rowTitle, styles.grow, { color: color.ink }]}>{draftToken.symbol}</Text>
+            <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.text3} />
           </Pressable>
-          <SheetInput
-            value={askText}
-            onChangeText={setAskText}
-            keyboardType="decimal-pad"
-            inputMode="decimal"
-            placeholder="0"
-            accessibilityLabel={t("receive.askAmount")}
-            onSubmitEditing={showAsk}
-          />
-          <Button disabled={draftUnits === undefined || draftUnits === ZERO} onPress={showAsk}>
-            <Text>{t("receive.askShow")}</Text>
-          </Button>
-        </View>
-      </Sheet>
+          <AmountPad value={draftUnits} onChange={setDraftUnits} decimals={draftToken.decimals} fraction={Math.min(TOKEN_FRACTION, draftToken.decimals)} prefix="" suffix={draftToken.symbol} label={t("receive.askAmount")} />
+          <Button label={t("receive.askShow")} disabled={draftUnits === ZERO} onPress={showAsk} />
+        </Sheet>
+      ) : null}
       <AssetPickerSheet
         open={picking}
         onClose={() => setPicking(false)}
@@ -286,9 +260,26 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
         selected={draftToken.address.toLowerCase()}
         onSelect={(choice) => {
           setAskToken(choice.token);
+          setDraftUnits(ZERO);
           setPicking(false);
         }}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  grow: { flex: 1, gap: SPACE.xxs },
+  pad: { paddingHorizontal: SPACE.inset },
+  center: { alignItems: "center", justifyContent: "center", gap: SPACE.lg },
+  centerText: { textAlign: "center" },
+  mono: { fontVariant: ["tabular-nums"] },
+  header: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
+  round: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  qr: { padding: SPACE.xl, borderRadius: RADIUS.lg },
+  qrCenter: { padding: SPACE.xs, borderRadius: RADIUS.md },
+  identity: { flexDirection: "row", alignItems: "center", gap: SPACE.md, alignSelf: "stretch", paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.md },
+  capsule: { height: SIZE.chipHeight, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, justifyContent: "center" },
+  actions: { gap: SPACE.sm, paddingHorizontal: SPACE.inset },
+});
