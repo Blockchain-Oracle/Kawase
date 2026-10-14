@@ -61,4 +61,7 @@ test("catalog over http: a guest browses the live marketplace as tools, by categ
   console.log(`  ${top.name} / ${top.groups[0]?.name ?? "all"}: ${detail.page.total} endpoints, first ${detail.endpoints[0]!.method} ${detail.endpoints[0]!.url} ${detail.endpoints[0]!.priceDisplay}`);
   const missing = await app.request("/marketplace/catalog/nobody.example?network=mainnet", { headers: { authorization: `Bearer ${token}` } });
   assert.equal(missing.status, 404);
+  // A key with a literal "%" is an unknown tool, not a server error (Hono has already decoded the param).
+  const percent = await app.request("/marketplace/catalog/%25?network=mainnet", { headers: { authorization: `Bearer ${token}` } });
+  assert.equal(percent.status, 404);
 });

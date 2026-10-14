@@ -88,6 +88,12 @@ export type CrossChainPort = {
 const BRIDGE_WATCH_MS = SECONDS_PER_DAY * MS_PER_SECOND;
 /** How often one order may ask its provider for its state. */
 const PROVIDER_POLL_MS = 5_000;
+/** Stored in deliveryTx when Coinbase delivered without naming a hash: "delivered" for the row, never shown as a hash. */
+const DELIVERED_NO_HASH = "delivered";
+/** A Bring-to-Arc leg that failed to start is tried again after 1 min, then 2, 4… up to an hour (per process). */
+const BRIDGE_RETRY_FIRST_MS = 60_000;
+const BRIDGE_RETRY_MAX_MS = 3_600_000;
+const BRIDGE_RETRY_GROWTH = 2;
 const PAGE_KEY_PREFIX = "kbuy_";
 const PAGE_KEY_BYTES = 24;
 /** The widget/pay-page events that mean the person is out without paying, or paid. */
@@ -106,6 +112,9 @@ function coinbaseProblem(error: unknown) {
   if (error.errorType.startsWith("guest_") && error.errorType.includes("limit")) return problem(HTTP.forbidden, "forbidden", error.message, extra);
   if (error.status === HTTP.tooManyRequests) return problem(HTTP.tooManyRequests, "rate_limited", error.message, extra);
   if (error.errorType === "guest_region_forbidden" || error.errorType === "guest_permission_denied") return problem(HTTP.forbidden, "forbidden", error.message, extra);
+  // 401/403/404 that is not about the guest means our own CDP key or setup is wrong: the person cannot fix it, so it is
+  // the provider side failing (both callers log the error), not a validation answer carrying Coinbase's raw text.
+  if (error.status === HTTP.unauthorized || error.status === HTTP.forbidden || error.status === HTTP.notFound) return problem(HTTP.badGateway, "upstream", "the payment provider did not answer; try again in a moment", extra);
   if (error.status >= HTTP.badRequest && error.status < HTTP.internal) return problem(HTTP.badRequest, "validation", error.message, extra);
   return problem(HTTP.badGateway, "upstream", "the payment provider did not answer; try again in a moment", extra);
 }
@@ -120,9 +129,12 @@ export class OnrampService {
   private agentWallets: AgentWalletPort | undefined;
   private crossChain: CrossChainPort | undefined;
   private readonly polled = new Map<string, number>();
+  /** Orders whose Bring-to-Arc leg failed to start: how many times, and when it may be tried again. */
+  private readonly bridgeRetries = new Map<string, { failures: number; nextAt: number }>();
   /** Where Kawase's buy page is served (https://app.getkawase.xyz): the host the Circle kit's referrerDomain names. */
   private readonly pageBaseUrl: string | undefined;
   private readonly providerPollMs: number;
+  private readonly bridgeRetryMs: number;
 
   constructor(
     private readonly db: Db,
@@ -131,9 +143,10 @@ export class OnrampService {
     private readonly engine: OnrampEngine,
     private readonly log: Logger,
     private readonly circleApiKey?: string | undefined,
-    options: { pageBaseUrl?: string | undefined; providerPollMs?: number | undefined } = {},
+    options: { pageBaseUrl?: string | undefined; providerPollMs?: number | undefined; bridgeRetryMs?: number | undefined } = {},
   ) {
     this.providerPollMs = options.providerPollMs ?? PROVIDER_POLL_MS;
+    this.bridgeRetryMs = options.bridgeRetryMs ?? BRIDGE_RETRY_FIRST_MS;
     const host = process.env.ONRAMP_REFERRER_DOMAIN;
     this.pageBaseUrl = (options.pageBaseUrl ?? process.env.ONRAMP_PAGE_URL ?? (host ? `https://${host}` : undefined))?.replace(/\/$/, "");
   }
@@ -451,7 +464,7 @@ export class OnrampService {
       } else if (state.state === "completed" && provider.sandbox(row.network)) {
         await this.db.update(onrampOrders).set({ status: "not_completed", reason: "SANDBOX_NO_FUNDS", events }).where(and(eq(onrampOrders.id, row.id), inArray(onrampOrders.status, OPEN)));
       } else if (state.state === "completed") {
-        await this.db.update(onrampOrders).set({ status: "submitted", deliveryTx: state.txHash ?? "delivered", events }).where(and(eq(onrampOrders.id, row.id), inArray(onrampOrders.status, OPEN)));
+        await this.db.update(onrampOrders).set({ status: "submitted", deliveryTx: state.txHash ?? DELIVERED_NO_HASH, events }).where(and(eq(onrampOrders.id, row.id), inArray(onrampOrders.status, OPEN)));
         this.log.info({ orderId: row.id, tx: state.txHash }, "coinbase delivered to Base");
         await this.startBridge(row.id, state.purchaseAmount);
       } else if (state.state === "processing" && row.status !== "submitted") {
@@ -460,8 +473,9 @@ export class OnrampService {
         await this.db.update(onrampOrders).set({ events }).where(eq(onrampOrders.id, row.id));
       }
     } else if (row.bridgeState === null || row.bridgeState === "failed") {
-      // Delivered earlier but the leg did not start (no port yet, or it failed): try again.
-      await this.startBridge(row.id, null);
+      // Delivered earlier but the leg did not start (no port yet, or it failed): try again, backing off after failures.
+      const retry = this.bridgeRetries.get(row.id);
+      if (!retry || Date.now() >= retry.nextAt) await this.startBridge(row.id, null);
     }
     const [fresh] = await this.db.select().from(onrampOrders).where(eq(onrampOrders.id, row.id));
     return fresh ?? row;
@@ -483,7 +497,10 @@ export class OnrampService {
       if (!amount) throw new Error("the delivered amount is unknown");
       const { intentId } = await port.bringToArc(claimed.userId, claimed.network, { amount: parseUnits(amount, USDC_DECIMALS), source: "base" });
       await this.db.update(onrampOrders).set({ bridgeState: "started", crosschainIntentId: intentId }).where(eq(onrampOrders.id, orderId));
+      this.bridgeRetries.delete(orderId);
     } catch (error) {
+      const failures = (this.bridgeRetries.get(orderId)?.failures ?? 0) + 1;
+      this.bridgeRetries.set(orderId, { failures, nextAt: Date.now() + Math.min(this.bridgeRetryMs * BRIDGE_RETRY_GROWTH ** (failures - 1), BRIDGE_RETRY_MAX_MS) });
       // The money is safe on Base at the person's own address; Bring to Arc can still be started from there.
       this.log.warn({ err: error, orderId }, "bring-to-arc after a coinbase delivery did not start");
       await this.db.update(onrampOrders).set({ bridgeState: "failed" }).where(eq(onrampOrders.id, orderId));
@@ -617,7 +634,7 @@ export class OnrampService {
       method: (row.method as OnrampMethod | null) ?? null,
       deliveryChain: row.deliveryChain === "base" ? "base" : "arc",
       stage: this.stage(row),
-      deliveryTx: row.deliveryTx,
+      deliveryTx: row.deliveryTx === DELIVERED_NO_HASH ? null : row.deliveryTx,
       bridge: row.bridgeState ? { state: row.bridgeState as "starting" | "started" | "failed", intentId: row.crosschainIntentId } : null,
     };
   }

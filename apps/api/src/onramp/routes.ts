@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { clientIp } from "../account/location";
 import { requireAccount, requireUser } from "../auth/middleware";
 import { bearerToken } from "../auth/session";
 import { HTTP, problem } from "../http/problem";
@@ -78,8 +79,7 @@ export function onrampRoutes(onramp: OnrampService) {
   app.use("/verifications/*", requireUser);
   app.post("/orders", requireAccount, async (c) => {
     const input = await parse(startSchema, await c.req.json());
-    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
-    return c.json(await onramp.start(c.get("user")!, input, "app", { clientIp }), HTTP.created);
+    return c.json(await onramp.start(c.get("user")!, input, "app", { clientIp: clientIp(c) }), HTTP.created);
   });
   app.get("/orders/:id", async (c) => c.json({ order: await onramp.get(c.get("userId")!, c.req.param("id")) }));
   app.post("/orders/:id/events", async (c) => {

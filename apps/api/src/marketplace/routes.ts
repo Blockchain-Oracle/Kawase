@@ -67,7 +67,7 @@ export function marketplaceRoutes(marketplace: MarketplaceService) {
   });
   app.get("/catalog/:key", requireUser, async (c) => {
     const input = await parse(toolSchema, Object.fromEntries(new URL(c.req.url).searchParams));
-    const detail = await marketplace.catalog.tool(marketplace.context(input.network ?? c.get("user")!.activeNetwork), decodeURIComponent(c.req.param("key")), input);
+    const detail = await marketplace.catalog.tool(marketplace.context(input.network ?? c.get("user")!.activeNetwork), c.req.param("key"), input);
     if (!detail) throw problem(HTTP.notFound, "not_found", "no such service");
     return c.json(detail);
   });

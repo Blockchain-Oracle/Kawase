@@ -60,7 +60,7 @@ test("coinbase orders: Base delivery starts the Arc leg once, the Arc arrival se
 
   const state = { current: { state: "pending", txHash: null, raw: "ONRAMP_ORDER_STATUS_PENDING_PAYMENT", purchaseAmount: "47.20" } as ProviderOrderState, sandbox: false, minted: 0 };
   const walletService = { userWallet: async () => ({ address: wallet }) } as unknown as WalletService;
-  const service = new OnrampService(db, noChains, walletService, onrampRouter([fakeCoinbase(state)]), log, undefined, { pageBaseUrl: "https://app.test.local", providerPollMs: 0 });
+  const service = new OnrampService(db, noChains, walletService, onrampRouter([fakeCoinbase(state)]), log, undefined, { pageBaseUrl: "https://app.test.local", providerPollMs: 0, bridgeRetryMs: 0 });
   const bridged: { userId: string; amount: bigint }[] = [];
   let failNext = false;
   const port: CrossChainPort = {
@@ -124,6 +124,12 @@ test("coinbase orders: Base delivery starts the Arc leg once, the Arc arrival se
   const retried = await service.get(userId, second.order.id);
   assert.deepEqual([retried.stage, retried.bridge?.state], ["bridging", "started"]);
   assert.equal(bridged.at(-1)!.amount, 19_400_000n);
+
+  // A delivery Coinbase reports without a hash is recorded as delivered but never shown as a hash.
+  const third = await service.start(user, { engine: "coinbase", amount: "10", coinbase: contact }, "app");
+  state.current = { state: "completed", txHash: null, raw: "ONRAMP_ORDER_STATUS_COMPLETED", purchaseAmount: "9.70" };
+  const noHash = await service.get(userId, third.order.id);
+  assert.deepEqual([noHash.stage, noHash.deliveryTx], ["bridging", null]);
 
   // The buy page's key reads its own order and nothing else.
   const key = started.pageUrl!.split("#k=")[1]!;
