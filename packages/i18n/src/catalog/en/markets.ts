@@ -32,4 +32,5 @@ export const markets = {
   recent: "Recent",
   recentClear: "Clear",
   longShort: "Long or short",
+  services: "Services",
 } as const;

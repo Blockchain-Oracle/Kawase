@@ -40,6 +40,15 @@ const catalogSchema = z.object({
   limit: intParam.optional(),
   offset: intParam.optional(),
 });
+const URL_MAX = 2_000;
+const PARAM_MAX = 200;
+const PARAMS_MAX = 20;
+const METHOD_MAX = 10;
+const params = z.record(z.string().max(NAME_MAX), z.string().max(PARAM_MAX)).refine((value) => Object.keys(value).length <= PARAMS_MAX);
+/** One listed service, as the marketplace screen's "Try" names it. */
+const serviceSchema = z.object({ url: z.url().max(URL_MAX), method: z.string().max(METHOD_MAX).optional(), pathParams: params.optional(), query: params.optional() });
+/** A try from the screen: the drawer's own id, so a second tap in the same drawer is the same call (never paid twice). */
+const trySchema = serviceSchema.extend({ tryId: z.uuid() });
 const toolSchema = z.object({ group: z.string().max(NAME_MAX).optional(), q: z.string().max(QUERY_MAX).optional(), network: z.enum(["mainnet", "testnet"]).optional(), limit: intParam.optional(), offset: intParam.optional() });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
@@ -70,6 +79,19 @@ export function marketplaceRoutes(marketplace: MarketplaceService) {
     const detail = await marketplace.catalog.tool(marketplace.context(input.network ?? c.get("user")!.activeNetwork), c.req.param("key"), input);
     if (!detail) throw problem(HTTP.notFound, "not_found", "no such service");
     return c.json(detail);
+  });
+
+  // The screen's "Try for $0.10" (Stage 3): first the seller's live 402 price (nothing paid), then one paid call through
+  // the agent's own path (`buy`, unchanged: the person's caps, ask-first, blocked sellers and categories all apply). The
+  // drawer's id stands in for a conversation, so the same call answered twice is paid once. What comes back is the
+  // seller's text, untrusted: the screen shows it as plain text and nothing acts on it.
+  app.post("/inspect", requireAccount, async (c) => {
+    const input = await parse(serviceSchema, await c.req.json());
+    return c.json(await marketplace.inspect(c.get("user")!, input));
+  });
+  app.post("/try", requireAccount, async (c) => {
+    const { tryId, ...input } = await parse(trySchema, await c.req.json());
+    return c.json(await marketplace.buy(c.get("user")!, input, { threadId: tryId, tainted: false }));
   });
 
   app.use("/agent-wallet/*", requireAccount);

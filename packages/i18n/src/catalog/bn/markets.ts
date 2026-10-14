@@ -34,4 +34,5 @@ export const markets: Catalog["markets"] = {
   recent: "সাম্প্রতিক",
   recentClear: "মুছুন",
   longShort: "লং বা শর্ট",
+  services: "সেবা",
 };
