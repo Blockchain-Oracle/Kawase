@@ -57,4 +57,8 @@ export const routes = {
   offline: "Offline · prices from {{time}}",
   pickA11y: "{{name}}: you receive {{amount}}",
   checkingA11y: "{{name}} is still pricing",
+  apy: "APY",
+  quoteAge: "Price from {{seconds}} s ago",
+  refreshHint: "Gets a fresh price now",
+  refreshing: "Getting a fresh price",
 };

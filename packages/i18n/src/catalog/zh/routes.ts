@@ -58,4 +58,8 @@ export const routes: Catalog["routes"] = {
   offline: "离线 · {{time}} 的价格",
   pickA11y: "{{name}}：你将收到 {{amount}}",
   checkingA11y: "{{name}} 仍在报价",
+  apy: "年化收益",
+  quoteAge: "{{seconds}} 秒前的价格",
+  refreshHint: "立即获取新价格",
+  refreshing: "正在获取新价格",
 };
