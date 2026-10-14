@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
-import { INVOICE_REMINDER_TICK_MS, MEMO_SCAN_TICK_MS, MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
+import { MIN_APP_VERSION_DEFAULT, PUSH_RECEIPT_TICK_MS, REQUEST_REMINDER_TICK_MS, RETENTION_SWEEP_MS } from "@kawase/config";
 import type { Db } from "@kawase/db";
 import { requestLogger, type Logger } from "@kawase/log";
 
@@ -87,10 +87,6 @@ import { markDeviceProof, requireDeviceProof } from "./auth/device-proof";
 import { AccountService } from "./account/service";
 import { AuditWriter } from "./audit/writer";
 import { auditWrites } from "./audit/middleware";
-import { InvoiceService } from "./business/invoices";
-import { PayoutService } from "./business/payouts";
-import { tokenResolver } from "./business/tokens";
-import { businessRoutes, publicInvoiceRoutes } from "./business/routes";
 import { PrivacyService } from "./history/privacy";
 import { ExportLinks } from "./history/export-link";
 import { exportFileRoutes, historyRoutes, privacyRoutes } from "./history/routes";
@@ -364,7 +360,7 @@ export function createApp(deps: AppDeps) {
   // their own pipelines. On every other money route only the writes listed here go through — drafting, revising,
   // cancelling, asking for what to sign, settings, turning something off — so approving, signing, submitting, activating
   // or moving money for real is refused plainly, before anything is signed. A write added later is refused until listed.
-  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|business|marketplace)(\/|$)/;
+  const PRACTICE_MONEY = /^\/(swaps|bridges|earn|margin|crosschain|lend|withdrawals|marketplace)(\/|$)/;
   const PRACTICE_SAFE: readonly (readonly [method: string, path: RegExp])[] = [
     ["POST", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)$/],
     ["PATCH", /^\/(swaps|bridges|earn\/intents|margin\/orders|crosschain\/orders|lend\/orders)\/[^/]+$/],
@@ -376,9 +372,6 @@ export function createApp(deps: AppDeps) {
     // A withdrawal: its plan, starting it and drafting its next step (each step is approved on its own, guarded route).
     ["POST", /^\/withdrawals(\/plan)?$/],
     ["POST", /^\/withdrawals\/[^/]+\/(next|cancel)$/],
-    ["PUT", /^\/business\/profile$/],
-    ["POST", /^\/business\/(invoices|payouts)$/],
-    ["POST", /^\/business\/invoices\/[^/]+\/cancel$/],
     // The agent wallet's settings and the grant to sign; a purchase decision only records it (a buy in practice pays nothing).
     ["PATCH", /^\/marketplace\/agent-wallet\/settings$/],
     ["POST", /^\/marketplace\/agent-wallet\/grant$/],
@@ -413,15 +406,9 @@ export function createApp(deps: AppDeps) {
   app.route("/inbox", inboxRoutes(inbox));
   if (marketplace) app.route("/marketplace", marketplaceRoutes(marketplace));
   app.route("/safety", safetyRoutes(safety));
-  const resolveToken = tokenResolver(assets);
-  const invoices = new InvoiceService(deps.db, deps.chains, requests, audit, deps.log, deps.webUrl ?? DEFAULT_WEB_URL, resolveToken, inbox);
-  if (deps.watchIntervalMs) invoices.start(MEMO_SCAN_TICK_MS, INVOICE_REMINDER_TICK_MS);
   if (deps.watchIntervalMs) requests.start(REQUEST_REMINDER_TICK_MS, deps.log);
-  const payouts = new PayoutService(deps.db, deps.chains, wallets, recipients, audit, resolveToken, tokenLookup(deps.chains, assets));
-  app.route("/business", businessRoutes({ invoices, payouts }));
-  app.route("/invoices/public", publicInvoiceRoutes(invoices));
   // Everyday money (A5-2): scan to pay.
-  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, invoices, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
+  app.route("/pay-codes", payCodeRoutes(new PayCodeService(requests, deps.webUrl ?? DEFAULT_WEB_URL, deps.chains)));
   app.route("/splits", splitRoutes(new SplitService(deps.db, requests, recipients)));
   app.route("/intents", intentRoutes({ db: deps.db, sends, swaps, bridges, earn, automations, onramp, crosschain, lend }));
   app.route("/contacts-discovery", discoveryRoutes(deps.db, audit));
@@ -441,9 +428,8 @@ export function createApp(deps: AppDeps) {
   const agentDeps = {
     deviceProofRequired: deps.deviceProofRequired,
     marketplace,
-    invoices,
     history,
-    business: { payouts, account, exportLinks, fees },
+    account: { service: account, exportLinks, fees },
     fx: (currency: string) => (deps.market ?? noMarketData).fx(currency),
     db: deps.db,
     chains: deps.chains,

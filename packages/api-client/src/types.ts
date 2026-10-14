@@ -321,7 +321,7 @@ export type SendRequest = {
   asset?: string | null | undefined;
   note?: string | null | undefined;
   /**
-   * A reference written on chain with the payment through Arc's Memo contract (public: an invoice or order id, never
+   * A reference written on chain with the payment through Arc's Memo contract (public: an order number, never
    * private words). `memoId` is its bytes32 lookup key; without one Kawase uses keccak256 of the text.
    */
   memo?: string | null | undefined;
@@ -623,11 +623,9 @@ export type AutomationView = {
   id: string;
   network: NetworkId;
   status: "draft" | "active" | "paused" | "canceled" | "ended";
-  kind: "scheduled_send" | "auto_save" | "rule" | "payroll" | "dca";
+  kind: "scheduled_send" | "auto_save" | "rule" | "dca";
   /** Practice: runs are dry-run and recorded as "would have"; no grant is held. */
   practice?: boolean;
-  /** Payroll only. */
-  payroll?: import("./automations-8c").PayrollAutomationView | null;
   /** DCA only. */
   dca?: import("./automations-8c").DcaView | null;
   schedule: AutomationSchedule;
@@ -780,7 +778,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "invoice_due" | "invoice_overdue" | "request_received" | "position_health" | "position_closed" | "token_graduated";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "request_received" | "position_health" | "position_closed" | "token_graduated";
 
 export type InboxItem = {
   id: string;

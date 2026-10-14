@@ -114,7 +114,7 @@ export async function spent(db: Executor, userId: string, network: NetworkId, as
           eq(spendLedger.asset, asset),
           inArray(spendLedger.state, ["reserved", "committed"]),
           gt(spendLedger.createdAt, since(seconds)),
-          // "Is distinct from": a payout's spend has no intent, and still counts.
+          // "Is distinct from": a row with no intent (left by the retired batch payouts) still counts.
           ...(exceptIntentId ? [sql`${spendLedger.intentId} is distinct from ${exceptIntentId}`] : []),
         ),
       );

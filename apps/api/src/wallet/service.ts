@@ -672,7 +672,8 @@ export class WalletService {
 
   /**
    * Several calls from the wallet in one transaction the wallet sends to itself (its 7702 DeleGator runs them in order,
-   * all or nothing): one signature, one Face ID. Used by batch payouts.
+   * all or nothing): one signature, one Face ID. No flow uses it since batch payouts were removed (D39); it stays
+   * as the primitive a future "pay several people" in Send would build on.
    */
   async selfBatchRequest(userId: string, network: NetworkId, kind: string, calls: readonly { to: Address; data: Hex }[], gas: bigint) {
     const wallet = await this.requireWallet(userId);

@@ -51,15 +51,10 @@ import type {
   ServiceSearchResult,
   SafetyChange,
   SafetyToolOutput,
-  PayrollAutomationInput,
   DcaInput,
   AutomationEdit,
   AutomationEditResponse,
   SimulationView,
-  InvoiceView,
-  PayoutProposal,
-  InvoiceFilter,
-  InvoiceListOutput,
   ExportLinkOutput,
   WeeklyReportOutput,
   ExplainOutput,
@@ -137,8 +132,6 @@ export type AgentContext = {
   agentWallet(): Promise<{ wallet: AgentWalletLine; summary: ModelSummary }>;
   /** The "Top up your agent wallet" card; the person picks the amount and taps (nothing moves from this call). */
   proposeAgentTopUp(input: { amount?: string | undefined }): Promise<{ proposal: AgentTopUpProposal; summary: ModelSummary }>;
-  /** Business mode: an invoice in any Arc token with a payment link and an on-chain reference (the card shares it). */
-  createInvoice(input: { client: string; amount: string; asset: string; description: string; dueInDays?: number | undefined }): Promise<{ invoice: InvoiceView | null; summary: ModelSummary }>;
   /** The person's latest message, so an address the model passes can be checked against their own words. */
   lastUserText: string;
   /** Typing in chat, or talking: a spoken answer is short and never reads out addresses or long numbers. */
@@ -193,16 +186,11 @@ export type AgentContext = {
   proposeAllowlistChange?(input: { action: "add" | "remove" | "only_on" | "only_off"; contact?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   revokeGrant?(input: { what: "allowance" | "automation" | "everything"; token?: string | undefined; automationId?: string | undefined }): Promise<SafetyToolOutput & { summary: ModelSummary }>;
   // Automations 8c (A3).
-  draftPayroll?(input: PayrollAutomationInput): Promise<ProposeAutomationOutput>;
   draftDca?(input: DcaInput): Promise<ProposeAutomationOutput>;
   editAutomation?(input: { automationId: string } & AutomationEdit): Promise<{ automation: AutomationEditResponse["automation"]; edit: AutomationEditResponse; summary: ModelSummary }>;
   simulateAutomation?(input: { automationId: string }): Promise<{ simulation: SimulationView; summary: ModelSummary }>;
   automationRuns?(input: { automationId?: string | undefined; limit: number }): Promise<{ network: AgentNetwork; automations: ProposeAutomationOutput[]; summary: ModelSummary }>;
-  // Business, history and account from chat (builder B2). Optional so a context without them still builds.
-  /** A checked batch payout (any Arc token); one Face ID on the card pays everyone. */
-  proposePayout?(input: { asset: string | null; lines: { recipient: string; amount: string }[] }): Promise<{ proposal: PayoutProposal; summary: ModelSummary }>;
-  /** The business's invoices with their status, filtered; one by number or client. */
-  listInvoices?(input: { filter: InvoiceFilter; number: string | null; client: string | null }): Promise<{ list: InvoiceListOutput; summary: ModelSummary }>;
+  // History and account from chat (builder B2). Optional so a context without them still builds.
   /** A short-lived download link for one month of history as CSV or beancount. */
   exportHistory?(input: { month: string | null; format: "csv" | "beancount" }): Promise<{ link: ExportLinkOutput; summary: ModelSummary }>;
   /** The weekly report card. */
