@@ -16,7 +16,8 @@ import { config } from "dotenv";
 import { createPublicClient, erc20Abi, http, parseUnits, type Hex, type TransactionSerializable } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import { createModels, type ModelRef } from "@kawase/agent";
+import { createModels } from "@kawase/agent";
+import type { ModelRef } from "@kawase/config";
 import type { AgentFeed, AgentFeedDetail, RaceRoutesOutput, SendIntent, SwapApproveResponse, SwapIntent, UnsignedTransaction } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
