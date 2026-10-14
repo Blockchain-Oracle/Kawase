@@ -131,6 +131,27 @@ export const apiEnvSchema = z.object({
   X402_DEMO_SELLER_URL: z.preprocess(blankIsUnset, z.url().optional()),
   /** Onramp: the hostname of a page that embeds the widget in an iframe. Unset in the app's flow (top level). */
   ONRAMP_REFERRER_DOMAIN: z.preprocess(blankIsUnset, z.string().regex(/^[a-z0-9.-]+$/).optional()),
+  /**
+   * Onramp: where Kawase's own buy page is served (https://app.getkawase.xyz), for `/buy/:orderId` links. Unset =
+   * https://<ONRAMP_REFERRER_DOMAIN>; with neither, a purchase has no page link (POST /onramp/orders/:id/page is 422).
+   */
+  ONRAMP_PAGE_URL: z.preprocess(blankIsUnset, z.url().optional()),
+  /** Coinbase's Onramp (engine 2, Apple Pay → Base → Arc): the CDP project and its Secret API key. Off without the key pair. */
+  CDP_PROJECT_ID: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  CDP_API_KEY_ID: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  /** An Ed25519 secret (base64) or an EC PEM; a PEM pasted into one line keeps its newlines as `\n`. */
+  CDP_API_KEY_SECRET: z.preprocess(blankIsUnset, pem.optional()),
+  /** Keyed swap venues (D8): Uniswap's Trading API and 0x. A venue whose key is unset is not raced or shown. */
+  UNISWAP_API_KEY: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  ZEROX_API_KEY: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  /**
+   * Socket's dedicated tier (dedicated-backend.socket.tech, 20 rps): its API key and the affiliate id issued with it.
+   * Without both, Socket is asked on the shared public tier (rate-limited per IP; its rows then read "Busy right now").
+   */
+  SOCKET_API_KEY: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  SOCKET_AFFILIATE_ID: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  /** The LiveKit agent name voice sessions dispatch (the worker registers the same); the default when unset. */
+  KAWASE_VOICE_AGENT: z.preprocess(blankIsUnset, z.string().min(1).optional()),
   /** RPC overrides; viem's built-in Arc endpoints are used when unset. */
   ARC_RPC_URL_TESTNET: z.url().optional(),
   ARC_RPC_URL_MAINNET: z.url().optional(),
@@ -148,6 +169,9 @@ export function loadApiEnv(source: Record<string, string | undefined> = process.
   const parsed = apiEnvSchema.safeParse(source);
   if (!parsed.success) report(parsed.error, "api");
   requirePrivyAppId(parsed.data);
+  // Pending tool approvals are signed with it: a per-process random key would void them on every restart and on any
+  // other instance, so production refuses to start without one (createTurnRunner checks too).
+  if (parsed.data.NODE_ENV === "production" && !parsed.data.AGENT_APPROVAL_SECRET) throw new Error("NODE_ENV=production needs: AGENT_APPROVAL_SECRET");
   if (parsed.data.MAINNET_ENABLED) {
     const missing = (
       [
