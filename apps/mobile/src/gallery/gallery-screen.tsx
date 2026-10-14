@@ -33,6 +33,7 @@ import * as React from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { RaceGallery } from "@/chat/race-gallery";
 import { SAMPLE, SAMPLE_ADDRESS, type SampleLocale } from "@/gallery/sample";
 import { useTheme, type Mode, type Network } from "@/theme/theme-provider";
 
@@ -300,6 +301,10 @@ export function GalleryScreen({ initialLocale = "en", initialScroll = 0 }: Galle
             onTalk={() => setLog("talk pressed")}
             labels={t.composer}
           />
+        </Section>
+
+        <Section title="Agent at work (front door)">
+          <RaceGallery />
         </Section>
       </Direction>
     </ScrollView>

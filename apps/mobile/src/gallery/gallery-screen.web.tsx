@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { RaceGallery } from "@/chat/race-gallery";
 import { SAMPLE, SAMPLE_ADDRESS, type SampleLocale } from "@/gallery/sample";
 import { useTheme, type Mode, type Network } from "@/theme/theme-provider";
 
@@ -234,6 +235,10 @@ export function GalleryScreen({ initialLocale = "en" }: GalleryScreenProps) {
               onTalk={() => setLog("talk pressed")}
               labels={t.composer}
             />
+          </Section>
+
+          <Section title="Agent at work (front door)">
+            <RaceGallery />
           </Section>
 
         </div>
