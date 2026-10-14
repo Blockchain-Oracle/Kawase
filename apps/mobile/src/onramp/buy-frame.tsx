@@ -2,7 +2,9 @@
 // provider's site as a separate page. Settings from the docs pack (buy-market §3):
 // - iOS `enableApplePay`: Apple Pay works in the WebView, and WebKit turns off injected JavaScript, so the page talks to
 //   the app only through `window.webkit.messageHandlers.ReactNativeWebView.postMessage` (buy-page.tsx does).
-// - Android `paymentRequestEnabled` for Google Pay (needs WebView 137+ and Play Services; the manifest side is the lead's).
+// - Android `paymentRequestEnabled` for Google Pay (needs WebView 137+ and Play Services). The manifest side comes with
+//   react-native-webview 13.16: its library manifest declares the PAY / IS_READY_TO_PAY / UPDATE_PAYMENT_DETAILS
+//   <queries> (merged into the app's) and it builds against androidx.webkit 1.14.0.
 // - The default user agent stays: the providers warn that Apple Pay breaks with a custom one.
 // - A Coinbase payment link (a provider page, not ours) is loaded as is and its own events are read here.
 // Whether Circle's widget (Transak inside) takes Apple Pay inside a WKWebView is unverified until a real iPhone tries
