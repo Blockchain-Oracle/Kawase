@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { arc, arcTestnet } from "viem/chains";
 
 import { PRIVY_APP_ID, PRIVY_WEB_CLIENT_ID } from "./config";
+import { PrivyOAuthBridge } from "./privy-oauth";
 
 export function PrivyWalletProvider({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +21,7 @@ export function PrivyWalletProvider({ children }: { children: ReactNode }) {
         embeddedWallets: { showWalletUIs: false, ethereum: { createOnLogin: "users-without-wallets" } },
       }}
     >
-      {children}
+      <PrivyOAuthBridge>{children}</PrivyOAuthBridge>
     </PrivyProvider>
   );
 }

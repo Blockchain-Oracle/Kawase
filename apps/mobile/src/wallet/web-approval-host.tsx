@@ -19,6 +19,7 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 
 import type { BiometricResult } from "./biometric";
 import { isPrivy, isWalletConfigured } from "./config";
+import { PrivyOAuthReturn } from "./privy-oauth-return";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
 
 const CODE_LENGTH = 6;
@@ -172,8 +173,17 @@ function PrivyHost() {
   );
 }
 
-/** Mounted once inside the sheet and session providers; without the provider's ids there is nothing to verify with. */
+/**
+ * Mounted once inside the sheet and session providers; without the provider's ids there is nothing to verify with.
+ * On Privy it also hosts the Google/Apple return (privy-oauth-return.tsx), which needs the same sheet surface.
+ */
 export function WebApprovalHost() {
   if (!isWalletConfigured) return null;
-  return isPrivy ? <PrivyHost /> : <ConfiguredHost />;
+  if (!isPrivy) return <ConfiguredHost />;
+  return (
+    <>
+      <PrivyHost />
+      <PrivyOAuthReturn />
+    </>
+  );
 }

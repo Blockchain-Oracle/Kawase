@@ -59,6 +59,3 @@ function usePrivyKit(): PrivyKit {
 export function usePrivyAccount(): TurnkeyAccount {
   return usePrivyAccountCore(usePrivyKit(), { providers: usePrivyLoginMethods("native") });
 }
-
-/** Native OAuth completes inside the sign-in sheet; nothing to finish at the root. */
-export function usePrivyOAuthReturn() {}

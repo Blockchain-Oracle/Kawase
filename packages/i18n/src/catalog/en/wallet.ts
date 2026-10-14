@@ -34,4 +34,7 @@ export const wallet = {
   exportKeyOnWeb: "It opens on the Kawase website. Sign in there with the same email, and Privy's secure window shows it.",
   exportKeyReveal: "Show private key",
   exportKeyOpenWeb: "Export on the website",
+  oauthReturnTitle: "Finishing your sign-in",
+  oauthReturnGoogle: "With your Google account",
+  oauthReturnApple: "With your Apple account",
 } as const;

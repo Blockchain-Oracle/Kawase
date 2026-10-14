@@ -36,4 +36,7 @@ export const wallet: Catalog["wallet"] = {
   exportKeyOnWeb: "यह Kawase वेबसाइट पर खुलती है। वहाँ उसी ईमेल से साइन इन करें, और Privy की सुरक्षित विंडो इसे दिखाएगी।",
   exportKeyReveal: "प्राइवेट की दिखाएँ",
   exportKeyOpenWeb: "वेबसाइट पर एक्सपोर्ट करें",
+  oauthReturnTitle: "आपका साइन इन पूरा हो रहा है",
+  oauthReturnGoogle: "आपके Google खाते से",
+  oauthReturnApple: "आपके Apple खाते से",
 };

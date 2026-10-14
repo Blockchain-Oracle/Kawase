@@ -36,4 +36,7 @@ export const wallet: Catalog["wallet"] = {
   exportKeyOnWeb: "يُفتح على موقع كاواسي. سجّل الدخول هناك بالبريد نفسه، وستعرضه نافذة Privy الآمنة.",
   exportKeyReveal: "إظهار المفتاح الخاص",
   exportKeyOpenWeb: "التصدير على الموقع",
+  oauthReturnTitle: "جارٍ إكمال تسجيل الدخول",
+  oauthReturnGoogle: "عبر حسابك في Google",
+  oauthReturnApple: "عبر حسابك في Apple",
 };
