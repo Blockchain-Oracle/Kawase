@@ -51,8 +51,8 @@ function leader(kind: RouteRace["kind"], rows: readonly RouteQuote[]): string | 
   const asset = candidates[0]?.receive?.symbol;
   const comparable = candidates.filter((row) => row.receive?.symbol === asset);
   const ranked = comparable.sort((a, b) => {
-    const more = BigInt(b.net!) - BigInt(a.net!);
-    return more === 0n ? byLowerCost(a, b) : more > 0n ? 1 : -1;
+    const [left, right] = [BigInt(a.net!), BigInt(b.net!)];
+    return left === right ? byLowerCost(a, b) : right > left ? 1 : -1;
   });
   return ranked[0]?.venue ?? null;
 }

@@ -2,7 +2,7 @@
 // skipped and why, what it is watching (with the next run's countdown) and what it found. Built by the api from
 // automation runs, history and receipts, Needs you, the agent's own proposals and For you; no new money logic.
 // Groups follow Mitoshi's DecisionTimeline: Done · Held · Skipped · Watching · Found.
-import type { AgentNetwork } from "./agent-types";
+import type { AgentHealth, AgentNetwork } from "./agent-types";
 import type { FeedToken } from "./activity-feed";
 import type { Suggestion } from "./intelligence";
 
@@ -65,7 +65,16 @@ type Call = <T>(method: string, path: string, body?: unknown) => Promise<T>;
 
 export type FeedApi = { get: (network?: AgentNetwork) => Promise<AgentFeed> };
 
-/** The feed's endpoint; the lead mounts it on the client as `feed`. */
-export function feedEndpoints(call: Call): { feed: FeedApi } {
-  return { feed: { get: (network) => call<AgentFeed>("GET", `/feed${network ? `?network=${network}` : ""}`) } };
+/** Whether the agent's model answers now (the app's offline state, before the person types). */
+export type AgentHealthApi = { health: () => Promise<{ health: AgentHealth }> };
+
+/**
+ * The front door's endpoints: the feed and the agent's health. The lead spreads this into the client
+ * (`...feedEndpoints(call)` in index.ts), giving `api.feed.get()` and `api.agentHealth.health()`.
+ */
+export function feedEndpoints(call: Call): { feed: FeedApi; agentHealth: AgentHealthApi } {
+  return {
+    feed: { get: (network) => call<AgentFeed>("GET", `/feed${network ? `?network=${network}` : ""}`) },
+    agentHealth: { health: () => call<{ health: AgentHealth }>("GET", "/agent/health") },
+  };
 }
