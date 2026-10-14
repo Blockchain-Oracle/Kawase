@@ -26,6 +26,14 @@
       "extends": "base",
       "autoIncrement": true,
       "environment": "production"
+    },
+    "simulator": {
+      "extends": "production",
+      "distribution": "internal",
+      "environment": "production",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {
