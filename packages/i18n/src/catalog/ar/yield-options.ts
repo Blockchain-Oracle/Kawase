@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "لا شيء على Arc يدفع عائدًا على {{asset}} الآن.",
   chooseHint: "يفتح الإيداع",
   moreWays: "طرق أخرى للكسب",
+  earnWith: "اكسب مع {{name}}",
 };

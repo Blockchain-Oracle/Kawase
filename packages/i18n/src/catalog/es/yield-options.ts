@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "Ahora nada en Arc paga rendimiento por {{asset}}.",
   chooseHint: "Abre el depósito",
   moreWays: "Más formas de ganar",
+  earnWith: "Ganar con {{name}}",
 };

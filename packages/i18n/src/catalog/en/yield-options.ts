@@ -18,4 +18,5 @@ export const yieldOptions = {
   none: "Nothing on Arc pays yield on {{asset}} right now.",
   chooseHint: "Opens the deposit",
   moreWays: "More ways to earn",
+  earnWith: "Earn with {{name}}",
 } as const;

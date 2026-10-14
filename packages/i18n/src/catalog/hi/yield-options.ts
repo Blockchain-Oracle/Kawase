@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "अभी Arc पर कुछ भी {{asset}} पर कमाई नहीं देता।",
   chooseHint: "जमा करना खोलता है",
   moreWays: "कमाने के और तरीके",
+  earnWith: "{{name}} के साथ कमाएँ",
 };

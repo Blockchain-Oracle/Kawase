@@ -20,4 +20,5 @@ export const yieldOptions: Catalog["yieldOptions"] = {
   none: "Сейчас на Arc ничто не приносит доход на {{asset}}.",
   chooseHint: "Открывает внесение",
   moreWays: "Другие способы получать доход",
+  earnWith: "Зарабатывать с {{name}}",
 };
