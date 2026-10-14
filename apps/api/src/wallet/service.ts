@@ -117,6 +117,44 @@ const RELAYED_ANSWER_TTL_MS = RELAY_TTL_SECONDS * MS_PER_SECOND;
 const GWEI = 1_000_000_000n;
 const PERCENT = 100n;
 
+type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/**
+ * The person's one active wallet, registered once. The single replacement allowed is the move from Turnkey to Privy
+ * (D41): the Turnkey wallet is kept but retired, the grants it signed stop being used (the server is the only
+ * redeemer), and the 7702 setup is asked again for the new address.
+ */
+export async function registerUserWallet(
+  db: DbOrTx,
+  userId: string,
+  input: { address: Address; custody: "turnkey" | "privy"; providerRef: Record<string, string> },
+) {
+  const run = async (tx: DbOrTx) => {
+    const [existing] = await tx
+      .select()
+      .from(wallets)
+      .where(and(eq(wallets.userId, userId), eq(wallets.role, "user"), eq(wallets.status, "active")));
+    if (existing) {
+      if (existing.address.toLowerCase() === input.address.toLowerCase()) return existing;
+      if (!(existing.custody === "turnkey" && input.custody === "privy"))
+        throw problem(HTTP.conflict, "conflict", "This account already has a wallet");
+      await tx.update(wallets).set({ status: "retired" }).where(eq(wallets.id, existing.id));
+      await tx
+        .update(grants)
+        .set({ status: "superseded" })
+        .where(and(eq(grants.delegatorWalletId, existing.id), inArray(grants.status, ["pending", "active"])));
+      await tx.delete(userWalletSetup).where(eq(userWalletSetup.userId, userId));
+    }
+    const [wallet] = await tx
+      .insert(wallets)
+      .values({ userId, role: "user", custody: input.custody, address: input.address, providerRef: input.providerRef })
+      .returning();
+    return wallet!;
+  };
+  // A savepoint when the caller is already inside a transaction (sign-in links the account and its wallet together).
+  return (db as Db).transaction(run);
+}
+
 export class WalletService {
   private readonly pendingRelays = new Map<string, PendingRelay>();
 
@@ -170,22 +208,11 @@ export class WalletService {
 
   /** Registers the Turnkey wallet the app created; the address must exist in the user's sub-organization. */
   async register(userId: string, input: { address: Address; walletId: string; subOrganizationId: string }) {
-    const existing = await this.userWallet(userId);
-    if (existing) {
-      if (existing.address.toLowerCase() === input.address.toLowerCase()) return existing;
-      throw problem(HTTP.conflict, "conflict", "This account already has a wallet");
-    }
-    const [wallet] = await this.db
-      .insert(wallets)
-      .values({
-        userId,
-        role: "user",
-        custody: "turnkey",
-        address: input.address,
-        providerRef: { subOrganizationId: input.subOrganizationId, walletId: input.walletId },
-      })
-      .returning();
-    return wallet;
+    return registerUserWallet(this.db, userId, {
+      address: input.address,
+      custody: "turnkey",
+      providerRef: { subOrganizationId: input.subOrganizationId, walletId: input.walletId },
+    });
   }
 
   /**

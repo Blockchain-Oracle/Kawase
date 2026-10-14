@@ -27,6 +27,12 @@ const turnkeySchema = z.object({
   device: deviceSchema,
 });
 
+/** A JWT: three base64url parts. Long enough for an identity token that carries the linked accounts. */
+const JWT_MAX_CHARS = 16_384;
+const jwt = z.string().max(JWT_MAX_CHARS).regex(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+const privyTokensSchema = z.object({ accessToken: jwt, identityToken: jwt.optional() });
+const privySchema = privyTokensSchema.extend({ device: deviceSchema });
+
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
   if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
@@ -57,6 +63,28 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook)
     if (guest) await revokeSession(db, guest.session.id);
     if (onSignedIn) void onSignedIn({ userId: user.id, deviceId: device.id, deviceCreatedAt: device.createdAt, ip: clientIp(c) }).catch(() => undefined);
     return c.json({ token, user: publicUser(user) }, HTTP.created);
+  });
+
+  /** Privy sign-in (D41): the tokens Privy gave the app; the person's email and wallet come from the signed tokens. */
+  app.post("/privy", async (c) => {
+    const input = await parse(privySchema, await c.req.json());
+    const guestToken = bearerToken(c.req.raw.headers);
+    const guest = guestToken ? await findSession(db, guestToken) : undefined;
+    const guestUserId = guest?.user.isAnonymous ? guest.user.id : undefined;
+    const { token, user, device, wallet } = await auth.signInWithPrivy({ ...input, guestUserId });
+    if (guest) await revokeSession(db, guest.session.id);
+    if (onSignedIn) void onSignedIn({ userId: user.id, deviceId: device.id, deviceCreatedAt: device.createdAt, ip: clientIp(c) }).catch(() => undefined);
+    return c.json({ token, user: publicUser(user), wallet: wallet ? { id: wallet.id, address: wallet.address } : null }, HTTP.created);
+  });
+
+  /** After the app created the Privy wallet: fresh tokens for the signed-in account register it. */
+  app.post("/privy/wallet", async (c) => {
+    const user = c.get("user");
+    if (!user) throw problem(HTTP.unauthorized, "unauthenticated");
+    if (user.isAnonymous) throw problem(HTTP.forbidden, "forbidden", "sign in to do this");
+    const input = await parse(privyTokensSchema, await c.req.json());
+    const wallet = await auth.linkPrivyWallet(user.id, input);
+    return c.json({ wallet: { id: wallet.id, address: wallet.address } }, HTTP.created);
   });
 
   app.post("/sign-out", async (c) => {
