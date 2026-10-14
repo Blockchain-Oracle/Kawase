@@ -1,115 +1,125 @@
-// The token page: one template for every asset (surfaces.md "Token page"; R1, R2, R13). Header with the real mark and
-// the copycat chip; price and 24 h change; the chart (Balance Chart twin, line of closes) with ranges via the Range
-// Navigator pills, a finger scrubs the price; the person's holding; stats; Safety (Kawase's copycat rule + GoPlus,
-// lookalikes linked); About; and a sticky bar with Buy · Sell and a More sheet where every other action is listed
-// with its reason when it cannot be done here. Guests see everything; any write asks them to sign in in place.
-// Extras: a star (the Markets Watchlist) and share in the header; the chart as a line or as candles (21st ssychui
-// Candle Chart twin) with the interval pills; the person's own trades' profit and loss; this asset's Activity.
-// On a desktop window (Stage 13) the page is two columns: everything above on the left, a taller chart and stats in
-// threes, and the swap ticket itself on the right (Buy · Sell, the same ticket as /swap, inline), with More in the
-// header instead of the sticky bar.
+// The token page, one template for every asset (surfaces.md "Token page"; R1, R2, R13), on the Senryo kit. The header
+// has the real mark, the copycat chip, a star (the Markets Watchlist), share and, on a desktop window, More. The price
+// is the one hero figure in rolling digits, with its change over the range (ChangeChip) and a sparkline; the chart is
+// a line or candles (the one candle chart, TradeChart) with the ranges as chips, and a finger or the mouse scrubs the
+// price. Then the person's holding (with the same token on other chains and Bring to Arc), their own trades' profit
+// and loss, this asset's activity, the stats, Safety (Kawase's copycat rule and GoPlus, lookalikes linked) and About.
+// Phone: a sticky bar with Buy · Sell and More (a sheet where every other action is listed with its reason when it
+// cannot be done here). Desktop: two columns, the page as the stage and the swap ticket itself as the ticket column
+// (Buy · Sell, the same ticket as /swap, inline), More in the right drawer (?d=more). Guests see everything; any
+// write asks them to sign in in place. Loading is the page's own shape; a missing token or a failed read says so.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import {
-  AlertTriangle,
-  ChevronLeft,
-  MoreHorizontal,
-  Share2,
-  ShieldAlert,
-  ShieldCheck,
-  Star,
-} from "lucide-react-native";
+import { MoreHorizontal, Share2, ShieldAlert, ShieldCheck, Star, TriangleAlert } from "lucide-react-native";
 import * as React from "react";
-import { Linking, Platform, Pressable, ScrollView, Share, View } from "react-native";
+import { Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import type { ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
+import type { Candle, ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
 import { PUBLIC_LINKS } from "@kawase/config";
 import { CHAIN_IDS } from "@kawase/identity";
-import { Amount } from "@kawase/ui-native/components/amount";
-import { AreaChart, RangePills, type ChartPoint } from "@kawase/ui-native/components/area-chart";
-import { CandleChart, type CandlePoint } from "@kawase/ui-native/components/candle-chart";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
-import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
-import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
-import { Sheet } from "@kawase/ui-native/components/sheet";
+import { AreaChart, type ChartPoint } from "@kawase/ui-native/components/area-chart";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-import { useWide, WEB_HOVER_MUTED, WEB_HOVER_SECONDARY } from "@kawase/ui-native/lib/wide";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
+import { BlockedCta } from "@/components/tx";
+import {
+  Button,
+  ChangeChip,
+  DisclosureRow,
+  EmptyState,
+  ErrorState,
+  FilterChips,
+  Icon,
+  KeyValue,
+  ListRow,
+  LoadingState,
+  Panel,
+  RADIUS,
+  SectionLabel,
+  Segmented,
+  Skeleton,
+  SIZE,
+  SPACE,
+  Sparkline,
+  StaleTick,
+  TYPE,
+  useTheme,
+} from "@/components/kit";
 import { MainnetConsentSheet } from "@/components/network-pill";
-import { useT } from "@/i18n";
-import { LaunchpadCard } from "@/launchpad/launchpad-card";
-import { useLocale } from "@/i18n/locale-provider";
-import { change, holdingAmount, money, price, shortAddress } from "@/portfolio/format";
-import { useFx } from "@/portfolio/use-fx";
-import { tokenChip } from "@/portfolio/token-chip";
-import { useSession } from "@/session/session-provider";
-import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 import { FeedRow } from "@/activity/feed-row";
-import { useToken, useTokenChart } from "@/token/use-token";
+import { fire } from "@/feedback/fire";
+import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
+import { LaunchpadCard } from "@/launchpad/launchpad-card";
+import { change, holdingAmount, money, price, shortAddress } from "@/portfolio/format";
+import { tokenChip } from "@/portfolio/token-chip";
+import { useFx } from "@/portfolio/use-fx";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { SwapScreen } from "@/screens/swap-screen";
+import { useSession } from "@/session/session-provider";
+import { useSignIn } from "@/sign-in/sign-in-provider";
 import { PriceAlertSheet } from "@/token/price-alert-sheet";
+import { useToken } from "@/token/use-token";
 import { useTokenMine } from "@/token/use-token-mine";
+import { LiveNumber } from "@/trade/bits";
+import { DetailDrawer, useDrawer } from "@/trade/drawer";
+import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
+import { TradeChart } from "@/trade/trade-chart";
+import { useCandles } from "@/trade/use-candles";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { withdrawHref } from "@/withdraw/href";
 
 const RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M", "1Y", "ALL"];
 const MARK = 36;
-const BACK = 40;
-const EDGE_INSET = 12;
 const CHART_HEIGHT = 200;
-const ABOUT_LINES = 4;
-const SECONDS_TO_MS = 1000;
-/** Room under the content for the sticky action bar. */
-const SCROLL_BOTTOM = 96;
-/** A desktop window: air above the header (no status bar), a taller chart, the ticket's column, the end of the page. */
-const WIDE_TOP = 32;
 const WIDE_CHART_HEIGHT = 320;
-const TICKET_COLUMN_PX = 400;
-const WIDE_END = 48;
+const HERO_H = 52;
+const SPARK_W = 72;
+const SECONDS_TO_MS = 1000;
+const BAR_H = 56;
 /** Stats per row: two on a phone, three on a desktop window. */
-const STAT_WIDTH = { phone: "w-1/2", wide: "w-1/3" } as const;
-const WEB_STAT = Platform.select({ web: "rounded-xl transition-colors hover:bg-muted/60", default: "" });
+const STAT_SHARE = { phone: "50%", wide: "33.33%" } as const;
 const ZERO = 0n;
+const PERCENT = 100;
 /** Actions that move or receive money: they need a signed-in account and the token's own network. */
-const WRITES: ReadonlySet<TokenAction> = new Set([
-  "buy",
-  "sell",
-  "send",
-  "receive",
-  "withdraw",
-  "bridge",
-  "earn",
-  "borrow",
-  "long_short",
-  "alert",
-]);
-
+const WRITES: ReadonlySet<TokenAction> = new Set(["buy", "sell", "send", "receive", "withdraw", "bridge", "earn", "borrow", "long_short", "alert"]);
 const ARC_MAINNET = 5042;
 const NEVER_HIDDEN: ReadonlySet<string> = new Set(["dollar", "bitcoin", "ether"]);
+
+function RoundAction({ icon, label, onPress, on }: { icon: typeof Star; label: string; onPress: () => void; on?: boolean }) {
+  const { color } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={on === undefined ? undefined : { selected: on }}
+      hitSlop={SPACE.xs}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={({ pressed }) => [styles.round, { backgroundColor: on ? color.accent : pressed ? color.rowPressed : color.raised2 }]}
+    >
+      <Icon icon={icon} size={SIZE.icon} tint={on ? color.accentForeground : color.ink} />
+    </Pressable>
+  );
+}
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
   const { locale } = useLocale();
+  const { color } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
   const wide = useWide();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const networkSwitch = useNetworkSwitch();
   const { detail, error, loading, refresh } = useToken(chainId, address);
   const [range, setRange] = React.useState<ChartRange>("1D");
-  const candles = useTokenChart(chainId, address, range);
+  const chart = useCandles(address || undefined, range, chainId);
   const mine = useTokenMine(chainId, address);
   // The person's holdings on other chains: the same token there is part of "my holding" (§D: across chains).
   const portfolio = usePortfolio();
@@ -119,42 +129,35 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   }, [status, refreshPortfolio]);
   const [chartKind, setChartKind] = React.useState<"line" | "candles">("line");
   const [scrub, setScrub] = React.useState<ChartPoint | null>(null);
-  const [candleScrub, setCandleScrub] = React.useState<CandlePoint | null>(null);
+  const [candleScrub, setCandleScrub] = React.useState<Candle | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
-  const [aboutOpen, setAboutOpen] = React.useState(false);
   const [alertOpen, setAlertOpen] = React.useState(false);
+  const drawer = useDrawer("more");
   // The inline ticket's side on a desktop window.
   const [side, setSide] = React.useState<"buy" | "sell">("buy");
-  const chartHeight = wide ? WIDE_CHART_HEIGHT : CHART_HEIGHT;
-  const top = wide ? WIDE_TOP : insets.top + EDGE_INSET;
   const fx = useFx();
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/markets"));
 
   const activeChain = user?.activeNetwork === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
+  const candles = chart.candles;
   const points: ChartPoint[] = (candles ?? []).map((candle) => ({ t: candle.t, v: candle.c }));
 
   if (!detail) {
     return (
-      <View className="bg-background flex-1" style={{ paddingTop: top }}>
-        <View className={wide ? "px-8" : "px-5"}>
-          <BackButton label={t("common.back")} onPress={leave} />
-        </View>
-        {loading ? (
-          <View className={cn("gap-4 px-5 pt-4", wide && "px-8")}>
-            <Skeleton className="h-10 w-48 rounded-xl" />
-            <Skeleton className="h-52 rounded-2xl" />
-            <Skeleton className="h-32 rounded-2xl" />
-          </View>
-        ) : (
-          <EmptyState
-            title={error === "not_found" ? t("tokenPage.notFound") : t("common.error")}
-            action={
-              <Button variant="secondary" onPress={() => void refresh()}>
-                <Text>{t("common.retry")}</Text>
-              </Button>
-            }
-          />
-        )}
+      <View style={styles.page}>
+        <PageHeader title={t("desktop.tokenTitle")} onBack={leave} />
+        <PhoneScroll>
+          {loading ? (
+            <>
+              <LoadingState shape="hero" />
+              <LoadingState shape="detail" />
+            </>
+          ) : error === "not_found" ? (
+            <EmptyState size="page" why={t("tokenPage.notFound")} action={{ label: t("common.back"), onPress: leave }} />
+          ) : (
+            <ErrorState diagnosis={{ kind: "server", retryable: true }} retry={() => void refresh()} />
+          )}
+        </PhoneScroll>
       </View>
     );
   }
@@ -163,7 +166,8 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const chip = tokenChip(token, t);
   const shownPrice = scrub ? scrub.v : candleScrub ? candleScrub.c : detail.market.priceUsd;
   const scrubbedAt = scrub?.t ?? candleScrub?.t;
-  const changeLabel = change(detail.market.change24hPct, locale);
+  const first = candles?.[0]?.o;
+  const rangeChange = first && shownPrice ? shownPrice / first - 1 : detail.market.change24hPct !== null ? detail.market.change24hPct / PERCENT : null;
   const holds = detail.holding && BigInt(detail.holding.balance) > ZERO;
   const elsewhere = (portfolio.portfolio?.otherChains ?? []).filter((holding) => holding.token.symbol.toUpperCase() === token.symbol.toUpperCase());
 
@@ -174,8 +178,12 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     return null;
   };
 
-  const run = (action: TokenAction) => {
+  const closeMore = () => {
     setMoreOpen(false);
+    if (drawer.open) drawer.hide();
+  };
+  const run = (action: TokenAction) => {
+    closeMore();
     // A desktop window has the ticket on the page: Buy and Sell turn it to that side.
     if (wide && (action === "buy" || action === "sell")) {
       setSide(action);
@@ -193,10 +201,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push({ pathname: "/swap", params: { sell: token.address } });
         return;
       case "send":
-        router.push({
-          pathname: "/send",
-          params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address },
-        });
+        router.push({ pathname: "/send", params: { asset: token.symbol === "USDC" || token.symbol === "EURC" ? token.symbol : token.address } });
         return;
       case "withdraw":
         router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
@@ -207,7 +212,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         return;
       case "bridge":
         // USDC by CCTP; any other token as itself through the cross-chain routes.
-        if (token.kind === "dollar") router.push("/bridge");
+        if (token.kind === "dollar") router.push("/move");
         else router.push({ pathname: "/move", params: { direction: "out", asset: token.address } });
         return;
       case "borrow":
@@ -233,10 +238,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const buyReason = reasonFor(buy);
   const sellReason = reasonFor(sell);
   const sideReason = side === "buy" ? buyReason : sellReason;
-  // A mainnet token seen from testnet: "Mainnet only — switch?" is the switch (the page is the same token after it).
+  // A mainnet token seen from testnet: "Mainnet only, switch?" is the switch (the page is the same token after it).
   const toMainnet = activeChain !== CHAIN_IDS.arc && token.chainId === CHAIN_IDS.arc;
   const switchToMainnet = () => {
-    setMoreOpen(false);
+    closeMore();
     void networkSwitch.switchNetwork("mainnet");
   };
   const fixable = (entry: TokenActionView) => toMainnet && reasonFor(entry) === t("tokenPage.n_mainnet_only");
@@ -245,7 +250,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const hideable = Boolean(holds && detail.holding) && !NEVER_HIDDEN.has(token.kind) && token.symbol !== "EURC";
   const hidden = detail.holding?.hidden ?? false;
   const toggleHidden = async () => {
-    setMoreOpen(false);
+    closeMore();
     try {
       await portfolio.setVisibility(token.address, hidden ? "shown" : "hidden");
       await refresh();
@@ -274,510 +279,347 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     { label: t("tokenPage.marketCap"), value: money(detail.market.marketCapUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.liquidity"), value: money(detail.market.liquidityUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.volume"), value: money(detail.market.volume24hUsd, fx, locale, { compact: true }) },
-    {
-      label: t("tokenPage.holders"),
-      value: detail.market.holders !== null ? new Intl.NumberFormat(locale).format(detail.market.holders) : "—",
-    },
+    { label: t("tokenPage.holders"), value: detail.market.holders !== null ? new Intl.NumberFormat(locale).format(detail.market.holders) : "—" },
     { label: t("tokenPage.fdv"), value: money(detail.market.fdvUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.contract"), value: shortAddress(token.address), onPress: () => void copy() },
   ];
 
-  const safetyTone =
-    detail.safety.level === "block"
-      ? "text-destructive"
-      : detail.safety.level === "caution"
-        ? "text-foreground"
-        : "text-success";
-  const safetyIcon =
-    detail.safety.level === "block" ? ShieldAlert : detail.safety.level === "caution" ? AlertTriangle : ShieldCheck;
+  const safetyTone = detail.safety.level === "block" ? color.down : detail.safety.level === "caution" ? color.warn : color.up;
+  const safetyIcon = detail.safety.level === "block" ? ShieldAlert : detail.safety.level === "caution" ? TriangleAlert : ShieldCheck;
+  const checkTone = (state: string) => (state === "danger" ? color.down : state === "warn" ? color.warn : state === "ok" ? color.up : color.text3);
+  const chartHeight = wide ? WIDE_CHART_HEIGHT : CHART_HEIGHT;
+  const chartLabel = t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) });
+
+  let chartView: React.ReactNode;
+  if (candles === undefined && !chart.failed) chartView = <Skeleton height={chartHeight} radius={RADIUS.md} />;
+  else if (candles === undefined) chartView = <ErrorState diagnosis={{ kind: "server", retryable: true }} retry={chart.retry} stillWorks={t("desktop.tokenChartFailed")} />;
+  else if (chartKind === "candles" && candles.length > 0)
+    chartView = (
+      <TradeChart
+        candles={candles}
+        levels={[]}
+        height={chartHeight}
+        onScrub={setCandleScrub}
+        formatValue={(value) => price(value, fx, locale)}
+        formatTime={(seconds) => new Date(seconds * SECONDS_TO_MS).toLocaleString(locale)}
+        accessibilityLabel={chartLabel}
+      />
+    );
+  else if (points.length > 1)
+    chartView = (
+      <AreaChart points={points} height={chartHeight} colors={{ up: color.up, down: color.down, muted: color.text3, scrub: color.hairline }} formatValue={(value) => price(value, fx, locale)} onScrub={setScrub} accessibilityLabel={chartLabel} />
+    );
+  else chartView = <EmptyState why={t("tokenPage.noChart")} size="inline" />;
 
   const page = (
-    <ScrollView
-      className="flex-1"
-      contentContainerClassName={cn("gap-6 px-5 pt-2", wide && "px-0")}
-      contentContainerStyle={{ paddingBottom: wide ? WIDE_END : SCROLL_BOTTOM }}
-    >
-      <View className="gap-1">
-        <Amount accessibilityLiveRegion="polite" className="font-display text-foreground text-4xl font-bold">
-          {price(shownPrice, fx, locale)}
-        </Amount>
-        {scrubbedAt !== undefined ? (
-          <Text className="text-muted-foreground text-sm">
-            {new Date(scrubbedAt * SECONDS_TO_MS).toLocaleString(locale)}
-          </Text>
-        ) : changeLabel ? (
-          <Amount
-            className={cn("text-base", (detail.market.change24hPct ?? 0) >= 0 ? "text-success" : "text-destructive")}
-          >
-            {t("assets.today", { change: changeLabel })}
-          </Amount>
-        ) : null}
-      </View>
-
-      <View className="gap-3">
-        <View accessibilityRole="radiogroup" className="bg-muted flex-row self-end rounded-full p-0.5">
-          {(["line", "candles"] as const).map((kind) => (
-            <Pressable
-              key={kind}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: chartKind === kind }}
-              onPress={() => setChartKind(kind)}
-              className={cn("rounded-full px-3 py-1", chartKind === kind && "bg-background")}
-            >
-              <Text
-                className={cn(
-                  "text-xs font-semibold",
-                  chartKind === kind ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {t(`tokenPage.chart_${kind}`)}
-              </Text>
-            </Pressable>
-          ))}
+    <>
+      <View style={styles.hero}>
+        <View style={styles.heroRow}>
+          <LiveNumber text={price(shownPrice, fx, locale)} value={shownPrice ?? 0} height={HERO_H} />
+          {points.length > 1 ? <Sparkline points={points.map((point) => point.v)} width={SPARK_W} /> : null}
         </View>
-        {candles === undefined ? (
-          <Skeleton className="rounded-2xl" style={{ height: chartHeight }} />
-        ) : chartKind === "candles" && (candles?.length ?? 0) > 0 ? (
-          <CandleChart
-            candles={candles}
-            height={chartHeight}
-            colors={{
-              up: colors.success,
-              down: colors.destructive,
-              muted: colors["muted-foreground"],
-              grid: colors.border,
-              scrub: colors.border,
-            }}
-            formatValue={(value) => price(value, fx, locale)}
-            onScrub={setCandleScrub}
-            accessibilityLabel={t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) })}
-          />
-        ) : points.length > 1 ? (
-          <AreaChart
-            points={points}
-            height={chartHeight}
-            colors={{
-              up: colors.success,
-              down: colors.destructive,
-              muted: colors["muted-foreground"],
-              scrub: colors.border,
-            }}
-            formatValue={(value) => price(value, fx, locale)}
-            onScrub={setScrub}
-            accessibilityLabel={t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) })}
-          />
+        {scrubbedAt !== undefined ? (
+          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{new Date(scrubbedAt * SECONDS_TO_MS).toLocaleString(locale)}</Text>
         ) : (
-          <View
-            className="bg-card border-border items-center justify-center rounded-2xl border"
-            style={{ height: chartHeight }}
-          >
-            <Text className="text-muted-foreground text-sm">{t("tokenPage.noChart")}</Text>
+          <View style={styles.line}>
+            <ChangeChip change={rangeChange} />
+            <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{candles && first ? range : t("assets.today", { change: change(detail.market.change24hPct, locale) ?? "" })}</Text>
           </View>
         )}
-        <RangePills ranges={RANGES} value={range} onChange={setRange} label={t("assets.rangeLabel")} />
+      </View>
+
+      <View style={styles.group}>
+        <View style={styles.line}>
+          <View style={styles.grow}>
+            <FilterChips<ChartRange> label={t("assets.rangeLabel")} options={RANGES.map((value) => ({ value, label: value }))} value={range} onChange={setRange} />
+          </View>
+          <View style={styles.kind}>
+            <Segmented<"line" | "candles">
+              label={t("tokenPage.chart_line")}
+              value={chartKind}
+              onChange={setChartKind}
+              options={[
+                { value: "line", label: t("tokenPage.chart_line") },
+                { value: "candles", label: t("tokenPage.chart_candles") },
+              ]}
+            />
+          </View>
+        </View>
+        {chartView}
+        {chart.failed && candles !== undefined && chart.asOf ? <StaleTick asOf={chart.asOf} /> : null}
       </View>
 
       {(holds && detail.holding) || elsewhere.length > 0 ? (
-        <View className="bg-card border-border gap-1 rounded-2xl border p-4">
-          <Eyebrow>{t("tokenPage.myHolding")}</Eyebrow>
+        <Panel style={styles.panel}>
+          <SectionLabel>{t("tokenPage.myHolding")}</SectionLabel>
           {holds && detail.holding ? (
             <>
-              <Amount className="text-foreground text-xl font-semibold">{holdingAmount(detail.holding, locale)}</Amount>
-              <Text className="text-muted-foreground text-sm">
-                {t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}
-              </Text>
+              <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{holdingAmount(detail.holding, locale)}</Text>
+              <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("tokenPage.worth", { value: money(detail.holding.valueUsd, fx, locale) })}</Text>
             </>
           ) : null}
           {/* The same token on other chains (one address everywhere), with the way to bring it to Arc. */}
           {elsewhere.map((holding) => (
-            <View key={`${holding.token.chainId}:${holding.token.address}`} className="flex-row items-center gap-2 pt-2">
-              <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
-                {t("tokenPage.onChain", { amount: holdingAmount(holding, locale), chain: holding.chainName })}
-              </Text>
-              <Button size="sm" variant="secondary" onPress={() => router.push({ pathname: "/move", params: { direction: "in" } })}>
-                <Text>{t("assets.bringToArc")}</Text>
-              </Button>
+            <View key={`${holding.token.chainId}:${holding.token.address}`} style={styles.line}>
+              <Text style={[TYPE.rowDetail, styles.grow, { color: color.text2 }]}>{t("tokenPage.onChain", { amount: holdingAmount(holding, locale), chain: holding.chainName })}</Text>
+              <Button label={t("assets.bringToArc")} size="sm" variant="secondary" block={false} onPress={() => router.push({ pathname: "/move", params: { direction: "in" } })} />
             </View>
           ))}
-        </View>
+        </Panel>
       ) : null}
 
       {mine.trades ? (
-        <View className="bg-card border-border gap-3 rounded-2xl border p-4">
-          <Eyebrow>{t("tokenPage.yourTrades", { count: mine.trades.trades })}</Eyebrow>
-          <View className="flex-row flex-wrap gap-y-3">
-            <View className="w-1/2 gap-0.5">
-              <Text className="text-muted-foreground text-xs">{t("tokenPage.avgCost")}</Text>
-              <Amount className="text-foreground text-base">
-                {mine.trades.avgCostUsd !== null ? price(mine.trades.avgCostUsd, fx, locale) : "—"}
-              </Amount>
-            </View>
-            <View className="w-1/2 gap-0.5">
-              <Text className="text-muted-foreground text-xs">{t("tokenPage.costBasis")}</Text>
-              <Amount className="text-foreground text-base">{money(mine.trades.costBasisUsd, fx, locale)}</Amount>
-            </View>
-            <View className="w-1/2 gap-0.5">
-              <Text className="text-muted-foreground text-xs">{t("tokenPage.unrealized")}</Text>
-              <Amount
-                className={cn(
-                  "text-base",
-                  (mine.trades.unrealizedUsd ?? 0) >= 0 ? "text-success" : "text-destructive",
-                )}
-              >
-                {mine.trades.unrealizedUsd !== null
-                  ? `${mine.trades.unrealizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.unrealizedUsd), fx, locale)}`
-                  : "—"}
-              </Amount>
-            </View>
-            <View className="w-1/2 gap-0.5">
-              <Text className="text-muted-foreground text-xs">{t("tokenPage.realized")}</Text>
-              <Amount className={cn("text-base", mine.trades.realizedUsd >= 0 ? "text-success" : "text-destructive")}>
-                {`${mine.trades.realizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.realizedUsd), fx, locale)}`}
-              </Amount>
-            </View>
-          </View>
-          <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>
-            {t("tokenPage.tradesNote")}
-          </Text>
-        </View>
+        <Panel style={styles.panel}>
+          <SectionLabel>{t("tokenPage.yourTrades", { count: mine.trades.trades })}</SectionLabel>
+          <KeyValue label={t("tokenPage.avgCost")} value={mine.trades.avgCostUsd !== null ? price(mine.trades.avgCostUsd, fx, locale) : "—"} />
+          <KeyValue label={t("tokenPage.costBasis")} value={money(mine.trades.costBasisUsd, fx, locale)} />
+          <KeyValue
+            label={t("tokenPage.unrealized")}
+            value={mine.trades.unrealizedUsd !== null ? `${mine.trades.unrealizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.unrealizedUsd), fx, locale)}` : "—"}
+            valueColor={mine.trades.unrealizedUsd === null ? undefined : mine.trades.unrealizedUsd >= 0 ? color.up : color.down}
+          />
+          <KeyValue
+            label={t("tokenPage.realized")}
+            value={`${mine.trades.realizedUsd >= 0 ? "+" : "−"}${money(Math.abs(mine.trades.realizedUsd), fx, locale)}`}
+            valueColor={mine.trades.realizedUsd >= 0 ? color.up : color.down}
+          />
+          <Text style={[TYPE.caption, { color: color.text3 }]}>{t("tokenPage.tradesNote")}</Text>
+        </Panel>
       ) : null}
 
       {mine.activity && mine.activity.length > 0 ? (
-        <View className="gap-2">
-          <View className="flex-row items-center justify-between px-1">
-            <Eyebrow>{t("tokenPage.activity")}</Eyebrow>
-            <Pressable accessibilityRole="link" hitSlop={10} onPress={() => router.push("/activity")}>
-              <Text className="text-muted-foreground text-xs font-semibold">{t("tokenPage.seeAll")}</Text>
-            </Pressable>
+        <View style={styles.group}>
+          <View style={styles.line}>
+            <SectionLabel style={styles.grow}>{t("tokenPage.activity")}</SectionLabel>
+            <Button label={t("tokenPage.seeAll")} variant="ghost" size="sm" block={false} onPress={() => router.push("/activity")} />
           </View>
-          <View className="bg-card border-border overflow-hidden rounded-2xl border">
+          <Panel>
             {mine.activity.map((item) => (
               <FeedRow key={item.id} item={item} onPress={() => router.push("/activity")} />
             ))}
-          </View>
+          </Panel>
         </View>
       ) : null}
 
-      <View className="gap-2">
-        <Eyebrow className="px-1">{t("tokenPage.stats")}</Eyebrow>
-        <View className="bg-card border-border flex-row flex-wrap rounded-2xl border p-2">
+      <View style={styles.group}>
+        <SectionLabel>{t("tokenPage.stats")}</SectionLabel>
+        <Panel style={styles.stats}>
           {stats.map((stat) => (
-            <Pressable
-              key={stat.label}
-              disabled={!stat.onPress}
-              onPress={stat.onPress}
-              accessibilityRole={stat.onPress ? "button" : "text"}
-              className={cn(wide ? STAT_WIDTH.wide : STAT_WIDTH.phone, "gap-0.5 p-2 active:opacity-70", stat.onPress && WEB_STAT)}
-            >
-              <Text className="text-muted-foreground text-xs">{stat.label}</Text>
-              <Amount className="text-foreground text-base">{stat.value}</Amount>
+            <Pressable key={stat.label} disabled={!stat.onPress} onPress={stat.onPress} accessibilityRole={stat.onPress ? "button" : "text"} style={[styles.stat, { width: wide ? STAT_SHARE.wide : STAT_SHARE.phone }]}>
+              <Text style={[TYPE.meta, { color: color.text3 }]}>{stat.label}</Text>
+              <Text style={[TYPE.rowAmount, { color: color.ink }]}>{stat.value}</Text>
             </Pressable>
           ))}
-        </View>
+        </Panel>
       </View>
 
       {/* B1: a launchpad token's curve and graduation alert (LIFT on Arc mainnet). */}
       {chainId === ARC_MAINNET ? <LaunchpadCard address={address} /> : null}
 
-      <View className="gap-2">
-        <Eyebrow className="px-1">{t("tokenPage.safety")}</Eyebrow>
-        <View className="bg-card border-border gap-3 rounded-2xl border p-4">
-          <View className="flex-row items-center gap-2">
-            <Icon as={safetyIcon} className={cn("size-5", safetyTone)} />
-            <Text className={cn("text-base font-semibold", safetyTone)}>
-              {detail.safety.level === "block"
-                ? t("tokenPage.safetyBlock")
-                : detail.safety.level === "caution"
-                  ? t("tokenPage.safetyCaution")
-                  : t("tokenPage.safetyOk")}
+      <View style={styles.group}>
+        <SectionLabel>{t("tokenPage.safety")}</SectionLabel>
+        <Panel style={styles.panel}>
+          <View style={styles.line}>
+            <Icon icon={safetyIcon} size={SIZE.icon} tint={safetyTone} />
+            <Text style={[TYPE.rowStrong, { color: safetyTone }]}>
+              {detail.safety.level === "block" ? t("tokenPage.safetyBlock") : detail.safety.level === "caution" ? t("tokenPage.safetyCaution") : t("tokenPage.safetyOk")}
             </Text>
           </View>
           {detail.safety.reasons.map((reason) => (
-            <Text key={reason} className={cn("text-muted-foreground text-sm", TEXT_START)}>
-              • {t(`tokenPage.r_${reason}`)}
+            <Text key={reason} style={[TYPE.rowDetail, { color: color.text2 }]}>
+              {`• ${t(`tokenPage.r_${reason}`)}`}
             </Text>
           ))}
-          <View className="gap-1.5">
-            {detail.safety.checks.map((check) => (
-              <View key={check.id} className="flex-row items-center justify-between">
-                <Text className="text-muted-foreground text-sm">{t(`tokenPage.c_${check.id}`)}</Text>
-                <Text
-                  className={cn(
-                    "text-sm font-medium",
-                    check.state === "danger"
-                      ? "text-destructive"
-                      : check.state === "warn"
-                        ? "text-foreground"
-                        : check.state === "ok"
-                          ? "text-success"
-                          : "text-muted-foreground",
-                  )}
-                >
-                  {check.value && check.state !== "unknown"
-                    ? `${check.value}${check.id.endsWith("tax") ? "%" : ""}`
-                    : t(`tokenPage.s_${check.state}`)}
-                </Text>
-              </View>
-            ))}
-          </View>
-          <Text className="text-muted-foreground text-xs">
-            {detail.safety.checkedBy
-              ? t("tokenPage.checkedBy", { name: detail.safety.checkedBy })
-              : t("tokenPage.notChecked")}
-          </Text>
-        </View>
+          {detail.safety.checks.map((check) => (
+            <KeyValue
+              key={check.id}
+              label={t(`tokenPage.c_${check.id}`)}
+              value={check.value && check.state !== "unknown" ? `${check.value}${check.id.endsWith("tax") ? "%" : ""}` : t(`tokenPage.s_${check.state}`)}
+              valueColor={checkTone(check.state)}
+            />
+          ))}
+          <Text style={[TYPE.caption, { color: color.text3 }]}>{detail.safety.checkedBy ? t("tokenPage.checkedBy", { name: detail.safety.checkedBy }) : t("tokenPage.notChecked")}</Text>
+        </Panel>
         {detail.safety.lookalikes.length > 0 ? (
-          <ListGroup label={t("tokenPage.lookalikes")}>
-            {detail.safety.lookalikes.map((other) => (
-              <ListRow
-                key={other.address}
-                title={other.name}
-                subtitle={`${shortAddress(other.address)}${other.liquidityUsd ? ` · ${t("markets.liq", { value: money(other.liquidityUsd, fx, locale, { compact: true }) })}` : ""}`}
-                chevron
-                onPress={() => router.push(`/token/${chainId}/${other.address}`)}
-              />
-            ))}
-          </ListGroup>
+          <>
+            <SectionLabel>{t("tokenPage.lookalikes")}</SectionLabel>
+            <Panel>
+              {detail.safety.lookalikes.map((other) => (
+                <ListRow
+                  key={other.address}
+                  title={other.name}
+                  detail={`${shortAddress(other.address)}${other.liquidityUsd ? ` · ${t("markets.liq", { value: money(other.liquidityUsd, fx, locale, { compact: true }) })}` : ""}`}
+                  onPress={() => router.push(`/token/${chainId}/${other.address}`)}
+                />
+              ))}
+            </Panel>
+          </>
         ) : null}
       </View>
 
       {detail.about.description || detail.about.websites.length > 0 ? (
-        <View className="gap-2">
-          <Eyebrow className="px-1">{t("tokenPage.about")}</Eyebrow>
-          <View className="bg-card border-border gap-3 rounded-2xl border p-4">
-            {detail.about.description ? (
-              <Pressable onPress={() => setAboutOpen((value) => !value)}>
-                <Text
-                  numberOfLines={aboutOpen ? undefined : ABOUT_LINES}
-                  className={cn("text-foreground text-sm leading-5", TEXT_START)}
-                >
-                  {detail.about.description}
-                </Text>
-              </Pressable>
-            ) : null}
-            {detail.about.websites.map((site) => (
-              <Text
-                key={site}
-                accessibilityRole="link"
-                onPress={() => void Linking.openURL(site)}
-                className="text-accent text-sm"
-              >
-                {site.replace(/^https?:\/\//, "")}
-              </Text>
-            ))}
-          </View>
-        </View>
+        <Panel style={styles.panel}>
+          {detail.about.description ? (
+            <DisclosureRow title={t("tokenPage.about")} value={token.symbol}>
+              <Text style={[TYPE.body, { color: color.ink }]}>{detail.about.description}</Text>
+            </DisclosureRow>
+          ) : (
+            <SectionLabel>{t("tokenPage.about")}</SectionLabel>
+          )}
+          {detail.about.websites.map((site) => (
+            <Text key={site} accessibilityRole="link" onPress={() => void Linking.openURL(site)} style={[TYPE.rowDetail, { color: color.link }]}>
+              {site.replace(/^https?:\/\//, "")}
+            </Text>
+          ))}
+        </Panel>
       ) : null}
-    </ScrollView>
+    </>
   );
 
-  return (
-    <View className="bg-background flex-1">
-      <View className={cn("flex-row items-center gap-3 px-5 pb-3", wide && "px-8 pb-5")} style={{ paddingTop: top }}>
-        <BackButton label={t("common.back")} onPress={leave} />
-        <TokenMark token={token} size={MARK} />
-        <View className="min-w-0 flex-1">
-          <View className="flex-row items-center gap-1.5">
-            <Text numberOfLines={1} className="text-foreground shrink text-lg font-semibold">
-              {token.name}
-            </Text>
-            {chip ? (
-              <Text
-                className={cn(
-                  "rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
-                  chip.tone === "danger" ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground",
-                )}
-              >
-                {chip.label}
-              </Text>
-            ) : null}
-          </View>
-          <Text className="text-muted-foreground text-sm">{token.symbol}</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={mine.watched ? t("tokenPage.unwatch") : t("tokenPage.watch")}
-          accessibilityState={{ selected: mine.watched }}
-          hitSlop={8}
-          onPress={() => {
-            if (!mine.account) {
-              signIn.open();
-              return;
+  const moreList = (
+    <Panel>
+      {detail.actions.map((entry) => {
+        const reason = reasonFor(entry);
+        // A mainnet-only row stays tappable: it is the switch.
+        const switches = fixable(entry);
+        return <ListRow key={entry.id} title={t(`tokenPage.a_${entry.id}`)} detail={reason ?? undefined} {...(!reason || switches ? { onPress: () => (switches ? switchToMainnet() : run(entry.id)) } : {})} />;
+      })}
+      {hideable ? <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} onPress={() => void toggleHidden()} /> : null}
+      {/* A recurring buy of this token (DCA), drafted on the New automation screen. */}
+      <ListRow
+        title={t("tokenPage.a_automate")}
+        detail={buyReason ?? undefined}
+        {...(!buyReason
+          ? {
+              onPress: () => {
+                closeMore();
+                if (status !== "account") signIn.open();
+                else router.push({ pathname: "/new-automation", params: { template: "dca", token: token.address, symbol: token.symbol } });
+              },
             }
-            void mine.toggleWatch().then((on) => toast(on ? t("tokenPage.watched") : t("tokenPage.unwatched")));
-          }}
-          className={cn("bg-secondary active:bg-muted size-10 items-center justify-center rounded-full", WEB_HOVER_SECONDARY)}
-        >
-          <Icon as={Star} className={cn("size-5", mine.watched ? "text-primary fill-primary" : "text-foreground")} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("tokenPage.share")}
-          hitSlop={8}
-          onPress={() =>
-            void Share.share({
-              message: t("tokenPage.shareMessage", {
-                name: token.name,
-                symbol: token.symbol,
-                url: `${PUBLIC_LINKS.webApp}/token/${token.chainId}/${token.address}`,
-              }),
-            })
-          }
-          className={cn("bg-secondary active:bg-muted size-10 items-center justify-center rounded-full", WEB_HOVER_SECONDARY)}
-        >
-          <Icon as={Share2} className="text-foreground size-5" />
-        </Pressable>
-        {/* A desktop window has no sticky bar: every other action is here. */}
-        {wide ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("tokenPage.more")}
-            hitSlop={8}
-            onPress={() => setMoreOpen(true)}
-            className={cn("bg-secondary active:bg-muted size-10 items-center justify-center rounded-full", WEB_HOVER_SECONDARY)}
-          >
-            <Icon as={MoreHorizontal} className="text-foreground size-5" />
-          </Pressable>
-        ) : null}
-      </View>
+          : {})}
+      />
+    </Panel>
+  );
 
-      {wide ? (
-        <View className="flex-1 flex-row gap-8 px-8 pb-8">
-          {page}
-          <View className="border-border overflow-hidden rounded-3xl border" style={{ width: TICKET_COLUMN_PX }}>
-            <View className="px-5 pt-5">
-              <SegmentedControl
+  const header = (
+    <PageHeader
+      title={token.name}
+      subtitle={chip ? `${token.symbol} · ${chip.label}` : token.symbol}
+      onBack={leave}
+      trailing={
+        <View style={styles.headerActions}>
+          <TokenMark token={token} size={MARK} />
+          <RoundAction
+            icon={Star}
+            on={mine.watched}
+            label={mine.watched ? t("tokenPage.unwatch") : t("tokenPage.watch")}
+            onPress={() => {
+              if (!mine.account) {
+                signIn.open();
+                return;
+              }
+              void mine.toggleWatch().then((on) => toast(on ? t("tokenPage.watched") : t("tokenPage.unwatched")));
+            }}
+          />
+          <RoundAction
+            icon={Share2}
+            label={t("tokenPage.share")}
+            onPress={() => void Share.share({ message: t("tokenPage.shareMessage", { name: token.name, symbol: token.symbol, url: `${PUBLIC_LINKS.webApp}/token/${token.chainId}/${token.address}` }) })}
+          />
+          {/* A desktop window has no sticky bar: every other action is in the drawer. */}
+          {wide ? <RoundAction icon={MoreHorizontal} label={t("tokenPage.more")} onPress={() => drawer.show()} /> : null}
+        </View>
+      }
+    />
+  );
+
+  const sheets = (
+    <>
+      <MainnetConsentSheet open={networkSwitch.consentNeeded} busy={networkSwitch.busy} onAccept={() => void networkSwitch.acceptMainnet()} onClose={networkSwitch.dismissConsent} />
+      <PriceAlertSheet open={alertOpen} onClose={() => setAlertOpen(false)} token={token} priceUsd={detail.market.priceUsd} />
+    </>
+  );
+
+  if (wide) {
+    return (
+      <View style={styles.page}>
+        {header}
+        <Columns
+          stage={page}
+          ticket={
+            <View style={styles.group}>
+              <Segmented<"buy" | "sell">
                 label={t("ticket.title")}
+                value={side}
+                onChange={setSide}
                 options={[
                   { value: "buy", label: t("tokenPage.a_buy") },
                   { value: "sell", label: t("tokenPage.a_sell") },
                 ]}
-                value={side}
-                onValueChange={(next) => setSide(next === "sell" ? "sell" : "buy")}
               />
+              {sideReason ? (
+                <BlockedCta
+                  blocker={{ label: sideFix ? sideFix.label : sideReason, reason: sideFix ? sideReason : null, fix: sideFix ? { kind: "retry" } : null }}
+                  {...(sideFix ? { onFix: sideFix.onPress, fixLabel: sideFix.label } : {})}
+                />
+              ) : (
+                <SwapScreen
+                  key={`${side}:${token.chainId}:${token.address}`}
+                  prefill={side === "buy" ? { buy: token.address } : { sell: token.address }}
+                  embedded
+                  onFinished={() => {
+                    void refresh();
+                    void refreshPortfolio();
+                  }}
+                />
+              )}
             </View>
-            {sideReason ? (
-              <EmptyState
-                title={sideReason}
-                action={
-                  sideFix ? (
-                    <Button onPress={sideFix.onPress} disabled={networkSwitch.busy}>
-                      <Text>{sideFix.label}</Text>
-                    </Button>
-                  ) : undefined
-                }
-              />
-            ) : (
-              <SwapScreen
-                key={`${side}:${token.chainId}:${token.address}`}
-                prefill={side === "buy" ? { buy: token.address } : { sell: token.address }}
-                embedded
-                onFinished={() => {
-                  void refresh();
-                  void refreshPortfolio();
-                }}
-              />
-            )}
-          </View>
-        </View>
-      ) : (
-        <>
-          {page}
-          <View
-            className="bg-background border-border flex-row items-center gap-3 border-t px-5 pt-3"
-            style={{ paddingBottom: insets.bottom + EDGE_INSET }}
-          >
-            <View className="flex-1 gap-1">
-              <Button disabled={Boolean(buyReason)} onPress={() => run("buy")}>
-                <Text>{t("tokenPage.a_buy")}</Text>
-              </Button>
-            </View>
-            <View className="flex-1 gap-1">
-              <Button variant="secondary" disabled={Boolean(sellReason)} onPress={() => run("sell")}>
-                <Text>{t("tokenPage.a_sell")}</Text>
-              </Button>
-            </View>
-            <Button
-              variant="secondary"
-              size="icon"
-              className="size-12"
-              accessibilityLabel={t("tokenPage.more")}
-              onPress={() => setMoreOpen(true)}
-            >
-              <Icon as={MoreHorizontal} className="size-5" />
-            </Button>
-          </View>
-          {buyReason && fixable(buy) ? (
-            // "Mainnet only — switch?" is the question and the switch.
-            <Pressable accessibilityRole="button" onPress={switchToMainnet} disabled={networkSwitch.busy} className="bg-background px-5 pb-2">
-              <Text className="text-accent text-center text-xs font-semibold">{buyReason}</Text>
-            </Pressable>
-          ) : buyReason ? (
-            <Text className="text-muted-foreground bg-background px-5 pb-2 text-center text-xs">{buyReason}</Text>
-          ) : null}
-        </>
-      )}
+          }
+        />
+        <DetailDrawer open={drawer.open} title={token.symbol} onClose={drawer.hide}>
+          {moreList}
+        </DetailDrawer>
+        {sheets}
+      </View>
+    );
+  }
 
-      <Sheet
-        open={moreOpen}
-        onClose={() => setMoreOpen(false)}
-        title={token.symbol}
-        colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-        closeLabel={t("common.close")}
-        bottomInset={insets.bottom}
-      >
-        <ListGroup>
-          {detail.actions.map((entry) => {
-            const reason = reasonFor(entry);
-            // A mainnet-only row stays tappable: it is the switch.
-            const switches = fixable(entry);
-            return (
-              <ListRow
-                key={entry.id}
-                title={t(`tokenPage.a_${entry.id}`)}
-                {...(reason ? { subtitle: reason } : {})}
-                disabled={Boolean(reason) && !switches}
-                chevron={!reason || switches}
-                onPress={() => (switches ? switchToMainnet() : run(entry.id))}
-              />
-            );
-          })}
-          {hideable ? <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} chevron onPress={() => void toggleHidden()} /> : null}
-          {/* A recurring buy of this token (DCA), drafted on the New automation screen. */}
-          <ListRow
-            title={t("tokenPage.a_automate")}
-            {...(reasonFor(buy) ? { subtitle: reasonFor(buy)! } : {})}
-            disabled={Boolean(reasonFor(buy))}
-            chevron={!reasonFor(buy)}
-            onPress={() => {
-              setMoreOpen(false);
-              if (status !== "account") signIn.open();
-              else router.push({ pathname: "/new-automation", params: { template: "dca", token: token.address, symbol: token.symbol } });
-            }}
-          />
-        </ListGroup>
-      </Sheet>
-      <MainnetConsentSheet
-        open={networkSwitch.consentNeeded}
-        busy={networkSwitch.busy}
-        onAccept={() => void networkSwitch.acceptMainnet()}
-        onClose={networkSwitch.dismissConsent}
-      />
-      <PriceAlertSheet open={alertOpen} onClose={() => setAlertOpen(false)} token={token} priceUsd={detail.market.priceUsd} />
+  return (
+    <View style={styles.page}>
+      {header}
+      <PhoneScroll bottom={BAR_H + SPACE.xxl}>{page}</PhoneScroll>
+      <View style={[styles.bar, { paddingBottom: insets.bottom + SPACE.md, backgroundColor: color.ground }]}>
+        <View style={styles.grow}>
+          <Button label={t("tokenPage.a_buy")} disabled={Boolean(buyReason) && !fixable(buy)} onPress={() => (buyReason && fixable(buy) ? switchToMainnet() : run("buy"))} />
+        </View>
+        <View style={styles.grow}>
+          <Button label={t("tokenPage.a_sell")} variant="secondary" disabled={Boolean(sellReason)} onPress={() => run("sell")} />
+        </View>
+        <RoundAction icon={MoreHorizontal} label={t("tokenPage.more")} onPress={() => setMoreOpen(true)} />
+      </View>
+      {buyReason ? <Text style={[TYPE.caption, styles.reason, { color: fixable(buy) ? color.link : color.text3, backgroundColor: color.ground }]}>{buyReason}</Text> : null}
+      <DetailDrawer open={moreOpen} title={token.symbol} onClose={() => setMoreOpen(false)}>
+        {moreList}
+      </DetailDrawer>
+      {sheets}
     </View>
   );
 }
 
-function BackButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      className={cn("bg-muted active:bg-secondary items-center justify-center rounded-full", WEB_HOVER_MUTED)}
-      style={{ width: BACK, height: BACK }}
-    >
-      <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-    </Pressable>
-  );
-}
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  hero: { gap: SPACE.xs },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  group: { gap: SPACE.md },
+  line: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  grow: { flex: 1, minWidth: 0 },
+  kind: { width: 168 },
+  panel: { gap: SPACE.sm, padding: SPACE.lg },
+  stats: { flexDirection: "row", flexWrap: "wrap", padding: SPACE.sm },
+  stat: { gap: SPACE.xxs, padding: SPACE.sm },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  round: { width: SIZE.touch, height: SIZE.touch, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  bar: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.inset, paddingTop: SPACE.md },
+  reason: { textAlign: "center", paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
+});
