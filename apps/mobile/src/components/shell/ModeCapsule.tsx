@@ -2,8 +2,9 @@
  * The persistent mode control (Senryo's ModeCapsule, in Kawase's words: Mainnet and Testnet): a 34 pt borderless
  * capsule on neutral plates, because the mode is in the words and never a hue wash. The Arc mark, the mode named, and a
  * small two-position switch whose knob travels on a spring. One tap switches network, like dark and light; a hold opens
- * both networks with their totals. A testnet capsule is outlined with a dashed rim and a hollow switch, a mainnet one is
- * solid, so the difference reads by shape as well as by the word. It is a switch for assistive technology.
+ * both networks with their totals. Both are solid plates (the dashed testnet rim read as an overlay on a phone, Abu's
+ * review 10-14); the switch carries the difference by shape — hollow on testnet, filled on mainnet — as well as the
+ * word. It is a switch for assistive technology.
  */
 import { arcIdentity } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
@@ -103,13 +104,7 @@ export function ModeCapsule({
             }
           : {})}
         hitSlop={HIT_SLOP}
-        style={[
-          styles.capsule,
-          { backgroundColor: color.networkSurface },
-          testnet
-            ? { borderWidth: 1, borderStyle: "dashed", borderColor: color.network }
-            : { borderWidth: 1, borderColor: color.networkSurface },
-        ]}
+        style={[styles.capsule, { backgroundColor: color.networkSurface }]}
       >
         {compact ? null : <Mark entity={arcIdentity(network).chain} size={SIZE.iconSm} />}
         <Text

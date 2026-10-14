@@ -1,6 +1,7 @@
 // The header every tab shares (surfaces.md "Header (every tab)"): avatar (profile and settings) · network pill (the
-// one-tap toggle; hold it for both networks and their totals) · inbox bell with its count. Guests also get the
-// language pill and a Sign in pill. Home puts these in its collapsing header; Markets and Activity use the row.
+// one-tap toggle; hold it for both networks and their totals) · inbox bell with its count, or a Sign in pill for a
+// guest. Three things at most (Abu's review 10-14: the row was crowded); the language is on the welcome story, in the
+// sign-in sheet and in Settings. Home puts these in its collapsing header; Markets and Activity use the row.
 import * as React from "react";
 import { View } from "react-native";
 
@@ -9,24 +10,18 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 
 import { HeaderAvatar } from "@/components/header-avatar";
-import { LanguagePill, LanguageSheet } from "@/components/language-sheet";
 import { NetworkPill } from "@/components/network-pill";
 import { useT } from "@/i18n";
 import { InboxBell } from "@/inbox/inbox-bell";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
-/** Avatar, then the language pill for a guest, then the network pill. */
+/** Avatar, then the network pill. */
 export function TabHeaderStart() {
-  const { status } = useSession();
-  const [languageOpen, setLanguageOpen] = React.useState(false);
-  const guest = status !== "account";
   return (
     <>
       <HeaderAvatar />
-      {guest ? <LanguagePill onPress={() => setLanguageOpen(true)} /> : null}
       <NetworkPill />
-      <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
     </>
   );
 }
