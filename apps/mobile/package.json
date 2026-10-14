@@ -5,6 +5,7 @@
   "dependencies": {
     "@ai-sdk/react": "catalog:",
     "@better-auth/expo": "1.7.6",
+    "@circle-fin/onramp-kit": "1.0.3",
     "@config-plugins/react-native-webrtc": "15.0.2",
     "@ethersproject/shims": "^5.8.0",
     "@expo-google-fonts/inter": "^0.4.2",

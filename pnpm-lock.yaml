@@ -438,6 +438,9 @@ importers:
       '@better-auth/expo':
         specifier: 1.7.6
         version: 1.7.6(272d4799aab617aa252952c42f2edc2e)
+      '@circle-fin/onramp-kit':
+        specifier: 1.0.3
+        version: 1.0.3
       '@config-plugins/react-native-webrtc':
         specifier: 15.0.2
         version: 15.0.2(expo@57.0.28)
