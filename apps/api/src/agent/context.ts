@@ -234,6 +234,8 @@ export function buildAgentContext(input: {
 
     portfolio: () => assets.portfolio(user),
     searchTokens: (query) => assets.search(user, network, query),
+    // The Markets tab's lists are Arc mainnet's, public on either network.
+    marketList: (segment) => assets.markets("mainnet", segment),
     tokenDetail: (address) => assets.token(user, network, address),
     ...(input.memeCheck ? { tokenWarning: (detail: Pick<TokenDetailView, "token" | "market">) => input.memeCheck!.check(network, detail) } : {}),
 

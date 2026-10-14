@@ -27,6 +27,8 @@ const TIMEZONE_MAX = 64;
 const MAX_PERCENT = 100;
 const TOKEN_QUERY_MAX = 64;
 const SEARCH_SHOWN = 8;
+/** The market rows the model reads (the list itself is longer). */
+const TRENDING_SHOWN = 10;
 const ASSETS_SHOWN = 20;
 
 /** A symbol, name or 0x address → the best match on this network (held and verified tokens first). */
@@ -330,6 +332,39 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
           network: output.network,
           results: output.results.slice(0, SEARCH_SHOWN).map((result) => ({ symbol: result.token.symbol, name: result.token.name, address: result.token.address, status: result.token.status, priceUsd: result.priceUsd, liquidityUsd: result.liquidityUsd, held: result.held })),
         },
+      }),
+    }),
+    get_trending: tool({
+      description:
+        "What is moving on Arc right now: Arc mainnet's public market lists, the same as the Markets tab, with live prices from each token's deepest pool — trending, meme coins, the newest, or stocks & FX. Each row: symbol, name, price, 24-hour and 1-hour change, market cap, volume and status (an impersonator is flagged: never buy it). Use it for \"what's trending / hot / pumping on Arc\", \"top meme coins\", \"new tokens\", \"what stocks or currencies can I buy\". Public: works for guests and on testnet (say it is mainnet's market there). Facts only, never a tip to buy.",
+      inputSchema: z.object({ segment: z.enum(["trending", "meme", "new", "fx"]).default("trending") }),
+      execute: async ({ segment }) => {
+        if (!context.marketList) return { status: "unavailable" as const };
+        const market = await context.marketList(segment);
+        return { status: "found" as const, segment, pricedAt: market.pricedAt, stale: market.stale, rows: market.rows };
+      },
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value:
+          output.status === "found"
+            ? {
+                network: "mainnet",
+                segment: output.segment,
+                pricedAt: output.pricedAt,
+                stale: output.stale,
+                rows: output.rows.slice(0, TRENDING_SHOWN).map((row) => ({
+                  symbol: row.token.symbol,
+                  name: row.token.name,
+                  address: row.token.address,
+                  status: row.token.status,
+                  priceUsd: row.priceUsd,
+                  change24hPct: row.change24hPct,
+                  change1hPct: row.change1hPct ?? null,
+                  marketCapUsd: row.marketCapUsd,
+                  volume24hUsd: row.volume24hUsd,
+                })),
+              }
+            : output,
       }),
     }),
     get_token_safety: tool({

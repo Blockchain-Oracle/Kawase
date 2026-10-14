@@ -42,6 +42,7 @@ import type {
   WithdrawProposalOutput,
   PortfolioView,
   TokenDetailView,
+  MarketListView,
   TokenSearchResult,
   AgentTopUpProposal,
   AgentWalletLine,
@@ -174,6 +175,8 @@ export type AgentContext = {
   portfolio(): Promise<PortfolioView>;
   /** Tokens on this network by name, symbol or address, with the copycat status of each. */
   searchTokens(query: string): Promise<TokenSearchResult[]>;
+  /** Arc mainnet's public market lists (the Markets tab): trending, meme, newest, stocks & FX, with live prices. */
+  marketList?(segment: "trending" | "meme" | "new" | "fx"): Promise<MarketListView>;
   /** One token's page: market, safety verdict, the person's holding and what they can do with it. */
   tokenDetail(address: string): Promise<TokenDetailView>;
   /** Drafts a trade of any pair (buy, sell, swap) with every venue's fresh quote; approved on the card. */

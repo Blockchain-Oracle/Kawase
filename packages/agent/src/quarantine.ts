@@ -116,6 +116,7 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   get_token_safety: { source: "token contract", keys: ["name", "symbol", "description"] },
   get_price: { source: "token contract", keys: ["name", "symbol", "description"] },
   get_markets: { source: "token contract", keys: ["name", "symbol"] },
+  get_trending: { source: "token contract", keys: ["name", "symbol"] },
   propose_send: TOKEN_IN_SENTENCE,
   propose_trade: TOKEN_IN_SENTENCE,
   propose_swap: TOKEN_IN_SENTENCE,
