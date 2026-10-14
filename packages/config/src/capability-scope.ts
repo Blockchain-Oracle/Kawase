@@ -22,8 +22,6 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   request: {
     supports: [
       "a payment request with a shareable link in any token on Arc; marked paid by a Kawase send or a matching plain transfer",
-      "business mode: a business profile; invoices with line items and a due date, a payment link, a PDF, and an on-chain reference (Arc Memo) that marks them paid, partly paid or overpaid; batch payouts signed once; payroll as a scheduled automation",
-      "invoices and payouts in any token on Arc (a verified symbol or an exact address; look-alikes refused), and invoice reminders: the day before it is due and once overdue (inbox and push; overdue also by email)",
     ],
     notYet: [],
   },
@@ -71,7 +69,7 @@ export const CAPABILITY_SCOPE: Partial<Record<CapabilityId, CapabilityScope>> = 
   },
   automations: {
     supports: [
-      "scheduled sends of a fixed amount to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period; payroll to several people the same way",
+      "scheduled sends of a fixed amount to one saved recipient, every day, week (on a weekday) or month (on day 1–28), bounded on chain to that recipient and amount per period",
       "Auto-save and round-ups into the person's own vault savings, bounded on chain to the wallet and its own savings",
       "rules: when the balance crosses a line, when money arrives, or when a price crosses a level — bridge USDC to the person's own address on another chain (fee bounded on chain), save, alert, or send to someone; DCA buys on a schedule",
       "a step an automation may not take alone (every swap or DCA buy, anything above its grant, a payment held by the allowlist or cooldown) waits in Needs you: inbox, push and Activity; answered once from any device, reminded at 12 hours, expired at 24",

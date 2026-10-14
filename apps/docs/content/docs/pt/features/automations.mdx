@@ -1,6 +1,6 @@
 ---
 title: "Automações"
-description: "Pagamentos programados, poupança automática, folha de pagamento, DCA e regras (saldo, dinheiro que entra ou sai, preço) que funcionam sozinhos dentro de permissões que você assina uma vez, com execuções de teste primeiro e Precisa de você para tudo que não puderem fazer sozinhos."
+description: "Pagamentos programados, poupança automática, DCA e regras (saldo, dinheiro que entra ou sai, preço) que funcionam sozinhos dentro de permissões que você assina uma vez, com execuções de teste primeiro e Precisa de você para tudo que não puderem fazer sozinhos."
 sourceHash: 4d4a986aeccb8f32
 ---
 
@@ -27,10 +27,8 @@ quando o dinheiro chegar.
 própria reserva (veja [Render](./earn-and-borrow.mdx)). Quando o saldo da carteira fica abaixo desse limite, ela repõe o valor usando a reserva. Ela verifica o saldo todos os dias e sempre que entra dinheiro. As permissões dela só permitem transferir USDC **entre sua carteira e sua própria
 reserva**, nunca para outro lugar.
 
-## Folha de pagamento e DCA
+## DCA
 
-- A **folha de pagamento** paga várias pessoas em um dia do mês. Cada beneficiário recebe sua própria permissão, vinculada a ele e ao valor,
-  e todas são assinadas com **um Face ID**. Veja [Negócios](./business.mdx#payroll).
 - O **DCA** ("compre 20 dólares de cirBTC toda semana") compra um token com um valor fixo em uma programação. Cada execução espera por você em
   **Precisa de você**, com uma nova cotação pronta para executar.
 
