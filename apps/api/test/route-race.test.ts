@@ -1,12 +1,12 @@
 // The race's contract, without the network: rows start `checking`, one snapshot per answer, a venue past the
 // timeout fails, `best` is the highest net among executable quoted rows, the last snapshot is `done`.
-// Run: pnpm --filter @kawase/api exec tsx --test src/routing/race.test.ts
+// Run: pnpm --filter @kawase/api exec tsx --test test/route-race.test.ts
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import type { RouteQuote, RouteRace } from "@kawase/api-client";
 
-import { checkingRow, raceRoutes, rankRows, type RaceAttempt } from "./race";
+import { checkingRow, raceRoutes, rankRows, type RaceAttempt } from "../src/routing/race";
 
 const quoted = (venue: string, net: string, executable = true): RouteQuote => ({ ...checkingRow(venue, `venue:${venue}`, venue), status: "quoted", receive: { amount: net, symbol: "EURC", decimals: 6 }, net, executable, reason: executable ? null : "not_enabled" });
 /** Answer times (ms) and the race's timeout in the first test. */

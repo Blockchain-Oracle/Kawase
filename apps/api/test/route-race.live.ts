@@ -1,7 +1,7 @@
 // Live, read-only check of the route race on Arc mainnet (no signing, no transaction): races 10 USDC → EURC across
 // every swap venue, has each new venue (Uniswap, 0x, Socket) build and pass its calldata checks for the requester,
 // and races 5 USDC Arc → Base (USDC) and 1 USDC Arc → Base (ETH, Gas.zip). Prints request ids, amounts and targets.
-// Run from the repo root: pnpm --filter @kawase/api exec tsx src/routing/race.live.ts [requester] [--record file.json]
+// Run from the repo root: pnpm --filter @kawase/api exec tsx test/route-race.live.ts [requester] [--record file.json]
 // (--record writes every snapshot, for the RouteList's gallery recording.)
 // Keys come from the repo's .env (UNISWAP_API_KEY, ZEROX_API_KEY); nothing secret is printed.
 import { existsSync, writeFileSync } from "node:fs";
@@ -11,12 +11,12 @@ import type { RouteRace } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
-import { appKitBridges } from "../bridge/engine";
-import { appKitSwaps } from "../swap/engine";
-import { createSwapVenues, type SwapVenue } from "../swap/venues";
-import type { SessionUser } from "../types";
-import type { Chains, NetworkClients } from "../wallet/chain";
-import { createRouteRacer } from "./racer";
+import { appKitBridges } from "../src/bridge/engine";
+import { appKitSwaps } from "../src/swap/engine";
+import { createSwapVenues, type SwapVenue } from "../src/swap/venues";
+import type { SessionUser } from "../src/types";
+import type { Chains, NetworkClients } from "../src/wallet/chain";
+import { createRouteRacer } from "../src/routing/racer";
 
 const ENV_FILE = new URL("../../../../.env", import.meta.url).pathname;
 if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);

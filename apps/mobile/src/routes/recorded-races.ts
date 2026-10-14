@@ -1,5 +1,5 @@
 // GALLERY ONLY. Route races recorded from Arc mainnet on 2026-10-14 (read-only quotes, no trades) by
-// apps/api/src/routing/race.live.ts --record, for the RouteList in /dev/gallery. Never imported by a real screen.
+// apps/api/test/route-race.live.ts --record, for the RouteList in /dev/gallery. Never imported by a real screen.
 import type { RouteRace } from "@kawase/api-client";
 
 /** swap 10 USDC → EURC: every snapshot as venues answered. */
