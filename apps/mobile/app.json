@@ -63,16 +63,6 @@
         {
           "ios": {
             "fonts": [
-              "./node_modules/@expo-google-fonts/manrope/400Regular/Manrope_400Regular.ttf",
-              "./node_modules/@expo-google-fonts/manrope/500Medium/Manrope_500Medium.ttf",
-              "./node_modules/@expo-google-fonts/manrope/600SemiBold/Manrope_600SemiBold.ttf",
-              "./node_modules/@expo-google-fonts/manrope/700Bold/Manrope_700Bold.ttf",
-              "./node_modules/@expo-google-fonts/space-grotesk/500Medium/SpaceGrotesk_500Medium.ttf",
-              "./node_modules/@expo-google-fonts/space-grotesk/600SemiBold/SpaceGrotesk_600SemiBold.ttf",
-              "./node_modules/@expo-google-fonts/space-grotesk/700Bold/SpaceGrotesk_700Bold.ttf",
-              "./node_modules/@expo-google-fonts/jetbrains-mono/400Regular/JetBrainsMono_400Regular.ttf",
-              "./node_modules/@expo-google-fonts/jetbrains-mono/500Medium/JetBrainsMono_500Medium.ttf",
-              "./node_modules/@expo-google-fonts/jetbrains-mono/600SemiBold/JetBrainsMono_600SemiBold.ttf",
               "./node_modules/@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf",
               "./node_modules/@expo-google-fonts/inter/500Medium/Inter_500Medium.ttf",
               "./node_modules/@expo-google-fonts/inter/600SemiBold/Inter_600SemiBold.ttf",
@@ -82,61 +72,6 @@
           },
           "android": {
             "fonts": [
-              {
-                "fontFamily": "Manrope",
-                "fontDefinitions": [
-                  {
-                    "path": "./node_modules/@expo-google-fonts/manrope/400Regular/Manrope_400Regular.ttf",
-                    "weight": 400
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/manrope/500Medium/Manrope_500Medium.ttf",
-                    "weight": 500
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/manrope/600SemiBold/Manrope_600SemiBold.ttf",
-                    "weight": 600
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/manrope/700Bold/Manrope_700Bold.ttf",
-                    "weight": 700
-                  }
-                ]
-              },
-              {
-                "fontFamily": "Space Grotesk",
-                "fontDefinitions": [
-                  {
-                    "path": "./node_modules/@expo-google-fonts/space-grotesk/500Medium/SpaceGrotesk_500Medium.ttf",
-                    "weight": 500
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/space-grotesk/600SemiBold/SpaceGrotesk_600SemiBold.ttf",
-                    "weight": 600
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/space-grotesk/700Bold/SpaceGrotesk_700Bold.ttf",
-                    "weight": 700
-                  }
-                ]
-              },
-              {
-                "fontFamily": "JetBrains Mono",
-                "fontDefinitions": [
-                  {
-                    "path": "./node_modules/@expo-google-fonts/jetbrains-mono/400Regular/JetBrainsMono_400Regular.ttf",
-                    "weight": 400
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/jetbrains-mono/500Medium/JetBrainsMono_500Medium.ttf",
-                    "weight": 500
-                  },
-                  {
-                    "path": "./node_modules/@expo-google-fonts/jetbrains-mono/600SemiBold/JetBrainsMono_600SemiBold.ttf",
-                    "weight": 600
-                  }
-                ]
-              },
               {
                 "fontFamily": "Inter",
                 "fontDefinitions": [
@@ -159,7 +94,7 @@
                 ]
               },
               {
-                "fontFamily": "RobotoCondensed",
+                "fontFamily": "Roboto Condensed",
                 "fontDefinitions": [
                   {
                     "path": "./node_modules/@expo-google-fonts/roboto-condensed/900Black/RobotoCondensed_900Black.ttf",

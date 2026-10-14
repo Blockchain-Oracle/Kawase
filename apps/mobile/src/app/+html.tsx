@@ -17,7 +17,7 @@ const COLUMN_MAX_PX = 480;
 const DESKTOP_PX = 1024;
 
 const columnCss = `
-html, body { background-color: var(--color-background, ${tokens.themes.dark.background}); }
+html, body { background-color: var(--color-background, ${tokens.themes[tokens.defaultMode].background}); }
 @media (min-width: ${COLUMN_BREAKPOINT_PX}px) and (max-width: ${DESKTOP_PX - 1}px) {
   body { display: flex; justify-content: center; }
   #root {
@@ -25,7 +25,7 @@ html, body { background-color: var(--color-background, ${tokens.themes.dark.back
     max-width: ${COLUMN_MAX_PX}px;
     transform: translateZ(0);
     overflow: hidden;
-    box-shadow: 0 0 0 1px var(--color-border, ${tokens.themes.dark.border});
+    box-shadow: 0 0 0 1px var(--color-border, ${tokens.themes[tokens.defaultMode].border});
   }
 }
 :where([role="button"], [role="link"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], [role="menuitem"], a[href]) {
@@ -35,7 +35,7 @@ html, body { background-color: var(--color-background, ${tokens.themes.dark.back
   cursor: default;
 }
 :where([role="button"], [role="link"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], a[href], input, textarea):focus-visible {
-  outline: 2px solid var(--color-ring, ${tokens.themes.dark.primary});
+  outline: 2px solid var(--color-ring, ${tokens.themes[tokens.defaultMode].primary});
   outline-offset: 2px;
 }
 `;
@@ -52,7 +52,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="stylesheet" href={tokens.fonts.googleFontsHref} />
         {/* Installable web app (PWA): manifest, theme colour, home-screen icon, and an offline-page-only worker. */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content={tokens.themes.dark.background} />
+        <meta name="theme-color" content={tokens.themes[tokens.defaultMode].background} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <script
           dangerouslySetInnerHTML={{

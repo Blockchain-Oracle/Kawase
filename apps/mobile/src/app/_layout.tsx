@@ -10,10 +10,10 @@ import { PortalHost } from "@rn-primitives/portal";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { Toaster } from "sonner-native";
 
 import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
 
+import { ToastHost } from "@/components/toast/ToastHost";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
 import { FundProvider } from "@/fund/fund-provider";
@@ -56,7 +56,7 @@ export default function RootLayout() {
                   </SignInProvider>
                   <PortalHost />
                   <WebApprovalHost />
-                  <Toaster position="top-center" />
+                  <ToastHost />
                 </BottomSheetModalProvider>
               </LocaleProvider>
             </SessionProvider>
