@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-14 night (Stage 3 merged and live; plan compressed-dreaming-yao)
+Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compressed-dreaming-yao)
 
 ## 2026-10-14 — revamp underway (deadline 10-17 11:59 PM ET = Sun 10-18 04:59 WAT)
 
@@ -49,6 +49,36 @@ Last updated: 2026-10-14 night (Stage 3 merged and live; plan compressed-dreamin
   - repo public, demo video, submission.
 
 **Owner:** run the Codex #2 and #3 briefs; back up `~/.kawase-secrets`; fund mainnet ops and relayer by Friday.
+
+**10-14 late — Abu's live review, acted on (commits 95fa3b00 → 889bb66f):**
+- The + is back as it was before Stage 3 (quiet glass circle at the trailing edge, actions rising in a column) and the
+  voice orb is back in the dock's centre. Lesson saved in memory: keep-what-abu-liked.
+- Home's composer is Senryo's launcher: a capsule beside the + in the dock's material, words that walk through what
+  Kawase can do, the mic inside, tucked behind the dock while reading down and back on scroll up; tapped, a calm
+  typing bar. The shared composer (Chat) lost its glow and ringed voice button.
+- Live markets: the api reads DexScreener (Arc = "arc", 5 s fresh, 30 tokens a call) for Markets rows, token pages and
+  portfolio values; GeckoTerminal keeps candles, served stale or retried, never "no price history". Token pages poll
+  every 5 s (Live pip, 5 m change, buys/sells), lists every 8 s, the 1H/1D line follows the live price. Heat map gone.
+- Mainnet "not available": a new guest never learned the available networks (fixed in session-provider).
+- Sounds are Senryo's kit at Senryo's levels; the old recorded placeholders are gone.
+- **Dev mode** for end-to-end testing (local only): `EXPO_PUBLIC_WALLET_PROVIDER=dev` against an api with
+  `KAWASE_DEV_AUTH=true` (refused in production and beside mainnet). Any `@kawase.test` email, any code; a throwaway
+  testnet key in the browser signs the api's nonce and is the wallet; approvals pass by themselves.
+  - Run it: throwaway Postgres in `.dev-pg/` (port 55432, dbs kawase_dev + kawase_dbos, `db:migrate`), the api with
+    `NODE_ENV=development PORT=3000 MAINNET_ENABLED=false KAWASE_DEV_AUTH=true DATABASE_URL=… DBOS_SYSTEM_DATABASE_URL=… npx tsx src/main.ts`,
+    the web as a static export (`EXPO_PUBLIC_WALLET_PROVIDER=dev EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo export --platform web --clear`)
+    served by `server/web.cjs` (`.claude/launch.json` "kawase-web-dev"). The Expo dev server OOMs at 4 GB; the export doesn't.
+  - Verified with it on Arc testnet: sign-up → 7702 setup → weekly budget step → first job on Home (faucet) → swap
+    2 USDC → EURC inside the budget with no slide and no prompt → contact → send → scheduled send on → Arabic.
+- Found and fixed with it: the agent's weekly budget was never bound in app.ts (every step asked); setup still offered
+  the old 5,000 USDC/day any-recipient allowance (now the budget step); the first job opened old Chat (now Home);
+  Send redesigned (search first, one row of Paste · Scan · Add contact, the review names the person, a new address is
+  said once, the budget's verdict replaces the old allowance line); text fields drew a square magenta focus ring;
+  Settings cut the budget value off; drafted automations appeared off-screen; Bridge chain names were cut off.
+- Builds queued: TestFlight 14 `a5d0f5eb` (auto-submit), simulator `5703e0bf`. Coolify api/web deploys are slow:
+  agari-box is at load ~46 with 7/7 GB used.
+- Still open: RouteList polish; feed row type; Privy proof (Codex #5); landing/docs brand; mainnet funding and
+  acceptance run; repo public; demo video; submission.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
