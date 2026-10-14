@@ -23,4 +23,12 @@ export const deleteAccount: Catalog["deleteAccount"] = {
   failed: "No se pudo eliminar. No se borró nada.",
   after:
     "Tu @alias queda reservado 30 días para que nadie más lo tome. Si vuelves a iniciar sesión más adelante, empezarás una cuenta nueva con la misma billetera.",
+  holdToDelete: "Mantén pulsado para eliminar mi cuenta",
+  typeFirst: "Primero escribe {{handle}}",
+  keepHolding: "Sigue pulsando",
+  stillWorks: "No se eliminó nada. Tu cuenta funciona como antes.",
+  loading: "Revisando lo que tiene tu cuenta",
+  agentWalletRow: "Billetera del agente",
+  agentWalletBack: "Vuelve primero a tu billetera",
+  needsWallet: "Configura tu billetera",
 };

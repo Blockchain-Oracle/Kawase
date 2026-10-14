@@ -21,4 +21,12 @@ export const deleteAccount: Catalog["deleteAccount"] = {
   done: "تم حذف حسابك",
   failed: "لم ينجح الحذف. لم يُحذف شيء.",
   after: "يُحجز ‎@اسمك لمدة 30 يومًا كي لا يأخذه أحد غيرك. إذا سجّلت الدخول لاحقًا، يبدأ حساب جديد بالمحفظة نفسها.",
+  holdToDelete: "اضغط مطولًا لحذف حسابي",
+  typeFirst: "اكتب {{handle}} أولًا",
+  keepHolding: "واصل الضغط",
+  stillWorks: "لم يُحذف شيء. يعمل حسابك كما كان.",
+  loading: "جارٍ التحقق مما يحتويه حسابك",
+  agentWalletRow: "محفظة الوكيل",
+  agentWalletBack: "تعود إلى محفظتك أولًا",
+  needsWallet: "أعدّ محفظتك",
 };

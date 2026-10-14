@@ -23,15 +23,23 @@ export type TurnkeyAccountApi = {
   handleGoogleOauth: (input: { onOauthSuccess: (result: OauthSuccess) => void }) => Promise<void>;
   handleAppleOauth: (input: { onOauthSuccess: (result: OauthSuccess) => void }) => Promise<void>;
   exportWallet: (input: { walletId: string }) => Promise<string>;
+  removeOauthProviders?: (input: { providerIds: string[] }) => Promise<string[]>;
   httpClient: { deleteApiKeys: (input: { organizationId: string; userId: string; apiKeyIds: string[] }) => Promise<unknown> } | undefined;
 };
 
 export type LinkProvider = "google" | "apple";
+/** A way into the account: the email code, Google or Apple. */
+export type LoginMethod = "email" | LinkProvider;
 
 const ISSUERS: Record<LinkProvider, RegExp> = { google: /accounts\.google\.com/i, apple: /appleid\.apple\.com/i };
 const ETHEREUM_FORMAT = "ADDRESS_FORMAT_ETHEREUM";
 
 export type SignInMethods = { email: string | null; google: boolean; apple: boolean };
+
+/** How many ways in the account has; the last one is never removed (the person would be locked out). */
+export function methodCount(methods: SignInMethods): number {
+  return (methods.email ? 1 : 0) + (methods.google ? 1 : 0) + (methods.apple ? 1 : 0);
+}
 
 export function accountMethodsCore(turnkey: TurnkeyAccountApi, emailOtp: string) {
   const methodsOf = (user: TurnkeyUser | undefined): SignInMethods => ({
@@ -41,7 +49,20 @@ export function accountMethodsCore(turnkey: TurnkeyAccountApi, emailOtp: string)
   });
 
   return {
+    /** The provider session that manages the methods is on this device (Turnkey: its session key). */
+    manageable: Boolean(turnkey.session),
     methods: methodsOf(turnkey.user),
+    /** Turnkey's email is the account's own login and can only be changed; Google and Apple can be removed. */
+    removable(methods: SignInMethods, method: LoginMethod): boolean {
+      return method !== "email" && methods[method] && methodCount(methods) > 1 && Boolean(turnkey.removeOauthProviders);
+    },
+    async unlink(method: LoginMethod): Promise<void> {
+      if (method === "email" || !turnkey.removeOauthProviders) throw new Error("this sign-in method can't be removed");
+      const user = await turnkey.fetchUser();
+      const ids = (user.oauthProviders ?? []).filter((provider) => ISSUERS[method].test(provider.issuer)).map((provider) => provider.providerId);
+      if (ids.length > 0) await turnkey.removeOauthProviders({ providerIds: ids });
+      await api.account.syncEmail().catch(() => undefined);
+    },
     async refresh(): Promise<SignInMethods> {
       return methodsOf(await turnkey.fetchUser());
     },

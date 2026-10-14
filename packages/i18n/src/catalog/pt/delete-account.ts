@@ -23,4 +23,12 @@ export const deleteAccount: Catalog["deleteAccount"] = {
   failed: "A exclusão não funcionou. Nada foi apagado.",
   after:
     "Seu @nome fica reservado por 30 dias para ninguém mais pegá-lo. Se você entrar de novo depois, começa uma conta nova com a mesma carteira.",
+  holdToDelete: "Segure para excluir minha conta",
+  typeFirst: "Digite {{handle}} primeiro",
+  keepHolding: "Continue segurando",
+  stillWorks: "Nada foi excluído. Sua conta funciona como antes.",
+  loading: "Verificando o que sua conta tem",
+  agentWalletRow: "Carteira do agente",
+  agentWalletBack: "Volta primeiro para sua carteira",
+  needsWallet: "Configure sua carteira",
 };

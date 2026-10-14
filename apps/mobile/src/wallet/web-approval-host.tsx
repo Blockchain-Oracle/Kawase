@@ -1,60 +1,122 @@
-// Web: the owner's check before a signature that binds them (accepting the allowance, a send above it). A browser has
-// no Face ID, so a fresh email code to the account's own address stands in: Turnkey's enclave verifies it (`initOtp`
-// + `verifyOtp`, which returns a verification token and logs nothing in), and only a verified code resolves
-// "approved". Closing the sheet is "cancelled"; nothing is signed either way until then (Codex review R03).
-// With Privy (D41) the wallet's session lives in this browser and Privy has no code check outside a login, so the
-// sheet is the explicit confirm D38 keeps above the budget: what is being approved, then Confirm or Cancel.
+// Web: the owner's check before a signature that binds them (accepting the allowance, a send above the budget). Both
+// hosts register one approver (web-approver.ts) that `confirmWithBiometrics` reaches on the web, and only "approved"
+// signs; closing the sheet is "cancelled" (Codex review R03). Built on the Senryo kit's sheet.
+// - Privy (D41, D38): the wallet's session lives in this browser and Privy has no code check outside a login, so the
+//   check is the explicit confirm D38 keeps above the budget: what is being approved, then a slide (21st 29304).
+// - Turnkey (the fallback build): a browser has no Face ID, so a fresh email code to the account's own address stands
+//   in: Turnkey's enclave verifies it (`initOtp` + `verifyOtp`, which logs nothing in).
 import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit";
 import * as React from "react";
-import { View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { Sheet, SheetInput } from "@kawase/ui-native/components/sheet";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-
+import { Button, SlideToConfirm, SPACE, TYPE, useTheme } from "@/components/kit";
+import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
+import { CodeField, CODE_LENGTH } from "@/account/fields";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
 import type { BiometricResult } from "./biometric";
 import { isPrivy, isWalletConfigured } from "./config";
 import { PrivyOAuthReturn } from "./privy-oauth-return";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
 
-const CODE_LENGTH = 6;
-
 type Pending = { prompt: string; resolve: (result: BiometricResult) => void };
+
+/** Registers this host's approver while mounted; each request opens the sheet and waits for its answer. */
+function usePendingApproval() {
+  const [pending, setPending] = React.useState<Pending>();
+  React.useEffect(() => {
+    const approver: WebApprover = (prompt) => new Promise<BiometricResult>((resolve) => setPending({ prompt, resolve }));
+    setWebApprover(approver);
+    return () => clearWebApprover(approver);
+  }, []);
+  // The answer is given once; the sheet then slides away and the pending request is dropped.
+  const answered = React.useRef<BiometricResult | undefined>(undefined);
+  const answer = (result: BiometricResult) => {
+    if (answered.current) return;
+    answered.current = result;
+    pending?.resolve(result);
+  };
+  const closed = () => {
+    if (!answered.current) pending?.resolve("cancelled");
+    answered.current = undefined;
+    setPending(undefined);
+  };
+  return { pending, answer, closed };
+}
+
+/** Privy: the explicit confirm (only "approved" signs). */
+function PrivyHost() {
+  const { t } = useT();
+  const { pending, answer, closed } = usePendingApproval();
+  if (!pending) return null;
+  return (
+    <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("wallet.approveTitle") })}>
+      <SheetHeading title={t("wallet.approveTitle")} body={pending.prompt} />
+      <PrivyActions prompt={pending.prompt} onAnswer={answer} />
+    </Sheet>
+  );
+}
+
+function PrivyActions({ prompt, onAnswer }: { prompt: string; onAnswer: (result: BiometricResult) => void }) {
+  const { t } = useT();
+  const close = useSheetClose();
+  return (
+    <View style={styles.actions}>
+      <SlideToConfirm
+        label={t("wallet.slideToApprove")}
+        resetKey={prompt}
+        onConfirm={() => {
+          onAnswer("approved");
+          close();
+        }}
+        onAccessibleActivate={() => {
+          onAnswer("approved");
+          close();
+        }}
+      />
+      <Button
+        label={t("common.cancel")}
+        variant="ghost"
+        onPress={() => {
+          onAnswer("cancelled");
+          close();
+        }}
+      />
+    </View>
+  );
+}
+
+/** Turnkey: a fresh code to the account's email, verified by Turnkey's enclave. */
+function TurnkeyHost() {
+  const { t } = useT();
+  const { pending, answer, closed } = usePendingApproval();
+  if (!pending) return null;
+  return (
+    <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("approval.title") })}>
+      <TurnkeyCode prompt={pending.prompt} onAnswer={answer} />
+    </Sheet>
+  );
+}
+
 type Otp = { otpId: string; otpEncryptionTargetBundle: string };
 
-function ConfiguredHost() {
+function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: BiometricResult) => void }) {
   const { t } = useT();
-  const colors = useThemeColors();
+  const { color } = useTheme();
+  const close = useSheetClose();
   const { user } = useSession();
   const { initOtp, verifyOtp } = useTurnkey();
-  const [pending, setPending] = React.useState<Pending>();
   const [otp, setOtp] = React.useState<Otp>();
   const [code, setCode] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string>();
   const email = user?.email ?? undefined;
 
-  // Registered while mounted; each request opens the sheet and waits for its answer.
-  React.useEffect(() => {
-    const approver: WebApprover = (prompt) =>
-      new Promise<BiometricResult>((resolve) => {
-        setOtp(undefined);
-        setCode("");
-        setError(undefined);
-        setPending({ prompt, resolve });
-      });
-    setWebApprover(approver);
-    return () => clearWebApprover(approver);
-  }, []);
-
   const finish = (result: BiometricResult) => {
-    pending?.resolve(result);
-    setPending(undefined);
+    onAnswer(result);
+    close();
   };
 
   const send = async () => {
@@ -77,109 +139,47 @@ function ConfiguredHost() {
     setError(undefined);
     try {
       const result = await verifyOtp({ otpId: otp.otpId, otpCode: value.trim(), otpEncryptionTargetBundle: otp.otpEncryptionTargetBundle });
-      if (result.verificationToken) finish("approved");
-      else setError(t("signIn.invalidCode"));
+      if (result.verificationToken) return finish("approved");
+      setError(t("signIn.invalidCode"));
     } catch {
       setError(t("signIn.invalidCode"));
-    } finally {
-      setBusy(false);
     }
+    setCode("");
+    setBusy(false);
   };
 
   return (
-    <Sheet
-      open={Boolean(pending)}
-      onClose={() => finish("cancelled")}
-      title={t("approval.title")}
-      subtitle={pending?.prompt}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-      closeLabel={t("common.close")}
-    >
-      <View className="gap-4">
-        <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>
-          {otp ? t("signIn.codeSent", { email: email ?? "" }) : t("approval.body", { email: email ?? "" })}
-        </Text>
+    <>
+      <SheetHeading title={t("approval.title")} body={otp ? t("signIn.codeSent", { email: email ?? "" }) : prompt} />
+      <View style={styles.actions}>
         {otp ? (
-          <SheetInput
-            value={code}
-            onChangeText={(value) => {
-              const digits = value.replace(/\D/g, "").slice(0, CODE_LENGTH);
-              setCode(digits);
-              if (digits.length === CODE_LENGTH) void verify(digits);
-            }}
-            placeholder={t("signIn.code")}
-            accessibilityLabel={t("signIn.code")}
-            keyboardType="number-pad"
-            autoComplete="one-time-code"
-            autoFocus
-            maxLength={CODE_LENGTH}
-            className="text-center font-mono text-xl tracking-widest"
-          />
-        ) : null}
-        {error ? <Text className={cn("text-destructive text-sm", TEXT_START)}>{error}</Text> : null}
-        {otp ? (
-          <Button size="lg" disabled={busy || code.length !== CODE_LENGTH} onPress={() => void verify(code)}>
-            <Text>{t("approval.confirm")}</Text>
-          </Button>
+          <CodeField value={code} onChange={setCode} onFilled={(digits) => void verify(digits)} label={t("signIn.code")} invalid={Boolean(error)} disabled={busy} />
         ) : (
-          <Button size="lg" disabled={busy || !email} onPress={() => void send()}>
-            <Text>{busy ? t("common.loading") : t("signIn.sendCode")}</Text>
-          </Button>
+          <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>{t("approval.body", { email: email ?? "" })}</Text>
         )}
-        <Button variant="ghost" onPress={() => finish("cancelled")}>
-          <Text className="text-muted-foreground">{t("common.cancel")}</Text>
-        </Button>
+        {error ? (
+          <Text accessibilityRole="alert" style={[TYPE.rowDetail, styles.center, { color: color.destructive }]}>
+            {error}
+          </Text>
+        ) : null}
+        {otp ? (
+          <Button label={t("approval.confirm")} loading={busy} disabled={code.length !== CODE_LENGTH} onPress={() => void verify(code)} />
+        ) : (
+          <Button label={t("signIn.sendCode")} loading={busy} disabled={!email} onPress={() => void send()} />
+        )}
+        <Button label={t("common.cancel")} variant="ghost" onPress={() => finish("cancelled")} />
       </View>
-    </Sheet>
-  );
-}
-
-/** Privy: the explicit confirm, registered the same way (only "approved" signs). */
-function PrivyHost() {
-  const { t } = useT();
-  const colors = useThemeColors();
-  const [pending, setPending] = React.useState<Pending>();
-
-  React.useEffect(() => {
-    const approver: WebApprover = (prompt) => new Promise<BiometricResult>((resolve) => setPending({ prompt, resolve }));
-    setWebApprover(approver);
-    return () => clearWebApprover(approver);
-  }, []);
-
-  const finish = (result: BiometricResult) => {
-    pending?.resolve(result);
-    setPending(undefined);
-  };
-
-  return (
-    <Sheet
-      open={Boolean(pending)}
-      onClose={() => finish("cancelled")}
-      title={t("approval.title")}
-      subtitle={pending?.prompt}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-      closeLabel={t("common.close")}
-    >
-      <View className="gap-4">
-        <Text className={cn("text-muted-foreground text-base leading-6", TEXT_START)}>{t("wallet.confirmInBrowser")}</Text>
-        <Button size="lg" onPress={() => finish("approved")}>
-          <Text>{t("approval.confirm")}</Text>
-        </Button>
-        <Button variant="ghost" onPress={() => finish("cancelled")}>
-          <Text className="text-muted-foreground">{t("common.cancel")}</Text>
-        </Button>
-      </View>
-    </Sheet>
+    </>
   );
 }
 
 /**
- * Mounted once inside the sheet and session providers; without the provider's ids there is nothing to verify with.
- * On Privy it also hosts the Google/Apple return (privy-oauth-return.tsx), which needs the same sheet surface.
+ * Mounted once inside the session provider; without the provider's ids there is nothing to verify with. On Privy it
+ * also hosts the Google/Apple return (privy-oauth-return.tsx), which needs the same sheet surface.
  */
 export function WebApprovalHost() {
   if (!isWalletConfigured) return null;
-  if (!isPrivy) return <ConfiguredHost />;
+  if (!isPrivy) return <TurnkeyHost />;
   return (
     <>
       <PrivyHost />
@@ -187,3 +187,8 @@ export function WebApprovalHost() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  actions: { gap: SPACE.md, paddingTop: SPACE.md },
+  center: { textAlign: "center" },
+});

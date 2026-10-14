@@ -23,4 +23,12 @@ export const deleteAccount: Catalog["deleteAccount"] = {
   failed: "La suppression n'a pas fonctionné. Rien n'a été supprimé.",
   after:
     "Votre @identifiant est réservé 30 jours pour que personne d'autre ne le prenne. Si vous vous reconnectez plus tard, un nouveau compte démarre avec le même portefeuille.",
+  holdToDelete: "Maintenez pour supprimer mon compte",
+  typeFirst: "Saisissez d'abord {{handle}}",
+  keepHolding: "Continuez d'appuyer",
+  stillWorks: "Rien n'a été supprimé. Votre compte fonctionne comme avant.",
+  loading: "Vérification de ce que contient votre compte",
+  agentWalletRow: "Portefeuille de l'agent",
+  agentWalletBack: "Rendu d'abord à votre portefeuille",
+  needsWallet: "Configurez votre portefeuille",
 };

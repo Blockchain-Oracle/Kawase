@@ -40,4 +40,8 @@ export const wallet: Catalog["wallet"] = {
   oauthReturnTitle: "Finalisation de votre connexion",
   oauthReturnGoogle: "Avec votre compte Google",
   oauthReturnApple: "Avec votre compte Apple",
+  approveTitle: "Approuver",
+  slideToApprove: "Glissez pour approuver",
+  creatingVerb: "Création de votre portefeuille",
+  signingInVerb: "Connexion en cours",
 };

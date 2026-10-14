@@ -9,4 +9,13 @@ export const devices = {
   signedOutEverywhere: "Every other device is signed out",
   lostPhone: "Lost a phone? Sign it out here, then turn on Pause all in Wallet & limits.",
   failed: "Couldn't load your devices.",
+  stillWorks: "Everything on this device keeps working.",
+  loading: "Loading your devices",
+  onlyThis: "Only this device",
+  onlyThisDetail: "Other phones and browsers you sign in on show up here.",
+  signOutEverywhereTitle: "Sign out every other device?",
+  signOutThisTitle: "Sign out of this device?",
+  signOutTitle: "Sign out {{name}}?",
+  signOutBody: "It stops using your account right away. Your wallet and your money stay where they are.",
+  signOutFailed: "Signing out didn't work. Try again.",
 } as const;

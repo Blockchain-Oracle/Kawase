@@ -188,7 +188,11 @@ export class AuthService {
    */
   async syncPrivyEmail(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
     const { email } = await this.ownPrivyIdentity(userId, input);
-    if (!email) return { email: null };
+    if (!email) {
+      // The person removed their last verified email at Privy: Kawase stops keeping one for them too.
+      await this.db.update(users).set({ email: null }).where(eq(users.id, userId));
+      return { email: null };
+    }
     const [other] = await this.db
       .select({ id: users.id })
       .from(users)

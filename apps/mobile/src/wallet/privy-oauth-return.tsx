@@ -8,25 +8,24 @@
 // once the outcome was shown; failures are reported like every other sign-in stage (auth-stage.ts).
 import { usePathname, useRouter, type Href } from "expo-router";
 import * as React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { ApiError, type ApiUser } from "@kawase/api-client";
-import { Sheet } from "@kawase/ui-native/components/sheet";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+
+import { Button, PixelLoader, SPACE, TYPE, useTheme, WaitingText } from "@/components/kit";
+import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
 
 import { useT } from "@/i18n";
 import { rememberReturnTo, takeDeepLink } from "@/onboarding/continuation";
 import { api } from "@/session/api";
 import { reportClientEvent } from "@/session/client-events";
 import { useSession } from "@/session/session-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
 import { AuthStageError } from "./auth-stage";
 import { describeError, summarize } from "./error-detail";
 import { usePrivyAccount } from "./privy-account";
-import { browserStorage, OAUTH_RETURN_KEY, takeOAuthReturn, usePrivyOAuth } from "./privy-oauth";
+import { browserStorage, OAUTH_RETURN_KEY, takeOAuthReturn, usePrivyOAuth, withoutOAuthParams } from "./privy-oauth";
 import { classifySignInFailure } from "./sign-in-errors";
 
 /** How long Privy gets to turn the provider's answer into a login before the sheet calls it failed. */
@@ -55,7 +54,6 @@ async function nextStep(user: ApiUser): Promise<"handle" | "setup" | "none"> {
 
 export function PrivyOAuthReturn() {
   const { t } = useT();
-  const colors = useThemeColors();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useSession();
@@ -115,7 +113,11 @@ export function PrivyOAuthReturn() {
       const next = await nextStep(signedIn);
       if (latest.current.pathname !== from) return;
       if (next === "none") {
-        if (from === WELCOME_PATH) router.replace((takeDeepLink() ?? "/") as Href);
+        if (from === WELCOME_PATH) {
+          // The link remembered by the signed-out redirect carries Privy's spent one-time parameters: drop them.
+          const link = takeDeepLink();
+          router.replace((link ? withoutOAuthParams(link) : "/") as Href);
+        }
         return;
       }
       // Onboarding ends back on the page the person signed in from (onboarding/continuation.ts).
@@ -199,43 +201,47 @@ export function PrivyOAuthReturn() {
 
   if (!provider) return null;
   const working = phase.name === "working" ? phase.step : undefined;
+  if (phase.name === "idle" || (hidden && working)) return null;
   const failedRetry = phase.name === "failed" ? phase.retry : undefined;
-  const failedWallet = failedRetry === "wallet";
+  const title = failedRetry === "wallet" ? t("setup.stepWallet") : t("wallet.oauthReturnTitle");
 
   return (
-    <Sheet
-      open={phase.name !== "idle" && !(hidden && working)}
-      onClose={close}
-      title={failedWallet ? t("setup.stepWallet") : t("wallet.oauthReturnTitle")}
-      subtitle={provider === "apple" ? t("wallet.oauthReturnApple") : t("wallet.oauthReturnGoogle")}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }}
-      closeLabel={t("common.close")}
-    >
-      <View className="gap-4">
+    <Sheet onClose={close} closeLabel={t("shell.kit.closeNamed", { name: title })}>
+      <SheetHeading title={title} body={provider === "apple" ? t("wallet.oauthReturnApple") : t("wallet.oauthReturnGoogle")} />
+      <View style={styles.body}>
         {working ? (
-          <View accessibilityLiveRegion="polite" className="flex-row items-center justify-center gap-2 py-3">
-            <ActivityIndicator size="small" color={colors["muted-foreground"]} />
-            <Text className="text-muted-foreground text-sm">
-              {working === "wallet" ? t("wallet.creating") : t("signIn.signingIn")}
-            </Text>
+          <View accessibilityLiveRegion="polite" style={styles.wait}>
+            <PixelLoader />
+            {/* Each step is its own named wait; the provider's own deadline turns a stuck one into a failure with Retry. */}
+            <WaitingText key={working} size="body" timeoutMs={null}>
+              {working === "wallet" ? t("wallet.creatingVerb") : t("wallet.signingInVerb")}
+            </WaitingText>
           </View>
         ) : null}
-        {phase.name === "failed" ? (
-          <>
-            <Text accessibilityRole="alert" className={cn("text-destructive text-sm", TEXT_START)}>
-              {phase.message}
-            </Text>
-            {failedRetry ? (
-              <Button size="lg" onPress={() => void retry(failedRetry)}>
-                <Text>{t("common.retry")}</Text>
-              </Button>
-            ) : null}
-            <Button variant="ghost" onPress={close}>
-              <Text className="text-muted-foreground">{t("common.close")}</Text>
-            </Button>
-          </>
-        ) : null}
+        {phase.name === "failed" ? <FailedActions message={phase.message} retry={failedRetry} onRetry={(step) => void retry(step)} /> : null}
       </View>
     </Sheet>
   );
 }
+
+function FailedActions({ message, retry, onRetry }: { message: string; retry: Step | undefined; onRetry: (step: Step) => void }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const closeSheet = useSheetClose();
+  return (
+    <>
+      <Text accessibilityRole="alert" style={[TYPE.body, styles.center, { color: color.destructive }]}>
+        {message}
+      </Text>
+      {retry ? <Button label={t("common.retry")} onPress={() => onRetry(retry)} /> : null}
+      <Button label={t("common.close")} variant="ghost" onPress={() => closeSheet()} />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: { gap: SPACE.md, paddingTop: SPACE.md },
+  wait: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.sm, paddingVertical: SPACE.md },
+  center: { textAlign: "center" },
+});
+

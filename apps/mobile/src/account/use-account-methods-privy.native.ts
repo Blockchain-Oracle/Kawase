@@ -2,7 +2,16 @@
 // so export opens the web app's export page in the system browser (docs.privy.io recipes/mobile-key-export).
 import "@/wallet/privy-polyfills.native";
 
-import { getAccessToken, useIdentityToken, useLinkWithOAuth, usePrivy, useUpdateEmail } from "@privy-io/expo";
+import {
+  getAccessToken,
+  useIdentityToken,
+  useLinkEmail,
+  useLinkWithOAuth,
+  usePrivy,
+  useUnlinkEmail,
+  useUnlinkOAuth,
+  useUpdateEmail,
+} from "@privy-io/expo";
 import * as WebBrowser from "expo-web-browser";
 
 import { WEB_APP_URL } from "@/wallet/config";
@@ -12,19 +21,33 @@ import { privyAccountMethods, type PrivyAccountMethods, type PrivyLinked } from 
 const EXPORT_PATH = "/account/export";
 
 export function usePrivyAccountMethods(): PrivyAccountMethods {
-  const { user, refreshUser } = usePrivy();
+  const { isReady, user, refreshUser } = usePrivy();
   const { link } = useLinkWithOAuth();
-  const { sendCode, updateEmail } = useUpdateEmail();
+  const { unlinkOAuth } = useUnlinkOAuth();
+  const { unlinkEmail } = useUnlinkEmail();
+  const update = useUpdateEmail();
+  const linkEmail = useLinkEmail();
   const { getIdentityToken } = useIdentityToken();
   return privyAccountMethods({
+    authenticated: isReady && Boolean(user),
     accounts: (user?.linked_accounts ?? []) as readonly PrivyLinked[],
     refreshAccounts: async () => ((await refreshUser()).user.linked_accounts ?? []) as readonly PrivyLinked[],
     link: async (provider) => {
       await link({ provider });
     },
-    sendEmailCode: (newEmailAddress) => sendCode({ newEmailAddress }),
-    updateEmail: async (newEmailAddress, code) => {
-      await updateEmail({ newEmailAddress, code });
+    unlinkOAuth: async (provider, subject) => {
+      await unlinkOAuth({ provider, subject });
+    },
+    unlinkEmail: async (email) => {
+      await unlinkEmail({ email });
+    },
+    sendEmailCode: async (email, mode) => {
+      if (mode === "update") await update.sendCode({ newEmailAddress: email });
+      else await linkEmail.sendCode({ email });
+    },
+    confirmEmailCode: async (email, code, mode) => {
+      if (mode === "update") await update.updateEmail({ newEmailAddress: email, code });
+      else await linkEmail.linkWithCode({ code, email });
     },
     tokens: async () => {
       const [accessToken, identityToken] = await Promise.all([getAccessToken(), getIdentityToken().catch(() => null)]);
