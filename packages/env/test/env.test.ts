@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { loadApiEnv } from "../src/index";
+import { loadApiEnv, loadPrivyEnv } from "../src/index";
 
 const HEX_KEY = "0x" + "ab".repeat(32);
 const PUBLIC_KEY = "02" + "cd".repeat(32);
@@ -44,4 +44,20 @@ test("mainnet needs the live keys", () => {
     OPS_WALLET_ADDRESS_MAINNET: "0x2d9b5452178316e064d10e1424e8acf65a71b6b9",
   });
   assert.equal(env.MAINNET_ENABLED, true);
+});
+
+test("Privy is off by default and needs its app id when chosen (D41)", () => {
+  assert.equal(loadApiEnv(base).WALLET_PROVIDER, "turnkey");
+  assert.throws(() => loadApiEnv({ ...base, WALLET_PROVIDER: "privy" }), /PRIVY_APP_ID/);
+  const env = loadApiEnv({
+    ...base,
+    WALLET_PROVIDER: "privy",
+    PRIVY_APP_ID: "app-id",
+    PRIVY_VERIFICATION_KEY: "-----BEGIN PUBLIC KEY-----\\nABC\\n-----END PUBLIC KEY-----",
+    PRIVY_APP_SECRET: "",
+  });
+  assert.equal(env.PRIVY_VERIFICATION_KEY, "-----BEGIN PUBLIC KEY-----\nABC\n-----END PUBLIC KEY-----");
+  assert.equal(env.PRIVY_APP_SECRET, undefined);
+  assert.equal(loadPrivyEnv({ WALLET_PROVIDER: "privy", PRIVY_APP_ID: "app-id" }).PRIVY_APP_ID, "app-id");
+  assert.throws(() => loadPrivyEnv({ WALLET_PROVIDER: "privy" }), /PRIVY_APP_ID/);
 });

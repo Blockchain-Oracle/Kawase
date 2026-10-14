@@ -19,6 +19,44 @@ const DEFAULT_API_PORT = 3000;
 /** An HMAC key shorter than this is too weak to sign approvals with. */
 const APPROVAL_SECRET_MIN = 32;
 
+/** A PEM pasted into one env line keeps its newlines as `\n`. */
+const pem = z.string().transform((value) => value.replace(/\\n/g, "\n"));
+
+/**
+ * Privy (D41) replaces Turnkey for sign-in and the user's key; Turnkey stays the fallback for one build.
+ * WALLET_PROVIDER=privy turns on Privy sign-in (`POST /auth/privy`); Turnkey sign-in stays on for older apps either way.
+ */
+const privyEnvShape = {
+  WALLET_PROVIDER: z.enum(["privy", "turnkey"]).default("turnkey"),
+  /** The Privy app id (public; the same value as EXPO_PUBLIC_PRIVY_APP_ID). */
+  PRIVY_APP_ID: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+  /**
+   * The app's token verification key (dashboard → Settings, ES256 PEM). Unset = read once from the app's public Privy
+   * config at the first sign-in.
+   */
+  PRIVY_VERIFICATION_KEY: z.preprocess(blankIsUnset, pem.optional()),
+  /** Only to read a user whose identity token was not sent (Privy's REST API, Basic auth). */
+  PRIVY_APP_SECRET: z.preprocess(blankIsUnset, z.string().min(1).optional()),
+};
+
+const privyEnvSchema = z.object(privyEnvShape);
+export type PrivyEnv = z.infer<typeof privyEnvSchema>;
+
+function requirePrivyAppId(env: PrivyEnv) {
+  if (env.WALLET_PROVIDER === "privy" && !env.PRIVY_APP_ID) throw new Error("WALLET_PROVIDER=privy needs: PRIVY_APP_ID");
+}
+
+/**
+ * Only the Privy variables: what auth reads when the app is assembled without them (one loader, so the api never reads
+ * process.env elsewhere).
+ */
+export function loadPrivyEnv(source: Record<string, string | undefined> = process.env): PrivyEnv {
+  const parsed = privyEnvSchema.safeParse(source);
+  if (!parsed.success) report(parsed.error, "api (Privy)");
+  requirePrivyAppId(parsed.data);
+  return parsed.data;
+}
+
 export const apiEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: port.default(DEFAULT_API_PORT),
@@ -34,6 +72,7 @@ export const apiEnvSchema = z.object({
   TURNKEY_API_PUBLIC_KEY: compressedPublicKey,
   TURNKEY_API_PRIVATE_KEY: hexKey,
   TURNKEY_API_BASE_URL: z.url().default("https://api.turnkey.com"),
+  ...privyEnvShape,
   /** Circle developer-controlled wallets (the agent's wallets). TEST always; LIVE only where mainnet is enabled. */
   CIRCLE_TEST_API_KEY: z.string().min(1),
   CIRCLE_TEST_ENTITY_SECRET: z.string().min(1),
@@ -108,6 +147,7 @@ function report(error: z.ZodError, app: string): never {
 export function loadApiEnv(source: Record<string, string | undefined> = process.env): ApiEnv {
   const parsed = apiEnvSchema.safeParse(source);
   if (!parsed.success) report(parsed.error, "api");
+  requirePrivyAppId(parsed.data);
   if (parsed.data.MAINNET_ENABLED) {
     const missing = (
       [
