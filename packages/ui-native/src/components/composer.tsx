@@ -149,6 +149,14 @@ function Composer({
     onSubmit();
     onSent?.();
   };
+  // On a keyboard (web and desktop) Enter sends and Shift+Enter starts a new line, as in every chat; a phone's return
+  // key stays a new line. Never while an input method is composing (Chinese, Japanese, Korean…).
+  const sendOnEnter = (event: { nativeEvent: { key: string }; preventDefault: () => void }) => {
+    const key = event.nativeEvent as unknown as KeyboardEvent;
+    if (key.key !== "Enter" || key.shiftKey || key.isComposing) return;
+    event.preventDefault();
+    submit();
+  };
   const change = (next: string) => {
     const last = sent.current;
     if (last && Date.now() - last.at < AUTOCORRECT_ECHO_MS && next.length >= last.text.trim().length - ECHO_SLACK_CHARS)
@@ -224,6 +232,7 @@ function Composer({
                 multiline
                 scrollEnabled
                 submitBehavior="newline"
+                {...(Platform.OS === "web" ? { onKeyPress: sendOnEnter } : {})}
                 style={Platform.OS === "web" ? WEB_NO_RESIZE : undefined}
                 className={cn("text-foreground max-h-full py-3 font-sans text-base leading-6", INPUT_TEXT_START)}
               />
