@@ -5,9 +5,11 @@
 // The story and the sign-in deep link are not places to return to. Read only in event handlers and effects.
 import { router, type Href } from "expo-router";
 
+import { releaseDeferredAction } from "./deferred-action";
+
 /** Pages that are part of signing in rather than something the person was doing. */
 const NOT_A_DESTINATION = new Set(["/welcome", "/sign-in", "/handle", "/wallet"]);
-const TABS = new Set(["/", "/chat", "/activity", "/settings"]);
+const TABS = new Set(["/", "/markets", "/activity", "/settings"]);
 
 let returnTo: string | undefined;
 /** A link opened with no session at all (a push, an email): the story and sign-in end there instead of home. */
@@ -43,6 +45,8 @@ export function forgetReturnTo() {
 export function finishOnboarding() {
   const target = returnTo ?? takeDeepLink();
   returnTo = undefined;
+  // A money action the guest started before signing in opens once they are back on the page (DeferredActionHost).
+  releaseDeferredAction();
   if (!target) {
     if (router.canGoBack()) router.back();
     else router.replace("/");

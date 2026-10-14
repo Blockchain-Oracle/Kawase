@@ -1,93 +1,34 @@
-// The layer above the tab pages and the dock: the fan's blur, the plus button with its four actions, and the
-// voice overlay. Order matters — the fan sits above its own blur, and the voice overlay above everything, so the
-// plus is blurred away while the orb is up. Rendered once: by the (tabs) layout, or on a desktop window by the
-// signed-in area's layout over the sidebar and every page (no plus there: the sidebar lists the same actions). The
-// plus steps aside on Chat, where the composer sits in its place. Send leads; an action that has not shipped on this network (Request until
-// Stage 5b) is not drawn at all: no "Soon" and no dead row. The closed plus is quiet
-// glass, so the screen's own main action stays the only lime one (R09). The fan's blur is only its backdrop (the
-// actions are the surface) and leaves over the fan's own exit, so both end together (R16). Opening the fan commits
-// to nothing, so it has no haptic: haptics are kept for real outcomes (the allowance accepted, money arrived).
-import { useRouter, useSegments } from "expo-router";
-import { ArrowDownToLine, ArrowLeftRight, HandCoins, QrCode, ScanLine, Send } from "lucide-react-native";
-
-import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
-import { FAN_EXIT_MS, QuickActionFan, type FanAction } from "@kawase/ui-native/components/quick-action-fan";
+// The layer above the tab pages and the dock: the + fan (it rises from the dock's centre) and the voice overlay (its
+// orb rises from the same disc on a hold). Order matters: the voice overlay sits above everything. Rendered once: by
+// the (tabs) layout, or on a desktop window by the signed-in area's layout over the rail and every page — there the
+// rail lists the same actions, so only the voice overlay is drawn. Every action goes through the account gate, so a
+// guest's first money tap opens the sign-in sheet in place and the action follows it.
 import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { useDockClearance } from "@/dock/use-dock-clearance";
-import { useFund } from "@/fund/fund-provider";
-import { useCapability } from "@/home/use-capability";
-import { useT } from "@/i18n";
+import { useAccountGate } from "@/onboarding/account-gate";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { VoiceOverlay } from "@/overlay/voice-overlay";
-import { useTheme } from "@/theme/theme-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
-const FAN_GAP = 12;
-/** Tabs whose own bottom control (the composer) owns the plus button's spot. */
-const TABS_WITHOUT_PLUS = new Set(["chat"]);
+import { ActionFan } from "./action-fan";
 
 export function OverlayHost() {
-  const { t } = useT();
-  const router = useRouter();
   const overlay = useOverlay();
-  const fund = useFund();
-  const { mode } = useTheme();
-  const colors = useThemeColors();
-  const clearance = useDockClearance();
-  const fanOpen = overlay.current === "fan";
-  const segments = useSegments();
-  // On a desktop window the sidebar carries the same actions, so there is no plus.
+  const gate = useAccountGate();
   const wide = useWide();
-  const showPlus = !wide && !TABS_WITHOUT_PLUS.has(segments[segments.length - 1] ?? "");
-
-  const request = useCapability("request");
-  const requestReady = request === "available";
-  const swapReady = useCapability("swap") === "available";
-  // Plan §D "Fan": Add money (the hub, Buy with Apple Pay its first row) · Send · Receive · Swap · Request, then Scan.
-  const actions: FanAction[] = [
-    { key: "fund", label: t("assets.addMoney"), icon: ArrowDownToLine },
-    { key: "send", label: t("home.send"), icon: Send },
-    { key: "receive", label: t("home.receive"), icon: QrCode },
-    ...(swapReady ? [{ key: "swap", label: t("home.swap"), icon: ArrowLeftRight }] : []),
-    ...(requestReady ? [{ key: "request", label: t("home.request"), icon: HandCoins }] : []),
-    { key: "scan", label: t("scan.fanLabel"), icon: ScanLine },
-  ];
-
-  const onAction = (key: string) => {
-    overlay.close();
-    if (key === "receive") router.push("/wallet/receive");
-    else if (key === "fund") fund.open();
-    else if (key === "send") router.push("/send");
-    else if (key === "swap") router.push("/swap");
-    else if (key === "request") router.push("/request");
-    else if (key === "scan") router.push("/scan");
-  };
 
   return (
     <>
-      <BlurOverlay
-        open={fanOpen}
-        onClose={overlay.close}
-        scheme={mode}
-        scrim={colors.scrim}
-        closeLabel={t("common.close")}
-        close="none"
-        modal={false}
-        exitMs={FAN_EXIT_MS}
-      />
-      {showPlus ? (
-        <QuickActionFan
-          open={fanOpen}
-          actions={actions}
-          onToggle={() => overlay.toggle("fan")}
-          onAction={onAction}
-          toggleLabel={t("home.more")}
-          bottom={clearance.dock + FAN_GAP}
-          glass={{ scheme: mode, tint: colors.glass }}
-          covered={overlay.shown === "voice"}
+      {wide ? null : (
+        <ActionFan
+          open={overlay.current === "fan"}
+          onClose={overlay.close}
+          origin={overlay.voiceTrigger}
+          onChoose={(verb) => {
+            overlay.close();
+            gate(verb);
+          }}
         />
-      ) : null}
+      )}
       <VoiceOverlay open={overlay.current === "voice"} />
     </>
   );
