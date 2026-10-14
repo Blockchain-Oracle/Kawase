@@ -88,6 +88,8 @@ import { WithdrawalService } from "./withdraw/withdrawals";
 import { tokenRulesRoutes } from "./tokens/rules-routes";
 import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
+import type { LiveTrades } from "./market/live";
+import { liveTradeRoutes } from "./market/live-routes";
 import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
 import type { AppEnv, SessionUser } from "./types";
@@ -140,6 +142,8 @@ export type AppDeps = {
   signInLimitPerMinute?: number;
   /** Browser origins allowed to call the api. */
   webOrigins?: string[];
+  /** Live trades on Arc mainnet (market/live.ts); absent in tests, where /markets/live is not mounted. */
+  liveTrades?: LiveTrades;
   /** The testnet faucet's drip (Circle's faucet in production, a fake in tests). */
   faucet: FaucetDrip;
   /** The agent's models (D29 registry). */
@@ -460,6 +464,7 @@ export function createApp(deps: AppDeps) {
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets, deps.db));
+  if (deps.liveTrades) app.route("/markets/live", liveTradeRoutes(deps.liveTrades));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));
   app.route("/needs-you", needsYouRoutes(needsYou));

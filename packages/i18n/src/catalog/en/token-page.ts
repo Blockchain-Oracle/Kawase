@@ -98,4 +98,9 @@ export const tokenPage = {
   activity: "Your activity",
   seeAll: "See all",
   onChain: "{{amount}} on {{chain}}",
+  liveWindow: "30 min",
+  elsewhere: "Look closer",
+  basedbotDetail: "Trades, holders and snipers",
+  dexscreenerDetail: "The pair, live",
+  explorer: "On Arc's explorer",
 } as const;

@@ -101,4 +101,9 @@ export const tokenPage: Catalog["tokenPage"] = {
   activity: "Sua atividade",
   seeAll: "Ver tudo",
   onChain: "{{amount}} em {{chain}}",
+  liveWindow: "30 min",
+  elsewhere: "Ver mais de perto",
+  basedbotDetail: "Negociações, holders e snipers",
+  dexscreenerDetail: "O par, ao vivo",
+  explorer: "No explorador da Arc",
 };

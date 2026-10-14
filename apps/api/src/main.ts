@@ -20,6 +20,7 @@ import { circleAgentWallets } from "./marketplace/agent-wallets";
 import { appKitBridges } from "./bridge/engine";
 import { appKitEarn } from "./earn/engine";
 import { liveMarketData } from "./market/sources";
+import { LiveTrades } from "./market/live";
 import { appKitSwaps } from "./swap/engine";
 import { onrampEngines } from "./onramp/engine";
 import { ResendEmail } from "./notify/email";
@@ -81,6 +82,7 @@ const app = createApp({
   onrampPageUrl,
   circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
   market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
+  liveTrades: new LiveTrades(),
   alchemyApiKey: env.ALCHEMY_API_KEY,
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,

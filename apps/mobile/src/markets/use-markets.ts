@@ -1,12 +1,17 @@
 // A Markets list (trending, meme, new, stocks & FX, long/short) from the api's shared market cache. Public data:
 // guests and testnet users read mainnet's markets (R13), labelled as such by the screen. While the list is on screen
 // it is read again every few seconds (prices are live from each token's deepest pair), quietly: rows roll in place.
+// Between reads, every swap on an Arc mainnet row's pool moves its price and its sparkline's head as it lands
+// (useLiveTrades), so a trade shows on the row about a block after it happens.
 import { useIsFocused } from "expo-router";
 import * as React from "react";
 
 import type { MarketListView, MarketSegment, NetworkId, TokenSearchResult } from "@kawase/api-client";
+import { CHAIN_IDS } from "@kawase/identity";
 
 import { api } from "@/session/api";
+
+import { lastTrade, useLiveTrades } from "./live-trades";
 
 export function useMarket(segment: MarketSegment, network: NetworkId) {
   const [market, setMarket] = React.useState<MarketListView>();
@@ -48,7 +53,29 @@ export function useMarket(segment: MarketSegment, network: NetworkId) {
     };
   }, [focused, segment, network]);
 
-  return { market, loading, error, refresh };
+  const liveTokens = React.useMemo(
+    () => (market?.rows ?? []).filter((row) => row.token.chainId === CHAIN_IDS.arc).map((row) => row.token.address),
+    [market],
+  );
+  const live = useLiveTrades(liveTokens);
+  const merged = React.useMemo(() => {
+    if (!market) return market;
+    const pricedAt = Date.parse(market.pricedAt);
+    return {
+      ...market,
+      rows: market.rows.map((row) => {
+        const trade = lastTrade(live, row.token.address);
+        if (!trade || trade.at <= pricedAt) return row;
+        return {
+          ...row,
+          priceUsd: trade.priceUsd,
+          spark: row.spark ? [...row.spark.slice(0, -1), trade.priceUsd] : row.spark,
+        };
+      }),
+    };
+  }, [market, live]);
+
+  return { market: merged, loading, error, refresh, live: live.live };
 }
 
 const SEARCH_DEBOUNCE_MS = 300;

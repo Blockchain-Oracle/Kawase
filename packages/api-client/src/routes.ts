@@ -80,11 +80,23 @@ export type RouteRace = {
 /** What the route race is asked: a swap on Arc, a move out of Arc, or where an asset can earn. */
 export type RouteRaceRequest =
   | { kind: "swap"; tokenIn: string; tokenOut: string; amount: string }
-  | { kind: "bridge"; destination: string; amount: string; asset?: string | null | undefined; toAsset?: string | null | undefined; recipient?: string | null | undefined }
+  | {
+      kind: "bridge";
+      destination: string;
+      amount: string;
+      asset?: string | null | undefined;
+      toAsset?: string | null | undefined;
+      recipient?: string | null | undefined;
+    }
   | { kind: "yield"; asset: string; amount?: string | null | undefined };
 
 /** The race endpoint answers one JSON snapshot per line (NDJSON) as venues answer, the last with `done: true`. */
 export async function* readRouteRace(body: ReadableStream<Uint8Array>): AsyncGenerator<RouteRace> {
+  yield* readNdjson<RouteRace>(body);
+}
+
+/** One JSON value per line (NDJSON), as the stream delivers them: the route race, live trades. */
+export async function* readNdjson<T>(body: ReadableStream<Uint8Array>): AsyncGenerator<T> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -95,11 +107,11 @@ export async function* readRouteRace(body: ReadableStream<Uint8Array>): AsyncGen
     while (newline >= 0) {
       const line = buffer.slice(0, newline).trim();
       buffer = buffer.slice(newline + 1);
-      if (line) yield JSON.parse(line) as RouteRace;
+      if (line) yield JSON.parse(line) as T;
       newline = buffer.indexOf("\n");
     }
     if (done) break;
   }
   const rest = buffer.trim();
-  if (rest) yield JSON.parse(rest) as RouteRace;
+  if (rest) yield JSON.parse(rest) as T;
 }

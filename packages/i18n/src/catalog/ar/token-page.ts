@@ -100,4 +100,9 @@ export const tokenPage: Catalog["tokenPage"] = {
   activity: "نشاطك",
   seeAll: "عرض الكل",
   onChain: "{{amount}} على {{chain}}",
+  liveWindow: "30 دقيقة",
+  elsewhere: "نظرة أقرب",
+  basedbotDetail: "الصفقات والحائزون والقنّاصون",
+  dexscreenerDetail: "الزوج مباشرةً",
+  explorer: "على مستكشف Arc",
 };

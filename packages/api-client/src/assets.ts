@@ -133,7 +133,8 @@ export type SafetyVerdict = {
 export type ChartRange = "1H" | "1D" | "1W" | "1M" | "1Y" | "ALL";
 export type Candle = { t: number; o: number; h: number; l: number; c: number; v: number };
 
-export type TokenAction = "buy" | "sell" | "send" | "receive" | "withdraw" | "bridge" | "earn" | "borrow" | "long_short" | "alert";
+export type TokenAction =
+  "buy" | "sell" | "send" | "receive" | "withdraw" | "bridge" | "earn" | "borrow" | "long_short" | "alert";
 
 /** One action on a token page: available, or unavailable with its reason (R2). */
 export type TokenActionView = { id: TokenAction; available: boolean; reason: string | null };
@@ -182,9 +183,36 @@ export type MarketRow = {
   change1hPct?: number | null;
 };
 
-export type MarketListView = { segment: MarketSegment; network: NetworkId; rows: MarketRow[]; pricedAt: string; stale: boolean; available: boolean };
+/** A swap on Arc mainnet, decoded from the pool's Swap log as it lands (GET /markets/live). */
+export type LiveTrade = {
+  token: string;
+  priceUsd: number;
+  side: "buy" | "sell";
+  amountUsd: number;
+  tx: string;
+  /** Milliseconds since the epoch. */
+  at: number;
+};
 
-export type TokenSearchResult = { token: TokenView; priceUsd: number | null; liquidityUsd: number | null; held: boolean };
+/** One line of GET /markets/live: the last ~30 minutes per token (lowercase address), then each trade, and pings. */
+export type LiveTradeMessage =
+  { type: "snapshot"; trades: Record<string, LiveTrade[]> } | { type: "trade"; trade: LiveTrade } | { type: "ping" };
+
+export type MarketListView = {
+  segment: MarketSegment;
+  network: NetworkId;
+  rows: MarketRow[];
+  pricedAt: string;
+  stale: boolean;
+  available: boolean;
+};
+
+export type TokenSearchResult = {
+  token: TokenView;
+  priceUsd: number | null;
+  liquidityUsd: number | null;
+  held: boolean;
+};
 
 /** A starred token on the Markets "Watchlist" segment. */
 export type WatchRow = { token: TokenView; priceUsd: number | null; change24hPct: number | null; held: boolean };

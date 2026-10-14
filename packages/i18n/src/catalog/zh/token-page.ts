@@ -100,4 +100,9 @@ export const tokenPage: Catalog["tokenPage"] = {
   activity: "你的动态",
   seeAll: "查看全部",
   onChain: "{{chain}} 上的 {{amount}}",
+  liveWindow: "30 分钟",
+  elsewhere: "深入查看",
+  basedbotDetail: "交易、持有人和狙击者",
+  dexscreenerDetail: "交易对，实时",
+  explorer: "在 Arc 浏览器上",
 };
