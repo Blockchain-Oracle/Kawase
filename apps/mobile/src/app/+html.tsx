@@ -34,7 +34,7 @@ html, body { background-color: var(--color-background, ${tokens.themes[tokens.de
 :where([role="button"], [role="link"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"])[aria-disabled="true"] {
   cursor: default;
 }
-:where([role="button"], [role="link"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], a[href], input, textarea):focus-visible {
+:where([role="button"], [role="link"], [role="tab"], [role="switch"], [role="checkbox"], [role="radio"], a[href]):focus-visible {
   outline: 2px solid var(--color-ring, ${tokens.themes[tokens.defaultMode].primary});
   outline-offset: 2px;
 }

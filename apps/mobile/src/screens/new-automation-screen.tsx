@@ -125,9 +125,6 @@ export function NewAutomationScreen() {
 
   return (
     <Page title={t("automation.newTitle")}>
-      {drafted.map((automation) => (
-        <AutomationCard key={automation.id} output={{ automation }} />
-      ))}
       <Section title={t("automation.newPick")}>
         <ListGroup>
           {TEMPLATES.map((entry) => (
@@ -213,6 +210,10 @@ export function NewAutomationScreen() {
         }}
         unavailable={(token) => (token.status === "impersonator" ? t("tokenPage.n_blocked") : token.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
       />
+      {/* A drafted automation appears where "Draft it" was tapped, newest first. */}
+      {drafted.map((automation) => (
+        <AutomationCard key={automation.id} output={{ automation }} />
+      ))}
     </Page>
   );
 }

@@ -93,8 +93,9 @@ export function HomeScreen() {
   React.useEffect(() => {
     if (!runNow || startedRun.current === runNow) return;
     startedRun.current = runNow;
-    router.setParams({ run: undefined });
     run.start(Crypto.randomUUID(), runNow);
+    // Off the address too, so a reload never asks again.
+    router.replace("/");
   }, [runNow, router, run]);
 
   // Ask Kawase from another screen: the request waits in the composer for the person's send.

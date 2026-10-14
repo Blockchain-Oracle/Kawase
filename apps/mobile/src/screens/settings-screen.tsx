@@ -35,7 +35,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DEFAULT_VOICE_PREFS } from "@kawase/config";
 import { LANGUAGE_NAMES } from "@kawase/i18n";
 import { arcIdentity } from "@kawase/identity";
-import { amount, formatAmount } from "@kawase/money";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
@@ -56,6 +55,7 @@ import { ModeCapsule } from "@/components/shell/ModeCapsule";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { stopInterfaceSounds } from "@/feedback/feedback";
 import { setFeedbackPreference, useFeedbackPreferences } from "@/feedback/preferences";
+import { formatUsd } from "@/budget/format";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { voiceName } from "@/screens/voice-settings-screen";
@@ -135,7 +135,8 @@ export function SettingsScreen() {
     let current = true;
     setBudget(undefined);
     setAgentBalance(undefined);
-    const usd = (base: string) => formatAmount(amount("USDC", BigInt(base)), locale);
+    // "$2 of $200": dollars, short, so the row never cuts its own value off.
+    const usd = (base: string) => formatUsd(BigInt(base), locale);
     api.budget
       .get()
       .then(({ budget: view }) => {
