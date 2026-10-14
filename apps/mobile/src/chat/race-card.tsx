@@ -13,7 +13,17 @@
 import { Route as RouteIcon, RotateCcw } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
-import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withRepeat, withTiming, ZoomIn } from "react-native-reanimated";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  ZoomIn,
+} from "react-native-reanimated";
 
 import { MOTION } from "@kawase/config";
 import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
@@ -63,10 +73,20 @@ function useRaceFormat() {
   const { locale } = useLocale();
   return {
     amount: (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: AMOUNT_DIGITS }).format(value),
-    fee: (usd: number) => t("feed.raceFee", { fee: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(usd) }),
+    fee: (usd: number) =>
+      t("feed.raceFee", {
+        fee: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(
+          usd,
+        ),
+      }),
     eta: (seconds: number) =>
-      seconds < SECONDS_PER_MINUTE ? t("feed.raceSeconds", { value: Math.round(seconds) }) : t("feed.raceMinutes", { value: Math.round(seconds / SECONDS_PER_MINUTE) }),
-    rate: (bps: number) => t("feed.raceRate", { rate: new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(bps / BPS_PER_UNIT) }),
+      seconds < SECONDS_PER_MINUTE
+        ? t("feed.raceSeconds", { value: Math.round(seconds) })
+        : t("feed.raceMinutes", { value: Math.round(seconds / SECONDS_PER_MINUTE) }),
+    rate: (bps: number) =>
+      t("feed.raceRate", {
+        rate: new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 2 }).format(bps / BPS_PER_UNIT),
+      }),
     reason: (reason: string | null) => {
       switch (reason) {
         case "timeout":
@@ -86,7 +106,11 @@ function useRaceFormat() {
   };
 }
 
-const EYEBROW: Record<AgentRaceRequest["kind"], string> = { swap: "feed.raceSwap", bridge: "feed.raceBridge", yield: "feed.raceYield" };
+const EYEBROW: Record<AgentRaceRequest["kind"], string> = {
+  swap: "feed.raceSwap",
+  bridge: "feed.raceBridge",
+  yield: "feed.raceYield",
+};
 
 /** A soft bar sweeping across where the amount will land (the row is still being asked). */
 function CheckingBar() {
@@ -100,7 +124,10 @@ function CheckingBar() {
   }, [reduced, sweep]);
   const sheen = useAnimatedStyle(() => ({ transform: [{ translateX: (sweep.value * HALF - 1) * width }] }));
   return (
-    <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)} className="bg-secondary h-4 w-20 overflow-hidden rounded-full">
+    <View
+      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      className="bg-secondary h-4 w-20 overflow-hidden rounded-full"
+    >
       {reduced ? null : <Animated.View style={sheen} className="bg-foreground/10 h-full w-1/2 rounded-full" />}
     </View>
   );
@@ -109,11 +136,17 @@ function CheckingBar() {
 /** The venue's mark: dim while asked (breathing), lit once quoted, faded when it could not quote. */
 function VenueMark({ quote }: { quote: RouteQuote }) {
   const reduced = useReducedMotionLive();
-  const opacity = useSharedValue(quote.status === "quoted" ? 1 : quote.status === "checking" ? ASKING_OPACITY : FAILED_OPACITY);
+  const opacity = useSharedValue(
+    quote.status === "quoted" ? 1 : quote.status === "checking" ? ASKING_OPACITY : FAILED_OPACITY,
+  );
   React.useEffect(() => {
     cancelAnimation(opacity);
     if (quote.status === "checking" && !reduced) {
-      opacity.value = withRepeat(withTiming(ASKING_OPACITY + (1 - ASKING_OPACITY) / HALF, { duration: MOTION.sendingCycleMs / HALF }), -1, true);
+      opacity.value = withRepeat(
+        withTiming(ASKING_OPACITY + (1 - ASKING_OPACITY) / HALF, { duration: MOTION.sendingCycleMs / HALF }),
+        -1,
+        true,
+      );
       return () => cancelAnimation(opacity);
     }
     const target = quote.status === "quoted" ? 1 : quote.status === "checking" ? ASKING_OPACITY : FAILED_OPACITY;
@@ -148,17 +181,28 @@ function Arrival({ quote, kind, live }: { quote: RouteQuote; kind: RouteRace["ki
   // Counts up only when it lands while the person watches; a reopened thread shows the figure.
   const [value, setValue] = React.useState(live ? 0 : target);
   React.useEffect(() => setValue(target), [target]);
-  if (kind === "yield" && typeof quote.apyBps === "number") return <Text className="text-foreground text-base font-semibold">{format.rate(quote.apyBps)}</Text>;
+  if (kind === "yield" && typeof quote.apyBps === "number")
+    return <Text className="text-foreground text-base font-semibold">{format.rate(quote.apyBps)}</Text>;
   if (!quote.receive) return null;
   return (
-    <View className="flex-row items-baseline gap-1">
+    <View className="shrink-0 flex-row items-baseline gap-1">
       <NumberTicker value={value} format={format.amount} className="text-foreground text-base font-semibold" />
       <Text className="text-muted-foreground text-sm">{quote.receive.symbol}</Text>
     </View>
   );
 }
 
-function RaceRow({ quote, kind, best, live }: { quote: RouteQuote; kind: RouteRace["kind"]; best: boolean; live: boolean }) {
+function RaceRow({
+  quote,
+  kind,
+  best,
+  live,
+}: {
+  quote: RouteQuote;
+  kind: RouteRace["kind"];
+  best: boolean;
+  live: boolean;
+}) {
   const { t } = useT();
   const format = useRaceFormat();
   const reduced = useReducedMotionLive();
@@ -169,30 +213,60 @@ function RaceRow({ quote, kind, best, live }: { quote: RouteQuote; kind: RouteRa
     if (was.current === "checking" && quote.status === "quoted" && live) setLanded(true);
     was.current = quote.status;
   }, [quote.status, live]);
-  const facts = [quote.feeUsd !== null ? format.fee(quote.feeUsd) : null, quote.etaSeconds !== null ? format.eta(quote.etaSeconds) : null].filter(Boolean).join(" · ");
+  const facts = [
+    quote.feeUsd !== null ? format.fee(quote.feeUsd) : null,
+    quote.etaSeconds !== null ? format.eta(quote.etaSeconds) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <Animated.View entering={reduced ? undefined : FadeIn.duration(MOTION.sheetMs)} className={cn("relative flex-row items-center gap-3 rounded-2xl px-2 py-2", best && "bg-secondary")}>
+    <Animated.View
+      entering={reduced ? undefined : FadeIn.duration(MOTION.sheetMs)}
+      className={cn("relative flex-row items-center gap-3 rounded-2xl px-2 py-2", best && "bg-secondary")}
+    >
       <Wash on={landed} />
       <VenueMark quote={quote} />
       <View className="min-w-0 flex-1 gap-0.5">
-        <View className="flex-row items-center gap-2">
-          <Text numberOfLines={1} className={cn("text-base font-semibold", quote.status === "quoted" ? "text-foreground" : "text-muted-foreground", TEXT_START)}>
-            {quote.label}
-          </Text>
-          {best ? (
-            <Animated.View key={`best-${quote.venue}`} entering={reduced ? undefined : ZoomIn.duration(MOTION.sheetMs)} exiting={reduced ? undefined : FadeOut.duration(MOTION.pressMs)}>
-              <Badge>
-                <Text>{t("feed.raceBest")}</Text>
-              </Badge>
-            </Animated.View>
-          ) : null}
-        </View>
-        {quote.status === "quoted" && facts ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{facts}</Text> : null}
+        <Text
+          numberOfLines={1}
+          className={cn(
+            "text-base font-semibold",
+            quote.status === "quoted" ? "text-foreground" : "text-muted-foreground",
+            TEXT_START,
+          )}
+        >
+          {quote.label}
+        </Text>
+        {/* "Best" leads the second line (the name keeps the first whole on a phone, never under the amount). */}
+        {best || (quote.status === "quoted" && facts) ? (
+          <View className="flex-row items-center gap-2">
+            {best ? (
+              <Animated.View
+                key={`best-${quote.venue}`}
+                entering={reduced ? undefined : ZoomIn.duration(MOTION.sheetMs)}
+                exiting={reduced ? undefined : FadeOut.duration(MOTION.pressMs)}
+              >
+                <Badge>
+                  <Text>{t("feed.raceBest")}</Text>
+                </Badge>
+              </Animated.View>
+            ) : null}
+            {quote.status === "quoted" && facts ? (
+              <Text numberOfLines={1} className={cn("text-muted-foreground shrink text-xs", TEXT_START)}>
+                {facts}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         {quote.status === "failed" || quote.status === "unavailable" ? (
           <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{format.reason(quote.reason)}</Text>
         ) : null}
       </View>
-      {quote.status === "checking" ? <CheckingBar /> : quote.status === "quoted" ? <Arrival quote={quote} kind={kind} live={live} /> : null}
+      {quote.status === "checking" ? (
+        <CheckingBar />
+      ) : quote.status === "quoted" ? (
+        <Arrival quote={quote} kind={kind} live={live} />
+      ) : null}
     </Animated.View>
   );
 }
@@ -236,7 +310,15 @@ function RaceSkeleton({ kind }: { kind: AgentRaceRequest["kind"] | undefined }) 
  * The race card for one race_routes part: `output` is its latest snapshot (null before the first), `live` while the
  * snapshots are still preliminary. Never a confirm: the propose step that follows carries it.
  */
-export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | null; live: boolean; kind?: AgentRaceRequest["kind"] | undefined }) {
+export function RaceCard({
+  output,
+  live,
+  kind,
+}: {
+  output: RaceRoutesOutput | null;
+  live: boolean;
+  kind?: AgentRaceRequest["kind"] | undefined;
+}) {
   const { t } = useT();
   const resume = useChatResume();
   if (!output) return <RaceSkeleton kind={kind} />;
@@ -247,7 +329,9 @@ export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | nu
       return (
         <View className="bg-card border-border flex-row items-center gap-2 self-start rounded-full border py-2 pe-4 ps-3">
           <Icon as={RouteIcon} className="text-muted-foreground size-4" />
-          <Text className="text-muted-foreground text-sm">{t(output.reason === "unknown_token" ? "feed.raceUnknownToken" : "feed.raceDirect")}</Text>
+          <Text className="text-muted-foreground text-sm">
+            {t(output.reason === "unknown_token" ? "feed.raceUnknownToken" : "feed.raceDirect")}
+          </Text>
         </View>
       );
     return (
@@ -277,11 +361,17 @@ export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | nu
         ) : (
           <Text className="text-muted-foreground text-sm">{t("feed.raceCompared", { total })}</Text>
         )}
-        {racing ? <Text className="text-muted-foreground text-sm tabular-nums">{t("feed.raceAnswered", { answered, total })}</Text> : null}
+        {racing ? (
+          <Text className="text-muted-foreground text-sm tabular-nums">
+            {t("feed.raceAnswered", { answered, total })}
+          </Text>
+        ) : null}
       </View>
       <RaceRows race={race} live={live} />
       {racing ? null : (
-        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{best ? t("feed.racePick", { venue: best.label }) : t("feed.raceNone")}</Text>
+        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>
+          {best ? t("feed.racePick", { venue: best.label }) : t("feed.raceNone")}
+        </Text>
       )}
     </AgentCard>
   );

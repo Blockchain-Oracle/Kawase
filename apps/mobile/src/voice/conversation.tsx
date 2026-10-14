@@ -1,8 +1,9 @@
 // The live conversation under the orb, the same on the phone and on the web (ChatGPT's voice mode, Meta AI's call
 // dock and ElevenReader's "Try saying" row, Refero flows 7030 / 12673 / 8983): a status line, the person's words small
 // and Kawase's answer large as live captions, a few things to try before the first word (tapping one sends it as
-// typed text into the same voice session), Kawase's cards rising as its tools produce them — a send to confirm is
-// confirmed on its card, never by a spoken "yes" — and one dock of round controls at the foot: type, mute, stop, end.
+// typed text into the same voice session), Kawase's cards rising under its words as its tools produce them (one
+// scrolling column, so a tall card never squeezes the answer out) — a send to confirm is confirmed on its card, never
+// by a spoken "yes" — and one dock of round controls at the foot: type, mute, stop, end.
 // The orb follows whoever is talking (written into a shared value from the audio level, never through React state
 // per tick) and swirls slowly while Kawase thinks. The room itself (native or browser) is joined by the platform's
 // voice-session file.
@@ -52,7 +53,6 @@ const THINK_LOW = 0.24;
 const THINK_HIGH = 0.5;
 const THINK_HALF_MS = 800;
 const STOP_TIMEOUT_MS = 5000;
-const CARDS_MAX_HEIGHT = 340;
 const SEGMENT_ID = "lk.segment_id";
 /** LiveKit Agents reads typed input on this text-stream topic (AgentSession's room input, text enabled by default). */
 const CHAT_TOPIC = "lk.chat";
@@ -277,25 +277,27 @@ export function Conversation({
             </View>
           </Animated.View>
         ) : null}
+        {cards.length > 0 ? (
+          <View style={styles.cards}>
+            {cards.map((card) => {
+              const part: ToolPart = {
+                type: `tool-${card.toolName}`,
+                toolCallId: card.toolCallId,
+                state: "output-available",
+                output: card.output,
+              };
+              return (
+                <Animated.View
+                  key={card.toolCallId}
+                  entering={reduced ? undefined : FadeInDown.duration(MOTION.sheetMs)}
+                >
+                  <ToolCard part={part} onToolOutput={() => undefined} />
+                </Animated.View>
+              );
+            })}
+          </View>
+        ) : null}
       </ScrollView>
-
-      {cards.length > 0 ? (
-        <ScrollView style={styles.cards} contentContainerStyle={styles.cardsBody}>
-          {cards.map((card) => {
-            const part: ToolPart = {
-              type: `tool-${card.toolName}`,
-              toolCallId: card.toolCallId,
-              state: "output-available",
-              output: card.output,
-            };
-            return (
-              <Animated.View key={card.toolCallId} entering={reduced ? undefined : FadeInDown.duration(MOTION.sheetMs)}>
-                <ToolCard part={part} onToolOutput={() => undefined} />
-              </Animated.View>
-            );
-          })}
-        </ScrollView>
-      ) : null}
 
       <View style={[styles.dock, ELEVATION.dock, { backgroundColor: color.glassTint, borderColor: color.glassRim }]}>
         <DockButton icon={Keyboard} label={t("home.typeInstead")} onPress={() => onTypeInstead(threadId)} />
@@ -368,8 +370,7 @@ const styles = StyleSheet.create({
   ideas: { alignItems: "center", gap: SPACE.md, marginTop: SPACE.sm },
   ideaRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: SPACE.sm },
   idea: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm + SPACE.xxs, borderRadius: RADIUS.pill },
-  cards: { alignSelf: "stretch", maxHeight: CARDS_MAX_HEIGHT },
-  cardsBody: { gap: SPACE.md, paddingBottom: SPACE.sm },
+  cards: { alignSelf: "stretch", gap: SPACE.md, marginTop: SPACE.sm },
   dock: {
     flexDirection: "row",
     alignItems: "center",
