@@ -1,9 +1,10 @@
 // Live, read-only check of the route race on Arc mainnet (no signing, no transaction): races 10 USDC → EURC across
 // every swap venue, has each new venue (Uniswap, 0x, Socket) build and pass its calldata checks for the requester,
 // and races 5 USDC Arc → Base (USDC) and 1 USDC Arc → Base (ETH, Gas.zip). Prints request ids, amounts and targets.
-// Run from the repo root: pnpm --filter @kawase/api exec tsx src/routing/race.live.ts [requester]
+// Run from the repo root: pnpm --filter @kawase/api exec tsx src/routing/race.live.ts [requester] [--record file.json]
+// (--record writes every snapshot, for the RouteList's gallery recording.)
 // Keys come from the repo's .env (UNISWAP_API_KEY, ZEROX_API_KEY); nothing secret is printed.
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { createPublicClient, getAddress, http, type Address, type PublicClient } from "viem";
 
 import type { RouteRace } from "@kawase/api-client";
@@ -20,7 +21,11 @@ import { createRouteRacer } from "./racer";
 const ENV_FILE = new URL("../../../../.env", import.meta.url).pathname;
 if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 
-const requester = getAddress(process.argv[2] ?? "0x1111111111111111111111111111111111111111");
+const args = process.argv.slice(2);
+const recordAt = args.indexOf("--record");
+const recordFile = recordAt >= 0 ? args[recordAt + 1] : undefined;
+const requester = getAddress(args.find((arg) => arg.startsWith("0x")) ?? "0x1111111111111111111111111111111111111111");
+const recorded: Record<string, RouteRace[]> = {};
 const env = loadApiEnv();
 const network = getNetwork("mainnet");
 const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_MAINNET) }) as PublicClient;
@@ -39,8 +44,10 @@ async function run(label: string, race: AsyncGenerator<RouteRace>) {
   console.log(`\n== ${label}`);
   let count = 0;
   let last: RouteRace | undefined;
+  const list: RouteRace[] = (recorded[label] = []);
   for await (const snapshot of race) {
     console.log(line(snapshot, count++));
+    list.push(snapshot);
     last = snapshot;
   }
   console.log(`snapshots: ${count}`);
@@ -79,3 +86,8 @@ for (const venue of ["uniswap", "zerox", "socket"] as SwapVenue[]) {
 
 await run("bridge 5 USDC Arc → Base (USDC)", await racer.bridge(user, { kind: "bridge", destination: "base", amount: "5" }));
 await run("bridge 1 USDC Arc → Base (ETH for gas)", await racer.bridge(user, { kind: "bridge", destination: "base", amount: "1", toAsset: "ETH" }));
+
+if (recordFile) {
+  writeFileSync(recordFile, JSON.stringify(recorded, null, 1));
+  console.log("\nrecorded to", recordFile);
+}

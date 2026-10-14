@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "project": {
+    "name": "@kawase/mobile",
+    "productType": "AI-agent money app on Arc: the agent is the front door, screens are add-ons (D37)",
+    "stack": ["expo-57", "react-native-0.86", "expo-router", "reanimated-4", "uniwind", "react-native-web"]
+  },
+  "authority": {
+    "plan": "~/.claude/plans/compressed-dreaming-yao.md (The premium bar §1)",
+    "direction": "Senryo look (D41): plan/research/2026-10-14/03-senryo-design.md, 04-senryo-flows.md",
+    "components": "plan/research/2026-10-14/05-21st-components.md"
+  },
+  "components": {
+    "sourced": [
+      {
+        "name": "route-list",
+        "lane": "routes",
+        "source": "composed from 21st.dev parts (research found no single 21st route-race component): rmahammad/streaming-data-rows (id 29368), sean0205/c-radio-group-17 (id 28337), prebuiltui/badge-tag (id 6955); retrieved 2026-10-14 via `21st get`",
+        "file": "apps/mobile/src/routes/route-list.tsx",
+        "port": {
+          "29368": "rows insert, re-rank and light up as the stream changes them: Reanimated LinearTransition (spring) for the re-rank, a fade-in of the new value instead of the number morph, shaped skeletons for rows still pricing, loading/empty/error states and reduced motion (100 ms) from its contract",
+          "28337": "each choice is a radio card: whole row pressable, ring + filled dot when picked, accessibilityRole radio inside a radiogroup",
+          "6955": "the 'Best' mark: an inset pill on the accent token with the label in its foreground"
+        },
+        "deviations": [
+          "one column list, not a table: Wise compare-sheet layout (plan/research 08-references #1) — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
+          "no ▲/▼ change glyphs or wash: a route row changes once (checking → quoted), so the light-up (mark opacity 0.38 → 1) carries it",
+          "routes Kawase cannot run are never offered: they collapse into one 'Didn't quote' disclosure with their reason",
+          "motion/react replaced by react-native-reanimated so one file serves iOS, Android and the web (react-native-web)",
+          "token names only (bg-card, border-primary, text-muted-foreground…); values come from the Look lane"
+        ],
+        "status": "built (Stage 2) — shown in /dev/gallery replaying races recorded on Arc mainnet; live via use-route-race.ts once POST /routes/race is mounted"
+      }
+    ]
+  }
+}

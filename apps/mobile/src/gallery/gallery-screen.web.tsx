@@ -22,6 +22,7 @@ import {
 import * as React from "react";
 
 import { SAMPLE, SAMPLE_ADDRESS, type SampleLocale } from "@/gallery/sample";
+import { RouteListGallery } from "@/routes/route-list-gallery";
 import { useTheme, type Mode, type Network } from "@/theme/theme-provider";
 
 const EVENT_ICONS = { a: ArrowUpRight, b: ArrowDownLeft, c: CalendarClock } as const;
@@ -209,6 +210,10 @@ export function GalleryScreen({ initialLocale = "en" }: GalleryScreenProps) {
                 return { ...event, icon: <EventIcon />, tone: index === 1 ? "in" : "out" };
               })}
             />
+          </Section>
+
+          <Section title="Route race">
+            <RouteListGallery />
           </Section>
 
           <Section title="Conversation">
