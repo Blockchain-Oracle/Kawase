@@ -14,6 +14,7 @@ import type { Candle, MarginSide } from "@kawase/api-client";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
 
+import { useT } from "@/i18n";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 export type ChartLevelKind = "price" | "entry" | "liquidation" | "takeProfit" | "stopLoss";
@@ -52,8 +53,11 @@ const SCRUB_SLOP = 6;
 const SCRUB_VERTICAL = 14;
 const DASH = "3 4";
 const DOT = "1 4";
+const STROKE = 1;
+const STROKE_BOLD = 1.5;
 
 export function TradeChart({ candles, livePrice, levels, side, height, formatValue, formatTime, accessibilityLabel, className }: Props) {
+  const { t } = useT();
   const colors = useThemeColors();
   const [width, setWidth] = React.useState(0);
   const [hover, setHover] = React.useState<number | null>(null);
@@ -173,7 +177,7 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
                 y1={y(level.value)}
                 y2={y(level.value)}
                 stroke={tone(level.kind)}
-                strokeWidth={level.kind === "liquidation" || level.kind === "entry" ? 1.5 : 1}
+                strokeWidth={level.kind === "liquidation" || level.kind === "entry" ? STROKE_BOLD : STROKE}
                 strokeDasharray={level.kind === "takeProfit" || level.kind === "stopLoss" ? DOT : level.kind === "price" ? DASH : undefined}
               />
             ))}
@@ -219,8 +223,8 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
         {active ? (
           <View pointerEvents="none" className="bg-card border-border absolute top-2 gap-0.5 rounded-xl border px-2.5 py-1.5" style={activeX > plotW * HALF ? { start: GAP, width: READOUT_W } : { end: AXIS_W + GAP, width: READOUT_W }}>
             <Text className="text-muted-foreground text-[11px]">{formatTime(active.t)}</Text>
-            <Text className={cn("font-mono text-[11px] tabular-nums", active.c >= active.o ? "text-success" : "text-destructive")}>{`O ${formatValue(active.o)}  C ${formatValue(active.c)}`}</Text>
-            <Text className="text-muted-foreground font-mono text-[11px] tabular-nums">{`H ${formatValue(active.h)}  L ${formatValue(active.l)}`}</Text>
+            <Text className={cn("font-mono text-[11px] tabular-nums", active.c >= active.o ? "text-success" : "text-destructive")}>{t("desktop.ohlcOpenClose", { open: formatValue(active.o), close: formatValue(active.c) })}</Text>
+            <Text className="text-muted-foreground font-mono text-[11px] tabular-nums">{t("desktop.ohlcHighLow", { high: formatValue(active.h), low: formatValue(active.l) })}</Text>
           </View>
         ) : null}
       </View>

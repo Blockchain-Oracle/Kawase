@@ -47,4 +47,7 @@ export const desktop: Catalog["desktop"] = {
   orderRow: "{{side}} {{market}} · أمر",
   orderDetail: "وضعت {{margin}} · تعرّض {{exposure}}",
   sheetTitle: "تداول {{market}}",
+  ohlcOpenClose: "فتح {{open}}  إغلاق {{close}}",
+  ohlcHighLow: "أعلى {{high}}  أدنى {{low}}",
+  routeSteps: "Aave V4 · {{steps}} خطوات",
 };

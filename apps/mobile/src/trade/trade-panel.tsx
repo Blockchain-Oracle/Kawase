@@ -331,7 +331,7 @@ export function TradePanel({ trade, inSheet = false, compact = false }: { trade:
               {draft.leverage > 1 ? <Fact label={t("margin.borrowRate")} value={t("margin.borrowRateValue", { rate: format.percent(draft.borrowApr, RATE_DIGITS) })} /> : null}
               <Fact label={t("margin.entry")} value={format.price(draft.markPrice)} />
               <Fact label={t("margin.networkFee")} value={format.usd(Number(formatUnits(BigInt(draft.fees.network), USDC_DECIMALS)), FEE_DIGITS)} />
-              <Fact label={t("margin.route")} value={t("desktop.routeValue", { venues: draft.venues.join(", ") || "—", steps: draft.loops + 1 })} />
+              <Fact label={t("margin.route")} value={draft.venues.length > 0 ? t("desktop.routeValue", { venues: draft.venues.join(", "), steps: draft.loops + 1 }) : t("desktop.routeSteps", { steps: draft.loops + 1 })} />
             </Animated.View>
           ) : null}
         </View>

@@ -47,4 +47,7 @@ export const desktop = {
   orderRow: "{{side}} {{market}} · order",
   orderDetail: "{{margin}} in · {{exposure}} exposure",
   sheetTitle: "Trade {{market}}",
+  ohlcOpenClose: "O {{open}}  C {{close}}",
+  ohlcHighLow: "H {{high}}  L {{low}}",
+  routeSteps: "Aave V4 · {{steps}} steps",
 } as const;
