@@ -13,7 +13,8 @@ if [[ "${1:-}" != "--no-export" ]]; then
   # shellcheck disable=SC1091
   source deploy/web.public.env
   set +a
-  (cd apps/mobile && NODE_OPTIONS=--max-old-space-size=8192 npx expo export --platform web --clear)
+  # Tree shaking (metro.config.js) drops the exports nothing uses: about a quarter of the first load.
+  (cd apps/mobile && EXPO_UNSTABLE_TREE_SHAKING=1 EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH=1 NODE_OPTIONS=--max-old-space-size=8192 npx expo export --platform web --clear)
 fi
 echo "$SHA" > apps/mobile/dist/client/version.txt
 ssh "$HOST" "mkdir -p /data/kawase-web/releases/$SHA"

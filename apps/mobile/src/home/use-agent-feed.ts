@@ -25,7 +25,8 @@ const readers = new Set<() => Promise<void>>();
 const publish = () => listeners.forEach((listener) => listener());
 
 /** Rows still moving on the chain, which keep the feed reading fast. */
-const inFlight = (feed: AgentFeed | undefined) => Boolean(feed?.groups.some((group) => group.items.some((item) => item.outcome === "in_flight")));
+const inFlight = (feed: AgentFeed | undefined) =>
+  Boolean(feed?.groups.some((group) => group.items.some((item) => item.outcome === "in_flight")));
 
 export type AgentFeedState = {
   feed: AgentFeed | undefined;
@@ -38,6 +39,8 @@ export type AgentFeedState = {
   /** A guest has no feed: Home shows markets and the composer instead. */
   guest: boolean;
 };
+
+const inflight = new Map<Network, Promise<AgentFeed>>();
 
 export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   const { status, user } = useSession();
@@ -58,7 +61,14 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
     if (!account) return;
     setReading(true);
     try {
-      const feed = await api.feed.get(network);
+      // Home and Activity are both mounted and poll on the same clock: a read already on its way is shared, not sent
+      // twice (the api saw two identical /feed calls every 30 s per person).
+      let read = inflight.get(network);
+      if (!read) {
+        read = api.feed.get(network).finally(() => inflight.delete(network));
+        inflight.set(network, read);
+      }
+      const feed = await read;
       cache.set(network, { feed, at: Date.now() });
       setError(null);
       publish();
@@ -105,4 +115,5 @@ export function invalidateAgentFeed() {
 }
 
 /** Every row of the feed, in the feed's own group order, as one list. */
-export const allRows = (feed: AgentFeed | undefined): AgentFeedItem[] => feed?.groups.flatMap((group) => group.items) ?? [];
+export const allRows = (feed: AgentFeed | undefined): AgentFeedItem[] =>
+  feed?.groups.flatMap((group) => group.items) ?? [];
