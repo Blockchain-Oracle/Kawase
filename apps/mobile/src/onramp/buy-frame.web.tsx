@@ -46,7 +46,7 @@ export function BuyFrame({ orderId, source, onEvent, onClose, className }: BuyFr
   if (source.kind === "link") return <LinkFrame orderId={orderId} url={source.url} onEvent={onEvent} className={className} />;
   return (
     <View className={cn("flex-1", className)}>
-      <BuyPage orderId={orderId} pageKey={keyOf(source.pageUrl)} onClose={() => onClose?.()} />
+      <BuyPage orderId={orderId} pageKey={keyOf(source.pageUrl)} onClose={(options) => onClose?.(options)} />
     </View>
   );
 }

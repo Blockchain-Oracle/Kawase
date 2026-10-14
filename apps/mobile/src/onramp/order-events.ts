@@ -48,9 +48,16 @@ type WebKitHost = { webkit?: { messageHandlers?: { ReactNativeWebView?: { postMe
  * `window.ReactNativeWebView`, only WebKit's own message handler; Android has the injected one. No host = a plain
  * browser tab, where this does nothing.
  */
-export function postToHost(message: object): boolean {
+const hostBridge = () => {
   const host = globalThis as unknown as WebKitHost;
-  const bridge = host.webkit?.messageHandlers?.ReactNativeWebView ?? host.ReactNativeWebView;
+  return host.webkit?.messageHandlers?.ReactNativeWebView ?? host.ReactNativeWebView;
+};
+
+/** True when this page runs inside the app's WebView (the app, not the page, decides where a close goes). */
+export const hasHost = (): boolean => !!hostBridge();
+
+export function postToHost(message: object): boolean {
+  const bridge = hostBridge();
   if (!bridge) return false;
   bridge.postMessage(JSON.stringify(message));
   return true;

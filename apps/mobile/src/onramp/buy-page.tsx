@@ -79,15 +79,26 @@ function useOnline(): boolean {
   return online;
 }
 
-/** Seconds since `since` (an ISO time), counted while `active`. */
-function useElapsedMs(since: string | undefined, active: boolean): number {
+/**
+ * Time spent in the current waiting step, measured from when this page first saw it (not from the order's creation:
+ * a Circle order reaches "submitted" only after the ID and card steps, a Coinbase one reaches "bridging" only after the
+ * delivery on Base). `step` names the step (status and stage); a new step starts the count again, none stops it.
+ */
+function useWaitingMs(step: string | undefined): number {
+  const [since, setSince] = React.useState<number>();
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => {
-    if (!active) return undefined;
+    if (!step) {
+      setSince(undefined);
+      return undefined;
+    }
+    const start = Date.now();
+    setSince(start);
+    setNow(start);
     const timer = setInterval(() => setNow(Date.now()), MS_PER_SECOND);
     return () => clearInterval(timer);
-  }, [active]);
-  return since && active ? Math.max(0, now - new Date(since).getTime()) : 0;
+  }, [step]);
+  return step && since !== undefined ? Math.max(0, now - since) : 0;
 }
 
 /** The skeleton shaped like the page: header, rail, the widget's box. */
@@ -129,12 +140,13 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
   const { order, accept } = watch;
   const held = useHeld(watch.loading);
 
-  // Circle's session for the widget: minted fresh by the api for this open order (it re-mints on SESSION_TIMEOUT).
+  // Circle's session for the widget: minted fresh by the api for this open order (it re-mints on SESSION_TIMEOUT). Once
+  // the order is submitted the widget is hidden behind the waiting card, so no session is minted for it.
   const [session, setSession] = React.useState<OnrampSessionView>();
   const [sessionTry, setSessionTry] = React.useState(0);
   const [widgetState, setWidgetState] = React.useState<"minting" | "mounting" | "ready" | "failed">("minting");
   const [widgetFailure, setWidgetFailure] = React.useState<{ code: string; retry: boolean }>();
-  const wantsWidget = order?.engine !== "coinbase" && !!order && (order.status === "created" || order.status === "opened" || order.status === "submitted");
+  const wantsWidget = order?.engine !== "coinbase" && !!order && (order.status === "created" || order.status === "opened");
 
   React.useEffect(() => {
     if (!wantsWidget || session) return undefined;
@@ -174,6 +186,16 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
     [accept, client, orderId],
   );
 
+  // Every way out (the X, Done, Try again) tells the app around the page first, so a WebView closes its sheet instead
+  // of navigating inside itself; `retry` asks the app to start the purchase again.
+  const leave = React.useCallback(
+    (options?: { retry?: boolean }) => {
+      postToHost({ event: HOST_EVENTS.close, orderId, retry: options?.retry === true });
+      onClose(options);
+    },
+    [onClose, orderId],
+  );
+
   // Arrival plays once, here only when no app is around the page (the app plays it from the message).
   const settledOnce = React.useRef(false);
   React.useEffect(() => {
@@ -182,7 +204,8 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
     if (!postToHost({ event: HOST_EVENTS.settled, orderId })) void confirmedFeedback(`onramp:${orderId}`);
   }, [order?.status, orderId]);
 
-  const elapsed = useElapsedMs(order?.createdAt, order?.status === "submitted" || order?.stage === "bridging");
+  const waitingStep = order && (order.status === "submitted" || order.stage === "bridging" || order.stage === "on_base") ? `${order.status}:${order.stage ?? ""}` : undefined;
+  const elapsed = useWaitingMs(waitingStep);
   const sandbox = order?.network === "testnet";
   const open = !!order && OPEN_STATUSES.has(order.status);
   const items = order
@@ -213,7 +236,7 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
             <Text className="text-muted-foreground text-sm underline">{t("buy.viewTx")}</Text>
           </Pressable>
         ) : null}
-        <Button onPress={() => onClose()}>
+        <Button onPress={() => leave()}>
           <Text>{t("buy.done")}</Text>
         </Button>
       </StateCard>
@@ -225,17 +248,17 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
       <StateCard title={t("buy.notCompleted")} body={order.status === "expired" ? t("buy.expired") : t(`buy.reason_${reason}`)} tone="error">
         <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t(reason === "CUSTOMER_PENDING_REVIEW" ? "buy.moneyPending" : "buy.moneyNone")}</Text>
         {retry ? (
-          <Button onPress={() => onClose({ retry: true })}>
+          <Button onPress={() => leave({ retry: true })}>
             <Text>{t("buy.tryAgain")}</Text>
           </Button>
         ) : null}
-        <Button variant="ghost" onPress={() => onClose()}>
+        <Button variant="ghost" onPress={() => leave()}>
           <Text>{t("buy.done")}</Text>
         </Button>
       </StateCard>
     );
   } else {
-    const waiting = order.status === "submitted" || order.stage === "bridging" || order.stage === "on_base";
+    const waiting = waitingStep !== undefined;
     body = (
       <View className="gap-4">
         {order.engine !== "coinbase" ? (
@@ -318,10 +341,7 @@ export function BuyPage({ orderId, pageKey, onClose }: BuyPageProps) {
               accessibilityRole="button"
               accessibilityLabel={t("buy.close")}
               hitSlop={12}
-              onPress={() => {
-                postToHost({ event: HOST_EVENTS.close, orderId });
-                onClose();
-              }}
+              onPress={() => leave()}
               className="bg-secondary size-9 items-center justify-center rounded-full"
             >
               <Icon as={X} className="text-foreground size-4" />

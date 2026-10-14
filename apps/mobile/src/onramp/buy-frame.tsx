@@ -33,8 +33,8 @@ export type BuyFrameProps = {
   onEvent?: ((event: BuyEvent) => void) | undefined;
   /** The page says the money arrived (the screen plays its own confirmation). */
   onSettled?: (() => void) | undefined;
-  /** The person closed the page. */
-  onClose?: (() => void) | undefined;
+  /** The person closed the page; `retry` asks the screen around to start the purchase again. */
+  onClose?: ((options?: { retry?: boolean }) => void) | undefined;
   className?: string | undefined;
 };
 
@@ -57,9 +57,10 @@ export function BuyFrame({ orderId, source, onEvent, onSettled, onClose, classNa
       } catch {
         return;
       }
-      const name = (parsed as { event?: unknown } | null)?.event;
+      const hostMessage = parsed as { event?: unknown; retry?: unknown } | null;
+      const name = hostMessage?.event;
       if (name === HOST_EVENTS.settled) onSettled?.();
-      else if (name === HOST_EVENTS.close) onClose?.();
+      else if (name === HOST_EVENTS.close) onClose?.({ retry: hostMessage?.retry === true });
       const event = readBuyEvent(parsed);
       if (!event || event.event.startsWith("KAWASE_")) return;
       onEvent?.(event);

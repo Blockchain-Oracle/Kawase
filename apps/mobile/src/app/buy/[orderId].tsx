@@ -9,6 +9,7 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
 import { BuyFrame } from "@/onramp/buy-frame";
+import { hasHost } from "@/onramp/order-events";
 import { api } from "@/session/api";
 
 /**
@@ -24,6 +25,9 @@ export default function BuyRoute() {
   const { t } = useT();
   const id = orderId ?? "";
   const close = React.useCallback(() => {
+    // Inside the app's WebView the page already told the app to close its sheet; navigating here would load the web
+    // app's home inside the payment sheet.
+    if (Platform.OS === "web" && hasHost()) return;
     if (router.canGoBack()) router.back();
     else router.replace("/");
   }, [router]);
