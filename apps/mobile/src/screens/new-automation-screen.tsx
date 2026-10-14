@@ -8,7 +8,7 @@ import { View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { AutomationSchedule, AutomationView, TokenView } from "@kawase/api-client";
-import { PAYROLL_MONTHDAYS } from "@kawase/config";
+import { MONTHLY_RUN_DAYS } from "@kawase/config";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Input } from "@kawase/ui-native/components/ui/input";
@@ -43,7 +43,7 @@ const EVERY: AutomationSchedule["every"][] = ["day", "week", "month"];
 const DAYS_IN_WEEK = 7;
 /** Monday first, Sunday (0) last. */
 const WEEKDAYS = Array.from({ length: DAYS_IN_WEEK }, (_, index) => (index + 1) % DAYS_IN_WEEK);
-const MONTHDAYS = PAYROLL_MONTHDAYS;
+const MONTHDAYS = MONTHLY_RUN_DAYS;
 const ROUND_TO = ["1", "5", "10"];
 const DEFAULT_TIME = "09:00";
 const FRIDAY = 5;
@@ -178,7 +178,7 @@ export function NewAutomationScreen() {
               {every === "month" ? (
                 <View className="flex-row flex-wrap gap-2">
                   {MONTHDAYS.map((day) => (
-                    <Chip key={day} label={t("business.monthday", { day: String(day) })} selected={monthday === day} onPress={() => setMonthday(day)} />
+                    <Chip key={day} label={t("automation.monthday", { day: String(day) })} selected={monthday === day} onPress={() => setMonthday(day)} />
                   ))}
                 </View>
               ) : null}

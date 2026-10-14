@@ -125,7 +125,6 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
   draft_automation: AUTOMATION_SENTENCE,
   draft_auto_save: AUTOMATION_SENTENCE,
   draft_rule: AUTOMATION_SENTENCE,
-  draft_payroll: AUTOMATION_SENTENCE,
   draft_dca: AUTOMATION_SENTENCE,
   list_automations: AUTOMATION_SENTENCE,
   change_automation: AUTOMATION_SENTENCE,
@@ -142,7 +141,7 @@ const UNTRUSTED_FIELDS: Record<string, { source: string; keys: string[] }> = {
 
 /**
  * Tools whose results are Kawase's own facts or the person's own words (balances, limits, Aave's listed assets,
- * Kawase's markets, the person's contacts, invoices and places). Every tool is either here or in UNTRUSTED_FIELDS; one
+ * Kawase's markets, the person's contacts and places). Every tool is either here or in UNTRUSTED_FIELDS; one
  * added later that is in neither counts as outside text once it runs, until someone decides which it is.
  */
 export const KAWASE_ONLY: ReadonlySet<string> = new Set([
@@ -150,7 +149,7 @@ export const KAWASE_ONLY: ReadonlySet<string> = new Set([
   "propose_network_switch", "propose_setting_change", "remember_fact", "forget_fact",
   "get_limits", "pause_all", "set_risk_mode", "propose_limit_change", "propose_allowlist_change", "revoke_grant",
   "propose_supply", "propose_borrow", "propose_repay", "start_buy", "propose_perp_order", "get_positions", "close_position", "protect_position",
-  "create_payment_request", "split_bill", "remind_payment", "create_invoice", "list_invoices", "propose_payout", "weekly_report", "export_history",
+  "create_payment_request", "split_bill", "remind_payment", "weekly_report", "export_history",
   "top_up_agent_wallet", "sign_out_device", "get_fee_reserve", "delete_account",
 ]);
 

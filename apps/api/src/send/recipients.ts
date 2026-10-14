@@ -154,7 +154,7 @@ export class Recipients {
 
   /**
    * Who `input` is: a contact, an @handle or an address, with the facts the send rules read. Someone the person blocked
-   * comes back marked, so every rule that reads `blocked` refuses them (sends, automations, payroll, the agent).
+   * comes back marked, so every rule that reads `blocked` refuses them (sends, automations, the agent).
    */
   async resolve(user: { id: string; walletAddress: string | undefined }, network: NetworkId, input: string | null | undefined): Promise<Resolution> {
     const found = await this.find(user, network, input);

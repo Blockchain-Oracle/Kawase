@@ -1,6 +1,7 @@
 import type { Catalog } from "../en/index";
 
 export const automation: Catalog["automation"] = {
+  monthday: "{{day}}-го числа каждого месяца",
   guestTitle: "Платежи по расписанию",
   guestBody: "Войдите, чтобы создавать автоматизации и управлять ими. Разговор останется здесь.",
   title: "Автоматизации",
@@ -127,10 +128,6 @@ export const automation: Catalog["automation"] = {
   editTime: "Время",
   editPrompt: "Подтвердить новое разрешение",
   edited: "Изменено",
-  payroll: "Заплатить {{count}} людям",
-  payrollLine: "{{amount}} — {{name}}",
-  payrollBound:
-    "Каждый получит не больше своей суммы {{per}} и только на свой адрес — это гарантирует Arc; до {{date}}.",
   dca: "Обменивать {{amount}} на {{symbolOut}}",
   dcaBound: "Не держит разрешений: каждый обмен ждёт вашего согласия в «Ждёт вас».",
   rulePrice: "Когда {{amountIn}} купит не меньше {{minOut}}",
@@ -145,7 +142,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "Тренировка: Arc отклонил бы ({{error}})",
   runNeedsYou: "Ждёт вас",
   runSwapOpened: "Обмен отправлен вам на подтверждение",
-  reason_PAYROLL_PARTIAL: "Оплачено {{paid}} из {{of}}",
   reason_DECLINED_BY_YOU: "Вы отклонили",
   reason_NOT_ANSWERED: "Нет ответа вовремя",
   reason_NOT_COMPLETED: "Подтверждено, но не завершено",

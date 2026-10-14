@@ -1,6 +1,7 @@
 import type { Catalog } from "../en/index";
 
 export const automation: Catalog["automation"] = {
+  monthday: "Dia {{day}} de cada mês",
   guestTitle: "Programe seu dinheiro",
   guestBody: "Entre para criar e gerenciar automações. Sua conversa permanece aqui.",
   title: "Automações",
@@ -127,10 +128,6 @@ export const automation: Catalog["automation"] = {
   editTime: "Horário",
   editPrompt: "Aprovar a nova permissão",
   edited: "Alterado",
-  payroll: "Pagar {{count}} pessoas",
-  payrollLine: "{{amount}} para {{name}}",
-  payrollBound:
-    "Cada pessoa pode receber no máximo o próprio valor {{per}}, só no próprio endereço, garantido pela Arc; até {{date}}.",
   dca: "Trocar {{amount}} por {{symbolOut}}",
   dcaBound: "Não guarda nenhuma permissão: cada troca espera seu sim em “Esperando você”.",
   rulePrice: "Quando {{amountIn}} comprar pelo menos {{minOut}}",
@@ -145,7 +142,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "Treino: a Arc o teria recusado ({{error}})",
   runNeedsYou: "Esperando você",
   runSwapOpened: "Troca enviada para você confirmar",
-  reason_PAYROLL_PARTIAL: "Pagos {{paid}} de {{of}}",
   reason_DECLINED_BY_YOU: "Você recusou",
   reason_NOT_ANSWERED: "Sem resposta a tempo",
   reason_NOT_COMPLETED: "Aprovado, mas não confirmado",

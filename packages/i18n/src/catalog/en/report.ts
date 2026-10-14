@@ -8,6 +8,5 @@ export const report = {
   earn: "{{count}} savings moves",
   services: "{{amount}} on {{count}} services",
   automations: "Automations: {{ran}} ran, {{skipped}} skipped",
-  invoices: "{{count}} invoices paid ({{amount}})",
   partial: "Only the latest part of this week could be read.",
 } as const;

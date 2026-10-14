@@ -9,8 +9,6 @@ import type { NetworkId } from "@kawase/networks";
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const TEN = 10n;
-const USDC_DECIMALS = 6;
-const MAX_SHOWN_DECIMALS = 6;
 const TOKEN_DIGITS = 6;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
@@ -26,13 +24,6 @@ function text(locale: CatalogLocale, block: Block, key: string, values: Record<s
 }
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
-
-/** Any token's amount from base units and decimals (invoices can be in any Arc token), in the person's locale. */
-function tokenAmount(baseUnits: string | undefined, decimals: string | undefined, symbol: string | undefined, locale: CatalogLocale) {
-  if (!baseUnits) return "";
-  const places = Number(decimals ?? USDC_DECIMALS);
-  return formatTokenAmount(BigInt(baseUnits), places, symbol ?? "", locale, { fractionDigits: Math.min(places, MAX_SHOWN_DECIMALS), trimZeros: true }).trim();
-}
 
 /**
  * `hideAmounts` (Settings → Notifications, plan §A.4.11 "hide amounts on the lock screen"): the words carry no figure —
@@ -106,11 +97,9 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       const what =
         p.automationKind === "dca"
           ? `${hide ? "" : `${p.tokenAmount ?? ""} `}${p.symbolIn ?? ""} → ${p.name ?? ""}`
-          : p.automationKind === "payroll"
-            ? text(locale, "notify", "reminderPayroll", { people: p.people ?? "" })
-            : hide
-              ? `→ ${name}`
-              : `${sum} → ${name}`;
+          : hide
+            ? `→ ${name}`
+            : `${sum} → ${name}`;
       title = text(locale, "notify", "reminderTitle", { at });
       body = [what, p.short ? text(locale, "notify", "reminderShort") : ""].filter(Boolean).join(" · ");
       path = "/automations";
@@ -169,21 +158,6 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
           ? text(locale, "alerts", "deviceSignedOutBody")
           : text(locale, "alerts", p.location ? "deviceSignedInBody" : "deviceSignedInBodyNoPlace", { platform: p.platform ?? "", location: p.location ?? "" });
       path = "/account/devices";
-      break;
-    }
-    case "invoice_due":
-    case "invoice_overdue": {
-      const owed = tokenAmount(p.amount, p.decimals, p.asset, locale);
-      title = text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueTitle" : p.stage === "due_today" ? "invoiceDueTodayTitle" : "invoiceDueSoonTitle", { number: p.number ?? "" });
-      // Hidden amounts: the client only, no figure on the lock screen.
-      body = hide
-        ? (p.client ?? "")
-        : text(locale, "alerts", item.kind === "invoice_overdue" ? "invoiceOverdueBody" : "invoiceDueBody", {
-            client: p.client ?? "",
-            amount: owed,
-            date: p.due ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(p.due)) : "",
-          });
-      path = p.invoiceId ? `/business/invoice/${p.invoiceId}` : "/business";
       break;
     }
   }
