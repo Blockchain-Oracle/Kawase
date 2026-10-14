@@ -1397,6 +1397,93 @@
           10458,
           1024
         ]
+      },
+      {
+        "query": "trading terminal order ticket",
+        "chosen": 27122,
+        "alsoSeen": [
+          22250,
+          6492
+        ]
+      },
+      {
+        "query": "positions table pnl",
+        "chosen": 27124,
+        "alsoSeen": [
+          104,
+          11651,
+          22167
+        ]
+      },
+      {
+        "query": "withdraw destination list",
+        "chosen": null,
+        "reason": "departures board and selects only; the destination grid is composed from kit rows and real exchange marks",
+        "alsoSeen": [
+          29827,
+          3672,
+          14305
+        ]
+      },
+      {
+        "query": "send money transfer form",
+        "chosen": null,
+        "reason": "card payment forms; Send is composed from the kit (AmountPad, people picker)",
+        "alsoSeen": [
+          25091,
+          25322,
+          4268
+        ]
+      },
+      {
+        "query": "health factor gauge",
+        "chosen": 1757,
+        "alsoSeen": [
+          8619,
+          8617
+        ]
+      },
+      {
+        "query": "timeline steps",
+        "chosen": 28381,
+        "alsoSeen": [
+          6087,
+          3733
+        ]
+      },
+      {
+        "query": "contact recipient picker",
+        "chosen": 24801,
+        "alsoSeen": [
+          8606,
+          1750
+        ]
+      },
+      {
+        "query": "side drawer detail panel",
+        "chosen": null,
+        "reason": "the kit Sheet already renders as Senryo's right drawer on desktop",
+        "alsoSeen": [
+          11442,
+          23558,
+          30710
+        ]
+      },
+      {
+        "query": "segmented toggle buy sell",
+        "chosen": 23552,
+        "alsoSeen": [
+          34763,
+          34935
+        ]
+      },
+      {
+        "query": "asset card",
+        "chosen": 7945,
+        "alsoSeen": [
+          29187,
+          31599
+        ]
       }
     ],
     "desktop": [
@@ -1444,6 +1531,115 @@
         "port": "apps/mobile/src/trade/rolling-number.tsx: only changed digits roll, up on a rise and down on a fall; Reanimated on the UI thread",
         "deviations": "reduced motion shows the new figure at once; screen readers hear the whole figure once; replaced by the Look lane's RollingFigure when the kit lands",
         "status": "built (Stage 2)"
+      },
+      {
+        "name": "trade-panel",
+        "id": 27122,
+        "author": "ssychui",
+        "source": "21st.dev ssychui/swap-ticket (Swap Ticket)",
+        "port": "apps/mobile/src/trade/trade-panel.tsx on the Senryo kit: Segmented (23552) Long/Short in the up/down tones, AmountPad (3711) on the phone and a typed figure on desktop (trade/ticket-amount.tsx), LiveOdometer/RollingFigure (1444) exposure, CountdownRing quote freshness, DisclosureRow details, tx kit CTA",
+        "deviations": "leverage opt-in (Senryo D-344) on the LeverageRuler; take-profit/stop-loss as ChoiceChips; SlideToConfirm (29304) in the side's tone; the 'Real money' marker on every mainnet ticket",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "trade-chart",
+        "ids": [
+          20107,
+          22250
+        ],
+        "author": "ssychui",
+        "source": "21st.dev ssychui/candle-chart (Candle Chart)",
+        "port": "apps/mobile/src/trade/trade-chart.tsx: THE one candle chart (the terminal, the position page, the token page's candles); kit tokens, onScrub",
+        "deviations": "react-native-svg (desktop docs pack §4); entry, liquidation (danger zone washed), TP/SL as levels; live price moves the last bar. packages/ui-native candle-chart.tsx has no consumer any more",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "positions-panel",
+        "id": 27124,
+        "author": "ssychui",
+        "source": "21st.dev ssychui/trade-journal-table",
+        "port": "apps/mobile/src/trade/positions-panel.tsx on kit Panel/LoadingState/EmptyState/ErrorState/StaleTick/CountdownRing/WaitingText; desktop rows open the right drawer (?d=position)",
+        "deviations": "live P&L as RollingFigure, sign and hue together",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "money-page-frame",
+        "ids": [
+          21517
+        ],
+        "author": "Senryo web shell",
+        "source": "Senryo/Mitoshi one stage + right drawers; 21st 21517 sidebar shell as the frame reference",
+        "port": "apps/mobile/src/trade/page-frame.tsx (PageHeader, Columns stage|ticket, PhoneScroll, WidePage) and trade/drawer.tsx (?d= drawer on the kit Sheet, 384 px right drawer on desktop)",
+        "deviations": "no new primitives: the kit Sheet already becomes a drawer on wide windows",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "intent-cta",
+        "ids": [
+          29304,
+          29815
+        ],
+        "source": "composed from the Look lane's tx kit (Mitoshi TxCta/TxSteps/TxMorph/TxFailureCard) and 21st 29304 slide",
+        "port": "apps/mobile/src/trade/intent-cta.tsx + intent-tx.ts: any wallet intent (send, earn, lend, margin) read as TxState; blocked fix, slide or press, steps, receipt morph, failure card, journal on leave",
+        "deviations": "the outcome cue fires once per intent id; the intent is journalled when it leaves the phone and forgotten when it ends",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "position-detail",
+        "ids": [
+          23549
+        ],
+        "author": "ddoemonn",
+        "source": "21st.dev ddoemonn/progress-bar (health) + Senryo position page",
+        "port": "apps/mobile/src/margin/position-detail.tsx: P&L hero, ProgressBar health (calm/near/late), KeyValue facts, the one chart, close share chips, ProtectionCard",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "health-gauge",
+        "id": 1757,
+        "author": "designali-in",
+        "source": "21st.dev designali-in/gauge, laid flat",
+        "port": "apps/mobile/src/lend/health-gauge.tsx on kit tokens (down/upWash zones, needle eases)",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "withdraw-tracker",
+        "id": 28381,
+        "author": "shadcnui-blocks",
+        "source": "21st.dev shadcnui-blocks/process-timeline",
+        "port": "apps/mobile/src/withdraw/tracker.tsx: vertical step timeline on kit tokens (replaces ui-native ProcessTimeline on Withdraw)",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "withdraw-leg",
+        "id": 7945,
+        "author": "ravikatiyar162",
+        "source": "21st.dev ravikatiyar162/asset-card",
+        "port": "LegRow in apps/mobile/src/screens/withdraw-screen.tsx: mark, amount field, Segmented itself/cash, route, receive KeyValue, the reason as a Note",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "exit-kit",
+        "id": 23527,
+        "source": "21st 23527 hold (kit HoldButton) + Wallet & limits exit kit",
+        "port": "apps/mobile/src/withdraw/exit-kit.tsx: pause, hold-to-revoke every permission (one Face ID), withdraw everything",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "recipient-picker",
+        "id": 24801,
+        "author": "felipemenezes098",
+        "source": "21st.dev felipemenezes098/people-picker",
+        "port": "apps/mobile/src/send/recipient-step.tsx: kit SearchField, Paste and Scan squares, filled groups of kit rows with avatars; the stage of Send on desktop",
+        "status": "built (Stage 3, desktop lane)"
+      },
+      {
+        "name": "vault-drawer",
+        "id": 30538,
+        "author": "ssychui",
+        "source": "21st.dev ssychui finance family (Balance Chart / Market Watchlist facts) as the detail reference",
+        "port": "VaultFacts in apps/mobile/src/screens/earn-screen.tsx in the ?d=vault drawer",
+        "status": "built (Stage 3, desktop lane)"
       }
     ]
   },

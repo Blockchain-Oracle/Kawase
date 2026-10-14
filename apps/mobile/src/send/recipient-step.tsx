@@ -1,33 +1,26 @@
-// Who to send to (revamp journey 10, Fomo P22): the search field sits at the bottom and rides the keyboard, with
-// Paste and Scan beside it and "Add contact" under it; results grow above it. Results come only from the person's
-// own contacts and an exact Kawase @handle — never from history, so a poisoned look-alike from an old transfer can
-// never be offered (I3). A full 0x address typed or pasted becomes one "send to this address" row; a partial one
-// offers nothing. Addresses and handles are always shown left-to-right in mono.
+// Who (revamp journey 10, the recipient step), on the Senryo kit (21st.dev felipemenezes098 "People Picker" 24801 as the
+// spec): the kit's SearchField for a name, a @handle or a pasted address, with Paste and Scan beside it; results in
+// filled groups (a full address, contacts, handles) as kit rows with each person's avatar; a contact on hold says so.
+// Loading is the list's own skeleton; nothing found says so; no contacts yet says why and offers Add a contact. On a
+// phone the search sits above the keyboard; on a desktop window it sits at the top of the column (the stage of Send).
 import * as Clipboard from "expo-clipboard";
-import { Clock, ClipboardPaste, ScanLine, UserPlus } from "lucide-react-native";
+import { ClipboardPaste, Clock, ScanLine, UserPlus } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { KeyboardStickyView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isAddress } from "viem";
 
 import type { Contact, RecipientMatch } from "@kawase/api-client";
-import { PaperPlane } from "@kawase/ui-native/components/art/paper-plane";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
-import { Amount } from "@kawase/ui-native/components/amount";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Input } from "@kawase/ui-native/components/ui/input";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
+import { Button, EmptyState, Icon, LoadingState, Panel, RADIUS, SearchField, SectionLabel, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
 import { AddContactSheet } from "@/contacts/add-contact-sheet";
-import { ScanModal } from "@/scan/scan-modal";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
+import { ScanModal } from "@/scan/scan-modal";
 import { api } from "@/session/api";
 
 import { shortAddress } from "./copy";
@@ -37,13 +30,7 @@ export type RecipientChoice = { text: string; title: string; subtitle: string | 
 
 const SEARCH_DEBOUNCE_MS = 250;
 const AVATAR = 44;
-const ROW_MIN_HEIGHT = 64;
-const ART_WIDTH = 170;
-const FOOTER_GAP = 12;
 const QUERY_MAX = 80;
-const SKELETON_ROWS = 3;
-const SKELETON_TITLE = 120;
-const SKELETON_LINE = 90;
 
 /** A choice from what was typed, before anything is known about it (a prefilled `to`). */
 export function choiceFromText(text: string): RecipientChoice {
@@ -61,8 +48,7 @@ export function choiceFromContact(contact: Contact): RecipientChoice {
 }
 
 function choiceFromMatch(match: RecipientMatch): RecipientChoice {
-  if (match.kind === "handle")
-    return { text: `@${match.handle}`, title: `@${match.handle}`, subtitle: shortAddress(match.address), seed: match.address.toLowerCase() };
+  if (match.kind === "handle") return { text: `@${match.handle}`, title: `@${match.handle}`, subtitle: shortAddress(match.address), seed: match.address.toLowerCase() };
   return {
     text: match.name,
     title: match.name,
@@ -71,38 +57,34 @@ function choiceFromMatch(match: RecipientMatch): RecipientChoice {
   };
 }
 
-function RecipientRow({
-  choice,
-  note,
-  onPress,
-}: {
-  choice: RecipientChoice;
-  note?: string | undefined;
-  onPress: () => void;
-}) {
+function RecipientRow({ choice, note, selected, onPress }: { choice: RecipientChoice; note?: string | undefined; selected?: boolean; onPress: () => void }) {
+  const { color } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected: Boolean(selected) }}
       accessibilityLabel={[choice.title, choice.subtitle, note].filter(Boolean).join(", ")}
-      onPress={onPress}
-      className="active:bg-muted flex-row items-center gap-3 px-4 py-2"
-      style={{ minHeight: ROW_MIN_HEIGHT }}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={({ pressed }) => [styles.row, { backgroundColor: selected ? color.selectedRow : pressed ? color.rowPressed : color.transparent }]}
     >
       <DefaultAvatar seed={choice.seed} size={AVATAR} />
-      <View className="min-w-0 flex-1 gap-0.5">
-        <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
+      <View style={styles.grow}>
+        <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
           {choice.title}
         </Text>
         {choice.subtitle ? (
-          <Amount numberOfLines={1} className="text-muted-foreground text-sm">
+          <Text numberOfLines={1} style={[TYPE.rowDetail, { color: color.text3 }]}>
             {choice.subtitle}
-          </Amount>
+          </Text>
         ) : null}
       </View>
       {note ? (
-        <View className="bg-muted flex-row items-center gap-1 rounded-full px-2.5 py-1">
-          <Icon as={Clock} className="text-muted-foreground size-3.5" />
-          <Text className="text-muted-foreground text-xs font-semibold">{note}</Text>
+        <View style={[styles.note, { backgroundColor: color.raised2 }]}>
+          <Icon icon={Clock} size={SIZE.iconSm} tint={color.text2} />
+          <Text style={[TYPE.meta, { color: color.text2 }]}>{note}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -111,15 +93,34 @@ function RecipientRow({
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <View className="gap-2">
-      <Eyebrow className="px-1">{label}</Eyebrow>
-      <View className="bg-card border-border overflow-hidden rounded-2xl border">{children}</View>
+    <View style={styles.group}>
+      <SectionLabel>{label}</SectionLabel>
+      <Panel>{children}</Panel>
     </View>
   );
 }
 
-export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) => void }) {
+function SquareAction({ icon, label, onPress }: { icon: typeof ClipboardPaste; label: string; onPress: () => void }) {
+  const { color } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={({ pressed }) => [styles.square, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+    >
+      <Icon icon={icon} size={SIZE.icon} />
+    </Pressable>
+  );
+}
+
+export function RecipientStep({ onPick, selected }: { onPick: (choice: RecipientChoice) => void; selected?: string | undefined }) {
   const { t } = useT();
+  const wide = useWide();
+  const { color } = useTheme();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = React.useState("");
   const [matches, setMatches] = React.useState<RecipientMatch[]>();
@@ -157,95 +158,57 @@ export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) =>
   const contacts = (matches ?? []).filter((match): match is Extract<RecipientMatch, { kind: "contact" }> => match.kind === "contact");
   const handles = (matches ?? []).filter((match): match is Extract<RecipientMatch, { kind: "handle" }> => match.kind === "handle");
   const nothing = matches !== undefined && contacts.length === 0 && handles.length === 0 && !fullAddress;
-  // What the add-contact sheet starts with: the typed address or handle, or the typed name.
-  // Anything that starts like an address or a handle belongs in the address field, never in the name.
+  // What the add-contact sheet starts with: the typed address or handle, or the typed name. Anything that starts like
+  // an address or a handle belongs in the address field, never in the name.
   const addressLike = /^0x/i.test(trimmed) || trimmed.startsWith("@");
 
-  return (
-    <View className="flex-1">
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pt-4" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        {matches === undefined ? (
-          <View className="bg-card border-border gap-1 rounded-2xl border py-2">
-            {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <View key={index} className="flex-row items-center gap-3 px-4" style={{ minHeight: ROW_MIN_HEIGHT }}>
-                <Skeleton className="rounded-full" style={{ width: AVATAR, height: AVATAR }} />
-                <View className="gap-2">
-                  <Skeleton className="h-4 rounded-md" style={{ width: SKELETON_TITLE }} />
-                  <Skeleton className="h-3 rounded-md" style={{ width: SKELETON_LINE }} />
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {fullAddress ? (
-          <Group label={t("send.addressHeading")}>
-            <RecipientRow
-              choice={{ text: trimmed, title: t("send.sendToAddress"), subtitle: shortAddress(trimmed), seed: trimmed.toLowerCase() }}
-              onPress={() => onPick({ text: trimmed, title: shortAddress(trimmed), subtitle: null, seed: trimmed.toLowerCase() })}
-            />
-          </Group>
-        ) : null}
-
-        {contacts.length ? (
-          <Group label={t("send.contactsHeading")}>
-            {contacts.map((match) => (
-              <RecipientRow
-                key={match.contactId}
-                choice={choiceFromMatch(match)}
-                note={match.onHold ? t("send.onHold") : undefined}
-                onPress={() => onPick(choiceFromMatch(match))}
-              />
-            ))}
-          </Group>
-        ) : null}
-
-        {handles.length ? (
-          <Group label={t("send.handleHeading")}>
-            {handles.map((match) => (
-              <RecipientRow key={match.handle} choice={choiceFromMatch(match)} onPress={() => onPick(choiceFromMatch(match))} />
-            ))}
-          </Group>
-        ) : null}
-
-        {nothing && trimmed ? (
-          <Text className="text-muted-foreground py-6 text-center text-base">{t("send.notFound")}</Text>
-        ) : null}
-        {nothing && !trimmed ? (
-          <EmptyState art={<PaperPlane width={ART_WIDTH} id="send-empty-plane" />} title={t("send.emptyTitle")} body={t("send.emptyBody")} layout="section" />
-        ) : null}
-        <Animated.View style={spacer} />
-      </ScrollView>
-
-      <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
-        <View className="bg-background gap-2 px-5 pt-2" style={{ paddingBottom: insets.bottom + FOOTER_GAP }}>
-          <View className="flex-row items-center gap-2">
-            <Input
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t("send.searchPlaceholder")}
-              accessibilityLabel={t("send.searchPlaceholder")}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-              maxLength={QUERY_MAX}
-              returnKeyType="search"
-              className={cn("flex-1", /^0x/i.test(trimmed) && "font-mono text-sm")}
-            />
-            <Button variant="secondary" size="icon" className="size-14 rounded-2xl" accessibilityLabel={t("send.paste")} onPress={() => void paste()}>
-              <Icon as={ClipboardPaste} className="size-5" />
-            </Button>
-            <Button variant="secondary" size="icon" className="size-14 rounded-2xl" accessibilityLabel={t("send.scan")} onPress={() => setScanning(true)}>
-              <Icon as={ScanLine} className="size-5" />
-            </Button>
-          </View>
-          <Button variant="ghost" onPress={() => setAdding(true)}>
-            <Icon as={UserPlus} className="text-foreground size-4" />
-            <Text>{t("send.addContact")}</Text>
-          </Button>
+  const search = (
+    <View style={styles.search}>
+      <View style={styles.searchRow}>
+        <View style={styles.grow}>
+          <SearchField value={query} onChange={(next) => setQuery(next.slice(0, QUERY_MAX))} placeholder={t("send.searchPlaceholder")} />
         </View>
-      </KeyboardStickyView>
+        <SquareAction icon={ClipboardPaste} label={t("send.paste")} onPress={() => void paste()} />
+        <SquareAction icon={ScanLine} label={t("send.scan")} onPress={() => setScanning(true)} />
+      </View>
+      <Button label={t("send.addContact")} variant="ghost" size="sm" leading={<Icon icon={UserPlus} size={SIZE.iconSm} />} onPress={() => setAdding(true)} />
+    </View>
+  );
 
+  const results = (
+    <>
+      {matches === undefined ? <LoadingState shape="list" /> : null}
+      {fullAddress ? (
+        <Group label={t("send.addressHeading")}>
+          <RecipientRow
+            choice={{ text: trimmed, title: t("send.sendToAddress"), subtitle: shortAddress(trimmed), seed: trimmed.toLowerCase() }}
+            onPress={() => onPick({ text: trimmed, title: shortAddress(trimmed), subtitle: null, seed: trimmed.toLowerCase() })}
+          />
+        </Group>
+      ) : null}
+      {contacts.length ? (
+        <Group label={t("send.contactsHeading")}>
+          {contacts.map((match) => {
+            const choice = choiceFromMatch(match);
+            return <RecipientRow key={match.contactId} choice={choice} selected={selected === choice.text} note={match.onHold ? t("send.onHold") : undefined} onPress={() => onPick(choice)} />;
+          })}
+        </Group>
+      ) : null}
+      {handles.length ? (
+        <Group label={t("send.handleHeading")}>
+          {handles.map((match) => {
+            const choice = choiceFromMatch(match);
+            return <RecipientRow key={match.handle} choice={choice} selected={selected === choice.text} onPress={() => onPick(choice)} />;
+          })}
+        </Group>
+      ) : null}
+      {nothing && trimmed ? <EmptyState why={t("send.notFound")} action={{ label: t("send.addContact"), onPress: () => setAdding(true) }} size="inline" /> : null}
+      {nothing && !trimmed ? <EmptyState icon={UserPlus} why={t("send.emptyTitle")} detail={t("send.emptyBody")} action={{ label: t("send.addContact"), onPress: () => setAdding(true) }} /> : null}
+    </>
+  );
+
+  const sheets = (
+    <>
       <AddContactSheet
         open={adding}
         onClose={() => setAdding(false)}
@@ -258,6 +221,42 @@ export function RecipientStep({ onPick }: { onPick: (choice: RecipientChoice) =>
         }}
       />
       <ScanModal open={scanning} origin="send" onClose={() => setScanning(false)} />
+    </>
+  );
+
+  if (wide) {
+    return (
+      <View style={styles.wide}>
+        {search}
+        {results}
+        {sheets}
+      </View>
+    );
+  }
+  return (
+    <View style={styles.flex}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        {results}
+        <Animated.View style={spacer} />
+      </ScrollView>
+      <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + SPACE.md, backgroundColor: color.ground }]}>{search}</View>
+      </KeyboardStickyView>
+      {sheets}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  wide: { gap: SPACE.lg },
+  list: { gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingTop: SPACE.lg },
+  footer: { paddingHorizontal: SPACE.inset, paddingTop: SPACE.sm },
+  search: { gap: SPACE.xs },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  group: { gap: SPACE.sm },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, minHeight: SIZE.rowMinHeight },
+  grow: { flex: 1, minWidth: 0 },
+  note: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs },
+  square: { width: SIZE.inputHeight, height: SIZE.inputHeight, borderRadius: RADIUS.md, alignItems: "center", justifyContent: "center" },
+});

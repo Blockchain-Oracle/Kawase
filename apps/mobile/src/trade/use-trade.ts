@@ -252,6 +252,8 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
       setAmountText(formatUnits(part - (part % CENT_UNITS), USDC_DECIMALS));
     },
     available,
+    /** What the wallet can spend now, in USDC base units (the fee float kept back); undefined until read. */
+    spendable: spendable !== undefined && spendable > ZERO ? spendable : spendable !== undefined ? ZERO : undefined,
     marginValue,
     leverageOn,
     leverageAvailable,

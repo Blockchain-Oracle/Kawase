@@ -1,32 +1,28 @@
-// Where the money goes (money-out.md "From → To"; surfaces.md Withdraw step 2): My places first (saved after a
-// withdrawal, a tap on a logo), then an exchange by its logo (the exchange table says which network it takes USDC
-// on; exchanges are mainnet only and say so on testnet), the person's own wallet on Arc or another chain, or their
-// bank — through an exchange, with the path stated. Asked only what cannot be inferred: the deposit address (paste),
-// with that exchange's own steps beside it.
+// Where the money goes (money-out.md "From → To"; surfaces.md Withdraw step 2), on the Senryo kit: My places first
+// (saved after a withdrawal, a tap on a logo), then an exchange by its real logo in a tile grid (the exchange table says
+// which network it takes USDC on; exchanges are mainnet only and say so on testnet), the person's own wallet on Arc or
+// another chain, or their bank through an exchange, with the path stated. Asked only what cannot be inferred: the
+// deposit address (paste), with that exchange's own steps beside it.
 import * as Clipboard from "expo-clipboard";
-import { Building2, ClipboardPaste, Landmark, Wallet as WalletIcon, X } from "lucide-react-native";
+import { ClipboardPaste, Landmark, Wallet as WalletIcon, X } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import type { ExchangeView, NetworkId, PlaceView, WithdrawDestinationView } from "@kawase/api-client";
 import { chainKey, exchangeKey, walletKey } from "@kawase/identity";
-import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { Button, DISABLED_OPACITY, Icon, ListRow, Panel, RADIUS, SectionLabel, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { shortAddress } from "@/send/copy";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
 import { useDestinationName } from "./copy";
 
 const ROW_MARK = 36;
-const TILE_MARK = 44;
-const CHAIN_MARK = 28;
-const ROW_ICON = 36;
+const TILE_MARK = 40;
+const CHAIN_MARK = 24;
+const TILE_W = "23%";
 
 export type DestinationInput = { place?: string | undefined; exchange?: string | undefined; chain?: string | undefined; address?: string | undefined; bank?: boolean | undefined };
 type ChainView = { key: string; name: string; chainId: number | null };
@@ -52,9 +48,12 @@ function brandMark(kind: "exchange" | "wallet", brand: string | null, chainId: n
   return chainId ? chainKey(chainId) : "";
 }
 
+/** No browser focus box: the field's plate carries focus. */
+const WEB_FIELD = { outlineStyle: "none" } as unknown as object;
+
 export function DestinationPicker({ network, value, onChange, places, exchanges, chains, chosen, onForget }: DestinationPickerProps) {
   const { t } = useT();
-  const colors = useThemeColors();
+  const { color } = useTheme();
   const name = useDestinationName();
   const [mode, setMode] = React.useState<Mode>("list");
   const testnet = network === "testnet";
@@ -64,33 +63,33 @@ export function DestinationPicker({ network, value, onChange, places, exchanges,
     const needsAddress = !value.place;
     const mark = chosen ? brandMark(chosen.kind, chosen.brand, chosen.chain.chainId) : exchange ? exchangeKey(exchange.slug) : "";
     return (
-      <View className="bg-card border-border gap-3 rounded-3xl border p-4">
-        <View className="flex-row items-center gap-3">
+      <Panel style={styles.panel}>
+        <View style={styles.line}>
           {mark ? <Mark entity={mark} size={ROW_MARK} /> : null}
-          <View className="min-w-0 flex-1">
-            <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{chosen ? name(chosen) : (exchange?.name ?? "")}</Text>
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>
+          <View style={styles.grow}>
+            <Text style={[TYPE.rowStrong, { color: color.ink }]}>{chosen ? name(chosen) : (exchange?.name ?? "")}</Text>
+            <Text style={[TYPE.rowDetail, { color: color.text3 }]}>
               {exchange ? t("withdraw.exchangeNetwork", { asset: exchange.asset, network: exchange.networkLabel }) : t("withdraw.onChain", { chain: chosen?.chain.name ?? "" })}
               {chosen?.address && !needsAddress ? ` · ${shortAddress(chosen.address)}` : ""}
             </Text>
           </View>
           <Button
+            label={t("withdraw.change")}
             variant="secondary"
             size="sm"
+            block={false}
             onPress={() => {
               setMode("list");
               onChange({});
             }}
-          >
-            <Text>{t("withdraw.change")}</Text>
-          </Button>
+          />
         </View>
         {needsAddress ? (
-          <View className="gap-2">
-            <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>
+          <View style={styles.group}>
+            <Text style={[TYPE.rowDetail, { color: color.text2 }]}>
               {exchange ? t("withdraw.exchangeSteps", { exchange: exchange.name, asset: exchange.asset, network: exchange.networkLabel }) : t("withdraw.walletSteps", { chain: chosen?.chain.name ?? "" })}
             </Text>
-            <View className="border-border flex-row items-center gap-2 rounded-2xl border ps-4 pe-1.5">
+            <View style={[styles.address, { backgroundColor: color.input }]}>
               <TextInput
                 accessibilityLabel={t("withdraw.address")}
                 value={value.address ?? chosen?.address ?? ""}
@@ -98,29 +97,27 @@ export function DestinationPicker({ network, value, onChange, places, exchanges,
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder={t("withdraw.addressPlaceholder")}
-                placeholderTextColor={colors["muted-foreground"]}
-                className="min-w-0 flex-1 py-3 font-mono text-sm"
-                style={{ color: colors.foreground }}
+                placeholderTextColor={color.text3}
+                style={[TYPE.rowAmount, styles.grow, styles.input, { color: color.ink }, Platform.OS === "web" ? WEB_FIELD : null]}
               />
               <Button
-                variant="secondary"
+                label={t("withdraw.paste")}
+                variant="ghost"
                 size="sm"
-                accessibilityLabel={t("withdraw.paste")}
+                block={false}
+                leading={<Icon icon={ClipboardPaste} size={SIZE.iconSm} />}
                 onPress={() => void Clipboard.getStringAsync().then((text) => onChange({ ...value, address: text.trim() }))}
-              >
-                <Icon as={ClipboardPaste} className="size-4" />
-                <Text>{t("withdraw.paste")}</Text>
-              </Button>
+              />
             </View>
           </View>
         ) : null}
-        {value.bank && exchange ? <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.bankThen", { exchange: exchange.name })}</Text> : null}
-      </View>
+        {value.bank && exchange ? <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("withdraw.bankThen", { exchange: exchange.name })}</Text> : null}
+      </Panel>
     );
   }
 
   const exchangeGrid = (bank: boolean) => (
-    <View className="flex-row flex-wrap gap-2">
+    <View style={styles.grid}>
       {exchanges.map((exchange) => {
         const off = exchange.unavailable !== null;
         return (
@@ -130,11 +127,14 @@ export function DestinationPicker({ network, value, onChange, places, exchanges,
             accessibilityLabel={off ? `${exchange.name}. ${t("withdraw.mainnetOnly")}` : exchange.name}
             accessibilityState={{ disabled: off }}
             disabled={off}
-            onPress={() => onChange({ exchange: exchange.slug, bank })}
-            className={cn("bg-card border-border active:bg-secondary w-[23%] items-center gap-1.5 rounded-2xl border py-3", off && "opacity-50")}
+            onPress={() => {
+              fire("tick");
+              onChange({ exchange: exchange.slug, bank });
+            }}
+            style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? color.rowPressed : color.card, opacity: off ? DISABLED_OPACITY : 1 }]}
           >
             <Mark entity={exchangeKey(exchange.slug)} size={TILE_MARK} />
-            <Text numberOfLines={1} className="text-foreground text-xs font-semibold">
+            <Text numberOfLines={1} style={[TYPE.meta, { color: color.ink }]}>
               {exchange.name}
             </Text>
           </Pressable>
@@ -145,74 +145,91 @@ export function DestinationPicker({ network, value, onChange, places, exchanges,
 
   if (mode === "wallet")
     return (
-      <View className="gap-3">
-        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("withdraw.walletChain")}</Text>
-        <View className="flex-row flex-wrap gap-2">
+      <View style={styles.group}>
+        <SectionLabel>{t("withdraw.walletChain")}</SectionLabel>
+        <View style={styles.chains}>
           {chains.map((chain) => (
             <Pressable
               key={chain.key}
               accessibilityRole="button"
-              onPress={() => onChange({ chain: chain.key })}
-              className="border-border active:bg-secondary flex-row items-center gap-2 rounded-full border px-3 py-2"
+              onPress={() => {
+                fire("tick");
+                onChange({ chain: chain.key });
+              }}
+              style={({ pressed }) => [styles.chain, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
             >
               {chain.chainId ? <Mark entity={chainKey(chain.chainId)} size={CHAIN_MARK} /> : null}
-              <Text className="text-foreground text-sm font-semibold">{chain.name}</Text>
+              <Text style={[TYPE.chipLabel, { color: color.ink }]}>{chain.name}</Text>
             </Pressable>
           ))}
         </View>
-        <Button variant="ghost" onPress={() => setMode("list")}>
-          <Text>{t("common.back")}</Text>
-        </Button>
+        <Button label={t("common.back")} variant="ghost" onPress={() => setMode("list")} />
       </View>
     );
 
   if (mode === "bank")
     return (
-      <View className="gap-3">
-        <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.bankBody")}</Text>
+      <View style={styles.group}>
+        <Text style={[TYPE.body, { color: color.text2 }]}>{t("withdraw.bankBody")}</Text>
         {exchangeGrid(true)}
-        {testnet ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("withdraw.exchangesMainnet")}</Text> : null}
-        <Button variant="ghost" onPress={() => setMode("list")}>
-          <Text>{t("common.back")}</Text>
-        </Button>
+        {testnet ? <Text style={[TYPE.caption, { color: color.text3 }]}>{t("withdraw.exchangesMainnet")}</Text> : null}
+        <Button label={t("common.back")} variant="ghost" onPress={() => setMode("list")} />
       </View>
     );
 
-  const roundIcon = (icon: typeof Building2) => (
-    <View className="bg-secondary items-center justify-center rounded-full" style={{ width: ROW_ICON, height: ROW_ICON }}>
-      <Icon as={icon} className="size-5" />
+  const roundIcon = (icon: typeof WalletIcon) => (
+    <View style={[styles.round, { backgroundColor: color.raised2 }]}>
+      <Icon icon={icon} size={SIZE.icon} />
     </View>
   );
 
   return (
-    <View className="gap-4">
+    <View style={styles.stack}>
       {places.length > 0 ? (
-        <ListGroup label={t("withdraw.myPlaces")}>
-          {places.map((place) => (
-            <ListRow
-              key={place.id}
-              leading={<Mark entity={brandMark(place.kind, place.brand, place.chain.chainId)} size={ROW_MARK} />}
-              title={name(place)}
-              subtitle={`${place.chain.name} · ${shortAddress(place.address)}`}
-              onPress={() => onChange({ place: place.id })}
-              trailing={
-                <Pressable accessibilityRole="button" accessibilityLabel={t("withdraw.forget", { name: name(place) })} hitSlop={12} onPress={() => onForget(place)}>
-                  <Icon as={X} className="text-muted-foreground size-4" />
-                </Pressable>
-              }
-            />
-          ))}
-        </ListGroup>
+        <View style={styles.group}>
+          <SectionLabel>{t("withdraw.myPlaces")}</SectionLabel>
+          <Panel>
+            {places.map((place) => (
+              <ListRow
+                key={place.id}
+                leading={<Mark entity={brandMark(place.kind, place.brand, place.chain.chainId)} size={ROW_MARK} />}
+                title={name(place)}
+                detail={`${place.chain.name} · ${shortAddress(place.address)}`}
+                onPress={() => onChange({ place: place.id })}
+                trailing={
+                  <Pressable accessibilityRole="button" accessibilityLabel={t("withdraw.forget", { name: name(place) })} hitSlop={SPACE.md} onPress={() => onForget(place)}>
+                    <Icon icon={X} size={SIZE.iconSm} tint={color.text3} />
+                  </Pressable>
+                }
+              />
+            ))}
+          </Panel>
+        </View>
       ) : null}
-      <View className="gap-2">
-        <Text className={cn("text-muted-foreground px-1 text-xs font-semibold uppercase", TEXT_START)}>{t("withdraw.exchanges")}</Text>
+      <View style={styles.group}>
+        <SectionLabel>{t("withdraw.exchanges")}</SectionLabel>
         {exchangeGrid(false)}
-        {testnet ? <Text className={cn("text-muted-foreground px-1 text-xs", TEXT_START)}>{t("withdraw.exchangesMainnet")}</Text> : null}
+        {testnet ? <Text style={[TYPE.caption, { color: color.text3 }]}>{t("withdraw.exchangesMainnet")}</Text> : null}
       </View>
-      <ListGroup>
-        <ListRow leading={roundIcon(WalletIcon)} title={t("withdraw.otherWallet")} subtitle={t("withdraw.otherWalletBody")} chevron onPress={() => setMode("wallet")} />
-        <ListRow leading={roundIcon(Landmark)} title={t("withdraw.bank")} subtitle={t("withdraw.bankRow")} chevron onPress={() => setMode("bank")} />
-      </ListGroup>
+      <Panel>
+        <ListRow leading={roundIcon(WalletIcon)} title={t("withdraw.otherWallet")} detail={t("withdraw.otherWalletBody")} onPress={() => setMode("wallet")} />
+        <ListRow leading={roundIcon(Landmark)} title={t("withdraw.bank")} detail={t("withdraw.bankRow")} onPress={() => setMode("bank")} />
+      </Panel>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  stack: { gap: SPACE.lg },
+  group: { gap: SPACE.sm },
+  panel: { gap: SPACE.md, padding: SPACE.lg },
+  line: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  grow: { flex: 1, minWidth: 0 },
+  address: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, borderRadius: RADIUS.md, paddingStart: SPACE.lg, minHeight: SIZE.inputHeight },
+  input: { paddingVertical: SPACE.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  tile: { width: TILE_W, alignItems: "center", gap: SPACE.xs, borderRadius: RADIUS.md, paddingVertical: SPACE.md },
+  chains: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  chain: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
+  round: { width: ROW_MARK, height: ROW_MARK, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+});

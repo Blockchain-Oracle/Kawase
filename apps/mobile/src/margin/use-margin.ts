@@ -56,6 +56,7 @@ export function useMarginPositions() {
   const network = user?.activeNetwork ?? "testnet";
   const [positions, setPositions] = React.useState<MarginPositionView[]>();
   const [failed, setFailed] = React.useState(false);
+  const [asOf, setAsOf] = React.useState<number>();
   const load = React.useCallback(async () => {
     if (status !== "account") {
       setPositions([]);
@@ -63,6 +64,7 @@ export function useMarginPositions() {
     }
     try {
       setPositions((await api.margin.positions()).positions);
+      setAsOf(Date.now());
       setFailed(false);
     } catch {
       // The last good list stays (marked stale by `failed`); the next refresh tries again.
@@ -74,5 +76,5 @@ export function useMarginPositions() {
     const timer = setInterval(() => void load(), POSITIONS_REFRESH_MS);
     return () => clearInterval(timer);
   }, [load, network]);
-  return { positions, failed, refresh: load };
+  return { positions, failed, asOf, refresh: load };
 }

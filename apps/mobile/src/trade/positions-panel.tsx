@@ -1,136 +1,127 @@
-// The terminal's positions (visual spec: 21st.dev ssychui "Trade Journal Table", id 27124 — the open row lit, the
-// outcome as a signed figure): the order on the ticket first, with a ring draining while its price is fresh, then
-// each open long / short with live P&L in rolling digits (sign and colour together, never colour alone) and how far
-// liquidation is. A tap opens the position. Desktop gets table columns; the phone gets two-line rows. Loading is a
-// skeleton of the rows, held a moment; empty says why and offers the ticket; a failed read keeps the last rows, marked
-// stale, with Retry.
-import { useRouter } from "expo-router";
+// The terminal's positions on the kit (visual spec: 21st.dev ssychui "Trade Journal Table", 27124): the order on the
+// ticket first, with the kit's CountdownRing draining while its price is fresh (or a named wait while it opens), then
+// each open long / short with live P&L in rolling digits (a sign and the hue together, never the hue alone) and how
+// far liquidation is. Desktop gets table columns and opens the position in the right drawer; the phone gets two-line
+// rows that open the position page. Loading is the list's own skeleton, held; empty says why and offers the ticket; a
+// failed read keeps the last rows marked stale, and with nothing to show says what still works, with Retry.
 import * as React from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { formatUnits } from "viem";
 
 import type { MarginIntent, MarginPositionView } from "@kawase/api-client";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Skeleton } from "@kawase/ui-native/components/ui/skeleton";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
-import { WEB_PRESSABLE } from "@kawase/ui-native/lib/wide";
 
+import { CountdownRing, EmptyState, ErrorState, LoadingState, Panel, SectionLabel, SPACE, StaleTick, TYPE, useHeldLoading, useTheme, WaitingText } from "@/components/kit";
+import { LineChart } from "@/components/kit/icons";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { marketEntity, useMarginFormat } from "@/margin/copy";
 import { isMarginMoving, isMarginOpen } from "@/margin/use-margin";
 
-import { DrainRing } from "./drain-ring";
-import { RollingNumber } from "./rolling-number";
-import { useHeld } from "./use-held";
+import { LiveNumber } from "./bits";
 import { QUOTE_FRESH_MS } from "./use-trade";
-import { WaitingLine } from "./waiting-line";
 
 const MARK = 32;
-const PNL_SIZE = 16;
-const SKELETON_ROWS = 3;
-const SKELETON_HEIGHT = 52;
+const PNL_H = 20;
 const RING = 22;
 const USDC_DECIMALS = 6;
+const MS = 1000;
+/** On a desktop window the market column is twice the width of each figure column. */
+const IDENTITY_SHARE = 2;
 
 type Props = {
   positions: MarginPositionView[] | undefined;
   failed: boolean;
+  /** When the list was last read, for the stale mark. */
+  asOf?: number | undefined;
   onRetry: () => void;
   /** The order on the ticket, shown first while it is priced or on its way. */
   order?: MarginIntent | undefined;
-  onOrder?: () => void;
+  onOrder?: (() => void) | undefined;
   /** Open the ticket (the empty state's action). */
   onTrade: () => void;
+  /** Open one position (the drawer on a desktop window, the page on a phone). */
+  onOpen: (position: MarginPositionView) => void;
   signedIn: boolean;
   wide: boolean;
 };
 
-function Column({ children, end, className }: { children: React.ReactNode; end?: boolean; className?: string }) {
-  return <View className={cn("min-w-0 flex-1", end ? "items-end" : "items-start", className)}>{children}</View>;
+function Cell({ children, end, grow = 1 }: { children: React.ReactNode; end?: boolean; grow?: number }) {
+  return <View style={[styles.cell, { flex: grow, alignItems: end ? "flex-end" : "flex-start" }]}>{children}</View>;
 }
 
-function PositionLine({ position, wide }: { position: MarginPositionView; wide: boolean }) {
+function PositionLine({ position, wide, onOpen }: { position: MarginPositionView; wide: boolean; onOpen: () => void }) {
   const { t } = useT();
-  const router = useRouter();
+  const { color } = useTheme();
   const format = useMarginFormat();
   const up = position.pnlUsd >= 0;
-  const pnl = (
-    <View className="items-end">
-      <RollingNumber text={format.signed(position.pnlUsd)} value={position.pnlUsd} size={PNL_SIZE} className={cn("font-semibold", up ? "text-success" : "text-destructive")} />
-      <Text className={cn("font-mono text-xs tabular-nums", up ? "text-success" : "text-destructive")}>{`${up ? "+" : "−"}${format.percent(Math.abs(position.pnlPercent))}`}</Text>
-    </View>
-  );
-  const identity = (
-    <View className="min-w-0 flex-1 flex-row items-center gap-3">
-      <Mark entity={marketEntity(position.asset)} size={MARK} />
-      <View className="min-w-0 flex-1">
-        <Text numberOfLines={1} className={cn("text-foreground text-sm font-semibold", TEXT_START)}>
-          {position.market}
-        </Text>
-        <Text numberOfLines={1} className={cn("text-xs font-semibold", position.side === "long" ? "text-success" : "text-destructive", TEXT_START)}>
-          {`${t(`margin.${position.side}`)} ${format.leverage(position.leverage)}`}
-        </Text>
-      </View>
-    </View>
-  );
+  const tone = up ? color.up : color.down;
   const liquidation = position.liquidationPrice
     ? `${format.price(position.liquidationPrice)}${position.liquidationDistance !== null ? ` · ${format.percent(position.liquidationDistance, 0)}` : ""}`
     : t("desktop.noLiquidation");
+  const figure = (value: string) => <Text style={[TYPE.rowAmount, { color: color.ink }]}>{value}</Text>;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={t("desktop.openPosition", { market: position.market, side: t(`margin.${position.side}`) })}
-      onPress={() => router.push(`/position/${position.id}`)}
-      className={cn("active:bg-muted flex-row items-center gap-3 px-4 py-3", WEB_PRESSABLE)}
+      onPress={() => {
+        fire("tick");
+        onOpen();
+      }}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [styles.line, { backgroundColor: pressed || hovered ? color.rowPressed : color.transparent }]}
     >
-      {identity}
+      <Cell grow={wide ? IDENTITY_SHARE : 1}>
+        <View style={styles.identity}>
+          <Mark entity={marketEntity(position.asset)} size={MARK} />
+          <View style={styles.shrink}>
+            <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
+              {position.market}
+            </Text>
+            <Text numberOfLines={1} style={[TYPE.rowDetail, { color: position.side === "long" ? color.up : color.down }]}>
+              {`${t(`margin.${position.side}`)} ${format.leverage(position.leverage)}`}
+            </Text>
+          </View>
+        </View>
+      </Cell>
       {wide ? (
         <>
-          <Column end>
-            <Text className="text-foreground font-mono text-sm tabular-nums">{format.usd(position.notionalUsd)}</Text>
-          </Column>
-          <Column end>
-            <Text className="text-foreground font-mono text-sm tabular-nums">{format.price(position.entryPrice)}</Text>
-          </Column>
-          <Column end>
-            <Text className="text-foreground font-mono text-sm tabular-nums">{format.price(position.markPrice)}</Text>
-          </Column>
-          <Column end>
-            <Text className="text-destructive font-mono text-sm tabular-nums">{liquidation}</Text>
-          </Column>
+          <Cell end>{figure(format.usd(position.notionalUsd))}</Cell>
+          <Cell end>{figure(format.price(position.entryPrice))}</Cell>
+          <Cell end>{figure(format.price(position.markPrice))}</Cell>
+          <Cell end>
+            <Text style={[TYPE.rowAmount, { color: color.down }]}>{liquidation}</Text>
+          </Cell>
         </>
       ) : null}
-      <Column end className={wide ? undefined : "flex-none"}>
-        {position.protection === "closing" ? <Text className="text-muted-foreground text-xs">{t("protect.closing")}</Text> : null}
-        {pnl}
-        {!wide ? <Text className="text-muted-foreground font-mono text-[11px] tabular-nums">{`${t("desktop.liqTag")} ${liquidation}`}</Text> : null}
-      </Column>
+      <Cell end grow={wide ? 1 : 0}>
+        {position.protection === "closing" ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("protect.closing")}</Text> : null}
+        <LiveNumber text={format.signed(position.pnlUsd)} value={position.pnlUsd} height={PNL_H} color={tone} align="right" />
+        <Text style={[TYPE.meta, { color: tone }]}>{`${up ? "+" : "−"}${format.percent(Math.abs(position.pnlPercent))}`}</Text>
+        {!wide ? <Text style={[TYPE.meta, { color: color.text3 }]}>{`${t("desktop.liqTag")} ${liquidation}`}</Text> : null}
+      </Cell>
     </Pressable>
   );
 }
 
 function OrderLine({ order, onPress }: { order: MarginIntent; onPress?: (() => void) | undefined }) {
   const { t } = useT();
+  const { color } = useTheme();
   const format = useMarginFormat();
   const draft = order.draft;
   if (!draft) return null;
   const quotedAt = Date.parse(draft.quotedAt);
   const moving = isMarginMoving(order);
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} disabled={!onPress} className={cn("bg-muted/50 flex-row items-center gap-3 px-4 py-3", onPress ? WEB_PRESSABLE : undefined)}>
-      <View className="items-center justify-center" style={{ width: MARK, height: MARK }}>
-        {moving ? <Mark entity={marketEntity(draft.asset)} size={MARK} /> : <DrainRing from={quotedAt} to={quotedAt + QUOTE_FRESH_MS} size={RING} accessibilityLabel={t("desktop.quoteFresh")} />}
-      </View>
-      <View className="min-w-0 flex-1">
-        <Text numberOfLines={1} className={cn("text-foreground text-sm font-semibold", TEXT_START)}>
+    <Pressable accessibilityRole="button" onPress={onPress} disabled={!onPress} style={[styles.line, { backgroundColor: color.selectedRow }]}>
+      <View style={styles.ring}>{moving ? <Mark entity={marketEntity(draft.asset)} size={MARK} /> : <CountdownRing fromSec={quotedAt / MS} toSec={(quotedAt + QUOTE_FRESH_MS) / MS} size={RING} />}</View>
+      <View style={styles.shrink}>
+        <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
           {t("desktop.orderRow", { side: t(`margin.${draft.side}`), market: draft.market })}
         </Text>
         {moving ? (
-          <WaitingLine verb={t("margin.opening")} />
+          <WaitingText>{t("margin.opening")}</WaitingText>
         ) : (
-          <Text numberOfLines={1} className={cn("text-muted-foreground font-mono text-xs tabular-nums", TEXT_START)}>
+          <Text numberOfLines={1} style={[TYPE.rowDetail, { color: color.text3 }]}>
             {t("desktop.orderDetail", { margin: format.usd(Number(formatUnits(BigInt(draft.margin), USDC_DECIMALS))), exposure: format.usd(draft.notionalUsd) })}
           </Text>
         )}
@@ -139,85 +130,58 @@ function OrderLine({ order, onPress }: { order: MarginIntent; onPress?: (() => v
   );
 }
 
-export function PositionsPanel({ positions, failed, onRetry, order, onOrder, onTrade, signedIn, wide }: Props) {
+export function PositionsPanel({ positions, failed, asOf, onRetry, order, onOrder, onTrade, onOpen, signedIn, wide }: Props) {
   const { t } = useT();
-  const loading = useHeld(signedIn && positions === undefined && !failed);
+  const { color } = useTheme();
+  const loading = useHeldLoading(signedIn && positions === undefined && !failed);
   const showOrder = order && order.draft && order.request.action === "open" && (isMarginOpen(order) || isMarginMoving(order));
   const list = positions ?? [];
 
   let body: React.ReactNode;
-  if (loading) {
-    body = (
-      <View className="gap-2 px-4 py-3">
-        {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-          <Skeleton key={index} className="rounded-xl" style={{ height: SKELETON_HEIGHT }} />
-        ))}
-      </View>
-    );
-  } else if (positions === undefined && failed) {
-    body = (
-      <View className="items-start gap-3 px-4 py-4">
-        <Text className={cn("text-foreground text-sm", TEXT_START)}>{t("desktop.positionsFailed")}</Text>
-        <Button variant="secondary" size="sm" onPress={onRetry}>
-          <Text>{t("common.retry")}</Text>
-        </Button>
-      </View>
-    );
-  } else if (list.length === 0 && !showOrder) {
-    body = (
-      <View className="items-start gap-3 px-4 py-4">
-        <View className="gap-1">
-          <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("margin.noPositions")}</Text>
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("desktop.noPositionsWhy")}</Text>
-        </View>
-        <Button variant="secondary" size="sm" onPress={onTrade}>
-          <Text>{t("desktop.openFirst")}</Text>
-        </Button>
-      </View>
-    );
-  } else {
+  if (loading || (signedIn && positions === undefined && !failed)) body = <LoadingState shape="list" label={t("margin.loading")} />;
+  else if (positions === undefined && failed) body = <ErrorState diagnosis={{ kind: "server", retryable: true }} retry={onRetry} stillWorks={t("desktop.positionsFailed")} />;
+  else if (list.length === 0 && !showOrder)
+    body = <EmptyState icon={LineChart} why={t("margin.noPositions")} detail={t("desktop.noPositionsWhy")} action={{ label: t("desktop.openFirst"), onPress: onTrade }} size="inline" />;
+  else
     body = (
       <View>
         {wide && list.length > 0 ? (
-          <View className="border-border flex-row gap-3 border-b px-4 py-2">
-            <Column className="flex-1">
-              <Text className="text-muted-foreground text-xs">{t("margin.markets")}</Text>
-            </Column>
-            {(["size", "entry", "mark"] as const).map((key) => (
-              <Column key={key} end>
-                <Text className="text-muted-foreground text-xs">{t(`margin.${key}`)}</Text>
-              </Column>
+          <View style={[styles.line, styles.headRow]}>
+            <Cell grow={IDENTITY_SHARE}>
+              <Text style={[TYPE.meta, { color: color.text3 }]}>{t("margin.markets")}</Text>
+            </Cell>
+            {(["size", "entry", "mark", "liquidation", "pnl"] as const).map((key) => (
+              <Cell key={key} end>
+                <Text style={[TYPE.meta, { color: color.text3 }]}>{t(`margin.${key}`)}</Text>
+              </Cell>
             ))}
-            <Column end>
-              <Text className="text-muted-foreground text-xs">{t("margin.liquidation")}</Text>
-            </Column>
-            <Column end>
-              <Text className="text-muted-foreground text-xs">{t("margin.pnl")}</Text>
-            </Column>
           </View>
         ) : null}
         {showOrder ? <OrderLine order={order!} onPress={onOrder} /> : null}
         {list.map((position) => (
-          <PositionLine key={position.id} position={position} wide={wide} />
+          <PositionLine key={position.id} position={position} wide={wide} onOpen={() => onOpen(position)} />
         ))}
       </View>
     );
-  }
 
   return (
-    <View className="bg-card border-border overflow-hidden rounded-3xl border">
-      <View className="flex-row items-center justify-between px-4 pb-1 pt-3">
-        <Text accessibilityRole="header" className="text-foreground text-base font-semibold">
-          {t("margin.yourPositions")}
-        </Text>
-        {failed && positions !== undefined ? (
-          <Pressable accessibilityRole="button" onPress={onRetry} className="flex-row items-center gap-1">
-            <Text className="text-muted-foreground text-xs">{t("desktop.stale")}</Text>
-            <Text className="text-foreground text-xs font-semibold underline">{t("common.retry")}</Text>
-          </Pressable>
-        ) : null}
+    <Panel style={styles.panel}>
+      <View style={styles.title}>
+        <SectionLabel>{t("margin.yourPositions")}</SectionLabel>
+        {failed && positions !== undefined && asOf ? <StaleTick asOf={asOf} compact /> : null}
       </View>
       {body}
-    </View>
+    </Panel>
   );
 }
+
+const styles = StyleSheet.create({
+  panel: { gap: SPACE.sm, paddingVertical: SPACE.md },
+  title: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACE.lg },
+  line: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md },
+  headRow: { paddingVertical: SPACE.xs },
+  cell: { minWidth: 0 },
+  identity: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  shrink: { flex: 1, minWidth: 0 },
+  ring: { width: MARK, height: MARK, alignItems: "center", justifyContent: "center" },
+});

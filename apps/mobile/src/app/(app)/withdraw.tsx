@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import type { WithdrawAssetInput } from "@kawase/api-client";
 
 import { WithdrawScreen } from "@/screens/withdraw-screen";
+import { WidePage } from "@/trade/page-frame";
 
 /**
  * `/withdraw` opens Withdraw empty; Home, token pages and the chat's withdraw card prefill it:
@@ -10,7 +11,15 @@ import { WithdrawScreen } from "@/screens/withdraw-screen";
  * `chain=base` · `address=0x…`.
  */
 export default function WithdrawRoute() {
-  const params = useLocalSearchParams<{ assets?: string; everything?: string; place?: string; exchange?: string; chain?: string; address?: string; resume?: string }>();
+  const params = useLocalSearchParams<{
+    assets?: string;
+    everything?: string;
+    place?: string;
+    exchange?: string;
+    chain?: string;
+    address?: string;
+    resume?: string;
+  }>();
   const assets: WithdrawAssetInput[] = (params.assets ?? "")
     .split(",")
     .filter(Boolean)
@@ -20,14 +29,16 @@ export default function WithdrawRoute() {
     })
     .filter((entry) => entry.asset);
   return (
-    <WithdrawScreen
-      prefill={{
-        assets,
-        everything: params.everything === "1",
-        destination: { place: params.place, exchange: params.exchange, chain: params.chain, address: params.address },
-        resume: params.resume,
-      }}
-    />
+    <>
+      <WidePage />
+      <WithdrawScreen
+        prefill={{
+          assets,
+          everything: params.everything === "1",
+          destination: { place: params.place, exchange: params.exchange, chain: params.chain, address: params.address },
+          resume: params.resume,
+        }}
+      />
+    </>
   );
 }
-
