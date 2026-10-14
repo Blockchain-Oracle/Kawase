@@ -1,0 +1,76 @@
+{
+  "at": "2026-10-14T09:38:39.477Z",
+  "wallet": "0x6c66dbcE544801809ed314a0FF3DF08c22611a7f",
+  "budget": {
+    "network": "testnet",
+    "policy": {
+      "wallet": "0x6c66dbce544801809ed314a0ff3df08c22611a7f",
+      "chainId": 5042002,
+      "weeklyCap": "5000000",
+      "perActionCap": "1000000",
+      "categories": [
+        "swap",
+        "earn"
+      ],
+      "venues": [
+        "app_kit",
+        "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88",
+        "0x8f2d33b5d4b9b5f02df635ae308f7b4c9da8d2dc"
+      ],
+      "issuedAt": 1791970684,
+      "version": 1
+    },
+    "signature": "0x0fc2a1f376a119b3594dc4666d5dd7006e0904b75bc9abad6b82cee62f2c4a025853191ae7ca4d09e0047e3f5039c735b8007071b644b31ec5a8fda7b2d2522d1b",
+    "paused": false,
+    "spentThisWeek": "0",
+    "leftThisWeek": "5000000",
+    "weekStartsAt": "2026-10-12T00:00:00.000Z",
+    "weekEndsAt": "2026-10-19T00:00:00.000Z"
+  },
+  "swap": {
+    "intent": "01a139c6-ad0c-7ec0-8bcd-f4bde22b5ab0",
+    "tx": {
+      "hash": "0x750f47bb77ff1a7a8d28b21bcabb34f2d8c675efb20197bbcd9dc996f3ad9918",
+      "explorerUrl": "https://testnet.arcscan.app/tx/0x750f47bb77ff1a7a8d28b21bcabb34f2d8c675efb20197bbcd9dc996f3ad9918"
+    },
+    "received": "377796",
+    "minOut": "370240",
+    "amountIn": "300000"
+  },
+  "earn": {
+    "intent": "01a139c6-e57c-7e3a-8f15-9923c7346ca1",
+    "state": "completed",
+    "tx": {
+      "hash": "0x2020c9b47f53fb734b1403beff71f7e5d9f143ff35417ac410da0f9c3d5af877",
+      "explorerUrl": "https://testnet.arcscan.app/tx/0x2020c9b47f53fb734b1403beff71f7e5d9f143ff35417ac410da0f9c3d5af877"
+    },
+    "vault": "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88"
+  },
+  "ledger": {
+    "spentThisWeek": "500000",
+    "leftThisWeek": "4500000",
+    "rows": [
+      {
+        "id": "01a139c6-f4e4-7377-96e0-9e6694e3559b",
+        "intentId": "01a139c6-e57c-7e3a-8f15-9923c7346ca1",
+        "category": "earn",
+        "venue": "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88",
+        "amountUsd": "200000",
+        "createdAt": "2026-10-14T09:38:22.537Z",
+        "counts": true
+      },
+      {
+        "id": "01a139c6-cfa1-7ea5-9c0e-efcdcef7ec49",
+        "intentId": "01a139c6-ad0c-7ec0-8bcd-f4bde22b5ab0",
+        "category": "swap",
+        "venue": "app_kit",
+        "amountUsd": "300000",
+        "createdAt": "2026-10-14T09:38:13.005Z",
+        "counts": true
+      }
+    ]
+  },
+  "paused": "paused",
+  "overCap": "over_action_cap",
+  "forgedBudget": 422
+}
