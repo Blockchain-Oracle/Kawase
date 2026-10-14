@@ -57,11 +57,29 @@ export function price(usd: number | null | undefined, fx: Fx, locale: string): s
   if (usd === null || usd === undefined) return "—";
   const value = usd * fx.perUsd;
   const small = Math.abs(value) < 1;
-  return new Intl.NumberFormat(locale, {
+  const text = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: currency(fx.currency),
     ...(small ? { maximumSignificantDigits: PRICE_SIG_DIGITS } : { minimumFractionDigits: VALUE_DIGITS, maximumFractionDigits: VALUE_DIGITS }),
   }).format(value);
+  return small ? compactZeros(text) : text;
+}
+
+const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
+/** From this many zeros after the decimal separator, they are written as a count. */
+const ZEROS_TO_COMPACT = 4;
+const LEADING_ZEROS = new RegExp(`([.,])(0{${ZEROS_TO_COMPACT},})(?=[1-9])`);
+
+/**
+ * A meme coin's price the way traders read it (DexScreener, BasedBot): $0.00002606 → $0.0₄2606, the run of zeros after
+ * the decimal separator written as one zero and a subscript count. Shorter runs stay as they are; scripts with their
+ * own digits (Arabic-Indic) are left alone.
+ */
+export function compactZeros(text: string): string {
+  return text.replace(LEADING_ZEROS, (_match, separator: string, zeros: string) => {
+    const count = [...String(zeros.length)].map((digit) => SUBSCRIPT_DIGITS[Number(digit)]).join("");
+    return `${separator}0${count}`;
+  });
 }
 
 /** "+3.20%" / "−1.05%". */
