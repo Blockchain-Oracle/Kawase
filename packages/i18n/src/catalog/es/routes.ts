@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "Avanzado",
   perYear: "{{rate}} al año",
   notQuoted: "Sin cotización",
+  alsoCheckedTitle: "También revisadas",
   alsoChecked: "Revisado, aún no disponible en Kawase",
   reason_timeout: "Tardó demasiado",
   reason_no_route: "Sin ruta",

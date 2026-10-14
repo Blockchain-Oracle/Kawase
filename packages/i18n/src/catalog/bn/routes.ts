@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "উন্নত",
   perYear: "বছরে {{rate}}",
   notQuoted: "দাম দেয়নি",
+  alsoCheckedTitle: "এগুলোও দেখা হয়েছে",
   alsoChecked: "যাচাই হয়েছে, Kawase-এ এখনও খোলা নয়",
   reason_timeout: "উত্তর দিতে বেশি দেরি",
   reason_no_route: "কোনো রুট নেই",

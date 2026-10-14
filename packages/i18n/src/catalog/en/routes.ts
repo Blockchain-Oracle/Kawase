@@ -37,6 +37,7 @@ export const routes = {
   risk_advanced: "Advanced",
   perYear: "{{rate}} a year",
   notQuoted: "Didn't quote",
+  alsoCheckedTitle: "Also checked",
   alsoChecked: "Checked, not open in Kawase yet",
   reason_timeout: "Too slow to answer",
   reason_no_route: "No route",

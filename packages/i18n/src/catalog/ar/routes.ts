@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "متقدّم",
   perYear: "{{rate}} سنويًا",
   notQuoted: "لم تُسعِّر",
+  alsoCheckedTitle: "فُحصت أيضًا",
   alsoChecked: "تم فحصها، غير متاحة في Kawase بعد",
   reason_timeout: "تأخر في الرد",
   reason_no_route: "لا يوجد مسار",

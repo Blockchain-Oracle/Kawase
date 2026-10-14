@@ -87,6 +87,7 @@ const BACKOFF_BASE_MS = 60_000;
 const BACKOFF_MAX_MS = 1_800_000;
 const MS_PER_SECOND = 1_000;
 const HTTP_TOO_MANY = 429;
+const DOUBLING = 2;
 
 /** "preview": a quote to show; "execute": the quote the calls are built from at approval. */
 export type LifiPriority = "preview" | "execute";
@@ -114,7 +115,7 @@ export async function lifiQuoteGet(query: URLSearchParams, priority: LifiPriorit
   if (answer.status === HTTP_TOO_MANY) {
     const retry = Number(answer.retryAfter);
     quoteBudget.strikes += 1;
-    quoteBudget.blockedUntil = now + (Number.isFinite(retry) && retry > 0 ? retry * MS_PER_SECOND : Math.min(BACKOFF_BASE_MS * 2 ** (quoteBudget.strikes - 1), BACKOFF_MAX_MS));
+    quoteBudget.blockedUntil = now + (Number.isFinite(retry) && retry > 0 ? retry * MS_PER_SECOND : Math.min(BACKOFF_BASE_MS * DOUBLING ** (quoteBudget.strikes - 1), BACKOFF_MAX_MS));
     throw new BridgeProviderError("LI.FI", "rate_limited", "LI.FI asked to slow down");
   }
   quoteBudget.strikes = 0;

@@ -48,6 +48,8 @@ const OTHER_OPACITY = 0.69;
 /** The landing wash (21st 29368 `highlightDuration`): starts at this opacity and fades out over WASH_MS. */
 const WASH_FROM = 0.85;
 const WASH_MS = 1_400;
+/** The wash never takes a tap (style, not the deprecated prop, so react-native-web stays quiet). */
+const NO_TOUCH = { pointerEvents: "none" } as const;
 
 export type RouteListState = "live" | "error" | "offline";
 
@@ -164,7 +166,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
                 </View>
               ))}
             </View>
-            <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{t("routes.notQuoted")}</Text>
+            <Text className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>{others.some((row) => row.status === "quoted") ? t("routes.alsoCheckedTitle") : t("routes.notQuoted")}</Text>
             <Chevron open={othersOpen} />
           </Pressable>
           {othersOpen ? (
@@ -273,7 +275,7 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
 
   return (
     <View className={cn("bg-card overflow-hidden rounded-2xl border", selected ? "border-primary border-2" : "border-border")}>
-      <Animated.View pointerEvents="none" className="bg-primary/10 absolute inset-0" style={washStyle} />
+      <Animated.View className="bg-primary/10 absolute inset-0" style={[washStyle, NO_TOUCH]} />
       <Pressable
         accessibilityRole={readOnly ? "text" : "radio"}
         accessibilityState={{ checked: selected, disabled: !quoted }}
@@ -286,16 +288,17 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, onPress
           <Mark entity={row.mark} size={MARK_SIZE} />
         </Animated.View>
         <View className="min-w-0 flex-1 gap-1">
-          <View className="flex-row items-center gap-2">
-            <Text numberOfLines={1} className={cn("text-foreground shrink text-base font-semibold", TEXT_START)}>
-              {row.label}
-            </Text>
-            {isBest && quoted ? <BestBadge /> : null}
-          </View>
+          <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
+            {row.label}
+          </Text>
           {quoted ? (
-            <Text numberOfLines={1} className={cn("text-muted-foreground text-xs", TEXT_START)}>
-              {[eta ? t(`routes.${eta.key}`, { count: eta.count }) : null, yieldRow ? t("routes.perYear", { rate: `${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%` }) : null].filter(Boolean).join(" · ")}
-            </Text>
+            // The name keeps the whole first line at 375 pt; "Best" leads the second, before the ETA.
+            <View className="flex-row items-center gap-1.5">
+              {isBest ? <BestBadge /> : null}
+              <Text numberOfLines={1} className={cn("text-muted-foreground shrink text-xs", TEXT_START)}>
+                {[eta ? t(`routes.${eta.key}`, { count: eta.count }) : null, yieldRow ? t("routes.perYear", { rate: `${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%` }) : null].filter(Boolean).join(" · ")}
+              </Text>
+            </View>
           ) : (
             <Skeleton className="h-3 w-16 rounded-full" />
           )}

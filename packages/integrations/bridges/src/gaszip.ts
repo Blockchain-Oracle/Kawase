@@ -13,6 +13,8 @@ const API = "https://backend.gas.zip/v2";
 const TIMEOUT_MS = 8_000;
 const NO_VALUE = 0n;
 const ADDRESS_BYTES = 20;
+const NATIVE_DECIMALS = 18;
+const MS_PER_SECOND = 1_000;
 
 /** The deposit contract the Arc quote names (read live 2026-10-14; Gas.zip's docs do not list Arc's yet). */
 export const GASZIP_DEPOSIT: Readonly<Record<number, Address>> = { 5042: "0x9E22ebeC84c7e4C4bD6D4aE7FF6f4D436D6D8390" };
@@ -63,7 +65,7 @@ export async function gasZipQuote(input: GasZipQuoteInput): Promise<GasZipQuote>
   return {
     // `expected` is a JSON number above 2^53 for large amounts; its string form keeps every digit it has.
     outputAmount: BigInt(typeof quote.expected === "string" ? quote.expected : Math.floor(quote.expected).toLocaleString("fullwide", { useGrouping: false })),
-    outputDecimals: quote.decimals ?? 18,
+    outputDecimals: quote.decimals ?? NATIVE_DECIMALS,
     outputUsd: typeof quote.usd === "number" ? quote.usd : null,
     etaSeconds: typeof quote.speed === "number" ? quote.speed : null,
     expires: Number(body.expires ?? 0),
@@ -85,7 +87,7 @@ export function checkGasZipCalls(
   if (calls.length !== 1 || !call || !contract || short === undefined) return { ok: false, reason: "wrong_shape" };
   if (!same(call.to, contract)) return { ok: false, reason: "wrong_target" };
   if (call.value !== expected.amountWei || call.value === NO_VALUE) return { ok: false, reason: "wrong_value" };
-  if (expected.expires && (expected.now ?? Math.floor(Date.now() / 1000)) > expected.expires) return { ok: false, reason: "expired" };
+  if (expected.expires && (expected.now ?? Math.floor(Date.now() / MS_PER_SECOND)) > expected.expires) return { ok: false, reason: "expired" };
   try {
     const { args } = decodeFunctionData({ abi: depositAbi, data: call.data });
     if (args[0] !== BigInt(short)) return { ok: false, reason: "wrong_destination" };

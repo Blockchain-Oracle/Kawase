@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "Avancé",
   perYear: "{{rate}} par an",
   notQuoted: "Pas de prix",
+  alsoCheckedTitle: "Aussi comparées",
   alsoChecked: "Vérifié, pas encore ouvert dans Kawase",
   reason_timeout: "Réponse trop lente",
   reason_no_route: "Aucun itinéraire",

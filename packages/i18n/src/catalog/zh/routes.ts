@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "进阶",
   perYear: "年化 {{rate}}",
   notQuoted: "未报价",
+  alsoCheckedTitle: "也比较过",
   alsoChecked: "已比较，Kawase 暂未开放",
   reason_timeout: "回复太慢",
   reason_no_route: "没有路线",

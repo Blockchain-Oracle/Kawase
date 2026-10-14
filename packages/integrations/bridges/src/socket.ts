@@ -17,6 +17,9 @@ const PERCENT = 100;
 const BPS = 10_000;
 const APPROVE_AND_CALL = 2;
 const ADDRESS_HEX = 40;
+const HEX_PREFIX = 2;
+const MS_PER_SECOND = 1_000;
+const DOUBLING = 2;
 
 /** Socket's allowance holder (the approval's spender and the call's target) and its executor, read live 2026-10-14. */
 export const SOCKET_ALLOWANCE_HOLDER: Address = "0x50c4E75a512F2A14A7b304787Adf79C4531A5909";
@@ -96,7 +99,7 @@ async function quoteGet(query: string): Promise<Answer> {
   const answer = await get(`/swap/quote?${query}`);
   if (answer.status === HTTP_TOO_MANY) {
     quoteState.strikes += 1;
-    quoteState.blockedUntil = now + Math.min(BACKOFF_BASE_MS * 2 ** (quoteState.strikes - 1), BACKOFF_MAX_MS);
+    quoteState.blockedUntil = now + Math.min(BACKOFF_BASE_MS * DOUBLING ** (quoteState.strikes - 1), BACKOFF_MAX_MS);
     return answer;
   }
   quoteState.strikes = 0;
@@ -176,7 +179,7 @@ export function checkSocketCalls(
   const [approve, main] = calls as [BridgeCall, BridgeCall];
   if (!same(main.to, SOCKET_ALLOWANCE_HOLDER)) return { ok: false, reason: "wrong_target" };
   if (main.value !== NO_VALUE || approve.value !== NO_VALUE) return { ok: false, reason: "native_value" };
-  if (expected.expiresAt && (expected.now ?? Math.floor(Date.now() / 1000)) > expected.expiresAt) return { ok: false, reason: "expired" };
+  if (expected.expiresAt && (expected.now ?? Math.floor(Date.now() / MS_PER_SECOND)) > expected.expiresAt) return { ok: false, reason: "expired" };
   try {
     const decoded = decodeFunctionData({ abi: erc20Abi, data: approve.data });
     if (decoded.functionName !== "approve" || !same(approve.to, expected.token) || !same(decoded.args[0], SOCKET_ALLOWANCE_HOLDER) || decoded.args[1] !== expected.amount) return { ok: false, reason: "wrong_approval" };
@@ -189,7 +192,7 @@ export function checkSocketCalls(
     if (!same(operator, SOCKET_EXECUTOR) || !same(target, SOCKET_EXECUTOR)) return { ok: false, reason: "wrong_operator" };
     if (!same(token, expected.token) || amount !== expected.amount) return { ok: false, reason: "wrong_amount" };
     // Opaque inner calldata: at least the receiver Kawase asked for must be in it as an ABI word.
-    if (!inner.toLowerCase().includes(expected.receiver.slice(2).toLowerCase().padStart(ADDRESS_HEX, "0"))) return { ok: false, reason: "receiver_missing" };
+    if (!inner.toLowerCase().includes(expected.receiver.slice(HEX_PREFIX).toLowerCase().padStart(ADDRESS_HEX, "0"))) return { ok: false, reason: "receiver_missing" };
   } catch {
     return { ok: false, reason: "unreadable" };
   }

@@ -38,6 +38,7 @@ export const routes: Catalog["routes"] = {
   risk_advanced: "Сложный",
   perYear: "{{rate}} в год",
   notQuoted: "Нет котировки",
+  alsoCheckedTitle: "Тоже проверены",
   alsoChecked: "Проверено, в Kawase пока не открыто",
   reason_timeout: "Слишком долго отвечал",
   reason_no_route: "Нет маршрута",
