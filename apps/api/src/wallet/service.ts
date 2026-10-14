@@ -44,6 +44,7 @@ import { DelegationManager } from "@metamask/smart-accounts-kit/contracts";
 import { hashDelegation } from "@metamask/smart-accounts-kit/utils";
 import { DELEGATION_FRAMEWORK, type NetworkId } from "@kawase/networks";
 
+import { retryOnRace } from "../auth/unique";
 import { ContactService } from "../contacts/service";
 import { HTTP, ProblemError, problem } from "../http/problem";
 import { lockPerson, relayGasPrice, relayProblem, relayRefusal, relayerReady, reserveRelay, REVOKE_KIND } from "../send/relayed";
@@ -51,6 +52,8 @@ import { fetchActivity } from "./activity";
 import type { Chains, NetworkClients } from "./chain";
 
 const SALT_BYTES = 32;
+/** The indexes two registrations of one wallet can collide on: one active wallet per person, one row per address. */
+const WALLET_RACE_INDEXES = ["wallets_one_user_wallet_idx", "wallets_role_network_address_idx"] as const;
 const MS_PER_SECOND = 1000;
 /** An allowance lives this long before the app asks for a fresh signature. */
 const ALLOWANCE_TTL_DAYS = 90;
@@ -152,7 +155,11 @@ export async function registerUserWallet(
     return wallet!;
   };
   // A savepoint when the caller is already inside a transaction (sign-in links the account and its wallet together).
-  return (db as Db).transaction(run);
+  // Two registrations of the same new wallet at once (sign-in and the app's own registration) race on the one-wallet
+  // index: the loser runs again and returns the winner's row; losing twice is a 409, never a 500.
+  return retryOnRace(() => (db as Db).transaction(run), WALLET_RACE_INDEXES, () =>
+    problem(HTTP.conflict, "conflict", "this wallet is already being registered; try again"),
+  );
 }
 
 export class WalletService {

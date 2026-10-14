@@ -13,6 +13,7 @@ import { HTTP, ProblemError, problem } from "../http/problem";
 import { registerUserWallet } from "../wallet/service";
 import { createPrivyVerifier, PrivyTokenError, type PrivyIdentity, type PrivyVerifier } from "./privy";
 import { createSession } from "./session";
+import { retryOnRace } from "./unique";
 import { parseStamp, proofClaims, verifyStamp, type StampedProof } from "./turnkey-proof";
 import type { TurnkeyReader, TurnkeyUser } from "./turnkey";
 
@@ -41,6 +42,9 @@ export function privyFromEnv(source?: Record<string, string | undefined>): Privy
 }
 
 const PRIVY = "privy" as const;
+/** The unique indexes two concurrent first sign-ins can collide on (the identity, the email, the device). */
+const RACED_INDEXES = ["users_identity_idx", "users_email_idx", "devices_installation_idx"] as const;
+const raceConflict = () => problem(HTTP.conflict, "conflict", "this sign-in is already being finished; try again");
 
 export class AuthService {
   readonly privy: PrivyVerifier | undefined;
@@ -86,7 +90,9 @@ export class AuthService {
   }) {
     const identity = await this.privyIdentity(input);
     const email = identity.email;
-    const user = await this.db.transaction(async (tx) => {
+    // Two first sign-ins for the same Privy user at once (a double tap, two tabs) race to create the account: the one
+    // that loses runs again and finds the winner's row; losing twice is a 409, never a 500.
+    const user = await retryOnRace(() => this.db.transaction(async (tx) => {
       const [byIdentity] = await tx
         .select()
         .from(users)
@@ -128,9 +134,9 @@ export class AuthService {
         .values({ ...linked, email: emailFree ? (email ?? null) : null, locale: input.device.locale ?? "en" })
         .returning();
       return created!;
-    });
+    }), RACED_INDEXES, raceConflict);
 
-    const device = await this.upsertDevice(user.id, input.device);
+    const device = await retryOnRace(() => this.upsertDevice(user.id, input.device), RACED_INDEXES, raceConflict);
     await this.db.update(devices).set({ identitySessionId: identity.sessionId }).where(eq(devices.id, device.id));
     const wallet = identity.wallet
       ? await this.privyWallet(user.id, identity, identity.wallet).catch((error: unknown) => {
@@ -148,8 +154,20 @@ export class AuthService {
    */
   async linkPrivyWallet(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
     const identity = await this.ownPrivyIdentity(userId, input);
-    if (!identity.wallet) throw problem(HTTP.unprocessable, "wallet_not_registered", "the Privy account has no wallet yet");
-    return this.privyWallet(userId, identity, identity.wallet);
+    // An identity token minted before the wallet existed (the SDK caches it) does not name the wallet yet; Privy's own
+    // record of the user does, when the api has the app secret to read it. The app also refreshes its token and retries.
+    const wallet = identity.wallet ?? (input.identityToken ? await this.privyWalletFromApi(input.accessToken) : undefined);
+    if (!wallet) throw problem(HTTP.unprocessable, "wallet_not_registered", "the Privy account has no wallet yet");
+    return this.privyWallet(userId, identity, wallet);
+  }
+
+  /** The embedded wallet as Privy's REST API has it now (needs PRIVY_APP_SECRET); undefined when it cannot be read. */
+  private async privyWalletFromApi(accessToken: string): Promise<PrivyIdentity["wallet"]> {
+    try {
+      return (await this.privy?.identify({ accessToken }))?.wallet;
+    } catch {
+      return undefined;
+    }
   }
 
   /** The tokens' identity, refused unless it is the one this Kawase account is linked to. */

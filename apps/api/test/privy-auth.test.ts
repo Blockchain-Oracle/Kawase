@@ -196,3 +196,35 @@ test("an email changed at Privy is followed, unless another account holds it", a
   const taken = await app.request("/auth/privy/sync", jsonRequest("POST", tokens({ ...person, email: EMAIL }), token));
   await expectStatus(taken, 409);
 });
+
+test("two first sign-ins for the same Privy user at once make one account: each answers 201 or 409, never 500", async () => {
+  const person: Person = { did: `did:privy:${randomUUID()}`, email: `race-${randomUUID()}@example.test`, wallet: privateKeyToAccount(generatePrivateKey()).address };
+  const attempts = await Promise.all(
+    ["race-1", "race-2", "race-3"].map((id) => app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device(id) }))),
+  );
+  const statuses = attempts.map((response) => response.status);
+  assert.ok(statuses.every((status) => status === 201 || status === 409), `statuses ${statuses.join(",")}`);
+  assert.ok(statuses.includes(201), "one sign-in wins");
+  const rows = await db.select().from(users).where(and(eq(users.identityProvider, "privy"), eq(users.identitySubject, person.did)));
+  assert.equal(rows.length, 1);
+  created.push(rows[0]!.id);
+  const active = await db.select().from(wallets).where(and(eq(wallets.userId, rows[0]!.id), eq(wallets.status, "active")));
+  assert.equal(active.length, 1, "one wallet registered");
+});
+
+test("two registrations of the same new wallet at once keep one wallet and never answer 500", async () => {
+  const person: Person = { did: `did:privy:${randomUUID()}`, email: `race-wallet-${randomUUID()}@example.test` };
+  const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("race-w") }));
+  await expectStatus(signIn, 201);
+  const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
+  created.push(user.id);
+  const late = privateKeyToAccount(generatePrivateKey()).address;
+  const attempts = await Promise.all(
+    [1, 2, 3].map(() => app.request("/auth/privy/wallet", jsonRequest("POST", tokens({ ...person, wallet: late }), token))),
+  );
+  const statuses = attempts.map((response) => response.status);
+  assert.ok(statuses.every((status) => status === 201 || status === 409), `statuses ${statuses.join(",")}`);
+  assert.ok(statuses.includes(201));
+  const active = await db.select().from(wallets).where(and(eq(wallets.userId, user.id), eq(wallets.status, "active")));
+  assert.equal(active.length, 1);
+});
