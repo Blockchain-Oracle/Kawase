@@ -16,6 +16,11 @@
 // by the chain's own native-transfer log, which covers both its native and ERC-20 faces, plus any flat fee); the fill
 // is followed through the provider until it is delivered. A move that is not filled says so and how it ends
 // (refunded by the provider), never re-sent on its own (R7).
+// Socket (its own routes through Across, CCTP, Relay…; 20 bps; opaque calldata, checked for target, spender, token,
+// amount and receiver, then witnessed) and Gas.zip (USDC on Arc → the gas coin on another chain, one native-value
+// deposit) are quoted next to the five above. They rank and execute once the draft format lists them
+// (@kawase/intents CROSSCHAIN_PROVIDERS, append-only); until then they are left out of the choice, never shown as
+// "quote only".
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
@@ -58,6 +63,13 @@ import {
   acrossStatus,
   checkAcrossCalls,
   checkDebridgeCalls,
+  checkGasZipCalls,
+  checkSocketCalls,
+  gasZipQuote,
+  gasZipStatus,
+  SOCKET_NATIVE,
+  socketQuote,
+  socketStatus,
   checkLifiCalls,
   checkPermit2Approval,
   checkRelayCalls,
@@ -119,10 +131,13 @@ type DraftPayload = { draft: StoredCrossChainDraft | null; view: CrossChainDraft
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 /** Where the origin transaction is: the Arc batch, a transaction on the other chain, or a permit Relay executes. */
 type Origin = "arc" | "source" | "permit";
-type Track = { requestId?: string | null; orderId?: string | null; tool?: string | null };
-type Progress = Track & { provider: CrossChainProvider; origin?: Origin; status?: string; fillTx?: string | null; received?: string | null };
+type Track = { requestId?: string | null; orderId?: string | null; tool?: string | null; quoteId?: string | null };
+/** Routes quoted beyond the five the draft format knows; see `registered`. */
+type ExtraProvider = "socket" | "gaszip";
+type Provider = CrossChainProvider | ExtraProvider;
+type Progress = Track & { provider: Provider; origin?: Origin; status?: string; fillTx?: string | null; received?: string | null };
 type Quote = {
-  provider: CrossChainProvider;
+  provider: Provider;
   /** Base units of `output` that would arrive, and the least. */
   received: bigint | null;
   minReceived: bigint | null;
@@ -170,7 +185,15 @@ const CCTP_QUOTE_TIMEOUT_MS = 15_000;
 const NO_QUOTE = -1n;
 /** Arc's native USDC transfers (and the native leg of every ERC-20 USDC transfer) are logged from this address. */
 const ARC_NATIVE_LOGGER = "0xfffffffffffffffffffffffffffffffffffffffe";
-const TRUST: Record<CrossChainProvider, CrossChainRouteView["trust"]> = { cctp: "burn_mint", across: "solver", relay: "solver", lifi: "solver", debridge: "solver" };
+const TRUST: Record<Provider, CrossChainRouteView["trust"]> = { cctp: "burn_mint", across: "solver", relay: "solver", lifi: "solver", debridge: "solver", socket: "solver", gaszip: "solver" };
+/** Gas for the Arc batch of the routes the config does not list yet (Socket's approve + exec; Gas.zip's one deposit). */
+const EXTRA_BATCH_GAS: Record<ExtraProvider, bigint> = { socket: 900_000n, gaszip: 120_000n };
+/** A provider the draft format can store (its index in CROSSCHAIN_PROVIDERS), so it can be chosen and executed. */
+const registered = (provider: Provider): provider is CrossChainProvider => (CROSSCHAIN_PROVIDERS as readonly string[]).includes(provider);
+const batchGasOf = (provider: Provider) => (registered(provider) ? CROSSCHAIN.batchGas[provider] : EXTRA_BATCH_GAS[provider]);
+const isConvertVenue = (venue: string): venue is (typeof CONVERT_VENUES)[number] => (CONVERT_VENUES as readonly string[]).includes(venue);
+type ShownQuote = Quote & { provider: CrossChainProvider };
+const shownRoute = (quote: Quote): quote is ShownQuote => registered(quote.provider);
 const CHAIN_NAMES: Record<string, string> = { base: "Base", ethereum: "Ethereum", arbitrum: "Arbitrum", optimism: "OP Mainnet", polygon: "Polygon", avalanche: "Avalanche" };
 const BRIDGE_NAMES: Record<string, string> = { relaydepository: "Relay", relay: "Relay", across: "Across", acrossV3: "Across", polymerStandard: "Polymer", cbridge: "Celer", stargateV2: "Stargate", mayan: "Mayan", glacis: "Glacis" };
 const DECIMAL = /^\d+(\.\d+)?$/;
@@ -297,11 +320,11 @@ export class CrossChainService {
   }
 
   /** A quote that did not happen, with why. */
-  private none(provider: CrossChainProvider, output: MoveAsset, reason: CrossChainRouteView["reason"]): Quote {
+  private none(provider: Provider, output: MoveAsset, reason: CrossChainRouteView["reason"]): Quote {
     return { provider, received: null, minReceived: null, etaSeconds: null, reason, output, nativeFee: ZERO, extraCost: ZERO, via: null, steps: [], convert: null, sourceGas: null, approval: null };
   }
 
-  private failed(provider: CrossChainProvider, output: MoveAsset, error: unknown): Quote {
+  private failed(provider: Provider, output: MoveAsset, error: unknown): Quote {
     const code = (error as { code?: string }).code;
     return this.none(provider, output, code === "amount_too_low" ? "amount_too_low" : code === "timeout" ? "timeout" : "no_quote");
   }
@@ -341,6 +364,28 @@ export class CrossChainService {
     return [cctp, across, relay];
   }
 
+  /** Socket's best route out of Arc for `from` → `to` (its 20 bps already netted in what arrives). */
+  private socketOut(input: { network: NetworkContext; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset; amount: bigint }): Promise<Quote> {
+    const { network, chain, wallet, recipient, from, to, amount } = input;
+    if (!network.isRealMoney) return Promise.resolve(this.none("socket", to, "not_on_arc_testnet"));
+    const slippageBps = from.usdc && to.usdc ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
+    const quote = socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: from.address as Address, outputToken: to.native ? SOCKET_NATIVE : (to.address as Address), amount, user: wallet, receiver: recipient, slippageBps }).then(
+      (route): Quote => ({ ...this.none("socket", to, null), received: route.outputAmount, minReceived: route.minOutputAmount, etaSeconds: route.etaSeconds, via: route.via }),
+    );
+    return within(quote, this.failed("socket", to, { code: "timeout" }), AGGREGATOR_TIMEOUT_MS).catch((error: unknown) => this.failed("socket", to, error));
+  }
+
+  /** Gas.zip: USDC on Arc → the gas coin of `chain` (ETH, POL, AVAX), one native-value deposit. */
+  private gasZipOut(input: { network: NetworkContext; chain: BridgeDestination; wallet: Address; recipient: Address; to: MoveAsset; amount: bigint }): Promise<Quote> {
+    const { network, chain, wallet, recipient, to, amount } = input;
+    if (!network.isRealMoney) return Promise.resolve(this.none("gaszip", to, "not_on_arc_testnet"));
+    const quote = gasZipQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, amountWei: toNative(amount), from: wallet, to: recipient }).then(
+      // Gas.zip delivers what it quotes (no slippage on its side), so the least equals the expected.
+      (quoted): Quote => ({ ...this.none("gaszip", to, null), received: quoted.outputAmount, minReceived: quoted.outputAmount, etaSeconds: quoted.etaSeconds }),
+    );
+    return within(quote, this.failed("gaszip", to, { code: "timeout" })).catch((error: unknown) => this.failed("gaszip", to, error));
+  }
+
   /** An aggregator route out of Arc for `from` → `to` (LI.FI or deBridge). */
   private aggregatorOut(provider: "lifi" | "debridge", input: { network: NetworkContext; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset; amount: bigint }): Promise<Quote> {
     const { network, chain, wallet, recipient, from, to, amount } = input;
@@ -362,12 +407,12 @@ export class CrossChainService {
     if (!this.venues) return [];
     const { network, client, wallet, from, amount } = input;
     const swapped = await within(
-      this.venues.quoteAll({ network, client: client as PublicClient, from: wallet, tokenIn: from.address as Address, tokenOut: network.addresses.usdc, amountIn: amount, decimalsIn: from.decimals, decimalsOut: USDC_DECIMALS, slippageBps: CROSSCHAIN.volatileSlippageBps }),
+      this.venues.quoteAll({ network, client: client as PublicClient, from: wallet, tokenIn: from.address as Address, tokenOut: network.addresses.usdc, amountIn: amount, decimalsIn: from.decimals, decimalsOut: USDC_DECIMALS, slippageBps: CROSSCHAIN.volatileSlippageBps }, CONVERT_VENUES),
       { quotes: [], failures: [] },
       AGGREGATOR_TIMEOUT_MS,
     );
     const best = swapped.quotes[0];
-    if (!best || best.minOut === ZERO) return [];
+    if (!best || best.minOut === ZERO || !isConvertVenue(best.venue)) return [];
     // The bridge is quoted before the swap's USDC exists: its guaranteed minimum is counted as held.
     return Promise.all(this.usdcOut({ ...input, amount: best.minOut, convert: { venue: best.venue, minOut: best.minOut }, credit: best.minOut }));
   }
@@ -375,12 +420,16 @@ export class CrossChainService {
   private async quotesOut(input: { network: NetworkContext; client: NetworkClients["client"]; chain: BridgeDestination; wallet: Address; recipient: Address; from: MoveAsset; to: MoveAsset | undefined; amount: bigint; credit?: bigint | undefined }): Promise<Quote[]> {
     const { from, to } = input;
     const usdcThere: MoveAsset = { chainId: input.chain.chainId, address: input.chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" };
+    // Gas for the other chain: its own coin, from USDC.
+    if (from.usdc && to?.native) {
+      return Promise.all([this.gasZipOut({ ...input, to }), this.aggregatorOut("lifi", { ...input, to }), this.socketOut({ ...input, to })]);
+    }
     if (from.usdc) {
-      return Promise.all([...this.usdcOut({ ...input, convert: null }), this.aggregatorOut("lifi", { ...input, to: usdcThere }), this.aggregatorOut("debridge", { ...input, to: usdcThere })]);
+      return Promise.all([...this.usdcOut({ ...input, convert: null }), this.aggregatorOut("lifi", { ...input, to: usdcThere }), this.aggregatorOut("debridge", { ...input, to: usdcThere }), this.socketOut({ ...input, to: usdcThere })]);
     }
     // As itself first; USDC (an aggregator's own swap, or convert-first) when nothing carries it.
     if (to && !to.usdc) {
-      const direct = await Promise.all([this.aggregatorOut("lifi", { ...input, to }), this.aggregatorOut("debridge", { ...input, to })]);
+      const direct = await Promise.all([this.aggregatorOut("lifi", { ...input, to }), this.aggregatorOut("debridge", { ...input, to }), this.socketOut({ ...input, to })]);
       if (direct.some((quote) => quote.received !== null && quote.reason === null)) return direct;
     }
     const [lifi, debridge, converted] = await Promise.all([this.aggregatorOut("lifi", { ...input, to: usdcThere }), this.aggregatorOut("debridge", { ...input, to: usdcThere }), this.convertFirst(input)]);
@@ -460,7 +509,10 @@ export class CrossChainService {
         from = await arcAsset(clients.network, clients.client as PublicClient, this.assets?.directory, request.asset);
         if (from !== "unknown") {
           balance = from.usdc ? usdcBalance : await clients.client.readContract({ address: from.address as Address, abi: erc20Abi, functionName: "balanceOf", args: [wallet] });
-          if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
+          const gasCoin = chain ? NATIVE_SYMBOLS[chain.chainId] : undefined;
+          const wantGas = Boolean(from.usdc && gasCoin && request.toAsset?.trim().toLowerCase() === gasCoin.toLowerCase());
+          if (chain && wantGas) to = { chainId: chain.chainId, address: zeroAddress, symbol: gasCoin!, decimals: NATIVE_DECIMALS, native: true, usdc: false, status: "remote" };
+          else if (chain) to = from.usdc || wantUsdc ? { chainId: chain.chainId, address: chain.usdc, symbol: "USDC", decimals: USDC_DECIMALS, native: false, usdc: true, status: "remote" } : await counterpartThere(chain, from);
         }
         if (request.recipient) {
           const resolution = await this.recipients.resolve({ id: user.id, walletAddress: wallet }, network, request.recipient);
@@ -489,7 +541,7 @@ export class CrossChainService {
         : await this.quotesIn({ network: clients.network, chain: chain!, wallet, from: asset, to: to!, amount: amount.baseUnits });
     }
     const net = (quote: Quote) => (quote.received === null ? NO_QUOTE : quote.received - quote.extraCost);
-    const executable = quotes.filter((quote) => quote.received !== null && quote.reason === null);
+    const executable = quotes.filter((quote) => quote.received !== null && quote.reason === null && registered(quote.provider));
     const ranked = [...executable].sort((a, b) => (net(b) > net(a) ? 1 : net(b) < net(a) ? -1 : (a.etaSeconds ?? Infinity) - (b.etaSeconds ?? Infinity)));
     const chosen = ranked.find((quote) => quote.provider === request.route) ?? ranked[0];
     // Two steps in: the approval's gas is paid in the chain's coin, which the person must hold there.
@@ -528,7 +580,7 @@ export class CrossChainService {
       let fee = ZERO;
       if (outbound) {
         const { maxFeePerGas } = await walletGasPrice(clients.client);
-        const gas = CROSSCHAIN.batchGas[chosen.provider] + (chosen.convert ? CROSSCHAIN.convertGas : ZERO);
+        const gas = batchGasOf(chosen.provider) + (chosen.convert ? CROSSCHAIN.convertGas : ZERO);
         fee = ((gas * GAS_ESTIMATE_HEADROOM_PERCENT) / PERCENT) * maxFeePerGas;
       } else if (sourceTx) fee = chosen.sourceGas ?? ZERO;
       // The first of two steps is paid there, in its coin: the version bounds it.
@@ -542,13 +594,13 @@ export class CrossChainService {
         recipient,
         outputToken: chosen.output.address as Address,
         minReceived: chosen.minReceived,
-        provider: CROSSCHAIN_PROVIDERS.indexOf(chosen.provider),
+        provider: (CROSSCHAIN_PROVIDERS as readonly string[]).indexOf(chosen.provider),
         nativeFee: chosen.nativeFee,
         swapMinOut: chosen.convert?.minOut ?? ZERO,
         swapVenue: chosen.convert ? CONVERT_VENUES.indexOf(chosen.convert.venue) : 0,
         maxFee: fee * MAX_FEE_DRAFT_MULTIPLIER,
       };
-      const shown = [...ranked, ...quotes.filter((quote) => !ranked.includes(quote))].slice(0, SHOWN_ROUTES);
+      const shown = [...ranked, ...quotes.filter((quote) => !ranked.includes(quote))].filter(shownRoute).slice(0, SHOWN_ROUTES);
       view = {
         direction,
         asset: asset.symbol,
@@ -576,7 +628,7 @@ export class CrossChainService {
           convertFirst: quote.convert ? { venue: SWAP_VENUE_LABELS[quote.convert.venue], minUsdc: quote.convert.minOut.toString() } : null,
           approveFirst: quote.approval ? { coin: quote.approval.coin, gas: quote.approval.gas.toString() } : null,
         })),
-        chosen: chosen.provider,
+        chosen: chosen.provider as CrossChainProvider,
         minReceived: chosen.minReceived.toString(),
         // Gas the wallet pays on Arc, in USDC; a move that starts on another chain pays there, in its coin.
         networkFee: outbound ? feeInUsdc(fee).toString() : "0",
@@ -708,7 +760,7 @@ export class CrossChainService {
   private async aggregatorCalls(provider: CrossChainProvider, draft: CrossChainDraft, network: NetworkContext, chain: BridgeDestination, token: { address: Address; usdc: boolean }, amount: bigint): Promise<{ calls: BridgeCall[]; track: Track } | { changed: true }> {
     if (provider === "lifi") {
       const slippageBps = token.usdc && same(draft.outputToken, chain.usdc) ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
-      const quote = await lifiQuote({ fromChainId: network.chainId, toChainId: chain.chainId, fromToken: token.address, toToken: draft.outputToken, amount, from: draft.from, to: draft.recipient, slippageBps });
+      const quote = await lifiQuote({ fromChainId: network.chainId, toChainId: chain.chainId, fromToken: token.address, toToken: draft.outputToken, amount, from: draft.from, to: draft.recipient, slippageBps, priority: "execute" });
       if (quote.minOutputAmount < draft.minReceived) return { changed: true };
       const check = checkLifiCalls(quote.calls, { chainId: network.chainId, token: token.address, amount, recipient: draft.recipient, destinationChainId: chain.chainId });
       if (!check.ok) throw this.refused(provider, check.reason);
@@ -723,6 +775,14 @@ export class CrossChainService {
       if (!check.ok) throw this.refused(provider, check.reason);
       return { calls: quote.calls, track: { orderId: quote.orderId } };
     }
+    if ((provider as Provider) === "socket") {
+      const slippageBps = token.usdc && same(draft.outputToken, chain.usdc) ? CROSSCHAIN.stableSlippageBps : CROSSCHAIN.volatileSlippageBps;
+      const route = await socketQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, inputToken: token.address, outputToken: same(draft.outputToken, zeroAddress) ? SOCKET_NATIVE : draft.outputToken, amount, user: draft.from, receiver: draft.recipient, slippageBps });
+      if (route.minOutputAmount < draft.minReceived) return { changed: true };
+      const check = checkSocketCalls(route.calls, { token: token.address, amount, receiver: draft.recipient, expiresAt: route.expiresAt });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { calls: route.calls, track: { quoteId: route.quoteId } };
+    }
     throw this.refused(provider, "not_an_aggregator");
   }
 
@@ -731,7 +791,7 @@ export class CrossChainService {
     if (draft.originChainId !== network.chainId) {
       if (provider === "lifi") {
         // The chain's own coin, one transaction there.
-        const quote = await lifiQuote({ fromChainId: chain.chainId, toChainId: network.chainId, fromToken: LIFI_NATIVE, toToken: draft.outputToken, amount: draft.amount, from: draft.from, to: draft.recipient, slippageBps: CROSSCHAIN.volatileSlippageBps });
+        const quote = await lifiQuote({ fromChainId: chain.chainId, toChainId: network.chainId, fromToken: LIFI_NATIVE, toToken: draft.outputToken, amount: draft.amount, from: draft.from, to: draft.recipient, slippageBps: CROSSCHAIN.volatileSlippageBps, priority: "execute" });
         if (quote.minOutputAmount < draft.minReceived) return { changed: true };
         const check = checkLifiCalls(quote.calls, { chainId: chain.chainId, token: LIFI_NATIVE, amount: draft.amount, recipient: draft.recipient, destinationChainId: network.chainId });
         if (!check.ok) throw this.refused(provider, check.reason);
@@ -780,6 +840,15 @@ export class CrossChainService {
       return { kind: "batch", calls: [...prepared.calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), ...bridged.calls], track: bridged.track };
     }
     const usdc = same(draft.token, network.addresses.usdc);
+    if ((provider as Provider) === "gaszip") {
+      // USDC → the gas coin there: one deposit carrying exactly the amount as Arc's native coin.
+      const amountWei = toNative(draft.amount);
+      const quote = await gasZipQuote({ originChainId: network.chainId, destinationChainId: chain.chainId, amountWei, from: draft.from, to: draft.recipient });
+      if (quote.outputAmount < draft.minReceived) return { changed: true };
+      const check = checkGasZipCalls(quote.calls, { originChainId: network.chainId, destinationChainId: chain.chainId, amountWei, recipient: draft.recipient, expires: quote.expires });
+      if (!check.ok) throw this.refused(provider, check.reason);
+      return { kind: "batch", calls: quote.calls, track: {} };
+    }
     const built = usdc ? await this.bridgeUsdc(provider, draft, network, withCredit(client, network.addresses.usdc, draft.from, credit), chain, draft.amount) : await this.aggregatorCalls(provider, draft, network, chain, { address: draft.token, usdc: false }, draft.amount);
     if ("changed" in built) return built;
     return { kind: "batch", calls: built.calls, track: built.track };
@@ -1178,6 +1247,18 @@ export class CrossChainService {
     if (progress.provider === "lifi" && originTx && progress.tool) {
       const status = await lifiStatus({ txHash: originTx, fromChainId: draft.originChainId, toChainId: draft.destinationChainId, tool: progress.tool });
       if (status.status === "delivered") return { status: "delivered", fillTx: status.receivingTx, received: (status.received ?? draft.minReceived).toString() };
+      if (status.status === "refunded" || status.status === "failed") return { status: status.status, fillTx: null, received: null };
+      return pending;
+    }
+    if (progress.provider === "socket" && progress.quoteId) {
+      const status = await socketStatus(progress.quoteId);
+      if (status.status === "delivered") return { status: "delivered", fillTx: status.destinationTx, received: (status.received ?? draft.minReceived).toString() };
+      if (status.status === "refunded" || status.status === "failed") return { status: status.status, fillTx: null, received: null };
+      return pending;
+    }
+    if (progress.provider === "gaszip" && originTx) {
+      const status = await gasZipStatus(originTx);
+      if (status.status === "delivered") return { status: "delivered", fillTx: status.destinationTx, received: draft.minReceived.toString() };
       if (status.status === "refunded" || status.status === "failed") return { status: status.status, fillTx: null, received: null };
       return pending;
     }
