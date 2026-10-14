@@ -19,4 +19,6 @@ export const movePolicy = {
   QUOTE_UNAVAILABLE: "No route can carry it right now.",
   MOVE_ASSET_UNKNOWN: "Kawase can't find {{asset}} there. Which asset do you mean?",
   TOKEN_BLOCKED: "{{symbol}} imitates another token, so Kawase won't move it.",
+  ADDRESS_CHANGE_HOLD: "{{name}}'s address there is new or changed. Payments to it wait until {{until}}, for your safety.",
+  RECIPIENT_BLOCKED: "{{name}} is blocked, so Kawase won't pay them.",
 } as const;

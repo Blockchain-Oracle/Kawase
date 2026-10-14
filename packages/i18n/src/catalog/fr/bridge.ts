@@ -13,7 +13,6 @@ export const bridge: Catalog["bridge"] = {
   routes: "Routes comparées",
   routeChosen: "Choisie",
   routeWouldArrive: "{{amount}} arriveraient",
-  reason_quote_only: "Prix seulement : Kawase n'utilise pas encore cette route",
   reason_no_quote: "Pas de prix pour l'instant",
   reason_timeout: "N'a pas répondu à temps",
   reason_not_on_arc_testnet: "Ne dessert pas Arc Testnet",

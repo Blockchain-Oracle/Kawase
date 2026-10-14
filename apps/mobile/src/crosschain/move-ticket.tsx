@@ -1,243 +1,202 @@
-// The bridge card (surfaces.md "Bridge", plan §C card 9): what moves from where to whom on which chain (any asset; it
-// arrives as itself, or as USDC when the route swaps it first), the route options (up to three: provider mark, what
-// arrives in its own asset, the fee or a flat fee on top, how long, "via Relay", "Circle burn/mint" or "solver"), the chosen
-// one and the person's pick, the least that arrives and the gas paid (none for Bring to Arc), then slide to confirm
-// (it resets on any new version) → Face ID → the tracker: Signed → Sent from {chain} → Filling on {chain} → Delivered;
-// a refund or failure says what happened to the money and offers "Try again" (the "Finish it" recovery).
+// The move ticket (plan F; Senryo grammar): what arrives where is the hero (the chosen bridge's amount, in the asset
+// that arrives, with the two chains' real marks), then every bridge asked for this version on the one RouteList —
+// Circle CCTP, Across, Relay, LI.FI, deBridge, Socket, Gas.zip, each with its logo, what it delivers, how far below
+// the best and how long, its trust model behind the chevron; a tap picks it (a new version priced by that bridge). The
+// quote's age drains and refreshes on its own. Slide to confirm (accent) → the wallet's yes → the kit's plate with the
+// move's four steps under it (Signed → Sent from Arc → Filling on Base → Delivered), then it morphs into the receipt.
+// A refund or failure says what happened to the money and offers "Try again" when nothing moved. Used by the Move
+// screen (and its desktop columns, `hideRoutes`) and the chat's move card.
 import { useRouter } from "expo-router";
-import { ArrowRight, Check, Circle, ExternalLink, X } from "lucide-react-native";
 import * as React from "react";
-import { Linking, Pressable, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeOut, useReducedMotion } from "react-native-reanimated";
 
-import type { CrossChainAssetView, CrossChainIntent, CrossChainProvider, CrossChainRouteView, PolicyResultView } from "@kawase/api-client";
+import { SWAP_QUOTE_TTL_S } from "@kawase/config";
 import { chainKey } from "@kawase/identity";
-import { Amount } from "@kawase/ui-native/components/amount";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { SlideToConfirm } from "@kawase/ui-native/components/slide-to-confirm";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { confirmedFeedback } from "@/feedback/feedback";
+import { type BlockerFix, Button, DisclosureRow, Icon, KeyValue, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { ChevronRight } from "@/components/kit/icons";
+import type { Blocker } from "@/components/tx";
 import { useFund } from "@/fund/fund-provider";
-import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { useMarginFormat } from "@/margin/copy";
-import { slideHaptic } from "@/margin/haptics";
+import { moveRace, venueName } from "@/routes/from-draft";
+import { useOutcomeFeedback } from "@/routes/intent-tx";
+import { QuoteAge } from "@/routes/quote-age";
+import { RouteList } from "@/routes/route-list";
+import { TicketCta } from "@/routes/ticket-cta";
 import { useMoney } from "@/send/copy";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
+import { useAssetMoney, useMovePolicyText } from "./move-copy";
+import { MoveReceipt } from "./move-receipt";
+import { MoveSteps } from "./move-steps";
+import { moveTx } from "./move-tx";
 import type { CrossChainController } from "./use-crosschain";
 
-const CHAIN_MARK = 28;
-const ROUTE_MARK = 24;
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
-const SECONDS_PER_MINUTE = 60;
-const PROVIDER_ENTITY: Record<CrossChainProvider, string> = { cctp: "provider:circle", across: "venue:across", relay: "venue:relay", lifi: "venue:lifi", debridge: "venue:debridge", socket: "venue:socket", gaszip: "venue:gaszip" };
-const USDC_VIEW = { symbol: "USDC", decimals: 6 };
 const NATIVE_DECIMALS = 18;
-const TOKEN_MARK = 32;
-const TRACK_STEPS = ["stepSigned", "stepSent", "stepFilling", "stepDelivered"] as const;
-const SENT = 1;
-const FILLING = 2;
-const DELIVERED = 3;
+const OPEN = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
-/** Base units of an asset with its symbol; drafts from before any-asset moves are USDC. */
-function useAssetMoney() {
-  const format = useMarginFormat();
-  return (base: string | null | undefined, asset: Pick<CrossChainAssetView, "symbol" | "decimals"> | undefined) => (base ? format.amount(base, (asset ?? USDC_VIEW).decimals, (asset ?? USDC_VIEW).symbol) : "");
+function fixOf(code: string | undefined): BlockerFix | null {
+  switch (code) {
+    case "SIGN_IN_REQUIRED":
+      return { kind: "sign-in" };
+    case "INSUFFICIENT_BALANCE":
+    case "INSUFFICIENT_GAS":
+      return { kind: "add-money" };
+    case "WALLET_NOT_READY":
+    case "WALLET_NOT_SET_UP":
+      return { kind: "setup-wallet" };
+    case "QUOTE_UNAVAILABLE":
+      return { kind: "retry" };
+    default:
+      return null;
+  }
 }
 
-function MoveTracker({ intent, busy }: { intent: CrossChainIntent; busy: boolean }) {
+export function MoveTicket({
+  controller,
+  onRetry,
+  hideRoutes = false,
+  onMark,
+  onDone,
+}: {
+  controller: CrossChainController;
+  /** Start the same move again (after a refund, or a failure where nothing moved). */
+  onRetry?: () => void;
+  /** The routes are drawn elsewhere (the desktop's right column). */
+  hideRoutes?: boolean;
+  /** Journal the intent before the yes (the screen's intent journal). */
+  onMark?: (id: string, what: string) => void;
+  onDone?: () => void;
+}) {
   const { t } = useT();
-  const reached = intent.stage === "delivered" ? DELIVERED : intent.stage === "filling" ? FILLING : intent.stage === "submitted" ? SENT : busy ? 0 : -1;
-  const failed = intent.stage === "refunded" || intent.stage === "failed";
-  if (reached < 0 && !failed) return null;
-  const names = { source: intent.draft?.source.name ?? "", destination: intent.draft?.destination.name ?? "" };
-  return (
-    <View className="gap-2">
-      {TRACK_STEPS.map((step, index) => {
-        const done = index < reached || (index === DELIVERED && intent.stage === "delivered");
-        const now = index === reached && !done;
-        const broken = failed && index === Math.max(reached, SENT);
-        return (
-          <View key={step} className="flex-row items-center gap-2">
-            <Icon as={done ? Check : broken ? X : Circle} className={cn("size-4", done ? "text-success" : broken ? "text-destructive" : now ? "text-foreground" : "text-muted-foreground")} />
-            <Text className={cn("text-sm", done || now ? "text-foreground" : "text-muted-foreground", TEXT_START)}>{t(`move.${step}`, { chain: index === SENT ? names.source : names.destination })}</Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function RouteRow({ route, input, chosen, onPick, disabled }: { route: CrossChainRouteView; input: CrossChainAssetView | undefined; chosen: boolean; onPick: () => void; disabled: boolean }) {
-  const { t } = useT();
-  const money = useAssetMoney();
-  const eta = route.etaSeconds === null ? null : route.etaSeconds < SECONDS_PER_MINUTE ? t("move.etaSeconds", { count: route.etaSeconds }) : t("move.etaMinutes", { count: Math.round(route.etaSeconds / SECONDS_PER_MINUTE) });
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: chosen, disabled: disabled || !route.executable }}
-      disabled={disabled || !route.executable}
-      onPress={onPick}
-      className={cn("flex-row items-center gap-3 rounded-2xl px-3 py-2", chosen ? "bg-secondary" : "active:bg-muted", !route.executable && "opacity-60")}
-    >
-      <Mark entity={PROVIDER_ENTITY[route.provider]} size={ROUTE_MARK} />
-      <View className="min-w-0 flex-1">
-        <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t(`move.provider_${route.provider}`)}</Text>
-        <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>
-          {route.executable
-            ? [route.via ? t("move.via", { bridge: route.via }) : t(`move.trust_${route.trust}`), route.convertFirst ? t("move.convertFirst", { venue: route.convertFirst.venue }) : null, route.approveFirst ? t("move.approveFirst", { coin: route.approveFirst.coin }) : null, eta].filter(Boolean).join(" · ")
-            : t(`move.reason_${route.reason ?? "no_quote"}`)}
-        </Text>
-      </View>
-      {route.received ? (
-        <View className="items-end">
-          <Amount className="text-foreground text-sm font-semibold">{money(route.received, route.output)}</Amount>
-          {route.nativeFee ? (
-            <Amount className="text-muted-foreground text-xs">{t("move.feeOnTop", { amount: money(route.nativeFee, { symbol: "USDC", decimals: NATIVE_DECIMALS }) })}</Amount>
-          ) : route.fee ? (
-            <Amount className="text-muted-foreground text-xs">{t("move.fee", { amount: money(route.fee, input) })}</Amount>
-          ) : null}
-        </View>
-      ) : null}
-      {chosen ? <Icon as={Check} className="text-success size-4" /> : null}
-    </Pressable>
-  );
-}
-
-export function MoveTicket({ controller, onRetry }: { controller: CrossChainController; onRetry?: () => void }) {
-  const { t } = useT();
-  const { rtl } = useLocale();
+  const { color } = useTheme();
   const router = useRouter();
+  const reduced = useReducedMotion();
   const fund = useFund();
   const signIn = useSignIn();
   const money = useMoney();
   const assetMoney = useAssetMoney();
+  const policyText = useMovePolicyText();
+  const [signingSince, setSigningSince] = React.useState<number | null>(null);
   const intent = controller.intent;
-  const deliveredId = intent?.stage === "delivered" ? intent.id : undefined;
-  React.useEffect(() => {
-    if (deliveredId) void confirmedFeedback(`move:${deliveredId}`);
-  }, [deliveredId]);
+  const race = React.useMemo(() => (intent?.draft ? moveRace(intent.draft) : null), [intent?.draft]);
+  const blocking = intent?.blocking ?? null;
+  const tx = moveTx(intent, signingSince, blocking ? policyText(blocking) : null);
+  useOutcomeFeedback(intent?.id, tx, "send");
   if (!intent) return null;
   const draft = intent.draft;
-  const blocking = intent.blocking;
-  const open = ["submitted", "working", "input_required", "auth_required", "ready_for_approval"].includes(intent.state);
-  const ready = !blocking && Boolean(draft) && intent.state === "ready_for_approval";
-  // Amounts in the asset the reason names (its own decimals), USDC otherwise.
-  const policyText = (result: PolicyResultView) => {
-    const p = result.params ?? {};
-    const asset = p.asset ? { symbol: p.asset, decimals: Number(p.decimals ?? USDC_VIEW.decimals) } : USDC_VIEW;
-    return t(`movePolicy.${result.code}`, { ...p, balance: assetMoney(p.balance, asset), needed: assetMoney(p.needed, asset), defaultValue: t(`policy.${result.code}`, { ...p, defaultValue: result.code }) });
+  const open = OPEN.has(intent.state);
+  const inFlight = tx.kind === "signing" || tx.kind === "submitted" || tx.kind === "unknown";
+  const done = tx.kind === "confirmed";
+  const prompt = draft ? t("move.signPrompt", { amount: assetMoney(draft.amount, draft.input), chain: draft.destination.name }) : t("move.title");
+
+  const confirm = async () => {
+    onMark?.(intent.id, prompt);
+    setSigningSince(Date.now());
+    try {
+      await controller.approve(prompt);
+    } finally {
+      setSigningSince(null);
+    }
   };
-  const fix =
-    blocking?.code === "SIGN_IN_REQUIRED"
-      ? { label: t("policy.fixSignIn"), onPress: () => signIn.open() }
-      : blocking?.code === "INSUFFICIENT_BALANCE" || blocking?.code === "INSUFFICIENT_GAS"
-        ? { label: t("policy.fixAddMoney"), onPress: fund.open }
-        : blocking?.code === "WALLET_NOT_READY" || blocking?.code === "WALLET_NOT_SET_UP"
-          ? { label: t("policy.fixSetUp"), onPress: () => router.push("/wallet") }
-          : blocking?.code === "QUOTE_UNAVAILABLE"
-            ? { label: t("move.tryAgain"), onPress: () => void controller.revise({}) }
-            : undefined;
+  const onFix = (fix: BlockerFix) => {
+    if (fix.kind === "sign-in") signIn.open();
+    else if (fix.kind === "add-money") fund.open();
+    else if (fix.kind === "setup-wallet") router.push("/wallet");
+    else void controller.revise({});
+  };
+  const blocker: Blocker | undefined = blocking ? { label: policyText(blocking), fix: fixOf(blocking.code) } : undefined;
+  const chosen = draft?.routes.find((route) => route.provider === draft.chosen);
+  const arriving = chosen?.received ?? draft?.minReceived ?? null;
+  const who = draft ? (draft.recipient.own ? t("move.you") : (draft.recipient.label ?? short(draft.recipient.address))) : "";
+  const quotedMs = draft ? Date.parse(draft.quotedAt) : 0;
 
   return (
-    <View className="gap-4">
-      {draft ? (
-        <>
-          <View className="flex-row items-center gap-2">
-            <Mark entity={chainKey(draft.source.chainId)} size={CHAIN_MARK} />
-            <Icon as={ArrowRight} className="text-muted-foreground size-4 rtl:-scale-x-100" />
-            <Mark entity={chainKey(draft.destination.chainId)} size={CHAIN_MARK} />
-            <Amount className={cn("font-display text-foreground flex-1 text-xl font-bold", TEXT_START)}>{assetMoney(draft.amount, draft.input)}</Amount>
-            {draft.input ? <TokenMark token={draft.input} size={TOKEN_MARK} /> : null}
-          </View>
-          {draft.output && draft.input && draft.output.symbol !== draft.input.symbol ? (
-            <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("move.arrivesAs", { asset: draft.output.symbol })}</Text>
-          ) : null}
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>
-            {draft.direction === "in"
-              ? t("move.bringLine", { source: draft.source.name })
-              : t("move.outLine", { who: draft.recipient.own ? t("move.you") : (draft.recipient.label ?? short(draft.recipient.address)), chain: draft.destination.name })}
-          </Text>
-          <View className="gap-1">
-            {draft.routes.map((route) => (
-              <RouteRow key={route.provider} route={route} input={draft.input} chosen={route.provider === draft.chosen} disabled={!open || controller.busy} onPick={() => void controller.revise({ route: route.provider })} />
-            ))}
-          </View>
-          <View className="border-border gap-1 rounded-2xl border px-4 py-3">
-            <View className="flex-row justify-between">
-              <Text className="text-muted-foreground text-sm">{t("move.atLeast")}</Text>
-              <Amount className="text-foreground text-sm font-semibold">{assetMoney(draft.minReceived, draft.output)}</Amount>
+    <View style={styles.wrap}>
+      {draft && !done ? (
+        <Animated.View exiting={reduced ? undefined : FadeOut.duration(TIMING.selection)} style={styles.wrap}>
+          <View style={styles.hero}>
+            <View style={styles.chains}>
+              <Mark entity={chainKey(draft.source.chainId)} size={SIZE.markInline} />
+              <Icon icon={ChevronRight} size={SIZE.iconSm} tint={color.text3} />
+              <Mark entity={chainKey(draft.destination.chainId)} size={SIZE.markInline} />
+              <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("move.arrivesOn", { chain: draft.destination.name })}</Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-muted-foreground text-sm">{t("move.networkFee")}</Text>
-              <Amount className="text-foreground text-sm">
-                {draft.networkFee !== "0" ? money("USDC", draft.networkFee) : draft.direction === "in" && draft.chosen === "lifi" ? t("move.gasThere", { chain: draft.source.name }) : t("move.noGas")}
-              </Amount>
+            <View style={styles.heroRow}>
+              {draft.output ? <TokenMark token={draft.output} size={SIZE.markToken} /> : null}
+              <Text numberOfLines={1} adjustsFontSizeToFit style={[TYPE.displayBalance, styles.figure, { color: color.ink }]}>
+                {assetMoney(arriving, draft.output)}
+              </Text>
             </View>
+            <Text style={[TYPE.rowDetail, { color: color.text2 }]}>
+              {t("move.forWhom", { who, amount: assetMoney(draft.amount, draft.input) })}
+            </Text>
           </View>
-        </>
-      ) : null}
 
-      {blocking && open ? (
-        <View className="bg-muted gap-3 rounded-2xl px-4 py-3">
-          <Text className={cn("text-foreground text-base", TEXT_START)}>{policyText(blocking)}</Text>
-          {fix ? (
-            <Button variant="secondary" onPress={fix.onPress}>
-              <Text>{fix.label}</Text>
-            </Button>
+          {hideRoutes || !race ? (
+            <View style={styles.via}>
+              <Mark entity={`venue:${draft.chosen}`} size={SIZE.markInline} />
+              <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("move.byBridge", { bridge: venueName(draft.chosen) })}</Text>
+            </View>
+          ) : (
+            <RouteList race={race} selected={draft.chosen} readOnly={!open || controller.busy} onSelect={(route) => void controller.revise({ route: route as typeof draft.chosen })} onRetry={() => void controller.revise({})} />
+          )}
+
+          {open ? (
+            <View style={styles.age}>
+              <QuoteAge quotedAt={draft.quotedAt} ttlSeconds={SWAP_QUOTE_TTL_S} refreshing={controller.busy && signingSince === null} paused={signingSince !== null || Number.isNaN(quotedMs)} onExpire={() => void controller.revise({})} />
+            </View>
           ) : null}
-        </View>
+
+          <DisclosureRow title={t("move.details")} value={assetMoney(draft.minReceived, draft.output)}>
+            <KeyValue label={t("move.atLeast")} value={assetMoney(draft.minReceived, draft.output)} />
+            <KeyValue
+              label={t("move.networkFee")}
+              value={draft.networkFee !== "0" ? money("USDC", draft.networkFee) : draft.direction === "in" && draft.chosen === "lifi" ? t("move.gasThere", { chain: draft.source.name }) : t("move.noGas")}
+            />
+            {chosen?.nativeFee ? <KeyValue label={t("move.flatFee")} value={assetMoney(chosen.nativeFee, { symbol: "USDC", decimals: NATIVE_DECIMALS })} /> : null}
+            {draft.output && draft.input && draft.output.symbol !== draft.input.symbol ? <KeyValue label={t("move.arrivesAsLabel")} value={draft.output.symbol} /> : null}
+            {!draft.recipient.own ? <KeyValue label={t("move.recipient")} value={short(draft.recipient.address)} /> : null}
+          </DisclosureRow>
+        </Animated.View>
       ) : null}
 
-      <MoveTracker intent={intent} busy={controller.busy} />
-
-      {intent.stage === "refunded" || intent.stage === "failed" ? (
-        <View className="gap-2">
-          <Text className={cn("text-foreground text-base", TEXT_START)}>{intent.stage === "refunded" ? t("move.refunded") : t("move.failed")}</Text>
-          {onRetry ? (
-            <Button onPress={onRetry}>
-              <Text>{t("move.finishIt")}</Text>
-            </Button>
-          ) : null}
-        </View>
-      ) : null}
-
-      {intent.tx || intent.fillTx ? (
-        <View className="flex-row gap-2">
-          {[intent.tx, intent.fillTx].filter(Boolean).map((link) => (
-            <Button key={link!.hash} variant="secondary" size="sm" onPress={() => void Linking.openURL(link!.explorerUrl)}>
-              <Icon as={ExternalLink} className="size-4" />
-              <Text>{link === intent.tx ? draft?.source.name : draft?.destination.name}</Text>
-            </Button>
-          ))}
-        </View>
-      ) : null}
-
-      {open ? (
-        <View className="gap-2">
-          <SlideToConfirm
-            disabled={!ready || controller.busy}
-            resetKey={`${intent.id}:${intent.version}:${intent.state}`}
-            pendingLabel={t("move.moving")}
-            rtl={rtl}
-            onHaptic={slideHaptic}
-            onConfirm={() => void controller.approve(draft ? t("move.signPrompt", { amount: assetMoney(draft.amount, draft.input), chain: draft.destination.name }) : t("move.title"))}
-          >
-            {draft?.direction === "in" ? t("move.slideBring") : t("move.slideSend")}
-          </SlideToConfirm>
-          <Button variant="ghost" disabled={controller.busy} onPress={() => void controller.cancel()}>
-            <Text className="text-muted-foreground">{t("move.cancel")}</Text>
-          </Button>
-        </View>
-      ) : null}
+      {intent.state === "canceled" || intent.state === "expired" ? (
+        <Text style={[TYPE.body, { color: color.text2 }]}>{intent.state === "expired" ? t("move.expired") : t("move.canceled")}</Text>
+      ) : (
+        <TicketCta
+          tx={tx}
+          action={prompt}
+          slideLabel={draft?.direction === "in" ? t("move.slideBring") : t("move.slideSend")}
+          resetKey={`${intent.id}:${intent.version}`}
+          onConfirm={() => void confirm()}
+          blocker={blocker}
+          onFix={onFix}
+          busy={controller.busy && !inFlight}
+          steps={<MoveSteps intent={intent} signing={signingSince !== null} />}
+          explorerUrl={intent.fillTx?.explorerUrl ?? intent.tx?.explorerUrl ?? null}
+          {...(onRetry ? { onRetry } : {})}
+          receipt={<MoveReceipt intent={intent} {...(onDone ? { actions: <Button label={t("send.done")} onPress={onDone} /> } : {})} />}
+        />
+      )}
+      {open && !inFlight ? <Button label={t("move.cancel")} variant="ghost" size="sm" disabled={controller.busy} onPress={() => void controller.cancel()} /> : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { gap: SPACE.md },
+  hero: { gap: SPACE.xs },
+  chains: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  heroRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  figure: { flexShrink: 1 },
+  via: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  age: { flexDirection: "row", justifyContent: "flex-end" },
+});

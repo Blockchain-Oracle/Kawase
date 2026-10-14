@@ -21,4 +21,6 @@ export const movePolicy: Catalog["movePolicy"] = {
   QUOTE_UNAVAILABLE: "ابھی کوئی راستہ اسے نہیں لے جا سکتا۔",
   MOVE_ASSET_UNKNOWN: "Kawase کو وہاں {{asset}} نہیں ملا۔ آپ کون سا اثاثہ کہہ رہے ہیں؟",
   TOKEN_BLOCKED: "{{symbol}} کسی اور ٹوکن کی نقل کرتا ہے، اس لیے Kawase اسے منتقل نہیں کرے گا۔",
+  ADDRESS_CHANGE_HOLD: "اس چین پر {{name}} کا پتہ نیا ہے یا بدلا ہے۔ آپ کی حفاظت کے لیے ادائیگیاں {{until}} تک رکی رہیں گی۔",
+  RECIPIENT_BLOCKED: "{{name}} بلاک ہے، اس لیے Kawase انہیں ادائیگی نہیں کرے گا۔",
 };

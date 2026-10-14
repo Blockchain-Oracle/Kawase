@@ -11,7 +11,6 @@ export const bridge = {
   routes: "Routes checked",
   routeChosen: "Chosen",
   routeWouldArrive: "{{amount}} would arrive",
-  reason_quote_only: "Quote only: Kawase doesn't use this route yet",
   reason_no_quote: "No quote right now",
   reason_timeout: "Didn't answer in time",
   reason_not_on_arc_testnet: "Doesn't serve Arc Testnet",

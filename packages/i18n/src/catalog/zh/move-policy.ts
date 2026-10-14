@@ -21,4 +21,6 @@ export const movePolicy: Catalog["movePolicy"] = {
   QUOTE_UNAVAILABLE: "暂时没有路径能转移它。",
   MOVE_ASSET_UNKNOWN: "Kawase 在那里找不到 {{asset}}。你指的是哪种资产？",
   TOKEN_BLOCKED: "{{symbol}} 仿冒其他代币，Kawase 不会转移它。",
+  ADDRESS_CHANGE_HOLD: "{{name}} 在该链上的地址是新的或已更改。为了你的安全，付款将等待至 {{until}}。",
+  RECIPIENT_BLOCKED: "{{name}} 已被屏蔽，Kawase 不会向其付款。",
 };

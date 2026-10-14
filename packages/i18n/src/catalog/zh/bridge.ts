@@ -13,7 +13,6 @@ export const bridge: Catalog["bridge"] = {
   routes: "已比较的路由",
   routeChosen: "已选择",
   routeWouldArrive: "将到账 {{amount}}",
-  reason_quote_only: "仅报价：Kawase 尚未使用此路由",
   reason_no_quote: "暂时没有报价",
   reason_timeout: "未及时响应",
   reason_not_on_arc_testnet: "不支持 Arc 测试网",

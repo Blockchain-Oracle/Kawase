@@ -2,7 +2,7 @@
 // what leaves Arc (exact) and the least that arrives on the other chain (the amount less the route's fee cap; the
 // actual fee is usually lower). Then the fees, whose address it goes to (the person's own), how it works in one
 // line, and the routes Kawase compared, with what each would deliver or why it was not used.
-import { ArrowDown, Check, Info } from "lucide-react-native";
+import { ArrowDown, Info } from "lucide-react-native";
 import * as React from "react";
 import { View } from "react-native";
 
@@ -96,32 +96,6 @@ export function BridgeReview({ intent, compact }: { intent: BridgeIntent; compac
         </Text>
       </View>
 
-      {!compact && draft.routes.length > 1 ? (
-        <View className="border-border gap-2 rounded-2xl border px-4 py-3">
-          <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("bridge.routes")}</Text>
-          {draft.routes.map((route) => (
-            <View key={route.provider} className="flex-row items-start justify-between gap-3">
-              <View className="flex-1 flex-row items-center gap-2">
-                {route.status === "chosen" ? <Icon as={Check} className="text-success size-4" /> : <View className="size-4" />}
-                <Text className={cn("text-sm", route.status === "chosen" ? "text-foreground font-semibold" : "text-muted-foreground")}>{route.provider}</Text>
-              </View>
-              <Text className="text-muted-foreground shrink text-end text-xs">
-                {route.status === "chosen"
-                  ? t("bridge.routeChosen")
-                  : route.received
-                    ? [
-                        t("bridge.routeWouldArrive", { amount: money("USDC", route.received) }),
-                        route.extraCost && route.extraCost !== "0" ? t("bridge.routeExtraCost", { amount: money("USDC", route.extraCost) }) : null,
-                        t(`bridge.reason_${route.reason ?? "quote_only"}`),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")
-                    : t(`bridge.reason_${route.reason ?? "no_quote"}`)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
     </View>
   );
 }
