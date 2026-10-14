@@ -143,7 +143,11 @@ function Plate({
           : state.kind === "confirmed"
             ? t("shell.tx.done")
             : state.kind === "failed"
-              ? t("shell.tx.tryAgain")
+              ? state.moneyMoved === "no"
+                ? t("shell.tx.tryAgain")
+                : state.moneyMoved === "unknown"
+                  ? t("shell.tx.waiting")
+                  : t("shell.tx.done")
               : action;
   return (
     <Animated.View style={[styles.plateWrap, ELEVATION.button, press.style, plateStyle]}>
@@ -181,7 +185,8 @@ function Plate({
 
 const styles = StyleSheet.create({
   wrap: { alignSelf: "stretch", gap: SPACE.xs },
-  plateWrap: { alignSelf: "stretch", opacity: 1 },
+  // The shadow follows the plate's corners (a square wrapper would cast square ones).
+  plateWrap: { alignSelf: "stretch", opacity: 1, borderRadius: BUTTON.radius.md },
   plate: {
     height: SIZE.buttonHeight,
     borderRadius: BUTTON.radius.md,

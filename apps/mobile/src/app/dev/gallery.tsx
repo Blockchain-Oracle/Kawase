@@ -498,7 +498,15 @@ function LiveSection() {
     setValue(next);
     source.set({ text: SAMPLE.dollars(next), trend: direction });
   };
-  const start = Math.floor(NOW / SAMPLE.secondMs);
+  const [start, setStart] = React.useState(() => Math.floor(Date.now() / SAMPLE.secondMs));
+  // The sample window restarts when it runs out, so the ring is always draining here.
+  React.useEffect(() => {
+    const id = setInterval(
+      () => setStart(Math.floor(Date.now() / SAMPLE.secondMs)),
+      SAMPLE.countdownSec * SAMPLE.secondMs,
+    );
+    return () => clearInterval(id);
+  }, []);
   const deadline = start + SAMPLE.countdownSec;
   const font = useDisplayFont(TYPE.positionPnl.fontSize ?? SIZE.icon);
   return (

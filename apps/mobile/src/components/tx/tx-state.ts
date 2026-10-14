@@ -39,15 +39,15 @@ export function reduceTx(state: TxState, event: TxEvent): TxState {
     case "reset":
       return TX_IDLE;
     case "review":
-      return state.kind === "idle" || state.kind === "blocked" || state.kind === "failed" ? { kind: "review" } : state;
+      return state.kind === "idle" || state.kind === "blocked" || (state.kind === "failed" && state.moneyMoved === "no")
+        ? { kind: "review" }
+        : state;
     case "block":
       return state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown"
         ? state
         : { kind: "blocked", reason: event.reason };
     case "confirm":
-      return state.kind === "idle" || state.kind === "review" || state.kind === "failed"
-        ? { kind: "signing", startedAt: event.nowMs }
-        : state;
+      return canConfirm(state) ? { kind: "signing", startedAt: event.nowMs } : state;
     case "submitted":
       return state.kind === "signing" ? { kind: "submitted", txHash: event.txHash, startedAt: event.nowMs } : state;
     case "receipt":
@@ -61,9 +61,10 @@ export function reduceTx(state: TxState, event: TxEvent): TxState {
   }
 }
 
-/** The CTA accepts a tap in these states only. */
+/** The CTA accepts a tap in these states only. A failure where money moved, or may have, is never retried from the same
+ * button (a second tap could pay twice): recovery reads the status and the failure card names what to do. */
 export const canConfirm = (state: TxState): boolean =>
-  state.kind === "idle" || state.kind === "review" || state.kind === "failed";
+  state.kind === "idle" || state.kind === "review" || (state.kind === "failed" && state.moneyMoved === "no");
 
 /** Something is in flight: the CTA never looks disabled, it shows the phase and absorbs the tap. */
 export const isInFlight = (state: TxState): boolean =>

@@ -26,7 +26,8 @@ import { Button } from "./Button";
 import { type Diagnosis, fixForDiagnosis } from "./diagnosis";
 import { ChevronDown, CloudOff, Icon, RotateCw, type SymbolIcon, TriangleAlert } from "./icons";
 import { useGroupFill } from "./Surface";
-import { NUMERIC_VARIANT, RADIUS, SHEET_SHAPE, SIZE, SKELETON, SPACE, TYPE, useTheme } from "./theme";
+import { WaitingText } from "./wait";
+import { RADIUS, SHEET_SHAPE, SIZE, SKELETON, SPACE, TYPE, useTheme } from "./theme";
 
 export function Skeleton({
   width = "100%",
@@ -53,7 +54,6 @@ const LIST_COUNT = 4;
 const PIXELS = GRID * GRID;
 const DIM_LEVEL = 0.15;
 const HALF = 2;
-const SECOND = 1000;
 const WAVE_THIRDS = 3;
 const PIXEL = 4;
 const PIXEL_GAP = 1.5;
@@ -190,19 +190,24 @@ function ShapeBody({ shape }: { shape: LoadingShape }) {
 }
 
 /**
- * The loader: skeletons of what will arrive. `named` adds the pixel loader, a shimmering label and the elapsed seconds
- * for a longer, named wait (an agent step, a quote race). Announced as busy; the label is what assistive tech reads.
+ * The loader: skeletons of what will arrive. `named` adds the pixel loader and the named wait for a longer wait (an
+ * agent step, a quote race): the verb shimmers, the seconds show after 3 s, and at about 15 s it says "Still waiting"
+ * with Retry when `onRetry` is given (the WaitingText rules). Announced as busy; the label is what assistive tech reads.
  */
 export function LoadingState({
   shape = "row",
   label,
   named = false,
+  startedAtMs,
+  onRetry,
 }: {
   shape?: LoadingShape;
   label?: string;
   named?: boolean;
+  /** When the named wait began (defaults to the first render). */
+  startedAtMs?: number;
+  onRetry?: () => void;
 }) {
-  const { color } = useTheme();
   const { t } = useT();
   const words = label ?? t("shell.states.loading");
   return (
@@ -215,28 +220,15 @@ export function LoadingState({
       {named ? (
         <View style={styles.loadingHead}>
           <PixelLoader />
-          <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{words}</Text>
-          <Elapsed />
+          <View style={styles.grow}>
+            <WaitingText {...(startedAtMs !== undefined ? { startedAtMs } : {})} {...(onRetry ? { onRetry } : {})}>
+              {words}
+            </WaitingText>
+          </View>
         </View>
       ) : null}
       <ShapeBody shape={shape} />
     </View>
-  );
-}
-
-function Elapsed() {
-  const { color } = useTheme();
-  const { t } = useT();
-  const [start] = useState(() => Date.now());
-  const [now, setNow] = useState(start);
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), SECOND);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>
-      {t("shell.wait.elapsed", { seconds: Math.floor((now - start) / SECOND) })}
-    </Text>
   );
 }
 

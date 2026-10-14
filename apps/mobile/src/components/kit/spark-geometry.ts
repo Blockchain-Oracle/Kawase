@@ -6,6 +6,8 @@ export type SparkTone = "up" | "down" | "flat";
 export type SparkGeometry = { d: string; area: string; baseY: number; tone: SparkTone; last: { x: number; y: number } };
 
 const FLAT_EPSILON = 1e-12;
+/** The narrowest window a sparkline draws, as a share of the price. */
+const MIN_RELATIVE_SPAN = 0.01;
 const DECIMALS = 2;
 const MIN_POINTS = 2;
 const BOTH_SIDES = 2;
@@ -21,9 +23,13 @@ export function sparkGeometry(
   const known = points.filter((p): p is number => p !== null && Number.isFinite(p));
   if (known.length < MIN_POINTS) return null;
   const base = baseline ?? (known[0] as number);
-  const lo = Math.min(...known, base);
-  const hi = Math.max(...known, base);
-  const span = hi - lo < FLAT_EPSILON ? 1 : hi - lo;
+  const low = Math.min(...known, base);
+  const high = Math.max(...known, base);
+  // A stablecoin's 0.1 % jitter is not a swing: the window is never narrower than 1 % of the price, centred on the
+  // move, so a calm series reads calm and a real move still fills the height.
+  const floor = Math.abs(base) * MIN_RELATIVE_SPAN;
+  const span = Math.max(high - low, floor) < FLAT_EPSILON ? 1 : Math.max(high - low, floor);
+  const lo = (low + high) / BOTH_SIDES - span / BOTH_SIDES;
   const innerW = width - pad * BOTH_SIDES;
   const innerH = height - pad * BOTH_SIDES;
   const x = (i: number) => pad + (points.length === 1 ? 0 : (i / (points.length - 1)) * innerW);

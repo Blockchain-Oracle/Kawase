@@ -35,7 +35,8 @@ export function TxFailureCard({
   const { diagnosis } = state;
   const fix = fixForDiagnosis(diagnosis.kind, diagnosis.retryable);
   const detour = fix && fix.kind !== "retry" && onFix ? fix : null;
-  const retry = onRetry && diagnosis.retryable ? onRetry : null;
+  // Retry only when nothing moved: after a partial or unknown outcome a second try could pay twice.
+  const retry = onRetry && diagnosis.retryable && state.moneyMoved === "no" ? onRetry : null;
   return (
     <View accessibilityRole="alert" style={[styles.card, { backgroundColor: color.destructiveWash }]}>
       <View style={styles.head}>

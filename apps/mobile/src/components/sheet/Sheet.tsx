@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { BackHandler, type LayoutChangeEvent, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  BackHandler,
+  type LayoutChangeEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Gesture, GestureDetector, ScrollView } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedKeyboard,
@@ -132,6 +140,14 @@ function SheetPanel({
   }, [at, settle, stops, top]);
 
   useEffect(() => {
+    // The web has no hardware back: Escape closes the sheet there, as it does the desktop drawer.
+    if (Platform.OS === "web") {
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "Escape" && dismissible) close();
+      };
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (dismissible) close();
       return true;
