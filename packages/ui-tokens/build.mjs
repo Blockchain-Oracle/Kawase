@@ -21,6 +21,8 @@ for (const [theme, values] of Object.entries(themes)) {
 }
 const radius = tokens.radius
 const radii = { sm: radius - RADIUS_STEP, md: radius - RADIUS_STEP / 2, lg: radius, xl: radius + RADIUS_STEP }
+// Senryo's own corner scale (8/12/16/24/32/pill) rides along as --radius-s-* for code that wants the exact steps.
+const senryoRadii = Object.entries(tokens.scale.radius).filter(([, v]) => v < 999).map(([k, v]) => [`s-${k}`, v])
 const lines = (values, indent, prefix) => Object.entries(values).map(([k, v]) => `${indent}--${prefix}${k}: ${v};`).join('\n')
 
 // Fonts. React Native takes exactly one family per style (no fallback list), and picks the weight from the
@@ -31,7 +33,7 @@ const monoStack = `"${tokens.fonts.mono}", ui-monospace, monospace`
 // Native (Uniwind): four flat themes, each defining every variable.
 const native = `${HEADER}@theme {
   --radius: ${radius}px;
-${Object.entries(radii).map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
+${[...Object.entries(radii), ...senryoRadii].map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
   --font-sans: '${tokens.fonts.body}';
   --font-display: '${tokens.fonts.display}';
   --font-mono: '${tokens.fonts.mono}';
@@ -71,7 +73,7 @@ ${lines(tokens.themes['testnet-dark'], '  ', '')}
 
 @theme inline {
 ${names.map((name) => `  --color-${name}: var(--${name});`).join('\n')}
-${Object.entries(radii).map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
+${[...Object.entries(radii), ...senryoRadii].map(([k, v]) => `  --radius-${k}: ${v}px;`).join('\n')}
   --font-sans: ${stack(tokens.fonts.body)};
   --font-display: ${stack(tokens.fonts.display)};
   --font-mono: ${monoStack};
@@ -86,8 +88,9 @@ const googleFontsHref = `https://fonts.googleapis.com/css2?${Object.entries(toke
 const { googleFontsAxes: _axes, ...fonts } = tokens.fonts
 
 const ts = `// GENERATED from tokens.json by build.mjs. Do not edit; change tokens.json and rebuild.
-// For code that cannot use class names: the orb shader, charts, the status bar, the story colour fields.
-export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: { ...fonts, googleFontsHref }, orb: tokens.orb, story: { ink: tokens.story.ink, fields: tokens.story.fields }, themes }, null, 2)} as const;
+// For code that cannot use class names: the orb shader, charts, Skia, the status bar, the story colour fields, and the
+// Senryo scales (type, space, radius, elevation, motion, spring, layout) the kit builds its styles from.
+export const tokens = ${JSON.stringify({ name: tokens.name, defaultMode: tokens.defaultMode, radius, fonts: { ...fonts, googleFontsHref }, orb: tokens.orb, scale: tokens.scale, story: { ink: tokens.story.ink, fields: tokens.story.fields }, themes }, null, 2)} as const;
 
 export type ThemeName = keyof typeof tokens.themes;
 export type TokenName = keyof typeof tokens.themes.light;
