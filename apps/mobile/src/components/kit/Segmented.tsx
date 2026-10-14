@@ -34,11 +34,11 @@ export function Segmented<T extends string>({
   const cell = useSharedValue(0);
   const at = useSharedValue(index);
   useEffect(() => {
-    at.value = withTiming(index, { duration: TIMING.selection, easing: EASE });
+    at.set(withTiming(index, { duration: TIMING.selection, easing: EASE }));
   }, [index, at]);
   const plate = useAnimatedStyle(() => ({
-    width: cell.value,
-    transform: [{ translateX: at.value * (cell.value + SPACE.xs) }],
+    width: cell.get(),
+    transform: [{ translateX: at.get() * (cell.get() + SPACE.xs) }],
   }));
   return (
     <View
@@ -46,7 +46,7 @@ export function Segmented<T extends string>({
       accessibilityLabel={label}
       onLayout={(e) => {
         const inner = e.nativeEvent.layout.width - HALF * SPACE.xs - (options.length - 1) * SPACE.xs;
-        cell.value = inner / options.length;
+        cell.set(inner / options.length);
       }}
       style={[styles.track, { backgroundColor: color.muted }]}
     >

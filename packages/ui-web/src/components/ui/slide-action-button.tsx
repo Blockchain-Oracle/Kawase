@@ -1,5 +1,7 @@
 "use client";
-// beui.dev/components/motion/expanding-arrow-button
+// Source: 21st.dev starc007/slide-action-button (id 29304), beui.dev/components/motion/expanding-arrow-button.
+// Kawase reskin (Senryo kit): a 56 px rail with 28 px corners on the action's wash, a 48 px thumb with 22 px corners,
+// the label in the button role (17 px, semibold). Tone colours come from the caller's token classes.
 
 import {
   animate,
@@ -132,8 +134,7 @@ export function SlideActionButton({
     <div
       ref={trackRef}
       className={cn(
-        "relative h-16 w-72 overflow-hidden rounded-[22px] bg-primary/10 p-1",
-        "ring-1 ring-primary/10",
+        "relative h-14 w-72 overflow-hidden rounded-[28px] bg-primary/12 p-1",
         // The track only carries the label — the slide starts on the thumb,
         // which suppresses selection for the whole gesture on its own.
         TOUCH_GESTURE_CONTENT_CLASS,
@@ -153,7 +154,7 @@ export function SlideActionButton({
       <motion.span
         aria-hidden="true"
         style={{ opacity: labelOpacity }}
-        className="pointer-events-none absolute inset-0 grid place-items-center pl-10 text-sm font-medium text-foreground"
+        className="pointer-events-none absolute inset-0 grid place-items-center ps-14 pe-4 text-[17px] leading-[22px] font-semibold text-foreground"
       >
         {children}
       </motion.span>
@@ -162,7 +163,7 @@ export function SlideActionButton({
         aria-live="polite"
         animate={{ opacity: completed ? 1 : 0 }}
         transition={{ duration: reduce ? 0 : 0.15, ease: EASE_OUT }}
-        className="pointer-events-none absolute inset-0 grid place-items-center text-sm font-medium text-primary-foreground"
+        className="pointer-events-none absolute inset-0 grid place-items-center text-[17px] leading-[22px] font-semibold text-primary-foreground"
       >
         {completed ? completeLabel : null}
       </motion.span>
@@ -184,7 +185,7 @@ export function SlideActionButton({
         whileTap={reduce || completed ? undefined : { scale: 0.94 }}
         transition={SPRING_PRESS}
         className={cn(
-          "relative z-10 grid size-14 touch-none cursor-grab place-items-center rounded-[18px] bg-primary text-primary-foreground shadow-sm",
+          "relative z-10 grid size-12 touch-none cursor-grab place-items-center rounded-[22px] bg-primary text-primary-foreground",
           TOUCH_GESTURE_CLASS,
           "outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           completed && "cursor-default bg-background text-foreground",

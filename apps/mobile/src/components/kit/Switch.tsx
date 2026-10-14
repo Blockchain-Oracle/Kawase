@@ -36,9 +36,9 @@ export function Switch({
   const reduce = useReducedMotion();
   const x = useSharedValue(value ? TRAVEL : 0);
   useEffect(() => {
-    x.value = reduce ? (value ? TRAVEL : 0) : withTiming(value ? TRAVEL : 0, { duration: TIMING.press, easing: EASE });
+    x.set(reduce ? (value ? TRAVEL : 0) : withTiming(value ? TRAVEL : 0, { duration: TIMING.press, easing: EASE }));
   }, [value, reduce, x]);
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
   return (
     <Pressable
       accessibilityRole="switch"

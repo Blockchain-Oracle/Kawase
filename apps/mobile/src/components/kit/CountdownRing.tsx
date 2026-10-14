@@ -46,13 +46,13 @@ export function CountdownRing({
   const reduce = useReducedMotion();
   const frame = useFrameCallback(() => {
     "worklet";
-    now.value = Date.now() + offsetMs.value;
+    now.set(Date.now() + offsetMs.get());
   }, !reduce);
   useEffect(() => {
     frame.setActive(!reduce);
     if (!reduce) return;
     const tick = () => {
-      now.value = Date.now() + offsetMs.value;
+      now.set(Date.now() + offsetMs.get());
     };
     tick();
     const id = setInterval(tick, MS);
@@ -63,13 +63,13 @@ export function CountdownRing({
   const circle = useMemo(() => Skia.Path.Circle(size / HALF, size / HALF, r), [size, r]);
   const arc = useDerivedValue(() => {
     const span = Math.max(1, (toSec - fromSec) * MS);
-    const left = Math.min(1, Math.max(0, (toSec * MS - now.value) / span));
+    const left = Math.min(1, Math.max(0, (toSec * MS - now.get()) / span));
     return Skia.PathBuilder.Make()
       .addArc(rect, START_ANGLE, -FULL_TURN * left)
       .build();
   });
-  const tint = useDerivedValue(() => (toSec * MS - now.value <= LAST_SECONDS * MS ? warn : color));
-  const width = useDerivedValue(() => (toSec * MS - now.value <= LAST_SECONDS * MS ? lastStroke : stroke));
+  const tint = useDerivedValue(() => (toSec * MS - now.get() <= LAST_SECONDS * MS ? warn : color));
+  const width = useDerivedValue(() => (toSec * MS - now.get() <= LAST_SECONDS * MS ? lastStroke : stroke));
   return (
     <Canvas style={{ width: size, height: size }}>
       <Path path={circle} style="stroke" strokeWidth={stroke} color={track} />

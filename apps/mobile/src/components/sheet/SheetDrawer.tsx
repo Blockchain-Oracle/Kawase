@@ -10,18 +10,21 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTimin
 import { scheduleOnRN } from "react-native-worklets";
 
 import { SurfaceLevel } from "@/components/kit/Surface";
-import { EASE, EASE_SHEET, ELEVATION, LAYOUT, SHEET_SHAPE, useTheme } from "@/components/kit/theme";
+import { EASE, EASE_SHEET, ELEVATION, LAYOUT, SHEET_SHAPE, TIMING, useTheme } from "@/components/kit/theme";
 import { fire } from "@/feedback/fire";
+import { useLocale } from "@/i18n/locale-provider";
 
 import { ExpandContext, SheetContext } from "./context";
 import type { SheetProps } from "./types";
 
 const NOOP = () => undefined;
-const REDUCED_MS = 100;
 const BOTH_SIDES = 2;
 
 export function SheetDrawer({ onClose, children, closeLabel, dismissible = true }: SheetProps) {
   const { color } = useTheme();
+  const { rtl } = useLocale();
+  // The drawer sits at the reading end of the window (the right, or the left in Arabic and Urdu) and slides in from it.
+  const side = rtl ? -1 : 1;
   const reduce = useReducedMotion();
   const { height: windowHeight } = useWindowDimensions();
   const slide = useSharedValue(LAYOUT.drawer + LAYOUT.inset);
@@ -30,7 +33,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
 
   useEffect(() => {
     fire("snap");
-    scrim.set(withTiming(1, { duration: reduce ? REDUCED_MS : LAYOUT.drawerInMs, easing: EASE }));
+    scrim.set(withTiming(1, { duration: reduce ? TIMING.reducedMotion : LAYOUT.drawerInMs, easing: EASE }));
     slide.set(reduce ? 0 : withTiming(0, { duration: LAYOUT.drawerInMs, easing: EASE_SHEET }));
   }, [reduce, scrim, slide]);
 
@@ -38,7 +41,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
     (after?: () => void) => {
       if (closing.current) return;
       closing.current = true;
-      const out = { duration: reduce ? REDUCED_MS : LAYOUT.drawerOutMs, easing: EASE };
+      const out = { duration: reduce ? TIMING.reducedMotion : LAYOUT.drawerOutMs, easing: EASE };
       scrim.set(withTiming(0, out));
       slide.set(
         withTiming(reduce ? 0 : LAYOUT.drawer + LAYOUT.inset, out, (done) => {
@@ -63,7 +66,7 @@ export function SheetDrawer({ onClose, children, closeLabel, dismissible = true 
   }, [close, dismissible]);
 
   const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.get() }));
-  const panelStyle = useAnimatedStyle(() => ({ opacity: reduce ? scrim.get() : 1, transform: [{ translateX: slide.get() }] }));
+  const panelStyle = useAnimatedStyle(() => ({ opacity: reduce ? scrim.get() : 1, transform: [{ translateX: slide.get() * side }] }));
 
   return (
     <View style={styles.root}>

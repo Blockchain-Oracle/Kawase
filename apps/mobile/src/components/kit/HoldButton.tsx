@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   cancelAnimation,
   Easing,
+  type SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
@@ -46,14 +47,14 @@ export function HoldButton({
   useEffect(() => {
     if (!live) {
       cancelAnimation(progress);
-      progress.value = 0;
+      progress.set(0);
     }
   }, [live, progress]);
   // A tick each quarter of the way, the confirm at the end (once per hold).
   useAnimatedReaction(
-    () => Math.floor(progress.value * QUARTERS),
+    () => Math.floor(progress.get() * QUARTERS),
     (q, prev) => {
-      if (!holding.value || prev === null || q <= prev || q >= QUARTERS) return;
+      if (!holding.get() || prev === null || q <= prev || q >= QUARTERS) return;
       scheduleOnRN(fire, "tick");
     },
   );
@@ -63,21 +64,21 @@ export function HoldButton({
   };
   const start = () => {
     if (!live) return;
-    holding.value = true;
+    holding.set(true);
     fire("press");
-    progress.value = withTiming(1, { duration: HOLD_MS * (1 - progress.value), easing: Easing.linear }, (finished) => {
+    progress.set(withTiming(1, { duration: HOLD_MS * (1 - progress.get()), easing: Easing.linear }, (finished) => {
       if (!finished) return;
-      holding.value = false;
-      progress.value = 0;
+      holding.set(false);
+      progress.set(0);
       scheduleOnRN(done);
-    });
+    }));
   };
   const stop = () => {
-    if (!holding.value) return;
-    holding.value = false;
-    progress.value = withTiming(0, { duration: (HOLD_MS * progress.value) / RELEASE_RATE, easing: Easing.linear });
+    if (!holding.get()) return;
+    holding.set(false);
+    progress.set(withTiming(0, { duration: (HOLD_MS * progress.get()) / RELEASE_RATE, easing: Easing.linear }));
   };
-  const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.value }] }));
+  const fill = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.get() }] }));
   return (
     <Pressable
       onPressIn={start}
@@ -114,11 +115,11 @@ function HoldLabel({
 }: {
   text: string;
   holdingText: string;
-  holding: { value: boolean };
+  holding: SharedValue<boolean>;
   ink: string;
 }) {
-  const idle = useAnimatedStyle(() => ({ opacity: holding.value ? 0 : 1 }));
-  const held = useAnimatedStyle(() => ({ opacity: holding.value ? 1 : 0 }));
+  const idle = useAnimatedStyle(() => ({ opacity: holding.get() ? 0 : 1 }));
+  const held = useAnimatedStyle(() => ({ opacity: holding.get() ? 1 : 0 }));
   return (
     <View style={styles.labels}>
       <Animated.Text numberOfLines={1} style={[TYPE.buttonLabel, { color: ink }, idle]}>

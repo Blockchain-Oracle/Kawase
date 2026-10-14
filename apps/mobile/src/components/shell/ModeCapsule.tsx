@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 
 import { fire } from "@/feedback/fire";
+import { useLocale } from "@/i18n/locale-provider";
 
 import { usePressScale } from "../kit/usePressScale";
 import { BUTTON, CONTROL_FONT_SCALE, RADIUS, SIZE, SPACE, SPRING, TYPE, useTheme } from "../kit/theme";
@@ -56,11 +57,14 @@ export function ModeCapsule({
   const press = usePressScale();
   const reduce = useReducedMotion();
   const testnet = network === "testnet";
+  // The knob travels toward the reading end for "on" (mainnet), so the switch mirrors in Arabic and Urdu.
+  const { rtl } = useLocale();
+  const side = rtl ? -1 : 1;
   const knob = useSharedValue(testnet ? 0 : 1);
   useEffect(() => {
     knob.set(reduce ? (testnet ? 0 : 1) : withSpring(testnet ? 0 : 1, SPRING.railPill));
   }, [testnet, reduce, knob]);
-  const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: knob.get() * TRAVEL }] }));
+  const knobStyle = useAnimatedStyle(() => ({ transform: [{ translateX: knob.get() * TRAVEL * side }] }));
   const dim = useAnimatedStyle(() => ({ opacity: withTiming(busy ? BUSY_OPACITY : 1, { duration: BUSY_MS }) }));
   return (
     <Animated.View style={[styles.shrink, press.style, dim]}>
@@ -107,8 +111,8 @@ const styles = StyleSheet.create({
     gap: SPACE.xs + SPACE.xxs,
     height: SIZE.modeCapsuleHeight,
     borderRadius: BUTTON.radius.md,
-    paddingLeft: SPACE.md,
-    paddingRight: SPACE.sm,
+    paddingStart: SPACE.md,
+    paddingEnd: SPACE.sm,
   },
   track: { width: TRACK_W, height: TRACK_H, borderRadius: RADIUS.pill, borderWidth: TRACK_BORDER, justifyContent: "center" },
   knob: { width: KNOB, height: KNOB, borderRadius: RADIUS.pill, marginHorizontal: KNOB_INSET },

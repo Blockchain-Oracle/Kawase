@@ -102,14 +102,14 @@ export function SlideToConfirm({
   current.current = { locked, onConfirm, onReset };
 
   const cancel = useCallback(() => {
-    epoch.value += 1;
-    active.value = false;
-    armed.value = false;
+    epoch.set(epoch.get() + 1);
+    active.set(false);
+    armed.set(false);
     cancelAnimation(travel);
-    travel.value = 0;
+    travel.set(0);
   }, [active, armed, epoch, travel]);
   useLayoutEffect(() => {
-    const wasActive = active.value;
+    const wasActive = active.get();
     cancel();
     done.current = false;
     if (wasActive) current.current.onReset?.();
@@ -130,7 +130,7 @@ export function SlideToConfirm({
   }, [cancel]);
 
   const commit = (attempt: number) => {
-    if (!alive.current || done.current || current.current.locked || attempt !== epoch.value) return;
+    if (!alive.current || done.current || current.current.locked || attempt !== epoch.get()) return;
     if (AppState.currentState !== "active") return;
     done.current = true;
     fire("confirm");
@@ -141,7 +141,7 @@ export function SlideToConfirm({
     if (locked) return;
     if (onAccessibleActivate) return onAccessibleActivate();
     // An explicit activate from a screen reader or switch control: the slide guards fingers, not assistive tech.
-    commit(epoch.value);
+    commit(epoch.get());
   };
 
   const pan = Gesture.Pan()
@@ -151,44 +151,44 @@ export function SlideToConfirm({
     .failOffsetY([-CANCEL_Y, CANCEL_Y])
     .onBegin(() => {
       cancelAnimation(travel);
-      gestureEpoch.value = epoch.value;
-      active.value = true;
-      pressed.value = true;
+      gestureEpoch.set(epoch.get());
+      active.set(true);
+      pressed.set(true);
     })
     .onUpdate((event) => {
-      if (gestureEpoch.value !== epoch.value) return;
-      travel.value = Math.max(0, Math.min(width.value, event.translationX * (left ? -1 : 1)));
-      const ready = width.value > 0 && travel.value >= width.value * COMMIT_FRACTION;
-      if (ready !== armed.value) {
-        armed.value = ready;
+      if (gestureEpoch.get() !== epoch.get()) return;
+      travel.set(Math.max(0, Math.min(width.get(), event.translationX * (left ? -1 : 1))));
+      const ready = width.get() > 0 && travel.get() >= width.get() * COMMIT_FRACTION;
+      if (ready !== armed.get()) {
+        armed.set(ready);
         if (ready) scheduleOnRN(detent);
       }
     })
     .onEnd((_event, success) => {
-      if (success && active.value && gestureEpoch.value === epoch.value && armed.value) {
-        active.value = false;
-        travel.value = width.value;
-        scheduleOnRN(commit, gestureEpoch.value);
-      } else travel.value = reduce ? 0 : withSpring(0, RESET_SPRING);
+      if (success && active.get() && gestureEpoch.get() === epoch.get() && armed.get()) {
+        active.set(false);
+        travel.set(width.get());
+        scheduleOnRN(commit, gestureEpoch.get());
+      } else travel.set(reduce ? 0 : withSpring(0, RESET_SPRING));
     })
     .onFinalize(() => {
-      pressed.value = false;
-      armed.value = false;
-      if (active.value) travel.value = reduce ? 0 : withSpring(0, RESET_SPRING);
-      active.value = false;
+      pressed.set(false);
+      armed.set(false);
+      if (active.get()) travel.set(reduce ? 0 : withSpring(0, RESET_SPRING));
+      active.set(false);
     });
 
   const progress = () => {
     "worklet";
-    return width.value > 0 ? travel.value / width.value : 0;
+    return width.get() > 0 ? travel.get() / width.get() : 0;
   };
   const thumbStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: travel.value * (left ? -1 : 1) },
-      { scale: pressed.value && !reduce ? PRESSED_SCALE : 1 },
+      { translateX: travel.get() * (left ? -1 : 1) },
+      { scale: pressed.get() && !reduce ? PRESSED_SCALE : 1 },
     ],
   }));
-  const fillStyle = useAnimatedStyle(() => ({ width: travel.value + THUMB + INSET * HALF }));
+  const fillStyle = useAnimatedStyle(() => ({ width: travel.get() + THUMB + INSET * HALF }));
   const labelStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress(), LABEL_FADE, LABEL_OPACITY, "clamp"),
   }));
@@ -234,7 +234,7 @@ export function SlideToConfirm({
         if (event.nativeEvent.actionName === "activate") review();
       }}
       onLayout={(event) => {
-        width.value = Math.max(0, event.nativeEvent.layout.width - THUMB - INSET * HALF);
+        width.set(Math.max(0, event.nativeEvent.layout.width - THUMB - INSET * HALF));
       }}
       style={[styles.rail, { backgroundColor: locked ? color.raised2 : filled ? solid : wash }]}
     >

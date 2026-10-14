@@ -13,8 +13,17 @@ import { fire, type SoundName } from "@/feedback/fire";
 
 import { announce } from "../kit/announce";
 import { type Diagnosis, diagnose } from "../kit/diagnosis";
-import { forgetIntent, journalIntent, type JournalMark, noteTxHash } from "./journal";
+import { answerLost, forgetIntent, journalIntent, type JournalMark, noteTxHash } from "./journal";
 import { reduceTx, type TxEvent, type TxState, TX_IDLE } from "./tx-state";
+
+const CLIENT_ERROR = 400;
+const SERVER_ERROR = 500;
+
+/** A 4xx answer is the server refusing in words: the intent was read and turned down, so nothing moved. */
+function isClientRefusal(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
+}
 
 export type TxOutcome =
   | { status: "confirmed"; txHash?: string | null }
@@ -52,12 +61,14 @@ export function useTxLifecycle(): TxRunner {
     async (send: (progress: TxProgress) => Promise<TxOutcome>, options: TxRunOptions = {}): Promise<TxOutcome> => {
       dispatch({ type: "confirm", nowMs: Date.now() });
       journalId.current = null;
+      let left = false;
       const progress: TxProgress = {
         journalled: (mark, id, owner) => {
           journalId.current = id;
           journalIntent({ ...mark, id, owner: owner.toLowerCase(), sentAt: Date.now() });
         },
         submitted: (txHash = null) => {
+          left = true;
           if (txHash && journalId.current) noteTxHash(journalId.current, txHash);
           dispatch({ type: "submitted", txHash, nowMs: Date.now() });
         },
@@ -66,7 +77,16 @@ export function useTxLifecycle(): TxRunner {
       try {
         outcome = await send(progress);
       } catch (error) {
-        outcome = { status: "refused", diagnosis: diagnose(error) };
+        const diagnosis = diagnose(error);
+        // Once the signed intent is journalled or on its way, a thrown error (a dropped connection while waiting for the
+        // receipt, say) does not mean the money stayed: the answer was lost. It stays in the journal for recovery to read,
+        // and the card says "waiting on the chain", never "no money moved". Only a refusal in words (a 4xx, a cancelled
+        // prompt) before anything left the phone is a plain "no".
+        const refusedInWords = diagnosis.kind === "rejected" || isClientRefusal(error);
+        if ((left || journalId.current) && !refusedInWords) {
+          if (journalId.current) answerLost(journalId.current);
+          outcome = { status: "unknown", diagnosis };
+        } else outcome = { status: "refused", diagnosis };
       }
       const settle = () => {
         if (journalId.current) forgetIntent(journalId.current);
@@ -95,6 +115,7 @@ export function useTxLifecycle(): TxRunner {
           // Left in the journal: recovery reads the status; this never sends again.
           dispatch({ type: "timeout", diagnosis: outcome.diagnosis });
           announce(t("shell.tx.unknown"));
+          fire("warn");
           break;
       }
       return outcome;

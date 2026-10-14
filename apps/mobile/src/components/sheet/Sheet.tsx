@@ -97,25 +97,25 @@ function SheetPanel({
       if (closing.current) return;
       closing.current = true;
       const out = { duration: reduce ? TIMING.reducedMotion : TIMING.sheetExit, easing: EASE };
-      scrim.value = withTiming(0, out);
-      drag.value = withTiming(reduce ? drag.value : height.value + SHEET_SHAPE.inset, out, (done) => {
+      scrim.set(withTiming(0, out));
+      drag.set(withTiming(reduce ? drag.get() : height.get() + SHEET_SHAPE.inset, out, (done) => {
         if (done) scheduleOnRN(finish, after);
-      });
+      }));
     },
     [drag, finish, height, reduce, scrim],
   );
 
   const settle = useCallback(
     (i: number) => {
-      at.value = i;
+      at.set(i);
       setAtTop(i === top);
-      drag.value = withSpring(offsets[i] ?? 0, SPRING.sheetRelease);
+      drag.set(withSpring(offsets[i] ?? 0, SPRING.sheetRelease));
       fire("tick");
     },
     [at, drag, offsets, top],
   );
   const expand = useCallback(() => {
-    if (stops && at.value !== top) settle(top);
+    if (stops && at.get() !== top) settle(top);
   }, [at, settle, stops, top]);
 
   useEffect(() => {
@@ -127,21 +127,21 @@ function SheetPanel({
   }, [close, dismissible]);
 
   const onLayout = (e: LayoutChangeEvent) => {
-    height.value = e.nativeEvent.layout.height;
+    height.set(e.nativeEvent.layout.height);
     if (opened.current) return;
     opened.current = true;
     fire("snap");
-    scrim.value = withTiming(1, { duration: reduce ? TIMING.reducedMotion : TIMING.selection, easing: EASE });
+    scrim.set(withTiming(1, { duration: reduce ? TIMING.reducedMotion : TIMING.selection, easing: EASE }));
     const rest = offsets[0] ?? 0;
-    if (reduce) drag.value = rest;
+    if (reduce) drag.set(rest);
     else {
-      drag.value = e.nativeEvent.layout.height + SHEET_SHAPE.inset;
-      drag.value = withTiming(rest, { duration: TIMING.sheetEnter, easing: EASE_SHEET });
+      drag.set(e.nativeEvent.layout.height + SHEET_SHAPE.inset);
+      drag.set(withTiming(rest, { duration: TIMING.sheetEnter, easing: EASE_SHEET }));
     }
   };
 
   const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
+    scrollY.set(e.contentOffset.y);
   });
   const native = Gesture.Native();
   // A lone positive offset activates on downward drags only; below the tallest detent an upward drag raises the sheet.
@@ -151,27 +151,27 @@ function SheetPanel({
     .failOffsetX([-SHEET.failOffsetX, SHEET.failOffsetX])
     .simultaneousWithExternalGesture(native)
     .onStart(() => {
-      start.value = drag.value;
+      start.set(drag.get());
     })
     .onUpdate((e) => {
       // The list owns the drag while it's scrolled (only possible at the tallest detent).
-      if (scrollY.value > 0 && at.value === top) return;
+      if (scrollY.get() > 0 && at.get() === top) return;
       const ceiling = offsets[top] ?? 0;
-      const next = start.value + e.translationY;
-      drag.value = next >= ceiling ? next : ceiling + (next - ceiling) / SHEET.upwardResistance;
+      const next = start.get() + e.translationY;
+      drag.set(next >= ceiling ? next : ceiling + (next - ceiling) / SHEET.upwardResistance);
     })
     .onEnd((e) => {
-      if (scrollY.value > 0 && at.value === top && drag.value <= (offsets[top] ?? 0)) return;
+      if (scrollY.get() > 0 && at.get() === top && drag.get() <= (offsets[top] ?? 0)) return;
       if (!stops) {
-        const past = drag.value > Math.min(SHEET.closeDistance, height.value * SHEET.closeFraction);
+        const past = drag.get() > Math.min(SHEET.closeDistance, height.get() * SHEET.closeFraction);
         if (past || e.velocityY > SHEET.closeVelocity) scheduleOnRN(close);
-        else drag.value = withSpring(0, { ...SPRING.sheetRelease, velocity: e.velocityY });
+        else drag.set(withSpring(0, { ...SPRING.sheetRelease, velocity: e.velocityY }));
         return;
       }
       // Detents: a flick moves one stop; otherwise the nearest; below the lowest by enough, it closes.
-      const i = at.value;
+      const i = at.get();
       const lowest = offsets[0] ?? 0;
-      if (drag.value > lowest + Math.min(SHEET.closeDistance, (tallest - lowest) * SHEET.closeFraction)) {
+      if (drag.get() > lowest + Math.min(SHEET.closeDistance, (tallest - lowest) * SHEET.closeFraction)) {
         scheduleOnRN(close);
         return;
       }
@@ -186,32 +186,32 @@ function SheetPanel({
       } else {
         let best = Number.POSITIVE_INFINITY;
         offsets.forEach((o, k) => {
-          const d = Math.abs(drag.value - o);
+          const d = Math.abs(drag.get() - o);
           if (d < best) {
             best = d;
             target = k;
           }
         });
       }
-      if (target === i) drag.value = withSpring(offsets[i] ?? 0, { ...SPRING.sheetRelease, velocity: e.velocityY });
+      if (target === i) drag.set(withSpring(offsets[i] ?? 0, { ...SPRING.sheetRelease, velocity: e.velocityY }));
       else scheduleOnRN(settle, target);
     });
 
   const panelStyle = useAnimatedStyle(() =>
     stops
-      ? { height: tallest, opacity: reduce ? scrim.value : 1, transform: [{ translateY: drag.value }] }
+      ? { height: tallest, opacity: reduce ? scrim.get() : 1, transform: [{ translateY: drag.get() }] }
       : {
-          maxHeight: Math.max(0, Math.min(windowHeight * maxHeight, windowHeight - insets.top - keyboard.height.value)),
-          opacity: reduce ? scrim.value : 1,
-          transform: [{ translateY: drag.value - keyboard.height.value }],
+          maxHeight: Math.max(0, Math.min(windowHeight * maxHeight, windowHeight - insets.top - keyboard.height.get())),
+          opacity: reduce ? scrim.get() : 1,
+          transform: [{ translateY: drag.get() - keyboard.height.get() }],
         },
   );
-  const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.value }));
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: scrim.get() }));
   // The panel reaches into the home-indicator band; its content stops above it (and above the keyboard's top edge).
   const keyboardPad = useAnimatedStyle(() => ({
     paddingBottom:
-      Math.max(SHEET_SHAPE.padding, insets.bottom - SHEET_SHAPE.inset - keyboard.height.value) +
-      (stops ? keyboard.height.value : 0),
+      Math.max(SHEET_SHAPE.padding, insets.bottom - SHEET_SHAPE.inset - keyboard.height.get()) +
+      (stops ? keyboard.height.get() : 0),
   }));
 
   return (

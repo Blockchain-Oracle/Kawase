@@ -71,13 +71,29 @@ export function AmountPad({
   const { color } = useTheme();
   const { t } = useT();
   const [text, setText] = useState(() => (value > ZERO ? amountText(value, decimals, fraction) : ""));
+  const [reported, setReported] = useState(value);
+  // The owner changed the amount itself (cleared it after a send, filled it from a quote): the figure follows. Typing
+  // reports through `set`, which records what it said, so the pad never fights its own keystrokes.
+  if (value !== reported) {
+    setReported(value);
+    setText(value > ZERO ? amountText(value, decimals, fraction) : "");
+  }
+  const report = (next: bigint) => {
+    setReported(next);
+    onChange(next);
+  };
   const set = (next: string) => {
     setText(next);
     try {
-      onChange(next === "" || next === "." ? ZERO : parseUnits(next.endsWith(".") ? next.slice(0, -1) : next, decimals));
+      report(next === "" || next === "." ? ZERO : parseUnits(next.endsWith(".") ? next.slice(0, -1) : next, decimals));
     } catch {
-      onChange(ZERO);
+      report(ZERO);
     }
+  };
+  /** A chip sets the exact base-unit value ("All" leaves no dust); the figure shows it to the pad's precision. */
+  const pick = (exact: bigint) => {
+    setText(exact > ZERO ? amountText(exact, decimals, fraction) : "");
+    report(exact);
   };
   const shown =
     balance !== undefined && balance > ZERO
@@ -106,7 +122,7 @@ export function AmountPad({
                 key={c.label}
                 onPress={() => {
                   fire("tick");
-                  set(amountText(c.value, decimals, fraction));
+                  pick(c.value);
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}

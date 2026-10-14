@@ -59,17 +59,22 @@ const cueVolume = (name: Cue): number => (name in CUE_MIX ? CUE_MASTER * CUE_MIX
 
 const ownership = new AudioOwnership();
 const completed = new Set<string>();
-const players = new Map<Cue, AudioPlayer>();
+/** Each cue's players. A hot cue (an agent step, a toggle, a tap) has two, played in turn, so a second cue a moment
+ * after the first does not wait for the first to rewind (Senryo's pool); the rest have one. */
+const players = new Map<Cue, AudioPlayer[]>();
+const turn = new Map<Cue, number>();
+const HOT_CUES: ReadonlySet<Cue> = new Set<Cue>(["agentStep", "tap", "toggle", "sheetOpen", "sheetClose"]);
+const POOL = 2;
 /** The onboarding narrator: one player, one clip at a time (see `narrate`). */
 let narrator: AudioPlayer | undefined;
 /** Ends the clip in progress as if it had finished, so whatever waits on it moves on. */
 let endNarration: (() => void) | undefined;
 const foreground = () => AppState.currentState === "active";
 const pauseAll = () => {
-  players.forEach((player) => player.pause());
+  players.forEach((pool) => pool.forEach((player) => player.pause()));
   narrator?.pause();
 };
-const anyPlaying = () => [...players.values()].some((p) => p.playing) || Boolean(narrator?.playing);
+const anyPlaying = () => [...players.values()].some((pool) => pool.some((p) => p.playing)) || Boolean(narrator?.playing);
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") return;
@@ -97,16 +102,44 @@ function releaseSession() {
     .catch(() => undefined);
 }
 
-function playerFor(cue: Cue): AudioPlayer {
+function poolFor(cue: Cue): AudioPlayer[] {
   const existing = players.get(cue);
   if (existing) return existing;
-  const player = createAudioPlayer(CUE_ASSETS[cue], { keepAudioSessionActive: true });
-  player.volume = cueVolume(cue);
-  player.addListener("playbackStatusUpdate", (status) => {
-    if (status.didJustFinish) releaseSession();
+  const pool = Array.from({ length: HOT_CUES.has(cue) ? POOL : 1 }, () => {
+    const player = createAudioPlayer(CUE_ASSETS[cue], { keepAudioSessionActive: true });
+    player.volume = cueVolume(cue);
+    player.addListener("playbackStatusUpdate", (status) => {
+      if (status.didJustFinish) releaseSession();
+    });
+    return player;
   });
-  players.set(cue, player);
-  return player;
+  players.set(cue, pool);
+  return pool;
+}
+
+/** The next player of a cue's pool (they alternate). */
+function playerFor(cue: Cue): AudioPlayer {
+  const pool = poolFor(cue);
+  const next = ((turn.get(cue) ?? -1) + 1) % pool.length;
+  turn.set(cue, next);
+  return pool[next] as AudioPlayer;
+}
+
+let warmed = false;
+
+/**
+ * Creates the cue players once, at launch, so the first "sent" or agent step plays on time instead of after a file
+ * load. Native only (a browser refuses audio before the first tap, and loading early there buys nothing). Never throws.
+ */
+export function warmFeedback(): void {
+  if (warmed || Platform.OS === "web") return;
+  warmed = true;
+  void loadFeedbackPreferences().catch(() => undefined);
+  try {
+    for (const name of Object.keys(CUE_ASSETS) as Cue[]) poolFor(name);
+  } catch {
+    // A player that cannot load now is created on first use instead.
+  }
 }
 
 type NarrationEvents = {

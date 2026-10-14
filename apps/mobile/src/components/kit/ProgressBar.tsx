@@ -25,9 +25,9 @@ export function ProgressBar(p: {
   const fraction = p.max <= 0 ? 0 : Math.min(1, Math.max(0, p.value / p.max));
   const fill = useSharedValue(fraction);
   useEffect(() => {
-    fill.value = reduce ? fraction : withSpring(fraction, FILL);
+    fill.set(reduce ? fraction : withSpring(fraction, FILL));
   }, [fraction, reduce, fill]);
-  const style = useAnimatedStyle(() => ({ width: `${fill.value * PERCENT}%` }));
+  const style = useAnimatedStyle(() => ({ width: `${fill.get() * PERCENT}%` }));
   const ink = p.tone === "late" ? color.down : p.tone === "near" ? color.warn : color.up;
   return (
     <View

@@ -46,8 +46,8 @@ export function LiveOdometer({
   const snap = useSharedValue(reduce);
   const mask = useSharedValue(hidden);
   useEffect(() => {
-    mask.value = hidden;
-    snap.value = reduce;
+    mask.set(hidden);
+    snap.set(reduce);
   }, [hidden, reduce, mask, snap]);
   const odo = useSharedValue(emptyOdometer());
   const clock = useSharedValue(0);
@@ -63,28 +63,28 @@ export function LiveOdometer({
 
   useFrameCallback((frame) => {
     "worklet";
-    const dt = last.value === 0 ? 0 : frame.timestamp - last.value;
-    last.value = frame.timestamp;
+    const dt = last.get() === 0 ? 0 : frame.timestamp - last.get();
+    last.set(frame.timestamp);
     let moving = false;
     odo.modify((o) => {
       "worklet";
-      const s = source.value;
-      if (mask.value) setOdometerTrend(o, HIDDEN_AMOUNT, 0);
+      const s = source.get();
+      if (mask.get()) setOdometerTrend(o, HIDDEN_AMOUNT, 0);
       else setOdometerTrend(o, s.text, s.trend);
       // Reduced motion: the figure changes without rolling.
-      if (snap.value) o.cur = o.target.slice();
+      if (snap.get()) o.cur = o.target.slice();
       moving = stepOdometer(o, dt);
       return o;
     });
-    if (moving || clock.value === 0) clock.value = frame.timestamp;
+    if (moving || clock.get() === 0) clock.set(frame.timestamp);
   });
 
   const picture = useDerivedValue(() => {
     "worklet";
-    const w = width.value;
+    const w = width.get();
     const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, w, height));
-    if (font && w > 0 && clock.value >= 0) {
-      const o = odo.value;
+    if (font && w > 0 && clock.get() >= 0) {
+      const o = odo.get();
       const right = align === "right" ? w : odometerWidth(o, font);
       drawOdometer(canvas, o, font, paint, right, height / HALF, height * PITCH_SHARE, 0, height);
     }
@@ -95,7 +95,7 @@ export function LiveOdometer({
     <View
       style={[styles.box, { height }]}
       onLayout={(e: LayoutChangeEvent) => {
-        width.value = e.nativeEvent.layout.width;
+        width.set(e.nativeEvent.layout.width);
       }}
       accessible
       accessibilityLabel={hidden ? t("shell.kit.hidden") : accessibilityLabel}

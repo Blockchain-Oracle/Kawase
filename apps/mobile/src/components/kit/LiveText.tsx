@@ -8,7 +8,7 @@ import Animated, { type SharedValue, useAnimatedProps } from "react-native-reani
 const AnimatedInput = Animated.createAnimatedComponent(TextInput);
 
 export function LiveText({ text, style }: { text: SharedValue<string>; style?: TextStyle | TextStyle[] }) {
-  const props = useAnimatedProps(() => ({ text: text.value, defaultValue: text.value }) as never);
+  const props = useAnimatedProps(() => ({ text: text.get(), defaultValue: text.get() }) as never);
   return (
     <AnimatedInput
       editable={false}

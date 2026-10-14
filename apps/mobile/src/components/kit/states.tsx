@@ -180,13 +180,14 @@ export function LoadingState({ shape = "row", label, named = false }: { shape?: 
 
 function Elapsed() {
   const { color } = useTheme();
+  const { t } = useT();
   const [start] = useState(() => Date.now());
   const [now, setNow] = useState(start);
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), SECOND);
     return () => clearInterval(id);
   }, []);
-  return <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{`${Math.floor((now - start) / SECOND)}s`}</Text>;
+  return <Text style={[TYPE.rowChange, { color: color.text3, fontVariant: NUMERIC_VARIANT }]}>{t("shell.wait.elapsed", { seconds: Math.floor((now - start) / SECOND) })}</Text>;
 }
 
 export type StateAction = { label: string; onPress: () => void };

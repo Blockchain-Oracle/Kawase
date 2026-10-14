@@ -16,7 +16,7 @@ import { fire } from "@/feedback/fire";
 
 import { GlassPlate } from "../kit/GlassPlate";
 import { Icon, type SymbolIcon } from "../kit/icons";
-import { dockBottom, EASE, SIZE, SPACE, SPRING, TIMING, TYPE, useTheme } from "../kit/theme";
+import { DOCK, dockBottom, EASE, SIZE, SPACE, SPRING, TIMING, TYPE, useTheme } from "../kit/theme";
 import { usePressScale } from "../kit/usePressScale";
 import { useDock } from "./dock-context";
 
@@ -145,7 +145,7 @@ function DockSlot({ item, selected, onPress, onLayout }: { item: DockItem; selec
 
 const styles = StyleSheet.create({
   position: { position: "absolute", alignSelf: "center" },
-  bar: { borderRadius: BAR_RADIUS, minHeight: 60, paddingHorizontal: SPACE.sm, justifyContent: "center", overflow: "hidden" },
+  bar: { borderRadius: BAR_RADIUS, minHeight: DOCK.height - SPACE.sm, paddingHorizontal: SPACE.sm, justifyContent: "center", overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   bubble: { position: "absolute", top: 4, bottom: 4, left: 0, borderRadius: BAR_RADIUS, borderWidth: 1 },
   slot: { width: SLOT, minHeight: SIZE.touch, alignItems: "center", justifyContent: "center" },
