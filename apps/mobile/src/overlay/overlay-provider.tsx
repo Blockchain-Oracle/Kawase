@@ -30,6 +30,9 @@ type OverlayState = {
   voiceTrigger: React.RefObject<View | null>;
   /** The pages, as Android's blur target for the overlays. */
   blurTarget: React.RefObject<View | null>;
+  /** Home's composer is open (typing): the + steps aside for it. */
+  composing: boolean;
+  setComposing: (composing: boolean) => void;
 };
 
 const OverlayContext = React.createContext<OverlayState | null>(null);
@@ -37,6 +40,7 @@ const OverlayContext = React.createContext<OverlayState | null>(null);
 export function OverlayProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = React.useState<OverlayKind | null>(null);
   const [leaving, setLeaving] = React.useState<OverlayKind | null>(null);
+  const [composing, setComposing] = React.useState(false);
   const voiceTrigger = React.useRef<View>(null);
   const blurTarget = React.useRef<View>(null);
 
@@ -59,8 +63,10 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       exited: (kind) => setLeaving((was) => (was === kind ? null : was)),
       voiceTrigger,
       blurTarget,
+      composing,
+      setComposing,
     };
-  }, [current, leaving]);
+  }, [current, leaving, composing]);
 
   // Back (Android) and Escape (web) close the open overlay first.
   React.useEffect(() => {

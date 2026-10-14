@@ -191,5 +191,5 @@ function QuickActionFan({ open, actions, onToggle, onAction, toggleLabel, bottom
   );
 }
 
-export { FAN_EXIT_MS, QuickActionFan };
+export { END_INSET as FAN_END_INSET, FAN_EXIT_MS, PLUS_SIZE as FAN_PLUS_SIZE, QuickActionFan };
 export type { FanAction, QuickActionFanProps };

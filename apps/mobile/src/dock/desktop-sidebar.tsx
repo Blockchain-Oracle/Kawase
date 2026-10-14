@@ -25,7 +25,7 @@ import { useT } from "@/i18n";
 import { InboxBell } from "@/inbox/inbox-bell";
 import { useAccountGate } from "@/onboarding/account-gate";
 import { DEFERRED_VERBS } from "@/onboarding/deferred-action";
-import { useFanActions } from "@/overlay/action-fan";
+import { useFanActions } from "@/overlay/fan-actions";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";

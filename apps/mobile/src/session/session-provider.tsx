@@ -110,6 +110,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (!token) {
       setStatus("none");
       setUser(undefined);
+      // No account yet: the public health read still says which networks are on.
+      void api
+        .health()
+        .then((health) => {
+          if (current()) setAvailableNetworks(health.networks);
+        })
+        .catch(() => undefined);
       return;
     }
     try {
@@ -189,6 +196,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (version !== epoch.current) return;
           show(guest);
           setConnection("online");
+          // Which networks are on (mainnet included) comes with the account read; a new guest asks for it too, or
+          // the network switch would think only testnet exists until the next launch.
+          const networks = await api
+            .health()
+            .then((health) => health.networks)
+            .catch(() => undefined);
+          if (networks && version === epoch.current) setAvailableNetworks(networks);
         })().finally(() => {
           if (creatingGuest.current === pending) creatingGuest.current = undefined;
         });

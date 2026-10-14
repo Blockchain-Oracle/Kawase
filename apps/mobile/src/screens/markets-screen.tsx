@@ -1,10 +1,10 @@
 // The Markets tab (surfaces.md "Markets tab"; plan §D; D1, D36): the shared tab header (Sign in for guests); search by
 // name, symbol or address, the Long/Short markets it names on top; segments Watchlist · Trending · Meme · Long/Short ·
-// Services (the x402 marketplace, Stage 3) · Stocks & FX · New; on Trending the Long or short cards, a hot-markets carousel and the heatmap (21st.dev 30551); then rows
+// Services (the x402 marketplace, Stage 3) · Stocks & FX · New; on Trending the Long or short cards and a hot-markets carousel; then rows
 // with price, 24 h change, volume and liquidity, copycats flagged. Public market data (R13): guests and testnet
 // users see mainnet's markets, and testnet says so with the switch. Rate-limited data shows its last snapshot
-// with the time. Every row opens the token page. On a desktop window (Stage 13) the page is a wide centred column,
-// the heatmap larger, and the rows in two columns; the sidebar carries the header's pills.
+// with the time. Every row opens the token page; prices are live (read again every few seconds while the list is on
+// screen). On a desktop window (Stage 13) the page is a wide centred column with the rows in two columns.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -14,7 +14,6 @@ import type { MarketRow, MarketSegment, TokenView } from "@kawase/api-client";
 import { AssetRow } from "@kawase/ui-native/components/asset-row";
 import { Eyebrow } from "@kawase/ui-native/components/eyebrow";
 import { ListGroup } from "@kawase/ui-native/components/list-row";
-import { MarketHeatmap } from "@kawase/ui-native/components/market-heatmap";
 import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { Amount } from "@kawase/ui-native/components/amount";
@@ -56,10 +55,6 @@ const SEGMENT_KEYS: Record<Segment, string> = {
   new: "markets.new",
 };
 const HOT_COUNT = 6;
-const HEAT_COUNT = 16;
-/** A desktop window shows more of the market, larger. */
-const WIDE_HEAT_COUNT = 28;
-const WIDE_HEAT_HEIGHT = 380;
 const WIDE_ROW_COLUMNS = 2;
 const HOT_CARD_WIDTH = 148;
 /** The card's own padding on both sides (p-4), and its sparkline's height. */
@@ -95,7 +90,7 @@ export function MarketsScreen() {
   const fx = useFx();
   const open = (token: Pick<TokenView, "chainId" | "address">) => router.push(tokenHref(token));
   const rows = market?.rows ?? [];
-  // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel or the map.
+  // A fake stays in the list with its chip (copycats are flagged), but is never promoted to the carousel.
   const promoted = rows.filter((row) => row.token.status !== "impersonator");
 
   const sparkColors = { up: colors.success, down: colors.destructive };
@@ -273,28 +268,6 @@ export function MarketsScreen() {
                       );
                     })}
                   </ScrollView>
-                </View>
-
-                <View className="gap-2">
-                  <Eyebrow className="px-1">{t("markets.heatmap")}</Eyebrow>
-                  <MarketHeatmap
-                    height={wide ? WIDE_HEAT_HEIGHT : undefined}
-                    colors={{
-                      up: colors.success,
-                      down: colors.destructive,
-                      flat: colors.muted,
-                      text: colors.foreground,
-                    }}
-                    tiles={promoted.slice(0, wide ? WIDE_HEAT_COUNT : HEAT_COUNT).map((row) => ({
-                      key: row.token.address,
-                      label: row.token.symbol,
-                      weight: row.volume24hUsd ?? row.liquidityUsd ?? 0,
-                      change: row.change24hPct,
-                      ...(change(row.change24hPct, locale) ? { changeLabel: change(row.change24hPct, locale)! } : {}),
-                      accessibilityLabel: [row.token.name, change(row.change24hPct, locale)].filter(Boolean).join(", "),
-                      onPress: () => open(row.token),
-                    }))}
-                  />
                 </View>
 
                 {wide ? (

@@ -1,4 +1,7 @@
-// One token's page and its chart, from the api (public market data; the holding when signed in).
+// One token's page and its chart, from the api (public market data; the holding when signed in). While the page is
+// on screen its market is read again every few seconds (the api's live layer is seconds old), quietly: no skeleton,
+// the price rolls to its new value.
+import { useIsFocused } from "expo-router";
 import * as React from "react";
 
 import type { Candle, ChartRange, TokenDetailView } from "@kawase/api-client";
@@ -28,10 +31,31 @@ export function useToken(chainId: number, address: string) {
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Live: a quiet read every few seconds while the page is on screen; a miss keeps what is shown.
+  const focused = useIsFocused();
+  React.useEffect(() => {
+    if (!focused) return undefined;
+    let alive = true;
+    const timer = setInterval(() => {
+      api.tokens
+        .get(chainId, address)
+        .then((answer) => {
+          if (alive) setDetail(answer.token);
+        })
+        .catch(() => undefined);
+    }, LIVE_POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [focused, chainId, address, user?.activeNetwork]);
   return { detail, error, loading, refresh };
 }
 
 const HTTP_NOT_FOUND = 404;
+/** How often an open token page reads its market again. */
+const LIVE_POLL_MS = 5_000;
 
 export function useTokenChart(chainId: number, address: string, range: ChartRange) {
   const [candles, setCandles] = React.useState<Candle[]>();

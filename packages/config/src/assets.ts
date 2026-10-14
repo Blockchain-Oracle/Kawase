@@ -24,8 +24,15 @@ export const MARKET_STALE_MAX_MS = SECONDS_PER_DAY * MS_PER_SECOND;
 
 /** The api refreshes the shared market cache (Markets lists, listed tokens' prices) this often. */
 export const MARKET_WARM_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
-/** GeckoTerminal's public API: calls per minute Kawase allows itself (their limit is ~10 on the free tier). */
-export const GECKOTERMINAL_CALLS_PER_MINUTE = 9;
+/** GeckoTerminal's public API: calls per minute Kawase allows itself (their open limit is 30; charts are its main use). */
+export const GECKOTERMINAL_CALLS_PER_MINUTE = 20;
+/**
+ * DexScreener's open API (live-checked 2026-10-14: Arc is "arc", prices move between calls seconds apart): a token's
+ * live price, 5 m / 1 h / 24 h change, liquidity, trades, image and links. 300 calls a minute; up to 30 tokens a call.
+ */
+export const LIVE_TTL_MS = 5 * MS_PER_SECOND;
+export const DEXSCREENER_CALLS_PER_MINUTE = 240;
+export const DEXSCREENER_TOKENS_MAX = 30;
 /** GeckoTerminal's tokens/multi endpoint takes at most this many addresses per call. */
 export const GECKOTERMINAL_MULTI_MAX = 30;
 /** An external call that takes longer than this is treated as down (the cache answers instead). */

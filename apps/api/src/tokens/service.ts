@@ -48,7 +48,7 @@ import { USDC_ERC20_DECIMALS } from "@kawase/money";
 
 import { HTTP, problem } from "../http/problem";
 import { priceKey, type WalletHolding } from "../market/alchemy";
-import type { MarketData, PoolRow, TokenMarket } from "../market/sources";
+import type { LiveQuote, MarketData, PoolRow, TokenMarket } from "../market/sources";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -86,7 +86,7 @@ const ZERO = 0n;
 /** Positions the earn service can report (kept narrow so tests can fake it). */
 export type EarnPositions = (user: SessionUser) => Promise<{ vault: string; name: string; apy: number; assets: string }[]>;
 
-type Priced = { priceUsd: number | null; change24hPct: number | null; market: TokenMarket | null };
+type Priced = { priceUsd: number | null; change24hPct: number | null; market: TokenMarket | null; live: LiveQuote | null };
 
 const chainIdOf = (network: NetworkId) => NETWORKS[network].chainId;
 const round = (value: number) => Math.round(value * PERCENT) / PERCENT;
@@ -155,15 +155,22 @@ export class AssetService {
     const twin = (address: string) => (network === "testnet" ? TESTNET_PRICE_TWINS[address.toLowerCase()]?.toLowerCase() : address.toLowerCase());
     const lookups = addresses.map((address) => [address.toLowerCase(), twin(address)] as const);
     const wanted = lookups.map(([, mainnet]) => mainnet).filter((address): address is string => Boolean(address));
-    const [{ markets, at, stale }, listed] = await Promise.all([this.market.markets(MAINNET_CHAIN_ID, wanted), this.market.listed(MAINNET_CHAIN_ID)]);
+    const [{ markets, at: marketAt, stale }, listed, live] = await Promise.all([
+      this.market.markets(MAINNET_CHAIN_ID, wanted),
+      this.market.listed(MAINNET_CHAIN_ID),
+      this.liveQuotes(wanted),
+    ]);
     const prices = new Map<string, Priced>();
     for (const [address, mainnet] of lookups) {
       const market = mainnet ? (markets.get(mainnet) ?? null) : null;
+      const quote = mainnet ? (live.quotes.get(mainnet) ?? null) : null;
       const listedPrice = mainnet ? (listed.get(mainnet)?.priceUsd ?? null) : null;
-      // The listed price wins for the dollar itself (GeckoTerminal can show USDC a hair off its peg from one pool).
-      const priceUsd = mainnet && isArcUsdc(mainnet) ? (listedPrice ?? 1) : (market?.priceUsd ?? listedPrice);
-      prices.set(address, { priceUsd, change24hPct: market?.change24hPct ?? null, market });
+      // The listed price wins for the dollar itself (a pool can show USDC a hair off its peg); otherwise the live pair
+      // (seconds old) before GeckoTerminal's minute-old snapshot.
+      const priceUsd = mainnet && isArcUsdc(mainnet) ? (listedPrice ?? 1) : (quote?.priceUsd ?? market?.priceUsd ?? listedPrice);
+      prices.set(address, { priceUsd, change24hPct: quote?.change24hPct ?? market?.change24hPct ?? null, market, live: quote });
     }
+    const at = live.quotes.size > 0 ? Math.max(marketAt, live.at) : marketAt;
     // Majors no DEX list prices (and any token the others missed): Alchemy's Prices API, when configured.
     const unpriced = lookups.filter(([address, mainnet]) => mainnet && prices.get(address)?.priceUsd === null);
     if (unpriced.length > 0 && this.market.wallets) {
@@ -174,6 +181,13 @@ export class AssetService {
       }
     }
     return { prices, at, stale };
+  }
+
+  /** Live quotes (DexScreener), or none when the source is down: the minute-old snapshot answers instead. */
+  private liveQuotes(addresses: readonly string[]): Promise<{ quotes: Map<string, LiveQuote>; at: number }> {
+    const none = { quotes: new Map<string, LiveQuote>(), at: Date.now() };
+    if (!this.market.live || addresses.length === 0) return Promise.resolve(none);
+    return this.market.live(MAINNET_CHAIN_ID, addresses).catch(() => none);
   }
 
   // ── Portfolio ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -593,20 +607,31 @@ export class AssetService {
     if (token.status === "unverified" && lookalikes.some((other) => (other.liquidityUsd ?? 0) > (priced?.market?.liquidityUsd ?? 0))) token.status = "lookalike";
     const safety = safetyVerdict(token, facts, lookalikes);
     const market = priced?.market ?? null;
+    const live = priced?.live ?? null;
+    if (!token.logoUrl && live?.imageUrl) token.logoUrl = live.imageUrl;
     return {
       token,
       network,
       market: {
         priceUsd: priced?.priceUsd ?? null,
         change24hPct: priced?.change24hPct ?? null,
-        volume24hUsd: market?.volume24hUsd ?? null,
-        liquidityUsd: market?.liquidityUsd ?? null,
-        marketCapUsd: market?.marketCapUsd ?? null,
-        fdvUsd: market?.fdvUsd ?? null,
+        volume24hUsd: live?.volume24hUsd ?? market?.volume24hUsd ?? null,
+        liquidityUsd: live?.liquidityUsd ?? market?.liquidityUsd ?? null,
+        marketCapUsd: live?.marketCapUsd ?? market?.marketCapUsd ?? null,
+        fdvUsd: live?.fdvUsd ?? market?.fdvUsd ?? null,
         holders: info?.holders ?? facts?.holders ?? null,
         pool: market?.pool ? { address: market.pool.address, dex: market.pool.dex, createdAt: market.pool.createdAt } : null,
+        change5mPct: live?.change5mPct ?? null,
+        change1hPct: live?.change1hPct ?? null,
+        buys24h: live?.buys24h ?? null,
+        sells24h: live?.sells24h ?? null,
       },
-      about: { description: info?.description ?? null, websites: info?.websites ?? [], twitter: info?.twitter ?? null, telegram: info?.telegram ?? null },
+      about: {
+        description: info?.description ?? null,
+        websites: info?.websites.length ? info.websites : (live?.websites ?? []),
+        twitter: info?.twitter ?? live?.twitter ?? null,
+        telegram: info?.telegram ?? live?.telegram ?? null,
+      },
       safety,
       holding,
       actions: tokenActions(network, token, safety.level, holding, venue),
@@ -687,7 +712,21 @@ export class AssetService {
       });
       if (rows.length >= MARKET_LIST_LIMIT) break;
     }
-    return { segment, network, rows, pricedAt: new Date(pools.at).toISOString(), stale: pools.stale, available: true };
+    // The pools list is a minute old; each row's price, change and depth come live from its deepest pair.
+    const live = await this.liveQuotes(rows.map((row) => row.token.address.toLowerCase()));
+    for (const row of rows) {
+      const quote = live.quotes.get(row.token.address.toLowerCase());
+      if (!quote) continue;
+      row.priceUsd = quote.priceUsd ?? row.priceUsd;
+      row.change24hPct = quote.change24hPct ?? row.change24hPct;
+      row.change1hPct = quote.change1hPct;
+      row.volume24hUsd = quote.volume24hUsd ?? row.volume24hUsd;
+      row.liquidityUsd = quote.liquidityUsd ?? row.liquidityUsd;
+      row.marketCapUsd = quote.marketCapUsd ?? row.marketCapUsd;
+      if (!row.token.logoUrl && quote.imageUrl) row.token.logoUrl = quote.imageUrl;
+    }
+    const pricedAt = live.quotes.size > 0 ? live.at : pools.at;
+    return { segment, network, rows, pricedAt: new Date(pricedAt).toISOString(), stale: pools.stale && live.quotes.size === 0, available: true };
   }
 
   /** Stocks & FX: the verified currency and real-world-asset tokens on Arc (EURC, wARS, XAUm…), priced. */

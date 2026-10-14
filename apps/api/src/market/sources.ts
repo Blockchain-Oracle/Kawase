@@ -5,6 +5,9 @@
 // - GeckoTerminal (`networks/arc`): token markets with their deepest pool, token info (description, holders,
 //   score), trending and new pools, search, OHLCV. ~10 calls a minute on the free tier, so every call goes through
 //   one budget and the shared cache.
+// - DexScreener `tokens/v1/arc/{addresses}`: the live layer — a token's price from its deepest pair seconds after a
+//   trade, 5 m / 1 h / 24 h change, liquidity, today's buys and sells, its image and links. 300 calls a minute, 30
+//   tokens a call, so lists and token pages refresh every few seconds without touching GeckoTerminal's budget.
 // - GoPlus `token_security/5042`: honeypot, taxes, mint, owner, holders.
 // - exchangerate-api's open endpoint: the display currency per US dollar.
 // Each is mainnet-only by nature; test networks get no market (R11), and callers say so.
@@ -12,9 +15,12 @@ import { getAddress } from "viem";
 
 import {
   CHART_TTL_MS,
+  DEXSCREENER_CALLS_PER_MINUTE,
+  DEXSCREENER_TOKENS_MAX,
   FX_TTL_MS,
   GECKOTERMINAL_CALLS_PER_MINUTE,
   GECKOTERMINAL_MULTI_MAX,
+  LIVE_TTL_MS,
   MARKET_TTL_MS,
   OTHER_CHAIN_BALANCES_TTL_MS,
   PRICE_TTL_MS,
@@ -31,6 +37,8 @@ import { CallBudget, MarketCache, OutOfBudget, getJson, type Cached } from "./ca
 const LIFI = "https://li.quest/v1";
 const GECKO = "https://api.geckoterminal.com/api/v2";
 const GECKO_NETWORK = "arc";
+const DEXSCREENER = "https://api.dexscreener.com";
+const DEXSCREENER_CHAIN = "arc";
 const GOPLUS = "https://api.gopluslabs.io/api/v1";
 const FX = "https://open.er-api.com/v6/latest/USD";
 /** Arc mainnet: the only Arc chain the market sources cover. */
@@ -90,6 +98,25 @@ export type TokenInfo = {
   gtVerified: boolean;
 };
 
+/** A token's live market from its deepest Arc pair on DexScreener (seconds old). */
+export type LiveQuote = {
+  pair: string;
+  priceUsd: number | null;
+  change5mPct: number | null;
+  change1hPct: number | null;
+  change24hPct: number | null;
+  volume24hUsd: number | null;
+  liquidityUsd: number | null;
+  marketCapUsd: number | null;
+  fdvUsd: number | null;
+  buys24h: number | null;
+  sells24h: number | null;
+  imageUrl: string | null;
+  websites: string[];
+  twitter: string | null;
+  telegram: string | null;
+};
+
 export type SecurityFacts = {
   honeypot: boolean | null;
   buyTaxPct: number | null;
@@ -123,7 +150,10 @@ export type MarketData = {
   markets(chainId: number, addresses: readonly string[]): Promise<{ markets: Map<string, TokenMarket>; at: number; stale: boolean }>;
   pools(kind: "trending" | "new"): Promise<Cached<PoolRow[]>>;
   search(query: string): Promise<PoolRow[]>;
+  /** A pool's candles; throws when GeckoTerminal can't answer and nothing is held (the page offers a retry). */
   chart(chainId: number, pool: string, token: string, range: ChartRange): Promise<Candle[]>;
+  /** Live quotes by lower-case address (DexScreener), with the time of the oldest one; empty where it has none. */
+  live?(chainId: number, addresses: readonly string[]): Promise<{ quotes: Map<string, LiveQuote>; at: number }>;
   /**
    * A market row's sparkline: hourly closes over 24 h for a pool's token. `load: false` answers only from the cache
    * (a list never spends the budget on it); the warmer loads one at a time.
@@ -198,9 +228,47 @@ const CHART_SHAPE: Record<ChartRange, { timeframe: "minute" | "hour" | "day"; ag
   ALL: { timeframe: "day", aggregate: 1, limit: 1000 },
 };
 
+// ── DexScreener's pair shape (only what Kawase reads) ───────────────────────────────────────────────────────
+type DsWindow = { m5?: number; h1?: number; h6?: number; h24?: number };
+type DsPair = {
+  chainId: string;
+  pairAddress: string;
+  baseToken: { address: string; symbol: string; name: string };
+  priceUsd?: string;
+  priceChange?: DsWindow;
+  volume?: DsWindow;
+  txns?: { h24?: { buys?: number; sells?: number } };
+  liquidity?: { usd?: number };
+  marketCap?: number;
+  fdv?: number;
+  info?: { imageUrl?: string; websites?: { url: string; label?: string }[]; socials?: { url: string; type: string }[] };
+};
+
+function liveQuote(pair: DsPair): LiveQuote {
+  const social = (type: string) => pair.info?.socials?.find((entry) => entry.type === type)?.url ?? null;
+  return {
+    pair: pair.pairAddress,
+    priceUsd: num(pair.priceUsd),
+    change5mPct: num(pair.priceChange?.m5),
+    change1hPct: num(pair.priceChange?.h1),
+    change24hPct: num(pair.priceChange?.h24),
+    volume24hUsd: num(pair.volume?.h24),
+    liquidityUsd: num(pair.liquidity?.usd),
+    marketCapUsd: num(pair.marketCap),
+    fdvUsd: num(pair.fdv),
+    buys24h: num(pair.txns?.h24?.buys),
+    sells24h: num(pair.txns?.h24?.sells),
+    imageUrl: pair.info?.imageUrl ?? null,
+    websites: (pair.info?.websites ?? []).map((site) => site.url).filter((url) => url.startsWith("https://")).slice(0, WEBSITES_MAX),
+    twitter: social("twitter"),
+    telegram: social("telegram"),
+  };
+}
+
 export function liveMarketData(options: { alchemyApiKey?: string | undefined } = {}): MarketData {
   const cache = new MarketCache();
   const gecko = new CallBudget("GeckoTerminal", GECKOTERMINAL_CALLS_PER_MINUTE);
+  const dex = new CallBudget("DexScreener", DEXSCREENER_CALLS_PER_MINUTE);
 
   const geckoGet = <T>(path: string): Promise<T> => {
     if (!gecko.take()) return Promise.reject(new OutOfBudget(gecko.source));
@@ -381,17 +449,52 @@ export function liveMarketData(options: { alchemyApiKey?: string | undefined } =
     chart: async (chainId, pool, token, range) => {
       if (chainId !== ARC_MAINNET_CHAIN_ID) return [];
       const shape = CHART_SHAPE[range];
-      return cache.value(
-        `gt:chart:${pool}:${lower(token)}:${range}`,
-        CHART_TTL_MS,
-        async () => {
-          const body = await geckoGet<{ data: { attributes: { ohlcv_list: [number, number, number, number, number, number][] } } }>(
-            `/networks/${GECKO_NETWORK}/pools/${pool}/ohlcv/${shape.timeframe}?aggregate=${shape.aggregate}&limit=${shape.limit}&currency=usd&token=${token}`,
-          );
-          return body.data.attributes.ohlcv_list.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })).sort((a, b) => a.t - b.t);
-        },
-        [],
+      // The last good candles when GeckoTerminal is busy; a failure with nothing held is an error, never "no history".
+      const held = await cache.get(`gt:chart:${pool}:${lower(token)}:${range}`, CHART_TTL_MS, async () => {
+        const body = await geckoGet<{ data: { attributes: { ohlcv_list: [number, number, number, number, number, number][] } } }>(
+          `/networks/${GECKO_NETWORK}/pools/${pool}/ohlcv/${shape.timeframe}?aggregate=${shape.aggregate}&limit=${shape.limit}&currency=usd&token=${token}`,
+        );
+        return body.data.attributes.ohlcv_list.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })).sort((a, b) => a.t - b.t);
+      });
+      return held.value;
+    },
+    live: async (chainId, addresses) => {
+      if (chainId !== ARC_MAINNET_CHAIN_ID) return { quotes: new Map<string, LiveQuote>(), at: Date.now() };
+      const wanted = [...new Set(addresses.map(lower))];
+      const due = wanted.filter((address) => {
+        const held = cache.peek<LiveQuote | null>(`ds:live:${address}`);
+        return !held || Date.now() - held.at >= LIVE_TTL_MS;
+      });
+      const batches: string[][] = [];
+      for (let i = 0; i < due.length; i += DEXSCREENER_TOKENS_MAX) batches.push(due.slice(i, i + DEXSCREENER_TOKENS_MAX));
+      await Promise.allSettled(
+        batches.map((batch) =>
+          cache.get(`ds:batch:${batch.join(",")}`, LIVE_TTL_MS, async () => {
+            if (!dex.take()) throw new OutOfBudget(dex.source);
+            const pairs = await getJson<DsPair[]>(`${DEXSCREENER}/tokens/v1/${DEXSCREENER_CHAIN}/${batch.join(",")}`);
+            // Each token's deepest pair where it is the base (the pair's price is the base's).
+            const best = new Map<string, DsPair>();
+            for (const pair of Array.isArray(pairs) ? pairs : []) {
+              if (pair.chainId !== DEXSCREENER_CHAIN) continue;
+              const base = lower(pair.baseToken.address);
+              const known = best.get(base);
+              if (!known || (pair.liquidity?.usd ?? 0) > (known.liquidity?.usd ?? 0)) best.set(base, pair);
+            }
+            // A token DexScreener doesn't know is remembered as such, so it isn't asked for again every few seconds.
+            for (const address of batch) cache.set(`ds:live:${address}`, best.has(address) ? liveQuote(best.get(address)!) : null);
+            return true;
+          }),
+        ),
       );
+      const quotes = new Map<string, LiveQuote>();
+      let at = Date.now();
+      for (const address of wanted) {
+        const held = cache.peek<LiveQuote | null>(`ds:live:${address}`);
+        if (!held?.value) continue;
+        quotes.set(address, held.value);
+        at = Math.min(at, held.at);
+      }
+      return { quotes, at };
     },
     sparkDue: (pool, token) => {
       const held = cache.peek<number[]>(`gt:spark:${lower(pool)}:${lower(token)}`);

@@ -10,7 +10,6 @@ export const markets: Catalog["markets"] = {
   fx: "Actions et devises",
   new: "Nouveaux",
   hot: "Populaires",
-  heatmap: "Carte thermique",
   vol: "Vol. {{value}}",
   liq: "Liq. {{value}}",
   mcap: "Cap. {{value}}",

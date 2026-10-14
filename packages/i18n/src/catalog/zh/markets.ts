@@ -10,7 +10,6 @@ export const markets: Catalog["markets"] = {
   fx: "股票与外汇",
   new: "新币",
   hot: "最热",
-  heatmap: "热力图",
   vol: "成交 {{value}}",
   liq: "流动性 {{value}}",
   mcap: "市值 {{value}}",

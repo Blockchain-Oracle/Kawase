@@ -10,7 +10,6 @@ export const markets: Catalog["markets"] = {
   fx: "স্টক ও বৈদেশিক মুদ্রা",
   new: "নতুন",
   hot: "সবচেয়ে গরম",
-  heatmap: "হিটম্যাপ",
   vol: "ভলিউম {{value}}",
   liq: "লিকুইডিটি {{value}}",
   mcap: "ক্যাপ {{value}}",

@@ -10,7 +10,7 @@
 // write asks them to sign in in place. Loading is the page's own shape; a missing token or a failed read says so.
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { MoreHorizontal, Share2, ShieldAlert, ShieldCheck, Star, TriangleAlert } from "lucide-react-native";
+import { CandlestickChart, ChartSpline, MoreHorizontal, Share2, ShieldAlert, ShieldCheck, Star, TriangleAlert } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,10 +30,10 @@ import {
   DisclosureRow,
   EmptyState,
   ErrorState,
-  FilterChips,
   Icon,
   KeyValue,
   ListRow,
+  LiveDot,
   LoadingState,
   Panel,
   RADIUS,
@@ -42,7 +42,6 @@ import {
   Skeleton,
   SIZE,
   SPACE,
-  Sparkline,
   StaleTick,
   TYPE,
   useTheme,
@@ -72,11 +71,12 @@ import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { withdrawHref } from "@/withdraw/href";
 
 const RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M", "1Y", "ALL"];
+/** Ranges whose last point is the live price. */
+const LIVE_RANGES: ReadonlySet<ChartRange> = new Set(["1H", "1D"]);
 const MARK = 36;
 const CHART_HEIGHT = 200;
 const WIDE_CHART_HEIGHT = 320;
 const HERO_H = 52;
-const SPARK_W = 72;
 const SECONDS_TO_MS = 1000;
 const BAR_H = 56;
 /** Stats per row: two on a phone, three on a desktop window. */
@@ -104,6 +104,33 @@ function RoundAction({ icon, label, onPress, on }: { icon: typeof Star; label: s
     >
       <Icon icon={icon} size={SIZE.icon} tint={on ? color.accentForeground : color.ink} />
     </Pressable>
+  );
+}
+
+/** The chart's ranges as one even row under it (every range in reach of the thumb, never clipped). */
+function RangeTabs({ value, onChange, label }: { value: ChartRange; onChange: (range: ChartRange) => void; label: string }) {
+  const { color } = useTheme();
+  return (
+    <View accessibilityRole="tablist" accessibilityLabel={label} style={styles.tabs}>
+      {RANGES.map((range) => {
+        const on = range === value;
+        return (
+          <Pressable
+            key={range}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            onPress={() => {
+              if (on) return;
+              fire("tick");
+              onChange(range);
+            }}
+            style={({ pressed }) => [styles.tab, { backgroundColor: on ? color.raised2 : pressed ? color.rowPressed : color.transparent }]}
+          >
+            <Text style={[TYPE.chipLabel, { color: on ? color.ink : color.text3 }]}>{range}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -140,7 +167,12 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 
   const activeChain = user?.activeNetwork === "mainnet" ? CHAIN_IDS.arc : CHAIN_IDS.arcTestnet;
   const candles = chart.candles;
-  const points: ChartPoint[] = (candles ?? []).map((candle) => ({ t: candle.t, v: candle.c }));
+  // The last point follows the live price on the short ranges, so the line moves with the market between reads.
+  const livePrice = detail?.market.priceUsd ?? null;
+  const points: ChartPoint[] = (candles ?? []).map((candle, index, all) => ({
+    t: candle.t,
+    v: index === all.length - 1 && livePrice !== null && LIVE_RANGES.has(range) ? livePrice : candle.c,
+  }));
 
   if (!detail) {
     return (
@@ -280,6 +312,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     { label: t("tokenPage.liquidity"), value: money(detail.market.liquidityUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.volume"), value: money(detail.market.volume24hUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.holders"), value: detail.market.holders !== null ? new Intl.NumberFormat(locale).format(detail.market.holders) : "—" },
+    ...(detail.market.buys24h != null && detail.market.sells24h != null
+      ? [{ label: t("tokenPage.buysSells"), value: `${new Intl.NumberFormat(locale).format(detail.market.buys24h)} / ${new Intl.NumberFormat(locale).format(detail.market.sells24h)}` }]
+      : []),
     { label: t("tokenPage.fdv"), value: money(detail.market.fdvUsd, fx, locale, { compact: true }) },
     { label: t("tokenPage.contract"), value: shortAddress(token.address), onPress: () => void copy() },
   ];
@@ -315,8 +350,14 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
     <>
       <View style={styles.hero}>
         <View style={styles.heroRow}>
-          <LiveNumber text={price(shownPrice, fx, locale)} value={shownPrice ?? 0} height={HERO_H} />
-          {points.length > 1 ? <Sparkline points={points.map((point) => point.v)} width={SPARK_W} /> : null}
+          <View style={styles.grow}>
+            <LiveNumber text={price(shownPrice, fx, locale)} value={shownPrice ?? 0} height={HERO_H} />
+          </View>
+          <RoundAction
+            icon={chartKind === "line" ? CandlestickChart : ChartSpline}
+            label={chartKind === "line" ? t("tokenPage.chart_candles") : t("tokenPage.chart_line")}
+            onPress={() => setChartKind(chartKind === "line" ? "candles" : "line")}
+          />
         </View>
         {scrubbedAt !== undefined ? (
           <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{new Date(scrubbedAt * SECONDS_TO_MS).toLocaleString(locale)}</Text>
@@ -324,29 +365,23 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           <View style={styles.line}>
             <ChangeChip change={rangeChange} />
             <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{candles && first ? range : t("assets.today", { change: change(detail.market.change24hPct, locale) ?? "" })}</Text>
+            {detail.market.priceUsd !== null && !detail.stale ? (
+              <View style={styles.live} accessibilityLabel={t("tokenPage.live")}>
+                <LiveDot />
+                <Text style={[TYPE.label, { color: color.text2 }]}>{t("tokenPage.live")}</Text>
+                {detail.market.change5mPct != null ? (
+                  <Text style={[TYPE.label, { color: detail.market.change5mPct >= 0 ? color.up : color.down }]}>{`5m ${change(detail.market.change5mPct, locale) ?? ""}`}</Text>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         )}
       </View>
 
       <View style={styles.group}>
-        <View style={styles.line}>
-          <View style={styles.grow}>
-            <FilterChips<ChartRange> label={t("assets.rangeLabel")} options={RANGES.map((value) => ({ value, label: value }))} value={range} onChange={setRange} />
-          </View>
-          <View style={styles.kind}>
-            <Segmented<"line" | "candles">
-              label={t("tokenPage.chart_line")}
-              value={chartKind}
-              onChange={setChartKind}
-              options={[
-                { value: "line", label: t("tokenPage.chart_line") },
-                { value: "candles", label: t("tokenPage.chart_candles") },
-              ]}
-            />
-          </View>
-        </View>
         {chartView}
         {chart.failed && candles !== undefined && chart.asOf ? <StaleTick asOf={chart.asOf} /> : null}
+        <RangeTabs value={range} onChange={setRange} label={t("assets.rangeLabel")} />
       </View>
 
       {(holds && detail.holding) || elsewhere.length > 0 ? (
@@ -614,7 +649,9 @@ const styles = StyleSheet.create({
   group: { gap: SPACE.md },
   line: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   grow: { flex: 1, minWidth: 0 },
-  kind: { width: 168 },
+  live: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, marginStart: SPACE.xs },
+  tabs: { flexDirection: "row", gap: SPACE.xxs },
+  tab: { flex: 1, height: SIZE.chipHeight, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
   panel: { gap: SPACE.sm, padding: SPACE.lg },
   stats: { flexDirection: "row", flexWrap: "wrap", padding: SPACE.sm },
   stat: { gap: SPACE.xxs, padding: SPACE.sm },

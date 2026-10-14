@@ -23,6 +23,7 @@ export { HoldButton } from "./HoldButton";
 export { Icon } from "./icons";
 export { applyKey, Keypad, type KeypadKey } from "./Keypad";
 export { ListRow } from "./ListRow";
+export { LiveDot } from "./LiveDot";
 export { type LiveFigure, LiveOdometer } from "./LiveOdometer";
 export { LiveText } from "./LiveText";
 export { usePullRefresh } from "./PullRefresh";

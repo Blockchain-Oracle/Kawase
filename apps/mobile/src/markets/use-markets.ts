@@ -1,5 +1,7 @@
 // A Markets list (trending, meme, new, stocks & FX, long/short) from the api's shared market cache. Public data:
-// guests and testnet users read mainnet's markets (R13), labelled as such by the screen.
+// guests and testnet users read mainnet's markets (R13), labelled as such by the screen. While the list is on screen
+// it is read again every few seconds (prices are live from each token's deepest pair), quietly: rows roll in place.
+import { useIsFocused } from "expo-router";
 import * as React from "react";
 
 import type { MarketListView, MarketSegment, NetworkId, TokenSearchResult } from "@kawase/api-client";
@@ -28,10 +30,30 @@ export function useMarket(segment: MarketSegment, network: NetworkId) {
     void refresh();
   }, [refresh, segment]);
 
+  const focused = useIsFocused();
+  React.useEffect(() => {
+    if (!focused) return undefined;
+    let alive = true;
+    const timer = setInterval(() => {
+      api.markets
+        .list(segment, network)
+        .then((answer) => {
+          if (alive) setMarket(answer.market);
+        })
+        .catch(() => undefined);
+    }, MARKET_POLL_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [focused, segment, network]);
+
   return { market, loading, error, refresh };
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
+/** How often an open Markets list reads its prices again. */
+const MARKET_POLL_MS = 8_000;
 
 /** Token search by name, symbol or address, debounced; empty query → no results. */
 export function useTokenSearch(query: string, network: NetworkId) {

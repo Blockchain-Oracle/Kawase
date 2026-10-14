@@ -8,7 +8,6 @@ export const markets = {
   fx: "Stocks & FX",
   new: "New",
   hot: "Hot right now",
-  heatmap: "Heatmap",
   vol: "Vol {{value}}",
   liq: "Liq {{value}}",
   mcap: "Cap {{value}}",

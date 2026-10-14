@@ -6,8 +6,10 @@
 //   3. the feed of what Kawase did — Done · Held · Skipped · Watching (with a countdown ring) · Found — day-grouped,
 //      filter chips with counts, each row a venue mark, the outcome, one line and the time; a row opens its detail
 //      (the race it came from and its receipt);
-//   4. the composer docked above the dock (grows as you type, mic → voice, the conversation drop-down), with the
-//      chips Bring USDC to Arc · Put idle USDC to work · Buy $50 · Send to a contact · Bridge.
+//   4. the composer: a capsule beside the + at rest (its words walk through what Kawase can do, the mic opens voice),
+//      tucked behind the dock while you read down and back when you scroll up; tapped, it opens into the typing bar
+//      with past conversations and the suggestions Bring USDC to Arc · Put idle USDC to work · Buy $50 · Send to a
+//      contact · Bridge.
 // A guest sees real markets, the composer and "your money appears here after you sign in" — never a fake balance.
 // Every surface has its designed states (skeletons held 300 ms, empty with the next action, errors that say what still
 // works, stale values marked). `?ask=` (Ask Kawase from another screen) puts that request in the composer, unsent.
@@ -15,7 +17,7 @@ import * as Crypto from "expo-crypto";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import * as React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeOut, useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { AgentFeedItem } from "@kawase/api-client";
@@ -28,12 +30,13 @@ import { useFund } from "@/fund/fund-provider";
 import { BalanceHero } from "@/home/balance-hero";
 import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
-import { HomeComposer } from "@/home/home-composer";
+import { HomeComposer, useComposerClearance } from "@/home/home-composer";
 import { HomeRun, type HomeRunHandle, type RunStatus } from "@/home/home-run";
 import { MarketsGlance, SignInPlate } from "@/home/markets-glance";
 import { PortfolioSheet } from "@/home/portfolio-sheet";
 import { useRunPointer } from "@/home/run-store";
 import { useAgentFeed } from "@/home/use-agent-feed";
+import { useLauncherScroll } from "@/home/use-launcher-scroll";
 import { useT } from "@/i18n";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useSession } from "@/session/session-provider";
@@ -68,7 +71,7 @@ export function HomeScreen() {
   const [open, setOpen] = React.useState<AgentFeedItem | null>(null);
   const [portfolioOpen, setPortfolioOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
-  const [composerHeight, setComposerHeight] = React.useState(0);
+  const composerClearance = useComposerClearance();
 
   // Fresh balances whenever Home comes back into view (after a trade, a switch, a fix).
   const refreshPortfolio = portfolio.refresh;
@@ -105,9 +108,8 @@ export function HomeScreen() {
   const scrollY = useSharedValue(0);
   const [runBottom, setRunBottom] = React.useState(0);
   const [scrolledPast, setScrolledPast] = React.useState(false);
-  const onScroll = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
-  });
+  // Reading down tucks the composer behind the dock; scrolling up brings it back.
+  const launcher = useLauncherScroll(scrollY);
   const onScrollEnd = (y: number) => setScrolledPast(runBottom > 0 && y > runBottom);
 
   const rows = rowsFor(feed.feed, filter);
@@ -171,12 +173,12 @@ export function HomeScreen() {
 
       <Animated.ScrollView
         ref={scroller}
-        onScroll={onScroll}
+        onScroll={launcher.onScroll}
         scrollEventThrottle={16}
         onMomentumScrollEnd={(event) => onScrollEnd(event.nativeEvent.contentOffset.y)}
         onScrollEndDrag={(event) => onScrollEnd(event.nativeEvent.contentOffset.y)}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, wide ? styles.wideContent : null, { paddingBottom: composerHeight + SPACE.xl }]}
+        contentContainerStyle={[styles.content, wide ? styles.wideContent : null, { paddingBottom: composerClearance }]}
       >
         {hero}
         {runSection}
@@ -195,9 +197,10 @@ export function HomeScreen() {
         onChange={setDraft}
         onSubmit={submit}
         busy={runBusy}
+        busyLabel={runStatus ? t(`feed.run.strip_${runStatus.phase}`) : undefined}
         onStop={() => runRef.current?.stop()}
         onHistory={() => setHistoryOpen(true)}
-        onLayout={setComposerHeight}
+        shown={launcher.shown}
         showChips={!run.pointer}
       />
 

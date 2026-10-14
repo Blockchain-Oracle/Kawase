@@ -151,6 +151,11 @@ export type TokenDetailView = {
     holders: number | null;
     /** The deepest pool, where the chart comes from. */
     pool: { address: string; dex: string; createdAt: string | null } | null;
+    /** Live from the deepest pair (seconds old): the change over five minutes and an hour, and today's trades. */
+    change5mPct?: number | null;
+    change1hPct?: number | null;
+    buys24h?: number | null;
+    sells24h?: number | null;
   };
   about: { description: string | null; websites: string[]; twitter: string | null; telegram: string | null };
   safety: SafetyVerdict;
@@ -173,6 +178,8 @@ export type MarketRow = {
   pool: { address: string; dex: string; createdAt: string | null };
   /** A short price series for the row's sparkline (hourly closes over 24 h), when the cache has one. */
   spark: number[] | null;
+  /** Live from the deepest pair: the change over the last hour. */
+  change1hPct?: number | null;
 };
 
 export type MarketListView = { segment: MarketSegment; network: NetworkId; rows: MarketRow[]; pricedAt: string; stale: boolean; available: boolean };
