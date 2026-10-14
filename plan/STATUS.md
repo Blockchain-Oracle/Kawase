@@ -75,10 +75,25 @@ Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compre
   Send redesigned (search first, one row of Paste · Scan · Add contact, the review names the person, a new address is
   said once, the budget's verdict replaces the old allowance line); text fields drew a square magenta focus ring;
   Settings cut the budget value off; drafted automations appeared off-screen; Bridge chain names were cut off.
-- Builds queued: TestFlight 14 `a5d0f5eb` (auto-submit), simulator `5703e0bf`. Coolify api/web deploys are slow:
-  agari-box is at load ~46 with 7/7 GB used.
-- Still open: RouteList polish; feed row type; Privy proof (Codex #5); landing/docs brand; mainnet funding and
-  acceptance run; repo public; demo video; submission.
+- Builds: TestFlight 15 `a5d0f5eb` (submitted), simulator `5703e0bf` (checked on the iPhone 17 Pro simulator: new
+  splash, + fan, orb dock, composer riding the keyboard). Coolify deploys are slow: agari-box is out of RAM and swap
+  during a web build (memory: coolify-skill-and-live-server-first).
+- Later the same evening:
+  - Bridge: chain picker as two columns of whole names; hero figure in cents beside its symbol; USDC/EURC get
+    Circle's mark on any chain. Verified Arc testnet → Base Sepolia over CCTP in dev mode.
+  - Add money → From a wallet (A6, web): EIP-6963 browser wallets pay USDC on Arc into Kawase, every state drawn.
+  - Markets rows show one fact (market cap, else volume) and flash up/down when a refresh moves the price.
+  - The agent now gets the budget's numbers every turn (budgetSummary was never filled), and a "ready" step inside
+    the budget is described as going ahead.
+  - Privy: `app.getkawase.xyz/?wallet=privy` tries Privy in that browser; the api accepts Privy and Turnkey
+    (WALLET_PROVIDER=privy on Coolify). Privy's allowed domains include app.getkawase.xyz and localhost:8081.
+    Needs one real sign-in (Abu or the Codex #5 test account), then flip EXPO_PUBLIC_WALLET_PROVIDER for everyone.
+    Why it matters: Turnkey's free plan (25 signatures a month) was used up on 10-03.
+  - Charts: GeckoTerminal 429s at 20 calls/min; back to 9 with a minute's back-off, 5-minute snapshots, warmed day
+    charts, 503 instead of 500.
+  - Landing and docs use the new mark; Arabic hero arrow; Face ID reason and notification colour updated.
+- Still open: RouteList polish; Privy proof and flip; mainnet funding and acceptance run; README (stale, 10-03);
+  repo public; demo video; submission.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
