@@ -1,7 +1,7 @@
 // Any token's mark (R1, R10): the identity registry's delivered artwork when Kawase has it (USDC, EURC…), else the
 // token's own image from a first-party list (LI.FI, CoinGecko via GeckoTerminal), else the labelled neutral disc —
 // never a stand-in logo. An optional chain badge sits in the trailing-bottom corner, as on `Mark`.
-import { fallbackFontSize, getTokenIdentity, markFile } from "@kawase/identity";
+import { arcIdentity, fallbackFontSize, getEntity, getTokenIdentity, markFile } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
@@ -12,6 +12,8 @@ import { rememberTokenLogo, rememberedTokenLogo } from "../lib/token-logos";
 const DEFAULT_SIZE = 44;
 const BADGE_RATIO = 0.42;
 const LABEL_MAX = 4;
+/** Circle's dollar and euro look the same on every chain: one on Base or Ethereum gets the registry's artwork too. */
+const CIRCLE_STABLES: Record<string, string> = { USDC: arcIdentity("mainnet").usdc, EURC: arcIdentity("mainnet").eurc };
 
 type TokenLike = { chainId: number; address: string; symbol: string; logoUrl?: string | null };
 
@@ -24,7 +26,9 @@ type TokenMarkProps = {
 };
 
 function TokenMark({ token, size = DEFAULT_SIZE, chainBadge, className }: TokenMarkProps) {
-  const entity = getTokenIdentity(token.chainId, token.address);
+  const own = getTokenIdentity(token.chainId, token.address);
+  const circle = CIRCLE_STABLES[token.symbol.toUpperCase()];
+  const entity = own ?? (circle ? getEntity(circle) : undefined);
   const [failed, setFailed] = React.useState(false);
   const badgeSize = Math.round(size * BADGE_RATIO);
   const delivered = entity && markFile(entity, "color");

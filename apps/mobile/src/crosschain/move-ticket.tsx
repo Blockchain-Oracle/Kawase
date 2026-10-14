@@ -8,6 +8,7 @@
 // screen (and its desktop columns, `hideRoutes`) and the chat's move card.
 import { useRouter } from "expo-router";
 import * as React from "react";
+import { formatUnits } from "viem";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeOut, useReducedMotion } from "react-native-reanimated";
 
@@ -21,6 +22,7 @@ import { ChevronRight } from "@/components/kit/icons";
 import type { Blocker } from "@/components/tx";
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
 import { moveRace, venueName } from "@/routes/from-draft";
 import { useOutcomeFeedback } from "@/routes/intent-tx";
 import { QuoteAge } from "@/routes/quote-age";
@@ -39,6 +41,10 @@ const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
 const NATIVE_DECIMALS = 18;
 const OPEN = new Set(["submitted", "working", "input_required", "auth_required", "ready_for_approval"]);
+const STABLES = new Set(["USDC", "EURC", "USDT"]);
+const USDC_DECIMALS = 6;
+const CENTS = 2;
+const TOKEN_PLACES = 6;
 
 const short = (address: string) => `${address.slice(0, ADDRESS_HEAD)}…${address.slice(-ADDRESS_TAIL)}`;
 
@@ -84,6 +90,14 @@ export function MoveTicket({
   const money = useMoney();
   const assetMoney = useAssetMoney();
   const policyText = useMovePolicyText();
+  const { locale } = useLocale();
+  // The hero's number alone (the symbol sits beside it, smaller): dollars and euros in cents, other tokens to 6 places.
+  const heroFigure = (base: string | null | undefined, asset: { symbol: string; decimals: number } | undefined) => {
+    if (!base) return "—";
+    const decimals = asset?.decimals ?? USDC_DECIMALS;
+    const stable = STABLES.has((asset?.symbol ?? "USDC").toUpperCase());
+    return new Intl.NumberFormat(locale, { minimumFractionDigits: stable ? CENTS : 0, maximumFractionDigits: stable ? CENTS : TOKEN_PLACES }).format(Number(formatUnits(BigInt(base), decimals)));
+  };
   const [signingSince, setSigningSince] = React.useState<number | null>(null);
   const intent = controller.intent;
   const race = React.useMemo(() => (intent?.draft ? moveRace(intent.draft) : null), [intent?.draft]);
@@ -129,11 +143,12 @@ export function MoveTicket({
               <Mark entity={chainKey(draft.destination.chainId)} size={SIZE.markInline} />
               <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("move.arrivesOn", { chain: draft.destination.name })}</Text>
             </View>
-            <View style={styles.heroRow}>
+            <View style={styles.heroRow} accessible accessibilityLabel={assetMoney(arriving, draft.output)}>
               {draft.output ? <TokenMark token={draft.output} size={SIZE.markToken} /> : null}
-              <Text numberOfLines={1} adjustsFontSizeToFit style={[TYPE.displayBalance, styles.figure, { color: color.ink }]}>
-                {assetMoney(arriving, draft.output)}
+              <Text numberOfLines={1} style={[TYPE.displayBalance, styles.figure, { color: color.ink }]}>
+                {heroFigure(arriving, draft.output)}
               </Text>
+              <Text style={[TYPE.sectionTitle, { color: color.text2 }]}>{draft.output?.symbol ?? "USDC"}</Text>
             </View>
             <Text style={[TYPE.rowDetail, { color: color.text2 }]}>
               {t("move.forWhom", { who, amount: assetMoney(draft.amount, draft.input) })}
