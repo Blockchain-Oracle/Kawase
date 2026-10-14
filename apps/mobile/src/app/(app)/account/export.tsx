@@ -1,6 +1,6 @@
-import { ExportWalletScreen } from "@/screens/export-wallet-screen";
+import { ExportWalletScreen } from "@/account/export-wallet-screen";
 
-/** `/account/export`: the recovery phrase, after Face ID, with screen capture blocked. */
+/** `/account/export`: the private key in Privy's window (Turnkey: the recovery phrase, screen capture blocked). */
 export default function ExportWalletRoute() {
   return <ExportWalletScreen />;
 }

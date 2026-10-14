@@ -6,6 +6,7 @@ import {
   useCreateWallet,
   useLoginWithEmail,
   usePrivy,
+  useUser,
   useWallets,
   type User,
 } from "@privy-io/react-auth";
@@ -26,6 +27,7 @@ export function useEmbeddedWallet() {
 
 function usePrivyKit(): PrivyKit {
   const privy = usePrivy();
+  const { refreshUser } = useUser();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   // Google and Apple leave the page; privy-oauth-return.tsx finishes the sign-in when it comes back.
   const oauth = usePrivyOAuth();
@@ -46,6 +48,9 @@ function usePrivyKit(): PrivyKit {
     },
     getAccessToken: privy.getAccessToken,
     getIdentityToken,
+    refreshUser: async () => {
+      await refreshUser();
+    },
     logout: privy.logout,
   };
 }

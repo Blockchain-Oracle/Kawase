@@ -20,4 +20,12 @@ export const deleteAccount: Catalog["deleteAccount"] = {
   done: "你的账户已删除",
   failed: "删除没有成功，没有删除任何内容。",
   after: "你的 @用户名 会保留 30 天，其他人无法占用。之后再次登录，会用同一个钱包开始一个新账户。",
+  holdToDelete: "按住以删除我的账户",
+  typeFirst: "请先输入 {{handle}}",
+  keepHolding: "继续按住",
+  stillWorks: "没有删除任何内容，你的账户照常可用。",
+  loading: "正在检查账户中的资产",
+  agentWalletRow: "代理钱包",
+  agentWalletBack: "先退回到你的钱包",
+  needsWallet: "设置钱包",
 };

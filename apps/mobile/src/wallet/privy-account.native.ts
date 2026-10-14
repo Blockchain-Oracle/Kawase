@@ -28,7 +28,7 @@ export function privyEmail(user: User | null | undefined): string | undefined {
 }
 
 function usePrivyKit(): PrivyKit {
-  const { isReady, user, logout } = usePrivy();
+  const { isReady, user, logout, refreshUser } = usePrivy();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const { login } = useLoginWithOAuth();
   const { wallets, create } = useEmbeddedEthereumWallet();
@@ -52,6 +52,9 @@ function usePrivyKit(): PrivyKit {
     },
     getAccessToken,
     getIdentityToken,
+    refreshUser: async () => {
+      await refreshUser();
+    },
     logout,
   };
 }

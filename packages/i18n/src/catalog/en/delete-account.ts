@@ -21,4 +21,12 @@ export const deleteAccount = {
   failed: "Deleting didn't work. Nothing was deleted.",
   after:
     "Your @handle is held for 30 days so no one else can take it. Signing in again later starts a new account with the same wallet.",
+  holdToDelete: "Hold to delete my account",
+  typeFirst: "Type {{handle}} first",
+  keepHolding: "Keep holding",
+  stillWorks: "Nothing was deleted. Your account works as before.",
+  loading: "Checking what your account holds",
+  agentWalletRow: "Agent wallet",
+  agentWalletBack: "Returned to your wallet first",
+  needsWallet: "Set up your wallet",
 } as const;
