@@ -48,7 +48,10 @@ const byLowerCost = (a: RouteQuote, b: RouteQuote) =>
 function leader(kind: RouteRace["kind"], rows: readonly RouteQuote[]): string | null {
   const candidates = rows.filter(pickable(kind));
   if (kind === "yield") return [...candidates].sort((a, b) => (b.apyBps ?? 0) - (a.apyBps ?? 0) || byLowerCost(a, b))[0]?.venue ?? null;
-  const asset = candidates[0]?.receive?.symbol;
+  // Compare like with like: the asset most rows deliver (one odd row naming another symbol never hides the rest).
+  const counts = new Map<string | undefined, number>();
+  for (const row of candidates) counts.set(row.receive?.symbol, (counts.get(row.receive?.symbol) ?? 0) + 1);
+  const asset = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   const comparable = candidates.filter((row) => row.receive?.symbol === asset);
   const ranked = comparable.sort((a, b) => {
     const [left, right] = [BigInt(a.net!), BigInt(b.net!)];
