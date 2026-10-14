@@ -13,6 +13,8 @@ export const CATALOG_PAGE_MAX = 50;
 export const ENDPOINT_PAGE_DEFAULT = 50;
 export const ENDPOINT_PAGE_MAX = 200;
 const DISPLAY_LOCALE = "en";
+/** The catalog counts as stale when its last read is older than this many refresh windows (a failed refresh keeps serving it). */
+const STALE_AFTER_WINDOWS = 2;
 
 export type CatalogQuery = {
   category?: MarketplaceCategory | undefined;
@@ -72,7 +74,7 @@ export class CatalogService {
       this.built.set(listings, catalog);
     }
     const at = this.discovery.readAt(network);
-    return { catalog, readAt: at ? new Date(at).toISOString() : null, stale: at !== undefined && Date.now() - at > X402_DISCOVERY_TTL_MS * 2 };
+    return { catalog, readAt: at ? new Date(at).toISOString() : null, stale: at !== undefined && Date.now() - at > X402_DISCOVERY_TTL_MS * STALE_AFTER_WINDOWS };
   }
 
   async list(network: NetworkContext, query: CatalogQuery): Promise<CatalogView> {

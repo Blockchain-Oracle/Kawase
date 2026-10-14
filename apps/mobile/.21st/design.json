@@ -1,0 +1,52 @@
+{
+  "version": 2,
+  "project": {
+    "name": "@kawase/mobile",
+    "productType": "AI-agent money app on Arc: the agent is the front door; screens are add-ons",
+    "stack": ["expo-57", "react-native-0.86", "expo-router", "uniwind", "reanimated-4"]
+  },
+  "components": {
+    "ports": [
+      {
+        "name": "ProgressRail",
+        "file": "apps/mobile/src/onramp/progress-rail.tsx",
+        "source": { "id": 3734, "author": "sean0205", "name": "Stepper", "url": "https://21st.dev/community/components/sean0205/stepper" },
+        "port": "native twin, horizontal orientation: numbered discs joined by a bar, finished steps filled with a check, the running one ringed",
+        "deviations": "failed state (cross, error colour); the connector fills with Reanimated (480 ms, 100 ms with reduced motion); labels under the discs; tokens only",
+        "usedBy": "buy page: Paying · Buying · (Bridging) · On Arc",
+        "stage": 2
+      },
+      {
+        "name": "PageSkeleton / widget placeholder",
+        "file": "apps/mobile/src/onramp/buy-page.tsx",
+        "source": { "id": 1588, "author": "shadcn", "name": "Skeleton", "url": "https://21st.dev/community/components/shadcn/skeleton" },
+        "port": "packages/ui-native Skeleton (React Native Reusables twin of the same component), composed into a skeleton shaped like the page: rail, title, widget box; held 300 ms",
+        "deviations": "layout is Kawase's",
+        "usedBy": "buy page loading and widget-mount states; native frame loading",
+        "stage": 2
+      },
+      {
+        "name": "StateCard (failure, waiting, receipt)",
+        "file": "apps/mobile/src/onramp/buy-page.tsx",
+        "source": { "id": 333, "author": "serafimcloud", "name": "Alert", "url": "https://21st.dev/community/components/serafimcloud/alert" },
+        "port": "reconstruction: a rounded bordered card with a title, a line of body and the action, in the Alert's hierarchy; composed from packages/ui-native Button and Text",
+        "deviations": "21st has no payment-state card; this is composed from existing twins, with the tone (neutral, error, success) as a border and title colour; always says whether money moved",
+        "usedBy": "buy page: widget failed, order not completed or expired, read failed, waiting, receipt",
+        "stage": 2
+      },
+      {
+        "name": "Real marks",
+        "file": "apps/mobile/src/onramp/buy-page.tsx",
+        "source": null,
+        "port": "packages/identity marks through packages/ui-native Mark (provider:kawase, provider:circle, exchange:coinbase): real logos, never a placeholder",
+        "stage": 2
+      }
+    ],
+    "searched": [
+      { "query": "stepper progress steps", "chosen": 3734, "alsoSeen": [769, 29815, 29925] },
+      { "query": "skeleton loading", "chosen": 1588, "alsoSeen": [1767, 23557, 29863, 19999] },
+      { "query": "payment checkout status", "chosen": null, "reason": "checkout cards found (109, 36084, 25322, 18876) are forms and summaries, not provider-hosted payment states", "alsoSeen": [109, 36084, 18876, 25322] },
+      { "query": "alert error retry", "chosen": 333, "alsoSeen": [19161, 706] }
+    ]
+  }
+}

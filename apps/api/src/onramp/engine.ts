@@ -65,6 +65,8 @@ export type OnrampSession = {
   /** The chain the session was minted to deliver to, as sent to the provider (Circle: "Arc"; Coinbase: "base"). */
   destinationChain: string;
   quote?: OnrampQuote | undefined;
+  /** Circle: the kit's session object as `createSession` returned it; the client kit's `mountIframe` takes it verbatim. */
+  kitSession?: Record<string, unknown> | undefined;
 };
 
 /** The provider's own word on a purchase, reduced to what the order needs. */

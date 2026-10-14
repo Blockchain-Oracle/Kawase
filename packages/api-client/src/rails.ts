@@ -358,7 +358,14 @@ export type OnrampStartResponse = {
   destinationChain?: string;
 };
 /** A fresh Circle session for an open order (the 30-minute one ran out: SESSION_TIMEOUT / INVALID_SESSION_TOKEN). */
-export type OnrampSessionView = { widgetUrl: string; expiresAt: string; engine: OnrampEngineId; destinationChain: string };
+export type OnrampSessionView = {
+  widgetUrl: string;
+  expiresAt: string;
+  engine: OnrampEngineId;
+  destinationChain: string;
+  /** Circle's session object exactly as the kit minted it: the client kit's `mountIframe({ session })` takes it verbatim. */
+  kitSession?: Record<string, unknown>;
+};
 export type OnrampQuoteRequest = { engine: OnrampEngineId; amount: string; currency?: string | null | undefined; method?: OnrampMethod | null | undefined };
 /** The provider's price for a purchase (Coinbase only; Circle's widget shows its own). Decimals as strings. */
 export type OnrampQuoteView = {

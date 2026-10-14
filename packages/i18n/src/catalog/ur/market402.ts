@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "مارکیٹ پلیس",
+  searchPlaceholder: "خدمات تلاش کریں",
+  categoryAll: "سب",
+  category_SOCIAL: "سوشل",
+  category_SEARCH: "تلاش اور تحقیق",
+  category_FINANCIAL: "مالیات",
+  category_DATA: "ڈیٹا",
+  category_INFRASTRUCTURE: "انفراسٹرکچر",
+  category_PREDICTION: "پیش گوئی کی مارکیٹیں",
+  category_CREATIVE: "تخلیقی",
+  category_OTHER: "دیگر",
+  party_first: "براہِ راست",
+  party_third: "تیسرا فریق",
+  rail_gateway: "Gateway بیلنس",
+  rail_eip3009: "کوئی بھی والٹ",
+  gatewayOnly: "Gateway بیلنس سے ادائیگی",
+  callsPerDollar: "$1 میں تقریباً {{calls}} کالز",
+  pricePerCall: "فی کال {{price}}",
+  endpointsCount: "{{n}} اینڈ پوائنٹس",
+  emptyTitle: "کوئی سروس نہیں ملی",
+  emptyBody: "کوئی اور لفظ آزمائیں، یا فلٹر ہٹائیں۔",
+  clearFilters: "فلٹر ہٹائیں",
+  errorTitle: "مارکیٹ پلیس لوڈ نہیں ہوا",
+  errorBody: "آپ کا ایجنٹ والٹ اور بیلنس محفوظ ہیں۔",
+  retry: "دوبارہ کوشش کریں",
+  staleNote: "{{time}} کی فہرست دکھا رہے ہیں۔",
+};

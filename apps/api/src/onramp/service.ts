@@ -14,7 +14,7 @@ import { createHash, createPublicKey, randomBytes, timingSafeEqual, verify } fro
 import { and, asc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import { parseAbiItem, parseUnits, type Address } from "viem";
 
-import { ONRAMP } from "@kawase/config";
+import { MS_PER_SECOND, ONRAMP, SECONDS_PER_DAY } from "@kawase/config";
 import type {
   OnrampAvailability,
   OnrampDestination,
@@ -84,7 +84,7 @@ export type CrossChainPort = {
 };
 
 /** A Coinbase order whose money reached Base stays watched this long for the leg to Arc (it needs the person's approval). */
-const BRIDGE_WATCH_MS = 24 * 60 * 60 * 1000;
+const BRIDGE_WATCH_MS = SECONDS_PER_DAY * MS_PER_SECOND;
 /** How often one order may ask its provider for its state. */
 const PROVIDER_POLL_MS = 5_000;
 const PAGE_KEY_PREFIX = "kbuy_";
@@ -323,7 +323,7 @@ export class OnrampService {
         metadata: { orderId: row.id },
       });
       await this.db.update(onrampOrders).set({ traceId: session.traceId }).where(eq(onrampOrders.id, row.id));
-      return { widgetUrl: session.widgetUrl, expiresAt: session.expiresAt, engine: "circle", destinationChain: session.destinationChain };
+      return { widgetUrl: session.widgetUrl, expiresAt: session.expiresAt, engine: "circle", destinationChain: session.destinationChain, ...(session.kitSession ? { kitSession: session.kitSession } : {}) };
     } catch (error) {
       this.log.warn({ err: error, orderId: id }, "onramp session re-mint failed");
       throw problem(HTTP.badGateway, "upstream", "Circle's onramp did not start; try again in a moment");

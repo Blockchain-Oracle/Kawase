@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "服务市场",
+  searchPlaceholder: "搜索服务",
+  categoryAll: "全部",
+  category_SOCIAL: "社交",
+  category_SEARCH: "搜索与研究",
+  category_FINANCIAL: "金融",
+  category_DATA: "数据",
+  category_INFRASTRUCTURE: "基础设施",
+  category_PREDICTION: "预测市场",
+  category_CREATIVE: "创意",
+  category_OTHER: "其他",
+  party_first: "官方直供",
+  party_third: "第三方转售",
+  rail_gateway: "Gateway 余额",
+  rail_eip3009: "任意钱包",
+  gatewayOnly: "用 Gateway 余额支付",
+  callsPerDollar: "每 1 美元约 {{calls}} 次调用",
+  pricePerCall: "每次调用 {{price}}",
+  endpointsCount: "{{n}} 个接口",
+  emptyTitle: "没有匹配的服务",
+  emptyBody: "换个词试试，或清除筛选。",
+  clearFilters: "清除筛选",
+  errorTitle: "服务市场未能加载",
+  errorBody: "你的代理钱包和余额不受影响。",
+  retry: "重试",
+  staleNote: "显示的是 {{time}} 的列表。",
+};

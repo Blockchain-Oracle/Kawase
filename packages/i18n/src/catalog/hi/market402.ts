@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "मार्केटप्लेस",
+  searchPlaceholder: "सेवाएँ खोजें",
+  categoryAll: "सभी",
+  category_SOCIAL: "सोशल",
+  category_SEARCH: "खोज और शोध",
+  category_FINANCIAL: "वित्त",
+  category_DATA: "डेटा",
+  category_INFRASTRUCTURE: "इंफ्रास्ट्रक्चर",
+  category_PREDICTION: "प्रेडिक्शन मार्केट",
+  category_CREATIVE: "क्रिएटिव",
+  category_OTHER: "अन्य",
+  party_first: "सीधे विक्रेता से",
+  party_third: "थर्ड पार्टी",
+  rail_gateway: "Gateway बैलेंस",
+  rail_eip3009: "कोई भी वॉलेट",
+  gatewayOnly: "Gateway बैलेंस से भुगतान",
+  callsPerDollar: "$1 में लगभग {{calls}} कॉल",
+  pricePerCall: "{{price}} प्रति कॉल",
+  endpointsCount: "{{n}} एंडपॉइंट",
+  emptyTitle: "कोई सेवा नहीं मिली",
+  emptyBody: "कोई और शब्द आज़माएँ, या फ़िल्टर हटाएँ।",
+  clearFilters: "फ़िल्टर हटाएँ",
+  errorTitle: "मार्केटप्लेस लोड नहीं हुआ",
+  errorBody: "आपका एजेंट वॉलेट और बैलेंस सुरक्षित हैं।",
+  retry: "फिर कोशिश करें",
+  staleNote: "{{time}} की सूची दिखा रहे हैं।",
+};

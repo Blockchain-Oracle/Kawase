@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "السوق",
+  searchPlaceholder: "ابحث عن خدمات",
+  categoryAll: "الكل",
+  category_SOCIAL: "اجتماعي",
+  category_SEARCH: "البحث والأبحاث",
+  category_FINANCIAL: "المال",
+  category_DATA: "البيانات",
+  category_INFRASTRUCTURE: "البنية التحتية",
+  category_PREDICTION: "أسواق التوقعات",
+  category_CREATIVE: "إبداعي",
+  category_OTHER: "أخرى",
+  party_first: "مباشر",
+  party_third: "عبر وسيط",
+  rail_gateway: "رصيد Gateway",
+  rail_eip3009: "أي محفظة",
+  gatewayOnly: "يُدفع من رصيد Gateway",
+  callsPerDollar: "نحو {{calls}} استدعاءً مقابل 1$",
+  pricePerCall: "{{price}} للاستدعاء",
+  endpointsCount: "{{n}} نقطة وصول",
+  emptyTitle: "لا توجد خدمات مطابقة",
+  emptyBody: "جرّب كلمة أخرى أو امسح عوامل التصفية.",
+  clearFilters: "مسح عوامل التصفية",
+  errorTitle: "تعذّر تحميل السوق",
+  errorBody: "محفظة وكيلك وأرصدتك لم تتأثر.",
+  retry: "حاول مرة أخرى",
+  staleNote: "نعرض قائمة {{time}}.",
+};

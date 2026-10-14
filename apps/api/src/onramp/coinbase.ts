@@ -15,6 +15,7 @@
 import { generateJwt } from "@coinbase/cdp-sdk/auth";
 import { createPrivateKey } from "node:crypto";
 
+import { MS_PER_SECOND, SECONDS_PER_MINUTE } from "@kawase/config";
 import type { NetworkId } from "@kawase/networks";
 
 import type { OnrampMethod, OnrampMintInput, OnrampQuote, OnrampSession, ProviderEngine, ProviderOrderState, VerificationChannel } from "./engine";
@@ -27,8 +28,13 @@ export const SANDBOX_PREFIX = "sandbox-";
 export const COINBASE_NETWORK = "base";
 const WEEKLY_LIMIT_USD = 500;
 /** The payment link is not given an expiry by the API; Kawase bounds how long it offers one. */
-const PAYMENT_LINK_TTL_MS = 30 * 60 * 1000;
+const PAYMENT_LINK_MINUTES = 30;
+const PAYMENT_LINK_TTL_MS = PAYMENT_LINK_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
 const REQUEST_TIMEOUT_MS = 20_000;
+/** HTTP statuses Coinbase answers with that this file gives meaning to. */
+const BAD_REQUEST = 400;
+const CENT_DIGITS = 2;
+const BAD_GATEWAY = 502;
 const US_PHONE = /^\+1\d{10}$/;
 const PAYMENT_METHOD = { apple_pay: "GUEST_CHECKOUT_APPLE_PAY", google_pay: "GUEST_CHECKOUT_GOOGLE_PAY" } as const;
 
@@ -90,7 +96,7 @@ const STATE: Record<string, ProviderOrderState["state"]> = {
 
 const money2 = (value: string) => {
   const [whole = "0", fraction = ""] = value.split(".");
-  return `${whole}.${(fraction + "00").slice(0, 2)}`;
+  return `${whole}.${fraction.padEnd(CENT_DIGITS, "0").slice(0, CENT_DIGITS)}`;
 };
 
 const quoteOf = (order: RawOrder): OnrampQuote => ({
@@ -146,9 +152,9 @@ export function coinbaseProvider(options: CoinbaseOptions): ProviderEngine {
 
   /** The fields every order or quote carries. */
   const base = (network: NetworkId, input: { amount: string; currency: string; asset: string; method: OnrampMethod; destinationAddress: string; appUserId: string }) => {
-    if (input.asset.toUpperCase() !== "USDC") throw new CoinbaseError(400, "invalid_request", "Coinbase delivers USDC");
+    if (input.asset.toUpperCase() !== "USDC") throw new CoinbaseError(BAD_REQUEST, "invalid_request", "Coinbase delivers USDC");
     const paymentMethod = PAYMENT_METHOD[input.method as keyof typeof PAYMENT_METHOD];
-    if (!paymentMethod) throw new CoinbaseError(400, "invalid_request", `Coinbase takes Apple Pay or Google Pay, not ${input.method}`);
+    if (!paymentMethod) throw new CoinbaseError(BAD_REQUEST, "invalid_request", `Coinbase takes Apple Pay or Google Pay, not ${input.method}`);
     return {
       paymentMethod,
       paymentCurrency: input.currency.toUpperCase(),
@@ -169,8 +175,8 @@ export function coinbaseProvider(options: CoinbaseOptions): ProviderEngine {
     methods: () => ["apple_pay", "google_pay"],
 
     async mint(network, input: OnrampMintInput): Promise<OnrampSession> {
-      if (!input.amount) throw new CoinbaseError(400, "invalid_request", "an amount is needed");
-      if (!input.contact) throw new CoinbaseError(400, "otp_verification_required", "verify the phone and email first");
+      if (!input.amount) throw new CoinbaseError(BAD_REQUEST, "invalid_request", "an amount is needed");
+      if (!input.contact) throw new CoinbaseError(BAD_REQUEST, "otp_verification_required", "verify the phone and email first");
       const payload = {
         ...base(network, { amount: input.amount, currency: input.currency ?? "USD", asset: input.asset, method: input.method ?? "apple_pay", destinationAddress: input.destinationAddress, appUserId: input.appUserId }),
         phoneNumber: input.contact.phone,
@@ -184,7 +190,7 @@ export function coinbaseProvider(options: CoinbaseOptions): ProviderEngine {
         // `domain` is only for an iframe; an iOS WebView leaves it out.
       };
       const created = await call<RawCreated>("POST", "/v2/onramp/orders", payload);
-      if (!created.paymentLink?.url) throw new CoinbaseError(502, "bad_gateway", "Coinbase returned no payment link");
+      if (!created.paymentLink?.url) throw new CoinbaseError(BAD_GATEWAY, "bad_gateway", "Coinbase returned no payment link");
       return {
         engine: "coinbase",
         widgetUrl: created.paymentLink.url,
@@ -209,7 +215,7 @@ export function coinbaseProvider(options: CoinbaseOptions): ProviderEngine {
     verification: {
       async start(_network, input: { channel: VerificationChannel; destination: string }) {
         // US numbers only, as the provider serves nobody else (a refusal here is cheaper than a code sent in vain).
-        if (input.channel === "sms" && !US_PHONE.test(input.destination)) throw new CoinbaseError(400, "guest_region_forbidden", "Coinbase sells to US phone numbers only");
+        if (input.channel === "sms" && !US_PHONE.test(input.destination)) throw new CoinbaseError(BAD_REQUEST, "guest_region_forbidden", "Coinbase sells to US phone numbers only");
         const started = await call<{ verificationId: string; otpExpiresAt: string }>("POST", "/v2/onramp/verifications", { channel: input.channel, destination: input.destination });
         return { verificationId: started.verificationId, expiresAt: started.otpExpiresAt };
       },

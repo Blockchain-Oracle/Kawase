@@ -54,7 +54,7 @@ export function circleProvider(env: ApiEnv): ProviderEngine {
         ...(input.currency ? { currency: input.currency } : {}),
         ...(input.email ? { email: input.email } : {}),
       });
-      return { engine: "circle", widgetUrl: session.widgetUrl, expiresAt: session.expiresAt, traceId: session.traceId, providerOrderId: null, destinationChain: CIRCLE_DESTINATION_CHAIN };
+      return { engine: "circle", widgetUrl: session.widgetUrl, expiresAt: session.expiresAt, traceId: session.traceId, providerOrderId: null, destinationChain: CIRCLE_DESTINATION_CHAIN, kitSession: { ...session } };
     },
   };
 }

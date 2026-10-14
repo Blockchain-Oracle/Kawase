@@ -1,3 +1,30 @@
 import type { Catalog } from "../en/index";
 
-export const market402: Catalog["market402"] = {};
+export const market402: Catalog["market402"] = {
+  title: "Mercado",
+  searchPlaceholder: "Buscar servicios",
+  categoryAll: "Todos",
+  category_SOCIAL: "Social",
+  category_SEARCH: "Búsqueda e investigación",
+  category_FINANCIAL: "Finanzas",
+  category_DATA: "Datos",
+  category_INFRASTRUCTURE: "Infraestructura",
+  category_PREDICTION: "Mercados de predicción",
+  category_CREATIVE: "Creativo",
+  category_OTHER: "Otros",
+  party_first: "Propio",
+  party_third: "De terceros",
+  rail_gateway: "Saldo de Gateway",
+  rail_eip3009: "Cualquier billetera",
+  gatewayOnly: "Se paga con saldo de Gateway",
+  callsPerDollar: "Unas {{calls}} llamadas por $1",
+  pricePerCall: "{{price}} por llamada",
+  endpointsCount: "{{n}} endpoints",
+  emptyTitle: "Ningún servicio coincide",
+  emptyBody: "Prueba otra palabra o quita los filtros.",
+  clearFilters: "Quitar filtros",
+  errorTitle: "El mercado no cargó",
+  errorBody: "Tu billetera de agente y tus saldos siguen intactos.",
+  retry: "Reintentar",
+  staleNote: "Mostrando la lista de {{time}}.",
+};
