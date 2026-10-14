@@ -2,7 +2,8 @@
 // the success mark in a soft lime disc, a title and a muted line, a dashed tear line with the side cut-outs, the facts
 // in a two-column grid (label over value, the amount right-aligned and large), a tinted strip for the payer or
 // method, another tear line, and a barcode drawn from the reference (deterministic bars, the reference spelled under
-// it). No confetti: Kawase's success is calm (the hanko stamp lives elsewhere). Used for payout and refund receipts.
+// it). No confetti: Kawase's success is calm (the hanko stamp lives elsewhere). A generic receipt primitive; no screen uses it now
+// (its first user, the batch payout receipt, went with Business, D39).
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { CircleCheck, CircleMinus } from "lucide-react-native";

@@ -67,7 +67,7 @@ export function Capabilities() {
       title="One app for everything on Arc"
       body={
         <>
-          Any token, long and short, buying with a card, yield, borrowing, bridges, automations, business tools and
+          Any token, long and short, buying with a card, yield, borrowing, bridges, automations and
           paid AI services, all from one conversation.{" "}
           {shipped === AREAS.length
             ? `All ${AREAS.length} run today (some on mainnet only),`

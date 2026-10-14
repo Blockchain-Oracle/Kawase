@@ -1,9 +1,9 @@
 // Looking back (cards/automate-safety.md "Look back"; surfaces.md Activity "row → receipt → why"):
 //  - why: the decision record behind one transaction — what was asked and where (or which automation ran), every check
 //    and its outcome, the route chosen and the others compared, the approval and how it was given, what was sent and by
-//    whom, what it was matched to (a request, an invoice), and the audit rows on it;
+//    whom, what it was matched to (a request), and the audit rows on it;
 //  - export: one month as CSV or beancount, from the chain's own history plus off-chain service payments;
-//  - report: a week in numbers (received, sent, swaps, bridges, earn, services, automations, invoices).
+//  - report: a week in numbers (received, sent, swaps, bridges, earn, services, automations).
 import { and, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 import type { Address } from "viem";
 
@@ -17,9 +17,7 @@ import {
   chainEvents,
   intentDrafts,
   intents,
-  invoices,
   marketplacePurchases,
-  payoutBatches,
   txAttempts,
   type Db,
 } from "@kawase/db";
@@ -87,7 +85,7 @@ export class HistoryService {
     if (attempt) view.steps.push({ step: "sent", at: iso(attempt.updatedAt), by: attempt.provider, txHash: hash, status: attempt.status });
     if (attempt && !attempt.intentId) view.facts.what = attempt.kind;
 
-    // The other things a transaction can be: an agent wallet move, a payout, an invoice payment, money that came in.
+    // The other things a transaction can be: an agent wallet move, money that came in.
     const [move] = await this.db
       .select()
       .from(agentWalletMoves)
@@ -98,27 +96,6 @@ export class HistoryService {
       view.facts = { move: move.kind, amount: move.amount.toString() };
       view.steps.push({ step: "asked", at: iso(move.createdAt), surface: "app", words: { move: move.kind } });
       view.steps.push({ step: "sent", at: iso(move.updatedAt), by: move.kind === "top_up" ? "ops_wallet_under_marketplace_grant" : "agent_wallet", txHash: hash, status: move.status });
-    }
-    const [payout] = await this.db
-      .select()
-      .from(payoutBatches)
-      .where(and(eq(payoutBatches.userId, user.id), sql`lower(${payoutBatches.txHash}) = ${hash}`))
-      .limit(1);
-    if (payout) {
-      view.kind = "payout";
-      view.facts = { people: payout.lines.length, total: payout.total.toString(), asset: payout.asset, decimals: payout.decimals };
-      view.steps.unshift({ step: "asked", at: iso(payout.createdAt), surface: "app", words: { payout: payout.lines.length } });
-    }
-    const [invoice] = await this.db
-      .select()
-      .from(invoices)
-      .where(and(eq(invoices.userId, user.id), sql`exists (select 1 from jsonb_array_elements(${invoices.payments}) p where lower(p->>'txHash') = ${hash})`))
-      .limit(1);
-    if (invoice) {
-      view.kind = "invoice";
-      const payment = invoice.payments.find((entry) => entry.txHash.toLowerCase() === hash);
-      view.facts = { invoice: invoice.number, client: invoice.clientName, amount: payment?.amount ?? null, asset: invoice.asset, decimals: invoice.decimals };
-      view.steps.push({ step: "matched", at: payment?.at ?? iso(invoice.updatedAt), what: "invoice", reference: payment?.via === "memo" ? invoice.memoId : null });
     }
     const [incoming] = await this.db
       .select()
@@ -133,7 +110,7 @@ export class HistoryService {
     }
 
     // Audit rows on the intent (or the object), oldest first.
-    const subjects = [attempt?.intentId, payout?.id, invoice?.id].filter((value): value is string => Boolean(value));
+    const subjects = attempt?.intentId ? [attempt.intentId] : [];
     if (subjects.length > 0) {
       const rows = await this.db
         .select({ action: auditLog.action, decision: auditLog.decision, createdAt: auditLog.createdAt })
@@ -143,7 +120,7 @@ export class HistoryService {
         .limit(AUDIT_ROWS);
       for (const row of rows) view.steps.push({ step: "audit", at: iso(row.createdAt), action: row.action, decision: row.decision });
     }
-    if (!attempt && !move && !payout && !invoice && !incoming) throw problem(HTTP.notFound, "not_found", "Kawase has no record of this transaction");
+    if (!attempt && !move && !incoming) throw problem(HTTP.notFound, "not_found", "Kawase has no record of this transaction");
     view.steps.sort((a, b) => a.at.localeCompare(b.at));
     return view;
   }
@@ -325,24 +302,12 @@ export class HistoryService {
         add(sent, item.asset, BigInt(item.amount));
       }
     }
-    const [runs, paid] = await Promise.all([
-      this.db
-        .select({ status: automationRuns.status, count: sql<number>`count(*)` })
-        .from(automationRuns)
-        .innerJoin(automations, eq(automations.id, automationRuns.automationId))
-        .where(and(eq(automationRuns.userId, user.id), eq(automations.network, network), gte(automationRuns.createdAt, from)))
-        .groupBy(automationRuns.status),
-      this.db
-        .select()
-        .from(invoices)
-        .where(and(eq(invoices.userId, user.id), eq(invoices.network, network), eq(invoices.status, "paid"), gte(invoices.updatedAt, from))),
-    ]);
-    const invoiceAmount: Record<string, bigint> = {};
-    const decimals: Record<string, number> = {};
-    for (const invoice of paid) {
-      add(invoiceAmount, invoice.asset, invoice.total);
-      if (invoice.asset !== "USDC" && invoice.asset !== "EURC") decimals[invoice.asset] = invoice.decimals;
-    }
+    const runs = await this.db
+      .select({ status: automationRuns.status, count: sql<number>`count(*)` })
+      .from(automationRuns)
+      .innerJoin(automations, eq(automations.id, automationRuns.automationId))
+      .where(and(eq(automationRuns.userId, user.id), eq(automations.network, network), gte(automationRuns.createdAt, from)))
+      .groupBy(automationRuns.status);
     return {
       network,
       from: iso(from),
@@ -355,8 +320,6 @@ export class HistoryService {
         ran: runs.filter((row) => row.status === "succeeded").reduce((sum, row) => sum + Number(row.count), 0),
         skipped: runs.filter((row) => row.status === "skipped").reduce((sum, row) => sum + Number(row.count), 0),
       },
-      invoices: { paid: paid.length, amount: strings(invoiceAmount) },
-      decimals,
       complete,
     };
   }

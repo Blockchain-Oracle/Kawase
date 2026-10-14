@@ -3,7 +3,7 @@
 // runs in its own time zone, and the bound the chain enforces — never colour alone. Auto-save says what it keeps
 // ready, where the rest goes and what it earns, when it checks, what a check would move now, and its bound (only
 // between the wallet and the person's own savings). The screen adds recent runs, each with what happened and why.
-import { ArrowDownUp, ArrowLeftRight, Bell, CircleCheck, CircleMinus, CircleX, Clock, FlaskConical, Hand, Radar, ShieldCheck, Sparkles, Users } from "lucide-react-native";
+import { ArrowDownUp, ArrowLeftRight, Bell, CircleCheck, CircleMinus, CircleX, Clock, FlaskConical, Hand, Radar, ShieldCheck, Sparkles } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, View } from "react-native";
 
@@ -98,39 +98,6 @@ function PracticeLine({ automation }: { automation: AutomationView }) {
     <View className="bg-network-surface flex-row items-start gap-2 rounded-2xl px-3 py-2.5">
       <Icon as={FlaskConical} className="text-network mt-0.5 size-4" />
       <Text className={cn("text-network flex-1 text-xs leading-5", TEXT_START)}>{t("automation.practiceBody")}</Text>
-    </View>
-  );
-}
-
-function PayrollSummary({ automation, compact, showRuns }: { automation: AutomationView; compact?: boolean | undefined; showRuns?: boolean | undefined }) {
-  const { t } = useT();
-  const money = useMoney();
-  const scheduleText = useScheduleText();
-  const payroll = automation.payroll!;
-  return (
-    <View className="gap-3">
-      <View className="flex-row items-center gap-3">
-        <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
-          <Icon as={Users} className="text-foreground size-5" />
-        </View>
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text numberOfLines={2} className={cn("font-display text-foreground font-bold", compact ? "text-lg" : "text-xl", TEXT_START)}>
-            {t("automation.payroll", { count: payroll.lines.length })}
-          </Text>
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{scheduleText(automation.schedule)}</Text>
-        </View>
-        <StateLabel>{t(automation.practice && automation.status === "active" ? "automation.practising" : STATUS_KEY[automation.status])}</StateLabel>
-      </View>
-      <View className="gap-1">
-        {payroll.lines.map((line, index) => (
-          <Line key={`${line.recipientWords}-${index}`} icon={CircleCheck}>
-            {t("automation.payrollLine", { amount: money(line.asset, line.amount), name: line.recipientName ?? (line.recipientAddress ? shortAddress(line.recipientAddress) : nameFromWords(line.recipientWords)) })}
-          </Line>
-        ))}
-      </View>
-      <PracticeLine automation={automation} />
-      {automation.status !== "canceled" && automation.status !== "ended" ? <Bound automation={automation} /> : null}
-      {showRuns ? <Runs automation={automation} /> : null}
     </View>
   );
 }
@@ -260,7 +227,6 @@ export function AutomationSummary({ automation, compact, showRuns }: { automatio
   const runWhen = useRunWhen();
   if (automation.kind === "auto_save" && automation.save) return <SaveSummary automation={automation} compact={compact} showRuns={showRuns} />;
   if (automation.kind === "rule" && automation.rule) return <RuleSummary automation={automation} compact={compact} showRuns={showRuns} />;
-  if (automation.kind === "payroll" && automation.payroll) return <PayrollSummary automation={automation} compact={compact} showRuns={showRuns} />;
   if (automation.kind === "dca" && automation.dca) return <DcaSummary automation={automation} compact={compact} showRuns={showRuns} />;
   const a = automation.action;
   if (!a) return null;

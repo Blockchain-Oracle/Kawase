@@ -1,8 +1,8 @@
 // Automations 8c on Arc testnet (cards/automate-safety.md "Automate anything"): practice first ("would have" runs,
 // dry-run on chain) → go live (Face ID signs the grant) → a real run; edit in place (narrowing at once, widening with
 // a new grant and the old one's revoke); the Needs-you queue (a run the allowlist holds back waits, is approved once
-// from the push, opens a send the person confirms, and settles the run; a second answer finds it answered); payroll
-// (one grant per person, one run pays both); underfunded → skipped → retried once when money arrives; DCA (each run
+// from the push, opens a send the person confirms, and settles the run; a second answer finds it answered);
+// underfunded → skipped → retried once when money arrives; DCA (each run
 // waits with a fresh quote); round-ups (each send's change saved into the person's own vault); a price alert on the
 // executable quote. The wallet is a local key standing in for Turnkey; the ops wallet is Circle's.
 // Skipped without the server keys in the root .env. Run: pnpm --filter @kawase/api test (or this file alone).
@@ -48,7 +48,7 @@ const FINAL = ["completed", "failed", "canceled", "expired", "unknown_outcome", 
 const units = (value: string) => parseUnits(value, 6);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll, underfunded retry, DCA, round-ups, price", { skip: !live, timeout: 1_500_000 }, async () => {
+test("automations 8c on Arc testnet: practice → live, edit, Needs you, underfunded retry, DCA, round-ups, price", { skip: !live, timeout: 1_500_000 }, async () => {
   const env = loadApiEnv();
   const chains = createChains(env);
   const network = getNetwork("testnet");
@@ -216,19 +216,7 @@ test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll
   await json(call("POST", `/safety/changes/${off.changeId}/approve`, { signature: await wallet.signTypedData(off.approval.typedData as unknown as TypedDataDefinition) }), "allowlist off approve");
   await call("POST", `/automations/${draft.id}/pause`);
 
-  // 5. Payroll: one grant per person, one run pays both.
-  const payroll = (await json<{ automation: AutomationView }>(call("POST", "/automations/payroll", { lines: [{ recipient: "Alex", amount: "0.02" }, { recipient: "Bea", amount: "0.03" }], every: "month", monthday: 1 }), "payroll", 201)).automation;
-  assert.equal(payroll.blocking, null, JSON.stringify(payroll.results));
-  assert.equal(payroll.payroll?.lines.length, 2);
-  const payrollOn = (await json<{ automation: AutomationView }>(call("POST", `/automations/${payroll.id}/activate`, { signatures: await signAll(payroll.id) }), "payroll on")).automation;
-  assert.equal(payrollOn.status, "active");
-  const beaBefore = await balanceOf(network.addresses.usdc, bea);
-  await makeDue(payroll.id);
-  await until(payroll.id, (a) => a.runs.some((run) => run.status === "succeeded"), "payroll run", POLL_ATTEMPTS * 3);
-  assert.equal((await balanceOf(network.addresses.usdc, bea)) - beaBefore, units("0.03"));
-  console.log("payroll paid Alex and Bea");
-
-  // 6. Underfunded: skipped and told; money arrives; tried once more, and it goes.
+  // 5. Underfunded: skipped and told; money arrives; tried once more, and it goes.
   const big = (await json<{ automation: AutomationView }>(call("POST", "/automations", { recipient: "Bea", amount: "0.3", asset: "EURC", every: "week", weekday: 3 }), "big", 201)).automation;
   await json(call("POST", `/automations/${big.id}/activate`, { signatures: await signAll(big.id) }), "big on");
   await makeDue(big.id);
@@ -241,7 +229,7 @@ test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll
   console.log("underfunded run retried on money in", retried.runs.find((run) => run.status === "succeeded")?.tx?.explorerUrl);
   await call("POST", `/automations/${big.id}/pause`);
 
-  // 7. DCA: each run waits in Needs you with a fresh quote; approving opens the swap for the person to confirm.
+  // 6. DCA: each run waits in Needs you with a fresh quote; approving opens the swap for the person to confirm.
   const dca = (await json<{ automation: AutomationView }>(call("POST", "/automations/dca", { from: "dollars", to: "euros", amount: "0.02", every: "day" }), "dca", 201)).automation;
   assert.equal(dca.blocking, null, JSON.stringify(dca.results));
   await json(call("POST", `/automations/${dca.id}/activate`, { signatures: [] }), "dca on");
@@ -254,7 +242,7 @@ test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll
   assert.ok(swapOpened.status === "opened" && swapOpened.kind === "swap", "a swap for the person to confirm");
   await call("POST", `/automations/${dca.id}/pause`);
 
-  // 8. Round-ups: each of the person's own sends puts its change (to the next 0.1) into their own vault.
+  // 7. Round-ups: each of the person's own sends puts its change (to the next 0.1) into their own vault.
   const roundUps = (await json<{ automation: AutomationView }>(call("POST", "/automations/rule", { trigger: "money_out", action: "save", roundTo: "0.1" }), "round-ups", 201)).automation;
   assert.equal(roundUps.blocking, null, JSON.stringify(roundUps.results));
   await json(call("POST", `/automations/${roundUps.id}/activate`, { signatures: await signAll(roundUps.id) }), "round-ups on");
@@ -267,7 +255,7 @@ test("automations 8c on Arc testnet: practice → live, edit, Needs you, payroll
   assert.equal(roundRun.trigger?.amount, units("0.07").toString(), "0.03 rounded up to 0.1 saves 0.07");
   console.log("round-up saved", roundRun.tx?.explorerUrl);
 
-  // 9. A price, on the executable quote: "tell me when 0.05 USDC buys at least 0.000001 EURC".
+  // 8. A price, on the executable quote: "tell me when 0.05 USDC buys at least 0.000001 EURC".
   const price = (await json<{ automation: AutomationView }>(call("POST", "/automations/rule", { trigger: "price", tokenIn: "USDC", tokenOut: "EURC", priceAmount: "0.05", minOut: "0.000001", action: "notify" }), "price", 201)).automation;
   assert.equal(price.blocking, null, JSON.stringify(price.results));
   await json(call("POST", `/automations/${price.id}/activate`, { signatures: [] }), "price on");

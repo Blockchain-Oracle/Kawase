@@ -10,6 +10,5 @@ export const report: Catalog["report"] = {
   earn: "{{count}} 次储蓄操作",
   services: "在 {{count}} 项服务上花费 {{amount}}",
   automations: "自动化：执行 {{ran}} 次，跳过 {{skipped}} 次",
-  invoices: "{{count}} 张发票已付（{{amount}}）",
   partial: "只能读取本周最近的一部分记录。",
 };

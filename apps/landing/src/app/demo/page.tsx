@@ -31,7 +31,6 @@ const KIND_LABEL: Record<EvidenceKind, string> = {
   earn: "Earn",
   automation: "Automation",
   revoke: "Revoke",
-  business: "Business",
 };
 
 /** The groups in the order a judge walks them (docs: judge walkthrough); each is a `/demo#<kind>` anchor. */

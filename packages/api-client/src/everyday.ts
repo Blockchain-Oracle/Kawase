@@ -23,8 +23,6 @@ export type PayCodeView =
       status: "request";
       token: string;
       request: PublicPaymentRequest;
-      /** When the request is an invoice's: its number and the business's name. */
-      invoice: { number: string; business: string | null } | null;
     }
   | {
       status: "unsupported";
@@ -96,10 +94,9 @@ export type IntentLookup =
   | { kind: "crosschain"; network: AgentNetwork; threadId: string | null; intent: CrossChainIntent }
   | { kind: "lend"; network: AgentNetwork; threadId: string | null; intent: LendIntent }
   // Every other id a notification can carry lands on its own screen (A5-3): an automation's live card, a run's story,
-  // an invoice, a Buy order, a split or one of the person's requests.
+  // a Buy order, a split or one of the person's requests.
   | { kind: "automation"; network: AgentNetwork; threadId: string | null; automation: AutomationView }
   | { kind: "automation_run"; network: AgentNetwork; threadId: null; runId: string }
-  | { kind: "invoice"; network: AgentNetwork; threadId: null; invoiceId: string }
   | { kind: "onramp"; network: AgentNetwork; threadId: null; order: OnrampOrderView }
   | { kind: "split"; network: AgentNetwork; threadId: null; splitId: string }
   | { kind: "request"; network: AgentNetwork; threadId: null; requestId: string }

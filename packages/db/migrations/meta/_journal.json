@@ -386,6 +386,13 @@
       "when": 1791000103000,
       "tag": "0078_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1791000104000,
+      "tag": "0090_drop_business",
+      "breakpoints": true
     }
   ]
 }

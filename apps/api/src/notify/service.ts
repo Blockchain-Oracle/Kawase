@@ -24,6 +24,7 @@ import { devices, inboxItems, notificationDeliveries, sessions, users, type Db }
 import { isRtlLocale, type CatalogLocale } from "@kawase/i18n";
 import type { Logger } from "@kawase/log";
 
+import { liveKind } from "../inbox/kinds";
 import type { Executor } from "../send/facts";
 import { EmailError, type ResendEmail } from "./email";
 import { EXPO_PUSH_TOKEN, PushRequestError, type ExpoPush, type PushMessage } from "./expo";
@@ -242,7 +243,7 @@ export class NotifyService {
       const locale: CatalogLocale = isSupportedLocale(user.locale) ? user.locale : "en";
       // A push shows on the lock screen: without figures when the person chose so. Email keeps the amounts.
       const rendered = renderNotification(
-        { kind: item.kind, network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash },
+        { kind: liveKind(item.kind), network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash },
         locale,
         { hideAmounts: delivery.channel === "push" && user.notifyHideAmounts },
       );

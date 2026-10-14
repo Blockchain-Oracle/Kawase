@@ -17,7 +17,6 @@ import type { WalletService } from "../wallet/service";
 import type { BridgeService } from "../bridge/service";
 import type { MarginService } from "../margin/service";
 import type { MarketplaceService } from "../marketplace/service";
-import type { InvoiceService } from "../business/invoices";
 import { PayCodeService } from "../paycodes/service";
 import { SplitService } from "../splits/service";
 import type { Recipients } from "../send/recipients";
@@ -50,7 +49,6 @@ export function buildIntelligence(input: {
   bridges: BridgeService;
   chains: Chains;
   margin?: MarginService | undefined;
-  invoices?: InvoiceService | undefined;
   recipients: Recipients;
   /** The x402 catalog, for For you's service card. */
   marketplace?: MarketplaceService | undefined;
@@ -192,7 +190,7 @@ export function buildIntelligence(input: {
     },
 
     async payCode(code) {
-      return new PayCodeService(input.requests, input.invoices, undefined, input.chains).resolve(user, code);
+      return new PayCodeService(input.requests, undefined, input.chains).resolve(user, code);
     },
 
     warn(error, what) {

@@ -33,7 +33,6 @@ export const notify: Catalog["notify"] = {
   needsYouSend: "Отправить {{amount}} получателю {{name}}",
   needsYouSwap: "Обменять {{amount}} {{symbolIn}} на {{symbolOut}}",
   reminderTitle: "Завтра, {{at}}",
-  reminderPayroll: "Выплаты {{people}} людям",
   reminderShort: "В кошельке меньше, чем нужно для запуска",
   requestReceivedTitle: "{{name}} просит у вас {{amount}}",
   requestReceivedTitleHidden: "{{name}} просит у вас деньги",

@@ -1,7 +1,7 @@
 // Every write is recorded (G9, cards/automate-safety.md "Audit: every write recorded"): each request that changed
 // something — any method but GET/HEAD/OPTIONS, answered without an error — leaves one audit row naming who (the user and
 // their device's session), what (the route pattern, never the raw URL: no tokens or names in the log), which object (the
-// route's id), on which network, and the outcome. Services add richer rows of their own (intents, payouts, grants).
+// route's id), on which network, and the outcome. Services add richer rows of their own (intents, grants).
 // Written after the response is decided and never awaited by it: auditing can never slow or fail the person's action.
 import type { MiddlewareHandler } from "hono";
 import { routePath } from "hono/route";

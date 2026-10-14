@@ -11,6 +11,7 @@ import { blockedAddresses } from "../contacts/blocks";
 import type { NotifyService } from "../notify/service";
 import type { Executor } from "../send/facts";
 import type { Chains } from "../wallet/chain";
+import { liveKind } from "./kinds";
 
 const PAGE = 100;
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -89,9 +90,9 @@ export class InboxService {
         const explorer = this.chains.get(row.network)?.network.viemChain.blockExplorers?.default.url;
         return {
           id: row.id,
-          kind: row.kind,
+          kind: liveKind(row.kind),
           network: row.network,
-          params: { ...subjectOf(row.kind, row.dedupeKey), ...row.params },
+          params: { ...subjectOf(liveKind(row.kind), row.dedupeKey), ...row.params },
           requestId: row.requestId,
           intentId: row.intentId,
           txHash: row.txHash,
