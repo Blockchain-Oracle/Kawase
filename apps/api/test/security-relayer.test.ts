@@ -1,6 +1,6 @@
 // H5 (security review 2026-10-03): Kawase's gas relayer cannot be drained. A 7702 setup is sponsored only for the
 // wallet's own authorization at its current nonce, never for a wallet already set up, and only so many times per
-// wallet; relayed batches (payouts, revokes, rails) are simulated before the relayer pays, counted per person under the
+// wallet; relayed batches (swaps, revokes, rails) are simulated before the relayer pays, counted per person under the
 // person's lock, and the network's daily gas budget refuses everything past it with a clear reason; the same request
 // submitted twice is sent once. The chain is in memory (the relayer's sends are counted); the database is real.
 import assert from "node:assert/strict";
@@ -130,7 +130,7 @@ test("relayed batches: simulated first, sent once per request, counted per perso
   const { userId, key } = await person();
   const call = { to: privateKeyToAccount(generatePrivateKey()).address, data: "0x" as Hex };
   const signed = async () => {
-    const request = await service.relayedBatchRequest(userId, "testnet", "payout", [call]);
+    const request = await service.relayedBatchRequest(userId, "testnet", "swap", [call]);
     return { requestId: request.requestId, signature: await key.signTypedData(request.typedData as unknown as TypedDataDefinition) };
   };
 
@@ -169,7 +169,7 @@ test("relayed batches: simulated first, sent once per request, counted per perso
   assert.deepEqual(outcomes.sort(), ["relay_limit", "sent"]);
   assert.equal(state.sends, 2);
   // And the next request is refused before the person is asked to sign anything.
-  assert.equal(await refusal(service.relayedBatchRequest(userId, "testnet", "payout", [call])), "relay_limit");
+  assert.equal(await refusal(service.relayedBatchRequest(userId, "testnet", "swap", [call])), "relay_limit");
   // Turning a grant off is not one of the day's relays.
   assert.equal(await refusal(service.relayedBatchRequest(userId, "testnet", "revoke_grant", [call])), "sent");
 });
@@ -187,7 +187,7 @@ test("the relayer's daily gas budget refuses everything past it, with its own re
       userId: spender.userId,
       network: "mainnet",
       chainId: getNetwork("mainnet").chainId,
-      kind: "payout_relayed",
+      kind: "swap_relayed",
       provider: "relayer",
       idempotencyKey: randomUUID(),
       fromAddress: spender.key.address,
@@ -197,7 +197,7 @@ test("the relayer's daily gas budget refuses everything past it, with its own re
     .returning({ id: txAttempts.id });
   try {
     const call = { to: privateKeyToAccount(generatePrivateKey()).address, data: "0x" as Hex };
-    assert.equal(await refusal(service.relayedBatchRequest(userId, "mainnet", "payout", [call])), "relayer_budget_spent");
+    assert.equal(await refusal(service.relayedBatchRequest(userId, "mainnet", "swap", [call])), "relayer_budget_spent");
   } finally {
     await db.delete(txAttempts).where(eq(txAttempts.id, row!.id));
   }

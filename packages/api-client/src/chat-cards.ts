@@ -1,23 +1,12 @@
-// What the business, history and account tools hand the chat's cards (B2-2: chat has the same reach as the screens).
+// What the history and account tools hand the chat's cards (B2-2: chat has the same reach as the screens).
 // Every output records the network it was read on, so a stored card never borrows today's network. Nothing in here
-// moves money or changes the account by itself: payouts, signing a device out and deleting the account are
-// proposals the person finishes on the card (Face ID, a tap, or the typed @handle on the delete screen).
+// moves money or changes the account by itself: signing a device out and deleting the account are
+// proposals the person finishes on the card (a tap, or the typed @handle on the delete screen).
 import type { DeviceView } from "./account";
-import type { InvoiceView, PayoutProblem, PayoutView } from "./business";
 import type { ReportView, WhyView } from "./history";
 import type { NetworkId } from "./types";
 
 type Blocked = "needs_sign_in" | "needs_wallet" | "unavailable";
-
-/** propose_payout: the checked batch (one Face ID pays everyone), or each line that could not be resolved. */
-export type PayoutProposal =
-  | { network: NetworkId; status: "ready"; payout: PayoutView }
-  | { network: NetworkId; status: "problems"; problems: PayoutProblem[] }
-  | { network: NetworkId; status: Blocked };
-
-export type InvoiceFilter = "open" | "overdue" | "paid" | "all";
-/** list_invoices: the business's invoices with their status (one when asked by number or client). */
-export type InvoiceListOutput = { network: NetworkId; status: "ready"; filter: InvoiceFilter; invoices: InvoiceView[] } | { network: NetworkId; status: Blocked };
 
 /** export_history: a short-lived download link for one month's file (no sign-in needed to open it); `path` is on the api. */
 export type ExportLinkOutput =

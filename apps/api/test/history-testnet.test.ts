@@ -1,5 +1,5 @@
 // Looking back on Arc testnet (cards/automate-safety.md "Look back"; G9): a fresh local key stands in for the Turnkey
-// wallet; test USDC arrives from the ops wallet; a two-line payout goes out in one transaction. Then: the "why" for that
+// wallet; test USDC arrives from the ops wallet; a send of 0.03 USDC goes out, signed by the wallet. Then: the "why" for that
 // transaction (what was asked, by whom, sent how, and the audit rows the middleware wrote for each write), the week's
 // report (the money in and out, as the explorer sees it), the month as CSV and beancount, and Data & privacy (a stored
 // conversation exported as text, a retention set, everything deleted).
@@ -12,7 +12,7 @@ import { and, eq } from "drizzle-orm";
 import { createPublicClient, createWalletClient, erc20Abi, http, parseUnits, type Hex, type TransactionSerializable } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { PayoutCreateResult, PayoutView, PrivacySettings, ReportView, TransactionRequestResponse, WhyView } from "@kawase/api-client";
+import type { PrivacySettings, ReportView, SendApproveResponse, SendIntent, TransactionRequestResponse, WhyView } from "@kawase/api-client";
 import { auditLog, threadMessages, threads } from "@kawase/db";
 import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
@@ -26,6 +26,7 @@ const live = Boolean(process.env.RELAYER_PRIVATE_KEY_TESTNET && process.env.OPS_
 const POLL_MS = 3000;
 const POLL_ATTEMPTS = 60;
 const DONE_STATES = ["COMPLETE", "CONFIRMED", "FAILED", "CANCELLED", "DENIED"];
+const FINAL = ["completed", "failed", "canceled", "expired", "rejected"];
 const usdc = (value: string) => parseUnits(value, 6);
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const toSerializable = (t: TransactionRequestResponse["transaction"]): TransactionSerializable => ({
@@ -40,7 +41,7 @@ const toSerializable = (t: TransactionRequestResponse["transaction"]): Transacti
   maxPriorityFeePerGas: BigInt(t.maxPriorityFeePerGas),
 });
 
-test("history on Arc testnet: why a payout happened, the weekly report, the month's export, privacy", { skip: !live, timeout: 900_000 }, async () => {
+test("history on Arc testnet: why a send happened, the weekly report, the month's export, privacy", { skip: !live, timeout: 900_000 }, async () => {
   const env = loadApiEnv();
   const chains = createChains(env);
   const network = getNetwork("testnet");
@@ -87,37 +88,42 @@ test("history on Arc testnet: why a payout happened, the weekly report, the mont
     await wait(POLL_MS);
   }
 
-  // A payout of two lines, one transaction.
+  // A send of 0.03 USDC to a new address: the wallet signs it.
   const one = privateKeyToAccount(generatePrivateKey()).address;
-  const two = privateKeyToAccount(generatePrivateKey()).address;
-  const draft = (await (await call("POST", "/business/payouts", { asset: "USDC", lines: [{ recipient: one, amount: "0.01" }, { recipient: two, amount: "0.02" }] })).json()) as PayoutCreateResult;
-  assert.ok(draft.payout, JSON.stringify(draft));
-  const signRequest = (await (await call("POST", `/business/payouts/${draft.payout!.id}/sign`, {})).json()) as TransactionRequestResponse;
-  const signed = await signer.signTransaction(toSerializable(signRequest.transaction) as never);
-  const sent = ((await (await call("POST", `/business/payouts/${draft.payout!.id}/submit`, { requestId: signRequest.requestId, signedTransaction: signed })).json()) as { payout: PayoutView }).payout;
-  assert.equal(sent.status, "confirmed");
-  console.log("payout", sent.txHash);
+  const draft = ((await (await call("POST", "/sends", { recipient: one, amount: "0.03", asset: "USDC" })).json()) as { intent: SendIntent }).intent;
+  assert.equal(draft.blocking, null, JSON.stringify(draft.results));
+  const sign = (await (await call("POST", `/sends/${draft.id}/approve`, { version: draft.version })).json()) as SendApproveResponse;
+  assert.equal(sign.status, "sign", JSON.stringify(sign));
+  if (sign.status !== "sign") return;
+  const signed = await signer.signTransaction(toSerializable(sign.transaction) as never);
+  await expectStatus(await call("POST", `/sends/${draft.id}/signature`, { approvalId: sign.approvalId, signedTransaction: signed }), 200, "signature");
+  let sent: SendIntent | undefined;
+  for (let attempt = 0; attempt < POLL_ATTEMPTS && !FINAL.includes(sent?.state ?? ""); attempt++) {
+    await wait(POLL_MS);
+    sent = ((await (await call("GET", `/sends/${draft.id}`)).json()) as { intent: SendIntent }).intent;
+  }
+  assert.equal(sent?.state, "completed", JSON.stringify(sent));
+  const txHash = sent!.tx!.hash;
+  console.log("send", txHash);
 
   // 1. Why: what it was, sent by the wallet itself, and the audit rows for each write on it.
-  const why = ((await (await call("GET", `/history/why/${sent.txHash}?network=testnet`)).json()) as { why: WhyView }).why;
-  assert.equal(why.kind, "payout");
-  assert.equal(why.facts.people, 2);
-  assert.ok(why.steps.some((step) => step.step === "sent" && step.by === "user_wallet" && step.status === "confirmed"), JSON.stringify(why.steps));
-  assert.ok(why.steps.some((step) => step.step === "audit" && step.action === "payout.sent"), JSON.stringify(why.steps));
+  const why = ((await (await call("GET", `/history/why/${txHash}?network=testnet`)).json()) as { why: WhyView }).why;
+  assert.equal(why.kind, "send");
+  assert.ok(why.steps.some((step) => step.step === "sent" && step.txHash.toLowerCase() === txHash.toLowerCase()), JSON.stringify(why.steps));
   assert.equal((await call("GET", `/history/why/0x${"ab".repeat(32)}?network=testnet`)).status, 404, "a transaction Kawase never saw");
 
   // Every write left an audit row (the middleware), naming the route pattern, never the raw path.
   const writes = await db.select({ action: auditLog.action }).from(auditLog).where(eq(auditLog.userId, userId));
   const actions = new Set(writes.map((row) => row.action));
-  for (const expected of ["POST /wallet", "POST /wallet/setup/submit", "POST /business/payouts", "POST /business/payouts/:id/sign", "POST /business/payouts/:id/submit"]) {
+  for (const expected of ["POST /wallet", "POST /wallet/setup/submit", "POST /sends", "POST /sends/:id/approve", "POST /sends/:id/signature"]) {
     assert.ok(actions.has(expected), `audited: ${expected} (have ${[...actions].join(", ")})`);
   }
 
-  // 2. The week's report and 3. the month's export, once the explorer has indexed the payout.
+  // 2. The week's report and 3. the month's export, once the explorer has indexed the send.
   let report: ReportView | undefined;
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
     report = ((await (await call("GET", "/history/report?network=testnet")).json()) as { report: ReportView }).report;
-    if (report.counts.sent >= 2 && report.counts.received >= 1) break;
+    if (report.counts.sent >= 1 && report.counts.received >= 1) break;
     await wait(POLL_MS);
   }
   assert.ok(report);
@@ -126,11 +132,11 @@ test("history on Arc testnet: why a payout happened, the weekly report, the mont
   const month = new Date().toISOString().slice(0, "YYYY-MM".length);
   const csv = await (await call("GET", `/history/export?network=testnet&month=${month}&format=csv`)).text();
   assert.match(csv, /^date,type,asset,amount,/);
-  assert.ok(csv.includes(sent.txHash!.toLowerCase()) || csv.toLowerCase().includes(sent.txHash!.toLowerCase()), csv);
-  assert.ok(csv.includes(",sent,USDC,-0.01,") && csv.includes(",sent,USDC,-0.02,") && csv.includes(",received,USDC,0.1,"), csv);
+  assert.ok(csv.toLowerCase().includes(txHash.toLowerCase()), csv);
+  assert.ok(csv.includes(",sent,USDC,-0.03,") && csv.includes(",received,USDC,0.1,"), csv);
   const beancount = await (await call("GET", `/history/export?network=testnet&month=${month}&format=beancount`)).text();
   assert.match(beancount, /open Assets:Kawase:ArcTestnet:USDC/);
-  assert.match(beancount, /Assets:Kawase:ArcTestnet:USDC {2}-0\.02 USDC/);
+  assert.match(beancount, /Assets:Kawase:ArcTestnet:USDC {2}-0\.03 USDC/);
   console.log(beancount.split("\n").slice(0, 12).join("\n"));
 
   // 4. Privacy: a stored conversation is exported as text, a retention is set, everything is deleted.

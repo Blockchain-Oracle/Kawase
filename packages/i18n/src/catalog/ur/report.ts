@@ -10,6 +10,5 @@ export const report: Catalog["report"] = {
   earn: "بچت میں {{count}} نقل و حرکت",
   services: "‏{{count}} سروسز پر {{amount}}",
   automations: "آٹومیشن: {{ran}} چلیں، {{skipped}} چھوڑی گئیں",
-  invoices: "‏{{count}} انوائسز ادا ہوئیں ({{amount}})",
   partial: "اس ہفتے کا صرف تازہ حصہ پڑھا جا سکا۔",
 };

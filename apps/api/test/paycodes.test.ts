@@ -29,10 +29,10 @@ test("EIP-681: native value and ERC-20 transfer, with the chain", () => {
   assert.equal(parsePayCode(`ethereum:${USDC}/approve?address=${PERSON}&uint256=1`, HOSTS, decimals).kind, "unknown");
 });
 
-test("Kawase links: request, app scheme and invoice document; other hosts are not trusted", () => {
+test("Kawase links: request and app scheme; other hosts are not trusted", () => {
   assert.deepEqual(parsePayCode("https://app.getkawase.xyz/r/abcDEF123_-xyz", HOSTS, decimals), { kind: "request", token: "abcDEF123_-xyz" });
   assert.deepEqual(parsePayCode("kawase://r/abcDEF123_-xyz", HOSTS, decimals), { kind: "request", token: "abcDEF123_-xyz" });
-  assert.deepEqual(parsePayCode("https://api.getkawase.xyz/invoices/public/abcDEF123_-xyz/document", HOSTS, decimals), { kind: "request", token: "abcDEF123_-xyz" });
+  assert.equal(parsePayCode("https://api.getkawase.xyz/invoices/public/abcDEF123_-xyz/document", HOSTS, decimals).kind, "unknown", "the retired invoice link is no longer a payment");
   assert.equal(parsePayCode("https://kawase-pay.example/r/abcDEF123_-xyz", HOSTS, decimals).kind, "unknown");
   assert.equal(parsePayCode("hello", HOSTS, decimals).kind, "unknown");
 });

@@ -43,15 +43,13 @@ test("practice mode refuses every real money move, and lets drafting through", a
     `/bridges/${id}/signature`,
     `/earn/intents/${id}/approve`,
     `/margin/orders/${id}/approve`,
-    // What the old list missed (security review, Low): cross-chain, lend, the withdrawal batch, payouts, protection.
+    // What the old list missed (security review, Low): cross-chain, lend, the withdrawal batch, protection.
     `/crosschain/orders/${id}/approve`,
     `/crosschain/orders/${id}/signature`,
     `/lend/orders/${id}/approve`,
     `/lend/orders/${id}/signature`,
     `/withdrawals/${id}/batch`,
     `/withdrawals/${id}/batch/signature`,
-    `/business/payouts/${id}/sign`,
-    `/business/payouts/${id}/submit`,
     "/margin/protection/grant/activate",
     "/marketplace/agent-wallet/top-up",
     "/marketplace/agent-wallet/grant/submit",
@@ -73,7 +71,6 @@ test("practice mode refuses every real money move, and lets drafting through", a
     ["POST", `/withdrawals/${id}/next`],
     ["PUT", `/margin/positions/${id}/protection`],
     ["DELETE", "/margin/protection/grant"],
-    ["POST", "/business/payouts"],
   ];
   for (const [method, path] of reachable) {
     const response = await app.request(path, jsonRequest(method, {}, token));

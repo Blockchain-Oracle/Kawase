@@ -38,13 +38,13 @@ export const SAMPLE = {
     suggestions: ["Split dinner with Kenji", "Pay rent every 1st"],
     composer: {
       placeholder: "Message Kawase…",
-      attach: "Attach a photo or invoice",
+      attach: "Attach a photo or file",
       talk: "Talk to Kawase",
       send: "Send",
     },
     events: [
       { id: "a", title: "Sent to Amina", description: "Arc · 2 min ago", time: "Done", amount: "−25.00" },
-      { id: "b", title: "From Kenji Tanaka", description: "Invoice 0042 · 09:12", time: "Done", amount: "+120.00" },
+      { id: "b", title: "From Kenji Tanaka", description: "Dinner · 09:12", time: "Done", amount: "+120.00" },
       { id: "c", title: "Rent to Fatima", description: "Every 1st · in 3 days", time: "Scheduled", amount: "−400.00" },
     ],
   },

@@ -3,7 +3,7 @@
 // To add one, copy the full hash from its log line and name the file; never retype a hash by hand.
 import type { ExplorerId } from "@kawase/config";
 
-export type EvidenceKind = "setup" | "allowance" | "send" | "swap" | "bridge" | "earn" | "automation" | "revoke" | "business";
+export type EvidenceKind = "setup" | "allowance" | "send" | "swap" | "bridge" | "earn" | "automation" | "revoke";
 
 export type Evidence = {
   /** The day it ran (UTC). */
@@ -327,24 +327,6 @@ export const EVIDENCE: readonly Evidence[] = [
   },
   {
     date: "2026-10-02",
-    kind: "business",
-    action: "Invoice INV-0001 (0.05 USDC) paid from another wallet through its link's Arc Memo call; matched by its on-chain reference and closed",
-    surface: "API test",
-    explorer: "arcTestnet",
-    hash: "0xefcc0f0bb9a651b14f5a66b3b2e6b041e33cb9b60e7c65aa370bdfbbebed1afa",
-    source: "apps/api/test/business-testnet.test.ts (commit 20ac602)",
-  },
-  {
-    date: "2026-10-02",
-    kind: "business",
-    action: "Batch payout: two people paid in one transaction, signed once",
-    surface: "API test",
-    explorer: "arcTestnet",
-    hash: "0x8ebd67721b3ca59330d96c6de3baaa872569a368606c223d174f1227177a6b9a",
-    source: "apps/api/test/business-testnet.test.ts (commit 20ac602)",
-  },
-  {
-    date: "2026-10-02",
     kind: "swap",
     action: "Any-pair ticket: 0.5 USDC → 0.424811 EURC at the best of KyberSwap, Circle App Kit and LI.FI, one signed batch",
     surface: "API test",
@@ -405,14 +387,5 @@ export const EVIDENCE: readonly Evidence[] = [
     explorer: "arcTestnet",
     hash: "0x7a93e823165dc468605203545b883f645b39d7f476c84122002f0ac7ef64c3cf",
     source: "plan/stages/11-onboarding-and-trust-layer.md (apps/api/test/gasless-send-testnet.test.ts)",
-  },
-  {
-    date: "2026-10-03",
-    kind: "business",
-    action: "Payout batch with no gas in the wallet: signed once, sent by the relayer through a one-time delegation",
-    surface: "API test",
-    explorer: "arcTestnet",
-    hash: "0x52160ea35588d7890ba92ce265ba6897f540f8b3a36430f0228e4939ef58b23e",
-    source: "plan/stages/11-onboarding-and-trust-layer.md (apps/api/test/gasless-batch-testnet.test.ts)",
   },
 ];

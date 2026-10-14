@@ -1,7 +1,7 @@
 // Why (surfaces.md Activity "row → receipt → why"; cards/automate-safety.md): the decision record behind one
 // movement, as a timeline: what was asked and where (or which automation ran), the checks (all clear, warnings, what
 // it needed), the route and what else was compared, the approval and how it was given, what was sent and by whom,
-// what it matched (a request, an invoice by its reference), and each recorded step. A transfer Kawase took no part in
+// what it matched (a request by its reference), and each recorded step. A transfer Kawase took no part in
 // (someone paid you from elsewhere) says so plainly.
 import { useLocalSearchParams } from "expo-router";
 import { ExternalLink } from "lucide-react-native";

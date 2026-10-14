@@ -1,7 +1,8 @@
 // A journal table (21st.dev 27124 · ssychui "Trade Journal Table", as a native twin on Lime on Ink): a card with a
 // title and a quiet count, a pill range control (radio group), one muted column head, and rows that read date, what,
 // amount and an outcome pill — a check for done, a cross for a miss, a lime dot while open. Rows press through to
-// their detail. Used for invoices (open, paid, overdue) and batch payout lines; the caller formats every value.
+// their detail. A generic list primitive; no screen uses it now (its first users, the invoice list and the batch payout
+// lines, went with Business, D39). The caller formats every value.
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 import { Check, X } from "lucide-react-native";
