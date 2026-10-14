@@ -753,6 +753,9 @@ export class CrossChainService {
     if (provider === "cctp") {
       const calls = await this.engine.prepare({ network, client, from: draft.from, destination: chain, recipient: draft.recipient, amount: formatUnits(amount, USDC_DECIMALS) });
       const check = checkBridgeCalls(network, calls, { usdc, amount, recipient: draft.recipient, domain: chain.domain, maxFee: amount > draft.minReceived ? amount - draft.minReceived : ZERO });
+      // Circle's fast-transfer fee moves between the quote and the yes: a higher cap than the version promised is a
+      // new version with the new numbers (like any route whose output fell), not a security refusal.
+      if (!check.ok && check.reason === "above_fee_cap") return { changed: true };
       if (!check.ok) throw this.refused(provider, check.reason);
       return { calls: calls.map((call) => ({ to: call.to, data: call.data ?? "0x", value: call.value ?? ZERO })), track: {} };
     }
