@@ -8,7 +8,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import type { RaceRoutesOutput, RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
+import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { BARE } from "./quarantine";
@@ -74,7 +74,7 @@ export function settleRace(race: RouteRace, finished: boolean): RouteRace {
   return { ...race, rows, best, done: finished || race.done };
 }
 
-const unavailable = (request: RouteRaceRequest, reason: "not_bound" | "failed" | "no_venues"): RaceRoutesOutput => ({
+const unavailable = (request: AgentRaceRequest, reason: "not_bound" | "failed" | "no_venues"): RaceRoutesOutput => ({
   status: "routes_unavailable",
   request,
   race: null,
@@ -82,7 +82,7 @@ const unavailable = (request: RouteRaceRequest, reason: "not_bound" | "failed" |
 });
 
 /** Which propose step takes the race's pick, by kind (the model is told, so it carries the venue across). */
-const NEXT_STEP: Record<RouteRaceRequest["kind"], string> = {
+const NEXT_STEP: Record<AgentRaceRequest["kind"], string> = {
   swap: "propose_trade",
   bridge: "propose_bridge (bring_to_arc when moving to Arc)",
   yield: "compare_yield, then propose_earn or propose_supply",
@@ -151,7 +151,7 @@ export function raceTools(context: AgentContext) {
         source: z.enum(CHAINS).optional().describe("Bring to Arc: the chain the money is on"),
       }),
       async *execute(input, { abortSignal }): AsyncGenerator<RaceRoutesOutput, void, unknown> {
-        const request: RouteRaceRequest = {
+        const request: AgentRaceRequest = {
           kind: input.kind,
           from: input.from ?? null,
           to: input.to ?? null,

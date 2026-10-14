@@ -10,7 +10,7 @@ import { isStepCount, simulateReadableStream, streamText, toUIMessageStream, typ
 import { MockLanguageModelV4 } from "ai/test";
 
 import { buildTools, decideApproval, raceForModel, settleRace, toolApprovals, turnTrust, type AgentContext } from "@kawase/agent";
-import type { BudgetAction, RaceRoutesOutput, RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
+import type { BudgetAction, RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
 
 const run = { toolCallId: "call-race", messages: [] } as never;
 
@@ -50,7 +50,7 @@ function fakeContext(extra: Partial<AgentContext> = {}): AgentContext {
   } as AgentContext;
 }
 
-async function* stubRace(request: RouteRaceRequest): AsyncGenerator<RouteRace> {
+async function* stubRace(request: AgentRaceRequest): AsyncGenerator<RouteRace> {
   assert.equal(request.kind, "swap");
   for (const snapshot of SNAPSHOTS) {
     await new Promise((resolve) => setTimeout(resolve, 1));

@@ -16,7 +16,7 @@ import { View } from "react-native";
 import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, useAnimatedStyle, useSharedValue, withRepeat, withTiming, ZoomIn } from "react-native-reanimated";
 
 import { MOTION } from "@kawase/config";
-import type { RaceRoutesOutput, RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
+import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { NumberTicker } from "@kawase/ui-native/components/number-ticker";
 import { Badge } from "@kawase/ui-native/components/ui/badge";
@@ -84,7 +84,7 @@ function useRaceFormat() {
   };
 }
 
-const EYEBROW: Record<RouteRaceRequest["kind"], string> = { swap: "feed.raceSwap", bridge: "feed.raceBridge", yield: "feed.raceYield" };
+const EYEBROW: Record<AgentRaceRequest["kind"], string> = { swap: "feed.raceSwap", bridge: "feed.raceBridge", yield: "feed.raceYield" };
 
 /** A soft bar sweeping across where the amount will land (the row is still being asked). */
 function CheckingBar() {
@@ -214,7 +214,7 @@ export function RaceRows({ race, live }: { race: RouteRace; live: boolean }) {
 }
 
 /** Before the first snapshot: the card's own shape, venues not known yet. */
-function RaceSkeleton({ kind }: { kind: RouteRaceRequest["kind"] | undefined }) {
+function RaceSkeleton({ kind }: { kind: AgentRaceRequest["kind"] | undefined }) {
   const { t } = useT();
   return (
     <AgentCard eyebrow={t(EYEBROW[kind ?? "swap"])}>
@@ -234,7 +234,7 @@ function RaceSkeleton({ kind }: { kind: RouteRaceRequest["kind"] | undefined }) 
  * The race card for one race_routes part: `output` is its latest snapshot (null before the first), `live` while the
  * snapshots are still preliminary. Never a confirm: the propose step that follows carries it.
  */
-export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | null; live: boolean; kind?: RouteRaceRequest["kind"] | undefined }) {
+export function RaceCard({ output, live, kind }: { output: RaceRoutesOutput | null; live: boolean; kind?: AgentRaceRequest["kind"] | undefined }) {
   const { t } = useT();
   const resume = useChatResume();
   if (!output) return <RaceSkeleton kind={kind} />;

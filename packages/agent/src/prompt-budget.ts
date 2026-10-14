@@ -16,7 +16,8 @@ export type BudgetSummary = {
 };
 
 /** The turn's context as the api builds it once it knows the person's budget. */
-export type BudgetPromptContext = AgentContext & { budget?: BudgetSummary | null | undefined };
+/** `budget` on the agent context is the yes/no decision (AgentBudget); the prompt describes the signed budget's numbers. */
+export type BudgetPromptContext = AgentContext & { budgetSummary?: BudgetSummary | null | undefined };
 
 const CENTS_PER_DOLLAR = 100n;
 const UNITS_PER_CENT = 10_000n;
@@ -60,7 +61,7 @@ function venueWords(venues: readonly string[]): string {
 }
 
 export function budgetLines(context: BudgetPromptContext): string[] {
-  const budget = context.budget;
+  const budget = context.budgetSummary;
   if (!budget) return [];
   const spent = /^\d+$/.test(budget.spentThisWeekUsd) ? BigInt(budget.spentThisWeekUsd) : NONE;
   const cap = /^\d+$/.test(budget.weeklyCapUsd) ? BigInt(budget.weeklyCapUsd) : NONE;

@@ -160,7 +160,7 @@ export type ListAutomationsOutput = { network: AgentNetwork; automations: Propos
 // ── Watching the agent work: the route race, the budget's yes, the model's health (front-door lane) ─────────────
 
 /** What race_routes asks every venue for. Amounts are decimals as the person said them ("2.5"); tokens as named. */
-export type RouteRaceRequest = {
+export type AgentRaceRequest = {
   kind: "swap" | "bridge" | "yield";
   /** Swap: what goes out (a symbol or 0x address); bridge and yield: the asset (USDC when not said). */
   from: string | null;
@@ -180,8 +180,8 @@ export type RouteRaceRequest = {
  * A race never invents a quote.
  */
 export type RaceRoutesOutput =
-  | { status: "racing" | "done"; request: RouteRaceRequest; race: import("./routes").RouteRace }
-  | { status: "routes_unavailable"; request: RouteRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" };
+  | { status: "racing" | "done"; request: AgentRaceRequest; race: import("./routes").RouteRace }
+  | { status: "routes_unavailable"; request: AgentRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" };
 
 /** One money step the agent wants to take, as the weekly budget sees it (D38). The Budget lane answers allows(). */
 export type BudgetAction = {

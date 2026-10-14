@@ -10,7 +10,7 @@ import type { CapabilityId } from "@kawase/config";
 import { intents, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
-import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, RouteRace, RouteRaceRequest, SwapRequest } from "@kawase/api-client";
+import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, RouteRace, AgentRaceRequest, SwapRequest } from "@kawase/api-client";
 import type { AgentBudget } from "@kawase/agent";
 
 import type { MarketplaceService } from "../marketplace/service";
@@ -77,10 +77,10 @@ const COUNTERPARTY_NAMES = { circle_faucet: "Circle faucet", kawase_agent: "Kawa
  * The route race as the api binds it (the Routes lane's apps/api/src/routing/race.ts): one person's request, every
  * venue asked at once, a snapshot per answer. The lead passes it to createApp as `raceRoutes`.
  */
-export type AgentRaceRoutes = (user: SessionUser, request: RouteRaceRequest, signal: AbortSignal | undefined) => AsyncIterable<RouteRace>;
+export type AgentRaceRoutes = (user: SessionUser, request: AgentRaceRequest, signal: AbortSignal | undefined) => AsyncIterable<RouteRace>;
 
 /** The race scoped to the person of this turn (K2: no tool chooses whose money is quoted). */
-const raceFor = (race: AgentRaceRoutes, user: SessionUser) => (request: RouteRaceRequest, options: { signal?: AbortSignal | undefined }) => race(user, request, options.signal);
+const raceFor = (race: AgentRaceRoutes, user: SessionUser) => (request: AgentRaceRequest, options: { signal?: AbortSignal | undefined }) => race(user, request, options.signal);
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;

@@ -5,7 +5,7 @@
 import * as React from "react";
 import { View } from "react-native";
 
-import type { RaceRoutesOutput, RouteQuote, RouteRace, RouteRaceRequest } from "@kawase/api-client";
+import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
@@ -17,8 +17,8 @@ import { RaceCard } from "./race-card";
 /** Between two recorded snapshots, as the venues answered (4 s cap per venue). */
 const STEP_MS = 700;
 
-const SWAP: RouteRaceRequest = { kind: "swap", from: "USDC", to: "EURC", amount: "2", destination: null, source: null };
-const BRING_IN: RouteRaceRequest = { kind: "bridge", from: "USDC", to: null, amount: "5", destination: null, source: "base" };
+const SWAP: AgentRaceRequest = { kind: "swap", from: "USDC", to: "EURC", amount: "2", destination: null, source: null };
+const BRING_IN: AgentRaceRequest = { kind: "bridge", from: "USDC", to: null, amount: "5", destination: null, source: "base" };
 
 const row = (venue: string, label: string): RouteQuote => ({
   venue,
@@ -75,7 +75,7 @@ const swap = () =>
     { index: 3, patch: { status: "failed", reason: "no_route" }, leader: "lifi" },
   ]);
 
-const asOutput = (request: RouteRaceRequest, race: RouteRace): RaceRoutesOutput => ({ status: race.done ? "done" : "racing", request, race });
+const asOutput = (request: AgentRaceRequest, race: RouteRace): RaceRoutesOutput => ({ status: race.done ? "done" : "racing", request, race });
 
 export function RaceGallery() {
   const snapshots = React.useMemo(bringIn, []);

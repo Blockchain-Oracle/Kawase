@@ -64,7 +64,7 @@ import type {
   FeeReserveView,
   BudgetAction,
   RouteRace,
-  RouteRaceRequest,
+  AgentRaceRequest,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -182,7 +182,7 @@ export type AgentContext = {
    * Every venue's quote as it lands (the Routes lane's race, bound by the api): one snapshot per answer, the last with
    * `done`. Without it race_routes says "routes_unavailable".
    */
-  raceRoutes?(request: RouteRaceRequest, options: { signal?: AbortSignal | undefined }): AsyncIterable<RouteRace>;
+  raceRoutes?(request: AgentRaceRequest, options: { signal?: AbortSignal | undefined }): AsyncIterable<RouteRace>;
   /** The weekly budget's yes (D38). Without it every money step waits for the person's tap. */
   budget?: AgentBudget | undefined;
   // Wallet & limits (A3). Optional so a context without them still builds; the tools say so when one is missing.
