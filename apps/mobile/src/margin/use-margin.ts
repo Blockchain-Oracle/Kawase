@@ -22,7 +22,10 @@ export function useMarginOrder(initial?: MarginIntent | undefined): MarginContro
   return useWalletIntent(api.margin, { changed: t("margin.changed"), unavailable: t("margin.unavailable") }, initial);
 }
 
-export function useMarginMarkets() {
+/** The venue's prices move; a live surface (the terminal) re-reads the markets this often (the api caches the venue). */
+export const MARKETS_REFRESH_MS = 15_000;
+
+export function useMarginMarkets(options: { live?: boolean } = {}) {
   const { user } = useSession();
   const network = user?.activeNetwork ?? "testnet";
   const [view, setView] = React.useState<MarginMarketsView>();
@@ -39,6 +42,12 @@ export function useMarginMarkets() {
     setView(undefined);
     void load();
   }, [load, network]);
+  const live = options.live ?? false;
+  React.useEffect(() => {
+    if (!live) return undefined;
+    const timer = setInterval(() => void load(), MARKETS_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [live, load]);
   return { view, failed, refresh: load };
 }
 
@@ -46,6 +55,7 @@ export function useMarginPositions() {
   const { status, user } = useSession();
   const network = user?.activeNetwork ?? "testnet";
   const [positions, setPositions] = React.useState<MarginPositionView[]>();
+  const [failed, setFailed] = React.useState(false);
   const load = React.useCallback(async () => {
     if (status !== "account") {
       setPositions([]);
@@ -53,8 +63,10 @@ export function useMarginPositions() {
     }
     try {
       setPositions((await api.margin.positions()).positions);
+      setFailed(false);
     } catch {
-      // The last good list stays; the next refresh tries again.
+      // The last good list stays (marked stale by `failed`); the next refresh tries again.
+      setFailed(true);
     }
   }, [status]);
   React.useEffect(() => {
@@ -62,5 +74,5 @@ export function useMarginPositions() {
     const timer = setInterval(() => void load(), POSITIONS_REFRESH_MS);
     return () => clearInterval(timer);
   }, [load, network]);
-  return { positions, refresh: load };
+  return { positions, failed, refresh: load };
 }
