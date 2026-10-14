@@ -1,9 +1,17 @@
 // The chat's connection to the agent (spike 7's pattern): useChat over the AI SDK's HTTP transport with expo/fetch
 // on native (streams incrementally on iOS through Coolify's Traefik), the session token as a bearer header, and only
 // the newest message in the body — the api keeps the thread's history. When a device-side tool (the network switch
-// card) gets its answer, the conversation continues by itself.
+// card) gets its answer, or the person answers an approval ("Go ahead" / "Not now"), the conversation continues by
+// itself. A live tool's preliminary snapshot (the route race while venues answer) never continues it: only finished
+// parts count, and an approval the api gave by itself (inside the budget) is never sent back.
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, type UIMessage } from "ai";
+import {
+  DefaultChatTransport,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import * as React from "react";
 import { Platform } from "react-native";
@@ -13,6 +21,22 @@ import { provenFetch } from "@/session/device-proof";
 import { sessionStorage } from "@/session/storage";
 
 const CHAT_PATH = "/agent/chat";
+/** Batches message updates while a race streams a snapshot per venue answer (docs pack: throttle 50). */
+const STREAM_THROTTLE_MS = 50;
+
+type AutoSendInput = { messages: UIMessage[] };
+
+/** Whether the last assistant message still has a live (preliminary) tool part: never send while it does. */
+const stillLive = ({ messages }: AutoSendInput) =>
+  messages.at(-1)?.parts.some((part) => isToolUIPart(part) && part.state === "output-available" && part.preliminary === true) ?? false;
+
+/** The person answered an approval request themselves (an automatic one is the api's own and needs no answer). */
+const personAnswered = ({ messages }: AutoSendInput) =>
+  messages.at(-1)?.parts.some((part) => isToolUIPart(part) && part.state === "approval-responded" && part.approval.isAutomatic !== true) ?? false;
+
+export const continueAutomatically = (input: AutoSendInput) =>
+  !stillLive(input) &&
+  (lastAssistantMessageIsCompleteWithToolCalls(input) || (personAnswered(input) && lastAssistantMessageIsCompleteWithApprovalResponses(input)));
 
 export function useAgentChat(threadId: string, initialMessages: UIMessage[]) {
   const transport = React.useMemo(
@@ -29,5 +53,5 @@ export function useAgentChat(threadId: string, initialMessages: UIMessage[]) {
       }),
     [],
   );
-  return useChat({ id: threadId, messages: initialMessages, transport, sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls });
+  return useChat({ id: threadId, messages: initialMessages, transport, throttle: STREAM_THROTTLE_MS, sendAutomaticallyWhen: continueAutomatically });
 }

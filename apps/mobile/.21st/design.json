@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "project": {
+    "name": "@kawase/mobile",
+    "productType": "Kawase: an AI agent that moves money across the Arc ecosystem (the agent is the front door, D37)",
+    "stack": ["expo-57", "react-native-0.86", "expo-router", "reanimated-4", "uniwind", "ai-sdk-7"]
+  },
+  "components": {
+    "records": [
+      {
+        "name": "race-card",
+        "lane": "front-door",
+        "source": "composed from 21st parts (no single 21st race component found): 29368, 6955, 12336",
+        "ids": [29368, 6955, 12336],
+        "port": "apps/mobile/src/chat/race-card.tsx: RaceCard (one race_routes part) + RaceRows (takes a RouteRace; the Routes lane's RouteList can replace it)",
+        "deviations": "Rows keep the order venues were asked (no resort jump on a phone); only the Best badge moves. 29368's change pulse became a one-shot wash on the row whose quote lands, and its numeric morph a count-up from zero (NumberTicker). Status is a word under the venue, never colour alone. The venue's real mark (packages/identity) breathes while asked, lights when quoted, fades when it cannot quote.",
+        "status": "built (Stage 2); gallery: /dev/gallery 'Agent at work (front door)'"
+      },
+      {
+        "name": "streaming-data-rows",
+        "lane": "front-door",
+        "id": 29368,
+        "author": "rmahammad",
+        "url": "https://21st.dev/r/rmahammad/streaming-data-rows",
+        "port": "RaceRows in apps/mobile/src/chat/race-card.tsx (native twin, no table: a list of rows)",
+        "deviations": "No sorting headers, row actions or mobile/table switch: one row per venue, stacked; loading/empty/error live on RaceCard (skeleton before the first snapshot, 'no venue answered' with Try again, 'quoting directly')."
+      },
+      {
+        "name": "badge-tag",
+        "lane": "front-door",
+        "id": 6955,
+        "author": "prebuiltui",
+        "url": "https://21st.dev/r/prebuiltui/badge-tag",
+        "port": "the Best pill in RaceRow (ui-native Badge, primary variant), zooming in on the new leader and fading from the old",
+        "deviations": "Single pill, no trailing message."
+      },
+      {
+        "name": "text-shimmer",
+        "lane": "front-door",
+        "id": 12336,
+        "author": "serafimcloud",
+        "url": "https://21st.dev/r/serafimcloud/text-shimmer",
+        "port": "apps/mobile/src/chat/text-shimmer.tsx: TextShimmer",
+        "deviations": "The web original clips a moving gradient to the glyphs; React Native has no text clip on every platform (Skia text would need fonts on the web export), so the highlight travels word by word (opacity wave). Words, never letters, so joined scripts keep their shaping. Reduced motion: still text."
+      },
+      {
+        "name": "agent-activity",
+        "lane": "front-door",
+        "id": 29318,
+        "author": "starc007",
+        "url": "https://21st.dev/r/starc007/agent-activity",
+        "port": "planned for the Stage 3 run card (understand → race → approve → steps → receipt); Stage 2 uses its status-line idea in RaceCard's header (shimmering label + 'n of m answered')",
+        "status": "planned"
+      },
+      {
+        "name": "radio-cards",
+        "lane": "front-door",
+        "id": 28337,
+        "author": "sean0205",
+        "url": "https://21st.dev/r/sean0205/c-radio-group-17",
+        "port": "planned: picking a non-best race row in the Stage 3 run card (the race is a suggestion in Stage 2 and has no picker yet)",
+        "status": "planned"
+      },
+      {
+        "name": "approval-card",
+        "lane": "front-door",
+        "source": "Kawase card base (chat/card.tsx) with ui-native Button; no 21st component needed for two buttons and a line",
+        "port": "apps/mobile/src/chat/approval-card.tsx: ApprovalCard (the trust rule asks once), NotDoneCard, InsideBudgetChip",
+        "status": "built (Stage 2)"
+      },
+      {
+        "name": "agent-offline",
+        "lane": "front-door",
+        "source": "Kawase state pattern (premium bar §2: what still works + one action), no 21st match for an inline status strip",
+        "port": "apps/mobile/src/chat/agent-offline.tsx: AgentOffline + useAgentHealth",
+        "status": "built (Stage 2)"
+      }
+    ]
+  }
+}

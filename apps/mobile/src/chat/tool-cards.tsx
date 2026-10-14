@@ -81,6 +81,8 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
 import { AgentCard, AgentCardLoading } from "./card";
+import { ApprovalCard, InsideBudgetChip, NotDoneCard } from "./approval-card";
+import { RaceCard } from "./race-card";
 import { RequestCard } from "./request-card";
 import { ContactsCard, SendCard } from "./send-card";
 import { AutomationCard } from "./automation-card";
@@ -104,7 +106,7 @@ import type { SafetyToolOutput } from "@kawase/api-client";
 import type { ChartOutput, DecisionView, HistorySearchOutput, MemoryToolOutput, SettingDiff, StatusView, SuggestionsView } from "@kawase/api-client";
 import { MemoryCard } from "./memory-card";
 import { ChartCard, DecisionCard, ForYouChatCard, HistorySearchCard, KnowledgeCard, SettingDiffCard, StatusCard } from "./insight-cards";
-import type { PayCodeView, RemindPaymentOutput } from "@kawase/api-client";
+import type { PayCodeView, RaceRoutesOutput, RemindPaymentOutput } from "@kawase/api-client";
 import { PayCodeCard, SplitBillCard } from "./pay-code-card";
 
 type Network = "mainnet" | "testnet";
@@ -124,6 +126,10 @@ export type ToolPart = {
   input?: unknown;
   output?: unknown;
   errorText?: string;
+  /** A live tool's snapshot (race_routes while venues answer): shown, never final, never acted on. */
+  preliminary?: boolean;
+  /** Who approved the step (AI SDK toolApproval): the api inside the budget (`isAutomatic`), or the person. */
+  approval?: { id: string; approved?: boolean; isAutomatic?: boolean; requestReason?: string; reason?: string };
 };
 
 /** "5,000.00 USDC" → "5,000 USDC": limits read as whole amounts. */
@@ -599,6 +605,7 @@ const LOADING_LABELS: Record<string, string> = {
   propose_send: "chat.loadingSend",
   propose_swap: "chat.loadingSwap",
   propose_trade: "chat.loadingSwap",
+  race_routes: "feed.raceAsking",
   propose_bridge: "chat.loadingBridge",
   get_earn: "chat.loadingEarn",
   propose_earn: "chat.loadingEarn",
@@ -635,9 +642,33 @@ const LOADING_LABELS: Record<string, string> = {
 export function ToolCard({
   part,
   onToolOutput,
+  onApproval,
 }: {
   part: ToolPart;
   onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
+  /** The person's answer to an approval request (never called for one the api gave by itself). */
+  onApproval?: ((id: string, approved: boolean) => void) | undefined;
+}) {
+  const card = <ToolResult part={part} onToolOutput={onToolOutput} onApproval={onApproval} />;
+  // Approved by the api inside the person's weekly budget: the card says so, and nobody was asked.
+  if (part.state === "output-available" && part.approval?.isAutomatic === true && part.approval.approved !== false)
+    return (
+      <View>
+        <InsideBudgetChip />
+        {card}
+      </View>
+    );
+  return card;
+}
+
+function ToolResult({
+  part,
+  onToolOutput,
+  onApproval,
+}: {
+  part: ToolPart;
+  onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
+  onApproval?: ((id: string, approved: boolean) => void) | undefined;
 }) {
   const { t } = useT();
   const { user } = useSession();
@@ -648,6 +679,27 @@ export function ToolCard({
 
   if (tool === "propose_network_switch") {
     return <NetworkSwitchCard part={part} onAnswer={(output) => onToolOutput(tool, part.toolCallId, output)} />;
+  }
+  // The route race: every snapshot drawn as it lands (preliminary while venues answer); never a confirm of its own.
+  if (tool === "race_routes" && (part.state === "input-streaming" || part.state === "input-available" || part.state === "output-available")) {
+    const kind = (part.input as { kind?: RaceRoutesOutput["request"]["kind"] } | undefined)?.kind;
+    const output = part.state === "output-available" ? (part.output as RaceRoutesOutput) : null;
+    return <RaceCard output={output} live={part.state !== "output-available" || part.preliminary === true} kind={kind} />;
+  }
+  // The trust rule stopped this step before it was drafted: the person decides, once.
+  if (part.state === "approval-requested" && part.approval && part.approval.isAutomatic !== true) {
+    const id = part.approval.id;
+    return <ApprovalCard tool={tool} input={part.input} reason={part.approval.requestReason} onAnswer={(approved) => onApproval?.(id, approved)} />;
+  }
+  if (part.state === "output-denied" || (part.state === "approval-responded" && part.approval?.approved === false)) return <NotDoneCard tool={tool} input={part.input} />;
+  if (part.state === "approval-responded") return <AgentCardLoading label={t("feed.preparing")} />;
+  // A pending approval whose signature no longer holds (too old, or signed by an api that has since restarted).
+  if (part.state === "output-error" && /approval/i.test(part.errorText ?? "") && /signature/i.test(part.errorText ?? "")) {
+    return (
+      <AgentCard>
+        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("feed.expired")}</Text>
+      </AgentCard>
+    );
   }
   if (part.state === "output-error") {
     return (

@@ -34,6 +34,7 @@ import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
+import { AgentOffline, isAgentOffline, useAgentHealth } from "./agent-offline";
 import { draftKey, readDraft, saveDraft } from "./drafts";
 import { EmptyThread } from "./empty-thread";
 import { MemoryNote } from "./memory-card";
@@ -160,6 +161,32 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
     [chat],
   );
 
+  // The person's answer to an approval request; the whole part (with its signature) goes back with the next send.
+  const onApproval = React.useCallback(
+    (id: string, approved: boolean) => {
+      void chat.addToolApprovalResponse({ id, approved });
+    },
+    [chat],
+  );
+
+  // The agent offline (the api's model self-test failed): a designed state above the composer, not an error.
+  const health = useAgentHealth(chat.error);
+  // The api refused the question before keeping it (offline answers come first): it goes back into the box, unsent.
+  React.useEffect(() => {
+    if (!isAgentOffline(chat.error)) return;
+    const asked = chat.messages.at(-1);
+    if (asked?.role === "user") {
+      chat.setMessages(chat.messages.slice(0, -1));
+      const text = textOf(asked);
+      setDraft(text);
+      saveDraft(key, text);
+    }
+    chat.clearError();
+  }, [chat, chat.error, key]);
+  const checkAgain = async () => {
+    if (await health.check()) toast(t("feed.offlineBack"));
+  };
+
   const actions: ComposerAction[] = [
     { label: t("chatHome.actionSend"), template: t("chatHome.actionSendTemplate"), icon: ArrowUpRight },
     { label: t("chatHome.actionRequest"), template: t("chatHome.actionRequestTemplate"), icon: HandCoins },
@@ -204,6 +231,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
                   message={message}
                   fresh={!shownAtOpen.current.has(message.id)}
                   onToolOutput={onToolOutput}
+                  onApproval={onApproval}
                   copiedLabel={t("chatHome.copied")}
                 />
               ))}
@@ -214,7 +242,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
                 <StateLabel className="text-muted-foreground">{t("home.thinking")}</StateLabel>
               </Animated.View>
             ) : null}
-            {chat.error ? (
+            {chat.error && !isAgentOffline(chat.error) ? (
               <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
                 <Text accessibilityRole="alert" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
                   {t("chat.answerFailed")}
@@ -242,6 +270,7 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
       )}
       <KeyboardStickyView offset={{ closed: 0, opened: clearance.dock - EDGE_INSET }}>
         <View onLayout={onComposerLayout} className="px-4 pt-2" style={{ paddingBottom: clearance.dock + EDGE_INSET }}>
+          {health.offline ? <AgentOffline checking={health.checking} onCheck={() => void checkAgain()} /> : null}
           {interrupted ? (
             <Text accessibilityRole="alert" className="text-muted-foreground pb-2 text-center text-sm">
               {t("chat.stopped")}
@@ -285,11 +314,13 @@ function MessageView({
   message,
   fresh,
   onToolOutput,
+  onApproval,
   copiedLabel,
 }: {
   message: UIMessage;
   fresh: boolean;
   onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
+  onApproval: (id: string, approved: boolean) => void;
   copiedLabel: string;
 }) {
   const reduced = useReducedMotionLive();
@@ -325,7 +356,7 @@ function MessageView({
           if (isToolUIPart(part))
             return (
               <Animated.View key={part.toolCallId} layout={reduced ? undefined : LinearTransition.duration(MOTION.sheetMs)}>
-                <ToolCard part={part as unknown as ToolPart} onToolOutput={onToolOutput} />
+                <ToolCard part={part as unknown as ToolPart} onToolOutput={onToolOutput} onApproval={onApproval} />
               </Animated.View>
             );
           return null;
