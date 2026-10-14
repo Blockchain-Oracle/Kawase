@@ -46,6 +46,11 @@ type RawItem = {
 
 type RawPage = { items?: RawItem[]; pagination?: { total?: number } };
 
+const TOO_MANY_REQUESTS = 429;
+const SERVER_ERROR = 500;
+const PAGE_RETRIES = 2;
+const RETRY_WAIT_BASE_MS = 500;
+const RETRY_WAIT_MAX_MS = 5_000;
 const caip2 = (network: NetworkContext) => `eip155:${network.chainId}`;
 const WORD = /[a-z0-9]+/g;
 const MIN_TOKEN = 2;
@@ -157,10 +162,22 @@ export class Discovery {
     return read;
   }
 
+  /** When the catalog for this network was last read (ms), or undefined before the first read. */
+  readAt(network: NetworkContext): number | undefined {
+    return this.cache.get(network.id)?.at;
+  }
+
+  /** One page; a 429 or a 5xx is retried a couple of times (Retry-After honoured, capped) before the read fails. */
   private async page(url: string): Promise<RawPage> {
-    const response = await this.fetchImpl(url, { signal: AbortSignal.timeout(X402_REQUEST_TIMEOUT_MS) });
-    if (!response.ok) throw new Error(`discovery answered ${response.status}`);
-    return (await response.json()) as RawPage;
+    for (let attempt = 0; ; attempt++) {
+      const response = await this.fetchImpl(url, { signal: AbortSignal.timeout(X402_REQUEST_TIMEOUT_MS) });
+      if (response.ok) return (await response.json()) as RawPage;
+      const retryable = response.status === TOO_MANY_REQUESTS || response.status >= SERVER_ERROR;
+      if (!retryable || attempt >= PAGE_RETRIES) throw new Error(`discovery answered ${response.status}`);
+      const asked = Number(response.headers.get("retry-after"));
+      const wait = Number.isFinite(asked) && asked > 0 ? Math.min(asked * 1_000, RETRY_WAIT_MAX_MS) : RETRY_WAIT_BASE_MS * 2 ** attempt;
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
   }
 
   private async read(network: NetworkContext): Promise<Listing[]> {

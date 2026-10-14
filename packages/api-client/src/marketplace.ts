@@ -168,3 +168,55 @@ export type AgentWalletLine =
 export type InspectServiceResult =
   | { network: NetworkId; status: "listed"; service: ServiceListing; livePrice: string | null; free: boolean; withinPerCallCap: boolean | null }
   | { network: NetworkId; status: "not_listed" | "unavailable" };
+
+// ── The catalog as a person browses it (GET /marketplace/catalog): tools, not endpoints ───────────────────────────
+
+/** First party: the seller's own API. Third party: a reseller's wrapper around someone else's tool. */
+export type CatalogParty = "first" | "third";
+
+export type CatalogGroupView = { key: string; name: string; endpoints: number };
+
+export type CatalogToolView = {
+  /** URL-safe, stable; `GET /marketplace/catalog/:key` opens it. */
+  key: string;
+  name: string;
+  provider: { name: string; website: string | null };
+  party: CatalogParty;
+  category: MarketplaceCategory;
+  description: string;
+  endpoints: number;
+  /** USDC base units: the cheapest and dearest endpoint. */
+  price: string;
+  maxPrice: string;
+  /** How many calls $1 buys at the cheapest endpoint. */
+  callsPerDollar: number;
+  rails: PaymentRail[];
+  /** No endpoint takes a plain wallet's EIP-3009 payment; they need a Gateway balance. */
+  gatewayOnly: boolean;
+  groups: CatalogGroupView[];
+};
+
+export type CatalogCategoryView = { id: MarketplaceCategory; tools: number; endpoints: number };
+
+export type CatalogView = {
+  network: NetworkId;
+  /** Counts over every filter but the chosen category, so the chips keep showing what each would give. */
+  categories: CatalogCategoryView[];
+  tools: CatalogToolView[];
+  page: { limit: number; offset: number; total: number };
+  totals: { tools: number; endpoints: number };
+  /** When the catalog was read from Circle's discovery (null when nothing has been read yet). */
+  readAt: string | null;
+  /** The last read is older than its refresh window and the refresh failed: shown stale. */
+  stale: boolean;
+};
+
+export type CatalogToolDetail = {
+  network: NetworkId;
+  tool: CatalogToolView;
+  /** The endpoints, cheapest first, for the group asked (or all) and the search words. */
+  endpoints: ServiceListing[];
+  page: { limit: number; offset: number; total: number };
+  readAt: string | null;
+  stale: boolean;
+};
