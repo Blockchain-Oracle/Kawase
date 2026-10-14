@@ -8,7 +8,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest } from "@kawase/api-client";
+import type { RaceRoutesOutput, RouteQuote, RouteRace, AgentRaceRequest, TokenWarning } from "@kawase/api-client";
 
 import type { AgentContext } from "./context";
 import { BARE } from "./quarantine";
@@ -142,15 +142,52 @@ export function raceForModel(output: RaceRoutesOutput) {
       apyPct: row.apyBps === null || row.apyBps === undefined ? null : row.apyBps / BPS_PER_PERCENT,
       executable: row.executable,
     }));
+  const warning = warningForModel(output.warning);
   return {
     status: output.status,
     kind: race.kind,
+    ...(warning ? { warning } : {}),
     best: race.best,
     quoted,
     notQuoted: race.rows.filter((row) => row.status !== "quoted").map((row) => ({ venue: row.venue, reason: row.reason })),
     next: race.best
       ? `The card shows the race. Suggest ${race.best} in one short line, then call ${NEXT_STEP[output.request.kind]} with venue "${race.best}" (or the venue the person picks); it quotes again before anything moves.`
       : "No venue can do this right now: say why in one line, from notQuoted.",
+  };
+}
+
+/** The check gives up after this; the race never waits longer for it. */
+const WARNING_TIMEOUT_MS = 4_000;
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * The meme/copycat check for the token being bought, named as the person said it (resolved by code, never by the
+ * model). undefined when it could not run (no check bound, the token not found, too slow): the card then shows none.
+ */
+export async function warningFor(context: AgentContext, token: string): Promise<TokenWarning | null | undefined> {
+  if (!context.tokenWarning) return undefined;
+  const check = (async () => {
+    const text = token.trim();
+    const address = ADDRESS.test(text) ? text : (await context.searchTokens(text))[0]?.token.address;
+    if (!address) return undefined;
+    const detail = await context.tokenDetail(address);
+    return context.tokenWarning!(detail);
+  })().catch((error: unknown) => {
+    context.intelligence.warn(error, "token warning failed");
+    return undefined;
+  });
+  const timeout = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), WARNING_TIMEOUT_MS).unref?.());
+  return Promise.race([check, timeout]);
+}
+
+/** What the model reads of a warning: reason codes and the copied name (fenced as outside text by the quarantine). */
+export function warningForModel(warning: TokenWarning | null | undefined) {
+  if (!warning) return undefined;
+  return {
+    level: warning.level,
+    reasons: warning.reasons,
+    ...(warning.copies ? { copies: warning.copies } : {}),
+    say: "The card shows a warning about this token. Name the concern in one short line (for example: its name copies a known coin, or its trading looks faked) and let the person decide; never call it safe.",
   };
 }
 
@@ -180,13 +217,30 @@ export function raceTools(context: AgentContext) {
           yield unavailable(request, "not_bound");
           return;
         }
+        // The meme/copycat check runs beside the race (a buy only): the card shows it as soon as it lands, and the
+        // final snapshot always carries its answer (null = nothing found).
+        const checking = request.kind === "swap" && request.to ? warningFor(context, request.to) : null;
+        // undefined: not checked (or the check could not finish); null: checked, nothing found.
+        let warning: TokenWarning | null | undefined;
+        void checking?.then((found) => {
+          warning = found;
+        });
+        const withWarning = (output: Extract<RaceRoutesOutput, { race: RouteRace }>): RaceRoutesOutput =>
+          warning === undefined ? output : { ...output, warning };
+        const settled = async (output: Extract<RaceRoutesOutput, { race: RouteRace }>): Promise<RaceRoutesOutput> => {
+          if (checking) warning = await checking;
+          return withWarning(output);
+        };
         let last: RouteRace | null = null;
         try {
           for await (const snapshot of context.raceRoutes(request, { signal: abortSignal })) {
             last = snapshot;
             const race = settleRace(snapshot, snapshot.done);
-            yield { status: race.done ? "done" : "racing", request, race };
-            if (race.done) return;
+            if (race.done) {
+              yield await settled({ status: "done", request, race });
+              return;
+            }
+            yield withWarning({ status: "racing", request, race });
           }
         } catch (error) {
           // A refusal is an answer, not a failure: nothing was asked, so there is nothing to show as quoted.
@@ -196,11 +250,11 @@ export function raceTools(context: AgentContext) {
           }
           context.intelligence.warn(error, "route race failed");
           // The quotes that did land stay real; the rest timed out. With none, nothing is shown as a quote.
-          yield last ? { status: "done", request, race: settleRace(last, true) } : unavailable(request, "failed");
+          yield last ? await settled({ status: "done", request, race: settleRace(last, true) }) : unavailable(request, "failed");
           return;
         }
         // The race ended without saying it was done: whoever had not answered timed out.
-        yield last && last.rows.length > 0 ? { status: "done", request, race: settleRace(last, true) } : unavailable(request, "no_venues");
+        yield last && last.rows.length > 0 ? await settled({ status: "done", request, race: settleRace(last, true) }) : unavailable(request, "no_venues");
       },
       toModelOutput: ({ output }) => ({ type: "json", value: raceForModel(output) }),
     }),

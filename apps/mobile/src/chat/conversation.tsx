@@ -41,6 +41,7 @@ import { MemoryNote } from "./memory-card";
 import { MessageText } from "./message-text";
 import { ChatResumeProvider } from "./resume";
 import { storedThread } from "./stored-thread";
+import { RunCard, runPartIds, runPiecesOf } from "./run-card";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
 
@@ -225,10 +226,12 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
             keyboardShouldPersistTaps="handled"
           >
             <ChatResumeProvider send={send}>
-              {chat.messages.map((message) => (
+              {chat.messages.map((message, index) => (
                 <MessageView
                   key={message.id}
                   message={message}
+                  asked={index > 0 && chat.messages[index - 1]?.role === "user" ? textOf(chat.messages[index - 1]!) : null}
+                  streaming={busy && index === chat.messages.length - 1}
                   fresh={!shownAtOpen.current.has(message.id)}
                   onToolOutput={onToolOutput}
                   onApproval={onApproval}
@@ -312,12 +315,17 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
 
 function MessageView({
   message,
+  asked,
+  streaming,
   fresh,
   onToolOutput,
   onApproval,
   copiedLabel,
 }: {
   message: UIMessage;
+  /** The person's words this message answers (the run card's "understand"). */
+  asked: string | null;
+  streaming: boolean;
   fresh: boolean;
   onToolOutput: (tool: string, toolCallId: string, output: unknown) => void;
   onApproval: (id: string, approved: boolean) => void;
@@ -345,6 +353,10 @@ function MessageView({
     );
   }
 
+  // A money run (a race and its step) is one object from the ask to the receipt; its words ride inside it.
+  const run = runPiecesOf(message);
+  const inRun = run ? runPartIds(run) : null;
+  let runDrawn = false;
   return (
     <Animated.View layout={reduced ? undefined : LinearTransition.duration(MOTION.sheetMs)} className="flex-row gap-3">
       <View className="pt-0.5">
@@ -352,7 +364,12 @@ function MessageView({
       </View>
       <Pressable onLongPress={copy} className="min-w-0 flex-1 gap-3">
         {message.parts.map((part, i) => {
-          if (part.type === "text") return part.text.length > 0 ? <MessageText key={i} text={part.text} /> : null;
+          if (part.type === "text") return part.text.length > 0 && !run ? <MessageText key={i} text={part.text} /> : null;
+          if (run && inRun && isToolUIPart(part) && inRun.has(part.toolCallId)) {
+            if (runDrawn) return null;
+            runDrawn = true;
+            return <RunCard key={`run-${part.toolCallId}`} pieces={run} asked={asked} live={fresh} streaming={streaming} onToolOutput={onToolOutput} onApproval={onApproval} />;
+          }
           if (isToolUIPart(part))
             return (
               <Animated.View key={part.toolCallId} layout={reduced ? undefined : LinearTransition.duration(MOTION.sheetMs)}>

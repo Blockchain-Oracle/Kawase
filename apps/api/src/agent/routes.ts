@@ -42,6 +42,7 @@ import type { AgentHealth } from "@kawase/api-client";
 
 import { buildAgentContext, type AgentRaceRoutes } from "./context";
 import { ConversationStore } from "./conversation-store";
+import { createMemeCheck, type MemeCheck } from "./meme-check";
 import type { ModelHealth } from "./health";
 
 /** Provider answers that mean the model cannot serve anyone right now (a dead key, no credit, a rate wall, an outage). */
@@ -132,6 +133,8 @@ export type AgentDeps = {
   raceRoutes?: AgentRaceRoutes | undefined;
   /** The person's weekly budget (the Budget lane); without it every money step waits for their tap (the safe default). */
   budget?: ((user: SessionUser) => AgentBudget | undefined) | undefined;
+  /** The meme/copycat check before a buy; one is made per runner when not given (tests pass their own). */
+  memeCheck?: MemeCheck | undefined;
   /** The model's self-test (health.ts): while it fails, /chat answers "agent_offline" at once. */
   health?: ModelHealth | undefined;
 };
@@ -183,6 +186,8 @@ export function createTurnRunner(deps: AgentDeps) {
   // other instance: production must set AGENT_APPROVAL_SECRET (one value for every instance).
   if (!approvalSecret && process.env.NODE_ENV === "production") throw new Error("AGENT_APPROVAL_SECRET must be set in production: pending approvals must survive restarts and instances");
   const conversations = new ConversationStore(db);
+  // One meme/copycat check for every turn: its GeckoTerminal cache and call budget are shared.
+  const memeCheck = deps.memeCheck ?? createMemeCheck();
   const secret = approvalSecret ?? randomBytes(SECRET_BYTES).toString("hex");
 
   const ownThread = async (userId: string, threadId: string) => {
@@ -251,6 +256,7 @@ export function createTurnRunner(deps: AgentDeps) {
       autoSendAllowed: !deps.deviceProofRequired || input.deviceProven === true,
       raceRoutes: deps.raceRoutes,
       budget: deps.budget?.(user),
+      memeCheck,
     });
     // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
     if (fx && user.displayCurrency && user.displayCurrency !== "USD") {

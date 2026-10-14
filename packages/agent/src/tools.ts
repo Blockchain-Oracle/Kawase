@@ -338,9 +338,18 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
       inputSchema: z.object({ token: z.string().min(1).max(TOKEN_QUERY_MAX) }),
       execute: async ({ token }) => {
         const detail = await resolveToken(context, token);
-        return detail
-          ? { status: "found" as const, network: context.network, token: detail.token, safety: detail.safety, market: detail.market, actions: detail.actions }
-          : { status: "not_found" as const, network: context.network, query: token };
+        if (!detail) return { status: "not_found" as const, network: context.network, query: token };
+        // The meme/copycat check (a copied name, a wash-traded or thin market); null = checked, nothing found.
+        const warning = context.tokenWarning ? await context.tokenWarning(detail).catch(() => undefined) : undefined;
+        return {
+          status: "found" as const,
+          network: context.network,
+          token: detail.token,
+          safety: detail.safety,
+          market: detail.market,
+          actions: detail.actions,
+          ...(warning !== undefined ? { warning } : {}),
+        };
       },
     }),
     get_price: tool({

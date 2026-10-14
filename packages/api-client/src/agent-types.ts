@@ -181,8 +181,34 @@ export type AgentRaceRequest = {
  * found). A race never invents a quote.
  */
 export type RaceRoutesOutput =
-  | { status: "racing" | "done"; request: AgentRaceRequest; race: import("./routes").RouteRace }
+  | {
+      status: "racing" | "done";
+      request: AgentRaceRequest;
+      race: import("./routes").RouteRace;
+      /** A swap into a token that looks like a copycat or a wash-traded meme (null: nothing found; absent: not checked). */
+      warning?: TokenWarning | null | undefined;
+    }
   | { status: "routes_unavailable"; request: AgentRaceRequest; race: null; reason: "not_bound" | "failed" | "no_venues" | "direct" | "unknown_token" };
+
+/**
+ * The meme/copycat check before a buy (front door): a token whose name copies a known asset, or whose market looks
+ * wash-traded (volume far above what its pools hold, identical volumes across pools, a few wallets trading a lot) or
+ * too thin to sell. Read from GeckoTerminal's pools (cached on the api) and Kawase's own copycat rule. A warning never
+ * blocks by itself: the card shows it before the person decides, and the trade card's own safety verdict still applies.
+ */
+export type TokenWarningReason = "copies_name" | "wash_volume" | "identical_volumes" | "few_traders" | "thin_liquidity" | "impersonator";
+export type TokenWarning = {
+  level: "caution" | "danger";
+  reasons: TokenWarningReason[];
+  token: { symbol: string; name: string; address: string };
+  /** The known asset its name copies ("Pepe", "USDC"), for copies_name. */
+  copies: string | null;
+  volume24hUsd: number | null;
+  liquidityUsd: number | null;
+  /** Who read the market: "GeckoTerminal", or null when only Kawase's own name rule ran (no pools on this network). */
+  checkedBy: string | null;
+  checkedAt: string;
+};
 
 /** One money step the agent wants to take, as the weekly budget sees it (D38). The Budget lane answers allows(). */
 export type BudgetAction = {

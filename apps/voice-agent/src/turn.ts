@@ -29,7 +29,8 @@ export const turnId = (meta: SessionMeta, key: string) =>
     .update(`${meta.turnNamespace ?? meta.threadId}:${key}`)
     .digest("hex");
 
-type StreamChunk = { type: string; delta?: string; toolCallId?: string; toolName?: string; output?: unknown };
+/** `preliminary`: a live tool's snapshot (the route race while venues answer); only its final output is a card. */
+type StreamChunk = { type: string; delta?: string; toolCallId?: string; toolName?: string; output?: unknown; preliminary?: boolean };
 
 export async function runTurn(
   meta: SessionMeta,
@@ -77,7 +78,8 @@ export async function runTurn(
         console.info(`voice turn: ${chunk.toolName} called after ${Date.now() - startedAt} ms`);
         tools.set(chunk.toolCallId, chunk.toolName);
         events.onToolCall?.(chunk.toolName);
-      } else if (chunk.type === "tool-output-available" && chunk.toolCallId) {
+      } else if (chunk.type === "tool-output-available" && chunk.toolCallId && chunk.preliminary !== true) {
+        // A race yields a snapshot per venue answer: the phone gets the finished race once, never a card per snapshot.
         const card = {
           toolName: tools.get(chunk.toolCallId) ?? "",
           toolCallId: chunk.toolCallId,

@@ -7,10 +7,10 @@
 //   - For you (Found: what Kawase noticed, one tap to act) —
 // and groups it Done · Held · Skipped · Watching · Found. Money that merely arrived is Activity's, not the agent's.
 // A source that cannot be read leaves its rows out and is named in `partial`; the rest is still served.
-import { and, desc, eq, gt, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 
-import { AGENT_FEED_GROUPS, type AgentFeed, type AgentFeedGroup, type AgentFeedItem, type AgentFeedKind, type AgentFeedOrigin, type FeedItem, type FeedPage, type FeedToken, type SuggestionsView } from "@kawase/api-client";
-import { automations, intents, type AutomationAction, type AutoSaveAction, type DcaAction, type Db, type RuleAction } from "@kawase/db";
+import { AGENT_FEED_GROUPS, type AgentFeed, type AgentFeedDetail, type RaceRoutesOutput, type RouteRace, type AgentFeedGroup, type AgentFeedItem, type AgentFeedKind, type AgentFeedOrigin, type FeedItem, type FeedPage, type FeedToken, type SuggestionsView } from "@kawase/api-client";
+import { automations, intentDrafts, intents, threadMessages, type AutomationAction, type AutoSaveAction, type DcaAction, type Db, type RuleAction } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { getNetwork, type NetworkId } from "@kawase/networks";
 
@@ -58,8 +58,55 @@ function blank(partial: Pick<AgentFeedItem, "id" | "group" | "source" | "kind" |
     runId: null,
     needsYouId: null,
     threadId: null,
+    venue: null,
     suggestion: null,
   };
+}
+
+/** A stored message part, loosely (only what the detail reads). */
+type ThreadPart = { type: string; state?: string; preliminary?: boolean; text?: unknown; output?: unknown };
+
+/** The intent a card carries ({ intent: { id } } on every propose_* output), if any. */
+function intentIdOf(part: ThreadPart): string | null {
+  if (!part.type.startsWith("tool-") || part.state !== "output-available") return null;
+  const intent = (part.output as { intent?: { id?: unknown } } | undefined)?.intent;
+  return typeof intent?.id === "string" ? intent.id : null;
+}
+
+/** Display names the services write ("KyberSwap", "LI.FI", "Circle App Kit") → identity slugs (packages/identity). */
+const VENUE_SLUGS: Record<string, string> = {
+  kyberswap: "kyberswap",
+  kyber: "kyberswap",
+  lifi: "lifi",
+  appkit: "app_kit",
+  circleappkit: "app_kit",
+  app_kit: "app_kit",
+  uniswap: "uniswap",
+  uniswapv3: "uniswap",
+  zerox: "zerox",
+  "0x": "zerox",
+  socket: "socket",
+  bungee: "socket",
+  gaszip: "gaszip",
+  across: "across",
+  relay: "relay",
+  debridge: "debridge",
+  cctp: "cctp",
+  circlecctp: "cctp",
+};
+
+/** The venue a draft ran on: its `venue`, else its `provider`/`bridge`, as an identity slug (unknown names stay null). */
+function venueOf(payload: Record<string, unknown>): string | null {
+  for (const field of ["venue", "provider", "bridge", "route"]) {
+    const value = payload[field];
+    if (typeof value !== "string") continue;
+    // "Aave V4 · KyberSwap": the venue that swapped is the last named part.
+    for (const name of value.split("·").reverse()) {
+      const slug = VENUE_SLUGS[name.toLowerCase().replace(/[\s.-]/g, "")];
+      if (slug) return slug;
+    }
+  }
+  return null;
 }
 
 export type FeedSources = {
@@ -107,6 +154,7 @@ export class FeedService {
         suggestion,
       })),
     ];
+    await this.withVenues(items);
 
     const groups = AGENT_FEED_GROUPS.map((group) => {
       const inGroup = items.filter((item) => item.group === group);
@@ -116,6 +164,66 @@ export class FeedService {
       return { group, count: inGroup.length, items: sorted.slice(0, GROUP_ROWS) };
     });
     return { network, groups, next: watched.next, partial, generatedAt: now.toISOString() };
+  }
+
+  /**
+   * One row opened: the row as the feed has it, the race Kawase ran before it and the person's words. The race is
+   * read from the conversation that made the row — the last finished race_routes before the card that carries this
+   * intent — so it is what the person watched, not a new quote. A row from a screen or an automation has no race.
+   */
+  async detail(user: SessionUser, network: NetworkId, id: string, now: Date = new Date()): Promise<AgentFeedDetail | null> {
+    const feed = await this.get(user, network, now);
+    const item = feed.groups.flatMap((group) => group.items).find((row) => row.id === id);
+    if (!item) return null;
+    if (!item.threadId || !item.intentId) return { item, race: null, asked: null };
+    const rows = await this.db
+      .select({ role: threadMessages.role, parts: threadMessages.parts, seq: threadMessages.seq })
+      .from(threadMessages)
+      .where(and(eq(threadMessages.threadId, item.threadId), eq(threadMessages.userId, user.id)))
+      .orderBy(asc(threadMessages.seq));
+    const messages = rows.map((row) => ({ role: row.role, parts: (row.parts ?? []) as ThreadPart[] }));
+    const at = messages.findIndex((message) => message.parts.some((part) => intentIdOf(part) === item.intentId));
+    if (at < 0) return { item, race: null, asked: null };
+    let race: RouteRace | null = null;
+    let asked: string | null = null;
+    for (let index = at; index >= 0 && (race === null || asked === null); index--) {
+      const message = messages[index]!;
+      if (message.role === "user") {
+        asked ??= message.parts.map((part) => (part.type === "text" && typeof part.text === "string" ? part.text : "")).join(" ").trim() || null;
+        // A race belongs to the question that asked for it: stop at the question.
+        break;
+      }
+      for (const part of [...message.parts].reverse()) {
+        if (race === null && part.type === "tool-race_routes" && part.state === "output-available" && part.preliminary !== true) {
+          const output = part.output as RaceRoutesOutput | undefined;
+          if (output && output.status !== "routes_unavailable") race = output.race;
+        }
+      }
+    }
+    return { item, race, asked };
+  }
+
+  /** Each row's venue, from its intent's latest draft (the venue it was quoted and run on). */
+  private async withVenues(items: AgentFeedItem[]): Promise<void> {
+    const ids = [...new Set(items.map((item) => item.intentId).filter((id): id is string => Boolean(id)))];
+    if (ids.length === 0) return;
+    const drafts = await this.db
+      .select({ intentId: intentDrafts.intentId, version: intentDrafts.version, payload: intentDrafts.payload })
+      .from(intentDrafts)
+      .where(and(inArray(intentDrafts.intentId, ids), isNull(intentDrafts.voidedAt)))
+      .catch((error: unknown) => {
+        this.log.warn({ err: error }, "feed: venues unavailable");
+        return [];
+      });
+    const latest = new Map<string, { version: number; payload: Record<string, unknown> }>();
+    for (const draft of drafts) {
+      const seen = latest.get(draft.intentId);
+      if (!seen || draft.version > seen.version) latest.set(draft.intentId, { version: draft.version, payload: draft.payload });
+    }
+    for (const item of items) {
+      const draft = item.intentId ? latest.get(item.intentId) : undefined;
+      item.venue = draft ? venueOf(draft.payload) : null;
+    }
   }
 
   /** Activity's rows that are Kawase's work, named by who started them. */

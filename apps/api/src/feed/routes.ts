@@ -9,6 +9,8 @@ import type { AppEnv } from "../types";
 import type { FeedService } from "./service";
 
 const network = z.enum(["mainnet", "testnet"]);
+/** "<source>:<uuid>" with room to spare. */
+const ITEM_ID_MAX = 80;
 
 export function feedRoutes(feed: FeedService) {
   const app = new Hono<AppEnv>();
@@ -17,6 +19,15 @@ export function feedRoutes(feed: FeedService) {
     const parsed = network.safeParse(c.req.query("network") ?? c.get("user")!.activeNetwork);
     if (!parsed.success) throw problem(HTTP.badRequest, "validation");
     return c.json(await feed.get(c.get("user")!, parsed.data));
+  });
+  // `GET /feed/item/:id` — one row with the race it came from and the person's words (the detail sheet).
+  app.get("/item/:id", async (c) => {
+    const parsed = network.safeParse(c.req.query("network") ?? c.get("user")!.activeNetwork);
+    const id = c.req.param("id");
+    if (!parsed.success || id.length > ITEM_ID_MAX) throw problem(HTTP.badRequest, "validation");
+    const detail = await feed.detail(c.get("user")!, parsed.data, id);
+    if (!detail) throw problem(HTTP.notFound, "not_found");
+    return c.json(detail);
   });
   return app;
 }

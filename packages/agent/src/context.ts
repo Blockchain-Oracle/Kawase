@@ -65,6 +65,7 @@ import type {
   BudgetAction,
   RouteRace,
   AgentRaceRequest,
+  TokenWarning,
 } from "@kawase/api-client";
 
 import type { IntelligenceContext } from "./intelligence";
@@ -183,6 +184,11 @@ export type AgentContext = {
    * `done`. Without it race_routes says "routes_unavailable".
    */
   raceRoutes?(request: AgentRaceRequest, options: { signal?: AbortSignal | undefined }): AsyncIterable<RouteRace>;
+  /**
+   * The meme/copycat check for a token about to be bought (its name copies a known asset; a wash-traded or thin
+   * market, from GeckoTerminal). Null when nothing was found. Without it the race and the safety tool carry no warning.
+   */
+  tokenWarning?(detail: Pick<TokenDetailView, "token" | "market">): Promise<TokenWarning | null>;
   /** The weekly budget's yes (D38). Without it every money step waits for the person's tap. */
   budget?: AgentBudget | undefined;
   // Wallet & limits (A3). Optional so a context without them still builds; the tools say so when one is missing.

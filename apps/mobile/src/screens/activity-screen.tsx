@@ -1,219 +1,182 @@
-// The Activity tab (surfaces.md Activity; cards/automate-safety.md "Look back"; R7): one row per outcome on the active
-// network — every token in and out (Alchemy's transfer history, through the api), named by what Kawase knows of it
-// (a send, a swap, a bridge, savings, Kawase Margin, an automation's run, a request paid, the faucet), with Kawase's
-// own outcomes that never touched the chain (a run skipped and why, a practice "would have", a step waiting for you,
-// a payment still being checked). Filters All · In · Out · Trades · Automations · Needs you (with its count); a row
-// opens its receipt and its why. The week's report and the export stay on top (B2). Rows are kept per network. The tab
-// header is the shared one (avatar · network pill · inbox bell; Sign in for guests); `?filter=needs_you` opens on a
-// filter (Home's Needs you "See all").
+// The Activity tab = the agent's whole feed (D37; plan §D "Activity = full feed"): everything Kawase did, held,
+// skipped, is watching and found, day-grouped with filter chips and counts, each row opening its detail (the race it
+// came from and the receipt; a receipt with a transaction opens Why). "All money" keeps every token in and out on the
+// network, Kawase's or not (receives, the faucet, requests paid), with its own filters, so nothing from the old
+// Activity is lost. The week's report and the export stay on top. `?filter=needs_you` (or `held`) opens on Held.
+// Every state is designed: skeletons held 300 ms, empty states that name the next action, a failed refresh that keeps
+// the last rows and marks them stale, and a guest's sign-in plate instead of an empty list.
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Download } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { FeedItem, ReportView } from "@kawase/api-client";
-import { CoinStack } from "@kawase/ui-native/components/art/coin-stack";
-import { EmptyState } from "@kawase/ui-native/components/empty-state";
-import { ListGroup } from "@kawase/ui-native/components/list-row";
-import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import type { AgentFeedItem, FeedItem, ReportView } from "@kawase/api-client";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import { ActivityRowSkeleton } from "@/activity/activity-row";
-import { FeedRow } from "@/activity/feed-row";
+import { FeedRow as MoneyRow } from "@/activity/feed-row";
 import { FeedSheet } from "@/activity/feed-sheet";
 import { useFeed } from "@/activity/use-feed";
+import { Button, EmptyState, ErrorState, FilterChips, Icon, Panel, Segmented, SIZE, SPACE, StaleTick, TYPE, usePullRefresh, useTheme } from "@/components/kit";
 import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { ExportSheet } from "@/history/export-sheet";
 import { ReportCard } from "@/history/report-card";
+import { FeedDetailSheet } from "@/home/feed-detail-sheet";
+import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
+import { useAgentFeed } from "@/home/use-agent-feed";
+import { SignInPlate } from "@/home/markets-glance";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
-import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
-const STRIP_INSET = 6;
-const EDGE_INSET = 12;
-/** A desktop page starts below a little air (there is no status bar). */
-const WIDE_TOP = 32;
-const ART_WIDTH = 140;
-const SKELETON_ROWS = 4;
-
-type Filter = "all" | "in" | "out" | "trades" | "automations" | "needs_you";
-const FILTERS: Filter[] = ["all", "in", "out", "trades", "automations", "needs_you"];
-const KEEP: Record<Filter, (item: FeedItem) => boolean> = {
+type View_ = "kawase" | "money";
+type MoneyFilter = "all" | "in" | "out" | "trades" | "automations";
+const MONEY_FILTERS: MoneyFilter[] = ["all", "in", "out", "trades", "automations"];
+const KEEP: Record<MoneyFilter, (item: FeedItem) => boolean> = {
   all: () => true,
   in: (item) => item.direction === "in",
   out: (item) => item.direction === "out",
   trades: (item) => item.kind === "swap" || item.kind === "margin",
   automations: (item) => item.fromAutomation || item.kind === "practice",
-  needs_you: (item) => item.status === "waiting",
 };
-const LABEL: Record<Filter, string> = {
+const MONEY_LABEL: Record<MoneyFilter, string> = {
   all: "activity.filterAll",
   in: "activityFeed.filterIn",
   out: "activityFeed.filterOut",
   trades: "activityFeed.filterTrades",
   automations: "activityFeed.filterAutomations",
-  needs_you: "needsYou.title",
 };
-
-function Chip({ active, label, count, onPress }: { active: boolean; label: string; count?: number | undefined; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={count ? `${label}, ${count}` : label}
-      onPress={onPress}
-      className={cn("flex-row items-center gap-1.5 rounded-full px-3.5 py-2", active ? "bg-primary" : "bg-muted active:bg-secondary")}
-    >
-      <Text className={cn("text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>{label}</Text>
-      {count ? (
-        <View className={cn("min-w-5 items-center rounded-full px-1.5", active ? "bg-primary-foreground" : "bg-destructive")}>
-          <Text className={cn("text-xs font-bold", active ? "text-primary" : "text-destructive-foreground")}>{String(count)}</Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
+const SKELETON_ROWS = 4;
+const FEED_FILTERS: readonly FeedFilter[] = ["all", "done", "held", "skipped", "watching", "found"];
 
 export function ActivityScreen() {
   const { t } = useT();
+  const { color } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const clearance = useDockClearance();
-  const colors = useThemeColors();
   const wide = useWide();
-  const signIn = useSignIn();
-  const { user } = useSession();
+  const { status, user } = useSession();
+  const account = status === "account";
   const network = user?.activeNetwork ?? "testnet";
-  const testnet = network === "testnet";
-  const feed = useFeed(network);
   const params = useLocalSearchParams<{ filter?: string }>();
-  const asked = FILTERS.find((entry) => entry === params.filter);
-  const [filter, setFilter] = React.useState<Filter>(asked ?? "all");
-  // Opened again with a filter (from Home): that filter.
-  React.useEffect(() => {
-    if (asked) setFilter(asked);
-  }, [asked]);
-  const [open, setOpen] = React.useState<FeedItem>();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const asked: FeedFilter | undefined = params.filter === "needs_you" ? "held" : FEED_FILTERS.find((entry) => entry === params.filter);
+
+  const agent = useAgentFeed();
+  const money = useFeed(network);
+  const [view, setView] = React.useState<View_>("kawase");
+  const [filter, setFilter] = React.useState<FeedFilter>(asked ?? "all");
+  const [moneyFilter, setMoneyFilter] = React.useState<MoneyFilter>("all");
+  const [open, setOpen] = React.useState<AgentFeedItem | null>(null);
+  const [openMoney, setOpenMoney] = React.useState<FeedItem>();
   const [exporting, setExporting] = React.useState(false);
   const [report, setReport] = React.useState<ReportView>();
-  const account = Boolean(user && !user.isGuest);
+  React.useEffect(() => {
+    if (asked) {
+      setView("kawase");
+      setFilter(asked);
+    }
+  }, [asked]);
 
+  const refreshMoney = money.refresh;
   useFocusEffect(
     React.useCallback(() => {
-      void feed.refresh();
+      void refreshMoney();
       // The week's report sits above the list (signed in only); a failure just leaves it out.
       if (account) void api.history.report(network).then((result) => setReport(result.report)).catch(() => undefined);
-    }, [feed.refresh, account, network]),
+    }, [refreshMoney, account, network]),
   );
+  const refreshing = usePullRefresh(() => Promise.all([agent.refresh(), money.refresh()]));
 
-  const items = feed.items.filter(KEEP[filter]);
-  const pull = async () => {
-    setRefreshing(true);
-    await feed.refresh();
-    setRefreshing(false);
-  };
-  // A row waiting for the person goes straight to its answer; anything else opens its receipt.
-  const openRow = (item: FeedItem) => (item.status === "waiting" && item.needsYouId ? router.push({ pathname: "/needs-you/[id]", params: { id: item.needsYouId } }) : setOpen(item));
+  // A money row waiting for the person goes straight to its answer; anything else opens its receipt.
+  const openMoneyRow = (item: FeedItem) => (item.status === "waiting" && item.needsYouId ? router.push({ pathname: "/needs-you/[id]", params: { id: item.needsYouId } }) : setOpenMoney(item));
+  const moneyItems = money.items.filter(KEEP[moneyFilter]);
+  const agentRows = rowsFor(agent.feed, "all");
 
   return (
-    <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
+    <View style={[styles.page, { backgroundColor: color.background }]}>
       <ScrollView
-        className="flex-1"
-        contentContainerClassName={cn("gap-5 px-5", wide && "px-10")}
-        contentContainerStyle={[
-          { paddingTop: wide ? WIDE_TOP : testnet ? EDGE_INSET : insets.top + EDGE_INSET, paddingBottom: clearance.scroll },
-          // A desktop window: one centred column (the sidebar carries the header's pills).
-          wide ? { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center" } : null,
-        ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void pull()} tintColor={colors["muted-foreground"]} />}
+        refreshControl={account ? refreshing : undefined}
+        contentContainerStyle={[styles.content, { paddingTop: wide ? SPACE.xxl : insets.top + SPACE.md, paddingBottom: clearance.scroll }, wide ? styles.wide : null]}
       >
         {wide ? null : <TabHeader />}
-        <View className="flex-row items-center justify-between">
-          <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
+        <View style={styles.titleRow}>
+          <Text accessibilityRole="header" style={[TYPE.pageTitle, styles.grow, { color: color.ink }]}>
             {t("activity.title")}
           </Text>
-          {account ? (
-            <Button size="sm" variant="secondary" onPress={() => setExporting(true)}>
-              <Icon as={Download} className="size-4" />
-              <Text>{t("history.export")}</Text>
-            </Button>
-          ) : null}
+          {account ? <Button size="sm" block={false} variant="secondary" label={t("history.export")} leading={<Icon icon={Download} size={SIZE.iconSm} />} onPress={() => setExporting(true)} /> : null}
         </View>
         {report ? <ReportCard report={report} /> : null}
 
         {!account ? (
-          <EmptyState
-            art={<CoinStack width={ART_WIDTH} />}
-            title={t("activity.emptyTitle")}
-            body={t("activity.emptyBody")}
-            action={
-              <Button onPress={signIn.open}>
-                <Text>{t("signIn.title")}</Text>
-              </Button>
-            }
-          />
+          <SignInPlate />
         ) : (
           <>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2" accessibilityRole="tablist">
-              {FILTERS.map((entry) => (
-                <Chip key={entry} active={filter === entry} label={t(LABEL[entry])} count={entry === "needs_you" ? feed.needsYou : undefined} onPress={() => setFilter(entry)} />
-              ))}
-            </ScrollView>
-
-            {feed.stale ? (
-              <View className="bg-muted flex-row items-center gap-3 rounded-2xl px-4 py-2.5">
-                <Text accessibilityLiveRegion="polite" className={cn("text-muted-foreground flex-1 text-sm", TEXT_START)}>
-                  {t("activity.stale")}
-                </Text>
-                <Button size="sm" variant="ghost" onPress={() => void feed.refresh()}>
-                  <Text className="text-foreground">{t("common.retry")}</Text>
-                </Button>
+            <Segmented
+              options={[
+                { value: "kawase", label: t("feed.activity.kawase") },
+                { value: "money", label: t("feed.activity.money") },
+              ]}
+              value={view}
+              onChange={setView}
+              label={t("feed.activity.viewLabel")}
+            />
+            {view === "kawase" ? (
+              <View style={styles.section}>
+                {agent.feed && agentRows.length > 0 ? <FeedFilters feed={agent.feed} value={filter} onChange={setFilter} /> : null}
+                {agent.error && agent.asOf ? <StaleTick asOf={agent.asOf} reason="refresh-failed" /> : null}
+                {!agent.feed && agent.error ? (
+                  <ErrorState diagnosis={agent.error} retry={() => void agent.refresh()} stillWorks={t("feed.activity.stillWorks")} />
+                ) : agent.feed && agentRows.length === 0 ? (
+                  <EmptyState why={t("feed.activity.emptyWhy")} action={{ label: t("feed.activity.emptyAction"), onPress: () => router.navigate({ pathname: "/", params: { ask: t("feed.home.emptyPrompt") } }) }} />
+                ) : agent.feed && rowsFor(agent.feed, filter).length === 0 ? (
+                  <EmptyState why={t("feed.activity.emptyFilter", { filter: t(`feed.list.filter_${filter}`) })} action={{ label: t("feed.activity.showAll"), onPress: () => setFilter("all") }} size="inline" />
+                ) : (
+                  <FeedTimeline feed={agent.feed} filter={filter} onOpen={setOpen} />
+                )}
               </View>
-            ) : null}
-
-            {feed.status === "loading" ? (
-              <ListGroup>
-                {Array.from({ length: SKELETON_ROWS }, (_, i) => (
-                  <ActivityRowSkeleton key={i} />
-                ))}
-              </ListGroup>
-            ) : feed.status === "error" && feed.items.length === 0 ? (
-              <View className="bg-card border-border flex-row items-center gap-3 rounded-2xl border px-4 py-3">
-                <Text className="text-muted-foreground flex-1 text-sm">{t("activity.loadFailed")}</Text>
-                <Button size="sm" variant="secondary" onPress={() => void feed.refresh()}>
-                  <Text>{t("common.retry")}</Text>
-                </Button>
-              </View>
-            ) : items.length === 0 ? (
-              <EmptyState
-                art={<CoinStack width={ART_WIDTH} />}
-                title={filter === "needs_you" ? t("activityFeed.emptyNeedsYou") : filter === "all" ? t("activity.emptyTitle") : t("activityFeed.emptyFilter")}
-                body={filter !== "all" && feed.items.length > 0 ? t("activity.emptyFilterBody") : t("activity.emptyBody")}
-              />
             ) : (
-              <ListGroup>
-                {items.map((item) => (
-                  <FeedRow key={item.id} item={item} onPress={() => openRow(item)} />
-                ))}
-              </ListGroup>
+              <View style={styles.section}>
+                <FilterChips options={MONEY_FILTERS.map((entry) => ({ value: entry, label: t(MONEY_LABEL[entry]) }))} value={moneyFilter} onChange={setMoneyFilter} label={t("feed.activity.moneyFilterLabel")} />
+                {money.stale ? <Text style={[TYPE.caption, { color: color.text3 }]}>{t("activity.stale")}</Text> : null}
+                {money.status === "loading" ? (
+                  <Panel>
+                    {Array.from({ length: SKELETON_ROWS }, (_, i) => (
+                      <ActivityRowSkeleton key={i} />
+                    ))}
+                  </Panel>
+                ) : money.status === "error" && money.items.length === 0 ? (
+                  <ErrorState diagnosis={{ kind: "server", retryable: true }} retry={() => void money.refresh()} stillWorks={t("feed.activity.stillWorks")} variant="strip" />
+                ) : moneyItems.length === 0 ? (
+                  <EmptyState why={moneyFilter === "all" ? t("activity.emptyTitle") : t("activityFeed.emptyFilter")} detail={moneyFilter === "all" ? t("activity.emptyBody") : t("activity.emptyFilterBody")} />
+                ) : (
+                  <Panel>
+                    {moneyItems.map((item) => (
+                      <MoneyRow key={item.id} item={item} onPress={() => openMoneyRow(item)} />
+                    ))}
+                  </Panel>
+                )}
+                {money.more ? <Text style={[TYPE.caption, styles.center, { color: color.text3 }]}>{t("activityFeed.latestOnly")}</Text> : null}
+              </View>
             )}
-
-            {feed.more ? <Text className="text-muted-foreground pb-2 text-center text-sm">{t("activityFeed.latestOnly")}</Text> : null}
           </>
         )}
       </ScrollView>
-      <FeedSheet item={open} onClose={() => setOpen(undefined)} />
+      {open ? <FeedDetailSheet item={open} onClose={() => setOpen(null)} onAsk={(prompt) => router.navigate({ pathname: "/", params: { ask: prompt } })} /> : null}
+      <FeedSheet item={openMoney} onClose={() => setOpenMoney(undefined)} />
       {account ? <ExportSheet open={exporting} onClose={() => setExporting(false)} network={network} /> : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  content: { gap: SPACE.lg, paddingHorizontal: SPACE.lgPlus },
+  wide: { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center" },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  grow: { flex: 1 },
+  section: { gap: SPACE.md },
+  center: { textAlign: "center" },
+});
