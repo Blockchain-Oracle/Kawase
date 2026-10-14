@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const move: Catalog["move"] = {
   changed: "রুট বদলেছে। নতুন সংখ্যা দেখে আবার স্লাইড করুন।",
   unavailable: "এখন কোনো রুট নেই। একটু পরে আবার চেষ্টা করুন।",
-  title: "অন্য নেটওয়ার্কে পাঠান",
+  title: "ব্রিজ",
   bringTitle: "Arc-এ আনুন",
   directionOut: "পাঠান",
   directionIn: "Arc-এ আনুন",

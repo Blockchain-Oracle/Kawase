@@ -3,7 +3,7 @@ import type { Catalog } from "../en/index";
 export const move: Catalog["move"] = {
   changed: "路径变了。请查看新数字后再次滑动。",
   unavailable: "暂时没有路径。请稍后再试。",
-  title: "转到其他链",
+  title: "跨链",
   bringTitle: "转回 Arc",
   directionOut: "转出",
   directionIn: "转回 Arc",

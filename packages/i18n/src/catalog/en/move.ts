@@ -1,7 +1,7 @@
 export const move = {
   changed: "The route changed. Check the new numbers and slide again.",
   unavailable: "No route right now. Try again in a moment.",
-  title: "Move to another chain",
+  title: "Bridge",
   bringTitle: "Bring to Arc",
   directionOut: "Send out",
   directionIn: "Bring to Arc",

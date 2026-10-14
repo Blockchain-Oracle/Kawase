@@ -17,7 +17,8 @@ import { useSession } from "@/session/session-provider";
 
 const TILE_RADIUS = 20;
 const SKELETON_TILES = 6;
-const COLUMNS = 3;
+/** Two columns of rows (mark beside the name), so every chain's name is whole at a phone's width. */
+const COLUMNS = 2;
 const BORDER = 2;
 const PERCENT = 100;
 const DIM = 0.5;
@@ -36,6 +37,18 @@ const MARK_CHAIN: Record<string, number> = {
 };
 
 export const destinationMark = (destination: Pick<BridgeDestinationView, "id" | "chainId">) => chainKey(MARK_CHAIN[destination.id] ?? destination.chainId);
+
+/** The chain's own name: the test network's suffix ("Sepolia", "Fuji", "Amoy") is the network capsule's to say. */
+const CHAIN_NAME: Record<string, string> = {
+  base: "Base",
+  ethereum: "Ethereum",
+  arbitrum: "Arbitrum",
+  optimism: "Optimism",
+  polygon: "Polygon",
+  avalanche: "Avalanche",
+  unichain: "Unichain",
+};
+export const chainName = (destination: Pick<BridgeDestinationView, "id" | "name">) => CHAIN_NAME[destination.id] ?? destination.name;
 
 /** The chains a move can reach from the active network, read once per network. */
 export function useDestinations() {
@@ -83,8 +96,8 @@ export function ChainGrid({
       <View style={styles.grid} accessibilityRole="progressbar">
         {Array.from({ length: SKELETON_TILES }, (_, index) => (
           <View key={index} style={[styles.tile, { backgroundColor: color.card }]}>
-            <Skeleton width={SIZE.markToken} height={SIZE.markToken} radius={SIZE.markToken} />
-            <Skeleton width="70%" height={SIZE.skeletonSmall} />
+            <Skeleton width={SIZE.markRow} height={SIZE.markRow} radius={SIZE.markRow} />
+            <Skeleton width="55%" height={SIZE.skeletonSmall} />
           </View>
         ))}
       </View>
@@ -113,15 +126,17 @@ export function ChainGrid({
             }}
             style={[styles.tile, { backgroundColor: on ? color.selectedRow : color.card, borderColor: on ? color.accent : color.transparent, opacity: quiet ? DIM : 1 }]}
           >
-            <Mark entity={destinationMark(destination)} size={SIZE.markToken} />
-            <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
-              {destination.name}
-            </Text>
-            {waiting !== undefined ? (
-              <Text numberOfLines={1} style={[TYPE.meta, { color: color.text2 }]}>
-                {best && amountOf ? amountOf(best) : t("move.nothingThere")}
+            <Mark entity={destinationMark(destination)} size={SIZE.markRow} />
+            <View style={styles.text}>
+              <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
+                {chainName(destination)}
               </Text>
-            ) : null}
+              {waiting !== undefined ? (
+                <Text numberOfLines={1} style={[TYPE.meta, { color: color.text2 }]}>
+                  {best && amountOf ? amountOf(best) : t("move.nothingThere")}
+                </Text>
+              ) : null}
+            </View>
           </Pressable>
         );
       })}
@@ -130,12 +145,14 @@ export function ChainGrid({
 }
 
 const styles = StyleSheet.create({
+  text: { flex: 1, minWidth: 0, gap: SPACE.xxs },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
   tile: {
     flexBasis: `${Math.floor(PERCENT / COLUMNS) - GUTTER_PERCENT}%`,
     flexGrow: 1,
-    alignItems: "flex-start",
-    gap: SPACE.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.sm,
     padding: SPACE.md,
     borderRadius: TILE_RADIUS,
     borderWidth: BORDER,
