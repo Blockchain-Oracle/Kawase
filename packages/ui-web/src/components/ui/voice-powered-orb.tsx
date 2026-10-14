@@ -6,7 +6,7 @@ import { tokens } from "@kawase/ui-tokens";
 
 // Source: 21st.dev isaiahbjork/voice-powered-orb. Changes for Kawase: type fixes (the published source does not
 // compile under current TypeScript DOM types), the voice level and colours as props, a still frame when the visitor
-// prefers reduced motion, and (Lime on Ink, D35) the ring shader replaced by a glass sphere with a breathing core.
+// prefers reduced motion, and (10-14) the ring shader replaced by a fluid magenta orb that flows faster with the voice.
 type OrbGL = OGLRenderingContext & { canvas: HTMLCanvasElement };
 const DEFAULT_ORB_COLORS: readonly [string, string, string] = tokens.orb.mainnet;
 const hexToVec3 = (hex: string) => {
@@ -145,8 +145,10 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     uniform vec3 baseColor1;
     uniform vec3 baseColor2;
     uniform vec3 baseColor3;
-    // Kawase (Lime on Ink): a glass sphere lit from the top-start, with a lime core that breathes with the voice
-    // level. baseColor1 = the core, baseColor2 = the rim light, baseColor3 = the glass body.
+    // Kawase (Senryo, 10-14): a living fluid orb, the voice's one figure (ChatGPT's voice mode, Siri). Three tones
+    // flow through the whole sphere by domain-warped noise: baseColor1 = the vivid body (magenta), baseColor2 = the
+    // light currents, baseColor3 = the depth. The voice level (hover) speeds the flow, deepens the warp, brightens the
+    // inner glow and swells the sphere a little; a soft rim and highlight keep it round.
     const float sphereRadius = 0.86;
     const float edgeSoftness = 0.012;
 
@@ -155,32 +157,28 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
       vec3 color2 = adjustHue(baseColor2, hue);
       vec3 color3 = adjustHue(baseColor3, hue);
 
+      float r = sphereRadius * (0.95 + hover * 0.07);
       float len = length(uv);
-      float inside = 1.0 - smoothstep(sphereRadius - edgeSoftness, sphereRadius + edgeSoftness, len);
+      float inside = 1.0 - smoothstep(r - edgeSoftness, r + edgeSoftness, len);
       if (inside <= 0.0) return vec4(0.0);
-      float z = sqrt(max(0.0, 1.0 - (len * len) / (sphereRadius * sphereRadius)));
-      vec3 n = normalize(vec3(uv / sphereRadius, z));
-      vec3 lightDir = normalize(vec3(-0.45, -0.6, 0.65));
-      float diff = max(dot(n, lightDir), 0.0);
-      float fresnel = pow(1.0 - z, 3.0);
+      vec2 p = uv / r;
+      float z = sqrt(max(0.0, 1.0 - dot(p, p)));
+      float t = iTime * (0.16 + hover * 0.6) + rot * 0.2;
 
-      float n0 = snoise3(vec3(uv * 1.4, iTime * 0.3 + rot)) * 0.5 + 0.5;
-      float coreR = 0.22 + hover * 0.30 + n0 * 0.04;
-      float core = smoothstep(coreR, 0.0, len);
-      float halo = smoothstep(coreR + 0.35, coreR * 0.6, len) * (0.30 + hover * 0.30);
-      float n1 = snoise3(vec3(uv * 3.0 + 7.0, iTime * 0.15)) * 0.5 + 0.5;
-      float edge = smoothstep(sphereRadius - 0.07, sphereRadius - 0.006, len);
+      vec2 q = vec2(snoise3(vec3(p * 1.1, t)), snoise3(vec3(p * 1.1 + 5.2, t + 1.7)));
+      vec2 w = p + q * (0.55 + hover * 0.4);
+      float f1 = snoise3(vec3(w * 1.5, t * 1.2)) * 0.5 + 0.5;
+      float f2 = snoise3(vec3(w * 2.3 + 3.1, t * 0.8 + 2.0)) * 0.5 + 0.5;
 
-      vec2 hp = vec2(-0.34, -0.42);
-      vec2 hd = (uv - hp) * vec2(6.0, 9.0);
-      float spec = exp(-dot(hd, hd));
-
-      vec3 col = color3 * (0.10 + 0.10 * diff) + color3 * n1 * 0.06;
-      col += color1 * (core * (0.9 + hover * 0.3) + halo);
-      col += color2 * (fresnel * 0.6 + edge * 0.5) * (1.0 + hover * 0.3);
-      col += vec3(1.0) * (spec * 0.85 + edge * 0.15);
-      float alpha = inside * (0.30 + 0.70 * max(max(fresnel * 1.4, edge * 0.8), core) + spec);
-      return vec4(clamp(col, 0.0, 1.0), clamp(alpha, 0.0, 1.0));
+      vec3 col = mix(color3, color1, smoothstep(0.12, 0.8, f1));
+      col = mix(col, color2, smoothstep(0.55, 0.95, f2) * 0.7);
+      col *= 0.72 + 0.38 * z;
+      col += color2 * (0.06 + hover * 0.28) * smoothstep(1.0, 0.0, length(p));
+      float fresnel = pow(1.0 - z, 2.5);
+      col = mix(col, color2, fresnel * 0.4);
+      vec2 hd = (p - vec2(-0.38, -0.46)) * vec2(4.5, 6.0);
+      col += vec3(1.0) * exp(-dot(hd, hd)) * 0.32;
+      return vec4(clamp(col, 0.0, 1.0), inside);
     }
 
     vec4 mainImage(vec2 fragCoord) {

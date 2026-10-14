@@ -1,6 +1,6 @@
 // Native twin of ui-web's voice-powered-orb (21st.dev isaiahbjork/voice-powered-orb).
-// The same fragment shader, ported from WebGL to Skia's shader language: since the revamp (Lime on Ink, D35) a glass
-// sphere with a core that breathes with the voice level. The level comes from a prop (the app owns the microphone),
+// The same fragment shader, ported from WebGL to Skia's shader language: since 10-14 a fluid magenta orb whose currents
+// flow faster and glow brighter with the voice level. The level comes from a prop (the app owns the microphone),
 // and with reduced motion (read live) the orb is a still frame. `paused` stops the frame loop while the orb cannot be
 // seen — its screen covered, the app in the background (Codex review R16). Without a label it is decoration, not an
 // element a screen reader stops on (R13).
@@ -49,8 +49,10 @@ float snoise3(float3 p) {
   return dot(float4(31.316), n);
 }
 
-// Kawase (Lime on Ink): a glass sphere lit from the top-start, with a lime core that breathes with the voice
-// level. baseColor1 = the core, baseColor2 = the rim light, baseColor3 = the glass body.
+// Kawase (Senryo, 10-14): a living fluid orb, the voice's one figure (ChatGPT's voice mode, Siri). Three tones flow
+// through the whole sphere by domain-warped noise: baseColor1 = the vivid body (magenta), baseColor2 = the light
+// currents, baseColor3 = the depth. The voice level (hover) speeds the flow, deepens the warp, brightens the inner glow
+// and swells the sphere a little; a soft rim and highlight keep it round. The same drawing as the web orb.
 const float sphereRadius = 0.86;
 const float edgeSoftness = 0.012;
 
@@ -59,32 +61,28 @@ float4 draw(float2 uv) {
   float3 color2 = baseColor2;
   float3 color3 = baseColor3;
 
+  float r = sphereRadius * (0.95 + hover * 0.07);
   float len = length(uv);
-  float inside = 1.0 - smoothstep(sphereRadius - edgeSoftness, sphereRadius + edgeSoftness, len);
+  float inside = 1.0 - smoothstep(r - edgeSoftness, r + edgeSoftness, len);
   if (inside <= 0.0) return float4(0.0);
-  float z = sqrt(max(0.0, 1.0 - (len * len) / (sphereRadius * sphereRadius)));
-  float3 n = normalize(float3(uv / sphereRadius, z));
-  float3 lightDir = normalize(float3(-0.45, -0.6, 0.65));
-  float diff = max(dot(n, lightDir), 0.0);
-  float fresnel = pow(1.0 - z, 3.0);
+  float2 p = uv / r;
+  float z = sqrt(max(0.0, 1.0 - dot(p, p)));
+  float t = iTime * (0.16 + hover * 0.6) + rot * 0.2;
 
-  float n0 = snoise3(float3(uv * 1.4, iTime * 0.3 + rot)) * 0.5 + 0.5;
-  float coreR = 0.22 + hover * 0.30 + n0 * 0.04;
-  float core = smoothstep(coreR, 0.0, len);
-  float halo = smoothstep(coreR + 0.35, coreR * 0.6, len) * (0.30 + hover * 0.30);
-  float n1 = snoise3(float3(uv * 3.0 + 7.0, iTime * 0.15)) * 0.5 + 0.5;
-  float edge = smoothstep(sphereRadius - 0.07, sphereRadius - 0.006, len);
+  float2 q = float2(snoise3(float3(p * 1.1, t)), snoise3(float3(p * 1.1 + 5.2, t + 1.7)));
+  float2 w = p + q * (0.55 + hover * 0.4);
+  float f1 = snoise3(float3(w * 1.5, t * 1.2)) * 0.5 + 0.5;
+  float f2 = snoise3(float3(w * 2.3 + 3.1, t * 0.8 + 2.0)) * 0.5 + 0.5;
 
-  float2 hp = float2(-0.34, -0.42);
-  float2 hd = (uv - hp) * float2(6.0, 9.0);
-  float spec = exp(-dot(hd, hd));
-
-  float3 col = color3 * (0.10 + 0.10 * diff) + color3 * n1 * 0.06;
-  col += color1 * (core * (0.9 + hover * 0.3) + halo);
-  col += color2 * (fresnel * 0.6 + edge * 0.5) * (1.0 + hover * 0.3);
-  col += float3(1.0) * (spec * 0.85 + edge * 0.15);
-  float alpha = inside * (0.30 + 0.70 * max(max(fresnel * 1.4, edge * 0.8), core) + spec);
-  return float4(clamp(col, 0.0, 1.0), clamp(alpha, 0.0, 1.0));
+  float3 col = mix(color3, color1, smoothstep(0.12, 0.8, f1));
+  col = mix(col, color2, smoothstep(0.55, 0.95, f2) * 0.7);
+  col *= 0.72 + 0.38 * z;
+  col += color2 * (0.06 + hover * 0.28) * smoothstep(1.0, 0.0, length(p));
+  float fresnel = pow(1.0 - z, 2.5);
+  col = mix(col, color2, fresnel * 0.4);
+  float2 hd = (p - float2(-0.38, -0.46)) * float2(4.5, 6.0);
+  col += float3(1.0) * exp(-dot(hd, hd)) * 0.32;
+  return float4(clamp(col, 0.0, 1.0), inside);
 }
 
 half4 main(float2 fragCoord) {
