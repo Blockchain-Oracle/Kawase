@@ -29,8 +29,8 @@ export const QUOTE_ONLY_TAKER: Address = "0x000000000000000000000000000000000000
 const USDC_DECIMALS = 6;
 const NATIVE_DECIMALS = 18;
 const STABLE_KINDS = new Set(["dollar", "fiat"]);
-const BRIDGES = ["cctp", "across", "relay", "lifi", "debridge", "socket", "gaszip"] as const;
-type Bridge = (typeof BRIDGES)[number];
+type Bridge = "cctp" | "across" | "relay" | "lifi" | "debridge" | "socket" | "gaszip";
+const ZERO = 0n;
 const TRUST: Record<Bridge, "burn_mint" | "solver"> = { cctp: "burn_mint", across: "solver", relay: "solver", lifi: "solver", debridge: "solver", socket: "solver", gaszip: "solver" };
 const CHAIN_NAMES: Record<string, string> = { base: "Base", ethereum: "Ethereum", arbitrum: "Arbitrum", optimism: "OP Mainnet", polygon: "Polygon", avalanche: "Avalanche" };
 
@@ -65,12 +65,12 @@ const bridgeRow = (provider: Bridge, received: bigint, output: TokenMeta, extra:
     status: "quoted",
     receive: { amount: received.toString(), symbol: output.symbol, decimals: output.decimals },
     net: net.toString(),
-    feeUsd: feeUnits !== null && output.symbol === "USDC" ? Number(formatUnits(feeUnits > 0n ? feeUnits : 0n, USDC_DECIMALS)) : null,
+    feeUsd: feeUnits !== null && output.symbol === "USDC" ? Number(formatUnits(feeUnits > ZERO ? feeUnits : ZERO, USDC_DECIMALS)) : null,
     etaSeconds: fillSeconds,
     detail: via ? [via] : [],
     executable: executableBridge(provider),
     reason: executableBridge(provider) ? null : "not_enabled",
-    facts: [{ kind: "trust", value: TRUST[provider] }, ...(via ? [{ kind: "via" as const, value: via }] : []), ...(minReceived !== null ? [{ kind: "min_receive" as const, value: minReceived.toString() }] : []), ...(extraCost > 0n ? [{ kind: "flat_fee" as const, value: extraCost.toString() }] : [])],
+    facts: [{ kind: "trust", value: TRUST[provider] }, ...(via ? [{ kind: "via" as const, value: via }] : []), ...(minReceived !== null ? [{ kind: "min_receive" as const, value: minReceived.toString() }] : []), ...(extraCost > ZERO ? [{ kind: "flat_fee" as const, value: extraCost.toString() }] : [])],
     minReceive: minReceived?.toString() ?? null,
     ...rest,
   };
@@ -86,7 +86,7 @@ function amountOf(text: string, decimals: number): bigint {
   const value = text.trim();
   if (!/^\d+(\.\d+)?$/.test(value) || (value.split(".")[1]?.length ?? 0) > decimals) throw new RaceInputError("invalid_amount");
   const units = parseUnits(value, decimals);
-  if (units <= 0n) throw new RaceInputError("invalid_amount");
+  if (units <= ZERO) throw new RaceInputError("invalid_amount");
   return units;
 }
 
@@ -130,7 +130,7 @@ export function createRouteRacer(deps: RouteRacerDeps) {
           return {
             pending: [pending],
             result: attempt.result.then(
-              (quote) => [quote.estimatedOut > 0n ? routeFromVenueQuote(quote, out) : failedRow(pending, "no_route")],
+              (quote) => [quote.estimatedOut > ZERO ? routeFromVenueQuote(quote, out) : failedRow(pending, "no_route")],
               (error: unknown) => [routeFromVenueFailure(failureOf(attempt.venue, error))],
             ),
           };
@@ -167,7 +167,7 @@ export function createRouteRacer(deps: RouteRacerDeps) {
         list.push(
           attempt("cctp", async () => {
             const estimate = await deps.bridges.estimate({ network: context, client, from: wallet, destination: chain, recipient, amount: formatUnits(amount, USDC_DECIMALS) });
-            const received = amount > estimate.maxFee ? amount - estimate.maxFee : 0n;
+            const received = amount > estimate.maxFee ? amount - estimate.maxFee : ZERO;
             return [bridgeRow("cctp", received, output, { minReceived: received, amountIn: amount })];
           }),
           attempt("across", async () => {
@@ -215,7 +215,7 @@ export function createRouteRacer(deps: RouteRacerDeps) {
       const meta: TokenMeta = { symbol: token.symbol, decimals: token.decimals };
       const pending = [checkingRow("aave", "provider:aave", "Aave"), checkingRow("morpho", "provider:morpho", "Morpho"), checkingRow("merkl", "provider:merkl", "Merkl")];
       const result = deps.yieldOptions(user, token.symbol, request.amount ?? null).then((view) => view.options.map((option) => routeFromYield(option, meta, amount)));
-      return raceRoutes("yield", [{ pending, result }], { ...options, ask: { amount: (amount ?? 0n).toString(), symbol: token.symbol, decimals: token.decimals, to: token.symbol } });
+      return raceRoutes("yield", [{ pending, result }], { ...options, ask: { amount: (amount ?? ZERO).toString(), symbol: token.symbol, decimals: token.decimals, to: token.symbol } });
     },
   };
 }

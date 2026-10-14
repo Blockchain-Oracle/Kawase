@@ -7,6 +7,7 @@ import { getVenueIdentity, providerKey, venueKey } from "@kawase/identity";
 import { SWAP_VENUE_NAMES, isSwapVenue, type VenueFailure, type VenueQuote } from "../swap/venues";
 
 const BPS = 10_000;
+const DECIMAL_BASE = 10;
 const MAX_FACTS = 4;
 /** A year's earnings are shown on this many units of the asset when no amount was given. */
 const YIELD_UNITS_WITHOUT_AMOUNT = 1;
@@ -70,7 +71,7 @@ export function routeFromSwapView(route: SwapRouteView, out: TokenMeta): RouteQu
 /** A route stored on a move draft (CrossChainDraftView.routes); `asset` is what leaves, for the fee in dollars. */
 export function routeFromCrossChainView(route: CrossChainRouteView, input: { decimals: number; usdPerUnit: number | null }): RouteQuote {
   const output = route.output ?? { symbol: "USDC", decimals: 6, chainId: 0, address: "" };
-  const fee = route.fee !== null && input.usdPerUnit !== null ? (Number(route.fee) / 10 ** input.decimals) * input.usdPerUnit : null;
+  const fee = route.fee !== null && input.usdPerUnit !== null ? (Number(route.fee) / DECIMAL_BASE ** input.decimals) * input.usdPerUnit : null;
   const quoted = route.received !== null;
   return {
     venue: route.provider,
@@ -90,7 +91,7 @@ export function routeFromCrossChainView(route: CrossChainRouteView, input: { dec
 
 /** A place to earn (YieldOptionView): what a year would bring on `amount` (base units of the asset), ranked by it. */
 export function routeFromYield(option: YieldOptionView, asset: TokenMeta, amount: bigint | null): RouteQuote {
-  const principal = amount ?? 10n ** BigInt(asset.decimals) * BigInt(YIELD_UNITS_WITHOUT_AMOUNT);
+  const principal = amount ?? BigInt(DECIMAL_BASE) ** BigInt(asset.decimals) * BigInt(YIELD_UNITS_WITHOUT_AMOUNT);
   const apyBps = Math.round(option.rate * BPS);
   const yearly = (principal * BigInt(Math.max(apyBps, 0))) / BigInt(BPS);
   const protocol = option.protocol.toLowerCase();

@@ -21,7 +21,13 @@ import { createRouteRacer } from "./racer";
 const ENV_FILE = new URL("../../../../.env", import.meta.url).pathname;
 if (existsSync(ENV_FILE)) process.loadEnvFile(ENV_FILE);
 
-const args = process.argv.slice(2);
+/** argv[0] is node, argv[1] this script. */
+const ARGS_FROM = 2;
+const SELECTOR_CHARS = 10;
+/** Prepare is held to 99% of the shown minimum, as the swap service's half-slippage build would be. */
+const HELD_SHARE = 99n;
+const WHOLE = 100n;
+const args = process.argv.slice(ARGS_FROM);
 const recordAt = args.indexOf("--record");
 const recordFile = recordAt >= 0 ? args[recordAt + 1] : undefined;
 const requester = getAddress(args.find((arg) => arg.startsWith("0x")) ?? "0x1111111111111111111111111111111111111111");
@@ -65,7 +71,7 @@ for (const venue of ["uniswap", "zerox", "socket"] as SwapVenue[]) {
     console.log(venue, "did not quote:", row?.reason);
     continue;
   }
-  const input = { network, client, from: requester, tokenIn: USDC, tokenOut: EURC, amountIn: 10_000_000n, decimalsIn: 6, decimalsOut: 6, slippageBps: 50, minOut: (BigInt(row.minReceive) * 99n) / 100n };
+  const input = { network, client, from: requester, tokenIn: USDC, tokenOut: EURC, amountIn: 10_000_000n, decimalsIn: 6, decimalsOut: 6, slippageBps: 50, minOut: (BigInt(row.minReceive) * HELD_SHARE) / WHOLE };
   try {
     const prepared = await venues.prepare(venue, input);
     console.log(
@@ -76,7 +82,7 @@ for (const venue of ["uniswap", "zerox", "socket"] as SwapVenue[]) {
       `guaranteed=${prepared.guaranteedOut}`,
       `feeBps=${row.feeBps ?? "-"}`,
       "calls:",
-      prepared.calls.map((call) => `${call.to}:${call.data.slice(0, 10)}:value=${call.value}`).join(" → "),
+      prepared.calls.map((call) => `${call.to}:${call.data.slice(0, SELECTOR_CHARS)}:value=${call.value}`).join(" → "),
       "checks: passed (recipient = requester)",
     );
   } catch (error) {

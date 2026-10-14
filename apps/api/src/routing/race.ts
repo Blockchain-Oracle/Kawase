@@ -40,7 +40,9 @@ export const failedRow = (row: RouteQuote, reason: string, status: "failed" | "u
 
 const RANK: Record<RouteQuote["status"], number> = { quoted: 0, checking: 1, failed: 2, unavailable: 3 };
 
-const netOf = (row: RouteQuote) => (row.net === null ? -1n : BigInt(row.net));
+const NO_NET = -1n;
+const EVEN = 0n;
+const netOf = (row: RouteQuote) => (row.net === null ? NO_NET : BigInt(row.net));
 
 /** Executable quotes by net (ties: the faster), then quotes Kawase cannot execute, then rows still checking, then failures. */
 export function rankRows(rows: readonly RouteQuote[]): RouteQuote[] {
@@ -50,7 +52,7 @@ export function rankRows(rows: readonly RouteQuote[]): RouteQuote[] {
     if (byTier !== 0) return byTier;
     if (a.status !== "quoted" || b.status !== "quoted") return 0;
     const diff = netOf(b) - netOf(a);
-    if (diff !== 0n) return diff > 0n ? 1 : -1;
+    if (diff !== EVEN) return diff > EVEN ? 1 : -1;
     return (a.etaSeconds ?? Number.POSITIVE_INFINITY) - (b.etaSeconds ?? Number.POSITIVE_INFINITY);
   });
 }

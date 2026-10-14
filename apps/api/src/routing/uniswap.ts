@@ -16,7 +16,15 @@ const RETRY_AFTER_MS = 400;
 const HTTP_SERVER_ERROR = 500;
 const NO_VALUE = 0n;
 /** Arc's native face of USDC has 18 decimals, its ERC-20 face 6. */
-const NATIVE_SCALE = 10n ** 12n;
+const DECIMAL_BASE = 10n;
+const NATIVE_EXTRA_DECIMALS = 12n;
+const NATIVE_SCALE = DECIMAL_BASE ** NATIVE_EXTRA_DECIMALS;
+/** Shown pool fee digits ("0.050%"). */
+const FEE_DIGITS = 3;
+/** approve + execute, or approve + permit + execute. */
+const APPROVE_AND_SWAP = 2;
+const WITH_PERMIT = 3;
+const HEX_PREFIX = 2;
 const PERCENT = 100;
 const BPS = 10_000;
 
@@ -134,7 +142,7 @@ export async function uniswapQuote(input: UniswapQuoteInput): Promise<UniswapQuo
     requestId: String(body.requestId ?? ""),
     estimatedOut: BigInt(quote.output.amount),
     minOut: BigInt(quote.output.minimumAmount),
-    via: pools.map((pool) => `${String(pool.type ?? "").replace(/-pool$/, "")} ${(Number(pool.fee ?? 0) / BPS).toFixed(3)}%`),
+    via: pools.map((pool) => `${String(pool.type ?? "").replace(/-pool$/, "")} ${(Number(pool.fee ?? 0) / BPS).toFixed(FEE_DIGITS)}%`),
     gasFeeUsd: quote.gasFeeUSD ? Number(quote.gasFeeUSD) : null,
     // Uniswap fees are in hundredths of a basis point (180 = 0.018%).
     poolFeeRate: fees.length ? fees.reduce((sum, fee) => sum + fee, 0) / (BPS * PERCENT) : null,
@@ -175,7 +183,8 @@ export function checkUniswapCalls(
     if (calls.length !== 1) return { ok: false, reason: "wrong_shape" };
     if (main.value !== expected.amountIn * NATIVE_SCALE) return { ok: false, reason: "native_value" };
   } else {
-    if (calls.length < 2 || calls.length > 3 || main.value !== NO_VALUE) return { ok: false, reason: calls.length < 2 || calls.length > 3 ? "wrong_shape" : "native_value" };
+    const shapeOk = calls.length >= APPROVE_AND_SWAP && calls.length <= WITH_PERMIT;
+    if (!shapeOk || main.value !== NO_VALUE) return { ok: false, reason: shapeOk ? "native_value" : "wrong_shape" };
     const approve = calls[0]!;
     try {
       const decoded = decodeFunctionData({ abi: erc20Abi, data: approve.data });
@@ -183,7 +192,7 @@ export function checkUniswapCalls(
     } catch {
       return { ok: false, reason: "wrong_approval" };
     }
-    if (calls.length === 3) {
+    if (calls.length === WITH_PERMIT) {
       const permit = calls[1]!;
       try {
         const { args } = decodeFunctionData({ abi: permit2Abi, data: permit.data });
@@ -200,7 +209,7 @@ export function checkUniswapCalls(
   let spent = NO_VALUE;
   try {
     const { args } = decodeFunctionData({ abi: routerAbi, data: main.data });
-    const commands = (args[0] as Hex).slice(2).match(/../g) ?? [];
+    const commands = (args[0] as Hex).slice(HEX_PREFIX).match(/../g) ?? [];
     const inputs = args[1] as readonly Hex[];
     if (commands.length === 0 || commands.length !== inputs.length) return { ok: false, reason: "unreadable" };
     for (let index = 0; index < commands.length; index++) {
@@ -208,7 +217,7 @@ export function checkUniswapCalls(
       const data = inputs[index]!;
       if (command === CMD.V4_SWAP) {
         const [actions, params] = decodeAbiParameters(parseAbiParameters("bytes, bytes[]"), data);
-        const list = actions.slice(2).match(/../g) ?? [];
+        const list = actions.slice(HEX_PREFIX).match(/../g) ?? [];
         if (list.length !== params.length) return { ok: false, reason: "unreadable" };
         for (let step = 0; step < list.length; step++) {
           const action = parseInt(list[step]!, 16);

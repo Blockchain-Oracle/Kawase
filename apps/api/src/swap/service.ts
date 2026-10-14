@@ -56,7 +56,7 @@ import {
 } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
-import { CANONICAL_TOKENS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
+import { CANONICAL_TOKENS, NETWORKS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
 import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFacts, type TokenRuleFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
@@ -826,7 +826,7 @@ function swapWitness(receipt: TransactionReceipt, draft: SwapDraft) {
   const wallet = draft.from.toLowerCase();
   const tokenIn = draft.tokenIn.toLowerCase();
   const tokenOut = draft.tokenOut.toLowerCase();
-  const onArc = draft.chainId === 5042 || draft.chainId === 5042002;
+  const onArc = draft.chainId === NETWORKS.mainnet.chainId || draft.chainId === NETWORKS.testnet.chainId;
   for (const log of receipt.logs) {
     const token = log.address.toLowerCase();
     const system = onArc && token === ARC_NATIVE_LOGGER;

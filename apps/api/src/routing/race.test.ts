@@ -9,6 +9,10 @@ import type { RouteQuote, RouteRace } from "@kawase/api-client";
 import { checkingRow, raceRoutes, rankRows, type RaceAttempt } from "./race";
 
 const quoted = (venue: string, net: string, executable = true): RouteQuote => ({ ...checkingRow(venue, `venue:${venue}`, venue), status: "quoted", receive: { amount: net, symbol: "EURC", decimals: 6 }, net, executable, reason: executable ? null : "not_enabled" });
+/** Answer times (ms) and the race's timeout in the first test. */
+const MS = { zerox: 10, lifi: 15, socket: 20, kyberswap: 30, appKit: 500, timeout: 100 } as const;
+/** One all-checking snapshot, one per venue (five), the last one done. */
+const EXPECTED_SNAPSHOTS = 6;
 const after = <T>(ms: number, value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
 const attempt = (venue: string, ms: number, row: RouteQuote | Error): RaceAttempt => ({
   pending: [checkingRow(venue, `venue:${venue}`, venue)],
@@ -19,12 +23,12 @@ test("one snapshot per answer, best moves to the leader, a slow venue times out"
   const snapshots: RouteRace[] = [];
   for await (const snapshot of raceRoutes(
     "swap",
-    [attempt("kyberswap", 30, quoted("kyberswap", "8926880")), attempt("zerox", 10, quoted("zerox", "8912940")), attempt("socket", 20, quoted("socket", "9999999", false)), attempt("app_kit", 500, quoted("app_kit", "9000000")), attempt("lifi", 15, new Error("no route"))],
+    [attempt("kyberswap", MS.kyberswap, quoted("kyberswap", "8926880")), attempt("zerox", MS.zerox, quoted("zerox", "8912940")), attempt("socket", MS.socket, quoted("socket", "9999999", false)), attempt("app_kit", MS.appKit, quoted("app_kit", "9000000")), attempt("lifi", MS.lifi, new Error("no route"))],
     { timeoutMs: 100 },
   ))
     snapshots.push(snapshot);
 
-  assert.equal(snapshots.length, 6);
+  assert.equal(snapshots.length, EXPECTED_SNAPSHOTS);
   assert.ok(snapshots[0]!.rows.every((row) => row.status === "checking"));
   assert.equal(snapshots[0]!.best, null);
   assert.equal(snapshots[1]!.best, "zerox");
