@@ -2,7 +2,7 @@
 // word"). Unlike ui-native's Caption, the row is not remounted when text grows, so earlier words stay put and only the
 // new ones fade. Screen readers get the whole line.
 import * as React from "react";
-import { View } from "react-native";
+import { type StyleProp, type TextStyle, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { MOTION } from "@kawase/config";
@@ -31,11 +31,13 @@ export function LiveCaption({
   text,
   className,
   textClassName,
+  textStyle,
 }: {
   id: string;
   text: string;
   className?: string;
   textClassName?: string;
+  textStyle?: StyleProp<TextStyle>;
 }) {
   const reduced = useReducedMotionLive();
   const list = React.useMemo(() => words(text.trim()), [text]);
@@ -51,6 +53,7 @@ export function LiveCaption({
         aria-hidden
         onLayout={(event) => setSpaceWidth(event.nativeEvent.layout.width)}
         className={cn(textClassName, "absolute opacity-0")}
+        style={textStyle}
       >
         {" "}
       </Text>
@@ -60,7 +63,9 @@ export function LiveCaption({
           entering={reduced ? undefined : FadeIn.duration(MOTION.captionWordMs)}
           style={word.spaceAfter ? { marginEnd: spaceWidth } : undefined}
         >
-          <Text className={textClassName}>{word.text}</Text>
+          <Text className={textClassName} style={textStyle}>
+            {word.text}
+          </Text>
         </Animated.View>
       ))}
     </View>

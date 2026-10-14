@@ -15,4 +15,10 @@ export const voice: Catalog["voice"] = {
   mute: "静音",
   unmute: "取消静音",
   muted: "已静音",
+  trySaying: "试着说",
+  ideaTrending: "Arc 上现在什么最热？",
+  ideaSwap: "把 5 USDC 换成 EURC",
+  ideaBring: "把我在 Base 上的 USDC 转过来",
+  ideaEarn: "让闲置的 USDC 赚收益",
+  end: "结束",
 };

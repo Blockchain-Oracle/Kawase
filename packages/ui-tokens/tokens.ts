@@ -19,15 +19,16 @@ export const tokens = {
     "googleFontsHref": "https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Roboto+Condensed:wght@900&family=Noto+Sans+Arabic:wght@400..700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Noto+Sans+Devanagari:wght@400..700&family=Noto+Sans+Bengali:wght@400..700&family=Noto+Sans+SC:wght@400..700&display=swap"
   },
   "orb": {
+    "_note": "The voice orb is Kawase's live presence and stays magenta on every network (Abu, 10-14: the grey testnet orb read as dead); the network is said by the network chip, never by a grey orb.",
     "mainnet": [
       "#FA00FF",
       "#FFC2FF",
       "#7A007D"
     ],
     "testnet": [
-      "#999999",
-      "#E2E2E2",
-      "#444444"
+      "#FA00FF",
+      "#FFC2FF",
+      "#7A007D"
     ]
   },
   "scale": {

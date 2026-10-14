@@ -25,9 +25,11 @@ export type VoiceSessionProps = {
   level: SharedValue<number>;
   /** Leave voice for the keyboard, in the same thread. */
   onTypeInstead: (threadId: string | undefined) => void;
+  /** End the conversation (the dock's End): the overlay closes. */
+  onEnd: () => void;
 };
 
-export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
+export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps) {
   const { t } = useT();
   const [session, setSession] = React.useState<Session>();
   const [failed, setFailed] = React.useState(false);
@@ -111,7 +113,7 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
         void closeAudio.current().catch(() => undefined);
       }}
     >
-      <Conversation level={level} threadId={session.threadId} onTypeInstead={onTypeInstead} />
+      <Conversation level={level} threadId={session.threadId} onTypeInstead={onTypeInstead} onEnd={onEnd} />
     </LiveKitRoom>
   );
 }

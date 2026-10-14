@@ -13,4 +13,10 @@ export const voice = {
   mute: "Mute",
   unmute: "Unmute",
   muted: "Muted",
+  trySaying: "Try saying",
+  ideaTrending: "What’s trending on Arc?",
+  ideaSwap: "Swap 5 USDC to EURC",
+  ideaBring: "Bring my USDC from Base",
+  ideaEarn: "Put my idle USDC to work",
+  end: "End",
 } as const;

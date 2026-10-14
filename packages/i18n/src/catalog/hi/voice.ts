@@ -15,4 +15,10 @@ export const voice: Catalog["voice"] = {
   mute: "म्यूट करें",
   unmute: "अनम्यूट करें",
   muted: "म्यूट है",
+  trySaying: "ऐसे बोलकर देखें",
+  ideaTrending: "Arc पर अभी क्या ट्रेंड कर रहा है?",
+  ideaSwap: "5 USDC को EURC में बदलो",
+  ideaBring: "Base से मेरे USDC ले आओ",
+  ideaEarn: "पड़े हुए USDC को काम पर लगाओ",
+  end: "समाप्त",
 };

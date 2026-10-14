@@ -12,12 +12,17 @@
 import { MOTION } from "@kawase/config";
 import { useRouter } from "expo-router";
 import * as React from "react";
-import { Platform, View } from "react-native";
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from "react-native-reanimated";
+import { Platform, useWindowDimensions, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
-import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { focusElement, useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { tokens } from "@kawase/ui-tokens";
 
@@ -29,20 +34,39 @@ import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
 export const ORB_DOCK_SIZE = 40;
-const ORB_OVERLAY_SIZE = 220;
+/** The orb in the overlay: the screen's one figure (ChatGPT's voice mode), about two thirds of a phone's width. */
+const ORB_MAX = 300;
+const ORB_WIDTH_SHARE = 0.68;
+const ORB_HEIGHT_SHARE = 0.36;
 const IDLE_LEVEL = 0.2;
 const HALF = 0.5;
-const START_SCALE = ORB_DOCK_SIZE / ORB_OVERLAY_SIZE;
+const TOP_GAP = 56;
+const BOTTOM_GAP = 16;
 
 type Point = { x: number; y: number };
 
 /** A view's centre in window coordinates (undefined when it is not on screen). */
 function measureCentre(node: View | null, done: (centre: Point | undefined) => void) {
   if (!node) return done(undefined);
-  node.measureInWindow((x, y, width, height) => done(width > 0 ? { x: x + width * HALF, y: y + height * HALF } : undefined));
+  node.measureInWindow((x, y, width, height) =>
+    done(width > 0 ? { x: x + width * HALF, y: y + height * HALF } : undefined),
+  );
 }
 
-function RisingOrb({ progress, from, network, level }: { progress: SharedValue<number>; from: SharedValue<Point | null>; network: "mainnet" | "testnet"; level: SharedValue<number> }) {
+function RisingOrb({
+  progress,
+  from,
+  network,
+  level,
+  size,
+}: {
+  progress: SharedValue<number>;
+  from: SharedValue<Point | null>;
+  network: "mainnet" | "testnet";
+  level: SharedValue<number>;
+  size: number;
+}) {
+  const startScale = ORB_DOCK_SIZE / size;
   // Invisible until both ends are measured, so it never flashes at the centre first.
   const style = useAnimatedStyle(() => {
     const origin = from.value;
@@ -52,12 +76,12 @@ function RisingOrb({ progress, from, network, level }: { progress: SharedValue<n
       transform: [
         { translateX: (origin?.x ?? 0) * away },
         { translateY: (origin?.y ?? 0) * away },
-        { scale: START_SCALE + (1 - START_SCALE) * progress.value },
+        { scale: startScale + (1 - startScale) * progress.value },
       ],
     };
   });
   return (
-    <Animated.View style={[{ width: ORB_OVERLAY_SIZE, height: ORB_OVERLAY_SIZE }, style]}>
+    <Animated.View style={[{ width: size, height: size }, style]}>
       <Orb colors={tokens.orb[network]} level={level} className="size-full" />
     </Animated.View>
   );
@@ -74,6 +98,8 @@ export function VoiceOverlay({ open }: VoiceOverlayProps) {
   const { mode, network } = useTheme();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
+  const window = useWindowDimensions();
+  const orbSize = Math.round(Math.min(ORB_MAX, window.width * ORB_WIDTH_SHARE, window.height * ORB_HEIGHT_SHARE));
   const reduced = useReducedMotionLive();
   const progress = useSharedValue(0);
   const level = useSharedValue(IDLE_LEVEL);
@@ -94,7 +120,10 @@ export function VoiceOverlay({ open }: VoiceOverlayProps) {
       measureCentre(slot.current, (to) =>
         measureCentre(trigger.current, (origin) => {
           from.value = to && origin ? { x: origin.x - to.x, y: origin.y - to.y } : { x: 0, y: 0 };
-          progress.value = withTiming(1, { duration: reduced ? 0 : MOTION.orbRiseMs, easing: Easing.out(Easing.cubic) });
+          progress.value = withTiming(1, {
+            duration: reduced ? 0 : MOTION.orbRiseMs,
+            easing: Easing.out(Easing.cubic),
+          });
         }),
       ),
     );
@@ -127,15 +156,23 @@ export function VoiceOverlay({ open }: VoiceOverlayProps) {
       contentFades={false}
       onExited={exited}
     >
-      <View className="flex-1 items-center justify-center gap-4 px-6" style={{ paddingTop: insets.top }}>
-        <View ref={slot} style={{ width: ORB_OVERLAY_SIZE, height: ORB_OVERLAY_SIZE }}>
-          <RisingOrb progress={progress} from={from} network={network} level={level} />
-        </View>
-        <Animated.View style={words} className="w-full flex-1 items-center gap-4">
-          <View ref={heading} accessible accessibilityRole="header" accessibilityLabel={t("voice.title")} tabIndex={Platform.OS === "web" ? -1 : undefined}>
-            <StateLabel>{t("common.appName")}</StateLabel>
+      <View
+        className="flex-1 items-center gap-6 px-6"
+        style={{ paddingTop: insets.top + TOP_GAP, paddingBottom: insets.bottom + BOTTOM_GAP }}
+      >
+        <View
+          ref={heading}
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel={t("voice.title")}
+          tabIndex={Platform.OS === "web" ? -1 : undefined}
+        >
+          <View ref={slot} style={{ width: orbSize, height: orbSize }}>
+            <RisingOrb progress={progress} from={from} network={network} level={level} size={orbSize} />
           </View>
-          {open ? <VoiceSession level={level} onTypeInstead={typeInstead} /> : null}
+        </View>
+        <Animated.View style={words} className="w-full flex-1 items-center">
+          {open ? <VoiceSession level={level} onTypeInstead={typeInstead} onEnd={overlay.close} /> : null}
         </Animated.View>
       </View>
     </BlurOverlay>

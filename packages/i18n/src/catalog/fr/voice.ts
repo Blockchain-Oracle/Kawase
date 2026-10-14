@@ -15,4 +15,10 @@ export const voice: Catalog["voice"] = {
   mute: "Couper le micro",
   unmute: "Activer le micro",
   muted: "Micro coupé",
+  trySaying: "Essayez de dire",
+  ideaTrending: "Qu’est-ce qui monte sur Arc ?",
+  ideaSwap: "Échange 5 USDC contre des EURC",
+  ideaBring: "Ramène mes USDC depuis Base",
+  ideaEarn: "Fais travailler mes USDC qui dorment",
+  end: "Terminer",
 };

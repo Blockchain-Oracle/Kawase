@@ -21,9 +21,14 @@ import { api } from "@/session/api";
 import { Conversation, TypeInstead } from "./conversation";
 import { isMicrophoneFailure } from "./mic-failure";
 
-export type VoiceSessionProps = { level: SharedValue<number>; onTypeInstead: (threadId: string | undefined) => void };
+export type VoiceSessionProps = {
+  level: SharedValue<number>;
+  onTypeInstead: (threadId: string | undefined) => void;
+  /** End the conversation (the dock's End): the overlay closes. */
+  onEnd: () => void;
+};
 
-export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
+export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps) {
   const { t } = useT();
   const [session, setSession] = React.useState<Session>();
   const [failed, setFailed] = React.useState(false);
@@ -68,7 +73,7 @@ export function VoiceSession({ level, onTypeInstead }: VoiceSessionProps) {
     >
       {/* Kawase's voice: one audio element per remote audio track. */}
       <RoomAudioRenderer />
-      <Conversation level={level} threadId={session.threadId} onTypeInstead={onTypeInstead} />
+      <Conversation level={level} threadId={session.threadId} onTypeInstead={onTypeInstead} onEnd={onEnd} />
     </LiveKitRoom>
   );
 }
