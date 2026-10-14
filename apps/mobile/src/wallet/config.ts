@@ -4,8 +4,29 @@
  * Which wallet provider signs people in and holds their key (D41): Privy, with Turnkey kept as the fallback for one
  * build. Set at build time with EXPO_PUBLIC_WALLET_PROVIDER (the api's WALLET_PROVIDER turns its side on).
  */
-export const WALLET_PROVIDER: "privy" | "turnkey" | "dev" =
+type Provider = "privy" | "turnkey" | "dev";
+const BUILT: Provider =
   process.env.EXPO_PUBLIC_WALLET_PROVIDER === "privy" ? "privy" : process.env.EXPO_PUBLIC_WALLET_PROVIDER === "dev" ? "dev" : "turnkey";
+const OVERRIDE_KEY = "kawase.wallet";
+
+/**
+ * The web app can try the other real provider without a new build: `?wallet=privy` (or `?wallet=turnkey`) is
+ * remembered in this browser until changed, so Privy can be proven on the live app before it becomes everyone's
+ * default. Never dev mode (that stays a build-time choice), never on a phone.
+ */
+function webOverride(): Provider | undefined {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined") return undefined;
+  try {
+    const asked = new URLSearchParams(window.location.search).get("wallet");
+    if (asked === "privy" || asked === "turnkey") window.localStorage.setItem(OVERRIDE_KEY, asked);
+    const kept = window.localStorage.getItem(OVERRIDE_KEY);
+    return kept === "privy" || kept === "turnkey" ? kept : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export const WALLET_PROVIDER: Provider = BUILT === "dev" ? "dev" : (webOverride() ?? BUILT);
 export const isPrivy = WALLET_PROVIDER === "privy";
 /**
  * Dev mode (local development only, EXPO_PUBLIC_WALLET_PROVIDER=dev against an api started with KAWASE_DEV_AUTH=1):
