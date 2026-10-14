@@ -1,10 +1,10 @@
 import { useLocalSearchParams } from "expo-router";
 
-import { MarginScreen } from "@/screens/margin-screen";
+import { TradeScreen } from "@/trade/trade-screen";
 
-/** `/margin?market=BTC&side=long` opens the ticket for that market and side (chat, a token page). */
+/** `/margin?market=BTC&side=long` opens the terminal on that market and side (chat, a token page, Markets). */
 export default function MarginRoute() {
   const params = useLocalSearchParams<{ market?: string; side?: string }>();
   const side = params.side === "long" || params.side === "short" ? params.side : undefined;
-  return <MarginScreen prefill={{ market: params.market, side }} />;
+  return <TradeScreen prefill={{ market: params.market, side }} />;
 }
