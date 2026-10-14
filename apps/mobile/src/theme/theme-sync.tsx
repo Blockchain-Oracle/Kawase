@@ -13,7 +13,8 @@ export function ThemeSync() {
   React.useEffect(() => {
     if (!user) return;
     setNetwork(user.activeNetwork);
-    if (user.theme === "system") setMode(scheme === "light" ? "light" : "dark");
+    // "Match my phone" goes dark only when the phone is dark; anything unknown stays light (Senryo: light-first).
+    if (user.theme === "system") setMode(scheme === "dark" ? "dark" : "light");
     else setMode(user.theme);
   }, [user, scheme, setMode, setNetwork]);
 

@@ -40,7 +40,7 @@ export const users = pgTable(
     displayCurrency: text().notNull().default("USD"),
     timezone: text().notNull().default("UTC"),
     // Koe is a dark stage by default (DESIGN.md); "system" and "light" are the user's choice.
-    theme: themeEnum().notNull().default("dark"),
+    theme: themeEnum().notNull().default("light"),
     activeNetwork: networkEnum().notNull().default("testnet"),
     riskMode: riskModeEnum().notNull().default("balanced"),
     practiceMode: boolean().notNull().default(false),
