@@ -27,6 +27,10 @@ function nativeContext(context, moduleName) {
 
 const resolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // A Privy web export leaves Turnkey's web kit out (src/wallet/turnkey-web-stub.js says why).
+  if (platform === 'web' && process.env.EXPO_PUBLIC_WALLET_PROVIDER === 'privy' && moduleName === '@turnkey/react-wallet-kit') {
+    return { type: 'sourceFile', filePath: path.join(__dirname, 'src/wallet/turnkey-web-stub.js') };
+  }
   if (platform === 'web' && moduleName === 'tslib') {
     const main = require.resolve('tslib', { paths: [path.dirname(context.originModulePath)] });
     return { type: 'sourceFile', filePath: path.join(path.dirname(main), 'tslib.es6.js') };

@@ -20,6 +20,8 @@ function webOverride(): Provider | undefined {
     const asked = new URLSearchParams(window.location.search).get("wallet");
     if (asked === "privy" || asked === "turnkey") window.localStorage.setItem(OVERRIDE_KEY, asked);
     const kept = window.localStorage.getItem(OVERRIDE_KEY);
+    // A Privy web build does not carry Turnkey's kit (metro.config.js), so only a Turnkey build can try Privy.
+    if (kept === "turnkey" && BUILT === "privy") return undefined;
     return kept === "privy" || kept === "turnkey" ? kept : undefined;
   } catch {
     return undefined;
