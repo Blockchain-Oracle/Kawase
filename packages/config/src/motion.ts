@@ -62,8 +62,6 @@ export const SPRING = {
 
 /** The composer ("orb capsule"): compact at rest beside the voice button, full width while typing. */
 export const COMPOSER = {
-  /** Share of the row the capsule takes at rest; the voice button takes the rest. */
-  restWidthPct: 72,
   minHeightPt: 48,
   /** About five lines of text before the field scrolls. */
   maxHeightPt: 140,

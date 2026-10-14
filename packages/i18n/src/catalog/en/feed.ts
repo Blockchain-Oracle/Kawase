@@ -53,7 +53,7 @@ export const feed = {
     balanceHint: "Opens your portfolio",
     balanceUnknown: "Balance unavailable right now",
     portfolio: "Portfolio",
-    placeholder: "Ask Kawase to do anything",
+    placeholder: "Tell Kawase what to do",
     history: "Past conversations",
     chipsLabel: "Suggestions",
     chipBring: "Bring USDC to Arc",

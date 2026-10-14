@@ -201,7 +201,10 @@ function Composer({
           style={[
             capsuleStyle,
             {
-              width: expanded ? "100%" : `${COMPOSER.restWidthPct}%`,
+              // At rest it takes every point beside the voice orb (a fixed share was too narrow on a phone); focused, the
+              // orb leaves and it grows to the whole row.
+              flexGrow: 1,
+              flexBasis: 0,
               flexShrink: 1,
               backgroundColor: colors.card,
               shadowColor: colors.glow,
