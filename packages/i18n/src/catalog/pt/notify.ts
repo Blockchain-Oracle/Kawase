@@ -36,6 +36,8 @@ export const notify: Catalog["notify"] = {
   reminderShort: "Sua carteira tem menos do que esta execução",
   requestReceivedTitle: "{{name}} pediu {{amount}} a você",
   requestReceivedTitleHidden: "{{name}} pediu dinheiro a você",
+  requestReminderTitle: "Lembrete: {{name}} pediu {{amount}} a você",
+  requestReminderTitleHidden: "Lembrete: {{name}} pediu dinheiro a você",
   requestReceivedBody: "Toque para pagar",
   receivedTitleHidden: "Você recebeu dinheiro",
   sentTitleHidden: "Seu dinheiro foi enviado",

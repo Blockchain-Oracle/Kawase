@@ -115,6 +115,8 @@ export function buildAgentContext(input: {
   log: Logger;
   /** Where the person is: typing in chat, or talking (voice answers are spoken; the cards carry the details). */
   surface?: "chat" | "voice" | undefined;
+  /** False when this turn may not send inside the allowance by itself (no device proof while one is required, M12). */
+  autoSendAllowed?: boolean | undefined;
 }): AgentContext {
   const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
@@ -164,7 +166,8 @@ export function buildAgentContext(input: {
       // Guard (X11) confirms everything, chat too: the card waits for the person's tap.
       // So does a send the tool did not clear (H2): a recipient the person did not name, outside text read since their
       // message, or a scanned code.
-      if (autoSend && !intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
+      // And without the device's proof (once required, M12) a bearer token alone never sends: the card waits too.
+      if (autoSend && input.autoSendAllowed !== false && !intent.blocking && intent.route === "allowance" && !user.isAnonymous && input.surface !== "voice" && user.riskMode !== "careful") {
         const answer = await sends.approve(user, intent.id, { version: intent.version, surface: "chat" }).catch((error: unknown) => {
           log.warn({ err: error, intentId: intent.id }, "auto-send inside the allowance did not start");
           return undefined;

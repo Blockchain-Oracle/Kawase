@@ -1,6 +1,7 @@
 // Circle's x402 catalog (cards/marketplace.md): every Arc listing, read once per network and cached, searched here.
 // Only listings from the catalog can be bought (MASTER-PLAN §Security). On testnet the catalog is empty, so Kawase's
-// own demo seller publishes its listings in the same shape at `{seller}/listings`.
+// own demo seller publishes its listings in the same shape at `{seller}/listings`. A listing whose URL could point the
+// api inside its own network (not https, a template in the host, a private address) is left out (guard.ts).
 import { getAddress, isAddress, type Address } from "viem";
 
 import {
@@ -13,6 +14,7 @@ import {
 } from "@kawase/config";
 import type { NetworkContext } from "@kawase/networks";
 
+import { listingUrlProblem, originOf, sellerFetch } from "./guard";
 import { isGatewayOption, type PaymentOption } from "./pay";
 
 export type Rail = "gateway" | "eip3009";
@@ -50,9 +52,12 @@ const MIN_TOKEN = 2;
 /** A word in the description or path counts more than one in a tag. */
 const SCORE = { description: 3, path: 2, provider: 2, tag: 1 } as const;
 
-/** One catalog item as a listing on this network, or undefined when it cannot be paid here. */
-export function toListing(item: RawItem, network: NetworkContext): Listing | undefined {
-  if (!item.resource) return undefined;
+/**
+ * One catalog item as a listing on this network, or undefined when it cannot be paid here or its URL is not one the
+ * api may call (`trusted`: origins exempt from that, Kawase's own demo seller).
+ */
+export function toListing(item: RawItem, network: NetworkContext, trusted: readonly string[] = []): Listing | undefined {
+  if (!item.resource || listingUrlProblem(item.resource, trusted)) return undefined;
   const usdc = network.addresses.usdc.toLowerCase();
   const here = (item.accepts ?? []).filter(
     (option) => option.scheme === "exact" && option.network === caip2(network) && option.asset.toLowerCase() === usdc && isAddress(option.payTo),
@@ -120,6 +125,17 @@ export class Discovery {
     this.now = options.now ?? Date.now;
   }
 
+  /** Origins called as they are: Kawase's own testnet demo seller, when one is configured. */
+  get trustedOrigins(): string[] {
+    const demo = originOf(this.options.demoSellerUrl);
+    return demo ? [demo] : [];
+  }
+
+  /** The fetch sellers are called with (guard.ts); `base` answers in memory in tests, the URL rules still apply. */
+  sellerFetch(base?: typeof fetch): typeof fetch {
+    return sellerFetch({ trusted: this.trustedOrigins, base });
+  }
+
   /** Every listing payable on this network (cached; one read at a time per network). */
   async all(network: NetworkContext): Promise<Listing[]> {
     const cached = this.cache.get(network.id);
@@ -163,7 +179,7 @@ export class Discovery {
     const seen = new Set<string>();
     const listings: Listing[] = [];
     for (const item of items) {
-      const listing = toListing(item, network);
+      const listing = toListing(item, network, this.trustedOrigins);
       if (!listing || seen.has(`${listing.method} ${listing.url}`)) continue;
       seen.add(`${listing.method} ${listing.url}`);
       listings.push(listing);

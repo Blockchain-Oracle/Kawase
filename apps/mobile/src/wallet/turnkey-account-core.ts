@@ -8,6 +8,7 @@ import { randomUUID } from "expo-crypto";
 import { ApiError, type ApiUser } from "@kawase/api-client";
 
 import { api } from "@/session/api";
+import { setDeviceProver } from "@/session/device-proof";
 import { deviceInfo, useSession } from "@/session/session-provider";
 import { sessionStorage } from "@/session/storage";
 import { authStage } from "./auth-stage";
@@ -83,6 +84,25 @@ export type TurnkeyKit = {
   logout: () => Promise<unknown>;
 };
 
+/**
+ * M12: while a Turnkey session is on the device, requests that must not go on the Kawase token alone (approving a
+ * send or a waiting run, deleting the account) carry a proof stamped by the session's key. Mounted once at the root.
+ */
+export function useDeviceProver(turnkey: Pick<TurnkeyKit, "session" | "httpClient">) {
+  const { session, httpClient } = turnkey;
+  React.useEffect(() => {
+    if (!session || !httpClient) {
+      setDeviceProver(undefined);
+      return;
+    }
+    setDeviceProver(async (activityId) => {
+      const signed = await httpClient.stampGetActivity({ organizationId: session.organizationId, activityId });
+      return signed ? { body: signed.body, stamp: signed.stamp.stampHeaderValue } : undefined;
+    });
+    return () => setDeviceProver(undefined);
+  }, [session, httpClient]);
+}
+
 export function useTurnkeyAccountCore(
   turnkey: TurnkeyKit,
   options: { providers: readonly SocialProvider[]; emailOtp: unknown },
@@ -109,6 +129,7 @@ export function useTurnkeyAccountCore(
   // values through this ref instead of the ones captured when it started.
   const latest = React.useRef({ session, httpClient, wallets });
   latest.current = { session, httpClient, wallets };
+
   const pendingToken = React.useRef<string | undefined>(undefined);
   const active = React.useRef<Promise<ApiUser> | undefined>(undefined);
   const activeWallet = React.useRef<Promise<{ address: string; walletId: string }> | undefined>(undefined);

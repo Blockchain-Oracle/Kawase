@@ -75,6 +75,7 @@ export const send: Catalog["send"] = {
   faceIdCancelledWeb: "تصدیق نہیں ہوئی۔ کچھ نہیں بھیجا گیا۔",
   faceIdCancelledAndroid: "تصدیق منسوخ ہو گئی۔ کچھ نہیں بھیجا گیا۔",
   trustPaidBefore: "پہلے ادائیگی کی",
+  trustVerified: "تصدیق شدہ",
   trustNew: "نیا وصول کنندہ",
   trustHandle: "ان کے ‎@handle سے",
   trustScanned: "اسکین کیا گیا",

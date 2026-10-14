@@ -79,7 +79,29 @@ Abu's direction: define every flow end to end, every asset first-class, the whol
 - Migration numbers: B2 0049 then 0080–89; A5 0078–79 then 0090–99. **Drizzle applies only entries whose `when` is later than the newest one recorded.** Locally, shared across worktrees, this had silently skipped 0030_margin and 0020_wallet_tokens; repaired 10-03 (applied by hand and recorded with their sha256). Production has all 51.
 - **Lead fix `161ade6`:** a Turnkey email counts only if it was proved. `UPDATE_USER_EMAIL`'s `verificationToken` is optional, so anyone could claim a victim's address for contact discovery or lock the real owner out.
 
-**Next for the lead:** merge each security slice as it lands and deploy; then tell Abu the wallets can be funded and run the acceptance runner; Circle KYB domain; demo video and submission (deadline 10-10).
+**Evening 10-03 (lead):**
+- **All five security highs merged** (`8f3534f9`); every row's status is in the tracker. M12 (device stamp on approvals and deletion) is built but off until the new app build is on phones: set `DEVICE_PROOF_REQUIRED=true` on the api then.
+- **Relayer limits (H5):** 20 relays a day per person, shared with gas-free sends (revokes don't count); 0.25 USDC of gas per person a day; a global 3 USDC a day on mainnet (50 on testnet).
+- **Merged:**
+  - A: desktop web (side menu, two-column Home and token page, inline swap ticket, sheets as dialogs);
+  - A5-4: reminders for requests and splits, `/i/<id>` for every kind, contact verification, rename/delete conversations;
+  - B1: per-position TP/SL grants; the acceptance runner's dry run is 22 done, 0 failed;
+  - A3: on-chain revoke on raise and in revoke-all, device-side grant checks, real pause reads, the $100/$200-a-week Face ID rule, practice-mode allowlist.
+- **Lead fixes:**
+  - Turnkey email trust (`161ade6`);
+  - the wallet ↔ delegation package cycle that broke turbo (`44c49f5`): the test moved to `integrations/delegation/test/device-checks.test.ts`;
+  - the app.ts merge of A5's reminder ticker with B2's token lookup.
+- **Builds:** EAS iOS `91bd583e` (auto-submit `41ed9031`) and an Android APK, both from `c8ec5c54`.
+- **Builders now:**
+  - A: desktop leftovers, then plan gaps in assets/Home/Markets/token/swap;
+  - A3: practice message, then plan gaps in safety/automations/Activity;
+  - A5: Block, For-you cards, contacts on other chains;
+  - B1: manual close disables grants, executable Aero LP + Merkl, two-step bring-in, then relayed gas for its flows.
+
+**Next for the lead:**
+- once the api with B2's fixes is live, tell Abu to fund the ops wallet and relayer, then run `pnpm --filter @kawase/api exec tsx test/mainnet-acceptance.ts --live --skip-openai`;
+- turn on `DEVICE_PROOF_REQUIRED` after the new build is installed;
+- Circle KYB domain; demo video and submission (deadline 10-10).
 
 ## Active repair — 2026-10-02
 

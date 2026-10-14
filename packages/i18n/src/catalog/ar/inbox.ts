@@ -13,5 +13,6 @@ export const inbox: Catalog["inbox"] = {
   loadFailed: "تعذّر تحميل صندوقك.",
   bellUnread: "‏صندوق الوارد، {{count}} جديدة",
   askedYou: "طلب منك {{name}} مبلغ {{amount}}",
+  remindedYou: "تذكير: طلب منك {{name}} مبلغ {{amount}}",
   pay: "ادفع",
 };

@@ -10,6 +10,7 @@ import type {
   MemoryToolOutput,
   MemoryUsed,
   PayCodeView,
+  RemindPaymentOutput,
   SettingDiff,
   SettingId,
   SplitInput,
@@ -51,6 +52,8 @@ export type IntelligenceContext = {
   payCode(code: string): Promise<PayCodeView>;
   /** Splits a bill into one payment request per person (equal or by hand); guests and walletless people are told why not. */
   splitBill(input: SplitInput): Promise<SplitBillOutput>;
+  /** Reminds whoever an open request (or a split's share) was for, found by who it was for or what it was about. */
+  remindPayment(input: { who?: string | undefined; about?: string | undefined; requestId?: string | undefined }): Promise<RemindPaymentOutput>;
   /** Background work that failed after the person had their answer (logged, never shown). */
   warn(error: unknown, what: string): void;
 };

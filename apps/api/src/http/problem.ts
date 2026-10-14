@@ -28,6 +28,8 @@ export type ProblemCode =
   | "conflict"
   | "nonce_invalid"
   | "proof_invalid"
+  /** Spending within the allowance or deleting the account needs the proof from the signed-in device (M12). */
+  | "device_proof_required"
   | "session_key_unknown"
   | "account_recovery_required"
   | "wallet_not_registered"
@@ -41,6 +43,10 @@ export type ProblemCode =
   | "network_unavailable"
   /** The network is on, but Kawase's relayer there has no gas yet (a funded relayer makes it ready). */
   | "network_not_ready"
+  /** Kawase's relayer has paid this person's fees as often, or as much, as one person gets in a day. */
+  | "relay_limit"
+  /** Kawase's relayer has spent its gas budget for the day on this network. */
+  | "relayer_budget_spent"
   | "consent_required"
   | "handle_invalid"
   | "handle_reserved"
@@ -114,6 +120,7 @@ const TITLES: Record<ProblemCode, string> = {
   conflict: "Already exists",
   nonce_invalid: "The sign-in challenge is unknown, used or expired",
   proof_invalid: "The sign-in proof does not verify",
+  device_proof_required: "This needs the proof from your signed-in device",
   session_key_unknown: "The session key is not registered on this user",
   account_recovery_required: "Use the original sign-in method to recover this account",
   wallet_not_registered: "No wallet is registered for this account",
@@ -125,6 +132,8 @@ const TITLES: Record<ProblemCode, string> = {
   revoke_failed: "The old grant's revoke did not go through; nothing changed",
   network_unavailable: "This network is not available",
   network_not_ready: "Kawase is getting this network ready",
+  relay_limit: "Kawase has paid your network fees enough times today",
+  relayer_budget_spent: "Kawase's free network fees are used up for today",
   consent_required: "A consent is required first",
   handle_invalid: "The handle is not valid",
   handle_reserved: "The handle is reserved",

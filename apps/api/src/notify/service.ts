@@ -3,7 +3,7 @@
 // time, push goes to Expo in batches, email to Resend one by one, and push receipts are read later. A push is sent at
 // most once (Expo has no idempotency key: a delivery cut off mid-send is never sent again); an email may be retried,
 // because its idempotency key makes Resend send it once. The inbox keeps everything either way.
-import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 
 import {
   isSupportedLocale,
@@ -20,7 +20,7 @@ import {
   type NotificationPrefs,
   type QuietHours,
 } from "@kawase/config";
-import { devices, inboxItems, notificationDeliveries, users, type Db } from "@kawase/db";
+import { devices, inboxItems, notificationDeliveries, sessions, users, type Db } from "@kawase/db";
 import { isRtlLocale, type CatalogLocale } from "@kawase/i18n";
 import type { Logger } from "@kawase/log";
 
@@ -95,15 +95,36 @@ export class NotifyService {
     if (rows.length > 0) await executor.insert(notificationDeliveries).values(rows).onConflictDoNothing();
   }
 
-  /** This phone's Expo push token (or none): a token belongs to one device row, the newest to claim it. */
-  async registerPushToken(userId: string, deviceId: string, token: string | null) {
+  /**
+   * This phone's Expo push token (or none). A token belongs to one device row. It moves here from another row only
+   * when that row is the same phone (this person's own other row, or the same installation signing in as someone
+   * else) or no one is signed in on it any more. Another person's signed-in phone keeps it: registering a token
+   * someone else holds never takes their notifications away (security review, low). Returns whether this phone has it.
+   */
+  async registerPushToken(userId: string, deviceId: string, token: string | null): Promise<boolean> {
     if (token !== null && !EXPO_PUSH_TOKEN.test(token)) throw new Error("not an Expo push token");
-    await this.db.transaction(async (tx) => {
-      if (token) await tx.update(devices).set({ expoPushToken: null }).where(and(eq(devices.expoPushToken, token), sql`${devices.id} <> ${deviceId}`));
+    return this.db.transaction(async (tx) => {
+      if (token) {
+        const [holder] = await tx.select().from(devices).where(and(eq(devices.expoPushToken, token), ne(devices.id, deviceId))).for("update");
+        if (holder) {
+          const [mine] = await tx.select({ installationId: devices.installationId }).from(devices).where(and(eq(devices.id, deviceId), eq(devices.userId, userId)));
+          const [live] = holder.revokedAt
+            ? []
+            : await tx
+                .select({ id: sessions.id })
+                .from(sessions)
+                .where(and(eq(sessions.deviceId, holder.id), isNull(sessions.revokedAt), gt(sessions.expiresAt, new Date())))
+                .limit(1);
+          const samePhone = holder.userId === userId || (mine !== undefined && holder.installationId === mine.installationId);
+          if (!samePhone && live) return false;
+          await tx.update(devices).set({ expoPushToken: null }).where(eq(devices.id, holder.id));
+        }
+      }
       await tx
         .update(devices)
         .set({ expoPushToken: token, lastSeenAt: new Date() })
         .where(and(eq(devices.id, deviceId), eq(devices.userId, userId)));
+      return true;
     });
   }
 

@@ -56,6 +56,7 @@ const app = createApp({
   ops: circleOps(env),
   agentWallets: circleAgentWallets(env),
   minAppVersion: env.KAWASE_MIN_APP_VERSION,
+  deviceProofRequired: env.DEVICE_PROOF_REQUIRED,
   discovery: new Discovery({ demoSellerUrl: env.X402_DEMO_SELLER_URL }),
   swaps: appKitSwaps(env),
   bridges: appKitBridges(env),

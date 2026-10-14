@@ -84,7 +84,7 @@ import { recordPractice } from "../safety/practice";
 import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
-import type { WalletService } from "../wallet/service";
+import type { SignedRevoke, WalletService } from "../wallet/service";
 import type { AgentWalletProvider } from "./agent-wallets";
 
 const SALT_BYTES = 32;
@@ -112,6 +112,12 @@ const min = (a: bigint, b: bigint) => (a < b ? a : b);
 
 type PurchaseRow = typeof marketplacePurchases.$inferSelect;
 type MoveRow = typeof agentWalletMoves.$inferSelect;
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+/** The pool or one transaction's connection: reads made under the purchase lock use the locked connection. */
+type Executor = Db | Tx;
+/** Why a purchase waits for the person's tap. */
+type AskWhy = "over_per_call" | "ask_first" | "after_paid_data";
+type PurchaseBase = Omit<typeof marketplacePurchases.$inferInsert, "status" | "amount">;
 /** A purchase that failed after payment, whose batched Gateway payment Circle reports as failed: never charged. */
 const NOT_CHARGED = "not_charged";
 /** How long a failed-after-payment Gateway purchase is looked at again (Circle batches within minutes). */
@@ -176,8 +182,19 @@ export function filledCall(listing: Listing, input: BuyServiceInput): Call {
 
 const requestHash = (call: Call) => createHash("sha256").update(`${call.method} ${call.url} ${call.body ?? ""}`).digest("hex");
 
+/** Why a purchase at this price waits for the person's tap, if it does. */
+const whyAsk = (price: bigint, settings: AgentWalletSettings, tainted: boolean): AskWhy | undefined =>
+  price > BigInt(settings.perCallCap) ? "over_per_call" : settings.askFirst ? "ask_first" : tainted ? "after_paid_data" : undefined;
+
 export class MarketplaceService {
   private readonly creating = new Map<string, Promise<AgentWallet>>();
+
+  /**
+   * Sellers are called only at the URLs the listing rules allow, and only at public addresses checked at connect time
+   * (integrations-x402 guard.ts: a listing must not point the api inside its own network). Circle's own APIs
+   * (Gateway) go through `fetchImpl`.
+   */
+  private readonly sellerFetch: typeof fetch;
 
   constructor(
     private readonly db: Db,
@@ -188,7 +205,11 @@ export class MarketplaceService {
     private readonly discovery: Discovery,
     private readonly log: Logger,
     private readonly fetchImpl: typeof fetch = fetch,
-  ) {}
+    /** Answers sellers in memory in tests; the listing rules still apply to it. */
+    sellerBase?: typeof fetch,
+  ) {
+    this.sellerFetch = discovery.sellerFetch(sellerBase);
+  }
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -293,8 +314,8 @@ export class MarketplaceService {
   }
 
   /** Spent in the last 24 hours: paid, being paid, or paid but failed after (the seller has the money). */
-  private async spentToday(userId: string, network: NetworkId): Promise<bigint> {
-    const [row] = await this.db
+  private async spentToday(userId: string, network: NetworkId, executor: Executor = this.db): Promise<bigint> {
+    const [row] = await executor
       .select({ total: sql<string>`coalesce(sum(${marketplacePurchases.amount}), 0)` })
       .from(marketplacePurchases)
       .where(
@@ -365,7 +386,12 @@ export class MarketplaceService {
 
   // ── The marketplace grant ──────────────────────────────────────────────────────────────────────────────────────
 
-  /** The grant the person signs once (Face ID): Kawase may move up to the cap per day into their agent wallet only. */
+  /**
+   * The grant the person signs once (Face ID): Kawase may move up to the cap per day into their agent wallet only.
+   * When an earlier marketplace grant still works on chain, the same step carries its on-chain revoke (the shared
+   * `revokeGrantsRequest`: relayer-paid when it can be), so the new grant replaces the old one on chain, not only in
+   * the database (security review H4).
+   */
   async grantRequest(user: SessionUser) {
     const network = user.activeNetwork;
     const owner = await this.walletService.userWallet(user.id);
@@ -408,10 +434,16 @@ export class MarketplaceService {
         status: "pending",
       })
       .returning({ id: grants.id });
-    return { grantId: row!.id, typedData: jsonSafe(typedData), receipt: jsonSafe(receipt) };
+    const revoke = await this.walletService.revokeGrantsRequest(user.id, await this.walletService.unrevokedGrantIds(user.id, network, { kind: "marketplace" }));
+    return { grantId: row!.id, typedData: jsonSafe(typedData), receipt: jsonSafe(receipt), revoke };
   }
 
-  async grantSubmit(user: SessionUser, grantId: string, signature: Hex) {
+  /**
+   * The signed grant becomes the active one. Every earlier marketplace grant the chain still honours is turned off
+   * first, with the revoke signed in the same yes (`revokeFirst`): refused without it, so the chain never holds an old
+   * grant and its replacement together.
+   */
+  async grantSubmit(user: SessionUser, grantId: string, signature: Hex, revoke?: SignedRevoke) {
     const [pending] = await this.db
       .select()
       .from(grants)
@@ -424,6 +456,7 @@ export class MarketplaceService {
     const typedData = grantTypedData(context, grant) as TypedDataDefinition;
     const valid = await verifyTypedData({ address: owner.address as Address, ...typedData, signature }).catch(() => false);
     if (!valid) throw problem(HTTP.unprocessable, "signature_mismatch");
+    await this.walletService.revokeFirst(user.id, await this.walletService.unrevokedGrantIds(user.id, pending.network, { kind: "marketplace" }), revoke);
     await this.db.transaction(async (tx) => {
       await tx
         .update(grants)
@@ -639,7 +672,7 @@ export class MarketplaceService {
     const listing = await this.discovery.find(context, input.url, input.method);
     if (!listing) return { network, status: "not_listed" as const };
     const call = filledCall(listing, input);
-    const asked = await probe(call, this.fetchImpl).catch(() => ({ kind: "error" as const, status: 0 }));
+    const asked = await probe(call, this.sellerFetch).catch(() => ({ kind: "error" as const, status: 0 }));
     const price = asked.kind === "payment_required" ? this.cheapest(asked.required, context) : undefined;
     const settings = user.isAnonymous ? undefined : await this.settings(user.id, network);
     return {
@@ -724,6 +757,86 @@ export class MarketplaceService {
   }
 
   /**
+   * The consent card for this call at this price: the one already waiting at the same price, or the earlier yes asked
+   * again at the new price (a yes never covers more than the person saw), or a new one.
+   */
+  private async askConsent(executor: Executor, base: PurchaseBase, price: bigint, earlier: PurchaseRow | undefined): Promise<PurchaseRow> {
+    if (earlier?.status === "needs_consent" && earlier.amount === price) return earlier;
+    if (earlier?.status === "approved") {
+      const [asked] = await executor
+        .update(marketplacePurchases)
+        .set({ status: "needs_consent", amount: price, rail: null })
+        .where(and(eq(marketplacePurchases.id, earlier.id), eq(marketplacePurchases.status, "approved")))
+        .returning();
+      if (asked) return asked;
+    }
+    const [created] = await executor.insert(marketplacePurchases).values({ ...base, amount: price, status: "needs_consent" }).returning();
+    return created!;
+  }
+
+  /**
+   * The checks again on what the chosen option costs, and the "paying" row, under the person's marketplace lock (one
+   * purchase decided at a time per person and network): two calls at once cannot both fit under the day's budget, a
+   * yes is used once and only for a price no higher than the one it was given, and the same call answered twice in
+   * one turn is paid once.
+   */
+  private async reservePayment(input: {
+    base: PurchaseBase;
+    paid: bigint;
+    rail: "gateway" | "eip3009";
+    approved: PurchaseRow | undefined;
+    settings: AgentWalletSettings;
+    tainted: boolean;
+  }): Promise<
+    | { kind: "paying"; row: PurchaseRow }
+    | { kind: "over_budget"; spent: bigint }
+    | { kind: "needs_consent"; row: PurchaseRow; why: AskWhy }
+    | { kind: "same_call"; row: PurchaseRow }
+  > {
+    const { base, paid, rail, approved, settings } = input;
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`marketplace:${base.userId}:${base.network}`}, 0))`);
+      if (base.threadId) {
+        const [same] = await tx
+          .select()
+          .from(marketplacePurchases)
+          .where(
+            and(
+              eq(marketplacePurchases.userId, base.userId),
+              eq(marketplacePurchases.threadId, base.threadId),
+              eq(marketplacePurchases.requestHash, base.requestHash),
+              inArray(marketplacePurchases.status, ["paying", "paid"]),
+              gte(marketplacePurchases.createdAt, new Date(Date.now() - SAME_CALL_WINDOW_MS)),
+            ),
+          )
+          .orderBy(desc(marketplacePurchases.createdAt))
+          .limit(1);
+        if (same) return { kind: "same_call" as const, row: same };
+      }
+      const spent = await this.spentToday(base.userId, base.network, tx);
+      if (spent + paid > BigInt(settings.dailyBudget)) return { kind: "over_budget" as const, spent };
+      const consented = approved && paid <= approved.amount ? approved : undefined;
+      const why = whyAsk(paid, settings, input.tainted);
+      if (why && !consented) return { kind: "needs_consent" as const, row: await this.askConsent(tx, base, paid, approved), why };
+      if (consented) {
+        const [used] = await tx
+          .update(marketplacePurchases)
+          .set({ status: "paying", rail, amount: paid })
+          .where(and(eq(marketplacePurchases.id, consented.id), eq(marketplacePurchases.status, "approved")))
+          .returning();
+        if (used) return { kind: "paying" as const, row: used };
+        // Another call took this yes a moment ago: being paid or paid, it is that call's payment, not a second one.
+        // Otherwise the yes is spent, and this call goes on as if there had been none.
+        const [current] = await tx.select().from(marketplacePurchases).where(eq(marketplacePurchases.id, consented.id));
+        if (current && (current.status === "paying" || current.status === "paid")) return { kind: "same_call" as const, row: current };
+        if (why) return { kind: "needs_consent" as const, row: await this.askConsent(tx, base, paid, undefined), why };
+      }
+      const [created] = await tx.insert(marketplacePurchases).values({ ...base, amount: paid, rail, status: "paying" }).returning();
+      return { kind: "paying" as const, row: created! };
+    });
+  }
+
+  /**
    * One paid call for the agent. `tainted` is set once paid data was read in this turn: from then on every purchase
    * waits for the person's tap (MASTER-PLAN §Security, the tainted-turn rule).
    */
@@ -765,7 +878,7 @@ export class MarketplaceService {
     }
     const approved = earlier?.status === "approved" ? earlier : undefined;
 
-    const asked = await probe(call, this.fetchImpl).catch((error: unknown) => {
+    const asked = await probe(call, this.sellerFetch).catch((error: unknown) => {
       this.log.warn({ err: error, url: call.url }, "seller did not answer");
       return { kind: "error" as const, status: 0 };
     });
@@ -782,7 +895,7 @@ export class MarketplaceService {
     const caps = { perCallCap: settings.perCallCap, dailyBudget: settings.dailyBudget, spentToday: spent.toString() };
     if (spent + amount > BigInt(settings.dailyBudget)) return { network, status: "refused", reason: "over_budget", service, caps };
 
-    const base = {
+    const base: PurchaseBase = {
       userId: user.id,
       network,
       threadId: context.threadId,
@@ -793,16 +906,13 @@ export class MarketplaceService {
       description: listing.description || null,
       category: listing.provider.category,
       payTo: listing.payTo,
-      amount,
     };
-    const why = amount > BigInt(settings.perCallCap) ? "over_per_call" : settings.askFirst ? "ask_first" : context.tainted ? "after_paid_data" : undefined;
+    const why = whyAsk(amount, settings, context.tainted);
     if (user.practiceMode) return this.practiceBuy(user.id, network, service, amount, why);
-    if (why && !approved) {
-      const [pending] =
-        earlier?.status === "needs_consent" && earlier.amount === amount
-          ? [earlier]
-          : await this.db.insert(marketplacePurchases).values({ ...base, status: "needs_consent" }).returning();
-      return { network, status: "needs_consent", purchase: purchaseView(pending!), caps, why };
+    // A yes covers the price the person saw, never a higher one the seller asks now.
+    if (why && !(approved && amount <= approved.amount)) {
+      const pending = await this.askConsent(this.db, base, amount, earlier);
+      return { network, status: "needs_consent", purchase: purchaseView(pending), caps, why };
     }
 
     // Funds: Gateway when its balance covers the price, plain EIP-3009 from what is on hand, else deposit, else top up.
@@ -843,20 +953,25 @@ export class MarketplaceService {
       };
     }
 
-    // From here the payment is signed once; the row says "paying" first, so nothing signs it again.
+    // From here the payment is signed once; the row says "paying" first, so nothing signs it again. The option chosen
+    // may cost more than the cheapest one checked above, so every check runs again on what it costs, under the lock.
     const rail = option === gateway ? ("gateway" as const) : ("eip3009" as const);
-    const [paying] = approved
-      ? await this.db.update(marketplacePurchases).set({ status: "paying", rail, amount: BigInt(option.amount) }).where(eq(marketplacePurchases.id, approved.id)).returning()
-      : await this.db.insert(marketplacePurchases).values({ ...base, amount: BigInt(option.amount), rail, status: "paying" }).returning();
+    const reserved = await this.reservePayment({ base, paid: BigInt(option.amount), rail, approved, settings, tainted: context.tainted });
+    if (reserved.kind === "over_budget") {
+      return { network, status: "refused", reason: "over_budget", service, caps: { ...caps, spentToday: reserved.spent.toString() } };
+    }
+    if (reserved.kind === "needs_consent") return { network, status: "needs_consent", purchase: purchaseView(reserved.row), caps, why: reserved.why };
+    if (reserved.kind === "same_call") return { network, status: "paid", purchase: purchaseView(reserved.row), content: reserved.row.responsePreview ?? "", truncated: true };
+    const paying = reserved.row;
     let result;
     try {
-      result = await pay(call, asked.required, option, this.signer(network, agent), this.fetchImpl);
+      result = await pay(call, asked.required, option, this.signer(network, agent), this.sellerFetch);
     } catch (error) {
-      this.log.warn({ err: error, purchaseId: paying!.id }, "x402 payment did not go through");
+      this.log.warn({ err: error, purchaseId: paying.id }, "x402 payment did not go through");
       const [failed] = await this.db
         .update(marketplacePurchases)
         .set({ status: "failed", reasonCode: "payment_failed" })
-        .where(eq(marketplacePurchases.id, paying!.id))
+        .where(eq(marketplacePurchases.id, paying.id))
         .returning();
       return { network, status: "failed", reason: "payment_failed", purchase: purchaseView(failed!), service };
     }
@@ -874,7 +989,7 @@ export class MarketplaceService {
         responsePreview: preview,
         paidAt: ok || result.settlement ? new Date() : null,
       })
-      .where(eq(marketplacePurchases.id, paying!.id))
+      .where(eq(marketplacePurchases.id, paying.id))
       .returning();
     const view = purchaseView(done!);
     if (!ok) return { network, status: "failed", reason: result.settlement ? "failed_after_payment" : "seller_error", purchase: view, service };

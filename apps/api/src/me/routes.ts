@@ -1,9 +1,10 @@
-import { and, eq, gt, ne, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, ne, or, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import {
   GPT_LIVE_VOICES,
+  HANDLE_RENAME_HOLD_DAYS,
   handleProblem,
   isDisplayCurrency,
   MAINNET_CONSENT_VERSION,
@@ -54,8 +55,9 @@ const HANDLE_PROBLEMS: Record<HandleProblem, "handle_invalid" | "handle_reserved
 };
 
 /**
- * Whether another user already has this handle (handles are unique without regard to case), or a deleted account's
- * hold on it has not run out (cards/access.md: the @handle is held 30 days).
+ * Whether another user already has this handle (handles are unique without regard to case), or a hold on it has not
+ * run out: a deleted account's (cards/access.md: the @handle is held 30 days) or someone else's who renamed away from
+ * it. The person who renamed away may take it back.
  */
 async function handleTaken(db: Db, handle: string, exceptUserId: string) {
   const [[row], [held]] = await Promise.all([
@@ -67,12 +69,19 @@ async function handleTaken(db: Db, handle: string, exceptUserId: string) {
     db
       .select({ handle: handleHolds.handle })
       .from(handleHolds)
-      .where(and(eq(handleHolds.handle, handle.toLowerCase()), gt(handleHolds.heldUntil, new Date())))
+      .where(
+        and(
+          eq(handleHolds.handle, handle.toLowerCase()),
+          gt(handleHolds.heldUntil, new Date()),
+          or(isNull(handleHolds.userId), ne(handleHolds.userId, exceptUserId)),
+        ),
+      )
       .limit(1),
   ]);
   return Boolean(row ?? held);
 }
 
+const MS_PER_DAY = 86_400_000;
 const networkSchema = z.object({ network: z.enum(["mainnet", "testnet"]) });
 const consentSchema = z.object({
   kind: z.enum(["terms", "mainnet_real_money", "meme_risk", "marketplace_risk", "voice_retention"]),
@@ -110,7 +119,20 @@ export function meRoutes(db: Db, chains: Chains) {
       if (await handleTaken(db, changes.handle, userId)) throw problem(HTTP.conflict, "handle_taken");
     }
     try {
-      const [updated] = await db.update(users).set(changes).where(eq(users.id, userId)).returning();
+      const previous = c.get("user")!.handle;
+      const renamed = changes.handle !== undefined && previous && previous.toLowerCase() !== (changes.handle ?? "").toLowerCase();
+      const updated = await db.transaction(async (tx) => {
+        const [row] = await tx.update(users).set(changes).where(eq(users.id, userId)).returning();
+        // The handle left behind is held, so no one else takes it and is paid in this person's place (they may take it back).
+        if (renamed) {
+          const heldUntil = new Date(Date.now() + HANDLE_RENAME_HOLD_DAYS * MS_PER_DAY);
+          await tx
+            .insert(handleHolds)
+            .values({ handle: previous.toLowerCase(), heldUntil, userId })
+            .onConflictDoUpdate({ target: handleHolds.handle, set: { heldUntil, userId } });
+        }
+        return row;
+      });
       return c.json({ user: publicUser(updated!) });
     } catch (failure) {
       // Two people saving the same handle at once: the unique index decides, and the loser is told it is taken.

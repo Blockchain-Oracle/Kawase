@@ -66,7 +66,8 @@ export const invoices = pgTable(
   ],
 );
 
-export type PayoutLine = { name: string | null; address: string; amount: string };
+/** `recipient`: what was typed for the line (a contact, an @handle or an address), checked again before signing. */
+export type PayoutLine = { name: string | null; address: string; amount: string; recipient?: string | undefined };
 export const payoutStatusEnum = pgEnum("payout_status", ["ready", "submitted", "confirmed", "failed"]);
 
 export const payoutBatches = pgTable(

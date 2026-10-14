@@ -4,12 +4,13 @@
 // incoming transfer of the same asset and exact amount to the requester after the request was made (the watcher).
 // Any token can be asked for (R1): USDC and EURC by name, every other token by its address on the network.
 import { randomBytes } from "node:crypto";
-import { and, asc, desc, eq, gt, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { getAddress, type Address } from "viem";
 
-import { REQUEST_NOTE_MAX, REQUEST_TOKEN_BYTES, REQUEST_TTL_S, MS_PER_SECOND } from "@kawase/config";
-import type { PaymentRequest, PaymentRequestInput, PublicPaymentRequest } from "@kawase/api-client";
-import { contactAddresses, contacts, paymentRequests, users, wallets, type Db } from "@kawase/db";
+import { REQUEST_LAST_DAY_S, REQUEST_NOTE_MAX, REQUEST_NUDGE_AFTER_S, REQUEST_TOKEN_BYTES, REQUEST_TTL_S, MS_PER_SECOND } from "@kawase/config";
+import type { PaymentRequest, PaymentRequestInput, PublicPaymentRequest, RequestReminder } from "@kawase/api-client";
+import { contactAddresses, contacts, inboxItems, paymentRequests, users, wallets, type Db } from "@kawase/db";
+import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import { addressForHandle } from "../contacts/service";
@@ -25,8 +26,12 @@ type RequestRow = typeof paymentRequests.$inferSelect;
 
 const ZERO = 0n;
 const STABLE_DECIMALS = 6;
+/** "YYYY-MM-DD": the day a Remind counts against. */
+const DATE_CHARS = 10;
 
 export class RequestService {
+  private timer: NodeJS.Timeout | undefined;
+
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
@@ -86,11 +91,14 @@ export class RequestService {
     return owner?.handle ? `@${owner.handle}` : null;
   }
 
-  /** Tells the payer in their inbox (and by push): "@x asked you for 12 USDC", opening the pay card. */
-  private async tellPayer(row: RequestRow, payerId: string) {
+  /**
+   * Tells the payer in their inbox (and by push): "@x asked you for 12 USDC", opening the pay card. A reminder is the
+   * same item marked as one ("Reminder: @x asked you…"), under its own dedupe key; false when that one was already told.
+   */
+  private async tellPayer(row: RequestRow, payerId: string, reminder?: string) {
     const symbol = this.tokenOf(row).symbol;
     const name = await this.nameIn(payerId, row.payTo);
-    await this.inbox.add(this.db, {
+    return this.inbox.add(this.db, {
       userId: payerId,
       network: row.network,
       kind: "request_received",
@@ -102,9 +110,10 @@ export class RequestService {
         token: row.token,
         ...(name ? { name } : {}),
         ...(row.note ? { note: row.note } : {}),
+        ...(reminder ? { reminder: "1" } : {}),
       },
       requestId: row.id,
-      dedupeKey: `request_received:${row.id}:${payerId}`,
+      dedupeKey: reminder ? `request_reminder:${row.id}:${reminder}` : `request_received:${row.id}:${payerId}`,
     });
   }
 
@@ -207,6 +216,50 @@ export class RequestService {
     const [updated] = await this.db.update(paymentRequests).set({ payerUserId: payer.userId }).where(eq(paymentRequests.id, id)).returning();
     await this.tellPayer(updated ?? row, payer.userId);
     return this.named(updated ?? row);
+  }
+
+  /**
+   * The requester's Remind (surfaces.md Request, "reminders"): someone asked in the app gets "Reminder: @x asked you
+   * for 12 USDC" in their inbox and by push, at most once a day per request; for a link only, the app shares the link
+   * again with a reminder. A request no longer open → 409 `request_unavailable`.
+   */
+  async remind(userId: string, id: string): Promise<{ request: PaymentRequest; reminded: RequestReminder }> {
+    const row = await this.own(userId, id);
+    if (row.status !== "open") throw problem(HTTP.conflict, "request_unavailable", "this request is no longer open");
+    const request = await this.named(row);
+    if (!row.payerUserId) return { request, reminded: "link" };
+    const told = await this.tellPayer(row, row.payerUserId, new Date().toISOString().slice(0, DATE_CHARS));
+    return { request, reminded: told ? "in_app" : "already_today" };
+  }
+
+  /**
+   * Kawase's own reminders to someone asked in the app: once when a request is still unpaid REQUEST_NUDGE_AFTER_S after
+   * it was made, and once on its last day. Each is told once (its dedupe key); returns how many went out.
+   */
+  async remindDue(now = new Date()): Promise<number> {
+    const due = await this.db
+      .select()
+      .from(paymentRequests)
+      .where(and(eq(paymentRequests.status, "open"), isNotNull(paymentRequests.payerUserId), gt(paymentRequests.expiresAt, now), lt(paymentRequests.createdAt, new Date(now.getTime() - REQUEST_NUDGE_AFTER_S * MS_PER_SECOND))));
+    // What was already told, in one read, so a sweep does not redo every open request.
+    const told = due.length
+      ? new Set((await this.db.select({ key: inboxItems.dedupeKey }).from(inboxItems).where(inArray(inboxItems.requestId, due.map((row) => row.id)))).map((row) => row.key))
+      : new Set<string>();
+    let sent = 0;
+    for (const row of due) {
+      const stage = row.expiresAt.getTime() - now.getTime() <= REQUEST_LAST_DAY_S * MS_PER_SECOND ? "last_day" : "nudge";
+      if (told.has(`request_reminder:${row.id}:${stage}`)) continue;
+      if (await this.tellPayer(row, row.payerUserId!, stage)) sent++;
+    }
+    return sent;
+  }
+
+  start(intervalMs: number, log: Logger) {
+    if (this.timer) return;
+    this.timer = setInterval(() => {
+      this.remindDue().catch((error: unknown) => log.warn({ err: error }, "request reminders failed"));
+    }, intervalMs);
+    this.timer.unref();
   }
 
   async list(userId: string): Promise<PaymentRequest[]> {

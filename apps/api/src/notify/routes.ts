@@ -52,7 +52,8 @@ export function notifyRoutes(db: Db, notify: NotifyService) {
     if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
     const deviceId = await deviceOf(c.get("sessionId"));
     if (!deviceId) throw problem(HTTP.badRequest, "validation");
-    await notify.registerPushToken(c.get("userId")!, deviceId, parsed.data.token);
+    // Held by another person's signed-in phone: this one does not take it (theirs keeps its notifications).
+    if (!(await notify.registerPushToken(c.get("userId")!, deviceId, parsed.data.token))) throw problem(HTTP.conflict, "conflict", "this push token belongs to another signed-in device");
     return c.body(null, HTTP.noContent);
   });
 

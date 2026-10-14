@@ -36,6 +36,11 @@ export const request: Catalog["request"] = {
   askName: "向 {{name}} 请求",
   askedInApp: "已在 Kawase 上向 {{name}} 请求",
   askedToast: "已在 Kawase 上向 {{name}} 发出请求",
+  remind: "提醒",
+  reminding: "正在提醒…",
+  reminded: "已在 Kawase 上提醒 {{name}}",
+  remindedAlready: "今天已经提醒过 {{name}} 了",
+  reminderMessage: "提醒：{{name}} 在 {{network}} 上请求 {{amount}}。在这里支付：{{link}}",
   askNotOnKawase: "{{name}} 不是你保存的 Kawase 用户。请改为分享链接。",
   askSomeoneElse: "改为请求其他人",
 };

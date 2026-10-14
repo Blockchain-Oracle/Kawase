@@ -73,6 +73,7 @@ export const send = {
   faceIdCancelledWeb: "Not confirmed. Nothing was sent.",
   faceIdCancelledAndroid: "The check was cancelled. Nothing was sent.",
   trustPaidBefore: "Paid before",
+  trustVerified: "Verified",
   trustNew: "New recipient",
   trustHandle: "From their @handle",
   trustScanned: "Scanned",

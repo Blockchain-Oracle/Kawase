@@ -36,6 +36,11 @@ export const request: Catalog["request"] = {
   askName: "Попросить: {{name}}",
   askedInApp: "Запрос в Kawase: {{name}}",
   askedToast: "Запрос отправлен в Kawase: {{name}}",
+  remind: "Напомнить",
+  reminding: "Напоминаем…",
+  reminded: "Напоминание отправлено в Kawase: {{name}}",
+  remindedAlready: "{{name}} уже получил(а) напоминание сегодня",
+  reminderMessage: "Напоминание: {{name}} запрашивает {{amount}} в сети {{network}}. Оплатить: {{link}}",
   askNotOnKawase: "{{name}} нет среди ваших сохранённых пользователей Kawase. Поделитесь ссылкой.",
   askSomeoneElse: "Попросить другого",
 };

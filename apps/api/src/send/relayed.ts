@@ -3,17 +3,24 @@
 // (`transferWithAuthorization`; read on chain 10-02: name "USDC"/"EURC", version "2", on testnet and mainnet), so the
 // person signs one typed message with Face ID — from, to, exactly this amount, valid for minutes, a fresh nonce — and
 // Kawase's relayer sends it and pays the fee. The signature can only ever move that amount to that recipient once.
-// Kawase pays the fee (shown on the card); a per-person daily cap bounds what that can cost.
+// Kawase pays the fee (shown on the card). What the relayer may spend is bounded (security review H5): a per-person
+// daily count of relayed transactions and share of its gas, and a daily gas budget per network, each checked under a
+// lock together with the attempt row that reserves the gas, so parallel requests cannot all fit.
 import { randomBytes } from "node:crypto";
-import { and, count, eq, gte } from "drizzle-orm";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { parseAbi, parseSignature, toHex, verifyTypedData, type Address, type Hex } from "viem";
 
-import { MS_PER_SECOND, RELAYED_SENDS_PER_DAY } from "@kawase/config";
+import { MIN_MAX_FEE_PER_GAS_GWEI, MS_PER_SECOND, RELAYED_SENDS_PER_DAY, RELAYER_DAILY_GAS_BUDGET, RELAYER_GAS_PER_PERSON_DAY } from "@kawase/config";
 import { txAttempts, type Db } from "@kawase/db";
+import type { NetworkId } from "@kawase/networks";
 
+import { HTTP, problem } from "../http/problem";
 import type { NetworkClients } from "../wallet/chain";
 
 const MS_PER_DAY = 86_400_000;
+const GWEI = 1_000_000_000n;
+const ZERO = 0n;
+const ONE = 1n;
 const NONCE_BYTES = 32;
 const VERSION = "2";
 /** Legacy ECDSA recovery ids are 27/28; viem gives yParity 0/1 for compact signatures. */
@@ -54,14 +61,81 @@ export async function relayerReady(clients: NetworkClients): Promise<boolean> {
   return balance >= RELAYER_MIN_GAS;
 }
 
-/** Whether the person still has relayed sends left today (Kawase pays their fees). */
-export async function relaysLeft(db: Db, userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ used: count() })
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+type Executor = Db | Tx;
+
+/** Why the relayer will not carry one more transaction for this person now. */
+export type RelayRefusal = "person_limit" | "budget_spent";
+
+/**
+ * The person's daily relays: gas-free sends (`send_relayed`) and every relayed batch (`<kind>_relayed`). Setups are
+ * apart, and so are revokes: turning a grant off is never refused for having sent too much today (its gas still counts).
+ */
+const RELAYED_KIND = sql`${txAttempts.kind} like '%\\_relayed' and ${txAttempts.kind} <> 'revoke_grant_relayed'`;
+/** The batch kind whose relays are not counted (see RELAYED_KIND). */
+export const REVOKE_KIND = "revoke_grant";
+
+/**
+ * What the relayer spent or reserved in the last day on this network, all told and for one person, and that person's
+ * relayed count. A transaction refused before it was broadcast cost nothing and does not count.
+ */
+async function relayerUse(executor: Executor, userId: string, network: NetworkId) {
+  const [row] = await executor
+    .select({
+      total: sql<string>`coalesce(sum(${txAttempts.gasCost}), 0)`,
+      mine: sql<string>`coalesce(sum(${txAttempts.gasCost}) filter (where ${txAttempts.userId} = ${userId}), 0)`,
+      relays: sql<string>`count(*) filter (where ${txAttempts.userId} = ${userId} and ${RELAYED_KIND})`,
+    })
     .from(txAttempts)
-    .where(and(eq(txAttempts.userId, userId), eq(txAttempts.kind, "send_relayed"), gte(txAttempts.createdAt, new Date(Date.now() - MS_PER_DAY))));
-  return Number(row?.used ?? 0) < RELAYED_SENDS_PER_DAY;
+    .where(
+      and(
+        eq(txAttempts.provider, "relayer"),
+        eq(txAttempts.network, network),
+        ne(txAttempts.status, "not_sent"),
+        gte(txAttempts.createdAt, new Date(Date.now() - MS_PER_DAY)),
+      ),
+    );
+  return { total: BigInt(row?.total ?? "0"), mine: BigInt(row?.mine ?? "0"), relays: Number(row?.relays ?? 0) };
 }
+
+/**
+ * Whether the relayer can carry one more transaction for this person costing up to `cost` (Arc native units): within
+ * the network's daily gas budget, the person's share of it and, when `counted` (a send or a batch, not a setup), their
+ * daily number of relays.
+ */
+export async function relayRefusal(executor: Executor, input: { userId: string; network: NetworkId; cost: bigint; counted: boolean }): Promise<RelayRefusal | undefined> {
+  const use = await relayerUse(executor, input.userId, input.network);
+  // Asked before the cost is known (0): any transaction costs something, so a budget used to the last unit is spent.
+  const cost = input.cost > ZERO ? input.cost : ONE;
+  if (use.total + cost > RELAYER_DAILY_GAS_BUDGET[input.network]) return "budget_spent";
+  if ((input.counted && use.relays >= RELAYED_SENDS_PER_DAY) || use.mine + cost > RELAYER_GAS_PER_PERSON_DAY[input.network]) return "person_limit";
+  return undefined;
+}
+
+/** The lock every send and relayed transaction takes first: one decision at a time per person and network. */
+export const lockPerson = (tx: Tx, userId: string, network: NetworkId) => tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`${userId}:${network}`}, 0))`);
+
+/**
+ * The relayer's budget under its network lock, inside the caller's transaction and after `lockPerson` (always in that
+ * order): the answer holds until the caller's attempt row, carrying `gasCost`, commits with the transaction.
+ */
+export async function reserveRelay(tx: Tx, input: { userId: string; network: NetworkId; cost: bigint; counted: boolean }): Promise<RelayRefusal | undefined> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`relayer:${input.network}`}, 0))`);
+  return relayRefusal(tx, input);
+}
+
+/** The gas price a relayer transaction is reserved at: the network's max fee now, never below Arc's floor. */
+export async function relayGasPrice(clients: NetworkClients): Promise<bigint> {
+  const floor = MIN_MAX_FEE_PER_GAS_GWEI * GWEI;
+  const fees = await clients.client.estimateFeesPerGas().catch(() => ({ maxFeePerGas: floor }));
+  return fees.maxFeePerGas > floor ? fees.maxFeePerGas : floor;
+}
+
+/** A refusal as the api answers it. */
+export const relayProblem = (refusal: RelayRefusal) =>
+  refusal === "budget_spent"
+    ? problem(HTTP.serviceUnavailable, "relayer_budget_spent", "Kawase's network fees for today are used up; the wallet pays its own fee until then")
+    : problem(HTTP.tooManyRequests, "relay_limit", "Kawase has paid this person's network fees enough times today");
 
 /** The typed message for exactly this transfer, valid for `ttlSeconds` from now, with a fresh nonce. */
 export async function authorizationFor(clients: NetworkClients, draft: { from: Address; to: Address; asset: Address; amount: bigint }, ttlSeconds: number): Promise<StoredAuthorization> {

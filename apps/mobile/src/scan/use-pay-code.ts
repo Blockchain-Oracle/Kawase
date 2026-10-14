@@ -10,7 +10,8 @@ import { tapFeedback } from "@/feedback/feedback";
 import { api } from "@/session/api";
 
 /** Where the scanner was opened from: the fan's scan page and Send are replaced by the flow; chat keeps its thread. */
-export type ScanOrigin = "fan" | "send" | "chat";
+/** Where the scanner opened; "contact" (verifying one) always takes the code itself. */
+export type ScanOrigin = "fan" | "send" | "chat" | "contact";
 
 export function sendParams(view: Extract<PayCodeView, { status: "send" }>) {
   return {

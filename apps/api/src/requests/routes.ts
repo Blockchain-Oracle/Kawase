@@ -39,6 +39,7 @@ export function requestRoutes(requests: RequestService) {
   });
   app.get("/:id", async (c) => c.json({ request: await requests.get(c.get("userId")!, c.req.param("id")) }));
   app.post("/:id/cancel", async (c) => c.json({ request: await requests.cancel(c.get("userId")!, c.req.param("id")) }));
+  app.post("/:id/remind", async (c) => c.json(await requests.remind(c.get("userId")!, c.req.param("id"))));
   app.post("/:id/ask", async (c) => {
     const { payer } = await parse(askSchema, await c.req.json().catch(() => undefined));
     return c.json({ request: await requests.ask(c.get("user")!, c.req.param("id"), payer) });

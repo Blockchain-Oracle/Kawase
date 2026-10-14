@@ -31,6 +31,7 @@ import {
   MAX_FEE_DRAFT_MULTIPLIER,
   MIN_MAX_FEE_PER_GAS_GWEI,
   MS_PER_SECOND,
+  RELAYED_SEND_GAS,
   SEND_UNKNOWN_AFTER_S,
 } from "@kawase/config";
 import type {
@@ -84,7 +85,7 @@ import { tokenLookup } from "../tokens/lookup";
 import type { AssetService } from "../tokens/service";
 import type { BundlePart } from "../intents/bundle";
 import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredRequest, type TokenLookup } from "./facts";
-import { authorizationFor, relayAuthorization, serializableTypedData, signedBySender, type StoredAuthorization } from "./relayed";
+import { authorizationFor, relayAuthorization, relayGasPrice, reserveRelay, serializableTypedData, signedBySender, type StoredAuthorization } from "./relayed";
 import { grantFor } from "../safety/allowances";
 import { recordPractice, simulateCall } from "../safety/practice";
 import type { OpsExecutor } from "./ops";
@@ -1017,7 +1018,9 @@ export class SendService {
   /**
    * A gas-free send's signature (EIP-3009): it must be the sender's over exactly the stored message, and the message
    * exactly the draft (from, to, token, amount). Then it is reserved and recorded like a wallet send, and the relayer
-   * sends it, paying the fee. A refusal before broadcast means nothing moved.
+   * sends it, paying the fee. A refusal before broadcast means nothing moved. The person's relays today and the
+   * relayer's budget are counted inside the same locked transaction as the attempt that uses one (security review
+   * M10): two sends at once cannot both take the last one; past it the send is redrafted and says why.
    */
   private async submitAuthorization(user: SessionUser, intentId: string, input: { approvalId: string; signature: Hex }): Promise<SendApproveResponse> {
     const before = await this.ownIntent(user.id, intentId);
@@ -1026,6 +1029,7 @@ export class SendService {
     if (fresh.kind === "changed") return this.redraft(user, intentId);
     const { draft } = fresh;
     const context = this.clients(before.network);
+    const relayCost = RELAYED_SEND_GAS * (await relayGasPrice(context));
 
     const prepared = await this.db.transaction(async (tx) => {
       const intent = await this.lockIntent(tx, user.id, intentId);
@@ -1053,6 +1057,8 @@ export class SendService {
       }
       const { ledger } = fresh;
       if (ledger.amount !== null && !(await fitsLimits(tx, user.id, intent.network, ledger.asset, ledger.amount, intentId))) return { kind: "changed" as const };
+      // Under the person's lock (lockIntent): the relay this send uses is counted with it, never read beforehand.
+      if (await reserveRelay(tx, { userId: user.id, network: intent.network, cost: relayCost, counted: true })) return { kind: "changed" as const };
       await tx.update(approvals).set({ status: "approved" }).where(eq(approvals.id, approval.id));
       if (ledger.amount !== null) await tx.insert(spendLedger).values({ userId: user.id, network: intent.network, intentId, category: "send", asset: ledger.asset, amount: ledger.amount });
       const [attempt] = await tx
@@ -1070,6 +1076,7 @@ export class SendService {
           toAddress: draft.asset,
           status: "prepared",
           receipt: { authorization: { nonce: stored.message.nonce, validBefore: stored.message.validBefore } },
+          gasCost: relayCost,
         })
         .returning({ id: txAttempts.id });
       await tx.update(intents).set({ state: "executing" }).where(eq(intents.id, intentId));
@@ -1218,7 +1225,12 @@ export class SendService {
       if (!moved) return { result: undefined, events: [] };
       await tx
         .update(txAttempts)
-        .set({ status: "confirmed", receipt: { ...((attempt.receipt as Record<string, unknown>) ?? {}), chain: jsonSafe(summary(receipt)) } })
+        .set({
+          status: "confirmed",
+          receipt: { ...((attempt.receipt as Record<string, unknown>) ?? {}), chain: jsonSafe(summary(receipt)) },
+          // A relayed send's reserved gas becomes what the relayer actually paid.
+          ...(attempt.provider === "relayer" ? { gasCost: receipt.gasUsed * receipt.effectiveGasPrice } : {}),
+        })
         .where(eq(txAttempts.id, attempt.id));
       await tx.update(spendLedger).set({ state: "committed" }).where(eq(spendLedger.intentId, intent.id));
       await this.contacts.markPaid(tx, intent.userId, intent.network, draft.to, at);

@@ -1,10 +1,19 @@
-import { SECONDS_PER_DAY, MS_PER_SECOND } from "./units";
+import { SECONDS_PER_DAY, SECONDS_PER_MINUTE, MS_PER_SECOND } from "./units";
 
 /** A payment request link stays payable this long. */
 export const REQUEST_TTL_S = 30 * SECONDS_PER_DAY;
 /** Random bytes in a request link's token (base64url); unguessable, short enough to read aloud. */
 export const REQUEST_TOKEN_BYTES = 12;
 export const REQUEST_NOTE_MAX = 140;
+/**
+ * Reminders to someone asked in the app (surfaces.md Request, "reminders"): Kawase nudges them once when a request is
+ * still unpaid this long after it was made, and once more on its last day; the requester's own Remind button works
+ * once a day per request.
+ */
+export const REQUEST_NUDGE_AFTER_S = 3 * SECONDS_PER_DAY;
+export const REQUEST_LAST_DAY_S = SECONDS_PER_DAY;
+const REQUEST_REMINDER_TICK_MINUTES = 15;
+export const REQUEST_REMINDER_TICK_MS = REQUEST_REMINDER_TICK_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
 
 /** The incoming-transfer watcher: how often it reads the chain, and how much it reads at once. */
 export const WATCH_INTERVAL_MS = 10 * MS_PER_SECOND;

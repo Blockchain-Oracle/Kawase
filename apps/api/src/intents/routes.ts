@@ -2,19 +2,21 @@
 // of the person's by its id — a push, the inbox or an email link opens it — with its kind and network, read fresh
 // (an expired draft expires, a moving one is tracked) by the same service that owns it. Any other id a notification
 // carries resolves too, so every link lands somewhere exact: an automation (its live card), one of its runs, an
-// invoice, a Buy order, a split or a request. Someone else's id is simply not found.
+// invoice, a Buy order, a split, a request, a withdrawal or a paid service call. Someone else's id is simply not found.
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { IntentLookup } from "@kawase/api-client";
-import { automationRuns, automations, intents, invoices, onrampOrders, paymentRequests, splits, type Db } from "@kawase/db";
+import { automationRuns, automations, intents, invoices, marketplacePurchases, onrampOrders, paymentRequests, splits, withdrawals, type Db } from "@kawase/db";
 
 import { requireUser } from "../auth/middleware";
 import type { AutomationService } from "../automations/service";
 import type { BridgeService } from "../bridge/service";
+import type { CrossChainService } from "../crosschain/service";
 import type { EarnService } from "../earn/service";
 import { HTTP, problem } from "../http/problem";
+import type { LendService } from "../lend/service";
 import type { OnrampService } from "../onramp/service";
 import type { SendService } from "../send/service";
 import type { SwapService } from "../swap/service";
@@ -28,12 +30,14 @@ type Deps = {
   earn: EarnService;
   automations?: AutomationService | undefined;
   onramp?: OnrampService | undefined;
+  crosschain?: CrossChainService | undefined;
+  lend?: LendService | undefined;
 };
 
 /** An id that is not an intent: which of the person's other things it is, if any. */
 async function other(deps: Deps, userId: string, id: string): Promise<IntentLookup | undefined> {
   const { db } = deps;
-  const [automation, run, invoice, order, split, request] = await Promise.all([
+  const [automation, run, invoice, order, split, request, withdrawal, purchase] = await Promise.all([
     db.select({ network: automations.network, threadId: automations.threadId }).from(automations).where(and(eq(automations.id, id), eq(automations.userId, userId))),
     db
       .select({ network: automations.network })
@@ -44,6 +48,8 @@ async function other(deps: Deps, userId: string, id: string): Promise<IntentLook
     db.select({ network: onrampOrders.network }).from(onrampOrders).where(and(eq(onrampOrders.id, id), eq(onrampOrders.userId, userId))),
     db.select({ network: splits.network }).from(splits).where(and(eq(splits.id, id), eq(splits.userId, userId))),
     db.select({ network: paymentRequests.network }).from(paymentRequests).where(and(eq(paymentRequests.id, id), eq(paymentRequests.userId, userId))),
+    db.select({ network: withdrawals.network }).from(withdrawals).where(and(eq(withdrawals.id, id), eq(withdrawals.userId, userId))),
+    db.select({ network: marketplacePurchases.network, threadId: marketplacePurchases.threadId }).from(marketplacePurchases).where(and(eq(marketplacePurchases.id, id), eq(marketplacePurchases.userId, userId))),
   ]);
   if (automation[0] && deps.automations)
     return { kind: "automation", network: automation[0].network, threadId: automation[0].threadId, automation: await deps.automations.get(userId, id) };
@@ -52,6 +58,8 @@ async function other(deps: Deps, userId: string, id: string): Promise<IntentLook
   if (order[0] && deps.onramp) return { kind: "onramp", network: order[0].network, threadId: null, order: await deps.onramp.get(userId, id) };
   if (split[0]) return { kind: "split", network: split[0].network, threadId: null, splitId: id };
   if (request[0]) return { kind: "request", network: request[0].network, threadId: null, requestId: id };
+  if (withdrawal[0]) return { kind: "withdrawal", network: withdrawal[0].network, threadId: null, withdrawalId: id };
+  if (purchase[0]) return { kind: "purchase", network: purchase[0].network, threadId: purchase[0].threadId, purchaseId: id };
   return undefined;
 }
 
@@ -86,7 +94,16 @@ export function intentRoutes(deps: Deps) {
       case "earn":
         found = { kind: "earn", ...base, intent: await deps.earn.get(userId, id.data) };
         break;
-      default: {
+      // A move across chains and an Aave action open their own live cards; without their service, not found.
+      case "crosschain":
+        if (!deps.crosschain) throw problem(HTTP.notFound, "not_found");
+        found = { kind: "crosschain", ...base, intent: await deps.crosschain.get(userId, id.data) };
+        break;
+      case "lend":
+        if (!deps.lend) throw problem(HTTP.notFound, "not_found");
+        found = { kind: "lend", ...base, intent: await deps.lend.get(userId, id.data) };
+        break;
+      case "margin": {
         const positionId = (row.request as { positionId?: string | null }).positionId ?? null;
         found = { kind: "margin", ...base, positionId };
       }
