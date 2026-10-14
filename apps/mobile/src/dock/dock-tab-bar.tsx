@@ -1,27 +1,23 @@
-// The glass dock as the tab bar (Fomo F12 / M09, in Kawase's material): Home · Markets · orb · Chat · Activity
-// (surfaces.md "Shell": trading needs a home; profile and settings open from the header avatar on every tab).
-// The four tabs are the (tabs) routes; the orb in the centre is not a route — it opens the voice overlay over the
-// live page. Given to expo-router's `Tabs` as `tabBar`, so tab state, deep links and the hardware back button
-// keep working; the dock floats over the pages, which pad themselves with `useDockClearance`. The four tabs are
-// announced as tabs and the orb as a button (Codex review R13); the orb slot is the voice overlay's trigger, and its
-// orb steps aside while the overlay's orb is up so there is only ever one (R16). The bar follows the reading
-// direction, bubble included.
+// The glass dock as the tab bar (Senryo's Dock, kept as Kawase's current tab set for now: Home · Markets · orb · Chat ·
+// Activity; the tab change to Home · Markets · centre · Activity · Settings is Stage 3). The four tabs are the (tabs)
+// routes; the orb in the centre is not a route, it opens the voice overlay over the live page. Given to expo-router's
+// `Tabs` as `tabBar`, so tab state, deep links and the hardware back button keep working; the dock floats over the pages,
+// which pad themselves with `useDockClearance`. The dock hides under every sheet (the dock context) and while the keyboard
+// is up. The orb slot is the voice overlay's trigger, and its orb steps aside while the overlay's orb is up so there is
+// only ever one.
 import type { Tabs } from "expo-router";
-import { Activity, ChartCandlestick, Home, MessageCircle } from "lucide-react-native";
 import type * as React from "react";
 import { View } from "react-native";
-import { useKeyboardState } from "react-native-keyboard-controller";
 
-import { GlassDock, type DockItem } from "@kawase/ui-native/components/glass-dock";
 import { tokens } from "@kawase/ui-tokens";
 
 import { Orb } from "@/components/orb";
+import { Activity, Home, LineChart, MessageCircle } from "@/components/kit/icons";
+import { Dock, type DockItem } from "@/components/shell/Dock";
 import { useT } from "@/i18n";
-import { useLocale } from "@/i18n/locale-provider";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { ORB_DOCK_SIZE } from "@/overlay/voice-overlay";
 import { useTheme } from "@/theme/theme-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
 /** What `Tabs` hands its custom tab bar (expo-router does not export the type by name). */
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
@@ -31,14 +27,12 @@ const ORB_IDLE_LEVEL = 0.15;
 
 /** Route names in the (tabs) group, in dock order; the orb sits in the centre. Settings is a tab without a slot. */
 const TAB_ORDER = ["index", "markets", ORB_KEY, "chat", "activity"] as const;
+const ICONS = { index: Home, markets: LineChart, chat: MessageCircle, activity: Activity } as const;
 
-export function DockTabBar({ state, navigation, insets }: TabBarProps) {
+export function DockTabBar({ state, navigation }: TabBarProps) {
   const { t } = useT();
-  const { mode, network } = useTheme();
-  const colors = useThemeColors();
+  const { network } = useTheme();
   const overlay = useOverlay();
-  const { rtl } = useLocale();
-  const keyboardVisible = useKeyboardState((keyboard) => keyboard.isVisible);
   const activeKey = state.routes[state.index]?.name ?? "index";
   const orbAway = overlay.shown === "voice";
 
@@ -49,7 +43,6 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
     [ORB_KEY]: t("home.dockVoice"),
     activity: t("home.dockActivity"),
   };
-  const icons = { index: Home, markets: ChartCandlestick, chat: MessageCircle, activity: Activity } as const;
 
   const items: DockItem[] = TAB_ORDER.map((key) =>
     key === ORB_KEY
@@ -64,7 +57,7 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
             </View>
           ),
         }
-      : { key, label: labels[key]!, icon: icons[key] },
+      : { key, label: labels[key]!, icon: ICONS[key] },
   );
 
   const onPress = (key: string) => {
@@ -79,6 +72,5 @@ export function DockTabBar({ state, navigation, insets }: TabBarProps) {
     if (key !== activeKey && !event.defaultPrevented) navigation.navigate(route.name, route.params);
   };
 
-  if (keyboardVisible) return null;
-  return <GlassDock items={items} activeKey={activeKey} onPress={onPress} scheme={mode} tint={colors.glass} bottomInset={insets.bottom} rtl={rtl} />;
+  return <Dock items={items} activeKey={activeKey} onPress={onPress} />;
 }

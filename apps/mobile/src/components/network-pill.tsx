@@ -1,56 +1,51 @@
-// The network pill is the toggle (D15 / A3): one tap switches between Arc and Arc Testnet. It is a switch to
-// assistive technology, its label says where a tap goes, and the first switch to mainnet raises the consent
-// sheet (S25, in C12's acknowledgment shape: read, tick, then the button). The pill never disappears because the
-// user signed in; Settings → Network repeats the same toggle with the explanation. Holding the pill opens both
-// networks with their own totals (surfaces.md "Network pill sheet"); assistive tech gets it as a named action.
+// The mode capsule (Senryo's ModeCapsule, the network toggle of D15 / A3): one tap switches Mainnet and Testnet, like
+// dark and light. It is a switch to assistive technology and its label says where a tap goes. The first switch to
+// mainnet raises the consent sheet (S25, in C12's acknowledgment shape: read, tick, then the button). The capsule never
+// disappears because the user signed in; Settings → Network repeats the same toggle. Holding it opens both networks with
+// their own totals; assistive tech gets that as a named action. The mode is in the words, on neutral plates (never a hue
+// wash); a testnet capsule is also outlined, so the difference reads by shape.
 import { Check } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { NetworkChip } from "@kawase/ui-native/components/network-chip";
-import { Sheet } from "@kawase/ui-native/components/sheet";
-import { StateLabel } from "@kawase/ui-native/components/state-label";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn } from "@kawase/ui-native/lib/utils";
-
+import { Icon as KitIcon } from "@/components/kit/icons";
+import { Button } from "@/components/kit/Button";
+import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
+import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
+import { ModeCapsule } from "@/components/shell/ModeCapsule";
+import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { NetworksSheet } from "@/components/networks-sheet";
 import { useSession } from "@/session/session-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
+/** The capsule is drawn 34 pt tall; its touch target reaches 44 pt above and below it (not sideways, where the language pill sits close by). */
+export const PILL_HIT_SLOP = { top: 5, bottom: 5 } as const;
+
 type NetworkPillProps = {
-  className?: string;
+  /** Drops the Arc mark (a ticket header, the compact rail). */
+  compact?: boolean;
 };
 
-/** The pill is drawn 24 pt tall; the touch target reaches 44 pt above and below it (not sideways, where the
- * language pill sits close by). */
-export const PILL_HIT_SLOP = { top: 10, bottom: 10 } as const;
-
-export function NetworkPill({ className }: NetworkPillProps) {
+export function NetworkPill({ compact = false }: NetworkPillProps) {
   const { t } = useT();
-  const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
+  const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } =
+    useNetworkSwitch();
   const { availableNetworks } = useSession();
   const [sheetOpen, setSheetOpen] = React.useState(false);
-  const testnet = network === "testnet";
   return (
     <>
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityLabel={t("network.switchTo", { network: nextName })}
-        accessibilityState={{ checked: !testnet, busy }}
-        accessibilityActions={[{ name: "longpress", label: t("network.sheetTitle") }]}
-        onAccessibilityAction={(event) => event.nativeEvent.actionName === "longpress" && setSheetOpen(true)}
-        hitSlop={PILL_HIT_SLOP}
-        onPress={toggle}
+      <ModeCapsule
+        network={network}
+        label={network === "testnet" ? t("network.testnet") : t("network.mainnet")}
+        switchLabel={t("network.switchTo", { network: nextName })}
+        longPressLabel={t("network.sheetTitle")}
+        busy={busy}
+        compact={compact}
+        onToggle={toggle}
         onLongPress={() => setSheetOpen(true)}
-        className={cn("active:opacity-70", className)}
-      >
-        <NetworkChip label={testnet ? t("network.arcTestnet") : t("network.arc")} />
-      </Pressable>
+      />
       <NetworksSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -62,7 +57,12 @@ export function NetworkPill({ className }: NetworkPillProps) {
           void switchNetwork(target);
         }}
       />
-      <MainnetConsentSheet open={consentNeeded} busy={busy} onAccept={() => void acceptMainnet()} onClose={dismissConsent} />
+      <MainnetConsentSheet
+        open={consentNeeded}
+        busy={busy}
+        onAccept={() => void acceptMainnet()}
+        onClose={dismissConsent}
+      />
     </>
   );
 }
@@ -76,49 +76,73 @@ type MainnetConsentSheetProps = {
 
 const CHECK_SIZE = 24;
 
+/** The real-money consent, on the kit's sheet: read, tick, then the button. A fresh sheet each time (the tick is not kept). */
 export function MainnetConsentSheet({ open, busy, onAccept, onClose }: MainnetConsentSheetProps) {
   const { t } = useT();
-  const colors = useThemeColors();
-  const insets = useSafeAreaInsets();
-  const [checked, setChecked] = React.useState(false);
-
-  // A fresh sheet each time: the tick is not remembered between openings.
-  React.useEffect(() => {
-    if (!open) setChecked(false);
-  }, [open]);
-
+  if (!open) return null;
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={t("wallet.mainnetConsentTitle")}
-      colors={{ background: colors.card, handle: colors.muted, scrim: colors.scrim }} closeLabel={t("common.close")}
-      bottomInset={insets.bottom}
-      className="gap-4"
-    >
-      <StateLabel className="text-muted-foreground text-start">{t("network.realMoney")}</StateLabel>
-      <Text className="text-foreground text-base leading-6">{t("wallet.mainnetConsentBody")}</Text>
+    <Sheet onClose={onClose} closeLabel={t("common.close")}>
+      <ConsentBody busy={busy} onAccept={onAccept} />
+    </Sheet>
+  );
+}
+
+function ConsentBody({ busy, onAccept }: { busy: boolean; onAccept: () => void }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const close = useSheetClose();
+  const [checked, setChecked] = React.useState(false);
+  return (
+    <View style={styles.body}>
+      <SheetHeading title={t("wallet.mainnetConsentTitle")} body={t("wallet.mainnetConsentBody")} />
+      <Text style={[TYPE.moneyMeta, styles.center, { color: color.text3 }]}>{t("network.realMoney")}</Text>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked }}
         accessibilityLabel={t("network.consentCheck")}
-        onPress={() => setChecked((value) => !value)}
-        className="flex-row items-center gap-3 py-1"
+        onPress={() => {
+          // A tick is a haptic only (fire.ts: no sound for ticks); the sound belongs to the switch itself.
+          fire("tick");
+          setChecked((value) => !value);
+        }}
+        style={styles.check}
       >
         <View
-          className={cn("items-center justify-center rounded-md border-2", checked ? "bg-primary border-primary" : "border-border")}
-          style={{ width: CHECK_SIZE, height: CHECK_SIZE }}
+          style={[
+            styles.box,
+            {
+              borderColor: checked ? color.primary : color.border,
+              backgroundColor: checked ? color.primary : color.transparent,
+            },
+          ]}
         >
-          {checked ? <Icon as={Check} className="text-primary-foreground size-4" strokeWidth={3} /> : null}
+          {checked ? <KitIcon icon={Check} size={SIZE.iconSm} tint={color.primaryForeground} strokeWidth={3} /> : null}
         </View>
-        <Text className="text-foreground flex-1 text-base">{t("network.consentCheck")}</Text>
+        <Text style={[TYPE.body, styles.grow, { color: color.ink }]}>{t("network.consentCheck")}</Text>
       </Pressable>
-      <Button size="lg" disabled={!checked || busy} onPress={onAccept}>
-        <Text>{t("wallet.mainnetConsentAccept")}</Text>
-      </Button>
-      <Button variant="ghost" onPress={onClose}>
-        <Text className="text-muted-foreground">{t("common.cancel")}</Text>
-      </Button>
-    </Sheet>
+      <Button label={t("wallet.mainnetConsentAccept")} disabled={!checked} loading={busy} onPress={onAccept} />
+      <Button label={t("common.cancel")} variant="ghost" onPress={() => close()} />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  body: { gap: SPACE.lg },
+  center: { textAlign: "center" },
+  grow: { flex: 1 },
+  check: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingVertical: SPACE.xs,
+    minHeight: SIZE.touch,
+  },
+  box: {
+    width: CHECK_SIZE,
+    height: CHECK_SIZE,
+    borderRadius: RADIUS.xs,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

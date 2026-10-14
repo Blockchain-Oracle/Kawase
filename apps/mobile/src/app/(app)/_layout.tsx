@@ -10,7 +10,7 @@ import { Redirect, Stack, useGlobalSearchParams, usePathname } from "expo-router
 
 import { rememberDeepLink } from "@/onboarding/continuation";
 import { CloudOff } from "lucide-react-native";
-import type * as React from "react";
+import * as React from "react";
 import { View } from "react-native";
 
 import { EmptyState } from "@kawase/ui-native/components/empty-state";
@@ -21,7 +21,15 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { useWide, WideFrameContext, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
+import { LoadingState } from "@/components/kit/states";
+import { LAYOUT, SPACE } from "@/components/kit/theme";
+import { useHeldLoading } from "@/components/kit/wait";
+import { SheetPortalProvider } from "@/components/sheet/SheetHost";
+import { DockProvider } from "@/components/shell/dock-context";
+import { LiveRegionHost } from "@/components/shell/LiveRegionHost";
+import { hydrateJournal } from "@/components/tx/journal";
 import { DesktopSidebar } from "@/dock/desktop-sidebar";
+import { warmFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { OverlayHost } from "@/overlay/overlay-host";
 import { OverlayProvider, useOverlay } from "@/overlay/overlay-provider";
@@ -38,6 +46,12 @@ export default function AppLayout() {
   const wide = useWide();
   const { status, connection, retry } = useSession();
   const updateRequired = useUpdateRequired();
+  // Once per launch: the cue players load before the first money sound is due, and the intent journal is read back so
+  // an action interrupted by a kill is recovered, never re-sent.
+  React.useEffect(() => {
+    warmFeedback();
+    void hydrateJournal();
+  }, []);
   if (updateRequired) return <UpdateRequiredScreen />;
   if (status === "loading" && connection !== "online") {
     return (
@@ -60,24 +74,58 @@ export default function AppLayout() {
       </View>
     );
   }
-  if (status === "loading") return null;
+  if (status === "loading") return <SessionLoading />;
   if (status === "none") return <SignedOutRedirect />;
   // Paused or practising: one strip above every screen says so (cards/automate-safety.md).
+  // The dock context and the sheet layer wrap every page of the area: a sheet opened anywhere renders above the dock
+  // (which hides under it) and the page beneath steps back to 0.96.
   return (
     <OverlayProvider>
-      <SafetyStripFrame>
-        <DesktopFrame>
-          <Stack
-            screenOptions={({ route }) => ({
-              headerShown: false,
-              ...(wide && route.name !== "(tabs)"
-                ? { contentStyle: { width: "100%", alignSelf: "center", maxWidth: WIDE_PAGES.has(route.name) ? WIDE_PAGE_PX : WIDE_COLUMN_PX } }
-                : {}),
-            })}
-          />
-        </DesktopFrame>
-      </SafetyStripFrame>
+      <DockProvider>
+        <SheetPortalProvider>
+          <SafetyStripFrame>
+            <DesktopFrame>
+              <Stack
+                screenOptions={({ route }) => ({
+                  headerShown: false,
+                  ...(wide && route.name !== "(tabs)"
+                    ? {
+                        contentStyle: {
+                          width: "100%",
+                          alignSelf: "center",
+                          maxWidth: WIDE_PAGES.has(route.name) ? WIDE_PAGE_PX : WIDE_COLUMN_PX,
+                        },
+                      }
+                    : {}),
+                })}
+              />
+            </DesktopFrame>
+          </SafetyStripFrame>
+        </SheetPortalProvider>
+      </DockProvider>
+      <LiveRegionHost />
     </OverlayProvider>
+  );
+}
+
+/**
+ * The session is being read (a saved one, usually a few milliseconds): Home's own shape (the balance hero, then the
+ * feed), shown only if the read outlasts a blink and then held long enough not to flash. Never a blank page.
+ */
+function SessionLoading() {
+  const shown = useHeldLoading(true);
+  return (
+    <View
+      className="bg-background flex-1"
+      style={{ paddingHorizontal: SPACE.inset, paddingTop: SPACE.xxxl + SPACE.xxxl }}
+    >
+      {shown ? (
+        <View style={{ gap: SPACE.xl }}>
+          <LoadingState shape="hero" />
+          <LoadingState shape="feed" />
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -92,11 +140,23 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
   const overlay = useOverlay();
   const { user } = useSession();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
+  // On a desktop window the rail and the one stage float on a slightly deeper ground, 16 px off the window's edge, with
+  // the stage's 24 px corners (the Senryo/Mitoshi web shell); on a phone the page is the whole window.
   return (
-    <View className="bg-background flex-1">
-      <View className="flex-1 flex-row" aria-hidden={wide && overlay.current !== null}>
+    <View
+      className={wide ? "bg-secondary flex-1" : "bg-background flex-1"}
+      style={wide ? { padding: LAYOUT.inset } : undefined}
+    >
+      <View
+        className="flex-1 flex-row"
+        style={wide ? { gap: LAYOUT.inset } : undefined}
+        aria-hidden={wide && overlay.current !== null}
+      >
         {wide ? <DesktopSidebar /> : null}
-        <View className="flex-1">
+        <View
+          className="bg-background flex-1"
+          style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}
+        >
           {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
           {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
           <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>

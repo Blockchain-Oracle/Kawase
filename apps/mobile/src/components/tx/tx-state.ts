@@ -1,0 +1,131 @@
+// The lifecycle of one money action as data (Mitoshi's TxState, Kawase's kinds): idle, review, blocked, signing, sent,
+// still waiting, confirmed or failed. A pure reducer so any lane's action drives the same kit: the CTA, the phase bar, the
+// steps row, the receipt morph and the failure card are all functions of this one value. Failed always carries whether
+// money moved (the card says so, always); "unknown" is its own state because a send whose answer was lost may have gone
+// through and is never re-sent.
+import type { Diagnosis } from "../kit/diagnosis";
+
+export type MoneyMoved = "no" | "yes" | "unknown";
+
+export type TxState =
+  | { kind: "idle" }
+  /** The details are being reviewed; the CTA offers the confirm. */
+  | { kind: "review" }
+  /** Cannot start: `reason` is the blocker, named as the CTA's label. */
+  | { kind: "blocked"; reason: string }
+  | { kind: "signing"; startedAt: number }
+  | { kind: "submitted"; txHash: string | null; startedAt: number }
+  /** The chain has not answered in time. Nothing is re-sent; recovery reads the status. */
+  | { kind: "unknown"; txHash: string | null; diagnosis: Diagnosis }
+  | { kind: "confirmed"; txHash: string | null }
+  | { kind: "failed"; diagnosis: Diagnosis; moneyMoved: MoneyMoved; txHash: string | null };
+
+export type TxEvent =
+  | { type: "review" }
+  | { type: "block"; reason: string }
+  | { type: "confirm"; nowMs: number }
+  | { type: "submitted"; txHash: string | null; nowMs: number }
+  | { type: "receipt"; txHash: string | null; status: "success" | "reverted"; diagnosis?: Diagnosis }
+  | { type: "error"; diagnosis: Diagnosis; moneyMoved?: MoneyMoved }
+  | { type: "timeout"; diagnosis: Diagnosis }
+  | { type: "reset" };
+
+export const TX_IDLE: TxState = { kind: "idle" };
+
+const REVERTED: Diagnosis = { kind: "unknown", retryable: true, technical: "reverted" };
+
+export function reduceTx(state: TxState, event: TxEvent): TxState {
+  switch (event.type) {
+    case "reset":
+      return TX_IDLE;
+    case "review":
+      return state.kind === "idle" || state.kind === "blocked" || (state.kind === "failed" && state.moneyMoved === "no")
+        ? { kind: "review" }
+        : state;
+    case "block":
+      return state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown"
+        ? state
+        : { kind: "blocked", reason: event.reason };
+    case "confirm":
+      return canConfirm(state) ? { kind: "signing", startedAt: event.nowMs } : state;
+    case "submitted":
+      return state.kind === "signing" ? { kind: "submitted", txHash: event.txHash, startedAt: event.nowMs } : state;
+    case "receipt":
+      if (event.status === "success") return { kind: "confirmed", txHash: event.txHash };
+      // A reverted transaction spends gas, not the amount: the money did not move.
+      return { kind: "failed", diagnosis: event.diagnosis ?? REVERTED, moneyMoved: "no", txHash: event.txHash };
+    case "error":
+      return { kind: "failed", diagnosis: event.diagnosis, moneyMoved: event.moneyMoved ?? "no", txHash: null };
+    case "timeout":
+      return { kind: "unknown", txHash: state.kind === "submitted" ? state.txHash : null, diagnosis: event.diagnosis };
+  }
+}
+
+const CLIENT_ERROR = 400;
+const SERVER_ERROR = 500;
+
+/** A 4xx answer is the server refusing in words: the intent was read and turned down, so nothing moved. */
+export function isClientRefusal(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  return typeof status === "number" && status >= CLIENT_ERROR && status < SERVER_ERROR;
+}
+
+/**
+ * How a thrown error ends a money action. Once the transaction has left the phone (`submitted`), nothing thrown after it
+ * can prove the money stayed: a 404 "not found yet" or a 409 "already known" from a later status or receipt read, a
+ * dropped connection, even a message that reads like a refusal. It ends `unknown`, stays in the journal and is never
+ * offered again from the same button. Before it left, a signed and journalled intent whose send failed without an
+ * answer is also `unknown` (the send may have landed). Only a refusal in words (a 4xx, a cancelled prompt) before
+ * anything left the phone, or any error before the intent was journalled, is a plain "no".
+ */
+export function endingOfThrow(at: {
+  left: boolean;
+  journalled: boolean;
+  refusedInWords: boolean;
+}): "unknown" | "refused" {
+  if (at.left) return "unknown";
+  if (at.journalled && !at.refusedInWords) return "unknown";
+  return "refused";
+}
+
+/** The CTA accepts a tap in these states only. A failure where money moved, or may have, is never retried from the same
+ * button (a second tap could pay twice): recovery reads the status and the failure card names what to do. */
+export const canConfirm = (state: TxState): boolean =>
+  state.kind === "idle" || state.kind === "review" || (state.kind === "failed" && state.moneyMoved === "no");
+
+/** Something is in flight: the CTA never looks disabled, it shows the phase and absorbs the tap. */
+export const isInFlight = (state: TxState): boolean =>
+  state.kind === "signing" || state.kind === "submitted" || state.kind === "unknown";
+
+/** How far the action got: 0 signing, 1 sent (or still waiting), 2 confirmed; -1 when nothing is in flight. */
+const STEP_CONFIRMED = 2;
+const THIRDS = 3;
+
+export function txReached(state: TxState): number {
+  switch (state.kind) {
+    case "signing":
+      return 0;
+    case "submitted":
+    case "unknown":
+      return 1;
+    case "confirmed":
+      return STEP_CONFIRMED;
+    default:
+      return -1;
+  }
+}
+
+/** The phase bar's fill: a third per step the action has taken. */
+export function txProgress(state: TxState): number {
+  switch (state.kind) {
+    case "signing":
+      return 1 / THIRDS;
+    case "submitted":
+    case "unknown":
+      return STEP_CONFIRMED / THIRDS;
+    case "confirmed":
+      return 1;
+    default:
+      return 0;
+  }
+}

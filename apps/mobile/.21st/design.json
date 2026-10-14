@@ -1,0 +1,1030 @@
+{
+  "version": 2,
+  "project": {
+    "name": "@kawase/mobile",
+    "productType": "AI-agent money app on Arc (Circle L1): the agent is the front door, screens are add-ons (D37)"
+  },
+  "direction": {
+    "name": "Senryo",
+    "summary": "Senryo's look exactly (D40): light-first neutrals (#F5F5F5 ground, white cards, #ECECEC insets), black primary actions, #FA00FF magenta with black labels only for trade, publish, selected controls and the focus ring, up/down only for direction, Inter for the interface and Roboto Condensed Black for money and page titles. Testnet is neutral plates plus the mode capsule, never a hue wash."
+  },
+  "authority": {
+    "decisions": "context/08-product-research/DECISIONS-FROM-ABU.md (D37-D43)",
+    "research": "plan/research/2026-10-14/03-senryo-design.md, 05-21st-components.md",
+    "docsPack": "plan/docs-packs/look.md",
+    "designSystem": "DESIGN.md"
+  },
+  "sources": {
+    "tokens": [
+      "packages/ui-tokens/tokens.json",
+      "packages/ui-tokens/sound.json",
+      "apps/mobile/src/components/kit/theme.ts"
+    ],
+    "components": ["apps/mobile/src/components/{kit,sheet,shell,toast,tx}", "packages/ui-web/src/components/ui"],
+    "senryo": "/Users/abu/dev/hackathon/metropolis (packages/tokens/src, apps/mobile/src/components)",
+    "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/{states,tx}"
+  },
+  "design": {
+    "colorMode": "light-default-with-dark",
+    "themes": ["light", "dark", "testnet", "testnet-dark"],
+    "colors": {
+      "--background": {
+        "light": "#F5F5F5",
+        "dark": "#111111",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--foreground": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--card": {
+        "light": "#FFFFFF",
+        "dark": "#1C1C1C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--card-foreground": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--popover": {
+        "light": "#F5F5F5",
+        "dark": "#171717",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--popover-foreground": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--primary": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--primary-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--secondary": {
+        "light": "#ECECEC",
+        "dark": "#292929",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--secondary-foreground": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--muted": {
+        "light": "#ECECEC",
+        "dark": "#292929",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--muted-foreground": {
+        "light": "#666666",
+        "dark": "#B8B8B8",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--accent": {
+        "light": "#FA00FF",
+        "dark": "#FA00FF",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--accent-foreground": {
+        "light": "#000000",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--destructive": {
+        "light": "#C83225",
+        "dark": "#FF5A48",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--destructive-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--success": {
+        "light": "#2F7A00",
+        "dark": "#B5F543",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--border": {
+        "light": "#D4D4D4",
+        "dark": "#414141",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--input": {
+        "light": "#ECECEC",
+        "dark": "#292929",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--ring": {
+        "light": "#FA00FF",
+        "dark": "#FA00FF",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--network": {
+        "light": "#000000",
+        "dark": "#F5F5F5",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--network-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--network-surface": {
+        "light": "#E2E2E2",
+        "dark": "#363636",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--glass": {
+        "light": "#ECECECEB",
+        "dark": "#292929EB",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--glass-border": {
+        "light": "#FFFFFFB3",
+        "dark": "#FFFFFF24",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--scrim": {
+        "light": "#000000B3",
+        "dark": "#000000B3",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--texture": {
+        "light": "#0000000F",
+        "dark": "#FFFFFF14",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--silver": {
+        "light": "#999999",
+        "dark": "#A0A0A0",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--silver-deep": {
+        "light": "#666666",
+        "dark": "#B8B8B8",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--text-3": {
+        "light": "#6E6E6E",
+        "dark": "#A0A0A0",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--link": {
+        "light": "#99009C",
+        "dark": "#FF75FF",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--up": {
+        "light": "#2F7A00",
+        "dark": "#B5F543",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--down": {
+        "light": "#C8283F",
+        "dark": "#FF647C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--warn": {
+        "light": "#8A5800",
+        "dark": "#F2B85C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--raised-2": {
+        "light": "#ECECEC",
+        "dark": "#292929",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--row-pressed": {
+        "light": "#E2E2E2",
+        "dark": "#363636",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--selected-row": {
+        "light": "#FCE3FC",
+        "dark": "#3C203C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--skeleton": {
+        "light": "#DEDEDE",
+        "dark": "#363636",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--primary-pressed": {
+        "light": "#252525",
+        "dark": "#DEDEDE",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--up-fill": {
+        "light": "#B5F543",
+        "dark": "#B5F543",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--down-fill": {
+        "light": "#FF647C",
+        "dark": "#FF647C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--up-fill-edge": {
+        "light": "#7FB224",
+        "dark": "#7FB224",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--down-fill-edge": {
+        "light": "#D9435C",
+        "dark": "#D9435C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--on-fill": {
+        "light": "#000000",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--up-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--down-foreground": {
+        "light": "#FFFFFF",
+        "dark": "#000000",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--up-surface": {
+        "light": "#EEF9DC",
+        "dark": "#1E2A0C",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--down-surface": {
+        "light": "#FDE7EA",
+        "dark": "#3A1A20",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--warn-surface": {
+        "light": "#FFF0D5",
+        "dark": "#332719",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--destructive-surface": {
+        "light": "#FBE8E5",
+        "dark": "#35201F",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--glass-opaque": {
+        "light": "#ECECEC",
+        "dark": "#292929",
+        "source": "packages/ui-tokens/tokens.json"
+      },
+      "--sheet-handle": {
+        "light": "#999999",
+        "dark": "#999999",
+        "source": "packages/ui-tokens/tokens.json"
+      }
+    },
+    "fonts": {
+      "ui": "Inter 400-700",
+      "money": "Roboto Condensed Black 900",
+      "scripts": ["Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC"]
+    },
+    "radius": {
+      "none": 0,
+      "xs": 8,
+      "sm": 12,
+      "md": 16,
+      "lg": 24,
+      "xl": 32,
+      "pill": 999
+    },
+    "space": {
+      "none": 0,
+      "xxs": 2,
+      "xs": 4,
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "lgPlus": 20,
+      "inset": 20,
+      "xl": 24,
+      "xxl": 32,
+      "xxxl": 48
+    },
+    "motion": {
+      "pressMs": 100,
+      "pressReleaseMs": 160,
+      "selectionMs": 170,
+      "sheetEnterMs": 480,
+      "sheetExitMs": 240,
+      "staggerMs": 40,
+      "reducedMotionMs": 100,
+      "easing": [0.2, 0.8, 0.2, 1],
+      "sheetEasing": [0.32, 0.72, 0, 1]
+    }
+  },
+  "components": {
+    "built": [
+      {
+        "name": "Button",
+        "native": "apps/mobile/src/components/kit/Button.tsx",
+        "source": [
+          {
+            "21st": 143,
+            "slug": "originui/button",
+            "url": "https://21st.dev/r/originui/button",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/Button.tsx"
+          }
+        ],
+        "port": "Senryo port: 56 pt plate (44 compact), 28/22 radius, black primary, quiet secondary one step lighter than its ground, ghost in link ink, destructive on its wash; 0.97 press scale (100/160 ms) and a press haptic.",
+        "deviations": "No outline/border on content (Senryo rule); the 21st button is the API spec (variants, loading), the anatomy is Senryo's.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Surface (Panel, SectionLabel, KeyValue, Rule, SurfaceLevel)",
+        "native": "apps/mobile/src/components/kit/Surface.tsx",
+        "source": [
+          {
+            "composedFrom": "Senryo kit/Surface.tsx (no 21st card fits: every 21st card carries a border or a shadow)"
+          }
+        ],
+        "port": "Depth is one step lighter fill per level (card on a page, raised-2 in a sheet); 20 pt corners; no border, no shadow.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ListRow",
+        "native": "apps/mobile/src/components/kit/ListRow.tsx",
+        "source": [
+          {
+            "21st": 28284,
+            "slug": "sean0205/item-action-list",
+            "url": "https://21st.dev/r/sean0205/item-action-list",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/ListRow.tsx"
+          }
+        ],
+        "port": "Leading real mark, title, detail, chevron or trailing control; rows separated by height, not lines; pressed row fill; tick haptic.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Segmented",
+        "native": "apps/mobile/src/components/kit/Segmented.tsx",
+        "source": [
+          {
+            "21st": 23552,
+            "slug": "ddoemonn/segmented-control",
+            "url": "https://21st.dev/r/ddoemonn/segmented-control",
+            "role": "spec"
+          }
+        ],
+        "port": "Sliding plate on a 170 ms curve, radio semantics, tick per change; Reanimated plate measured per cell (mirrors in RTL).",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Switch",
+        "native": "apps/mobile/src/components/kit/Switch.tsx",
+        "source": [
+          {
+            "21st": 21948,
+            "slug": "serafimcloud/switch",
+            "url": "https://21st.dev/r/serafimcloud/switch",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/Switch.tsx"
+          }
+        ],
+        "port": "Thumb travels in 100 ms on the press curve; switch role with checked state.",
+        "deviations": "Solid primary (black) track instead of the 21st gradient (no gradients in the Senryo look); a caller can pass a token tone.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "SearchField",
+        "native": "apps/mobile/src/components/kit/SearchField.tsx",
+        "source": [
+          {
+            "21st": 1469,
+            "slug": "jolbol1/searchfield",
+            "url": "https://21st.dev/r/jolbol1/searchfield",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/SearchField.tsx"
+          }
+        ],
+        "port": "Inset fill, leading search glyph, clear button when not empty; search label from the shell catalogue.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "FilterChips",
+        "native": "apps/mobile/src/components/kit/FilterChips.tsx",
+        "source": [
+          {
+            "21st": 23525,
+            "slug": "ddoemonn/filter-grid",
+            "url": "https://21st.dev/r/ddoemonn/filter-grid",
+            "role": "spec"
+          },
+          {
+            "21st": 1963,
+            "slug": "preetsuthar17/selector-chips",
+            "url": "https://21st.dev/r/preetsuthar17/selector-chips",
+            "role": "spec"
+          }
+        ],
+        "port": "Segmented radio chips with optional live counts; 32 pt chips; selected in ink, the rest on raised-2.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Keypad",
+        "native": "apps/mobile/src/components/kit/Keypad.tsx",
+        "source": [
+          {
+            "21st": 3711,
+            "slug": "bankkroll/number-pad",
+            "url": "https://21st.dev/r/bankkroll/number-pad",
+            "role": "spec"
+          }
+        ],
+        "port": "Borderless 3 x 4 grid of large Inter figures, pressed key on row-pressed, tick per key; applyKey enforces decimals and digit caps.",
+        "deviations": "Dialog/vaul wrapper of the 21st pad removed: the pad lives inside our sheet.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "AmountPad",
+        "native": "apps/mobile/src/components/kit/AmountPad.tsx",
+        "source": [
+          {
+            "21st": 3711,
+            "slug": "bankkroll/number-pad",
+            "url": "https://21st.dev/r/bankkroll/number-pad",
+            "role": "keypad"
+          },
+          {
+            "composedFrom": "Keypad + Senryo kit/AmountPad.tsx"
+          }
+        ],
+        "port": "Figure in Roboto Condensed Black (tabular), one problem/limits line, 1/4 1/2 3/4 All chips of a balance or presets, keypad. Values in base units through viem parseUnits/formatUnits (any decimals); a chip sets the exact value, so All leaves no dust.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "HoldButton",
+        "native": "apps/mobile/src/components/kit/HoldButton.tsx",
+        "web": "ui-web hold-to-confirm.tsx (installed 21st component) for DOM-only pages; the app's web build runs the native kit via react-native-web.",
+        "source": [
+          {
+            "21st": 23527,
+            "slug": "ddoemonn/hold-to-confirm",
+            "url": "https://21st.dev/r/ddoemonn/hold-to-confirm",
+            "role": "spec"
+          }
+        ],
+        "port": "Hold 1200 ms, a tick at each quarter, linear fill, release drains; the label becomes the blocker when not ready; confirm haptic on completion.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "SlideToConfirm",
+        "native": "apps/mobile/src/components/kit/SlideToConfirm.tsx",
+        "web": "apps/mobile/src/components/kit/SlideToConfirm.web.tsx -> packages/ui-web/src/components/ui/slide-action-button.tsx",
+        "source": [
+          {
+            "21st": 29304,
+            "slug": "starc007/slide-action-button",
+            "url": "https://21st.dev/r/starc007/slide-action-button",
+            "role": "spec"
+          }
+        ],
+        "port": "Native: Gesture.Pan, 56 pt rail, 48 pt thumb, commits on release past 90 %, haptic detent, chevron bends into a check, tones primary/accent/up/down, screen-reader activate action.",
+        "deviations": "Web twin is the installed 21st component reskinned to the kit's 56 px rail, 28/22 radii and 17 px label; a locked rail is a quiet stated plate.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "DisclosureRow",
+        "native": "apps/mobile/src/components/kit/DisclosureRow.tsx",
+        "source": [
+          {
+            "21st": 851,
+            "slug": "ibelick/disclosure",
+            "url": "https://21st.dev/r/ibelick/disclosure",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/DisclosureRow.tsx"
+          }
+        ],
+        "port": "Title and value at rest, the detail behind one tap (the Senryo \"detail behind one disclosure\" rule); expanded state for assistive tech.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "QuietLine",
+        "native": "apps/mobile/src/components/kit/QuietLine.tsx",
+        "source": [
+          {
+            "composedFrom": "Senryo kit/QuietLine.tsx (a single meta line; nothing on 21st is smaller than a badge)"
+          }
+        ],
+        "port": "One quiet text line in text-3 under a control or figure.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ProgressBar",
+        "native": "apps/mobile/src/components/kit/ProgressBar.tsx",
+        "source": [
+          {
+            "21st": 23549,
+            "slug": "ddoemonn/progress-bar",
+            "url": "https://21st.dev/r/ddoemonn/progress-bar",
+            "role": "spec"
+          }
+        ],
+        "port": "Spring-filled bar with progressbar semantics and a value text; reduced motion jumps.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ChangeChip",
+        "native": "apps/mobile/src/components/kit/ChangeChip.tsx",
+        "source": [
+          {
+            "21st": 27366,
+            "slug": "isaiahbjork/primitive-badge",
+            "url": "https://21st.dev/r/isaiahbjork/primitive-badge",
+            "role": "spec"
+          },
+          {
+            "21st": 6955,
+            "slug": "prebuiltui/badge-tag",
+            "url": "https://21st.dev/r/prebuiltui/badge-tag",
+            "role": "spec"
+          }
+        ],
+        "port": "Localised signed percent on the direction's wash (up/down surface), grey when level; null draws nothing (never a fake 0 %).",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ActionCircle / ActionCircles",
+        "native": "apps/mobile/src/components/kit/ActionCircle.tsx",
+        "source": [
+          {
+            "composedFrom": "Senryo kit/ActionCircle.tsx (the Fomo/UGLYCASH round quick action; 21st icon buttons are all ghost or square)"
+          }
+        ],
+        "port": "Round quick action with its label under it, press scale and haptic; a row of them for Send/Receive/Add money/Swap.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "CountdownRing",
+        "native": "apps/mobile/src/components/kit/CountdownRing.tsx",
+        "source": [
+          {
+            "21st": 1737,
+            "slug": "hihahihahoho/circle-progress",
+            "url": "https://21st.dev/r/hihahihahoho/circle-progress",
+            "role": "spec"
+          },
+          {
+            "21st": 26542,
+            "slug": "edwinvakayil/r-progress",
+            "url": "https://21st.dev/r/edwinvakayil/r-progress",
+            "role": "spec"
+          }
+        ],
+        "port": "Skia ring that drains on the UI thread toward a deadline (quote age, the next scheduled run); warn ink and a thicker stroke in the last seconds.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "LiveOdometer / RollingFigure",
+        "native": "apps/mobile/src/components/kit/LiveOdometer.tsx",
+        "web": "apps/mobile/src/components/kit/{LiveOdometer,RollingFigure}.web.tsx -> packages/ui-web/src/components/ui/number-flow.tsx",
+        "source": [
+          {
+            "21st": 1444,
+            "slug": "barvian/number-flow",
+            "url": "https://21st.dev/r/barvian/number-flow",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/LiveOdometer.tsx"
+          }
+        ],
+        "port": "Native: Skia picture recorded on the UI thread, direction-aware digit roll, Roboto Condensed Black from the same TTF the app embeds; masks while balances are hidden.",
+        "deviations": "Web never loads CanvasKit: the .web twins roll with NumberFlow (21st 1444) in the display face.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Sparkline",
+        "native": "apps/mobile/src/components/kit/Sparkline.tsx",
+        "web": "apps/mobile/src/components/kit/Sparkline.web.tsx",
+        "source": [
+          {
+            "21st": 30538,
+            "slug": "ssychui/balance-chart",
+            "url": "https://21st.dev/r/ssychui/balance-chart",
+            "role": "spec"
+          },
+          {
+            "21st": 34512,
+            "slug": "appica-dev/sparkline",
+            "url": "https://21st.dev/r/appica-dev/sparkline",
+            "role": "spec"
+          }
+        ],
+        "port": "One pure geometry (spark-geometry.ts) drawn by Skia on the phone and react-native-svg on the web: faint area, dashed baseline at the window's first price, the line in the direction ink; gaps stay gaps.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "GlassPlate",
+        "native": "apps/mobile/src/components/kit/GlassPlate.tsx",
+        "source": [
+          {
+            "21st": 3042,
+            "slug": "paceui/liquid-glass",
+            "url": "https://21st.dev/r/paceui/liquid-glass",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/GlassPlate.tsx"
+          }
+        ],
+        "port": "iOS 26 Liquid Glass where available, the opaque glass token elsewhere and under Reduce Transparency; dock and capsule material only.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ToastHost + notify",
+        "native": "apps/mobile/src/components/toast/ToastHost.tsx",
+        "source": [
+          {
+            "21st": 24297,
+            "slug": "cnippet-dev/toast",
+            "url": "https://21st.dev/r/cnippet-dev/toast",
+            "role": "spec"
+          },
+          {
+            "21st": 886,
+            "slug": "shadcn/sonner",
+            "url": "https://21st.dev/r/shadcn/sonner",
+            "role": "spec"
+          }
+        ],
+        "port": "sonner-native with one visible toast at the bottom, raised-2 plate, 20 pt corners, the dock's shadow, clears the dock; notify.success/arrived/error pair each toast with its cue.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "States: Skeleton, LoadingState (shaped: line, row, list, plate, chart, hero, feed, routes, detail), PixelLoader",
+        "native": "apps/mobile/src/components/kit/states.tsx",
+        "source": [
+          {
+            "21st": 1588,
+            "slug": "shadcn/skeleton",
+            "url": "https://21st.dev/r/shadcn/skeleton",
+            "role": "spec"
+          },
+          {
+            "21st": 23557,
+            "slug": "ddoemonn/skeleton-swap",
+            "url": "https://21st.dev/r/ddoemonn/skeleton-swap",
+            "role": "spec"
+          },
+          {
+            "21st": 23591,
+            "slug": "theshanelevine/loading-state",
+            "url": "https://21st.dev/r/theshanelevine/loading-state",
+            "role": "spec"
+          },
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/LoadingState.tsx"
+          }
+        ],
+        "port": "Skeletons shaped like the real layout, pulsing 1200 ms (static under Reduce Motion); a named wait adds the 3 x 3 pixel loader and elapsed seconds.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "EmptyState",
+        "native": "apps/mobile/src/components/kit/states.tsx",
+        "source": [
+          {
+            "21st": 1435,
+            "slug": "serafimcloud/empty-state",
+            "url": "https://21st.dev/r/serafimcloud/empty-state",
+            "role": "spec"
+          },
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/EmptyState.tsx"
+          }
+        ],
+        "port": "Says why in at most five words, one line of detail, and names the next action; filled group, no border.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ErrorState",
+        "native": "apps/mobile/src/components/kit/states.tsx",
+        "source": [
+          {
+            "21st": 19376,
+            "slug": "olewandowski1/empty-states-4",
+            "url": "https://21st.dev/r/olewandowski1/empty-states-4",
+            "role": "spec"
+          },
+          {
+            "21st": 23621,
+            "slug": "cnippet-dev/v-alert-7",
+            "url": "https://21st.dev/r/cnippet-dev/v-alert-7",
+            "role": "spec"
+          },
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/ErrorState.tsx"
+          }
+        ],
+        "port": "Diagnosis in human words, what still works, one action (the fix or Retry), technical line behind a disclosure; strip variant for inline use.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "StaleTick / OfflineStrip / ReadView",
+        "native": "apps/mobile/src/components/kit/states.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/StaleTick.tsx"
+          },
+          {
+            "composedFrom": "Mitoshi StaleTick + ReadFailure"
+          }
+        ],
+        "port": "Cached values stay at full ink; a polite line says how old they are in the reader's clock; ReadView keeps children mounted between fresh and stale.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "useHeldLoading / useWaitClock / WaitingText / ShimmerText",
+        "native": "apps/mobile/src/components/kit/wait.tsx",
+        "source": [
+          {
+            "21st": 12336,
+            "slug": "serafimcloud/text-shimmer",
+            "url": "https://21st.dev/r/serafimcloud/text-shimmer",
+            "role": "spec"
+          },
+          {
+            "21st": 1641,
+            "slug": "ibelick/text-shimmer",
+            "url": "https://21st.dev/r/ibelick/text-shimmer",
+            "role": "spec"
+          },
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/{useHeldLoading.ts,WaitingText.tsx}"
+          }
+        ],
+        "port": "Skeleton only after 120 ms, held at least 300 ms; a short verb that shimmers, elapsed seconds after 3 s, \"Still waiting · Retry\" at 15 s.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "BlockedCta",
+        "native": "apps/mobile/src/components/tx/BlockedCta.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/BlockedCta.tsx"
+          },
+          {
+            "composedFrom": "Button + WaitingText"
+          }
+        ],
+        "port": "A blocker with a fix IS the action (\"Add money\", \"Set a budget\"); otherwise a stated quiet plate, never a grey ghost or \"Soon\".",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "TxCta",
+        "native": "apps/mobile/src/components/tx/TxCta.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxCta.tsx"
+          },
+          {
+            "composedFrom": "Button anatomy + TxSteps + TxMorph + BlockedCta"
+          }
+        ],
+        "port": "Never looks disabled in flight: the face names the phase, a phase bar fills the bottom edge (thirds), the caption says whether money moved on failure and \"nothing is re-sent\" while waiting.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "TxSteps",
+        "native": "apps/mobile/src/components/tx/TxSteps.tsx",
+        "source": [
+          {
+            "21st": 23569,
+            "slug": "ddoemonn/task-steps",
+            "url": "https://21st.dev/r/ddoemonn/task-steps",
+            "role": "spec"
+          },
+          {
+            "21st": 29815,
+            "slug": "sean0205/c-stepper-15",
+            "url": "https://21st.dev/r/sean0205/c-stepper-15",
+            "role": "spec"
+          }
+        ],
+        "port": "Signing, Sent, Confirmed as mark + word (never colour alone); active step pulses; compact horizontal row under the CTA.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "TxMorph",
+        "native": "apps/mobile/src/components/tx/TxMorph.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxMorph.tsx"
+          },
+          {
+            "composedFrom": "Mitoshi tx/TxMorph.tsx with Reanimated layout transitions (a motion wrapper with no look of its own; it morphs the CTA and the host's receipt)"
+          }
+        ],
+        "port": "The CTA fades out (160 ms) and the receipt rises in (220 ms, 60 ms late) while the box eases height (240 ms); 100 ms crossfade under Reduce Motion.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "TxFailureCard",
+        "native": "apps/mobile/src/components/tx/TxFailureCard.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxFailureCard.tsx"
+          },
+          {
+            "21st": 23621,
+            "slug": "cnippet-dev/v-alert-7",
+            "url": "https://21st.dev/r/cnippet-dev/v-alert-7",
+            "role": "spec"
+          }
+        ],
+        "port": "Always says whether money moved; one fix from the diagnosis, Retry when it can help, explorer link with a hash, technical details behind a disclosure.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "useTxLifecycle + tx-state",
+        "native": "apps/mobile/src/components/tx/useTxLifecycle.ts",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/useTxLifecycle.ts"
+          },
+          {
+            "composedFrom": "Mitoshi tx/useTxLifecycle.ts and its TxState reducer (logic, no visible part)"
+          }
+        ],
+        "port": "One reducer for idle, review, blocked, signing, submitted, unknown, confirmed, failed; plays the money cue once per identity; a lost answer after the send is \"unknown\" and stays in the journal.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Intent journal + recovery",
+        "native": "apps/mobile/src/components/tx/journal.ts",
+        "source": [
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/packages/calls/src/{intent-journal.ts,use-intent-recovery.ts}"
+          },
+          {
+            "composedFrom": "Senryo packages/calls intent-journal.ts and use-intent-recovery.ts (logic, no visible part); the reader lives in tx/recovery.ts"
+          }
+        ],
+        "port": "Written after the signature, before the send; mirrored to AsyncStorage; recovery only READS status by id, so nothing is ever sent twice.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Sheet / SheetHost / SheetRoute / SheetRow / SheetDrawer",
+        "native": "apps/mobile/src/components/sheet/Sheet.tsx",
+        "source": [
+          {
+            "21st": 31360,
+            "slug": "wensity/drawer",
+            "url": "https://21st.dev/r/wensity/drawer",
+            "role": "spec"
+          },
+          {
+            "21st": 1245,
+            "slug": "shadcn/drawer",
+            "url": "https://21st.dev/r/shadcn/drawer",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/sheet/*"
+          }
+        ],
+        "port": "Root sheet layer above every page and the dock; detents 0.62/0.88/1 (LIST_DETENTS), closes past 25 % (120 pt max) or a 900 pt/s flick, upward drag resisted /6; the page beneath steps back to 0.96; the dock hides while any sheet holds it. On a desktop window the same API is a 384 px right drawer.",
+        "deviations": "Ported instead of @gorhom/bottom-sheet: the parent step-back and the dock hold need the host (docs pack section 6).",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Dock + dock-context",
+        "native": "apps/mobile/src/components/shell/Dock.tsx",
+        "source": [
+          {
+            "21st": 19177,
+            "slug": "soralabs/dock-nav",
+            "url": "https://21st.dev/r/soralabs/dock-nav",
+            "role": "spec"
+          },
+          {
+            "21st": 574,
+            "slug": "yadwinder/bottom-menu",
+            "url": "https://21st.dev/r/yadwinder/bottom-menu",
+            "role": "spec"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/Dock.tsx"
+          }
+        ],
+        "port": "Icon-only glass capsule, a bubble that springs to the active slot (measured, so it mirrors in RTL), the orb as a centre action, badge, hides under sheets and the keyboard.",
+        "deviations": "Labels are not drawn (Senryo rule); the tab set is still Home, Markets, orb, Chat, Activity until Stage 3.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Rail (desktop)",
+        "native": "apps/mobile/src/components/shell/Rail.tsx",
+        "source": [
+          {
+            "21st": 21517,
+            "slug": "unlumen/sidebar-001",
+            "url": "https://21st.dev/r/unlumen/sidebar-001",
+            "role": "spec"
+          }
+        ],
+        "port": "Floating 248 px rail (88 compact below 1280 px), 16 px off the window, 24 px corners, an active pill that springs (500/36) between rows, hover lift, header (brand, mode capsule) and footer (person).",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "ModeCapsule",
+        "native": "apps/mobile/src/components/shell/ModeCapsule.tsx",
+        "source": [
+          {
+            "21st": 1600,
+            "slug": "haydenbleasel/pill",
+            "url": "https://21st.dev/r/haydenbleasel/pill",
+            "role": "spec",
+            "verified": "21st get 1600 returns haydenbleasel/pill (2026-10-14)"
+          },
+          {
+            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/ModeCapsule.tsx"
+          }
+        ],
+        "port": "Mainnet/Testnet in words on neutral plates (never a hue wash), Arc mark, a two-position switch whose knob springs; one tap switches, a hold opens both networks; testnet reads by shape too (dashed rim, hollow track).",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "LiveRegionHost + announce",
+        "native": "apps/mobile/src/components/shell/LiveRegionHost.tsx",
+        "source": [
+          {
+            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/LiveRegion.tsx"
+          },
+          {
+            "composedFrom": "Mitoshi states/LiveRegion.tsx (an accessibility live region, no visible part)"
+          }
+        ],
+        "port": "One polite live region on the web; the platform announcer on the phone.",
+        "status": "built (Stage 2, look lane)"
+      },
+      {
+        "name": "Icon (utility glyphs)",
+        "native": "apps/mobile/src/components/kit/icons.tsx",
+        "source": [
+          {
+            "composedFrom": "lucide-react-native (utility glyphs only; real marks come from @kawase/identity)"
+          }
+        ],
+        "port": "One stroke, one size scale; never a stand-in for a token, chain or venue mark.",
+        "status": "built (Stage 2, look lane)"
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "date": "2026-10-14",
+      "decision": "D40 Senryo look exactly; token values changed, token names kept; four themes; testnet neutral",
+      "ref": "D40"
+    },
+    {
+      "date": "2026-10-14",
+      "decision": "Web never loads CanvasKit: Skia parts have .web twins (NumberFlow, SVG)",
+      "ref": "docs pack section 3"
+    },
+    {
+      "date": "2026-10-14",
+      "decision": "Senryo sheet host ported instead of @gorhom/bottom-sheet for the root sheets (parent step-back, dock hold)",
+      "ref": "docs pack section 6"
+    },
+    {
+      "date": "2026-10-14",
+      "decision": "One app for phone and web: the native kit runs on react-native-web; a DOM twin exists only where a native library cannot (Skia) or where the 21st DOM component is the better web control (slide)",
+      "ref": "plan/spikes/08-ui-stack.md"
+    }
+  ],
+  "rules": [
+    "21st.dev first for every visible component; every kit part is listed here with its 21st id, or \"composedFrom\" where research found no match.",
+    "No hex outside packages/ui-tokens and the kit theme shim; no hard-coded strings (the shell, feedback and network catalogues).",
+    "Every surface draws loading (shaped, held), empty (why + next action), error (what still works + one action) and offline (stale-marked) states.",
+    "Every money action: BlockedCta names its fix, TxSteps, TxMorph to the receipt, TxFailureCard says whether money moved, the intent journal survives a kill and never resends.",
+    "No sound for ticks or navigation; fire() pairs haptics and cues and respects the silent switch and the person's toggles."
+  ]
+}
