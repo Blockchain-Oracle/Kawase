@@ -1,28 +1,26 @@
-// Take-profit and stop-loss on the position page (trade.md "Long / short"): two rows of targets as steps from the
-// price now (a take-profit past it, a stop-loss before it; never past liquidation), what is saved, Save, and — the first
-// time, or once the position outgrew or outlived them — one button to let Kawase close this position for the person
-// (its grants, one Face ID). Kawase then watches; the row says "Watching", "Closing…" or that it could not close at a
-// fair price. The api checks every target.
-import { ShieldCheck } from "lucide-react-native";
+// Take-profit and stop-loss on a position (trade.md "Long / short"), on the kit: two rows of targets as steps from the
+// price now (a take-profit past it, a stop-loss before it; never past liquidation), what is saved, Save, and, the first
+// time or once the position outgrew or outlived them, one button to let Kawase close this position for the person (its
+// grants, one Face ID). Kawase then watches; the tag says "Watching", "Closing" or that it could not close at a fair
+// price. The api checks every target.
 import * as React from "react";
-import { Pressable, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { toast } from "sonner-native";
 import { formatUnits } from "viem";
 
 import type { MarginPositionView } from "@kawase/api-client";
 import { MARGIN_PROTECTION } from "@kawase/config";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { Button, Panel, RADIUS, SPACE, TYPE, useTheme } from "@/components/kit";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
+import { ChoiceChips, Note } from "@/trade/bits";
 
 import { PRICE_DECIMALS, useMarginFormat } from "./copy";
 import { useProtection, type ProtectionRefusal } from "./use-protection";
 
 const CENTS = 2;
+const OFF = -1;
 
 type Target = "takeProfit" | "stopLoss";
 
@@ -31,6 +29,7 @@ const usd = (eightDecimals: string | null | undefined) => (eightDecimals ? Numbe
 export function ProtectionCard({ position, onSaved }: { position: MarginPositionView; onSaved: () => void }) {
   const { t } = useT();
   const { locale } = useLocale();
+  const { color } = useTheme();
   const format = useMarginFormat();
   const protection = useProtection(position.id);
   const mark = usd(position.markPrice)!;
@@ -81,76 +80,58 @@ export function ProtectionCard({ position, onSaved }: { position: MarginPosition
   const status = position.protection;
   const granted = protection.view?.grant === "active";
   const row = (target: Target) => (
-    <View className="gap-2">
-      <View className="flex-row items-center justify-between gap-3">
-        <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t(`protect.${target}`)}</Text>
-        <Text className="text-muted-foreground text-xs">{chosen[target] === null ? t("protect.off") : format.usd(chosen[target]!)}</Text>
+    <View style={styles.group}>
+      <View style={styles.row}>
+        <Text style={[TYPE.rowStrong, styles.grow, { color: color.ink }]}>{t(`protect.${target}`)}</Text>
+        <Text style={[TYPE.rowAmount, { color: color.text2 }]}>{chosen[target] === null ? t("protect.off") : format.usd(chosen[target]!)}</Text>
       </View>
-      <View className="flex-row flex-wrap gap-2">
-        <Pressable
-          accessibilityRole="radio"
-          accessibilityState={{ checked: chosen[target] === null }}
-          onPress={() => setChosen((current) => ({ ...current, [target]: null }))}
-          className={cn("rounded-full px-3 py-1.5", chosen[target] === null ? "bg-primary" : "bg-muted active:bg-secondary")}
-        >
-          <Text className={cn("text-sm font-semibold", chosen[target] === null ? "text-primary-foreground" : "text-foreground")}>{t("protect.off")}</Text>
-        </Pressable>
-        {options(target).map((option) => (
-          <Pressable
-            key={option.step}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: chosen[target] === option.price }}
-            accessibilityLabel={`${t(`protect.${target}`)} ${format.usd(option.price)}`}
-            onPress={() => setChosen((current) => ({ ...current, [target]: option.price }))}
-            className={cn("items-center rounded-2xl px-3 py-1.5", chosen[target] === option.price ? "bg-primary" : "bg-muted active:bg-secondary")}
-          >
-            <Text className={cn("text-sm font-semibold", chosen[target] === option.price ? "text-primary-foreground" : "text-foreground")}>{percent((option.price - mark) / mark)}</Text>
-            <Text className={cn("text-[10px]", chosen[target] === option.price ? "text-primary-foreground" : "text-muted-foreground")}>{format.usd(option.price, 0)}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <ChoiceChips<number>
+        label={t(`protect.${target}`)}
+        value={chosen[target] ?? OFF}
+        onChange={(price) => setChosen((current) => ({ ...current, [target]: price === OFF ? null : price }))}
+        options={[{ value: OFF, label: t("protect.off") }, ...options(target).map((option) => ({ value: option.price, label: percent((option.price - mark) / mark) }))]}
+      />
     </View>
   );
 
   return (
-    <View className="border-border gap-4 rounded-3xl border p-4">
-      <View className="flex-row items-center gap-2">
-        <Icon as={ShieldCheck} className="text-foreground size-5" />
-        <Text className={cn("font-display text-foreground flex-1 text-base font-bold", TEXT_START)}>{t("protect.title")}</Text>
+    <Panel style={styles.card}>
+      <View style={styles.row}>
+        <Text style={[TYPE.sectionTitle, styles.grow, { color: color.ink }]}>{t("protect.title")}</Text>
         {status ? (
-          <View className={cn("rounded-full px-2 py-0.5", status === "unavailable" ? "bg-destructive/15" : "bg-success/15")}>
-            <Text className={cn("text-xs font-semibold", status === "unavailable" ? "text-destructive" : "text-success")}>{t(`protect.${status}`)}</Text>
+          <View style={[styles.tag, { backgroundColor: status === "unavailable" ? color.downSurface : color.upSurface }]}>
+            <Text style={[TYPE.chipLabel, { color: status === "unavailable" ? color.down : color.up }]}>{t(`protect.${status}`)}</Text>
           </View>
         ) : null}
       </View>
       {row("takeProfit")}
       {row("stopLoss")}
-      {liquidation !== null ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("protect.liquidationNote", { price: format.usd(liquidation, 0) })}</Text> : null}
-      {refusal ? <Text className={cn("text-destructive text-sm", TEXT_START)}>{t(`protect.${refusal}`)}</Text> : null}
-      {changed ? (
-        <Button disabled={protection.busy} onPress={() => void save()}>
-          <Text>{protection.busy ? t("common.loading") : t("protect.save")}</Text>
-        </Button>
-      ) : null}
+      {liquidation !== null ? <Note tone="quiet">{t("protect.liquidationNote", { price: format.usd(liquidation, 0) })}</Note> : null}
+      {refusal ? <Note>{t(`protect.${refusal}`)}</Note> : null}
+      {changed ? <Button label={protection.busy ? t("common.loading") : t("protect.save")} loading={protection.busy} onPress={() => void save()} /> : null}
       {needsGrant || (!granted && (saved.takeProfit !== null || saved.stopLoss !== null) && protection.view?.available) ? (
-        <View className="bg-muted gap-3 rounded-2xl px-4 py-3">
-          <Text className={cn("text-foreground text-sm", TEXT_START)}>{t("protect.needsGrant")}</Text>
-          <Button disabled={protection.busy} onPress={() => void turnOn()}>
-            <Text>{protection.busy ? t("protect.turningOn") : t("protect.turnOn")}</Text>
-          </Button>
+        <View style={styles.group}>
+          <Text style={[TYPE.body, { color: color.ink }]}>{t("protect.needsGrant")}</Text>
+          <Button label={protection.busy ? t("protect.turningOn") : t("protect.turnOn")} loading={protection.busy} onPress={() => void turnOn()} />
         </View>
       ) : null}
       {granted && protection.view?.expiresAt ? (
-        <View className="flex-row items-center justify-between gap-3">
-          <Text className={cn("text-muted-foreground flex-1 text-xs", TEXT_START)}>
+        <View style={styles.row}>
+          <Text style={[TYPE.caption, styles.grow, { color: color.text3 }]}>
             {t("protect.onUntil", { date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(protection.view.expiresAt)) })}
           </Text>
-          <Button size="sm" variant="ghost" disabled={protection.busy} onPress={() => void protection.turnOff()}>
-            <Text className="text-muted-foreground">{t("protect.turnOff")}</Text>
-          </Button>
+          <Button label={t("protect.turnOff")} variant="ghost" size="sm" block={false} disabled={protection.busy} onPress={() => void protection.turnOff()} />
         </View>
       ) : null}
-      <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("protect.route")}</Text>
-    </View>
+      <Note tone="quiet">{t("protect.route")}</Note>
+    </Panel>
   );
 }
+
+const styles = StyleSheet.create({
+  card: { gap: SPACE.lg, padding: SPACE.lg },
+  group: { gap: SPACE.sm },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  grow: { flex: 1, minWidth: 0 },
+  tag: { borderRadius: RADIUS.pill, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xxs },
+});

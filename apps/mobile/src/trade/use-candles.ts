@@ -1,6 +1,6 @@
-// The chart's candles for one margin market: the asset's deepest pool on Arc mainnet (the only network Kawase Margin
-// runs on), per range. Read once per market and range and kept stable, so a positions or price poll never redraws
-// the candles; the live price moves the last bar instead. A failed read keeps the last good candles, marked stale.
+// The chart's candles for one asset (a margin market on Arc mainnet, or any token page's chain) per range. Read once
+// per asset and range and kept stable, so a positions or price poll never redraws the candles; the live price moves
+// the last bar instead. A failed read keeps the last good candles, marked stale with the time they were read.
 import * as React from "react";
 
 import type { Candle, ChartRange } from "@kawase/api-client";
@@ -10,8 +10,9 @@ import { api } from "@/session/api";
 
 export const TRADE_RANGES: readonly ChartRange[] = ["1H", "1D", "1W", "1M"];
 
-export function useCandles(asset: string | undefined, range: ChartRange) {
+export function useCandles(asset: string | undefined, range: ChartRange, chainId: number = CHAIN_IDS.arc) {
   const [candles, setCandles] = React.useState<Candle[]>();
+  const [asOf, setAsOf] = React.useState<number>();
   const [failed, setFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
   React.useEffect(() => {
@@ -19,9 +20,11 @@ export function useCandles(asset: string | undefined, range: ChartRange) {
     let live = true;
     setFailed(false);
     api.tokens
-      .chart(CHAIN_IDS.arc, asset, range)
+      .chart(chainId, asset, range)
       .then((result) => {
-        if (live) setCandles(result.candles);
+        if (!live) return;
+        setCandles(result.candles);
+        setAsOf(Date.now());
       })
       .catch(() => {
         if (live) setFailed(true);
@@ -29,8 +32,8 @@ export function useCandles(asset: string | undefined, range: ChartRange) {
     return () => {
       live = false;
     };
-  }, [asset, range, attempt]);
-  // A new market starts from its own skeleton, never the last market's bars.
-  React.useEffect(() => setCandles(undefined), [asset]);
-  return { candles, failed, retry: () => setAttempt((value) => value + 1) };
+  }, [asset, chainId, range, attempt]);
+  // A new asset starts from its own skeleton, never the last one's bars.
+  React.useEffect(() => setCandles(undefined), [asset, chainId]);
+  return { candles, failed, asOf, retry: () => setAttempt((value) => value + 1) };
 }

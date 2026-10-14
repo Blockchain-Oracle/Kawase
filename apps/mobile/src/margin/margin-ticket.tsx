@@ -1,88 +1,47 @@
-// The perp ticket (surfaces.md "Trade tickets", ported from Senryo's ticket): the market header, margin as the hero
-// with the leveraged size under it, presets, the LeverageRuler capped by what the market's collateral factor allows,
-// the liquidation price with how far away it is, health, borrow rate, network fee and route, the risk line, and
-// slide to confirm, which resets on any change of market, side, margin, leverage or quote (R5). After the slide:
-// Face ID, then the execution trace (Checking → Signed → Submitted → Final) and the receipt with View position.
-// The same ticket renders on the Long/Short screen and as the chat card; nothing here decides money, the api does.
+// The perp ticket for a drafted order (surfaces.md "Trade tickets", ported from Senryo's ticket onto the kit): the
+// market with its real mark and the side, margin as the one hero figure with the leveraged size under it, presets and
+// the LeverageRuler (an open), or what comes back (a close), the liquidation price, health, rate, fee and route as
+// key-value rows, the risk line, the brake, and the tx kit's CTA: the fix when blocked, the slide (in the side's tone,
+// reset by any new version, R5), Signing → Sent → Confirmed, then the receipt in place, or the failure card saying
+// whether money moved. The same ticket is the chat card and the position page's close; the api decides money.
 import { useRouter } from "expo-router";
-import { Check, Circle, ExternalLink, X } from "lucide-react-native";
 import * as React from "react";
-import { Linking, Pressable, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import { StyleSheet, Text, View } from "react-native";
 
-import type { MarginIntent, MarginMarketView, MarginRequest, PolicyResultView } from "@kawase/api-client";
+import type { MarginMarketView, MarginRequest, PolicyResultView } from "@kawase/api-client";
 import { GAS_FLOAT_USDC_BASE_UNITS, MARGIN } from "@kawase/config";
-import { Amount } from "@kawase/ui-native/components/amount";
 import { LeverageRuler } from "@kawase/ui-native/components/leverage-ruler";
 import { Mark } from "@kawase/ui-native/components/mark";
-import { SlideToConfirm } from "@kawase/ui-native/components/slide-to-confirm";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { confirmedFeedback } from "@/feedback/feedback";
+import { Button, KeyValue, Panel, SPACE, TYPE, useTheme } from "@/components/kit";
 import { useFund } from "@/fund/fund-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { BrakeNote } from "@/safety/brake-note";
 import { useMoney } from "@/send/copy";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useTheme } from "@/theme/theme-provider";
+import { useTheme as useAppTheme } from "@/theme/theme-provider";
+import { ChoiceChips, LiveNumber, Note, RealMoney, SideTag } from "@/trade/bits";
+import { IntentCta, openExplorer, type CtaBlocker } from "@/trade/intent-cta";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
 import { marketEntity, useMarginFormat, useMarginPolicyText, useMarginPrompt } from "./copy";
-import { rulerHaptic, slideHaptic } from "./haptics";
+import { rulerHaptic } from "./haptics";
 import { isMarginFinished, isMarginMoving, type MarginController } from "./use-margin";
 
 const MARK = 36;
-const HERO = 44;
-const HERO_COMPACT = 30;
+const HERO_H = 44;
+const HERO_H_COMPACT = 32;
 const CENT_DIGITS = 2;
 const ZERO = 0n;
 const USDC_UNIT = 1_000_000;
-const TRACE_STEPS = ["traceChecking", "traceSigned", "traceSubmitted", "traceFinal"] as const;
-const SIGNED_STEP = 1;
-const SUBMITTED_STEP = 2;
-const FINAL_STEP = 3;
-
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <View className="flex-row items-center justify-between gap-3">
-      <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{label}</Text>
-      <Amount className={cn("text-sm", strong ? "text-foreground font-semibold" : "text-foreground")}>{value}</Amount>
-    </View>
-  );
-}
-
-/** Checking → Signed → Submitted → Final, from the intent's state while the slide's yes runs (any wallet intent). */
-export function MarginTrace({ intent, busy }: { intent: Pick<MarginIntent, "state">; busy: boolean }) {
-  const { t } = useT();
-  const failed = intent.state === "failed" || intent.state === "rejected" || intent.state === "expired" || intent.state === "canceled";
-  const reached =
-    intent.state === "completed" ? FINAL_STEP : intent.state === "executing" || intent.state === "unknown_outcome" ? SUBMITTED_STEP : intent.state === "approved" ? SIGNED_STEP : busy ? 0 : -1;
-  if (reached < 0 && !failed) return null;
-  return (
-    <View className="flex-row items-center justify-between gap-2">
-      {TRACE_STEPS.map((step, index) => {
-        const done = index < reached || (index === FINAL_STEP && intent.state === "completed");
-        const now = index === reached && !done;
-        return (
-          <View key={step} className="flex-1 items-center gap-1">
-            <Icon as={done ? Check : failed && index === Math.max(reached, 0) ? X : Circle} className={cn("size-4", done ? "text-success" : failed && index === Math.max(reached, 0) ? "text-destructive" : now ? "text-foreground" : "text-muted-foreground")} />
-            <Text className={cn("text-center text-xs", done || now ? "text-foreground" : "text-muted-foreground")}>{t(`margin.${step}`)}</Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
 
 export function MarginTicket({ controller, market, compact = false }: { controller: MarginController; market?: MarginMarketView | undefined; compact?: boolean }) {
   const { t } = useT();
   const { rtl } = useLocale();
-  const { themeName } = useTheme();
+  const { themeName } = useAppTheme();
+  const { color } = useTheme();
   const router = useRouter();
   const fund = useFund();
   const signIn = useSignIn();
@@ -103,83 +62,82 @@ export function MarginTicket({ controller, market, compact = false }: { controll
   React.useEffect(() => {
     if (draft?.leverage) setLeverage(draft.leverage);
   }, [draft?.leverage]);
-  // The confirmed haptic and sound, once per order, only when the receipt said so.
-  const completedId = intent?.state === "completed" ? intent.id : undefined;
-  React.useEffect(() => {
-    if (completedId) void confirmedFeedback(`margin:${completedId}`);
-  }, [completedId]);
 
   if (!intent) return null;
   const usdc = wallet?.networks[intent.network]?.usdcBalance;
   const spendable = usdc ? BigInt(usdc) - GAS_FLOAT_USDC_BASE_UNITS : undefined;
   const moving = isMarginMoving(intent);
   const finished = isMarginFinished(intent);
+  const editing = !moving && !finished;
   const blocking = intent.blocking;
-  const ready = !blocking && Boolean(draft) && intent.state === "ready_for_approval";
   const revise = (patch: MarginRequest) => void controller.revise(patch);
 
-  const fixFor = (result: PolicyResultView) => {
+  const fixFor = (result: PolicyResultView): CtaBlocker => {
+    const reason = policyText(result, intent.network);
     switch (result.code) {
       case "SIGN_IN_REQUIRED":
-        return { label: t("policy.fixSignIn"), onPress: () => signIn.open() };
+        return { label: t("policy.fixSignIn"), reason, onFix: () => signIn.open() };
       case "ON_OTHER_NETWORK":
-        return { label: t("marginPolicy.fixSwitch"), onPress: () => void networkSwitch.switchNetwork("mainnet") };
+        return { label: t("marginPolicy.fixSwitch"), reason, onFix: () => void networkSwitch.switchNetwork("mainnet") };
       case "INSUFFICIENT_BALANCE":
       case "INSUFFICIENT_GAS":
-        return { label: t("policy.fixAddMoney"), onPress: fund.open };
+        return { label: t("policy.fixAddMoney"), reason, onFix: fund.open };
       case "WALLET_NOT_READY":
       case "WALLET_NOT_SET_UP":
-        return { label: t("policy.fixSetUp"), onPress: () => router.push("/wallet") };
+        return { label: t("policy.fixSetUp"), reason, onFix: () => router.push("/wallet") };
       case "QUOTE_UNAVAILABLE":
-        return { label: t("marginPolicy.fixTryAgain"), onPress: () => revise({}) };
+        return { label: t("marginPolicy.fixTryAgain"), reason, onFix: () => revise({}) };
       case "LEVERAGE_TOO_HIGH":
-        return { label: format.leverage(maxLeverage), onPress: () => revise({ leverage: maxLeverage }) };
+        return { label: format.leverage(maxLeverage), reason, onFix: () => revise({ leverage: maxLeverage }) };
       default:
-        return undefined;
+        return { label: reason };
     }
   };
-  const fix = blocking ? fixFor(blocking) : undefined;
-  const toneOf = side === "long" ? "long" : "short";
-  const resetKey = `${intent.id}:${intent.version}:${intent.state}`;
+  const blocker: CtaBlocker | null = editing ? (blocking ? fixFor(blocking) : !draft ? { label: t("desktop.pricing"), busy: true } : null) : null;
+  const presets = [
+    ...MARGIN.presets.map((value) => ({ label: format.usd(value, 0), value: String(value) })),
+    ...(spendable && spendable > ZERO ? [{ label: t("margin.max"), value: (Number(spendable) / USDC_UNIT).toFixed(CENT_DIGITS) }] : []),
+  ];
+
+  const receipt = (
+    <Panel style={styles.receipt}>
+      <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{t(closing ? "margin.closed" : "margin.opened")}</Text>
+      {draft && closing ? <KeyValue label={t("margin.youGetBack")} value={money("USDC", draft.returnedMin)} /> : null}
+      {draft && !closing ? <KeyValue label={t("margin.size")} value={format.usd(draft.notionalUsd)} /> : null}
+      {intent.positionId && !closing ? <Button label={intent.network === "mainnet" ? t("protect.title") : t("margin.viewPosition")} onPress={() => router.push(`/position/${intent.positionId}`)} /> : null}
+      {intent.tx ? <Button label={t("desktop.explorer")} variant="ghost" onPress={() => openExplorer(intent.tx?.explorerUrl)} /> : null}
+    </Panel>
+  );
 
   return (
-    <View className="gap-4">
-      <View className="flex-row items-center gap-3">
+    <View style={styles.ticket}>
+      {intent.network === "mainnet" && editing ? <RealMoney label={t("margin.title")} /> : null}
+      <View style={styles.row}>
         {draft ? <Mark entity={marketEntity(draft.asset)} size={MARK} /> : null}
-        <View className="flex-1">
-          <Text className={cn("font-display text-foreground text-lg font-bold", TEXT_START)}>{draft?.market ?? request?.market ?? t("margin.title")}</Text>
-          {draft ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{`${t("margin.mark")} ${format.price(draft.markPrice)}`}</Text> : null}
+        <View style={styles.grow}>
+          <Text style={[TYPE.rowTitle, { color: color.ink }]}>{draft?.market ?? request?.market ?? t("margin.title")}</Text>
+          {draft ? <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{`${t("margin.mark")} ${format.price(draft.markPrice)}`}</Text> : null}
         </View>
-        <View className={cn("rounded-full px-3 py-1", side === "long" ? "bg-success/15" : "bg-destructive/15")}>
-          <Text className={cn("text-sm font-semibold", side === "long" ? "text-success" : "text-destructive")}>{t(`margin.${side}`)}</Text>
-        </View>
+        <SideTag side={side} />
       </View>
 
       {draft && !closing ? (
-        <View className="gap-1">
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("margin.margin")}</Text>
-          <Amount className={cn("font-display text-foreground font-bold", TEXT_START)} style={{ fontSize: compact ? HERO_COMPACT : HERO }}>
-            {money("USDC", draft.margin)}
-          </Amount>
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("margin.leveragedSize", { amount: format.usd(draft.notionalUsd) })}</Text>
+        <View style={styles.hero}>
+          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("margin.margin")}</Text>
+          <LiveNumber text={money("USDC", draft.margin)} value={Number(draft.margin) / USDC_UNIT} height={compact ? HERO_H_COMPACT : HERO_H} />
+          <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("margin.leveragedSize", { amount: format.usd(draft.notionalUsd) })}</Text>
+        </View>
+      ) : null}
+      {draft && closing ? (
+        <View style={styles.hero}>
+          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("margin.youGetBack")}</Text>
+          <LiveNumber text={money("USDC", draft.returnedMin)} value={Number(draft.returnedMin) / USDC_UNIT} height={compact ? HERO_H_COMPACT : HERO_H} />
         </View>
       ) : null}
 
-      {!moving && !finished && !closing ? (
+      {editing && !closing ? (
         <>
-          <View className="flex-row gap-2">
-            {[...MARGIN.presets.map((value) => ({ label: format.usd(value, 0), value: String(value) })), ...(spendable && spendable > ZERO ? [{ label: t("margin.max"), value: (Number(spendable) / USDC_UNIT).toFixed(CENT_DIGITS) }] : [])].map((preset) => (
-              <Pressable
-                key={preset.label}
-                accessibilityRole="button"
-                disabled={controller.busy}
-                onPress={() => revise({ margin: preset.value })}
-                className={cn("bg-muted active:bg-secondary flex-1 items-center rounded-full py-2", request?.margin === preset.value && "bg-secondary")}
-              >
-                <Text className="text-foreground text-sm font-semibold">{preset.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <ChoiceChips label={t("margin.margin")} options={presets.map((preset) => ({ value: preset.value, label: preset.label, disabled: controller.busy }))} value={request?.margin ?? null} onChange={(value) => revise({ margin: value })} />
           {sideView?.available !== false ? (
             <LeverageRuler
               value={Math.min(leverage, maxLeverage)}
@@ -200,83 +158,45 @@ export function MarginTicket({ controller, market, compact = false }: { controll
         </>
       ) : null}
 
-      {draft ? (
-        <View className="border-border gap-2 rounded-2xl border px-4 py-3">
-          {closing ? <Row label={t("margin.youGetBack")} value={money("USDC", draft.returnedMin)} strong /> : null}
+      {draft && editing ? (
+        <Panel style={styles.facts}>
           {draft.liquidationPrice ? (
-            <Row
+            <KeyValue
               label={t("margin.liquidation")}
               value={`${format.price(draft.liquidationPrice)}${draft.liquidationDistance !== null ? ` · ${t("margin.liquidationAway", { percent: format.percent(draft.liquidationDistance) })}` : ""}`}
-              strong
             />
           ) : null}
-          {draft.healthAfter !== null ? <Row label={t("margin.health")} value={draft.healthAfter.toFixed(CENT_DIGITS)} /> : null}
-          <Row label={t("margin.borrowRate")} value={t("margin.borrowRateValue", { rate: format.percent(draft.borrowApr, CENT_DIGITS) })} />
-          <Row label={t("margin.networkFee")} value={money("USDC", draft.fees.network)} />
-          <Row label={t("margin.route")} value={t("margin.routeValue", { venues: draft.venues.join(", ") || "KyberSwap", loops: draft.loops + 1 })} />
-        </View>
+          {draft.healthAfter !== null ? <KeyValue label={t("margin.health")} value={draft.healthAfter.toFixed(CENT_DIGITS)} /> : null}
+          <KeyValue label={t("margin.borrowRate")} value={t("margin.borrowRateValue", { rate: format.percent(draft.borrowApr, CENT_DIGITS) })} />
+          <KeyValue label={t("margin.networkFee")} value={money("USDC", draft.fees.network)} />
+          <KeyValue label={t("margin.route")} value={t("margin.routeValue", { venues: draft.venues.join(", ") || "Aave V4", loops: draft.loops + 1 })} />
+        </Panel>
       ) : null}
 
-      {draft && closing && draft.protectionOff && !finished ? <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("margin.closeEndsProtection")}</Text> : null}
+      {draft && closing && draft.protectionOff && !finished ? <Note tone="quiet">{t("margin.closeEndsProtection")}</Note> : null}
+      {draft && !closing && draft.liquidationPrice && editing ? <Note tone="quiet">{t("margin.risk", { price: format.price(draft.liquidationPrice) })}</Note> : null}
+      {editing && !blocking ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
 
-      {draft && !closing && draft.liquidationPrice && !moving && !finished ? (
-        <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("margin.risk", { price: format.price(draft.liquidationPrice) })}</Text>
-      ) : null}
-
-      {blocking && !moving && !finished ? (
-        <View className="bg-muted gap-3 rounded-2xl px-4 py-3">
-          <Text className={cn("text-foreground text-base", TEXT_START)}>{policyText(blocking, intent.network)}</Text>
-          {fix ? (
-            <Button variant="secondary" onPress={fix.onPress}>
-              <Text>{fix.label}</Text>
-            </Button>
-          ) : null}
-        </View>
-      ) : !moving && !finished ? (
-        <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} />
-      ) : null}
-
-      <MarginTrace intent={intent} busy={controller.busy} />
-
-      {finished ? (
-        <Animated.View entering={FadeIn} className="gap-3">
-          <Text className={cn("font-display text-foreground text-xl font-bold", TEXT_START)}>
-            {intent.state === "completed" ? t(closing ? "margin.closed" : "margin.opened") : intent.outcome === "checking" ? t("margin.checking") : t("margin.failed")}
-          </Text>
-          <View className="flex-row gap-2">
-            {intent.state === "completed" && intent.positionId && !closing ? (
-              <Button className="flex-1" onPress={() => router.push(`/position/${intent.positionId}`)}>
-                <Text>{intent.network === "mainnet" ? t("protect.title") : t("margin.viewPosition")}</Text>
-              </Button>
-            ) : null}
-            {intent.tx ? (
-              <Button variant="secondary" size="icon" accessibilityLabel={intent.tx.hash} onPress={() => void Linking.openURL(intent.tx!.explorerUrl)}>
-                <Icon as={ExternalLink} className="size-4" />
-              </Button>
-            ) : null}
-          </View>
-        </Animated.View>
-      ) : !moving ? (
-        <View className="gap-2">
-          <SlideToConfirm
-            tone={closing ? "primary" : toneOf}
-            rtl={rtl}
-            disabled={!ready || controller.busy}
-            resetKey={resetKey}
-            pendingLabel={t(closing ? "margin.closing" : "margin.opening")}
-            done={undefined}
-            onHaptic={slideHaptic}
-            onConfirm={() => void controller.approve(prompt(draft))}
-          >
-            {closing ? t("margin.slideClose") : side === "long" ? t("margin.slideLong") : t("margin.slideShort")}
-          </SlideToConfirm>
-          <Button variant="ghost" disabled={controller.busy} onPress={() => void controller.cancel()}>
-            <Text className="text-muted-foreground">{t("margin.cancel")}</Text>
-          </Button>
-        </View>
-      ) : (
-        <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t(closing ? "margin.closing" : "margin.opening")}</Text>
-      )}
+      <IntentCta
+        intent={intent}
+        busy={controller.busy}
+        connectionLost={controller.connectionLost}
+        blocker={blocker}
+        confirm={{ kind: "slide", label: closing ? t("margin.slideClose") : side === "long" ? t("margin.slideLong") : t("margin.slideShort"), tone: closing ? "primary" : side === "long" ? "up" : "down" }}
+        onConfirm={() => void controller.approve(prompt(draft))}
+        receipt={receipt}
+        journal={{ what: prompt(draft), kind: "trade", network: intent.network, owner: wallet?.address }}
+      />
+      {editing ? <Button label={t("margin.cancel")} variant="ghost" disabled={controller.busy} onPress={() => void controller.cancel()} /> : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  ticket: { gap: SPACE.lg },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  grow: { flex: 1, minWidth: 0 },
+  hero: { gap: SPACE.xxs },
+  facts: { gap: SPACE.xs, padding: SPACE.lg },
+  receipt: { gap: SPACE.md, padding: SPACE.lg },
+});

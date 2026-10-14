@@ -1,21 +1,21 @@
-// The terminal's price panel (native twin of 21st.dev ssychui "Candle Chart", id 20107; the desktop docs pack's
-// choice: react-native-svg, one drawing for iOS, Android and the web, SSR-safe, no WASM). Candles over a volume
-// strip, the live price ticking on the last bar, and the trade's levels drawn rather than written: the entry, the
-// liquidation price with the zone past it washed in the down colour, and take-profit / stop-loss as dotted lines.
-// The price range always includes those levels, so how far liquidation is reads at a glance. A finger (pan) or a
-// mouse (hover, web) reads the bar under it. Wicks share one path and bodies two (up / down), capped at 150 bars.
+// The one candle chart of the app (native twin of 21st.dev ssychui "Candle Chart", ids 20107 / 22250; the desktop docs
+// pack's choice: react-native-svg, one drawing for iOS, Android and the web, SSR-safe, no WASM). The terminal draws it
+// with the trade's levels and the token page with none; packages/ui-native's older candle-chart is no longer used.
+// Candles over a volume strip, the live price ticking on the last bar, and the trade's levels drawn rather than
+// written: the entry, the liquidation price with the zone past it washed in the down colour, and take-profit /
+// stop-loss as dotted lines. The price range always includes those levels, so how far liquidation is reads at a
+// glance. A finger (pan) or a mouse (hover, web) reads the bar under it, and `onScrub` hands it to the page. Colours
+// are the kit's tokens (up / down for direction only, the readout says the numbers so colour is never alone).
 import * as React from "react";
-import { View, type LayoutChangeEvent } from "react-native";
+import { Text, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Svg, { Line, Path, Rect } from "react-native-svg";
 import { scheduleOnRN } from "react-native-worklets";
 
 import type { Candle, MarginSide } from "@kawase/api-client";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn } from "@kawase/ui-native/lib/utils";
 
+import { NUMERIC_VARIANT, RADIUS, SPACE, TYPE, useTheme } from "@/components/kit";
 import { useT } from "@/i18n";
-import { useThemeColors } from "@/theme/use-theme-colors";
 
 export type ChartLevelKind = "price" | "entry" | "liquidation" | "takeProfit" | "stopLoss";
 /** `label` is the short tag drawn beside the line ("Liq.", "Entry", "TP", "SL"); the axis pill carries the price. */
@@ -32,7 +32,8 @@ type Props = {
   formatValue: (value: number) => string;
   formatTime: (seconds: number) => string;
   accessibilityLabel: string;
-  className?: string;
+  /** The bar under the pointer or finger, and null when it leaves (a page's hero price can follow it). */
+  onScrub?: (candle: Candle | null) => void;
 };
 
 const MAX_BARS = 150;
@@ -56,9 +57,9 @@ const DOT = "1 4";
 const STROKE = 1;
 const STROKE_BOLD = 1.5;
 
-export function TradeChart({ candles, livePrice, levels, side, height, formatValue, formatTime, accessibilityLabel, className }: Props) {
+export function TradeChart({ candles, livePrice, levels, side, height, formatValue, formatTime, accessibilityLabel, onScrub }: Props) {
   const { t } = useT();
-  const colors = useThemeColors();
+  const { color } = useTheme();
   const [width, setWidth] = React.useState(0);
   const [hover, setHover] = React.useState<number | null>(null);
 
@@ -115,7 +116,15 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
     return { wicks, up, down, volumeUp, volumeDown };
   }, [bars, height, scale, slot, volumeH, y]);
 
-  const select = React.useCallback((index: number | null) => setHover(index), []);
+  const barsRef = React.useRef(bars);
+  barsRef.current = bars;
+  const select = React.useCallback(
+    (index: number | null) => {
+      setHover(index);
+      onScrub?.(index === null ? null : (barsRef.current[index] ?? null));
+    },
+    [onScrub],
+  );
   const indexAt = (x: number) => {
     "worklet";
     if (slot === 0) return 0;
@@ -138,8 +147,7 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
   const active = hover !== null ? bars[hover] : undefined;
   const activeX = hover !== null ? hover * slot + slot * HALF : 0;
 
-  const tone = (kind: ChartLevelKind) =>
-    kind === "liquidation" || kind === "stopLoss" ? colors.destructive : kind === "takeProfit" ? colors.success : kind === "entry" ? colors.foreground : colors["muted-foreground"];
+  const tone = (kind: ChartLevelKind) => (kind === "liquidation" || kind === "stopLoss" ? color.down : kind === "takeProfit" ? color.up : kind === "entry" ? color.ink : color.text3);
 
   // Labels sit on the price axis; ones that would overlap are nudged apart, in price order.
   const labels = React.useMemo(() => {
@@ -154,21 +162,22 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
 
   const liquidation = levels.find((level) => level.kind === "liquidation");
   const zone = liquidation && side ? (side === "long" ? { top: y(liquidation.value), bottom: priceH } : { top: 0, bottom: y(liquidation.value) }) : undefined;
+  const drawn = Boolean(scale) && width > 0;
 
   return (
     <GestureDetector gesture={gesture}>
-      <View accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel} onLayout={onLayout} className={cn("relative", className)} style={{ height }}>
-        {scale && width > 0 ? (
+      <View accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel} onLayout={onLayout} style={{ height }}>
+        {drawn ? (
           <Svg width={width} height={height}>
-            {zone ? <Rect x={0} y={zone.top} width={plotW} height={Math.max(zone.bottom - zone.top, 0)} fill={colors.destructive} opacity={ZONE_OPACITY} /> : null}
+            {zone ? <Rect x={0} y={zone.top} width={plotW} height={Math.max(zone.bottom - zone.top, 0)} fill={color.down} opacity={ZONE_OPACITY} /> : null}
             {ticks.map((tick) => (
-              <Line key={tick} x1={0} x2={plotW} y1={y(tick)} y2={y(tick)} stroke={colors.border} strokeWidth={1} strokeDasharray={DASH} />
+              <Line key={tick} x1={0} x2={plotW} y1={y(tick)} y2={y(tick)} stroke={color.hairline} strokeWidth={STROKE} strokeDasharray={DASH} />
             ))}
-            <Path d={paths.wicks} stroke={colors["muted-foreground"]} strokeWidth={1} />
-            <Path d={paths.up} fill={colors.success} />
-            <Path d={paths.down} fill={colors.destructive} />
-            <Path d={paths.volumeUp} fill={colors.success} opacity={VOLUME_OPACITY} />
-            <Path d={paths.volumeDown} fill={colors.destructive} opacity={VOLUME_OPACITY} />
+            <Path d={paths.wicks} stroke={color.text3} strokeWidth={STROKE} />
+            <Path d={paths.up} fill={color.up} />
+            <Path d={paths.down} fill={color.down} />
+            <Path d={paths.volumeUp} fill={color.up} opacity={VOLUME_OPACITY} />
+            <Path d={paths.volumeDown} fill={color.down} opacity={VOLUME_OPACITY} />
             {levels.map((level) => (
               <Line
                 key={level.kind}
@@ -181,50 +190,61 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
                 strokeDasharray={level.kind === "takeProfit" || level.kind === "stopLoss" ? DOT : level.kind === "price" ? DASH : undefined}
               />
             ))}
-            {active ? <Line x1={activeX} x2={activeX} y1={0} y2={height} stroke={colors["muted-foreground"]} strokeWidth={1} strokeDasharray={DASH} /> : null}
+            {active ? <Line x1={activeX} x2={activeX} y1={0} y2={height} stroke={color.text3} strokeWidth={STROKE} strokeDasharray={DASH} /> : null}
           </Svg>
         ) : null}
-        {scale && width > 0
+        {drawn
           ? ticks.map((tick) => (
-              <Text key={tick} pointerEvents="none" numberOfLines={1} className="text-muted-foreground absolute font-mono text-[10px] tabular-nums" style={{ top: y(tick) - GAP, end: 0, width: AXIS_W - GAP, textAlign: "right" }}>
+              <Text key={tick} pointerEvents="none" numberOfLines={1} style={[TYPE.micro, { position: "absolute", color: color.text3, fontVariant: NUMERIC_VARIANT, top: y(tick) - GAP, end: 0, width: AXIS_W - GAP, textAlign: "right" }]}>
                 {formatValue(tick)}
               </Text>
             ))
           : null}
-        {scale && width > 0
+        {drawn
           ? labels.map(({ level, top }) => (
               <View
                 key={level.kind}
                 pointerEvents="none"
-                className={cn("absolute justify-center rounded-md px-1.5", level.kind === "price" ? "bg-foreground" : level.kind === "entry" ? "bg-card border-foreground border" : "bg-card border")}
-                style={{ top, end: 0, height: LABEL_H, width: AXIS_W, borderColor: level.kind === "price" || level.kind === "entry" ? undefined : tone(level.kind) }}
+                style={{
+                  position: "absolute",
+                  justifyContent: "center",
+                  borderRadius: RADIUS.xs,
+                  paddingHorizontal: SPACE.xs,
+                  top,
+                  end: 0,
+                  height: LABEL_H,
+                  width: AXIS_W,
+                  backgroundColor: level.kind === "price" ? color.ink : color.card,
+                  borderWidth: level.kind === "price" ? 0 : STROKE,
+                  borderColor: tone(level.kind),
+                }}
               >
-                <Text numberOfLines={1} className={cn("font-mono tabular-nums", level.kind === "price" ? "text-background" : "text-foreground")} style={{ fontSize: LABEL_FONT }}>
+                <Text numberOfLines={1} style={{ fontSize: LABEL_FONT, fontVariant: NUMERIC_VARIANT, color: level.kind === "price" ? color.ground : color.ink }}>
                   {formatValue(level.value)}
                 </Text>
               </View>
             ))
           : null}
-        {scale && width > 0
+        {drawn
           ? labels
               .filter(({ level }) => level.kind !== "price")
               .map(({ level, top }) => (
-                <Text
-                  key={`tag-${level.kind}`}
-                  pointerEvents="none"
-                  numberOfLines={1}
-                  className="absolute font-semibold"
-                  style={{ top, end: AXIS_W + GAP * HALF, lineHeight: LABEL_H, fontSize: LABEL_FONT, color: tone(level.kind) }}
-                >
+                <Text key={`tag-${level.kind}`} pointerEvents="none" numberOfLines={1} style={[TYPE.micro, { position: "absolute", top, end: AXIS_W + GAP * HALF, lineHeight: LABEL_H, color: tone(level.kind) }]}>
                   {level.label}
                 </Text>
               ))
           : null}
         {active ? (
-          <View pointerEvents="none" className="bg-card border-border absolute top-2 gap-0.5 rounded-xl border px-2.5 py-1.5" style={activeX > plotW * HALF ? { start: GAP, width: READOUT_W } : { end: AXIS_W + GAP, width: READOUT_W }}>
-            <Text className="text-muted-foreground text-[11px]">{formatTime(active.t)}</Text>
-            <Text className={cn("font-mono text-[11px] tabular-nums", active.c >= active.o ? "text-success" : "text-destructive")}>{t("desktop.ohlcOpenClose", { open: formatValue(active.o), close: formatValue(active.c) })}</Text>
-            <Text className="text-muted-foreground font-mono text-[11px] tabular-nums">{t("desktop.ohlcHighLow", { high: formatValue(active.h), low: formatValue(active.l) })}</Text>
+          <View
+            pointerEvents="none"
+            style={[
+              { position: "absolute", top: SPACE.sm, gap: SPACE.xxs, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs, backgroundColor: color.raised2 },
+              activeX > plotW * HALF ? { start: GAP, width: READOUT_W } : { end: AXIS_W + GAP, width: READOUT_W },
+            ]}
+          >
+            <Text style={[TYPE.micro, { color: color.text3 }]}>{formatTime(active.t)}</Text>
+            <Text style={[TYPE.micro, { fontVariant: NUMERIC_VARIANT, color: active.c >= active.o ? color.up : color.down }]}>{t("desktop.ohlcOpenClose", { open: formatValue(active.o), close: formatValue(active.c) })}</Text>
+            <Text style={[TYPE.micro, { fontVariant: NUMERIC_VARIANT, color: color.text3 }]}>{t("desktop.ohlcHighLow", { high: formatValue(active.h), low: formatValue(active.l) })}</Text>
           </View>
         ) : null}
       </View>
