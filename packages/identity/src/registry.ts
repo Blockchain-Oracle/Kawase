@@ -191,7 +191,7 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("apple"), kind: "provider", name: "Apple", brandColor: "#000000", shape: "uncontained", marks: { color: "apple", mono: "apple-mono" } },
   { id: providerKey("google"), kind: "provider", name: "Google", brandColor: "#4285F4", shape: "uncontained", marks: { color: "google", mono: "google-mono" } },
   { id: providerKey("circle"), kind: "provider", name: "Circle", brandColor: "#00E599", shape: "uncontained", marks: { color: "circle", mono: "circle-mono" } },
-  { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#D4FF3A", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
+  { id: providerKey("kawase"), kind: "provider", name: "Kawase", brandColor: "#111111", shape: "tile", marks: { color: "kawase", mono: "kawase-mono" } },
   { id: providerKey("morpho"), kind: "provider", name: "Morpho", brandColor: "#15181A", shape: "tile", marks: { color: "morpho", mono: "morpho-mono" } },
   { id: providerKey("aave"), kind: "provider", name: "Aave", brandColor: "#9391F7", shape: "disc", marks: { color: "aave", mono: "aave-mono" } },
   { id: providerKey("aero"), kind: "provider", name: "Aero", brandColor: "#154AFA", shape: "uncontained", marks: { color: "aero", mono: "aero-mono" } },

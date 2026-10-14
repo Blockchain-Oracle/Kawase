@@ -25,7 +25,7 @@ type KawaseMarkProps = {
 
 const DEFAULT_SIZE = 64;
 
-export function KawaseMark({ size = DEFAULT_SIZE, mono, ink = tokens.themes.dark.background, lime = tokens.themes.dark.primary }: KawaseMarkProps) {
+export function KawaseMark({ size = DEFAULT_SIZE, mono, ink = tokens.themes.dark.background, lime = tokens.themes.light.accent }: KawaseMarkProps) {
   const column = GLYPH_SIZE * 2 + GLYPH_GAP;
   const x = MARK_VIEWBOX * HALF - GLYPH_SIZE * HALF;
   const y = MARK_VIEWBOX * HALF - column * HALF;

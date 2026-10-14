@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B0C10",
+        "backgroundColor": "#111111",
         "foregroundImage": "./assets/brand/android-foreground.png",
         "backgroundImage": "./assets/brand/android-background.png",
         "monochromeImage": "./assets/brand/android-monochrome.png"
@@ -43,8 +43,8 @@
       "name": "Kawase",
       "shortName": "Kawase",
       "description": "An AI money app for everything on Arc.",
-      "themeColor": "#0B0C10",
-      "backgroundColor": "#0B0C10"
+      "themeColor": "#F5F5F5",
+      "backgroundColor": "#F5F5F5"
     },
     "plugins": [
       "expo-router",
@@ -52,7 +52,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0C10",
+          "backgroundColor": "#F5F5F5",
           "image": "./assets/brand/splash.png",
           "imageWidth": 120
         }
