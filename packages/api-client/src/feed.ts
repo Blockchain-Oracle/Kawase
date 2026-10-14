@@ -47,6 +47,8 @@ export type AgentFeedItem = {
   needsYouId: string | null;
   /** The conversation that made it, for "Open in chat". */
   threadId: string | null;
+  /** The venue that carried it (an identity slug: "kyberswap", "lifi", "cctp"…), for the row's mark; null when none. */
+  venue: string | null;
   /** Found: the For-you card, rendered as Home's For-you row. */
   suggestion: Suggestion | null;
 };
@@ -61,9 +63,24 @@ export type AgentFeed = {
   generatedAt: string;
 };
 
+/**
+ * One feed row opened (GET /feed/item/:id): the row, the race Kawase ran before it (every venue asked, read from the
+ * conversation that made it; null when it was not raced or was started on a screen), and the person's own words.
+ */
+export type AgentFeedDetail = {
+  item: AgentFeedItem;
+  race: import("./routes").RouteRace | null;
+  /** What the person asked, as typed or said ("swap 2 USDC to EURC"); null outside a conversation. */
+  asked: string | null;
+};
+
 type Call = <T>(method: string, path: string, body?: unknown) => Promise<T>;
 
-export type FeedApi = { get: (network?: AgentNetwork) => Promise<AgentFeed> };
+export type FeedApi = {
+  get: (network?: AgentNetwork) => Promise<AgentFeed>;
+  /** One row with its race and the words that started it (the feed's detail sheet). */
+  item: (id: string, network?: AgentNetwork) => Promise<AgentFeedDetail>;
+};
 
 /** Whether the agent's model answers now (the app's offline state, before the person types). */
 export type AgentHealthApi = { health: () => Promise<{ health: AgentHealth }> };
@@ -74,7 +91,10 @@ export type AgentHealthApi = { health: () => Promise<{ health: AgentHealth }> };
  */
 export function feedEndpoints(call: Call): { feed: FeedApi; agentHealth: AgentHealthApi } {
   return {
-    feed: { get: (network) => call<AgentFeed>("GET", `/feed${network ? `?network=${network}` : ""}`) },
+    feed: {
+      get: (network) => call<AgentFeed>("GET", `/feed${network ? `?network=${network}` : ""}`),
+      item: (id, network) => call<AgentFeedDetail>("GET", `/feed/item/${encodeURIComponent(id)}${network ? `?network=${network}` : ""}`),
+    },
     agentHealth: { health: () => call<{ health: AgentHealth }>("GET", "/agent/health") },
   };
 }

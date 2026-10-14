@@ -42,6 +42,7 @@ import type { AgentHealth } from "@kawase/api-client";
 
 import { buildAgentContext, type AgentRaceRoutes } from "./context";
 import { ConversationStore } from "./conversation-store";
+import { createMemeCheck, type MemeCheck } from "./meme-check";
 import type { ModelHealth } from "./health";
 
 /** Provider answers that mean the model cannot serve anyone right now (a dead key, no credit, a rate wall, an outage). */

@@ -10,7 +10,8 @@ import type { CapabilityId } from "@kawase/config";
 import { intents, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
-import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, RouteRace, AgentRaceRequest, SwapRequest } from "@kawase/api-client";
+import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, RouteRace, AgentRaceRequest, SwapRequest, TokenDetailView } from "@kawase/api-client";
+import type { MemeCheck } from "./meme-check";
 import type { AgentBudget } from "@kawase/agent";
 
 import type { MarketplaceService } from "../marketplace/service";
@@ -125,6 +126,8 @@ export function buildAgentContext(input: {
   raceRoutes?: AgentRaceRoutes | undefined;
   /** The person's weekly budget (the Budget lane); without it every money step waits for their tap. */
   budget?: AgentBudget | undefined;
+  /** The meme/copycat check before a buy (one per api, cached; meme-check.ts). */
+  memeCheck?: MemeCheck | undefined;
 }): AgentContext {
   const { user, db, chains, wallets, faucet, contacts, recipients, sends, swaps, bridges, earn, assets, automations, requests, threadId, log } = input;
   const network = user.activeNetwork;
@@ -232,6 +235,7 @@ export function buildAgentContext(input: {
     portfolio: () => assets.portfolio(user),
     searchTokens: (query) => assets.search(user, network, query),
     tokenDetail: (address) => assets.token(user, network, address),
+    ...(input.memeCheck ? { tokenWarning: (detail: Pick<TokenDetailView, "token" | "market">) => input.memeCheck!.check(network, detail) } : {}),
 
     async earnOverview() {
       const view = await earn.overview(user);
