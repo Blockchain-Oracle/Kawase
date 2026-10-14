@@ -4,10 +4,13 @@ import { MS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE } 
 
 /** LI.FI's token list for Arc (symbols, logos, USD prices): refreshed this often. */
 export const TOKEN_LIST_TTL_MS = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND;
-/** Prices and 24 h change: one snapshot per minute serves everyone (GeckoTerminal allows ~10 calls a minute). */
-export const PRICE_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
-/** Market lists (trending, new) and a token's market page. */
-export const MARKET_TTL_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
+/**
+ * GeckoTerminal's token snapshots (pool, depth, fallback price): every five minutes is enough now that prices and
+ * change come live from DexScreener; the saved calls go to charts.
+ */
+export const PRICE_TTL_MS = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** Which pools are trending or new (the lists' membership; each row's price is live). */
+export const MARKET_TTL_MS = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND;
 /** Charts change slowly at the ranges a phone shows. */
 export const CHART_TTL_MS = 2 * SECONDS_PER_MINUTE * MS_PER_SECOND;
 /** Market rows' sparklines: 24 hourly closes, refreshed every half hour, one call per warm tick. */
@@ -24,8 +27,12 @@ export const MARKET_STALE_MAX_MS = SECONDS_PER_DAY * MS_PER_SECOND;
 
 /** The api refreshes the shared market cache (Markets lists, listed tokens' prices) this often. */
 export const MARKET_WARM_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
-/** GeckoTerminal's public API: calls per minute Kawase allows itself (their open limit is 30; charts are its main use). */
-export const GECKOTERMINAL_CALLS_PER_MINUTE = 20;
+/** GeckoTerminal's public API: calls per minute Kawase allows itself (it answers 429 above ~10; charts are its main use). */
+export const GECKOTERMINAL_CALLS_PER_MINUTE = 9;
+/** After GeckoTerminal answers 429, no call for this long (it keeps refusing while the window is full). */
+export const GECKOTERMINAL_COOLDOWN_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
+/** The warmer refreshes a popular token's day chart when it is older than this (people's reads keep it fresher). */
+export const CHART_WARM_MS = 30 * SECONDS_PER_MINUTE * MS_PER_SECOND;
 /**
  * DexScreener's open API (live-checked 2026-10-14: Arc is "arc", prices move between calls seconds apart): a token's
  * live price, 5 m / 1 h / 24 h change, liquidity, trades, image and links. 300 calls a minute; up to 30 tokens a call.

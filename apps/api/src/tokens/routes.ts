@@ -6,7 +6,7 @@ import { z } from "zod";
 import { isNetworkId, networkForChainId, type NetworkId } from "@kawase/networks";
 
 import { requireAccount, requireUser } from "../auth/middleware";
-import { HTTP, problem } from "../http/problem";
+import { HTTP, ProblemError, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { AssetService } from "./service";
 import { tokenTrades } from "./trades";
@@ -86,7 +86,12 @@ export function tokenRoutes(assets: AssetService, db?: Db) {
   app.get("/:chainId/:address/chart", async (c) => {
     const tokenAddress = await parse(address, c.req.param("address"));
     const range = await parse(rangeSchema, c.req.query("range") ?? "1D");
-    return c.json({ range, candles: await assets.chart(networkOfChain(c.req.param("chainId")), tokenAddress, range) });
+    // The chart source busy with nothing held yet is a 503 the page retries, never a 500 or an empty "no history".
+    const candles = await assets.chart(networkOfChain(c.req.param("chainId")), tokenAddress, range).catch((error: unknown) => {
+      if (error instanceof ProblemError) throw error;
+      throw problem(HTTP.serviceUnavailable, "upstream", "the price history source is busy; try again in a moment");
+    });
+    return c.json({ range, candles });
   });
   return app;
 }

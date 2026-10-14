@@ -7,6 +7,7 @@ import { erc20Abi, formatUnits, getAddress, isAddress, type Address } from "viem
 
 import {
   DUST_USD,
+  CHART_WARM_MS,
   MARKET_LIST_LIMIT,
   PORTFOLIO_HISTORY_DAYS,
   PORTFOLIO_SNAPSHOT_EVERY_MS,
@@ -120,6 +121,7 @@ export class AssetService {
       const listed = await this.market.listed(MAINNET_CHAIN_ID);
       await this.market.markets(MAINNET_CHAIN_ID, [...CANONICAL_TOKENS.mainnet.map((token) => token.address.toLowerCase()), ...listed.keys()]);
       await this.warmSpark();
+      await this.warmChart();
     };
     void run().catch((error: unknown) => this.log.warn({ err: error }, "market warm failed"));
     const timer = setInterval(() => void run().catch((error: unknown) => this.log.warn({ err: error }, "market warm failed")), intervalMs);
@@ -139,6 +141,21 @@ export class AssetService {
       if (!side.address) continue;
       if (this.market.sparkDue && !this.market.sparkDue(pool.address, side.address)) continue;
       await this.market.spark(pool.address, side.address, true);
+      return;
+    }
+  }
+
+  /**
+   * One popular day chart per warm tick: the first trending or meme pool whose 1D candles are missing or older than
+   * CHART_WARM_MS, so a token people open has its chart on hand (served from here while GeckoTerminal is busy).
+   */
+  private async warmChart() {
+    if (!this.market.chartDue) return;
+    const trending = await this.market.pools("trending").catch(() => null);
+    for (const pool of (trending?.value ?? []).slice(0, MARKET_LIST_LIMIT)) {
+      const side = this.tradedSide(pool);
+      if (!side.address || !this.market.chartDue(pool.address, side.address, "1D", CHART_WARM_MS)) continue;
+      await this.market.chart(MAINNET_CHAIN_ID, pool.address, side.address.toLowerCase(), "1D").catch(() => undefined);
       return;
     }
   }

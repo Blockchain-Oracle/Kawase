@@ -20,14 +20,21 @@ export class OutOfBudget extends Error {
 /** A sliding one-minute window of calls, so a shared free tier is never exceeded (GeckoTerminal: ~10 a minute). */
 export class CallBudget {
   private readonly calls: number[] = [];
+  private pausedUntil = 0;
 
   constructor(
     readonly source: string,
     private readonly perMinute: number,
   ) {}
 
+  /** The source refused (429): no calls until `ms` from now. */
+  cooldown(ms: number) {
+    this.pausedUntil = Date.now() + ms;
+  }
+
   take(): boolean {
     const now = Date.now();
+    if (now < this.pausedUntil) return false;
     while (this.calls.length > 0 && now - this.calls[0]! > MINUTE_MS) this.calls.shift();
     if (this.calls.length >= this.perMinute) return false;
     this.calls.push(now);

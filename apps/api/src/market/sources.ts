@@ -19,6 +19,7 @@ import {
   DEXSCREENER_TOKENS_MAX,
   FX_TTL_MS,
   GECKOTERMINAL_CALLS_PER_MINUTE,
+  GECKOTERMINAL_COOLDOWN_MS,
   GECKOTERMINAL_MULTI_MAX,
   LIVE_TTL_MS,
   MARKET_TTL_MS,
@@ -161,6 +162,8 @@ export type MarketData = {
   spark?(pool: string, token: string, load: boolean): Promise<number[] | null>;
   /** Whether a pool's sparkline is missing or older than its half hour (what the warmer loads next). */
   sparkDue?(pool: string, token: string): boolean;
+  /** Whether a pool's chart for a range is missing or older than `ms` (the warmer keeps popular charts on hand). */
+  chartDue?(pool: string, token: string, range: ChartRange, ms: number): boolean;
   info(chainId: number, address: string): Promise<TokenInfo | null>;
   security(chainId: number, address: string): Promise<SecurityFacts | null>;
   otherChains(wallet: string): Promise<OtherChainBalance[]>;
@@ -272,7 +275,11 @@ export function liveMarketData(options: { alchemyApiKey?: string | undefined } =
 
   const geckoGet = <T>(path: string): Promise<T> => {
     if (!gecko.take()) return Promise.reject(new OutOfBudget(gecko.source));
-    return getJson<T>(`${GECKO}${path}`);
+    return getJson<T>(`${GECKO}${path}`).catch((error: unknown) => {
+      // A 429 means the window is full on their side: stop asking for a minute instead of burning more refusals.
+      if (error instanceof Error && error.message.endsWith(" 429")) gecko.cooldown(GECKOTERMINAL_COOLDOWN_MS);
+      throw error;
+    });
   };
 
   const listed = async (chainId: number) => {
@@ -495,6 +502,10 @@ export function liveMarketData(options: { alchemyApiKey?: string | undefined } =
         at = Math.min(at, held.at);
       }
       return { quotes, at };
+    },
+    chartDue: (pool, token, range, ms) => {
+      const held = cache.peek<Candle[]>(`gt:chart:${pool}:${lower(token)}:${range}`);
+      return !held || held.value.length === 0 || Date.now() - held.at >= ms;
     },
     sparkDue: (pool, token) => {
       const held = cache.peek<number[]>(`gt:spark:${lower(pool)}:${lower(token)}`);
