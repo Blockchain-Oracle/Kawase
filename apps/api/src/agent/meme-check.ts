@@ -15,12 +15,14 @@ import type { NetworkId } from "@kawase/networks";
 const GECKO = "https://api.geckoterminal.com/api/v2";
 const GECKO_NETWORK = "arc";
 const TIMEOUT_MS = 3_000;
-const CACHE_MS = 10 * 60_000;
-const FAILED_CACHE_MS = 60_000;
+const MINUTE_MS = 60_000;
+const CACHE_MINUTES = 10;
+const CACHE_MS = CACHE_MINUTES * MINUTE_MS;
+const FAILED_CACHE_MS = MINUTE_MS;
 /** A share of GeckoTerminal's free 30 calls a minute (the market pages use the rest). */
 const CALLS_PER_MINUTE = 6;
-const MINUTE_MS = 60_000;
 const CACHE_MAX = 500;
+const NOT_FOUND = 404;
 
 /** 24-hour volume this many times what the pools hold, on a small pool, reads as churn rather than trading. */
 const WASH_TURNOVER = 10;
@@ -32,6 +34,8 @@ const FEW_TRADERS_MAX = 5;
 const FEW_TRADERS_MIN_TRADES = 40;
 /** Two pools' volumes equal to the cent (and not zero) are not two markets. */
 const CENT = 100;
+/** A known name this long or longer also matches as a prefix ("PEPE2"); shorter ones ("ETH", "ARC") only exactly. */
+const PREFIX_MIN = 4;
 
 /**
  * Assets people know by name, whose name a copy borrows: stablecoins, majors and the memes copied most. A token that is
@@ -66,7 +70,7 @@ export function copiedName(token: { symbol: string; name: string }): string | nu
     for (const candidate of known.names) {
       if (symbol === candidate || name === candidate) return known.label;
       // "PEPE2", "USDCoin Official", "Bitcoin Arc": the known name plus a little.
-      if (candidate.length >= 4 && (symbol.startsWith(candidate) || name.startsWith(candidate))) return known.label;
+      if (candidate.length >= PREFIX_MIN && (symbol.startsWith(candidate) || name.startsWith(candidate))) return known.label;
     }
   }
   return null;
@@ -107,7 +111,7 @@ export function marketSignals(pools: readonly Pool[]): { reasons: TokenWarningRe
 export type MemeCheck = { check(network: NetworkId, detail: Pick<TokenDetailView, "token" | "market">): Promise<TokenWarning | null> };
 
 /** One instance per api: the cache and the call budget are shared by every person's turns. */
-export function createMemeCheck(log: Logger, fetchImpl: typeof fetch = fetch): MemeCheck {
+export function createMemeCheck(log?: Pick<Logger, "warn">, fetchImpl: typeof fetch = fetch): MemeCheck {
   const cache = new Map<string, { at: number; ttl: number; pools: Pool[] | null }>();
   let window = { start: 0, calls: 0 };
 
@@ -126,7 +130,7 @@ export function createMemeCheck(log: Logger, fetchImpl: typeof fetch = fetch): M
       });
       // A token GeckoTerminal has never seen has no pools: a real answer (nothing to trade against).
       const read: Pool[] | null =
-        response.status === 404
+        response.status === NOT_FOUND
           ? []
           : response.ok
             ? (((await response.json()) as { data?: GtPool[] }).data ?? []).map((pool) => {
@@ -143,7 +147,7 @@ export function createMemeCheck(log: Logger, fetchImpl: typeof fetch = fetch): M
       cache.set(key, { at: now, ttl: read ? CACHE_MS : FAILED_CACHE_MS, pools: read });
       return read;
     } catch (error) {
-      log.warn({ err: error, token: key }, "meme check: GeckoTerminal unavailable");
+      log?.warn({ err: error, token: key }, "meme check: GeckoTerminal unavailable");
       cache.set(key, { at: now, ttl: FAILED_CACHE_MS, pools: null });
       return null;
     }
