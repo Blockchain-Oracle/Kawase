@@ -19,6 +19,8 @@ import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 
+const HALF = 2;
+
 const EDGE = SPACE.md;
 
 type Chip = { key: string; label: string; prompt?: string; href?: "/move" };
@@ -118,8 +120,8 @@ const styles = StyleSheet.create({
   dock: { position: "absolute", start: 0, end: 0, bottom: 0 },
   block: { gap: SPACE.sm, paddingTop: SPACE.sm },
   chips: { gap: SPACE.sm, paddingHorizontal: SPACE.lgPlus },
-  chip: { height: SIZE.chipHeight, borderRadius: SIZE.chipHeight / 2, paddingHorizontal: SPACE.md, justifyContent: "center" },
+  chip: { height: SIZE.chipHeight, borderRadius: SIZE.chipHeight / HALF, paddingHorizontal: SPACE.md, justifyContent: "center" },
   row: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.sm, paddingHorizontal: SPACE.lg },
-  round: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / 2, alignItems: "center", justifyContent: "center" },
+  round: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / HALF, alignItems: "center", justifyContent: "center" },
   grow: { flex: 1 },
 });

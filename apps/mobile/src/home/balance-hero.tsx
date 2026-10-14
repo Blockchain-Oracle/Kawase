@@ -16,7 +16,9 @@ import { money } from "@/portfolio/format";
 const FIGURE_HEIGHT = TYPE.displayBalance.lineHeight ?? SIZE.avatarLg;
 const CENTS = 100;
 const PERCENT = 100;
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 86_400_000;
+const WEEK_DAYS = 7;
+const WEEK_MS = WEEK_DAYS * DAY_MS;
 const MIN_POINTS = 2;
 
 export function BalanceHero({

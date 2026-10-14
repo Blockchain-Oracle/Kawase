@@ -41,6 +41,9 @@ import { ToolCard, type ToolPart } from "./tool-cards";
 const SWAP_STEPS = new Set(["propose_trade", "propose_swap"]);
 const SEND_STEPS = new Set(["propose_send"]);
 /** Every step that moves money after a race or on its own, drawn inside the run plate. */
+/** The race skeleton before the first snapshot: three rows. */
+const SKELETON_COUNT = 3;
+const SKELETON_ROWS = Array.from({ length: SKELETON_COUNT }, (_, row) => row);
 const STEP_TOOLS = new Set([...SWAP_STEPS, ...SEND_STEPS, "propose_bridge", "bring_to_arc", "propose_earn", "propose_supply", "propose_withdraw", "start_buy"]);
 
 export type RunPieces = { race: ToolPart | null; step: ToolPart | null; text: string };
@@ -329,7 +332,7 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
 
       {pieces.race && !raced && pieces.race.state !== "output-available" ? (
         <View style={styles.skeletonRows}>
-          {[0, 1, 2].map((row) => (
+          {SKELETON_ROWS.map((row) => (
             <Skeleton key={row} height={SPACE.xxl} />
           ))}
         </View>

@@ -32,6 +32,7 @@ const MS = 1000;
 const RAIL_WIDTH = 2;
 /** Rows animate in only on the first screenful; later ones just appear. */
 const STAGGER_ROWS = 8;
+const HALF = 2;
 
 const KIND_GLYPH: Partial<Record<AgentFeedItem["kind"], LucideIcon>> = { automation: CalendarClock, practice: FlaskConical, suggestion: Sparkles };
 
@@ -164,10 +165,10 @@ const styles = StyleSheet.create({
   head: { paddingHorizontal: SPACE.xs, paddingBottom: SPACE.xs },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xs, borderRadius: SPACE.md },
   lead: { width: MARK, alignItems: "center", alignSelf: "stretch", justifyContent: "center" },
-  rail: { position: "absolute", width: RAIL_WIDTH, start: (MARK - RAIL_WIDTH) / 2 },
+  rail: { position: "absolute", width: RAIL_WIDTH, start: (MARK - RAIL_WIDTH) / HALF },
   railAbove: { top: -SPACE.sm, height: "50%" },
   railBelow: { bottom: -SPACE.sm, height: "50%" },
-  glyph: { width: MARK, height: MARK, borderRadius: MARK / 2, alignItems: "center", justifyContent: "center" },
+  glyph: { width: MARK, height: MARK, borderRadius: MARK / HALF, alignItems: "center", justifyContent: "center" },
   copy: { flex: 1, gap: SPACE.xxs },
   end: { alignItems: "flex-end", gap: SPACE.xxs },
 });

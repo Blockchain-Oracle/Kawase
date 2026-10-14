@@ -13,10 +13,10 @@ import { useRouter, type Href } from "expo-router";
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 
-import type { Contact, PolicyResultView } from "@kawase/api-client";
+import type { PolicyResultView } from "@kawase/api-client";
 
 import { BlockedCta, type Blocker } from "@/components/tx";
-import { Button, SPACE, type BlockerFix, type BlockerFixKind } from "@/components/kit";
+import { Button, SPACE, type BlockerFixKind } from "@/components/kit";
 import { Sheet } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
 import { MainnetConsentSheet } from "@/components/network-pill";
@@ -141,7 +141,7 @@ export function SmartFix({ blocking, reason, name, network, onFixed }: SmartFixP
   return (
     <View style={styles.wrap}>
       {label ? (
-        <BlockedCta blocker={blocker} onFix={(_fix: BlockerFix) => start()} fixLabel={label} />
+        <BlockedCta blocker={blocker} onFix={() => start()} fixLabel={label} />
       ) : (
         <BlockedCta blocker={blocker} />
       )}
@@ -151,7 +151,7 @@ export function SmartFix({ blocking, reason, name, network, onFixed }: SmartFixP
           open
           initialName={name ?? undefined}
           onClose={() => setOpen(null)}
-          onSaved={(_contact: Contact) => {
+          onSaved={() => {
             setOpen(null);
             onFixed();
           }}

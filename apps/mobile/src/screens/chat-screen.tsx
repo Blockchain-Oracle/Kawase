@@ -24,6 +24,8 @@ import { useT } from "@/i18n";
 import { ScanModal } from "@/scan/scan-modal";
 import { api } from "@/session/api";
 
+const HALF = 2;
+
 /** The conversation's width on a desktop window. */
 const CHAT_COLUMN_PX = 760;
 
@@ -175,7 +177,7 @@ const styles = StyleSheet.create({
   wide: { maxWidth: CHAT_COLUMN_PX },
   header: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, paddingHorizontal: SPACE.lgPlus, paddingBottom: SPACE.sm },
   title: { flex: 1, textAlign: "center" },
-  round: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / 2, alignItems: "center", justifyContent: "center" },
+  round: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / HALF, alignItems: "center", justifyContent: "center" },
   center: { flex: 1, justifyContent: "center", paddingHorizontal: SPACE.lgPlus },
   loading: { paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.md },
 });

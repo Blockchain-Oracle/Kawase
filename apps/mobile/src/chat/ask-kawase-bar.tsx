@@ -14,6 +14,8 @@ import { Icon, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 
+const HALF = 2;
+
 export function AskKawaseBar({ prompt, label }: { prompt: string; label?: string | undefined }) {
   const { t } = useT();
   const { color } = useTheme();
@@ -42,6 +44,6 @@ export function AskKawaseBar({ prompt, label }: { prompt: string; label?: string
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: SIZE.touch, borderRadius: SIZE.touch / 2, paddingHorizontal: SPACE.lg },
+  bar: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: SIZE.touch, borderRadius: SIZE.touch / HALF, paddingHorizontal: SPACE.lg },
   prompt: { flex: 1 },
 });

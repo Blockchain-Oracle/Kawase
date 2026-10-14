@@ -17,7 +17,7 @@ export type RunPointer = {
 
 const KEY = "kawase.home.run.v1";
 /** Older than this, a run is history (the feed has it), not something to resume on Home. */
-const KEEP_MS = 24 * 60 * 60 * 1000;
+const KEEP_MS = 86_400_000;
 
 type Stored = Partial<Record<Network, Omit<RunPointer, "prompt">>>;
 
