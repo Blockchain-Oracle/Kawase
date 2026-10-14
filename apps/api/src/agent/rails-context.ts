@@ -119,6 +119,21 @@ function summarizeCrossChain(intent: CrossChainIntent): string {
   return blocking ? `${line} Blocked: ${MOVE_REASONS[blocking.code] ?? blocking.code}` : line;
 }
 
+/** A race's venue id → the yield source it names. */
+const VENUE_SOURCE: Record<string, YieldOptionsView["options"][number]["kind"]> = { aave: "aave_v4", morpho: "morpho_vault", merkl: "lp", aero: "lp" };
+
+/**
+ * The person's (or the race's) chosen venue first and preselected, when it can take the deposit now; otherwise the view
+ * as ranked. The venue may be a source id or a protocol ("morpho").
+ */
+export function chosenFirst(view: YieldOptionsView, venue: string | null): YieldOptionsView {
+  if (!venue) return view;
+  const wanted = venue.toLowerCase();
+  const chosen = view.options.find((option) => option.executable && (option.id.toLowerCase() === wanted || option.kind === VENUE_SOURCE[wanted]));
+  if (!chosen) return view;
+  return { ...view, best: chosen.id, options: [chosen, ...view.options.filter((option) => option !== chosen)] };
+}
+
 function summarizeOptions(view: YieldOptionsView): string {
   if (view.options.length === 0) return `Nothing to earn on ${view.asset} here right now.`;
   return view.options
@@ -231,7 +246,8 @@ export function railsContext(input: {
   const lending: Partial<AgentContext> = lend
     ? {
         async compareYield(request) {
-          const view = await lend.options(user, request.asset, request.amount);
+          // Read fresh every time (a race's rate is never reused); the venue the race or the person picked leads.
+          const view = chosenFirst(await lend.options(user, request.asset, request.amount), request.venue ?? null);
           return { ...view, summary: summarizeOptions(view) };
         },
         async proposeLp(request) {

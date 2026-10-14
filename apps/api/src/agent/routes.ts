@@ -36,8 +36,38 @@ import type { MarketplaceService } from "../marketplace/service";
 import type { SafetyService } from "../safety/service";
 import type { HistoryService } from "../history/service";
 import type { AccountAgentDeps } from "./account-context";
-import { buildAgentContext } from "./context";
+import type { Context } from "hono";
+import type { AgentBudget } from "@kawase/agent";
+import type { AgentHealth } from "@kawase/api-client";
+
+import { buildAgentContext, type AgentRaceRoutes } from "./context";
 import { ConversationStore } from "./conversation-store";
+import type { ModelHealth } from "./health";
+
+/** Provider answers that mean the model cannot serve anyone right now (a dead key, no credit, a rate wall, an outage). */
+const PROVIDER_DOWN = new Set([HTTP.unauthorized, HTTP.forbidden, HTTP.tooManyRequests, HTTP.internal, HTTP.badGateway, HTTP.serviceUnavailable]);
+
+/** "http_401" when a turn failed because the provider is down; null for anything else (a tool's error, a cancel). */
+function providerFailure(error: unknown): string | null {
+  const status = (error as { statusCode?: unknown } | null)?.statusCode;
+  return typeof status === "number" && PROVIDER_DOWN.has(status as never) ? `http_${status}` : null;
+}
+
+/** The typed answer the app turns into its offline state (a problem document, like every other refusal). */
+function agentOffline(c: Context<AppEnv>, health: AgentHealth) {
+  return c.json(
+    {
+      type: "https://kawase.xyz/problems/agent_offline",
+      title: "The agent is offline",
+      status: HTTP.serviceUnavailable,
+      detail: "Kawase's model is not answering right now; balances, sends and every screen still work.",
+      instance: c.req.path,
+      health,
+    },
+    HTTP.serviceUnavailable,
+    { "content-type": "application/problem+json" },
+  );
+}
 
 const TITLE_MAX = 60;
 const THREADS_PAGE = 50;
@@ -98,6 +128,12 @@ export type AgentDeps = {
   fx?: ((currency: string) => Promise<number | null>) | undefined;
   /** M12: with device proofs required, a chat turn sends inside the allowance by itself only when it carried one. */
   deviceProofRequired?: boolean | undefined;
+  /** The Routes lane's race (apps/api/src/routing/race.ts); race_routes says "routes_unavailable" without it. */
+  raceRoutes?: AgentRaceRoutes | undefined;
+  /** The person's weekly budget (the Budget lane); without it every money step waits for their tap (the safe default). */
+  budget?: ((user: SessionUser) => AgentBudget | undefined) | undefined;
+  /** The model's self-test (health.ts): while it fails, /chat answers "agent_offline" at once. */
+  health?: ModelHealth | undefined;
 };
 
 /** The first words the person wrote, as the thread's title. */
@@ -143,7 +179,9 @@ export function createTurnRunner(deps: AgentDeps) {
     account,
     fx,
   } = deps;
-  // Without a configured secret, approvals are still signed — they just do not outlive this process.
+  // Without a configured secret, approvals are still signed, but a pending one dies with this process and fails on any
+  // other instance: production must set AGENT_APPROVAL_SECRET (one value for every instance).
+  if (!approvalSecret && process.env.NODE_ENV === "production") throw new Error("AGENT_APPROVAL_SECRET must be set in production: pending approvals must survive restarts and instances");
   const conversations = new ConversationStore(db);
   const secret = approvalSecret ?? randomBytes(SECRET_BYTES).toString("hex");
 
@@ -211,6 +249,8 @@ export function createTurnRunner(deps: AgentDeps) {
       surface,
       // M12: without the device's proof (once required) a send inside the allowance waits for the tap on its card.
       autoSendAllowed: !deps.deviceProofRequired || input.deviceProven === true,
+      raceRoutes: deps.raceRoutes,
+      budget: deps.budget?.(user),
     });
     // The display currency (B2-3): today's rate, read quickly; dollars if it does not come.
     if (fx && user.displayCurrency && user.displayCurrency !== "USD") {
@@ -290,6 +330,9 @@ export function createTurnRunner(deps: AgentDeps) {
         onError: (error) => {
           failed = true;
           log.error({ err: error }, "agent turn failed");
+          // The provider refused or broke (a dead key, no credit, an outage): offline until the next check passes.
+          const providerDown = providerFailure(error);
+          if (providerDown) deps.health?.reportFailure(providerDown);
         },
         onEnd: async ({ messages: finished, isAborted, isCancelled }) => {
           clearInterval(lease);
@@ -343,8 +386,14 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
   app.use("*", requireUser);
   const { run, ownThread, loadMessages } = runner;
 
+  // Whether the agent can answer now, before the person types (the app's offline state).
+  app.get("/health", (c) => c.json({ health: deps.health?.status() ?? { status: "unknown", checkedAt: null, model: "", reason: null } }));
+
   app.post("/chat", async (c) => {
     if (!models.hasKeyFor("agentChat")) throw problem(HTTP.internal, "agent_unavailable");
+    // The self-test says the model is unreachable: say so at once, typed, instead of a turn that breaks halfway.
+    const health = deps.health?.status();
+    if (health?.status === "offline") return agentOffline(c, health);
     const parsed = chatSchema.safeParse(await c.req.json());
     if (!parsed.success) throw problem(HTTP.badRequest, "validation", undefined, { issues: parsed.error.issues });
     const stream = await run({
