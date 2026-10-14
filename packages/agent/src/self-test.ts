@@ -8,7 +8,7 @@ import type { Models } from "./models";
 
 /** Long enough for a cold provider; short enough that a hung one counts as offline. */
 const SELF_TEST_TIMEOUT_MS = 20_000;
-const SELF_TEST_MAX_TOKENS = 64;
+const SELF_TEST_MAX_TOKENS = 256;
 
 export type SelfTestResult = { ok: true; ms: number } | { ok: false; ms: number; reason: string };
 
@@ -17,9 +17,16 @@ export async function selfTestModel(models: Pick<Models, "forRole" | "hasKeyFor"
   const startedAt = Date.now();
   if (!models.hasKeyFor("agentChat")) return { ok: false, ms: 0, reason: "no_key" };
   let called = false;
+  const model = models.forRole("agentChat");
+  // Only reasoning models take an effort (as turn.ts): the least, so the tiny budget goes to the tool call.
+  const reasons = typeof model === "object" && /^(gpt-5|gpt-6|o\d)/.test(model.modelId);
   try {
     await generateText({
-      model: models.forRole("agentChat"),
+      model,
+      providerOptions: {
+        openai: reasons ? { reasoningEffort: "none", textVerbosity: "low" } : {},
+        google: { thinkingConfig: { thinkingLevel: "low" } },
+      },
       instructions: "You are a health check. Call the ping tool once, then answer with the single word ok.",
       prompt: "ping",
       tools: {
