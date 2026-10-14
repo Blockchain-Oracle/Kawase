@@ -126,8 +126,17 @@ Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compre
   Token pages link to BasedBot, DexScreener and Arc's explorer ("Look closer").
 - Composer hint no longer spills; mic is a mini live orb; a fade under Home's bottom controls; handle field has one
   ring; the phone header is avatar · solid network chip · Sign in. Web publishes reload in place (SIGHUP, no 502s).
-- **Found:** the web's first paint is ~19 s (one 24 MB script: viem's chains, lucide, all 10 catalogs, LiveKit,
-  Turnkey on a Privy build). Tree shaking (`EXPO_UNSTABLE_TREE_SHAKING`) is being measured.
+- **First load halved:** tree-shaken web exports, LiveKit and the dev pages load on demand, Turnkey's web kit is stubbed
+  out of Privy builds, and one language loads (not ten). Initial script ~3.6 MB gzipped (was ~6.8).
+- Prices: `$0.0₄2606` notation; compact money on phones (Hermes has no compact Intl).
+- **Verified tonight:**
+  - web: voice mode live (pipeline greets, a typed suggestion runs);
+  - iOS simulator build `8963346c`: Privy sign-in sheet, voice mode (race card + spoken answer), Live token chart, rows
+    flashing per trade;
+  - dev mode on Arc testnet: "swap 1 USDC to EURC" on Home → race → done inside the budget with no prompt (1.231845
+    EURC, receipt + explorer), budget ring $23 of $200.
+- **Builds:** TestFlight 19 (`3e223970`, auto-submitted), APK `619f5486`, web `a99d260f`.
+- **Waiting on Abu:** one real Privy sign-in (no attempt in the api logs yet); mainnet funding by Friday.
 - **The plan now:** `/Users/abu/.claude/plans/breezy-puzzling-starfish.md`: the open parts of `compressed-dreaming-yao.md`
   merged with Abu's 10-14 design review (voice mode, composer, live markets with on-chain ticks, BasedBot links, logos,
   lime purge, mobile header), in order A money path → B voice → C composer → D live markets → E sweep → F mainnet/submit.
