@@ -6,6 +6,10 @@
 // venue allow it, the action fits the per-action cap, and this week's ledger plus the action fits the weekly cap.
 // The week is the ISO week, Monday 00:00 UTC. A ledger row counts while its intent is alive (not failed, canceled or
 // expired), so a reverted swap gives its room back without anyone settling it here.
+//
+// Stage 3: the same approval that signs the budget also signs the away pack (away.ts: per-contact sends, vaults, a move
+// to the wallet's own address, all bound to the kill-switch nonce), turns the old any-recipient allowance off on chain
+// (the security fix), and rotates the nonce so the new pack goes live and the old one dies in one transaction.
 import { and, desc, eq, gte, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 
@@ -23,6 +27,7 @@ import { REVOKE_KIND, relayerReady } from "../send/relayed";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { AwayPacks, type AwayProposal, type AwaySummary } from "./away";
 import { budgetSpend, budgets } from "./schema";
 
 type BudgetRow = typeof budgets.$inferSelect;
@@ -39,6 +44,17 @@ const ZERO = 0n;
 const RELEASED_STATES = ["failed", "canceled", "expired", "rejected"] as const;
 /** Gas for the wallet's own `incrementNonce` (a self-batch of one call) when the relayer cannot carry it. */
 const KILL_SWITCH_GAS = 150_000n;
+/** Gas for each further call in the wallet's own self-batch. */
+const KILL_SWITCH_EACH_GAS = 60_000n;
+/**
+ * Revoke-all moves the nonce twice: past every grant at the current nonce, and past a pack already signed for the next
+ * one (a budget whose rotation never landed), so nothing the wallet signed before can ever come alive.
+ */
+const KILL_SWITCH_STEPS = 2;
+/** Categories that name no venue: a send goes to a saved contact, not through a venue. */
+const VENUELESS: ReadonlySet<string> = new Set(["send"]);
+/** The ledger's venue for a send. */
+const SEND_VENUE = "transfer";
 
 /** Monday 00:00 UTC of the week `at` falls in. */
 export function weekStart(at: Date): Date {
@@ -65,7 +81,17 @@ export type BudgetView = {
   leftThisWeek: string;
   weekStartsAt: string;
   weekEndsAt: string;
+  /** The away pack signed with it (none until the Stage 3 screen signs one). */
+  away: AwaySummary;
+  /** Old any-recipient allowances still honoured on chain: the next budget signature turns them off. */
+  legacyAllowances: number;
 };
+
+/** What a chain step of saving answered (the old allowance's revoke, the nonce rotation): null when there was none. */
+export type ChainOutcome = { status: "confirmed" | "reverted" | "failed"; tx: string | null } | null;
+
+/** A request the wallet signs with the budget, and what it signed (relayed: a one-time delegation; else a transaction). */
+export type SignedRequest = { requestId: string; relayed: boolean; signed: Hex };
 
 export type LedgerRow = { id: string; intentId: string | null; category: string; venue: string; amountUsd: string; createdAt: string; counts: boolean };
 
@@ -84,12 +110,16 @@ const policyOf = (row: BudgetRow): BudgetPolicy => ({
 export type ProposedPolicy = { weeklyCap: string; perActionCap: string; categories: string[]; venues: string[] };
 
 export class BudgetService {
+  readonly away: AwayPacks;
+
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
     private readonly wallets: WalletService,
     private readonly log: Logger,
-  ) {}
+  ) {
+    this.away = new AwayPacks(db, chains);
+  }
 
   private chainId(network: NetworkId) {
     const clients = this.chains.get(network);
@@ -128,12 +158,17 @@ export class BudgetService {
     return BigInt(row?.total ?? "0");
   }
 
+  /** The old any-recipient allowances the chain still honours on this network (the Stage 3 budget turns them off). */
+  private legacyAllowances(userId: string, network: NetworkId) {
+    return this.wallets.unrevokedGrantIds(userId, network, { kind: "allowance" }).catch(() => [] as string[]);
+  }
+
   /** The budget, what is spent this week and what is left, or null when the person has none on this network. */
   async current(user: SessionUser, network: NetworkId = user.activeNetwork): Promise<BudgetView | null> {
     const row = await this.active(this.db, user.id, network);
     if (!row) return null;
     const now = new Date();
-    const spent = await this.spentThisWeek(this.db, user.id, network, now);
+    const [spent, away, legacy] = await Promise.all([this.spentThisWeek(this.db, user.id, network, now), this.away.summary(user.id, network), this.legacyAllowances(user.id, network)]);
     const left = row.weeklyCap > spent ? row.weeklyCap - spent : ZERO;
     return {
       network,
@@ -144,14 +179,18 @@ export class BudgetService {
       leftThisWeek: left.toString(),
       weekStartsAt: weekStart(now).toISOString(),
       weekEndsAt: weekEnd(now).toISOString(),
+      away,
+      legacyAllowances: legacy.length,
     };
   }
 
   /**
    * The typed data the wallet signs for a new budget: the person's numbers, their wallet, the next version. The phone
    * builds the same thing itself and compares before it signs (raising a limit is the phone's Face ID, lowering is not).
+   * With `pack`, the same approval also gets the away pack (for the wallet's next nonce), the nonce rotation that turns
+   * it on, and the revoke of any old any-recipient allowance.
    */
-  async proposal(user: SessionUser, input: ProposedPolicy, network: NetworkId = user.activeNetwork) {
+  async proposal(user: SessionUser, input: ProposedPolicy & { pack?: boolean | undefined }, network: NetworkId = user.activeNetwork) {
     const wallet = await this.wallet(user.id);
     const [latest] = await this.db
       .select({ version: budgets.version })
@@ -170,38 +209,76 @@ export class BudgetService {
       version: (latest?.version ?? 0) + 1,
     };
     if (!isSaneBudget(policy)) throw problem(HTTP.badRequest, "validation", "a budget needs a per-action cap above zero and within the week, and known categories");
-    return { policy: serializePolicy(policy), typedData: serializeTyped(budgetTypedData(policy)) };
+    const base = { policy: serializePolicy(policy), typedData: serializeTyped(budgetTypedData(policy)) };
+    if (!input.pack) return base;
+    const away: AwayProposal = await this.away.propose(user.id, network, policy);
+    const [rotation, allowanceRevoke] = await Promise.all([this.nonceRequest(user.id, network, 1), this.wallets.revokeGrantsRequest(user.id, await this.legacyAllowances(user.id, network))]);
+    return { ...base, away, rotation, allowanceRevoke };
   }
 
-  /** The wallet signed a budget: it must be this person's wallet and these exact terms. It replaces the one before. */
-  async save(user: SessionUser, input: { policy: ReturnType<typeof serializePolicy>; signature: Hex }, network: NetworkId = user.activeNetwork) {
+  /**
+   * The wallet signed a budget: it must be this person's wallet and these exact terms. It replaces the one before.
+   * With the away pack: every grant's signature is checked against the stored grant before anything is saved; then the
+   * old allowance's revoke and the nonce rotation go out, and the pack goes live once the chain shows the new nonce.
+   * A chain step that does not land leaves the budget signed (the phone's silent path works with it alone) and says so.
+   */
+  async save(
+    user: SessionUser,
+    input: {
+      policy: ReturnType<typeof serializePolicy>;
+      signature: Hex;
+      away?: { proposalId: string; signatures: { salt: string; signature: Hex }[] } | undefined;
+      rotation?: SignedRequest | undefined;
+      allowanceRevoke?: SignedRequest | undefined;
+    },
+    network: NetworkId = user.activeNetwork,
+  ) {
     const wallet = await this.wallet(user.id);
     const policy = parsePolicy(input.policy);
     if (policy.wallet.toLowerCase() !== wallet.toLowerCase() || policy.chainId !== this.chainId(network)) throw problem(HTTP.unprocessable, "signature_mismatch", "a budget for another wallet or network");
     if (!(await verifyBudget(policy, input.signature))) throw problem(HTTP.unprocessable, "signature_mismatch", "the budget's signature does not match its terms");
-    await this.db.transaction(async (tx) => {
+    const budgetId = await this.db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`budget:${user.id}:${network}`}, 0))`);
       const current = await this.active(tx, user.id, network);
       if (current && current.version >= policy.version) throw problem(HTTP.conflict, "intent_stale", "a newer budget is already signed");
       if (current) await tx.update(budgets).set({ endedAt: new Date() }).where(eq(budgets.id, current.id));
-      await tx.insert(budgets).values({
-        userId: user.id,
-        network,
-        chainId: policy.chainId,
-        wallet: policy.wallet.toLowerCase(),
-        weeklyCap: policy.weeklyCap,
-        perActionCap: policy.perActionCap,
-        categories: policy.categories,
-        venues: policy.venues,
-        issuedAt: policy.issuedAt,
-        version: policy.version,
-        signature: input.signature,
-        // A new budget keeps a pause the person set: only they lift it.
-        paused: current?.paused ?? false,
-      });
+      const [row] = await tx
+        .insert(budgets)
+        .values({
+          userId: user.id,
+          network,
+          chainId: policy.chainId,
+          wallet: policy.wallet.toLowerCase(),
+          weeklyCap: policy.weeklyCap,
+          perActionCap: policy.perActionCap,
+          categories: policy.categories,
+          venues: policy.venues,
+          issuedAt: policy.issuedAt,
+          version: policy.version,
+          signature: input.signature,
+          // A new budget keeps a pause the person set: only they lift it.
+          paused: current?.paused ?? false,
+        })
+        .returning({ id: budgets.id });
+      return row!.id;
     });
     this.log.info({ userId: user.id, network, version: policy.version }, "budget signed");
-    return this.current(user, network);
+    if (input.away) await this.away.sign(user.id, network, wallet, input.away.proposalId, input.away.signatures, budgetId);
+    const allowanceRevoke = input.allowanceRevoke ? await this.chainStep(user.id, "allowance revoke", () => this.wallets.submitSigned(user.id, input.allowanceRevoke!.requestId, input.allowanceRevoke!.signed)) : null;
+    const rotation = input.rotation ? await this.chainStep(user.id, "nonce rotation", () => this.submitKillSwitch(user, input.rotation!)) : null;
+    if (input.away || input.rotation) await this.away.settle(user.id, network, wallet).catch((error: unknown) => this.log.warn({ err: error, userId: user.id }, "away pack settle failed"));
+    return { budget: await this.current(user, network), allowanceRevoke, rotation };
+  }
+
+  /** One chain step of saving: its outcome, never a thrown error once the budget itself is saved. */
+  private async chainStep(userId: string, name: string, run: () => Promise<{ tx: Hex; status: string }>): Promise<ChainOutcome> {
+    try {
+      const sent = await run();
+      return { status: sent.status === "confirmed" ? "confirmed" : "reverted", tx: sent.tx };
+    } catch (error) {
+      this.log.warn({ err: error, userId }, `budget ${name} failed`);
+      return { status: "failed", tx: null };
+    }
   }
 
   /** Pause or resume silent actions. Pausing never asks; resuming only lets the agent act inside what was signed. */
@@ -222,37 +299,58 @@ export class BudgetService {
   }
 
   /**
-   * The kill-switch (D38): `NonceEnforcer.incrementNonce(DelegationManager)` from the wallet, which ends every grant and
-   * leaf it signed at the current nonce at once. Kawase stops acting silently first (the budget is paused, which never
-   * asks); then the wallet signs it with no Face ID (the phone's checkRevoke accepts exactly this call, nothing else).
-   * The relayer carries it when it can, so a wallet with no USDC can still pull the switch; otherwise the wallet sends
-   * it itself. The app posts the signature to /budget/kill-switch/submit.
+   * `incrementNonce` from the wallet, `times` times in one batch: relayed when the relayer can carry it (a wallet with
+   * no USDC can still pull the switch), else the wallet's own self-batch. The phone's checkRevoke accepts exactly this.
    */
-  async killSwitch(user: SessionUser, network: NetworkId = user.activeNetwork): Promise<RevokeRequest> {
+  private async nonceRequest(userId: string, network: NetworkId, times: number): Promise<RevokeRequest> {
     const clients = this.chains.get(network);
     if (!clients) throw problem(HTTP.unprocessable, "network_unavailable", `${network} is not available`);
-    await this.db
-      .update(budgets)
-      .set({ paused: true })
-      .where(and(eq(budgets.userId, user.id), eq(budgets.network, network), isNull(budgets.endedAt)));
-    const call = encodeIncrementNonce(clients.network);
+    const calls = Array.from({ length: times }, () => encodeIncrementNonce(clients.network));
     const relayed = (await relayerReady(clients))
-      ? await this.wallets.relayedBatchRequest(user.id, network, REVOKE_KIND, [call]).catch((error: unknown) => {
+      ? await this.wallets.relayedBatchRequest(userId, network, REVOKE_KIND, calls).catch((error: unknown) => {
           if (error instanceof ProblemError) return undefined;
           throw error;
         })
       : undefined;
-    this.log.info({ userId: user.id, network, relayed: Boolean(relayed) }, "budget kill-switch requested");
-    return relayed ?? ((await this.wallets.selfBatchRequest(user.id, network, REVOKE_KIND, [call], KILL_SWITCH_GAS)) as RevokeRequest);
+    return relayed ?? ((await this.wallets.selfBatchRequest(userId, network, REVOKE_KIND, calls, KILL_SWITCH_GAS + KILL_SWITCH_EACH_GAS * BigInt(times - 1))) as RevokeRequest);
+  }
+
+  /**
+   * Revoke all (D38, the exit kit): Kawase stops acting silently at once (the budget is paused, which never asks); then
+   * two requests the wallet signs with no Face ID, both only taking power away:
+   *  - the kill-switch: `incrementNonce` twice, ending every leaf and away-pack grant (and a pack signed for the next
+   *    nonce that never went live);
+   *  - `disableDelegation` of every older grant without the kill-switch (the any-recipient allowance, automations'
+   *    grants, the marketplace top-up), recorded by the wallet service as revoked when it lands.
+   * The app posts the first to /budget/kill-switch/submit and the second to /wallet's revoke submit.
+   */
+  async killSwitch(user: SessionUser, network: NetworkId = user.activeNetwork): Promise<RevokeRequest & { legacy?: RevokeRequest | null }> {
+    await this.db
+      .update(budgets)
+      .set({ paused: true })
+      .where(and(eq(budgets.userId, user.id), eq(budgets.network, network), isNull(budgets.endedAt)));
+    const revoke = await this.nonceRequest(user.id, network, KILL_SWITCH_STEPS);
+    const legacy = await this.wallets.revokeGrantsRequest(user.id, await this.wallets.unrevokedGrantIds(user.id, network)).catch((error: unknown) => {
+      this.log.warn({ err: error, userId: user.id }, "budget revoke-all: older grants' revoke unavailable");
+      return null;
+    });
+    this.log.info({ userId: user.id, network, relayed: "relayed" in revoke, legacy: Boolean(legacy) }, "budget kill-switch requested");
+    return { ...revoke, legacy };
   }
 
   /** The wallet signed the kill-switch: the relayer redeems its one-time delegation, or the signed transaction goes out. */
   async submitKillSwitch(user: SessionUser, input: { requestId: string; relayed: boolean; signed: Hex }) {
-    return input.relayed ? this.wallets.submitRelayedBatch(user.id, input.requestId, input.signed) : this.wallets.submitSigned(user.id, input.requestId, input.signed);
+    const sent = input.relayed ? await this.wallets.submitRelayedBatch(user.id, input.requestId, input.signed) : await this.wallets.submitSigned(user.id, input.requestId, input.signed);
+    return sent;
+  }
+
+  /** After a kill-switch landed: every pack is recorded revoked (the chain already refuses them). */
+  async afterKillSwitch(user: SessionUser, network: NetworkId = user.activeNetwork) {
+    await this.away.revokeAll(user.id, network);
   }
 
   /** Would this action be silent right now? */
-  async allows(executor: Executor, userId: string, network: NetworkId, action: BudgetAction): Promise<{ ok: true; budget: BudgetRow; left: bigint } | { ok: false; reason: BudgetRefusal }> {
+  async allows(executor: Executor, userId: string, network: NetworkId, action: BudgetAction, options: { anyVenue?: boolean } = {}): Promise<{ ok: true; budget: BudgetRow; left: bigint } | { ok: false; reason: BudgetRefusal }> {
     // The safety settings are read on the pool: they read in parallel, which a transaction's one connection cannot.
     const row = await this.active(executor, userId, network);
     const settings = await safetySettingsOf(this.db, userId, network);
@@ -263,7 +361,8 @@ export class BudgetService {
     if (settings.riskMode === "careful") return { ok: false, reason: "guard" };
     if (settings.practice) return { ok: false, reason: "practice" };
     if (!row.categories.includes(action.category)) return { ok: false, reason: "category_off" };
-    if (!row.venues.includes(action.venue.toLowerCase())) return { ok: false, reason: "venue_off" };
+    // A send has no venue: it is a transfer to a saved contact (the phone checks the contact and the exact transfer).
+    if (!options.anyVenue && !VENUELESS.has(action.category) && !row.venues.includes(action.venue.toLowerCase())) return { ok: false, reason: "venue_off" };
     if (action.amountUsd > row.perActionCap) return { ok: false, reason: "over_action_cap" };
     const spent = await this.spentThisWeek(executor, userId, network);
     if (spent + action.amountUsd > row.weeklyCap) return { ok: false, reason: "over_week" };
@@ -283,6 +382,22 @@ export class BudgetService {
       .values({ userId, network, budgetId: fits.budget.id, intentId: action.intentId, category: action.category, venue: action.venue.toLowerCase(), amountUsd: action.amountUsd })
       .onConflictDoNothing();
     return fits;
+  }
+
+  /**
+   * A send the phone signs with no prompt (inside the budget, to a saved contact): reserved against this week before
+   * the wallet signs, so the server's ledger (and the agent's summary) counts it like a swap's leaves. The intent must be
+   * this person's own open send on this network; its room comes back if the send fails (the ledger skips dead intents).
+   */
+  async reserveSend(user: SessionUser, input: { intentId: string; amountUsd: bigint }, network: NetworkId = user.activeNetwork) {
+    const [intent] = await this.db
+      .select({ id: intents.id, kind: intents.kind, network: intents.network, state: intents.state })
+      .from(intents)
+      .where(and(eq(intents.id, input.intentId), eq(intents.userId, user.id)));
+    if (!intent || intent.kind !== "send" || intent.network !== network) throw problem(HTTP.notFound, "not_found", "no such send");
+    if (intent.state !== "ready_for_approval") throw problem(HTTP.conflict, "intent_final");
+    const fits = await this.db.transaction((tx) => this.reserve(tx, user.id, network, { category: "send", venue: SEND_VENUE, amountUsd: input.amountUsd, intentId: intent.id }));
+    return fits.ok ? { ok: true as const, leftThisWeek: fits.left.toString() } : { ok: false as const, reason: fits.reason };
   }
 
   /** This week's ledger, newest first, with whether each row still counts. */
