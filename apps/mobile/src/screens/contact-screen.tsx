@@ -30,6 +30,7 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { Textarea } from "@kawase/ui-native/components/ui/textarea";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
+import { ContactChains } from "@/contacts/chain-addresses";
 import { ContactsHeader } from "@/contacts/screen-header";
 import { contactAddress, useContact, useSourceLabel } from "@/contacts/use-contacts";
 import { useT } from "@/i18n";
@@ -88,7 +89,7 @@ function VerifyAddress({ contact, network, onChanged }: { contact: Contact; netw
   const verifiedLabel = useVerifiedLabel();
   const [scanning, setScanning] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  const current = contact.addresses.find((entry) => entry.status === "active");
+  const current = contact.addresses.find((entry) => entry.status === "active" && (entry.chain ?? "arc") === "arc");
   const method = current?.trust[network]?.verifiedMethod ?? null;
   if (!current || contact.pendingChange) return null;
 
@@ -417,7 +418,8 @@ export function ContactScreen({ id }: { id: string | undefined }) {
   }
 
   const address = contactAddress(contact);
-  const versions = [...contact.addresses].sort((a, b) => b.version - a.version);
+  // The Arc address's history here; addresses on other chains are listed (with their own holds) by ContactChains.
+  const versions = contact.addresses.filter((entry) => (entry.chain ?? "arc") === "arc").sort((a, b) => b.version - a.version);
 
   return (
     <View className="bg-background flex-1">
@@ -500,6 +502,8 @@ export function ContactScreen({ id }: { id: string | undefined }) {
             <Text>{t("contacts.changeAddress")}</Text>
           </Button>
         </View>
+
+        <ContactChains contact={contact} onChanged={set} />
 
         <ListGroup label={t("contacts.addresses")}>
           {versions.map((version) => (

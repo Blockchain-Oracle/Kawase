@@ -170,7 +170,9 @@ export class Recipients {
     if (!text) return { facts: { status: "missing" }, view: null, suggestions: [] };
     const self = user.walletAddress?.toLowerCase();
     const arc = await this.contacts.addressBook(user.id);
-    const there = chain === "arc" ? [] : await this.contacts.addressBook(user.id, chain);
+    // Only a live address there (current, or waiting out its hold) speaks for the contact on that chain: one that was
+    // retired or blocked must not hide their Arc address.
+    const there = chain === "arc" ? [] : (await this.contacts.addressBook(user.id, chain)).filter((entry) => entry.status === "active" || entry.status === "pending_cooldown");
     const book = [...there, ...arc.filter((entry) => !there.some((onChain) => onChain.contactId === entry.contactId))];
 
     // A pasted or typed address.
