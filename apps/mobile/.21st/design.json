@@ -1114,6 +1114,71 @@
         "source": "Kawase state pattern (premium bar §2: what still works + one action), no 21st match for an inline status strip",
         "port": "apps/mobile/src/chat/agent-offline.tsx: AgentOffline + useAgentHealth",
         "status": "built (Stage 2)"
+      },
+      {
+        "name": "swap-ticket-s3",
+        "lane": "routes",
+        "id": 27122,
+        "author": "ssychui",
+        "ids": [
+          27122,
+          16251
+        ],
+        "source": "21st.dev ssychui/swap-ticket (27122) and starc007 'BeUI Multi-chain Swap' (16251) as the visual spec; 21st catalog search 2026-10-14 (metadata; code not retrieved: the native twin is composed from the Senryo kit)",
+        "port": "apps/mobile/src/screens/swap-screen.tsx + swap/{token-button,swap-review,swap-receipt}.tsx: two token plates with the flip, the kit AmountPad, the RouteList at review, TicketCta; desktop two columns with routes/live-race.tsx",
+        "deviations": "One hero figure (what comes back, RollingFigure); venues on the shared RouteList instead of a single 'best route' line; impact as a chip (amber / destructive surface, words always); slide to confirm (accent) instead of a button; quote age as the kit CountdownRing with auto-requote",
+        "status": "built (Stage 3)"
+      },
+      {
+        "name": "chain-grid",
+        "lane": "routes",
+        "id": 28351,
+        "author": "sean0205",
+        "source": "21st.dev sean0205 'Icon Card Radio Group' (28351); 21st catalog search 2026-10-14 (metadata; code not retrieved: the native twin is composed from the Senryo kit)",
+        "port": "apps/mobile/src/crosschain/chain-grid.tsx: tiles with the chain's real mark (packages/identity), name and, for Bring to Arc, what is waiting there",
+        "deviations": "Senryo fills, no borders except the accent ring on the selected tile (selected-row fill); only chains GET /bridges/destinations returns; designed loading (shaped tiles), error (strip with Retry) and empty states",
+        "status": "built (Stage 3)"
+      },
+      {
+        "name": "move-steps",
+        "lane": "routes",
+        "id": 29815,
+        "author": "sean0205",
+        "source": "21st.dev sean0205 'Vertical Titled Stepper' (29815), with the kit TxSteps grammar (23569); 21st catalog search 2026-10-14 (metadata; code not retrieved: the native twin is composed from the Senryo kit)",
+        "port": "apps/mobile/src/crosschain/move-steps.tsx: Signed → Sent from Arc → Filling on {chain} → Delivered under the move's TxCta plate",
+        "deviations": "Four steps (TxSteps has three fixed ones); vertical because the step names carry chain names; a broken step shows the destructive mark with its word; each new step is announced once",
+        "status": "built (Stage 3)"
+      },
+      {
+        "name": "route-receipts",
+        "lane": "routes",
+        "id": 9038,
+        "author": "kavikatiyar",
+        "source": "21st.dev kavikatiyar 'Order Confirmation Card' (9038) as the receipt's spec; 21st catalog search 2026-10-14 (metadata; code not retrieved: the native twin is composed from the Senryo kit)",
+        "port": "apps/mobile/src/swap/swap-receipt.tsx and crosschain/move-receipt.tsx: the TxMorph target of the swap and move CTAs",
+        "deviations": "What actually arrived (from the receipt, never the estimate), the venue/bridge with its real mark, explorer links for both chains; up-surface check badge; no illustration",
+        "status": "built (Stage 3)"
+      },
+      {
+        "name": "yield-routes",
+        "lane": "routes",
+        "ids": [
+          29368,
+          28337,
+          6955
+        ],
+        "source": "the RouteList (composed from 21st 29368 / 28337 / 6955) for yield",
+        "port": "apps/mobile/src/lend/yield-options.tsx: YieldRoutes (RouteList rows: rate as the figure, risk chip, size and curator behind the chevron) + 'Earn with {name}'",
+        "deviations": "Risk is a word on a quiet plate (up-surface for blue chip, warn-surface for advanced), never colour alone; LP campaigns Kawase does not deposit into are listed below with why",
+        "status": "built (Stage 3)"
+      },
+      {
+        "name": "contact-chains",
+        "lane": "routes",
+        "source": "no 21st match for per-chain contact addresses (searched 'contact address list': 7139, 5689, 8969 are contact forms); composed from the kit Panel, Button and Sheet",
+        "port": "apps/mobile/src/contacts/chain-addresses.tsx: a contact's addresses on other chains with their 24 h hold, 'Send on {chain}' through Move, and the add sheet",
+        "deviations": "—",
+        "status": "built (Stage 3)"
       }
     ],
     "ports": [
