@@ -26,6 +26,10 @@ const USDC_DECIMALS = 6;
 const CENTS = 2;
 const NO_LEVERAGE = 1;
 const AMOUNT_PATTERN = /^\d*(?:[.,]\d{0,6})?$/;
+const ZERO = 0n;
+/** One cent of USDC in base units (6 decimals): shares round down to it. */
+const CENT_UNITS = 10_000n;
+const PERCENT = 100;
 
 export type TargetStep = number | null;
 export type TradeTargets = { takeProfit: TargetStep; stopLoss: TargetStep };
@@ -101,7 +105,7 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
 
   const usdc = wallet?.networks.mainnet?.usdcBalance;
   const spendable = usdc !== undefined ? BigInt(usdc) - GAS_FLOAT_USDC_BASE_UNITS : undefined;
-  const available = spendable !== undefined && spendable > 0n ? Number(formatUnits(spendable, USDC_DECIMALS)) : spendable !== undefined ? 0 : undefined;
+  const available = spendable !== undefined && spendable > ZERO ? Number(formatUnits(spendable, USDC_DECIMALS)) : spendable !== undefined ? 0 : undefined;
   const marginValue = Number(normalise(amount) || "0");
   const signedIn = status === "account";
 
@@ -158,12 +162,17 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
     // Keyed on the request's content (`requestKey`), not on the object's identity.
   }, [requestKey, signedIn, pump]);
 
+  // Price the same inputs again (the ring ran out, or "Try again"): a fresh object, so the pump sends it once more.
+  const requestRef = React.useRef<MarginRequest | undefined>(undefined);
+  requestRef.current = request;
   const requote = React.useCallback(() => {
     const current = intentRef.current;
-    if (!current || !isMarginOpen(current) || running.current || controller.busy) return;
-    wanted.current = { ...(wanted.current ?? {}) };
+    const latest = requestRef.current;
+    if (!latest || !signedIn || running.current || controller.busy) return;
+    if (current && !isMarginOpen(current)) return;
+    wanted.current = { ...latest };
     void pump();
-  }, [controller.busy, pump]);
+  }, [controller.busy, pump, signedIn]);
 
   // The draft matches what the ticket shows only when it was drafted from these very inputs.
   const intent = controller.intent;
@@ -204,9 +213,9 @@ export function useTrade(markets: readonly MarginMarketView[] | undefined, prefi
     },
     /** A share of what the wallet can spend (¼ ½ ¾ All), in cents, rounded down. */
     setShare: (share: number) => {
-      if (spendable === undefined || spendable <= 0n) return;
-      const cents = (Number(formatUnits(spendable, USDC_DECIMALS)) * share).toFixed(USDC_DECIMALS);
-      setAmountText(String(Math.floor(Number(cents) * 10 ** CENTS) / 10 ** CENTS));
+      if (spendable === undefined || spendable <= ZERO) return;
+      const part = (spendable * BigInt(Math.round(share * PERCENT))) / BigInt(PERCENT);
+      setAmountText(formatUnits(part - (part % CENT_UNITS), USDC_DECIMALS));
     },
     available,
     marginValue,

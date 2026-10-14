@@ -15,7 +15,7 @@ export const isMarginFinished = isIntentFinished;
 
 export type MarginController = WalletIntentController<MarginIntent, MarginRequest>;
 
-export const POSITIONS_REFRESH_MS = 15_000;
+const POSITIONS_REFRESH_MS = 15_000;
 
 export function useMarginOrder(initial?: MarginIntent | undefined): MarginController {
   const { t } = useT();
@@ -56,7 +56,6 @@ export function useMarginPositions() {
   const network = user?.activeNetwork ?? "testnet";
   const [positions, setPositions] = React.useState<MarginPositionView[]>();
   const [failed, setFailed] = React.useState(false);
-  const [readAt, setReadAt] = React.useState<number>();
   const load = React.useCallback(async () => {
     if (status !== "account") {
       setPositions([]);
@@ -65,7 +64,6 @@ export function useMarginPositions() {
     try {
       setPositions((await api.margin.positions()).positions);
       setFailed(false);
-      setReadAt(Date.now());
     } catch {
       // The last good list stays (marked stale by `failed`); the next refresh tries again.
       setFailed(true);
@@ -76,5 +74,5 @@ export function useMarginPositions() {
     const timer = setInterval(() => void load(), POSITIONS_REFRESH_MS);
     return () => clearInterval(timer);
   }, [load, network]);
-  return { positions, failed, readAt, refresh: load };
+  return { positions, failed, refresh: load };
 }
