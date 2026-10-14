@@ -1,46 +1,47 @@
-// Withdraw (money-out.md "Withdraw (any asset, anywhere)", G7; surfaces.md Withdraw): what (one asset, several, or
-// everything — each as itself or as cash), where (My places, an exchange by its logo, my other wallet, my bank via
-// an exchange), the route per asset as lines the api plans (transfer / bridge / convert first, what arrives, why a
-// line cannot go), then slide → Face ID once → the tracker (21st Process Timeline) → the receipt. The destination is
-// saved to My places when it worked, so the next withdrawal is a tap.
+// Withdraw (money-out.md "Withdraw (any asset, anywhere)", G7; surfaces.md Withdraw), on the Senryo kit: what (one
+// asset, several, or everything, each as itself or as cash), where (My places, an exchange by its logo, my other
+// wallet, my bank via an exchange), the route per asset as lines the api plans (transfer / bridge / convert first, what
+// arrives, why a line cannot go), then the slide → Face ID once → the tracker → the receipt. A first-time destination
+// gets a small test first. The destination is saved to My places when it worked, so the next withdrawal is a tap. The
+// exit kit (pause, revoke every permission, withdraw everything) sits under it, one place to leave from.
+// Phone: one column. Desktop: two columns, what and where (and the exit kit) on the stage, the ticket beside them
+// (the total as the one hero, the test, the slide, then the tracker and the receipt in place).
+// States: guests sign in; the plan is a named wait while it is drawn; a failed plan says what still works with Retry;
+// a stopped withdrawal says whether money moved and offers "Finish it" (nothing is re-sent on its own).
 import { useRouter } from "expo-router";
-import { ArrowRight, ChevronLeft, ExternalLink, Layers, Plus, X } from "lucide-react-native";
+import { Plus } from "lucide-react-native";
 import * as React from "react";
-import { Linking, Pressable, ScrollView, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { toast } from "sonner-native";
 
 import type { ExchangeView, PlaceView, WithdrawalStepView, WithdrawAssetInput, WithdrawLegView, WithdrawPlanInput, WithdrawPlanView } from "@kawase/api-client";
 import { WITHDRAW_TEST_AMOUNT } from "@kawase/config";
-import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
-import { ProcessTimeline, type TimelineStep } from "@kawase/ui-native/components/process-timeline";
-import { ReceiptCard } from "@kawase/ui-native/components/receipt-card";
-import { SlideToConfirm } from "@kawase/ui-native/components/slide-to-confirm";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
-import { Button } from "@kawase/ui-native/components/ui/button";
-import { Icon } from "@kawase/ui-native/components/ui/icon";
-import { Text } from "@kawase/ui-native/components/ui/text";
-import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { confirmedFeedback } from "@/feedback/feedback";
+import { BlockedCta, TxFailureCard } from "@/components/tx";
+import { Button, EmptyState, ErrorState, Icon, KeyValue, LoadingState, Panel, RADIUS, SectionLabel, Segmented, SIZE, SlideToConfirm, SPACE, TYPE, useTheme, WaitingText } from "@/components/kit";
+import { ArrowUpRight, X } from "@/components/kit/icons";
+import { fire } from "@/feedback/fire";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
-import { slideHaptic } from "@/margin/haptics";
 import { AssetPickerSheet } from "@/portfolio/asset-picker-sheet";
 import { money as fiat, tokenAmount, USD_FX } from "@/portfolio/format";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useThemeColors } from "@/theme/use-theme-colors";
+import { LiveNumber, Note, RealMoney } from "@/trade/bits";
+import { openExplorer } from "@/trade/intent-cta";
+import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
 import { useDestinationName, useLegRoute, useStepProblem, useStepTitle, useWithdrawReason } from "@/withdraw/copy";
 import { DestinationPicker, type DestinationInput } from "@/withdraw/destination-picker";
+import { ExitKit } from "@/withdraw/exit-kit";
+import { WithdrawTracker, type TrackStep } from "@/withdraw/tracker";
 import { useWithdrawRun } from "@/withdraw/use-withdraw-run";
 
-const STRIP_INSET = 6;
-const EDGE_INSET = 12;
-const FOOTER_GAP = 32;
 const LINE_MARK = 36;
+const HERO_H = 44;
 const PLAN_DEBOUNCE_MS = 350;
 const DECIMAL = /^\d*\.?\d*$/;
 const USDC_DECIMALS = 6;
@@ -52,12 +53,15 @@ type Line = { asset: string; amount: string | null; as: "itself" | "cash" | null
 const sameLines = (a: Line[], b: Line[]) => JSON.stringify(a) === JSON.stringify(b);
 const linesFromPlan = (plan: WithdrawPlanView): Line[] => plan.legs.map((leg) => ({ asset: leg.token.address, amount: leg.max ? null : leg.amountText, as: leg.as }));
 
+/** No browser focus box on a bare field: its plate carries focus. */
+const WEB_FIELD = { outlineStyle: "none" } as unknown as object;
+
 export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   const { t } = useT();
+  const { color } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const colors = useThemeColors();
-  const { locale, rtl } = useLocale();
+  const wide = useWide();
+  const { locale } = useLocale();
   const { status, user } = useSession();
   const signIn = useSignIn();
   const { portfolio } = usePortfolio();
@@ -76,6 +80,8 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   const [destination, setDestination] = React.useState<DestinationInput>(prefill.destination);
   const [plan, setPlan] = React.useState<WithdrawPlanView>();
   const [planning, setPlanning] = React.useState(false);
+  const [planFailed, setPlanFailed] = React.useState(false);
+  const [attempt, setAttempt] = React.useState(0);
   const [places, setPlaces] = React.useState<PlaceView[]>([]);
   const [exchanges, setExchanges] = React.useState<ExchangeView[]>([]);
   const [chains, setChains] = React.useState<{ key: string; name: string; chainId: number | null }[]>([]);
@@ -84,9 +90,19 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
 
   // The tables (public) and My places (the person's own), per network.
   React.useEffect(() => {
-    void api.withdrawals.exchanges().then((result) => setExchanges(result.exchanges)).catch(() => undefined);
-    void api.withdrawals.chains().then((result) => setChains(result.chains)).catch(() => undefined);
-    if (account) void api.places.list().then((result) => setPlaces(result.places)).catch(() => undefined);
+    void api.withdrawals
+      .exchanges()
+      .then((result) => setExchanges(result.exchanges))
+      .catch(() => undefined);
+    void api.withdrawals
+      .chains()
+      .then((result) => setChains(result.chains))
+      .catch(() => undefined);
+    if (account)
+      void api.places
+        .list()
+        .then((result) => setPlaces(result.places))
+        .catch(() => undefined);
   }, [account, network]);
 
   const input: WithdrawPlanInput = React.useMemo(
@@ -112,6 +128,7 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
         .then(({ plan: next }) => {
           if (run !== planRun.current) return;
           setPlan(next);
+          setPlanFailed(false);
           // "Everything" becomes the lines it chose, so each can be edited or removed.
           if (everything) {
             const chosen = linesFromPlan(next);
@@ -119,11 +136,11 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
             setLines((current) => (sameLines(current, chosen) ? current : chosen));
           }
         })
-        .catch(() => run === planRun.current && toast(t("withdraw.planFailed")))
+        .catch(() => run === planRun.current && setPlanFailed(true))
         .finally(() => run === planRun.current && setPlanning(false));
     }, PLAN_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [account, everything, input, network, t]);
+  }, [account, everything, input, network, attempt]);
 
   const where = destination.place || destination.exchange || destination.chain ? destinationName(plan?.destination) : "";
   const run = useWithdrawRun();
@@ -158,7 +175,6 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
     setTesting(false);
     const outcome = await run.start(input, t("withdraw.faceId", { count: legs.length, to: where }), t("common.cancel"));
     said(outcome);
-    if (outcome === "done") void confirmedFeedback(`withdraw:${plan.legs.map((leg) => leg.token.address).join(",")}:${Date.now()}`);
   };
   /** A first-time destination: a small USDC test goes first (money-out.md "What if"), then the rest. */
   const sendTest = async () => {
@@ -181,6 +197,11 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
 
   const record = run.withdrawal;
   const recordName = record ? destinationName(record.destination) : where;
+  // The money cue once per finished withdrawal (its id keeps a remount from replaying it).
+  React.useEffect(() => {
+    if (run.phase === "done" && record) fire("filled", { sound: "send", identity: `withdraw:${record.id}` });
+    if (run.phase === "stopped" && record) fire("fail", { sound: "error", identity: `withdraw:${record.id}:stopped` });
+  }, [record, run.phase]);
   const stepAmount = (step: WithdrawalStepView) => {
     const units = step.moved ?? step.amount;
     return units === null ? step.token.symbol : tokenAmount(units, step.token.decimals, step.token.symbol, locale);
@@ -188,7 +209,7 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
   const chainName = record?.destination.chain.name ?? plan?.destination?.chain.name ?? "";
   // Steps signed together (one transaction on Arc): said once under the tracker.
   const batchedCount = (record?.steps ?? []).filter((step) => step.batched).length;
-  const timeline: TimelineStep[] = (record?.steps ?? []).map((step) => ({
+  const track: TrackStep[] = (record?.steps ?? []).map((step) => ({
     id: step.id,
     title: stepTitle(step, stepAmount(step), recordName, chainName),
     description:
@@ -200,181 +221,205 @@ export function WithdrawScreen({ prefill }: { prefill: WithdrawPrefill }) {
             ? t("withdraw.converted", { amount: tokenAmount(step.received, USDC_DECIMALS, "USDC", locale) })
             : undefined,
     state: step.state,
-    trailing: step.explorerUrl ? (
-      <Pressable accessibilityRole="link" accessibilityLabel={t("withdraw.viewTx")} hitSlop={10} onPress={() => void Linking.openURL(step.fillUrl ?? step.explorerUrl!)}>
-        <Icon as={ExternalLink} className="text-muted-foreground size-4" />
-      </Pressable>
-    ) : undefined,
+    explorerUrl: step.fillUrl ?? step.explorerUrl,
   }));
+  const moved = (record?.steps ?? []).some((step) => step.state === "done");
+
+  if (!account) {
+    return (
+      <View style={styles.page}>
+        <PageHeader title={t("withdraw.title")} onBack={leave} />
+        <View style={styles.plain}>
+          <EmptyState size="page" icon={ArrowUpRight} why={t("withdraw.signInTitle")} detail={t("withdraw.signInBody")} action={{ label: t("signIn.title"), onPress: () => signIn.open() }} />
+        </View>
+      </View>
+    );
+  }
+
+  // The run: the tracker, then Finish it, the test's result, or the receipt.
+  const runView = started ? (
+    <View style={styles.group}>
+      <View style={styles.hero}>
+        <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{testing ? t("withdraw.testTo") : t("withdraw.toLabel")}</Text>
+        <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{recordName}</Text>
+      </View>
+      {run.phase === "confirming" ? <WaitingText timeoutMs={null}>{t("desktop.confirming")}</WaitingText> : null}
+      {track.length > 0 ? <WithdrawTracker steps={track} onOpen={openExplorer} /> : null}
+      {batchedCount > 1 ? <Note tone="quiet">{t("withdraw.oneTransaction", { count: batchedCount })}</Note> : null}
+      {run.phase === "stopped" && record ? (
+        <>
+          <TxFailureCard state={{ kind: "failed", diagnosis: { kind: "unknown", retryable: false, technical: record.status }, moneyMoved: moved ? "yes" : "no", txHash: null }} />
+          <Button label={t("withdraw.finishIt")} onPress={() => void finish()} />
+        </>
+      ) : null}
+      {run.phase === "done" && testing ? (
+        <Panel style={styles.panel}>
+          <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{t("withdraw.testDoneTitle")}</Text>
+          <Text style={[TYPE.body, { color: color.text2 }]}>{t("withdraw.testDoneBody", { to: recordName })}</Text>
+          <Button label={t("withdraw.testContinue")} onPress={afterTest} />
+        </Panel>
+      ) : null}
+      {run.phase === "done" && !testing ? (
+        <Panel style={styles.panel}>
+          <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{t("withdraw.doneTitle")}</Text>
+          <KeyValue label={t("withdraw.toLabel")} value={recordName} />
+          {(record?.steps ?? []).map((step) => (
+            <KeyValue key={step.id} label={stepTitle(step, stepAmount(step), recordName, chainName)} value={t("withdraw.stepDone")} />
+          ))}
+          {record?.totalUsd ? <KeyValue label={t("withdraw.total")} value={fiat(record.totalUsd, fx, locale)} /> : null}
+          <Button label={t("common.done")} onPress={leave} />
+        </Panel>
+      ) : null}
+    </View>
+  ) : null;
+
+  // What stops the slide, as one blocker with its fix (or the named wait while the plan is drawn).
+  const blocker = planning
+    ? { label: t("desktop.planning"), busy: true }
+    : planFailed
+      ? { label: t("common.retry"), reason: t("withdraw.planFailed"), fix: { kind: "retry" as const } }
+      : legs.length === 0
+        ? { label: t("desktop.withdrawWhat") }
+        : !plan?.destination?.address
+          ? { label: t("desktop.withdrawWhere") }
+          : blockedLine
+            ? { label: t("withdraw.removeBlocked") }
+            : plan?.blocking && plan.blocking !== "no_destination"
+              ? { label: reasonText(plan.blocking, { exchange: plan.destination?.exchange?.name, chain: plan.destination?.chain.name }) }
+              : null;
+
+  const ticket = runView ?? (
+    <View style={styles.group}>
+      {!testnet ? <RealMoney /> : null}
+      <View style={styles.hero}>
+        <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{where ? t("desktop.withdrawTotalTo", { to: where }) : t("withdraw.total")}</Text>
+        {plan?.totalUsd ? <LiveNumber text={fiat(plan.totalUsd, fx, locale)} value={plan.totalUsd} height={HERO_H} /> : <Text style={[TYPE.displayBalance, { color: color.text3 }]}>{fiat(0, fx, locale)}</Text>}
+      </View>
+      {ready && plan?.destination?.firstTime ? (
+        <Panel style={styles.panel}>
+          <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t("withdraw.firstTimeTitle")}</Text>
+          <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("withdraw.firstTimeBody", { amount: testAmount })}</Text>
+          <Button label={t("withdraw.sendTest", { amount: testAmount })} variant="secondary" onPress={() => void sendTest()} />
+        </Panel>
+      ) : null}
+      {blocker ? (
+        <BlockedCta blocker={blocker} {...(planFailed ? { onFix: () => setAttempt((value) => value + 1), fixLabel: t("common.retry") } : {})} />
+      ) : (
+        <SlideToConfirm label={t("withdraw.slide")} tone="primary" resetKey={JSON.stringify(input)} onConfirm={() => void confirm()} />
+      )}
+      <Note tone="quiet">{t("withdraw.faceIdNote")}</Note>
+    </View>
+  );
+
+  const what = (
+    <View style={styles.group}>
+      <View style={styles.line}>
+        <SectionLabel style={styles.grow}>{t("withdraw.what")}</SectionLabel>
+        <Button label={t("withdraw.everything")} variant="secondary" size="sm" block={false} onPress={() => setEverything(true)} />
+        <Button label={t("withdraw.add")} variant="secondary" size="sm" block={false} leading={<Icon icon={Plus} size={SIZE.iconSm} />} onPress={() => setPicking(true)} />
+      </View>
+      {legs.length === 0 ? (
+        planning ? (
+          <LoadingState shape="row" />
+        ) : planFailed ? (
+          <ErrorState diagnosis={{ kind: "server", retryable: true }} retry={() => setAttempt((value) => value + 1)} stillWorks={t("withdraw.planFailed")} />
+        ) : (
+          <EmptyState why={t("withdraw.nothingChosen")} action={{ label: t("withdraw.everything"), onPress: () => setEverything(true) }} secondary={{ label: t("withdraw.add"), onPress: () => setPicking(true) }} size="inline" />
+        )
+      ) : (
+        legs.map((leg) => (
+          <LegRow
+            key={leg.token.address}
+            leg={leg}
+            amount={lines.find(lineOf(leg))?.amount ?? null}
+            route={legRoute(leg)}
+            reason={leg.reason ? reasonText(leg.reason, { exchange: plan?.destination?.exchange?.name, symbol: leg.token.symbol, chain: leg.receive.chain, network: plan?.destination?.exchange?.networkLabel }) : undefined}
+            value={leg.valueUsd !== null ? fiat(leg.valueUsd, fx, locale) : undefined}
+            locale={locale}
+            onAmount={(text) => setLine(leg, { amount: text === "" ? null : text })}
+            onAs={(as) => setLine(leg, { as })}
+            onRemove={() => removeLine(leg)}
+            // To the person's own wallet on another chain, on mainnet: the cross-chain routes take it as itself.
+            onMove={
+              !testnet && plan?.destination?.address && plan.destination.chain.key !== "arc" && !plan.destination.exchange
+                ? () =>
+                    router.push({
+                      pathname: "/move",
+                      params: { direction: "out", chain: plan.destination!.chain.key, asset: leg.token.address, amount: leg.amountText, recipient: plan.destination!.address! },
+                    })
+                : undefined
+            }
+          />
+        ))
+      )}
+    </View>
+  );
+
+  const whereView = (
+    <View style={styles.group}>
+      <SectionLabel>{t("withdraw.where")}</SectionLabel>
+      <DestinationPicker
+        network={network}
+        value={destination}
+        onChange={setDestination}
+        places={places}
+        exchanges={exchanges}
+        chains={chains}
+        chosen={plan?.destination}
+        onForget={(place) => {
+          setPlaces((current) => current.filter((entry) => entry.id !== place.id));
+          void api.places.remove(place.id).catch(() => undefined);
+        }}
+      />
+    </View>
+  );
+
+  const exitKit = <ExitKit onEverything={() => setEverything(true)} />;
+  const picker = (
+    <AssetPickerSheet
+      open={picking}
+      onClose={() => setPicking(false)}
+      title={t("withdraw.addAsset")}
+      mode="held"
+      onSelect={({ token }) => {
+        setPicking(false);
+        setLines((current) => {
+          const base = everything && plan ? linesFromPlan(plan) : current;
+          return base.some((line) => line.asset.toLowerCase() === token.address.toLowerCase()) ? base : [...base, { asset: token.address, amount: null, as: null }];
+        });
+        setEverything(false);
+      }}
+      unavailable={(token) => (token.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
+    />
+  );
 
   return (
-    <View className="bg-background flex-1">
-      {testnet ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
-      <View className="flex-row items-center gap-3 px-5" style={{ paddingTop: testnet ? EDGE_INSET : insets.top + EDGE_INSET }}>
-        <Button variant="secondary" size="icon" accessibilityLabel={t("common.back")} className="size-11" onPress={leave}>
-          <Icon as={ChevronLeft} className="size-5 rtl:-scale-x-100" />
-        </Button>
-        <Text accessibilityRole="header" className="font-display text-foreground text-2xl font-bold">
-          {t("withdraw.title")}
-        </Text>
-      </View>
-      <ScrollView className="flex-1" contentContainerClassName="gap-6 px-5 pt-4" contentContainerStyle={{ paddingBottom: insets.bottom + FOOTER_GAP }} keyboardShouldPersistTaps="handled">
-        {!account ? (
-          <View className="bg-card border-border gap-3 rounded-3xl border p-5">
-            <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("withdraw.signInTitle")}</Text>
-            <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.signInBody")}</Text>
-            <Button onPress={() => signIn.open()}>
-              <Text>{t("signIn.title")}</Text>
-            </Button>
-          </View>
-        ) : started ? (
-          <View className="gap-5">
-            <View className="gap-1">
-              <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{testing ? t("withdraw.testTo") : t("withdraw.toLabel")}</Text>
-              <Text className={cn("text-foreground text-xl font-semibold", TEXT_START)}>{recordName}</Text>
-            </View>
-            <ProcessTimeline steps={timeline} spinnerColor={colors.foreground} />
-            {batchedCount > 1 ? (
-              <View className="bg-muted flex-row items-center gap-2 rounded-2xl px-4 py-3">
-                <Icon as={Layers} className="text-muted-foreground size-4" />
-                <Text className={cn("text-muted-foreground flex-1 text-sm leading-5", TEXT_START)}>{t("withdraw.oneTransaction", { count: batchedCount })}</Text>
-              </View>
-            ) : null}
-            {run.phase === "stopped" && record ? (
-              <Button onPress={() => void finish()}>
-                <Text>{t("withdraw.finishIt")}</Text>
-              </Button>
-            ) : null}
-            {run.phase === "done" && testing ? (
-              <View className="bg-card border-border gap-3 rounded-3xl border p-4">
-                <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{t("withdraw.testDoneTitle")}</Text>
-                <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.testDoneBody", { to: recordName })}</Text>
-                <Button onPress={afterTest}>
-                  <Text>{t("withdraw.testContinue")}</Text>
-                </Button>
-              </View>
-            ) : null}
-            {run.phase === "done" && !testing ? (
-              <ReceiptCard
-                title={t("withdraw.doneTitle")}
-                badge={testnet ? t("network.arcTestnet") : t("network.arc")}
-                details={[
-                  { label: t("withdraw.toLabel"), value: recordName, isBold: true },
-                  ...(record?.steps ?? []).map((step) => ({ label: stepTitle(step, stepAmount(step), recordName, chainName), value: t("withdraw.stepDone") })),
-                  ...(record?.totalUsd ? [{ label: t("withdraw.total"), value: fiat(record.totalUsd, fx, locale), isBold: true }] : []),
-                ]}
-                buttonText={t("common.done")}
-                onAction={leave}
-              />
-            ) : null}
-          </View>
-        ) : (
-          <>
-            <View className="gap-3">
-              <View className="flex-row items-center justify-between">
-                <Text className={cn("text-foreground text-lg font-semibold", TEXT_START)}>{t("withdraw.what")}</Text>
-                <View className="flex-row gap-2">
-                  <Button variant="secondary" size="sm" onPress={() => setEverything(true)}>
-                    <Text>{t("withdraw.everything")}</Text>
-                  </Button>
-                  <Button variant="secondary" size="sm" accessibilityLabel={t("withdraw.addAsset")} onPress={() => setPicking(true)}>
-                    <Icon as={Plus} className="size-4" />
-                    <Text>{t("withdraw.add")}</Text>
-                  </Button>
-                </View>
-              </View>
-              {legs.length === 0 ? (
-                <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{planning ? t("common.loading") : t("withdraw.nothingChosen")}</Text>
-              ) : (
-                legs.map((leg) => (
-                  <LegRow
-                    key={leg.token.address}
-                    leg={leg}
-                    amount={lines.find(lineOf(leg))?.amount ?? null}
-                    route={legRoute(leg)}
-                    reason={leg.reason ? reasonText(leg.reason, { exchange: plan?.destination?.exchange?.name, symbol: leg.token.symbol, chain: leg.receive.chain, network: plan?.destination?.exchange?.networkLabel }) : undefined}
-                    value={leg.valueUsd !== null ? fiat(leg.valueUsd, fx, locale) : undefined}
-                    locale={locale}
-                    onAmount={(text) => setLine(leg, { amount: text === "" ? null : text })}
-                    onAs={(as) => setLine(leg, { as })}
-                    onRemove={() => removeLine(leg)}
-                    // To the person's own wallet on another chain, on mainnet: the cross-chain routes take it as itself.
-                    onMove={
-                      !testnet && plan?.destination?.address && plan.destination.chain.key !== "arc" && !plan.destination.exchange
-                        ? () =>
-                            router.push({
-                              pathname: "/move",
-                              params: { direction: "out", chain: plan.destination!.chain.key, asset: leg.token.address, amount: leg.amountText, recipient: plan.destination!.address! },
-                            })
-                        : undefined
-                    }
-                  />
-                ))
-              )}
-            </View>
-
-            <View className="gap-3">
-              <Text className={cn("text-foreground text-lg font-semibold", TEXT_START)}>{t("withdraw.where")}</Text>
-              <DestinationPicker
-                network={network}
-                value={destination}
-                onChange={setDestination}
-                places={places}
-                exchanges={exchanges}
-                chains={chains}
-                chosen={plan?.destination}
-                onForget={(place) => {
-                  setPlaces((current) => current.filter((entry) => entry.id !== place.id));
-                  void api.places.remove(place.id).catch(() => undefined);
-                }}
-              />
-              {plan?.blocking && plan.blocking !== "no_destination" ? (
-                <Text className={cn("text-destructive text-sm leading-5", TEXT_START)}>{reasonText(plan.blocking, { exchange: plan.destination?.exchange?.name, chain: plan.destination?.chain.name })}</Text>
-              ) : null}
-            </View>
-
-            {legs.length > 0 ? (
-              <View className="gap-3">
-                {plan?.totalUsd ? (
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-muted-foreground text-sm">{t("withdraw.total")}</Text>
-                    <Text className="text-foreground font-display text-lg font-bold">{fiat(plan.totalUsd, fx, locale)}</Text>
-                  </View>
-                ) : null}
-                {blockedLine ? <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("withdraw.removeBlocked")}</Text> : null}
-                {ready && plan?.destination?.firstTime ? (
-                  <View className="bg-muted gap-2 rounded-3xl p-4">
-                    <Text className={cn("text-foreground text-sm font-semibold", TEXT_START)}>{t("withdraw.firstTimeTitle")}</Text>
-                    <Text className={cn("text-muted-foreground text-sm leading-5", TEXT_START)}>{t("withdraw.firstTimeBody", { amount: testAmount })}</Text>
-                    <Button variant="secondary" onPress={() => void sendTest()}>
-                      <Text>{t("withdraw.sendTest", { amount: testAmount })}</Text>
-                    </Button>
-                  </View>
-                ) : null}
-                <SlideToConfirm disabled={!ready || planning} resetKey={JSON.stringify(input)} pendingLabel={t("withdraw.sending")} rtl={rtl} onHaptic={slideHaptic} onConfirm={() => void confirm()}>
-                  {t("withdraw.slide")}
-                </SlideToConfirm>
-                <Text className={cn("text-muted-foreground text-xs leading-4", TEXT_START)}>{t("withdraw.faceIdNote")}</Text>
-              </View>
-            ) : null}
-          </>
-        )}
-      </ScrollView>
-      <AssetPickerSheet
-        open={picking}
-        onClose={() => setPicking(false)}
-        title={t("withdraw.addAsset")}
-        mode="held"
-        onSelect={({ token }) => {
-          setPicking(false);
-          setLines((current) => {
-            const base = everything && plan ? linesFromPlan(plan) : current;
-            return base.some((line) => line.asset.toLowerCase() === token.address.toLowerCase()) ? base : [...base, { asset: token.address, amount: null, as: null }];
-          });
-          setEverything(false);
-        }}
-        unavailable={(token) => (token.kind === "permissioned" ? t("tokenPage.n_permissioned") : undefined)}
-      />
+    <View style={styles.page}>
+      <PageHeader title={t("withdraw.title")} onBack={leave} />
+      {wide ? (
+        <Columns
+          stage={
+            <>
+              {what}
+              {whereView}
+              {exitKit}
+            </>
+          }
+          ticket={ticket}
+        />
+      ) : (
+        <PhoneScroll>
+          {runView ?? (
+            <>
+              {what}
+              {whereView}
+              {ticket}
+              {exitKit}
+            </>
+          )}
+        </PhoneScroll>
+      )}
+      {picker}
     </View>
   );
 }
@@ -393,19 +438,19 @@ type LegRowProps = {
   onMove?: (() => void) | undefined;
 };
 
-/** One asset's line (21st Asset Card row): mark, amount (Max by default), as itself / as cash, the route, the reason. */
+/** One asset's line (21st ravikatiyar162 "Asset Card" 7945): mark, amount (Max by default), as itself or as cash, the route, why. */
 function LegRow({ leg, amount, route, reason, value, locale, onAmount, onAs, onRemove, onMove }: LegRowProps) {
   const { t } = useT();
-  const colors = useThemeColors();
+  const { color } = useTheme();
   const cashable = leg.canGoAsCash || leg.as === "cash";
   const offerCash = leg.canGoAsCash && (leg.reason === "convert_first" || leg.reason === "exchange_not_accepted");
   return (
-    <View className={cn("bg-card gap-3 rounded-3xl border p-4", leg.status === "blocked" ? "border-destructive/50" : leg.status === "warning" ? "border-warning/60" : "border-border")}>
-      <View className="flex-row items-center gap-3">
+    <Panel style={[styles.panel, leg.status === "blocked" ? { backgroundColor: color.destructiveWash } : leg.status === "warning" ? { backgroundColor: color.warnWash } : null]}>
+      <View style={styles.line}>
         <TokenMark token={leg.token} size={LINE_MARK} />
-        <View className="min-w-0 flex-1">
-          <Text className={cn("text-foreground text-base font-semibold", TEXT_START)}>{leg.token.symbol}</Text>
-          <Text className={cn("text-muted-foreground text-xs", TEXT_START)}>{t("withdraw.held", { amount: tokenAmount(leg.balance, leg.token.decimals, leg.token.symbol, locale) })}</Text>
+        <View style={styles.grow}>
+          <Text style={[TYPE.rowStrong, { color: color.ink }]}>{leg.token.symbol}</Text>
+          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("withdraw.held", { amount: tokenAmount(leg.balance, leg.token.decimals, leg.token.symbol, locale) })}</Text>
         </View>
         <TextInput
           accessibilityLabel={t("withdraw.amountOf", { symbol: leg.token.symbol })}
@@ -415,52 +460,45 @@ function LegRow({ leg, amount, route, reason, value, locale, onAmount, onAs, onR
             if (DECIMAL.test(next)) onAmount(next);
           }}
           keyboardType="decimal-pad"
+          inputMode="decimal"
           placeholder={t("withdraw.max")}
-          placeholderTextColor={colors["muted-foreground"]}
-          className="border-border min-w-20 rounded-xl border px-3 py-2 text-end font-mono text-base"
-          style={{ color: colors.foreground }}
+          placeholderTextColor={color.text3}
+          style={[TYPE.rowAmount, styles.amount, { color: color.ink, backgroundColor: color.input }, Platform.OS === "web" ? WEB_FIELD : null]}
         />
-        <Pressable accessibilityRole="button" accessibilityLabel={t("withdraw.removeLine", { symbol: leg.token.symbol })} hitSlop={10} onPress={onRemove}>
-          <Icon as={X} className="text-muted-foreground size-4" />
+        <Pressable accessibilityRole="button" accessibilityLabel={t("withdraw.removeLine", { symbol: leg.token.symbol })} hitSlop={SPACE.md} onPress={onRemove}>
+          <Icon icon={X} size={SIZE.iconSm} tint={color.text3} />
         </Pressable>
       </View>
       {cashable ? (
-        <View accessibilityRole="radiogroup" className="bg-muted flex-row rounded-full p-1">
-          {(["itself", "cash"] as const).map((option) => (
-            <Pressable
-              key={option}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: leg.as === option }}
-              onPress={() => onAs(option)}
-              className={cn("flex-1 items-center rounded-full py-1.5", leg.as === option && "bg-background")}
-            >
-              <Text className={cn("text-sm font-semibold", leg.as === option ? "text-foreground" : "text-muted-foreground")}>{option === "itself" ? t("withdraw.asItself", { symbol: leg.token.symbol }) : t("withdraw.asCash")}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Segmented<"itself" | "cash">
+          label={t("withdraw.youReceive")}
+          value={leg.as}
+          onChange={onAs}
+          options={[
+            { value: "itself", label: t("withdraw.asItself", { symbol: leg.token.symbol }) },
+            { value: "cash", label: t("withdraw.asCash") },
+          ]}
+        />
       ) : null}
-      <View className="flex-row items-center gap-2">
-        <Icon as={ArrowRight} className="text-muted-foreground size-4 rtl:-scale-x-100" />
-        <Text className={cn("text-muted-foreground min-w-0 flex-1 text-sm", TEXT_START)}>{route}</Text>
-      </View>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-muted-foreground text-sm">{t("withdraw.youReceive")}</Text>
-        <Text className="text-foreground text-sm font-semibold">
-          {leg.receive.amountText ? `${leg.as === "cash" ? "≈ " : ""}${leg.receive.amountText} ${leg.receive.symbol}` : leg.receive.symbol}
-          {value ? <Text className="text-muted-foreground text-sm font-normal">{` · ${value}`}</Text> : null}
-        </Text>
-      </View>
-      {reason ? <Text className={cn("text-sm leading-5", leg.status === "blocked" ? "text-destructive" : "text-warning", TEXT_START)}>{reason}</Text> : null}
-      {onMove && leg.reason === "convert_first" ? (
-        <Button variant="secondary" size="sm" onPress={onMove}>
-          <Text>{t("withdraw.moveAsItself", { symbol: leg.token.symbol })}</Text>
-        </Button>
-      ) : null}
-      {offerCash ? (
-        <Button variant="secondary" size="sm" onPress={() => onAs("cash")}>
-          <Text>{t("withdraw.sendAsCash")}</Text>
-        </Button>
-      ) : null}
-    </View>
+      <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{route}</Text>
+      <KeyValue
+        label={t("withdraw.youReceive")}
+        value={`${leg.receive.amountText ? `${leg.as === "cash" ? "≈ " : ""}${leg.receive.amountText} ${leg.receive.symbol}` : leg.receive.symbol}${value ? ` · ${value}` : ""}`}
+      />
+      {reason ? <Note tone={leg.status === "blocked" || leg.status === "warning" ? "warn" : "quiet"}>{reason}</Note> : null}
+      {onMove && leg.reason === "convert_first" ? <Button label={t("withdraw.moveAsItself", { symbol: leg.token.symbol })} variant="secondary" size="sm" onPress={onMove} /> : null}
+      {offerCash ? <Button label={t("withdraw.sendAsCash")} variant="secondary" size="sm" onPress={() => onAs("cash")} /> : null}
+    </Panel>
   );
 }
+
+const styles = StyleSheet.create({
+  page: { flex: 1 },
+  plain: { flex: 1, paddingHorizontal: SPACE.inset, paddingTop: SPACE.lg },
+  group: { gap: SPACE.md },
+  hero: { gap: SPACE.xxs },
+  panel: { gap: SPACE.md, padding: SPACE.lg },
+  line: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  grow: { flex: 1, minWidth: 0 },
+  amount: { minWidth: 88, minHeight: SIZE.chipHeight, borderRadius: RADIUS.sm, paddingHorizontal: SPACE.md, textAlign: "right" },
+});
