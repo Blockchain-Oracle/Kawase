@@ -101,6 +101,7 @@ export const send: Catalog["send"] = {
   otherChain: "محفظته على شبكة أخرى؟",
   otherChainBridge: "أرسل USDC إليها عبر جسر: تختار الشبكة والمسار.",
   otherChainConvert: "‏USDC وحده ينتقل بين الشبكات. حوّل {{asset}} إلى USDC أولًا.",
+  otherChainAsItself: "أرسل {{asset}} إلى هناك كما هو: تختار الشبكة والمسار.",
   referenceAdd: "أضف مرجعًا على السلسلة",
   referencePlaceholder: "رقم الفاتورة أو الطلب",
   referenceHint: "يُكتب على السلسلة مع الدفعة ليتمكّن المستلم من مطابقتها. إنه علني: لا تكتب شيئًا خاصًا.",

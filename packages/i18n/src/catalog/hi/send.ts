@@ -102,6 +102,7 @@ export const send: Catalog["send"] = {
   otherChain: "उनका वॉलेट किसी दूसरी चेन पर है?",
   otherChainBridge: "ब्रिज से वहाँ USDC भेजें: चेन और रूट आप चुनें।",
   otherChainConvert: "सिर्फ़ USDC चेन पार करता है। पहले अपना {{asset}} USDC में बदलें।",
+  otherChainAsItself: "{{asset}} को वैसे ही वहाँ भेजें: चेन और रूट आप चुनें।",
   referenceAdd: "चेन पर रेफ़रेंस जोड़ें",
   referencePlaceholder: "इनवॉइस या ऑर्डर नंबर",
   referenceHint:

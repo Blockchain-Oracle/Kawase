@@ -2,7 +2,9 @@
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn } from "@kawase/ui-native/lib/utils";
+import { WideFrameContext } from "@kawase/ui-native/lib/wide";
 import { Waypoints } from "lucide-react-native";
+import * as React from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 
 type NetworkChipProps = {
@@ -28,7 +30,10 @@ type TestnetStripProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+/** Inside the desktop frame a page's own strip steps aside: the frame draws one across the whole content area. */
 function TestnetStrip({ label, className, style }: TestnetStripProps) {
+  const framed = React.useContext(WideFrameContext);
+  if (framed) return null;
   return (
     <View
       accessibilityRole="header"

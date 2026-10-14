@@ -14,6 +14,7 @@ export const withdraw = {
   asCash: "As cash (USDC)",
   youReceive: "You receive",
   sendAsCash: "Send it as cash instead",
+  moveAsItself: "Move {{symbol}} as itself",
   routeTransfer: "Transfer on {{chain}}",
   routeBridge: "Bridge to {{chain}}",
   routeConvertTransfer: "Convert to USDC, then transfer on {{chain}}",

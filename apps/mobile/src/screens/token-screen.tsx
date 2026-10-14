@@ -57,6 +57,7 @@ import { FeedRow } from "@/activity/feed-row";
 import { useToken, useTokenChart } from "@/token/use-token";
 import { usePortfolio } from "@/portfolio/use-portfolio";
 import { SwapScreen } from "@/screens/swap-screen";
+import { PriceAlertSheet } from "@/token/price-alert-sheet";
 import { useTokenMine } from "@/token/use-token-mine";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { withdrawHref } from "@/withdraw/href";
@@ -88,10 +89,13 @@ const WRITES: ReadonlySet<TokenAction> = new Set([
   "withdraw",
   "bridge",
   "earn",
+  "borrow",
   "long_short",
+  "alert",
 ]);
 
 const ARC_MAINNET = 5042;
+const NEVER_HIDDEN: ReadonlySet<string> = new Set(["dollar", "bitcoin", "ether"]);
 
 export function TokenScreen({ chainId, address }: { chainId: number; address: string }) {
   const { t } = useT();
@@ -118,6 +122,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const [candleScrub, setCandleScrub] = React.useState<CandlePoint | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
   const [aboutOpen, setAboutOpen] = React.useState(false);
+  const [alertOpen, setAlertOpen] = React.useState(false);
   // The inline ticket's side on a desktop window.
   const [side, setSide] = React.useState<"buy" | "sell">("buy");
   const chartHeight = wide ? WIDE_CHART_HEIGHT : CHART_HEIGHT;
@@ -197,10 +202,19 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         router.push(withdrawHref({ assets: [{ asset: token.address, amount: "max" }] }));
         return;
       case "receive":
-        router.push("/wallet/receive");
+        // The receive page starts a request for this token (an amount QR any wallet fills in).
+        router.push({ pathname: "/wallet/receive", params: { asset: token.address, chainId: String(token.chainId), symbol: token.symbol, decimals: String(token.decimals), name: token.name } });
         return;
       case "bridge":
-        router.push("/bridge");
+        // USDC by CCTP; any other token as itself through the cross-chain routes.
+        if (token.kind === "dollar") router.push("/bridge");
+        else router.push({ pathname: "/move", params: { direction: "out", asset: token.address } });
+        return;
+      case "borrow":
+        router.push({ pathname: "/borrow", params: { action: "borrow", asset: token.symbol } });
+        return;
+      case "alert":
+        setAlertOpen(true);
         return;
       case "earn":
         // Earn on this very token (the universal picker starts on it).
@@ -219,11 +233,32 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const buyReason = reasonFor(buy);
   const sellReason = reasonFor(sell);
   const sideReason = side === "buy" ? buyReason : sellReason;
+  // A mainnet token seen from testnet: "Mainnet only — switch?" is the switch (the page is the same token after it).
+  const toMainnet = activeChain !== CHAIN_IDS.arc && token.chainId === CHAIN_IDS.arc;
+  const switchToMainnet = () => {
+    setMoreOpen(false);
+    void networkSwitch.switchNetwork("mainnet");
+  };
+  const fixable = (entry: TokenActionView) => toMainnet && reasonFor(entry) === t("tokenPage.n_mainnet_only");
+  // Hide (capability-matrix H): a held token can leave Home's list for Hidden, and come back; the dollars, euros,
+  // Bitcoin and Ether are never hidden.
+  const hideable = Boolean(holds && detail.holding) && !NEVER_HIDDEN.has(token.kind) && token.symbol !== "EURC";
+  const hidden = detail.holding?.hidden ?? false;
+  const toggleHidden = async () => {
+    setMoreOpen(false);
+    try {
+      await portfolio.setVisibility(token.address, hidden ? "shown" : "hidden");
+      await refresh();
+      toast(hidden ? t("tokenPage.shownToast") : t("tokenPage.hiddenToast"));
+    } catch {
+      toast(t("common.error"));
+    }
+  };
   // The inline ticket's one way past its reason: a mainnet token from testnet switches (a guest signs in on the way),
   // a guest signs in, and nothing to sell turns the ticket to Buy.
   const sideFix =
-    sideReason && token.chainId === CHAIN_IDS.arc && activeChain !== CHAIN_IDS.arc
-      ? { label: t("markets.switchToMainnet"), onPress: () => void networkSwitch.switchNetwork("mainnet") }
+    sideReason && toMainnet
+      ? { label: t("markets.switchToMainnet"), onPress: switchToMainnet }
       : sideReason && status !== "account"
         ? { label: t("policy.fixSignIn"), onPress: signIn.open }
         : sideReason && side === "sell" && !buyReason
@@ -672,7 +707,12 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
               <Icon as={MoreHorizontal} className="size-5" />
             </Button>
           </View>
-          {buyReason ? (
+          {buyReason && fixable(buy) ? (
+            // "Mainnet only — switch?" is the question and the switch.
+            <Pressable accessibilityRole="button" onPress={switchToMainnet} disabled={networkSwitch.busy} className="bg-background px-5 pb-2">
+              <Text className="text-accent text-center text-xs font-semibold">{buyReason}</Text>
+            </Pressable>
+          ) : buyReason ? (
             <Text className="text-muted-foreground bg-background px-5 pb-2 text-center text-xs">{buyReason}</Text>
           ) : null}
         </>
@@ -689,27 +729,29 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         <ListGroup>
           {detail.actions.map((entry) => {
             const reason = reasonFor(entry);
+            // A mainnet-only row stays tappable: it is the switch.
+            const switches = fixable(entry);
             return (
               <ListRow
                 key={entry.id}
                 title={t(`tokenPage.a_${entry.id}`)}
                 {...(reason ? { subtitle: reason } : {})}
-                disabled={Boolean(reason)}
-                chevron={!reason}
-                onPress={() => run(entry.id)}
+                disabled={Boolean(reason) && !switches}
+                chevron={!reason || switches}
+                onPress={() => (switches ? switchToMainnet() : run(entry.id))}
               />
             );
           })}
+          {hideable ? <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} chevron onPress={() => void toggleHidden()} /> : null}
         </ListGroup>
       </Sheet>
-      {wide ? (
-        <MainnetConsentSheet
-          open={networkSwitch.consentNeeded}
-          busy={networkSwitch.busy}
-          onAccept={() => void networkSwitch.acceptMainnet()}
-          onClose={networkSwitch.dismissConsent}
-        />
-      ) : null}
+      <MainnetConsentSheet
+        open={networkSwitch.consentNeeded}
+        busy={networkSwitch.busy}
+        onAccept={() => void networkSwitch.acceptMainnet()}
+        onClose={networkSwitch.dismissConsent}
+      />
+      <PriceAlertSheet open={alertOpen} onClose={() => setAlertOpen(false)} token={token} priceUsd={detail.market.priceUsd} />
     </View>
   );
 }

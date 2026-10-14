@@ -16,6 +16,7 @@ export const withdraw: Catalog["withdraw"] = {
   asCash: "换成现金（USDC）",
   youReceive: "你将收到",
   sendAsCash: "改为以现金发送",
+  moveAsItself: "原样转移 {{symbol}}",
   routeTransfer: "在 {{chain}} 上转账",
   routeBridge: "跨链到 {{chain}}",
   routeConvertTransfer: "先换成 USDC，再在 {{chain}} 上转账",

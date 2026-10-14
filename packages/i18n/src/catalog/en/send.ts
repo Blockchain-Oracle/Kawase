@@ -100,6 +100,7 @@ export const send = {
   otherChain: "Their wallet is on another chain?",
   otherChainBridge: "Send USDC there by a bridge: you pick the chain and the route.",
   otherChainConvert: "Only USDC crosses chains. Convert your {{asset}} to USDC first.",
+  otherChainAsItself: "Send {{asset}} there as itself: you pick the chain and the route.",
   referenceAdd: "Add an on-chain reference",
   referencePlaceholder: "Invoice or order number",
   referenceHint: "Written on chain with the payment, so the receiver can match it. Public: no private words.",
