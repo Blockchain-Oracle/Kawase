@@ -34,9 +34,8 @@ import type { SwapService } from "../swap/service";
 import type { AssetService } from "../tokens/service";
 import type { MarketplaceService } from "../marketplace/service";
 import type { SafetyService } from "../safety/service";
-import type { InvoiceService } from "../business/invoices";
 import type { HistoryService } from "../history/service";
-import type { BusinessAgentDeps } from "./business-context";
+import type { AccountAgentDeps } from "./account-context";
 import { buildAgentContext } from "./context";
 import { ConversationStore } from "./conversation-store";
 
@@ -92,11 +91,9 @@ export type AgentDeps = {
   marketplace?: MarketplaceService | undefined;
   /** Wallet & limits (A3); the safety tools answer "unavailable" without it. */
   safety?: SafetyService | undefined;
-  /** Business mode: invoices from chat. */
-  invoices?: InvoiceService | undefined;
   history?: HistoryService | undefined;
-  /** Payouts, payroll, devices and export links for chat (B2-2). */
-  business?: BusinessAgentDeps | undefined;
+  /** Devices, export links and the fee reserve for chat (B2-2). */
+  account?: AccountAgentDeps | undefined;
   /** One US dollar in a display currency (B2-3); replies stay in dollars without it. */
   fx?: ((currency: string) => Promise<number | null>) | undefined;
   /** M12: with device proofs required, a chat turn sends inside the allowance by itself only when it carried one. */
@@ -142,9 +139,8 @@ export function createTurnRunner(deps: AgentDeps) {
     models,
     approvalSecret,
     marketplace,
-    invoices,
     history: historyService,
-    business,
+    account,
     fx,
   } = deps;
   // Without a configured secret, approvals are still signed — they just do not outlive this process.
@@ -207,9 +203,8 @@ export function createTurnRunner(deps: AgentDeps) {
       requests,
       marketplace,
       safety: deps.safety,
-      invoices,
       history: historyService,
-      business,
+      account,
       threadId,
       lastUserText,
       log,

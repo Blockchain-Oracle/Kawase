@@ -1,6 +1,7 @@
 import type { Catalog } from "../en/index";
 
 export const automation: Catalog["automation"] = {
+  monthday: "اليوم {{day}} من كل شهر",
   guestTitle: "جدول أموالك",
   guestBody: "سجّل الدخول لإنشاء العمليات التلقائية وإدارتها. ستبقى محادثتك هنا.",
   title: "الأتمتة",
@@ -124,9 +125,6 @@ export const automation: Catalog["automation"] = {
   editTime: "الوقت",
   editPrompt: "الموافقة على الإذن الجديد",
   edited: "تم التغيير",
-  payroll: "الدفع لـ {{count}} أشخاص",
-  payrollLine: "{{amount}} إلى {{name}}",
-  payrollBound: "يمكن لكل شخص تلقي مبلغه فقط على الأكثر {{per}}، وعلى عنوانه فقط، وتفرض Arc ذلك؛ حتى {{date}}.",
   dca: "مبادلة {{amount}} إلى {{symbolOut}}",
   dcaBound: "لا يحتفظ بأي إذن: كل مبادلة تنتظر موافقتك في «بانتظارك».",
   rulePrice: "عندما يشتري {{amountIn}} ما لا يقل عن {{minOut}}",
@@ -141,7 +139,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "تدريب: كانت Arc سترفضه ({{error}})",
   runNeedsYou: "بانتظارك",
   runSwapOpened: "أُرسلت المبادلة لتأكيدك",
-  reason_PAYROLL_PARTIAL: "تم الدفع لـ {{paid}} من {{of}}",
   reason_DECLINED_BY_YOU: "رفضته",
   reason_NOT_ANSWERED: "لم تتم الإجابة في الوقت",
   reason_NOT_COMPLETED: "تمت الموافقة دون تأكيد",

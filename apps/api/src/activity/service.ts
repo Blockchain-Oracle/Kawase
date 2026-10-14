@@ -9,7 +9,7 @@ import { and, desc, eq, gt, inArray, isNull, notInArray, or, sql } from "drizzle
 import type { Address } from "viem";
 
 import type { FeedItem, FeedKind, FeedPage, FeedToken, WhyStep, WhyView } from "@kawase/api-client";
-import { attentionItems, auditLog, automationRuns, automations, chainEvents, intentDrafts, intents, practiceRuns, txAttempts, walletTokens, withdrawals, type Db, type DcaAction, type PayrollAction, type RuleAction } from "@kawase/db";
+import { attentionItems, auditLog, automationRuns, automations, chainEvents, intentDrafts, intents, practiceRuns, txAttempts, walletTokens, withdrawals, type Db, type DcaAction, type RuleAction } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import type { NetworkContext, NetworkId } from "@kawase/networks";
 
@@ -348,11 +348,6 @@ export class ActivityFeedService {
     if (automation.kind === "scheduled_send") {
       const action = automation.action as { amount: string; asset: string; recipientAddress: string; recipientName: string | null };
       return { token: stable(action.asset), amount: action.amount, counterparty: action.recipientAddress, contactName: action.recipientName };
-    }
-    if (automation.kind === "payroll") {
-      const action = automation.action as PayrollAction;
-      const total = action.lines.filter((line) => line.asset === "USDC").reduce((sum, line) => sum + BigInt(line.amount), BigInt(0));
-      return { token: usdc, amount: total.toString(), contactName: action.lines.map((line) => line.recipientName ?? line.recipientWords).join(", ") };
     }
     if (automation.kind === "dca") {
       const action = automation.action as DcaAction;

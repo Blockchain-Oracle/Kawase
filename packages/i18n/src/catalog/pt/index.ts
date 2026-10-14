@@ -62,7 +62,6 @@ import { movePolicy } from "./move-policy";
 import { lend } from "./lend";
 import { lendPolicy } from "./lend-policy";
 import { yieldOptions } from "./yield-options";
-import { business } from "./business";
 import { why } from "./why";
 import { report } from "./report";
 import { history } from "./history";
@@ -156,7 +155,6 @@ export const pt: Catalog = {
   lend,
   lendPolicy,
   yieldOptions,
-  business,
   why,
   report,
   history,

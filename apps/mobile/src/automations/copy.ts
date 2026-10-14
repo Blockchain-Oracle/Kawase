@@ -51,7 +51,6 @@ export function useBoundText() {
   return (automation: AutomationView) => {
     const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(automation.endsAt));
     if (automation.save) return t("automation.saveBound", { vault: vaultTitle(automation.save.vaultName), date });
-    if (automation.payroll) return t("automation.payrollBound", { per: t(PER[automation.schedule.every]), date });
     if (automation.dca) return t("automation.dcaBound");
     const step = automation.rule?.step;
     if (step?.type === "send") return t("automation.ruleBoundSend", { amount: money(step.asset, step.capPerDay), name: step.recipientName ?? step.recipientWords });
@@ -139,7 +138,6 @@ export function useRunLabel() {
       if (run.status === "executing" || !run.move) return t("automation.runMoving");
       return t(run.move.direction === "in" ? "automation.runSaved" : "automation.runToppedUp", { amount: money("USDC", run.move.amount) });
     }
-    if (automation.payroll && run.status === "succeeded" && run.reason === "PAYROLL_PARTIAL") return t("automation.reason_PAYROLL_PARTIAL", run.reasonParams ?? {});
     if (automation.dca && run.status !== "executing") return t("automation.runSwapOpened");
     return run.status === "succeeded" ? t("automation.runSucceeded") : t("automation.runExecuting");
   };

@@ -1,6 +1,7 @@
 import type { Catalog } from "../en/index";
 
 export const automation: Catalog["automation"] = {
+  monthday: "ہر مہینے کی {{day}} تاریخ",
   guestTitle: "اپنی رقم کا شیڈول بنائیں",
   guestBody: "خودکار کام بنانے اور سنبھالنے کے لیے سائن ان کریں۔ آپ کی گفتگو یہیں رہے گی۔",
   title: "آٹومیشن",
@@ -125,9 +126,6 @@ export const automation: Catalog["automation"] = {
   editTime: "وقت",
   editPrompt: "نئی اجازت منظور کریں",
   edited: "تبدیل ہو گیا",
-  payroll: "{{count}} لوگوں کو ادائیگی",
-  payrollLine: "{{name}} کو {{amount}}",
-  payrollBound: "ہر شخص {{per}} زیادہ سے زیادہ اپنی رقم، صرف اپنے پتے پر پا سکتا ہے، Arc پر نافذ؛ {{date}} تک۔",
   dca: "{{amount}} کو {{symbolOut}} میں بدلیں",
   dcaBound: "کوئی اجازت نہیں رکھتا: ہر تبادلہ “آپ کا انتظار” میں آپ کی ہاں کا انتظار کرتا ہے۔",
   rulePrice: "جب {{amountIn}} سے کم از کم {{minOut}} ملے",
@@ -142,7 +140,6 @@ export const automation: Catalog["automation"] = {
   runPracticedRefused: "مشق: Arc اسے مسترد کر دیتا ({{error}})",
   runNeedsYou: "آپ کا انتظار",
   runSwapOpened: "تبادلہ آپ کی تصدیق کے لیے بھیجا",
-  reason_PAYROLL_PARTIAL: "{{of}} میں سے {{paid}} کو ادائیگی",
   reason_DECLINED_BY_YOU: "آپ نے مسترد کیا",
   reason_NOT_ANSWERED: "وقت پر جواب نہیں",
   reason_NOT_COMPLETED: "منظور، مگر تصدیق نہیں",

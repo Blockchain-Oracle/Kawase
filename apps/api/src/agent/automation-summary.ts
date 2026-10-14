@@ -131,12 +131,6 @@ function ruleReadBack(automation: AutomationView) {
   return `${when}: ${what}.${cadence}${now}`;
 }
 
-function payrollReadBack(automation: AutomationView) {
-  const payroll = automation.payroll!;
-  const people = payroll.lines.map((line) => `${money(line.asset, line.amount)} to ${line.recipientName ?? line.recipientWords}`).join(", ");
-  return `${when(automation)}: pay ${people}${payroll.note ? ` ("${payroll.note}")` : ""}.`;
-}
-
 function dcaReadBack(automation: AutomationView) {
   const dca = automation.dca!;
   return `${when(automation)}: swap ${tokens(dca.amount, dca.decimalsIn, dca.symbolIn)} to ${dca.symbolOut}. Each run waits in Needs you with a fresh quote and they confirm the swap (Face ID); nothing swaps by itself.`;
@@ -180,36 +174,32 @@ export function summarizeAutomation(automation: AutomationView): AutomationSumma
   const ends = automation.endsAt.slice(0, DATE_CHARS);
   const rule = automation.rule;
   const practice = automation.practice ? " PRACTICE: runs are dry-run and recorded as \"would have\"; nothing moves until they go live." : "";
-  const readBack = automation.payroll
-    ? payrollReadBack(automation) + practice
-    : automation.dca
-      ? dcaReadBack(automation) + practice
-      : rule
-    ? ruleReadBack(automation) + practice
-    : save
-    ? saveReadBack(automation)
-    : a && a.amount !== "0"
-      ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${a.recipientName ?? a.recipientWords}${a.note ? ` ("${a.note}")` : ""}`
-      : null;
-  const bound = automation.payroll
-    ? `Each person can get at most their own amount ${per}, only at their own address, enforced on Arc by one grant per person, all signed with one Face ID; it ends on ${ends}.`
-    : automation.dca
-      ? "A DCA holds no permission: every swap waits for their own confirmation."
-      : rule && rule.step.type === "send"
-        ? `At most ${money(rule.step.asset, rule.step.capPerDay)} a day can go, and only to ${rule.step.recipientName ?? rule.step.recipientWords}, enforced on Arc by the grant they sign; more waits for them in Needs you.`
-        : rule && rule.step.type === "swap"
-          ? "A swap holds no permission: it waits for their own confirmation each time."
-          : rule
-    ? rule.step.type === "bridge"
-      ? `Kawase can only move USDC from their wallet to their own address on ${rule.step.destinationName}, through Circle CCTP; the route's fee can never exceed 16.77 USDC. Enforced on Arc by the two grants they sign with one Face ID; it ends on ${ends}.`
-      : rule.step.type === "save"
-        ? `Kawase can only move USDC into their own savings in ${rule.step.vaultName}, never to anyone else; enforced on Arc by the grants they sign with one Face ID; it ends on ${ends}.`
-        : "An alert moves no money; turning it on needs only a tap."
-    : save
-    ? `Kawase can only move USDC between their wallet and their own savings in ${save.vaultName}, never to anyone else, enforced on Arc by the three grants they sign with one Face ID; it ends on ${ends}.`
-    : a && a.amount !== "0"
-      ? `At most ${money(a.asset, a.amount)} ${per} can ever go, and only to this address, enforced on Arc by the grant they sign; it ends on ${ends}.`
-      : null;
+  const readBack = automation.dca
+    ? dcaReadBack(automation) + practice
+    : rule
+      ? ruleReadBack(automation) + practice
+      : save
+        ? saveReadBack(automation)
+        : a && a.amount !== "0"
+          ? `${when(automation)}: send ${money(a.asset, a.amount)} to ${a.recipientName ?? a.recipientWords}${a.note ? ` ("${a.note}")` : ""}`
+          : null;
+  const bound = automation.dca
+    ? "A DCA holds no permission: every swap waits for their own confirmation."
+    : rule && rule.step.type === "send"
+      ? `At most ${money(rule.step.asset, rule.step.capPerDay)} a day can go, and only to ${rule.step.recipientName ?? rule.step.recipientWords}, enforced on Arc by the grant they sign; more waits for them in Needs you.`
+      : rule && rule.step.type === "swap"
+        ? "A swap holds no permission: it waits for their own confirmation each time."
+        : rule
+          ? rule.step.type === "bridge"
+            ? `Kawase can only move USDC from their wallet to their own address on ${rule.step.destinationName}, through Circle CCTP; the route's fee can never exceed 16.77 USDC. Enforced on Arc by the two grants they sign with one Face ID; it ends on ${ends}.`
+            : rule.step.type === "save"
+              ? `Kawase can only move USDC into their own savings in ${rule.step.vaultName}, never to anyone else; enforced on Arc by the grants they sign with one Face ID; it ends on ${ends}.`
+              : "An alert moves no money; turning it on needs only a tap."
+          : save
+            ? `Kawase can only move USDC between their wallet and their own savings in ${save.vaultName}, never to anyone else, enforced on Arc by the three grants they sign with one Face ID; it ends on ${ends}.`
+            : a && a.amount !== "0"
+              ? `At most ${money(a.asset, a.amount)} ${per} can ever go, and only to this address, enforced on Arc by the grant they sign; it ends on ${ends}.`
+              : null;
   return {
     automationId: automation.id,
     network: automation.network,
