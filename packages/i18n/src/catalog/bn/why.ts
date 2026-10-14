@@ -14,7 +14,6 @@ export const why: Catalog["why"] = {
   },
   automation: "আপনার অটোমেশন চলেছে: {{kind}}",
   automationKind: {
-    payroll: "বেতন",
     dca: "নিয়মিত কেনা",
     scheduled_send: "নির্ধারিত সময়ের পেমেন্ট",
     auto_save: "অটো-সেভ",
@@ -58,7 +57,6 @@ export const why: Catalog["why"] = {
     pending: "অপেক্ষমাণ",
     failed: "ব্যর্থ",
   },
-  matchedInvoice: "আপনার ইনভয়েসের সাথে মেলানো হয়েছে",
   matchedRequest: "আপনার পেমেন্ট অনুরোধের সাথে মেলানো হয়েছে",
   byReference: "এর অন-চেইন রেফারেন্স দিয়ে",
   recorded: "রেকর্ড করা হয়েছে",
@@ -72,13 +70,6 @@ export const why: Catalog["why"] = {
       approved: "আপনি অনুমোদন দিয়েছেন",
       declined: "আপনি প্রত্যাখ্যান করেছেন",
     },
-    payout: { sent: "পেআউট রেকর্ড হয়েছে" },
-    invoice: {
-      created: "ইনভয়েস তৈরি হয়েছে",
-      paid: "ইনভয়েস পরিশোধিত হিসেবে চিহ্নিত",
-      canceled: "ইনভয়েস বাতিল হয়েছে",
-    },
-    payroll: { activated: "বেতন চালু হয়েছে" },
   },
   kind: {
     send: "আপনার করা একটি পেমেন্ট।",
@@ -87,8 +78,6 @@ export const why: Catalog["why"] = {
     earn: "সঞ্চয়ে বা সঞ্চয় থেকে সরানো।",
     automation: "আপনার কোনো অটোমেশনের পেমেন্ট।",
     agent_wallet: "আপনার এজেন্ট ওয়ালেটের টাকার লেনদেন।",
-    payout: "{{people}} জনকে পেআউট।",
-    invoice: "{{client}}-এর কাছ থেকে ইনভয়েস {{invoice}}-এর পেমেন্ট।",
     incoming: "যে টাকা এসেছে।",
     other: "Kawase-এর রেকর্ড করা একটি লেনদেন।",
   },

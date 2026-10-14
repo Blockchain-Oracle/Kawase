@@ -13,9 +13,7 @@ import { amount, formatAmount, parseAmount, type AssetId } from "@kawase/money";
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome } from "@kawase/api-client";
 
 import type { MarketplaceService } from "../marketplace/service";
-import type { InvoiceService } from "../business/invoices";
 import type { HistoryService } from "../history/service";
-import { ProblemError } from "../http/problem";
 import { summarizeAgentWallet, summarizeBuy, summarizeInspect, summarizeServices, summarizeTopUp } from "./marketplace-summary";
 
 import { capabilityView } from "../capabilities/service";
@@ -48,7 +46,7 @@ import type { SafetyService } from "../safety/service";
 import { buildIntelligence } from "./intelligence";
 import { moneyOutContext } from "./money-out-context";
 import type { WithdrawService } from "../withdraw/service";
-import { businessContext, type BusinessAgentDeps } from "./business-context";
+import { accountContext, type AccountAgentDeps } from "./account-context";
 
 /** Display strings for the model are canonical (English digits); the model renders them in the person's language. */
 const DISPLAY_LOCALE = "en";
@@ -58,8 +56,6 @@ const DRAFT_LISTED_DAYS = 7;
 const MS_PER_SECOND = 1000;
 const DRAFT_LISTED_MS = DRAFT_LISTED_DAYS * SECONDS_PER_DAY * MS_PER_SECOND;
 const ZERO = 0n;
-/** "YYYY-MM-DD" from an ISO timestamp. */
-const DATE_CHARS = 10;
 
 type NetworkState = {
   setUp: boolean;
@@ -104,12 +100,10 @@ export function buildAgentContext(input: {
   marketplace?: MarketplaceService | undefined;
   /** Wallet & limits (A3). */
   safety?: SafetyService | undefined;
-  /** Business mode's invoices. */
-  invoices?: InvoiceService | undefined;
   /** Looking back: the weekly report, why, exports. */
   history?: HistoryService | undefined;
-  /** Payouts, payroll, devices and export links for chat (B2-2). */
-  business?: BusinessAgentDeps | undefined;
+  /** Devices, export links and the fee reserve for chat (B2-2). */
+  account?: AccountAgentDeps | undefined;
   threadId: string;
   lastUserText: string;
   log: Logger;
@@ -142,9 +136,9 @@ export function buildAgentContext(input: {
     ...safetyContext({ user, safety: input.safety, automations, contacts, surface: input.surface ?? "chat" }),
     ...automationsContext({ user, automations, threadId }),
     ...railsContext({ user, db, margin: input.margin, onramp: input.onramp, crosschain: input.crosschain, lend: input.lend, threadId }),
-    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, invoices: input.invoices, recipients, marketplace }),
+    intelligence: buildIntelligence({ db, user, threadId, log, wallets, earn, requests, assets, swaps, bridges, chains, margin: input.margin, recipients, marketplace }),
     ...moneyOutContext({ user, withdraw: input.withdraw }),
-    ...businessContext({ user, db, wallets, invoices: input.invoices, history: input.history, business: input.business }),
+    ...accountContext({ user, wallets, history: input.history, account: input.account }),
 
     async proposeSend(request, { autoSend }) {
       // One open send per conversation: a newer proposal replaces any earlier one still waiting, so an old card
@@ -257,7 +251,7 @@ export function buildAgentContext(input: {
 
     async listAutomations() {
       if (user.isAnonymous) return { network, automations: [] };
-      // Drafts from the last week too: one made earlier (a DCA, a payroll) can still be turned on from its card.
+      // Drafts from the last week too: one made earlier (a DCA) can still be turned on from its card.
       const since = Date.now() - DRAFT_LISTED_MS;
       const list = (await automations.list(user)).filter((entry) => entry.status !== "draft" || Date.parse(entry.createdAt) > since);
       return { network, automations: list.map((automation) => ({ automation, summary: summarizeAutomation(automation) })) };
@@ -333,21 +327,6 @@ export function buildAgentContext(input: {
         };
       }
       return { proposal, summary: summarizeTopUp(proposal) };
-    },
-
-    async createInvoice({ client, amount: total, asset, description, dueInDays }) {
-      if (user.isAnonymous) return { invoice: null, summary: { status: "needs_sign_in" } };
-      if (!input.invoices || !(await wallets.userWallet(user.id))) return { invoice: null, summary: { status: "needs_wallet" } };
-      // Any Arc token: an unknown symbol or a look-alike is refused with the reason, for the model to ask about.
-      const invoice = await input.invoices.create(user, { clientName: client, asset, lines: [{ description, quantity: 1, unitPrice: total }], dueInDays }).catch((error: unknown) => {
-        if (error instanceof ProblemError) return error;
-        throw error;
-      });
-      if (invoice instanceof ProblemError) return { invoice: null, summary: { status: "refused", reason: invoice.detail ?? invoice.code } };
-      return {
-        invoice,
-        summary: { status: "created", number: invoice.number, client: invoice.clientName, total: `${total} ${invoice.asset}`, due: invoice.dueAt.slice(0, DATE_CHARS), link: invoice.link, network },
-      };
     },
 
     async findContacts(query) {

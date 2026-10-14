@@ -3,7 +3,7 @@
 // under the network it happened on. When that is not the network the person is on, it says so and offers the
 // switch; the card's own actions apply once they match. A guest who opens an account's link signs in in place and
 // the card loads (signed-out links come back here after onboarding). A margin order opens its position; an automation
-// shows its live card, and so do a Buy order, a move across chains and an Aave action; a run, an invoice, a split or a
+// shows its live card, and so do a Buy order, a move across chains and an Aave action; a run, a split or a
 // request opens its page (A5-3), a withdrawal resumes on Withdraw and a paid service call opens the agent wallet.
 import { useRouter } from "expo-router";
 import { CloudOff, Waypoints } from "lucide-react-native";
@@ -53,13 +53,12 @@ export function IntentScreen({ id }: { id: string }) {
     setLoad({ status: "loading" });
     try {
       const found = await api.intents.get(id);
-      // A margin order lives on its position page; a run, an invoice, a split and a request on their own pages.
+      // A margin order lives on its position page; a run, a split and a request on their own pages.
       if (found.kind === "margin") {
         router.replace(found.positionId ? { pathname: "/position/[id]", params: { id: found.positionId } } : "/margin");
         return;
       }
       if (found.kind === "automation_run") return void router.replace({ pathname: "/why/run/[id]", params: { id: found.runId } });
-      if (found.kind === "invoice") return void router.replace({ pathname: "/business/invoice/[id]", params: { id: found.invoiceId } });
       if (found.kind === "split") return void router.replace({ pathname: "/split/[id]", params: { id: found.splitId } });
       if (found.kind === "request") return void router.replace({ pathname: "/request", params: { id: found.requestId } });
       // A withdrawal resumes where it stands ("Finish it"); a paid service call is in the agent wallet's history.

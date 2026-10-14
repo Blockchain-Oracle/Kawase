@@ -33,8 +33,6 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   rule_alert: "notifications.kindRuleAlert",
   device_signed_in: "alerts.kindDeviceSignedIn",
   device_signed_out: "alerts.kindDeviceSignedOut",
-  invoice_due: "alerts.kindInvoiceDue",
-  invoice_overdue: "alerts.kindInvoiceOverdue",
   position_health: "notifications.kindPositionHealth",
   position_closed: "notifications.kindPositionClosed",
   token_graduated: "notifications.kindTokenGraduated",

@@ -1,14 +1,14 @@
 // `GET /intents/:id` (plan §A.4.11: "a tap opens the exact card (`/i/[intentId]`) on its network"): any money action
 // of the person's by its id — a push, the inbox or an email link opens it — with its kind and network, read fresh
 // (an expired draft expires, a moving one is tracked) by the same service that owns it. Any other id a notification
-// carries resolves too, so every link lands somewhere exact: an automation (its live card), one of its runs, an
-// invoice, a Buy order, a split, a request, a withdrawal or a paid service call. Someone else's id is simply not found.
+// carries resolves too, so every link lands somewhere exact: an automation (its live card), one of its runs, a
+// Buy order, a split, a request, a withdrawal or a paid service call. Someone else's id is simply not found.
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import type { IntentLookup } from "@kawase/api-client";
-import { automationRuns, automations, intents, invoices, marketplacePurchases, onrampOrders, paymentRequests, splits, withdrawals, type Db } from "@kawase/db";
+import { automationRuns, automations, intents, marketplacePurchases, onrampOrders, paymentRequests, splits, withdrawals, type Db } from "@kawase/db";
 
 import { requireUser } from "../auth/middleware";
 import type { AutomationService } from "../automations/service";
@@ -37,14 +37,13 @@ type Deps = {
 /** An id that is not an intent: which of the person's other things it is, if any. */
 async function other(deps: Deps, userId: string, id: string): Promise<IntentLookup | undefined> {
   const { db } = deps;
-  const [automation, run, invoice, order, split, request, withdrawal, purchase] = await Promise.all([
+  const [automation, run, order, split, request, withdrawal, purchase] = await Promise.all([
     db.select({ network: automations.network, threadId: automations.threadId }).from(automations).where(and(eq(automations.id, id), eq(automations.userId, userId))),
     db
       .select({ network: automations.network })
       .from(automationRuns)
       .innerJoin(automations, eq(automations.id, automationRuns.automationId))
       .where(and(eq(automationRuns.id, id), eq(automationRuns.userId, userId))),
-    db.select({ network: invoices.network }).from(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, userId))),
     db.select({ network: onrampOrders.network }).from(onrampOrders).where(and(eq(onrampOrders.id, id), eq(onrampOrders.userId, userId))),
     db.select({ network: splits.network }).from(splits).where(and(eq(splits.id, id), eq(splits.userId, userId))),
     db.select({ network: paymentRequests.network }).from(paymentRequests).where(and(eq(paymentRequests.id, id), eq(paymentRequests.userId, userId))),
@@ -54,7 +53,6 @@ async function other(deps: Deps, userId: string, id: string): Promise<IntentLook
   if (automation[0] && deps.automations)
     return { kind: "automation", network: automation[0].network, threadId: automation[0].threadId, automation: await deps.automations.get(userId, id) };
   if (run[0]) return { kind: "automation_run", network: run[0].network, threadId: null, runId: id };
-  if (invoice[0]) return { kind: "invoice", network: invoice[0].network, threadId: null, invoiceId: id };
   if (order[0] && deps.onramp) return { kind: "onramp", network: order[0].network, threadId: null, order: await deps.onramp.get(userId, id) };
   if (split[0]) return { kind: "split", network: split[0].network, threadId: null, splitId: id };
   if (request[0]) return { kind: "request", network: request[0].network, threadId: null, requestId: id };

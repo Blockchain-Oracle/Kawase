@@ -33,7 +33,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 
 import { AgentCard } from "./card";
 
-/** The card for one automation; the Payroll screen passes just the automation (the summary is for the model). */
+/** The card for one automation; a screen passes just the automation (the summary is for the model). */
 /**
  * `edit`: a widening edit the agent prepared in chat (edit_automation); its new permission is signed here, with the old
  * one's revoke, in one Face ID. `simulation`: what its next runs would do (simulate_automation).

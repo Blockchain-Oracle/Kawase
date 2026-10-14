@@ -4,11 +4,11 @@
 import { tool } from "ai";
 import { z } from "zod";
 
-import { businessTools } from "./business-tools";
 import type { AgentContext } from "./context";
 import { railsTools } from "./rails-tools";
 import { safetyTools } from "./safety-tools";
 import { automationTools } from "./automation-tools";
+import { accountTools } from "./everyday-tools";
 import { intelligenceTools } from "./intelligence-tools";
 import { withQuarantine } from "./quarantine";
 import { moneyOutTools } from "./money-out-tools";
@@ -39,7 +39,6 @@ const SERVICE_QUERY_MAX = 120;
 const SERVICE_URL_MAX = 500;
 const PARAM_MAX = 200;
 const BODY_MAX = 4_000;
-const INVOICE_DUE_MAX = 365;
 
 /** What the model is told when a send inside the allowance waits for the person's tap (H2), by why it waits. */
 const HELD_APPROVAL: Record<Hold, string> = {
@@ -60,7 +59,7 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
     ...railsTools(context),
     ...safetyTools(context),
     ...automationTools(context),
-    ...businessTools(context),
+    ...accountTools(context),
     get_wallet: tool({
       description:
         "The person's wallet on the active network: address, @handle, whether it is set up, USDC and EURC balances, and the daily allowance Kawase holds. Call it before saying anything about their money.",
@@ -407,19 +406,6 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
         amount: z.string().regex(/^\d+(\.\d+)?$/).optional().describe("USDC, digits with a dot, only if they said"),
       }),
       execute: async (input) => context.proposeAgentTopUp(input),
-      toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
-    }),
-    create_invoice: tool({
-      description:
-        "Business mode: invoice a client (\"invoice Acme 500 USDC for the logo\", \"bill Ben 0.01 cirBTC\"). Pass the client's name as said, the total as digits with a dot, the token (USDC unless they named another: EURC, cirBTC or any Arc token by symbol or address), what it is for in a few words, and the days until due only if they said (14 otherwise). Kawase numbers it, adds the business profile, gives it a payment link and an on-chain reference (Arc Memo), and the card shares the link or a PDF. It is marked paid when the money arrives with that reference, or through the link; the business is reminded before it falls due and when it is overdue.",
-      inputSchema: z.object({
-        client: z.string().min(1).max(RECIPIENT_MAX),
-        amount: z.string().regex(/^\d+(\.\d+)?$/),
-        asset: z.string().max(TOKEN_QUERY_MAX).optional(),
-        description: z.string().min(1).max(NOTE_MAX),
-        dueInDays: z.number().int().min(0).max(INVOICE_DUE_MAX).optional(),
-      }),
-      execute: async (input) => context.createInvoice({ ...input, asset: input.asset ?? "USDC" }),
       toModelOutput: ({ output }) => ({ type: "json", value: output.summary }),
     }),
     // Memory, history search, Arc knowledge and the extra cards (A5).

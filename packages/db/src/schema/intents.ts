@@ -6,7 +6,6 @@ import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgEnum, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { createdAt, id, money, networkEnum, timestampTz, updatedAt } from "./common";
-import { payoutBatches } from "./business";
 import { users } from "./identity";
 
 export const intentStateEnum = pgEnum("intent_state", [
@@ -124,10 +123,8 @@ export const spendLedger = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     network: networkEnum().notNull(),
-    /** The send (or other intent) this is for; null for a batch payout, which names its payout instead. */
+    /** The send (or other intent) this is for. Null only on rows left by the retired batch-payout feature (migration 0090). */
     intentId: uuid().references(() => intents.id, { onDelete: "cascade" }),
-    /** A batch payout's whole spend (security review M7): one row per payout, reserved when it is signed. */
-    payoutId: uuid().references(() => payoutBatches.id, { onDelete: "cascade" }),
     category: text().notNull(),
     /** USDC or EURC; limits are counted per asset. */
     asset: text().notNull(),
@@ -138,9 +135,6 @@ export const spendLedger = pgTable(
   },
   (table) => [
     uniqueIndex("spend_ledger_intent_category_idx").on(table.intentId, table.category),
-    uniqueIndex("spend_ledger_payout_idx")
-      .on(table.payoutId)
-      .where(sql`${table.payoutId} is not null`),
     index("spend_ledger_user_network_created_idx").on(table.userId, table.network, table.createdAt),
   ],
 );

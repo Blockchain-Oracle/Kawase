@@ -48,7 +48,7 @@ export type IntelligenceContext = {
   settingDiff(input: { setting: SettingId; value: string; reason: string | null }): Promise<SettingDiff>;
   /** Whether what Kawase depends on answers now. */
   status(): Promise<StatusView>;
-  /** What a payment code (address, EIP-681 link, Kawase request or invoice link) means on the active network. */
+  /** What a payment code (address, EIP-681 link or Kawase request link) means on the active network. */
   payCode(code: string): Promise<PayCodeView>;
   /** Splits a bill into one payment request per person (equal or by hand); guests and walletless people are told why not. */
   splitBill(input: SplitInput): Promise<SplitBillOutput>;

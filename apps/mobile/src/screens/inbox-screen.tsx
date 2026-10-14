@@ -3,7 +3,7 @@
 // whom, a request of yours that was paid, a send that landed — with an unread dot that is never the only signal.
 // Tapping marks it read and opens the request or the transaction. "Mark all read" when there is something unread.
 import { useRouter } from "expo-router";
-import { ChevronLeft, FileClock, GraduationCap, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
+import { ChevronLeft, GraduationCap, HeartPulse, ShieldAlert, ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { Linking, Pressable, RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -40,13 +40,10 @@ const BADGE = 18;
 const DOT = 8;
 const SKELETON_ROWS = 4;
 const SKELETON_HEIGHT = 64;
-const USDC_PLACES = 6;
 
 function InboxRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   if (item.kind === "position_health" || item.kind === "position_closed" || item.kind === "token_graduated") return <PositionAlertRow item={item} onPress={onPress} />;
-  if (item.kind === "device_signed_in" || item.kind === "device_signed_out" || item.kind === "invoice_due" || item.kind === "invoice_overdue") {
-    return <AlertRow item={item} onPress={onPress} />;
-  }
+  if (item.kind === "device_signed_in" || item.kind === "device_signed_out") return <AlertRow item={item} onPress={onPress} />;
   return <MoneyRow item={item} onPress={onPress} />;
 }
 
@@ -115,24 +112,13 @@ function PositionAlertRow({ item, onPress }: { item: InboxItem; onPress: () => v
   );
 }
 
-/** Security and business notices: an icon, the notice, and when. */
+/** Security notices (a device signed in or out): an icon, the notice, and when. */
 function AlertRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const { t } = useT();
-  const { locale } = useLocale();
   const dates = useRequestDates();
   const p = item.params;
-  const security = item.kind === "device_signed_in" || item.kind === "device_signed_out";
-  const places = Number(p.decimals ?? USDC_PLACES);
-  const owed = p.amount ? formatTokenAmount(BigInt(p.amount), places, p.asset ?? "", locale, { fractionDigits: Math.min(places, USDC_PLACES), trimZeros: true }) : "";
-  const title =
-    item.kind === "device_signed_in"
-      ? t("alerts.deviceSignedInTitle", { name: p.name ?? t("alerts.aDevice") })
-      : item.kind === "device_signed_out"
-        ? t("alerts.deviceSignedOutTitle", { name: p.name ?? t("alerts.aDevice") })
-        : item.kind === "invoice_overdue"
-          ? t("alerts.invoiceOverdueTitle", { number: p.number ?? "" })
-          : t(p.stage === "due_today" ? "alerts.invoiceDueTodayTitle" : "alerts.invoiceDueSoonTitle", { number: p.number ?? "" });
-  const detail = security ? [p.platform, p.location].filter(Boolean).join(" · ") : t("alerts.invoiceDueBody", { client: p.client ?? "", amount: owed });
+  const title = t(item.kind === "device_signed_in" ? "alerts.deviceSignedInTitle" : "alerts.deviceSignedOutTitle", { name: p.name ?? t("alerts.aDevice") });
+  const detail = [p.platform, p.location].filter(Boolean).join(" · ");
   const unread = !item.readAt;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${unread ? `${t("inbox.unread")}, ` : ""}${title}`} onPress={onPress} className="active:bg-muted flex-row items-center gap-3 px-4 py-3">
@@ -140,7 +126,7 @@ function AlertRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
         {unread ? <View className="bg-accent rounded-full" style={{ width: DOT, height: DOT }} /> : null}
       </View>
       <View className="bg-muted items-center justify-center rounded-full" style={{ width: AVATAR, height: AVATAR }}>
-        <Icon as={security ? ShieldAlert : FileClock} className={cn("size-5", item.kind === "invoice_overdue" || item.kind === "device_signed_in" ? "text-destructive" : "text-muted-foreground")} />
+        <Icon as={ShieldAlert} className={cn("size-5", item.kind === "device_signed_in" ? "text-destructive" : "text-muted-foreground")} />
       </View>
       <View className="min-w-0 flex-1 gap-0.5">
         <Text numberOfLines={2} className={cn("text-foreground text-base", unread ? "font-bold" : "font-semibold", TEXT_START)}>
@@ -202,7 +188,7 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
         ? t("notify.needsYouSwap", { amount: p.amount && p.decimalsIn ? formatTokenAmount(BigInt(p.amount), Number(p.decimalsIn), "", locale, { trimZeros: true, withSymbol: false }) : "", symbolIn: p.symbolIn ?? "", symbolOut: p.symbolOut ?? "" })
         : t("notify.needsYouSend", { amount, name })
       : reminder
-        ? [p.automationKind === "payroll" ? t("notify.reminderPayroll", { people: p.people ?? "" }) : p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : `${amount} → ${name}`, p.short ? t("notify.reminderShort") : null, p.at ? dates.moment(p.at) : null].filter(Boolean).join(" · ")
+        ? [p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : `${amount} → ${name}`, p.short ? t("notify.reminderShort") : null, p.at ? dates.moment(p.at) : null].filter(Boolean).join(" · ")
         : item.kind === "request_paid"
       ? t("inbox.requestPaidBy", { amount, name })
       : alert && p.balance
@@ -270,7 +256,6 @@ export function InboxScreen() {
     else if ((item.kind === "automation_skipped" || item.kind === "rule_alert") && item.params.runId) router.push({ pathname: "/why/run/[id]", params: { id: item.params.runId } });
     else if (item.kind === "automation_reminder" && item.params.automationId) router.push({ pathname: "/i/[id]", params: { id: item.params.automationId } });
     else if (item.kind === "device_signed_in" || item.kind === "device_signed_out") router.push("/account/devices");
-    else if ((item.kind === "invoice_due" || item.kind === "invoice_overdue") && item.params.invoiceId) router.push({ pathname: "/business/invoice/[id]", params: { id: item.params.invoiceId } });
     else if (item.kind === "automation_skipped" || item.kind === "rule_alert" || item.kind === "automation_reminder") router.push("/automations");
     else if (item.requestId) router.push({ pathname: "/request", params: { id: item.requestId } });
     // The action's own card by id (A5-2), or why money arrived; the explorer only when there is neither.
