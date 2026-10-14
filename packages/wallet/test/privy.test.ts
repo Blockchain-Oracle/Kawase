@@ -1,11 +1,14 @@
 // The Privy adapter (privy.ts) against viem's own local account: with the same key behind `signHash`, every signature
 // must be byte-for-byte what viem produces, whether the wallet returns v as 27/28 (what Privy's secp256k1_sign returned
-// on Arc testnet, 2026-10-14) or 0/1. The live Arc testnet run (setup 0x26fd81d4…, redeem 0xbac10503…, send 0xc5942512…)
-// is in the wallet lane report.
-// Run: pnpm --filter @kawase/wallet exec tsx --test test/privy.test.ts
+// on Arc testnet, 2026-10-14) or 0/1. Live run through this adapter on Arc testnet, wallet 0xb1032cdA…7fe5 (web
+// @privy-io/react-auth): 7702 setup 0xf9ab40ed1fe4aef39e0a4bd1618da08e73500498199eea293a73a73c7a62d98d, delegation
+// redeemed by the DelegationManager 0xe67033f140cf8af7c73520c638ea02cc4eaa49c6642b8958916729c2b743230b, wallet-signed
+// send 0x252dfa13fa8ef879d0e1f58a440d2afbc3c4db6a1ccdf47f1f79f64cef59d778, revoke
+// 0x2840caf9a8992010f09c40bc357ed28da53d354b2655c5a6ddb61837c9253d8a.
+// Run: pnpm --filter @kawase/wallet test
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseSignature, serializeSignature, type Hex, type TransactionSerializable } from "viem";
+import { parseSignature, recoverAddress, serializeSignature, type Hex, type TransactionSerializable } from "viem";
 import { generatePrivateKey, privateKeyToAccount, sign } from "viem/accounts";
 
 import { DELEGATION_FRAMEWORK } from "@kawase/networks";
@@ -105,4 +108,14 @@ test("passkey approval runs the app's confirm before every signature, and a refu
   assert.equal(parseSignature(signature).yParity !== undefined, true);
   await assert.rejects(signer.signMessage({ message: "two" }), /cancelled/);
   assert.equal(confirms, 2);
+});
+
+// A signature Privy's embedded wallet returned for secp256k1_sign on 2026-10-14 (web SDK): v = 0x1c (28), and it
+// recovers to the wallet with viem, as the adapter assumes.
+test("a real Privy raw-hash signature recovers to its wallet", async () => {
+  const hash = "0x50d4ce4f36e96a765db97504482c5da271b4a93b544608899d60f0c8683bcbc4";
+  const signature =
+    "0xc6270385ab5d7baac7357ec1f74ef1cb95171894fff340c7b0a90f88cad300be0dae300a290a1f636da008f3026ae8ece2e85756ec1cd565b17be63ad2f0bff01c";
+  assert.equal(await recoverAddress({ hash, signature }), "0xb1032cdAe59503AD265EAcf6cA2b2E49Ec6F7fe5");
+  assert.equal(parseSignature(signature).yParity, 1);
 });
