@@ -32,7 +32,7 @@ import {
   type Hex,
 } from "viem";
 
-import { NETWORKS, type NetworkId } from "@kawase/networks";
+import { CANONICAL_TOKENS, NETWORKS, TESTNET_PRICE_TWINS, type CanonicalToken, type NetworkId } from "@kawase/networks";
 
 import { ARC_CHAIN_IDS, SigningRefused, decodeDelegation, receiptOf, type DecodedCaveat, type DecodedDelegation, type Execution } from "./checks";
 
@@ -439,4 +439,67 @@ export async function verifyBudget(policy: BudgetPolicy, signature: Hex): Promis
   } catch {
     return false;
   }
+}
+
+// ── What the app compiles in for the budget guard (never taken from a response) ──────────────────────────────────
+
+const MAINNET_CHAIN_ID = NETWORKS.mainnet.chainId;
+const TESTNET_CHAIN_ID = NETWORKS.testnet.chainId;
+
+/**
+ * Kawase's ops wallet on each Arc network (Circle developer-controlled wallets; the api's OPS_WALLET_ADDRESS_*): the
+ * only delegate and the only redeemer a budget leaf or a contact grant may name. A leaf for anyone else is refused.
+ */
+export const KAWASE_OPS_WALLETS: Readonly<Record<number, Address>> = {
+  [MAINNET_CHAIN_ID]: getAddress("0x2afa6cb26f360adecbd8a014030a8aff17ae8b3b"),
+  [TESTNET_CHAIN_ID]: getAddress("0x2d9b5452178316e064d10e1424e8acf65a71b6b9"),
+};
+
+/**
+ * The contract each swap venue's leaf may call (its router), per Arc network. A venue missing here is never silent,
+ * whatever the budget lists: the phone cannot tell its router from anyone else's.
+ *  - kyberswap: MetaAggregationRouterV2 (@kawase/integrations-kyberswap KYBERSWAP_ROUTER; KyberSwap does not serve testnet);
+ *  - app_kit:   Circle App Kit's swap adapter (`swapAdapterContract`, read from the kit 2026-10-14);
+ *  - lifi:      LI.FI's diamond on Arc mainnet (@kawase/config LIFI_DIAMOND_ARC).
+ */
+export const BUDGET_SWAP_ROUTERS: Readonly<Record<number, Readonly<Record<string, readonly Address[]>>>> = {
+  [MAINNET_CHAIN_ID]: {
+    kyberswap: [getAddress("0x6131B5fae19EA4f9D964eAc0408E4408b66337b5")],
+    app_kit: [getAddress("0x7FB8c7260b63934d8da38aF902f87ae6e284a845")],
+    lifi: [getAddress("0xA4072583658Fae592A3506A42431cb6316a8d40b")],
+  },
+  [TESTNET_CHAIN_ID]: {
+    app_kit: [getAddress("0xBBD70b01a1CAbc96d5b7b129Ae1AAabdf50dd40b")],
+  },
+};
+
+/** The Arc network a chain id is, if it is one. */
+export function arcNetworkOf(chainId: number): NetworkId | undefined {
+  return Object.values(NETWORKS).find((network) => network.chainId === chainId)?.id;
+}
+
+/** Kawase's ops wallet on this chain, or undefined off Arc. */
+export const opsWalletFor = (chainId: number): Address | undefined => KAWASE_OPS_WALLETS[chainId];
+
+/** The routers of one swap venue on this chain (empty when the app does not know the venue there). */
+export function venueRouters(chainId: number, venue: string): readonly Address[] {
+  return BUDGET_SWAP_ROUTERS[chainId]?.[venue.toLowerCase()] ?? [];
+}
+
+/** A token Kawase vouches for on this chain (the compiled registry), or undefined. */
+export function vouchedToken(chainId: number, address: string): CanonicalToken | undefined {
+  const network = arcNetworkOf(chainId);
+  if (!network) return undefined;
+  return CANONICAL_TOKENS[network].find((token) => same(token.address, address));
+}
+
+/**
+ * Where to price a token independently: itself on mainnet; a test token's mainnet twin on testnet (test money has no
+ * market of its own, so it is valued at the real token's price, as the api does).
+ */
+export function priceSourceOf(chainId: number, token: Address): { chainId: number; token: Address } | undefined {
+  if (chainId === MAINNET_CHAIN_ID) return { chainId, token };
+  if (chainId !== TESTNET_CHAIN_ID) return undefined;
+  const twin = TESTNET_PRICE_TWINS[token.toLowerCase()];
+  return twin ? { chainId: MAINNET_CHAIN_ID, token: twin } : undefined;
 }

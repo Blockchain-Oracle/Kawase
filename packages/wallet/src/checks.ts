@@ -19,6 +19,9 @@ export const BUDGET_ENFORCERS = {
   nonce: "0xDE4f2FAC4B3D87A1d9953Ca5FC09FCa7F366254f",
 } as const satisfies Record<string, Address>;
 
+/** Kawase's DelegationManager (MetaMask Delegation Framework v1.3.0, the same on both Arc networks). */
+export const DELEGATION_FRAMEWORK_MANAGER = DELEGATION_FRAMEWORK.delegationManager as Address;
+
 /** The only chains this wallet signs an authorization or a delegation for. */
 export const ARC_CHAIN_IDS: readonly number[] = Object.values(NETWORKS).map((network) => network.chainId);
 
