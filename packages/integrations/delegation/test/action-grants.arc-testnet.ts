@@ -36,6 +36,7 @@ import {
   grantTypedData,
   isWalletSetUp,
   randomSalt,
+  simpleSwapPlan,
   readGrantNonce,
   setupAuthorizationRequest,
   withSignature,
@@ -91,6 +92,7 @@ function record(name: string, expected: "pass" | "fail", ok: boolean, extra: { t
 const balanceOf = (token: Address, owner: Address) => client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [owner] });
 const nowS = async () => Number((await client.getBlock()).timestamp);
 const sign = async (leaf: Delegation) => withSignature(leaf, await user.signTypedData(grantTypedData(network, leaf)));
+const signAll = (steps: readonly LeafStep[]) => Promise.all(steps.map(async (step) => ({ ...step, grant: await sign(step.grant) })));
 
 async function waitForCircle(id: string) {
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
@@ -177,21 +179,18 @@ let leftoverLeaf: LeafStep[] | undefined;
   const amountIn = usdc(SWAP_USDC);
   const { quote, router, routerCalldata } = await route(SWAP_USDC, user.address);
   const now = await nowS();
-  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: opsAddress, router, tokenIn: USDC, tokenOut: EURC, amountIn, minOut: quote.minOut, routerCalldata, nonce, now, salts: [randomSalt(), randomSalt()] });
+  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: opsAddress, tokenIn: USDC, tokenOut: EURC, amountIn: amountIn, minOut: quote.minOut, plan: simpleSwapPlan(USDC, router, amountIn, routerCalldata), nonce, now });
   // The phone: decode both leaves and compare with what it expects on its own, before it signs.
   let phone = "";
   try {
-    const typed = [grantTypedData(network, leaves.approveLeaf), grantTypedData(network, leaves.swapLeaf)] as const;
-    const checked = checkSwapLeaves(typed as never, { wallet: user.address, ops: opsAddress, now, nonce, routers: [router], tokenIn: USDC, tokenOut: EURC, amountIn, minOut: quote.minOut });
+    const typed = leaves.leaves.map((leaf) => grantTypedData(network, leaf));
+    const checked = checkSwapLeaves(typed as never, { wallet: user.address, ops: opsAddress, now, nonce, venue: { targets: [router], spenders: [router] }, tokenIn: USDC, tokenOut: EURC, amountIn, minOut: quote.minOut });
     phone = `guaranteed ${formatUnits(checked.guaranteedOut, DECIMALS)} EURC`;
   } catch (error) {
     phone = String(error);
   }
   record("phone checks the swap leaves against its own quote", "pass", phone.startsWith("guaranteed"), { detail: phone });
-  const signed: LeafStep[] = [
-    { ...leaves.steps[0], grant: await sign(leaves.approveLeaf) },
-    { ...leaves.steps[1], grant: await sign(leaves.swapLeaf) },
-  ];
+  const signed: LeafStep[] = await signAll(leaves.steps);
   const receipt = describeGrant(network, signed[1]!.grant);
   record("the signed swap leaf decodes to its guarantees", "pass", receipt.unknownCaveats.length === 0 && receipt.balanceChanges.length === 2 && receipt.nonce !== undefined && receipt.maxCalls === 1, {
     detail: JSON.stringify(receipt.balanceChanges, (_, v) => (typeof v === "bigint" ? v.toString() : v)),
@@ -216,13 +215,10 @@ let leftoverLeaf: LeafStep[] | undefined;
   const ownRoute = await route(SMALL_SWAP_USDC, user.address);
   const theft = await route(SMALL_SWAP_USDC, relayerAccount.address);
   const now = await nowS();
-  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, router: theft.router, tokenIn: USDC, tokenOut: EURC, amountIn, minOut: ownRoute.quote.minOut, routerCalldata: theft.routerCalldata, nonce, now, salts: [randomSalt(), randomSalt()] });
-  const control = await revertReason(user.address, { to: user.address, data: encodeSelfBatch([{ to: leaves.steps[0].target, data: leaves.steps[0].callData }, { to: theft.router, data: theft.routerCalldata }]) });
+  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, tokenIn: USDC, tokenOut: EURC, amountIn: amountIn, minOut: ownRoute.quote.minOut, plan: simpleSwapPlan(USDC, theft.router, amountIn, theft.routerCalldata), nonce, now });
+  const control = await revertReason(user.address, { to: user.address, data: encodeSelfBatch([{ to: leaves.steps[0]!.target, data: leaves.steps[0]!.callData }, { to: theft.router, data: theft.routerCalldata }]) });
   record("control: the redirected calls run when the wallet sends them itself", "pass", control === "", { detail: control || "eth_call succeeds, output to the redeemer" });
-  const call = encodeRedeemLeaves(network, [
-    { ...leaves.steps[0], grant: await sign(leaves.approveLeaf) },
-    { ...leaves.steps[1], grant: await sign(leaves.swapLeaf) },
-  ]);
+  const call = encodeRedeemLeaves(network, await signAll(leaves.steps));
   const reason = await revertReason(relayerAccount.address, call);
   const eurcBefore = await balanceOf(EURC, relayerAccount.address);
   const mined = await minedRedeem(call);
@@ -236,11 +232,8 @@ let leftoverLeaf: LeafStep[] | undefined;
   const { quote, router, routerCalldata } = await route(SMALL_SWAP_USDC, user.address);
   const greedy = quote.estimatedOut * 2n;
   const now = await nowS();
-  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, router, tokenIn: USDC, tokenOut: EURC, amountIn, minOut: greedy, routerCalldata, nonce, now, salts: [randomSalt(), randomSalt()] });
-  const call = encodeRedeemLeaves(network, [
-    { ...leaves.steps[0], grant: await sign(leaves.approveLeaf) },
-    { ...leaves.steps[1], grant: await sign(leaves.swapLeaf) },
-  ]);
+  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, tokenIn: USDC, tokenOut: EURC, amountIn: amountIn, minOut: greedy, plan: simpleSwapPlan(USDC, router, amountIn, routerCalldata), nonce, now });
+  const call = encodeRedeemLeaves(network, await signAll(leaves.steps));
   const reason = await revertReason(relayerAccount.address, call);
   const usdcBefore = await balanceOf(USDC, user.address);
   const mined = await minedRedeem(call);
@@ -286,11 +279,8 @@ const contactGrant = await sign(contactGrantUnsigned!);
 // A leaf signed at the current nonce, kept unredeemed to show (5) kills it too.
 {
   const { quote, router, routerCalldata } = await route(SMALL_SWAP_USDC, user.address);
-  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, router, tokenIn: USDC, tokenOut: EURC, amountIn: usdc(SMALL_SWAP_USDC), minOut: quote.minOut, routerCalldata, nonce, now: await nowS(), salts: [randomSalt(), randomSalt()] });
-  leftoverLeaf = [
-    { ...leaves.steps[0], grant: await sign(leaves.approveLeaf) },
-    { ...leaves.steps[1], grant: await sign(leaves.swapLeaf) },
-  ];
+  const leaves = buildSwapLeaves({ network, wallet: user.address, ops: relayerAccount.address, tokenIn: USDC, tokenOut: EURC, amountIn: usdc(SMALL_SWAP_USDC), minOut: quote.minOut, plan: simpleSwapPlan(USDC, router, usdc(SMALL_SWAP_USDC), routerCalldata), nonce, now: await nowS() });
+  leftoverLeaf = await signAll(leaves.steps);
   const before = await revertReason(relayerAccount.address, encodeRedeemLeaves(network, leftoverLeaf));
   record("control: a fresh leaf at the current nonce would redeem", "pass", before === "", { detail: before || "eth_call succeeds" });
 }
