@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Publish the web app: export it here with the production values, copy it to the server as a new release, point
-# `current` at it and restart the container (apps/mobile/Dockerfile.prebuilt). Minutes instead of the server's hour.
+# `current` at it and signal the server to reload it (apps/mobile/Dockerfile.prebuilt; no restart, no gap).
 #   apps/mobile/scripts/publish-web.sh              # export the working tree and go live
 #   apps/mobile/scripts/publish-web.sh --no-export  # re-publish apps/mobile/dist as it is
 set -euo pipefail
@@ -21,5 +21,5 @@ rsync -az --delete apps/mobile/dist/ "$HOST:/data/kawase-web/releases/$SHA/"
 # A relative link resolves the same inside the container (/srv/current -> /srv/releases/<sha>). Five releases are kept.
 ssh "$HOST" "cd /data/kawase-web && chmod -R a+rX releases/$SHA && ln -sfn releases/$SHA current.tmp && mv -Tf current.tmp current \
   && ls -1t releases | tail -n +6 | xargs -r -I{} rm -rf releases/{} \
-  && docker ps --format '{{.Names}}' | grep '^$APP' | xargs -r docker restart"
+  && docker ps --format '{{.Names}}' | grep '^$APP' | xargs -r docker kill -s HUP"
 echo "live: $SHA  (https://app.getkawase.xyz/version.txt)"

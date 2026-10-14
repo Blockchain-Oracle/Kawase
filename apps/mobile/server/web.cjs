@@ -1,7 +1,7 @@
 // Serves the web build: static files from dist/client, everything else through Expo's server handler
 // (prerendered routes and, later, API routes). Run after `npx expo export --platform web`.
 // CommonJS because expo-server's ESM build has extensionless imports that Node cannot resolve unbundled.
-const { createReadStream, existsSync, statSync } = require("node:fs");
+const { createReadStream, existsSync, realpathSync, statSync } = require("node:fs");
 const { createServer } = require("node:http");
 const { extname, join, normalize, sep } = require("node:path");
 const { createRequestHandler } = require("expo-server/adapter/http");
@@ -11,7 +11,13 @@ const { createRequestHandler } = require("expo-server/adapter/http");
 const root = process.env.KAWASE_WEB_DIST ?? join(__dirname, "..", "dist");
 const client = join(root, "client");
 const port = Number(process.env.PORT ?? "3000");
-const handler = createRequestHandler({ build: join(root, "server") });
+let handler = createRequestHandler({ build: join(root, "server") });
+// A published release (apps/mobile/scripts/publish-web.sh) swaps `current` and sends SIGHUP: static files already
+// follow the link per request, and the route handler is rebuilt here, so a release goes live with no restart.
+process.on("SIGHUP", () => {
+  handler = createRequestHandler({ build: join(root, "server") });
+  console.log(`web: reloaded ${realpathSync(root)}`);
+});
 
 const TYPES = {
   ".html": "text/html; charset=utf-8",
