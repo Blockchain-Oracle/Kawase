@@ -28,8 +28,11 @@ export function kyberQuote(fetchImpl: typeof fetch = fetch, timeoutMs = QUOTE_TI
     const slug = KYBER_SLUGS[from.chainId];
     if (!slug) return undefined;
     const query = new URLSearchParams({ tokenIn: from.token, tokenOut: to.token, amountIn: amountIn.toString() });
+    // AbortController rather than AbortSignal.timeout, which not every React Native runtime has.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetchImpl(`${KYBER_API}/${slug}/api/v1/routes?${query}`, { headers: { "x-client-id": CLIENT_ID }, signal: AbortSignal.timeout(timeoutMs) });
+      const response = await fetchImpl(`${KYBER_API}/${slug}/api/v1/routes?${query}`, { headers: { "x-client-id": CLIENT_ID }, signal: controller.signal });
       if (!response.ok) return undefined;
       const body = (await response.json()) as { code?: number; data?: { routeSummary?: { amountOut?: unknown } } };
       const out = body.code === 0 ? body.data?.routeSummary?.amountOut : undefined;
@@ -38,6 +41,8 @@ export function kyberQuote(fetchImpl: typeof fetch = fetch, timeoutMs = QUOTE_TI
       return amount > NONE ? amount : undefined;
     } catch {
       return undefined;
+    } finally {
+      clearTimeout(timer);
     }
   };
 }
