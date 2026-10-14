@@ -110,8 +110,9 @@ Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compre
   account; the Turnkey wallet is retired and the Privy one registered (`registerUserWallet`).
 - The desktop rail scrolls between its pinned header and footer.
 - Still Turnkey: the native builds (EAS env), so the next TestFlight/APK needs `EXPO_PUBLIC_WALLET_PROVIDER=privy`.
-- Abu's 10-14 design review (composer, voice orb, trending, live charts, BasedBot links, handle input, testnet toggle)
-  goes into one combined plan with `compressed-dreaming-yao.md`.
+- **The plan now:** `/Users/abu/.claude/plans/breezy-puzzling-starfish.md`: the open parts of `compressed-dreaming-yao.md`
+  merged with Abu's 10-14 design review (voice mode, composer, live markets with on-chain ticks, BasedBot links, logos,
+  lime purge, mobile header), in order A money path → B voice → C composer → D live markets → E sweep → F mainnet/submit.
 
 ## Now — 2026-10-02 afternoon (Claude Code leads; Codex no longer used)
 
