@@ -1,0 +1,12 @@
+# The web app served from an export built elsewhere (scripts/publish-web.sh): this image is only the small Node
+# server; the export lives on the host at /data/kawase-web (releases/<commit>, with `current` pointing at the live
+# one) and is mounted at /srv. Building the monorepo on the server took over an hour on its 8 GB, so the export is
+# made on a developer machine and copied up; a release is live after a container restart.
+FROM node:24-alpine
+WORKDIR /app
+ENV NODE_ENV=production KAWASE_WEB_DIST=/srv/current
+RUN npm install --no-audit --no-fund --omit=dev expo-server@57.0.3 && npm cache clean --force
+COPY apps/mobile/server /app/server
+USER node
+EXPOSE 3000
+CMD ["node", "server/web.cjs"]

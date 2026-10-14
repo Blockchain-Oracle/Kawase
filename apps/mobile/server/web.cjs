@@ -6,7 +6,9 @@ const { createServer } = require("node:http");
 const { extname, join, normalize, sep } = require("node:path");
 const { createRequestHandler } = require("expo-server/adapter/http");
 
-const root = join(__dirname, "..", "dist");
+// KAWASE_WEB_DIST points at an export published from outside the image (Dockerfile.prebuilt); otherwise the export
+// baked in beside this script.
+const root = process.env.KAWASE_WEB_DIST ?? join(__dirname, "..", "dist");
 const client = join(root, "client");
 const port = Number(process.env.PORT ?? "3000");
 const handler = createRequestHandler({ build: join(root, "server") });

@@ -7,7 +7,7 @@
  * It mirrors in right-to-left languages because its rows are measured, not indexed.
  */
 import { type ReactNode, type Ref, useEffect, useState } from "react";
-import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import { type LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from "react-native-reanimated";
 
 import { fire } from "@/feedback/fire";
@@ -99,7 +99,8 @@ export function Rail({
       ]}
     >
       {header ? <View style={[styles.header, compact ? styles.centered : null]}>{header}</View> : null}
-      <View style={styles.body}>
+      {/* The rows scroll between the pinned header and footer, so a short window never hides them under the footer. */}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {selectable && active ? (
           <Animated.View pointerEvents="none" style={[styles.pill, { backgroundColor: color.raised2 }, pill]} />
         ) : null}
@@ -145,7 +146,7 @@ export function Rail({
             ))}
           </View>
         ))}
-      </View>
+      </ScrollView>
       {footer ? <View style={[styles.footer, compact ? styles.centered : null]}>{footer}</View> : null}
     </View>
   );
@@ -216,7 +217,10 @@ const styles = StyleSheet.create({
   header: { gap: SPACE.md },
   footer: { gap: SPACE.sm },
   centered: { alignItems: "center" },
-  body: { flex: 1, gap: SPACE.lg },
+  // minHeight 0 lets the scroller shrink below its rows inside the rail's column (a flex child keeps its content's
+  // height otherwise, and the footer would cover the last rows again).
+  scroll: { flex: 1, minHeight: 0 },
+  body: { gap: SPACE.lg },
   pill: { position: "absolute", left: 0, right: 0, top: 0, borderRadius: RADIUS.md },
   section: { gap: SPACE.xxs },
   sectionLabel: { paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
