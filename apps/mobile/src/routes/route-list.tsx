@@ -8,6 +8,7 @@
 // apply as they land.
 import type { RouteQuote, RouteRace } from "@kawase/api-client";
 import { MOTION } from "@kawase/config";
+import { hasUncasedScript } from "@kawase/i18n";
 import { Amount } from "@kawase/ui-native/components/amount";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -379,9 +380,11 @@ function factLines(row: RouteQuote, locale: string, t: Translate): string[] {
 /** 21st 6955 badge tag: an inset pill on the accent. */
 function BestBadge() {
   const { t } = useT();
+  const label = t("routes.best");
   return (
     <View className="bg-primary rounded-full px-2 py-0.5">
-      <Text className="text-primary-foreground text-[10px] font-bold uppercase tracking-wider">{t("routes.best")}</Text>
+      {/* Joined and uncased scripts are never letter-spaced (packages/i18n/src/scripts.ts). */}
+      <Text className={cn("text-primary-foreground text-xs font-bold", hasUncasedScript(label) ? null : "uppercase tracking-wider")}>{label}</Text>
     </View>
   );
 }
