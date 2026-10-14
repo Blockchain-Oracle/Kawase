@@ -9,6 +9,8 @@ import MarkAisa from "./aisa";
 import MarkAisaMono from "./aisa-mono";
 import MarkApple from "./apple";
 import MarkAppleMono from "./apple-mono";
+import MarkApplepay from "./applepay";
+import MarkApplepayMono from "./applepay-mono";
 import MarkArbitrum from "./arbitrum";
 import MarkArbitrumMono from "./arbitrum-mono";
 import MarkArc from "./arc";
@@ -40,9 +42,12 @@ import MarkEurc from "./eurc";
 import MarkEurcMono from "./eurc-mono";
 import MarkExa from "./exa";
 import MarkExaMono from "./exa-mono";
+import MarkGaszip from "./gaszip";
 import MarkGoldsky from "./goldsky";
 import MarkGoogle from "./google";
 import MarkGoogleMono from "./google-mono";
+import MarkGooglepay from "./googlepay";
+import MarkGooglepayMono from "./googlepay-mono";
 import MarkKawase from "./kawase";
 import MarkKawaseMono from "./kawase-mono";
 import MarkKraken from "./kraken";
@@ -55,6 +60,7 @@ import MarkLedger from "./ledger";
 import MarkLedgerMono from "./ledger-mono";
 import MarkLifi from "./lifi";
 import MarkLifiMono from "./lifi-mono";
+import MarkMerkl from "./merkl";
 import MarkMetamask from "./metamask";
 import MarkMorpho from "./morpho";
 import MarkMorphoMono from "./morpho-mono";
@@ -72,16 +78,21 @@ import MarkRabby from "./rabby";
 import MarkRabbyMono from "./rabby-mono";
 import MarkRelay from "./relay";
 import MarkRelayMono from "./relay-mono";
+import MarkSocket from "./socket";
 import MarkSolana from "./solana";
 import MarkSolanaMono from "./solana-mono";
 import MarkUnichain from "./unichain";
 import MarkUnichainMono from "./unichain-mono";
+import MarkUniswap from "./uniswap";
+import MarkUniswapMono from "./uniswap-mono";
 import MarkUsdc from "./usdc";
 import MarkUsdcMono from "./usdc-mono";
 import MarkVangrid from "./vangrid";
 import MarkVangridMono from "./vangrid-mono";
 import MarkWeth from "./weth";
 import MarkWethMono from "./weth-mono";
+import MarkZerox from "./zerox";
+import MarkZeroxMono from "./zerox-mono";
 
 /** File stem → component. Absent stems have not been delivered (see PROVENANCE.md). */
 export const MARKS = {
@@ -95,6 +106,8 @@ export const MARKS = {
   "aisa-mono": MarkAisaMono,
   "apple": MarkApple,
   "apple-mono": MarkAppleMono,
+  "applepay": MarkApplepay,
+  "applepay-mono": MarkApplepayMono,
   "arbitrum": MarkArbitrum,
   "arbitrum-mono": MarkArbitrumMono,
   "arc": MarkArc,
@@ -126,9 +139,12 @@ export const MARKS = {
   "eurc-mono": MarkEurcMono,
   "exa": MarkExa,
   "exa-mono": MarkExaMono,
+  "gaszip": MarkGaszip,
   "goldsky": MarkGoldsky,
   "google": MarkGoogle,
   "google-mono": MarkGoogleMono,
+  "googlepay": MarkGooglepay,
+  "googlepay-mono": MarkGooglepayMono,
   "kawase": MarkKawase,
   "kawase-mono": MarkKawaseMono,
   "kraken": MarkKraken,
@@ -141,6 +157,7 @@ export const MARKS = {
   "ledger-mono": MarkLedgerMono,
   "lifi": MarkLifi,
   "lifi-mono": MarkLifiMono,
+  "merkl": MarkMerkl,
   "metamask": MarkMetamask,
   "morpho": MarkMorpho,
   "morpho-mono": MarkMorphoMono,
@@ -158,16 +175,21 @@ export const MARKS = {
   "rabby-mono": MarkRabbyMono,
   "relay": MarkRelay,
   "relay-mono": MarkRelayMono,
+  "socket": MarkSocket,
   "solana": MarkSolana,
   "solana-mono": MarkSolanaMono,
   "unichain": MarkUnichain,
   "unichain-mono": MarkUnichainMono,
+  "uniswap": MarkUniswap,
+  "uniswap-mono": MarkUniswapMono,
   "usdc": MarkUsdc,
   "usdc-mono": MarkUsdcMono,
   "vangrid": MarkVangrid,
   "vangrid-mono": MarkVangridMono,
   "weth": MarkWeth,
   "weth-mono": MarkWethMono,
+  "zerox": MarkZerox,
+  "zerox-mono": MarkZeroxMono,
 } as const;
 
 export type MarkStem = keyof typeof MARKS;

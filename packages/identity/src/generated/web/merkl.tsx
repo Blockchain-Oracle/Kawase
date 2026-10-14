@@ -1,0 +1,5 @@
+// GENERATED from svg/ by build.mjs. Do not edit; replace the SVG and rebuild.
+import * as React from "react";
+import type { SVGProps } from "react";
+const MarkMerkl = (props: SVGProps<SVGSVGElement>) => <svg width="100%" height="100%" fill="none" {...props}><circle cx={68} cy={68} r={68} fill="#1F2333" /><path fill="#B9AAFD" d="M82.143 55.111H101v9.333H82.143z" /><path fill="#fff" d="M93.143 70.665H112v10.889H93.143zM58.572 38h18.857v9.333H58.572z" /><path fill="#B9AAFD" d="M93.143 87.776H112v6.222H93.143z" /><path fill="#fff" d="M71.143 70.665h17.286v10.889H71.143zM71.143 87.776h17.286v6.222H71.143z" /><path fill="#B9AAFD" d="M47.571 70.665h17.286v10.889H47.571z" /><path fill="#fff" d="M47.571 87.776h17.286v6.222H47.571zM24 70.665h18.857v10.889H24zM35 55.111h18.857v9.333H35zM24 87.776h18.857v6.222H24z" /></svg>;
+export default MarkMerkl;
