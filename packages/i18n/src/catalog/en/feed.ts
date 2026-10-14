@@ -1,2 +1,49 @@
 // Owned by one build lane (plan: compressed-dreaming-yao). Keys are added here first, then in every language.
-export const feed = {};
+// The front door (D37): watching the agent work — the route race card, who approved a step, the agent offline.
+export const feed = {
+  // The race card (race_routes): every venue asked at once, each lighting up as its quote lands.
+  raceSwap: "Swap · best price",
+  raceBridge: "Move · best route",
+  raceYield: "Earn · best rate",
+  raceAsking: "Asking every venue",
+  raceAnswered: "{{answered}} of {{total}} answered",
+  raceCompared: "{{total}} venues compared",
+  raceBest: "Best",
+  raceFee: "{{fee}} fee",
+  raceSeconds: "~{{value}} s",
+  raceMinutes: "~{{value}} min",
+  raceRate: "{{rate}} a year",
+  racePick: "Kawase suggests {{venue}}. It quotes again before anything moves.",
+  raceNone: "No venue can do this right now.",
+  raceNoAnswer: "No venue answered. Nothing moved.",
+  raceDirect: "Quoting directly",
+  raceTryAgain: "Try again",
+  raceTryAgainPrompt: "Try that again",
+  // Why a venue did not quote (RouteQuote.reason).
+  reasonTimeout: "Too slow",
+  reasonNoRoute: "No route",
+  reasonNotOnNetwork: "Not on this network",
+  reasonAmountTooLow: "Amount too low",
+  reasonUnavailable: "Not available",
+  // Who said yes to a step (AI SDK toolApproval).
+  insideBudget: "Inside your budget",
+  askFirst: "Go ahead?",
+  askOutsideText: "This chat has text from outside Kawase, so you decide.",
+  askOtherRecipient: "This goes to someone else, so you decide.",
+  goAhead: "Go ahead",
+  notNow: "Not now",
+  preparing: "Preparing…",
+  notDone: "Not done. Nothing moved.",
+  expired: "This request expired. Ask again.",
+  stepSwap: "Swap",
+  stepBridge: "Move",
+  stepBringIn: "Bring to Arc",
+  stepEarn: "Earn",
+  stepVia: "via {{venue}}",
+  // The agent offline (the model's self-test failed).
+  offlineTitle: "The agent is offline",
+  offlineBody: "Your money and every screen still work.",
+  offlineCheck: "Check again",
+  offlineChecking: "Checking…",
+  offlineBack: "The agent is back.",
+};
