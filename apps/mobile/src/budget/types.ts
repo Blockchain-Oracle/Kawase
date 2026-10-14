@@ -19,7 +19,7 @@ export type BudgetView = {
 export type BudgetLedgerRow = { id: string; intentId: string | null; category: string; venue: string; amountUsd: string; createdAt: string; counts: boolean };
 
 /** Why the server says an action is not silent (the guard has its own, stricter list). */
-export type ServerBudgetRefusal = "no_budget" | "paused" | "guard" | "practice" | "category_off" | "venue_off" | "over_action_cap" | "over_week" | "unpriced";
+export type ServerBudgetRefusal = "no_budget" | "paused" | "guard" | "practice" | "category_off" | "venue_off" | "over_action_cap" | "over_week" | "unpriced" | "token_unvetted";
 
 /** One leaf as the api hands it out: typed data to sign (salt as a decimal string) and the receipt it decoded. */
 export type LeafOffer = { typedData: Record<string, unknown>; receipt: Record<string, unknown> };

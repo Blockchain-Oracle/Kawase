@@ -3,7 +3,9 @@
 //   POST /proposal                 the typed data to sign for new terms (the phone compares before signing)
 //   PUT  /                         a signed budget: verified against the wallet, replaces the one before
 //   POST /pause · /resume          silent: pausing only ever makes Kawase do less
-//   DELETE /                       ends the budget (the on-chain kill-switch is the phone's incrementNonce)
+//   DELETE /                       ends the budget (the on-chain kill-switch is below)
+//   POST /kill-switch              pauses, and hands the wallet incrementNonce to sign (relayed when it can be)
+//   POST /kill-switch/submit       { requestId, relayed, signed } → the relayer (or the wallet's own transaction) sends it
 //   GET  /ledger                   this week's silent actions
 //   POST /swaps/:id/leaf           { version } → sign_leaf (leaves to sign) or outside_budget
 //   POST /swaps/:id/leaf/signature { approvalId, signatures } → executing (ops redeems)
@@ -46,6 +48,7 @@ const savedSchema = z.object({
   signature: z.string().regex(SIGNATURE),
 });
 const leafSchema = z.object({ version: z.number().int().positive() });
+const killSubmitSchema = z.object({ requestId: z.string().min(1).max(VENUE_MAX), relayed: z.boolean(), signed: z.string().regex(/^0x[0-9a-fA-F]+$/) });
 const leafSignatureSchema = z.object({ approvalId: z.uuid(), signatures: z.array(z.string().regex(SIGNATURE)).min(1).max(MAX_LEAVES) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
@@ -69,6 +72,12 @@ export function budgetRoutes(deps: { budget: BudgetService; swaps: SwapService; 
   app.post("/pause", async (c) => c.json({ budget: await budget.setPaused(c.get("user")!, true) }));
   app.post("/resume", requireAccount, async (c) => c.json({ budget: await budget.setPaused(c.get("user")!, false) }));
   app.delete("/", async (c) => c.json({ budget: await budget.end(c.get("user")!) }));
+  // Only ever takes power away, so neither step needs a step-up.
+  app.post("/kill-switch", async (c) => c.json({ revoke: await budget.killSwitch(c.get("user")!) }));
+  app.post("/kill-switch/submit", async (c) => {
+    const input = await parse(killSubmitSchema, await c.req.json());
+    return c.json(await budget.submitKillSwitch(c.get("user")!, { requestId: input.requestId, relayed: input.relayed, signed: input.signed as `0x${string}` }));
+  });
 
   // A braked draft (risky: price impact past the person's rule, leverage…) is never silent: it needs their override on
   // the card, which is the ordinary path's Face ID. So the leaf path refuses it outright.

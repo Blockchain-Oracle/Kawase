@@ -36,7 +36,7 @@ export type LeafBudgetLine = { category: BudgetCategory; venue: string; amountUs
 export type LeafResponse<Intent> =
   | { status: "sign_leaf"; intent: Intent; approvalId: string; leaves: LeafOffer[]; expiresAt: string; budget: LeafBudgetLine & { leftThisWeek: string } }
   /** Not silent: the phone falls back to the ordinary approval (a slide or Face ID) and says why. */
-  | { status: "outside_budget"; intent: Intent; reason: BudgetRefusal | "unpriced" }
+  | { status: "outside_budget"; intent: Intent; reason: BudgetRefusal | "unpriced" | "token_unvetted" }
   | { status: "executing"; intent: Intent }
   | { status: "changed"; intent: Intent }
   | { status: "final"; intent: Intent };

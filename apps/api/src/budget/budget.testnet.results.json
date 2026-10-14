@@ -1,10 +1,10 @@
 {
-  "at": "2026-10-14T09:38:39.477Z",
-  "wallet": "0x6c66dbcE544801809ed314a0FF3DF08c22611a7f",
+  "at": "2026-10-14T10:20:36.890Z",
+  "wallet": "0x8892FABa4324Cb162e8b56A8452d9d06032b8006",
   "budget": {
     "network": "testnet",
     "policy": {
-      "wallet": "0x6c66dbce544801809ed314a0ff3df08c22611a7f",
+      "wallet": "0x8892faba4324cb162e8b56a8452d9d06032b8006",
       "chainId": 5042002,
       "weeklyCap": "5000000",
       "perActionCap": "1000000",
@@ -17,32 +17,70 @@
         "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88",
         "0x8f2d33b5d4b9b5f02df635ae308f7b4c9da8d2dc"
       ],
-      "issuedAt": 1791970684,
+      "issuedAt": 1791973204,
       "version": 1
     },
-    "signature": "0x0fc2a1f376a119b3594dc4666d5dd7006e0904b75bc9abad6b82cee62f2c4a025853191ae7ca4d09e0047e3f5039c735b8007071b644b31ec5a8fda7b2d2522d1b",
+    "signature": "0xca8d74533ac746dbed741b36d49dcec72c0bdfff9fe5dd7697e149c0a72215cb1bff038013a46e13870db7b16123a29d5b453cba7351179c728e1ea9215e572e1c",
     "paused": false,
     "spentThisWeek": "0",
     "leftThisWeek": "5000000",
     "weekStartsAt": "2026-10-12T00:00:00.000Z",
     "weekEndsAt": "2026-10-19T00:00:00.000Z"
   },
+  "swapGuard": {
+    "silent": true,
+    "reason": "inside_budget",
+    "category": "swap",
+    "amountUsd": "300000",
+    "leftAfter": "4700000",
+    "guarantees": [
+      {
+        "token": "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+        "amount": "371682",
+        "direction": "increase"
+      },
+      {
+        "token": "0x3600000000000000000000000000000000000000",
+        "amount": "300000",
+        "direction": "decrease"
+      }
+    ]
+  },
   "swap": {
-    "intent": "01a139c6-ad0c-7ec0-8bcd-f4bde22b5ab0",
+    "intent": "01a139ed-222c-7598-8472-6f1c2437563c",
     "tx": {
-      "hash": "0x750f47bb77ff1a7a8d28b21bcabb34f2d8c675efb20197bbcd9dc996f3ad9918",
-      "explorerUrl": "https://testnet.arcscan.app/tx/0x750f47bb77ff1a7a8d28b21bcabb34f2d8c675efb20197bbcd9dc996f3ad9918"
+      "hash": "0xa815f9e098e2995de48722a312ccff8baaadfad75bad37fe39b251a10a2b740a",
+      "explorerUrl": "https://testnet.arcscan.app/tx/0xa815f9e098e2995de48722a312ccff8baaadfad75bad37fe39b251a10a2b740a"
     },
-    "received": "377796",
-    "minOut": "370240",
+    "received": "379267",
+    "minOut": "371682",
     "amountIn": "300000"
   },
+  "earnGuard": {
+    "silent": true,
+    "reason": "inside_budget",
+    "category": "earn",
+    "amountUsd": "200000",
+    "leftAfter": "4500000",
+    "guarantees": [
+      {
+        "token": "0xAabbeF1D3971c710276ed41eC791BbE14CdB8E88",
+        "amount": "197790665700212384",
+        "direction": "increase"
+      },
+      {
+        "token": "0x3600000000000000000000000000000000000000",
+        "amount": "200000",
+        "direction": "decrease"
+      }
+    ]
+  },
   "earn": {
-    "intent": "01a139c6-e57c-7e3a-8f15-9923c7346ca1",
+    "intent": "01a139ed-4e53-7de2-9efd-003e4f8d0423",
     "state": "completed",
     "tx": {
-      "hash": "0x2020c9b47f53fb734b1403beff71f7e5d9f143ff35417ac410da0f9c3d5af877",
-      "explorerUrl": "https://testnet.arcscan.app/tx/0x2020c9b47f53fb734b1403beff71f7e5d9f143ff35417ac410da0f9c3d5af877"
+      "hash": "0x5eb4caee4a2ed8876eb511a709fa4e48e522f3092504862735ad7fc0d55e81fb",
+      "explorerUrl": "https://testnet.arcscan.app/tx/0x5eb4caee4a2ed8876eb511a709fa4e48e522f3092504862735ad7fc0d55e81fb"
     },
     "vault": "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88"
   },
@@ -51,26 +89,33 @@
     "leftThisWeek": "4500000",
     "rows": [
       {
-        "id": "01a139c6-f4e4-7377-96e0-9e6694e3559b",
-        "intentId": "01a139c6-e57c-7e3a-8f15-9923c7346ca1",
+        "id": "01a139ed-5945-7f14-86d5-d49641bc4a4a",
+        "intentId": "01a139ed-4e53-7de2-9efd-003e4f8d0423",
         "category": "earn",
         "venue": "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88",
         "amountUsd": "200000",
-        "createdAt": "2026-10-14T09:38:22.537Z",
+        "createdAt": "2026-10-14T10:20:18.611Z",
         "counts": true
       },
       {
-        "id": "01a139c6-cfa1-7ea5-9c0e-efcdcef7ec49",
-        "intentId": "01a139c6-ad0c-7ec0-8bcd-f4bde22b5ab0",
+        "id": "01a139ed-39b2-7b98-a6a0-9ca3cb87aa4b",
+        "intentId": "01a139ed-222c-7598-8472-6f1c2437563c",
         "category": "swap",
         "venue": "app_kit",
         "amountUsd": "300000",
-        "createdAt": "2026-10-14T09:38:13.005Z",
+        "createdAt": "2026-10-14T10:20:10.534Z",
         "counts": true
       }
     ]
   },
   "paused": "paused",
   "overCap": "over_action_cap",
-  "forgedBudget": 422
+  "forgedBudget": 422,
+  "killSwitch": {
+    "relayed": true,
+    "tx": "0xf207541b1161fa4c49e827322234f4dd00e22fef988c8b83117cbccb2bf2088c",
+    "status": "confirmed",
+    "nonce": "0 → 1",
+    "budgetPaused": true
+  }
 }

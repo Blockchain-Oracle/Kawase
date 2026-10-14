@@ -732,6 +732,8 @@ export class SwapService {
     const swap = calls[calls.length - 1]!;
     if (swap.value !== ZERO) throw problem(HTTP.badGateway, "quote_unavailable", "the swap route carries native value");
 
+    // A token Kawase does not vouch for is never silent (the token rules, D12): the person confirms it on the card.
+    if ((current.payload as DraftPayload).view?.unverifiedOut) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: "token_unvetted" };
     // The budget counts dollars: the draft's own dollar value, or the amount itself when it is USDC.
     const valueUsd = ((current.payload as DraftPayload).view?.valueUsd ?? null) as number | null;
     const amountUsd = valueUsd !== null ? usdBaseUnits(valueUsd) : draft.tokenIn.toLowerCase() === network.addresses.usdc.toLowerCase() ? draft.amountIn : undefined;

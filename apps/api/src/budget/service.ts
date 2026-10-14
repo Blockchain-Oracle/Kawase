@@ -9,14 +9,17 @@
 import { and, desc, eq, gte, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 
+import type { RevokeRequest } from "@kawase/api-client";
 import { intents, type Db } from "@kawase/db";
+import { encodeIncrementNonce } from "@kawase/integrations-delegation";
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 import { BUDGET_CATEGORIES, budgetTypedData, isSaneBudget, verifyBudget, type BudgetCategory, type BudgetPolicy } from "@kawase/wallet";
 
-import { HTTP, problem } from "../http/problem";
+import { HTTP, ProblemError, problem } from "../http/problem";
 import { safetySettingsOf } from "../safety/settings";
 import type { Tx } from "../intents/chain";
+import { REVOKE_KIND, relayerReady } from "../send/relayed";
 import type { SessionUser } from "../types";
 import type { Chains } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
@@ -34,6 +37,8 @@ const SUNDAY_OFFSET = 6;
 const ZERO = 0n;
 /** Intent states whose spend no longer counts: nothing left the wallet under them. */
 const RELEASED_STATES = ["failed", "canceled", "expired", "rejected"] as const;
+/** Gas for the wallet's own `incrementNonce` (a self-batch of one call) when the relayer cannot carry it. */
+const KILL_SWITCH_GAS = 150_000n;
 
 /** Monday 00:00 UTC of the week `at` falls in. */
 export function weekStart(at: Date): Date {
@@ -214,6 +219,36 @@ export class BudgetService {
       .set({ endedAt: new Date() })
       .where(and(eq(budgets.userId, user.id), eq(budgets.network, network), isNull(budgets.endedAt)));
     return null;
+  }
+
+  /**
+   * The kill-switch (D38): `NonceEnforcer.incrementNonce(DelegationManager)` from the wallet, which ends every grant and
+   * leaf it signed at the current nonce at once. Kawase stops acting silently first (the budget is paused, which never
+   * asks); then the wallet signs it with no Face ID (the phone's checkRevoke accepts exactly this call, nothing else).
+   * The relayer carries it when it can, so a wallet with no USDC can still pull the switch; otherwise the wallet sends
+   * it itself. The app posts the signature to /budget/kill-switch/submit.
+   */
+  async killSwitch(user: SessionUser, network: NetworkId = user.activeNetwork): Promise<RevokeRequest> {
+    const clients = this.chains.get(network);
+    if (!clients) throw problem(HTTP.unprocessable, "network_unavailable", `${network} is not available`);
+    await this.db
+      .update(budgets)
+      .set({ paused: true })
+      .where(and(eq(budgets.userId, user.id), eq(budgets.network, network), isNull(budgets.endedAt)));
+    const call = encodeIncrementNonce(clients.network);
+    const relayed = (await relayerReady(clients))
+      ? await this.wallets.relayedBatchRequest(user.id, network, REVOKE_KIND, [call]).catch((error: unknown) => {
+          if (error instanceof ProblemError) return undefined;
+          throw error;
+        })
+      : undefined;
+    this.log.info({ userId: user.id, network, relayed: Boolean(relayed) }, "budget kill-switch requested");
+    return relayed ?? ((await this.wallets.selfBatchRequest(user.id, network, REVOKE_KIND, [call], KILL_SWITCH_GAS)) as RevokeRequest);
+  }
+
+  /** The wallet signed the kill-switch: the relayer redeems its one-time delegation, or the signed transaction goes out. */
+  async submitKillSwitch(user: SessionUser, input: { requestId: string; relayed: boolean; signed: Hex }) {
+    return input.relayed ? this.wallets.submitRelayedBatch(user.id, input.requestId, input.signed) : this.wallets.submitSigned(user.id, input.requestId, input.signed);
   }
 
   /** Would this action be silent right now? */

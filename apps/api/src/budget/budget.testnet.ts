@@ -2,7 +2,8 @@
 // wallet: sign a budget (one signature), then a USDC→EURC swap and a vault deposit go out with no transaction from the
 // wallet — the api hands the phone one-shot leaves (`sign_leaf`), the phone checks them against what it expects
 // (@kawase/wallet flow-checks) and signs, Kawase's ops wallet redeems, and the swap's own receipt witness settles it.
-// Then the ledger shows the spend, and a paused budget, or an action over the per-action cap, is "outside_budget".
+// Then the ledger shows the spend, a paused budget or an action over the per-action cap is "outside_budget", and the
+// kill-switch (incrementNonce, signed with no Face ID, relayed) pauses the budget and ends every grant at the old nonce.
 // Needs the testnet keys in the root .env and DATABASE_URL pointing at a migrated (scratch) database.
 // Run from apps/api: npx tsx src/budget/budget.testnet.ts
 import assert from "node:assert/strict";
@@ -11,15 +12,20 @@ import { writeFileSync } from "node:fs";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { config } from "dotenv";
 import { Hono } from "hono";
-import { createPublicClient, createWalletClient, erc20Abi, http, parseUnits, type Address, type Hex } from "viem";
+import { createPublicClient, createWalletClient, erc20Abi, http, parseAbi, parseUnits, type Address, type Hex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import type { EarnIntent, SwapIntent } from "@kawase/api-client";
+import type { EarnIntent, RevokeRequest, SafetyView, SwapIntent } from "@kawase/api-client";
 import { loadApiEnv } from "@kawase/env";
 import { swapAdapterContract } from "@kawase/integrations-app-kit";
 import { createLogger } from "@kawase/log";
 import { getNetwork } from "@kawase/networks";
-import { budgetTypedData, checkEarnLeaves, checkSwapLeaves, reviveDelegationTypedData } from "@kawase/wallet";
+import { BUDGET_ENFORCERS, DELEGATION_FRAMEWORK_MANAGER, budgetTypedData, checkRevoke, reviveDelegationTypedData, venueRouters } from "@kawase/wallet";
+
+// The phone's own budget guard and its live inputs, exactly as the app runs them (a test-only import of app code).
+import { arcReads } from "../../../mobile/src/budget/chain";
+import { budgetAllows, type GuardContext, type GuardDeps } from "../../../mobile/src/budget/guard";
+import { kyberQuote } from "../../../mobile/src/budget/price";
 
 import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "../../test/helpers";
 import { attachSession } from "../auth/middleware";
@@ -48,6 +54,8 @@ const HTTP_UNPROCESSABLE = 422;
 const HTTP_SERVER_ERROR = 500;
 const NONE = 0n;
 const JSON_INDENT = 2;
+const ONE = 1n;
+const NONCE_ABI = parseAbi(["function currentNonce(address delegationManager, address delegator) view returns (uint256)"]);
 const POLL_ATTEMPTS = 60;
 const DONE_STATES = ["COMPLETE", "CONFIRMED", "FAILED", "CANCELLED", "DENIED"];
 const usdc = (value: string) => parseUnits(value, USDC_DECIMALS);
@@ -95,10 +103,17 @@ let token = "";
 const call = (target: { request: (path: string, init?: RequestInit) => Response | Promise<Response> }, method: string, path: string, payload?: unknown) =>
   target.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
 const json = async <T>(response: Response | Promise<Response>) => (await response).json() as Promise<T>;
-const chainNow = async () => Number((await client.getBlock()).timestamp);
 
 /** What the phone signs: the leaves' typed data with their numbers as bigints again. */
 const signLeaves = (leaves: { typedData: Record<string, unknown> }[]) => Promise.all(leaves.map((leaf) => wallet.signTypedData(reviveDelegationTypedData(leaf.typedData) as never)));
+const bigintJson = (_: string, value: unknown) => (typeof value === "bigint" ? value.toString() : value);
+
+/** The phone guard's live inputs: its own price and chain reads, an empty phone ledger (a fresh install). */
+const phoneDeps: GuardDeps = { quote: kyberQuote(), reads: arcReads, localSpent: () => Promise.resolve(NONE) };
+async function guardContext(): Promise<GuardContext> {
+  const [{ budget: view }, safety] = await Promise.all([json<{ budget: BudgetView }>(call(budgetApp, "GET", "/budget")), json<SafetyView>(call(app, "GET", "/safety"))]);
+  return { wallet: wallet.address, chainId: network.chainId, budget: view, safety: { pausedAt: safety.pausedAt, riskMode: safety.riskMode, practice: safety.practice }, contacts: [] };
+}
 
 try {
   // 0. Sign in, register, set up (relayed 7702), fund.
@@ -142,17 +157,17 @@ try {
   const offer = await json<LeafResponse<SwapIntent>>(call(budgetApp, "POST", `/budget/swaps/${swap.id}/leaf`, { version: swap.version }));
   assert.equal(offer.status, "sign_leaf", JSON.stringify(offer));
   if (offer.status !== "sign_leaf") throw new Error("no leaves");
-  const checked = checkSwapLeaves([reviveDelegationTypedData(offer.leaves[0]!.typedData as never), reviveDelegationTypedData(offer.leaves[1]!.typedData as never)] as never, {
-    wallet: wallet.address,
-    ops: OPS,
-    now: await chainNow(),
-    routers: [swapAdapterContract(network)],
-    tokenIn: network.addresses.usdc,
-    tokenOut: network.addresses.eurc,
-    amountIn: BigInt(swap.draft!.amountIn),
-    minOut: BigInt(swap.draft!.minOut),
-  });
-  console.log("phone checked the leaves: output to the wallet ≥", checked.guaranteedOut.toString());
+  // The phone's own guard, as the app runs it: the signed budget, the safety settings, its own KyberSwap price (the
+  // mainnet twins of test money), its own nonce read on Arc, and every leaf decoded.
+  const swapVerdict = await budgetAllows(
+    { kind: "swap", venue: "app_kit", tokenIn: network.addresses.usdc, tokenOut: network.addresses.eurc, amountIn: BigInt(swap.draft!.amountIn), minOut: BigInt(swap.draft!.minOut), leaves: offer.leaves.map((leaf) => leaf.typedData as Record<string, unknown>) },
+    await guardContext(),
+    phoneDeps,
+  );
+  assert.equal(swapVerdict.silent, true, JSON.stringify(swapVerdict, bigintJson));
+  assert.equal(venueRouters(network.chainId, "app_kit")[0], swapAdapterContract(network));
+  evidence.swapGuard = swapVerdict;
+  console.log("phone guard: silent swap,", JSON.stringify(swapVerdict, bigintJson));
   const signatures = await signLeaves(offer.leaves as never);
   const nonceBefore = await client.getTransactionCount({ address: wallet.address });
   const sent = await json<LeafResponse<SwapIntent>>(call(budgetApp, "POST", `/budget/swaps/${swap.id}/leaf/signature`, { approvalId: offer.approvalId, signatures }));
@@ -176,17 +191,10 @@ try {
     assert.equal(earnOffer.status, "sign_leaf", JSON.stringify(earnOffer));
     if (earnOffer.status !== "sign_leaf") throw new Error("no earn leaves");
     const vault = deposit.draft!.vault.address as Address;
-    checkEarnLeaves(earnOffer.leaves.map((leaf) => reviveDelegationTypedData(leaf.typedData as never)) as never, {
-      wallet: wallet.address,
-      ops: OPS,
-      now: await chainNow(),
-      action: "deposit",
-      vaults: [vault],
-      vault,
-      asset: network.addresses.usdc,
-      amount: BigInt(deposit.draft!.amount),
-      minOut: 1n,
-    });
+    const earnVerdict = await budgetAllows({ kind: "earn", action: "deposit", vault, amount: BigInt(deposit.draft!.amount), leaves: earnOffer.leaves.map((leaf) => leaf.typedData as Record<string, unknown>) }, await guardContext(), phoneDeps);
+    assert.equal(earnVerdict.silent, true, JSON.stringify(earnVerdict, bigintJson));
+    evidence.earnGuard = earnVerdict;
+    console.log("phone guard: silent deposit,", JSON.stringify(earnVerdict, bigintJson));
     const earnSent = await json<LeafResponse<EarnIntent>>(call(budgetApp, "POST", `/budget/earn/${deposit.id}/leaf/signature`, { approvalId: earnOffer.approvalId, signatures: await signLeaves(earnOffer.leaves as never) }));
     assert.equal(earnSent.status, "executing", JSON.stringify(earnSent));
     let earned = deposit;
@@ -227,6 +235,26 @@ try {
   assert.equal(forged.status, HTTP_UNPROCESSABLE, "a budget whose signature does not match its terms is refused");
   console.log("paused →", evidence.paused, "| over the cap →", evidence.overCap, "| forged budget →", forged.status);
   console.log("ledger", JSON.stringify(evidence.ledger));
+
+  // 5. The kill-switch: the budget pauses at once, the phone accepts incrementNonce as a revoke (no Face ID), signs it,
+  //    and the relayer (or the wallet) sends it: every grant and leaf at the old nonce is dead.
+  const nonceAddress = BUDGET_ENFORCERS.nonce;
+  const readNonce = () => client.readContract({ address: nonceAddress, abi: NONCE_ABI, functionName: "currentNonce", args: [DELEGATION_FRAMEWORK_MANAGER, wallet.address] });
+  const killBefore = await readNonce();
+  const { revoke } = await json<{ revoke: RevokeRequest }>(call(budgetApp, "POST", "/budget/kill-switch"));
+  const killed = "typedData" in revoke ? { typedData: reviveDelegationTypedData(revoke.typedData) } : { transaction: revoke.transaction };
+  checkRevoke(killed as never, wallet.address);
+  const killSigned =
+    "typedData" in revoke
+      ? await wallet.signTypedData(reviveDelegationTypedData(revoke.typedData) as never)
+      : await wallet.signTransaction({ ...revoke.transaction, value: BigInt(revoke.transaction.value), gas: BigInt(revoke.transaction.gas), maxFeePerGas: BigInt(revoke.transaction.maxFeePerGas), maxPriorityFeePerGas: BigInt(revoke.transaction.maxPriorityFeePerGas) });
+  const killSent = await json<{ tx: Hex; status: string }>(call(budgetApp, "POST", "/budget/kill-switch/submit", { requestId: revoke.requestId, relayed: "typedData" in revoke, signed: killSigned }));
+  const killAfter = await readNonce();
+  assert.equal(killAfter, killBefore + ONE, "the kill-switch moved the wallet's nonce");
+  const pausedView = await json<{ budget: BudgetView }>(call(budgetApp, "GET", "/budget"));
+  assert.equal(pausedView.budget.paused, true);
+  evidence.killSwitch = { relayed: "typedData" in revoke, tx: killSent.tx, status: killSent.status, nonce: `${killBefore} → ${killAfter}`, budgetPaused: pausedView.budget.paused };
+  console.log("kill-switch", killSent.status, `${network.viemChain.blockExplorers?.default.url}/tx/${killSent.tx}`, `nonce ${killBefore} → ${killAfter}`);
 } finally {
   for (const tokenAddress of [network.addresses.eurc, network.addresses.usdc]) {
     const left = await client.readContract({ address: tokenAddress, abi: erc20Abi, functionName: "balanceOf", args: [wallet.address] });
