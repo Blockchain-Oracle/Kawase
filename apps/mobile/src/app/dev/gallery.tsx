@@ -73,6 +73,7 @@ import { Dock, type DockItem } from "@/components/shell/Dock";
 import { DockProvider } from "@/components/shell/dock-context";
 import { ModeCapsule } from "@/components/shell/ModeCapsule";
 import { Rail, type RailSection } from "@/components/shell/Rail";
+import { RouteListGallery } from "@/routes/route-list-gallery";
 import { notify } from "@/components/toast/notify";
 import { BlockedCta, TxCta, TxFailureCard, TxSteps, type TxState, useTxLifecycle } from "@/components/tx";
 import { fire, type HapticEvent, type SoundName } from "@/feedback/fire";
@@ -272,6 +273,9 @@ function Gallery() {
         <StatesSection />
         <WaitsSection />
         <TxSection />
+        <Section title="Route race">
+          <RouteListGallery />
+        </Section>
         <SheetsSection />
         <ShellSection dock={dock} setDock={setDock} />
         <FeedbackSection />

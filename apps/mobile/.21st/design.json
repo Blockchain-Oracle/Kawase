@@ -20,13 +20,21 @@
       "packages/ui-tokens/sound.json",
       "apps/mobile/src/components/kit/theme.ts"
     ],
-    "components": ["apps/mobile/src/components/{kit,sheet,shell,toast,tx}", "packages/ui-web/src/components/ui"],
+    "components": [
+      "apps/mobile/src/components/{kit,sheet,shell,toast,tx}",
+      "packages/ui-web/src/components/ui"
+    ],
     "senryo": "/Users/abu/dev/hackathon/metropolis (packages/tokens/src, apps/mobile/src/components)",
     "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/{states,tx}"
   },
   "design": {
     "colorMode": "light-default-with-dark",
-    "themes": ["light", "dark", "testnet", "testnet-dark"],
+    "themes": [
+      "light",
+      "dark",
+      "testnet",
+      "testnet-dark"
+    ],
     "colors": {
       "--background": {
         "light": "#F5F5F5",
@@ -292,7 +300,13 @@
     "fonts": {
       "ui": "Inter 400-700",
       "money": "Roboto Condensed Black 900",
-      "scripts": ["Noto Sans Arabic", "Noto Nastaliq Urdu", "Noto Sans Devanagari", "Noto Sans Bengali", "Noto Sans SC"]
+      "scripts": [
+        "Noto Sans Arabic",
+        "Noto Nastaliq Urdu",
+        "Noto Sans Devanagari",
+        "Noto Sans Bengali",
+        "Noto Sans SC"
+      ]
     },
     "radius": {
       "none": 0,
@@ -324,8 +338,18 @@
       "sheetExitMs": 240,
       "staggerMs": 40,
       "reducedMotionMs": 100,
-      "easing": [0.2, 0.8, 0.2, 1],
-      "sheetEasing": [0.32, 0.72, 0, 1]
+      "easing": [
+        0.2,
+        0.8,
+        0.2,
+        1
+      ],
+      "sheetEasing": [
+        0.32,
+        0.72,
+        0,
+        1
+      ]
     }
   },
   "components": {
@@ -995,6 +1019,27 @@
         ],
         "port": "One stroke, one size scale; never a stand-in for a token, chain or venue mark.",
         "status": "built (Stage 2, look lane)"
+      }
+    ],
+    "sourced": [
+      {
+        "name": "route-list",
+        "lane": "routes",
+        "source": "composed from 21st.dev parts (research found no single 21st route-race component): rmahammad/streaming-data-rows (id 29368), sean0205/c-radio-group-17 (id 28337), prebuiltui/badge-tag (id 6955); retrieved 2026-10-14 via `21st get`",
+        "file": "apps/mobile/src/routes/route-list.tsx",
+        "port": {
+          "29368": "rows insert, re-rank and light up as the stream changes them: Reanimated LinearTransition (spring) for the re-rank, a fade-in of the new value instead of the number morph, shaped skeletons for rows still pricing, loading/empty/error states and reduced motion (100 ms) from its contract",
+          "28337": "each choice is a radio card: whole row pressable, ring + filled dot when picked, accessibilityRole radio inside a radiogroup",
+          "6955": "the 'Best' mark: an inset pill on the accent token with the label in its foreground"
+        },
+        "deviations": [
+          "one column list, not a table: Wise compare-sheet layout (plan/research 08-references #1) — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
+          "no ▲/▼ change glyphs: a route row changes once (checking → quoted), so the light-up carries it: the mark goes 0.38 → 1 and 29368's ChangePulse wash (accent at 10%, 0.85 → 0 over 1.4 s, fade-out only) runs once; reduced motion skips the wash",
+          "routes Kawase cannot run are never offered: they collapse into one 'Didn't quote' disclosure with their reason",
+          "motion/react replaced by react-native-reanimated so one file serves iOS, Android and the web (react-native-web)",
+          "token names only (bg-card, border-primary, text-muted-foreground…); values come from the Look lane"
+        ],
+        "status": "built (Stage 2) — shown in /dev/gallery replaying races recorded on Arc mainnet; live via use-route-race.ts + race-source.ts (expo/fetch NDJSON stream) once POST /routes/race is mounted"
       }
     ]
   },

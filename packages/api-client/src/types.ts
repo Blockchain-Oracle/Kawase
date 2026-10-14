@@ -353,7 +353,14 @@ export type SwapRouteView = {
   /** Exchanges the route goes through, for "via …". */
   via: string[];
   feeUsd: number | null;
-  /** Why it was not chosen or did not quote: not_on_network, no_route, timeout, failed. */
+  /** The venue's own cut, already netted in estimatedOut (Socket 20 bps, 0x's volume fee, Circle 2 bps), when it says. */
+  feeBps?: number | null | undefined;
+  /** That cut in base units of `feeToken`. */
+  fee?: string | null | undefined;
+  feeToken?: string | null | undefined;
+  /** The venue's id for this quote (Uniswap requestId, 0x zid, Socket quoteId). */
+  quoteId?: string | null | undefined;
+  /** Why it was not chosen or did not quote: not_on_network, no_route, timeout, failed, needs_key, rate_limited, less_out; "picked" on a chosen row the person picked over a better one. */
   reason: string | null;
 };
 
@@ -395,8 +402,8 @@ export type SwapIntent = {
   state: IntentState;
   outcome: SendOutcome | null;
   version: number;
-  /** As asked: "USDC"/"EURC" or a token address. */
-  request: { tokenIn: string | null; tokenOut: string | null; amount: string | null };
+  /** As asked: "USDC"/"EURC" or a token address; `venue` when the person picked one. */
+  request: { tokenIn: string | null; tokenOut: string | null; amount: string | null; venue?: string | null };
   draft: SwapDraftView | null;
   results: PolicyResultView[];
   blocking: PolicyResultView | null;
@@ -414,6 +421,8 @@ export type SwapRequest = {
   tokenOut?: string | null | undefined;
   /** Decimal amount of tokenIn. */
   amount?: string | null | undefined;
+  /** The venue the person picked (kyberswap, app_kit, lifi, uniswap, zerox, socket); null or absent = the best. */
+  venue?: string | null | undefined;
 };
 
 export type SwapApproveResponse =

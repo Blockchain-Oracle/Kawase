@@ -39,9 +39,7 @@ import {
   SEND_UNKNOWN_AFTER_S,
   SWAP_BATCH_GAS_ESTIMATE,
   SWAP_ROUTE_SLIPPAGE_DIVISOR,
-  SWAP_VENUE_LABELS,
   TOKEN_RULES,
-  type SwapVenueId,
 } from "@kawase/config";
 import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, SwapRouteView, TokenView, UnsignedTransaction } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
@@ -58,7 +56,7 @@ import {
 } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
-import { CANONICAL_TOKENS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
+import { CANONICAL_TOKENS, NETWORKS, normalizeSymbol, type NetworkContext, type NetworkId } from "@kawase/networks";
 import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFacts, type TokenRuleFacts } from "@kawase/policy";
 
 import { capabilityView } from "../capabilities/service";
@@ -72,15 +70,15 @@ import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { tokenRulesOf } from "../tokens/rules";
 import type { SwapEngine } from "./engine";
-import { createSwapVenues, VenueRefused, type SwapVenues, type VenueFailure, type VenueQuote } from "./venues";
+import { createSwapVenues, isSwapVenue, SWAP_VENUE_NAMES, VenueRefused, type SwapVenue, type SwapVenues, type VenueFailure, type VenueQuote } from "./venues";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
 type AttemptRow = typeof txAttempts.$inferSelect;
 
-/** As asked: "USDC"/"EURC" (older swaps), a verified symbol, or a lower-case token address. */
-type StoredSwapRequest = { tokenIn: string | null; tokenOut: string | null; amount: string | null };
-type DraftPayload = { draft: StoredSwapDraft | null; view: SwapDraftView | null; venue?: SwapVenueId };
+/** As asked: "USDC"/"EURC" (older swaps), a verified symbol, or a lower-case token address; `venue` when the person picked one. */
+type StoredSwapRequest = { tokenIn: string | null; tokenOut: string | null; amount: string | null; venue?: string | null };
+type DraftPayload = { draft: StoredSwapDraft | null; view: SwapDraftView | null; venue?: SwapVenue };
 type PolicyReport = { results: PolicyResult[]; blocking: PolicyResult | null };
 
 const ZERO = 0n;
@@ -184,7 +182,7 @@ export class SwapService {
   }
 
   /** Everything the policy needs, fresh: both tokens, balances and the 7702 code, every venue's quote, prices, token rules. */
-  private async evaluate(user: SessionUser, intent: IntentRow, request: StoredSwapRequest, onlyVenue?: SwapVenueId) {
+  private async evaluate(user: SessionUser, intent: IntentRow, request: StoredSwapRequest, onlyVenue?: SwapVenue) {
     const network: NetworkId = intent.network;
     const other: NetworkId = network === "testnet" ? "mainnet" : "testnet";
     const clients = this.chains.get(network);
@@ -241,7 +239,9 @@ export class SwapService {
       ]);
       quotes = fanned.quotes;
       failures = fanned.failures;
-      best = quotes[0];
+      // The venue the person picked, when it quoted; otherwise the most delivered.
+      const picked = isSwapVenue(request.venue) ? quotes.find((entry) => entry.venue === request.venue) : undefined;
+      best = picked ?? quotes[0];
       let priceIn = priced?.prices.get(viewIn.address.toLowerCase())?.priceUsd ?? null;
       let priceOut = priced?.prices.get(viewOut.address.toLowerCase())?.priceUsd ?? null;
       // Circle's own token rates when the market sources have no price (test networks, tokens they do not list).
@@ -351,11 +351,11 @@ export class SwapService {
         marketRate: marketRate ? marketRate.toPrecision(RATE_DIGITS) : null,
         rateGapBps: quote.rateGapBps ?? null,
         fees: { route: "0", network: feeInUsdc(fee).toString() },
-        provider: SWAP_VENUE_LABELS[best.venue],
+        provider: SWAP_VENUE_NAMES[best.venue],
         quotedAt: new Date().toISOString(),
         tokens: { in: viewIn, out: viewOut },
         venue: best.venue,
-        routes: routeViews(fresh.quotes, fresh.failures),
+        routes: routeViews(fresh.quotes, fresh.failures, best.venue),
         valueUsd: fresh.valueUsd,
         unverifiedOut: fresh.unverifiedOut,
       };
@@ -432,7 +432,7 @@ export class SwapService {
       state: intent.state,
       outcome: outcomeOf(intent.state, attempt),
       version: intent.currentDraftVersion,
-      request: { tokenIn: request.tokenIn, tokenOut: request.tokenOut, amount: request.amount },
+      request: { tokenIn: request.tokenIn, tokenOut: request.tokenOut, amount: request.amount, ...(request.venue ? { venue: request.venue } : {}) },
       draft: payload.view ?? null,
       results: report.results,
       blocking: report.blocking,
@@ -805,26 +805,49 @@ export class SwapService {
 function normalise(base: Partial<StoredSwapRequest>, patch: SwapRequest): StoredSwapRequest {
   const pick = <K extends keyof StoredSwapRequest>(key: K): StoredSwapRequest[K] =>
     (patch[key] !== undefined ? patch[key] : (base[key] ?? null)) as StoredSwapRequest[K];
-  return { tokenIn: pick("tokenIn"), tokenOut: pick("tokenOut"), amount: pick("amount")?.trim() || null };
+  const venue = patch.venue !== undefined ? patch.venue : (base.venue ?? null);
+  return { tokenIn: pick("tokenIn"), tokenOut: pick("tokenOut"), amount: pick("amount")?.trim() || null, venue: isSwapVenue(venue) ? venue : null };
 }
 
-/** What the receipt's Transfer logs say moved: tokenIn out of the wallet, tokenOut into it. */
+/** Arc's USDC: every movement, native or through the ERC-20, is also logged from this system address at 18 decimals. */
+const ARC_NATIVE_LOGGER = "0xfffffffffffffffffffffffffffffffffffffffe";
+const ARC_USDC = "0x3600000000000000000000000000000000000000";
+
+/**
+ * What the receipt's Transfer logs say moved: tokenIn out of the wallet, tokenOut into it. USDC on Arc can leave as
+ * the native coin (Uniswap's router is paid that way), which only the system log records: for USDC the larger of
+ * the ERC-20 log and the system log (rescaled to 6 decimals) counts, never their sum.
+ */
 function swapWitness(receipt: TransactionReceipt, draft: SwapDraft) {
   let out = ZERO;
   let into = ZERO;
+  let nativeOut = ZERO;
+  let nativeIn = ZERO;
+  const wallet = draft.from.toLowerCase();
+  const tokenIn = draft.tokenIn.toLowerCase();
+  const tokenOut = draft.tokenOut.toLowerCase();
+  const onArc = draft.chainId === NETWORKS.mainnet.chainId || draft.chainId === NETWORKS.testnet.chainId;
   for (const log of receipt.logs) {
     const token = log.address.toLowerCase();
-    if (token !== draft.tokenIn.toLowerCase() && token !== draft.tokenOut.toLowerCase()) continue;
+    const system = onArc && token === ARC_NATIVE_LOGGER;
+    if (token !== tokenIn && token !== tokenOut && !system) continue;
     try {
       const event = decodeEventLog({ abi: erc20Abi, data: log.data, topics: log.topics });
       if (event.eventName !== "Transfer") continue;
-      const wallet = draft.from.toLowerCase();
-      if (token === draft.tokenIn.toLowerCase() && event.args.from.toLowerCase() === wallet) out += event.args.value;
-      if (token === draft.tokenOut.toLowerCase() && event.args.to.toLowerCase() === wallet) into += event.args.value;
+      if (system) {
+        if (event.args.from.toLowerCase() === wallet) nativeOut += event.args.value;
+        if (event.args.to.toLowerCase() === wallet) nativeIn += event.args.value;
+        continue;
+      }
+      if (token === tokenIn && event.args.from.toLowerCase() === wallet) out += event.args.value;
+      if (token === tokenOut && event.args.to.toLowerCase() === wallet) into += event.args.value;
     } catch {
       // Not an ERC-20 Transfer.
     }
   }
+  const fromNative = (value: bigint) => rescale(value, USDC_NATIVE_DECIMALS, decimalsOf("USDC"));
+  if (onArc && tokenIn === ARC_USDC && fromNative(nativeOut) > out) out = fromNative(nativeOut);
+  if (onArc && tokenOut === ARC_USDC && fromNative(nativeIn) > into) into = fromNative(nativeIn);
   return { out, in: into };
 }
 
@@ -846,21 +869,49 @@ function outcomeOf(state: IntentState, attempt: AttemptRow | undefined) {
 }
 
 /** Gas for approve + swap before an estimate is possible: Circle's adapter is lighter than an aggregator route. */
-const gasEstimate = (venue: SwapVenueId) => (venue === "app_kit" ? SWAP_BATCH_GAS_ESTIMATE : AGGREGATOR_BATCH_GAS_ESTIMATE);
+const gasEstimate = (venue: SwapVenue) => (venue === "app_kit" ? SWAP_BATCH_GAS_ESTIMATE : AGGREGATOR_BATCH_GAS_ESTIMATE);
 
-/** Every venue asked, best first: the chosen one, the others that quoted, then those that could not (R3). */
-function routeViews(quotes: readonly VenueQuote[], failures: readonly VenueFailure[]): SwapRouteView[] {
+/**
+ * Every venue asked: the chosen one (the person's pick, else the most delivered), the others that quoted, best first,
+ * then those that could not (R3). Each carries the venue's own fee, so a pick is made knowing it.
+ */
+function routeViews(quotes: readonly VenueQuote[], failures: readonly VenueFailure[], chosen: SwapVenue): SwapRouteView[] {
+  const best = quotes[0];
+  const ordered = [...quotes.filter((entry) => entry.venue === chosen), ...quotes.filter((entry) => entry.venue !== chosen)];
   return [
-    ...quotes.map((entry, index) => ({
+    ...ordered.map((entry) => ({
       venue: entry.venue,
-      label: SWAP_VENUE_LABELS[entry.venue],
-      status: index === 0 ? ("chosen" as const) : ("quoted" as const),
+      label: SWAP_VENUE_NAMES[entry.venue],
+      status: entry.venue === chosen ? ("chosen" as const) : ("quoted" as const),
       estimatedOut: entry.estimatedOut.toString(),
       minOut: entry.minOut.toString(),
       via: entry.via,
       feeUsd: entry.feeUsd,
-      reason: index === 0 ? null : "less_out",
+      feeBps: entry.fee?.bps ?? null,
+      fee: entry.fee?.amount !== null && entry.fee?.amount !== undefined ? entry.fee.amount.toString() : null,
+      feeToken: entry.fee?.token ?? null,
+      quoteId: entry.quoteId,
+      reason: entry.venue === chosen ? (best && best.venue !== chosen ? "picked" : null) : "less_out",
     })),
-    ...failures.map((entry) => ({ venue: entry.venue, label: SWAP_VENUE_LABELS[entry.venue], status: "unavailable" as const, estimatedOut: null, minOut: null, via: [], feeUsd: null, reason: entry.reason })),
+    ...failures.flatMap((entry) => {
+      const reason = shownReason(entry.reason);
+      return reason === null ? [] : [{ venue: entry.venue, label: SWAP_VENUE_NAMES[entry.venue], status: "unavailable" as const, estimatedOut: null, minOut: null, via: [], feeUsd: null, feeBps: null, fee: null, feeToken: null, quoteId: null, reason }];
+    }),
   ];
+}
+
+/**
+ * A failure as the review shows it, in the reasons the ticket catalog words (not_on_network, no_route, timeout,
+ * failed). A venue this server has no key for is not a fact the person needs, so it is left out; a venue that turned
+ * the request away for its rate limit did not answer in time, as far as the person is concerned.
+ */
+function shownReason(reason: VenueFailure["reason"]): "not_on_network" | "no_route" | "timeout" | "failed" | null {
+  switch (reason) {
+    case "needs_key":
+      return null;
+    case "rate_limited":
+      return "timeout";
+    default:
+      return reason;
+  }
 }
