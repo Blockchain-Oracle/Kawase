@@ -49,7 +49,7 @@ import type {
 } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import { checkEarnCalls, type EarnVault, type SwapCall } from "@kawase/integrations-app-kit";
-import { encodeRedeemSave, encodeSelfBatch, isWalletSetUp, type SaveGrants } from "@kawase/integrations-delegation";
+import { buildEarnLeaves, encodeRedeemLeaves, encodeRedeemSave, encodeSelfBatch, isWalletSetUp, randomSalt, readGrantNonce, type SaveGrants } from "@kawase/integrations-delegation";
 import { DRAFTABLE_STATES, earnDraftHash, loadEarnDraft, storeEarnDraft, type EarnDraft, type IntentState, type StoredEarnDraft } from "@kawase/intents";
 import type { Logger } from "@kawase/log";
 import { USDC_NATIVE_DECIMALS, decimalsOf, rescale } from "@kawase/money";
@@ -66,6 +66,7 @@ import type { OpsExecutor } from "../send/ops";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { chainNow, markLeafRequest, offerLeaves, storeLeafRequest, takeSignedLeaves, type LeafBudget, type LeafResponse } from "../budget/leaf";
 import type { EarnEngine } from "./engine";
 
 type IntentRow = typeof intents.$inferSelect;
@@ -556,6 +557,115 @@ export class EarnService {
       if (refused) await this.settleFailed(intentId, prepared.attemptId, "not_sent", message.slice(0, ERROR_MAX));
       else await this.db.update(txAttempts).set({ status: "submitted", errorCode: "broadcast_unclear" }).where(eq(txAttempts.id, prepared.attemptId));
     }
+    void this.follow(intentId);
+    return { status: "executing", intent: await this.view(user.id, intentId) };
+  }
+
+  // ── Inside the budget (D38): one-shot leaves, no Face ID ────────────────────────────────────────────────────
+
+  /**
+   * The same approval as `approve`, inside the person's budget: the phone signs one-shot leaves for the vault's own
+   * ERC-4626 call, pinned exactly with the wallet as receiver (and owner), plus the share and USDC balance changes the
+   * version promises; Kawase's ops wallet redeems them. The vault itself is the budget's venue. Outside the budget it
+   * says why and offers nothing: the phone takes the ordinary path.
+   */
+  async approveLeaf(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }, budget: LeafBudget): Promise<LeafResponse<EarnIntent>> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+    if (!this.opsAttempts) throw problem(HTTP.serviceUnavailable, "network_unavailable", "silent vault moves are not available here");
+    const current = await this.currentDraft(before);
+    const stored = (current?.payload as DraftPayload | undefined)?.draft;
+    if (!current?.draftHash || !stored) return this.redraft(user, intentId) as Promise<LeafResponse<EarnIntent>>;
+    const draft = loadEarnDraft(stored);
+    if (earnDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId) as Promise<LeafResponse<EarnIntent>>;
+    const fresh = await this.evaluate(user, before, before.request as StoredEarnRequest);
+    if (fresh.evaluation.blocking || !fresh.vault || !same(fresh.vault.address, draft.vault)) return this.redraft(user, intentId) as Promise<LeafResponse<EarnIntent>>;
+
+    const { network, client, ops } = fresh.clients;
+    // USDC in or out of the person's own vault position: its dollar amount is the amount itself.
+    const line = { category: "earn" as const, venue: draft.vault.toLowerCase(), amountUsd: draft.amount };
+    const fits = await budget.allows(this.db, user.id, before.network, line);
+    if (!fits.ok) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: fits.reason };
+
+    const [nonce, now] = await Promise.all([readGrantNonce(client, network, draft.from), chainNow(client)]);
+    const leaves = buildEarnLeaves({
+      network,
+      wallet: draft.from,
+      ops: ops.address,
+      action: draft.action,
+      vault: draft.vault,
+      asset: network.addresses.usdc,
+      amount: draft.amount,
+      minOut: draft.minOut,
+      maxSharesIn: draft.action === "withdraw" ? draft.maxIn : undefined,
+      nonce,
+      now,
+      salts: [randomSalt(), randomSalt()],
+    });
+    const approvalId = await this.db.transaction(async (tx) => {
+      const intent = await this.lockIntent(tx, user.id, intentId);
+      if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== input.version) return undefined;
+      return storeLeafRequest(tx, { userId: user.id, intentId, network: intent.network, kind: "earn", draftVersion: intent.currentDraftVersion, draftHash: current.draftHash!, steps: leaves.steps, line, expiresAt: leaves.expiresAt });
+    });
+    if (!approvalId) return { status: "final", intent: await this.get(user.id, intentId) };
+    return {
+      status: "sign_leaf",
+      intent: await this.view(user.id, intentId),
+      approvalId,
+      leaves: offerLeaves(network, leaves.steps),
+      expiresAt: new Date(leaves.expiresAt * MS_PER_SECOND).toISOString(),
+      budget: { category: "earn", venue: line.venue, amountUsd: line.amountUsd.toString(), leftThisWeek: fits.left.toString() },
+    };
+  }
+
+  /** The phone signed the leaves: checked, reserved against the week, redeemed by ops, settled by the same witness. */
+  async submitLeaf(user: SessionUser, intentId: string, input: { approvalId: string; signatures: Hex[] }, budget: LeafBudget): Promise<LeafResponse<EarnIntent>> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    const current = await this.currentDraft(before);
+    const stored = (current?.payload as DraftPayload | undefined)?.draft;
+    if (!stored || !current?.draftHash) return this.redraft(user, intentId) as Promise<LeafResponse<EarnIntent>>;
+    const draft = loadEarnDraft(stored);
+    const { network, ops } = this.clients(before.network);
+    if (!this.opsAttempts) throw problem(HTTP.serviceUnavailable, "network_unavailable", "silent vault moves are not available here");
+
+    const prepared = await this.db.transaction(async (tx) => {
+      const intent = await this.lockIntent(tx, user.id, intentId);
+      if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== before.currentDraftVersion) return { kind: "final" as const };
+      const { request, steps } = await takeSignedLeaves(tx, network, { approvalId: input.approvalId, intentId, kind: "earn", draftVersion: intent.currentDraftVersion, draftHash: current.draftHash!, wallet: draft.from, signatures: input.signatures });
+      const fits = await budget.reserve(tx, user.id, intent.network, { category: "earn", venue: request.venue, amountUsd: request.amountUsd, intentId });
+      if (!fits.ok) {
+        await markLeafRequest(tx, request.id, "rejected");
+        return { kind: "outside" as const, reason: fits.reason };
+      }
+      const call = encodeRedeemLeaves(network, steps);
+      const [attempt] = await tx
+        .insert(txAttempts)
+        .values({
+          userId: user.id,
+          intentId,
+          network: intent.network,
+          chainId: network.chainId,
+          attemptNo: await nextAttemptNo(tx, intentId),
+          kind: `earn_${draft.action}_leaf`,
+          provider: "circle_dcw",
+          idempotencyKey: randomUUID(),
+          fromAddress: ops.address,
+          toAddress: call.to,
+          status: "prepared",
+          receipt: { prepared: { to: call.to, data: call.data } },
+        })
+        .returning();
+      await markLeafRequest(tx, request.id, "redeemed");
+      await tx.update(intents).set({ state: "executing" }).where(eq(intents.id, intentId));
+      return { kind: "redeem" as const, attempt: attempt! };
+    });
+    if (prepared.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (prepared.kind === "outside") return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: prepared.reason };
+    await this.opsAttempts.submit(intentId, prepared.attempt);
     void this.follow(intentId);
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }

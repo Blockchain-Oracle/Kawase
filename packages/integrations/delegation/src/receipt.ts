@@ -1,7 +1,7 @@
 // The "can / can never" receipt shown to the user. It is decoded from the signed caveat bytes, not from
 // the draft that produced them, so it always describes what the chain will actually enforce.
 import { decodeCaveat } from "@metamask/smart-accounts-kit/utils";
-import type { Delegation } from "@metamask/smart-accounts-kit";
+import { BalanceChangeType, type Delegation } from "@metamask/smart-accounts-kit";
 import { size, slice, type Address, type Hex } from "viem";
 import type { NetworkContext } from "@kawase/networks";
 
@@ -36,6 +36,10 @@ export type GrantReceipt = {
   maxNativeValue: bigint | undefined;
   /** Addresses allowed to redeem, from the Redeemer caveat. */
   redeemers: Address[];
+  /** The NonceEnforcer nonce the grant is bound to (the kill-switch), as 32-byte hex. */
+  nonce: Hex | undefined;
+  /** ERC20BalanceChange terms: the wallet's token balance must rise by at least / fall by at most `amount`. */
+  balanceChanges: { token: Address; recipient: Address; amount: bigint; direction: "increase" | "decrease" }[];
   /** Enforcers this code does not understand. A receipt with any of these must not be shown as safe. */
   unknownCaveats: Address[];
 };
@@ -57,6 +61,8 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
     maxCalls: undefined,
     maxNativeValue: undefined,
     redeemers: [],
+    nonce: undefined,
+    balanceChanges: [],
     unknownCaveats: [],
   };
   for (const caveat of grant.caveats) {
@@ -106,6 +112,17 @@ export function describeGrant(network: NetworkContext, grant: Delegation): Grant
       }
       case "limitedCalls":
         receipt.maxCalls = decoded.limit;
+        break;
+      case "nonce":
+        receipt.nonce = decoded.nonce;
+        break;
+      case "erc20BalanceChange":
+        receipt.balanceChanges.push({
+          token: decoded.tokenAddress,
+          recipient: decoded.recipient,
+          amount: decoded.balance,
+          direction: decoded.changeType === BalanceChangeType.Increase ? "increase" : "decrease",
+        });
         break;
       default:
         receipt.unknownCaveats.push(caveat.enforcer);

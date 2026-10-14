@@ -44,7 +44,7 @@ import {
 import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, SwapRouteView, TokenView, UnsignedTransaction } from "@kawase/api-client";
 import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
 import type { SwapCall } from "@kawase/integrations-app-kit";
-import { encodeSelfBatch, isWalletSetUp } from "@kawase/integrations-delegation";
+import { buildSwapLeaves, encodeRedeemLeaves, encodeSelfBatch, isWalletSetUp, randomSalt, readGrantNonce } from "@kawase/integrations-delegation";
 import {
   DRAFTABLE_STATES,
   loadSwapDraft,
@@ -69,6 +69,9 @@ import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { tokenRulesOf } from "../tokens/rules";
+import { chainNow, markLeafRequest, offerLeaves, storeLeafRequest, takeSignedLeaves, usdBaseUnits, type LeafBudget, type LeafResponse } from "../budget/leaf";
+import { OpsAttempts } from "../intents/ops-attempts";
+import type { OpsExecutor } from "../send/ops";
 import type { SwapEngine } from "./engine";
 import { createSwapVenues, isSwapVenue, SWAP_VENUE_NAMES, VenueRefused, type SwapVenue, type SwapVenues, type VenueFailure, type VenueQuote } from "./venues";
 
@@ -141,9 +144,14 @@ export class SwapService {
     private readonly engine: SwapEngine,
     private readonly log: Logger,
     private readonly assets?: AssetService,
+    /** Kawase's ops wallet (Circle), which redeems a swap's signed leaves inside the budget (D38). */
+    private readonly ops?: OpsExecutor | undefined,
   ) {
     this.venues = createSwapVenues(engine);
+    this.opsAttempts = ops ? new OpsAttempts(db, chains, ops, log, (intentId, attemptId, error) => this.settleFailed(intentId, attemptId, "not_sent", error)) : undefined;
   }
+
+  private readonly opsAttempts: OpsAttempts | undefined;
 
   private clients(network: NetworkId): NetworkClients {
     const clients = this.chains.get(network);
@@ -705,6 +713,119 @@ export class SwapService {
     return { status: "executing", intent: await this.view(user.id, intentId) };
   }
 
+  // ── Inside the budget (D38): one-shot leaves, no Face ID ────────────────────────────────────────────────────
+
+  /**
+   * The same approval as `approve`, on the same fresh calls, but inside the person's budget: instead of a transaction
+   * the phone signs two one-shot leaves (an exact approve, and the router call whose output must land in the wallet:
+   * at least this version's `minOut`, spending at most `amountIn`), which Kawase's ops wallet redeems. Outside the
+   * budget (none, paused, the venue or category off, over a cap, no dollar value) it says so and nothing is offered:
+   * the phone takes the ordinary path.
+   */
+  async approveLeaf(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }, budget: LeafBudget): Promise<LeafResponse<SwapIntent>> {
+    const fresh = await this.freshCalls(user, intentId, input.version);
+    if (fresh.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (fresh.kind === "changed") return this.redraft(user, intentId) as Promise<LeafResponse<SwapIntent>>;
+    const { before, current, draft, calls, venue } = fresh;
+    const { network, client, ops } = this.clients(before.network);
+    if (!this.ops) throw problem(HTTP.serviceUnavailable, "network_unavailable", "silent swaps are not available here");
+    const swap = calls[calls.length - 1]!;
+    if (swap.value !== ZERO) throw problem(HTTP.badGateway, "quote_unavailable", "the swap route carries native value");
+
+    // A token Kawase does not vouch for is never silent (the token rules, D12): the person confirms it on the card.
+    if ((current.payload as DraftPayload).view?.unverifiedOut) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: "token_unvetted" };
+    // The budget counts dollars: the draft's own dollar value, or the amount itself when it is USDC.
+    const valueUsd = ((current.payload as DraftPayload).view?.valueUsd ?? null) as number | null;
+    const amountUsd = valueUsd !== null ? usdBaseUnits(valueUsd) : draft.tokenIn.toLowerCase() === network.addresses.usdc.toLowerCase() ? draft.amountIn : undefined;
+    if (amountUsd === undefined) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: "unpriced" };
+    const line = { category: "swap" as const, venue, amountUsd };
+    const fits = await budget.allows(this.db, user.id, before.network, line);
+    if (!fits.ok) return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: fits.reason };
+
+    const [nonce, now] = await Promise.all([readGrantNonce(client, network, draft.from), chainNow(client)]);
+    const leaves = buildSwapLeaves({
+      network,
+      wallet: draft.from,
+      ops: ops.address,
+      router: swap.to,
+      tokenIn: draft.tokenIn,
+      tokenOut: draft.tokenOut,
+      amountIn: draft.amountIn,
+      minOut: draft.minOut,
+      routerCalldata: swap.data,
+      nonce,
+      now,
+      salts: [randomSalt(), randomSalt()],
+    });
+    const approvalId = await this.db.transaction(async (tx) => {
+      const intent = await this.lockIntent(tx, user.id, intentId);
+      if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== input.version) return undefined;
+      return storeLeafRequest(tx, { userId: user.id, intentId, network: intent.network, kind: "swap", draftVersion: intent.currentDraftVersion, draftHash: current.draftHash!, steps: leaves.steps, line, expiresAt: leaves.expiresAt });
+    });
+    if (!approvalId) return { status: "final", intent: await this.get(user.id, intentId) };
+    return {
+      status: "sign_leaf",
+      intent: await this.view(user.id, intentId),
+      approvalId,
+      leaves: offerLeaves(network, leaves.steps),
+      expiresAt: new Date(leaves.expiresAt * MS_PER_SECOND).toISOString(),
+      budget: { category: "swap", venue, amountUsd: amountUsd.toString(), leftThisWeek: (fits.left).toString() },
+    };
+  }
+
+  /**
+   * The phone signed the leaves: each must be this wallet's signature over exactly the stored terms. The spend is
+   * reserved against this week (re-checked under the budget lock), the ops wallet redeems both leaves in one
+   * transaction, and the same receipt witness as a signed swap settles it.
+   */
+  async submitLeaf(user: SessionUser, intentId: string, input: { approvalId: string; signatures: Hex[] }, budget: LeafBudget): Promise<LeafResponse<SwapIntent>> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    const current = await this.currentDraft(before);
+    const stored = (current?.payload as DraftPayload | undefined)?.draft;
+    if (!stored || !current?.draftHash) return this.redraft(user, intentId) as Promise<LeafResponse<SwapIntent>>;
+    const draft = loadSwapDraft(stored);
+    const { network, ops } = this.clients(before.network);
+    if (!this.opsAttempts) throw problem(HTTP.serviceUnavailable, "network_unavailable", "silent swaps are not available here");
+
+    const prepared = await this.db.transaction(async (tx) => {
+      const intent = await this.lockIntent(tx, user.id, intentId);
+      if (intent.state !== "ready_for_approval" || intent.currentDraftVersion !== before.currentDraftVersion) return { kind: "final" as const };
+      const { request, steps } = await takeSignedLeaves(tx, network, { approvalId: input.approvalId, intentId, kind: "swap", draftVersion: intent.currentDraftVersion, draftHash: current.draftHash!, wallet: draft.from, signatures: input.signatures });
+      const fits = await budget.reserve(tx, user.id, intent.network, { category: "swap", venue: request.venue, amountUsd: request.amountUsd, intentId });
+      if (!fits.ok) {
+        await markLeafRequest(tx, request.id, "rejected");
+        return { kind: "outside" as const, reason: fits.reason };
+      }
+      const call = encodeRedeemLeaves(network, steps);
+      const [attempt] = await tx
+        .insert(txAttempts)
+        .values({
+          userId: user.id,
+          intentId,
+          network: intent.network,
+          chainId: network.chainId,
+          attemptNo: await nextAttemptNo(tx, intentId),
+          kind: "swap_leaf",
+          provider: "circle_dcw",
+          idempotencyKey: randomUUID(),
+          fromAddress: ops.address,
+          toAddress: call.to,
+          status: "prepared",
+          receipt: { prepared: { to: call.to, data: call.data } },
+        })
+        .returning();
+      await markLeafRequest(tx, request.id, "redeemed");
+      await tx.update(intents).set({ state: "executing" }).where(eq(intents.id, intentId));
+      return { kind: "redeem" as const, attempt: attempt! };
+    });
+    if (prepared.kind === "final") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (prepared.kind === "outside") return { status: "outside_budget", intent: await this.view(user.id, intentId), reason: prepared.reason };
+    await this.opsAttempts.submit(intentId, prepared.attempt);
+    void this.follow(intentId);
+    return { status: "executing", intent: await this.view(user.id, intentId) };
+  }
+
   // ── Tracking ────────────────────────────────────────────────────────────────────────────────────────────────
 
   private async follow(intentId: string) {
@@ -724,8 +845,12 @@ export class SwapService {
     try {
       const [intent] = await this.db.select().from(intents).where(eq(intents.id, intentId));
       if (!intent || (intent.state !== "executing" && intent.state !== "unknown_outcome")) return true;
-      const attempt = await this.latestAttempt(intentId);
-      if (!attempt?.txHash) return false;
+      const latest = await this.latestAttempt(intentId);
+      if (!latest) return false;
+      // A leaf redeem (D38) goes out through Circle: its hash arrives once Circle has one.
+      const hash = latest.provider === "circle_dcw" ? await this.opsAttempts?.hash(intentId, intent.network, latest) : (latest.txHash as Hex | null);
+      if (!hash) return latest.provider === "circle_dcw" && (await this.latestAttempt(intentId))?.status === "not_sent";
+      const attempt = { ...latest, txHash: hash };
       await this.db.update(txAttempts).set({ lastReconciledAt: new Date() }).where(eq(txAttempts.id, attempt.id));
       const receipt = await this.clients(intent.network).client.getTransactionReceipt({ hash: attempt.txHash as Hex }).catch(() => undefined);
       if (!receipt) {

@@ -1,2 +1,55 @@
-// Owned by one build lane (plan: compressed-dreaming-yao). Keys are added here first, then in every language.
-export const budget = {};
+// Owned by the budget lane (plan: compressed-dreaming-yao, D38). The guard's reasons (apps/mobile/src/budget/guard.ts)
+// each have a short line and the fix a blocked card offers; the chip, ring and receipt lines are for the Stage 3 screens.
+export const budget = {
+  insideChip: "Inside budget · no Face ID",
+  insideChipWeb: "Inside budget · no code",
+  ring: "{{spent}} of {{cap}} this week",
+  left: "{{amount}} left this week",
+  guarantee: {
+    outAtLeast: "Output had to land in your wallet: at least {{amount}}",
+    spentAtMost: "It could spend at most {{amount}}",
+  },
+  reason: {
+    no_budget: "No weekly budget yet",
+    budget_unverified: "This budget isn't signed by your wallet",
+    paused: "Kawase is paused",
+    guard_mode: "Careful mode asks every time",
+    practice: "Practice mode is on",
+    settings_unknown: "Couldn't load your limits",
+    category_off: "Not part of your budget",
+    venue_off: "This venue isn't in your budget",
+    token_unvetted: "A token Kawase doesn't vouch for",
+    new_person: "First payment to this person",
+    new_destination: "A new destination",
+    unpriced: "Couldn't check the price",
+    price_off: "Worse than the market price",
+    over_action_cap: "Above your limit per action",
+    over_week: "More than what's left this week",
+    leaf_refused: "The terms didn't match the card",
+  },
+  fix: {
+    no_budget: "Set a budget",
+    budget_unverified: "Sign it again",
+    paused: "Resume",
+    guard_mode: "Change mode",
+    practice: "Turn off practice",
+    settings_unknown: "Try again",
+    category_off: "Add to budget",
+    venue_off: "Add to budget",
+    token_unvetted: "Approve once",
+    new_person: "Approve once",
+    new_destination: "Approve once",
+    unpriced: "Approve once",
+    price_off: "Review the price",
+    over_action_cap: "Approve once",
+    over_week: "Approve once",
+    leaf_refused: "Review it",
+  },
+  category: {
+    swap: "Swaps",
+    bridge: "Moves to your wallets",
+    earn: "Earn",
+    x402: "Paid services",
+    send: "Sends to contacts",
+  },
+} as const;
