@@ -87,6 +87,7 @@ export const move: Catalog["move"] = {
   onExplorer: "Ver na {{chain}}",
   pickChain: "Escolha uma rede",
   pickSource: "Escolha onde está",
+  choose: "Escolher",
   pricing: "Cotando cada ponte…",
   raceIdleTitle: "As pontes disputam aqui",
   raceIdleBody: "Escolha uma rede e um valor, e cada ponte cota aqui, ao vivo.",

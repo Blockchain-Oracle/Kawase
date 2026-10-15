@@ -37,7 +37,7 @@ export function TicketHeader({ title, onBack, testnet, embedded = false }: { tit
         {title}
       </Text>
       <View style={[styles.mode, { backgroundColor: testnet ? color.networkSurface : color.raised2 }]}>
-        <Text style={[TYPE.modeLabel, { color: testnet ? color.networkForeground : color.ink }]}>{testnet ? t("network.testnet") : t("network.realMoney")}</Text>
+        <Text style={[TYPE.modeLabel, { color: testnet ? color.network : color.ink }]}>{testnet ? t("network.testnet") : t("network.realMoney")}</Text>
       </View>
     </View>
   );

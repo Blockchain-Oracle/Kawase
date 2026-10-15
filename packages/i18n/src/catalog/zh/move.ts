@@ -87,6 +87,7 @@ export const move: Catalog["move"] = {
   onExplorer: "在 {{chain}} 上查看",
   pickChain: "选择一条链",
   pickSource: "选择资金所在位置",
+  choose: "选择",
   pricing: "正在为每座跨链桥报价…",
   raceIdleTitle: "跨链桥在这里比价",
   raceIdleBody: "选择链和金额，每座跨链桥都会在这里实时报价。",

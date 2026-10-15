@@ -16,4 +16,11 @@ export const receipt = {
   receivedLine: "I received {{amount}} from {{name}} with Kawase.",
   saveSender: "Save sender as a contact",
   savedAs: "Saved as {{name}}.",
+  verifyTitle: "Verify it on chain",
+  scanToVerify: "Scan to open it on {{explorer}}",
+  openExplorer: "Open on {{explorer}}",
+  sender: "Sent by",
+  notSaved: "Not in your contacts",
+  saveAs: "Save",
+  saved: "In your contacts",
 };

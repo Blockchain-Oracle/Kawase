@@ -18,4 +18,11 @@ export const receipt: Catalog["receipt"] = {
   receivedLine: "我用 Kawase 收到了 {{name}} 的 {{amount}}。",
   saveSender: "把付款人存为联系人",
   savedAs: "已存为 {{name}}。",
+  verifyTitle: "在链上核实",
+  scanToVerify: "扫码在 {{explorer}} 上打开",
+  openExplorer: "在 {{explorer}} 上打开",
+  sender: "发送方",
+  notSaved: "不在你的联系人中",
+  saveAs: "保存",
+  saved: "已在联系人中",
 };

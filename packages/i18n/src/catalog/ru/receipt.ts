@@ -18,4 +18,11 @@ export const receipt: Catalog["receipt"] = {
   receivedLine: "Я получил(а) {{amount}} от {{name}} через Kawase.",
   saveSender: "Сохранить отправителя в контакты",
   savedAs: "Сохранено как {{name}}.",
+  verifyTitle: "Проверьте в сети",
+  scanToVerify: "Отсканируйте, чтобы открыть в {{explorer}}",
+  openExplorer: "Открыть в {{explorer}}",
+  sender: "Отправитель",
+  notSaved: "Нет в ваших контактах",
+  saveAs: "Сохранить",
+  saved: "В ваших контактах",
 };

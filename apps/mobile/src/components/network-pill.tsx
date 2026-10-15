@@ -24,11 +24,13 @@ import { useNetworkSwitch } from "@/wallet/use-network-switch";
 export const PILL_HIT_SLOP = { top: 5, bottom: 5 } as const;
 
 type NetworkPillProps = {
-  /** Drops the Arc mark (a ticket header, the compact rail). */
+  /** Drops the Arc mark (a ticket header). */
   compact?: boolean;
+  /** Drops the word instead, keeping the mark and the switch (the compact rail, 88 px wide). */
+  bare?: boolean;
 };
 
-export function NetworkPill({ compact = false }: NetworkPillProps) {
+export function NetworkPill({ compact = false, bare = false }: NetworkPillProps) {
   const { t } = useT();
   const { network, nextName, busy, toggle, switchNetwork, consentNeeded, acceptMainnet, dismissConsent } =
     useNetworkSwitch();
@@ -43,6 +45,7 @@ export function NetworkPill({ compact = false }: NetworkPillProps) {
         longPressLabel={t("network.sheetTitle")}
         busy={busy}
         compact={compact}
+        bare={bare}
         onToggle={toggle}
         onLongPress={() => setSheetOpen(true)}
       />

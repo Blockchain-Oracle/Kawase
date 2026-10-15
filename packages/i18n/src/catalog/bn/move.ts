@@ -87,6 +87,7 @@ export const move: Catalog["move"] = {
   onExplorer: "{{chain}}-এ দেখুন",
   pickChain: "একটি চেইন বেছে নিন",
   pickSource: "টাকা কোথায় আছে বেছে নিন",
+  choose: "বেছে নিন",
   pricing: "প্রতিটি ব্রিজের দাম দেখা হচ্ছে…",
   raceIdleTitle: "এখানে ব্রিজগুলো প্রতিযোগিতা করে",
   raceIdleBody: "একটি চেইন ও পরিমাণ বেছে নিন, প্রতিটি ব্রিজ এখানে সরাসরি দাম দেবে।",

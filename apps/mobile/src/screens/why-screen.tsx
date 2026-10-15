@@ -38,6 +38,11 @@ export function WhyScreen({ runId }: { runId?: string | undefined } = {}) {
       .catch((error: unknown) => setWhy(error instanceof ApiError && error.status === HTTP_NOT_FOUND ? null : undefined));
   }, [tx, network, runId]);
 
+  const incoming =
+    why && why.kind === "incoming" && typeof why.facts.from === "string" && why.facts.amount !== null && why.facts.amount !== undefined
+      ? { from: why.facts.from, amount: String(why.facts.amount) }
+      : null;
+
   return (
     <Page title={t("why.title")}>
       {why === undefined ? (
@@ -49,25 +54,25 @@ export function WhyScreen({ runId }: { runId?: string | undefined } = {}) {
         </View>
       ) : (
         <>
-          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{headline(why)}</Text>
-          <WhyTimeline why={why} />
-          {why.explorerUrl ? (
-            <Button variant="secondary" onPress={() => void Linking.openURL(why.explorerUrl!)}>
-              <Icon as={ExternalLink} className="size-4" />
-              <Text>{t("activity.viewExplorer")}</Text>
-            </Button>
-          ) : null}
-          {/* Money that came in: save the sender, share the receipt (A5-2). */}
-          {why.kind === "incoming" && typeof why.facts.from === "string" && why.facts.amount !== null && why.facts.amount !== undefined ? (
+          {/* Money that came in: the receipt itself first, who sent it, and sharing it (A5-2). */}
+          {incoming ? (
             <IncomingActions
-              from={why.facts.from}
-              amountBase={String(why.facts.amount)}
+              from={incoming.from}
+              amountBase={incoming.amount}
               asset={String(why.facts.asset ?? "USDC")}
               network={why.network}
               at={typeof why.facts.at === "string" ? why.facts.at : (why.steps[0]?.at ?? new Date().toISOString())}
               txHash={why.txHash}
               explorerUrl={why.explorerUrl}
             />
+          ) : null}
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{headline(why)}</Text>
+          <WhyTimeline why={why} />
+          {why.explorerUrl && !incoming ? (
+            <Button variant="secondary" onPress={() => void Linking.openURL(why.explorerUrl!)}>
+              <Icon as={ExternalLink} className="size-4" />
+              <Text>{t("activity.viewExplorer")}</Text>
+            </Button>
           ) : null}
         </>
       )}

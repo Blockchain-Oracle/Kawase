@@ -128,7 +128,7 @@ export function DesktopSidebar() {
               )}
             </View>
             <View style={compact ? styles.headerCompact : styles.headerRow}>
-              <NetworkPill compact={compact} />
+              <NetworkPill bare={compact} />
               {!compact && account ? <InboxBell /> : null}
               {!account && !compact ? <LanguagePill onPress={() => setLanguageOpen(true)} /> : null}
             </View>

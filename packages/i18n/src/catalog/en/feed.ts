@@ -101,6 +101,9 @@ export const feed = {
     lineEarn: "Earn: {{amount}} {{place}}",
     lineWithdraw: "Withdrew {{amount}} to {{place}}",
     lineMargin: "Trade with {{amount}}",
+    lineMarginSide: "{{side}} {{market}} with {{amount}}",
+    lineMarginBare: "{{side}} {{market}}",
+    lineMarginAny: "A long or short",
     lineAutomationTo: "{{amount}} to {{name}}, on schedule",
     lineAutomation: "An automation ran",
     lineFound: "Something worth a look",
@@ -116,6 +119,7 @@ export const feed = {
     outcomeFailedWhy: "Failed: {{reason}}",
     outcomeWatching: "Watching",
     outcomeFound: "Found",
+    foundTrending: "{{change}} today · {{liquidity}} liquidity",
   },
   detail: {
     title: "What happened",

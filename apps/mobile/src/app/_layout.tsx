@@ -16,6 +16,7 @@ import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
 import { ToastHost } from "@/components/toast/ToastHost";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
+import { SheetLayer, SheetPortalProvider } from "@/components/sheet/SheetHost";
 import { FundProvider } from "@/fund/fund-provider";
 import { BuyProvider } from "@/onramp/buy-provider";
 import { SessionProvider } from "@/session/session-provider";
@@ -42,18 +43,24 @@ export default function RootLayout() {
               <DeviceProofSync />
               <LocaleProvider>
                 <BottomSheetModalProvider>
-                  <SignInProvider>
-                    <BuyProvider>
-                      <FundProvider>
-                        <Stack
-                          screenOptions={({ route }) => ({
-                            headerShown: false,
-                            ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
-                          })}
-                        />
-                      </FundProvider>
-                    </BuyProvider>
-                  </SignInProvider>
+                  {/* Sign in, Add money and Buy open from anywhere, so their sheets need a layer of their own above
+                      every page (without it they render in the page's flow and split the window in two). The layer
+                      sits inside the three providers, so what their sheets read resolves. */}
+                  <SheetPortalProvider layer="apart">
+                    <SignInProvider>
+                      <BuyProvider>
+                        <FundProvider>
+                          <Stack
+                            screenOptions={({ route }) => ({
+                              headerShown: false,
+                              ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
+                            })}
+                          />
+                          <SheetLayer />
+                        </FundProvider>
+                      </BuyProvider>
+                    </SignInProvider>
+                  </SheetPortalProvider>
                   <PortalHost />
                   <WebApprovalHost />
                   <ToastHost />

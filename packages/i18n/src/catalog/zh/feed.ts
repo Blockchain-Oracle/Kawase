@@ -97,6 +97,9 @@ export const feed: Catalog["feed"] = {
     lineEarn: "收益：{{amount}} {{place}}",
     lineWithdraw: "已提取 {{amount}} 到 {{place}}",
     lineMargin: "用 {{amount}} 交易",
+    lineMarginSide: "用 {{amount}} {{side}} {{market}}",
+    lineMarginBare: "{{side}} {{market}}",
+    lineMarginAny: "一笔做多或做空",
     lineAutomationTo: "按计划 {{amount}} 给 {{name}}",
     lineAutomation: "一个自动化已运行",
     lineFound: "值得一看",
@@ -112,6 +115,7 @@ export const feed: Catalog["feed"] = {
     outcomeFailedWhy: "失败：{{reason}}",
     outcomeWatching: "关注中",
     outcomeFound: "发现",
+    foundTrending: "今日 {{change}} · 流动性 {{liquidity}}",
   },
   detail: {
     title: "发生了什么",

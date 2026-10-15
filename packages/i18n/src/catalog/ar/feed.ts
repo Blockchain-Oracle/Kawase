@@ -97,6 +97,9 @@ export const feed: Catalog["feed"] = {
     lineEarn: "عائد: {{amount}} {{place}}",
     lineWithdraw: "سُحب {{amount}} إلى {{place}}",
     lineMargin: "صفقة بـ {{amount}}",
+    lineMarginSide: "{{side}} {{market}} بمبلغ {{amount}}",
+    lineMarginBare: "{{side}} {{market}}",
+    lineMarginAny: "صفقة شراء أو بيع على المكشوف",
     lineAutomationTo: "{{amount}} إلى {{name}} حسب الجدول",
     lineAutomation: "تم تشغيل أتمتة",
     lineFound: "شيء يستحق النظر",
@@ -112,6 +115,7 @@ export const feed: Catalog["feed"] = {
     outcomeFailedWhy: "فشل: {{reason}}",
     outcomeWatching: "قيد المتابعة",
     outcomeFound: "وُجد",
+    foundTrending: "{{change}} اليوم · سيولة {{liquidity}}",
   },
   detail: {
     title: "ماذا حدث",

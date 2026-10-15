@@ -55,8 +55,13 @@ export function useFeedCopy() {
         return t("feed.list.lineEarn", { amount: what || asked, place: who });
       case "withdraw":
         return t("feed.list.lineWithdraw", { amount: what || asked, place: who });
-      case "margin":
-        return t("feed.list.lineMargin", { amount: what || asked });
+      case "margin": {
+        const side = item.asked?.from === "long" || item.asked?.from === "short" ? t(`margin.${item.asked.from}`) : null;
+        const market = item.asked?.to ?? null;
+        const stake = what || (item.asked?.amount ? `${item.asked.amount} USDC` : "");
+        if (side && market) return stake ? t("feed.list.lineMarginSide", { side, market, amount: stake }) : t("feed.list.lineMarginBare", { side, market });
+        return stake ? t("feed.list.lineMargin", { amount: stake }) : t("feed.list.lineMarginAny");
+      }
       case "automation":
         return who ? t("feed.list.lineAutomationTo", { amount: what, name: who }) : t("feed.list.lineAutomation");
       case "suggestion":
@@ -85,7 +90,10 @@ export function useFeedCopy() {
       case "scheduled":
         return t("feed.list.outcomeWatching");
       case "suggested":
-        return t("feed.list.outcomeFound");
+        // What makes it worth a look, never a bare "Found": a trending token says how it moved and how deep it is.
+        if (item.suggestion?.kind === "trending_token" && item.suggestion.facts.change && item.suggestion.facts.liquidity)
+          return t("feed.list.foundTrending", { change: item.suggestion.facts.change, liquidity: item.suggestion.facts.liquidity });
+        return t("feed.list.foundHead");
     }
   };
 

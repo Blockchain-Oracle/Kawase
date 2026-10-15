@@ -14,12 +14,17 @@ import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { formatUnits, parseUnits } from "viem";
 
 import type { CrossChainRequest, RouteRaceRequest } from "@kawase/api-client";
+import { arcIdentity } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { AmountPad, Button, Panel, SectionLabel, Segmented, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { AmountPad, Button, Icon, Panel, SectionLabel, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { ArrowLeftRight } from "lucide-react-native";
+import { Sheet } from "@/components/sheet/Sheet";
+import { SheetHeading } from "@/components/sheet/SheetRoute";
 import { type Blocker, BlockedCta } from "@/components/tx";
-import { ChainGrid, destinationMark, useDestinations } from "@/crosschain/chain-grid";
+import { ChainGrid, chainName, destinationMark, useDestinations } from "@/crosschain/chain-grid";
 import { useAssetMoney } from "@/crosschain/move-copy";
 import { MoveTicket } from "@/crosschain/move-ticket";
 import { moveEnded } from "@/crosschain/move-tx";
@@ -37,6 +42,7 @@ import { TicketHeader } from "@/routes/ticket-header";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
+import { TicketPill } from "@/swap/token-button";
 import { TradeSwitch } from "@/swap/trade-switch";
 
 const USDC_DECIMALS = 6;
@@ -45,6 +51,12 @@ const NOTHING = 0n;
 const ASSET_CHOICES = 6;
 const MAX_FRACTION = 6;
 const TICKET_COLUMN = 460;
+/** Below this the two pills can't hold their label and a chain's name side by side. */
+const TICKET_MIN = 360;
+/** The race column's least width, and the page width that holds both columns side by side. */
+const RACE_MIN = 340;
+const BOTH_SIDES = 2;
+const TWO_COLUMNS_MIN = TICKET_MIN + RACE_MIN + SPACE.lg + SPACE.inset * BOTH_SIDES;
 const HALF = 2;
 
 export type MovePrefill = { direction?: "out" | "in" | undefined; chain?: string | undefined; amount?: string | undefined; recipient?: string | undefined; asset?: string | undefined };
@@ -64,7 +76,10 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const { color } = useTheme();
   const router = useRouter();
   const reduced = useReducedMotion();
-  const wide = useWide();
+  const wideWindow = useWide();
+  // Two columns only when the page holds both the ticket and the race at their least (see the swap screen).
+  const [pageWidth, setPageWidth] = React.useState(0);
+  const wide = wideWindow && pageWidth >= TWO_COLUMNS_MIN;
   const fund = useFund();
   const money = useAssetMoney();
   const { portfolio } = usePortfolio();
@@ -82,6 +97,7 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const [amount, setAmount] = React.useState<bigint>(() => units(prefill.amount, USDC_DECIMALS));
   const [recipient, setRecipient] = React.useState(prefill.recipient ?? "");
   const [creating, setCreating] = React.useState(false);
+  const [picking, setPicking] = React.useState(false);
 
   const waiting = React.useMemo(() => elsewhere?.chains ?? [], [elsewhere]);
   const onChain = waiting.filter((row) => row.key === chain);
@@ -208,42 +224,63 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
       </View>
     ) : null;
 
+  // Select first, like the swap: Arc on one side, the other chain a pill that opens the chain picker; the flip turns
+  // "Send out" into "Bring to Arc". Routes show only once there is a chain and an amount to race.
+  const turn = (next: "out" | "in") => {
+    setDirection(next);
+    setChain(undefined);
+    setAsset({ symbol: "USDC", decimals: USDC_DECIMALS });
+    setAmount(NOTHING);
+    fire("tick");
+  };
+  const picked = (id: string) => {
+    setChain(id);
+    setPicking(false);
+    const there = waiting.find((row) => row.key === id && row.asset === "USDC") ?? waiting.find((row) => row.key === id);
+    if (direction === "in" && there) {
+      setAsset({ symbol: there.asset, decimals: there.decimals ?? USDC_DECIMALS });
+      setAmount(BigInt(there.balance));
+    }
+  };
+  const chosen = destinations.list.find((entry) => entry.id === chain);
+  const arcSide = <TicketPill mark={<Mark entity={arcIdentity(network).chain} size={SIZE.markToken} />} label={direction === "in" ? t("move.to") : t("move.from")} value={testnet ? t("network.arcTestnet") : t("network.arc")} />;
+  const chainSide = (
+    <TicketPill
+      {...(chosen ? { mark: <Mark entity={destinationMark(chosen)} size={SIZE.markToken} /> } : {})}
+      label={direction === "in" ? t("move.from") : t("move.to")}
+      value={chosen ? chainName(chosen) : t("move.choose")}
+      placeholder={!chosen}
+      onPress={() => setPicking(true)}
+    />
+  );
+  const pair = (
+    <View style={styles.pair}>
+      {direction === "out" ? arcSide : chainSide}
+      <Pressable accessibilityRole="button" accessibilityLabel={t("swap.flip")} onPress={() => turn(direction === "out" ? "in" : "out")} style={[styles.flip, { backgroundColor: color.raised2 }]}>
+        <Icon icon={ArrowLeftRight} size={SIZE.iconSm} />
+      </Pressable>
+      {direction === "out" ? chainSide : arcSide}
+    </View>
+  );
+  const picker = picking ? (
+    <Sheet onClose={() => setPicking(false)} closeLabel={t("common.close")}>
+      <SheetHeading title={direction === "in" ? t("move.pickSource") : t("move.pickChain")} />
+      <ChainGrid
+        destinations={destinations.list}
+        status={destinations.status}
+        onRetry={destinations.retry}
+        selected={chain}
+        onSelect={picked}
+        {...(direction === "in" ? { waiting, amountOf: (row: (typeof waiting)[number]) => money(row.balance, { symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS }) } : {})}
+      />
+    </Sheet>
+  ) : null;
+
   const form = (
     <View style={styles.grow}>
       <ScrollView style={styles.grow} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Segmented<"out" | "in">
-          label={t("move.title")}
-          value={direction}
-          onChange={(value) => {
-            setDirection(value);
-            setChain(undefined);
-            setAsset({ symbol: "USDC", decimals: USDC_DECIMALS });
-            setAmount(NOTHING);
-          }}
-          options={[
-            { value: "out", label: t("move.directionOut") },
-            { value: "in", label: t("move.directionIn") },
-          ]}
-        />
-        <View style={styles.section}>
-          <SectionLabel>{direction === "in" ? t("move.from") : t("move.to")}</SectionLabel>
-          <ChainGrid
-            destinations={destinations.list}
-            status={destinations.status}
-            onRetry={destinations.retry}
-            selected={chain}
-            onSelect={(id) => {
-              setChain(id);
-              const there = waiting.find((row) => row.key === id && row.asset === "USDC") ?? waiting.find((row) => row.key === id);
-              if (direction === "in" && there) {
-                setAsset({ symbol: there.asset, decimals: there.decimals ?? USDC_DECIMALS });
-                setAmount(BigInt(there.balance));
-              }
-            }}
-            {...(direction === "in" ? { waiting, amountOf: (row: (typeof waiting)[number]) => money(row.balance, { symbol: row.asset, decimals: row.decimals ?? USDC_DECIMALS }) } : {})}
-          />
-        </View>
-        {direction === "out" ? (
+        {pair}
+        {direction === "out" && chain ? (
           <View style={styles.section}>
             <SectionLabel>{t("move.recipient")}</SectionLabel>
             <RecipientField value={recipient} onChange={setRecipient} chain={chain} chainMark={chainMark} />
@@ -294,30 +331,35 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
   const open = intent ? ["submitted", "working", "input_required", "auth_required", "ready_for_approval"].includes(intent.state) : false;
 
   return (
-    <View style={[styles.page, { backgroundColor: color.ground }]}>
+    <View style={[styles.page, { backgroundColor: color.ground }]} onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}>
       <TicketHeader title={direction === "in" ? t("move.bringTitle") : t("move.title")} onBack={back} testnet={testnet} />
       {!intent && direction === "out" ? (
         <View style={styles.switch}>
           <TradeSwitch current="bridge" />
         </View>
       ) : null}
-      {wide ? (
+      {wide && (draftRace || raceRequest) ? (
         <View style={styles.columns}>
           <View style={styles.ticketColumn}>{body}</View>
-          <Panel style={styles.raceColumn}>
-            <SectionLabel>{t("routes.title")}</SectionLabel>
-            <ScrollView contentContainerStyle={styles.raceScroll}>
-              {draftRace && intent?.draft ? (
-                <RouteList race={draftRace} selected={intent.draft.chosen} readOnly={!open || controller.busy} onSelect={(route) => void controller.revise({ route: route as NonNullable<typeof intent.draft>["chosen"] })} />
-              ) : (
-                <LiveRace request={raceRequest} idleTitle={direction === "in" ? t("move.raceIdleInTitle") : t("move.raceIdleTitle")} idleBody={direction === "in" ? t("move.raceIdleInBody") : t("move.raceIdleBody")} />
-              )}
-            </ScrollView>
-          </Panel>
+          <Animated.View entering={reduced ? undefined : FadeIn.duration(TIMING.sheetEnter)} style={styles.grow}>
+            <Panel style={styles.raceColumn}>
+              <ScrollView contentContainerStyle={styles.raceScroll}>
+                {draftRace && intent?.draft ? (
+                  <RouteList race={draftRace} selected={intent.draft.chosen} readOnly={!open || controller.busy} onSelect={(route) => void controller.revise({ route: route as NonNullable<typeof intent.draft>["chosen"] })} />
+                ) : (
+                  <LiveRace request={raceRequest} idleTitle={direction === "in" ? t("move.raceIdleInTitle") : t("move.raceIdleTitle")} idleBody={direction === "in" ? t("move.raceIdleInBody") : t("move.raceIdleBody")} />
+                )}
+              </ScrollView>
+            </Panel>
+          </Animated.View>
         </View>
+      ) : wideWindow ? (
+        // Nothing to race yet: the ticket alone, centred; the bridges come in beside it once there is a chain and an amount.
+        <View style={styles.solo}>{body}</View>
       ) : (
         body
       )}
+      {picker}
     </View>
   );
 }
@@ -355,7 +397,10 @@ const styles = StyleSheet.create({
   switch: { paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
   footer: { gap: SPACE.xs, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.xl },
   columns: { flex: 1, flexDirection: "row", gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.lg },
-  ticketColumn: { width: TICKET_COLUMN, maxWidth: "45%" },
+  ticketColumn: { width: TICKET_COLUMN, maxWidth: "50%", minWidth: TICKET_MIN },
+  solo: { flex: 1, width: "100%", maxWidth: TICKET_COLUMN, alignSelf: "center" },
+  pair: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  flip: { width: SIZE.touch, height: SIZE.touch, borderRadius: SIZE.touch / HALF, alignItems: "center", justifyContent: "center" },
   raceColumn: { flex: 1, padding: SPACE.lg, gap: SPACE.md },
   raceScroll: { gap: SPACE.md, paddingBottom: SPACE.lg },
 });

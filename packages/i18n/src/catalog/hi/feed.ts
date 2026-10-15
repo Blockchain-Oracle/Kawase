@@ -97,6 +97,9 @@ export const feed: Catalog["feed"] = {
     lineEarn: "कमाई: {{amount}} {{place}}",
     lineWithdraw: "{{amount}} {{place}} निकाले",
     lineMargin: "{{amount}} से ट्रेड",
+    lineMarginSide: "{{amount}} से {{market}} {{side}}",
+    lineMarginBare: "{{market}} {{side}}",
+    lineMarginAny: "एक लॉन्ग या शॉर्ट",
     lineAutomationTo: "{{amount}} {{name}} को, तय समय पर",
     lineAutomation: "एक ऑटोमेशन चला",
     lineFound: "देखने लायक कुछ",
@@ -112,6 +115,7 @@ export const feed: Catalog["feed"] = {
     outcomeFailedWhy: "नहीं हुआ: {{reason}}",
     outcomeWatching: "नज़र में",
     outcomeFound: "मिला",
+    foundTrending: "आज {{change}} · {{liquidity}} लिक्विडिटी",
   },
   detail: {
     title: "क्या हुआ",

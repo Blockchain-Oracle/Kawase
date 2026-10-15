@@ -14,7 +14,7 @@ import { getVenueIdentity, venueKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
-import { CountdownRing, FilterChips, Icon, LoadingState, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { CountdownRing, FilterChips, Icon, LoadingState, Panel, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { ARC_CHAIN_IDS } from "@/safety/use-safety";
@@ -78,7 +78,18 @@ function FeedMark({ item }: { item: AgentFeedItem }) {
   );
 }
 
-export function FeedRow({ item, onPress, rail }: { item: AgentFeedItem; onPress: (item: AgentFeedItem) => void; rail: { above: boolean; below: boolean } }) {
+export function FeedRow({
+  item,
+  onPress,
+  rail,
+  plated = false,
+}: {
+  item: AgentFeedItem;
+  onPress: (item: AgentFeedItem) => void;
+  rail: { above: boolean; below: boolean };
+  /** On a plate (Activity): the row is inset like every list row on a panel, and the rail reaches the next row. */
+  plated?: boolean;
+}) {
   const { color } = useTheme();
   const copy = useFeedCopy();
   const watching = item.outcome === "scheduled";
@@ -96,11 +107,11 @@ export function FeedRow({ item, onPress, rail }: { item: AgentFeedItem; onPress:
       }}
       accessibilityRole="button"
       accessibilityLabel={`${line}. ${detail}. ${when}`}
-      style={({ pressed }) => [styles.row, pressed ? { backgroundColor: color.rowPressed } : null]}
+      style={({ pressed }) => [styles.row, plated ? styles.rowPlated : null, pressed ? { backgroundColor: color.rowPressed } : null]}
     >
       <View style={styles.lead}>
-        {rail.above ? <View style={[styles.rail, styles.railAbove, { backgroundColor: color.skeleton }]} /> : null}
-        {rail.below ? <View style={[styles.rail, styles.railBelow, { backgroundColor: color.skeleton }]} /> : null}
+        {rail.above ? <View style={[styles.rail, plated ? styles.railAbovePlated : styles.railAbove, { backgroundColor: color.skeleton }]} /> : null}
+        {rail.below ? <View style={[styles.rail, plated ? styles.railBelowPlated : styles.railBelow, { backgroundColor: color.skeleton }]} /> : null}
         <FeedMark item={item} />
       </View>
       <View style={styles.copy}>
@@ -123,7 +134,20 @@ export function FeedRow({ item, onPress, rail }: { item: AgentFeedItem; onPress:
  * The timeline: Watching on top, then a heading per day. `limit` keeps Home's glance short (Activity shows all).
  * Loading is the feed's own skeleton; empty and error states are the host's (they differ between Home and Activity).
  */
-export function FeedTimeline({ feed, filter, limit, onOpen }: { feed: AgentFeed | undefined; filter: FeedFilter; limit?: number; onOpen: (item: AgentFeedItem) => void }) {
+export function FeedTimeline({
+  feed,
+  filter,
+  limit,
+  onOpen,
+  plated = false,
+}: {
+  feed: AgentFeed | undefined;
+  filter: FeedFilter;
+  limit?: number;
+  onOpen: (item: AgentFeedItem) => void;
+  /** Each day's rows on a panel, the way Activity's "All money" list sits (Activity); Home keeps them on the ground. */
+  plated?: boolean;
+}) {
   const { t } = useT();
   const { color } = useTheme();
   const copy = useFeedCopy();
@@ -142,25 +166,36 @@ export function FeedTimeline({ feed, filter, limit, onOpen }: { feed: AgentFeed 
     <View style={styles.list}>
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
-          <Text accessibilityRole="header" style={[TYPE.label, styles.head, { color: color.text3 }]}>
+          <Text accessibilityRole="header" style={[TYPE.label, styles.head, plated ? styles.headPlated : null, { color: color.text3 }]}>
             {section.title}
           </Text>
-          {section.rows.map((row, at) => {
-            const order = index++;
-            return (
-              <Animated.View key={row.id} entering={reduced || order >= STAGGER_ROWS ? undefined : FadeInDown.delay(order * TIMING.stagger).duration(TIMING.staggerItem)}>
-                <FeedRow item={row} onPress={onOpen} rail={{ above: at > 0, below: at < section.rows.length - 1 }} />
-              </Animated.View>
-            );
-          })}
+          <Plate plated={plated}>
+            {section.rows.map((row, at) => {
+              const order = index++;
+              return (
+                <Animated.View key={row.id} entering={reduced || order >= STAGGER_ROWS ? undefined : FadeInDown.delay(order * TIMING.stagger).duration(TIMING.staggerItem)}>
+                  <FeedRow item={row} onPress={onOpen} plated={plated} rail={{ above: at > 0, below: at < section.rows.length - 1 }} />
+                </Animated.View>
+              );
+            })}
+          </Plate>
         </View>
       ))}
     </View>
   );
 }
 
+function Plate({ plated, children }: { plated: boolean; children: React.ReactNode }) {
+  return plated ? <Panel style={styles.plate}>{children}</Panel> : <>{children}</>;
+}
+
 const styles = StyleSheet.create({
   list: { gap: SPACE.lg },
+  plate: { paddingVertical: SPACE.xs },
+  headPlated: { paddingHorizontal: SPACE.lg },
+  rowPlated: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: 0 },
+  railAbovePlated: { top: -SPACE.md, height: "50%" },
+  railBelowPlated: { bottom: -SPACE.md, height: "50%" },
   section: { gap: SPACE.xxs },
   head: { paddingHorizontal: SPACE.xs, paddingBottom: SPACE.xs },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xs, borderRadius: SPACE.md },

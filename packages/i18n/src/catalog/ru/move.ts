@@ -87,6 +87,7 @@ export const move: Catalog["move"] = {
   onExplorer: "Посмотреть в {{chain}}",
   pickChain: "Выберите сеть",
   pickSource: "Выберите, где деньги",
+  choose: "Выбрать",
   pricing: "Оцениваем каждый мост…",
   raceIdleTitle: "Здесь соревнуются мосты",
   raceIdleBody: "Выберите сеть и сумму, и каждый мост оценит перевод здесь, в реальном времени.",

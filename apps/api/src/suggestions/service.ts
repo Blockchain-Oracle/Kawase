@@ -365,6 +365,7 @@ export class SuggestionService {
           facts: {
             token: row.token.symbol,
             tokenName: row.token.name,
+            address: row.token.address,
             segment,
             change: `${row.change24hPct! > 0 ? "+" : ""}${row.change24hPct!.toFixed(PCT_DIGITS)}%`,
             liquidity: compactUsd(row.liquidityUsd ?? 0),

@@ -97,6 +97,9 @@ export const feed: Catalog["feed"] = {
     lineEarn: "Доход: {{amount}} {{place}}",
     lineWithdraw: "Вывод {{amount}} в {{place}}",
     lineMargin: "Сделка на {{amount}}",
+    lineMarginSide: "{{side}} {{market}} на {{amount}}",
+    lineMarginBare: "{{side}} {{market}}",
+    lineMarginAny: "Лонг или шорт",
     lineAutomationTo: "{{amount}} → {{name}} по расписанию",
     lineAutomation: "Сработала автоматизация",
     lineFound: "Стоит взглянуть",
@@ -112,6 +115,7 @@ export const feed: Catalog["feed"] = {
     outcomeFailedWhy: "Не удалось: {{reason}}",
     outcomeWatching: "Наблюдает",
     outcomeFound: "Найдено",
+    foundTrending: "{{change}} за день · ликвидность {{liquidity}}",
   },
   detail: {
     title: "Что произошло",

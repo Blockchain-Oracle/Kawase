@@ -87,6 +87,7 @@ export const move: Catalog["move"] = {
   onExplorer: "اعرضه على {{chain}}",
   pickChain: "اختر شبكة",
   pickSource: "اختر مكان المال",
+  choose: "اختر",
   pricing: "تسعير كل جسر…",
   raceIdleTitle: "هنا تتسابق الجسور",
   raceIdleBody: "اختر شبكة ومبلغًا، وسيسعّره كل جسر هنا مباشرةً.",

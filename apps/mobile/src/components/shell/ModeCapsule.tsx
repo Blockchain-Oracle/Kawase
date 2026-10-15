@@ -47,6 +47,7 @@ export function ModeCapsule({
   longPressLabel,
   busy = false,
   compact = false,
+  bare = false,
   onToggle,
   onLongPress,
 }: {
@@ -60,6 +61,8 @@ export function ModeCapsule({
   busy?: boolean;
   /** Drops the mark, for a ticket header where the money word already sits beside the amount. */
   compact?: boolean;
+  /** The mark and the switch without the word, for the compact rail (the word stays for assistive technology). */
+  bare?: boolean;
   onToggle: () => void;
   onLongPress?: () => void;
 }) {
@@ -94,7 +97,7 @@ export function ModeCapsule({
             }
           : {})}
         accessibilityRole="switch"
-        accessibilityLabel={switchLabel}
+        accessibilityLabel={bare ? `${label}. ${switchLabel}` : switchLabel}
         accessibilityState={{ checked: !testnet, busy }}
         {...(onLongPress && longPressLabel
           ? {
@@ -107,13 +110,15 @@ export function ModeCapsule({
         style={[styles.capsule, { backgroundColor: color.networkSurface }]}
       >
         {compact ? null : <Mark entity={arcIdentity(network).chain} size={SIZE.iconSm} />}
-        <Text
-          maxFontSizeMultiplier={CONTROL_FONT_SCALE}
-          style={[TYPE.modeLabel, { color: color.network }]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
+        {bare ? null : (
+          <Text
+            maxFontSizeMultiplier={CONTROL_FONT_SCALE}
+            style={[TYPE.modeLabel, { color: color.network }]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        )}
         <View
           style={[
             styles.track,

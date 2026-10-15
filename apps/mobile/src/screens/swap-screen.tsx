@@ -59,6 +59,12 @@ const FLIP = SIZE.touch;
 const HALF = 2;
 /** The desktop's ticket column; the live race takes the rest. */
 const TICKET_COLUMN = 440;
+/** Below this the two token pills can't hold "You pay" and a symbol side by side. */
+const TICKET_MIN = 360;
+/** The race column's least width, and the page width that holds both columns side by side. */
+const RACE_MIN = 340;
+const BOTH_SIDES = 2;
+const TWO_COLUMNS_MIN = TICKET_MIN + RACE_MIN + SPACE.lg + SPACE.inset * BOTH_SIDES;
 
 type Step = "amount" | "review";
 
@@ -113,7 +119,11 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const { color } = useTheme();
   const router = useRouter();
   const reduced = useReducedMotion();
-  const wide = useWide() && !embedded;
+  const wideWindow = useWide() && !embedded;
+  // Two columns only when the page holds both the ticket and the race at their least; a narrower desktop window keeps
+  // the one ticket (and its review lists the venues), so the token pills never squeeze.
+  const [pageWidth, setPageWidth] = React.useState(0);
+  const wide = wideWindow && pageWidth >= TWO_COLUMNS_MIN;
   const { status, user } = useSession();
   const signIn = useSignIn();
   const fund = useFund();
@@ -421,27 +431,32 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   const draftRace = intent && visible === "review" ? swapRace(intent) : null;
 
   return (
-    <View style={[styles.page, { backgroundColor: embedded ? color.transparent : color.ground }]}>
+    <View style={[styles.page, { backgroundColor: embedded ? color.transparent : color.ground }]} onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}>
       <TicketHeader title={title} onBack={back} testnet={testnet} embedded={embedded} />
       {!finished && !inFlight && visible === "amount" && !prefill.buy && !prefill.sell && !embedded ? (
         <View style={styles.switch}>
           <TradeSwitch current="swap" />
         </View>
       ) : null}
-      {wide ? (
+      {wide && (draftRace || raceRequest) ? (
         <View style={styles.columns}>
           <View style={styles.ticketColumn}>{ticket}</View>
-          <Panel style={styles.raceColumn}>
+          <Animated.View entering={reduced ? undefined : FadeIn.duration(TIMING.sheetEnter)} style={styles.grow}>
+            <Panel style={styles.raceColumn}>
             <SectionLabel>{t("routes.title")}</SectionLabel>
-            <ScrollView contentContainerStyle={styles.raceScroll}>
-              {draftRace ? (
-                <RouteList race={draftRace} selected={intent?.draft?.venue ?? draftRace.best} readOnly={!open} {...(open ? { onSelect: (venue: string) => void controller.revise({ venue }) } : {})} />
-              ) : (
-                <LiveRace request={raceRequest} selected={preferred} onSelect={setPreferred} idleTitle={t("swap.raceIdleTitle")} idleBody={t("swap.raceIdleBody")} />
-              )}
-            </ScrollView>
-          </Panel>
+              <ScrollView contentContainerStyle={styles.raceScroll}>
+                {draftRace ? (
+                  <RouteList race={draftRace} selected={intent?.draft?.venue ?? draftRace.best} readOnly={!open} {...(open ? { onSelect: (venue: string) => void controller.revise({ venue }) } : {})} />
+                ) : (
+                  <LiveRace request={raceRequest} selected={preferred} onSelect={setPreferred} idleTitle={t("swap.raceIdleTitle")} idleBody={t("swap.raceIdleBody")} />
+                )}
+              </ScrollView>
+            </Panel>
+          </Animated.View>
         </View>
+      ) : wideWindow ? (
+        // Nothing to race yet: the ticket alone, centred; the venues come in beside it once there is an amount.
+        <View style={styles.solo}>{ticket}</View>
       ) : (
         ticket
       )}
@@ -486,7 +501,8 @@ const styles = StyleSheet.create({
   footer: { gap: SPACE.xs, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.xl },
   row: { flexDirection: "row", justifyContent: "center", gap: SPACE.sm },
   columns: { flex: 1, flexDirection: "row", gap: SPACE.lg, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.lg },
-  ticketColumn: { width: TICKET_COLUMN, maxWidth: "45%" },
+  ticketColumn: { width: TICKET_COLUMN, maxWidth: "50%", minWidth: TICKET_MIN },
+  solo: { flex: 1, width: "100%", maxWidth: TICKET_COLUMN, alignSelf: "center" },
   raceColumn: { flex: 1, padding: SPACE.lg, gap: SPACE.md },
   raceScroll: { gap: SPACE.md, paddingBottom: SPACE.lg },
 });

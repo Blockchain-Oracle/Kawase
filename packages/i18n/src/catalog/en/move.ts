@@ -85,6 +85,7 @@ export const move = {
   onExplorer: "See it on {{chain}}",
   pickChain: "Choose a chain",
   pickSource: "Choose where it is",
+  choose: "Choose",
   pricing: "Pricing every bridge…",
   raceIdleTitle: "The bridges race here",
   raceIdleBody: "Pick a chain and an amount, and every bridge prices it here, live.",

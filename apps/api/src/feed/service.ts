@@ -31,6 +31,8 @@ const PROPOSALS = 20;
 const OPEN_STATES = ["ready_for_approval", "input_required", "auth_required"] as const;
 const AGENT_SURFACES = new Set(["chat", "voice"]);
 const USDC_DECIMALS = 6;
+/** A token row only shows a mark, never an amount, so its decimals are the ERC-20 default. */
+const TOKEN_DECIMALS = 18;
 
 type IntentRow = { id: string; kind: string; originSurface: string; threadId: string | null; state: string; request: Record<string, unknown>; createdAt: Date };
 
@@ -159,6 +161,8 @@ export class FeedService {
       ...watched.items,
       ...(found?.suggestions ?? []).map((suggestion) => ({
         ...blank({ id: `suggestion:${suggestion.id}`, group: "found", source: "suggestion", kind: "suggestion", origin: "agent", network, at: now.toISOString(), outcome: "suggested" }),
+        // A trending token's row wears the token's own mark.
+        token: suggestion.kind === "trending_token" && suggestion.facts.address ? { address: suggestion.facts.address, symbol: suggestion.facts.token ?? "", decimals: TOKEN_DECIMALS } : null,
         suggestion,
       })),
     ];
@@ -288,11 +292,15 @@ export class FeedService {
         at: row.createdAt.toISOString(),
         outcome: "waiting",
       }),
-      asked: {
-        amount: text(row.request.amount),
-        from: text(row.request.tokenIn) ?? text(row.request.asset),
-        to: text(row.request.tokenOut) ?? text(row.request.destination) ?? text(row.request.recipient),
-      },
+      // A long or short asks with its margin, its side and its market ("10", "short", "cirBTC").
+      asked:
+        row.kind === "margin"
+          ? { amount: text(row.request.margin), from: text(row.request.side), to: text(row.request.market) }
+          : {
+              amount: text(row.request.amount),
+              from: text(row.request.tokenIn) ?? text(row.request.asset),
+              to: text(row.request.tokenOut) ?? text(row.request.destination) ?? text(row.request.recipient),
+            },
       counterparty: text(row.request.recipient) ?? text(row.request.destination),
       reason: row.state === "ready_for_approval" ? "READY_FOR_APPROVAL" : row.state === "auth_required" ? "SIGN_IN_REQUIRED" : "INPUT_REQUIRED",
       intentId: row.id,

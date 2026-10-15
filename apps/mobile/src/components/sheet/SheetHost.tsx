@@ -23,9 +23,16 @@ interface Portal {
 const PortalContext = createContext<Portal | null>(null);
 const InPlaceContext = createContext(false);
 
-/** Wraps the stack; the layer renders right after it, under the toasts and the other root hosts. */
-export function SheetPortalProvider({ children }: { children: ReactNode }) {
-  const [entries, setEntries] = useState<readonly { id: string; node: ReactNode }[]>([]);
+type Entries = readonly { id: string; node: ReactNode }[];
+const EntriesContext = createContext<Entries>([]);
+
+/**
+ * Wraps the stack; the layer renders right after it, under the toasts and the other root hosts. `layer="apart"` keeps
+ * the layer out of the provider so it can sit deeper, inside providers whose own sheets use it (the root's Sign in,
+ * Add money and Buy): a portal's node resolves its contexts where the layer is, so the layer goes inside them.
+ */
+export function SheetPortalProvider({ children, layer = "here" }: { children: ReactNode; layer?: "here" | "apart" }) {
+  const [entries, setEntries] = useState<Entries>([]);
   const depth = useSharedValue(0);
   const count = useSharedValue(0);
   const portal = useMemo<Portal>(
@@ -58,15 +65,31 @@ export function SheetPortalProvider({ children }: { children: ReactNode }) {
   });
   return (
     <PortalContext.Provider value={portal}>
-      <Animated.View style={[styles.fill, page]}>{children}</Animated.View>
-      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-        {entries.map((e) => (
-          <View key={e.id} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-            {e.node}
-          </View>
-        ))}
-      </View>
+      <EntriesContext.Provider value={entries}>
+        {layer === "apart" ? (
+          children
+        ) : (
+          <>
+            <Animated.View style={[styles.fill, page]}>{children}</Animated.View>
+            <SheetLayer />
+          </>
+        )}
+      </EntriesContext.Provider>
     </PortalContext.Provider>
+  );
+}
+
+/** Where the sheets of the nearest provider draw: above everything before it, filling the window. */
+export function SheetLayer() {
+  const entries = useContext(EntriesContext);
+  return (
+    <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+      {entries.map((e) => (
+        <View key={e.id} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+          {e.node}
+        </View>
+      ))}
+    </View>
   );
 }
 

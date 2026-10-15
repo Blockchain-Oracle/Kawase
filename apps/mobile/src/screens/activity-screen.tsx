@@ -134,7 +134,7 @@ export function ActivityScreen() {
                 ) : agent.feed && rowsFor(agent.feed, filter).length === 0 ? (
                   <EmptyState why={t("feed.activity.emptyFilter", { filter: t(`feed.list.filter_${filter}`) })} action={{ label: t("feed.activity.showAll"), onPress: () => setFilter("all") }} size="inline" />
                 ) : (
-                  <FeedTimeline feed={agent.feed} filter={filter} onOpen={setOpen} />
+                  <FeedTimeline feed={agent.feed} filter={filter} onOpen={setOpen} plated />
                 )}
               </View>
             ) : (

@@ -18,4 +18,11 @@ export const receipt: Catalog["receipt"] = {
   receivedLine: "مجھے Kawase پر {{name}} سے {{amount}} ملے۔",
   saveSender: "بھیجنے والے کو رابطے میں محفوظ کریں",
   savedAs: "{{name}} کے نام سے محفوظ۔",
+  verifyTitle: "چین پر تصدیق کریں",
+  scanToVerify: "{{explorer}} پر کھولنے کے لیے اسکین کریں",
+  openExplorer: "{{explorer}} پر کھولیں",
+  sender: "بھیجنے والا",
+  notSaved: "آپ کے رابطوں میں نہیں",
+  saveAs: "محفوظ کریں",
+  saved: "آپ کے رابطوں میں",
 };
