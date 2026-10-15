@@ -82,7 +82,7 @@ const app = createApp({
   onrampPageUrl,
   circleWebhookKey: env.CIRCLE_LIVE_API_KEY ?? env.CIRCLE_TEST_API_KEY,
   market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
-  liveTrades: new LiveTrades(),
+  liveTrades: new LiveTrades({ alchemyKey: env.ALCHEMY_API_KEY }),
   alchemyApiKey: env.ALCHEMY_API_KEY,
   marketWarmMs: MARKET_WARM_MS,
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,

@@ -3,6 +3,7 @@
 import {
   createPublicClient,
   createWalletClient,
+  fallback,
   http,
   nonceManager,
   type Address,
@@ -31,14 +32,35 @@ export type Chains = {
 
 const withPrefix = (key: string): Hex => (key.startsWith("0x") ? (key as Hex) : `0x${key}`);
 
+const ALCHEMY_SLUG: Record<NetworkId, string> = { mainnet: "arc-mainnet", testnet: "arc-testnet" };
+/**
+ * Arc's provider-run public endpoints (Blockdaemon, dRPC, QuickNode; Arc's node-providers docs), all keyless and
+ * checked on 10-15 (chain ids 5042 / 5042002).
+ */
+const PROVIDER_RPCS: Record<NetworkId, readonly string[]> = {
+  mainnet: ["https://rpc.blockdaemon.mainnet.arc.io", "https://rpc.drpc.mainnet.arc.io", "https://rpc.quicknode.mainnet.arc.io"],
+  testnet: ["https://rpc.blockdaemon.testnet.arc.network", "https://rpc.drpc.testnet.arc.network", "https://rpc.quicknode.testnet.arc.network"],
+};
+
+/**
+ * Arc's own public RPC first, then the provider-run endpoints, then Alchemy: one public endpoint rate-limits
+ * ("Request exceeds defined limit"), and on 10-15 that failed a person's wallet read on mainnet with a 500 (Alchemy's
+ * monthly quota was spent too). A failed or refused call moves to the next; reverts are not retried elsewhere.
+ */
+export function arcTransport(id: NetworkId, rpcUrl?: string, alchemyKey?: string) {
+  const urls = [rpcUrl, ...PROVIDER_RPCS[id], alchemyKey ? `https://${ALCHEMY_SLUG[id]}.g.alchemy.com/v2/${alchemyKey}` : undefined];
+  return fallback(urls.filter((url, index) => index === 0 || url).map((url) => http(url ?? undefined)));
+}
+
 function clientsFor(
   id: NetworkId,
   relayerKey: string,
   ops: { walletId: string; address: Address },
   rpcUrl?: string,
+  alchemyKey?: string,
 ): NetworkClients {
   const network = getNetwork(id);
-  const transport = http(rpcUrl);
+  const transport = arcTransport(id, rpcUrl, alchemyKey);
   // Sign-ups that set up at the same moment each send a relayed transaction; the nonce manager hands them out in
   // order within this process, so two setups never race for the same nonce.
   const account = privateKeyToAccount(withPrefix(relayerKey), { nonceManager });
@@ -60,6 +82,7 @@ export function createChains(env: ApiEnv): Chains {
       env.RELAYER_PRIVATE_KEY_TESTNET,
       { walletId: env.OPS_WALLET_ID_TESTNET, address: env.OPS_WALLET_ADDRESS_TESTNET as Address },
       env.ARC_RPC_URL_TESTNET,
+      env.ALCHEMY_API_KEY,
     ),
   );
   if (
@@ -75,6 +98,7 @@ export function createChains(env: ApiEnv): Chains {
         env.RELAYER_PRIVATE_KEY_MAINNET,
         { walletId: env.OPS_WALLET_ID_MAINNET, address: env.OPS_WALLET_ADDRESS_MAINNET as Address },
         env.ARC_RPC_URL_MAINNET,
+        env.ALCHEMY_API_KEY,
       ),
     );
   }

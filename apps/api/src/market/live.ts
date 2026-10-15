@@ -8,7 +8,6 @@ import {
   createPublicClient,
   decodeEventLog,
   getAddress,
-  http,
   parseAbi,
   parseAbiItem,
   type Address,
@@ -20,6 +19,7 @@ import {
 
 import { getNetwork } from "@kawase/networks";
 
+import { arcTransport } from "../wallet/chain";
 import { getJson } from "./cache";
 
 const DEXSCREENER_TOKENS = "https://api.dexscreener.com/tokens/v1/arc";
@@ -96,10 +96,13 @@ export class LiveTrades {
   private readonly listeners = new Set<(trade: LiveTrade) => void>();
   private unwatch: (() => void) | undefined;
   private reconnect: NodeJS.Timeout | undefined;
+  private readonly wsUrl: string;
 
-  constructor(private readonly wsUrl: string = MAINNET_WSS) {
+  constructor(options: { wsUrl?: string; alchemyKey?: string | undefined } = {}) {
+    this.wsUrl = options.wsUrl ?? MAINNET_WSS;
     const chain = getNetwork("mainnet").viemChain;
-    this.http = createPublicClient({ chain, transport: http() }) as PublicClient;
+    // The history reads (getLogs, two blocks) share the public RPC's limit with every wallet read: Alchemy steps in.
+    this.http = createPublicClient({ chain, transport: arcTransport("mainnet", undefined, options.alchemyKey) }) as PublicClient;
   }
 
   /** Recent trades for these tokens (the last ~30 minutes), and live ones to `onTrade` until the returned stop. */
