@@ -1,7 +1,36 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-14 late (Abu's live review acted on; dev mode; plan compressed-dreaming-yao)
+Last updated: 2026-10-15 morning (Abu's 10-15 review acted on; plan breezy-puzzling-starfish)
+
+## 2026-10-15 — Abu's signed-in review (Privy, @ajweb3)
+
+Live: web `c8e3963e` (app.getkawase.xyz/version.txt), api `c8e3963e` (deploy `wo9i7xkb…`). Plan: `~/.claude/plans/breezy-puzzling-starfish.md`.
+
+- **Setup stuck at step 2 (Privy web):** `useEmbeddedWallet` only matched `walletClientType === "privy"`; Privy's newer
+  enclave wallets are `privy-v2`, so no signer, so the auto-run never fired. Both types match now (the user's own wallet
+  address breaks a tie). An 8 s watchdog turns a missing signer into "Your wallet didn't connect" + Retry and posts a
+  `signerMissing` client event. Not yet confirmed with Abu's real sign-in.
+- **Mainnet "couldn't load your wallets" / margin 500s:** rpc.mainnet.arc.io rate limits + Alchemy quota spent →
+  `arcTransport` falls back across Blockdaemon, dRPC, QuickNode, then Alchemy (`c85be4ec`).
+- **Add money drawer** split the window and didn't close on outside clicks: Fund/Buy/Sign-in providers sat above the sheet
+  layer. A root `SheetPortalProvider layer="apart"` + `<SheetLayer/>` inside the three providers.
+- **Swap/Bridge select-first:** ticket alone until there is an amount; race column only when the page fits both
+  (`TWO_COLUMNS_MIN`); Bridge = From/To `TicketPill`s + flip + chain picker sheet; "To whom" after a chain.
+- **Receipt slip** (`receipt/receipt-slip.tsx`, Senryo's trade slip): brand, hanko, facts, perforated stub, QR to the
+  explorer, theme-following on the page and in the shared image; Why shows it first + "Sent by" with Save.
+- **Feed:** held long/short reads "Short cirBTC with 10 USDC"; trending row has the token logo and "+x% today · $y liquidity".
+- **Activity:** borderless report panel, Kawase timeline on plates, open positions first.
+- **Long/Short live:** api `LiveTicker` (Coinbase public WS; Pyth Hermes now needs a key) → `GET /markets/live/prices`
+  NDJSON; terminal tabs/hero/chart head and Markets → Long/Short rows move live; Long/Short plates per market. Chart
+  range follows the candles; far levels (2× liquidation) pinned to the edge with an arrow (no more squashed candles).
+- **Voice:** measured 0.6 s session + 2.0 s join + 2.4 s greeting (`apps/voice-agent/test/join-latency.ts`). Code
+  preloads and a session is minted at idle (free; dispatch happens on join); `/threads` hides empty threads.
+- **Small:** compact rail network capsule fits (bare), ticket header Testnet chip readable, EAS channels added.
+- **Builds:** EAS free plan is out of iOS builds until 11-01 → iOS built locally (`eas build --local`) then `eas submit`;
+  Android preview APK `30b900fe` queued on EAS.
+- **Still open:** Abu's Privy sign-in to confirm setup + mainnet; agent long/short tried live in chat; a dev-mode
+  bridge/send/earn tx run; README/docs (Turnkey → Privy); demo video; repo public (ask first).
 
 ## 2026-10-14 — revamp underway (deadline 10-17 11:59 PM ET = Sun 10-18 04:59 WAT)
 
