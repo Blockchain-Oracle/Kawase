@@ -1,46 +1,52 @@
 ---
 title: "网页版和桌面版"
-description: "无需安装即可在任何浏览器中使用 Kawase，也可以将其安装为网页应用，或使用始终运行当前版本的 Mac 桌面应用。"
-sourceHash: 0b0a27fbf85f8ce1
+description: "Kawase 在任何浏览器中都能用，无需安装，为电脑设计了侧边栏布局，还能作为网页应用安装；Mac 应用即将推出。"
+sourceHash: 66949511dc861764
 ---
 
 <Marks names="kawase arc" />
 
-## 在浏览器中
+打开 [app.getkawase.xyz](https://app.getkawase.xyz)。你会以**访客**身份开始，一切都和手机上一样：聊天、卡片、市场行情、语音和每个
+页面，都为宽窗口重新排布。
 
-打开 [app.getkawase.xyz](https://app.getkawase.xyz)。你会以**游客**身份开始，所有功能都和手机上一样：
-聊天、卡片、市场、语音和每个页面。
+<Shot src="web/signed-in-home" alt="电脑上的 Kawase：侧边栏里有首页、市场行情、服务市场、动态、设置、和 Kawase 聊天、和 Kawase 说话以及转移资金；余额、Kawase 做了什么和监控中，旁边是 Arc 热门。" zoom="5.5 6 3.5" lens="26 36">
+  <Pin box="0.5 1 9.5 97">侧边栏：每个页面，以及每种转移资金的方式</Pin>
 
-- **确认付款**：使用**邮箱验证码**代替 Face ID。
-- **语音**：点击圆球，并在浏览器询问时允许使用麦克风。如果你拒绝，Kawase 会告诉你如何允许使用麦克风，
-  旁边也可以直接输入文字。
-- **安装**：Kawase 是可安装的网页应用。在 Chrome 或 Edge 中使用**安装**，在 Safari 中选择**添加到程序坞**（Mac）或
-  **添加到主屏幕**（iPhone）。如果网络中断，页面会显示离线提示，而不是出现损坏的页面。Kawase 从不
-  缓存余额，因此不会把旧数据显示成当前资金。
+  <Pin at="46 15">你的余额和 Kawase 做了什么</Pin>
 
-## 桌面应用（Mac）
+  <Pin box="72 4 26 22">Arc 热门，实时更新</Pin>
 
-[下载 Mac 版 Kawase](https://getkawase.xyz/download/Kawase-mac.dmg)（Apple silicon，约 2 MB），打开磁盘映像，
-然后将 Kawase 拖到“应用程序”中。
+  <Pin at="59 92">告诉 Kawase 要做什么</Pin>
+</Shot>
 
-<Callout type="warn">
-**目前还没有通过 Apple 公证：第一次打开时，请右键点击 Kawase → 打开。** 在 macOS 15 及更高版本中，先打开一次，然后前往
-**系统设置 → 隐私与安全性**，选择**仍要打开**。这是预览版本，不是已签名的正式版本。
-</Callout>
+## 为电脑而设计
 
-它是在原生窗口中运行的网页应用，因此**始终是当前版本**，无需更新：
+- **侧边栏**汇集了每个页面和**转移资金**（充值、转账、收款、兑换、跨链），还有网络开关和你的个人资料。
+- **和 Kawase 聊天**和**和 Kawase 说话**都只需一次点击：打字或语音。
+- 宽屏会把内容并排摆放，比如代币的图表旁边就是它的交易单：
 
-- 标题栏会使用 Kawase 的颜色，并跟随你的浅色或深色模式；
-- 复制、粘贴和常用菜单都可以正常使用；⌘+ 和 ⌘− 可缩放；
-- **`kawase://` 链接**（和手机上一样）会在窗口中打开对应页面，例如 `kawase://r/…` 会打开
-  收款请求；
-- 登录窗口会在应用内打开，其他网站（区块浏览器、本文档等）会在浏览器中打开；
-- 除了应用运行所在的窗口外，页面**无法访问你的电脑**。
+<Shot src="web/margin" alt="电脑上的做多 / 做空：左边是 cirBTC 的图表及其市场和时间范围，右边是带杠杆的做多或做空交易单。">
+  <Pin box="60.5 9 39 45">交易单就在图表旁边</Pin>
+</Shot>
 
-桌面应用中的语音功能还未测试；如需使用语音，请在浏览器中打开网页应用，或使用手机。
+<Shot src="web/activity" alt="电脑上的动态：本周的盈亏、筛选器、带定时转账的监控中，以及每一笔带正负号金额的资金变动。" />
 
-Windows 和 Linux 版本使用相同的源代码（`apps/desktop`）；目前还没有构建。
+## 在网页上确认
+
+手机上要求 Face ID 的地方，网页版会发送一个**邮件验证码**：输入六位数字，付款就会发出。语音也能用：浏览器询问时允许使用麦克风。
+如果你拒绝，Kawase 会告诉你怎么开启，键盘就在旁边。
+
+## 安装
+
+Kawase 是一个可安装的网页应用。在 Chrome 或 Edge 中使用**安装**，在 Safari 中使用**添加到程序坞**（Mac）或**添加到主屏幕**
+（iPhone）。如果网络断开，会显示一个离线页面说明情况，而不是一个坏掉的页面。Kawase 从不缓存余额，所以旧数据绝不会被当作当前资金
+显示。
+
+## Mac 应用
+
+Kawase 的 Mac 版即将推出。在那之前，网页版可以在你 Mac 上的任何浏览器中运行，语音也可以用。所有平台见
+[getkawase.xyz/download](https://getkawase.xyz/download)。
 
 ## 在手机上
 
-**iPhone** 版 Kawase 已在 TestFlight 上线，**Android** 版以 APK 提供。请参阅[开始使用](../getting-started.mdx)。
+Kawase 的 **iPhone** 版在 TestFlight 上，**Android** 版以 APK 提供。见[快速上手](../getting-started.mdx)。

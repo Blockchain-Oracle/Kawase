@@ -1,46 +1,54 @@
 ---
 title: "Web e desktop"
-description: "Kawase em qualquer navegador, sem precisar instalar nada, como um app web instalável e como um app para Mac que sempre usa a versão atual."
-sourceHash: 0b0a27fbf85f8ce1
+description: "O Kawase em qualquer navegador sem instalar nada, pensado para o computador com uma barra lateral, instalável como app web; o app para Mac está a caminho."
+sourceHash: 66949511dc861764
 ---
 
 <Marks names="kawase arc" />
 
-## No navegador
+Abra [app.getkawase.xyz](https://app.getkawase.xyz). Você começa como **visitante**, e tudo funciona como no celular: o chat,
+os cartões, Mercados, a voz e cada tela, organizados para uma janela larga.
 
-Abra [app.getkawase.xyz](https://app.getkawase.xyz). Você começa como **convidado**, e tudo funciona como no celular:
-chat, cartões, Mercados, Voz e todas as telas.
+<Shot src="web/signed-in-home" alt="O Kawase no computador: a barra lateral com Início, Mercados, Marketplace, Atividade, Configurações, Conversar com a Kawase, Falar com a Kawase e Movimentar dinheiro; o saldo, O que o Kawase fez com Observando, e Em alta na Arc ao lado." zoom="5.5 6 3.5" lens="26 36">
+  <Pin box="0.5 1 9.5 97">A barra lateral: cada tela, e cada jeito de movimentar dinheiro</Pin>
 
-- **Confirmar um pagamento**: um **código enviado por e-mail** substitui o Face ID.
-- **Voz**: toque no orbe e permita o acesso ao microfone quando o navegador pedir. Se você recusar, o Kawase explica como permitir o acesso, e
-  a digitação fica logo ali.
-- **Instalar**: o Kawase é um app web instalável. No Chrome ou Edge, use **Instalar**. No Safari, use **Adicionar ao Dock** (Mac) ou
-  **Adicionar à Tela de Início** (iPhone). Se a conexão cair, uma página offline informa o problema em vez de mostrar uma tela quebrada. O Kawase nunca
-  armazena saldos em cache. Assim, um valor antigo nunca é mostrado como dinheiro atual.
+  <Pin at="46 15">Seu saldo e o que o Kawase fez</Pin>
 
-## O app para desktop (Mac)
+  <Pin box="72 4 26 22">Em alta na Arc, ao vivo</Pin>
 
-[Baixe o Kawase para Mac](https://getkawase.xyz/download/Kawase-mac.dmg) (Apple silicon, cerca de 2 MB), abra a imagem de disco
-e arraste o Kawase para Aplicativos.
+  <Pin at="59 92">Diga ao Kawase o que fazer</Pin>
+</Shot>
 
-<Callout type="warn">
-**Ainda não foi notarizado pela Apple: na primeira vez, clique com o botão direito no Kawase → Abrir.** No macOS 15 ou posterior, abra o app uma vez e depois acesse
-**Ajustes do Sistema → Privacidade e Segurança** e escolha **Abrir Mesmo Assim**. Esta é uma versão de prévia, não uma versão assinada.
-</Callout>
+## Pensado para o computador
 
-Ele é o app web ao vivo em uma janela nativa. Por isso, está **sempre na versão atual**, sem precisar atualizar:
+- **A barra lateral** reúne cada tela e **Movimentar dinheiro** (Adicionar dinheiro, Enviar, Receber, Trocar, Ponte), com o
+  seletor de rede e o seu perfil.
+- **Conversar com a Kawase** e **Falar com a Kawase** estão a um clique: digitando e por voz.
+- Telas largas colocam as coisas lado a lado, como o gráfico de um token ao lado do seu ticket:
 
-- a barra de título usa as cores do Kawase e acompanha o modo claro ou escuro;
-- copiar, colar e os menus comuns funcionam; ⌘+ e ⌘− ajustam o zoom;
-- os **links `kawase://`** (iguais aos do celular) abrem a página correspondente na janela. Por exemplo, `kawase://r/…` abre
-  um pedido de pagamento;
-- as janelas de login abrem dentro do app, e qualquer outro site (um explorador, esta documentação) abre no navegador;
-- a página **não tem acesso ao seu computador** além da janela em que é executada.
+<Shot src="web/margin" alt="Comprado / Vendido no computador: o gráfico do cirBTC com seus mercados e períodos à esquerda, o ticket de Comprado ou Vendido com a alavancagem à direita.">
+  <Pin box="60.5 9 39 45">O ticket ao lado do gráfico</Pin>
+</Shot>
 
-A Voz no app para desktop ainda não foi testada. Use o app web em um navegador ou o celular para usar a Voz.
+<Shot src="web/activity" alt="Atividade no computador: o lucro e o prejuízo da semana, filtros, Observando com os envios agendados, e cada movimentação com seu valor com sinal." />
 
-As versões para Windows e Linux vêm do mesmo código-fonte (`apps/desktop`), mas ainda não foram compiladas.
+## Confirmar na web
+
+Onde um celular pede Face ID, o app web envia um **código por email**: você digita os seis dígitos e o pagamento sai. A voz
+também funciona: permita o microfone quando o navegador pedir. Se você recusar, o Kawase explica como permitir, e o teclado
+está logo ali.
+
+## Instalar
+
+O Kawase é um app web instalável. No Chrome ou no Edge use **Instalar**; no Safari, **Adicionar ao Dock** (Mac) ou
+**Adicionar à Tela de Início** (iPhone). Se a rede cair, uma página offline avisa em vez de uma tela quebrada. O Kawase nunca
+guarda saldos em cache, então nada antigo aparece como dinheiro atual.
+
+## O app para Mac
+
+O Kawase para Mac está a caminho. Até lá, o app web roda em qualquer navegador no seu Mac, com voz. Veja
+[getkawase.xyz/download](https://getkawase.xyz/download) para cada plataforma.
 
 ## No celular
 
-O Kawase para **iPhone** está no TestFlight, e a versão para **Android** está disponível como APK. Veja os [primeiros passos](../getting-started.mdx).
+O Kawase para **iPhone** está no TestFlight e para **Android** como APK. Veja [primeiros passos](../getting-started.mdx).
