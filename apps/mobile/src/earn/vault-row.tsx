@@ -46,7 +46,8 @@ export function VaultRow({ vault, onPress, selected, network = "testnet" }: { va
     >
       <Mark entity={protocolEntity(vault.protocol)} size={MARK} />
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
+        {/* Two lines: vaults share long prefixes ("Steakhouse Prime U…" twice told nothing apart on a phone). */}
+        <Text numberOfLines={2} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
           {vaultTitle(vault.name)}
         </Text>
         <Text numberOfLines={2} className={cn("text-muted-foreground text-xs", TEXT_START)}>
