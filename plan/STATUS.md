@@ -50,7 +50,11 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 **Submission**
 13. [ ] README "Where it stands" refreshed with the mainnet evidence; docs check.
 14. [ ] Demo script + video.
-15. [ ] Secret scan of the whole history (gitleaks) → ask Abu → repo public.
+15. [ ] Secret scan of the whole history: done 10-15 (gitleaks 8, `--redact`): 30 findings, all false positives (public
+       client ids in web.public.env, storage key names, a fake "ABC" test key, contract/token addresses, commit hashes,
+       payment-request link tokens in review evidence, App Store ids); no .env/.p8/.pem/keystore ever committed. Before
+       public, Abu decides: `context/` (209 research files incl. meeting transcripts) and `plan/` (302 files; STATUS
+       names his emails and wallet addresses) — keep, trim or drop. Then ask → repo public.
 16. [ ] Submit with a 2 h buffer.
 
 Done today and checked live (details in the rounds below): Turnkey out; Apple sign-in on the web; voice picker hello
