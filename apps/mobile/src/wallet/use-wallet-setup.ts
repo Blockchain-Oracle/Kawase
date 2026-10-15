@@ -15,6 +15,7 @@ import { checkTransferGrant } from "@kawase/wallet";
 
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
+import { reportClientEvent } from "@/session/client-events";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
 import { PASSKEY_RP_ID } from "@/wallet/config";
@@ -39,6 +40,9 @@ export type AcceptResult =
 /** The allowance the api proposes: what the person reads before approving, and exactly what is signed. */
 export type AllowanceProposal = AllowanceRequestResponse & { fetchedAt: number };
 
+/** How long the setup waits for the wallet to be able to sign before it says so with Retry. */
+const SIGNER_WAIT_MS = 8_000;
+
 /** A proposal older than this is asked for again before it can be signed. */
 const PROPOSAL_MAX_AGE_MS = APPROVAL_TTL_S * MS_PER_SECOND;
 
@@ -57,6 +61,8 @@ export function useWalletSetup(network: NetworkId) {
   const [failed, setFailed] = React.useState<Partial<Record<SetupStepKey, true>>>({});
   /** The network is on but Kawase's relayer there has no gas yet (first mainnet days): a calm wait, not an error. */
   const [notReady, setNotReady] = React.useState(false);
+  /** The wallet exists but did not become able to sign in time: the step says so instead of waiting silently. */
+  const [signerMissing, setSignerMissing] = React.useState(false);
   const [proposal, setProposal] = React.useState<AllowanceProposal>();
   const [preparing, setPreparing] = React.useState(false);
   const [proposalError, setProposalError] = React.useState(false);
@@ -109,6 +115,28 @@ export function useWalletSetup(network: NetworkId) {
     if (!hasWallet && !failed.wallet) void createWallet();
     else if (hasWallet && !setUp && signer && !failed.setup) void setUpWallet();
   }, [loaded, running, hasWallet, setUp, signer, failed.wallet, failed.setup, createWallet, setUpWallet]);
+
+  /** Step 2 is waiting for the wallet to be able to sign (the provider's wallet is still connecting). */
+  const connecting = loaded && hasWallet && !setUp && !signer && !failed.setup;
+  React.useEffect(() => {
+    if (!connecting) return;
+    const timer = setTimeout(() => {
+      setSignerMissing(true);
+      setFailed((current) => ({ ...current, setup: true }));
+      reportClientEvent({ stage: "setup", category: "signerMissing", message: `network=${network}` });
+    }, SIGNER_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [connecting, network]);
+  React.useEffect(() => {
+    if (signer) setSignerMissing(false);
+  }, [signer]);
+
+  /** Retry signs when the wallet can; otherwise it waits for the wallet to connect again. */
+  const retrySetup = React.useCallback(async () => {
+    if (signer) return setUpWallet();
+    setSignerMissing(false);
+    setFailed((current) => ({ ...current, setup: undefined }));
+  }, [signer, setUpWallet]);
 
   /** Asks the api for the allowance it would grant, decoded from its caveats, for the person to read first. */
   const prepareAllowance = React.useCallback(async () => {
@@ -187,7 +215,9 @@ export function useWalletSetup(network: NetworkId) {
     prepareAllowance,
     failed,
     notReady,
-    retry: { wallet: createWallet, setup: setUpWallet },
+    connecting,
+    signerMissing,
+    retry: { wallet: createWallet, setup: retrySetup },
     acceptAllowance,
     refresh,
   };

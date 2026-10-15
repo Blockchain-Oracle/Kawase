@@ -19,10 +19,17 @@ import type { TurnkeyAccount } from "./turnkey-account-core";
 /** The verified email on a Privy user: the email-code login first, then Google's or Apple's. */
 export const privyEmail = (user: User | null | undefined) => user?.email?.address ?? user?.google?.email ?? user?.apple?.email ?? undefined;
 
-/** The embedded (Privy) Ethereum wallet among the connected ones. */
+/** Privy labels its embedded wallets "privy" or, for wallets made in its newer secure enclave, "privy-v2". */
+const EMBEDDED_CLIENT_TYPES = new Set(["privy", "privy-v2"]);
+
+/** The embedded (Privy) Ethereum wallet among the connected ones; the user's own wallet address breaks a tie. */
 export function useEmbeddedWallet() {
   const { wallets, ready } = useWallets();
-  return { ready, wallet: wallets.find((wallet) => wallet.walletClientType === "privy") };
+  const { user } = usePrivy();
+  const own = user?.wallet?.address?.toLowerCase();
+  const embedded = wallets.filter((wallet) => EMBEDDED_CLIENT_TYPES.has(wallet.walletClientType));
+  const wallet = embedded.find((candidate) => candidate.address.toLowerCase() === own) ?? embedded[0];
+  return { ready, wallet, clientTypes: wallets.map((candidate) => candidate.walletClientType) };
 }
 
 function usePrivyKit(): PrivyKit {

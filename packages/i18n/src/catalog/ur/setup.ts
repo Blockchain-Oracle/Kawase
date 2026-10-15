@@ -7,6 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "اسے {{network}} پر سیٹ اپ کریں",
   settingUpDetail: "‏Kawase کے ریلے کے ذریعے دستخط کر کے بھیجا جا رہا ہے…",
   failed: "یہ مکمل نہیں ہوا۔ دوبارہ کوشش کریں۔",
+  connectingDetail: "آپ کے والیٹ سے جڑ رہے ہیں…",
+  signerMissing: "آپ کا والیٹ نہیں جڑا۔ کچھ بھی دستخط نہیں ہوا — دوبارہ کوشش کریں۔",
   notReady:
     "Kawase ابھی {{network}} تیار کر رہا ہے۔ کچھ بھی سائن نہیں ہوا اور آپ کی رقم محفوظ ہے — تھوڑی دیر بعد دوبارہ کوشش کریں۔",
   primerTitle: "روزانہ کی حد کے لیے ایک Face ID",

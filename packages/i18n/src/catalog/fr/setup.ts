@@ -7,6 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "Le configurer sur {{network}}",
   settingUpDetail: "Signature et envoi via le relais de Kawase…",
   failed: "Cela n'a pas abouti. Réessayez.",
+  connectingDetail: "Connexion à votre portefeuille…",
+  signerMissing: "Votre portefeuille ne s'est pas connecté. Rien n'a été signé — réessayez.",
   notReady: "Kawase prépare {{network}}. Rien n'a été signé et votre argent est en sécurité : réessayez bientôt.",
   primerTitle: "Un Face ID pour votre plafond quotidien",
   primerTitleAndroid: "Une seule approbation pour votre plafond quotidien",

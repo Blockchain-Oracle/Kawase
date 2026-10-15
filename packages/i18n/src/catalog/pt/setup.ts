@@ -7,6 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "Configurá-la na {{network}}",
   settingUpDetail: "Assinando e enviando pelo relayer do Kawase…",
   failed: "Não deu certo. Tente de novo.",
+  connectingDetail: "Conectando à sua carteira…",
+  signerMissing: "Sua carteira não conectou. Nada foi assinado — tente de novo.",
   notReady:
     "A Kawase está preparando a {{network}}. Nada foi assinado e seu dinheiro está seguro — tente de novo em breve.",
   primerTitle: "Um Face ID para o seu limite diário",

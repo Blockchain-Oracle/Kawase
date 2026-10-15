@@ -7,6 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "在 {{network}} 上完成设置",
   settingUpDetail: "正在通过 Kawase 的中继签名并发送…",
   failed: "没有成功，请重试。",
+  connectingDetail: "正在连接你的钱包…",
+  signerMissing: "钱包没有连接上。没有签署任何内容，请重试。",
   notReady: "Kawase 正在准备 {{network}}。没有签署任何内容，你的资金是安全的，请稍后再试。",
   primerTitle: "一次面容 ID，开启每日额度",
   primerTitleAndroid: "一次确认，开启每日额度",

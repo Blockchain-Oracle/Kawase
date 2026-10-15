@@ -134,14 +134,18 @@ export function SetupScreen() {
     {
       key: "setup",
       label: t("setup.stepNetwork", { network: networkName }),
-      state: setup.setUp ? "done" : setup.failed.setup ? "failed" : setup.running === "setup" ? "running" : "waiting",
+      state: setup.setUp ? "done" : setup.failed.setup ? "failed" : setup.running === "setup" || setup.connecting ? "running" : "waiting",
       detail: setup.failed.setup
         ? setup.notReady
           ? t("setup.notReady", { network: networkName })
-          : t("setup.failed")
+          : setup.signerMissing
+            ? t("setup.signerMissing")
+            : t("setup.failed")
         : setup.running === "setup"
           ? t("setup.settingUpDetail")
-          : undefined,
+          : setup.connecting
+            ? t("setup.connectingDetail")
+            : undefined,
       onRetry: () => void setup.retry.setup(),
     },
     { key: "budget", label: t("budget.intro.eyebrow"), state: "waiting" },

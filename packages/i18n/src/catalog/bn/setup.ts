@@ -7,6 +7,8 @@ export const setup: Catalog["setup"] = {
   stepNetwork: "{{network}}-এ সেট আপ করুন",
   settingUpDetail: "Kawase-এর রিলে দিয়ে সই করে পাঠানো হচ্ছে…",
   failed: "এটা হয়নি। আবার চেষ্টা করুন।",
+  connectingDetail: "আপনার ওয়ালেটের সাথে সংযোগ হচ্ছে…",
+  signerMissing: "আপনার ওয়ালেট সংযুক্ত হয়নি। কিছুই স্বাক্ষর করা হয়নি — আবার চেষ্টা করুন।",
   notReady: "Kawase এখন {{network}} তৈরি করছে। কিছুই সই হয়নি, আপনার টাকা নিরাপদ — একটু পরে আবার চেষ্টা করুন।",
   primerTitle: "দৈনিক সীমার জন্য একবার Face ID",
   primerTitleAndroid: "দৈনিক সীমার জন্য একবার অনুমোদন",
