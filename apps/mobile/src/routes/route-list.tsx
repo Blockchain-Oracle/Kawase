@@ -102,6 +102,12 @@ function useElapsed(race: RouteRace | null) {
   return started === null ? 0 : Math.max(0, Math.floor((now - started) / TICK_MS));
 }
 
+/**
+ * Below this list width the venue's name would lose to the figure ("Re…" for Relay in the quote plate on a 375 pt
+ * phone): name about 100 pt ("Circle CCTP"), figure about 130 ("0.05295 USDC less"), plus mark, radio, gaps, padding.
+ */
+const COMPACT_BELOW_PX = 356;
+
 function useLayout() {
   const reduced = useReducedMotionLive();
   return reduced ? LinearTransition.duration(REDUCED_MS) : LinearTransition.springify().damping(SPRING.damping).stiffness(SPRING.stiffness);
@@ -116,6 +122,8 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
   const [picked, setPicked] = React.useState<string | null>(null);
   const [openVenue, setOpenVenue] = React.useState<string | null>(null);
   const [othersOpen, setOthersOpen] = React.useState(false);
+  const [width, setWidth] = React.useState(0);
+  const compact = width > 0 && width < COMPACT_BELOW_PX;
 
   if (state === "error" && !race) return <RouteListError onRetry={onRetry} className={className} />;
   if (held || !race) return <RouteListSkeleton className={className} />;
@@ -133,7 +141,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
   };
 
   return (
-    <View className={cn("gap-3", className)}>
+    <View className={cn("gap-3", className)} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
       <RaceHeader race={race} state={state} answered={answered} elapsed={elapsed} onRetry={onRetry} />
       {empty ? (
         <RouteListEmpty onRetry={onRetry} />
@@ -150,6 +158,7 @@ export function RouteList({ race, state = "live", selected, onSelect, onRetry, r
                 readOnly={readOnly}
                 locale={locale}
                 showYearly={Boolean(race.ask)}
+                compact={compact}
                 onPress={() => pick(row.venue)}
                 onToggle={() => setOpenVenue((current) => (current === row.venue ? null : row.venue))}
               />
@@ -247,12 +256,14 @@ type RowProps = {
   locale: string;
   /** Yield: the race was asked for an amount, so each row's year of earnings is worth saying. */
   showYearly: boolean;
+  /** A narrow list (the quote plate on a small phone, a card in chat): the figure moves under the name. */
+  compact: boolean;
   onPress: () => void;
   onToggle: () => void;
 };
 
 /** One venue: a radio card (21st 28337) that shimmers while pricing and lights up when its quote lands. */
-function RouteRow({ row, best, isBest, selected, open, readOnly, locale, showYearly, onPress, onToggle }: RowProps) {
+function RouteRow({ row, best, isBest, selected, open, readOnly, locale, showYearly, compact, onPress, onToggle }: RowProps) {
   const { t } = useT();
   const reduced = useReducedMotionLive();
   const quoted = row.status === "quoted";
@@ -277,6 +288,45 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, showYea
   const risk = row.facts?.find((fact): fact is RiskFact => fact.kind === "risk")?.value ?? null;
   const label = quoted && receive ? t("routes.pickA11y", { name: row.label, amount: receive }) : t("routes.checkingA11y", { name: row.label });
 
+  const name = (
+    <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
+      {row.label}
+    </Text>
+  );
+  const meta = quoted ? (
+    // The name keeps the whole first line; "Best" leads the second, then the risk (yield), the ETA.
+    <View className={cn("flex-row items-center gap-1.5", compact && "min-w-0 shrink")}>
+      {isBest ? <BestBadge /> : null}
+      {risk ? <RiskChip risk={risk} /> : null}
+      <Text numberOfLines={1} className={cn("text-muted-foreground shrink text-xs", TEXT_START)}>
+        {yieldRow ? (receive && showYearly ? t("routes.perYear", { rate: receive }) : null) : eta ? t(`routes.${eta.key}`, { count: eta.count }) : null}
+      </Text>
+    </View>
+  ) : (
+    <Skeleton className="h-3 w-16 rounded-full" />
+  );
+  const figure = (
+    <View className="items-end gap-1">
+      {quoted && yieldRow ? (
+        // Yield: the rate is the figure; what a year brings on the amount sits on the second line.
+        <Animated.View key={row.apyBps} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
+          <Amount className="font-display text-foreground text-lg font-bold">{`${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%`}</Amount>
+          <Text className="text-muted-foreground text-xs">{t("routes.apy")}</Text>
+        </Animated.View>
+      ) : quoted && receive ? (
+        <Animated.View key={row.receive?.amount} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
+          <Amount className="text-foreground text-base font-semibold">{receive}</Amount>
+          <Text className="text-muted-foreground text-xs">{delta ? t("routes.deltaToBest", { amount: formatAmount(delta, locale) }) : t("routes.youReceive")}</Text>
+        </Animated.View>
+      ) : (
+        <View className="items-end gap-1.5">
+          <Skeleton className="h-4 w-24 rounded-full" />
+          <Skeleton className="h-3 w-14 rounded-full" />
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <View className={cn("overflow-hidden rounded-2xl", selected ? "bg-selected-row" : "bg-card")}>
       <Animated.View className="bg-accent/15 absolute inset-0" style={[washStyle, NO_TOUCH]} />
@@ -291,42 +341,24 @@ function RouteRow({ row, best, isBest, selected, open, readOnly, locale, showYea
         <Animated.View style={markStyle}>
           <Mark entity={row.mark} size={MARK_SIZE} />
         </Animated.View>
-        <View className="min-w-0 flex-1 gap-1">
-          <Text numberOfLines={1} className={cn("text-foreground text-base font-semibold", TEXT_START)}>
-            {row.label}
-          </Text>
-          {quoted ? (
-            // The name keeps the whole first line at 375 pt; "Best" leads the second, then the risk (yield), the ETA.
-            <View className="flex-row items-center gap-1.5">
-              {isBest ? <BestBadge /> : null}
-              {risk ? <RiskChip risk={risk} /> : null}
-              <Text numberOfLines={1} className={cn("text-muted-foreground shrink text-xs", TEXT_START)}>
-                {yieldRow ? (receive && showYearly ? t("routes.perYear", { rate: receive }) : null) : eta ? t(`routes.${eta.key}`, { count: eta.count }) : null}
-              </Text>
+        {compact ? (
+          // Narrow: the name has the whole first line; the figure ends the second, after "Best" and the ETA.
+          <View className="min-w-0 flex-1 gap-1">
+            {name}
+            <View className="flex-row items-end justify-between gap-2">
+              {meta}
+              {figure}
             </View>
-          ) : (
-            <Skeleton className="h-3 w-16 rounded-full" />
-          )}
-        </View>
-        <View className="items-end gap-1">
-          {quoted && yieldRow ? (
-            // Yield: the rate is the figure; what a year brings on the amount sits on the second line.
-            <Animated.View key={row.apyBps} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
-              <Amount className="font-display text-foreground text-lg font-bold">{`${(row.apyBps! / BPS_PER_PERCENT).toFixed(PERCENT_DIGITS)}%`}</Amount>
-              <Text className="text-muted-foreground text-xs">{t("routes.apy")}</Text>
-            </Animated.View>
-          ) : quoted && receive ? (
-            <Animated.View key={row.receive?.amount} entering={FadeIn.duration(reduced ? REDUCED_MS : MOTION.sheetMs)} className="items-end">
-              <Amount className="text-foreground text-base font-semibold">{receive}</Amount>
-              <Text className="text-muted-foreground text-xs">{delta ? t("routes.deltaToBest", { amount: formatAmount(delta, locale) }) : t("routes.youReceive")}</Text>
-            </Animated.View>
-          ) : (
-            <View className="items-end gap-1.5">
-              <Skeleton className="h-4 w-24 rounded-full" />
-              <Skeleton className="h-3 w-14 rounded-full" />
+          </View>
+        ) : (
+          <>
+            <View className="min-w-0 flex-1 gap-1">
+              {name}
+              {meta}
             </View>
-          )}
-        </View>
+            {figure}
+          </>
+        )}
         {!readOnly ? <Radio on={selected} /> : null}
       </Pressable>
       {quoted ? (
