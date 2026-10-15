@@ -10,9 +10,11 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 **Now (in flight)**
 1. [ ] Abu's mainnet wallet setup lands (account 01a13ed0…, wallet 0x53fD9a…; relayer funded 6.98 USDC) → then the
        mainnet test: a real swap, a send, the agent's long/short in chat, a paid x402 call (Abu's money; he approves).
-2. [ ] iOS build 23 built locally (13:42, Privy-only JS embedded, production channel, runtime 1.0.0) → `eas submit`
-       (running) → swap it into the Public beta review instead of 21, so a fresh install's first launch is not the old
-       Turnkey code. Public link https://testflight.apple.com/join/PD3fgXZx.
+2. [ ] iOS build 23 built locally (13:42, Privy-only JS embedded, production channel, runtime 1.0.0), uploaded with
+       `eas submit` and processed ("Ready to Submit", internal groups). Apple allows one 1.0.0 build in Beta App Review
+       at a time, so 21 stays in review; once 21 is approved, add 23 to Public beta (later builds of an approved version
+       usually pass at once). Until then a fresh install of 21 runs today's JS from its second launch (OTA).
+       Public link https://testflight.apple.com/join/PD3fgXZx.
 3. [x] api deploy of the relayer watch + 3 s drain: 239 of 240 half-second probes 200 through the swap (one dropped
        connection), against 15–30 s of 502 before; /health shows `relayers: {testnet: ok, mainnet: ok}`.
 
