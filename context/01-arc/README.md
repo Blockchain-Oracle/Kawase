@@ -6,7 +6,7 @@ Sources:
 - https://docs.arc.io/llms.txt and https://docs.arc.io/llms-full.txt (local copies: `.firecrawl/docs/arc-llms.txt`, `.firecrawl/docs/arc-llms-full.txt`)
 - Live RPC checks against `rpc.testnet.arc.io` and `rpc.mainnet.arc.io`, 2026-09-29
 - npm registry and GitHub API, 2026-09-29
-- Prior research (read-only): `/Users/abu/dev/hackathon/arc-agent/docs/wiki/*.md`, checked 2026-07-28 to 2026-08-08
+- Prior research (read-only): `arc-agent/docs/wiki/*.md`, checked 2026-07-28 to 2026-08-08
 - Hackathon materials: `.firecrawl/tameion.md`, `.firecrawl/kickoff-slides.txt`, `.firecrawl/arc-node-canteen.html`
 
 Verified: 2026-09-29

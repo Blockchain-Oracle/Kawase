@@ -41,3 +41,4 @@ refs/*/
 /.21st/
 /.claude/
 /apps/mobile/.claude/
+/plan/spikes/code/**/*.log

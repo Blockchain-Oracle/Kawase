@@ -2,10 +2,10 @@
 
 Purpose: the gotchas, failures and limits Abu hit on Arc Testnet and the Circle stack in Jul–Aug 2026. Each one saves hours on a Tameion build. Every item cites its evidence.
 
-Sources: `/Users/abu/dev/hackathon/arc-agent/AGENTS.md:95-243`, `CLAUDE.md`, `docs/raw/{arc-wallet-policy-live-checks-2026-07-29.md, 2026-07-30-phase-2-disposable-accounts.md, 2026-07-31-phase-2-wallet-and-mandate-trial.md, 2026-07-31-phase-2-app-kit-swap-trial.md, 2026-08-04-first-arc-swap.md, 2026-07-30-app-kit-keyless-quote.md, 2026-07-30-browser-webrtc-voice-trial.md, proof-feasibility-live-checks-2026-07-29.md}`, `docs/research/{2026-08-08-phase8-wave3-crosschain-runtime.md, 2026-08-05-phase6-worker-runtime.md}`, `docs/wiki/{arc-network-and-native-primitives.md, circle-wallets-and-agent-stack.md, app-kit-cctp-and-gateway.md}`, `docs/verification/2026-08-04-agent-path-real.md`.
+Sources: `arc-agent/AGENTS.md:95-243`, `CLAUDE.md`, `docs/raw/{arc-wallet-policy-live-checks-2026-07-29.md, 2026-07-30-phase-2-disposable-accounts.md, 2026-07-31-phase-2-wallet-and-mandate-trial.md, 2026-07-31-phase-2-app-kit-swap-trial.md, 2026-08-04-first-arc-swap.md, 2026-07-30-app-kit-keyless-quote.md, 2026-07-30-browser-webrtc-voice-trial.md, proof-feasibility-live-checks-2026-07-29.md}`, `docs/research/{2026-08-08-phase8-wave3-crosschain-runtime.md, 2026-08-05-phase6-worker-runtime.md}`, `docs/wiki/{arc-network-and-native-primitives.md, circle-wallets-and-agent-stack.md, app-kit-cctp-and-gateway.md}`, `docs/verification/2026-08-04-agent-path-real.md`.
 Verified: 2026-09-29. These are **observations from 2026-07-28 to 2026-08-11**. SDK versions, endpoints and Circle policy may have changed, so re-probe anything load-bearing.
 
-All paths below are relative to `/Users/abu/dev/hackathon/arc-agent/`.
+All paths below are relative to `arc-agent/`.
 
 ---
 

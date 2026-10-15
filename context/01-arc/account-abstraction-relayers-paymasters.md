@@ -10,7 +10,7 @@ Sources:
 - https://docs.arc.io/arc/references/evm-differences (EIP-7702)
 - https://docs.arc.io/app-kit/unified-balance (SCA and delegate constraints)
 - https://docs.arc.io/arc/tutorials/deploy-contracts (Gas Station on SCAs)
-- Prior research: /Users/abu/dev/hackathon/arc-agent/docs/wiki/account-abstraction-and-policy-surface.md (checked 2026-07-29; cross-checked below)
+- Prior research: arc-agent/docs/wiki/account-abstraction-and-policy-surface.md (checked 2026-07-29; cross-checked below)
 
 Verified: 2026-09-29
 

@@ -2,7 +2,7 @@
 
 Purpose: the single, end-to-end definition of what a Kawase user can do, how, and what every screen shows as a result. Every build slice implements a capability card from here; nothing is built from a feature name alone. Method: the `product-how-tree` skill (Abu, 2026-10-02, D36).
 
-Sources: `context/08-product-research/ABU-BRIEF-VERBATIM.md`, `DECISIONS-FROM-ABU.md` (D1–D36), `FEATURE-INVENTORY.md` (A–U), the research folders `01`–`17`, the reference study `docs/design/reference-study-2026-09-30/`, Senryo's trading design (`/Users/abu/dev/hackathon/metropolis`, read-only), live API checks recorded in each area file, and the approved plan `/Users/abu/.claude/plans/noble-nibbling-shannon.md`.
+Sources: `context/08-product-research/ABU-BRIEF-VERBATIM.md`, `DECISIONS-FROM-ABU.md` (D1–D36), `FEATURE-INVENTORY.md` (A–U), the research folders `01`–`17`, the reference study `docs/design/reference-study-2026-09-30/`, Senryo's trading design (`metropolis`, read-only), live API checks recorded in each area file, and the approved plan `~/.claude/plans/noble-nibbling-shannon.md`.
 Verified: 2026-10-02 (each file carries its own date per fact)
 
 ## Files

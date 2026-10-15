@@ -2,7 +2,7 @@
 
 Purpose: a short note on Abu's concurrent HackCanton Season 3 build. It covers only what carries over to Tameion (library conventions, workflow, judging-playbook ideas, agent and treasury overlap) and the time conflict between the two deadlines.
 
-Sources: `/Users/abu/dev/hackathon/canton-season3/CLAUDE.md`, `context/README.md`, `context/06-prior-work/{sotto-retrospective.md, reusable-code-map.md, idea-graveyard.md}`, `context/00-hackathon/{s3-judging-playbook.md, calendar.md}`, `context/05-community/ai-agents-on-canton.md`, `/Users/abu/dev/hackathon/tamion/.firecrawl/tameion.md:143,737-739`.
+Sources: `canton-season3/CLAUDE.md`, `context/README.md`, `context/06-prior-work/{sotto-retrospective.md, reusable-code-map.md, idea-graveyard.md}`, `context/00-hackathon/{s3-judging-playbook.md, calendar.md}`, `context/05-community/ai-agents-on-canton.md`, `kawase/.firecrawl/tameion.md:143,737-739`.
 Verified: 2026-09-29
 
 ---
@@ -22,7 +22,7 @@ Verified: 2026-09-29
 | After the deadline | Closing 10-10 12:00 UTC. Async judging 10-10 → 10-18. Finalists 10-19. **Live Grand Final 10-21 14:00 UTC** | None stated beyond submission |
 | Hidden gates | 1,000 Mana burned (≥10 active days), journal entries, prior-work disclosure | Traction questions (businesses onboarded, value moved) |
 
-Sources: `canton-season3/context/00-hackathon/calendar.md` "Official dates", `tamion/.firecrawl/tameion.md:139-143`.
+Sources: `canton-season3/context/00-hackathon/calendar.md` "Official dates", `kawase/.firecrawl/tameion.md:139-143`.
 
 What this means in practice:
 - The two submissions land **about 28 hours apart**. Canton comes first.

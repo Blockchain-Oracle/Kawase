@@ -4,7 +4,7 @@
 
 Purpose: an entry point to Abu's own prior projects that bear on Tameion. It covers what exists, the fastest reuse path per RFB, and how to stay on the right side of the "delta" judging rule.
 
-Sources: the files in this folder; `/Users/abu/dev/hackathon/arc-agent/` (read-only); `/Users/abu/dev/hackathon/canton-season3/` (read-only); `/Users/abu/dev/hackathon/tamion/.firecrawl/tameion.md:143,737-739`.
+Sources: the files in this folder; the arc-agent repository (read-only); `canton-season3/` (read-only); `kawase/.firecrawl/tameion.md:143,737-739`.
 Verified: 2026-09-29
 
 ---
@@ -21,7 +21,7 @@ Verified: 2026-09-29
 
 ## Headline facts
 
-- **Arc Copilot** (`/Users/abu/dev/hackathon/arc-agent`, Jul 28 to Aug 11 2026) is a conversational Arc money agent.
+- **Arc Copilot** (`arc-agent/`, Jul 28 to Aug 11 2026) is a conversational Arc money agent.
   - Its 94-action catalogue is mostly **not** executable.
   - These wrote real value on Arc Testnet with tx evidence: payments (C01), App Kit USDC↔EURC swap (H02), recurring mandates with a protected floor, Biconomy smart-session limits, and a Gateway Base→Arc mint.
   - CCTP and Gateway product adapters exist but were **never funded or run live**.
@@ -32,7 +32,7 @@ Verified: 2026-09-29
 
 ## Fastest reuse path per RFB
 
-"Lift" paths are relative to `/Users/abu/dev/hackathon/arc-agent/packages/`. Full detail is in the code map.
+"Lift" paths are relative to `arc-agent/packages/`. Full detail is in the code map.
 
 | RFB | What arc-agent already gives you | What is missing (Tameion delta) | Circle tools to add for scoring |
 |---|---|---|---|

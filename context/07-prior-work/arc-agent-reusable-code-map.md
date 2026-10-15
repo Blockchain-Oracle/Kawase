@@ -2,9 +2,9 @@
 
 # Arc Copilot: reusable code map
 
-Purpose: the concrete modules in `/Users/abu/dev/hackathon/arc-agent` worth lifting into a Tameion entry. For each one: path, what it does, what it would give Tameion, which RFB it serves, and how much editing it needs.
+Purpose: the concrete modules in `arc-agent` worth lifting into a Tameion entry. For each one: path, what it does, what it would give Tameion, which RFB it serves, and how much editing it needs.
 
-Sources: source files under `/Users/abu/dev/hackathon/arc-agent/packages/*/src`, `apps/worker/src`, `database/migrations/`, `scripts/`, plus `AGENTS.md:196-243` ("Gotchas") and `docs/decisions/2026-08-05-a05-legacy-disposition.md`.
+Sources: source files under `arc-agent/packages/*/src`, `apps/worker/src`, `database/migrations/`, `scripts/`, plus `AGENTS.md:196-243` ("Gotchas") and `docs/decisions/2026-08-05-a05-legacy-disposition.md`.
 Verified: 2026-09-29. Paths and line numbers are from the local working tree (HEAD `ab9c976` plus uncommitted changes).
 
 Legend:

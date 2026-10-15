@@ -2,7 +2,7 @@
 
 Purpose: what Abu's prior Arc project is, how it is built, and what was actually proven on Arc Testnet, so a Tameion entry can reuse it without over-claiming.
 
-Sources: `/Users/abu/dev/hackathon/arc-agent/{CLAUDE.md,AGENTS.md,README.md,SPEC.md,package.json}`, `docs/decisions/*`, `docs/raw/*`, `docs/verification/*`, `docs/handoffs/2026-08-09-authenticated-experience-authorized.md`, `docs/state.json`, `git log`/`git status` run 2026-09-29.
+Sources: `arc-agent/{CLAUDE.md,AGENTS.md,README.md,SPEC.md,package.json}`, `docs/decisions/*`, `docs/raw/*`, `docs/verification/*`, `docs/handoffs/2026-08-09-authenticated-experience-authorized.md`, `docs/state.json`, `git log`/`git status` run 2026-09-29.
 Verified: 2026-09-29
 
 ---
@@ -80,7 +80,7 @@ apps/landing, apps/docs (Fumadocs)
 - **207 uncommitted paths**, last modified 2026-08-11.
 - `origin` (github.com/Blockchain-Oracle/arc-agent) is **behind**: the remote branch head is `9eb4893` from 2026-08-05.
 - `docs/state.json` stage is `build`, with A-07 editable write tools in progress.
-- A separate dirty Phase 9 worktree exists at `/Users/abu/.codex/worktrees/b467/arc-agent`.
+- A separate dirty Phase 9 worktree exists at `~/.codex/worktrees/b467/arc-agent`.
 - Delta-rule consequences are in `README.md` of this folder.
 
 ## Key decisions (one line each)

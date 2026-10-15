@@ -1,12 +1,12 @@
 # Arc Copilot: knowledge index (where Abu already researched something)
 
-Purpose: a topic → file pointer index into `/Users/abu/dev/hackathon/arc-agent/docs/`. Before a Tameion agent researches Arc or Circle from scratch, it should check here. **All of these files are dated 2026-07-28 to 2026-08-11, so treat them as a starting point, not as current truth.** Re-verify addresses, SDK versions, fees and support tables before relying on them.
+Purpose: a topic → file pointer index into `arc-agent/docs/`. Before a Tameion agent researches Arc or Circle from scratch, it should check here. **All of these files are dated 2026-07-28 to 2026-08-11, so treat them as a starting point, not as current truth.** Re-verify addresses, SDK versions, fees and support tables before relying on them.
 
-Sources: `/Users/abu/dev/hackathon/arc-agent/docs/{wiki,research,raw,decisions,plans,verification,design,specs,stories}/`, `docs/research/README.md`, `docs/wiki/index.md`, `docs/raw/source-registry.md`.
+Sources: `arc-agent/docs/{wiki,research,raw,decisions,plans,verification,design,specs,stories}/`, `docs/research/README.md`, `docs/wiki/index.md`, `docs/raw/source-registry.md`.
 Verified: 2026-09-29. The file list was read 2026-09-29; content dates are in the file names or in "Checked:" headers.
 
 Conventions:
-- Paths are relative to `/Users/abu/dev/hackathon/arc-agent/docs/`.
+- Paths are relative to `arc-agent/docs/`.
 - Doc types:
   - **wiki** is distilled, cross-linked facts. Start here.
   - **research** is a dated brief with sources, facts, inferences and unknowns.
