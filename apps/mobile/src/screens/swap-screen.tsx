@@ -310,14 +310,16 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
         : short
           ? { label: t("ticket.notEnough", { symbol: tokenIn.symbol }), fix: { kind: "add-money" } }
           : null;
-  const raceRequest = amount > ZERO && !short ? ({ kind: "swap", tokenIn: tokenIn.address, tokenOut: tokenOut.address, amount: decimalOf(amount, tokenIn.decimals) } as const) : null;
+  // The race runs for any amount, short of balance included: what 5 USDC would get, and where, before "Add money".
+  const raceRequest = amount > ZERO ? ({ kind: "swap", tokenIn: tokenIn.address, tokenOut: tokenOut.address, amount: decimalOf(amount, tokenIn.decimals) } as const) : null;
 
   const pair = (
     <View style={styles.pair}>
       <TokenButton
         token={tokenIn}
         label={t("ticket.pay")}
-        caption={balanceIn !== undefined ? t("ticket.balance", { amount: tokenAmount(balanceIn.toString(), tokenIn.decimals, tokenIn.symbol, locale) }) : undefined}
+        // A phone's pill is too narrow for it ("Balanc…"); the amount pad shows the balance with Max there.
+        caption={wide && balanceIn !== undefined ? t("ticket.balance", { amount: tokenAmount(balanceIn.toString(), tokenIn.decimals, tokenIn.symbol, locale) }) : undefined}
         onPress={() => setPicker("in")}
       />
       <Pressable accessibilityRole="button" accessibilityLabel={t("swap.flip")} onPress={flip} style={[styles.flip, { backgroundColor: color.raised2 }]}>

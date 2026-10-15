@@ -183,7 +183,8 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
         : short
           ? { label: t("move.notEnough", { asset: assetLabel(asset, held) }), ...(direction === "out" ? { fix: { kind: "add-money" as const } } : {}) }
           : null;
-  const raceRequest: RouteRaceRequest | null = direction === "out" && chain && amount > NOTHING && !short ? { kind: "bridge", destination: chain, amount: decimal, asset: asset.symbol, recipient: recipient.trim() || null } : null;
+  // Quoted for any amount, short of balance included (what it would deliver, before "Add money"), like Swap.
+  const raceRequest: RouteRaceRequest | null = direction === "out" && chain && amount > NOTHING ? { kind: "bridge", destination: chain, amount: decimal, asset: asset.symbol, recipient: recipient.trim() || null } : null;
   const chainMark = (() => {
     const entry = destinations.list.find((destination) => destination.id === chain);
     return entry ? destinationMark(entry) : undefined;
