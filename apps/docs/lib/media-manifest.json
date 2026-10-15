@@ -1,4 +1,466 @@
 {
+  "activity/inbox": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "activity/list": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "activity/receipt": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "activity/receipt-actions": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "activity/why": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/card": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/list": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/new": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/on": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/schedule": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "automations/watching": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "bridge/chains": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "bridge/review": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "bridge/ticket": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "bridge/tracking": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "bridge/withdraw": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "buy/add-money": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "buy/amount": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "buy/methods": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "contacts/empty": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "contacts/list": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "contacts/new": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "contacts/save-sender": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "contacts/settings": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "earn/ticket": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "earn/vaults": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "limits/budget": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "limits/controls": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "limits/covers": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "limits/exit-kit": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "long-short/margin": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "long-short/ticket": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "long-short/ticket-tpsl": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "marketplace/agent-wallet": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "marketplace/list": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "marketplace/service": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "network/mainnet-home": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "network/mainnet-swap": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "notifications/settings": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/amount": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/chat": {
+    "kind": "video",
+    "device": "phone",
+    "w": 780,
+    "h": 1594,
+    "themes": [
+      "light"
+    ]
+  },
+  "send/receive": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/request-amount": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/review": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/search": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "send/sent": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "settings/top": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
   "start/budget": {
     "kind": "image",
     "device": "phone",
@@ -24,6 +486,16 @@
     "w": 1170,
     "h": 2391,
     "themes": [
+      "light"
+    ]
+  },
+  "start/fan": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
       "light"
     ]
   },
@@ -66,6 +538,16 @@
       "light"
     ]
   },
+  "start/home": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
   "start/language": {
     "kind": "image",
     "device": "phone",
@@ -99,6 +581,128 @@
     "device": "phone",
     "w": 1170,
     "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "swap/done": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "swap/race": {
+    "kind": "video",
+    "device": "phone",
+    "w": 780,
+    "h": 1594,
+    "themes": [
+      "light"
+    ]
+  },
+  "swap/receipt": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "swap/review": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "swap/ticket": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "trade/markets": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "trade/token": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "voice/mode": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
+  "voice/settings": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "web/home": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
+    "themes": [
+      "light"
+    ]
+  },
+  "web/margin": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
+    "themes": [
+      "light"
+    ]
+  },
+  "web/marketplace": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
+    "themes": [
+      "light"
+    ]
+  },
+  "web/markets": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
     "themes": [
       "light"
     ]

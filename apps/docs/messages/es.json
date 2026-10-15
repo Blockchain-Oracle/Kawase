@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "Cambiar tema",
     "Type(type table)": "Tipo",
     "View as Markdown(page actions)": "Ver como Markdown"
+  },
+  "visual": {
+    "steps": "Pasos",
+    "previous": "Paso anterior",
+    "next": "Paso siguiente",
+    "of": "de",
+    "pause": "Pausar",
+    "play": "Reproducir"
   }
 }

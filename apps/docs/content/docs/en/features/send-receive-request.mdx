@@ -1,76 +1,122 @@
 ---
 title: Send, receive and request
-description: Pay anyone in any token by name, @handle, address or QR code; add money from a card, an exchange or another chain; request money or split a bill with a link.
+description: Pay anyone by @handle, contact, address or QR code in any token you hold on Arc; receive at one address and its QR code; ask for money with a link.
 ---
 
 <Status ids="send request payment_links" />
 
 <Marks names="usdc eurc arc" />
 
-## Send
+<Flow>
+  <FlowStep icon="at-sign" title="Who">An @handle, a contact, an address or a QR code.</FlowStep>
+  <FlowStep icon="shield" title="Checked">The recipient, your balance, your budget.</FlowStep>
+  <FlowFork>
+    <FlowStep when="A contact, inside your budget" icon="zap" title="Sent at once" />
+    <FlowStep when="Someone new, or above it" icon="fingerprint" title="You confirm" tone="accent">Face ID, your fingerprint, or an email code on the web.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="receipt" title="Receipt" tone="ink">Paid only when the chain shows the exact transfer.</FlowStep>
+</Flow>
 
-Say or type who and how much ("send 20 dollars to Alex", "pay @mira 5 euros"), or use the Send screen. You can send **any
-token you hold on Arc**. Kawase:
+## Send, step by step
 
-1. **Finds the recipient**: a saved contact, a Kawase `@handle`, an `0x…` address you typed yourself, or a **QR code** you
-   scanned. The agent can only use an address that came from your contacts, a code you scanned, or your own message, word
-   for word.
-2. **Picks the token** you hold, or asks if it is unclear.
-3. **Checks the recipient on every payment**: a token contract or a look-alike of a saved contact is refused, a contract
-   that isn't a wallet is warned about, the token issuer's blocklist is checked where it has one, and your own address is
-   named as yours. It also checks your balance, your limits and whether a contact's address changed recently.
-4. **Shows the payment card** with the exact amount, token, recipient and network.
+Open **Send** from **+**, or just say it ("send 5 dollars to @ines", "pay Sam 5 euros"). You can send **any token you
+hold on Arc**.
 
-Then one of two things happens:
+<Walkthrough>
+  <WalkStep title="Find who" src="send/search">
+    Type an `@handle` or a name, paste an address, or scan a QR code. People on Kawase show up by their handle.
 
-| Situation | What you do |
-|---|---|
-| Inside what is left of today's allowance for that token, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |
-| Above the allowance, a token outside it, a new address, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |
+    <Pin box="5 12 90 5.5">An @handle, a name or an 0x address</Pin>
 
-A payment to an address you just added can suggest sending a **test amount** first. A payment is only marked **paid** when the network's
-receipt shows the exact transfer. If the answer is unclear, the card says "still checking" and Kawase keeps looking; it
-never sends twice.
+    <Pin at="62 21">Paste, scan a QR code or save a contact</Pin>
 
-**Their wallet is on another chain?** The review offers it: USDC opens the [move card](./bridge-and-withdraw.mdx) with the
-same amount and recipient; any other token offers converting to USDC first.
+    <Pin box="5 28.5 90 8">Found on Kawase by their handle</Pin>
+  </WalkStep>
+  <WalkStep title="How much" src="send/amount" zoom="61 16 9">
+    Type the amount or take a share of what you hold. Tap the token to pay in another one.
+
+    <Pin at="26 16">Who you're paying</Pin>
+
+    <Pin at="50 33.7">A quarter, half, three quarters or all of it</Pin>
+
+    <Pin at="26 64.6">A private note, never written on the chain</Pin>
+  </WalkStep>
+  <WalkStep title="Review" src="send/review" zoom="44 41 8">
+    Everything is on one card before anything moves: the amount, who it goes to and **where that address came from**,
+    the network and its fee, and what Kawase needs from you.
+
+    <Pin box="5 31.5 90 12.5">The recipient, and how Kawase knows the address</Pin>
+
+    <Pin box="5 46 90 9">A first payment can go as a test amount first</Pin>
+
+    <Pin at="50 80">Someone new: confirm with an email code (Face ID on a phone)</Pin>
+
+    <Pin at="50 94">Their wallet is on another chain? Bridge it instead</Pin>
+  </WalkStep>
+  <WalkStep title="Sent" src="send/sent">
+    The card follows the payment until the network confirms it. It is marked **paid** only when the chain's receipt
+    shows the exact transfer; if the answer is slow, it says "still checking" and never sends twice.
+  </WalkStep>
+  <WalkStep title="The receipt" src="activity/receipt" zoom="84 87 9">
+    Every payment has a receipt slip: what moved, to whom, when, on which network, and the transaction. Its QR code
+    opens the transaction on ArcScan. See [Activity and receipts](./activity-and-receipts.mdx).
+  </WalkStep>
+</Walkthrough>
+
+### What is checked on every payment
+
+- **Where the address came from.** Kawase only pays an address from your contacts, a handle, a code you scanned, or
+  your own message, word for word.
+- **The recipient itself.** A token contract or a look-alike of a saved contact is refused; a contract that isn't a
+  wallet is warned about; the token issuer's blocklist is checked where it has one; your own address is named as yours.
+- **Your money and your rules.** Your balance, your [weekly budget](./limits-and-control.mdx), and whether a contact's
+  address changed recently.
+
+## By asking Kawase
+
+Say or type it the way you'd say it to a person. Kawase prepares **the same card**, with the same checks, and waits
+for your tap: a spoken "yes" never approves a payment.
+
+<Clip src="send/chat" alt="Typing “send 2 dollars to @sam” in chat: Kawase prepares the payment card and it is sent." />
+
+## Receive
+
+Your wallet has **one address on both networks**, and it takes **any token on Arc**.
+
+<Shot src="send/receive" alt="Receive: a QR code, the @handle and the address, Copy address and Share." zoom="50 46 9">
+  <Pin at="50 23">Your address as a QR code</Pin>
+
+  <Pin box="4 58 92 6.5">Your @handle and address, on this network</Pin>
+
+  <Pin at="22 76">Ask for an exact amount</Pin>
+
+  <Pin at="50 86.5">Copy it or share it</Pin>
+</Shot>
+
+**Add money** (from **+**) gathers every way in: [buy with Apple Pay or a card](./buy.mdx), from an exchange, USDC
+waiting for you on another chain (brought to Arc with no gas), your address and QR code, and test USDC on testnet.
+Money that arrives shows up in [Activity](./activity-and-receipts.mdx) and the inbox, can wake your
+[automations](./automations.mdx), and offers **Save sender** as a contact.
 
 ## Scan to pay
 
-Tap **Scan** in the quick-action fan, on Send, or in chat's header. The scanner reads:
-
-- a bare address, or a payment link with an amount and token (EIP-681): Send opens filled in, and the usual checks run;
-- a Kawase request link: its pay page opens.
-
-A code for the other Arc network, another chain or a closed request says why, with a network switch where that helps. You
-can also paste a code instead.
-
-## Receive and add money
-
-Your wallet has **one address on both networks**, and it takes **any token on Arc**. **Add money** gathers every way in:
-
-- **Buy** with a card ([Buy](./buy.mdx));
-- **From an exchange**: the exchange's logo and its own steps (Coinbase through Base, then Bring to Arc);
-- **From another chain**: USDC waiting at your address elsewhere, brought to Arc with no gas;
-- **Receive**: your address and its QR code;
-- **Test USDC** on testnet.
-
-Money that arrives shows up in Activity and the inbox, can wake your [automations](./automations.mdx), and offers
-**Save sender as a contact**.
+**Scan a QR code** on Send (or in **+**) reads a bare address, a payment link with an amount and token (EIP-681), or a
+Kawase request link. A code for the other Arc network, another chain or a closed request says why, with a network
+switch where that helps.
 
 ## Request and split
 
-"Request 15 dollars from Sam for dinner", or open Request. Kawase creates a **payment request** in any token on Arc with a
-shareable link. The person paying can open it in any browser; the request is marked paid when a Kawase payment or a
-matching plain transfer arrives.
+"Request 15 dollars from Sam for dinner", or **Request**. Kawase makes a **payment request** in any token on Arc with a
+link you share. The person paying opens it in any browser; it is marked paid when a Kawase payment or a matching plain
+transfer arrives.
 
-**Split a bill**: "split 30 dollars for dinner with Amina and Tunde". Equal shares or by hand, with you included or not.
+<Shot src="send/request-amount" alt="Request: 15 USDC typed on the keypad, with a note field." zoom="50 33 10">
+  <Pin at="50 21">The amount you ask for, in any token</Pin>
+
+  <Pin at="50 41">A note for the person who pays, never written on the chain</Pin>
+</Shot>
+
+**Split a bill**: "split 30 dollars for dinner with Ines and Sam". Equal shares or by hand, with you included or not.
 Each person gets their own request and link, and a progress card shows who has paid.
-
-## Receipts and links
-
-- **Share a receipt** of a finished payment as an image card (or text with the explorer link on the web).
-- Every action has its own link (`/i/…`). Notifications open the exact card; a link opened while signed out comes back to
-  it after sign-in. A card blocked by something you then fix (sign in, setup, limits, adding money) checks again by itself.
 
 <ScopeList ids="send request" />

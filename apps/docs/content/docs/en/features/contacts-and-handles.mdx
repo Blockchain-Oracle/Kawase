@@ -1,40 +1,83 @@
 ---
 title: Contacts and @handles
-description: Save people by name, pay them by name or @handle, and get warned about changed or look-alike addresses.
+description: Claim an @handle people can pay you at, save the people you pay (or the sender of money you received), and get warned about changed or look-alike addresses.
 ---
 
 <Status ids="contacts" />
 
-## Contacts
+<Flow>
+  <FlowStep icon="at-sign" title="Claim a handle">People pay you at @you.</FlowStep>
+  <FlowStep icon="user-plus" title="Save people">By name, @handle or address, or from a receipt.</FlowStep>
+  <FlowStep icon="send" title="Pay by name" tone="accent">"Send 5 dollars to Sam."</FlowStep>
+  <FlowStep icon="shield" title="Protected">Changed and look-alike addresses are caught.</FlowStep>
+</Flow>
 
-A contact is a name (and nicknames) with one or more addresses. Kawase uses contacts to understand "send to Alex" and to
-protect you:
+## Your @handle
 
-- **Address changes are held.** When a contact's address changes, the new address waits **24 hours** before money can go to
-  it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.
-- **Look-alike addresses are flagged.** An address whose first and last four characters match one of your contacts' is
-  treated as a look-alike: Kawase stops and asks for Face ID.
-- **Payment history** builds trust per address and per network: a first payment to an address is treated more carefully
-  than a repeat one.
+A `@handle` is an optional public name you can be paid by: "send 10 to @maya". You pick it right after signing in
+(or skip it), and change it later in **Settings → Handle**.
 
-If you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment — you don't
-have to start over.
+<Shot src="start/handle" alt="Pick a handle: @ines typed, marked Available, with Continue and Skip for now." zoom="12 47 7">
+  <Pin box="5 37 90 7.5">Checked as you type</Pin>
 
-### Adding people
-
-- **Save a sender**: money that arrived from someone offers **Save sender as a contact**, with the address from the
-  payment.
-- **Import from your phone**: Contacts → Import reads names and emails **on your phone only**. **Find who's on Kawase**
-  sends only hashed emails, never the names, emails or numbers themselves; people who allow being found are added by their
-  @handle in one tap, and you can invite the rest. Whether others can find you this way is a switch on the same page.
-
-## @handles
-
-A `@handle` is an optional public name you can be paid by: "send 10 to @abu". Rules:
+  <Pin at="50 87">Keep it, or skip for now</Pin>
+</Shot>
 
 - 3 to 20 characters: lowercase letters, digits and underscore.
-- Unique regardless of case; names that would impersonate Kawase, Arc, Circle or staff are reserved.
-- You choose it during onboarding (or skip) and can change it in Settings.
+- Unique whatever the case; names that would impersonate Kawase, Arc, Circle or staff are reserved.
+- A handle resolves to the person's Kawase wallet. If they haven't set a wallet up yet, Kawase tells you instead of
+  guessing.
 
-A handle resolves to the person's Kawase wallet address. If the person hasn't set up a wallet yet, Kawase tells you
-instead of guessing.
+## Save a contact
+
+A contact is a name (and nicknames) with one or more addresses. Contacts are how Kawase understands "send to Sam", and
+how it protects you.
+
+<Walkthrough>
+  <WalkStep title="Contacts" src="contacts/empty">
+    **Settings → Contacts**, or the contacts button on Send. **People** are who you pay; **My places** are your own
+    wallets and exchange accounts you withdraw to.
+
+    <Pin at="50 70">Add a contact</Pin>
+
+    <Pin at="50 77">Import from your phone</Pin>
+  </WalkStep>
+  <WalkStep title="Name and address" src="contacts/new" zoom="40 68 10">
+    A name, and an `@handle` or an `0x` address. A handle is checked as you type.
+
+    <Pin box="4 54 92 7">Their name</Pin>
+
+    <Pin box="4 64 64 7">An @handle or an address (or paste one)</Pin>
+  </WalkStep>
+  <WalkStep title="Saved" src="contacts/list">
+    From now on "send 5 dollars to Sam" just works, and a payment to a saved contact can go **inside your weekly
+    budget** without asking.
+  </WalkStep>
+</Walkthrough>
+
+If you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment: you
+don't start over.
+
+### Save the sender of money you received
+
+Open a payment you received in [Activity](./activity-and-receipts.mdx): the receipt says who **sent** it and offers
+**Save**, with the address from the payment itself.
+
+<Shot src="contacts/save-sender" alt="A receipt for 1.00 USDC received, with Sent by and a Save button under it." zoom="78 72 9">
+  <Pin box="4 62 92 12">Sent by: the address it came from, ready to save</Pin>
+</Shot>
+
+### Import from your phone
+
+**Contacts → Import** reads names and emails **on your phone only**. **Find who's on Kawase** sends only hashed emails,
+never the names, emails or numbers themselves; people who allow being found are added by their @handle in one tap, and
+you can invite the rest. Whether others can find you this way is a switch on the same page.
+
+## How contacts protect you
+
+- **Address changes are held.** When a contact's address changes, the new address waits **24 hours** before money can
+  go to it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.
+- **Look-alikes are flagged.** An address whose first and last four characters match one of your contacts' is treated
+  as a look-alike: Kawase stops and asks you to confirm.
+- **History builds trust** per address and per network: a first payment to an address is treated more carefully than a
+  repeat one, and can go as a [test amount](./send-receive-request.mdx) first.

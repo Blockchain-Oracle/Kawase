@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "থিম টগল করুন",
     "Type(type table)": "ধরন",
     "View as Markdown(page actions)": "Markdown হিসেবে দেখুন"
+  },
+  "visual": {
+    "steps": "ধাপ",
+    "previous": "আগের ধাপ",
+    "next": "পরের ধাপ",
+    "of": "এর মধ্যে",
+    "pause": "থামান",
+    "play": "চালান"
   }
 }

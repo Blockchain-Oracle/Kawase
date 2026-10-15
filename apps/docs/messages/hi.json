@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "थीम बदलें",
     "Type(type table)": "टाइप",
     "View as Markdown(page actions)": "Markdown के रूप में देखें"
+  },
+  "visual": {
+    "steps": "चरण",
+    "previous": "पिछला चरण",
+    "next": "अगला चरण",
+    "of": "में से",
+    "pause": "रोकें",
+    "play": "चलाएँ"
   }
 }

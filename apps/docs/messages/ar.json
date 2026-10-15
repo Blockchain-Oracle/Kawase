@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "تبديل السمة",
     "Type(type table)": "النوع",
     "View as Markdown(page actions)": "العرض بصيغة Markdown"
+  },
+  "visual": {
+    "steps": "الخطوات",
+    "previous": "الخطوة السابقة",
+    "next": "الخطوة التالية",
+    "of": "من",
+    "pause": "إيقاف مؤقت",
+    "play": "تشغيل"
   }
 }

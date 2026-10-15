@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "تھیم ٹوگل کریں",
     "Type(type table)": "قسم",
     "View as Markdown(page actions)": "Markdown کے طور پر دیکھیں"
+  },
+  "visual": {
+    "steps": "مراحل",
+    "previous": "پچھلا مرحلہ",
+    "next": "اگلا مرحلہ",
+    "of": "میں سے",
+    "pause": "روکیں",
+    "play": "چلائیں"
   }
 }

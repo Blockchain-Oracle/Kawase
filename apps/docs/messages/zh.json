@@ -122,5 +122,13 @@
     "Toggle Theme(theme switcher)(aria-label)": "切换主题",
     "Type(type table)": "类型",
     "View as Markdown(page actions)": "以 Markdown 查看"
+  },
+  "visual": {
+    "steps": "步骤",
+    "previous": "上一步",
+    "next": "下一步",
+    "of": "/",
+    "pause": "暂停",
+    "play": "播放"
   }
 }
