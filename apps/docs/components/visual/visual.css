@@ -1,0 +1,953 @@
+/* The docs' visual language: device frames, pins and lenses over real captures, the stepper, and flow diagrams.
+   Colours are the Senryo tokens (paper/ink, one magenta accent), so everything follows the page's theme. */
+
+.kv-flow,
+.kv-shot,
+.kv-walk {
+  --kv-line: color-mix(in oklab, var(--foreground) 34%, transparent);
+  --kv-accent-soft: color-mix(in oklab, var(--accent) 20%, transparent);
+  --kv-dir: 1;
+  container-type: inline-size;
+  margin-block: 2rem;
+}
+[dir="rtl"] :is(.kv-flow, .kv-shot, .kv-walk) {
+  --kv-dir: -1;
+}
+[dir="rtl"] .kv-flip {
+  transform: scaleX(-1);
+}
+
+/* ── Theme pairs ─────────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-only-dark {
+  display: none;
+}
+.dark .kv-only-dark {
+  display: block;
+}
+.dark .kv-only-light {
+  display: none;
+}
+
+/* ── The phone (the landing's) ───────────────────────────────────────────────────────────────────────────────── */
+.kv-phone {
+  position: relative;
+  width: var(--phone-w, 264px);
+  flex: none;
+  aspect-ratio: 433 / 882;
+  filter: drop-shadow(0 24px 36px rgb(0 0 0 / 0.16));
+}
+.dark .kv-phone {
+  filter: drop-shadow(0 30px 50px rgb(0 0 0 / 0.6));
+}
+.kv-phone-body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.kv-phone-metal {
+  fill: #1b1b1d;
+}
+.dark .kv-phone-metal {
+  fill: #34343a;
+}
+.kv-phone-bezel {
+  fill: #050505;
+}
+.dark .kv-phone-bezel {
+  fill: #000;
+}
+/* The screen: 390.5 × 843.5 at (21.25, 19.25) of the 433 × 882 body. */
+.kv-phone-screen {
+  position: absolute;
+  left: 4.907%;
+  top: 2.182%;
+  width: 90.18%;
+  height: 95.63%;
+  border-radius: 12.9% / 6.6%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+.dark .kv-phone-screen {
+  background: #111111;
+}
+.kv-statusbar {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 390 / 47;
+  fill: #000;
+}
+.dark .kv-statusbar {
+  fill: #f5f5f5;
+}
+.kv-statusbar-time {
+  font: 600 17px/1 -apple-system, "SF Pro Text", var(--font-sans);
+  letter-spacing: -0.01em;
+}
+.kv-statusbar-outline {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.35;
+  color: #000;
+}
+.dark .kv-statusbar-outline {
+  color: #f5f5f5;
+}
+.kv-statusbar-cap {
+  opacity: 0.4;
+}
+.kv-phone-island {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: #000;
+}
+/* Over the capture only (below the status bar), outside the rounded screen so a lens can reach past the frame. */
+.kv-phone-overlay {
+  position: absolute;
+  left: 4.907%;
+  width: 90.18%;
+  top: 7.518%;
+  height: 90.29%;
+  pointer-events: none;
+}
+.kv-screen-clip {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.kv-screen-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  transition:
+    opacity 0.28s ease,
+    visibility 0s linear 0s;
+}
+:is(.kv-screen-img, .kv-video)[data-hidden] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.28s ease,
+    visibility 0s linear 0.28s;
+}
+
+/* ── The desktop window ──────────────────────────────────────────────────────────────────────────────────────── */
+.kv-window {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 30px 70px -34px rgb(0 0 0 / 0.4);
+}
+.dark .kv-window {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 40px 90px -30px rgb(0 0 0 / 0.75);
+}
+.kv-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding-inline: 12px;
+  border-radius: 14px 14px 0 0;
+  background: #ececec;
+  direction: ltr;
+}
+.dark .kv-window-bar {
+  background: #242424;
+}
+.kv-window-light {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #ff5f57;
+}
+.kv-window-light:nth-child(2) {
+  background: #febc2e;
+}
+.kv-window-light:nth-child(3) {
+  background: #28c840;
+}
+.kv-window-address {
+  margin-inline: auto;
+  translate: -27px 0;
+  padding: 2px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  background: var(--background);
+}
+.kv-window-screen {
+  position: relative;
+  aspect-ratio: 1440 / 900;
+}
+.kv-window-screen > .kv-screen-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 14px 14px;
+}
+
+/* ── Pins, the highlighted spot and the lens ────────────────────────────────────────────────────────────────── */
+.kv-overlay {
+  position: absolute;
+  inset: 0;
+  direction: ltr;
+  pointer-events: none;
+}
+.kv-overlay[data-hidden] {
+  visibility: hidden;
+}
+.kv-overlay-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.kv-ring {
+  fill: color-mix(in oklab, var(--accent) 8%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.kv-leader {
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.kv-pin {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  translate: -50% -50%;
+  font: 800 12px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: #000;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 2.5px #fff,
+    0 6px 16px -4px rgb(250 0 255 / 0.65);
+  transition: scale 0.18s ease;
+}
+.dark .kv-pin {
+  box-shadow:
+    0 0 0 2.5px #111,
+    0 6px 18px -4px rgb(250 0 255 / 0.75);
+}
+.kv-pin-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  opacity: 0;
+}
+.kv-pin-box {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 4px var(--kv-accent-soft),
+    0 0 24px -6px var(--accent);
+}
+.kv-pin-box > .kv-pin {
+  left: 100%;
+  top: 0;
+}
+.kv-lens {
+  position: absolute;
+  z-index: 2;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--background);
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 0 0 8px var(--kv-accent-soft),
+    0 22px 44px -12px rgb(0 0 0 / 0.5);
+}
+.kv-lens-img {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kv-overlay:not([data-hidden]) :is(.kv-pin, .kv-pin-box) {
+    animation: kv-pop 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+    animation-delay: calc(var(--i, 0) * 80ms + 140ms);
+  }
+  .kv-overlay:not([data-hidden]) .kv-pin-box > .kv-pin {
+    animation: none;
+  }
+  .kv-overlay:not([data-hidden]) .kv-lens {
+    animation: kv-lens 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.1s both;
+  }
+  .kv-overlay:not([data-hidden]) .kv-overlay-lines {
+    animation: kv-fade 0.3s ease 0.2s both;
+  }
+  .kv-overlay:not([data-hidden]) .kv-pin-dot::after {
+    animation: kv-ping 2.4s ease-out 0.8s infinite;
+  }
+}
+@keyframes kv-pop {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+@keyframes kv-lens {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+@keyframes kv-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes kv-ping {
+  0% {
+    opacity: 0.8;
+    scale: 1;
+  }
+  70%,
+  100% {
+    opacity: 0;
+    scale: 2;
+  }
+}
+
+/* The key's line under the pointer lights its pin. */
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="1"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="1"],
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="2"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="2"],
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="3"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="3"],
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="4"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="4"],
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="5"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="5"],
+:is(.kv-shot, .kv-walk):has(.kv-legend li[data-n="6"]:hover) .kv-overlay:not([data-hidden]) .kv-pin[data-n="6"] {
+  scale: 1.3;
+}
+
+/* ── The key ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-legend {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kv-legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--foreground);
+}
+.kv-pin-static {
+  position: static;
+  flex: none;
+  translate: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -1px;
+  font-size: 11.5px;
+  box-shadow: none;
+}
+.dark .kv-pin-static {
+  box-shadow: none;
+}
+.kv-legend-text :where(p) {
+  margin: 0;
+}
+.kv-caption {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+:is(.kv-legend-text, .kv-walk-text, .kv-node-body, .kv-caption) :where(code) {
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  font-size: 0.88em;
+  background: var(--muted);
+}
+:is(.kv-legend-text, .kv-walk-text, .kv-node-body) :where(a) {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:is(.kv-legend-text, .kv-walk-text, .kv-node-body) :where(strong) {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* ── A single shot ───────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-shot-inner {
+  display: grid;
+  gap: 22px;
+  justify-items: center;
+}
+.kv-shot-stage {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.kv-shot[data-device="phone"] .kv-phone {
+  --phone-w: 232px;
+}
+.kv-has-lens {
+  margin-inline: 22px;
+}
+.kv-shot-key {
+  width: 100%;
+  max-width: 34rem;
+}
+@container (min-width: 34rem) {
+  .kv-shot[data-device="phone"]:not(.kv-shot-bare) .kv-shot-inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    gap: 36px;
+  }
+  .kv-shot[data-device="phone"] .kv-phone {
+    --phone-w: 256px;
+  }
+  .kv-shot[data-device="desktop"] .kv-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+}
+
+/* ── The stepper ─────────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-walk-inner {
+  display: grid;
+  gap: 18px;
+}
+.kv-walk-stage {
+  display: flex;
+  justify-content: center;
+  touch-action: pan-y;
+  user-select: none;
+}
+.kv-walk[data-device="phone"] .kv-phone {
+  --phone-w: 224px;
+}
+.kv-walk-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kv-walk-step {
+  margin: 0;
+  padding: 3px;
+  border-radius: 18px;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.kv-walk-step[data-active] {
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.kv-walk-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 14px;
+  text-align: start;
+  cursor: pointer;
+}
+.kv-walk-head:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.kv-walk-n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  font: 700 12px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+.kv-walk-step[data-done] .kv-walk-n {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+}
+.kv-walk-step[data-active] .kv-walk-n {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 0 0 4px var(--kv-accent-soft);
+}
+.kv-walk-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+  transition: color 0.2s ease;
+}
+.kv-walk-head:hover .kv-walk-title,
+.kv-walk-step[data-active] .kv-walk-title {
+  color: var(--foreground);
+}
+/* Narrow: only the chosen step opens. */
+.kv-walk-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+.kv-walk-step[data-active] .kv-walk-body {
+  grid-template-rows: 1fr;
+}
+.kv-walk-body-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding-inline: 48px 12px;
+}
+.kv-walk-text {
+  padding-bottom: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+.kv-walk-text :where(p) {
+  margin: 0 0 0.5em;
+}
+.kv-walk-text :where(p:last-child) {
+  margin-bottom: 0;
+}
+.kv-walk-legend {
+  padding-block: 4px 12px;
+}
+.kv-walk-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-inline-start: 13px;
+}
+.kv-walk-arrow {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+}
+.kv-walk-arrow:hover:not(:disabled) {
+  background: var(--muted);
+}
+.kv-walk-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.kv-walk-next:not(:disabled) {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+}
+.kv-walk-next:hover:not(:disabled) {
+  background: var(--foreground);
+  opacity: 0.88;
+}
+.kv-walk-arrow:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.kv-walk-count {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+@container (min-width: 38rem) {
+  .kv-walk[data-device="phone"] .kv-walk-inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 36px;
+  }
+  .kv-walk[data-device="phone"] .kv-walk-stage {
+    position: sticky;
+    top: 88px;
+  }
+  .kv-walk[data-device="phone"] .kv-phone {
+    --phone-w: 256px;
+  }
+  /* Wide: every step's text stays readable; only the key follows the chosen step. */
+  .kv-walk .kv-walk-body {
+    grid-template-rows: 1fr;
+  }
+  .kv-walk .kv-walk-legend {
+    display: grid;
+    grid-template-rows: 0fr;
+    padding: 0;
+    transition: grid-template-rows 0.3s ease;
+  }
+  .kv-walk .kv-walk-legend > .kv-legend {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .kv-walk .kv-walk-step[data-active] .kv-walk-legend {
+    grid-template-rows: 1fr;
+    padding-block: 2px 12px;
+  }
+  .kv-walk .kv-walk-step:not([data-active]) .kv-walk-text {
+    opacity: 0.8;
+  }
+}
+
+/* ── Videos ──────────────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-video {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 0.28s ease,
+    visibility 0s linear 0s;
+}
+.kv-video-toggle {
+  position: absolute;
+  z-index: 3;
+  inset-inline-end: 10px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.kv-video-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ── Flow diagrams ───────────────────────────────────────────────────────────────────────────────────────────── */
+.kv-flow-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kv-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: min(100%, 25rem);
+  padding: 13px 15px 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 12px 30px -22px rgb(0 0 0 / 0.35);
+}
+.kv-node-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.kv-node-n {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font: 700 11.5px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--background);
+  background: var(--foreground);
+}
+.kv-node-when {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.kv-node-glyph {
+  display: flex;
+  margin-inline-start: auto;
+  color: var(--muted-foreground);
+}
+.kv-node-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--foreground);
+}
+.kv-node-body {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.kv-node-body :where(p) {
+  margin: 0;
+}
+.kv-tone-accent {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--kv-accent-soft),
+    0 18px 40px -22px color-mix(in oklab, var(--accent) 80%, transparent);
+}
+.kv-tone-accent .kv-node-n {
+  color: #000;
+  background: var(--accent);
+}
+.kv-tone-accent .kv-node-glyph {
+  color: var(--accent);
+}
+.kv-tone-ink {
+  border-color: transparent;
+  background: var(--foreground);
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
+}
+.kv-tone-ink :is(.kv-node-title, .kv-node-glyph) {
+  color: var(--background);
+}
+.kv-tone-ink .kv-node-body {
+  color: color-mix(in oklab, var(--background) 72%, transparent);
+}
+.kv-tone-ink .kv-node-n {
+  color: var(--foreground);
+  background: var(--background);
+}
+.kv-tone-ink .kv-node-when {
+  color: var(--background);
+  background: color-mix(in oklab, var(--background) 16%, transparent);
+}
+.kv-tone-quiet {
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+
+.kv-flow-fork {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  width: min(100%, calc(var(--n) * 15rem));
+}
+.kv-flow-branch {
+  display: flex;
+  padding-inline: 5px;
+}
+.kv-flow-branch > .kv-node {
+  width: 100%;
+}
+
+.kv-line {
+  fill: none;
+  stroke: var(--kv-line);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.kv-head {
+  fill: var(--kv-line);
+}
+.kv-conn {
+  position: relative;
+  flex: none;
+}
+.kv-conn-straight {
+  display: flex;
+  justify-content: center;
+  height: 30px;
+}
+.kv-conn-h {
+  display: none;
+}
+.kv-conn-v {
+  display: block;
+}
+.kv-conn-fork {
+  width: min(100%, calc(var(--n) * 15rem));
+  height: 32px;
+}
+.kv-conn-fork > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.kv-fork-head {
+  position: absolute;
+  bottom: 0;
+  left: var(--at);
+  display: flex;
+  translate: -50% 0;
+  rotate: 90deg;
+}
+.kv-merge-head {
+  left: 50%;
+}
+.kv-conn-spark {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 10px 1px var(--accent);
+  opacity: 0;
+  translate: -50% 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kv-conn-spark {
+    animation: kv-spark-down 3.2s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 0.55s);
+  }
+}
+@keyframes kv-spark-down {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  5% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 1;
+    transform: translateY(18px);
+  }
+  27%,
+  100% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+@keyframes kv-spark-across {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  5% {
+    opacity: 1;
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(calc(24px * var(--kv-dir)));
+  }
+  27%,
+  100% {
+    opacity: 0;
+    transform: translateX(calc(28px * var(--kv-dir)));
+  }
+}
+
+@container (min-width: 40rem) {
+  .kv-flow[data-across] .kv-flow-track {
+    flex-direction: row;
+    align-items: center;
+  }
+  .kv-flow[data-across] .kv-flow-track > .kv-node {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+  .kv-flow[data-across] .kv-flow-fork {
+    flex: 1.15 1 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+    width: auto;
+    min-width: 0;
+  }
+  .kv-flow[data-across] .kv-flow-branch {
+    padding-inline: 0;
+    padding-block: 5px;
+  }
+  .kv-flow[data-across] .kv-conn-straight {
+    align-items: center;
+    width: 40px;
+    height: auto;
+  }
+  .kv-flow[data-across] .kv-conn-h {
+    display: block;
+  }
+  .kv-flow[data-across] .kv-conn-v {
+    display: none;
+  }
+  [dir="rtl"] .kv-flow[data-across] .kv-conn-h {
+    transform: scaleX(-1);
+  }
+  .kv-flow[data-across] .kv-conn-fork {
+    align-self: stretch;
+    width: 40px;
+    height: auto;
+  }
+  .kv-flow[data-across] .kv-fork-head {
+    top: var(--at);
+    bottom: auto;
+    left: auto;
+    inset-inline-end: 0;
+    translate: 0 -50%;
+    rotate: none;
+  }
+  [dir="rtl"] .kv-flow[data-across] .kv-fork-head {
+    scale: -1 1;
+  }
+  .kv-flow[data-across] .kv-merge-head {
+    top: 50%;
+  }
+  .kv-flow[data-across] .kv-conn-spark {
+    top: 50%;
+    left: auto;
+    inset-inline-start: 2px;
+    translate: 0 -50%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .kv-flow[data-across] .kv-conn-spark {
+      animation-name: kv-spark-across;
+    }
+  }
+}

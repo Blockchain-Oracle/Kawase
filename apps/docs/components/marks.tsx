@@ -40,6 +40,9 @@ const ENTITY_BY_NAME: Record<string, string> = {
 
 const DEFAULT_SIZE = 28;
 
+/** The identity registry key for a short name (`usdc`, `relay`), or the name itself. */
+export const markEntity = (name: string) => ENTITY_BY_NAME[name] ?? name;
+
 /** `<Marks names="usdc eurc arc" />` in MDX. */
 export function Marks({ names, size = DEFAULT_SIZE }: { names: string; size?: number }) {
   return (
@@ -48,7 +51,7 @@ export function Marks({ names, size = DEFAULT_SIZE }: { names: string; size?: nu
         .split(/\s+/)
         .filter(Boolean)
         .map((name) => (
-          <Mark key={name} entity={ENTITY_BY_NAME[name] ?? name} size={size} />
+          <Mark key={name} entity={markEntity(name)} size={size} />
         ))}
     </span>
   );

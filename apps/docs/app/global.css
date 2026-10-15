@@ -5,6 +5,9 @@
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
+/* Device frames, pins and lenses, the stepper and flow diagrams (components/visual). */
+@import "../components/visual/visual.css";
+
 /* ui-web's Mark (real logos) is rendered in MDX pages. */
 @source "../../../packages/ui-web/src/components";
 

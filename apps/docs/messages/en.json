@@ -55,5 +55,13 @@
   },
   "status": {
     "label": "Status"
+  },
+  "visual": {
+    "steps": "Steps",
+    "previous": "Previous step",
+    "next": "Next step",
+    "of": "of",
+    "pause": "Pause",
+    "play": "Play"
   }
 }

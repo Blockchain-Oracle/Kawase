@@ -1,80 +1,147 @@
 ---
 title: Getting started
-description: Open Kawase in the browser as a guest, on the Mac, or on iPhone or Android, then get free test money and make a first payment.
+description: Open Kawase as a guest in any browser, on iPhone or Android; sign in with an email code, Google or Apple; get free test USDC and make a first payment.
 ---
 
-## 1. Open the app
+<Flow>
+  <FlowStep icon="eye" title="Look around">As a guest: no account, nothing to install.</FlowStep>
+  <FlowStep icon="mail" title="Sign in">An email code, Google or Apple. No password, no PIN.</FlowStep>
+  <FlowStep icon="wallet" title="Set up">Your wallet and your weekly budget. Kawase pays the fee.</FlowStep>
+  <FlowStep icon="sparkles" title="Ask" tone="accent">Free test USDC, then your first payment.</FlowStep>
+</Flow>
+
+## Open the app
 
 <Tabs items={['Web', 'iPhone', 'Android']}>
   <Tab value="Web">
-    Open [app.getkawase.xyz](https://app.getkawase.xyz) in any modern browser. You start as a **guest**: no sign-up, no
-    email. You can chat with Kawase, talk to it, look around every screen and see what it would do.
-
-    On the web, an **email code** stands in for Face ID wherever a payment needs your confirmation. You can install the
-    web app, or use the [desktop app for Mac](./features/web-and-desktop.mdx).
+    Open [app.getkawase.xyz](https://app.getkawase.xyz) in any modern browser, on a computer or a phone. You can install
+    it as an app from the browser ([web and desktop](./features/web-and-desktop.mdx)). On the web, an **email code**
+    stands in for Face ID wherever a payment needs your confirmation.
   </Tab>
   <Tab value="iPhone">
-    Kawase for iPhone is distributed through **TestFlight** while it is in beta. Install TestFlight from the App Store,
-    then open the invite link you were given. A public TestFlight link will be published on the showcase page when it is
-    available.
+    Kawase for iPhone is a public beta on Apple's **TestFlight**. Open
+    [getkawase.xyz/download](https://getkawase.xyz/download) on the iPhone: it opens the TestFlight invitation as soon
+    as Apple's beta review lets testers in, and the web app until then.
   </Tab>
   <Tab value="Android">
-    Download the Android build (APK) from Kawase:
-    [getkawase.xyz/download](https://getkawase.xyz/download).
-    Open it on the phone and allow the install. On Android the confirmation is your **fingerprint or screen lock**.
+    Download the APK from [getkawase.xyz/download](https://getkawase.xyz/download), open it and allow the install when
+    Android asks. On Android your confirmation is your **fingerprint or screen lock**.
   </Tab>
 </Tabs>
 
-## 2. Pick your language
+## Look around, then sign in
 
-The language pill is on the very first screen. Kawase speaks [ten languages](./features/languages.mdx), and Arabic and
-Urdu switch the whole layout to right-to-left at once. You can change it again at any time in Settings.
+You start as a **guest**. Every screen opens, you can chat with Kawase and talk to it, and see what it would do.
+Nothing you did as a guest is lost when you sign in: your chat and your contacts move into your account.
 
-## 3. Sign in when you want to keep things
+<Walkthrough light>
+  <WalkStep title="Pick your language" src="start/welcome" zoom="83 3 9">
+    The language pill is on the very first screen. Kawase speaks [ten languages](./features/languages.mdx); Arabic and
+    Urdu turn the whole layout right to left at once.
 
-Guests can explore everything. To hold money, sign in with:
+    <Pin at="66 3">Sound for the welcome story</Pin>
 
-- an **email code**,
-- **Apple**, or
-- **Google**.
+    <Pin at="50 78">Look around as a guest</Pin>
 
-There is no password and no PIN. Signing in creates your wallet (see [safety](./safety.mdx)): one address that works on
-both networks. Everything you did as a guest — your chat, your contacts — moves into your account.
+    <Pin at="50 86">Or create an account now</Pin>
+  </WalkStep>
+  <WalkStep title="Look around" src="start/guest-home" zoom="32 4 11">
+    Home shows what is trending on Arc. Type in the bar, tap the orb to talk, or open **+** for every action.
 
-Setting the wallet up costs you nothing: you sign one authorization and Kawase pays the network fee.
+    <Pin at="38 85">Tell Kawase what to do, in words</Pin>
 
-## 4. Get test money
+    <Pin at="88 85">Every action: send, swap, add money…</Pin>
 
-New accounts start on **testnet**, where money has no value. Ask Kawase "get me test money" or open the faucet from the
-home screen. Each claim brings about **20 test USDC and 20 test EURC** from Circle's faucet, once a day. If the in-app
-claim is refused, Circle's own faucet is at [faucet.circle.com](https://faucet.circle.com) (choose "Arc Testnet").
+    <Pin at="50 95">Talk to Kawase</Pin>
+  </WalkStep>
+  <WalkStep title="Sign in" src="start/sign-in">
+    Signing in is what lets you hold money. There is no password and no PIN.
 
-## 5. Accept your daily allowance
+    <Pin box="5 61 90 7">An email code</Pin>
 
-Kawase asks you once to accept an **everyday allowance**: an amount of USDC per day that the agent may send for you without
-asking again. You approve it with one Face ID. The default is shown on the card before you approve; see the
-[limits table](./safety.mdx#default-limits).
+    <Pin at="50 86">Google</Pin>
 
-## 6. Make your first payment
+    <Pin at="50 94">Apple</Pin>
+  </WalkStep>
+  <WalkStep title="Enter the code" src="start/code" zoom="50 78.5 14">
+    Type the six digits from the email. Kawase signs you in as soon as the last one is in.
+  </WalkStep>
+</Walkthrough>
 
-Type or say, for example (use a friend's @handle, or paste the address of a second wallet of your own):
+## Your wallet and your weekly budget
 
-> send 1 dollar to @friend
+Signing in creates your wallet: **one address that works on both networks**, held by you (see
+[safety](./safety.mdx)). Three short steps follow.
 
-Kawase finds the recipient, checks your balance and limits, and shows the payment card: exact amount, currency, recipient
-and network. Inside your allowance it sends at once; above it, it waits for your Face ID. The card follows the payment
-until the network confirms it, and the receipt links to the block explorer.
+<Walkthrough>
+  <WalkStep title="Pick a handle" src="start/handle">
+    People can pay you at your `@handle`. It's optional, and you can change it later in Settings
+    ([handles](./features/contacts-and-handles.mdx)).
 
-## 7. Try the rest
+    <Pin box="5 37 90 7.5">Your handle, checked as you type</Pin>
+
+    <Pin at="7 47">Free to take</Pin>
+  </WalkStep>
+  <WalkStep title="Wallet setup" src="start/wallet-setup">
+    Kawase creates the wallet and sets it up on the network. It takes a few seconds, and **Kawase pays the network
+    fee**.
+
+    <Pin at="8 33">Created</Pin>
+
+    <Pin at="8 40">Set up on Arc Testnet, through Kawase's relayer</Pin>
+  </WalkStep>
+  <WalkStep title="Your weekly budget" src="start/budget" zoom="17 16 13">
+    Inside the budget Kawase swaps, moves and earns for you **without asking each time**, up to a set amount at a
+    time. Paying someone new, opening a position or raising a limit always asks. You can change the numbers here or
+    later in [Budget](./features/limits-and-control.mdx).
+
+    <Pin at="50 34">What it covers</Pin>
+
+    <Pin at="50 73">Turn it on</Pin>
+
+    <Pin at="50 81">Or set your own numbers</Pin>
+  </WalkStep>
+  <WalkStep title="Give Kawase its first job" src="start/first-job">
+    Pick one and watch it work, or come back to it later.
+
+    <Pin box="5 21.5 90 7.5">Free test USDC from Circle</Pin>
+  </WalkStep>
+  <WalkStep title="Free test money" src="start/faucet" zoom="62 56 15">
+    New accounts start on **testnet**, where money has no value. Each claim brings **20 test USDC and 20 test EURC**
+    from Circle's faucet. If a claim is refused, the card links to Circle's own faucet
+    ([faucet.circle.com](https://faucet.circle.com), "Arc Testnet").
+
+    <Pin at="23 15">Your balance, once it lands</Pin>
+
+    <Pin at="32 4">Testnet: test money only</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Testnet and mainnet
+
+The **network pill** at the top of Home says where you are and switches in one tap, both ways. Testnet is free and
+behaves like the real thing; the first switch to mainnet asks you to confirm that money there is real. See
+[the network toggle](./features/network-toggle.mdx).
+
+## Your first ask
+
+Type or say what you want, the way you'd say it to a person:
+
+> send 1 dollar to @sam
+
+Kawase finds the recipient, checks your balance and budget, and shows the payment card: the exact amount, token,
+recipient and network. Someone new always waits for your confirmation; inside your budget, a payment to a contact goes
+at once. The card follows the payment until the network confirms it, and its receipt links to the explorer. The whole
+flow is on [Send, receive and request](./features/send-receive-request.mdx).
+
+Then try:
 
 - "swap 2 dollars to euros"
 - "move 1 dollar to Base"
 - "put 5 dollars in savings"
-- "every Friday at 9 send 1 dollar to Alex"
-- "keep 20 dollars in my wallet and save the rest"
+- "every Friday at 9 send 1 dollar to Sam"
 - "buy 10 dollars of USDC with a card" (Circle's sandbox on testnet)
-- "remember that Alex is my brother"
+- "remember that Sam is my brother"
 
-On **mainnet**, Markets, trading any token, long and short, and borrowing are there too. See the [features](./features/swap-and-trade.mdx).
-
-Each one shows a card first and tells you exactly what it needs from you.
+Each one shows a card first and says exactly what it needs from you. On **mainnet** there is more: every token on
+Arc, [long and short](./features/long-short.mdx) and borrowing.

@@ -6,6 +6,8 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  // No generated AGENTS.md / CLAUDE.md in the app folder.
+  agentRules: false,
   // A self-contained server for the Docker image (Dockerfile); traced from the workspace root so the
   // @kawase packages it imports are included.
   output: "standalone",
