@@ -10,20 +10,28 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 **Now (in flight)**
 1. [ ] Abu's mainnet wallet setup lands (account 01a13ed0…, wallet 0x53fD9a…; relayer funded 6.98 USDC) → then the
        mainnet test: a real swap, a send, the agent's long/short in chat, a paid x402 call (Abu's money; he approves).
-2. [ ] iOS build 22 built locally with today's JS (Privy only) → `eas submit` → swap it into the Public beta review, so a
-       fresh install's first launch is not the old Turnkey code. Public link https://testflight.apple.com/join/PD3fgXZx.
-3. [ ] api deploy of the relayer watch + 3 s drain (first try failed on an npm network blip) → probe shows no 502.
+2. [ ] iOS build 23 built locally (13:42, Privy-only JS embedded, production channel, runtime 1.0.0) → `eas submit`
+       (running) → swap it into the Public beta review instead of 21, so a fresh install's first launch is not the old
+       Turnkey code. Public link https://testflight.apple.com/join/PD3fgXZx.
+3. [x] api deploy of the relayer watch + 3 s drain: 239 of 240 half-second probes 200 through the swap (one dropped
+       connection), against 15–30 s of 502 before; /health shows `relayers: {testnet: ok, mainnet: ok}`.
 
 **Verify (built, not yet seen live)**
-4. [ ] Agent wallet redesign, signed in (dev mode on localhost).
+4. [x] Agent wallet redesign seen signed in on prod (Abu's session in the pane, viewing only): hero, spent-today bar,
+       cells, Almost empty, top-up, rules, categories, empty Spending. Fixed from it: "asks for Face ID once" (wrong
+       on the web) → "asks you to confirm once"; the card button truncated → "Buy with Apple Pay or card".
 5. [ ] Apple sign-in on iOS through the web flow, on Abu's iPhone via iPhone Mirroring (stop at Apple's page).
 6. [ ] The 1 crash TestFlight logged on build 21 (Xcode Organizer → Crashes).
 7. [ ] Native Markets on testnet: "Switch to mainnet" has its button (10-14 open item; fixed on web).
 
 **Build (owed from earlier rounds)**
 8. [ ] Sweep checklist on every screen, signed in, phone + desktop (STATUS sweep rules below).
-9. [ ] The + fan's first open takes ~1 s (10-14).
-10. [ ] RouteList polish (10-14); venue honesty: a venue we have never executed through is marked quote-only (plan A4).
+9. [x] The + fan's first open (10-14 "~1 s"): measured on the live web in a fresh tab, no long task, worst frame 17 ms.
+       Native: check on the device pass (item 12).
+10. [ ] RouteList polish (10-14). Venue honesty exists: rows carry `executable`, the best route is chosen among
+       executable rows only, and quoted-but-not-executable venues sit under "Also checked" with their reason.
+       Found in the sweep: Swap/Bridge hid the quote when the balance was short (now quoted for any amount, so you see
+       what it gets before Add money); the phone pill's "Balanc…" line dropped (the pad shows the balance + Max).
 11. [ ] Dev-mode run with tx hashes: bridge, send, earn (10-15 morning).
 12. [ ] Real-device pass on Abu's iPhone (iPhone Mirroring; phone-harness optional).
 
