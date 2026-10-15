@@ -22,6 +22,7 @@ import Animated, { FadeIn, FadeOut, useSharedValue } from "react-native-reanimat
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { AgentFeedItem } from "@kawase/api-client";
+import { useStageFrame } from "@kawase/ui-native/lib/stage";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import {
@@ -58,6 +59,10 @@ import { useWalletStatus } from "@/wallet/use-wallet-status";
 /** Home shows a glance; Activity has the whole feed. */
 const FEED_ROWS = 12;
 const EMPTY_PROMPT_KEY = "feed.home.emptyPrompt";
+/** The live markets column beside the feed on a wide desktop stage. */
+const SIDE_COLUMN_PX = 340;
+/** The stage width from which the feed (560 px at least) and the markets column fit side by side, with the gutters. */
+const BESIDE_MIN_STAGE_PX = 1000;
 
 export function HomeScreen() {
   const { t } = useT();
@@ -69,6 +74,9 @@ export function HomeScreen() {
   const account = status === "account";
   const network = user?.activeNetwork ?? "testnet";
   const portfolio = usePortfolio();
+  const emptyWallet = account && portfolio.portfolio !== undefined && portfolio.portfolio.totalUsd === 0;
+  const stage = useStageFrame();
+  const beside = wide && (stage?.width ?? 0) >= BESIDE_MIN_STAGE_PX;
   const wallet = useWalletStatus();
   const fund = useFund();
   const { ask, run: runNow } = useLocalSearchParams<{ ask?: string; run?: string }>();
@@ -222,12 +230,30 @@ export function HomeScreen() {
         onMomentumScrollEnd={(event) => onScrollEnd(event.nativeEvent.contentOffset.y)}
         onScrollEndDrag={(event) => onScrollEnd(event.nativeEvent.contentOffset.y)}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, wide ? styles.wideContent : null, { paddingBottom: composerClearance }]}
+        contentContainerStyle={[styles.content, wide ? (beside ? styles.besideContent : styles.wideContent) : null, { paddingBottom: composerClearance }]}
       >
-        {hero}
-        {runSection}
-        {feedSection}
-        {account ? null : <MarketsGlance />}
+        {beside ? (
+          // A desktop stage wide enough for both: the agent's column, and the live markets beside it (the sweep rule:
+          // a desktop window uses its width), for everyone.
+          <View style={styles.columns}>
+            <View style={styles.mainColumn}>
+              {hero}
+              {runSection}
+              {feedSection}
+            </View>
+            <View style={styles.sideColumn}>
+              <MarketsGlance />
+            </View>
+          </View>
+        ) : (
+          <>
+            {hero}
+            {runSection}
+            {feedSection}
+            {/* Guests, and an account with nothing in it yet, see the live markets (a new account's Home was emptier than a guest's). */}
+            {!account || emptyWallet ? <MarketsGlance /> : null}
+          </>
+        )}
       </Animated.ScrollView>
 
       {scrolledPast && runStatus ? (
@@ -314,6 +340,10 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   content: { gap: SPACE.xl, paddingHorizontal: SPACE.lgPlus, paddingTop: SPACE.sm },
   wideContent: { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center", paddingTop: SPACE.xxl },
+  besideContent: { width: "100%", maxWidth: WIDE_COLUMN_PX + SIDE_COLUMN_PX + SPACE.xxl, alignSelf: "center", paddingTop: SPACE.xxl },
+  columns: { flexDirection: "row", alignItems: "flex-start", gap: SPACE.xxl },
+  mainColumn: { flex: 1, minWidth: 0, gap: SPACE.xl },
+  sideColumn: { width: SIDE_COLUMN_PX },
   section: { gap: SPACE.md },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   strip: { position: "absolute", start: SPACE.lgPlus, end: SPACE.lgPlus },
