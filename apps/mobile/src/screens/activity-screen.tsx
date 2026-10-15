@@ -72,10 +72,10 @@ const CUT_LABEL: Record<Cut, string> = {
   trades: "activityFeed.filterTrades",
 };
 const ASKABLE: readonly ActivityFilter[] = ["held", "skipped", "watching", "found"];
-/** The list (600 px at least) and the receipt panel side by side, with the gutters. */
-const SPLIT_MIN_STAGE_PX = 1040;
+/** The list (530 px at least) and the receipt panel side by side, with the gutters: from Home's two-column width. */
+const SPLIT_MIN_STAGE_PX = 1000;
 const LIST_MAX_PX = 640;
-const PANEL_PX = 420;
+const PANEL_PX = 380;
 const GUTTERS = 2;
 
 export function ActivityScreen() {
