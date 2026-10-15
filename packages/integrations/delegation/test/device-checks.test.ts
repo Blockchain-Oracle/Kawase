@@ -1,7 +1,7 @@
 // M6: the phone checks what it signs against what is compiled into the app, whatever the server sent. Every grant
 // Kawase builds today must pass the device decoder; a grant whose bytes differ from its card, a delegation for another
 // wallet, contract or chain, an unknown caveat, a revoke that does more than revoke, and a 7702 authorization for any
-// contract but the DeleGator or any chain but Arc are refused before Turnkey is asked for a signature.
+// contract but the DeleGator or any chain but Arc are refused before Privy is asked for a signature.
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { getSmartAccountsEnvironment } from "@metamask/smart-accounts-kit";
@@ -26,7 +26,7 @@ import {
 } from "../src";
 import { DELEGATION_FRAMEWORK, getNetwork } from "@kawase/networks";
 
-import { ARC_CHAIN_IDS, SigningRefused, checkAuthorization, checkGrant, checkRevoke, checkTransferGrant, checkTypedData, decodeDelegation, turnkeySigner, type ShownGrant } from "@kawase/wallet";
+import { ARC_CHAIN_IDS, SigningRefused, checkAuthorization, checkGrant, checkRevoke, checkTransferGrant, checkTypedData, decodeDelegation, privySigner, type ShownGrant } from "@kawase/wallet";
 
 const network = getNetwork("testnet");
 const wallet = privateKeyToAccount(generatePrivateKey()).address;
@@ -80,16 +80,15 @@ test("a 7702 authorization: only the DeleGator, only on Arc", () => {
   refused(() => checkAuthorization({ contractAddress: DELEGATION_FRAMEWORK.eip7702StatelessDeleGator, chainId: 8453 }), /chain other than Arc/);
 });
 
-test("the Turnkey signer refuses before Turnkey is asked for anything", async () => {
+test("the Privy signer refuses before Privy is asked for anything", async () => {
   let asked = 0;
-  const signer = turnkeySigner({
+  const key = privateKeyToAccount(generatePrivateKey());
+  const signer = privySigner({
     address: wallet,
-    approval: "session",
-    signRawPayload: async () => {
+    signHash: async (hash) => {
       asked += 1;
-      return { r: "01".repeat(32), s: "01".repeat(32), v: "00" };
+      return key.sign({ hash });
     },
-    signTransaction: async () => "0x",
   });
   await assert.rejects(signer.signAuthorization({ contractAddress: other, chainId: 5042002, nonce: 0 }), SigningRefused);
   await assert.rejects(signer.signAuthorization({ contractAddress: DELEGATION_FRAMEWORK.eip7702StatelessDeleGator, chainId: 0, nonce: 0 }), SigningRefused);

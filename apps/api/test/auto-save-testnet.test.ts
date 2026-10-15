@@ -1,5 +1,5 @@
 // Auto-save on Arc testnet (Stage 8b): "keep 1.2 USDC ready, the rest earns" is drafted, its three grants signed by
-// the wallet (a local key standing in for Turnkey; one Face ID on a phone) and turned on. The runner inside the api
+// the wallet (a local key standing in for Privy; one Face ID on a phone) and turned on. The runner inside the api
 // saves what is above the line at once, tops the wallet up from savings when it drops below, and money arriving wakes
 // it (the incoming watcher) so the new money is saved within a tick — while the money coming back from savings is not
 // called "received". Cancelling revokes all three grants in one transaction. The chain-side bound (nothing can go
@@ -27,7 +27,7 @@ import { RequestService } from "../src/requests/service";
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -46,14 +46,9 @@ test("auto-save on Arc testnet: saves above the line, tops up below it, wakes wh
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "saver", email: `save-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), undefined, undefined, appKitEarn(env), { automationTickMs: 1000, reconcileIntervalMs: 2000 });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`save-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), undefined, undefined, appKitEarn(env), { automationTickMs: 1000, reconcileIntervalMs: 2000 });
   const watcherDb = createDb(process.env.DATABASE_URL!, { poolSize: 2 });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   const balance = () => client.readContract({ address: network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [wallet.address] });
@@ -79,15 +74,12 @@ test("auto-save on Arc testnet: saves above the line, tops up below it, wakes wh
     }
   };
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "save-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "save-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

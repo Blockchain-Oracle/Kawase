@@ -10,7 +10,7 @@ red, no por la confianza en la IA ni en los servidores de Kawase. Esta página e
 ## Tu billetera
 
 - Cuando inicias sesión (código por email, Apple o Google), Kawase crea una cuenta común al estilo de Ethereum (una **EOA**) cuya clave
-  está en manos de **Turnkey**, en hardware seguro, dentro de una suborganización que te pertenece. No hay PIN ni
+  guarda **Privy**, dividida en enclaves seguros para que nadie la tenga nunca completa. No hay PIN ni
   contraseña. Es **una sola dirección en ambas redes**.
 - Después, Kawase actualiza esa misma cuenta con **EIP-7702**, apuntando su código a `EIP7702StatelessDeleGator` de MetaMask, que ha sido auditado.
   Firmas una autorización; el relayer de Kawase la envía y paga la comisión, así que la configuración no te cuesta
@@ -46,9 +46,7 @@ Por encima del límite, Kawase prepara la transacción exacta, te muestra la can
 a tu billetera que firme **esa** transacción. Después, el servidor comprueba que los bytes firmados coincidan con los datos de la tarjeta: remitente, destinatario,
 cantidad, red y comisiones, antes de transmitirla. Si no coinciden, el pago se bloquea.
 
-Hoy, la firma procede de tu sesión iniciada, protegida por la comprobación biométrica del dispositivo. **Las passkeys están por llegar**
-(necesitan el dominio propio de Kawase): cuando añadas una, Turnkey la exigirá para cada firma de la billetera. Así, ni una
-sesión robada ni el propio servidor de Kawase podrán firmar por ti.
+La firma sale de tu propia billetera, tras la comprobación del titular: Face ID (o el código del dispositivo) en el teléfono y, en la web, un código de seis dígitos que Kawase envía a tu correo verificado. El servidor de Kawase nunca tiene tu clave, así que no puede firmar por ti.
 
 ## Automatizaciones: fijadas en la cadena
 

@@ -12,7 +12,7 @@ import type { OnrampOrderView } from "@kawase/api-client";
 import { chainEvents, users } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
-import { noChains, deleteUser, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { deleteUser, jsonRequest, noChains, testApp } from "./helpers";
 import type { CrossChainService } from "../src/crosschain/service";
 import { crossChainPort } from "../src/onramp/bridge-port";
 import { onrampRouter, type ProviderEngine, type ProviderOrderState } from "../src/onramp/engine";
@@ -47,7 +47,7 @@ function fakeCoinbase(state: { current: ProviderOrderState; sandbox: boolean; mi
 }
 
 test("coinbase orders: Base delivery starts the Arc leg once, the Arc arrival settles, a sandbox never does", { skip: !live, timeout: 120_000 }, async () => {
-  const { app, db, close } = testApp(fakeTurnkey({}));
+  const { app, db, close } = testApp();
   const guest = (await (await app.request("/auth/guest", jsonRequest("POST", { device: { installationId: randomUUID(), platform: "ios" } }))).json()) as { user: { id: string } };
   const userId = guest.user.id;
   after(async () => {

@@ -36,8 +36,6 @@ export const wallet: Catalog["wallet"] = {
   oauthReturnTitle: "正在完成登录",
   oauthReturnGoogle: "使用你的 Google 账号",
   oauthReturnApple: "使用你的 Apple 账号",
-  approveTitle: "批准",
-  slideToApprove: "滑动以批准",
   creatingVerb: "正在创建你的钱包",
   signingInVerb: "正在登录",
 };

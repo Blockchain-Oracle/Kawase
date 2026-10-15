@@ -11,7 +11,6 @@ export type DeviceView = {
   /** The device this request came from. */
   current: boolean;
   signedIn: boolean;
-  turnkeyPublicKey: string | null;
   /** Roughly where it was last seen ("Lisbon, Portugal"). */
   location: string | null;
 };
@@ -28,13 +27,17 @@ export type AccountHoldings = {
 
 export type AccountDeleted = { deleted: true; handleHeldDays: number };
 
+/** The web's owner check: where the code went (masked) and until when it works. */
+export type ApprovalCodeSent = { sentTo: string; expiresAt: string };
+
 export type AccountApi = {
   devices: () => Promise<{ devices: DeviceView[] }>;
   touchDevice: (input: { name?: string; appVersion?: string }) => Promise<void>;
-  signOutDevice: (id: string) => Promise<{ turnkeyPublicKey: string | null }>;
-  signOutEverywhere: () => Promise<{ turnkeyPublicKeys: string[] }>;
-  syncEmail: () => Promise<{ email: string | null }>;
+  signOutDevice: (id: string) => Promise<{ signedOut: true }>;
+  signOutEverywhere: () => Promise<{ signedOut: number }>;
   exportRecorded: () => Promise<void>;
+  sendApprovalCode: () => Promise<ApprovalCodeSent>;
+  verifyApprovalCode: (code: string) => Promise<{ approved: true }>;
   holdings: () => Promise<AccountHoldings>;
   revokeAllRequest: (network: NetworkId) => Promise<{ revoke: RevokeRequest | null }>;
   deleteAccount: (confirm: string) => Promise<AccountDeleted>;

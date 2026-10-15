@@ -12,7 +12,6 @@ import { SigningRefused, checkGrant, receiptOf, type ShownGrant } from "@kawase/
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
@@ -34,7 +33,7 @@ function checkAutomationGrant(typedData: unknown, receipt: unknown, automation: 
 
 export function useAutomation(initial: AutomationView | undefined) {
   const { t } = useT();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const [automation, setAutomation] = React.useState<AutomationView | undefined>(initial);
   const [busy, setBusy] = React.useState(false);
   const [followUntil, setFollowUntil] = React.useState(0);

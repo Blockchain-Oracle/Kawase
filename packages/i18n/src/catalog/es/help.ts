@@ -24,7 +24,7 @@ export const help: Catalog["help"] = {
   copied: "Copiado",
   keyTitle: "Tu clave",
   keyBody:
-    "La clave de tu billetera la crea y la guarda Turnkey en hardware seguro. Kawase nunca la ve; la desbloquean tu Face ID o tu llave de acceso.",
+    "La clave de tu billetera se divide y la guarda Privy en enclaves seguros. Kawase nunca la ve; solo tu propio inicio de sesión puede usarla.",
   codeTitle: "Funciones inteligentes en tu dirección",
   codeBody:
     "Tu dirección ejecuta el código abierto DeleGator de MetaMask (EIP-7702), así que varios pasos van en un solo Face ID y tus límites se hacen cumplir. Nunca mueve dinero por sí solo.",

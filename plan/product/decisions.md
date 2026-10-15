@@ -7,9 +7,9 @@ Verified: 2026-10-02
 | # | Question | Decision | Why |
 |---|---|---|---|
 | X1 | Chat sends inside the allowance with no tap; voice waits for a tap. Contradiction? | Keep both, on purpose | Typed text is exact; speech can mishear "15"/"50" or "Amina"/"Amir" |
-| X2 | Is Face ID the binding approval? | No: the Turnkey session-key signature is. Face ID unlocks the Keychain key. Web uses an email code until passkeys | Accurate security wording |
+| X2 | Is Face ID the binding approval? | No: the person's own Privy wallet signature is (D41). Face ID is the owner's check before it; the web uses a code Kawase emails | Accurate security wording |
 | X3 | Default allowance | Per-token daily caps; testnet $5,000/day, mainnet $500/day; default set = the stablecoins held; any token can be added; all signed with one Face ID | One rule replacing three numbers |
-| X4 | One wallet or two per person? | One Turnkey address on both networks; Circle TEST/LIVE keys are platform-only | D33 |
+| X4 | One wallet or two per person? | One Privy address on both networks; Circle TEST/LIVE keys are platform-only | D33 |
 | X5 | Funds stranded on other chains | Portfolio reads every supported chain; Bring to Arc; bridges and withdraws accept any recipient | No dead money |
 | X6 | Contact address-change hold | Ends by review with Face ID, not by time; automations pinned to the old address pause | Safety over convenience |
 | X7 | Raise a limit | Face ID + a new on-chain grant; tightening is instant | D33 |

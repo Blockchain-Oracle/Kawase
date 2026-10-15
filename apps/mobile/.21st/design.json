@@ -1319,7 +1319,7 @@
         "ids": [
           23527
         ],
-        "port": "apps/mobile/src/account/export-wallet-screen.tsx: a deliberate hold opens Privy's export window (web) / shows the Turnkey phrase",
+        "port": "apps/mobile/src/account/export-wallet-screen.tsx: a deliberate hold opens Privy's export window (web) / the web app's export page (phone)",
         "deviations": "none"
       }
     ],

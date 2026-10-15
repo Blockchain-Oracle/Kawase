@@ -1,5 +1,5 @@
 // Automations on Arc testnet (Stage 8 exit): "every day send 0.05 USDC to Alex" is drafted, its grant signed by the
-// wallet (a local key standing in for Turnkey) and turned on, and the runner inside the api pays Alex without asking.
+// wallet (a local key standing in for Privy) and turned on, and the runner inside the api pays Alex without asking.
 // Then the guarantees: the same occurrence never pays twice (one row per automation and time), a second run in the
 // same period is refused because the grant's on-chain cap is used, the ops wallet itself cannot redeem the grant to
 // anyone else or above the cap (the chain refuses), pause / skip work, and cancelling revokes the grant on chain.
@@ -21,7 +21,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -39,14 +39,9 @@ test("automations on Arc testnet: unattended runs, bounded on chain", { skip: !l
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "automator", email: `auto-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), undefined, undefined, undefined, { automationTickMs: 1000 });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`auto-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), undefined, undefined, undefined, { automationTickMs: 1000 });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -62,15 +57,12 @@ test("automations on Arc testnet: unattended runs, bounded on chain", { skip: !l
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "auto-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "auto-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

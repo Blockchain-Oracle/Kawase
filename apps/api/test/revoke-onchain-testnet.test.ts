@@ -1,7 +1,7 @@
 // H4 on Arc testnet: turning a grant off is an on-chain fact, not a database row. Raising an allowance disables the old
 // delegation on chain inside the same approval (the relayer pays), so the ops wallet can no longer redeem it; and
 // revoke-all covers every grant the chain still honours, including one the database had already set aside.
-// The wallet is a local key standing in for Turnkey; the ops wallet is Circle's (it only funds the wallet here).
+// The wallet is a local key standing in for Privy; the ops wallet is Circle's (it only funds the wallet here).
 // Skipped without the server keys in the root .env. Run alone: pnpm --filter @kawase/api exec tsx --test test/revoke-onchain-testnet.test.ts
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -21,7 +21,7 @@ import { encodeRedeemTransfer } from "@kawase/integrations-delegation";
 import { DELEGATION_FRAMEWORK, getNetwork } from "@kawase/networks";
 
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, revokeSubmitBody, signRevokeRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, revokeSubmitBody, signRevokeRequest, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -42,14 +42,9 @@ test("H4: a raise disables the old allowance on chain; revoke-all covers a grant
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const ops = env.OPS_WALLET_ADDRESS_TESTNET as Address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "revoke", email: `revoke-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains);
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`revoke-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains);
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -60,9 +55,7 @@ test("H4: a raise disables the old allowance on chain; revoke-all covers a grant
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "revoke-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "revoke-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
@@ -74,7 +67,6 @@ test("H4: a raise disables the old allowance on chain; revoke-all covers a grant
     return (await answer.json()) as T;
   };
 
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = await json<{ authorization: { contractAddress: Hex; chainId: number; nonce: number } }>(call("POST", "/wallet/setup/request", { network: "testnet" }), "setup request");
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(await call("POST", "/wallet/setup/submit", { network: "testnet", authorization: { address: signedAuth.address, chainId: signedAuth.chainId, nonce: signedAuth.nonce, r: signedAuth.r, s: signedAuth.s, yParity: signedAuth.yParity } }), 200, "setup");

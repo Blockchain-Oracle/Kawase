@@ -8,7 +8,7 @@
 // Failures say what failed (Codex review R08): a wrong or expired code, too many codes, no connection, or "you're
 // signed in, but the wallet wasn't created" — which keeps the sign-in and retries only the wallet. A sheet closed
 // mid-request ignores the late answer instead of navigating, and a new code can be asked for after a short wait.
-// When Turnkey refuses more codes for an email, sending stays off with a countdown until it takes them again.
+// When Privy refuses more codes for an email, sending stays off with a countdown before the next try.
 import * as React from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +25,7 @@ import { useT } from "@/i18n";
 import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { classifySignInFailure, type SignInFailure } from "@/wallet/sign-in-errors";
-import { useTurnkeyAccount, type SocialProvider } from "@/wallet/use-turnkey-account";
+import { useWalletAccount, type SocialProvider } from "@/wallet/use-wallet-account";
 import { AuthStageError } from "@/wallet/auth-stage";
 
 import type { SignInReason } from "./sign-in-provider";
@@ -35,22 +35,22 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** A new code can be asked for this long after the last one was sent. */
 const RESEND_COOLDOWN_S = 30;
 /**
- * After Turnkey refuses a new code ("Max number of OTPs have been initiated"), how long the sheet waits before
- * offering another: Turnkey keeps at most 3 active codes per user, each living 5 minutes
- * (docs.turnkey.com/features/authentication/email, "OTP Rate Limits").
+ * After Privy refuses a new code (too many asked for), how long the sheet waits before offering another. Privy does
+ * not publish the limit (its codes live 10 minutes, docs.privy.io "Email" login), so the sheet waits a minute and then
+ * lets the person try again; a second refusal waits again.
  */
-const OTP_LIMIT_COOLDOWN_S = 300;
+const OTP_LIMIT_COOLDOWN_S = 60;
 const MS_PER_SECOND = 1_000;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_DIGITS = 2;
 
-/** Per email, until when Turnkey refuses new codes. Kept outside the sheet so closing and reopening it can't skip the wait. */
+/** Per email, until when Privy refuses new codes. Kept outside the sheet so closing and reopening it can't skip the wait. */
 const codesRefusedUntil = new Map<string, number>();
 const refusalKey = (address: string) => address.trim().toLowerCase();
 const minutesAndSeconds = (seconds: number) =>
   `${Math.floor(seconds / SECONDS_PER_MINUTE)}:${String(seconds % SECONDS_PER_MINUTE).padStart(SECONDS_DIGITS, "0")}`;
 
-type Step = { name: "methods" } | { name: "code"; email: string; otpId: string; otpEncryptionTargetBundle: string };
+type Step = { name: "methods" } | { name: "code"; email: string };
 type Pending = "code" | "verify" | "resend" | "continue" | SocialProvider | "wallet" | undefined;
 
 type SignInSheetProps = {
@@ -67,7 +67,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
   const { mode } = useTheme();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
-  const turnkey = useTurnkeyAccount();
+  const account = useWalletAccount();
   const [step, setStep] = React.useState<Step>({ name: "methods" });
   const [email, setEmail] = React.useState("");
   const [code, setCode] = React.useState("");
@@ -110,7 +110,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
     return () => clearInterval(timer);
   }, [resendAt, refusedUntil, now]);
   const resendIn = Math.max(0, Math.ceil((resendAt - now) / MS_PER_SECOND));
-  /** Seconds until Turnkey takes a new code for this email again; while it runs, sending is off. */
+  /** Seconds until a new code for this email is offered again; while it runs, sending is off. */
   const refusedFor = Math.max(0, Math.ceil((refusedUntil - now) / MS_PER_SECOND));
 
   const busy = pending !== undefined;
@@ -135,7 +135,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
     setPending("wallet");
     setError(undefined);
     try {
-      await turnkey.ensureWallet();
+      await account.ensureWallet();
       if (started !== generation.current) return;
       setPending(undefined);
       setWalletFor(undefined);
@@ -203,9 +203,9 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
     setPending(resend ? "resend" : "code");
     setError(undefined);
     try {
-      const sent = await turnkey.sendCode(address);
+      await account.sendCode(address);
       if (started !== generation.current) return;
-      setStep({ name: "code", email: address, ...sent });
+      setStep({ name: "code", email: address });
       setCode("");
       setNow(Date.now());
       setResendAt(Date.now() + RESEND_COOLDOWN_S * MS_PER_SECOND);
@@ -213,7 +213,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
       if (started !== generation.current) return;
       const failure = classifySignInFailure(problem);
       if (failure === "rateLimited") {
-        // Said by the countdown on the button and the line under it, which both end when Turnkey takes codes again.
+        // Said by the countdown on the button and the line under it, which both end when a new code can be asked for.
         codesRefusedUntil.set(refusalKey(address), Date.now() + OTP_LIMIT_COOLDOWN_S * MS_PER_SECOND);
         setRefusals(Object.fromEntries(codesRefusedUntil));
         setNow(Date.now());
@@ -229,12 +229,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
     if (step.name !== "code" || value.trim().length !== CODE_LENGTH || busy) return;
     void finish(
       () =>
-        turnkey.verifyCode({
-          email: step.email,
-          code: value,
-          otpId: step.otpId,
-          otpEncryptionTargetBundle: step.otpEncryptionTargetBundle,
-        }),
+        account.verifyCode({ email: step.email, code: value }),
       "verify",
     );
   };
@@ -294,27 +289,27 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
             <Text>{t("common.retry")}</Text>
           </Button>
         ) : resumeSession ? (
-          <Button size="lg" disabled={busy} onPress={() => void finish(turnkey.linkSession, "continue")}>
+          <Button size="lg" disabled={busy} onPress={() => void finish(account.linkSession, "continue")}>
             {busy ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
             <Text>{t("common.retry")}</Text>
           </Button>
         ) : step.name === "methods" ? (
           <>
-            {!turnkey.available ? (
+            {!account.available ? (
               <Text className="text-muted-foreground bg-muted rounded-2xl px-4 py-3 text-sm">
                 {t("signIn.webUnavailable")}
               </Text>
             ) : null}
 
-            {turnkey.signedIn && turnkey.email && !recoveryRequired ? (
+            {account.signedIn && account.email && !recoveryRequired ? (
               <Button
                 size="lg"
                 variant="secondary"
                 disabled={busy}
-                onPress={() => void finish(turnkey.linkSession, "continue")}
+                onPress={() => void finish(account.linkSession, "continue")}
               >
                 {pending === "continue" ? <ActivityIndicator color={colors.foreground} /> : null}
-                <Text numberOfLines={1}>{t("signIn.continueAs", { email: turnkey.email })}</Text>
+                <Text numberOfLines={1}>{t("signIn.continueAs", { email: account.email })}</Text>
               </Button>
             ) : null}
 
@@ -331,12 +326,12 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
               textContentType="emailAddress"
               keyboardType="email-address"
               returnKeyType="send"
-              editable={turnkey.available && !busy}
+              editable={account.available && !busy}
               onSubmitEditing={() => (EMAIL_PATTERN.test(email.trim()) && refusedFor === 0 ? void sendCode() : undefined)}
             />
             <Button
               size="lg"
-              disabled={busy || !turnkey.available || !EMAIL_PATTERN.test(email.trim()) || refusedFor > 0}
+              disabled={busy || !account.available || !EMAIL_PATTERN.test(email.trim()) || refusedFor > 0}
               onPress={() => void sendCode()}
             >
               {pending === "code" ? <ActivityIndicator color={colors["primary-foreground"]} /> : null}
@@ -347,10 +342,10 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
               </Text>
             </Button>
 
-            {turnkey.providers.length > 0 ? (
+            {account.providers.length > 0 ? (
               <>
                 <OrDivider label={t("signIn.or")} />
-                {turnkey.providers
+                {account.providers
                   // Apple first on Apple platforms (HIG), Google first elsewhere.
                   .slice()
                   .sort((a) => (a === (Platform.OS === "ios" ? "apple" : "google") ? -1 : 1))
@@ -362,7 +357,7 @@ export function SignInSheet({ open, onClose, onSignedIn, reason }: SignInSheetPr
                       scheme={mode}
                       pending={pending === provider}
                       disabled={busy && pending !== provider}
-                      onPress={() => void finish(() => turnkey.signInWith(provider), provider)}
+                      onPress={() => void finish(() => account.signInWith(provider), provider)}
                     />
                   ))}
               </>

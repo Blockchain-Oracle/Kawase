@@ -1,5 +1,5 @@
 {
- "builtAt": "2026-10-02",
+ "builtAt": "2026-10-15",
  "entries": [
   {
    "id": "context-01-arc-account-abstraction-relayers-paymasters-md-1",
@@ -467,13 +467,19 @@
    "id": "apps-docs-content-docs-en-faq-mdx-5",
    "title": "FAQ: Which countries and currencies?",
    "source": "https://docs.getkawase.xyz/docs/faq",
-   "text": "Kawase works with USDC (dollars) and EURC (euros) on Arc today, in ten languages. More tokens are on the way — see\nwhat works today."
+   "text": "Kawase is built around USDC (dollars) and EURC (euros) on Arc, in ten languages. On mainnet you can also hold and\ntrade any token on Arc, and buy with a card where Circle's Onramp serves you. See what works today."
   },
   {
    "id": "apps-docs-content-docs-en-faq-mdx-6",
    "title": "FAQ: What happens to a payment if my phone dies mid-way?",
    "source": "https://docs.getkawase.xyz/docs/faq",
    "text": "Nothing is lost or doubled. Each payment is recorded before it is sent; Kawase keeps checking the network until it knows\nthe outcome, and only a receipt with the exact transfer marks it paid. Automations are claimed once per run and recovered\nafter a restart."
+  },
+  {
+   "id": "apps-docs-content-docs-en-faq-mdx-7",
+   "title": "FAQ: Can I use it without Kawase one day?",
+   "source": "https://docs.getkawase.xyz/docs/faq",
+   "text": "Yes. Your account is an ordinary account on Arc, and Settings → Account → Export wallet gives you its private key (shown by Privy's own window); see\nWithdraw without Kawase."
   },
   {
    "id": "apps-docs-content-docs-en-faq-mdx-8",
@@ -491,61 +497,109 @@
    "id": "apps-docs-content-docs-en-features-automations-mdx-0",
    "title": "Automations",
    "source": "https://docs.getkawase.xyz/docs/features/automations",
-   "text": "Automations are where an agent earns its keep: things that should happen without you opening the app. Every automation\nruns unattended, but inside an on-chain grant you sign once — so even Kawase itself cannot make it do more."
+   "text": "Automations are where an agent earns its keep: things that should happen without you opening the app. Every automation\nruns unattended, but inside an on-chain grant you sign once, so even Kawase itself cannot make it do more."
   },
   {
    "id": "apps-docs-content-docs-en-features-automations-mdx-1",
    "title": "Automations: Scheduled payments",
    "source": "https://docs.getkawase.xyz/docs/features/automations",
-   "text": "\"Every Friday at 9 send 10 dollars to Alex.\" Kawase reads it back with the next runs and the maximum it could ever move,\nthen you turn it on with one Face ID. That signs the automation's own grant: it may only transfer that token, only\nto Alex's address (pinned on chain), and only up to the amount per period. Schedules: every day, every week on a weekday,\nor every month on day 1–28, in your own time zone.\n\nEach run happens exactly once: if Kawase's server restarts mid-run, the run is recovered under the same id, never\npaid twice. A run that can't go ahead (not enough money, over a limit) is skipped with a reason in your inbox."
+   "text": "\"Every Friday at 9 send 10 dollars to Alex.\" Kawase reads it back with the next runs and the maximum it could ever move,\nthen you turn it on with one Face ID. That signs the automation's own grant: it may only transfer that token, only\nto Alex's address (pinned on chain), and only up to the amount per period. Schedules: every day, every week on a weekday,\nor every month on day 1–28, in your own time zone.\n\nEach run happens exactly once: if Kawase's server restarts mid-run, the run is recovered under the same id and never\npaid twice. Weekly and monthly runs get a reminder a day before (with a heads-up when your wallet is short). A run\nthat can't go ahead is skipped with a reason in your inbox, and a run skipped for lack of money is retried once\nwhen money arrives."
   },
   {
    "id": "apps-docs-content-docs-en-features-automations-mdx-2",
    "title": "Automations: Auto-save",
    "source": "https://docs.getkawase.xyz/docs/features/automations",
-   "text": "\"Keep 100 dollars in my wallet and save the rest.\" Auto-save keeps that amount ready and moves anything above it into your\nown vault savings (see Earn); when your wallet drops below the line, it tops it back up from\nsavings. It checks daily and whenever money arrives. Its grants only allow moving USDC between your wallet and your own\nsavings — never anywhere else."
+   "text": "\"Keep 100 dollars in my wallet and save the rest.\" Auto-save keeps that amount ready and moves anything above it into your\nown vault savings (see Earn). When your wallet drops below the line, it tops it back up from\nsavings. It checks daily and whenever money arrives. Its grants only allow moving USDC between your wallet and your own\nsavings, never anywhere else."
   },
   {
    "id": "apps-docs-content-docs-en-features-automations-mdx-3",
-   "title": "Automations: Rules",
+   "title": "Automations: DCA",
    "source": "https://docs.getkawase.xyz/docs/features/automations",
-   "text": "\"When my balance goes above 500, bridge what's above 400 to my Base address.\" Rules have:\n\n- a trigger: the balance goes above or below an amount, or money arrives (optionally from someone, or at least an\n  amount);\n- an action: bridge USDC to your own address on another network (the route fee is capped on chain), save it into your\n  vault, or just alert you;\n- an amount: what is above a line, a share of the money that arrived, or a fixed amount.\n\nA balance rule fires once per crossing and re-arms when the balance goes back."
+   "text": "- DCA (\"buy 20 dollars of cirBTC every week\") buys a token with a fixed amount on a schedule. Each run waits for you in\n  Needs you with a fresh executable quote."
   },
   {
    "id": "apps-docs-content-docs-en-features-automations-mdx-4",
+   "title": "Automations: Rules",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "\"When my balance goes above 500, bridge what's above 400 to my Base address.\" A rule has:\n\n- a trigger: the balance goes above or below an amount; money arrives (optionally from someone, or at least an\n  amount); money goes out (round-ups); or a token's price crosses a level (checked on the executable quote every\n  two minutes);\n- an action: bridge USDC to your own address on another network (the route fee is capped on chain), save into your\n  vault, send to someone (bounded on chain), swap, or just alert you;\n- an amount: what is above a line, a share of the money that arrived, or a fixed amount.\n\nA balance or price rule fires once per crossing and re-arms when it goes back. A round-up rule (\"round up my\npayments and save the change\") saves the difference from each send into your own vault."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-5",
+   "title": "Automations: Practice first",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "A new automation can start in practice: it runs without a grant, and each run is the exact transfer as a dry run on\nArc, recorded as \"would have\". Nothing moves. When you're happy, Go live signs its grant. Ask \"what would happen if\nthis ran now?\" for a dry run on demand. With global practice mode on, every\nautomation runs in practice."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-6",
+   "title": "Automations: Needs you",
+   "source": "https://docs.getkawase.xyz/docs/features/automations",
+   "text": "An automation never swaps on its own, and never pays above its grant or past your allowlist or new-recipient rules. When a\nrun reaches such a step it waits in Needs you (inbox and Automations, with a push where notifications are set up).\nApproving opens the same send or swap you'd make by hand. Unanswered items are reminded after 12 hours and expire after\n24. See Needs you."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-automations-mdx-7",
    "title": "Automations: Managing them",
    "source": "https://docs.getkawase.xyz/docs/features/automations",
-   "text": "From the Automations screen or in chat: list, pause, resume, skip the next run, and cancel. Cancelling\nalso revokes the grant on chain, so the permission is gone, not just hidden."
+   "text": "From the Automations screen or in chat: list, pause, resume, skip the next run, edit and cancel.\n\n- Editing in place: asking for less applies at once; asking for more signs a new grant together with the old one's\n  revoke.\n- Cancelling also revokes the grant on chain, so the permission is gone, not just hidden."
   },
   {
    "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-0",
-   "title": "Bridge and withdraw: Bridge USDC out of Arc (today)",
+   "title": "Bridge and withdraw",
    "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
-   "text": "\"Move 20 dollars to Base\" or the Bridge screen. Kawase moves USDC from Arc to your own address on Base, Ethereum,\nArbitrum, Optimism, Polygon or Avalanche through Circle CCTP with Circle's forwarder:\n\n- Your USDC is burned on Arc and minted on the destination network by Circle; you need no gas on the other side. The\n  fee comes out of the amount and is shown before you confirm.\n- It takes about a minute. The card follows three steps: the burn on Arc, Circle's attestation, and the mint on the\n  destination network — and it checks the money actually arrived at your address there.\n- You confirm with one Face ID. The approval and the burn go as one transaction from your wallet. The fee is capped:\n  if the route's fee rises above the cap you were shown, nothing is sent."
+   "text": "Ask Kawase (\"send 20 dollars to Alex on Base\", \"bring my USDC from Base to Arc\") and it puts a move card in front of\nyou, which also opens full screen as Move to another chain. It moves USDC between Arc and Base, Ethereum, Arbitrum,\nOptimism, Polygon or Avalanche."
   },
   {
    "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-1",
-   "title": "Bridge and withdraw: Routes compared",
+   "title": "Bridge and withdraw: Out of Arc, to anyone",
    "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
-   "text": "Before you confirm, Kawase can compare the same transfer across providers and rank them by what actually arrives:\n\n- Circle CCTP — the route Kawase executes today.\n- LI.FI (both networks), Relay and deBridge (mainnet) — quoted for comparison only today.\n- Across and Relay as executed routes, and bridging into Arc, are being added."
+   "text": "The recipient can be you, a contact, an @handle or any 0x address. Kawase asks three providers for a live\nquote:\n\n- Circle CCTP: Circle burns the USDC on Arc and mints it on the other network;\n- Across and Relay: a solver pays out on the other side, and is repaid from your deposit.\n\nThey are ranked by what arrives after fees, with ties going to the faster one. Up to three routes are shown with the\nprovider's mark, what arrives, the fee and the expected time. The best one is picked for you, and you can tap another.\n\nBefore your wallet is asked, Kawase builds the chosen provider's transaction and checks it: for Across it decodes the\ndeposit (who pays, who receives, which token, the amount, the minimum, the destination, no extra message); for Relay it\nchecks the approval and deposit into Relay's listed depository; for CCTP, Circle's own call checks. The transaction is\nsimulated from your wallet, then sent as one transaction after you slide and confirm with Face ID."
   },
   {
    "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-2",
-   "title": "Bridge and withdraw: Withdraw anywhere (coming)",
+   "title": "Bridge and withdraw: Bring to Arc",
    "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
-   "text": "Today you can already send USDC or EURC to any address on Arc — including an exchange's Arc deposit address — and\nbridge USDC to your own address on the six networks above. Withdrawing to any address on another network (a friend,\nan exchange elsewhere) in one step is coming.\n\nIf you ever need to leave without Kawase, see Withdraw without Kawase."
+   "text": "If you hold USDC at the same address on another network, Kawase finds it (the balances are shown, the largest picked) and\nbrings it to Arc with Relay's permit: one signature, and no gas needed on that network. The permit is checked\n(your address, the amount, Relay's contract and that network's USDC) before you sign."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-3",
+   "title": "Bridge and withdraw: Following a move",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "Every move is tracked: Signed → Sent → Arriving → Delivered, with explorer links. Kawase checks the amount that left\nyour wallet on the receipt, then the fill through the provider's own status (Across deposit status, Relay request status\nor Circle's attestation). If a provider refunds instead, the card says so plainly. Nothing is ever sent twice."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-4",
+   "title": "Bridge and withdraw: On testnet",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "Arc Testnet uses CCTP only; Across and Relay serve Arc mainnet. Bring to Arc is mainnet only."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-bridge-and-withdraw-mdx-5",
+   "title": "Bridge and withdraw: Withdraw",
+   "source": "https://docs.getkawase.xyz/docs/features/bridge-and-withdraw",
+   "text": "Withdraw (from Home, or \"withdraw everything to my Kraken\") takes one token, several or everything out of Kawase:\n\n### What\nPick the tokens. Each one goes as itself or as cash (converted to USDC first).\n\n### Where\nAn exchange (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, or Coinbase through Base), your own wallet on Arc or\nanother chain, or your bank through an exchange. Kawase knows which assets and networks each exchange accepts and\nwarns you before you send something it would not credit. Places you withdraw to are saved in My places.\n\n### One confirmation\nKawase plans a line per token: a transfer on Arc, a bridge, or a conversion first. You slide once and confirm with one\nFace ID. A tracker follows every line to the end; if something stops half way, Finish it picks up where it was.\n\nTokens other than USDC cross chains as USDC (converted first). On testnet, exchanges aren't offered; withdraw goes to your\nown wallet. In the exit kit, \"move the money out\" opens Withdraw for everything.\n\nTo take your money out without Kawase at all, follow Withdraw without Kawase."
   },
   {
    "id": "apps-docs-content-docs-en-features-buy-mdx-0",
    "title": "Buy with Apple Pay or card",
    "source": "https://docs.getkawase.xyz/docs/features/buy",
-   "text": "Buying is planned through Circle's Onramp Kit: pay with a debit card, Apple Pay or Google Pay and receive USDC or EURC\ndirectly in your Kawase wallet on Arc. The session is created by Kawase's server and opened in a secure browser sheet;\nKawase marks the purchase complete only when the money is confirmed on chain.\n\nTo buy any other token with Apple Pay, the plan is to buy USDC first and then swap in one approval, with both fees shown\nbefore you pay.\n\nThis is coming: it is not available in the app yet. Until it is, on testnet you can use the free\nfaucet; on mainnet you can receive USDC from any wallet or exchange that sends to\nArc."
+   "text": "\"Buy 50 dollars of USDC\", or Add money → Buy with Apple Pay or card (the first row).\n\n### Choose the amount\nPick a preset or type an amount, in dollars or euros. The sheet shows the payment methods Circle offers and says plainly\nwhether this is real money (mainnet) or Circle's sandbox (testnet, test cards only).\n\n### Pay at Circle\nBuy opens Circle's checkout full screen (where Apple Pay works). Kawase creates the session on its server, for your\nown address on Arc.\n\n### Funded\nBack in Kawase, the order is followed until the chain confirms the delivery, then you see \"You're funded\". If the\npayment didn't complete, Circle's reason is shown with Try again."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-buy-mdx-1",
+   "title": "Buy with Apple Pay or card: Buying another token",
+   "source": "https://docs.getkawase.xyz/docs/features/buy",
+   "text": "Ask for any other token (\"buy 30 dollars of cirBTC with Apple Pay\") and Kawase buys USDC first, then opens the swap for\nwhat arrived, with one more approval and both fees shown. It only ever continues to a canonical or listed token, never a\nlook-alike."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-buy-mdx-2",
+   "title": "Buy with Apple Pay or card: Where it runs",
+   "source": "https://docs.getkawase.xyz/docs/features/buy",
+   "text": "- Mainnet: Circle's production Onramp with real cards. Apple Pay and Google Pay appear once Circle finishes its\n  business check of Kawase's domain; the checkout shows which methods it offers.\n- Testnet: Circle's Onramp sandbox with test cards. No real money moves. The free\n  faucet works too.\n\nSelling to a bank account isn't built. To cash out, send to an exchange that accepts Arc deposits (see\nWithdraw without Kawase)."
   },
   {
    "id": "apps-docs-content-docs-en-features-contacts-and-handles-mdx-0",
    "title": "Contacts and @handles: Contacts",
    "source": "https://docs.getkawase.xyz/docs/features/contacts-and-handles",
-   "text": "A contact is a name (and nicknames) with one or more addresses. Kawase uses contacts to understand \"send to Alex\" and to\nprotect you:\n\n- Address changes are held. When a contact's address changes, the new address waits 24 hours before money can go to\n  it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.\n- Look-alike addresses are flagged. An address whose first and last four characters match one of your contacts' is\n  treated as a look-alike: Kawase stops and asks for Face ID.\n- Payment history builds trust per address and per network: a first payment to an address is treated more carefully\n  than a repeat one.\n\nIf you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment — you don't\nhave to start over."
+   "text": "A contact is a name (and nicknames) with one or more addresses. Kawase uses contacts to understand \"send to Alex\" and to\nprotect you:\n\n- Address changes are held. When a contact's address changes, the new address waits 24 hours before money can go to\n  it, and the contact is frozen meanwhile. A changed address is a classic way to steal a payment.\n- Look-alike addresses are flagged. An address whose first and last four characters match one of your contacts' is\n  treated as a look-alike: Kawase stops and asks for Face ID.\n- Payment history builds trust per address and per network: a first payment to an address is treated more carefully\n  than a repeat one.\n\nIf you mention someone Kawase doesn't know, it asks you to save them and then carries on with the same payment — you don't\nhave to start over.\n\n### Adding people\n\n- Save a sender: money that arrived from someone offers Save sender as a contact, with the address from the\n  payment.\n- Import from your phone: Contacts → Import reads names and emails on your phone only. Find who's on Kawase\n  sends only hashed emails, never the names, emails or numbers themselves; people who allow being found are added by their\n  @handle in one tap, and you can invite the rest. Whether others can find you this way is a switch on the same page."
   },
   {
    "id": "apps-docs-content-docs-en-features-contacts-and-handles-mdx-1",
@@ -555,15 +609,27 @@
   },
   {
    "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-0",
-   "title": "Earn and borrow: Earn with Morpho vaults (today)",
+   "title": "Earn and borrow: Yield options",
    "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
-   "text": "\"Put 50 dollars in savings\" or the Earn screen. Kawase lists the Morpho vaults available through Circle's App Kit\nEarn on Arc (on testnet: Arc Testnet's mock vaults) with readable names and their rates, and:\n\n- Deposits USDC into the vault you pick — or the best active one when you don't say — with a minimum number of vault\n  shares checked against the vault's own preview.\n- Withdraws any amount back to your wallet, paying at least the amount shown.\n- Shows your positions, read live from the vaults on chain (never stored by Kawase).\n\nEach deposit or withdrawal is one Face ID, sent as one transaction. Auto-save uses the\nsame vaults to keep your savings topped up by itself."
+   "text": "\"Where can my 200 dollars earn?\" Kawase compares every source that takes your asset, from live reads:\n\n- Aave V4 supply: the current rate, how much the market could pay out right now, and its size;\n- Morpho vaults listed by Circle's App Kit Earn, ranked by what they could give back now. A vault that couldn't return\n  your money is never offered, and low liquidity is flagged;\n- Aero liquidity campaigns from Merkl: shown as advanced, read only.\n\nOptions are ranked by rate among the sources that could return your amount, with the best one marked. Tapping Aave opens\nthe supply ticket; tapping a vault opens Earn for that vault."
   },
   {
    "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-1",
-   "title": "Earn and borrow: More yield and borrowing (coming)",
+   "title": "Earn and borrow: Earn with Morpho vaults",
    "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
-   "text": "The plan compares every source that accepts your asset — Aave V4, Morpho vaults directly and others — showing the\nrate, how much can be withdrawn right now, size and risk, and hides sources you couldn't exit. Borrowing USDC or EURC\nagainst collateral (for example on Aave V4) is planned with a health gauge, repay and add-collateral actions, and\nliquidation alerts in your inbox. Both are coming."
+   "text": "\"Put 50 dollars in savings\", or the Earn screen. Deposit USDC into the vault you pick (or the best active one) and\nwithdraw any amount back. Your positions are read live from the vaults. Each deposit or withdrawal is one Face ID,\nsent as one transaction. Auto-save uses the same vaults by itself.\n\nOn testnet, Earn uses Arc Testnet's mock Morpho vaults."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-2",
+   "title": "Earn and borrow: Borrow and supply on Aave V4",
+   "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
+   "text": "The Borrow screen (from Earn on mainnet) shows your Aave V4 position first: what you owe (with Repay), what you\nsupplied (with Add and Withdraw), the health gauge and how much room is left. Then what you can borrow, and at\nwhat rate.\n\n- Borrow USDC, EURC, cirBTC or WETH against collateral of USDC, cirBTC or WETH. EURC can't be collateral on Aave V4.\n  Kawase picks the collateral from your wallet (the held asset worth most after its factor) and puts it in in the same\n  transaction.\n- The gauge moves with every digit you type. Max keeps you at the safe floor.\n- A loan that would leave health under 1.25 is refused; under 1.5 you're warned.\n- With one collateral asset, the ticket shows the price at which it would be liquidated.\n- Repay part or all. \"All\" repays everything with a small margin for interest, and resets the approval.\n\nEvery action is re-checked against fresh prices when you approve, simulated from your wallet, and sent as one\ntransaction. You confirm by sliding and Face ID."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-earn-and-borrow-mdx-3",
+   "title": "Earn and borrow: Not on testnet",
+   "source": "https://docs.getkawase.xyz/docs/features/earn-and-borrow",
+   "text": "Aave V4 is on Arc mainnet only, so borrowing and Aave supply are too. Morpho vaults work on both networks."
   },
   {
    "id": "apps-docs-content-docs-en-features-languages-mdx-0",
@@ -572,10 +638,184 @@
    "text": "Kawase speaks the world's most widely spoken languages, everywhere in the app:\n\n| Language | Name in the language | Direction |\n|---|---|---|\n| English | English | left to right |\n| Chinese | 中文 | left to right |\n| Hindi | हिन्दी | left to right |\n| Spanish | Español | left to right |\n| French | Français | left to right |\n| Arabic | العربية | right to left |\n| Bengali | বাংলা | left to right |\n| Portuguese | Português | left to right |\n| Russian | Русский | left to right |\n| Urdu | اردو | right to left |\n\n- From the first screen. The language pill is on the first onboarding panel and every screen after it; changing it is\n  instant, direction included.\n- Every string in every language. The app's ten catalogs are complete; the agent replies in your language and\n  voice hears and speaks all ten.\n- Amounts stay exact. Numbers are formatted for your language, while amounts, addresses and codes stay left-to-right\n  so they can be checked character by character.\n- These docs are available in the same ten languages (use the language switch in the sidebar)."
   },
   {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-0",
+   "title": "Limits and control",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Everything the agent may do without asking is written down in Settings → Wallet & limits, and most of it is enforced\nby Arc itself. This page shows what you can change there. The model behind it is on the safety page."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-1",
+   "title": "Limits and control: Your allowance, per token",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "The authority receipt shows, for each token, what Arc enforces (the grant you signed) and Kawase's own lower cap, what\nis left today, and any temporary raise.\n\n- Add a token: any token you hold, or an address you paste, checked on chain.\n- Lower a number and it saves at once.\n- Raise one and you see Now → After: one approval signs the new on-chain grant together with the revoke of the\n  old one, so two grants are never live at the same time."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-2",
+   "title": "Limits and control: What Kawase checks on its own",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "On top of the chain's limit, Kawase applies rules of its own:\n\n- a per-payment cap;\n- new recipients: for the first hours after you add someone, the allowance and automations stay off that address;\n  your own payment still goes through, with a test amount suggested;\n- allowlist only: the agent pays only people on your list;\n- a temporary raise: more for a while, then back by itself."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-3",
+   "title": "Limits and control: The brake",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Some requests are unusual enough to stop and show you why, even inside your limits: more than half your balance to\nsomeone new, a trade whose price impact is over your rule, or leverage above 5×. The card shows a brake panel;\nit's your call, and approving goes ahead. An automation that hits the brake waits in Needs you instead."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-4",
+   "title": "Limits and control: Token rules",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Wallet & limits → Token rules sets which tokens Kawase may buy for you: verified only, or verified and popular\nones with warnings; caps for unverified tokens per trade and per day, with today's meter; and the highest price impact you\naccept. Copycats and high-risk tokens are always blocked. Tightening applies at once; loosening asks for Face ID and your\nwallet's signature."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-5",
+   "title": "Limits and control: Pause all",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "One switch turns off everything the agent does without asking: no payment uses the allowance (each one waits for your\nFace ID), every automation run is skipped, and the agent buys nothing in the marketplace. What you do yourself still\nworks, swaps, bridges and withdrawals included, so you can always move your money out. While paused, a strip sits above\nevery screen."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-6",
+   "title": "Limits and control: The risk dial",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Guard · Balanced · Autonomous:\n\n- Guard: every payment waits for your confirmation, chat too.\n- Balanced: inside your allowance, a typed request goes at once.\n- Autonomous: Kawase may act on its own suggestions inside your limits, then tells you."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-7",
+   "title": "Limits and control: Practice mode",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "With practice on, Kawase runs the exact transaction you asked for as a dry run on Arc, from your own address, and shows\n\"Would have sent\" with the chain's answer. Nothing moves. Practice also covers automations, and a marketplace\npurchase answers \"would pay\" with the live price and nothing paid. Swaps, bridges, savings moves and margin orders are\nrefused before anything is signed, so the PRACTICE strip never hides a real payment."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-8",
+   "title": "Limits and control: The exit kit",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "If something feels wrong: pause, then hold to revoke every permission on the network with one Face ID (one\ntransaction), then move the money out, which opens Withdraw for everything.\nAutomations whose grants are revoked end."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-9",
+   "title": "Limits and control: Needs you",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Some steps an automation may never take alone: every swap, a payment above its grant, or one your allowlist or\ncooldown holds back. They wait in Needs you, in the inbox and in Automations, with a push notification where\nnotifications are set up. Answer from anywhere, once: a second answer finds it already answered and says when and where.\nApproving opens the very send or swap you would make by hand, re-checked. Unanswered items are reminded after 12\nhours and expire after 24."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-10",
+   "title": "Limits and control: Activity and why",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Activity is one feed of every token in and out: sends, receives, swaps with both legs, bridges, savings, margin,\nautomation runs, requests paid, the faucet and practice runs. Each row says where it stands (checking, skipped and why,\npractice, waiting). Filters: All · In · Out · Trades · Automations · Needs you, the last with its count.\n\nTap a row for its receipt (amount, time, network, the other side, the transaction), then Why: the decision record\nbehind it, or for a run that never reached the chain, what stopped it and how you answered. From Activity you can also\nread the week's report and export your history as CSV or beancount."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-limits-and-control-mdx-11",
+   "title": "Limits and control: From chat",
+   "source": "https://docs.getkawase.xyz/docs/features/limits-and-control",
+   "text": "Ask \"what are my limits?\", \"pause everything\", \"set the dial to guard\", \"raise my USDC allowance to 50\" or \"revoke\neverything\". Each answer is a card, and changes are approved on the card."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-0",
+   "title": "Long and short",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "Kawase Margin lets you bet on a price going up (long) or down (short) with more than you put in. It runs on\nAave V4 on Arc mainnet, through your own Aave account: no exchange account, no flash loan, and nothing held by\nKawase."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-1",
+   "title": "Long and short: How a position is built",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "- Long X: your USDC margin is swapped to X and supplied as collateral, then Kawase borrows USDC against it, swaps it to\n  more X and supplies that, a few times in a loop.\n- Short X: your USDC is supplied as collateral, then Kawase borrows X, swaps it to USDC and supplies that, in a loop.\n- Closing runs it backwards: withdraw, swap, repay, then the rest comes back to your wallet.\n\nThe whole position opens or closes as one transaction from your own wallet (an EIP-7702 batch). The swap legs come from\nKyberSwap with checked calldata. Each loop borrows only down to a safe health at oracle prices, and the account opens at a\nhealth of 1.10 or more."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-2",
+   "title": "Long and short: Markets",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "Markets come from Aave V4's live reserves on Arc. Today:\n\n- cirBTC (Circle's Bitcoin) and WETH: long and short;\n- EURC: short only, because EURC can't be collateral on Aave V4.\n\nLeverage is capped by each asset's collateral factor. At today's factors that is about 3.4× long cirBTC, 4× long\nWETH and 2.4× for a short. Margin is paid in USDC."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-3",
+   "title": "Long and short: The ticket",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "\"Long Bitcoin 2x with 10 dollars\", or the Long/Short screen. Choosing a side drafts a real plan at once ($10, 2×), so\nthe ticket opens with live numbers:\n\n- your margin and the leveraged size, with presets and Max;\n- a leverage ruler capped by the market, with a tick at every half step;\n- the liquidation price and how far away it is, the account's health, the borrow rate and the network fee;\n- the route, and a risk line.\n\nYou confirm by sliding (mint for a long, red for a short), then Face ID. The ticket follows the transaction from\nchecking to final. Any change to the plan resets the slide, so you never confirm numbers you didn't see."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-4",
+   "title": "Long and short: Positions",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "Each position has its own page: profit and loss split into price and borrowing cost, a health gauge, its\nliquidation price, and Close 25% · 50% · 75% · All, which drafts the unwind into the same ticket. Home's For you\ncard warns you when an open position's health drops under 1.25 or liquidation is within a 10% move."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-long-short-mdx-5",
+   "title": "Long and short: Not on testnet",
+   "source": "https://docs.getkawase.xyz/docs/features/long-short",
+   "text": "Aave V4 is on Arc mainnet only, so Kawase Margin is too. On testnet the screen explains this and offers the switch."
+  },
+  {
    "id": "apps-docs-content-docs-en-features-marketplace-mdx-0",
-   "title": "x402 marketplace",
+   "title": "Agent wallet and marketplace",
    "source": "https://docs.getkawase.xyz/docs/features/marketplace",
-   "text": "x402 is an open standard for paying for a web request with stablecoins: the service answers \"402 Payment Required\"\nwith a price, the client pays in USDC and gets the result. Kawase's plan is to let the agent find and pay for services\nfrom Circle's x402 catalog on your behalf, strictly inside a budget:\n\n- a separate marketplace wallet whose balance is the hard cap,\n- limits per call, per session and per day, set by you,\n- every purchase shown with its price, the service and the result.\n\nCircle's catalog lists mainnet services only, so the marketplace is planned for mainnet and is not on testnet. It is\ncoming: not available in the app yet."
+   "text": "x402 is an open standard for paying for a web request with stablecoins: the service answers \"402 Payment Required\"\nwith a price, the client pays in USDC and gets the result. Kawase uses it to buy answers for you: web search and news,\nprediction-market odds, DefiLlama yields and prices, stock prices, data enrichment, from Circle's x402 catalog on Arc."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-marketplace-mdx-1",
+   "title": "Agent wallet and marketplace: Your agent wallet",
+   "source": "https://docs.getkawase.xyz/docs/features/marketplace",
+   "text": "Purchases never come out of your main wallet directly. Kawase has a separate agent wallet for you, and it can only\nspend what you put in:\n\n- Top up from your Kawase wallet with a preset. The first top-up signs a capped marketplace grant with Face ID;\n  later top-ups need no prompt, inside that cap. Or top up with Apple Pay or a card through Circle's Onramp, straight\n  into the agent wallet.\n- Its balance is split between Circle Gateway (ready for nanopayments, which most sellers take) and a part on hand\n  for sellers that take plain USDC (EIP-3009). When a plain-USDC purchase needs more on hand, Kawase refills it from\n  Gateway itself.\n- Return to my wallet sends both parts back at any time.\n\nSettings → Agent wallet shows the balance, what was spent today, the address and the full history of purchases and\nmoves."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-marketplace-mdx-2",
+   "title": "Agent wallet and marketplace: Budgets you set",
+   "source": "https://docs.getkawase.xyz/docs/features/marketplace",
+   "text": "- a daily budget and a per-call cap;\n- ask me first above the cap: the purchase waits on a consent card in chat;\n- the categories Kawase may buy from;\n- blocked sellers: tap any purchase to block its seller.\n\nTightening applies at once; loosening asks for Face ID. A refusal names the rule that stopped it."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-marketplace-mdx-3",
+   "title": "Agent wallet and marketplace: Every purchase receipted",
+   "source": "https://docs.getkawase.xyz/docs/features/marketplace",
+   "text": "Chat shows what Kawase found (the seller's mark, what it returns and the price) and, after paying, a receipt: \"Paid 0.002\nUSDC to …\". The seller's answer is labelled unchecked. x402 has no refund standard yet: if a call fails after payment,\nthe receipt says the seller kept it; a payment that Circle reports as failed is marked not charged. Kawase treats outside text as data, never as instructions, and\nsays so when an answer tries to tell it what to do."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-marketplace-mdx-4",
+   "title": "Agent wallet and marketplace: Networks",
+   "source": "https://docs.getkawase.xyz/docs/features/marketplace",
+   "text": "- Mainnet: Circle's catalog (about 2,100 listings on Arc), paid over both rails.\n- Testnet: Circle's catalog has no testnet listings, so Kawase runs its own demo seller (seller.getkawase.xyz) to\n  try it end to end with test money."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-0",
+   "title": "Memory and search: Memory",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "\"Remember that my landlord is @maria.\" Kawase keeps facts you ask it to remember (people, @handles, preferences) and\nuses them later. When an answer relies on one, chat shows a From memory line, so you always know where it came from.\n\nSettings → Memory lists every fact: add one, edit it, forget one or all, or turn memory off. A guest's memory moves\ninto the account on sign-in. Kawase doesn't remember things you didn't ask it to."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-1",
+   "title": "Memory and search: Search every conversation",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "The history sheet searches all your conversations on Kawase's server, not just the ones loaded: the words, the cards\nand who they were for (search \"Maria\" and the send to her shows up). Partial words and Chinese, Japanese or Korean text\nwork. Results are grouped by conversation with the words around the match, and open the conversation. You can also ask:\n\"what did I send my landlord last month?\""
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-2",
+   "title": "Memory and search: Long conversations",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "A long thread stays coherent: after each turn, the older part is folded into a summary and the latest messages are kept\nword for word. The summary never restates amounts or outcomes from memory; the cards' own results are kept exactly as they\nwere, and Kawase checks again with its tools before relying on one."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-3",
+   "title": "Memory and search: For you",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "Home shows a few cards that deserve a look, computed from your real balances on the active network:\n\n- idle USDC above what you spend, next to a vault that could pay it all back;\n- one of your payment requests about to expire;\n- a bridge that hasn't arrived 15 minutes after it should have;\n- a big move in a token you hold (5% in a day, 0.5% for a currency stablecoin, at least $10 held);\n- a margin position whose health is under 1.25 or within a 10% move of liquidation.\n\nThey're facts and options, never advice. Each card has one action. Dismiss hides a card for a week; don't show this\nkind mutes it (and can be undone)."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-4",
+   "title": "Memory and search: Answers about Arc, with sources",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "Ask \"how fast is finality on Arc?\" or \"what does a transfer cost?\". Kawase answers from a curated set of notes built from\nArc's and Circle's documentation and these docs, and shows a Sources card naming each one. Facts only, no investment\nadvice."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-5",
+   "title": "Memory and search: Cards that explain",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "- Charts: your portfolio's value, or any token's price, over a day, a week, a month or a year.\n- Why this one?: why a bridge route, swap venue or vault won (every provider asked, what each delivers, the fee and the\n  time, why the others lost or couldn't quote).\n- Settings changes as Now → After, applied on your device (memory on or off, reply language, theme).\n- Status: whether Kawase, Arc (each network), Circle and prices are up, slow or down."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-memory-and-search-mdx-6",
+   "title": "Memory and search: Outside text is data",
+   "source": "https://docs.getkawase.xyz/docs/features/memory-and-search",
+   "text": "Anything Kawase reads from outside (marketplace answers, token and vault names, chain memos, contact notes, past messages)\nis fenced as untrusted. Instructions hidden in it are flagged and never followed."
   },
   {
    "id": "apps-docs-content-docs-en-features-network-toggle-mdx-0",
@@ -593,55 +833,115 @@
    "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-0",
    "title": "Send, receive and request: Send",
    "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
-   "text": "Say or type who and how much — \"send 20 dollars to Alex\", \"pay @mira 5 euros\" — or use the Send screen. Kawase:\n\n1. Finds the recipient: a saved contact, a Kawase @handle, or an 0x… address you typed yourself. The agent can only\n   use an address that came from your contacts or appears word for word in your own message.\n2. Picks the currency you hold, or asks if it is unclear.\n3. Checks everything at once: your balance, your limits, whether this is a first payment to that address, whether the\n   address looks like one of your contacts' (a look-alike), and whether a contact's address changed recently.\n4. Shows the payment card with the exact amount, currency, recipient and network.\n\nThen one of two things happens:\n\n| Situation | What you do |\n|---|---|\n| USDC, inside what is left of today's allowance, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |\n| Above the allowance, any EURC payment, a first payment to a new address above the threshold, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |\n\nA payment is only marked paid when the network's receipt shows the exact transfer. If the answer is unclear, the card\nsays \"still checking\" and Kawase keeps looking; it never sends twice."
+   "text": "Say or type who and how much (\"send 20 dollars to Alex\", \"pay @mira 5 euros\"), or use the Send screen. You can send any\ntoken you hold on Arc. Kawase:\n\n1. Finds the recipient: a saved contact, a Kawase @handle, an 0x… address you typed yourself, or a QR code you\n   scanned. The agent can only use an address that came from your contacts, a code you scanned, or your own message, word\n   for word.\n2. Picks the token you hold, or asks if it is unclear.\n3. Checks the recipient on every payment: a token contract or a look-alike of a saved contact is refused, a contract\n   that isn't a wallet is warned about, the token issuer's blocklist is checked where it has one, and your own address is\n   named as yours. It also checks your balance, your limits and whether a contact's address changed recently.\n4. Shows the payment card with the exact amount, token, recipient and network.\n\nThen one of two things happens:\n\n| Situation | What you do |\n|---|---|\n| Inside what is left of today's allowance for that token, to someone you have paid before or named in this request | Nothing. It is sent at once and Kawase says so. |\n| Above the allowance, a token outside it, a new address, or a look-alike address | Confirm with Face ID (fingerprint or screen lock on Android, an email code on the web). |\n\nA payment to an address you just added can suggest sending a test amount first. A payment is only marked…"
   },
   {
    "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-1",
-   "title": "Send, receive and request: Receive",
+   "title": "Send, receive and request: Scan to pay",
    "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
-   "text": "Your wallet has one address on both networks. Open Receive for the address and its QR code. Payments that arrive are\nnoticed by Kawase's watcher, show up in Activity and the inbox, and can wake your automations."
+   "text": "Tap Scan in the quick-action fan, on Send, or in chat's header. The scanner reads:\n\n- a bare address, or a payment link with an amount and token (EIP-681): Send opens filled in, and the usual checks run;\n- a Kawase request link: its pay page opens.\n\nA code for the other Arc network, another chain or a closed request says why, with a network switch where that helps. You\ncan also paste a code instead."
   },
   {
    "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-2",
-   "title": "Send, receive and request: Request",
+   "title": "Send, receive and request: Receive and add money",
    "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
-   "text": "Ask \"request 15 dollars from Sam for dinner\" or open Request. Kawase creates a payment request in USDC or EURC with a\nshareable link. The person paying can open it in the web app; the request is marked paid when a Kawase payment or a\nmatching plain transfer arrives."
+   "text": "Your wallet has one address on both networks, and it takes any token on Arc. Add money gathers every way in:\n\n- Buy with a card (Buy);\n- From an exchange: the exchange's logo and its own steps (Coinbase through Base, then Bring to Arc);\n- From another chain: USDC waiting at your address elsewhere, brought to Arc with no gas;\n- Receive: your address and its QR code;\n- Test USDC on testnet.\n\nMoney that arrives shows up in Activity and the inbox, can wake your automations, and offers\nSave sender as a contact."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-3",
+   "title": "Send, receive and request: Request and split",
+   "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
+   "text": "\"Request 15 dollars from Sam for dinner\", or open Request. Kawase creates a payment request in any token on Arc with a\nshareable link. The person paying can open it in any browser; the request is marked paid when a Kawase payment or a\nmatching plain transfer arrives.\n\nSplit a bill: \"split 30 dollars for dinner with Amina and Tunde\". Equal shares or by hand, with you included or not.\nEach person gets their own request and link, and a progress card shows who has paid."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-send-receive-request-mdx-4",
+   "title": "Send, receive and request: Receipts and links",
+   "source": "https://docs.getkawase.xyz/docs/features/send-receive-request",
+   "text": "- Share a receipt of a finished payment as an image card (or text with the explorer link on the web).\n- Every action has its own link (/i/…). Notifications open the exact card; a link opened while signed out comes back to\n  it after sign-in. A card blocked by something you then fix (sign in, setup, limits, adding money) checks again by itself."
   },
   {
    "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-0",
-   "title": "Swap and trade: Swap USDC ↔ EURC (today)",
+   "title": "Trade any token: Markets",
    "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
-   "text": "\"Swap 10 dollars to euros\" or the Swap screen. Kawase gets a quote through Circle's App Kit and shows:\n\n- the amount you give and the amount you get, at least,\n- Circle's market rate next to the quoted rate, and the fees,\n- a warning if the quote is noticeably worse than the market rate; a quote far worse is refused.\n\nOn mainnet the guaranteed minimum is 1% under the quote (2% on testnet, where pools are thin). The route itself is built\nat half that tolerance, so a small move between the quote and your confirmation still clears the minimum.\n\nYou confirm every swap yourself with one Face ID — swaps are never covered by the everyday allowance. The approval and\nthe swap go to the network as one transaction (an EIP-7702 batch from your own wallet), so either both happen or\nneither does. Kawase marks the swap complete only when the receipt shows the exact amount leaving your wallet and at least\nthe minimum arriving."
+   "text": "The Markets tab (in the dock, between Home and the orb) is open to guests too:\n\n- Search by name, symbol or contract address.\n- Segments Trending · Meme · Long/Short · Stocks & FX · New, a carousel of hot markets, and a heatmap where each\n  tile is sized by the day's volume and coloured by its move.\n- Rows show the price, the day's change, volume and liquidity. A token that copies another one carries a copycat\n  chip; fakes stay flagged in the list and never reach the carousel or the heatmap.\n\nMarkets are an Arc mainnet thing. On testnet the tab says so and offers the switch."
   },
   {
    "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-1",
-   "title": "Swap and trade: Any token, meme coins, long and short (coming)",
+   "title": "Trade any token: A page for every token",
    "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
-   "text": "The plan is to make every token on Arc first-class: see everything your address holds, swap any listed token with quotes\ncompared across aggregators, and trade meme coins with safety checks (copycat detection, token risk data and your own\ntoken rules capping the risk). Long and short positions (perpetual futures) on Arc's perps venues are planned the same\nway: a clear ticket with leverage, liquidation price and take-profit/stop-loss, confirmed with Face ID.\n\nThese are marked coming in the matrix above until they ship; nothing here is presented as available before it is."
+   "text": "Tap any token, in Markets, on Home or in a chat card, to open its page:\n\n- its mark, price and change, and a chart you can scrub with ranges from one hour to all time;\n- what you hold of it;\n- market cap, liquidity, volume, holders, fully diluted value and the contract (copy it in one tap);\n- Safety: a verdict with its reasons, the checks from GoPlus (honeypot, buy and sell taxes, owner powers) and any\n  look-alikes, linked;\n- Buy · Sell, and a More sheet that lists every other action, each with the reason when it isn't available."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-2",
+   "title": "Trade any token: Your portfolio, every token",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "Home shows every token your address holds on Arc and on Ethereum, Base, Arbitrum, OP, Polygon and Avalanche, each with\nits real mark and value. Kawase hides what would mislead you:\n\n- an impostor (a stablecoin's or a well-known symbol at another address, or with other decimals) is hidden;\n- a token with no price and no pool goes to Hidden;\n- an unpriced token never counts toward your total."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-3",
+   "title": "Trade any token: Buy, sell or swap any pair",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "\"Buy 20 dollars of ARGUS\", \"sell half my cirBTC\", or the ticket from a token page. You pay with any token you hold\nand get any token (search by name, symbol or address). For every trade Kawase asks three venues at once, KyberSwap,\nCircle's App Kit and LI.FI, and recommends the one that delivers the most. The others are listed with what they would\ndeliver, or why they couldn't quote.\n\nThe review shows the amount you get at least, the price impact against the market price and the route. You confirm by\nsliding on the card, then Face ID. Only the chosen venue builds the transaction, at half the slippage you were\nshown, and Kawase checks its calls (router, amounts, recipient, the on-chain minimum) before your wallet is asked. The\napproval and the trade go out as one transaction from your own wallet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-4",
+   "title": "Trade any token: Token rules",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "Every buy passes your token rules first:\n\n- impersonators and honeypots are blocked;\n- an unverified token is limited to $50 a trade and $200 a day;\n- price impact may be at most 5% for anything that isn't a stablecoin.\n\nA blocked trade says which rule stopped it and what would change the answer."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-swap-and-trade-mdx-5",
+   "title": "Trade any token: On testnet",
+   "source": "https://docs.getkawase.xyz/docs/features/swap-and-trade",
+   "text": "Arc Testnet has only USDC ↔ EURC to trade, through the same ticket. Every other token, and meme coins, are mainnet\nonly.\n\nLong and short positions have their own page: Long and short."
   },
   {
    "id": "apps-docs-content-docs-en-features-voice-mdx-0",
    "title": "Voice",
    "source": "https://docs.getkawase.xyz/docs/features/voice",
-   "text": "Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it shows the words it heard, answers aloud,\nand puts the same cards on screen as chat does.\n\n- One conversation. What you said by voice is in your chat thread, and typing picks it up where you left off.\n- What was heard is always shown before anything is confirmed.\n- A spoken \"yes\" never approves a payment. A send by voice is prepared on its card and waits for your tap and Face ID\n  (fingerprint or screen lock on Android) — even inside your daily allowance.\n- The orb shows the network: lime on mainnet, sky blue on testnet."
+   "text": "Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it shows the words it heard, answers aloud,\nand puts the same cards on screen as chat does.\n\n- One conversation. What you said by voice is in your chat thread, and typing picks it up where you left off.\n- Captions on both sides: what Kawase heard, and what it is saying.\n- A spoken \"yes\" never approves a payment. A send by voice is prepared on its card and waits for your tap and Face ID\n  (fingerprint or screen lock on Android) — even inside your daily allowance.\n- Mute with one tap: nothing is heard or sent while muted. Type instead is always there.\n- The orb shows the network: lime on mainnet, sky blue on testnet."
   },
   {
    "id": "apps-docs-content-docs-en-features-voice-mdx-1",
-   "title": "Voice: Languages and voices",
+   "title": "Voice: On the web",
    "source": "https://docs.getkawase.xyz/docs/features/voice",
-   "text": "Kawase hears all ten languages with ElevenLabs Scribe v2 (realtime). It speaks with ElevenLabs Flash v2.5 in English,\nSpanish, French, Portuguese, Russian, Chinese, Hindi and Arabic, and with OpenAI's speech model in Bengali and Urdu, which\nFlash v2.5 does not cover."
+   "text": "Voice works in the web app too: allow the microphone when the browser asks. If you refuse it, or there is no microphone,\nKawase stays connected, says how to allow it, and typing is right beside it. Kawase's own voice still plays."
   },
   {
    "id": "apps-docs-content-docs-en-features-voice-mdx-2",
+   "title": "Voice: Settings → Voice",
+   "source": "https://docs.getkawase.xyz/docs/features/voice",
+   "text": "- Kawase's voice: one of six.\n- Speaking speed: relaxed, normal or brisk.\n- Kawase speaks first: it greets you as soon as voice opens; turned off, it waits for you.\n\nChanges apply the next time you start talking."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-voice-mdx-3",
    "title": "Voice: How it works",
    "source": "https://docs.getkawase.xyz/docs/features/voice",
-   "text": "The phone joins a LiveKit room over WebRTC. Kawase's voice worker turns speech into text, runs the same agent turn as\nchat (same tools, same limits, same thread), and speaks the answer while the cards arrive on your screen."
+   "text": "The phone or browser joins a LiveKit room over WebRTC, and Kawase's voice worker joins the same room. Every money or\naccount request is handed to the same agent turn as chat (same tools, same limits, same thread); the cards arrive on\nyour screen while the answer is spoken. Before speaking amounts, assets, @handles or the network, the worker checks them\nagainst what the tools returned and corrects a mismatch. If the realtime voice can't start, Kawase falls back to a\nlisten → answer → speak pipeline with the same agent behind it. LiveKit doesn't record the conversation."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-web-and-desktop-mdx-0",
+   "title": "Web and desktop: In the browser",
+   "source": "https://docs.getkawase.xyz/docs/features/web-and-desktop",
+   "text": "Open app.getkawase.xyz. You start as a guest, and everything works as on the phone:\nchat, cards, Markets, voice and every screen.\n\n- Confirming a payment: an email code stands in for Face ID.\n- Voice: tap the orb and allow the microphone when the browser asks. If you refuse it, Kawase says how to allow it, and\n  typing is right there.\n- Install it: Kawase is an installable web app. In Chrome or Edge use Install, in Safari Add to Dock (Mac) or\n  Add to Home Screen (iPhone). If the network drops, an offline page says so instead of a broken screen. Kawase never\n  caches balances, so nothing old is ever shown as current money."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-web-and-desktop-mdx-1",
+   "title": "Web and desktop: The desktop app (Mac)",
+   "source": "https://docs.getkawase.xyz/docs/features/web-and-desktop",
+   "text": "Download Kawase for Mac (Apple silicon, about 2 MB), open the disk image\nand drag Kawase to Applications.\n\nNot yet notarized by Apple: the first time, right-click Kawase → Open. On macOS 15 and later, open it once, then go to\nSystem Settings → Privacy & Security and choose Open Anyway. This is a preview build, not a signed release.\n\nIt is the live web app in a native window, so it is always the current release with nothing to update:\n\n- the title bar takes Kawase's colours and follows your light or dark mode;\n- copy, paste and the usual menus work; ⌘+ and ⌘− zoom;\n- kawase:// links (the same as on the phone) open the matching page in the window, for example kawase://r/… opens\n  a payment request;\n- sign-in windows open inside the app, and any other site (an explorer, these docs) opens in your browser;\n- the page gets no access to your computer beyond the window it runs in.\n\nVoice inside the desktop app hasn't been checked yet; use the web app in a browser, or your phone, for voice.\n\nWindows and Linux builds come from the same source (apps/desktop); they haven't been built yet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-features-web-and-desktop-mdx-2",
+   "title": "Web and desktop: On the phone",
+   "source": "https://docs.getkawase.xyz/docs/features/web-and-desktop",
+   "text": "Kawase for iPhone is on TestFlight and for Android as an APK. See getting started."
   },
   {
    "id": "apps-docs-content-docs-en-getting-started-mdx-0",
    "title": "Getting started: 1. Open the app",
    "source": "https://docs.getkawase.xyz/docs/getting-started",
-   "text": "Open kawase.84.46.247.92.sslip.io in any modern browser. You start as a\n    guest: no sign-up, no email. You can chat with Kawase, look around every screen and see what it would do.\n\n    On the web, an email code stands in for Face ID wherever a payment needs your confirmation. Voice is not in the web\n    app yet; typing works everywhere.\n  \n  \n    Kawase for iPhone is distributed through TestFlight while it is in beta. Install TestFlight from the App Store,\n    then open the invite link you were given. A public TestFlight link will be published on the showcase page when it is\n    available.\n  \n  \n    Download the Android build (APK) from Expo:\n    build e644e19d.\n    Open it on the phone and allow the install. On Android the confirmation is your fingerprint or screen lock."
+   "text": "Open app.getkawase.xyz in any modern browser. You start as a guest: no sign-up, no\n    email. You can chat with Kawase, talk to it, look around every screen and see what it would do.\n\n    On the web, an email code stands in for Face ID wherever a payment needs your confirmation. You can install the\n    web app, or use the desktop app for Mac.\n  \n  \n    Kawase for iPhone is distributed through TestFlight while it is in beta. Install TestFlight from the App Store,\n    then open the invite link you were given. A public TestFlight link will be published on the showcase page when it is\n    available.\n  \n  \n    Download the Android build (APK) from Expo:\n    build e644e19d.\n    Open it on the phone and allow the install. On Android the confirmation is your fingerprint or screen lock."
   },
   {
    "id": "apps-docs-content-docs-en-getting-started-mdx-1",
@@ -671,13 +971,13 @@
    "id": "apps-docs-content-docs-en-getting-started-mdx-5",
    "title": "Getting started: 6. Make your first payment",
    "source": "https://docs.getkawase.xyz/docs/getting-started",
-   "text": "Type or say, for example:\n\n> send 1 dollar to @kawasedemo\n\nKawase finds the recipient, checks your balance and limits, and shows the payment card: exact amount, currency, recipient\nand network. Inside your allowance it sends at once; above it, it waits for your Face ID. The card follows the payment\nuntil the network confirms it, and the receipt links to the block explorer."
+   "text": "Type or say, for example (use a friend's @handle, or paste the address of a second wallet of your own):\n\n> send 1 dollar to @friend\n\nKawase finds the recipient, checks your balance and limits, and shows the payment card: exact amount, currency, recipient\nand network. Inside your allowance it sends at once; above it, it waits for your Face ID. The card follows the payment\nuntil the network confirms it, and the receipt links to the block explorer."
   },
   {
    "id": "apps-docs-content-docs-en-getting-started-mdx-6",
    "title": "Getting started: 7. Try the rest",
    "source": "https://docs.getkawase.xyz/docs/getting-started",
-   "text": "- \"swap 2 dollars to euros\"\n- \"move 1 dollar to Base\"\n- \"put 5 dollars in savings\"\n- \"every Friday at 9 send 1 dollar to Alex\"\n- \"keep 20 dollars in my wallet and save the rest\"\n\nEach one shows a card first and tells you exactly what it needs from you."
+   "text": "- \"swap 2 dollars to euros\"\n- \"move 1 dollar to Base\"\n- \"put 5 dollars in savings\"\n- \"every Friday at 9 send 1 dollar to Alex\"\n- \"keep 20 dollars in my wallet and save the rest\"\n- \"buy 10 dollars of USDC with a card\" (Circle's sandbox on testnet)\n- \"remember that Alex is my brother\"\n\nOn mainnet, Markets, trading any token, long and short, and borrowing are there too. See the features.\n\nEach one shows a card first and tells you exactly what it needs from you."
   },
   {
    "id": "apps-docs-content-docs-en-index-mdx-0",
@@ -689,7 +989,7 @@
    "id": "apps-docs-content-docs-en-index-mdx-1",
    "title": "What Kawase is: One app for everything on Arc",
    "source": "https://docs.getkawase.xyz/docs",
-   "text": "The goal is that anything a person can do with money on Arc, they can do by asking Kawase:\n\n- Send, receive and request USDC and EURC, to a saved contact, a Kawase @handle or any address.\n- Swap and trade: USDC ↔ EURC today; any token on Arc, meme coins and long/short positions (perps) are being added.\n- Buy with Apple Pay or a card through Circle's Onramp Kit.\n- Bridge and withdraw: move USDC from Arc to six other networks over Circle CCTP, with other bridges (Across, Relay)\n  compared; withdraw anywhere.\n- Earn and borrow: Morpho vaults today; Aave V4 and borrowing are being added.\n- Automations: scheduled payments, Auto-save and rules that run by themselves inside limits you sign once.\n- The x402 marketplace: pay for services and APIs per call, inside a budget.\n- Voice on iPhone and Android, and the whole app in ten languages.\n\nNot all of this has shipped. The availability page is generated from the same capability registry the\napp and the agent read, so it always says honestly what runs today and what is coming:"
+   "text": "The goal is that anything a person can do with money on Arc, they can do by asking Kawase:\n\n- Send, receive and request any token, to a saved contact, a Kawase @handle,\n  any address or a scanned QR code; split a bill with a link per person.\n- Withdraw any token to an exchange, your own wallet on another chain,\n  or your bank through an exchange, confirmed once.\n- Trade any token: Markets, a page with safety checks for every token, and any pair at\n  the best of KyberSwap, Circle's App Kit and LI.FI, meme coins included (mainnet).\n- Long and short with Kawase Margin on Aave V4 (mainnet).\n- Buy with a card, Apple Pay or Google Pay through Circle's Onramp.\n- Bridge USDC to anyone on six networks over Circle CCTP, Across or Relay, ranked\n  by what arrives, and bring USDC to Arc with no gas on the other chain.\n- Earn and borrow: yield options across Aave V4, Morpho vaults and Aero; borrowing on\n  Aave V4 with a health gauge.\n- Automations: scheduled payments, Auto-save, DCA and rules, each bounded on chain,\n  with practice runs first.\n- The agent wallet: Kawase pays for services per call over x402, inside a budget.\n- Limits and control: your allowance per token, Pause all, practice mode, the exit\n  kit and Needs you.\n- Memory and search, suggestions on Home, and answers about Arc with sources.\n- Voice on iPhone, Android and the web, and the whole app in ten languages, in the browser…"
   },
   {
    "id": "apps-docs-content-docs-en-index-mdx-2",
@@ -707,13 +1007,43 @@
    "id": "apps-docs-content-docs-en-index-mdx-4",
    "title": "What Kawase is: Where to try it",
    "source": "https://docs.getkawase.xyz/docs",
-   "text": "- Web app, no install, starts as a guest: kawase.84.46.247.92.sslip.io\n- iPhone (TestFlight) and Android (APK): see getting started."
+   "text": "- Web app, no install, starts as a guest: app.getkawase.xyz\n- Mac: the desktop app\n- iPhone (TestFlight) and Android (APK): see getting started."
+  },
+  {
+   "id": "apps-docs-content-docs-en-judge-walkthrough-mdx-0",
+   "title": "Judge walkthrough",
+   "source": "https://docs.getkawase.xyz/docs/judge-walkthrough",
+   "text": "This page is for reviewers who click around without us in the room. Each step says what to do, what you should see, and\nwhere the proof is: the demo page groups every real Arc testnet transaction behind a claim,\nand each step links to its group (for example /demo#send). Testnet money has no\nvalue, so nothing here costs anything.\n\n- Chat and voice are paused: the AI model provider's prepaid credit has run out.\n- Mainnet moves no money yet: Kawase's mainnet relayer has not been funded.\n\nUntil these are lifted, the steps marked paused below cannot be run on the live app; their transactions on the demo\npage are the proof that they work."
+  },
+  {
+   "id": "apps-docs-content-docs-en-judge-walkthrough-mdx-1",
+   "title": "Judge walkthrough: What you can try right now",
+   "source": "https://docs.getkawase.xyz/docs/judge-walkthrough",
+   "text": "Use app.getkawase.xyz in a desktop or phone browser, the\nAndroid APK, or\nTestFlight if you have an invite.\n\n1. Arrive as a guest. Pick a language from the pill on the first screen (Arabic and Urdu turn the whole layout\n   right-to-left), swipe the short story, and open every screen: Home, Markets, a token page, Activity, Settings.\n2. Help & trust (Settings): what Kawase can do, where your money lives, how to leave without Kawase, and the live\n   state of Arc, Circle and prices.\n3. Sign in with an email code (or Apple or Google). Kawase creates your own wallet with Privy: one address on both\n   networks.\n4. Get test money from the faucet card on Home: Circle's faucet sends about 20 USDC and 20 EURC. Your balance,\n   the fee chip (\"~N actions left\": Arc's fees are paid in USDC) and the receive page with your QR code follow.\n5. Switch networks with the pill in the header: the first switch to mainnet shows the real-money consent.\n6. Check the chain. Every claim below has a transaction on /demo that opens on the\n   explorer."
+  },
+  {
+   "id": "apps-docs-content-docs-en-judge-walkthrough-mdx-2",
+   "title": "Judge walkthrough: The five-minute path (testnet, paused)",
+   "source": "https://docs.getkawase.xyz/docs/judge-walkthrough",
+   "text": "This is the path once chat and wallet signing are back. On the web an email code stands in for Face ID; on iPhone and\nAndroid the same steps use Face ID or the fingerprint.\n\n### 1. Ask what it can do\n\n> what can you do?\n\nYou get the capability card: what works on testnet and on mainnet, from the same registry the agent reads before it\nproposes anything (availability).\n\nProof: the demo video.\n\n### 2. Set up the wallet and accept the allowance\n\nKawase upgrades your wallet in place with EIP-7702; you sign once and Kawase's relayer pays the fee. Then you accept the\neveryday allowance with one confirmation: a delegation that lets Kawase's agent wallet send up to a daily amount of\nUSDC for you, with the cap, the token, the function, the redeemer and the expiry written on chain.\n\nProof: setup paid by the relayer, sends inside the on-chain\nallowance.\n\n### 3. Send money\n\n> send 1 dollar to 0x… (paste an address you control, or a friend's @handle)\n\nKawase resolves the recipient, runs its checks (balance, limits, look-alike and contract addresses) and shows the card:\namount, currency, recipient, network. Inside the allowance it goes at once and the card follows the transaction to the\nexplorer; above it, or to a new address above the first-time threshold, it waits for your confirmation. A wallet with no\nUSDC left for fees still sends USDC or EURC: you sign once and the relayer pays.\n\nProof…"
+  },
+  {
+   "id": "apps-docs-content-docs-en-judge-walkthrough-mdx-3",
+   "title": "Judge walkthrough: The mainnet path",
+   "source": "https://docs.getkawase.xyz/docs/judge-walkthrough",
+   "text": "Mainnet is real money, so it takes an account and an explicit consent. Tap the network pill: the first switch shows the\nreal-money consent; after it, the pill, the REAL MONEY label and the orb's colour all say mainnet. Your address is the\nsame; balances, history and limits are kept per network (network toggle).\n\nWhat only mainnet has, each built against mainnet contracts and live quotes:\n\n- Markets: every token on Arc with price, chart and safety checks; meme coins; a token still on a launchpad's bonding\n  curve shows its progress to graduation (swap and trade).\n- Long and short: Kawase Margin opens a leveraged position through your own Aave V4 account, with the liquidation\n  price on the ticket before you slide (long and short).\n- Earn and borrow: Aave V4 supply and borrowing with a live health gauge next to Morpho vaults and Aero campaigns\n  (earn and borrow).\n- Agent wallet: paid x402 services from Circle's catalog, inside a daily budget you set\n  (marketplace).\n- Buy: USDC with a card through Circle's Onramp, delivered to your own wallet (buy).\n\nMoving real money needs the mainnet wallet setup, which is paused with the rest of wallet signing and until the\nmainnet relayer is funded; the setup then says \"Kawase is getting mainnet ready\" instead of failing silently. Every\nmainnet action runs the same code as its testnet twin (the network is part of the session, not something t…"
+  },
+  {
+   "id": "apps-docs-content-docs-en-judge-walkthrough-mdx-4",
+   "title": "Judge walkthrough: Where to read the code",
+   "source": "https://docs.getkawase.xyz/docs/judge-walkthrough",
+   "text": "The repository's README maps every feature to its package, and architecture lists the tests that\nran against Arc testnet. The availability page is generated from the capability registry\n(packages/config/src/capabilities.ts) when this site is built, so it says what the app says."
   },
   {
    "id": "apps-docs-content-docs-en-networks-mdx-0",
    "title": "Networks",
    "source": "https://docs.getkawase.xyz/docs/networks",
-   "text": "Arc is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under\na second. Kawase supports exactly two Arc networks.\n\n| | Arc mainnet | Arc testnet |\n|---|---|---|\n| Money | Real | Test money with no value |\n| Chain ID | 5042 | 5042002 |\n| Explorer | explorer.arc.io | testnet.arcscan.app |\n| Getting money | Receive from any wallet or exchange that sends to Arc; buying with Apple Pay or card is coming | The in-app faucet (about 20 USDC + 20 EURC a day) |\n| Earn | Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |\n| Bridge destinations | Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche | their test networks (Base Sepolia, Ethereum Sepolia, …) |\n| x402 marketplace | Planned (Circle's catalog is mainnet-only) | Not available |\n| Default limits | Lower | Ten times higher (no real money at risk) |\n| Where new accounts start | | ✓ |\n\nEvery flow in Kawase has been run end to end with real transactions on Arc testnet; the evidence is linked from the\nshowcase's demo page. The availability below is what the app offers on each network:"
+   "text": "Arc is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under\na second. Kawase supports exactly two Arc networks.\n\n| | Arc mainnet | Arc testnet |\n|---|---|---|\n| Money | Real | Test money with no value |\n| Chain ID | 5042 | 5042002 |\n| Explorer | explorer.arc.io | testnet.arcscan.app |\n| Getting money | Buy with a card through Circle's Onramp; receive from any wallet or exchange that sends to Arc | The in-app faucet (about 20 USDC + 20 EURC a day); Circle's Onramp sandbox with test cards |\n| Trading | Any token, meme coins included, at the best of KyberSwap, App Kit and LI.FI | USDC ↔ EURC only |\n| Long and short | Kawase Margin on Aave V4 | Not available (Aave V4 is mainnet only) |\n| Earn and borrow | Aave V4 supply and borrowing; Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |\n| Bridges | To anyone on Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche over CCTP, Across or Relay; Bring to Arc | CCTP to their test networks (Base Sepolia, Ethereum Sepolia, …) |\n| x402 marketplace | Circle's catalog | Kawase's own demo seller (Circle's catalog is mainnet only) |\n| Default limits | Lower | Ten times higher (no real money at risk) |\n| Where new accounts start | | ✓ |\n\nEvery flow in Kawase has been run end to end with real transactions on Arc testnet; the evidence is linked from the\nsh…"
   },
   {
    "id": "apps-docs-content-docs-en-networks-mdx-1",
@@ -731,7 +1061,7 @@
    "id": "apps-docs-content-docs-en-safety-mdx-1",
    "title": "Safety model: Your wallet",
    "source": "https://docs.getkawase.xyz/docs/safety",
-   "text": "- When you sign in (email code, Apple or Google), Kawase creates an ordinary Ethereum-style account (an EOA) whose key\n  is held by Turnkey in secure hardware, inside a sub-organization that belongs to you. There is no PIN and no\n  password. It is one address on both networks.\n- Kawase then upgrades that same account in place with EIP-7702, pointing its code at MetaMask's audited\n  EIP7702StatelessDeleGator. You sign one authorization; Kawase's relayer sends it and pays the fee, so setup costs you\n  nothing.\n- After the upgrade your account can grant delegations (ERC-7710, from MetaMask's Delegation Framework): narrow,\n  signed permissions with limits built in. Those are the only way the agent can ever move your money without you."
+   "text": "- When you sign in (email code, Apple or Google), Kawase creates an ordinary Ethereum-style account (an EOA) whose key\n  is held by Privy, split up in secure enclaves so that no single party ever holds it whole. There is no PIN and no\n  password. It is one address on both networks.\n- Kawase then upgrades that same account in place with EIP-7702, pointing its code at MetaMask's audited\n  EIP7702StatelessDeleGator. You sign one authorization; Kawase's relayer sends it and pays the fee, so setup costs you\n  nothing.\n- After the upgrade your account can grant delegations (ERC-7710, from MetaMask's Delegation Framework): narrow,\n  signed permissions with limits built in. Those are the only way the agent can ever move your money without you."
   },
   {
    "id": "apps-docs-content-docs-en-safety-mdx-2",
@@ -761,7 +1091,7 @@
    "id": "apps-docs-content-docs-en-safety-mdx-6",
    "title": "Safety model: Revoke and pause",
    "source": "https://docs.getkawase.xyz/docs/safety",
-   "text": "- Revoke the allowance: Wallet & limits → Revoke (press and hold to confirm). It is one ordinary transaction from your\n  wallet that disables the delegation on chain; the agent can no longer send anything without your Face ID.\n- Pause, skip or cancel any automation from the Automations screen or in chat; cancelling revokes its grant.\n- Pause everything at once (all automations and agent spending) is enforced by the server already; the switch for it\n  in Settings is coming.\n- Leave entirely: see Withdraw without Kawase."
+   "text": "- Revoke the allowance: Wallet & limits → Revoke (press and hold to confirm). It is one ordinary transaction from your\n  wallet that disables the delegation on chain; the agent can no longer send anything without your Face ID.\n- Pause, skip or cancel any automation from the Automations screen or in chat; cancelling revokes its grant.\n- Pause all in Wallet & limits turns off everything the agent does without asking; your own Face ID payments still\n  work. The exit kit pauses, revokes every permission in one transaction and helps you move the money out. See\n  Limits and control.\n- Leave entirely: see Withdraw without Kawase."
   },
   {
    "id": "apps-docs-content-docs-en-safety-mdx-7",
@@ -773,34 +1103,46 @@
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-0",
    "title": "Withdraw without Kawase",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "Kawase never holds your money. Your USDC and EURC sit in your own account on Arc, and the permissions you gave the agent\nare narrow and expire on their own. This page explains how to get your money out — with Kawase's help, and without it."
+   "text": "Kawase never holds your money. Your tokens sit in your own account on Arc, and the permissions you gave the agent are\nnarrow and expire on their own. This guide takes you out step by step: first with Kawase's help, then without it."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-1",
-   "title": "Withdraw without Kawase: While Kawase is running: send it out",
+   "title": "Withdraw without Kawase: Before you start",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "The quickest exit is a normal payment:\n\n### Pick where it goes\nAn address you control in another wallet (MetaMask, Rabby, …) that has Arc added, or an exchange's Arc deposit\naddress. Check the network is Arc; sending to an address on another network is not the same thing.\n\n### Send everything\nSay \"send all my USDC to 0x…\" (paste the address in the same message) or use the Send screen. Larger amounts ask for your\nFace ID. Repeat for EURC.\n\n### Revoke the agent\nWallet & limits → Revoke (press and hold). Cancel any automations; each cancel revokes its grant on chain.\n\nUSDC can also go straight to your own address on Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche with a\nbridge."
+   "text": "Gather what isn't plain money in your wallet yet:\n\n- Savings in a vault: withdraw them on the Earn screen.\n- Aave V4 supply or a loan: repay and withdraw on the Borrow screen.\n- Long or short positions: close them (Close · All) on each position's page.\n- The agent wallet: Settings → Agent wallet → Return to my wallet.\n- Any other token can go out with Withdraw as itself on Arc, or converted to USDC to cross to another chain."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-2",
-   "title": "Withdraw without Kawase: Check everything on the explorer",
+   "title": "Withdraw without Kawase: Part 1: with Kawase (the exit kit)",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "You don't need Kawase to see your money. Open your address on Arc's block explorer:\n\n- Mainnet: https://explorer.arc.io/address/<your address>\n- Testnet: https://testnet.arcscan.app/address/<your address>\n\nThere you can see:\n\n- your USDC and EURC balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native\n  coin and as the USDC token),\n- every transaction, including the payments the agent made under your allowance,\n- your account's code: after setup it is 0xef0100 followed by the EIP7702StatelessDeleGator address. That is the\n  EIP-7702 upgrade; your account still works as a normal account.\n\nKawase's receipts link to these same pages."
+   "text": "### Pause the agent\nSettings → Wallet & limits → Pause all. Everything the agent does without asking stops at once. Your own Face ID\npayments still work.\n\n### Revoke every permission\nIn the exit kit, hold to revoke. One Face ID sends one transaction that revokes every grant on that network: your\nallowance and every automation's grant. Automations end. Repeat on the other network if you used it.\n\n### Withdraw everything\nIn the exit kit, move the money out opens Withdraw with everything\nselected (or say \"withdraw everything to my Kraken\"). Pick where it goes: an exchange (Kraken, Bybit, OKX, Binance,\nBitget, KuCoin, or Coinbase through Base), your own wallet on Arc or another chain, or your bank through an exchange.\nKawase plans each token (a transfer, a bridge, or a conversion to USDC first), warns you about anything the destination\nwouldn't credit, and you confirm once with Face ID.\n\n### Check the explorer\nOpen your address on the explorer (below) and confirm the balances are where you sent them."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-3",
-   "title": "Withdraw without Kawase: If Kawase disappears",
+   "title": "Withdraw without Kawase: Part 2: without Kawase (export your wallet)",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "- The agent's permissions stop being useful. Your allowance and automation grants can only be used by Kawase's own agent\n  wallet, and they expire (the allowance after 90 days, each automation at its end date).\n- Your money stays in your account. It is an ordinary account on Arc whose key is held for you by Turnkey.\n- Export wallet (coming). Settings → Account → Export wallet will show your wallet's key through Turnkey's secure export,\n  after Face ID and clear warnings. With it you can import the account into any wallet that supports Arc and move your\n  money without Kawase. This option is not available yet; until it is, the steps above are the way out."
+   "text": "Your wallet's key is held for you by Privy, split up in secure enclaves. Exporting gives you your own copy of the\nprivate key, so you can use the same account in any wallet.\n\n### Export\nSettings → Account → Export wallet. Read the warnings and hold the button: Privy shows your private key in its\nown secure window, which Kawase never sees. On a phone the export opens on the web app, where you sign in with the same\nemail. Keep the key somewhere safe offline. Anyone with it controls your money.\n\n### Import it into another wallet\nIn MetaMask, Rabby or another wallet that allows custom networks, choose to import a private key. You get the same\naddress as in Kawase.\n\n### Add Arc\nAdd the network with the details in the table below. Your balances appear as they are on chain.\n\n### Move your money\nSend from that wallet as you would from any other. Vault, Aave and margin positions live in your own account at those\nprotocols, so any interface for them on Arc can manage them.\n\nExport while Kawase is running if you want a copy you control: the export goes through the app."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-4",
-   "title": "Withdraw without Kawase: Adding Arc to another wallet",
+   "title": "Withdraw without Kawase: Check everything on the explorer",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "| | Mainnet | Testnet |\n|---|---|---|\n| Network name | Arc | Arc Testnet |\n| Chain ID | 5042 | 5042002 |\n| RPC | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Currency symbol | USDC | USDC |\n| Explorer | https://explorer.arc.io | https://explorer.testnet.arc.io |\n\nSome wallets label the gas balance \"ETH\" on custom networks; on Arc it is USDC. The USDC token address is\n0x3600000000000000000000000000000000000000 on both networks; EURC is\n0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 on mainnet and 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a on testnet."
+   "text": "You don't need Kawase to see your money. Open your address on Arc's block explorer:\n\n- Mainnet: https://explorer.arc.io/address/<your address>\n- Testnet: https://testnet.arcscan.app/address/<your address>\n\nThere you can see:\n\n- your balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native coin and as the USDC\n  token);\n- every transaction, including the payments the agent made under your allowance;\n- your account's code: after setup it is 0xef0100 followed by the EIP7702StatelessDeleGator address. That is the\n  EIP-7702 upgrade; your account still works as a normal account.\n\nKawase's receipts link to these same pages."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-5",
+   "title": "Withdraw without Kawase: If Kawase disappears",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "- The agent's permissions stop being useful. Your allowance and automation grants can only be used by Kawase's own agent\n  wallet, and they expire: the allowance after 90 days, each automation at its end date.\n- Your money stays in your account. It is an ordinary account on Arc.\n- With an exported private key (part 2), you can move everything from any wallet that supports Arc."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-6",
+   "title": "Withdraw without Kawase: Adding Arc to another wallet",
+   "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
+   "text": "| | Mainnet | Testnet |\n|---|---|---|\n| Network name | Arc | Arc Testnet |\n| Chain ID | 5042 | 5042002 |\n| RPC | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Currency symbol | USDC | USDC |\n| Explorer | https://explorer.arc.io | https://testnet.arcscan.app |\n\nSome wallets label the gas balance \"ETH\" on custom networks; on Arc it is USDC. The USDC token address is\n0x3600000000000000000000000000000000000000 on both networks; EURC is\n0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 on mainnet and 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a on testnet."
+  },
+  {
+   "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-7",
    "title": "Withdraw without Kawase: Removing the EIP-7702 upgrade (optional)",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
    "text": "You don't need to undo the upgrade to move your money. If you want a plain account again after exporting it, sign an\nEIP-7702 authorization pointing at the zero address and send it from the account itself, for example with viem:\n\nAfterwards the explorer shows no code on your address."

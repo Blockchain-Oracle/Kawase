@@ -39,8 +39,6 @@ export const wallet: Catalog["wallet"] = {
   oauthReturnTitle: "Terminando de iniciar sesión",
   oauthReturnGoogle: "Con tu cuenta de Google",
   oauthReturnApple: "Con tu cuenta de Apple",
-  approveTitle: "Aprobar",
-  slideToApprove: "Desliza para aprobar",
   creatingVerb: "Creando tu billetera",
   signingInVerb: "Iniciando sesión",
 };

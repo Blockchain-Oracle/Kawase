@@ -12,14 +12,14 @@ import { Discovery } from "@kawase/integrations-x402";
 
 import { circleAgentWallets } from "../src/marketplace/agent-wallets";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 const live = Boolean(process.env.DATABASE_URL && process.env.CIRCLE_TEST_API_KEY);
 
 test("catalog over http: a guest browses the live marketplace as tools, by category, search and price", { skip: !live, timeout: 180_000 }, async () => {
   const env = loadApiEnv();
-  const { app, db, close } = testApp(fakeTurnkey({}, {}), createChains(env), undefined, undefined, undefined, undefined, undefined, { agentWallets: circleAgentWallets(env), discovery: new Discovery({}) });
+  const { app, db, close } = testApp(createChains(env), undefined, undefined, undefined, undefined, undefined, { agentWallets: circleAgentWallets(env), discovery: new Discovery({}) });
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);

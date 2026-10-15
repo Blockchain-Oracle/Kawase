@@ -16,7 +16,6 @@ import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { signRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { sayIfRefused } from "@/wallet/refused";
@@ -33,7 +32,7 @@ export function usePrice() {
 export function useAgentWallet(options: { load?: boolean } = {}) {
   const { t } = useT();
   const { user } = useSession();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const price = usePrice();
   const account = Boolean(user && !user.isGuest);
   const scope = `${user?.id ?? "guest"}:${user?.activeNetwork ?? "testnet"}`;

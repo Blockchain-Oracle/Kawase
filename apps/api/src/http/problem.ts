@@ -30,7 +30,10 @@ export type ProblemCode =
   | "proof_invalid"
   /** Spending within the allowance or deleting the account needs the proof from the signed-in device (M12). */
   | "device_proof_required"
-  | "session_key_unknown"
+  /** The Privy session behind these tokens was signed out from Settings → Devices: sign in afresh. */
+  | "session_signed_out"
+  /** The emailed approval code is wrong, used, expired or out of tries. */
+  | "code_invalid"
   | "account_recovery_required"
   | "wallet_not_registered"
   | "wallet_not_set_up"
@@ -121,7 +124,8 @@ const TITLES: Record<ProblemCode, string> = {
   nonce_invalid: "The sign-in challenge is unknown, used or expired",
   proof_invalid: "The sign-in proof does not verify",
   device_proof_required: "This needs the proof from your signed-in device",
-  session_key_unknown: "The session key is not registered on this user",
+  session_signed_out: "This device was signed out; sign in again",
+  code_invalid: "That code is not right or has expired",
   account_recovery_required: "Use the original sign-in method to recover this account",
   wallet_not_registered: "No wallet is registered for this account",
   wallet_not_set_up: "The wallet is not set up on this network",

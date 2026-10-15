@@ -49,8 +49,8 @@ export const EVIDENCE: readonly Evidence[] = [
   {
     date: "2026-09-30",
     kind: "allowance",
-    action: "Turnkey wallet: the agent sent 0.1 USDC inside the allowance (0.5 was refused by the chain)",
-    surface: "iOS simulator, Turnkey wallet",
+    action: "Provider-held wallet: the agent sent 0.1 USDC inside the allowance (0.5 was refused by the chain)",
+    surface: "iOS simulator, provider-held wallet (spike 16)",
     explorer: "arcTestnet",
     hash: "0xfd9e28ef23f8e1506ca18ad12f22d59e962aec2763fe87e586e9257f6089c995",
     source: "plan/spikes/16-turnkey-wallet.md",
@@ -58,8 +58,8 @@ export const EVIDENCE: readonly Evidence[] = [
   {
     date: "2026-09-30",
     kind: "send",
-    action: "Turnkey wallet: the person sent 0.4 USDC themselves",
-    surface: "iOS simulator, Turnkey wallet",
+    action: "Provider-held wallet: the person sent 0.4 USDC themselves",
+    surface: "iOS simulator, provider-held wallet (spike 16)",
     explorer: "arcTestnet",
     hash: "0x8dba5c8a757f3418653fe2b5e1c5fdf83ee9a60df7c0d485cb0ce38c9e9e9a8b",
     source: "plan/spikes/16-turnkey-wallet.md",
@@ -67,8 +67,8 @@ export const EVIDENCE: readonly Evidence[] = [
   {
     date: "2026-09-30",
     kind: "revoke",
-    action: "Turnkey wallet: allowance revoked; the agent's next try was refused",
-    surface: "iOS simulator, Turnkey wallet",
+    action: "Provider-held wallet: allowance revoked; the agent's next try was refused",
+    surface: "iOS simulator, provider-held wallet (spike 16)",
     explorer: "arcTestnet",
     hash: "0x329a14ed5f9a04047f71d613e2d5a026cc803bc969719807c4e8b7e835e81547",
     source: "plan/spikes/16-turnkey-wallet.md",

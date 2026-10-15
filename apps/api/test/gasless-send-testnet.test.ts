@@ -16,7 +16,7 @@ import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -34,14 +34,9 @@ test("a wallet with no USDC to spare sends all of it through the EIP-3009 relaye
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const recipient = privateKeyToAccount(generatePrivateKey()).address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "gasless", email: `gasless-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains);
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`gasless-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains);
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   let token = "";
@@ -61,13 +56,10 @@ test("a wallet with no USDC to spare sends all of it through the EIP-3009 relaye
     return "timeout";
   };
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "gasless-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "gasless-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   ({ token } = (await signIn.json()) as { token: string });
   userId = ((await (await call("GET", "/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
 
   // The wallet holds exactly 0.03 USDC and nothing else: sending all of it leaves nothing for the fee.
   assert.equal(await drip(wallet.address, "0.03"), "COMPLETE");

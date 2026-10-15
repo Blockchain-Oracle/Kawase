@@ -1,7 +1,7 @@
 // Settings → Sign-in & security → Devices (cards/access.md) on the Senryo kit: this device first, then every other one
 // signed in (its name, system and app version, where and when it was last active). Signing one out asks once in a
-// sheet and ends its Kawase sessions at once (with Turnkey, its session key goes too); "Sign out every other device"
-// does it for all of them, for a lost phone. This device signs out the way Settings does.
+// sheet and ends its Kawase sessions at once, and the api refuses its Privy session from then on; "Sign out every other
+// device" does it for all of them, for a lost phone. This device signs out the way Settings does.
 // States: a list-shaped skeleton on the first read; the last list kept (and marked stale) when a refresh fails or the
 // phone is offline; an error with Retry only when nothing was ever read; "only this device" when nobody else is in.
 import * as Application from "expo-application";
@@ -38,7 +38,6 @@ import { readCache, writeCache } from "@/session/cache";
 import { useSession } from "@/session/session-provider";
 
 import { Group, GroupNote, Page } from "./kit-page";
-import { useAccountMethods } from "./use-account-methods";
 import { useLeave } from "./use-leave";
 
 const PLATFORM_NAMES = { ios: "iOS", android: "Android", web: "Web", desktop: "Desktop" } as const;
@@ -216,7 +215,6 @@ function SignOutSheet({
 function SignOutActions({ ask, name, onDone }: { ask: Ask; name: string; onDone: () => void }) {
   const { t } = useT();
   const close = useSheetClose();
-  const account = useAccountMethods();
   const leave = useLeave();
   const [busy, setBusy] = React.useState(false);
   const run = async () => {
@@ -226,14 +224,12 @@ function SignOutActions({ ask, name, onDone }: { ask: Ask; name: string; onDone:
         await leave();
         return;
       }
+      // The api ends that device's Kawase session and refuses its Privy session from now on: it has to sign in afresh.
       if (ask.kind === "one") {
-        const { turnkeyPublicKey } = await api.account.signOutDevice(ask.device.id);
-        // With Turnkey its session key goes too, so that phone can't sign anything even with the app still open.
-        await account.deleteSessionKeys(turnkeyPublicKey ? [turnkeyPublicKey] : []).catch(() => 0);
+        await api.account.signOutDevice(ask.device.id);
         notify.success(t("devices.signedOut", { name }));
       } else {
-        const { turnkeyPublicKeys } = await api.account.signOutEverywhere();
-        await account.deleteSessionKeys(turnkeyPublicKeys).catch(() => 0);
+        await api.account.signOutEverywhere();
         notify.success(t("devices.signedOutEverywhere"));
       }
       close(onDone);

@@ -1,10 +1,10 @@
 // Privy behind the WalletSigner interface (D41).
-// Like turnkey.ts, this file does not import Privy's SDK: the app passes in one function, `signHash`, which wraps the
+// This file does not import Privy's SDK: the app passes in one function, `signHash`, which wraps the
 // embedded wallet's EIP-1193 `secp256k1_sign` (native @privy-io/expo and web @privy-io/react-auth expose the same
 // method), so one adapter serves both and stays testable with a local key.
 // Everything is a raw 32-byte digest: viem hashes the message, the typed data, the authorization or the transaction
-// here, and the wallet signs that digest. This is the pattern turnkey.ts already proved for the delegation typed data
-// (spike 16 finding 1), and it means no Privy-side encoding can differ from what the chain checks.
+// here, and the wallet signs that digest (the pattern spike 16 proved for the delegation typed data), so no
+// provider-side encoding can differ from what the chain checks.
 // Before anything is signed, the phone checks it against what is compiled into the app (checks.ts, review M6).
 import {
   hashMessage,
@@ -23,7 +23,7 @@ import { toAccount } from "viem/accounts";
 import { hashAuthorization } from "viem/utils";
 
 import { checkAuthorization, checkTypedData } from "./checks";
-import type { ApprovalStrength, WalletSigner } from "./signer";
+import type { WalletSigner } from "./signer";
 
 const DIGEST_HEX_LENGTH = 66;
 
@@ -35,12 +35,6 @@ export type PrivySignerDeps = {
    * 0/1; both parse).
    */
   signHash: (hash: Hex) => Promise<Hex>;
-  /**
-   * Privy keys are not bound to the device, so there is no per-signature system sheet. With `passkey`, this runs
-   * before each signature (the app's own Face ID gate); a rejection stops the signature.
-   */
-  confirm?: (() => Promise<void>) | undefined;
-  approval: ApprovalStrength;
 };
 
 /** Splits a 65-byte signature into the parts viem serializes (yParity from v = 27/28 or 0/1). */
@@ -50,10 +44,9 @@ export function signatureParts(signature: Hex) {
 }
 
 export function privySigner(deps: PrivySignerDeps): WalletSigner {
-  const { address, approval } = deps;
+  const { address } = deps;
   const sign = async (hash: Hex) => {
     if (hash.length !== DIGEST_HEX_LENGTH) throw new Error("only a 32-byte digest is signed");
-    if (approval === "passkey" && deps.confirm) await deps.confirm();
     return signatureParts(await deps.signHash(hash));
   };
 

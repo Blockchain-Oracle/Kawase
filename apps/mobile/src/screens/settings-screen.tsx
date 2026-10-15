@@ -63,7 +63,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
-import { useTurnkeyAccount } from "@/wallet/use-turnkey-account";
+import { useWalletAccount } from "@/wallet/use-wallet-account";
 
 const AVATAR = SIZE.avatarLg;
 const GLYPH_PLATE = SIZE.avatarSm;
@@ -115,7 +115,7 @@ export function SettingsScreen() {
   const { locale } = useLocale();
   const { status, user, update, signOut } = useSession();
   const signIn = useSignIn();
-  const account = useTurnkeyAccount();
+  const account = useWalletAccount();
   const networkSwitch = useNetworkSwitch();
   const [hidden, setHidden] = useHideBalances();
   const feedback = useFeedbackPreferences();
@@ -172,7 +172,7 @@ export function SettingsScreen() {
     void setFeedbackPreference(key, enabled).catch(() => setSaveFailed(true));
   };
   const leave = async () => {
-    await account.signOutTurnkey();
+    await account.signOutWallet();
     await signOut();
     router.replace("/welcome");
   };

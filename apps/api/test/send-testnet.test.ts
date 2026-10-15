@@ -1,4 +1,4 @@
-// Sends through the api on Arc testnet, with a fresh local key standing in for the Turnkey wallet and Circle's
+// Sends through the api on Arc testnet, with a fresh local key standing in for the Privy wallet and Circle's
 // real ops wallet redeeming the allowance (D22: the uncertain part is how our pieces compose on a real chain).
 // Covers: a contact send inside the allowance with a double tap, the receipt witness, the address-change freeze
 // and its cancel, an unknown name resolved by saving the contact (resolve and resume), and a send above the
@@ -18,7 +18,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -41,14 +41,9 @@ test("sends on Arc testnet: allowance, freeze, resolve and resume, wallet signat
   const bob = privateKeyToAccount(generatePrivateKey()).address;
   const bobNew = privateKeyToAccount(generatePrivateKey()).address;
   const carol = privateKeyToAccount(generatePrivateKey()).address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "sender", email: `send-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`send-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -64,9 +59,7 @@ test("sends on Arc testnet: allowance, freeze, resolve and resume, wallet signat
   });
 
   // Sign in, register, set up, and accept a small allowance (0.1 USDC a day) so both routes are reachable.
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "send-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "send-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
@@ -74,7 +67,6 @@ test("sends on Arc testnet: allowance, freeze, resolve and resume, wallet signat
     const response = await app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
     return response;
   };
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

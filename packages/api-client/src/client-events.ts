@@ -15,7 +15,7 @@ export type ClientEvent = {
   outcome: "failed";
   /** The app's classification of the failure (sign-in: cancelled, invalidCode, offline, other…). */
   category: string;
-  /** The error's code, when it has one (a Turnkey or api code). */
+  /** The error's code, when it has one (a Privy or api code). */
   code?: string | undefined;
   /** The error's message chain, redacted and cut to `messageMax`. */
   message?: string | undefined;

@@ -45,6 +45,9 @@ export class PrivyTokenError extends Error {
 
 const isEmail = (value: unknown): value is string => typeof value === "string" && value.includes("@");
 
+/** Privy's embedded wallets: the original client and the server-wallet one ("user-controlled server wallets"). */
+const EMBEDDED_CLIENT_TYPES: ReadonlySet<string> = new Set(["privy", "privy-v2"]);
+
 /** The verified email and the embedded wallet from Privy's user object. */
 export function readPrivyUser(user: Pick<User, "linked_accounts">): Pick<PrivyIdentity, "email" | "wallet"> {
   const accounts: LinkedAccount[] = user.linked_accounts ?? [];
@@ -56,7 +59,7 @@ export function readPrivyUser(user: Pick<User, "linked_accounts">): Pick<PrivyId
     (account) =>
       account.type === "wallet" &&
       "wallet_client_type" in account &&
-      account.wallet_client_type === "privy" &&
+      EMBEDDED_CLIENT_TYPES.has(String(account.wallet_client_type)) &&
       account.chain_type === "ethereum",
   );
   const address = embedded && "address" in embedded ? embedded.address : undefined;

@@ -1,56 +1,27 @@
-// Privy sign-in (D41) against the local database, with tokens minted in Privy's exact format (ES256, issuer privy.io,
-// audience the app id, `sid`/`sub`; the identity token's `linked_accounts` claim as Privy encodes it) and verified by
-// @privy-io/node, so no live Privy session is needed. Run: pnpm --filter @kawase/api exec tsx --test test/privy-auth.test.ts
+// Privy sign-in (D41) against the local database, with tokens minted in Privy's exact format by the test helpers (ES256,
+// issuer privy.io, audience the app id, `sid`/`sub`; the identity token's `linked_accounts` claim as Privy encodes it)
+// and verified by @privy-io/node, so no live Privy session is needed. Also: signing a device out refuses its Privy
+// session, and the web's emailed approval code. Run: pnpm --filter @kawase/api exec tsx --test test/privy-auth.test.ts
 import assert from "node:assert/strict";
-import { createHash, generateKeyPairSync, randomUUID, sign, type KeyObject } from "node:crypto";
+import { createHash, generateKeyPairSync, randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { and, eq } from "drizzle-orm";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
-import { grants, userWalletSetup, users, wallets } from "@kawase/db";
+import { users, wallets } from "@kawase/db";
 
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import type { Email } from "../src/notify/email";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, privyTokens, testApp, type PrivyPerson } from "./helpers";
 
-const APP_ID = "kawase-privy-test";
-const keys = generateKeyPairSync("ec", { namedCurve: "P-256" });
 const otherKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
-// Read by the AuthService the app builds (WALLET_PROVIDER=privy turns Privy sign-in on).
-process.env.WALLET_PROVIDER = "privy";
-process.env.PRIVY_APP_ID = APP_ID;
-process.env.PRIVY_VERIFICATION_KEY = keys.publicKey.export({ type: "spki", format: "pem" }).toString();
-delete process.env.PRIVY_APP_SECRET;
+const tokens = (person: PrivyPerson) => privyTokens(person);
+/** The emails the api sent (approval codes), instead of Resend. */
+const sent: Email[] = [];
+const email = { send: async (message: Email) => (sent.push(message), { id: randomUUID() }) };
 
-const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
-function jwt(payload: Record<string, unknown>, key: KeyObject = keys.privateKey) {
-  const now = Math.floor(Date.now() / 1000);
-  const body = `${b64({ alg: "ES256", typ: "JWT" })}.${b64({ iss: "privy.io", aud: APP_ID, iat: now, exp: now + 3600, ...payload })}`;
-  const signature = sign("sha256", Buffer.from(body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
-  return `${body}.${signature}`;
-}
-
-type Person = { did: string; email?: string; wallet?: string };
-const tokens = (person: Person, key?: KeyObject) => ({
-  accessToken: jwt({ sub: person.did, sid: `session-${person.did}` }, key),
-  identityToken: jwt(
-    {
-      sub: person.did,
-      cr: "1791000000",
-      linked_accounts: JSON.stringify([
-        ...(person.email ? [{ type: "email", address: person.email, lv: 1791000000 }] : []),
-        ...(person.wallet
-          ? [{ type: "wallet", wallet_client_type: "privy", id: `wallet-${person.did}`, address: person.wallet, chain_type: "ethereum", lv: 1791000000 }]
-          : []),
-      ]),
-    },
-    key,
-  ),
-});
-
-const { app, db, close } = testApp(fakeTurnkey({}), undefined, undefined, undefined, undefined, undefined, undefined, { deviceProofRequired: true });
+const { app, db, close } = testApp(undefined, undefined, undefined, undefined, undefined, undefined, { deviceProofRequired: true, email: email as never });
 const EMAIL = "privy-amina@example.test";
-const OLD_EMAIL = "turnkey-era@example.test";
 await db.delete(users).where(eq(users.email, EMAIL));
-await db.delete(users).where(eq(users.email, OLD_EMAIL));
 const device = (id: string) => ({ platform: "web", installationId: `privy-test-${id}`, appVersion: "0.2.0", locale: "en" });
 const created: string[] = [];
 after(async () => {
@@ -65,7 +36,7 @@ test("a Privy sign-in upgrades the guest and registers the embedded wallet from 
   await expectStatus(guest, 201);
   const { token: guestToken, user: guestUser } = (await guest.json()) as { token: string; user: { id: string } };
   created.push(guestUser.id);
-  const person = { did: `did:privy:${randomUUID()}`, email: EMAIL, wallet: wallet.address };
+  const person = privyPerson(EMAIL, wallet.address);
   const response = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("a") }, guestToken));
   await expectStatus(response, 201);
   const body = (await response.json()) as { token: string; user: { id: string; email: string; isGuest: boolean }; wallet: { address: string } };
@@ -85,74 +56,87 @@ test("a Privy sign-in upgrades the guest and registers the embedded wallet from 
 });
 
 test("tokens that do not verify, or that name two different people, are refused", async () => {
-  const person = { did: `did:privy:${randomUUID()}`, email: "nobody@example.test" };
-  const forged = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person, otherKeys.privateKey), device: device("c") }));
+  const person = privyPerson("nobody@example.test");
+  const forged = await app.request("/auth/privy", jsonRequest("POST", { ...privyTokens(person, { key: otherKeys.privateKey }), device: device("c") }));
   await expectStatus(forged, 401);
-  const mixed = { accessToken: tokens(person).accessToken, identityToken: tokens({ ...person, did: `did:privy:${randomUUID()}` }).identityToken };
+  const mixed = { accessToken: tokens(person).accessToken, identityToken: tokens(privyPerson("nobody@example.test")).identityToken };
   const response = await app.request("/auth/privy", jsonRequest("POST", { ...mixed, device: device("c") }));
   await expectStatus(response, 401);
   const garbage = await app.request("/auth/privy", jsonRequest("POST", { accessToken: "not-a-jwt", device: device("c") }));
   await expectStatus(garbage, 400);
 });
 
-test("a Turnkey-era account is matched by the verified email: its wallet is retired, its grants stop, setup is asked again", async () => {
-  const [old] = await db
-    .insert(users)
-    .values({ email: OLD_EMAIL, isAnonymous: false, turnkeySubOrganizationId: randomUUID(), identityProvider: "turnkey" })
-    .returning();
-  created.push(old!.id);
-  const oldAddress = privateKeyToAccount(generatePrivateKey()).address;
-  const [oldWallet] = await db.insert(wallets).values({ userId: old!.id, role: "user", custody: "turnkey", address: oldAddress }).returning();
-  await db.insert(userWalletSetup).values({ userId: old!.id, network: "testnet", delegatorImpl: "0x63c0c19a282a1B52b07dD5a65b58948A07DAE32B" });
-  const [grant] = await db
-    .insert(grants)
-    .values({
-      userId: old!.id,
-      network: "testnet",
-      kind: "allowance",
-      delegatorWalletId: oldWallet!.id,
-      delegateAddress: oldAddress,
-      delegation: {},
-      delegationHash: `0x${createHash("sha256").update(randomUUID()).digest("hex")}`,
-      receipt: {},
-      periodAmount: 1n,
-      periodSeconds: 86400,
-      startsAt: new Date(),
-      expiresAt: new Date(Date.now() + 86_400_000),
-      status: "active",
-    })
-    .returning();
-
-  const newWallet = privateKeyToAccount(generatePrivateKey()).address;
-  const person = { did: `did:privy:${randomUUID()}`, email: OLD_EMAIL.toUpperCase(), wallet: newWallet };
-  const response = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("d") }));
-  await expectStatus(response, 201);
-  const body = (await response.json()) as { user: { id: string }; wallet: { address: string } };
-  assert.equal(body.user.id, old!.id);
-  assert.equal(body.wallet.address.toLowerCase(), newWallet.toLowerCase());
-  const rows = await db.select().from(wallets).where(eq(wallets.userId, old!.id));
-  assert.deepEqual(rows.map((row) => `${row.custody}:${row.status}`).sort(), ["privy:active", "turnkey:retired"]);
-  const [after] = await db.select().from(grants).where(eq(grants.id, grant!.id));
-  assert.equal(after?.status, "superseded");
-  assert.equal((await db.select().from(userWalletSetup).where(eq(userWalletSetup.userId, old!.id))).length, 0);
-  const [linked] = await db.select().from(users).where(eq(users.id, old!.id));
-  assert.equal(linked?.identityProvider, "privy");
-
+test("an account keeps its wallet: tokens naming another one sign in but register nothing; an email is not taken over", async () => {
+  const first = privateKeyToAccount(generatePrivateKey()).address;
+  const person = privyPerson(`keep-${randomUUID()}@example.test`, first);
+  const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("d") }));
+  await expectStatus(signIn, 201);
+  const { user } = (await signIn.json()) as { user: { id: string } };
+  created.push(user.id);
+  const second = privateKeyToAccount(generatePrivateKey()).address;
+  const again = await app.request("/auth/privy", jsonRequest("POST", { ...tokens({ ...person, wallet: second }), device: device("d") }));
+  await expectStatus(again, 201);
+  assert.equal(((await again.json()) as { wallet: unknown }).wallet ?? null, null);
+  const rows = await db.select().from(wallets).where(eq(wallets.userId, user.id));
+  assert.deepEqual(rows.map((row) => `${row.custody}:${row.status}:${row.address.toLowerCase()}`), [`privy:active:${first.toLowerCase()}`]);
   // A second Privy identity claiming the same email does not take the account over.
-  const intruder = { did: `did:privy:${randomUUID()}`, email: OLD_EMAIL };
+  const intruder = privyPerson(person.email);
   const refused = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(intruder), device: device("e") }));
   await expectStatus(refused, 409);
 });
 
+test("a device signed out from another one cannot come back on its old Privy session; a fresh sign-in can", async () => {
+  const person = privyPerson(`out-${randomUUID()}@example.test`, privateKeyToAccount(generatePrivateKey()).address);
+  const phone = await privySignIn(app, person, device("out-phone"));
+  await expectStatus(phone, 201);
+  const { token: phoneToken, user } = (await phone.json()) as { token: string; user: { id: string } };
+  created.push(user.id);
+  await expectStatus(await privySignIn(app, person, device("out-laptop")), 201);
+  const listed = (await (await app.request("/account/devices", { headers: { authorization: `Bearer ${phoneToken}` } })).json()) as {
+    devices: { id: string; current: boolean }[];
+  };
+  const laptop = listed.devices.find((entry) => !entry.current)!;
+  await expectStatus(await app.request(`/account/devices/${laptop.id}/sign-out`, { method: "POST", headers: { authorization: `Bearer ${phoneToken}` } }), 200);
+  const back = await privySignIn(app, person, device("out-laptop"));
+  await expectStatus(back, 401);
+  assert.match(((await back.json()) as { type: string }).type, /session_signed_out$/);
+  // Signed in afresh (a new Privy session), the laptop is let in again.
+  await expectStatus(await privySignIn(app, { ...person, session: randomUUID() }, device("out-laptop")), 201);
+});
+
+test("the web's approval code: emailed to the account, wrong codes spend tries, the right one works once", async () => {
+  const person = privyPerson(`code-${randomUUID()}@example.test`);
+  const signIn = await privySignIn(app, person, device("code"));
+  await expectStatus(signIn, 201);
+  const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
+  created.push(user.id);
+  const auth = { authorization: `Bearer ${token}` };
+  const before = sent.length;
+  const asked = await app.request("/account/approval-code", { method: "POST", headers: auth });
+  await expectStatus(asked, 200);
+  assert.match(((await asked.json()) as { sentTo: string }).sentTo, /^co•••@example\.test$/);
+  const message = sent.at(-1)!;
+  assert.equal(sent.length, before + 1);
+  assert.equal(message.to, person.email);
+  const code = /\b(\d{6})\b/.exec(message.text)![1]!;
+  await expectStatus(await app.request("/account/approval-code", { method: "POST", headers: auth }), 429, "a second code at once");
+  const wrong = code === "000000" ? "111111" : "000000";
+  await expectStatus(await app.request("/account/approval-code/verify", jsonRequest("POST", { code: wrong }, token)), 400, "wrong code");
+  const right = await app.request("/account/approval-code/verify", jsonRequest("POST", { code }, token));
+  await expectStatus(right, 200, "right code");
+  assert.deepEqual(await right.json(), { approved: true });
+  await expectStatus(await app.request("/account/approval-code/verify", jsonRequest("POST", { code }, token)), 400, "used once");
+});
+
 test("a wallet created after sign-in is registered from fresh tokens for the same identity only", async () => {
-  const person: Person = { did: `did:privy:${randomUUID()}`, email: `late-${randomUUID()}@example.test` };
+  const person = privyPerson(`late-${randomUUID()}@example.test`);
   const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("f") }));
   await expectStatus(signIn, 201);
   const { token, user, wallet: none } = (await signIn.json()) as { token: string; user: { id: string }; wallet: null };
   created.push(user.id);
   assert.equal(none, null);
   const late = privateKeyToAccount(generatePrivateKey()).address;
-  const other = await app.request("/auth/privy/wallet", jsonRequest("POST", tokens({ did: `did:privy:${randomUUID()}`, wallet: late }), token));
+  const other = await app.request("/auth/privy/wallet", jsonRequest("POST", tokens(privyPerson(undefined, late)), token));
   await expectStatus(other, 403);
   const missing = await app.request("/auth/privy/wallet", jsonRequest("POST", tokens(person), token));
   await expectStatus(missing, 422);
@@ -163,7 +147,7 @@ test("a wallet created after sign-in is registered from fresh tokens for the sam
 
 test("M12 with Privy: the registered wallet signs the request; a missing, foreign or replayed proof is refused", async () => {
   const signer = privateKeyToAccount(generatePrivateKey());
-  const person = { did: `did:privy:${randomUUID()}`, email: `proof-${randomUUID()}@example.test`, wallet: signer.address };
+  const person = privyPerson(`proof-${randomUUID()}@example.test`, signer.address);
   const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("g") }));
   await expectStatus(signIn, 201);
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
@@ -184,7 +168,7 @@ test("M12 with Privy: the registered wallet signs the request; a missing, foreig
 });
 
 test("an email changed at Privy is followed, unless another account holds it", async () => {
-  const person: Person = { did: `did:privy:${randomUUID()}`, email: `before-${randomUUID()}@example.test` };
+  const person = privyPerson(`before-${randomUUID()}@example.test`);
   const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("h") }));
   await expectStatus(signIn, 201);
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
@@ -198,7 +182,7 @@ test("an email changed at Privy is followed, unless another account holds it", a
 });
 
 test("two first sign-ins for the same Privy user at once make one account: each answers 201 or 409, never 500", async () => {
-  const person: Person = { did: `did:privy:${randomUUID()}`, email: `race-${randomUUID()}@example.test`, wallet: privateKeyToAccount(generatePrivateKey()).address };
+  const person = privyPerson(`race-${randomUUID()}@example.test`, privateKeyToAccount(generatePrivateKey()).address);
   const attempts = await Promise.all(
     ["race-1", "race-2", "race-3"].map((id) => app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device(id) }))),
   );
@@ -213,7 +197,7 @@ test("two first sign-ins for the same Privy user at once make one account: each 
 });
 
 test("two registrations of the same new wallet at once keep one wallet and never answer 500", async () => {
-  const person: Person = { did: `did:privy:${randomUUID()}`, email: `race-wallet-${randomUUID()}@example.test` };
+  const person = privyPerson(`race-wallet-${randomUUID()}@example.test`);
   const signIn = await app.request("/auth/privy", jsonRequest("POST", { ...tokens(person), device: device("race-w") }));
   await expectStatus(signIn, 201);
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };

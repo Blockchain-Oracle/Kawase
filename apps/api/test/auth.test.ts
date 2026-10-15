@@ -6,29 +6,10 @@ import { eq } from "drizzle-orm";
 
 import { users } from "@kawase/db";
 
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
-const SUB_ORG = randomUUID();
-const TURNKEY_USER = randomUUID();
-const OTHER_ORG = randomUUID();
-const OTHER_USER = randomUUID();
-const sessionKey = turnkeyStyleKeyPair();
-const otherKey = turnkeyStyleKeyPair();
-const turnkey = fakeTurnkey({
-  [`${SUB_ORG}/${TURNKEY_USER}`]: {
-    userId: TURNKEY_USER,
-    userName: "amina",
-    email: "amina@example.test",
-    sessionPublicKeys: [sessionKey.publicKeyHex],
-  },
-  [`${OTHER_ORG}/${OTHER_USER}`]: {
-    userId: OTHER_USER,
-    userName: "other identity",
-    email: "amina@example.test",
-    sessionPublicKeys: [otherKey.publicKeyHex],
-  },
-});
-const { app, db, close } = testApp(turnkey);
+const person = privyPerson("amina@example.test");
+const { app, db, close } = testApp();
 // Rows left behind by an earlier interrupted run.
 await db.delete(users).where(eq(users.email, "amina@example.test"));
 const device = { platform: "ios", installationId: "test-phone-0001", appVersion: "0.1.0", locale: "ar" };
@@ -37,13 +18,6 @@ after(async () => {
   for (const id of created) await deleteUser(db, id);
   await close();
 });
-
-async function proofFor(key = sessionKey) {
-  const nonceResponse = await app.request("/auth/nonce", { method: "POST" });
-  const { nonce } = (await nonceResponse.json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  return { body, stamp: await stampBody(body, key), nonce };
-}
 
 test("a guest gets a session and can read /me", async () => {
   const response = await app.request("/auth/guest", jsonRequest("POST", { device, locale: "ar" }));
@@ -69,29 +43,22 @@ test("without a session, /me is a problem+json 401", async () => {
   assert.ok(body.requestId);
 });
 
-test("a Turnkey proof upgrades the guest in place, and a second guest is merged into the account", async () => {
+test("a Privy sign-in upgrades the guest in place, and a second guest is merged into the account", async () => {
   const guest = await app.request("/auth/guest", jsonRequest("POST", { device }));
   const { token: guestToken, user: guestUser } = (await guest.json()) as { token: string; user: { id: string } };
 
-  const proof = await proofFor();
-  const signIn = await app.request(
-    "/auth/turnkey",
-    jsonRequest(
-      "POST",
-      { proof: { body: proof.body, stamp: proof.stamp }, turnkeyUserId: TURNKEY_USER, device },
-      guestToken,
-    ),
-  );
+  const signIn = await privySignIn(app, person, device, guestToken);
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as {
     token: string;
-    user: { id: string; isGuest: boolean; email: string; turnkeySubOrganizationId: string };
+    user: { id: string; isGuest: boolean; email: string };
   };
   created.push(user.id);
   assert.equal(user.id, guestUser.id, "the guest row became the account");
   assert.equal(user.isGuest, false);
   assert.equal(user.email, "amina@example.test");
-  assert.equal(user.turnkeySubOrganizationId, SUB_ORG);
+  const [row] = await db.select().from(users).where(eq(users.id, user.id));
+  assert.equal(row?.identitySubject, person.did);
   assert.equal(
     (await app.request("/me", { headers: { authorization: `Bearer ${guestToken}` } })).status,
     401,
@@ -99,7 +66,7 @@ test("a Turnkey proof upgrades the guest in place, and a second guest is merged 
   );
   assert.equal((await app.request("/me", { headers: { authorization: `Bearer ${token}` } })).status, 200);
 
-  // A new guest on another device signs in to the same Turnkey account: the guest is merged and deleted.
+  // A new guest on another device signs in to the same Privy account: the guest is merged and deleted.
   const secondGuest = await app.request(
     "/auth/guest",
     jsonRequest("POST", { device: { ...device, installationId: "test-laptop-0002", platform: "web" } }),
@@ -108,19 +75,7 @@ test("a Turnkey proof upgrades the guest in place, and a second guest is merged 
     token: string;
     user: { id: string };
   };
-  const proof2 = await proofFor();
-  const signIn2 = await app.request(
-    "/auth/turnkey",
-    jsonRequest(
-      "POST",
-      {
-        proof: { body: proof2.body, stamp: proof2.stamp },
-        turnkeyUserId: TURNKEY_USER,
-        device: { ...device, installationId: "test-laptop-0002", platform: "web" },
-      },
-      secondToken,
-    ),
-  );
+  const signIn2 = await privySignIn(app, person, { ...device, installationId: "test-laptop-0002", platform: "web" }, secondToken);
   await expectStatus(signIn2, 201, "second sign-in");
   const merged = (await signIn2.json()) as { user: { id: string } };
   assert.equal(merged.user.id, user.id);
@@ -131,86 +86,22 @@ test("a Turnkey proof upgrades the guest in place, and a second guest is merged 
   );
 });
 
-test("a used or unknown nonce, a wrong key, and an unknown user are refused", async () => {
-  const proof = await proofFor();
-  const first = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", { proof: { body: proof.body, stamp: proof.stamp }, turnkeyUserId: TURNKEY_USER, device }),
-  );
-  assert.equal(first.status, 201);
-  const replay = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", { proof: { body: proof.body, stamp: proof.stamp }, turnkeyUserId: TURNKEY_USER, device }),
-  );
-  assert.equal(replay.status, 401);
-  assert.match(((await replay.json()) as { type: string }).type, /nonce_invalid$/);
-
-  const wrongKey = await proofFor(otherKey);
-  const refused = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", { proof: { body: wrongKey.body, stamp: wrongKey.stamp }, turnkeyUserId: TURNKEY_USER, device }),
-  );
-  assert.equal(refused.status, 401);
-  assert.match(((await refused.json()) as { type: string }).type, /session_key_unknown$/);
-
-  const unknownUser = await proofFor();
-  const missing = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", {
-      proof: { body: unknownUser.body, stamp: unknownUser.stamp },
-      turnkeyUserId: randomUUID(),
-      device,
-    }),
-  );
-  assert.equal(missing.status, 401);
-
-  const tampered = await proofFor();
-  const bad = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", {
-      proof: { body: tampered.body.replace(tampered.nonce, "x"), stamp: tampered.stamp },
-      turnkeyUserId: TURNKEY_USER,
-      device,
-    }),
-  );
-  assert.equal(bad.status, 401);
-});
-
-test("matching email metadata cannot rebind another Turnkey identity or move its guest data", async () => {
-  const [original] = await db.select().from(users).where(eq(users.turnkeySubOrganizationId, SUB_ORG));
+test("another Privy identity with the same verified email cannot take the account or move its guest data", async () => {
+  const [original] = await db.select().from(users).where(eq(users.identitySubject, person.did));
   assert.ok(original);
   const guest = await app.request("/auth/guest", jsonRequest("POST", { device }));
   const { token: guestToken, user: guestUser } = (await guest.json()) as { token: string; user: { id: string } };
   created.push(guestUser.id);
-  const nonceResponse = await app.request("/auth/nonce", { method: "POST" });
-  const { nonce } = (await nonceResponse.json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: OTHER_ORG, activityId: nonce });
-  const response = await app.request(
-    "/auth/turnkey",
-    jsonRequest(
-      "POST",
-      {
-        proof: { body, stamp: await stampBody(body, otherKey) },
-        turnkeyUserId: OTHER_USER,
-        device,
-      },
-      guestToken,
-    ),
-  );
+  const response = await privySignIn(app, privyPerson("amina@example.test"), device, guestToken);
   assert.equal(response.status, 409);
   assert.match(((await response.json()) as { type: string }).type, /account_recovery_required$/);
   const [unchanged] = await db.select().from(users).where(eq(users.id, original.id));
-  assert.equal(unchanged?.turnkeySubOrganizationId, SUB_ORG);
-  assert.equal(unchanged?.turnkeyUserId, TURNKEY_USER);
+  assert.equal(unchanged?.identitySubject, person.did);
   assert.equal((await app.request("/me", { headers: { authorization: `Bearer ${guestToken}` } })).status, 200);
 });
 
 test("mainnet needs the consent and a live mainnet; settings and idempotent consents work", async () => {
-  const proof = await proofFor();
-  const signIn = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", { proof: { body: proof.body, stamp: proof.stamp }, turnkeyUserId: TURNKEY_USER, device }),
-  );
+  const signIn = await privySignIn(app, person, device);
   const { token } = (await signIn.json()) as { token: string };
 
   const noMainnet = await app.request("/me/network", jsonRequest("PUT", { network: "mainnet" }, token));

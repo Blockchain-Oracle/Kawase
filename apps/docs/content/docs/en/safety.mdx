@@ -9,7 +9,7 @@ network — not by trust in the AI or in Kawase's servers. This page describes h
 ## Your wallet
 
 - When you sign in (email code, Apple or Google), Kawase creates an ordinary Ethereum-style account (an **EOA**) whose key
-  is held by **Turnkey** in secure hardware, inside a sub-organization that belongs to you. There is no PIN and no
+  is held by **Privy**, split up in secure enclaves so that no single party ever holds it whole. There is no PIN and no
   password. It is **one address on both networks**.
 - Kawase then upgrades that same account in place with **EIP-7702**, pointing its code at MetaMask's audited
   `EIP7702StatelessDeleGator`. You sign one authorization; Kawase's relayer sends it and pays the fee, so setup costs you
@@ -45,9 +45,9 @@ Above the allowance, Kawase builds the exact transaction, shows you the amount, 
 your wallet to sign **that** transaction. The server then checks the signed bytes match the card — sender, recipient,
 amount, network, fees — before broadcasting. A mismatch freezes the payment.
 
-Today the signature comes from your signed-in session behind the device's own biometric check. **Passkeys are coming**
-(they need Kawase's own domain): once you add one, Turnkey itself will require it for every wallet signature, so neither a
-stolen session nor Kawase's own server could sign for you.
+The signature comes from your own wallet, behind the owner's check: Face ID (or the device passcode) on a phone, and on
+the web a six-digit code Kawase emails to your verified address. Kawase's server never holds your key, so it cannot sign
+for you.
 
 ## Automations: pinned on chain
 

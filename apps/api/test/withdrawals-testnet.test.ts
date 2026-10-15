@@ -25,7 +25,7 @@ import { getNetwork } from "@kawase/networks";
 import { appKitBridges } from "../src/bridge/engine";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -63,17 +63,10 @@ before(async () => {
   const chains = createChains(env);
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "batcher", email: `batch-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, undefined, appKitSwaps(env), appKitBridges(env));
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "batch-phone-0001" } }));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`batch-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, undefined, appKitSwaps(env), appKitBridges(env));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "batch-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   call = (method, path, payload) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
@@ -86,7 +79,6 @@ before(async () => {
     await deleteUser(db, user.id);
     await close();
   };
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

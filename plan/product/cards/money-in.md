@@ -51,7 +51,7 @@ Verified: 2026-10-02
 
   | Route | Fee | You receive | Gas | Speed |
   |---|---|---|---|---|
-  | **Relay with permit** (default) | $0.033 | 49.966 | **gasless**: one EIP-712 `ReceiveWithAuthorization` signature (Turnkey, the same key) | ~1 s |
+  | **Relay with permit** (default) | $0.033 | 49.966 | **gasless**: one EIP-712 `ReceiveWithAuthorization` signature (Privy, the same key) | ~1 s |
   | Across | $0.008 (cheapest) | 49.992 | needs ETH on Base, so offered only when the user has it or Kawase sponsors | ~instant |
   | CCTP fast/standard | ~0.0016 / 0 | — | needs Base gas or sponsorship; the forwarder mints on Arc | seconds / ~15 min |
 

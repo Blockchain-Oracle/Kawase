@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { PRIVY_APP_ID, PRIVY_CLIENT_ID } from "./config";
-import type { SocialProvider } from "./turnkey-account-core";
+import type { SocialProvider } from "./account";
 
 const PRIVY_APP_CONFIG = "https://auth.privy.io/api/v1/apps/";
 

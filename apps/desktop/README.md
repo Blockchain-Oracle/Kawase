@@ -13,7 +13,7 @@ What the shell adds to the web app:
 - **`kawase://` deep links** use the same scheme as the phone app. `kawase://r/abc` opens
   `https://app.getkawase.xyz/r/abc` in the window. On Windows and Linux a second launch hands its link to the running
   window (single-instance).
-- **The window stays on the app.** Sign-in pages (Google, Apple, Turnkey) may load inside it. Pop-ups the app opens
+- **The window stays on the app.** Sign-in pages (Google, Apple, Privy) may load inside it. Pop-ups the app opens
   itself (the sign-in window, Buy) become child windows that share the session, so the sign-in completes as it does
   in a browser. Any other site (an explorer, the docs) opens in your browser.
 - **No access to the computer.** The remote page gets no Tauri commands: `capabilities` is empty and there is no

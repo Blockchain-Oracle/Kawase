@@ -101,7 +101,7 @@ let user: SessionUser;
 before(async () => {
   if (!url) return;
   const [row] = await db.insert(users).values({ isAnonymous: false, email: `x402-h1-${randomUUID()}@example.test` }).returning();
-  await db.insert(wallets).values({ userId: row!.id, role: "user", custody: "turnkey", address: privateKeyToAccount(generatePrivateKey()).address as Address, providerRef: {} });
+  await db.insert(wallets).values({ userId: row!.id, role: "user", custody: "privy", address: privateKeyToAccount(generatePrivateKey()).address as Address, providerRef: {} });
   user = { ...row!, activeNetwork: "testnet" } as unknown as SessionUser;
 });
 

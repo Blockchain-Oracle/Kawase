@@ -12,7 +12,6 @@ import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { useSession } from "@/session/session-provider";
 import { biometricKind, confirmWithBiometrics, type BiometricKind } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 import { DEFAULT_CATEGORIES, DEFAULT_PER_ACTION, DEFAULT_WEEKLY, defaultDraft, useAllBudgetVenues } from "./defaults";
@@ -28,7 +27,7 @@ export function BudgetIntro({ onDone, onSkip }: { onDone: () => void; onSkip: ()
   const { color } = useTheme();
   const { user } = useSession();
   const { state, set, network } = useBudget();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const ready = state.status === "ready";
   const { venues } = useAllBudgetVenues(network, ready);
   const [busy, setBusy] = React.useState(false);

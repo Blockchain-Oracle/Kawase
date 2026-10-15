@@ -2,7 +2,7 @@
   "name": "@kawase/wallet",
   "version": "0.0.0",
   "private": true,
-  "description": "The user's wallet signer: one interface, Privy- and Turnkey-backed implementations for the app and a local-key one for tests. Client-safe.",
+  "description": "The user's wallet signer: one interface, a Privy-backed implementation for the app and a local-key one for tests. Client-safe.",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

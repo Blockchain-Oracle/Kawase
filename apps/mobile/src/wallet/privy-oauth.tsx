@@ -5,7 +5,7 @@
 import { useLoginWithOAuth, usePrivy, type OAuthFlowState } from "@privy-io/react-auth";
 import * as React from "react";
 
-import type { SocialProvider } from "./turnkey-account-core";
+import type { SocialProvider } from "./account";
 
 /** Set just before the page leaves for Google or Apple; read when it comes back. Cleared once the outcome was shown. */
 export const OAUTH_RETURN_KEY = "kawase.privy.oauth";

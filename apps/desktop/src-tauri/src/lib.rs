@@ -1,7 +1,7 @@
 //! Kawase on the desktop (plan Lane C item 13): a native window around the live web app at
 //! https://app.getkawase.xyz. Nothing is bundled, so the desktop app is always the current web release.
 //!
-//! - The window stays on the app. Sign-in pages (Google, Apple, Turnkey) may load in it; any other site opens in
+//! - The window stays on the app. Sign-in pages (Google, Apple, Privy) may load in it; any other site opens in
 //!   the person's browser.
 //! - Pop-ups the app opens itself (the sign-in window, Buy) become child windows that share the app's session, so
 //!   the opener can read their result exactly as in a browser.
@@ -29,9 +29,10 @@ const TITLE: &str = "Kawase";
 const DEFAULT_SIZE: (f64, f64) = (1280.0, 820.0);
 /// The phone layout's narrowest comfortable width.
 const MIN_SIZE: (f64, f64) = (380.0, 600.0);
-/// Sign-in providers whose pages may load inside Kawase's windows (Turnkey's web kit drives them).
+/// Sign-in pages that may load inside Kawase's windows: Google's and Apple's, and Privy's own (auth.privy.io answers
+/// their redirect and sends the page back to the app; D41).
 const AUTH_HOSTS: &[&str] = &["accounts.google.com", "account.apple.com", "appleid.apple.com"];
-const AUTH_DOMAIN_SUFFIXES: &[&str] = &[".turnkey.com"];
+const AUTH_DOMAIN_SUFFIXES: &[&str] = &[".privy.io"];
 /// packages/ui-tokens: themes.dark.background and themes.light.background.
 const INK: Color = Color(0x0B, 0x0C, 0x10, 0xFF);
 const PAPER: Color = Color(0xF7, 0xF8, 0xF4, 0xFF);
@@ -224,8 +225,8 @@ mod tests {
         assert!(!is_app(&url("http://app.getkawase.xyz/")));
         assert!(!is_app(&url("https://app.getkawase.xyz.evil.example/")));
         assert!(is_auth(&url("https://accounts.google.com/o/oauth2/v2/auth")));
-        assert!(is_auth(&url("https://oauth-redirect.turnkey.com/")));
-        assert!(!is_auth(&url("https://turnkey.com.evil.example/")));
+        assert!(is_auth(&url("https://auth.privy.io/api/v1/oauth/callback")));
+        assert!(!is_auth(&url("https://privy.io.evil.example/")));
         assert!(!is_web(&url("blob:https://app.getkawase.xyz/123")));
     }
 }

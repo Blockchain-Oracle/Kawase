@@ -39,8 +39,6 @@ export const wallet: Catalog["wallet"] = {
   oauthReturnTitle: "جارٍ إكمال تسجيل الدخول",
   oauthReturnGoogle: "عبر حسابك في Google",
   oauthReturnApple: "عبر حسابك في Apple",
-  approveTitle: "الموافقة",
-  slideToApprove: "اسحب للموافقة",
   creatingVerb: "جارٍ إنشاء محفظتك",
   signingInVerb: "جارٍ تسجيل الدخول",
 };

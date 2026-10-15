@@ -1,22 +1,20 @@
-// Getting in and staying in (cards/access.md): this device and the others, signing one out or all of them, the email
-// that follows the account's Turnkey user, what the account holds before it is deleted, and deleting it.
+// Getting in and staying in (cards/access.md): this device and the others, signing one out or all of them, what the
+// account holds before it is deleted, and deleting it. (The email follows the person's Privy login: /auth/privy/email.)
 //
-// Signing a device out revokes its Kawase sessions here and hands back that device's Turnkey session key; the app
-// (signed in to Turnkey on this device) then deletes that API key from the person's sub-organization, which only the
-// person's own session may do. Deleting the account deletes the person's data at Kawase (contacts, threads and their
-// transcripts, inbox, requests, grants as Kawase holds them) — the wallet stays theirs in their Turnkey sub-org — and
-// holds the @handle for 30 days. Money in the agent wallet goes back to their wallet first.
+// Signing a device out revokes its Kawase sessions and stops its pushes; the device signs out of Privy itself when it
+// next opens. Deleting the account deletes the person's data at Kawase (contacts, threads and their transcripts,
+// inbox, requests, grants as Kawase holds them) — the wallet stays theirs at Privy, exportable — and holds the @handle
+// for 30 days. Money in the agent wallet goes back to their wallet first.
 import { and, count, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 
 import { HANDLE_HOLD_DAYS, SECONDS_PER_DAY, SECONDS_PER_MINUTE } from "@kawase/config";
-import { devices, grants, handleHolds, sessions, users, type Db } from "@kawase/db";
+import { devices, grants, handleHolds, revokedIdentitySessions, sessions, users, type Db } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import type { NetworkId } from "@kawase/networks";
 
 import type { AuditWriter } from "../audit/writer";
 import type { InboxService } from "../inbox/service";
 import { approximatePlace } from "./location";
-import type { TurnkeyReader } from "../auth/turnkey";
 import { HTTP, problem } from "../http/problem";
 import type { MarketplaceService } from "../marketplace/service";
 import type { SessionUser } from "../types";
@@ -40,17 +38,22 @@ export type DeviceView = {
   createdAt: string;
   current: boolean;
   signedIn: boolean;
-  /** The device's Turnkey session key, for the app to delete when signing it out. */
-  turnkeyPublicKey: string | null;
   /** Roughly where it was last seen ("Lisbon, Portugal"). */
   location: string | null;
 };
+
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/** A signed-out device's Privy session: refused at sign-in from now on (auth/service.ts), so it must sign in afresh. */
+async function revokeIdentitySession(tx: Tx, userId: string, sessionId: string | null) {
+  if (!sessionId) return;
+  await tx.insert(revokedIdentitySessions).values({ sessionId, userId }).onConflictDoNothing();
+}
 
 export class AccountService {
   constructor(
     private readonly db: Db,
     private readonly chains: Chains,
-    private readonly turnkey: TurnkeyReader,
     private readonly wallets: WalletService,
     private readonly audit: AuditWriter,
     private readonly log: Logger,
@@ -112,7 +115,6 @@ export class AccountService {
       createdAt: device.createdAt.toISOString(),
       current: device.id === currentDeviceId,
       signedIn: (liveByDevice.get(device.id) ?? 0) > 0 && !device.revokedAt,
-      turnkeyPublicKey: device.turnkeyPublicKey,
       location: device.location,
     }));
   }
@@ -134,17 +136,18 @@ export class AccountService {
       .where(and(eq(devices.id, deviceId), eq(devices.userId, userId)));
   }
 
-  /** Revokes every Kawase session on one device and stops its pushes; returns its Turnkey key for the app to delete. */
+  /** Revokes every Kawase session on one device and stops its pushes. */
   async signOutDevice(user: SessionUser, deviceId: string, by: { deviceId: string | undefined }) {
     const [device] = await this.db.select().from(devices).where(and(eq(devices.id, deviceId), eq(devices.userId, user.id)));
     if (!device) throw problem(HTTP.notFound, "not_found");
     await this.db.transaction(async (tx) => {
       await tx.update(sessions).set({ revokedAt: new Date() }).where(and(eq(sessions.deviceId, deviceId), isNull(sessions.revokedAt)));
       await tx.update(devices).set({ revokedAt: new Date(), expoPushToken: null }).where(eq(devices.id, deviceId));
+      await revokeIdentitySession(tx, user.id, device.identitySessionId);
     });
     await this.audit.write({ userId: user.id, actor: "user", action: "device.sign_out", subjectType: "device", subjectId: deviceId, deviceId: by.deviceId });
     await this.securityNotice(user.id, "device_signed_out", device).catch((error: unknown) => this.log.warn({ err: error }, "sign-out notice failed"));
-    return { turnkeyPublicKey: device.turnkeyPublicKey };
+    return { signedOut: true as const };
   }
 
   /** Every other device out at once (lost phone); this one stays signed in. */
@@ -153,30 +156,15 @@ export class AccountService {
       .select()
       .from(devices)
       .where(and(eq(devices.userId, user.id), by.deviceId ? ne(devices.id, by.deviceId) : sql`true`));
-    for (const device of others) {
-      await this.db.update(sessions).set({ revokedAt: new Date() }).where(and(eq(sessions.deviceId, device.id), isNull(sessions.revokedAt)));
-      await this.db.update(devices).set({ revokedAt: new Date(), expoPushToken: null }).where(eq(devices.id, device.id));
-    }
+    await this.db.transaction(async (tx) => {
+      for (const device of others) {
+        await tx.update(sessions).set({ revokedAt: new Date() }).where(and(eq(sessions.deviceId, device.id), isNull(sessions.revokedAt)));
+        await tx.update(devices).set({ revokedAt: new Date(), expoPushToken: null }).where(eq(devices.id, device.id));
+        await revokeIdentitySession(tx, user.id, device.identitySessionId);
+      }
+    });
     await this.audit.write({ userId: user.id, actor: "user", action: "device.sign_out_everywhere", checks: { devices: others.length }, deviceId: by.deviceId });
-    return { turnkeyPublicKeys: others.map((device) => device.turnkeyPublicKey).filter((key): key is string => Boolean(key)) };
-  }
-
-  /** After the app changed or linked a sign-in method: the account email follows the Turnkey user's. */
-  async syncEmail(user: SessionUser) {
-    if (!user.turnkeySubOrganizationId || !user.turnkeyUserId) throw problem(HTTP.forbidden, "forbidden");
-    const turnkeyUser = await this.turnkey.getUser(user.turnkeySubOrganizationId, user.turnkeyUserId);
-    const email = turnkeyUser?.email ?? null;
-    if (email && email.toLowerCase() !== (user.email ?? "").toLowerCase()) {
-      const [other] = await this.db
-        .select({ id: users.id })
-        .from(users)
-        .where(and(sql`lower(${users.email}) = lower(${email})`, ne(users.id, user.id)));
-      // That address already belongs to another Kawase account: the method stays linked at Turnkey, the email here does not move.
-      if (other) throw problem(HTTP.conflict, "account_recovery_required", "this email belongs to another account");
-      await this.db.update(users).set({ email }).where(eq(users.id, user.id));
-      await this.audit.write({ userId: user.id, actor: "user", action: "account.email_changed" });
-    }
-    return { email };
+    return { signedOut: others.length };
   }
 
   /** Step 1 of deleting: what is still held, per network, and which grants are still on (step 3 revokes them). */
@@ -243,7 +231,6 @@ export class AccountService {
     await this.audit.write({
       userId: null,
       actor: "user",
-      actorRef: user.turnkeySubOrganizationId ?? undefined,
       action: "account.deleted",
       checks: { grantsLeftOn: holdings?.networks.reduce((sum, entry) => sum + entry.activeGrants.length, 0) ?? null },
       deviceId: by.deviceId,
@@ -251,7 +238,7 @@ export class AccountService {
     return { deleted: true as const, handleHeldDays: user.handle ? HANDLE_HOLD_DAYS : 0 };
   }
 
-  /** Export is done on the device with Turnkey; this records that it happened (cards/access.md "After: an audit row"). */
+  /** Export is done on the device with Privy; this records that it happened (cards/access.md "After: an audit row"). */
   async recordExport(user: SessionUser, by: { deviceId: string | undefined }) {
     await this.audit.write({ userId: user.id, actor: "user", action: "wallet.exported", deviceId: by.deviceId });
   }

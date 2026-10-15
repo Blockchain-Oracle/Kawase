@@ -9,24 +9,21 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 import { automationRuns, automations, inboxItems } from "@kawase/db";
 
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 const url = process.env.DATABASE_URL;
 const DAY_MS = 86_400_000;
 
 test("a contact's new address pauses the automations paying the old one", { skip: !url }, async () => {
-  const subOrg = randomUUID();
-  const turnkeyUser = randomUUID();
-  const key = turnkeyStyleKeyPair();
-  const { app, db, close } = testApp(fakeTurnkey({ [`${subOrg}/${turnkeyUser}`]: { userId: turnkeyUser, userName: "change", email: `change-${subOrg}@example.test`, sessionPublicKeys: [key.publicKeyHex] } }));
+  const testId = randomUUID();
+  const person = privyPerson(`change-${testId}@example.test`);
+  const { app, db, close } = testApp();
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
-  const { nonce } = (await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: subOrg, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: turnkeyUser, device: { platform: "ios", installationId: "address-change-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "address-change-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;

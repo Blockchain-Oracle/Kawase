@@ -1,6 +1,6 @@
-// An error as logs can show it: name, message, code and the `cause` chain the Turnkey kit wraps the real failure
-// in, with emails, codes, keys and tokens taken out of every message. Without this a kit failure logs only as
-// "UNKNOWN" and the reason is lost.
+// An error as logs can show it: name, message, code and the `cause` chain an SDK wraps the real failure in, with
+// emails, codes, keys and tokens taken out of every message. Without this a wrapped failure logs only as "UNKNOWN" and
+// the reason is lost.
 import { redactDiagnostic } from "@kawase/api-client";
 
 /** How many `cause` levels are kept. */

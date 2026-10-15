@@ -1,8 +1,7 @@
-import { generateKeyPairSync, type KeyObject } from "node:crypto";
-import { ApiKeyStamper } from "@turnkey/api-key-stamper";
+import { generateKeyPairSync, randomUUID, sign, type KeyObject } from "node:crypto";
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
-import type { Hex, LocalAccount, TypedDataDefinition } from "viem";
+import type { Address, Hex, LocalAccount, TypedDataDefinition } from "viem";
 
 import { createModels } from "@kawase/agent";
 import type { RevokeRequest } from "@kawase/api-client";
@@ -10,7 +9,7 @@ import { createDb, users, type Db } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 
 import { createApp, type App, type AppDeps } from "../src/app";
-import type { TurnkeyReader, TurnkeyUser } from "../src/auth/turnkey";
+import { createPrivyVerifier } from "../src/auth/privy";
 import type { FaucetDrip } from "../src/faucet/circle-faucet";
 import type { OpsExecutor } from "../src/send/ops";
 import type { Chains } from "../src/wallet/chain";
@@ -20,42 +19,70 @@ import { noSwaps, type SwapEngine } from "../src/swap/engine";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
-const COMPRESSED_EVEN = "02";
-const COMPRESSED_ODD = "03";
+/**
+ * Privy sign-in in tests (D41): tokens in Privy's exact format (ES256, issuer privy.io, audience the app id, `sub` and
+ * `sid`; the identity token's `linked_accounts` as Privy encodes it), signed with a key only the test app trusts and
+ * checked by @privy-io/node like real ones, so no live Privy session is needed.
+ */
+export const PRIVY_TEST_APP_ID = "kawase-test";
+const privyKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
+export const testPrivy = createPrivyVerifier({
+  appId: PRIVY_TEST_APP_ID,
+  verificationKey: privyKeys.publicKey.export({ type: "spki", format: "pem" }).toString(),
+});
+const TOKEN_LIFE_S = 3600;
+const MS_PER_S = 1000;
+const LINKED_AT = 1791000000;
 
-/** A P-256 key in Turnkey's formats: private key as 32-byte hex, public key compressed. */
-export function turnkeyStyleKeyPair() {
-  const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
-  const jwk = privateKey.export({ format: "jwk" });
-  const x = Buffer.from(jwk.x!, "base64url");
-  const y = Buffer.from(jwk.y!, "base64url");
-  const prefix = y[y.length - 1]! % 2 === 0 ? COMPRESSED_EVEN : COMPRESSED_ODD;
+const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+export function privyJwt(payload: Record<string, unknown>, key: KeyObject = privyKeys.privateKey) {
+  const now = Math.floor(Date.now() / MS_PER_S);
+  const body = `${b64({ alg: "ES256", typ: "JWT" })}.${b64({ iss: "privy.io", aud: PRIVY_TEST_APP_ID, iat: now, exp: now + TOKEN_LIFE_S, ...payload })}`;
+  const signature = sign("sha256", Buffer.from(body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  return `${body}.${signature}`;
+}
+
+/** A Privy user: their DID, the session on one device, a verified email, and the embedded wallet (once it exists). */
+export type PrivyPerson = { did: string; session: string; email?: string | undefined; wallet?: string | undefined };
+
+export const privyPerson = (email?: string, wallet?: string): PrivyPerson => ({
+  did: `did:privy:${randomUUID()}`,
+  session: randomUUID(),
+  ...(email ? { email } : {}),
+  ...(wallet ? { wallet } : {}),
+});
+
+/**
+ * The access and identity tokens Privy's SDK hands the app for this person on one device (each device has its own
+ * Privy session, as in life); another key forges them.
+ */
+export function privyTokens(person: PrivyPerson, options: { key?: KeyObject; device?: string } = {}) {
+  const { key, device } = options;
+  const session = device ? `${person.session}:${device}` : person.session;
   return {
-    privateKeyHex: Buffer.from(jwk.d!, "base64url").toString("hex"),
-    publicKeyHex: prefix + x.toString("hex"),
-    publicKey: publicKey as KeyObject,
+    accessToken: privyJwt({ sub: person.did, sid: session }, key),
+    identityToken: privyJwt(
+      {
+        sub: person.did,
+        sid: session,
+        cr: String(LINKED_AT),
+        linked_accounts: JSON.stringify([
+          ...(person.email ? [{ type: "email", address: person.email, lv: LINKED_AT }] : []),
+          ...(person.wallet
+            ? [{ type: "wallet", wallet_client_type: "privy", id: `wallet-${person.did}`, address: person.wallet, chain_type: "ethereum", lv: LINKED_AT }]
+            : []),
+        ]),
+      },
+      key,
+    ),
   };
 }
 
-/** Signs a body the way the app's Turnkey session does. */
-export async function stampBody(body: string, key: { privateKeyHex: string; publicKeyHex: string }) {
-  const stamper = new ApiKeyStamper({ apiPublicKey: key.publicKeyHex, apiPrivateKey: key.privateKeyHex });
-  const stamp = await stamper.stamp(body);
-  return stamp.stampHeaderValue;
-}
+type TestDevice = { platform: string; installationId: string; appVersion?: string; locale?: string };
 
-/** A Turnkey reader that answers from memory. */
-export function fakeTurnkey(
-  userRecords: Record<string, TurnkeyUser>,
-  addresses: Record<string, { walletId: string; address: string }[]> = {},
-): TurnkeyReader {
-  return {
-    getUser: async (organizationId, userId) => {
-      const user = userRecords[`${organizationId}/${userId}`];
-      return user ? user : undefined;
-    },
-    getWalletAddresses: async (organizationId) => addresses[organizationId] ?? [],
-  };
+/** Signs the person in over the api (or upgrades the guest whose token is passed); their wallet registers in the same step. */
+export function privySignIn(app: App, person: PrivyPerson, device: TestDevice, guestToken?: string) {
+  return app.request("/auth/privy", jsonRequest("POST", { ...privyTokens(person, { device: device.installationId }), device }, guestToken));
 }
 
 export const noChains: Chains = { available: ["testnet"], get: () => undefined };
@@ -72,7 +99,6 @@ export const noOps: OpsExecutor = {
 export const okFaucet: FaucetDrip = async () => undefined;
 
 export function testApp(
-  turnkey: TurnkeyReader,
   chains: Chains = noChains,
   faucet: FaucetDrip = okFaucet,
   ops: OpsExecutor = noOps,
@@ -94,6 +120,8 @@ export function testApp(
     models?: AppDeps["models"];
     /** Allowance sends and account deletion need the device's proof (M12). */
     deviceProofRequired?: boolean;
+    /** Where emails go (approval codes, notices); none by default. */
+    email?: AppDeps["email"];
   } = {},
 ): { app: App; db: Db; close: () => Promise<void> } {
   const url = process.env.DATABASE_URL;
@@ -103,7 +131,7 @@ export function testApp(
   const app = createApp({
     db,
     log: createLogger({ service: "api-test", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" }),
-    turnkey,
+    privy: testPrivy,
     chains,
     faucet,
     ops,

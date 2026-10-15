@@ -20,7 +20,7 @@ import { LaunchpadService } from "../src/launchpad/service";
 import { noSwaps } from "../src/swap/engine";
 import { createSwapVenues } from "../src/swap/venues";
 import type { Chains, NetworkClients } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 const LIFT: Address = "0x44B453D355835Ce1269fc11D3FA4161c0DcC0087";
 const TOLLY: Address = "0xBc43CE8DEc648EA298C4275559b81D6261c90b67";
@@ -54,23 +54,19 @@ async function onTheCurve(): Promise<{ address: string; symbol: string }> {
 test("launchpads: curve progress and fees from LIFT, a graduation watch told once, other memes trade normally", { skip: !process.env.DATABASE_URL, timeout: 300_000 }, async () => {
   const wallet = privateKeyToAccount(generatePrivateKey()).address;
   const org = randomUUID();
-  const turnkeyUser = randomUUID();
-  const key = turnkeyStyleKeyPair();
   const chains = readOnlyChains();
-  const { app, db, close } = testApp(fakeTurnkey({ [`${org}/${turnkeyUser}`]: { userId: turnkeyUser, userName: "watcher", email: `lift-${org}@example.test`, sessionPublicKeys: [key.publicKeyHex] } }, { [org]: [{ walletId: "wallet-1", address: wallet }] }), chains);
+  const person = privyPerson(`lift-${org}@example.test`, wallet);
+  const { app, db, close } = testApp(chains);
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: org, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: turnkeyUser, device: { platform: "ios", installationId: "launchpad-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "launchpad-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet, walletId: "wallet-1" }), 201, "register");
   await expectStatus(await call("POST", "/me/consents", { kind: "mainnet_real_money", version: "1", locale: "en" }), 201, "consent");
   await expectStatus(await call("PUT", "/me/network", { network: "mainnet" }), 200, "switch");
   const read = async (address: string) => ((await (await call("GET", `/launchpad/tokens/${address}`)).json()) as { launchpad: LaunchpadView | null }).launchpad;

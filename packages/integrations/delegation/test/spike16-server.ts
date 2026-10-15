@@ -1,6 +1,6 @@
-// Spike 16 server: the backend half of "Turnkey wallet in the app" on Arc testnet.
+// Spike 16 server: the backend half of the person's wallet on Arc testnet (plan/spikes/16-turnkey-wallet.md).
 // It builds what the wallet must sign, verifies every signature itself, relays the 7702 setup, and lets the
-// agent's ops wallet spend inside the signed allowance. The app screen is apps/mobile/src/spike/wallet-screen.native.tsx.
+// agent's ops wallet spend inside the signed allowance. spike16-local-client.ts drives it with a local key.
 // Run: pnpm --filter @kawase/integrations-delegation spike16
 import { randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";

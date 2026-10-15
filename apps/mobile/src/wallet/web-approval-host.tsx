@@ -1,23 +1,23 @@
-// Web: the owner's check before a signature that binds them (accepting the allowance, a send above the budget). Both
-// hosts register one approver (web-approver.ts) that `confirmWithBiometrics` reaches on the web, and only "approved"
-// signs; closing the sheet is "cancelled" (Codex review R03). Built on the Senryo kit's sheet.
-// - Privy (D41, D38): the wallet's session lives in this browser and Privy has no code check outside a login, so the
-//   check is the explicit confirm D38 keeps above the budget: what is being approved, then a slide (21st 29304).
-// - Turnkey (the fallback build): a browser has no Face ID, so a fresh email code to the account's own address stands
-//   in: Turnkey's enclave verifies it (`initOtp` + `verifyOtp`, which logs nothing in).
-import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit";
+// Web: the owner's check before a signature that binds them (accepting the allowance, a send or a swap above it). A
+// browser has no Face ID, so a six-digit code emailed to the account's verified address stands in (the buttons say
+// "…with an email code"): Kawase's api sends and checks it (account/approval-codes.ts), and only "approved" signs;
+// closing the sheet is "cancelled" (Codex review R03). The host registers the one approver (web-approver.ts) that
+// `confirmWithBiometrics` reaches on the web. Built on the Senryo kit's sheet. It also hosts Privy's Google/Apple
+// return (privy-oauth-return.tsx), which needs the same sheet surface.
 import * as React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { Button, SlideToConfirm, SPACE, TYPE, useTheme } from "@/components/kit";
+import { ApiError } from "@kawase/api-client";
+
+import { CodeField, CODE_LENGTH } from "@/account/fields";
+import { Button, ShimmerText, SPACE, TYPE, useTheme } from "@/components/kit";
 import { Sheet, useSheetClose } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
-import { CodeField, CODE_LENGTH } from "@/account/fields";
 import { useT } from "@/i18n";
-import { useSession } from "@/session/session-provider";
+import { api } from "@/session/api";
 
 import type { BiometricResult } from "./biometric";
-import { isDev, isPrivy, isWalletConfigured } from "./config";
+import { isDev, isWalletConfigured } from "./config";
 import { PrivyOAuthReturn } from "./privy-oauth-return";
 import { RootSheetLayer } from "./root-sheet-layer";
 import { clearWebApprover, setWebApprover, type WebApprover } from "./web-approver";
@@ -48,109 +48,59 @@ function usePendingApproval() {
   return { pending, answer, closed };
 }
 
-/** Privy: the explicit confirm (only "approved" signs). */
-function PrivyHost() {
-  const { t } = useT();
-  const { pending, answer, closed } = usePendingApproval();
-  if (!pending) return null;
-  return (
-    <RootSheetLayer>
-      <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("wallet.approveTitle") })}>
-        <SheetHeading title={t("wallet.approveTitle")} body={pending.prompt} />
-        <PrivyActions prompt={pending.prompt} onAnswer={answer} />
-      </Sheet>
-    </RootSheetLayer>
-  );
-}
-
-function PrivyActions({ prompt, onAnswer }: { prompt: string; onAnswer: (result: BiometricResult) => void }) {
-  const { t } = useT();
-  const close = useSheetClose();
-  return (
-    <View style={styles.actions}>
-      <SlideToConfirm
-        label={t("wallet.slideToApprove")}
-        resetKey={prompt}
-        onConfirm={() => {
-          onAnswer("approved");
-          close();
-        }}
-        onAccessibleActivate={() => {
-          onAnswer("approved");
-          close();
-        }}
-      />
-      <Button
-        label={t("common.cancel")}
-        variant="ghost"
-        onPress={() => {
-          onAnswer("cancelled");
-          close();
-        }}
-      />
-    </View>
-  );
-}
-
-/** Turnkey: a fresh code to the account's email, verified by Turnkey's enclave. */
-function TurnkeyHost() {
+function EmailCodeHost() {
   const { t } = useT();
   const { pending, answer, closed } = usePendingApproval();
   if (!pending) return null;
   return (
     <RootSheetLayer>
       <Sheet onClose={closed} closeLabel={t("shell.kit.closeNamed", { name: t("approval.title") })}>
-        <TurnkeyCode prompt={pending.prompt} onAnswer={answer} />
+        <EmailCode prompt={pending.prompt} onAnswer={answer} />
       </Sheet>
     </RootSheetLayer>
   );
 }
 
-type Otp = { otpId: string; otpEncryptionTargetBundle: string };
+type Sent = { sentTo: string };
 
-function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: BiometricResult) => void }) {
+/** The code goes out as the sheet opens (the button already said "with an email code"); typing six digits checks it. */
+function EmailCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: BiometricResult) => void }) {
   const { t } = useT();
   const { color } = useTheme();
   const close = useSheetClose();
-  const { user } = useSession();
-  const { initOtp, verifyOtp } = useTurnkey();
-  const [otp, setOtp] = React.useState<Otp>();
+  const [sent, setSent] = React.useState<Sent>();
   const [code, setCode] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string>();
-  const email = user?.email ?? undefined;
 
   const finish = (result: BiometricResult) => {
     onAnswer(result);
     close();
   };
 
-  const send = async () => {
-    if (!email) return finish("unavailable");
+  const send = React.useCallback(async () => {
     setBusy(true);
     setError(undefined);
+    setCode("");
     try {
-      const sent = await initOtp({ otpType: OtpType.Email, contact: email });
-      setOtp({ otpId: sent.otpId, otpEncryptionTargetBundle: sent.otpEncryptionTargetBundle });
-    } catch {
-      setError(t("errors.rateLimited"));
+      setSent(await api.account.sendApprovalCode());
+    } catch (failure) {
+      setError(failure instanceof ApiError && failure.code === "rate_limited" ? t("errors.rateLimited") : t("approval.sendFailed"));
     } finally {
       setBusy(false);
     }
-  };
+  }, [t]);
+  React.useEffect(() => {
+    void send();
+  }, [send]);
 
   const verify = async (value: string) => {
-    if (!otp) return;
+    if (!sent) return;
     setBusy(true);
     setError(undefined);
     try {
-      const result = await verifyOtp({
-        otpId: otp.otpId,
-        otpCode: value.trim(),
-        otpEncryptionTargetBundle: otp.otpEncryptionTargetBundle,
-      });
-      if (result.verificationToken) return finish("approved");
-      setError(t("signIn.invalidCode"));
+      await api.account.verifyApprovalCode(value.trim());
+      return finish("approved");
     } catch {
       setError(t("signIn.invalidCode"));
     }
@@ -160,47 +110,39 @@ function TurnkeyCode({ prompt, onAnswer }: { prompt: string; onAnswer: (result: 
 
   return (
     <>
-      <SheetHeading title={t("approval.title")} body={otp ? t("signIn.codeSent", { email: email ?? "" }) : prompt} />
+      <SheetHeading title={t("approval.title")} body={prompt} />
       <View style={styles.actions}>
-        {otp ? (
-          <CodeField
-            value={code}
-            onChange={setCode}
-            onFilled={(digits) => void verify(digits)}
-            label={t("signIn.code")}
-            invalid={Boolean(error)}
-            disabled={busy}
-          />
-        ) : (
-          <Text style={[TYPE.body, styles.center, { color: color.text2 }]}>
-            {t("approval.body", { email: email ?? "" })}
-          </Text>
-        )}
+        {sent ? (
+          <Text style={[TYPE.rowDetail, styles.center, { color: color.text2 }]}>{t("signIn.codeSent", { email: sent.sentTo })}</Text>
+        ) : !error ? (
+          <ShimmerText style={[TYPE.rowDetail, styles.center, { color: color.text2 }]}>{t("approval.sending")}</ShimmerText>
+        ) : null}
+        <CodeField
+          value={code}
+          onChange={setCode}
+          onFilled={(digits) => void verify(digits)}
+          label={t("signIn.code")}
+          invalid={Boolean(error)}
+          disabled={busy || !sent}
+        />
         {error ? (
           <Text accessibilityRole="alert" style={[TYPE.rowDetail, styles.center, { color: color.destructive }]}>
             {error}
           </Text>
         ) : null}
-        {otp ? (
-          <Button
-            label={t("approval.confirm")}
-            loading={busy}
-            disabled={code.length !== CODE_LENGTH}
-            onPress={() => void verify(code)}
-          />
-        ) : (
-          <Button label={t("signIn.sendCode")} loading={busy} disabled={!email} onPress={() => void send()} />
-        )}
+        <Button
+          label={t("approval.confirm")}
+          loading={busy}
+          disabled={!sent || code.length !== CODE_LENGTH}
+          onPress={() => void verify(code)}
+        />
+        <Button label={t("signIn.resend")} variant="ghost" disabled={busy} onPress={() => void send()} />
         <Button label={t("common.cancel")} variant="ghost" onPress={() => finish("cancelled")} />
       </View>
     </>
   );
 }
 
-/**
- * Mounted once inside the session provider; without the provider's ids there is nothing to verify with. On Privy it
- * also hosts the Google/Apple return (privy-oauth-return.tsx), which needs the same sheet surface.
- */
 /** Dev mode: the key is a throwaway testnet key on this machine, so an approval passes by itself (said in the console). */
 function DevHost() {
   React.useEffect(() => {
@@ -214,13 +156,13 @@ function DevHost() {
   return null;
 }
 
+/** Mounted once inside the session provider; without the Privy ids there is nothing to approve with. */
 export function WebApprovalHost() {
   if (!isWalletConfigured) return null;
   if (isDev) return <DevHost />;
-  if (!isPrivy) return <TurnkeyHost />;
   return (
     <>
-      <PrivyHost />
+      <EmailCodeHost />
       <PrivyOAuthReturn />
     </>
   );

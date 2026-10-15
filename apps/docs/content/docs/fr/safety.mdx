@@ -10,7 +10,7 @@ visible et contrôlé par le réseau — et non par la confiance accordée à l'
 ## Votre portefeuille
 
 - Quand vous vous connectez (code envoyé par e-mail, Apple ou Google), Kawase crée un compte ordinaire de type Ethereum (un **EOA**) dont la clé
-  est conservée par **Turnkey** dans du matériel sécurisé, au sein d'une sous-organisation qui vous appartient. Il n'y a ni code PIN ni
+  est conservée par **Privy**, fractionnée dans des enclaves sécurisées pour que personne ne la détienne jamais en entier. Il n'y a ni code PIN ni
   mot de passe. C'est **une seule adresse sur les deux réseaux**.
 - Kawase met ensuite ce même compte à niveau avec **EIP-7702**, en faisant pointer son code vers
   `EIP7702StatelessDeleGator`, audité par MetaMask. Vous signez une autorisation ; le relais de Kawase l'envoie et paie les frais, si bien que cette configuration
@@ -46,9 +46,7 @@ Au-delà de l'allocation, Kawase prépare la transaction exacte, vous montre le 
 à votre portefeuille de signer **cette** transaction. Le serveur vérifie ensuite que les octets signés correspondent à la carte — expéditeur, destinataire,
 montant, réseau et frais — avant de la diffuser. Toute différence bloque le paiement.
 
-Aujourd'hui, la signature provient de votre session ouverte, protégée par la vérification biométrique de l'appareil. **Les clés d'accès arrivent bientôt**
-(elles nécessitent le propre domaine de Kawase) : dès que vous en ajoutez une, Turnkey l'exigera pour chaque signature de portefeuille. Ainsi, ni une
-session volée ni le propre serveur de Kawase ne pourront signer à votre place.
+La signature vient de votre propre portefeuille, après la vérification du titulaire : Face ID (ou le code de l'appareil) sur un téléphone et, sur le web, un code à six chiffres que Kawase envoie à votre adresse e-mail vérifiée. Le serveur de Kawase ne détient jamais votre clé ; il ne peut donc pas signer à votre place.
 
 ## Automatisations : ancrées on-chain
 

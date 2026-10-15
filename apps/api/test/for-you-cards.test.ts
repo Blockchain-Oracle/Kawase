@@ -15,9 +15,9 @@ import { z } from "zod";
 
 import type { RouteQuote } from "../src/bridge/compare";
 import { SuggestionService } from "../src/suggestions/service";
-import { deleteUser, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { deleteUser, jsonRequest, testApp } from "./helpers";
 
-const { app, db, close } = testApp(fakeTurnkey({}));
+const { app, db, close } = testApp();
 const ids: string[] = [];
 after(async () => {
   for (const id of ids) await deleteUser(db, id);
@@ -86,7 +86,7 @@ test("trending: the first liquid token the person does not hold and that is no c
   const portfolio = { assets: [{ token: token("HELD", held, "listed"), amount: "1", valueUsd: 1, change24hPct: null }], hidden: [] } as unknown as PortfolioView;
   const cards = kind((await service({ markets, portfolio }).list(user as never)).suggestions, "trending_token");
   assert.equal(cards.length, 1);
-  assert.deepEqual({ ...cards[0]!.facts }, { token: "0004", tokenName: "0004 Coin", segment: "trending", change: "+12.3%", liquidity: "$45.6k", status: "unverified" });
+  assert.deepEqual({ ...cards[0]!.facts }, { token: "0004", tokenName: "0004 Coin", address: "0x4000000000000000000000000000000000000004", segment: "trending", change: "+12.3%", liquidity: "$45.6k", status: "unverified" });
   assert.deepEqual(cards[0]!.action, { type: "route", path: "/token/5042/0x4000000000000000000000000000000000000004" });
 });
 

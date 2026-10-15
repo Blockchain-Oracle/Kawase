@@ -19,7 +19,7 @@ import { circleAgentWallets } from "../src/marketplace/agent-wallets";
 import { circleOnramp } from "../src/onramp/engine";
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -38,14 +38,9 @@ test("Apple Pay into the agent wallet: a sandbox session for it, settled by a tr
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "cardbuyer", email: `card-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), undefined, undefined, undefined, {
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`card-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), undefined, undefined, undefined, {
     agentWallets: circleAgentWallets(env),
     discovery: new Discovery({ demoSellerUrl: SELLER }),
     onramp: circleOnramp(env),
@@ -76,13 +71,10 @@ test("Apple Pay into the agent wallet: a sandbox session for it, settled by a tr
     return { state: "timeout", txHash: undefined };
   };
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "card-test-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "card-test-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   ({ token } = (await signIn.json()) as { token: string });
   userId = ((await (await call("GET", "/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
 
   // 1. A real sandbox session whose destination is the agent wallet (made on first use); USDC whatever was asked.
   const started = await call("POST", "/onramp/orders", { amount: "0.10", asset: "EURC", destination: "agent_wallet" });

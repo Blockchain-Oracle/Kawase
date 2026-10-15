@@ -1,5 +1,5 @@
-// The api, assembled from its parts so tests can build it with fakes (a Turnkey reader that answers from
-// memory, a local chain) and main.ts with the real ones.
+// The api, assembled from its parts so tests can build it with fakes (a local chain, engines that answer from memory)
+// and main.ts with the real ones.
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
@@ -23,8 +23,8 @@ import { agentRaceRoutes } from "./routing/agent-race";
 import { createRouteRacer } from "./routing/racer";
 import { routeRaceRoutes } from "./routing/routes";
 import { authRoutes } from "./auth/routes";
-import { AuthService } from "./auth/service";
-import type { TurnkeyReader } from "./auth/turnkey";
+import type { PrivyVerifier } from "./auth/privy";
+import { AuthService, privyFromEnv } from "./auth/service";
 import { capabilityView } from "./capabilities/service";
 import { clientEventRoutes } from "./client-events/routes";
 import { contactRoutes, recipientRoutes } from "./contacts/routes";
@@ -38,6 +38,7 @@ import { createRateLimit } from "./http/rate-limit";
 import { meRoutes } from "./me/routes";
 import { IncomingWatcher } from "./incoming/watcher";
 import { InboxService } from "./inbox/service";
+import { ApprovalCodes } from "./account/approval-codes";
 import type { ResendEmail } from "./notify/email";
 import type { ExpoPush } from "./notify/expo";
 import { notifyRoutes } from "./notify/routes";
@@ -132,10 +133,11 @@ import { WalletService } from "./wallet/service";
 
 export type AppDeps = {
   db: Db;
+  /** Privy's token check (D41); unset = built from the PRIVY_* variables (tests pass one that trusts their own key). */
+  privy?: PrivyVerifier | undefined;
   /** Local development's dev sign-in (main.ts: KAWASE_DEV_AUTH outside production). */
   devSignIn?: boolean;
   log: Logger;
-  turnkey: TurnkeyReader;
   chains: Chains;
   /** Requests per minute per client (ip before sign-in, user after). */
   rateLimitPerMinute?: number;
@@ -215,7 +217,7 @@ const DEFAULT_WEB_URL = "http://localhost:8081";
 
 export function createApp(deps: AppDeps) {
   const app = new Hono<AppEnv>();
-  const auth = new AuthService(deps.db, deps.turnkey);
+  const auth = new AuthService(deps.db, deps.privy ?? privyFromEnv());
   const wallets = new WalletService(deps.db, deps.chains);
   const faucet = new FaucetService(deps.db, wallets, deps.faucet);
   const contacts = new ContactService(deps.db);
@@ -312,7 +314,7 @@ export function createApp(deps: AppDeps) {
       arrived: (userId, network) => marketplace.putToWork(userId, network),
     });
   }
-  const account = new AccountService(deps.db, deps.chains, deps.turnkey, wallets, audit, deps.log, marketplace, inbox);
+  const account = new AccountService(deps.db, deps.chains, wallets, audit, deps.log, marketplace, inbox);
   if (deps.reconcileIntervalMs) {
     sends.startSweeper(deps.reconcileIntervalMs);
     swaps.startSweeper(deps.reconcileIntervalMs);
@@ -355,8 +357,8 @@ export function createApp(deps: AppDeps) {
     "*",
     cors({
       origin: (origin) => (deps.webOrigins?.includes(origin) ? origin : null),
-      // The device proof (M12) rides on four headers: Turnkey's web build sends body + stamp, Privy's activity + signature.
-      allowHeaders: ["authorization", "content-type", "idempotency-key", "x-kawase-auth-attempt", "x-kawase-proof-activity", "x-kawase-proof-signature", "x-kawase-proof-body", "x-kawase-proof-stamp"],
+      // The device proof (M12) rides on two headers: the activity and the wallet's signature over it.
+      allowHeaders: ["authorization", "content-type", "idempotency-key", "x-kawase-auth-attempt", "x-kawase-proof-activity", "x-kawase-proof-signature"],
       exposeHeaders: ["x-request-id", "idempotent-replayed"],
       credentials: true,
     }),
@@ -386,12 +388,13 @@ export function createApp(deps: AppDeps) {
   app.use("*", idempotency(deps.db));
   app.use("*", auditWrites(audit));
   // M12: a leaked bearer token alone cannot spend within the allowance or delete the account; these also carry the
-  // proof from the signed-in device's own Turnkey key (after idempotency, so a retried request gets its first answer).
-  const deviceProof = requireDeviceProof(deps.db, deps.deviceProofRequired ?? false, deps.turnkey);
+  // proof that the person's own wallet signed this request (after idempotency, so a retried request gets its first
+  // answer).
+  const deviceProof = requireDeviceProof(deps.db, deps.deviceProofRequired ?? false);
   app.use("/sends/:id/approve", deviceProof);
   app.use("/needs-you/:id/approve", deviceProof);
   app.use("/account/delete", deviceProof);
-  app.use("/agent/chat", markDeviceProof(deps.db, deps.turnkey));
+  app.use("/agent/chat", markDeviceProof(deps.db));
 
   app.onError((error, c) => {
     const id = c.get("requestId");
@@ -413,7 +416,7 @@ export function createApp(deps: AppDeps) {
   app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input), { devSignIn }));
   app.route("/me", meRoutes(deps.db, deps.chains));
   app.route("/notifications", notifyRoutes(deps.db, notify));
-  app.route("/wallet", walletRoutes(wallets, deps.turnkey));
+  app.route("/wallet", walletRoutes(wallets));
   app.route("/faucet", faucetRoutes(faucet));
   app.route("/contacts", contactRoutes(contacts));
   app.route("/recipients", recipientRoutes(recipients));
@@ -497,7 +500,7 @@ export function createApp(deps: AppDeps) {
   const exportLinks = new ExportLinks(deps.approvalSecret);
   app.route("/files/export", exportFileRoutes(history, exportLinks));
   app.route("/privacy", privacyRoutes(privacy));
-  app.route("/account", accountRoutes(deps.db, account));
+  app.route("/account", accountRoutes(deps.db, account, new ApprovalCodes(deps.db, deps.email)));
   const agentDeps = {
     deviceProofRequired: deps.deviceProofRequired,
     marketplace,

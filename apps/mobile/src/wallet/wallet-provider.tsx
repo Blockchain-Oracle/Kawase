@@ -1,14 +1,11 @@
-// Web: the wallet provider for this build (D41): Privy, or Turnkey as the fallback for one build
-// (EXPO_PUBLIC_WALLET_PROVIDER). Without the provider's ids the app still runs (guest look-around).
+// Web: Privy around the app (D41). Dev mode needs no provider (the key is local), and a build without the Privy ids
+// still runs (guest look-around).
 import type { ReactNode } from "react";
 
-import { isDev, isPrivy, isWalletConfigured } from "./config";
+import { isDev, isWalletConfigured } from "./config";
 import { PrivyWalletProvider } from "./privy-provider";
-import { TurnkeyWalletProvider } from "./turnkey-provider";
 
 export function WalletProvider({ children }: { children: ReactNode }) {
-  if (isDev) return <>{children}</>;
-  if (!isPrivy) return <TurnkeyWalletProvider>{children}</TurnkeyWalletProvider>;
-  if (!isWalletConfigured) return <>{children}</>;
+  if (isDev || !isWalletConfigured) return <>{children}</>;
   return <PrivyWalletProvider>{children}</PrivyWalletProvider>;
 }

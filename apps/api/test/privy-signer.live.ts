@@ -40,7 +40,6 @@ console.log("privy wallet", wallet.id, address);
 
 const signer = privySigner({
   address,
-  approval: "session",
   async signHash(hash) {
     const result = await privy.wallets().ethereum().signSecp256k1(wallet.id, { params: { hash } });
     return result.signature as Hex;

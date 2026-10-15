@@ -12,7 +12,6 @@
     "test": "tsx --test --test-concurrency=1 test/*.test.ts"
   },
   "devDependencies": {
-    "@turnkey/crypto": "2.13.2",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   },
@@ -43,8 +42,6 @@
     "@kawase/wallet": "workspace:*",
     "@metamask/smart-accounts-kit": "catalog:",
     "@privy-io/node": "^0.35.0",
-    "@turnkey/api-key-stamper": "catalog:",
-    "@turnkey/http": "catalog:",
     "@x402/core": "catalog:",
     "@x402/evm": "catalog:",
     "ai": "catalog:",

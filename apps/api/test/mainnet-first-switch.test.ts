@@ -14,7 +14,7 @@ import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -28,27 +28,19 @@ test("first mainnet switch: consent, switch, and a setup that says mainnet is no
   const mainnet = chains.get("mainnet")!;
   const relayerGas = await createPublicClient({ chain: getNetwork("mainnet").viemChain, transport: http(env.ARC_RPC_URL_MAINNET) }).getBalance({ address: mainnet.relayerAddress });
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "mainnet", email: `mainnet-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains);
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`mainnet-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains);
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "mainnet-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "mainnet-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   const { token } = (await signIn.json()) as { token: string };
   const call = (method: string, path: string, payload?: unknown) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
   userId = ((await (await call("GET", "/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
 
   // 1. No consent, no mainnet; with it, the switch happens.
   assert.equal((await call("PUT", "/me/network", { network: "mainnet" })).status >= 400, true, "refused without the real-money consent");

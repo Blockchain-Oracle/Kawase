@@ -2,7 +2,7 @@
 // without the person: while paused the person's own signed send lands, the allowance no longer covers anything (the
 // ops wallet redeems nothing) and an automation run is skipped. The new-recipient cooldown keeps the allowance off a new
 // address but never blocks the person's own send. The brake (over half the balance to someone new) is refused without
-// the person's explicit override and goes through with it. The wallet is a local key standing in for Turnkey.
+// the person's explicit override and goes through with it. The wallet is a local key standing in for Privy.
 // Skipped without the server keys in the root .env. Run: pnpm --filter @kawase/api test (or this file alone).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -20,7 +20,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -40,14 +40,9 @@ test("pause, cooldown and the brake on Arc testnet", { skip: !live, timeout: 900
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "brake", email: `brake-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), undefined, undefined, undefined, { automationTickMs: 1000, reconcileIntervalMs: 2000 });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`brake-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), undefined, undefined, undefined, { automationTickMs: 1000, reconcileIntervalMs: 2000 });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -61,9 +56,7 @@ test("pause, cooldown and the brake on Arc testnet", { skip: !live, timeout: 900
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "brake-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "brake-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
@@ -74,7 +67,6 @@ test("pause, cooldown and the brake on Arc testnet", { skip: !live, timeout: 900
     await expectStatus(answer, status, what);
     return (await answer.json()) as T;
   };
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(await call("POST", "/wallet/setup/submit", { network: "testnet", authorization: { address: signedAuth.address, chainId: signedAuth.chainId, nonce: signedAuth.nonce, r: signedAuth.r, s: signedAuth.s, yParity: signedAuth.yParity } }), 200, "setup");

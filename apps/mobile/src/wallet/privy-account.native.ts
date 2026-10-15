@@ -15,7 +15,7 @@ import {
 
 import { usePrivyAccountCore, type PrivyKit } from "./privy-account-core";
 import { usePrivyLoginMethods } from "./privy-login-methods";
-import type { TurnkeyAccount } from "./turnkey-account-core";
+import type { WalletAccount } from "./account";
 
 /** The verified email on a Privy user: the email-code login first, then Google's or Apple's. */
 export function privyEmail(user: User | null | undefined): string | undefined {
@@ -59,6 +59,6 @@ function usePrivyKit(): PrivyKit {
   };
 }
 
-export function usePrivyAccount(): TurnkeyAccount {
+export function usePrivyAccount(): WalletAccount {
   return usePrivyAccountCore(usePrivyKit(), { providers: usePrivyLoginMethods("native") });
 }

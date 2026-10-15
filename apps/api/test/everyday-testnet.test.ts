@@ -1,4 +1,4 @@
-// Everyday money on Arc testnet (A5-2), with fresh local keys standing in for two Turnkey wallets and Circle's real
+// Everyday money on Arc testnet (A5-2), with fresh local keys standing in for two Privy wallets and Circle's real
 // ops wallet funding the payer: scan to pay (an EIP-681 code read by the api, then the send it opens, executed), split
 // a bill (the requester splits, the payer pays their share from its link, the split shows who has paid), and the
 // same send found again by id the way a notification opens it (`/i/<id>`).
@@ -18,7 +18,7 @@ import { getNetwork } from "@kawase/networks";
 import { circleOps } from "../src/send/ops";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -35,18 +35,11 @@ test("everyday money on Arc testnet: scan to pay, split a bill, open by id", { s
   const chains = createChains(env);
   const network = getNetwork("testnet");
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const people = ["payer", "requester"].map((role) => ({
-    role,
-    wallet: privateKeyToAccount(generatePrivateKey()),
-    subOrg: randomUUID(),
-    turnkeyUser: randomUUID(),
-    key: turnkeyStyleKeyPair(),
-  }));
-  const turnkey = fakeTurnkey(
-    Object.fromEntries(people.map((p) => [`${p.subOrg}/${p.turnkeyUser}`, { userId: p.turnkeyUser, userName: p.role, email: `${p.role}-${p.subOrg}@example.test`, sessionPublicKeys: [p.key.publicKeyHex] }])),
-    Object.fromEntries(people.map((p) => [p.subOrg, [{ walletId: `wallet-${p.role}`, address: p.wallet.address }]])),
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), appKitSwaps(env));
+  const people = ["payer", "requester"].map((role) => {
+    const wallet = privateKeyToAccount(generatePrivateKey());
+    return { role, wallet, privy: privyPerson(`${role}-${randomUUID()}@example.test`, wallet.address) };
+  });
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), appKitSwaps(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   const userIds: string[] = [];
   const payer = people[0]!;
@@ -68,15 +61,12 @@ test("everyday money on Arc testnet: scan to pay, split a bill, open by id", { s
   });
 
   const signIn = async (person: (typeof people)[number]) => {
-    const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-    const body = JSON.stringify({ organizationId: person.subOrg, activityId: nonce });
-    const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId: `everyday-${person.role}-0001` } }));
+    const response = await privySignIn(app, person.privy, { platform: "ios", installationId: `everyday-${person.role}-0001` });
     await expectStatus(response, 201, `${person.role} sign-in`);
     const { token, user } = (await response.json()) as { token: string; user: { id: string } };
     userIds.push(user.id);
     const call = (method: string, path: string, payload?: unknown) =>
       app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-    await expectStatus(await call("POST", "/wallet", { address: person.wallet.address, walletId: `wallet-${person.role}` }), 201, `${person.role} register`);
     return call;
   };
   const asPayer = await signIn(payer);

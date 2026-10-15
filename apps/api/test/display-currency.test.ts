@@ -9,17 +9,15 @@ import type { FxView, PortfolioView } from "@kawase/api-client";
 import { instructions, type AgentContext } from "@kawase/agent";
 
 import { liveMarketData } from "../src/market/sources";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 const EUR_LOW = 0.5;
 const EUR_HIGH = 1.5;
 
 test("display currency: rate, choice, portfolio and the agent's line", { timeout: 60_000 }, async () => {
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const key = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey({ [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "fx", email: `fx-${SUB_ORG}@example.test`, sessionPublicKeys: [key.publicKeyHex] } });
-  const { app, db, close } = testApp(turnkey, undefined, undefined, undefined, undefined, undefined, undefined, { market: liveMarketData() });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`fx-${TEST_ID}@example.test`);
+  const { app, db, close } = testApp(undefined, undefined, undefined, undefined, undefined, undefined, { market: liveMarketData() });
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
@@ -34,9 +32,7 @@ test("display currency: rate, choice, portfolio and the agent's line", { timeout
   assert.equal((await app.request("/fx?currency=XYZ")).status, 422);
 
   // 2. The person chooses it (any case); an unknown code is refused.
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "fx-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "fx-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token } = (await signIn.json()) as { token: string };
   const call = (method: string, path: string, payload?: unknown) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));

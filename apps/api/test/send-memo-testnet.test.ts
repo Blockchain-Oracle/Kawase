@@ -17,7 +17,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { parsePayCode } from "../src/paycodes/parse";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -40,12 +40,8 @@ test("send with an on-chain reference carries its memoId through Arc's Memo cont
   const receiver = privateKeyToAccount(generatePrivateKey());
   const payer = privateKeyToAccount(generatePrivateKey());
   const payerSigner = createWalletClient({ account: payer, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const people = [{ sub: randomUUID(), user: randomUUID(), key: turnkeyStyleKeyPair(), account: payer, name: "payer" }];
-  const turnkey = fakeTurnkey(
-    Object.fromEntries(people.map((p) => [`${p.sub}/${p.user}`, { userId: p.user, userName: p.name, email: `${p.name}-${p.sub}@example.test`, sessionPublicKeys: [p.key.publicKeyHex] }])),
-    Object.fromEntries(people.map((p) => [p.sub, [{ walletId: "wallet-1", address: p.account.address }]])),
-  );
-  const { app, db, close } = testApp(turnkey, chains);
+  const people = [{ account: payer, name: "payer", privy: privyPerson(`payer-${randomUUID()}@example.test`, payer.address) }];
+  const { app, db, close } = testApp(chains);
   const userIds: string[] = [];
   after(async () => {
     for (const token of [network.addresses.eurc, network.addresses.usdc]) {
@@ -58,15 +54,12 @@ test("send with an on-chain reference carries its memoId through Arc's Memo cont
   });
 
   const signIn = async (person: (typeof people)[number]) => {
-    const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-    const body = JSON.stringify({ organizationId: person.sub, activityId: nonce });
-    const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.user, device: { platform: "ios", installationId: `memo-${person.name}-0001` } }));
+    const response = await privySignIn(app, person.privy, { platform: "ios", installationId: `memo-${person.name}-0001` });
     await expectStatus(response, 201, "sign-in");
     const { token, user } = (await response.json()) as { token: string; user: { id: string } };
     userIds.push(user.id);
     const call = (method: string, path: string, payload?: unknown) =>
       app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-    await expectStatus(await call("POST", "/wallet", { address: person.account.address, walletId: "wallet-1" }), 201, "register");
     const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
     const auth = await person.account.signAuthorization(authorization);
     await expectStatus(await call("POST", "/wallet/setup/submit", { network: "testnet", authorization: { address: auth.address, chainId: auth.chainId, nonce: auth.nonce, r: auth.r, s: auth.s, yParity: auth.yParity } }), 200, "setup");

@@ -9,9 +9,9 @@ import { and, eq } from "drizzle-orm";
 import type { Contact } from "@kawase/api-client";
 import { contactAddressEvents, users } from "@kawase/db";
 
-import { deleteUser, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { deleteUser, jsonRequest, testApp } from "./helpers";
 
-const { app, db, close } = testApp(fakeTurnkey({}));
+const { app, db, close } = testApp();
 const ids: string[] = [];
 after(async () => {
   for (const id of ids) await deleteUser(db, id);

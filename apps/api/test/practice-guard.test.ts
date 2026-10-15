@@ -10,13 +10,11 @@ import { eq } from "drizzle-orm";
 
 import { users } from "@kawase/db";
 
-import { deleteUser, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
-const subOrg = randomUUID();
-const turnkeyUser = randomUUID();
-const key = turnkeyStyleKeyPair();
-const turnkey = fakeTurnkey({ [`${subOrg}/${turnkeyUser}`]: { userId: turnkeyUser, userName: "practice", email: `practice-${subOrg}@example.test`, sessionPublicKeys: [key.publicKeyHex] } });
-const { app, db, close } = testApp(turnkey);
+const testId = randomUUID();
+const person = privyPerson(`practice-${testId}@example.test`);
+const { app, db, close } = testApp();
 let userId = "";
 after(async () => {
   if (userId) await deleteUser(db, userId);
@@ -24,9 +22,7 @@ after(async () => {
 });
 
 test("practice mode refuses every real money move, and lets drafting through", async () => {
-  const { nonce } = (await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: subOrg, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: turnkeyUser, device: { platform: "ios", installationId: "practice-guard-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "practice-guard-0001" });
   assert.equal(signIn.status, 201);
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;

@@ -20,7 +20,7 @@ export const help: Catalog["help"] = {
   copy: "复制",
   copied: "已复制",
   keyTitle: "你的密钥",
-  keyBody: "你钱包的密钥由 Turnkey 在安全硬件中生成并保管。Kawase 永远看不到它；它由你的面容 ID 或通行密钥解锁。",
+  keyBody: "你钱包的密钥被拆分后由 Privy 保存在安全隔离区中。Kawase 永远看不到它；只有你本人登录后才能使用它。",
   codeTitle: "你地址上的智能功能",
   codeBody:
     "你的地址运行 MetaMask 开源的 DeleGator 代码（EIP-7702），因此一次面容 ID 就能完成多个步骤，你的限额也会被强制执行。它从不自行转移资金。",

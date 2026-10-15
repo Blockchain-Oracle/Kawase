@@ -7,24 +7,13 @@ import { inArray } from "drizzle-orm";
 
 import { handleHolds, users } from "@kawase/db";
 
-import { deleteUser, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
-const people = ["kenji", "fatima"].map((name) => ({
-  name,
-  email: `${name}-handle@example.test`,
-  subOrg: randomUUID(),
-  turnkeyUser: randomUUID(),
-  key: turnkeyStyleKeyPair(),
-}));
-const turnkey = fakeTurnkey(
-  Object.fromEntries(
-    people.map((p) => [
-      `${p.subOrg}/${p.turnkeyUser}`,
-      { userId: p.turnkeyUser, userName: p.name, email: p.email, sessionPublicKeys: [p.key.publicKeyHex] },
-    ]),
-  ),
-);
-const { app, db, close } = testApp(turnkey);
+const people = ["kenji", "fatima"].map((name) => {
+  const email = `${name}-handle@example.test`;
+  return { ...privyPerson(email), name, email };
+});
+const { app, db, close } = testApp();
 await db.delete(users).where(
   inArray(
     users.email,
@@ -38,17 +27,8 @@ after(async () => {
 });
 
 async function signIn(person: (typeof people)[number]) {
-  const { nonce } = (await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: person.subOrg, activityId: nonce });
   const device = { platform: "ios", installationId: `handle-test-${person.name}`, appVersion: "0.1.0", locale: "en" };
-  const response = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", {
-      proof: { body, stamp: await stampBody(body, person.key) },
-      turnkeyUserId: person.turnkeyUser,
-      device,
-    }),
-  );
+  const response = await privySignIn(app, person, device);
   assert.equal(response.status, 201);
   const { token, user } = (await response.json()) as { token: string; user: { id: string; handle: string | null } };
   created.push(user.id);

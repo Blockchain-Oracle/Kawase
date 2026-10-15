@@ -10,6 +10,3 @@ import type { LocalAccount } from "viem";
 export type WalletSigner = LocalAccount & {
   signAuthorization: NonNullable<LocalAccount["signAuthorization"]>;
 };
-
-/** How strongly a signature was approved. `passkey` is enforced by the wallet provider, not by our app. */
-export type ApprovalStrength = "session" | "passkey";

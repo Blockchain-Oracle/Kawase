@@ -16,7 +16,7 @@ export type RenderedNotification = { title: string; body: string; /** The app pa
 type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
 type Block = "notify" | "automation" | "inbox" | "alerts";
 
-function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
+export function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
   const pick = (catalog: unknown) => (catalog as Record<Block, Record<string, unknown>>)[block]?.[key];
   const template = pick(CATALOGS[locale]) ?? pick(CATALOGS.en);
   if (typeof template !== "string") return key;

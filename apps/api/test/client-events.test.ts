@@ -4,9 +4,9 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 
-import { fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { jsonRequest, testApp } from "./helpers";
 
-const { app, close } = testApp(fakeTurnkey({}));
+const { app, close } = testApp();
 after(close);
 
 const event = {

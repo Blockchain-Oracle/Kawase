@@ -12,7 +12,6 @@ import { createLogger } from "@kawase/log";
 
 import { createModelHealth } from "./agent/health";
 import { createApp } from "./app";
-import { createTurnkeyReader } from "./auth/turnkey";
 import { circleFaucet } from "./faucet/circle-faucet";
 import { circleOps } from "./send/ops";
 import { Discovery } from "@kawase/integrations-x402";
@@ -56,11 +55,6 @@ const app = createApp({
   db,
   log,
   devSignIn: env.KAWASE_DEV_AUTH && env.NODE_ENV !== "production",
-  turnkey: createTurnkeyReader({
-    baseUrl: env.TURNKEY_API_BASE_URL,
-    apiPublicKey: env.TURNKEY_API_PUBLIC_KEY,
-    apiPrivateKey: env.TURNKEY_API_PRIVATE_KEY,
-  }),
   chains: createChains(env),
   faucet: circleFaucet(env.CIRCLE_TEST_API_KEY),
   models,

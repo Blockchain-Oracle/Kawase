@@ -1,5 +1,5 @@
-// Settings → Account (cards/access.md): devices and sessions, the email that follows the Turnkey user, the export
-// record, and deleting the account step by step.
+// Settings → Account (cards/access.md): devices and sessions, the export record, deleting the account step by step, and
+// the web's emailed approval code (approval-codes.ts).
 import { eq } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { sessions, type Db } from "@kawase/db";
 import { requireAccount } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
+import type { ApprovalCodes } from "./approval-codes";
 import { clientIp } from "./location";
 import type { AccountService } from "./service";
 
@@ -19,6 +20,8 @@ const network = z.enum(["mainnet", "testnet"]);
 const touchSchema = z.object({ name: z.string().min(1).max(DEVICE_NAME_MAX).optional(), appVersion: z.string().max(VERSION_MAX).optional() });
 const deleteSchema = z.object({ confirm: z.string().min(1).max(CONFIRM_MAX) });
 const revokeSchema = z.object({ network });
+const CODE_DIGITS = 6;
+const codeSchema = z.object({ code: z.string().regex(new RegExp(`^\\d{${CODE_DIGITS}}$`)) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
   const parsed = schema.safeParse(body);
@@ -26,7 +29,7 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
   return parsed.data;
 }
 
-export function accountRoutes(db: Db, account: AccountService) {
+export function accountRoutes(db: Db, account: AccountService, codes: ApprovalCodes) {
   const app = new Hono<AppEnv>();
   app.use("*", requireAccount);
 
@@ -53,7 +56,12 @@ export function accountRoutes(db: Db, account: AccountService) {
 
   app.post("/sign-out-everywhere", async (c) => c.json(await account.signOutEverywhere(c.get("user")!, { deviceId: await currentDevice(c) })));
 
-  app.post("/email/sync", async (c) => c.json(await account.syncEmail(c.get("user")!)));
+  /** The web's owner check: a code to the account's verified email, then the code typed back. */
+  app.post("/approval-code", async (c) => c.json(await codes.send(c.get("user")!)));
+  app.post("/approval-code/verify", async (c) => {
+    const { code } = await parse(codeSchema, await c.req.json());
+    return c.json(await codes.verify(c.get("user")!, code));
+  });
 
   app.post("/export/recorded", async (c) => {
     await account.recordExport(c.get("user")!, { deviceId: await currentDevice(c) });

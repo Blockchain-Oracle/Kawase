@@ -28,7 +28,7 @@ const signHashWith = (legacyV: boolean) => async (hash: Hex) => {
 };
 
 for (const legacyV of [true, false]) {
-  const signer = privySigner({ address: local.address, signHash: signHashWith(legacyV), approval: "session" });
+  const signer = privySigner({ address: local.address, signHash: signHashWith(legacyV) });
   const label = legacyV ? "v 27/28" : "v 0/1";
 
   test(`message matches viem (${label})`, async () => {
@@ -62,7 +62,7 @@ for (const legacyV of [true, false]) {
 }
 
 test("plain typed data matches viem", async () => {
-  const signer = privySigner({ address: local.address, signHash: signHashWith(true), approval: "session" });
+  const signer = privySigner({ address: local.address, signHash: signHashWith(true) });
   const typedData = {
     domain: { name: "Kawase", version: "1", chainId: ARC_TESTNET },
     types: { Note: [{ name: "text", type: "string" }] },
@@ -80,7 +80,6 @@ test("an authorization for another contract or chain is refused before signing",
       asked += 1;
       return signHashWith(true)(hash);
     },
-    approval: "session",
   });
   await assert.rejects(
     signer.signAuthorization({ contractAddress: local.address, chainId: ARC_TESTNET, nonce: 0 }),
@@ -91,23 +90,6 @@ test("an authorization for another contract or chain is refused before signing",
     SigningRefused,
   );
   assert.equal(asked, 0);
-});
-
-test("passkey approval runs the app's confirm before every signature, and a refusal stops it", async () => {
-  let confirms = 0;
-  const signer = privySigner({
-    address: local.address,
-    signHash: signHashWith(true),
-    approval: "passkey",
-    confirm: async () => {
-      confirms += 1;
-      if (confirms > 1) throw new Error("cancelled");
-    },
-  });
-  const signature = await signer.signMessage({ message: "one" });
-  assert.equal(parseSignature(signature).yParity !== undefined, true);
-  await assert.rejects(signer.signMessage({ message: "two" }), /cancelled/);
-  assert.equal(confirms, 2);
 });
 
 // A signature Privy's embedded wallet returned for secp256k1_sign on 2026-10-14 (web SDK): v = 0x1c (28), and it

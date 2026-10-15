@@ -1,4 +1,4 @@
-// Privy behind the sign-in shape the screens already use (D41), shared by the native (@privy-io/expo) and the web
+// Privy behind the sign-in shape the screens use (account.ts; D41), shared by the native (@privy-io/expo) and the web
 // (@privy-io/react-auth) SDK: after the email code, Google or Apple, the app hands Privy's access and identity tokens to
 // the api (one sign-in; the api verifies them and reads the email and the wallet from the signed identity token),
 // creates the embedded wallet when the account has none, and registers it. Each platform passes a small kit over its
@@ -6,13 +6,14 @@
 import * as React from "react";
 import { randomUUID } from "expo-crypto";
 
-import { ApiError, type ApiUser } from "@kawase/api-client";
+import { ApiError, type ApiUser, type PrivyTokens } from "@kawase/api-client";
 
+import { api } from "@/session/api";
 import { deviceInfo, useSession } from "@/session/session-provider";
 import { sessionStorage } from "@/session/storage";
+
+import type { SocialProvider, WalletAccount } from "./account";
 import { authStage } from "./auth-stage";
-import { privyApi, type PrivyTokens } from "./privy-api";
-import type { SocialProvider, TurnkeyAccount } from "./turnkey-account-core";
 
 /** Privy publishes a new login, wallet and tokens through React state; a step waits this long for them. */
 const STATE_WAIT_MS = 15_000;
@@ -45,7 +46,7 @@ export type PrivyKit = {
   logout: () => Promise<void>;
 };
 
-export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonly SocialProvider[] }): TurnkeyAccount {
+export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonly SocialProvider[] }): WalletAccount {
   const { adoptToken } = useSession();
   const { providers } = options;
 
@@ -86,7 +87,7 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
   const registerFresh = React.useCallback(async () => {
     for (let attempt = 1; ; attempt++) {
       try {
-        return await privyApi.registerWallet(await tokens(), attemptId.current);
+        return await api.auth.privyWallet(await tokens(), attemptId.current);
       } catch (error) {
         // A 409 is another registration of the same wallet finishing at this moment: the next try reads its row.
         const again =
@@ -114,7 +115,7 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
     }
     const proof = await authStage("session", attemptId.current, tokens);
     const { token } = await authStage("link", attemptId.current, async () =>
-      privyApi.signIn({ ...proof, device: await deviceInfo() }, await sessionStorage.getToken(), attemptId.current),
+      api.auth.privy({ ...proof, device: await deviceInfo() }, await sessionStorage.getToken(), attemptId.current),
     );
     pendingToken.current = token;
     const user = await authStage("account", attemptId.current, () => adoptToken(token, attemptId.current));
@@ -136,7 +137,7 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
     pendingToken.current = undefined;
   };
 
-  return React.useMemo<TurnkeyAccount>(
+  return React.useMemo<WalletAccount>(
     () => ({
       available: true,
       providers,
@@ -148,8 +149,6 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
         // Privy refuse a new code; it is ended first, so the person simply starts again.
         if (latest.current.authenticated) await latest.current.logout();
         await latest.current.sendCode(email.trim());
-        // Privy keeps the pending code on its side; the sheet's step only needs the email.
-        return { otpId: "", otpEncryptionTargetBundle: "" };
       },
       verifyCode({ email, code }) {
         return once(async () => {
@@ -191,7 +190,7 @@ export function usePrivyAccountCore(kit: PrivyKit, options: { providers: readonl
         activeWallet.current = pending;
         return pending;
       },
-      async signOutTurnkey() {
+      async signOutWallet() {
         pendingToken.current = undefined;
         if (latest.current.authenticated) await latest.current.logout();
       },

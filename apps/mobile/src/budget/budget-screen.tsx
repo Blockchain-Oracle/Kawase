@@ -47,7 +47,6 @@ import { useLocale } from "@/i18n/locale-provider";
 import { useSafetyChange, useSafetyView } from "@/safety/use-safety";
 import { useSession } from "@/session/session-provider";
 import { biometricKind, confirmWithBiometrics, type BiometricKind } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 import { budgetApi } from "./client";
@@ -86,7 +85,7 @@ export function BudgetScreen() {
   const { color } = useTheme();
   const { user } = useSession();
   const { state, load, set, network } = useBudget();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const ready = state.status === "ready";
   const view = ready ? state.view : null;
   const { venues: allVenues, vaults, swapVenues } = useAllBudgetVenues(network, ready);

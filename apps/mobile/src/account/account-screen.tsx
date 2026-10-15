@@ -38,7 +38,7 @@ import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 
-import { methodCount, type LinkProvider, type LoginMethod, type SignInMethods } from "./account-methods-core";
+import { methodCount, type LinkProvider, type LoginMethod, type SignInMethods } from "./account-methods";
 import { CodeField, CODE_LENGTH, Field } from "./fields";
 import { Group, GroupNote, Page } from "./kit-page";
 import { useAccountMethods } from "./use-account-methods";
@@ -358,8 +358,6 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
   const account = useAccountMethods();
   const [email, setEmail] = React.useState("");
   const [sentTo, setSentTo] = React.useState<string>();
-  /** Turnkey's pending code (Privy keeps its own and hands back empty strings). */
-  const [otp, setOtp] = React.useState({ otpId: "", otpEncryptionTargetBundle: "" });
   const [sentAt, setSentAt] = React.useState(0);
   const [code, setCode] = React.useState("");
   const [busy, setBusy] = React.useState<"send" | "verify">();
@@ -376,7 +374,7 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
     setBusy("send");
     setError(undefined);
     try {
-      setOtp(await account.sendEmailCode(address));
+      await account.sendEmailCode(address);
       setSentTo(address);
       setSentAt(Date.now());
       setNow(Date.now());
@@ -384,7 +382,7 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
     } catch (failure) {
       const message = String((failure as Error).message ?? "");
       setError(
-        /max number|too many|rate/i.test(message)
+        /too many|too_many_requests|rate/i.test(message)
           ? t("errors.rateLimited")
           : diagnose(failure).kind === "offline"
             ? t("errors.offlineAction")
@@ -400,7 +398,7 @@ function EmailSteps({ title, onDone }: { title: string; onDone: (email: string |
     setBusy("verify");
     setError(undefined);
     try {
-      const result = await account.confirmEmail({ email: sentTo, code: digits, ...otp });
+      const result = await account.confirmEmail({ email: sentTo, code: digits });
       notify.success(t("account.emailChanged"));
       close(() => onDone(result.email));
     } catch (failure) {

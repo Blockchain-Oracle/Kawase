@@ -15,9 +15,9 @@ import { buildIntelligence } from "../src/agent/intelligence";
 import { InboxService } from "../src/inbox/service";
 import { renderNotification } from "../src/notify/render";
 import { RequestService } from "../src/requests/service";
-import { deleteUser, fakeTurnkey, jsonRequest, noChains, testApp } from "./helpers";
+import { deleteUser, jsonRequest, noChains, testApp } from "./helpers";
 
-const { app, db, close } = testApp(fakeTurnkey({}));
+const { app, db, close } = testApp();
 const ids: string[] = [];
 after(async () => {
   for (const id of ids) await deleteUser(db, id);

@@ -44,9 +44,6 @@ catalog:
   "@types/pg": 8.23.1
   pino: 10.3.1
   uuidv7: 1.2.1
-  # Turnkey, server side (the same versions the app's kit already uses)
-  "@turnkey/http": 6.6.0
-  "@turnkey/api-key-stamper": 0.6.17
 
 minimumReleaseAgeExclude:
   - '@typescript-eslint/eslint-plugin@8.71.0'
@@ -76,8 +73,6 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/google@4.0.87'
   - '@ai-sdk/provider-utils@5.0.53'
   - '@ai-sdk/provider@4.0.21'
-  - '@turnkey/core@2.12.1'
-  - '@turnkey/react-wallet-kit@2.5.2'
 
 # Expo native builds allow one version per native module (expo-doctor, spike 09)
 overrides:

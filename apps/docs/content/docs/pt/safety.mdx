@@ -10,7 +10,7 @@ rede — e não pela confiança na IA ou nos servidores da Kawase. Esta página 
 ## Sua carteira
 
 - Ao entrar (código por e-mail, Apple ou Google), a Kawase cria uma conta comum no estilo Ethereum (uma **EOA**), cuja chave
-  fica protegida pela **Turnkey** em hardware seguro, dentro de uma suborganização que pertence a você. Não há PIN nem
+  fica guardada pela **Privy**, dividida em enclaves seguros para que ninguém a tenha inteira. Não há PIN nem
   senha. É **um endereço nas duas redes**.
 - Depois, a Kawase atualiza essa mesma conta usando **EIP-7702**, apontando o código dela para o
   `EIP7702StatelessDeleGator`, auditado pela MetaMask. Você assina uma autorização; o relayer da Kawase a envia e paga a taxa, então a configuração não custa nada para você.
@@ -45,9 +45,7 @@ Acima do limite, a Kawase monta a transação exata, mostra o valor, a moeda, o 
 **essa** transação. Depois, o servidor verifica se os bytes assinados correspondem ao cartão — remetente, destinatário,
 valor, rede e taxas — antes de transmitir. Se houver diferença, o pagamento é bloqueado.
 
-Hoje, a assinatura vem da sua sessão iniciada, protegida pela verificação biométrica do próprio dispositivo. **As passkeys estão chegando**
-(elas precisam do domínio próprio da Kawase): depois que você adicionar uma, a própria Turnkey exigirá seu uso em todas as assinaturas da carteira. Assim, nem uma
-sessão roubada nem o servidor da Kawase poderão assinar por você.
+A assinatura vem da sua própria carteira, depois da verificação do titular: Face ID (ou o código do aparelho) no celular e, na web, um código de seis dígitos que a Kawase envia para o seu e-mail verificado. O servidor da Kawase nunca guarda sua chave, então não pode assinar por você.
 
 ## Automações: registradas na blockchain
 

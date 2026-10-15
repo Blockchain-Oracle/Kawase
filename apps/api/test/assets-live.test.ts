@@ -22,7 +22,7 @@ import type { Chains, NetworkClients } from "../src/wallet/chain";
 import { createDb } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 import { createModels } from "@kawase/agent";
-import { fakeTurnkey, noOps, okFaucet } from "./helpers";
+import { noOps, okFaucet } from "./helpers";
 
 /** An EOA that holds ARGUS and other Arc tokens (ARGUS's owner per GoPlus, 2026-10-02). */
 const HOLDER = "0x7d613c6316eDe9d257f3BF512777Cb4Ea4A6beE4";
@@ -50,14 +50,14 @@ const chains: Chains = { available: ["mainnet"], get: (network) => (network === 
 const url = process.env.DATABASE_URL!;
 const { db, pool } = createDb(url, { poolSize: 2 });
 const log = createLogger({ service: "assets-live", level: "silent" });
-const app = createApp({ db, log, turnkey: fakeTurnkey({}), chains, faucet: okFaucet, ops: noOps, models: createModels({}), market: liveMarketData({ alchemyApiKey: process.env.ALCHEMY_API_KEY }), rateLimitPerMinute: 10_000 });
+const app = createApp({ db, log, chains, faucet: okFaucet, ops: noOps, models: createModels({}), market: liveMarketData({ alchemyApiKey: process.env.ALCHEMY_API_KEY }), rateLimitPerMinute: 10_000 });
 let userId = "";
 const token = `assets-live-${Date.now()}`;
 
 before(async () => {
   const [user] = await db.insert(users).values({ isAnonymous: false, email: `assets-live-${Date.now()}@example.com`, activeNetwork: "mainnet" }).returning();
   userId = user!.id;
-  await db.insert(wallets).values({ userId, role: "user", status: "active", address: HOLDER, custody: "turnkey", createdAt: new Date(Date.now() - HOUR_MS - HOUR_MS) } as never);
+  await db.insert(wallets).values({ userId, role: "user", status: "active", address: HOLDER, custody: "privy", createdAt: new Date(Date.now() - HOUR_MS - HOUR_MS) } as never);
   const [device] = await db.insert(devices).values({ userId, platform: "ios", installationId: `assets-live-${Date.now()}` }).returning();
   await db.insert(sessions).values({ userId, deviceId: device!.id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + HOUR_MS) } as never);
 });
@@ -114,7 +114,7 @@ test("discovery: the watcher records every ERC-20 that reaches a Kawase wallet, 
   // fresh arrivals in the watcher's first window.
   const [busy] = await db.insert(users).values({ isAnonymous: false, email: `assets-live-pm-${Date.now()}@example.com`, activeNetwork: "mainnet" }).returning();
   try {
-    await db.insert(wallets).values({ userId: busy!.id, role: "user", status: "active", address: POOL_MANAGER, custody: "turnkey" } as never);
+    await db.insert(wallets).values({ userId: busy!.id, role: "user", status: "active", address: POOL_MANAGER, custody: "privy" } as never);
     const watcher = new IncomingWatcher(db, chains, { matchIncoming: async () => undefined } as never, { add: async () => undefined } as never, log);
     await watcher.tick();
     const found = await db.select().from(walletTokens).where(eq(walletTokens.userId, busy!.id));

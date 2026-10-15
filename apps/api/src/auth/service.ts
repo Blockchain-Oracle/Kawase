@@ -1,28 +1,23 @@
-// Sign-in: a guest gets a user and a device session at once. An account sign-in links the wallet provider's identity
-// to a Kawase user (moving a guest's data across if there is one) and issues a session:
-// - Privy (D41): the app's Privy access and identity tokens, verified here (privy.ts); the Privy wallet is registered
-//   from the signed identity token in the same step. A Turnkey-era account is matched by the email Privy verified.
-// - Turnkey (the fallback for one build): a stamp by the session key over our single-use nonce.
+// Sign-in: a guest gets a user and a device session at once. An account sign-in links the person's Privy identity to a
+// Kawase user (moving a guest's data across if there is one) and issues a session (D41): the app's Privy access and
+// identity tokens, verified here (privy.ts); the Privy wallet is registered from the signed identity token in the same
+// step. Dev sign-in (local development only) is a throwaway key signing our single-use nonce.
 import { randomBytes } from "node:crypto";
 import { and, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { verifyMessage, type Address, type Hex } from "viem";
 
 import { loadPrivyEnv } from "@kawase/env";
-import { devices, moveUserData, signInNonces, users, type Db } from "@kawase/db";
+import { devices, moveUserData, revokedIdentitySessions, signInNonces, users, type Db } from "@kawase/db";
 
 import { HTTP, ProblemError, problem } from "../http/problem";
 import { registerUserWallet } from "../wallet/service";
 import { createPrivyVerifier, PrivyTokenError, type PrivyIdentity, type PrivyVerifier } from "./privy";
 import { createSession } from "./session";
 import { retryOnRace } from "./unique";
-import { parseStamp, proofClaims, verifyStamp, type StampedProof } from "./turnkey-proof";
-import type { TurnkeyReader, TurnkeyUser } from "./turnkey";
 
 const NONCE_BYTES = 32;
 const MS_PER_SECOND = 1000;
 const NONCE_TTL_SECONDS = 300;
-const KEY_LOOKUP_ATTEMPTS = 3;
-const KEY_LOOKUP_DELAY_MS = 1500;
 
 export type DeviceInput = {
   platform: "ios" | "android" | "web" | "desktop";
@@ -31,10 +26,10 @@ export type DeviceInput = {
   locale?: string | undefined;
 };
 
-/** Privy sign-in as configured by WALLET_PROVIDER and the PRIVY_* variables; undefined while Turnkey is the provider. */
+/** Privy sign-in from the PRIVY_* variables; undefined without an app id (a test or a local run that needs none). */
 export function privyFromEnv(source?: Record<string, string | undefined>): PrivyVerifier | undefined {
   const env = loadPrivyEnv(source);
-  if (env.WALLET_PROVIDER !== "privy" || !env.PRIVY_APP_ID) return undefined;
+  if (!env.PRIVY_APP_ID) return undefined;
   return createPrivyVerifier({
     appId: env.PRIVY_APP_ID,
     verificationKey: env.PRIVY_VERIFICATION_KEY,
@@ -56,21 +51,30 @@ export class AuthService {
 
   constructor(
     private readonly db: Db,
-    private readonly turnkey: TurnkeyReader,
     privy: PrivyVerifier | undefined = privyFromEnv(),
   ) {
     this.privy = privy;
   }
 
-  /** The tokens' identity, or the problem the app shows (a bad or expired token is a 401; Privy unreachable a 502). */
+  /**
+   * The tokens' identity, or the problem the app shows (a bad or expired token is a 401; Privy unreachable a 502). A
+   * Privy session signed out from Settings → Devices is refused for good: that device has to sign in afresh.
+   */
   private async privyIdentity(input: { accessToken: string; identityToken?: string | undefined }): Promise<PrivyIdentity> {
     if (!this.privy) throw problem(HTTP.notFound, "not_found", "Privy sign-in is not on");
+    let identity: PrivyIdentity;
     try {
-      return await this.privy.identify(input);
+      identity = await this.privy.identify(input);
     } catch (error) {
       if (error instanceof PrivyTokenError) throw problem(HTTP.unauthorized, "proof_invalid", "the Privy tokens do not verify");
       throw problem(HTTP.badGateway, "upstream", "Privy could not be reached");
     }
+    const [revoked] = await this.db
+      .select({ sessionId: revokedIdentitySessions.sessionId })
+      .from(revokedIdentitySessions)
+      .where(eq(revokedIdentitySessions.sessionId, identity.sessionId));
+    if (revoked) throw problem(HTTP.unauthorized, "session_signed_out", "this device was signed out; sign in again");
+    return identity;
   }
 
   private privyWallet(userId: string, identity: PrivyIdentity, wallet: NonNullable<PrivyIdentity["wallet"]>) {
@@ -83,8 +87,8 @@ export class AuthService {
 
   /**
    * Privy sign-in (D41). The Privy DID is the identity. Without a Kawase user for it yet, the email Privy verified
-   * finds a Turnkey-era account (the move from Turnkey); an account already linked to another Privy identity is not
-   * taken over (recovery). The embedded wallet in the identity token is registered in the same step; a wallet that
+   * finds the account that email belongs to; an account already linked to another Privy identity is not taken over
+   * (recovery). The embedded wallet in the identity token is registered in the same step; a wallet that
    * cannot be registered never fails the sign-in (the app registers it again after creating it).
    */
   async signInWithPrivy(input: {
@@ -189,7 +193,7 @@ export class AuthService {
 
   /**
    * After the person changed their email at Privy (a code to the new address): Kawase follows the verified address,
-   * unless it already belongs to another Kawase account (the same rule as the Turnkey sync).
+   * unless it already belongs to another Kawase account.
    */
   async syncPrivyEmail(userId: string, input: { accessToken: string; identityToken?: string | undefined }) {
     const { email } = await this.ownPrivyIdentity(userId, input);
@@ -290,108 +294,5 @@ export class AuthService {
     const device = await this.upsertDevice(user!.id, input.device);
     const { token } = await createSession(this.db, user!.id, device.id);
     return { token, user: user!, device };
-  }
-
-  /**
-   * The proof is a Turnkey stamp over `{"organizationId": <sub-org>, "activityId": <our nonce>}`. It is
-   * checked in this order: the nonce is ours and unused, the signature is valid for the stamp's key, and the
-   * parent organization can see that key on the claimed user.
-   */
-  async signInWithTurnkey(input: {
-    proof: StampedProof;
-    turnkeyUserId: string;
-    device: DeviceInput;
-    guestUserId?: string | undefined;
-  }) {
-    const claims = proofClaims(input.proof.body);
-    if (!claims) throw problem(HTTP.unauthorized, "proof_invalid", "the signed body is not a sign-in request");
-    await this.consumeNonce(claims.nonce);
-
-    let stamp;
-    try {
-      stamp = parseStamp(input.proof.stamp);
-    } catch {
-      throw problem(HTTP.unauthorized, "proof_invalid", "the stamp is not a Turnkey P-256 stamp");
-    }
-    if (!verifyStamp(input.proof.body, stamp)) throw problem(HTTP.unauthorized, "proof_invalid");
-
-    // Right after a sign-in the new session key can take a moment to show up on the user, so the read is
-    // repeated a few times before the proof is refused.
-    let turnkeyUser: TurnkeyUser | undefined;
-    for (let attempt = 0; attempt < KEY_LOOKUP_ATTEMPTS; attempt++) {
-      turnkeyUser = await this.turnkey.getUser(claims.organizationId, input.turnkeyUserId);
-      if (turnkeyUser?.sessionPublicKeys.includes(stamp.publicKey)) break;
-      if (attempt < KEY_LOOKUP_ATTEMPTS - 1) await new Promise((resolve) => setTimeout(resolve, KEY_LOOKUP_DELAY_MS));
-    }
-    if (!turnkeyUser) throw problem(HTTP.unauthorized, "session_key_unknown", "no such user in this organization");
-    if (!turnkeyUser.sessionPublicKeys.includes(stamp.publicKey))
-      throw problem(HTTP.unauthorized, "session_key_unknown");
-
-    const user = await this.db.transaction(async (tx) => {
-      // The proved sub-organization is the identity. Email is mutable provider metadata and cannot rebind
-      // another account or its wallet. A different identity needs an explicit recovery ceremony.
-      const [bySubOrg] = await tx.select().from(users).where(eq(users.turnkeySubOrganizationId, claims.organizationId));
-      const [byEmail] =
-        bySubOrg || !turnkeyUser.email
-          ? []
-          : await tx
-              .select()
-              .from(users)
-              .where(sql`lower(${users.email}) = lower(${turnkeyUser.email})`);
-      if (byEmail) throw problem(HTTP.conflict, "account_recovery_required");
-      const existing = bySubOrg;
-      if (existing) {
-        if (input.guestUserId && input.guestUserId !== existing.id) {
-          await moveUserData(tx, input.guestUserId, existing.id);
-        }
-        const [updated] = await tx
-          .update(users)
-          .set({
-            email: turnkeyUser.email ?? existing.email,
-            turnkeySubOrganizationId: claims.organizationId,
-            turnkeyUserId: turnkeyUser.userId,
-            ...(existing.identityProvider ? {} : { identityProvider: "turnkey" as const, identitySubject: claims.organizationId }),
-            isAnonymous: false,
-          })
-          .where(eq(users.id, existing.id))
-          .returning();
-        return updated!;
-      }
-      if (input.guestUserId) {
-        // The guest becomes the account: nothing to move, the row is upgraded in place.
-        const [upgraded] = await tx
-          .update(users)
-          .set({
-            email: turnkeyUser.email,
-            turnkeySubOrganizationId: claims.organizationId,
-            turnkeyUserId: turnkeyUser.userId,
-            identityProvider: "turnkey",
-            identitySubject: claims.organizationId,
-            isAnonymous: false,
-          })
-          .where(and(eq(users.id, input.guestUserId), eq(users.isAnonymous, true)))
-          .returning();
-        if (upgraded) return upgraded;
-      }
-      const [created] = await tx
-        .insert(users)
-        .values({
-          email: turnkeyUser.email,
-          turnkeySubOrganizationId: claims.organizationId,
-          turnkeyUserId: turnkeyUser.userId,
-          identityProvider: "turnkey",
-          identitySubject: claims.organizationId,
-          isAnonymous: false,
-          locale: input.device.locale ?? "en",
-        })
-        .returning();
-      return created!;
-    });
-
-    const device = await this.upsertDevice(user.id, input.device);
-    // The session key that proved this sign-in is this device's Turnkey API key: "sign out this device" deletes it.
-    await this.db.update(devices).set({ turnkeyPublicKey: stamp.publicKey }).where(eq(devices.id, device.id));
-    const { token } = await createSession(this.db, user.id, device.id);
-    return { token, user, device, turnkeyUser };
   }
 }

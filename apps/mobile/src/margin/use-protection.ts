@@ -14,7 +14,6 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { sayIfPractice } from "@/safety/practice-refusal";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
@@ -27,7 +26,7 @@ const KNOWN: ReadonlySet<string> = new Set(["take_profit_wrong_side", "stop_loss
 export function useProtection(positionId: string) {
   const { t } = useT();
   const { status, user } = useSession();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const [view, setView] = React.useState<MarginProtectionView>();
   const [busy, setBusy] = React.useState(false);
 

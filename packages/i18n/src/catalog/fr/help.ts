@@ -24,7 +24,7 @@ export const help: Catalog["help"] = {
   copied: "Copié",
   keyTitle: "Votre clé",
   keyBody:
-    "La clé de votre portefeuille est créée et conservée par Turnkey dans du matériel sécurisé. Kawase ne la voit jamais ; votre Face ID ou votre clé d'identification la déverrouille.",
+    "La clé de votre portefeuille est fractionnée et conservée par Privy dans des enclaves sécurisées. Kawase ne la voit jamais ; seule votre propre connexion peut l'utiliser.",
   codeTitle: "Des fonctions intelligentes sur votre adresse",
   codeBody:
     "Votre adresse exécute le code open source DeleGator de MetaMask (EIP-7702) : plusieurs étapes passent en un seul Face ID et vos limites sont appliquées. Il ne déplace jamais d'argent de lui-même.",

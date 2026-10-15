@@ -29,7 +29,7 @@ import { SendService } from "../src/send/service";
 import type { SessionUser } from "../src/types";
 import { createChains } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, noOps, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, noOps, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -40,14 +40,9 @@ test("automation drafts carry on through sign-in, a new contact and wallet setup
   const env = loadApiEnv();
   const chains = createChains(env);
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "continuer", email: `continue-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, noOps, undefined, undefined, appKitEarn(env));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`continue-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, noOps, undefined, undefined, appKitEarn(env));
   // The service the agent's tools use, built the way the api builds it.
   const log = createLogger({ service: "continuation-test", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" });
   const wallets = new WalletService(db, chains);
@@ -82,12 +77,7 @@ test("automation drafts carry on through sign-in, a new contact and wallet setup
   assert.equal(save.save?.keep, usdc("7"));
 
   // 2. They sign in: the guest becomes the account, and its drafts with it.
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request(
-    "/auth/turnkey",
-    jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "continue-test-phone1" } }, guestToken),
-  );
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "continue-test-phone1" }, guestToken);
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   assert.equal(user.id, guestUser.id);
@@ -105,7 +95,6 @@ test("automation drafts carry on through sign-in, a new contact and wallet setup
   assert.equal(sendNow.schedule.time, "08:30");
 
   // The wallet exists → it is not set up yet.
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   sendNow = await recheck(send.id);
   assert.equal(sendNow.blocking?.code, "WALLET_NOT_SET_UP", JSON.stringify(sendNow.results));
   let saveNow = await recheck(save.id);

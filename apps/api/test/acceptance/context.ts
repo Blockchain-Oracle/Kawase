@@ -7,7 +7,7 @@ import { createPublicClient, erc20Abi, formatUnits, http, type Address, type Hex
 import type { UnsignedTransaction } from "@kawase/api-client";
 import type { WalletSigner } from "@kawase/wallet";
 
-import type { AcceptanceAccount } from "./account";
+import type { RunAccount } from "./account";
 
 export type Mode = "dry" | "live";
 export type Card = "setup" | "trade" | "money-in" | "money-out" | "earn-borrow" | "marketplace" | "automate-safety";
@@ -84,7 +84,7 @@ export type Ctx = {
   mode: Mode;
   step: Step;
   api: Api;
-  account: AcceptanceAccount;
+  account: RunAccount;
   signer: WalletSigner;
   /** Signs for account 1 (the "friend" address), for steps that move money back. */
   friendSigner: WalletSigner;

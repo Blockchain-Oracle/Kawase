@@ -27,7 +27,6 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
-import { useAccountMethods } from "@/account/use-account-methods";
 import { shareTextFile } from "@/history/share-file";
 import { useWhyHeadline, WhyTimeline } from "@/history/why-timeline";
 import { useLocale } from "@/i18n/locale-provider";
@@ -224,7 +223,6 @@ export function DeviceSignOutCard({ output }: { output: { proposal: DeviceSignOu
   const { t } = useT();
   const { locale } = useLocale();
   const router = useRouter();
-  const account = useAccountMethods();
   const { proposal } = output;
   const [devices, setDevices] = React.useState<DeviceView[]>(proposal.status === "proposed" ? proposal.devices : []);
   const [busy, setBusy] = React.useState<string>();
@@ -244,9 +242,8 @@ export function DeviceSignOutCard({ output }: { output: { proposal: DeviceSignOu
     if (yes !== "approved") return;
     setBusy(device.id);
     try {
-      const { turnkeyPublicKey } = await api.account.signOutDevice(device.id);
-      // Its Turnkey session key goes too, so that device can't sign anything even with the app still open.
-      await account.deleteSessionKeys(turnkeyPublicKey ? [turnkeyPublicKey] : []).catch(() => 0);
+      // The api ends its Kawase session and refuses its Privy session from now on: it has to sign in afresh.
+      await api.account.signOutDevice(device.id);
       toast(t("devices.signedOut", { name }));
       setDevices((current) => current.filter((entry) => entry.id !== device.id));
     } catch {

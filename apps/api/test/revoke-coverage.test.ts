@@ -24,7 +24,7 @@ test("revoke-all covers every signed, unexpired grant not revoked on chain, what
     await db.delete(users).where(eq(users.id, user!.id));
     await pool.end();
   });
-  const [wallet] = await db.insert(wallets).values({ userId: user!.id, role: "user", status: "active", address: hex(20), custody: "turnkey" } as never).returning();
+  const [wallet] = await db.insert(wallets).values({ userId: user!.id, role: "user", status: "active", address: hex(20), custody: "privy" } as never).returning();
   const grant = async (name: string, values: Partial<typeof grants.$inferInsert> & { signed?: boolean; expired?: boolean }) => {
     const { signed = true, expired = false, ...rest } = values;
     const [row] = await db

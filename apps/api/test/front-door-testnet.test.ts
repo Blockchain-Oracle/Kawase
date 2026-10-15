@@ -24,7 +24,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -46,18 +46,13 @@ test("front door on testnet: the race streams, the swap lands, the feed has its 
   const network = getNetwork("testnet");
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "front-door", email: `front-door-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`front-door-${TEST_ID}@example.test`, wallet.address);
   const models = createModels(
     { openai: env.OPENAI_API_KEY! },
     env.KAWASE_MODEL_AGENT_CHAT ? { agentChat: env.KAWASE_MODEL_AGENT_CHAT as ModelRef } : {},
   );
-  const { app, db, close } = testApp(turnkey, chains, undefined, undefined, appKitSwaps(env), undefined, undefined, {
+  const { app, db, close } = testApp(chains, undefined, undefined, appKitSwaps(env), undefined, undefined, {
     models,
     ...(env.ALCHEMY_API_KEY ? { alchemyApiKey: env.ALCHEMY_API_KEY } : {}),
   });
@@ -79,14 +74,11 @@ test("front door on testnet: the race streams, the swap lands, the feed has its 
   });
 
   // A signed-in person with a set-up wallet holding 2.3 USDC (Circle's test ops wallet sends it).
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: `front-door-${SUB_ORG.slice(0, 8)}` } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: `front-door-${TEST_ID.slice(0, 8)}` });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

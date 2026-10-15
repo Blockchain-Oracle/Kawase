@@ -18,10 +18,9 @@ import { api } from "@/session/api";
 import { reportClientEvent } from "@/session/client-events";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke } from "@/wallet/sign-revoke";
-import { useTurnkeyAccount } from "@/wallet/use-turnkey-account";
+import { useWalletAccount } from "@/wallet/use-wallet-account";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
@@ -53,9 +52,9 @@ type Prompt = { message: string; cancel: string };
 export function useWalletSetup(network: NetworkId) {
   const { t } = useT();
   const { status } = useSession();
-  const turnkey = useTurnkeyAccount();
+  const account = useWalletAccount();
   // Passkeys need a real domain; until then the session key signs, behind the device's Face ID check.
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const { wallet, refresh, error: loadError } = useWalletStatus();
   const [running, setRunning] = React.useState<SetupStepKey>();
   const [failed, setFailed] = React.useState<Partial<Record<SetupStepKey, true>>>({});
@@ -94,7 +93,7 @@ export function useWalletSetup(network: NetworkId) {
     [refresh, t],
   );
 
-  const createWallet = React.useCallback(() => step("wallet", async () => void (await turnkey.ensureWallet())), [step, turnkey]);
+  const createWallet = React.useCallback(() => step("wallet", async () => void (await account.ensureWallet())), [step, account]);
 
   const setUpWallet = React.useCallback(
     () =>

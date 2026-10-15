@@ -21,12 +21,6 @@ const deviceSchema = z.object({
 
 const guestSchema = z.object({ device: deviceSchema, locale: z.string().max(FIELD.localeMax).optional() });
 
-const turnkeySchema = z.object({
-  proof: z.object({ body: z.string().min(1), stamp: z.string().min(1) }),
-  turnkeyUserId: z.uuid(),
-  device: deviceSchema,
-});
-
 /** A JWT: three base64url parts. Long enough for an identity token that carries the linked accounts. */
 const JWT_MAX_CHARS = 16_384;
 const jwt = z.string().max(JWT_MAX_CHARS).regex(/^[\w-]+\.[\w-]+\.[\w-]+$/);
@@ -59,18 +53,6 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook,
   app.post("/guest", async (c) => {
     const input = await parse(guestSchema, await c.req.json());
     const { token, user } = await auth.signInAsGuest(input);
-    return c.json({ token, user: publicUser(user) }, HTTP.created);
-  });
-
-  app.post("/turnkey", async (c) => {
-    const input = await parse(turnkeySchema, await c.req.json());
-    // A guest session in the Authorization header means "upgrade this guest".
-    const guestToken = bearerToken(c.req.raw.headers);
-    const guest = guestToken ? await findSession(db, guestToken) : undefined;
-    const guestUserId = guest?.user.isAnonymous ? guest.user.id : undefined;
-    const { token, user, device } = await auth.signInWithTurnkey({ ...input, guestUserId });
-    if (guest) await revokeSession(db, guest.session.id);
-    if (onSignedIn) void onSignedIn({ userId: user.id, deviceId: device.id, deviceCreatedAt: device.createdAt, ip: clientIp(c) }).catch(() => undefined);
     return c.json({ token, user: publicUser(user) }, HTTP.created);
   });
 
@@ -136,7 +118,7 @@ export function authRoutes(db: Db, auth: AuthService, onSignedIn?: SignedInHook,
   return app;
 }
 
-/** The user as the app sees it: never the Turnkey ids of other users, never internal flags. */
+/** The user as the app sees it: never another user's ids, never internal flags. */
 export function publicUser(user: {
   id: string;
   email: string | null;
@@ -152,7 +134,6 @@ export function publicUser(user: {
   riskMode: string;
   practiceMode: boolean;
   pausedAllAt?: Date | null;
-  turnkeySubOrganizationId: string | null;
   voicePrefs?: unknown;
 }) {
   return {
@@ -171,7 +152,6 @@ export function publicUser(user: {
     riskMode: user.riskMode,
     practiceMode: user.practiceMode,
     pausedAllAt: user.pausedAllAt?.toISOString() ?? null,
-    turnkeySubOrganizationId: user.turnkeySubOrganizationId,
     /** Settings → Voice, with the defaults filled in. */
     voicePrefs: voicePrefs(user.voicePrefs),
   };

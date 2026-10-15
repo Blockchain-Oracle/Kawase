@@ -13,7 +13,7 @@ import type { MarginIntent, MarginMarketsView } from "@kawase/api-client";
 import { getNetwork, type NetworkId } from "@kawase/networks";
 
 import type { Chains, NetworkClients } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 const RPC = { mainnet: process.env.ARC_RPC_URL_MAINNET ?? "https://rpc.drpc.mainnet.arc.io", testnet: process.env.ARC_RPC_URL_TESTNET } as const;
 const TIMEOUT_MS = 60_000;
@@ -38,14 +38,9 @@ function readOnlyChains(): Chains {
 
 test("margin: live markets, and real plans that wait for money", { skip: !process.env.DATABASE_URL, timeout: 300_000 }, async () => {
   const wallet = privateKeyToAccount(generatePrivateKey()).address as Address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const key = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "trader", email: `margin-${SUB_ORG}@example.test`, sessionPublicKeys: [key.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet }] },
-  );
-  const { app, db, close } = testApp(turnkey, readOnlyChains());
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`margin-${TEST_ID}@example.test`, wallet);
+  const { app, db, close } = testApp(readOnlyChains());
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
@@ -66,15 +61,12 @@ test("margin: live markets, and real plans that wait for money", { skip: !proces
   assert.equal(testnet.available, false);
   assert.equal(testnet.reason, "mainnet_only");
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, key) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "margin-test-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "margin-test-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet, walletId: "wallet-1" }), 201, "register");
 
   // On testnet the order explains itself and offers the switch.
   const onTestnet = (await (await call("POST", "/margin/orders", { market: "btc", side: "long", margin: "10" })).json()) as { intent: MarginIntent };

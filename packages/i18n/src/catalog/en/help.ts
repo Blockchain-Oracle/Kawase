@@ -18,7 +18,7 @@ export const help = {
   copy: "Copy",
   copied: "Copied",
   keyTitle: "Your key",
-  keyBody: "Your wallet's key is made and kept by Turnkey in secure hardware. Kawase never sees it; your Face ID or passkey unlocks it.",
+  keyBody: "Your wallet's key is split up and kept by Privy in secure enclaves. Kawase never sees it; only your own sign-in can use it.",
   codeTitle: "Smart features on your address",
   codeBody: "Your address runs MetaMask's open-source DeleGator code (EIP-7702), so several steps go in one Face ID and your limits are enforced. It never moves money by itself.",
   leaveTitle: "Leave without Kawase",

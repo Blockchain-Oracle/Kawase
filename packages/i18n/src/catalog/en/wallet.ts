@@ -37,8 +37,6 @@ export const wallet = {
   oauthReturnTitle: "Finishing your sign-in",
   oauthReturnGoogle: "With your Google account",
   oauthReturnApple: "With your Apple account",
-  approveTitle: "Approve",
-  slideToApprove: "Slide to approve",
   creatingVerb: "Creating your wallet",
   signingInVerb: "Signing in",
 } as const;

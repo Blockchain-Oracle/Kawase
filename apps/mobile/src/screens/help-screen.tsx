@@ -1,6 +1,6 @@
 // Help & trust (B2-3; plan §A.4 14 "help and trust", S "Friction and trust"): in plain words, what Kawase can and
 // can't do with the person's money (the allowance they signed, caps, pause, revoke), where the money lives (their own
-// wallet, the key Turnkey keeps, the 7702 code on their address), how to leave without Kawase (export the wallet, the
+// wallet, the key Privy keeps for them, the 7702 code on their address), how to leave without Kawase (export the wallet, the
 // Arc network details for any other wallet), whether Kawase is working right now (the live status), and where to
 // read more or ask (the docs, a problem report, the chat). Rows are the item-action list (21st 28284 twin).
 import * as Clipboard from "expo-clipboard";

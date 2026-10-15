@@ -4,12 +4,8 @@ import { test } from "node:test";
 import { loadApiEnv, loadPrivyEnv } from "../src/index";
 
 const HEX_KEY = "0x" + "ab".repeat(32);
-const PUBLIC_KEY = "02" + "cd".repeat(32);
 const base = {
   DATABASE_URL: "postgres://kawase:kawase@localhost:5433/kawase",
-  TURNKEY_ORGANIZATION_ID: "bb8f314c-c99b-4b41-995a-47c9d0bca23e",
-  TURNKEY_API_PUBLIC_KEY: PUBLIC_KEY,
-  TURNKEY_API_PRIVATE_KEY: HEX_KEY,
   CIRCLE_TEST_API_KEY: "TEST_API_KEY:x:y",
   CIRCLE_TEST_ENTITY_SECRET: "secret",
   RELAYER_PRIVATE_KEY_TESTNET: HEX_KEY,
@@ -22,13 +18,13 @@ test("loads the api environment with defaults", () => {
   assert.equal(env.PORT, 3000);
   assert.equal(env.NODE_ENV, "development");
   assert.equal(env.MAINNET_ENABLED, false);
-  assert.equal(env.TURNKEY_API_BASE_URL, "https://api.turnkey.com");
+  assert.equal(env.PRIVY_APP_ID, undefined);
 });
 
 test("names every missing or malformed variable", () => {
   assert.throws(
-    () => loadApiEnv({ ...base, DATABASE_URL: "nope", TURNKEY_API_PUBLIC_KEY: "short" }),
-    (error: Error) => error.message.includes("DATABASE_URL") && error.message.includes("TURNKEY_API_PUBLIC_KEY"),
+    () => loadApiEnv({ ...base, DATABASE_URL: "nope", RELAYER_PRIVATE_KEY_TESTNET: "short" }),
+    (error: Error) => error.message.includes("DATABASE_URL") && error.message.includes("RELAYER_PRIVATE_KEY_TESTNET"),
   );
 });
 
@@ -46,25 +42,23 @@ test("mainnet needs the live keys", () => {
   assert.equal(env.MAINNET_ENABLED, true);
 });
 
-test("Privy is off by default and needs its app id when chosen (D41)", () => {
-  assert.equal(loadApiEnv(base).WALLET_PROVIDER, "turnkey");
-  assert.throws(() => loadApiEnv({ ...base, WALLET_PROVIDER: "privy" }), /PRIVY_APP_ID/);
+test("Privy's keys load, a blank secret is unset, and production needs the app id (D41)", () => {
   const env = loadApiEnv({
     ...base,
-    WALLET_PROVIDER: "privy",
     PRIVY_APP_ID: "app-id",
     PRIVY_VERIFICATION_KEY: "-----BEGIN PUBLIC KEY-----\\nABC\\n-----END PUBLIC KEY-----",
     PRIVY_APP_SECRET: "",
   });
   assert.equal(env.PRIVY_VERIFICATION_KEY, "-----BEGIN PUBLIC KEY-----\nABC\n-----END PUBLIC KEY-----");
   assert.equal(env.PRIVY_APP_SECRET, undefined);
-  assert.equal(loadPrivyEnv({ WALLET_PROVIDER: "privy", PRIVY_APP_ID: "app-id" }).PRIVY_APP_ID, "app-id");
-  assert.throws(() => loadPrivyEnv({ WALLET_PROVIDER: "privy" }), /PRIVY_APP_ID/);
+  assert.equal(loadPrivyEnv({ PRIVY_APP_ID: "app-id" }).PRIVY_APP_ID, "app-id");
+  assert.equal(loadPrivyEnv({}).PRIVY_APP_ID, undefined);
+  assert.throws(() => loadApiEnv({ ...base, NODE_ENV: "production", AGENT_APPROVAL_SECRET: "s".repeat(32) }), /PRIVY_APP_ID/);
 });
 
 test("production needs the approval secret", () => {
   assert.throws(() => loadApiEnv({ ...base, NODE_ENV: "production" }), /AGENT_APPROVAL_SECRET/);
-  const env = loadApiEnv({ ...base, NODE_ENV: "production", AGENT_APPROVAL_SECRET: "s".repeat(32) });
+  const env = loadApiEnv({ ...base, NODE_ENV: "production", AGENT_APPROVAL_SECRET: "s".repeat(32), PRIVY_APP_ID: "app-id" });
   assert.equal(env.NODE_ENV, "production");
 });
 

@@ -29,8 +29,6 @@ export type SessionUser = {
   practiceMode: boolean;
   /** Set while the person has paused all agent and automation spending. */
   pausedAllAt?: Date | null;
-  turnkeySubOrganizationId: string | null;
-  turnkeyUserId: string | null;
   /** Settings → Voice as stored (read with `voicePrefs`). */
   voicePrefs?: unknown;
 };

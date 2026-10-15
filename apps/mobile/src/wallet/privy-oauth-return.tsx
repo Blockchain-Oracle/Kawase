@@ -202,7 +202,7 @@ export function PrivyOAuthReturn() {
     }
     clearReturn();
     // The email belongs to another sign-in method: this Privy login cannot be used, so it is ended.
-    if (phase.name === "failed" && phase.recovery) void latest.current.account.signOutTurnkey().catch(() => undefined);
+    if (phase.name === "failed" && phase.recovery) void latest.current.account.signOutWallet().catch(() => undefined);
     setPhase({ name: "idle" });
   };
 

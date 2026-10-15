@@ -22,7 +22,7 @@ import { RequestService } from "../src/requests/service";
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -42,14 +42,10 @@ test("payment requests on Arc testnet: paid by a Kawase send, paid by a plain tr
   const payerKey = privateKeyToAccount(generatePrivateKey());
   const requesterKey = privateKeyToAccount(generatePrivateKey());
   const people = [
-    { key: payerKey, org: randomUUID(), tk: randomUUID(), session: turnkeyStyleKeyPair(), name: "payer" },
-    { key: requesterKey, org: randomUUID(), tk: randomUUID(), session: turnkeyStyleKeyPair(), name: "requester" },
+    { key: payerKey, name: "payer", privy: privyPerson(`payer-${randomUUID()}@example.test`, payerKey.address) },
+    { key: requesterKey, name: "requester", privy: privyPerson(`requester-${randomUUID()}@example.test`, requesterKey.address) },
   ];
-  const turnkey = fakeTurnkey(
-    Object.fromEntries(people.map((p) => [`${p.org}/${p.tk}`, { userId: p.tk, userName: p.name, email: `${p.name}-${p.org}@example.test`, sessionPublicKeys: [p.session.publicKeyHex] }])),
-    Object.fromEntries(people.map((p) => [p.org, [{ walletId: "wallet-1", address: p.key.address }]])),
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env));
+  const { app, db, close } = testApp(chains, undefined, circleOps(env));
   const userIds: string[] = [];
   const watcherDb = createDb(process.env.DATABASE_URL!, { poolSize: 2 });
   after(async () => {
@@ -65,15 +61,12 @@ test("payment requests on Arc testnet: paid by a Kawase send, paid by a plain tr
   });
 
   const signIn = async (p: (typeof people)[number]) => {
-    const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-    const body = JSON.stringify({ organizationId: p.org, activityId: nonce });
-    const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, p.session) }, turnkeyUserId: p.tk, device: { platform: "ios", installationId: `req-test-${p.name}-0001` } }));
+    const response = await privySignIn(app, p.privy, { platform: "ios", installationId: `req-test-${p.name}-0001` });
     await expectStatus(response, 201, `sign-in ${p.name}`);
     const { token, user } = (await response.json()) as { token: string; user: { id: string } };
     userIds.push(user.id);
     const call = (method: string, path: string, payload?: unknown) =>
       app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-    await expectStatus(await call("POST", "/wallet", { address: p.key.address, walletId: "wallet-1" }), 201, `register ${p.name}`);
     return call;
   };
   const payer = await signIn(people[0]!);

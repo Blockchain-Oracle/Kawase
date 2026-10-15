@@ -1,7 +1,7 @@
 // Wallet & limits on Arc testnet (cards/automate-safety.md "Stay in control"; X3, X7, X11, G8): an allowance per token
 // on chain, tightening at once and loosening with the wallet's signature (a new grant plus the old one's revoke), the
 // per-payment cap, pause all and resume, the risk dial, practice mode's dry run, and the exit kit revoking every grant
-// in one transaction. The wallet is a local key standing in for Turnkey; the ops wallet is Circle's.
+// in one transaction. The wallet is a local key standing in for Privy; the ops wallet is Circle's.
 // Skipped without the server keys in the root .env. Run: pnpm --filter @kawase/api test (or this file alone).
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -17,7 +17,7 @@ import { getNetwork } from "@kawase/networks";
 
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, revokeSubmitBody, signRevokeRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, revokeSubmitBody, signRevokeRequest, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -36,14 +36,9 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "limits", email: `limits-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env), undefined, undefined, undefined, { reconcileIntervalMs: 2000 });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`limits-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env), undefined, undefined, undefined, { reconcileIntervalMs: 2000 });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -59,9 +54,7 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "limits-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "limits-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
@@ -72,7 +65,6 @@ test("wallet & limits on Arc testnet: per-token allowance, tighten/loosen, pause
     await expectStatus(answer, status, what);
     return (await answer.json()) as T;
   };
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

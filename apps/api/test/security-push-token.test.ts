@@ -8,11 +8,10 @@ import { eq } from "drizzle-orm";
 
 import { devices } from "@kawase/db";
 
-import { deleteUser, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
-const people = ["ada", "bo"].map((name) => ({ name, email: `${name}-${randomUUID()}@example.test`, subOrg: randomUUID(), turnkeyUser: randomUUID(), key: turnkeyStyleKeyPair() }));
-const turnkey = fakeTurnkey(Object.fromEntries(people.map((p) => [`${p.subOrg}/${p.turnkeyUser}`, { userId: p.turnkeyUser, userName: p.name, email: p.email, sessionPublicKeys: [p.key.publicKeyHex] }])));
-const { app, db, close } = testApp(turnkey);
+const people = ["ada", "bo"].map((name) => ({ name, ...privyPerson(`${name}-${randomUUID()}@example.test`) }));
+const { app, db, close } = testApp();
 const created: string[] = [];
 after(async () => {
   for (const id of created) await deleteUser(db, id);
@@ -20,9 +19,7 @@ after(async () => {
 });
 
 async function signIn(person: (typeof people)[number], installationId: string) {
-  const { nonce } = (await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string };
-  const body = JSON.stringify({ organizationId: person.subOrg, activityId: nonce });
-  const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId } }));
+  const response = await privySignIn(app, person, { platform: "ios", installationId });
   assert.equal(response.status, 201);
   const { token, user } = (await response.json()) as { token: string; user: { id: string } };
   if (!created.includes(user.id)) created.push(user.id);

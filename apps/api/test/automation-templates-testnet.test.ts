@@ -14,7 +14,7 @@ import { loadApiEnv } from "@kawase/env";
 import { getNetwork } from "@kawase/networks";
 
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -24,27 +24,19 @@ test("every New automation template drafts the right kind through the api", { sk
   const env = loadApiEnv();
   const network = getNetwork("testnet");
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "templates", email: `templates-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, createChains(env));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`templates-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(createChains(env));
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "templates-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "templates-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) => app.request(path, jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signed = await wallet.signAuthorization(authorization);
   await expectStatus(await call("POST", "/wallet/setup/submit", { network: "testnet", authorization: { address: signed.address, chainId: signed.chainId, nonce: signed.nonce, r: signed.r, s: signed.s, yParity: signed.yParity } }), 200, "setup");

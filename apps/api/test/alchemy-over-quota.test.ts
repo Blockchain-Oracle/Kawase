@@ -1,6 +1,6 @@
 // Alchemy over its monthly quota (it answers 429 "Monthly capacity limit exceeded" on every API Kawase uses): the
-// reads that use it must fall back, never 500. Read-only and live: a signed-in session (a local stamp, no Turnkey
-// signing) whose wallet is the testnet ops wallet (real USDC and real history, nothing is sent), with the real
+// reads that use it must fall back, never 500. Read-only and live: a signed-in session (a test Privy session, nothing
+// signed) whose wallet is the testnet ops wallet (real USDC and real history, nothing is sent), with the real
 // Alchemy key and live market data. Portfolio falls back to the watcher's list and balances read on chain, Activity to
 // the explorer's USDC/EURC page, prices to the other sources; the weekly report and the export read the explorer.
 import assert from "node:assert/strict";
@@ -15,7 +15,7 @@ import { loadApiEnv } from "@kawase/env";
 import { AlchemyPausedError, assertAlchemyOpen, resetAlchemyPause } from "../src/market/alchemy-quota";
 import { liveMarketData } from "../src/market/sources";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -39,14 +39,9 @@ test("Alchemy over quota: portfolio, activity, prices, the weekly report and the
   console.log("alchemy now:", state.status, state.text);
   const overQuota = state.status === 429;
 
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "quota", email: `quota-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet }] },
-  );
-  const { app, db, close } = testApp(turnkey, createChains(env), undefined, undefined, undefined, undefined, undefined, {
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`quota-${TEST_ID}@example.test`, wallet);
+  const { app, db, close } = testApp(createChains(env), undefined, undefined, undefined, undefined, undefined, {
     alchemyApiKey: env.ALCHEMY_API_KEY,
     market: liveMarketData({ alchemyApiKey: env.ALCHEMY_API_KEY }),
   });
@@ -64,13 +59,10 @@ test("Alchemy over quota: portfolio, activity, prices, the weekly report and the
     return response;
   };
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "web", installationId: "quota-test-browser-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "web", installationId: "quota-test-browser-01" });
   await expectStatus(signIn, 201, "sign-in");
   ({ token } = (await signIn.json()) as { token: string });
   userId = ((await (await call("/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await app.request("/wallet", jsonRequest("POST", { address: wallet, walletId: "wallet-1" }, token)), 201, "register");
 
   // Portfolio: the wallet's test USDC is found and priced without Alchemy. The first read meets the 429 and pauses
   // Alchemy, so the second goes straight to the fallback.

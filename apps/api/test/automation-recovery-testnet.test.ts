@@ -24,7 +24,7 @@ import { appKitEarn } from "../src/earn/engine";
 import { circleOps } from "../src/send/ops";
 import type { OpsExecutor } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -45,13 +45,8 @@ test("automation runs recover from interruption: one truthful outcome each, neve
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "recoverer", email: `recover-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`recover-${TEST_ID}@example.test`, wallet.address);
   // The ops wallet as Circle, except that the call can be made to fail once the way a lost connection does.
   const real = circleOps(env);
   let loseNextCall = false;
@@ -67,7 +62,7 @@ test("automation runs recover from interruption: one truthful outcome each, neve
     },
     get: (network, id) => real.get(network, id),
   };
-  const { app, db, close } = testApp(turnkey, chains, undefined, flaky, undefined, undefined, appKitEarn(env), { automationTickMs: 1000, reconcileIntervalMs: 3000 });
+  const { app, db, close } = testApp(chains, undefined, flaky, undefined, undefined, appKitEarn(env), { automationTickMs: 1000, reconcileIntervalMs: 3000 });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   const usdcOf = (address: Hex) => client.readContract({ address: network.addresses.usdc, abi: erc20Abi, functionName: "balanceOf", args: [address] });
   let userId = "";
@@ -91,15 +86,12 @@ test("automation runs recover from interruption: one truthful outcome each, neve
     }
   };
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "recover-test-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "recover-test-phone-01" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

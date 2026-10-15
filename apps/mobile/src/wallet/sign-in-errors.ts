@@ -1,18 +1,18 @@
 // What went wrong during sign-in, in the terms the sheet needs to say it truthfully (Codex review R08): the person
 // closed a provider's sheet (not an error), the code was wrong or expired, too many codes were asked for, the phone
-// is offline, or something else. The Turnkey kit wraps its errors (a `TurnkeyError` whose `cause` holds the original),
-// so the whole chain is read: codes, messages and HTTP statuses.
+// is offline, or something else. Privy's SDKs say it with a code (`invalid_credentials`, `oauth_user_denied`,
+// `exited_auth_flow`, `client_request_timeout`) or an HTTP status, sometimes under a `cause`, so the whole chain is read:
+// codes, messages and statuses.
 import { ApiError } from "@kawase/api-client";
 
 export type SignInFailure = "cancelled" | "invalidCode" | "expiredCode" | "rateLimited" | "offline" | "other";
 
-// What the Turnkey kit and Apple say when the person closed the provider's sheet: not an error to show.
-const CANCELLED = /cancel|did not complete successfully|1001/i;
-const INVALID_CODE = /invalid otp|otp code is invalid|INVALID_OTP_CODE/i;
+// What Privy and Apple say when the person closed the provider's sheet: not an error to show.
+const CANCELLED = /cancel|oauth_user_denied|exited_auth_flow|did not complete successfully|1001/i;
+const INVALID_CODE = /invalid_credentials|invalid (email and )?code|incorrect code|wrong code/i;
 const EXPIRED_CODE = /expired/i;
-// Turnkey says "Max number of OTPs have been initiated"; its core rewords that to "Maximum number of OTPs…".
-const RATE_LIMITED = /too many|rate.?limit|max(imum)? number of otps|MAX_OTP_INITIATED_ERROR/i;
-const OFFLINE = /network request failed|fetch failed|could not connect|offline|timed out|internet connection|NETWORK_ERROR|TIMEOUT/i;
+const RATE_LIMITED = /too many|too_many_requests|rate.?limit/i;
+const OFFLINE = /network request failed|fetch failed|could not connect|offline|timed out|internet connection|client_request_timeout|NETWORK_ERROR|TIMEOUT/i;
 const HTTP_TOO_MANY = 429;
 /** How deep the `cause` chain is followed. */
 const CHAIN_DEPTH = 5;

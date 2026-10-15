@@ -6,11 +6,11 @@ import { after, test } from "node:test";
 import { eq } from "drizzle-orm";
 
 import type { ThreadSummary } from "@kawase/api-client";
-import { threads, users } from "@kawase/db";
+import { threadMessages, threads, users } from "@kawase/db";
 
-import { deleteUser, fakeTurnkey, jsonRequest, testApp } from "./helpers";
+import { deleteUser, jsonRequest, testApp } from "./helpers";
 
-const { app, db, close } = testApp(fakeTurnkey({}));
+const { app, db, close } = testApp();
 const ids: string[] = [];
 after(async () => {
   for (const id of ids) await deleteUser(db, id);
@@ -33,6 +33,8 @@ test("a conversation is renamed and deleted by its owner only", async () => {
   const me = await account();
   const stranger = await account();
   const [thread] = await db.insert(threads).values({ id: randomUUID(), userId: me.id, network: "testnet", title: "send 5 to @alex" }).returning();
+  // The list shows conversations that have a message.
+  await db.insert(threadMessages).values({ threadId: thread!.id, id: randomUUID(), userId: me.id, seq: 0, role: "user", parts: [{ type: "text", text: "send 5 to @alex" }] });
   const rename = (who: typeof me, title: string) => who.call("PATCH", `/agent/threads/${thread!.id}`, { title });
 
   const renamed = (await (await rename(me, "  Rent with Bola  ")).json()) as { thread: ThreadSummary };

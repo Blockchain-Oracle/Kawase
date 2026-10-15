@@ -7,7 +7,7 @@ import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { Db } from "./client";
 import { threadMessages, threads, threadTurns } from "./schema/chat";
 import { contactAddressEvents, contactAddresses, contactAddressTrust, contacts } from "./schema/contacts";
-import { consents, devices, sessions, users } from "./schema/identity";
+import { approvalCodes, consents, devices, revokedIdentitySessions, sessions, users } from "./schema/identity";
 import { apiIdempotency, auditLog, outbox } from "./schema/system";
 import { approvals, intents, spendLedger } from "./schema/intents";
 import { chainEvents, inboxItems, paymentRequests } from "./schema/requests";
@@ -39,6 +39,8 @@ type UserOwned = {
 export const USER_OWNED_TABLES: Record<string, UserOwned> = {
   devices: { table: devices, userId: devices.userId, perUserKey: ["installationId"] },
   sessions: { table: sessions, userId: sessions.userId },
+  revoked_identity_sessions: { table: revokedIdentitySessions, userId: revokedIdentitySessions.userId },
+  approval_codes: { table: approvalCodes, userId: approvalCodes.userId },
   consents: { table: consents, userId: consents.userId, perUserKey: ["kind", "version"] },
   wallets: { table: wallets, userId: wallets.userId, perUserKey: ["role"] },
   user_wallet_setup: { table: userWalletSetup, userId: userWalletSetup.userId, perUserKey: ["network"] },

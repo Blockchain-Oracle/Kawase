@@ -1,4 +1,4 @@
-// Drives the spike-16 server exactly as the app will, with a local key in place of the Turnkey wallet.
+// Drives the spike-16 server exactly as the app does, with a local key in place of the person's wallet.
 // It proves the server half before any wallet provider is involved.
 // Run (server must be up): pnpm --filter @kawase/integrations-delegation exec tsx test/spike16-local-client.ts
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";

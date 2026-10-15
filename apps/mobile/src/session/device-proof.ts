@@ -1,9 +1,7 @@
 // The proof a request carries from this device's own wallet session (security review M12): approving a send, a waiting
 // run, or deleting the account is never done on the Kawase session token alone. The device signs an activity id that
-// names this exact request ("kawase:<ms>:<sha256 of `METHOD path\nbody`>"):
-// - Turnkey: the session key stamps a "get activity" body carrying it (the api checks the stamp's key is the one this
-//   device signed in with);
-// - Privy (D41): the person's wallet signs it as a personal message (the api checks it recovers to their wallet).
+// names this exact request ("kawase:<ms>:<sha256 of `METHOD path\nbody`>") as a personal message with the person's own
+// wallet (Privy, D41; the dev key in local development), and the api checks it recovers to their registered wallet.
 import { toast } from "sonner-native";
 import { sha256, stringToBytes } from "viem";
 

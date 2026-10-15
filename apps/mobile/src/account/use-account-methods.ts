@@ -1,5 +1,5 @@
-// The web: Turnkey's React kit, or Privy's React SDK when it is the wallet provider (D41).
-import { OtpType, useTurnkey } from "@turnkey/react-wallet-kit";
+// The web: Settings → Account over Privy's React SDK (D41); dev mode and a build without the Privy ids have nothing to
+// manage (account-methods.ts UNCONFIGURED_METHODS).
 import {
   getIdentityToken,
   useLinkEmail,
@@ -11,20 +11,12 @@ import {
   useUser,
 } from "@privy-io/react-auth";
 
-import { isDev, isPrivy, isWalletConfigured } from "@/wallet/config";
-import { accountMethodsCore, type AccountMethods, type TurnkeyAccountApi } from "./account-methods-core";
-import {
-  privyAccountMethods,
-  UNCONFIGURED_METHODS,
-  type PrivyAccountMethods,
-  type PrivyLinked,
-} from "./use-account-methods-privy-core";
+import { isDev, isWalletConfigured } from "@/wallet/config";
 
-function useTurnkeyAccountMethods(): AccountMethods {
-  return accountMethodsCore(useTurnkey() as unknown as TurnkeyAccountApi, OtpType.Email);
-}
+import { UNCONFIGURED_METHODS, type AccountMethods } from "./account-methods";
+import { privyAccountMethods, type PrivyLinked } from "./use-account-methods-privy-core";
 
-function usePrivyAccountMethods(): PrivyAccountMethods {
+function usePrivyAccountMethods(): AccountMethods {
   const privy = usePrivy();
   const { user, refreshUser } = useUser();
   const { initOAuth } = useLinkWithOAuth();
@@ -63,10 +55,5 @@ function usePrivyAccountMethods(): PrivyAccountMethods {
   });
 }
 
-export const useAccountMethods: () => AccountMethods | PrivyAccountMethods = isDev
-  ? () => UNCONFIGURED_METHODS
-  : !isPrivy
-  ? useTurnkeyAccountMethods
-  : isWalletConfigured
-    ? usePrivyAccountMethods
-    : () => UNCONFIGURED_METHODS;
+export const useAccountMethods: () => AccountMethods =
+  isDev || !isWalletConfigured ? () => UNCONFIGURED_METHODS : usePrivyAccountMethods;

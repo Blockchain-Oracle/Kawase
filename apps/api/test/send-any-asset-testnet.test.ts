@@ -1,5 +1,5 @@
 // Sending any asset (R1) and the recipient check on every payment (R6), through the api on Arc testnet with a fresh
-// local key standing in for the Turnkey wallet. EURC is named by its token address (the asset registry's path, as
+// local key standing in for the Privy wallet. EURC is named by its token address (the asset registry's path, as
 // any token would be), signed by the wallet, and witnessed by its receipt. Then: a token contract as the recipient
 // is refused, a look-alike of a saved contact is refused, and another Kawase user's bare 0x shows their @handle.
 // Skipped without the server keys in the root .env. Run: pnpm --filter @kawase/api exec tsx --test test/send-any-asset-testnet.test.ts
@@ -23,7 +23,7 @@ import { RequestService } from "../src/requests/service";
 import { circleOps } from "../src/send/ops";
 import { WalletService } from "../src/wallet/service";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -46,14 +46,9 @@ test("any-asset sends and the recipient check on Arc testnet", { skip: !live, ti
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const dana = privateKeyToAccount(generatePrivateKey()).address;
   const kawaseFriend = privateKeyToAccount(generatePrivateKey()).address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "sender", email: `any-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`any-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, circleOps(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   let friendId = "";
@@ -68,15 +63,12 @@ test("any-asset sends and the recipient check on Arc testnet", { skip: !live, ti
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "any-asset-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "any-asset-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(
@@ -132,7 +124,7 @@ test("any-asset sends and the recipient check on Arc testnet", { skip: !live, ti
   const handle = `friend${Date.now() % 1_000_000}`;
   const [friend] = await db.insert(users).values({ isAnonymous: false, email: `${handle}@example.test`, handle }).returning();
   friendId = friend!.id;
-  await db.insert(wallets).values({ userId: friendId, role: "user", status: "active", address: kawaseFriend, custody: "turnkey" } as never);
+  await db.insert(wallets).values({ userId: friendId, role: "user", status: "active", address: kawaseFriend, custody: "privy" } as never);
   const toFriend = ((await (await call("POST", "/sends", { recipient: kawaseFriend, amount: "0.01", asset: "USDC" })).json()) as { intent: SendIntent }).intent;
   assert.equal(toFriend.draft?.recipient.handle, handle, JSON.stringify(toFriend.draft?.recipient));
   for (const id of [toToken.id, toFake.id, toFriend.id]) await call("POST", `/sends/${id}/cancel`);

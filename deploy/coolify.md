@@ -69,12 +69,12 @@ coolify app create deploy-key \
 
 ## Switching on the device proof (M12, `DEVICE_PROOF_REQUIRED`)
 
-With it on, approving a send (inside the allowance it goes at once), approving a waiting run, deleting the account, and a chat message's auto-send all need a Turnkey stamp from the phone's own session key; a stolen bearer token alone does nothing there. It is off on the api until the phones send the proof.
+With it on, approving a send (inside the allowance it goes at once), approving a waiting run, deleting the account, and a chat message's auto-send all need the person's own wallet signature (Privy, made on that device) over that exact request; a stolen bearer token alone does nothing there. It is off on the api until the phones send the proof.
 
 - **Which app carries it:** every build from `main` after the B2-7 merge (the app proves approvals, waiting runs, account deletion and chat messages on iOS, Android and web). Builds made before that merge send none on chat messages, and builds from before the M12 merge (`8f3534f`) send none at all. The JS can also reach older 1.0.0 builds as an EAS Update, but the gate below cannot see an update, only the native version.
 - **How an old build is told to update:** `/health` returns `minAppVersion` (`KAWASE_MIN_APP_VERSION`); a native version below it shows "Update required" with the store link (`apps/mobile/src/account/update-gate.tsx`). Every build so far is version 1.0.0, so give the build that carries the proof a new version (`"version": "1.1.0"` in `apps/mobile/app.json`; `runtimeVersion` follows it, so OTA updates then target 1.1.0) and submit it.
 - **Order:** (1) the 1.1.0 build is live on TestFlight and the Play internal track; (2) set `KAWASE_MIN_APP_VERSION=1.1.0` on the api and redeploy (older phones see "Update required"); (3) set `DEVICE_PROOF_REQUIRED=true` and redeploy. The web app always runs the latest bundle, so it needs nothing.
-- **What people see when a proof is missing or stale** (their Turnkey session ended): "Sign in again on this phone to approve this. Nothing was sent." (`errors.deviceProofNeeded`, 10 languages). A renewed Turnkey session key is accepted when Turnkey lists it for the person. Log line `security.device_proof_invalid` counts proofs that did not hold, even while the flag is off: check it is near zero before step 3.
+- **What people see when a proof is missing or stale** (their Privy session on that device ended): "Sign in again on this phone to approve this. Nothing was sent." (`errors.deviceProofNeeded`, 10 languages). Log line `security.device_proof_invalid` counts proofs that did not hold, even while the flag is off: check it is near zero before step 3.
 
 ## Git source
 

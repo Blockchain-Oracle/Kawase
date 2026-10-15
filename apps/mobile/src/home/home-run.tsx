@@ -12,6 +12,8 @@ import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanim
 
 import { MessageCircle, X } from "lucide-react-native";
 
+import { ApiError } from "@kawase/api-client";
+
 import { diagnose, ErrorState, Icon, LoadingState, SIZE, SPACE, TIMING, TYPE, useTheme, type Diagnosis } from "@/components/kit";
 import { fire } from "@/feedback/fire";
 import { AgentOffline, isAgentOffline, useAgentHealth } from "@/chat/agent-offline";
@@ -27,6 +29,7 @@ import { api } from "@/session/api";
 import { invalidateAgentFeed } from "./use-agent-feed";
 import type { RunPointer } from "./run-store";
 
+const HTTP_NOT_FOUND = 404;
 const textOf = (message: UIMessage | undefined) => (message ? message.parts.map((part) => (part.type === "text" ? part.text : "")).join("").trim() : "");
 
 /** What the live strip says: the phase, and whether the agent is still talking. */
@@ -46,7 +49,7 @@ type HomeRunProps = {
 
 /** Loads the thread (a run from before a restart), then draws it. */
 export const HomeRun = React.forwardRef<HomeRunHandle, HomeRunProps>(function HomeRun(props, ref) {
-  const { pointer } = props;
+  const { pointer, onClose } = props;
   const [loaded, setLoaded] = React.useState<UIMessage[] | null>(pointer.prompt ? [] : null);
   const [error, setError] = React.useState<Diagnosis | null>(null);
   const read = React.useCallback(async () => {
@@ -55,9 +58,11 @@ export const HomeRun = React.forwardRef<HomeRunHandle, HomeRunProps>(function Ho
       const { messages } = await api.agent.thread(pointer.threadId);
       setLoaded(messages as UIMessage[]);
     } catch (failure) {
+      // A conversation the api no longer has (deleted, or the account reset) is not a failure: Home lets it go.
+      if (failure instanceof ApiError && failure.status === HTTP_NOT_FOUND) return onClose();
       setError(diagnose(failure));
     }
-  }, [pointer.threadId]);
+  }, [pointer.threadId, onClose]);
   React.useEffect(() => {
     if (!pointer.prompt) void read();
   }, [pointer.prompt, read]);

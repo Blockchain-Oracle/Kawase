@@ -69,7 +69,7 @@ const made: string[] = [];
 async function person() {
   const key = privateKeyToAccount(generatePrivateKey());
   const [row] = await db.insert(users).values({ isAnonymous: false, email: `relayer-${randomUUID()}@example.test` }).returning();
-  await db.insert(wallets).values({ userId: row!.id, role: "user", custody: "turnkey", address: key.address, providerRef: {} });
+  await db.insert(wallets).values({ userId: row!.id, role: "user", custody: "privy", address: key.address, providerRef: {} });
   made.push(row!.id);
   return { userId: row!.id, key };
 }

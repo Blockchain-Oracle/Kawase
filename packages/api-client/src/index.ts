@@ -15,7 +15,8 @@ import type {
   SetupRequestResponse,
   SignedAuthorizationInput,
   SignInResponse,
-  StampedProof,
+  PrivyTokens,
+  RegisteredWallet,
   RevokeRequest,
   SignedRevokeInput,
   WalletStatus,
@@ -71,7 +72,7 @@ import type {
   ServiceSearchResult,
   TopUpResult,
 } from "./marketplace";
-import type { AccountApi, AccountDeleted, AccountHoldings, DeviceView } from "./account";
+import type { AccountApi, AccountDeleted, AccountHoldings, ApprovalCodeSent, DeviceView } from "./account";
 import type { ActivityFeedApi, FeedPage } from "./activity-feed";
 import type { ExitKitResponse, SafetyApi, SafetyChange, SafetyChangeResponse, SafetyView, TokenOption } from "./safety";
 import type { AutomationEdit, AutomationEditResponse, AutomationsMoreApi, DcaInput, NeedsYouApi, NeedsYouApproval, NeedsYouItem, SimulationView } from "./automations-8c";
@@ -127,7 +128,7 @@ export type ApiClientOptions = {
   getToken: () => string | undefined | Promise<string | undefined>;
   fetch?: typeof fetch;
   /**
-   * Headers proving a request comes from this device's own Turnkey key (security review M12), for the calls a bearer
+   * Headers proving the person's own wallet signed this request (security review M12), for the calls a bearer
    * token alone may not make: approving a send (inside the allowance it goes at once), a waiting run, deleting the
    * account. Without it those calls go unproven (older servers accept that until proofs are required).
    */
@@ -186,12 +187,14 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       nonce: (authAttemptId?: string) =>
         call<{ nonce: string; expiresAt: string }>("POST", "/auth/nonce", undefined, { authAttemptId }),
       guest: (input: { device: DeviceInfo; locale?: string }) => call<SignInResponse>("POST", "/auth/guest", input),
-      /** With a guest token, the guest is upgraded or merged into the account. */
-      turnkey: (
-        input: { proof: StampedProof; turnkeyUserId: string; device: DeviceInfo },
-        guestToken?: string,
-        authAttemptId?: string,
-      ) => call<SignInResponse>("POST", "/auth/turnkey", input, { token: guestToken, authAttemptId }),
+      /** Signs in with Privy (or upgrades the guest whose token is sent) and registers the wallet the identity token names. */
+      privy: (input: PrivyTokens & { device: DeviceInfo }, guestToken?: string, authAttemptId?: string) =>
+        call<SignInResponse & { wallet: RegisteredWallet | null }>("POST", "/auth/privy", input, { token: guestToken, authAttemptId }),
+      /** Registers a wallet Privy created after sign-in, from fresh tokens for the same Privy identity. */
+      privyWallet: (input: PrivyTokens, authAttemptId?: string) =>
+        call<{ wallet: RegisteredWallet }>("POST", "/auth/privy/wallet", input, { authAttemptId }),
+      /** After the email changed at Privy: Kawase follows the verified address. */
+      privySync: (input: PrivyTokens) => call<{ email: string | null }>("POST", "/auth/privy/sync", input),
       /** Local development only: a throwaway testnet key signs the nonce (`Kawase dev sign-in\n<nonce>`). */
       dev: (
         input: { email: string; address: string; nonce: string; signature: string; device: DeviceInfo },
@@ -229,8 +232,6 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       status: () => call<WalletStatus>("GET", "/wallet"),
       /** USDC and EURC transfers in and out on one network, newest first. */
       activity: (network: NetworkId) => call<ActivityPage>("GET", `/wallet/activity?network=${network}`),
-      register: (input: { address: string; walletId: string }, authAttemptId?: string) =>
-        call<{ wallet: { id: string; address: string } }>("POST", "/wallet", input, { authAttemptId }),
       setupRequest: (network: NetworkId) => call<SetupRequestResponse>("POST", "/wallet/setup/request", { network }),
       setupSubmit: (network: NetworkId, authorization: SignedAuthorizationInput, idempotencyKey?: string) =>
         call<{ tx: string | null; setUp: boolean }>(
@@ -497,14 +498,15 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       },
     },
 
-    /** Settings → Account: devices, email, export record, deleting the account. */
+    /** Settings → Account: devices, export record, the web's emailed approval code, deleting the account. */
     account: {
       devices: () => call<{ devices: DeviceView[] }>("GET", "/account/devices"),
       touchDevice: (input: { name?: string; appVersion?: string }) => call<void>("PATCH", "/account/devices/current", input),
-      signOutDevice: (id: string) => call<{ turnkeyPublicKey: string | null }>("POST", `/account/devices/${id}/sign-out`),
-      signOutEverywhere: () => call<{ turnkeyPublicKeys: string[] }>("POST", "/account/sign-out-everywhere"),
-      syncEmail: () => call<{ email: string | null }>("POST", "/account/email/sync"),
+      signOutDevice: (id: string) => call<{ signedOut: true }>("POST", `/account/devices/${id}/sign-out`),
+      signOutEverywhere: () => call<{ signedOut: number }>("POST", "/account/sign-out-everywhere"),
       exportRecorded: () => call<void>("POST", "/account/export/recorded"),
+      sendApprovalCode: () => call<ApprovalCodeSent>("POST", "/account/approval-code"),
+      verifyApprovalCode: (code: string) => call<{ approved: true }>("POST", "/account/approval-code/verify", { code }),
       holdings: () => call<AccountHoldings>("GET", "/account/holdings"),
       revokeAllRequest: (network: NetworkId) =>
         call<{ revoke: RevokeRequest | null }>("POST", "/account/grants/revoke/request", { network }),

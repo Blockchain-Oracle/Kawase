@@ -3,7 +3,6 @@ import { isAddress, type Address, type Hex, type SignedAuthorization } from "vie
 import { z } from "zod";
 
 import { requireAccount } from "../auth/middleware";
-import type { TurnkeyReader } from "../auth/turnkey";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import type { SignedRevoke, WalletService } from "./service";
@@ -12,10 +11,6 @@ const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
 const network = z.enum(["mainnet", "testnet"]);
 const AUTHORIZATION_KEYS = ["address", "chainId", "nonce", "r", "s", "yParity"] as const;
 
-const registerSchema = z.object({
-  address: z.string().refine(isAddress, "expected an address"),
-  walletId: z.string().min(1),
-});
 const networkSchema = z.object({ network });
 const setupSubmitSchema = z.object({
   network,
@@ -49,7 +44,7 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
   return parsed.data;
 }
 
-export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
+export function walletRoutes(wallets: WalletService) {
   const app = new Hono<AppEnv>();
   app.use("*", requireAccount);
 
@@ -59,24 +54,6 @@ export function walletRoutes(wallets: WalletService, turnkey: TurnkeyReader) {
   app.get("/activity", async (c) => {
     const input = await parse(activitySchema, { network: c.req.query("network") });
     return c.json(await wallets.activity(c.get("userId")!, input.network));
-  });
-
-  /** The app creates the wallet with the Turnkey kit, then registers its address here. */
-  app.post("/", async (c) => {
-    const input = await parse(registerSchema, await c.req.json());
-    const user = c.get("user")!;
-    if (!user.turnkeySubOrganizationId) throw problem(HTTP.forbidden, "forbidden");
-    const known = await turnkey.getWalletAddresses(user.turnkeySubOrganizationId);
-    const match = known.find(
-      (entry) => entry.address.toLowerCase() === input.address.toLowerCase() && entry.walletId === input.walletId,
-    );
-    if (!match) throw problem(HTTP.unprocessable, "validation", "this address is not in your Turnkey organization");
-    const wallet = await wallets.register(user.id, {
-      address: input.address as Address,
-      walletId: input.walletId,
-      subOrganizationId: user.turnkeySubOrganizationId,
-    });
-    return c.json({ wallet: { id: wallet!.id, address: wallet!.address } }, HTTP.created);
   });
 
   app.post("/setup/request", async (c) => {

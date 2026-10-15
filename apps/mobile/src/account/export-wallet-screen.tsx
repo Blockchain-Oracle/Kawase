@@ -1,24 +1,18 @@
-// Settings → Sign-in & security → Private key (cards/access.md) on the Senryo kit.
-// - Privy (D41): the wallet is a private key, and Privy shows it only in its own secure window, never to Kawase. On the
-//   web a deliberate hold opens that window here; on a phone the export opens on the web app (this same page), where
-//   the person signs in with the same email and Privy's window shows the key.
-// - Turnkey (the fallback build): the recovery phrase, after the device's own check, decrypted on this device and shown
-//   with screenshots and screen recording blocked; leaving the page hides it.
-// Kawase records that an export happened (never the phrase or the key). What the key can do is said first, in the
+// Settings → Sign-in & security → Private key (cards/access.md) on the Senryo kit. The wallet is a Privy private key
+// (D41), and Privy shows it only in its own secure window, never to Kawase: on the web a deliberate hold opens that
+// window here; on a phone the export opens on the web app (this same page), where the person signs in with the same
+// email and Privy's window shows the key. Kawase records that an export happened (never the key). What the key can do is said first, in the
 // three lines that matter, never as a wall of text.
-import * as Clipboard from "expo-clipboard";
-import * as ScreenCapture from "expo-screen-capture";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { ShieldAlert } from "lucide-react-native";
 import * as React from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import {
   Button,
   EmptyState,
   HoldButton,
   Icon,
-  NUMERIC_VARIANT,
   Panel,
   RADIUS,
   SIZE,
@@ -31,18 +25,13 @@ import { notify } from "@/components/toast/notify";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { confirmWithBiometrics } from "@/wallet/biometric";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 import { Page } from "./kit-page";
+import type { AccountMethods } from "./account-methods";
 import { useAccountMethods } from "./use-account-methods";
-import type { PrivyAccountMethods } from "./use-account-methods-privy-core";
 
-const CAPTURE_KEY = "export-wallet";
-
-const isPrivyMethods = (methods: object): methods is PrivyAccountMethods => "exportKey" in methods;
-
-/** What the key or phrase can do, in at most three short lines, under one warning mark. */
+/** What the key can do, in at most three short lines, under one warning mark. */
 function Warning({ title, lines }: { title: string; lines: string[] }) {
   const { color } = useTheme();
   return (
@@ -85,8 +74,8 @@ function NoWallet() {
   );
 }
 
-/** Privy: the key is shown by Privy's own window (here on the web, or on the web app from a phone). */
-function PrivyExport({ account }: { account: PrivyAccountMethods }) {
+/** The key is shown by Privy's own window (here on the web, or on the web app from a phone). */
+function KeyExport({ account }: { account: AccountMethods }) {
   const { t } = useT();
   const signer = useWalletSigner();
   const signIn = useSignIn();
@@ -160,106 +149,8 @@ function PrivyExport({ account }: { account: PrivyAccountMethods }) {
   );
 }
 
-function PhraseExport({ exportPhrase }: { exportPhrase: () => Promise<string> }) {
-  const { t } = useT();
-  const { color } = useTheme();
-  const signer = useWalletSigner();
-  const [phrase, setPhrase] = React.useState<string>();
-  const [busy, setBusy] = React.useState(false);
-
-  // While the phrase is on screen nothing may capture it; it is gone when the page loses focus.
-  React.useEffect(() => {
-    if (!phrase || Platform.OS === "web") return undefined;
-    void ScreenCapture.preventScreenCaptureAsync(CAPTURE_KEY).catch(() => undefined);
-    return () => {
-      void ScreenCapture.allowScreenCaptureAsync(CAPTURE_KEY).catch(() => undefined);
-    };
-  }, [phrase]);
-  useFocusEffect(
-    React.useCallback(
-      () => () => {
-        setPhrase(undefined);
-      },
-      [],
-    ),
-  );
-
-  const reveal = async () => {
-    const check = await confirmWithBiometrics(t("exportWallet.prompt"), t("common.cancel"));
-    if (check !== "approved") {
-      if (check === "unavailable") notify.error(t("send.approvalUnavailable"));
-      return;
-    }
-    setBusy(true);
-    try {
-      setPhrase(await exportPhrase());
-    } catch {
-      notify.error(t("exportWallet.failed"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!signer)
-    return (
-      <Page title={t("exportWallet.title")}>
-        <NoWallet />
-      </Page>
-    );
-  const words = phrase?.trim().split(/\s+/) ?? [];
-  return (
-    <Page
-      title={t("exportWallet.title")}
-      footer={
-        phrase ? (
-          <>
-            <Button
-              label={t("exportWallet.copy")}
-              variant="secondary"
-              onPress={() => void Clipboard.setStringAsync(phrase).then(() => notify.info(t("exportWallet.copied")))}
-            />
-            <Button label={t("exportWallet.hide")} variant="ghost" onPress={() => setPhrase(undefined)} />
-          </>
-        ) : (
-          <HoldButton
-            label={t("exportWallet.holdToRevealPhrase")}
-            holdingLabel={t("exportWallet.keepHolding")}
-            ready
-            busy={busy}
-            onConfirm={() => void reveal()}
-          />
-        )
-      }
-    >
-      <Warning
-        title={t("exportWallet.warningTitle")}
-        lines={[t("exportWallet.warning1"), t("exportWallet.warning2"), t("exportWallet.warning3")]}
-      />
-      {phrase ? (
-        <Panel>
-          <View style={styles.words} accessibilityLabel={t("exportWallet.phrase")}>
-            {words.map((word, index) => (
-              <View key={`${index}-${word}`} style={[styles.word, { backgroundColor: color.raised2 }]}>
-                <Text style={[TYPE.meta, styles.figure, { color: color.text3 }]}>{index + 1}</Text>
-                <Text selectable style={[TYPE.rowStrong, { color: color.ink }]}>
-                  {word}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Panel>
-      ) : null}
-    </Page>
-  );
-}
-
 export function ExportWalletScreen() {
-  const account = useAccountMethods();
-  return isPrivyMethods(account) ? (
-    <PrivyExport account={account} />
-  ) : (
-    <PhraseExport exportPhrase={account.exportPhrase} />
-  );
+  return <KeyExport account={useAccountMethods()} />;
 }
 
 const styles = StyleSheet.create({
@@ -272,14 +163,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: SPACE.xs,
   },
-  words: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm, padding: SPACE.lg },
-  word: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: SPACE.xs,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACE.md,
-    paddingVertical: SPACE.sm,
-  },
-  figure: { fontVariant: NUMERIC_VARIANT },
 });

@@ -25,7 +25,7 @@ import { feedRoutes } from "../src/feed/routes";
 import { FeedService } from "../src/feed/service";
 import type { AppEnv, SessionUser } from "../src/types";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -38,23 +38,16 @@ test("GET /feed: real rows from the real services, grouped, with the next run's 
   const env = loadApiEnv();
   const chains = createChains(env);
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "feed", email: `feed-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, undefined, undefined, undefined, undefined, { automationTickMs: 500 });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`feed-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, undefined, undefined, undefined, undefined, { automationTickMs: 500 });
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: `feed-${SUB_ORG.slice(0, 8)}` } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: `feed-${TEST_ID.slice(0, 8)}` });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
@@ -64,7 +57,6 @@ test("GET /feed: real rows from the real services, grouped, with the next run's 
     await expectStatus(answer, status, what);
     return (await answer.json()) as T;
   };
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const bob = privateKeyToAccount(generatePrivateKey()).address;
   await expectStatus(await call("POST", "/contacts", { displayName: "Bob", address: bob, source: "pasted" }), 201, "bob");
 

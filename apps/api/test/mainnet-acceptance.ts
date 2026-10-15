@@ -1,6 +1,6 @@
 // The mainnet acceptance run: the acceptance checklists in plan/product/cards/* (trade, money-in, money-out,
 // earn-borrow, marketplace, automate-safety), walked with dollar-sized real amounts through the api as one real
-// signed-in account (a Turnkey sub-organization the runner holds a key for; see acceptance/account.ts).
+// signed-in account (the Privy app's test account, its session handed to the run; see acceptance/account.ts).
 //
 //   pnpm --filter @kawase/api exec tsx test/mainnet-acceptance.ts            dry run (default): nothing is sent
 //   pnpm --filter @kawase/api exec tsx test/mainnet-acceptance.ts --live     the real thing, against --api
@@ -36,15 +36,18 @@ import { createPublicClient, erc20Abi, formatUnits, getAddress, http, parseUnits
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 
+import { PrivyClient } from "@privy-io/node";
+
 import { createModels } from "@kawase/agent";
 import { createDb, txAttempts, users } from "@kawase/db";
 import { loadApiEnv, type ApiEnv } from "@kawase/env";
 import { createLogger } from "@kawase/log";
 import { Discovery } from "@kawase/integrations-x402";
 import { getNetwork } from "@kawase/networks";
+import type { WalletSigner } from "@kawase/wallet";
 
 import { createApp } from "../src/app";
-import { createTurnkeyReader } from "../src/auth/turnkey";
+import { privyFromEnv } from "../src/auth/service";
 import { appKitBridges } from "../src/bridge/engine";
 import { appKitEarn } from "../src/earn/engine";
 import { circleFaucet } from "../src/faucet/circle-faucet";
@@ -53,11 +56,11 @@ import { circleAgentWallets } from "../src/marketplace/agent-wallets";
 import { circleOnramp } from "../src/onramp/engine";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import type { TurnkeyReader } from "../src/auth/turnkey";
-import { exportedSigners, loadOrCreateAccount, localStandIn, signInProof, type AcceptanceAccount, type StandIn } from "./acceptance/account";
+import { loadAccount, localStandIn, privySigners, sessionFromEnv, type PrivySession, type RunAccount, type StandIn } from "./acceptance/account";
 import { Api, ApiError, arcClient, makeCtx, StepFailed, StepSkipped, type Ctx, type Mode, type TxRecord } from "./acceptance/context";
 import { ShadowChain, shadowOps, type ShadowSnapshot } from "./acceptance/shadow-chain";
 import { ASSETS, FUNDING, STEPS } from "./acceptance/steps";
+import { privyTokens, testPrivy } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -158,7 +161,7 @@ async function openAiCredit(): Promise<{ ok: boolean; reason: string }> {
   return { ok: false, reason: response.status === HTTP_TOO_MANY ? `exhausted (${code})` : `refused (${code})` };
 }
 
-async function preflight(env: ApiEnv, account: AcceptanceAccount) {
+async function preflight(env: ApiEnv, account: RunAccount, signing: { ok: boolean; reason: string }) {
   console.log("Preflight");
   const ops = env.OPS_WALLET_ADDRESS_MAINNET as Address | undefined;
   const relayerKey = env.RELAYER_PRIVATE_KEY_MAINNET;
@@ -176,28 +179,21 @@ async function preflight(env: ApiEnv, account: AcceptanceAccount) {
   }
   const held = await balancesOf(account.address);
   console.log(`  account      ${account.address}  ${held.arc.map((row) => `${row.amount} ${row.symbol}`).join(", ")} on Arc; ${held.base.usdc} USDC, ${held.base.eth} ETH on Base`);
-  console.log(`  friend       ${account.friendAddress} (account 1, the "contact on Base")`);
+  console.log(`  friend       ${account.friendAddress} (a key the runner holds, the "contact on Base")`);
   const usdc = held.arc.find((row) => row.symbol === "USDC")?.amount ?? 0;
   const needed = FUNDING.find((f) => f.chain === "Arc" && f.symbol === "USDC")?.amount ?? 0;
   if (usdc < needed) problems.push(`the account holds ${usdc} USDC on Arc (the run needs ${needed})`);
-  let signing = { ok: true, reason: "the wallet signs locally from its seed, exported into memory (no Turnkey signing quota used)" };
-  let signers: Awaited<ReturnType<typeof exportedSigners>> | undefined;
-  try {
-    signers = await exportedSigners(account, env.TURNKEY_API_BASE_URL);
-  } catch (error) {
-    signing = { ok: false, reason: `the wallet could not be exported: ${error instanceof Error ? error.message.slice(0, 160) : String(error)}` };
-    problems.push(`no signer: ${signing.reason}`);
-  }
+  if (!signing.ok) problems.push(`no signer: ${signing.reason}`);
   console.log(`  signing      ${signing.reason}`);
   const credit = await openAiCredit();
   console.log(`  OpenAI       ${credit.reason}${credit.ok ? "" : " — agent steps skipped"}`);
-  return { problems, agentAvailable: credit.ok, signers, held };
+  return { problems, agentAvailable: credit.ok, held };
 }
 
 // --- the api, in-process (dry) or deployed (live) ----------------------------------------------------------------
 
-async function dryRunApi(env: ApiEnv, state: RunState, account: AcceptanceAccount, standIn: StandIn | undefined) {
-  const runAddress = standIn?.address ?? account.address;
+async function dryRunApi(env: ApiEnv, state: RunState, standIn: StandIn) {
+  const runAddress = standIn.address;
   const chain = new ShadowChain(SHADOW_UPSTREAM);
   const url = await chain.start();
   if (state.shadow) chain.restore(state.shadow);
@@ -211,28 +207,15 @@ async function dryRunApi(env: ApiEnv, state: RunState, account: AcceptanceAccoun
     // The shadow chain starts again at nonce 0, so the last dry run's attempts from this wallet (kept past the user's
     // deletion, and unique per network, sender and nonce) go too. This is the dry run's own database only.
     await db.delete(txAttempts).where(and(eq(txAttempts.network, "mainnet"), sql`lower(${txAttempts.fromAddress}) = ${runAddress.toLowerCase()}`));
-    await db.delete(users).where(eq(users.turnkeySubOrganizationId, account.subOrganizationId));
+    await db.delete(users).where(eq(users.identitySubject, standIn.person.did));
     console.log("  fresh: the dry run's database user and shadow chain start over");
   }
   const opsAddress = getAddress(env.OPS_WALLET_ADDRESS_MAINNET!);
-  const reader = createTurnkeyReader({ baseUrl: env.TURNKEY_API_BASE_URL, apiPublicKey: env.TURNKEY_API_PUBLIC_KEY, apiPrivateKey: env.TURNKEY_API_PRIVATE_KEY });
-  // With a stand-in, the account's wallet reads as the stand-in's addresses; the sign-in itself stays real.
-  const turnkey: TurnkeyReader = standIn
-    ? {
-        getUser: (organizationId, userId) => reader.getUser(organizationId, userId),
-        getWalletAddresses: async (organizationId) =>
-          organizationId === account.subOrganizationId
-            ? [
-                { walletId: account.walletId, address: standIn.address },
-                { walletId: account.walletId, address: standIn.friendAddress },
-              ]
-            : reader.getWalletAddresses(organizationId),
-      }
-    : reader;
   const app = createApp({
     db,
     log: createLogger({ service: "acceptance-api", level: (process.env.ACCEPTANCE_LOG_LEVEL ?? "warn") as "warn" }),
-    turnkey,
+    // The stand-in's test identity: the in-process api trusts the test Privy key, never a real session.
+    privy: testPrivy,
     chains: createChains(shadowEnv),
     faucet: circleFaucet(env.CIRCLE_TEST_API_KEY),
     // No model: agent steps are a live-run matter (and the dry run makes no OpenAI calls).
@@ -258,19 +241,15 @@ async function dryRunApi(env: ApiEnv, state: RunState, account: AcceptanceAccoun
 
 // --- the run ----------------------------------------------------------------------------------------------------
 
-async function signIn(api: Api, account: AcceptanceAccount) {
-  const { nonce } = await api.call<{ nonce: string }>("POST", "/auth/nonce", {}, { auth: false });
-  const proof = await signInProof(account, nonce);
+/** Signs in as the app does: the Privy session's tokens (the stand-in's test ones in a dry run); the wallet registers in the same step. */
+async function signIn(api: Api, tokens: PrivySession) {
   const { token, user } = await api.call<{ token: string; user: { id: string } }>(
     "POST",
-    "/auth/turnkey",
-    { proof, turnkeyUserId: account.userId, device: { platform: "ios", installationId: "kawase-acceptance-runner" } },
+    "/auth/privy",
+    { ...tokens, device: { platform: "ios", installationId: "kawase-acceptance-runner" } },
     { auth: false },
   );
   api.token = token;
-  await api.post("/wallet", { address: account.address, walletId: account.walletId }).catch((error: unknown) => {
-    if (!(error instanceof ApiError) || error.status >= 500) throw error;
-  });
   return user.id;
 }
 
@@ -279,32 +258,42 @@ async function main() {
   if (flags.list) return;
   const env = loadApiEnv();
   if (!env.MAINNET_ENABLED) throw new Error("MAINNET_ENABLED is off in the root .env");
-  const { account, created } = await loadOrCreateAccount(accountPath, {
-    baseUrl: env.TURNKEY_API_BASE_URL,
-    organizationId: env.TURNKEY_ORGANIZATION_ID,
-    apiPublicKey: env.TURNKEY_API_PUBLIC_KEY,
-    apiPrivateKey: env.TURNKEY_API_PRIVATE_KEY,
-  });
-  console.log(created ? `Created the acceptance account (Turnkey sub-organization ${account.subOrganizationId}); details in ${accountPath}` : `Acceptance account: ${account.address} (${accountPath})`);
+  // A live run is the Privy test account (its session from the web app); a dry run is local keys and a test identity.
+  const session = sessionFromEnv();
+  const standIn = MODE === "dry" ? localStandIn(join(STATE_DIR, "dry-stand-in.json")) : undefined;
+  let runAccount: RunAccount;
+  let signers: { signer: WalletSigner; friendSigner: WalletSigner };
+  let signing: { ok: boolean; reason: string };
+  if (standIn) {
+    runAccount = { address: standIn.address, friendAddress: standIn.friendAddress };
+    signers = standIn;
+    signing = { ok: true, reason: "local keys stand in for the wallet (the dry run signs nothing real)" };
+    console.log(`  stand-in wallet for the dry run: ${standIn.address} (friend ${standIn.friendAddress})`);
+  } else {
+    const verifier = privyFromEnv();
+    if (!session || !verifier || !env.PRIVY_APP_ID || !env.PRIVY_APP_SECRET)
+      throw new Error("a live run signs in as the Privy test account: set ACCEPTANCE_PRIVY_ACCESS_TOKEN and ACCEPTANCE_PRIVY_IDENTITY_TOKEN (from the web app, signed in as it), with PRIVY_APP_ID and PRIVY_APP_SECRET");
+    const { account, created } = await loadAccount(accountPath, session, verifier);
+    console.log(created ? `Acceptance account ${account.address} (Privy ${account.did}); its friend key kept in ${accountPath}` : `Acceptance account: ${account.address} (${accountPath})`);
+    runAccount = account;
+    signers = privySigners(account, session, new PrivyClient({ appId: env.PRIVY_APP_ID, appSecret: env.PRIVY_APP_SECRET }));
+    signing = { ok: true, reason: "the person's own Privy wallet, through Privy's server API on their session's JWT" };
+  }
 
   const state = loadState();
-  const { problems, agentAvailable, signers } = await preflight(env, account);
+  const { problems, agentAvailable } = await preflight(env, runAccount, signing);
   if (problems.length) {
     console.log(`\n  ${MODE === "live" ? "Cannot start" : "A live run could not start yet"}:\n${problems.map((p) => `   - ${p}`).join("\n")}`);
     if (MODE === "live") process.exit(1);
     console.log("  The dry run carries on with the account funded on the shadow chain.");
   }
-  // Without the wallet's seed a live run cannot sign; a dry run signs with local keys standing in for the wallet.
-  const standIn = MODE === "dry" && !signers ? localStandIn(join(STATE_DIR, "dry-stand-in.json")) : undefined;
-  if (standIn) console.log(`  stand-in wallet for the dry run: ${standIn.address} (friend ${standIn.friendAddress})`);
-  const runAccount: AcceptanceAccount = standIn ? { ...account, address: standIn.address, friendAddress: standIn.friendAddress } : account;
 
   let close = async () => {};
   let api: Api;
   let rpc = UPSTREAM_ARC;
   let shadow: ShadowChain | undefined;
   if (MODE === "dry") {
-    const dry = await dryRunApi(env, state, account, standIn);
+    const dry = await dryRunApi(env, state, standIn!);
     shadow = dry.chain;
     rpc = dry.rpc;
     close = dry.close;
@@ -324,7 +313,7 @@ async function main() {
     api = new Api((_method, path, init) => fetch(`${baseUrl}${path}`, init));
   }
 
-  const own = standIn ?? signers!;
+  const own = signers;
   const base = {
     mode: MODE,
     api,
@@ -338,7 +327,7 @@ async function main() {
     data: state.data,
   } satisfies Omit<Ctx, "note" | "tx" | "step">;
 
-  await signIn(api, runAccount);
+  await signIn(api, standIn ? privyTokens(standIn.person, { device: "kawase-acceptance-runner" }) : session!);
   console.log("\nSteps");
 
   const only = flags.only ? new Set(flags.only.split(",")) : undefined;

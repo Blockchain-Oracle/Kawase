@@ -15,12 +15,13 @@ import {
 import * as WebBrowser from "expo-web-browser";
 
 import { WEB_APP_URL } from "@/wallet/config";
-import { privyAccountMethods, type PrivyAccountMethods, type PrivyLinked } from "./use-account-methods-privy-core";
+import type { AccountMethods } from "./account-methods";
+import { privyAccountMethods, type PrivyLinked } from "./use-account-methods-privy-core";
 
 /** The web app's export page (the same screen, where Privy can show its export window). */
 const EXPORT_PATH = "/account/export";
 
-export function usePrivyAccountMethods(): PrivyAccountMethods {
+export function usePrivyAccountMethods(): AccountMethods {
   const { isReady, user, refreshUser } = usePrivy();
   const { link } = useLinkWithOAuth();
   const { unlinkOAuth } = useUnlinkOAuth();

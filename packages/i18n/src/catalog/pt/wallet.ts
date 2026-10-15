@@ -40,8 +40,6 @@ export const wallet: Catalog["wallet"] = {
   oauthReturnTitle: "Concluindo sua entrada",
   oauthReturnGoogle: "Com sua conta do Google",
   oauthReturnApple: "Com sua conta da Apple",
-  approveTitle: "Aprovar",
-  slideToApprove: "Deslize para aprovar",
   creatingVerb: "Criando sua carteira",
   signingInVerb: "Entrando",
 };

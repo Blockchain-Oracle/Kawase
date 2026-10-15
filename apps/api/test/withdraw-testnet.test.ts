@@ -1,5 +1,5 @@
 // Withdraw (money-out.md, G7) on Arc testnet, end to end through the api with a fresh local key standing in for the
-// Turnkey wallet: the plan (EURC as cash + USDC to my own wallet on Base Sepolia → convert, then bridge), exchanges
+// Privy wallet: the plan (EURC as cash + USDC to my own wallet on Base Sepolia → convert, then bridge), exchanges
 // refused on testnet with their reason, "everything" to an Arc address, then the legs the app runs after one Face
 // ID: the EURC → USDC swap, signed and witnessed, and the USDC bridge (one signed batch, Circle's CCTP) delivered on
 // Base Sepolia; the destination is saved as a place. Skipped without the server keys in the root .env.
@@ -20,7 +20,7 @@ import { getNetwork } from "@kawase/networks";
 import { appKitBridges } from "../src/bridge/engine";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -55,14 +55,9 @@ test("withdraw on Arc testnet: plan, convert, bridge to my wallet on Base Sepoli
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const otherWallet = privateKeyToAccount(generatePrivateKey()).address;
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "withdrawer", email: `withdraw-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, undefined, appKitSwaps(env), appKitBridges(env));
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`withdraw-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, undefined, appKitSwaps(env), appKitBridges(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   after(async () => {
@@ -75,15 +70,12 @@ test("withdraw on Arc testnet: plan, convert, bridge to my wallet on Base Sepoli
     await close();
   });
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "withdraw-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "withdraw-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

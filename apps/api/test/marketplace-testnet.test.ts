@@ -1,5 +1,5 @@
 // The x402 marketplace end to end on Arc testnet (cards/marketplace.md acceptance "Testnet: the demo seller returns
-// 402 → paid → response"): a fresh local key stands in for the Turnkey wallet; the agent wallet is a real Circle
+// 402 → paid → response"): a fresh local key stands in for the Privy wallet; the agent wallet is a real Circle
 // developer-controlled wallet; money moves under a real marketplace grant (ops wallet redeems it), into Circle Gateway,
 // pays Kawase's demo seller with a Gateway nanopayment, and comes back. Covers: the grant is asked for on the first
 // top-up; a paid call answers with real data; the same call again is not paid twice; above the per-call cap a consent
@@ -27,7 +27,7 @@ import { circleOps } from "../src/send/ops";
 import type { SessionUser } from "../src/types";
 import { createChains } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -48,17 +48,12 @@ test("x402 on Arc testnet: top up under the grant, pay the demo seller through G
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
   const wallet = privateKeyToAccount(generatePrivateKey());
   const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "buyer", email: `x402-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`x402-${TEST_ID}@example.test`, wallet.address);
   const discovery = new Discovery({ demoSellerUrl: SELLER });
   const agentWallets = circleAgentWallets(env);
   const ops = circleOps(env);
-  const { app, db, close } = testApp(turnkey, chains, undefined, ops, undefined, undefined, undefined, { agentWallets, discovery });
+  const { app, db, close } = testApp(chains, undefined, ops, undefined, undefined, undefined, { agentWallets, discovery });
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   let userId = "";
   let token = "";
@@ -77,13 +72,10 @@ test("x402 on Arc testnet: top up under the grant, pay the demo seller through G
   });
 
   // Sign in, register the wallet, set it up (7702, relayed), and fund it with 1.5 test USDC from the ops wallet.
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "x402-test-phone-0001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "x402-test-phone-0001" });
   await expectStatus(signIn, 201, "sign-in");
   ({ token } = (await signIn.json()) as { token: string });
   userId = ((await (await call("GET", "/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

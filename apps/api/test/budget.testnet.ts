@@ -27,7 +27,7 @@ import { arcReads } from "../../mobile/src/budget/chain";
 import { budgetAllows, type GuardContext, type GuardDeps } from "../../mobile/src/budget/guard";
 import { kyberQuote } from "../../mobile/src/budget/price";
 
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 import { attachSession } from "../src/auth/middleware";
 import { appKitEarn } from "../src/earn/engine";
 import { EarnService } from "../src/earn/service";
@@ -68,15 +68,10 @@ const network = getNetwork("testnet");
 const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
 const wallet = privateKeyToAccount(generatePrivateKey());
 const signer = createWalletClient({ account: wallet, chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-const SUB_ORG = randomUUID();
-const TURNKEY_USER = randomUUID();
-const sessionKey = turnkeyStyleKeyPair();
-const turnkey = fakeTurnkey(
-  { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "budgeter", email: `budget-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-  { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-);
+const TEST_ID = randomUUID();
+const person = privyPerson(`budget-${TEST_ID}@example.test`, wallet.address);
 const ops = circleOps(env);
-const { app, db, close } = testApp(turnkey, chains, undefined, ops, appKitSwaps(env), undefined, appKitEarn(env));
+const { app, db, close } = testApp(chains, undefined, ops, appKitSwaps(env), undefined, appKitEarn(env));
 const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
 const OPS = env.OPS_WALLET_ADDRESS_TESTNET as Address;
 
@@ -117,12 +112,9 @@ async function guardContext(): Promise<GuardContext> {
 
 try {
   // 0. Sign in, register, set up (relayed 7702), fund.
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "budget-test-phone-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "budget-test-phone-01" });
   await expectStatus(signIn, HTTP_CREATED, "sign-in");
   ({ token, user: { id: userId } } = (await signIn.json()) as { token: string; user: { id: string } });
-  await expectStatus(await call(app, "POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), HTTP_CREATED, "register");
   const { authorization } = await json<{ authorization: { contractAddress: Hex; chainId: number; nonce: number } }>(call(app, "POST", "/wallet/setup/request", { network: "testnet" }));
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(

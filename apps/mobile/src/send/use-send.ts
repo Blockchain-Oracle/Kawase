@@ -22,7 +22,6 @@ import { releaseIfDead, silentSendVerdict } from "@/budget/silent";
 import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 import { sayIfProofNeeded } from "@/session/device-proof";
@@ -70,7 +69,7 @@ export function useSend(initial?: SendIntent | undefined): SendController {
   const [busy, setBusy] = React.useState(false);
   const [connectionLost, setConnectionLost] = React.useState(false);
   const epoch = React.useRef(0);
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const id = intent?.id;
 
   /** Shows `next` if nothing newer happened since `startedIn` and it does not move the send backwards. */

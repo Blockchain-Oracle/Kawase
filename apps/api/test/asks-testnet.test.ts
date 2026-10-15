@@ -1,4 +1,4 @@
-// In-app asks on Arc testnet (A5-3), with fresh local keys standing in for two Turnkey wallets and Circle's real ops
+// In-app asks on Arc testnet (A5-3), with fresh local keys standing in for two Privy wallets and Circle's real ops
 // wallet funding the payer: the requester splits a bill in EURC asked for by its token address (any asset, R1) with
 // the payer's @handle; the payer finds "@x asked you for 0.02 EURC" in their inbox, opens the pay card from it and
 // pays from Kawase; the split settles. A plain request asks the payer in the app too; a name that is nobody on
@@ -19,7 +19,7 @@ import { getNetwork } from "@kawase/networks";
 import { renderNotification } from "../src/notify/render";
 import { circleOps } from "../src/send/ops";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -37,19 +37,11 @@ test("in-app asks on Arc testnet: a split in EURC asks @handle in the app, paid 
   const chains = createChains(env);
   const network = getNetwork("testnet");
   const client = createPublicClient({ chain: network.viemChain, transport: http(env.ARC_RPC_URL_TESTNET) });
-  const people = ["payer", "requester"].map((role) => ({
-    role,
-    handle: `${role === "payer" ? "kemi" : "abu"}${suffix()}`,
-    wallet: privateKeyToAccount(generatePrivateKey()),
-    subOrg: randomUUID(),
-    turnkeyUser: randomUUID(),
-    key: turnkeyStyleKeyPair(),
-  }));
-  const turnkey = fakeTurnkey(
-    Object.fromEntries(people.map((p) => [`${p.subOrg}/${p.turnkeyUser}`, { userId: p.turnkeyUser, userName: p.role, email: `${p.role}-${p.subOrg}@example.test`, sessionPublicKeys: [p.key.publicKeyHex] }])),
-    Object.fromEntries(people.map((p) => [p.subOrg, [{ walletId: `wallet-${p.role}`, address: p.wallet.address }]])),
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, circleOps(env));
+  const people = ["payer", "requester"].map((role) => {
+    const wallet = privateKeyToAccount(generatePrivateKey());
+    return { role, handle: `${role === "payer" ? "kemi" : "abu"}${suffix()}`, wallet, privy: privyPerson(`${role}-${randomUUID()}@example.test`, wallet.address) };
+  });
+  const { app, db, close } = testApp(chains, undefined, circleOps(env));
   const circle = initiateDeveloperControlledWalletsClient({ apiKey: env.CIRCLE_TEST_API_KEY, entitySecret: env.CIRCLE_TEST_ENTITY_SECRET });
   const userIds: string[] = [];
   const payer = people[0]!;
@@ -73,15 +65,12 @@ test("in-app asks on Arc testnet: a split in EURC asks @handle in the app, paid 
   });
 
   const signIn = async (person: (typeof people)[number]) => {
-    const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-    const body = JSON.stringify({ organizationId: person.subOrg, activityId: nonce });
-    const response = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId: `asks-${person.role}-0001` } }));
+    const response = await privySignIn(app, person.privy, { platform: "ios", installationId: `asks-${person.role}-0001` });
     await expectStatus(response, 201, `${person.role} sign-in`);
     const { token, user } = (await response.json()) as { token: string; user: { id: string } };
     userIds.push(user.id);
     const call = (method: string, path: string, payload?: unknown) =>
       app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-    await expectStatus(await call("POST", "/wallet", { address: person.wallet.address, walletId: `wallet-${person.role}` }), 201, `${person.role} register`);
     await expectStatus(await call("PATCH", "/me", { handle: person.handle }), 200, `${person.role} handle`);
     return call;
   };

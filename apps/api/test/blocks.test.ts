@@ -14,9 +14,10 @@ import { ContactService } from "../src/contacts/service";
 import { InboxService } from "../src/inbox/service";
 import { RequestService } from "../src/requests/service";
 import { Recipients } from "../src/send/recipients";
-import { deleteUser, fakeTurnkey, jsonRequest, noChains, testApp } from "./helpers";
+import { deleteUser, jsonRequest, noChains, privyPerson, testApp } from "./helpers";
 
-const { app, db, close } = testApp(fakeTurnkey({}));
+const person = privyPerson();
+const { app, db, close } = testApp();
 const ids: string[] = [];
 after(async () => {
   for (const id of ids) await deleteUser(db, id);
@@ -30,7 +31,7 @@ async function account(handle: string, address?: string) {
   const { token, user } = (await guest.json()) as { token: string; user: { id: string } };
   ids.push(user.id);
   await db.update(users).set({ isAnonymous: false, email: `${handle}@example.test`, handle }).where(eq(users.id, user.id));
-  if (address) await db.insert(wallets).values({ userId: user.id, role: "user", custody: "turnkey", address });
+  if (address) await db.insert(wallets).values({ userId: user.id, role: "user", custody: "privy", address });
   const call = (method: string, path: string, body?: unknown) =>
     app.request(path, body === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, body, token));
   return { id: user.id, call };

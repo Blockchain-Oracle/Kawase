@@ -4,7 +4,6 @@
 import { z } from "zod";
 
 const hexKey = z.string().regex(/^(0x)?[0-9a-fA-F]{64}$/, "expected a 32-byte hex key");
-const compressedPublicKey = z.string().regex(/^0[23][0-9a-fA-F]{64}$/, "expected a compressed P-256 public key");
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/, "expected an address");
 const flag = z
   .enum(["true", "false"])
@@ -22,12 +21,8 @@ const APPROVAL_SECRET_MIN = 32;
 /** A PEM pasted into one env line keeps its newlines as `\n`. */
 const pem = z.string().transform((value) => value.replace(/\\n/g, "\n"));
 
-/**
- * Privy (D41) replaces Turnkey for sign-in and the user's key; Turnkey stays the fallback for one build.
- * WALLET_PROVIDER=privy turns on Privy sign-in (`POST /auth/privy`); Turnkey sign-in stays on for older apps either way.
- */
+/** Privy (D41): sign-in and the user's key. Without an app id there is no account sign-in (a test or a local run). */
 const privyEnvShape = {
-  WALLET_PROVIDER: z.enum(["privy", "turnkey"]).default("turnkey"),
   /** The Privy app id (public; the same value as EXPO_PUBLIC_PRIVY_APP_ID). */
   PRIVY_APP_ID: z.preprocess(blankIsUnset, z.string().min(1).optional()),
   /**
@@ -42,10 +37,6 @@ const privyEnvShape = {
 const privyEnvSchema = z.object(privyEnvShape);
 export type PrivyEnv = z.infer<typeof privyEnvSchema>;
 
-function requirePrivyAppId(env: PrivyEnv) {
-  if (env.WALLET_PROVIDER === "privy" && !env.PRIVY_APP_ID) throw new Error("WALLET_PROVIDER=privy needs: PRIVY_APP_ID");
-}
-
 /**
  * Only the Privy variables: what auth reads when the app is assembled without them (one loader, so the api never reads
  * process.env elsewhere).
@@ -53,7 +44,6 @@ function requirePrivyAppId(env: PrivyEnv) {
 export function loadPrivyEnv(source: Record<string, string | undefined> = process.env): PrivyEnv {
   const parsed = privyEnvSchema.safeParse(source);
   if (!parsed.success) report(parsed.error, "api (Privy)");
-  requirePrivyAppId(parsed.data);
   return parsed.data;
 }
 
@@ -67,11 +57,6 @@ export const apiEnvSchema = z.object({
   KAWASE_WEB_ORIGINS: z.string().default(""),
   /** The web app's own address, for links people share (payment requests: `{web}/r/{token}`). */
   KAWASE_WEB_URL: z.url().default("https://app.getkawase.xyz"),
-  /** Turnkey: the parent organization and its server API key (read access to every user's sub-organization). */
-  TURNKEY_ORGANIZATION_ID: z.uuid(),
-  TURNKEY_API_PUBLIC_KEY: compressedPublicKey,
-  TURNKEY_API_PRIVATE_KEY: hexKey,
-  TURNKEY_API_BASE_URL: z.url().default("https://api.turnkey.com"),
   ...privyEnvShape,
   /** Circle developer-controlled wallets (the agent's wallets). TEST always; LIVE only where mainnet is enabled. */
   CIRCLE_TEST_API_KEY: z.string().min(1),
@@ -82,8 +67,8 @@ export const apiEnvSchema = z.object({
   /** Dev sign-in for local development (a throwaway testnet key); ignored in production and beside mainnet. */
   KAWASE_DEV_AUTH: flag,
   /**
-   * Spending within the allowance and deleting the account need a proof from the device's Turnkey key (security
-   * review M12). Off until the app that sends it is on people's phones; a proof that is sent is checked either way.
+   * Spending within the allowance and deleting the account need a proof signed by the person's own wallet on that
+   * device (security review M12). Off until the app that sends it is on people's phones; a sent proof is checked anyway.
    */
   DEVICE_PROOF_REQUIRED: flag,
   /** The relayer key per network: a plain key on our server that pays for 7702 setups (spike 15). */
@@ -170,10 +155,11 @@ function report(error: z.ZodError, app: string): never {
 export function loadApiEnv(source: Record<string, string | undefined> = process.env): ApiEnv {
   const parsed = apiEnvSchema.safeParse(source);
   if (!parsed.success) report(parsed.error, "api");
-  requirePrivyAppId(parsed.data);
   // Pending tool approvals are signed with it: a per-process random key would void them on every restart and on any
   // other instance, so production refuses to start without one (createTurnRunner checks too).
   if (parsed.data.NODE_ENV === "production" && !parsed.data.AGENT_APPROVAL_SECRET) throw new Error("NODE_ENV=production needs: AGENT_APPROVAL_SECRET");
+  // People sign in with Privy; a production api without its app id would let nobody in.
+  if (parsed.data.NODE_ENV === "production" && !parsed.data.PRIVY_APP_ID) throw new Error("NODE_ENV=production needs: PRIVY_APP_ID");
   if (parsed.data.MAINNET_ENABLED) {
     const missing = (
       [

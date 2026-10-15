@@ -1,7 +1,7 @@
 # Card: Get in and stay in (account and access)
 
 Purpose: the how-ladder for opening the app, signing in, linking methods, devices, export and deletion. Rules: R12, R13, R8.
-Sources: `apps/mobile/src/wallet/turnkey-account-core.ts`, `sign-in/sign-in-sheet.tsx`, `apps/api/src/auth/*`, Turnkey kit 2.3.7 / core 2.12.0 source, the Release repro of 2026-10-02.
+Sources: `apps/mobile/src/wallet/privy-account-core.ts`, `sign-in/sign-in-sheet.tsx`, `apps/api/src/auth/*`, `apps/api/src/account/approval-codes.ts`, Privy's docs (docs.privy.io, read 2026-10-15).
 Verified: 2026-10-02
 
 ## First open
@@ -22,30 +22,30 @@ Verified: 2026-10-02
 |---|---|
 | Entry | Story; the guest header **Sign in** pill; **any guarded action** (in place, resumes after); Settings → Account; an expired session (re-auth sheet over the current page) |
 | Which | Email code · Apple · Google (passkey once a domain exists) |
-| How | Email: address → code (6 digits, paste supported) → signed in. Apple/Google: provider sheet → back. All reach the **same Turnkey sub-org** for a linked person |
+| How | Email: address → code (6 digits, paste supported) → signed in. Apple/Google: provider sheet → back. All reach the **same Privy user** for a linked person |
 | Then | New account: optional @handle → testnet setup runs by itself (wallet, 7702 relayed, allowance with one Face ID) → completion receipt. Returning: straight back to the original task |
 | How long | Code email in seconds; setup ~5–15 s with a stepper |
-| What if | Wrong code (inline), expired code (resend), **too many codes → countdown** (Turnkey "Max number of OTPs"), offline, provider down, session-link failure (retry that stage only, never a new code), wallet registration failure (retry), cancelled provider sheet (back to the sheet). The beacon `POST /client-events` records the stage and error for support |
+| What if | Wrong code (inline), expired code (resend), **too many codes → countdown** (Privy refuses more codes), offline, provider down, session-link failure (retry that stage only, never a new code), wallet registration failure (retry), cancelled provider sheet (back to the sheet). The beacon `POST /client-events` records the stage and error for support |
 | After | Session for 30 days; push token registered; guest data merged (drafts resume; clashing contacts flagged) |
-| Consistency | Same flow on iOS/Android/web; web uses an email code for approvals until passkeys |
+| Consistency | Same flow on iOS/Android/web; web uses an emailed approval code (Kawase's own) where a phone uses Face ID |
 | Copy & identity | Apple and Google marks per their brand rules; stage-specific error copy in 10 languages |
 
 ## Link methods / change email
 - **Entry:** Settings → Account → Sign-in methods.
-- **How:** add Apple, Google or email to the current Turnkey user (authenticators). Changing the email sends a code to the new address.
+- **How:** add Apple, Google or email to the current Privy user (linked accounts). Changing the email sends a code to the new address.
 - **What if:** the method already belongs to another account → explain and offer sign-in there.
 - **After:** the method is listed with its mark; the notification email follows the account email.
 
 ## Devices and sessions
 - **Entry:** Settings → Account → Devices.
 - **Which:** this device and others (name, OS, last active, approximate location).
-- **How:** "Sign out this device" revokes the Kawase session and deletes that device's Turnkey API key. "Sign out everywhere" does it for all.
+- **How:** "Sign out this device" revokes the Kawase session and refuses that device's Privy session from then on (it must sign in afresh). "Sign out everywhere" does it for all.
 - **Lost phone:** sign in elsewhere → Devices → sign out the lost one → **Pause all** (instant, server) → optionally Revoke (on chain).
 - **After:** a security notification by email.
 
 ## Export wallet
 - **Entry:** Settings → Account → Export wallet; the "Withdraw without Kawase" docs page.
-- **How:** warnings → Face ID → Turnkey export bundle shown with screen-capture protection → copy or reveal.
+- **How:** warnings → a deliberate hold → Privy's own export window shows the private key (a phone opens it on the web app); Kawase never sees it.
 - **After:** an audit row.
 
 ## Delete account
@@ -58,7 +58,7 @@ Verified: 2026-10-02
 The wallet stays the user's.
 
 ## Sign out
-Clears the account's caches and drafts, unregisters the push token server-side, logs out of Turnkey, and returns to the story with the language kept.
+Clears the account's caches and drafts, unregisters the push token server-side, logs out of Privy, and returns to the story with the language kept.
 
 ## Acceptance (walk on a phone)
 - [ ] Fresh install → story → change language on panel 1 → Try first → guest Home in that language.

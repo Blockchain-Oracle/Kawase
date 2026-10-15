@@ -21,7 +21,6 @@ export type ApiUser = {
   practiceMode: boolean;
   /** Set while the person has paused all agent and automation spending (Wallet & limits). */
   pausedAllAt?: string | null;
-  turnkeySubOrganizationId: string | null;
   /** Settings → Voice (defaults filled in by the api); absent on users cached before it existed. */
   voicePrefs?: VoicePrefs;
 };
@@ -42,7 +41,10 @@ export type DeviceInfo = {
 
 export type SignInResponse = { token: string; user: ApiUser };
 
-export type StampedProof = { body: string; stamp: string };
+/** A Privy session's tokens, sent in the body (never a cookie or the URL); the identity token names the wallet. */
+export type PrivyTokens = { accessToken: string; identityToken?: string | undefined };
+export type RegisteredWallet = { id: string; address: string };
+
 
 export type ConsentKind = "terms" | "mainnet_real_money" | "meme_risk" | "marketplace_risk" | "voice_retention";
 export type Consent = { kind: ConsentKind; version: string; acceptedAt: string };

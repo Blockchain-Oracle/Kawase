@@ -19,7 +19,7 @@ import { appKitEarn } from "../src/earn/engine";
 import { liveMarketData } from "../src/market/sources";
 import { appKitSwaps } from "../src/swap/engine";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, fakeTurnkey, jsonRequest, noChains, noOps, okFaucet } from "./helpers";
+import { deleteUser, jsonRequest, noChains, noOps, okFaucet } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 // The schema-compatibility notes are known (z.record in tool inputs); keep the output to the evidence.
@@ -35,7 +35,6 @@ const RATE = 10_000;
 const app = createApp({
   db,
   log: createLogger({ service: "intelligence-live", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" }),
-  turnkey: fakeTurnkey({}),
   chains: noChains,
   faucet: okFaucet,
   ops: noOps,
@@ -139,7 +138,6 @@ async function realAccountApp() {
   return createApp({
     db,
     log: createLogger({ service: "intelligence-live", level: (process.env.TEST_LOG_LEVEL ?? "silent") as "silent" }),
-    turnkey: fakeTurnkey({}),
     chains: createChains(env),
     faucet: okFaucet,
     ops: noOps,

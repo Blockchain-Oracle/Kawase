@@ -7,9 +7,9 @@ import { NETWORK_IDS } from "@kawase/networks";
 
 import { HTTP } from "../src/http/problem";
 import { PUBLIC_ACTION_KINDS } from "../src/public/service";
-import { fakeTurnkey, testApp } from "./helpers";
+import { testApp } from "./helpers";
 
-const { app, close } = testApp(fakeTurnkey({}));
+const { app, close } = testApp();
 after(close);
 
 const PERSONAL_KEYS = /email|address|handle|userId|user_id|amount|hash|token|"id"/i;

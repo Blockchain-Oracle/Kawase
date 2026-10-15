@@ -7,10 +7,9 @@ import { MockLanguageModelV4 } from "ai/test";
 import { threadMessages, threadTurns } from "@kawase/db";
 import { createLogger } from "@kawase/log";
 import { createApp } from "../src/app";
-import { deleteUser, fakeTurnkey, jsonRequest, noChains, noOps, okFaucet, testApp } from "./helpers";
+import { deleteUser, jsonRequest, noChains, noOps, okFaucet, testApp } from "./helpers";
 
-const turnkey = fakeTurnkey({});
-const { db, close } = testApp(turnkey);
+const { db, close } = testApp();
 const model = new MockLanguageModelV4({
   doStream: async () => ({
     stream: simulateReadableStream({
@@ -33,7 +32,6 @@ const model = new MockLanguageModelV4({
 });
 const app = createApp({
   db,
-  turnkey,
   chains: noChains,
   ops: noOps,
   faucet: okFaucet,

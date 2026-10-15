@@ -10,7 +10,6 @@ import { useT } from "@/i18n";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
@@ -72,7 +71,7 @@ export function useLpQuote(input: { pool: string; asset: string; amount: string 
 /** One LP action: the person's yes, then the api builds it, the wallet signs exactly that, and it is sent. */
 export function useLpActions(onDone?: () => void) {
   const { t } = useT();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const [busy, setBusy] = React.useState(false);
 
   const run = async (prompt: string, build: () => Promise<{ request: TransactionRequestResponse }>, done: string): Promise<LpOutcome> => {

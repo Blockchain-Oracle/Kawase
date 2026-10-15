@@ -16,7 +16,6 @@ import { useLocale } from "@/i18n/locale-provider";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { sayIfRefused } from "@/wallet/refused";
 import { signRevoke, submitRevoke } from "@/wallet/sign-revoke";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
@@ -55,7 +54,7 @@ export function useSafetyView() {
 /** Asking for a change, approving a loosening, and signing an on-chain revoke. */
 export function useSafetyChange() {
   const { t } = useT();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const session = useSession();
 
   /** A tightening applies now; a loosening returns what to approve. Errors are thrown to the caller. */

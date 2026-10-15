@@ -48,13 +48,11 @@ was reused is listed under [Prior work](#prior-work-and-what-was-reused).
 New accounts start on **Arc testnet**, where money has no value; claim test money from the faucet card on Home. On the
 web an email code stands in for Face ID.
 
-### Where it stands (2026-10-03)
+### Where it stands (2026-10-15)
 
-- **Paused on the live app right now.** Chat and voice: the AI model provider's prepaid credit has run out. Anything a
-  wallet signs (setup, the allowance, every confirmation): Kawase's Turnkey organization has used the 25 signatures a
-  month of Turnkey's free plan. Until these are lifted, the live app can be explored as a guest, signed in to, and given
-  test money, but it cannot move money; the [judge walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough) says
-  step by step what runs today.
+- **Sign-in and the wallet are Privy's** (an email code or Google): the key is split up in Privy's secure enclaves and
+  never reaches Kawase. On the web an emailed code stands in for Face ID before anything binding is signed; the
+  [judge walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough) says step by step what runs today.
 - **Testnet:** every flow below has been run end to end with real Arc testnet transactions, recorded as it was built.
   44 of them are on [/demo](https://getkawase.xyz/demo), grouped by what they prove, each with its explorer link and
   the build log or test that produced it.
@@ -125,11 +123,11 @@ passkeys as the wallet's signing factor.
  │  notifications, reconciliation │
  └──────┬──────────────┬──────────┘
         ▼              ▼
-   Postgres 17     Arc mainnet / testnet · Circle (Wallets, App Kit, CCTP, Gateway, Onramp, faucet) · Turnkey
+   Postgres 17     Arc mainnet / testnet · Circle (Wallets, App Kit, CCTP, Gateway, Onramp, faucet) · Privy
 ```
 
-- **Your wallet** is an ordinary EOA held by **Turnkey** in your own sub-organization (no seed phrase, no PIN), one address
-  on both networks. Kawase upgrades it in place with **EIP-7702** to MetaMask's `EIP7702StatelessDeleGator`; you sign
+- **Your wallet** is an ordinary EOA whose key **Privy** keeps split up in secure enclaves (no seed phrase, no PIN), one
+  address on both networks. Kawase upgrades it in place with **EIP-7702** to MetaMask's `EIP7702StatelessDeleGator`; you sign
   one authorization and Kawase's relayer pays the fee.
 - **The agent's authority** is **ERC-7710 delegations** from your account (MetaMask Delegation Framework,
   [`packages/integrations/delegation`](packages/integrations/delegation)), redeemed by Kawase's agent wallet, a Circle
@@ -219,8 +217,9 @@ EXPO_PUBLIC_API_URL=http://localhost:3000 pnpm --filter @kawase/mobile web
 The api needs, at minimum (checked at start by [`packages/env`](packages/env/src/index.ts)):
 
 - `DATABASE_URL` (for the compose database: `postgres://kawase:kawase@localhost:5433/kawase`);
-- a Turnkey organization and API key pair (`TURNKEY_ORGANIZATION_ID`, `TURNKEY_API_PUBLIC_KEY`, `TURNKEY_API_PRIVATE_KEY`)
-  and the app's `EXPO_PUBLIC_TURNKEY_*` ids;
+- for sign-in, a Privy app: `PRIVY_APP_ID` on the api (`PRIVY_APP_SECRET` optional) and `EXPO_PUBLIC_PRIVY_APP_ID` in the
+  app (plus `EXPO_PUBLIC_PRIVY_CLIENT_ID` for the native app); local development can use dev sign-in instead
+  (`KAWASE_DEV_AUTH=true` on the api, `EXPO_PUBLIC_WALLET_PROVIDER=dev` in the app);
 - a Circle TEST API key and entity secret, and a developer-controlled wallet on Arc testnet for the agent
   (`OPS_WALLET_ID_TESTNET`, `OPS_WALLET_ADDRESS_TESTNET`);
 - `RELAYER_PRIVATE_KEY_TESTNET`: any key whose address holds a little testnet USDC

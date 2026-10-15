@@ -17,7 +17,6 @@ import { useT } from "@/i18n";
 import { sayIfPractice } from "@/safety/practice-refusal";
 import { api } from "@/session/api";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { toSerializable } from "@/wallet/use-wallet-setup";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
@@ -36,7 +35,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function useWithdrawRun() {
   const { t } = useT();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const [withdrawal, setWithdrawal] = React.useState<WithdrawalView>();
   const [phase, setPhase] = React.useState<RunPhase>("idle");
   const running = React.useRef(false);

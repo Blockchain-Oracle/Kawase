@@ -26,7 +26,6 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { confirmWithBiometrics } from "@/wallet/biometric";
-import { PASSKEY_RP_ID } from "@/wallet/config";
 import { useWalletSigner } from "@/wallet/use-wallet-signer";
 
 const STRIP_INSET = 6;
@@ -53,7 +52,7 @@ export function TokenRulesScreen() {
   const { locale } = useLocale();
   const { status, user } = useSession();
   const signIn = useSignIn();
-  const signer = useWalletSigner(PASSKEY_RP_ID ? "passkey" : "session");
+  const signer = useWalletSigner();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
   const [rules, setRules] = React.useState<TokenRulesView>();
   const [draft, setDraft] = React.useState<TokenRulesValuesView>();

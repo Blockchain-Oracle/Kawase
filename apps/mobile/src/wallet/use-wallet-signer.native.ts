@@ -1,15 +1,12 @@
-// iOS and Android: the app's WalletSigner for this build's wallet provider (D41): Privy's embedded wallet
-// (privy-signer.native.ts, loaded only on a Privy build), or Turnkey's (turnkey-signer.native.ts, the fallback for one
-// build). Undefined while there is no wallet to sign with.
-import type { ApprovalStrength, WalletSigner } from "@kawase/wallet";
+// iOS and Android: the app's WalletSigner over Privy's embedded wallet (privy-signer.native.ts, D41), loaded only when
+// the build has the Privy ids. Undefined while there is no wallet to sign with.
+import type { WalletSigner } from "@kawase/wallet";
 
-import { isPrivy, isWalletConfigured } from "./config";
-import { useTurnkeyWalletSigner } from "./turnkey-signer.native";
+import { isWalletConfigured } from "./config";
 
 const privy: typeof import("./privy-signer.native") | undefined =
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- evaluated only on a Privy build (see above)
-  isPrivy && isWalletConfigured ? require("./privy-signer.native") : undefined;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- Privy's native modules load only with its ids
+  isWalletConfigured ? require("./privy-signer.native") : undefined;
 
-export const useWalletSigner: (approval?: ApprovalStrength) => WalletSigner | undefined = !isPrivy
-  ? useTurnkeyWalletSigner
-  : (privy?.usePrivyWalletSigner ?? (() => undefined));
+export const useWalletSigner: () => WalletSigner | undefined =
+  privy?.usePrivyWalletSigner ?? (() => undefined);

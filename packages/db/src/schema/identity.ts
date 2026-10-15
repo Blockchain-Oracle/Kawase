@@ -1,5 +1,5 @@
-// Kawase owns the user, the device sessions and the sign-in nonces. The wallet provider (Privy, D41; Turnkey until it
-// is retired) owns the credentials and the user's key.
+// Kawase owns the user, the device sessions and the sign-in nonces. The wallet provider (Privy, D41) owns the
+// credentials and the user's key.
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
@@ -11,7 +11,7 @@ export const themeEnum = pgEnum("theme", ["system", "light", "dark"]);
 export const riskModeEnum = pgEnum("risk_mode", ["careful", "balanced", "autonomous"]);
 export const platformEnum = pgEnum("platform", ["ios", "android", "web", "desktop"]);
 /** Who proved the person's identity at sign-in (D41). */
-export const identityProviderEnum = pgEnum("identity_provider", ["turnkey", "privy"]);
+export const identityProviderEnum = pgEnum("identity_provider", ["privy"]);
 
 export const users = pgTable(
   "users",
@@ -26,14 +26,9 @@ export const users = pgTable(
      * not at every sign-in (Codex review R07). It stays changeable in Settings.
      */
     handlePromptedAt: timestampTz(),
-    /**
-     * Provider-neutral identity (migration 0130): the provider and its id for the person (Privy: the user's DID;
-     * Turnkey: the sub-organization id, backfilled). The `turnkey*` columns below stay for the Turnkey fallback build.
-     */
+    /** Who proved the person's identity and their id there (Privy: the user's DID); null for guests and dev accounts. */
     identityProvider: identityProviderEnum(),
     identitySubject: text(),
-    turnkeySubOrganizationId: uuid(),
-    turnkeyUserId: uuid(),
     isAnonymous: boolean().notNull().default(true),
     locale: text().notNull().default("en"),
     replyLanguage: text(),
@@ -69,9 +64,6 @@ export const users = pgTable(
     uniqueIndex("users_identity_idx")
       .on(table.identityProvider, table.identitySubject)
       .where(sql`${table.identitySubject} is not null`),
-    uniqueIndex("users_turnkey_sub_organization_idx")
-      .on(table.turnkeySubOrganizationId)
-      .where(sql`${table.turnkeySubOrganizationId} is not null`),
   ],
 );
 
@@ -91,9 +83,7 @@ export const devices = pgTable(
     biometricEnrolled: boolean().notNull().default(false),
     /** The device's own name ("Abu's iPhone"), as the app reports it, for Settings → Devices. */
     name: text(),
-    /** The Turnkey session key that proved the latest sign-in here: the API key "sign out this device" deletes. */
-    turnkeyPublicKey: text(),
-    /** The wallet provider's session that proved the latest sign-in here (Privy: the access token's session id). */
+    /** The Privy session that proved the latest sign-in here (the access token's `sid`): refused once signed out. */
     identitySessionId: text(),
     /** Where it last signed in or was seen, coarsely ("Lisbon, Portugal"), from its IP; the IP itself is never kept. */
     location: text(),
@@ -129,13 +119,45 @@ export const sessions = pgTable(
   (table) => [uniqueIndex("sessions_token_hash_idx").on(table.tokenHash), index("sessions_user_idx").on(table.userId)],
 );
 
-/** Single-use nonces the client signs with its Turnkey session key to prove the sign-in (Privy sign-in needs none). */
+/** Single-use nonces a dev-mode key signs to prove the sign-in (Privy sign-in needs none; KAWASE_DEV_AUTH only). */
 export const signInNonces = pgTable("sign_in_nonces", {
   nonce: text().primaryKey(),
   expiresAt: timestampTz().notNull(),
   usedAt: timestampTz(),
   createdAt: createdAt(),
 });
+
+/**
+ * Privy sessions signed out from Settings → Devices (one device, or every other one): a sign-in with tokens from one of
+ * them is refused, so the device must sign in afresh. Privy keeps the session itself until its refresh token lapses.
+ */
+export const revokedIdentitySessions = pgTable("revoked_identity_sessions", {
+  sessionId: text().primaryKey(),
+  userId: uuid()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  revokedAt: createdAt(),
+});
+
+/**
+ * The web's owner check (a browser has no Face ID): a six-digit code emailed to the account's verified address before
+ * a signature that binds them. Only its hash is kept; one live code per person, a few tries, ten minutes.
+ */
+export const approvalCodes = pgTable(
+  "approval_codes",
+  {
+    id: id(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text().notNull(),
+    attempts: integer().notNull().default(0),
+    expiresAt: timestampTz().notNull(),
+    usedAt: timestampTz(),
+    createdAt: createdAt(),
+  },
+  (table) => [index("approval_codes_user_idx").on(table.userId)],
+);
 
 export const consentKindEnum = pgEnum("consent_kind", [
   "terms",

@@ -23,7 +23,7 @@ import { alchemyIndex, type WalletHolding } from "../src/market/alchemy";
 import { MarketCache } from "../src/market/cache";
 import { noMarketData } from "../src/market/sources";
 import type { Chains, NetworkClients } from "../src/wallet/chain";
-import { fakeTurnkey, noOps, okFaucet } from "./helpers";
+import { noOps, okFaucet } from "./helpers";
 
 const HOLDER = "0x7d613c6316eDe9d257f3BF512777Cb4Ea4A6beE4";
 const ARGUS = "0xece5ca8bf9220718e5727754026757512212cb3c";
@@ -85,7 +85,6 @@ const indexed: WalletHolding[] = [
 const app = createApp({
   db,
   log: createLogger({ service: "alchemy-portfolio", level: "silent" }),
-  turnkey: fakeTurnkey({}),
   chains,
   faucet: okFaucet,
   ops: noOps,
@@ -99,7 +98,7 @@ const token = `alchemy-portfolio-${Date.now()}`;
 before(async () => {
   const [user] = await db.insert(users).values({ isAnonymous: false, email: `${token}@example.com`, activeNetwork: "mainnet" }).returning();
   userId = user!.id;
-  await db.insert(wallets).values({ userId, role: "user", status: "active", address: HOLDER, custody: "turnkey" } as never);
+  await db.insert(wallets).values({ userId, role: "user", status: "active", address: HOLDER, custody: "privy" } as never);
   const [device] = await db.insert(devices).values({ userId, platform: "ios", installationId: token }).returning();
   await db.insert(sessions).values({ userId, deviceId: device!.id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + HOUR_MS) } as never);
 });

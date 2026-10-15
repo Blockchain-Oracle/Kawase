@@ -59,15 +59,12 @@ test("a guest token can be passed for the upgrade call, and 204 yields undefined
         : new Response(JSON.stringify({ token: "t", user: {} }), { status: 201 });
     }),
   });
-  await client.auth.turnkey(
-    { proof: { body: "b", stamp: "s" }, turnkeyUserId: "u", device: { platform: "ios", installationId: "12345678" } },
-    "guest",
-  );
+  await client.auth.privy({ accessToken: "a.b.c", device: { platform: "ios", installationId: "12345678" } }, "guest");
   assert.equal(authorization, "Bearer guest");
   assert.equal(await client.auth.signOut(), undefined);
 });
 
-test("sign-in tracing shares an attempt identity without changing the signed proof or session token", async () => {
+test("sign-in tracing shares an attempt identity without changing the Privy tokens or session token", async () => {
   const requests: RequestInit[] = [];
   const client = createApiClient({
     baseUrl: "https://api.test",
@@ -78,18 +75,14 @@ test("sign-in tracing shares an attempt identity without changing the signed pro
     }),
   });
   const attempt = "1a2b3c4d-1111-2222-3333-444444444444";
-  const proof = { body: "signed-body", stamp: "signed-stamp" };
+  const tokens = { accessToken: "access.jwt.sig", identityToken: "identity.jwt.sig" };
   await client.auth.nonce(attempt);
-  await client.auth.turnkey(
-    { proof, turnkeyUserId: "user", device: { platform: "ios", installationId: "phone-id" } },
-    "guest",
-    attempt,
-  );
+  await client.auth.privy({ ...tokens, device: { platform: "ios", installationId: "phone-id" } }, "guest", attempt);
   await client.me.get(attempt);
-  await client.wallet.register({ address: "address", walletId: "wallet" }, attempt);
+  await client.auth.privyWallet(tokens, attempt);
   assert.ok(
     requests.every((request) => (request.headers as Record<string, string>)["x-kawase-auth-attempt"] === attempt),
   );
   assert.equal((requests[1]!.headers as Record<string, string>).authorization, "Bearer guest");
-  assert.deepEqual(JSON.parse(requests[1]!.body as string).proof, proof);
+  assert.equal(JSON.parse(requests[1]!.body as string).identityToken, tokens.identityToken);
 });

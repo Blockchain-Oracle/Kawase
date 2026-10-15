@@ -1,4 +1,4 @@
-// The user's wallet is one provider-held address (Privy, D41; Turnkey before) used on both networks; the agent's wallets are Circle
+// The user's wallet is one provider-held address (Privy, D41) used on both networks; the agent's wallets are Circle
 // developer-controlled wallets per network; the relayer is a plain key on the server (spikes 15 and 16).
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, jsonb, pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
@@ -14,7 +14,7 @@ export const walletRoleEnum = pgEnum("wallet_role", [
   "relayer",
   "faucet_drip",
 ]);
-export const custodyEnum = pgEnum("custody", ["turnkey", "circle_dcw", "external", "privy"]);
+export const custodyEnum = pgEnum("custody", ["circle_dcw", "external", "privy"]);
 export const walletStatusEnum = pgEnum("wallet_status", ["active", "retired"]);
 
 export const wallets = pgTable(
@@ -27,7 +27,7 @@ export const wallets = pgTable(
     role: walletRoleEnum().notNull(),
     custody: custodyEnum().notNull(),
     address: text().notNull(),
-    /** Privy: `{ userId, walletId }`; Turnkey: `{ subOrganizationId, walletId }`; Circle: `{ walletId }`. */
+    /** Privy: `{ userId, walletId }`; Circle: `{ walletId }`; a dev key: `{ kind: "dev" }`. */
     providerRef: jsonb().$type<Record<string, string>>().notNull().default({}),
     status: walletStatusEnum().notNull().default("active"),
     createdAt: createdAt(),
@@ -36,7 +36,7 @@ export const wallets = pgTable(
   (table) => [
     uniqueIndex("wallets_role_network_address_idx").on(table.role, table.network, sql`lower(${table.address})`),
     index("wallets_user_idx").on(table.userId),
-    // One active wallet per person; a replaced one (a Turnkey address after the move to Privy) is kept, retired.
+    // One active wallet per person; a replaced one is kept, retired.
     uniqueIndex("wallets_one_user_wallet_idx")
       .on(table.userId)
       .where(sql`${table.role} = 'user' and ${table.status} = 'active'`),

@@ -116,7 +116,7 @@ const KEEP = [
   "Relay",
   "LI.FI",
   "deBridge",
-  "Turnkey",
+  "Privy",
   "MetaMask",
   "EIP-7702",
   "ERC-7710",

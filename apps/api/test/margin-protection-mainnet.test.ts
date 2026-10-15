@@ -25,7 +25,7 @@ import { MarginProtection } from "../src/margin/protection";
 import { MarginService } from "../src/margin/service";
 import type { Chains, NetworkClients } from "../src/wallet/chain";
 import { WalletService } from "../src/wallet/service";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 /** Real Aave V4 accounts on Arc mainnet (Spoke Borrow events, read 10-02): a cirBTC long, one under 1.5, one under 1.2. */
 const LONG: Address = "0x6533B5FcB6C16E0753BFD50A0114DF72499944a4";
@@ -50,13 +50,9 @@ function readOnlyChains(): Chains {
 }
 
 test("margin protection: targets checked against the price, liquidation and Uniswap; health told once per fall", { skip: !process.env.DATABASE_URL, timeout: 400_000 }, async () => {
-  const people = [LONG, WARNING, DANGER].map((wallet) => ({ wallet, org: randomUUID(), turnkeyUser: randomUUID(), key: turnkeyStyleKeyPair() }));
-  const turnkey = fakeTurnkey(
-    Object.fromEntries(people.map((p) => [`${p.org}/${p.turnkeyUser}`, { userId: p.turnkeyUser, userName: "protected", email: `protect-${p.org}@example.test`, sessionPublicKeys: [p.key.publicKeyHex] }])),
-    Object.fromEntries(people.map((p) => [p.org, [{ walletId: `wallet-${p.org}`, address: p.wallet }]])),
-  );
+  const people = [LONG, WARNING, DANGER].map((wallet) => ({ wallet, privy: privyPerson(`protect-${randomUUID()}@example.test`, wallet) }));
   const chains = readOnlyChains();
-  const { app, db, close } = testApp(turnkey, chains);
+  const { app, db, close } = testApp(chains);
   const userIds: string[] = [];
   after(async () => {
     for (const id of userIds) await deleteUser(db, id);
@@ -64,14 +60,11 @@ test("margin protection: targets checked against the price, liquidation and Unis
   });
   const sessions = [];
   for (const [index, person] of people.entries()) {
-    const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-    const body = JSON.stringify({ organizationId: person.org, activityId: nonce });
-    const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId: `protect-phone-00${index}` } }));
+    const signIn = await privySignIn(app, person.privy, { platform: "ios", installationId: `protect-phone-00${index}` });
     await expectStatus(signIn, 201, "sign-in");
     const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
     userIds.push(user.id);
     const call = (method: string, path: string, payload?: unknown) => app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
-    await expectStatus(await call("POST", "/wallet", { address: person.wallet, walletId: `wallet-${person.org}` }), 201, "register");
     await expectStatus(await call("POST", "/me/consents", { kind: "mainnet_real_money", version: "1", locale: "en" }), 201, "consent");
     await expectStatus(await call("PUT", "/me/network", { network: "mainnet" }), 200, "switch");
     // Each did something on Aave through Kawase (what makes them candidates for health alerts).
@@ -132,25 +125,18 @@ test("margin protection: targets checked against the price, liquidation and Unis
 });
 
 test("margin protection: practice mode never closes, a pause holds a take-profit but not a stop-loss", { skip: !process.env.DATABASE_URL, timeout: 200_000 }, async () => {
-  const person = { org: randomUUID(), turnkeyUser: randomUUID(), key: turnkeyStyleKeyPair(), wallet: privateKeyToAccount(generatePrivateKey()).address };
-  const turnkey = fakeTurnkey(
-    { [`${person.org}/${person.turnkeyUser}`]: { userId: person.turnkeyUser, userName: "held", email: `held-${person.org}@example.test`, sessionPublicKeys: [person.key.publicKeyHex] } },
-    { [person.org]: [{ walletId: `wallet-${person.org}`, address: person.wallet }] },
-  );
+  const person = privyPerson(`held-${randomUUID()}@example.test`, privateKeyToAccount(generatePrivateKey()).address);
   const chains = readOnlyChains();
-  const { app, db, close } = testApp(turnkey, chains);
+  const { app, db, close } = testApp(chains);
   let userId = "";
   after(async () => {
     if (userId) await deleteUser(db, userId);
     await close();
   });
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: person.org, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, person.key) }, turnkeyUserId: person.turnkeyUser, device: { platform: "ios", installationId: "held-phone-001" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "held-phone-001" });
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
-  await expectStatus(await app.request("/wallet", jsonRequest("POST", { address: person.wallet, walletId: `wallet-${person.org}` }, token)), 201, "register");
 
   const market = await readMarket(chains.get("mainnet")!.client, AAVE_V4.mainnet!.mainSpoke);
   const cirBTC = market.reserves.find((reserve) => reserve.symbol === "cirBTC")!;

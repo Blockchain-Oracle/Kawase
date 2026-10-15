@@ -20,7 +20,7 @@ import { DELEGATION_FRAMEWORK } from "@kawase/networks";
 
 import type { AgentWalletProvider } from "../src/marketplace/agent-wallets";
 import { createChains } from "../src/wallet/chain";
-import { deleteUser, expectStatus, fakeTurnkey, jsonRequest, stampBody, testApp, turnkeyStyleKeyPair } from "./helpers";
+import { deleteUser, expectStatus, jsonRequest, privyPerson, privySignIn, testApp } from "./helpers";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
@@ -41,14 +41,9 @@ test("a new marketplace grant disables the one it replaces on chain, in the same
   const chains = createChains(env);
   const testnet = chains.get("testnet")!;
   const wallet = privateKeyToAccount(generatePrivateKey());
-  const SUB_ORG = randomUUID();
-  const TURNKEY_USER = randomUUID();
-  const sessionKey = turnkeyStyleKeyPair();
-  const turnkey = fakeTurnkey(
-    { [`${SUB_ORG}/${TURNKEY_USER}`]: { userId: TURNKEY_USER, userName: "supersede", email: `supersede-${SUB_ORG}@example.test`, sessionPublicKeys: [sessionKey.publicKeyHex] } },
-    { [SUB_ORG]: [{ walletId: "wallet-1", address: wallet.address }] },
-  );
-  const { app, db, close } = testApp(turnkey, chains, undefined, undefined, undefined, undefined, undefined, { agentWallets, discovery: new Discovery({}) });
+  const TEST_ID = randomUUID();
+  const person = privyPerson(`supersede-${TEST_ID}@example.test`, wallet.address);
+  const { app, db, close } = testApp(chains, undefined, undefined, undefined, undefined, undefined, { agentWallets, discovery: new Discovery({}) });
   let userId = "";
   let token = "";
   after(async () => {
@@ -58,13 +53,10 @@ test("a new marketplace grant disables the one it replaces on chain, in the same
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
 
-  const nonce = ((await (await app.request("/auth/nonce", { method: "POST" })).json()) as { nonce: string }).nonce;
-  const body = JSON.stringify({ organizationId: SUB_ORG, activityId: nonce });
-  const signIn = await app.request("/auth/turnkey", jsonRequest("POST", { proof: { body, stamp: await stampBody(body, sessionKey) }, turnkeyUserId: TURNKEY_USER, device: { platform: "ios", installationId: "supersede-01" } }));
+  const signIn = await privySignIn(app, person, { platform: "ios", installationId: "supersede-01" });
   await expectStatus(signIn, 201, "sign-in");
   ({ token } = (await signIn.json()) as { token: string });
   userId = ((await (await call("GET", "/me")).json()) as { user: { id: string } }).user.id;
-  await expectStatus(await call("POST", "/wallet", { address: wallet.address, walletId: "wallet-1" }), 201, "register");
   const { authorization } = (await (await call("POST", "/wallet/setup/request", { network: "testnet" })).json()) as { authorization: { contractAddress: Hex; chainId: number; nonce: number } };
   const signedAuth = await wallet.signAuthorization(authorization);
   await expectStatus(
