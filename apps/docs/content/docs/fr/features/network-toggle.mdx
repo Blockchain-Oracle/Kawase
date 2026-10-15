@@ -1,15 +1,59 @@
 ---
 title: "Le bouton de réseau"
-description: "Passez du réseau principal Arc (argent réel) au réseau de test Arc (argent de test) en un geste, avec le réseau toujours affiché de trois façons."
-sourceHash: 20db8e2535fa3289
+description: "Passez du réseau principal Arc (argent réel) au réseau de test Arc (argent de test) en un geste, avec le réseau affiché sur chaque écran."
+sourceHash: a0e2111b24b5bec2
 ---
 
-Kawase fonctionne sur deux réseaux : **le réseau principal Arc**, où l'argent est réel, et **le réseau de test Arc**, où il ne l'est pas. La **pastille du réseau** dans l'en-tête permet de passer de l'un à l'autre en un geste, dans les deux sens, comme pour le mode sombre.
+Kawase fonctionne sur deux réseaux : le **réseau principal Arc**, où l’argent est réel, et le **réseau de test Arc**, où il ne
+l’est pas. Le **bouton de réseau** en haut de l’Accueil passe de l’un à l’autre en un geste, dans les deux sens, comme le mode
+sombre.
 
-- **Les nouveaux comptes commencent sur le réseau de test**, et tout élément manquant ou illisible revient par défaut au réseau de test : l'option la plus sûre.
-- **Le premier passage au réseau principal** affiche un court message de consentement « Argent réel » ; les passages suivants sont instantanés.
-- **Toujours visible, jamais indiqué par la couleur seule.** Sur le réseau de test, une bande indique « Réseau de test · pas d'argent réel » ; sur le réseau principal, les cartes d'argent portent la mention **ARGENT RÉEL**. La pastille indique le réseau, et l'orbe vocale change de couleur (vert citron sur le réseau principal, bleu ciel sur le réseau de test).
-- **Votre portefeuille est le même** sur les deux réseaux : une seule adresse, les mêmes contacts et les mêmes réglages. Les soldes et l'activité sont propres à chaque réseau.
-- **Le serveur décide.** Le réseau fait partie de votre session sur le serveur. Il n'est jamais choisi par le modèle d'IA ; chaque paiement indique le réseau pour lequel il a été préparé, et toute incompatibilité bloque le paiement.
+<Flow>
+  <FlowStep icon="toggle" title="Touchez le bouton">Test ⇄ Principal, dans les deux sens.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Première fois vers le principal" icon="shield" title="Argent réel" tone="accent">Cochez « Je comprends qu’il s’agit d’argent réel ».</FlowStep>
+    <FlowStep when="Ensuite" icon="zap" title="Instantané">Comme passer en mode sombre.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="eye" title="Toujours affiché" tone="ink">Le bouton, un bandeau ou une pastille Argent réel.</FlowStep>
+</Flow>
 
-Lorsqu'un élément n'existe que sur un seul réseau — le faucet sur le réseau de test, la marketplace x402 sur le réseau principal — Kawase vous le signale et vous propose de changer de réseau au lieu d'échouer. Consultez la page [réseaux](../networks.mdx) pour la comparaison complète.
+## Test et principal, côte à côte
+
+<div className="grid gap-x-6 sm:grid-cols-2">
+
+<Shot src="start/guest-home" alt="Accueil sur Arc Testnet : le bouton indique Réseau de test, désactivé." zoom="29 4 12">
+  <Pin at="53 4">Réseau de test : argent de test uniquement</Pin>
+</Shot>
+
+<Shot src="network/mainnet-home" alt="Accueil sur le réseau principal Arc : le bouton indique Réseau principal, activé." zoom="30 4 12">
+  <Pin at="53 4">Réseau principal : argent réel</Pin>
+</Shot>
+
+</div>
+
+## Toujours visible, jamais par la seule couleur
+
+- **Le bouton** nomme le réseau sur l’Accueil, et dans Réglages → Réseau.
+- **Sur le réseau de test**, les écrans ouverts portent un bandeau : **« Réseau de test · pas d'argent réel »** (voir
+  [Envoyer](./send-receive-request.mdx)).
+- **Sur le réseau principal**, les écrans d’argent portent une pastille **Argent réel** :
+
+<Shot src="network/mainnet-swap" alt="Échange sur le réseau principal Arc avec la pastille Argent réel dans son en-tête." zoom="82 4.3 11">
+  <Pin box="70 2 26 4.5">Argent réel</Pin>
+</Shot>
+
+## Comment il se comporte
+
+- **Les nouveaux comptes démarrent sur le réseau de test**, et tout ce qui manque ou est illisible revient au réseau de test :
+  le sens sûr.
+- **Le premier passage au réseau principal** vous demande de confirmer que l’argent y est réel ; ensuite c’est instantané. Les
+  invités peuvent explorer les deux réseaux ; l’argent du réseau principal demande un compte.
+- **Votre portefeuille est le même** sur les deux : une adresse, les mêmes contacts et réglages. Les soldes et l’activité sont
+  propres à chaque réseau.
+- **Les brouillons restent là où ils ont été créés.** Ce que vous êtes en train de vérifier reste sur son réseau d’origine ;
+  revenez-y pour l’approuver.
+- **Le serveur décide.** Le réseau fait partie de votre session sur le serveur, jamais choisi par le modèle d’IA ; chaque
+  paiement porte le réseau pour lequel il a été préparé, et une différence l’arrête.
+
+Quand quelque chose n’existe que sur un réseau (le robinet sur le réseau de test, long et court sur le principal), Kawase le
+dit et propose de changer plutôt que d’échouer. Voir [réseaux](../networks.mdx) pour la comparaison complète.

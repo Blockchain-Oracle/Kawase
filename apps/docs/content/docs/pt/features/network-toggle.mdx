@@ -1,19 +1,57 @@
 ---
 title: "O seletor de rede"
-description: "Alterne entre a rede principal da Arc (dinheiro real) e a rede de testes da Arc (dinheiro de teste) com um toque, com a rede sempre exibida de três formas."
-sourceHash: 20db8e2535fa3289
+description: "Alterne entre a rede principal da Arc (dinheiro real) e a rede de testes da Arc (dinheiro de teste) com um toque, com a rede mostrada em todas as telas."
+sourceHash: a0e2111b24b5bec2
 ---
 
-Kawase funciona em duas redes: a **rede principal da Arc**, onde o dinheiro é real, e a **rede de testes da Arc**, onde não é. A **pílula
-da rede** no cabeçalho alterna entre elas com um toque, nos dois sentidos, como no modo escuro.
+O Kawase funciona em duas redes: a **rede principal da Arc**, onde o dinheiro é real, e a **rede de testes da Arc**, onde não
+é. O **seletor de rede** no topo do Início alterna entre elas com um toque, nos dois sentidos, como o modo escuro.
 
-- **Novas contas começam na rede de testes**, e qualquer informação ausente ou ilegível volta para a rede de testes: a opção segura.
-- **A primeira mudança para a rede principal** mostra um breve consentimento de "Dinheiro real"; depois disso, a mudança é instantânea.
-- **Sempre visível, nunca apenas por cor.** Na rede de testes, uma faixa diz "Rede de testes · sem dinheiro real"; na rede principal, os cartões de dinheiro exibem o
-  rótulo **DINHEIRO REAL**. A pílula informa o nome da rede, e o orbe de voz muda de cor (verde-limão na rede principal, azul-celeste na
-  rede de testes).
-- **Sua carteira é a mesma** nas duas redes: um endereço, os mesmos contatos e configurações. Os saldos e as atividades são separados por rede.
-- **O servidor decide.** A rede faz parte da sua sessão no servidor e nunca é escolhida pelo modelo de IA; cada pagamento leva a rede para a qual foi preparado, e qualquer incompatibilidade o interrompe.
+<Flow>
+  <FlowStep icon="toggle" title="Toque no seletor">Testes ⇄ Principal, nos dois sentidos.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Primeira vez na principal" icon="shield" title="Dinheiro real" tone="accent">Marque «Entendo que é dinheiro de verdade».</FlowStep>
+    <FlowStep when="Depois disso" icon="zap" title="Na hora">Como trocar para o modo escuro.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="eye" title="Sempre à vista" tone="ink">O seletor, uma faixa ou um selo de Dinheiro real.</FlowStep>
+</Flow>
 
-Quando algo existe em apenas uma rede — o faucet na rede de testes, o marketplace x402 na rede principal — o Kawase informa e
-oferece a opção de mudar de rede, em vez de apresentar um erro. Consulte [redes](../networks.mdx) para ver a comparação completa.
+## Testes e principal, lado a lado
+
+<div className="grid gap-x-6 sm:grid-cols-2">
+
+<Shot src="start/guest-home" alt="Início na Arc Testnet: o seletor diz Rede de testes, desligado." zoom="29 4 12">
+  <Pin at="53 4">Rede de testes: só dinheiro de teste</Pin>
+</Shot>
+
+<Shot src="network/mainnet-home" alt="Início na rede principal da Arc: o seletor diz Rede principal, ligado." zoom="30 4 12">
+  <Pin at="53 4">Rede principal: dinheiro real</Pin>
+</Shot>
+
+</div>
+
+## Sempre visível, nunca só pela cor
+
+- **O seletor** nomeia a rede no Início, e em Configurações → Rede.
+- **Na rede de testes**, as telas abertas trazem uma faixa: **«Rede de testes · sem dinheiro real»** (veja
+  [Enviar](./send-receive-request.mdx)).
+- **Na rede principal**, as telas de dinheiro trazem um selo de **Dinheiro real**:
+
+<Shot src="network/mainnet-swap" alt="Troca na rede principal da Arc com o selo Dinheiro real no cabeçalho." zoom="82 4.3 11">
+  <Pin box="70 2 26 4.5">Dinheiro real</Pin>
+</Shot>
+
+## Como ele se comporta
+
+- **Contas novas começam na rede de testes**, e qualquer coisa ausente ou ilegível volta para a rede de testes: o sentido
+  seguro.
+- **A primeira troca para a rede principal** pede que você confirme que lá o dinheiro é real; depois disso é na hora.
+  Visitantes podem explorar as duas redes; dinheiro na rede principal precisa de uma conta.
+- **Sua carteira é a mesma** nas duas: um endereço, os mesmos contatos e configurações. Saldos e atividade são de cada rede.
+- **Rascunhos ficam onde foram feitos.** O que você está revisando fica na rede em que foi criado; volte para ela para
+  aprovar.
+- **O servidor decide.** A rede faz parte da sua sessão no servidor e nunca é escolhida pelo modelo de IA; cada pagamento leva
+  a rede para a qual foi preparado, e uma divergência o interrompe.
+
+Quando algo existe em só uma rede (o faucet na de testes, comprado e vendido na principal), o Kawase avisa e oferece trocar em
+vez de falhar. Veja [redes](../networks.mdx) para a comparação completa.
