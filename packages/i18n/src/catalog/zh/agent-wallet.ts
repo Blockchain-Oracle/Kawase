@@ -82,5 +82,6 @@ export const agentWallet: Catalog["agentWallet"] = {
   lowBody: "充值之前，你的代理无法为服务付费。",
   signIn: "登录",
   spentTodayLabel: "今日已花费",
+  spentOfBudget: "{{spent}} / {{budget}}",
   stillWorks: "你的 Kawase 钱包没有变动。",
 };

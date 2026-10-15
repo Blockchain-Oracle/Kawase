@@ -84,5 +84,6 @@ export const agentWallet: Catalog["agentWallet"] = {
   lowBody: "Tu agente no puede pagar servicios hasta que recargues.",
   signIn: "Iniciar sesión",
   spentTodayLabel: "Gastado hoy",
+  spentOfBudget: "{{spent}} de {{budget}}",
   stillWorks: "Tu billetera de Kawase no se ha tocado.",
 };

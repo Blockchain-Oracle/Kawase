@@ -1,19 +1,25 @@
 // The Agent wallet page on the Senryo kit (cards/marketplace.md; D38: the agent wallet is the budget's "services" line).
-// Top to bottom: the balance as the hero (ready to pay in Gateway, on hand, spent today), a top-up card when it runs
+// The hero is a card: the balance, what the agent spent today against its daily budget as a meter, where the money sits
+// (ready in Gateway, on hand) as two cells, and the address. A desktop window puts the money (hero, top up) beside the
+// rules (budget, categories, sellers, history) instead of one long column. Then, as before: a quiet plate when it runs
 // low, Top up (presets, one tap; the first one signs the capped grant), buy straight into it with Apple Pay or card (D42),
 // Return to my wallet; the controls (per day, per call, ask first: tightening is instant, loosening asks first), the
 // categories it may pay for, blocked sellers, the spending history, and the way into the marketplace. Every state is
 // drawn: guest, loading, failed (with what still holds), empty history.
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect, useRouter } from "expo-router";
+import { Copy } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { MarketplaceCategory } from "@kawase/api-client";
+import { arcIdentity } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { Button, EmptyState, ErrorState, KeyValue, LoadingState, Panel, Rule, Switch } from "@/components/kit";
+import { Button, EmptyState, ErrorState, LoadingState, Panel, Rule, Switch } from "@/components/kit";
 import { ChevronLeft, ChevronRight, Icon } from "@/components/kit/icons";
 import { RollingFigure } from "@/components/kit/RollingFigure";
 import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
@@ -34,6 +40,10 @@ const PER_CALL_CHOICES = ["10000", "50000", "100000", "500000"];
 /** Under this the agent cannot pay for a typical call: the top-up card comes first. */
 const LOW_BALANCE = 100_000n;
 const ZERO = 0n;
+const PERCENT = 100;
+const METER_H = 8;
+/** The hero's coin, beside the figure. */
+const COIN = 40;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   const { color } = useTheme();
@@ -59,6 +69,35 @@ function Choices({ values, current, onChange, disabled, label }: { values: strin
   );
 }
 
+/** Today's spending against the daily budget: a thin bar and the two figures, so the cap is never a surprise. */
+function BudgetMeter({ spent, budget, price }: { spent: string; budget: string; price: (units: string) => string }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const cap = BigInt(budget);
+  const share = cap > ZERO ? Math.min(PERCENT, Number((BigInt(spent) * BigInt(PERCENT)) / cap)) : 0;
+  return (
+    <View style={styles.meter} accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: PERCENT, now: share }} accessibilityLabel={t("agentWallet.spentOfBudget", { spent: price(spent), budget: price(budget) })}>
+      <View style={styles.meterHead}>
+        <Text style={[TYPE.rowDetail, styles.grow, { color: color.text2 }]}>{t("agentWallet.spentTodayLabel")}</Text>
+        <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t("agentWallet.spentOfBudget", { spent: price(spent), budget: price(budget) })}</Text>
+      </View>
+      <View style={[styles.track, { backgroundColor: color.raised2 }]}>
+        <View style={[styles.fillBar, { width: `${share}%`, backgroundColor: share >= PERCENT ? color.destructive : color.accent }]} />
+      </View>
+    </View>
+  );
+}
+
+function Cell({ label, value }: { label: string; value: string }) {
+  const { color } = useTheme();
+  return (
+    <View style={[styles.cell, { backgroundColor: color.raised2 }]}>
+      <Text numberOfLines={1} style={[TYPE.meta, { color: color.text3 }]}>{label}</Text>
+      <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>{value}</Text>
+    </View>
+  );
+}
+
 export function AgentWalletScreen() {
   const { t } = useT();
   const { color } = useTheme();
@@ -66,6 +105,7 @@ export function AgentWalletScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useSession();
   const signIn = useSignIn();
+  const wide = useWide();
   const wallet = useAgentWallet({ load: false });
   const { view, price } = wallet;
   const [amount, setAmount] = React.useState<string>();
@@ -104,33 +144,39 @@ export function AgentWalletScreen() {
     );
   } else {
     body = (
-      <>
-        {/* 1. The balance, the one hero figure */}
-        <View style={styles.hero}>
-          <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("agentWallet.balance")}</Text>
-          <RollingFigure text={price(view.balances.total)} value={total} color={color.ink} height={TYPE.displayBalance.lineHeight ?? SIZE.avatarLg} align="left" sensitive />
-          <Panel style={styles.panel}>
-            <KeyValue label={t("agentWallet.inGateway")} value={price(view.balances.inGateway)} />
-            <Rule />
-            <KeyValue label={t("agentWallet.onHand")} value={price(view.balances.onHand)} />
-            <Rule />
-            <KeyValue label={t("agentWallet.spentTodayLabel")} value={price(view.spentToday)} />
-          </Panel>
+      <View style={wide ? styles.columns : styles.stack}>
+      <View style={wide ? styles.column : styles.stack}>
+        {/* 1. The hero: the balance, today's spending against the daily budget, where the money sits */}
+        <Panel style={styles.heroCard}>
+          <View style={styles.heroHead}>
+            <Mark entity={arcIdentity(user?.activeNetwork ?? "testnet").usdc} size={COIN} />
+            <View style={styles.grow}>
+              <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("agentWallet.balance")}</Text>
+              <RollingFigure text={price(view.balances.total)} value={total} color={color.ink} height={TYPE.displayBalance.lineHeight ?? SIZE.avatarLg} align="left" sensitive />
+            </View>
+          </View>
+          <BudgetMeter spent={view.spentToday} budget={settings.dailyBudget} price={price} />
+          <View style={styles.cells}>
+            <Cell label={t("agentWallet.inGateway")} value={price(view.balances.inGateway)} />
+            <Cell label={t("agentWallet.onHand")} value={price(view.balances.onHand)} />
+          </View>
           {view.address ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t("agentWallet.copyAddress")}
               onPress={() => void Clipboard.setStringAsync(view.address!).then(() => notify.success(t("agentWallet.addressCopied")))}
+              style={({ pressed }) => [styles.addressChip, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
             >
-              <Text style={[TYPE.meta, { color: color.text3 }]}>{`${shortAddress(view.address)} · ${t("agentWallet.copyAddress")}`}</Text>
+              <Icon icon={Copy} size={SIZE.iconSm} tint={color.text2} />
+              <Text style={[TYPE.meta, { color: color.text2 }]}>{shortAddress(view.address)}</Text>
             </Pressable>
           ) : null}
           {testnet ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("agentWallet.testnetNote")}</Text> : null}
-        </View>
+        </Panel>
 
         {/* 2. Low: the fix first */}
         {total < LOW_BALANCE ? (
-          <View style={[styles.low, { backgroundColor: color.warnSurface }]} accessibilityRole="alert">
+          <View style={[styles.low, { backgroundColor: color.raised2 }]} accessibilityRole="alert">
             <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("agentWallet.lowTitle")}</Text>
             <Text style={[TYPE.body, { color: color.text2 }]}>{t("agentWallet.lowBody")}</Text>
           </View>
@@ -147,6 +193,8 @@ export function AgentWalletScreen() {
           </Panel>
         </Section>
 
+      </View>
+      <View style={wide ? styles.column : styles.stack}>
         {/* 4. Controls */}
         <Section title={t("agentWallet.budget")}>
           <Panel style={styles.panel}>
@@ -248,7 +296,8 @@ export function AgentWalletScreen() {
           </View>
           <Icon icon={ChevronRight} size={SIZE.iconSm} tint={color.text3} />
         </Pressable>
-      </>
+      </View>
+      </View>
     );
   }
 
@@ -296,7 +345,18 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
   round: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
   body: { gap: SPACE.xxl, paddingHorizontal: SPACE.inset, paddingTop: SPACE.md },
-  hero: { gap: SPACE.sm },
+  heroCard: { padding: SPACE.lg, gap: SPACE.lg },
+  heroHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  meter: { gap: SPACE.xs },
+  meterHead: { flexDirection: "row", alignItems: "baseline", gap: SPACE.sm },
+  track: { height: METER_H, borderRadius: RADIUS.pill, overflow: "hidden" },
+  fillBar: { height: METER_H, borderRadius: RADIUS.pill },
+  cells: { flexDirection: "row", gap: SPACE.sm },
+  cell: { flex: 1, minWidth: 0, gap: SPACE.xxs, padding: SPACE.md, borderRadius: RADIUS.md },
+  addressChip: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: SPACE.xs, paddingHorizontal: SPACE.md, height: SIZE.chipHeight, borderRadius: RADIUS.pill },
+  columns: { flexDirection: "row", alignItems: "flex-start", gap: SPACE.xxl },
+  column: { flex: 1, minWidth: 0, gap: SPACE.xxl },
+  stack: { gap: SPACE.xxl },
   section: { gap: SPACE.md },
   panel: { padding: SPACE.lg, gap: SPACE.md },
   pad: { padding: SPACE.lg },

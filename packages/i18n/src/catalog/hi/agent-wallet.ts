@@ -83,5 +83,6 @@ export const agentWallet: Catalog["agentWallet"] = {
   lowBody: "पैसे डालने तक आपका एजेंट किसी सेवा का भुगतान नहीं कर सकता।",
   signIn: "साइन इन",
   spentTodayLabel: "आज खर्च",
+  spentOfBudget: "{{budget}} में से {{spent}}",
   stillWorks: "आपका Kawase वॉलेट सुरक्षित है।",
 };

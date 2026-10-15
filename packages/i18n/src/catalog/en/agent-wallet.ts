@@ -76,6 +76,7 @@ export const agentWallet = {
   lowBody: "Your agent can't pay for a service until you top up.",
   signIn: "Sign in",
   spentTodayLabel: "Spent today",
+  spentOfBudget: "{{spent}} of {{budget}}",
   stillWorks: "Your Kawase wallet is untouched.",
   deliversAgent: "USDC goes straight to your agent wallet on {{network}}.",
   noRefund: "No refund: {{seller}} kept the payment. Paid calls can't be refunded yet.",

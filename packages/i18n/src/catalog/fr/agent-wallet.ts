@@ -85,5 +85,6 @@ export const agentWallet: Catalog["agentWallet"] = {
   lowBody: "Votre agent ne peut payer aucun service tant que vous ne rechargez pas.",
   signIn: "Se connecter",
   spentTodayLabel: "Dépensé aujourd'hui",
+  spentOfBudget: "{{spent}} sur {{budget}}",
   stillWorks: "Votre portefeuille Kawase n'a pas bougé.",
 };
