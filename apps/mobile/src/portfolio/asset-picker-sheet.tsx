@@ -41,6 +41,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 /** How many popular tokens the picker offers before anything is typed. */
 const POPULAR_MAX = 12;
+const TESTNET_POPULAR = ["USDC", "EURC"] as const;
 const matches = (token: TokenView, query: string) => {
   const needle = query.trim().toLowerCase();
   return !needle || token.symbol.toLowerCase().includes(needle) || token.name.toLowerCase().includes(needle) || token.address.toLowerCase() === needle;
@@ -70,9 +71,15 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
   React.useEffect(() => {
     if (!open || mode !== "any") return undefined;
     let live = true;
-    void Promise.all([api.markets.list("fx", network).catch(() => null), api.markets.list("trending", network).catch(() => null)]).then((lists) => {
+    // Testnet has no market lists (its money is test dollars and euros): it offers those two, found by name.
+    const read =
+      network === "testnet"
+        ? Promise.all(TESTNET_POPULAR.map((symbol) => api.tokens.search(symbol, network).catch(() => null))).then((found) =>
+            found.flatMap((result, index) => (result?.results ?? []).filter((entry) => entry.token.symbol === TESTNET_POPULAR[index]).slice(0, 1)).map((entry) => ({ token: entry.token, priceUsd: entry.priceUsd, liquidityUsd: entry.liquidityUsd, change24hPct: null, volume24hUsd: null, marketCapUsd: null, pool: { address: "", dex: "", createdAt: null }, spark: null })),
+          )
+        : Promise.all([api.markets.list("fx", network).catch(() => null), api.markets.list("trending", network).catch(() => null)]).then((lists) => lists.flatMap((list) => list?.market.rows ?? []));
+    void read.then((rows) => {
       if (!live) return;
-      const rows = lists.flatMap((list) => list?.market.rows ?? []);
       const seen = new Set<string>();
       setPopular(
         rows

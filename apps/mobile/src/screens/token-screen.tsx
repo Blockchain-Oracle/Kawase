@@ -528,7 +528,21 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const chartLabel = t("assets.chartLabel", { range, value: price(detail.market.priceUsd, fx, locale) });
 
   let chartView: React.ReactNode;
-  if (candles === undefined && !chart.failed) chartView = <Skeleton height={chartHeight} radius={RADIUS.md} />;
+  // Live draws from the chain's own trades, so a busy history source never blanks a chart that has trades to show.
+  if (showLive && chartKind === "line")
+    chartView = (
+      <AreaChart
+        points={points}
+        height={chartHeight}
+        colors={{ up: color.up, down: color.down, muted: color.text3, scrub: color.hairline }}
+        formatValue={(value) => price(value, fx, locale)}
+        onScrub={setScrub}
+        accessibilityLabel={chartLabel}
+      />
+    );
+  else if (candles === undefined && !chart.failed) chartView = <Skeleton height={chartHeight} radius={RADIUS.md} />;
+  else if (candles === undefined && range === "LIVE")
+    chartView = <EmptyState why={t("tokenPage.waitingTrades")} detail={t("tokenPage.waitingTradesBody")} size="inline" />;
   else if (candles === undefined)
     chartView = (
       <ErrorState

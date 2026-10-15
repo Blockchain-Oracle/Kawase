@@ -51,6 +51,8 @@ export const tokenPage = {
   s_danger: "Danger",
   s_unknown: "Not checked",
   a_buy: "Buy",
+  waitingTrades: "Watching for the next trade",
+  waitingTradesBody: "The line starts with the next swap on Arc; the price above is live.",
   group_trade: "Trade",
   group_move: "Move",
   group_grow: "Grow",

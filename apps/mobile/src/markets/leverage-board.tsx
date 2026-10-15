@@ -153,7 +153,7 @@ function MarketCard({ market, live, available, width }: { market: MarginMarketVi
     <View style={[styles.card, width ? { width } : styles.cardWide, { backgroundColor: color.card }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={market.market} onPress={() => go()} style={styles.cardHead}>
         <Mark entity={marketEntity(market.asset)} size={MARK} />
-        <View style={styles.grow}>
+        <View style={[styles.grow, styles.start]}>
           <Text style={[TYPE.rowStrong, { color: color.ink }]}>{market.market}</Text>
           <ChangeChip change={change} />
         </View>
@@ -201,6 +201,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.md },
   grow: { flex: 1, minWidth: 0, gap: SPACE.xxs },
   live: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  start: { alignItems: "flex-start" },
   row: { flexDirection: "row", gap: SPACE.md },
   scroll: { gap: SPACE.md, paddingEnd: SPACE.lg },
   card: { borderRadius: RADIUS.lg, padding: SPACE.lg, gap: SPACE.md },

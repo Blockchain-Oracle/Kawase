@@ -53,6 +53,8 @@ export const tokenPage: Catalog["tokenPage"] = {
   s_danger: "Peligro",
   s_unknown: "Sin revisar",
   a_buy: "Comprar",
+  waitingTrades: "Esperando la próxima operación",
+  waitingTradesBody: "La línea empieza con el próximo swap en Arc; el precio de arriba está en vivo.",
   group_trade: "Operar",
   group_move: "Mover",
   group_grow: "Hacer crecer",
