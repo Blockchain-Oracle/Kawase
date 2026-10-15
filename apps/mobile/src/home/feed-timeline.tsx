@@ -4,9 +4,10 @@
 // time. A rail joins the marks of one day (21st 28340 "Activity Timeline", olewandowski1: day groups, a rail behind
 // the marks, relative times), rows rise in on a 40 ms stagger, and filter chips with counts sit above (21st 35042
 // "Chip Group" on the kit's FilterChips). Tapping a row opens its detail (the race it came from and its receipt).
-import { CalendarClock, FlaskConical, Hand, Sparkles, Waypoints, type LucideIcon } from "lucide-react-native";
+import { CalendarClock, EyeOff, FlaskConical, Hand, Sparkles, Waypoints, X, type LucideIcon } from "lucide-react-native";
 import * as React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 
 import { AGENT_FEED_GROUPS, type AgentFeed, type AgentFeedGroup, type AgentFeedItem } from "@kawase/api-client";
@@ -15,11 +16,13 @@ import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
 import { CountdownRing, FilterChips, Icon, LoadingState, Panel, SIZE, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { notify } from "@/components/toast/notify";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { ARC_CHAIN_IDS } from "@/safety/use-safety";
 
 import { PERIOD_SECONDS, useFeedCopy } from "./feed-copy";
+import { dismissFeedItem, dismissible } from "./use-agent-feed";
 
 export type FeedFilter = AgentFeedGroup | "all";
 const FILTERS: readonly FeedFilter[] = ["all", ...AGENT_FEED_GROUPS];
@@ -32,6 +35,9 @@ const MS = 1000;
 const RAIL_WIDTH = 2;
 /** Rows animate in only on the first screenful; later ones just appear. */
 const STAGGER_ROWS = 8;
+/** How far a phone row is swiped before letting go takes it away. */
+const SWIPE_THRESHOLD = 72;
+const SWIPE_ACTION_WIDTH = 96;
 const HALF = 2;
 
 /** The run-kind badge on a token's mark (a calendar on a scheduled run). */
@@ -96,11 +102,14 @@ export function FeedMark({ item }: { item: AgentFeedItem }) {
 export function FeedRow({
   item,
   onPress,
+  onDismiss,
   rail,
   plated = false,
 }: {
   item: AgentFeedItem;
   onPress: (item: AgentFeedItem) => void;
+  /** A held or found row the person can take away (on the web its × shows; a phone swipes it). */
+  onDismiss?: (() => void) | undefined;
   rail: { above: boolean; below: boolean };
   /** On a plate (Activity): the row is inset like every list row on a panel, and the rail reaches the next row. */
   plated?: boolean;
@@ -141,7 +150,64 @@ export function FeedRow({
         {watching ? <CountdownRing fromSec={due - period} toSec={due} size={RING} stroke={RING_STROKE} /> : null}
         <Text style={[TYPE.meta, { color: color.text3 }]}>{when}</Text>
       </View>
+      {onDismiss && Platform.OS === "web" ? <DismissButton item={item} onDismiss={onDismiss} /> : null}
     </Pressable>
+  );
+}
+
+/** The web's way to take a held or found row away: a quiet × at the row's end. */
+function DismissButton({ item, onDismiss }: { item: AgentFeedItem; onDismiss: () => void }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const label = item.source === "proposal" ? t("feed.list.cancelHeld") : t("feed.list.dismissFound");
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={SPACE.xs}
+      onPress={onDismiss}
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [styles.dismiss, { backgroundColor: pressed || hovered ? color.rowPressed : color.transparent }]}
+    >
+      <Icon icon={X} size={SIZE.iconSm} tint={color.text3} />
+    </Pressable>
+  );
+}
+
+/** A phone row that swipes away: past the threshold, letting go cancels a held one or dismisses a found one. */
+function SwipeAway({ item, onDismiss, children }: { item: AgentFeedItem; onDismiss: () => void; children: React.ReactNode }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const held = item.source === "proposal";
+  return (
+    <ReanimatedSwipeable
+      friction={2}
+      rightThreshold={SWIPE_THRESHOLD}
+      overshootRight={false}
+      onSwipeableOpen={onDismiss}
+      renderRightActions={() => (
+        <View style={[styles.swipeAction, { backgroundColor: held ? color.destructive : color.raised2 }]}>
+          <Icon icon={held ? X : EyeOff} size={SIZE.iconSm} tint={held ? color.onFill : color.ink} />
+          <Text style={[TYPE.chipLabel, { color: held ? color.onFill : color.ink }]}>{held ? t("feed.list.cancelHeld") : t("feed.list.dismissFound")}</Text>
+        </View>
+      )}
+    >
+      {children}
+    </ReanimatedSwipeable>
+  );
+}
+
+/** Takes the row off the feed; a held one says nothing moved, a refusal says so. */
+function useDismiss() {
+  const { t } = useT();
+  return React.useCallback(
+    (item: AgentFeedItem) => {
+      fire("tick");
+      void dismissFeedItem(item).then((gone) => {
+        if (!gone) notify.error(t("feed.list.dismissFailed"));
+        else if (item.source === "proposal") notify.info(t("feed.list.cancelledHeld"));
+      });
+    },
+    [t],
   );
 }
 
@@ -167,6 +233,7 @@ export function FeedTimeline({
   const { color } = useTheme();
   const copy = useFeedCopy();
   const reduced = useReducedMotion();
+  const dismiss = useDismiss();
   if (!feed) return <LoadingState shape="feed" />;
   const rows = rowsFor(feed, filter).slice(0, limit);
   const sections: { title: string; rows: AgentFeedItem[] }[] = [];
@@ -189,7 +256,19 @@ export function FeedTimeline({
               const order = index++;
               return (
                 <Animated.View key={row.id} entering={reduced || order >= STAGGER_ROWS ? undefined : FadeInDown.delay(order * TIMING.stagger).duration(TIMING.staggerItem)}>
-                  <FeedRow item={row} onPress={onOpen} plated={plated} rail={{ above: at > 0, below: at < section.rows.length - 1 }} />
+                  {dismissible(row) && Platform.OS !== "web" ? (
+                    <SwipeAway item={row} onDismiss={() => dismiss(row)}>
+                      <FeedRow item={row} onPress={onOpen} plated={plated} rail={{ above: at > 0, below: at < section.rows.length - 1 }} />
+                    </SwipeAway>
+                  ) : (
+                    <FeedRow
+                      item={row}
+                      onPress={onOpen}
+                      onDismiss={dismissible(row) ? () => dismiss(row) : undefined}
+                      plated={plated}
+                      rail={{ above: at > 0, below: at < section.rows.length - 1 }}
+                    />
+                  )}
                 </Animated.View>
               );
             })}
@@ -206,6 +285,8 @@ function Plate({ plated, children }: { plated: boolean; children: React.ReactNod
 
 const styles = StyleSheet.create({
   list: { gap: SPACE.lg },
+  dismiss: { width: SIZE.touch - SPACE.md, height: SIZE.touch - SPACE.md, borderRadius: SIZE.touch, alignItems: "center", justifyContent: "center" },
+  swipeAction: { width: SWIPE_ACTION_WIDTH, alignItems: "center", justifyContent: "center", gap: SPACE.xxs },
   plate: { paddingVertical: SPACE.xs },
   headPlated: { paddingHorizontal: SPACE.lg },
   rowPlated: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: 0 },

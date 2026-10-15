@@ -29,5 +29,11 @@ export function feedRoutes(feed: FeedService) {
     if (!detail) throw problem(HTTP.notFound, "not_found");
     return c.json(detail);
   });
+  // `POST /feed/:id/dismiss` — a held proposal is cancelled, a found suggestion dismissed; done money stays.
+  app.post("/:id/dismiss", async (c) => {
+    const id = c.req.param("id");
+    if (id.length > ITEM_ID_MAX || !id.includes(":")) throw problem(HTTP.badRequest, "validation");
+    return c.json(await feed.dismiss(c.get("user")!, id));
+  });
   return app;
 }

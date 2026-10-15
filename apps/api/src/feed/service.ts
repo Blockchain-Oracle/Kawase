@@ -10,10 +10,11 @@
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull } from "drizzle-orm";
 
 import { AGENT_FEED_GROUPS, type AgentFeed, type AgentFeedDetail, type RaceRoutesOutput, type RouteRace, type AgentFeedGroup, type AgentFeedItem, type AgentFeedKind, type AgentFeedOrigin, type FeedItem, type FeedPage, type FeedToken, type SuggestionsView } from "@kawase/api-client";
-import { automations, intentDrafts, intents, threadMessages, type AutomationAction, type AutoSaveAction, type DcaAction, type Db, type RuleAction } from "@kawase/db";
+import { approvals, automations, intentDrafts, intents, threadMessages, type AutomationAction, type AutoSaveAction, type DcaAction, type Db, type RuleAction } from "@kawase/db";
 import type { Logger } from "@kawase/log";
 import { getNetwork, type NetworkId } from "@kawase/networks";
 
+import { HTTP, problem } from "../http/problem";
 import type { SessionUser } from "../types";
 
 /**
@@ -125,7 +126,7 @@ export type FeedSources = {
   /** Activity's merged rows (the chain plus Kawase's outcomes). */
   activity: { list(user: SessionUser, network: NetworkId): Promise<FeedPage> };
   /** For you; Found stays empty without it. */
-  suggestions?: { list(user: SessionUser): Promise<SuggestionsView> } | undefined;
+  suggestions?: { list(user: SessionUser): Promise<SuggestionsView>; dismiss(userId: string, id: string): Promise<void> } | undefined;
 };
 
 export class FeedService {
@@ -134,6 +135,34 @@ export class FeedService {
     private readonly sources: FeedSources,
     private readonly log: Logger,
   ) {}
+
+  /**
+   * The person swiped or closed a feed item: a held proposal is cancelled (nothing had moved, and its waiting
+   * signature is rejected, as each money screen's own Cancel does); a found suggestion is dismissed for good. What
+   * already happened is the record, and stays.
+   */
+  async dismiss(user: SessionUser, itemId: string): Promise<{ dismissed: true }> {
+    const [source, id] = [itemId.slice(0, itemId.indexOf(":")), itemId.slice(itemId.indexOf(":") + 1)];
+    if (source === "proposal") {
+      const done = await this.db.transaction(async (tx) => {
+        const [cancelled] = await tx
+          .update(intents)
+          .set({ state: "canceled" })
+          .where(and(eq(intents.id, id), eq(intents.userId, user.id), inArray(intents.state, [...OPEN_STATES])))
+          .returning({ id: intents.id });
+        if (!cancelled) return false;
+        await tx.update(approvals).set({ status: "rejected" }).where(and(eq(approvals.intentId, id), eq(approvals.status, "pending_signature")));
+        return true;
+      });
+      if (!done) throw problem(HTTP.conflict, "intent_final", "it is no longer waiting");
+      return { dismissed: true };
+    }
+    if (source === "suggestion" && this.sources.suggestions) {
+      await this.sources.suggestions.dismiss(user.id, id);
+      return { dismissed: true };
+    }
+    throw problem(HTTP.unprocessable, "validation", "what already happened stays in the record");
+  }
 
   async get(user: SessionUser, network: NetworkId, now: Date = new Date()): Promise<AgentFeed> {
     const partial: AgentFeed["partial"] = [];

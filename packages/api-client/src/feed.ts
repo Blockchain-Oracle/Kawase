@@ -80,6 +80,8 @@ export type FeedApi = {
   get: (network?: AgentNetwork) => Promise<AgentFeed>;
   /** One row with its race and the words that started it (the feed's detail sheet). */
   item: (id: string, network?: AgentNetwork) => Promise<AgentFeedDetail>;
+  /** A held proposal is cancelled, a found suggestion dismissed; what already happened cannot be. */
+  dismiss: (id: string) => Promise<{ dismissed: true }>;
 };
 
 /** Whether the agent's model answers now (the app's offline state, before the person types). */
@@ -94,6 +96,7 @@ export function feedEndpoints(call: Call): { feed: FeedApi; agentHealth: AgentHe
     feed: {
       get: (network) => call<AgentFeed>("GET", `/feed${network ? `?network=${network}` : ""}`),
       item: (id, network) => call<AgentFeedDetail>("GET", `/feed/item/${encodeURIComponent(id)}${network ? `?network=${network}` : ""}`),
+      dismiss: (id) => call<{ dismissed: true }>("POST", `/feed/${encodeURIComponent(id)}/dismiss`, {}),
     },
     agentHealth: { health: () => call<{ health: AgentHealth }>("GET", "/agent/health") },
   };

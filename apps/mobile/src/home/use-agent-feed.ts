@@ -66,6 +66,33 @@ async function restore(userId: string, network: Network) {
   }
 }
 
+/** What the person may take off the feed: a held proposal (it is cancelled) or a found suggestion. Done money stays. */
+export const dismissible = (item: AgentFeedItem) => item.source === "proposal" || item.source === "suggestion";
+
+/**
+ * Takes an item off every cached feed at once (Home and Activity both), then tells the api; a refusal (it ran in the
+ * meantime, or the network failed) puts it back. Returns whether it went.
+ */
+export async function dismissFeedItem(item: AgentFeedItem): Promise<boolean> {
+  const before = new Map(cache);
+  for (const [network, entry] of cache) {
+    const groups = entry.feed.groups.map((group) => {
+      const items = group.items.filter((entry) => entry.id !== item.id);
+      return items.length === group.items.length ? group : { ...group, items, count: Math.max(0, group.count - 1) };
+    });
+    cache.set(network, { ...entry, feed: { ...entry.feed, groups } });
+  }
+  publish();
+  try {
+    await api.feed.dismiss(item.id);
+    return true;
+  } catch {
+    for (const [network, entry] of before) cache.set(network, entry);
+    publish();
+    return false;
+  }
+}
+
 export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   const { status, user } = useSession();
   const network: Network = user?.activeNetwork ?? "testnet";

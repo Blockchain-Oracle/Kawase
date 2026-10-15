@@ -82,7 +82,7 @@ test("GET /feed: real rows from the real services, grouped, with the next run's 
     db,
     {
       activity: { list: (_user: SessionUser, network) => asPerson<FeedPage>(`/activity?network=${network}`) },
-      suggestions: { list: () => asPerson<SuggestionsView>("/suggestions") },
+      suggestions: { list: () => asPerson<SuggestionsView>("/suggestions"), dismiss: async () => undefined },
     },
     log,
   );
