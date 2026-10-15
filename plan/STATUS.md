@@ -138,7 +138,11 @@ UI and agent, from Abu's screenshots:
 - [x] Voice agent: "list the marketplace" finds nothing while "DeFi Llama" finds 31.
 - [x] Languages carry no flag (a language is not a country); display currencies do carry flags.
 - [x] Receive flashes "Set up your wallet" before the address.
-- [x] Add money rows reshuffle while opening.
+- [x] Add money rows reshuffle while opening. Ticked too early: Abu 10-15 (evening) saw the sheet open, then collapse to
+      one row on a phone (desktop: reshuffle, then back). Root cause, measured in the page: every row was `position:
+      absolute` at top 812 (below the screen). SheetRow's entering animation used `withInitialValues`, which makes it
+      a custom animation, and Reanimated 4.5's web cleanup pins a custom entering animation absolute at a snapshot
+      taken mid-slide. The web now uses the predefined fade-up (3f6ce241); TxMorph had the same pattern, fixed too.
 - [x] Feed items dismissible (held → cancel, found → dismiss; swipe on a phone, × on the web; done money is not).
 - [x] Marketplace: in the main navigation (desktop), every service's logo, a narrower category column, recently
       called tools; Try-it: "Pay 0.001 USDC" with the USDC mark in one button that fits, a neutral top-up plate.
