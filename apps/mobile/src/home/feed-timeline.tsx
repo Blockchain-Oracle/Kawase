@@ -192,9 +192,12 @@ export function FeedRow({
   onPress,
   onDismiss,
   plated = false,
+  selected = false,
 }: {
   item: AgentFeedItem;
   onPress: (item: AgentFeedItem) => void;
+  /** The row whose receipt shows beside the list (Activity on a desktop). */
+  selected?: boolean;
   /** A held or found row the person can take away (on the web its × shows; a phone swipes it). */
   onDismiss?: (() => void) | undefined;
   /** On a plate (Activity): the row is inset like every list row on a panel. */
@@ -222,9 +225,10 @@ export function FeedRow({
       }}
       accessibilityRole="button"
       accessibilityLabel={[title, under, figure, other ?? when].filter(Boolean).join(". ")}
-      style={({ pressed }) => [styles.row, plated ? styles.rowPlated : null, pressed ? { backgroundColor: color.rowPressed } : null]}
+      accessibilityState={selected ? { selected: true } : undefined}
+      style={({ pressed }) => [styles.row, plated ? styles.rowPlated : null, pressed || selected ? { backgroundColor: color.rowPressed } : null]}
     >
-      <FeedMark item={item} ring={plated ? color.card : color.ground} />
+      <FeedMark item={item} ring={plated ? (selected ? color.rowPressed : color.card) : color.ground} />
       <View style={styles.copy}>
         <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
           {title}
@@ -320,8 +324,11 @@ export function FeedTimeline({
   onOpen,
   plated = false,
   keep,
+  selectedId,
 }: {
   feed: AgentFeed | undefined;
+  /** The row shown beside the list (Activity's receipt panel). */
+  selectedId?: string | undefined;
   filter: FeedFilter;
   /** A finer cut than the group (Activity's In · Out · Trades). */
   keep?: ((item: AgentFeedItem) => boolean) | undefined;
@@ -361,7 +368,7 @@ export function FeedTimeline({
                 <Animated.View key={row.id} entering={reduced || order >= STAGGER_ROWS ? undefined : FadeInDown.delay(order * TIMING.stagger).duration(TIMING.staggerItem)}>
                   {dismissible(row) && Platform.OS !== "web" ? (
                     <SwipeAway item={row} onDismiss={() => dismiss(row)}>
-                      <FeedRow item={row} onPress={onOpen} plated={plated} />
+                      <FeedRow item={row} onPress={onOpen} plated={plated} selected={row.id === selectedId} />
                     </SwipeAway>
                   ) : (
                     <FeedRow
@@ -369,6 +376,7 @@ export function FeedTimeline({
                       onPress={onOpen}
                       onDismiss={dismissible(row) ? () => dismiss(row) : undefined}
                       plated={plated}
+                      selected={row.id === selectedId}
                     />
                   )}
                 </Animated.View>

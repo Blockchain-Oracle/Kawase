@@ -85,6 +85,35 @@ export function FeedDetailSheet({
   onAsk?: ((prompt: string) => void) | undefined;
 }) {
   const { t } = useT();
+  const { color } = useTheme();
+  return (
+    <Sheet
+      onClose={onClose}
+      closeLabel={t("shell.kit.closeNamed", { name: t("feed.detail.title") })}
+      detents={LIST_DETENTS}
+    >
+      <FeedDetail item={item} onLeave={onClose} onAsk={onAsk} ground={color.popover} />
+    </Sheet>
+  );
+}
+
+/**
+ * What a row opens, without the sheet around it: the sheet on a phone, Activity's receipt panel on a desktop.
+ * `onLeave` runs before it navigates away (the sheet closes); `ground` is the colour it sits on (the slip's notches).
+ */
+export function FeedDetail({
+  item,
+  onLeave,
+  onAsk,
+  ground,
+}: {
+  item: AgentFeedItem;
+  onLeave?: (() => void) | undefined;
+  onAsk?: ((prompt: string) => void) | undefined;
+  ground: string;
+}) {
+  const onClose = () => onLeave?.();
+  const { t } = useT();
   const { locale } = useLocale();
   const { color } = useTheme();
   const router = useRouter();
@@ -147,15 +176,11 @@ export function FeedDetailSheet({
       : null;
 
   return (
-    <Sheet
-      onClose={onClose}
-      closeLabel={t("shell.kit.closeNamed", { name: t("feed.detail.title") })}
-      detents={LIST_DETENTS}
-    >
+    <>
       {receipt ? null : (
         <>
           <View style={styles.face}>
-            <FeedMark item={row} ring={color.popover} />
+            <FeedMark item={row} ring={ground} />
           </View>
           <SheetHeading title={copy.line(row)} body={copy.detail(row)} />
         </>
@@ -173,7 +198,7 @@ export function FeedDetailSheet({
           />
         ) : receipt ? (
           <View style={styles.block}>
-            <ReceiptSlip receipt={receipt} ground={color.popover} />
+            <ReceiptSlip receipt={receipt} ground={ground} />
             <ShareReceiptButton receipt={receipt} />
           </View>
         ) : null}
@@ -295,7 +320,7 @@ export function FeedDetailSheet({
           ) : null}
         </View>
       </View>
-    </Sheet>
+    </>
   );
 }
 
