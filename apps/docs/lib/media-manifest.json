@@ -69,16 +69,6 @@
       "light"
     ]
   },
-  "automations/list": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "dark",
-      "light"
-    ]
-  },
   "automations/new": {
     "kind": "image",
     "device": "phone",
@@ -236,25 +226,6 @@
     "h": 2391,
     "themes": [
       "dark",
-      "light"
-    ]
-  },
-  "contacts/settings": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "dark",
-      "light"
-    ]
-  },
-  "earn/borrow": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
       "light"
     ]
   },
@@ -470,16 +441,6 @@
       "light"
     ]
   },
-  "settings/top": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "dark",
-      "light"
-    ]
-  },
   "start/budget": {
     "kind": "image",
     "device": "phone",
@@ -496,25 +457,6 @@
     "w": 1170,
     "h": 2391,
     "themes": [
-      "light"
-    ]
-  },
-  "start/email": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "light"
-    ]
-  },
-  "start/fan": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "dark",
       "light"
     ]
   },
@@ -564,25 +506,6 @@
     "h": 2391,
     "themes": [
       "dark",
-      "light"
-    ]
-  },
-  "start/home": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
-      "dark",
-      "light"
-    ]
-  },
-  "start/language": {
-    "kind": "image",
-    "device": "phone",
-    "w": 1170,
-    "h": 2391,
-    "themes": [
       "light"
     ]
   },
@@ -719,34 +642,7 @@
       "light"
     ]
   },
-  "web/home": {
-    "kind": "image",
-    "device": "desktop",
-    "w": 2880,
-    "h": 1800,
-    "themes": [
-      "light"
-    ]
-  },
   "web/margin": {
-    "kind": "image",
-    "device": "desktop",
-    "w": 2880,
-    "h": 1800,
-    "themes": [
-      "light"
-    ]
-  },
-  "web/marketplace": {
-    "kind": "image",
-    "device": "desktop",
-    "w": 2880,
-    "h": 1800,
-    "themes": [
-      "light"
-    ]
-  },
-  "web/markets": {
     "kind": "image",
     "device": "desktop",
     "w": 2880,

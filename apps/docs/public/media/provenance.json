@@ -1,0 +1,352 @@
+{
+  "captured": "2026-10-15 to 2026-10-16",
+  "builds": {
+    "2026-10-15": "main at 87009a1d (live web 3f6ce241 for guest captures)",
+    "2026-10-16": "main at dcd5cde2, the same build as app.getkawase.xyz/version.txt that day (rehearsal before signing, desktop Activity, voice island)"
+  },
+  "how": "Playwright headless Chromium. Phones are 390x797 pt at 3x inside the docs' iPhone frame; desktops are 1440x900 at 2x. Stills are WebP (cwebp q84); clips are H.264 from the Chrome screencast with a WebP poster. Reduced motion, so nothing is caught mid-animation.",
+  "money": "Every signed-in screen is Arc testnet with test USDC/EURC from Circle's faucet: real testnet transactions, no real money. Mainnet screens are guest views only: quotes and market data, nothing signed.",
+  "people": "No real person's email, wallet or balance appears. Accounts are @kawase.test test accounts (maya, ines, nia, lena, omar, sam).",
+  "media": {
+    "activity/inbox": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "activity/list": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "activity/open-receipt": {
+      "what": "780x1594 px, phone, video, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "activity/receipt": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "activity/receipt-actions": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "activity/why": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "automations/card": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "automations/new": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "automations/on": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "automations/schedule": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "automations/watching": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "bridge/chains": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "bridge/review": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "bridge/ticket": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "bridge/tracking": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "bridge/withdraw": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "buy/add-money": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "buy/amount": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "buy/methods": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "contacts/empty": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @ines (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "contacts/list": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "contacts/new": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "contacts/save-sender": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @sam (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "earn/ticket": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "earn/vaults": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "limits/budget": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "limits/controls": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "limits/covers": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "limits/exit-kit": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "long-short/margin": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "long-short/ticket": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "long-short/ticket-tpsl": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "marketplace/agent-wallet": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "marketplace/list": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "marketplace/service": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "network/mainnet-home": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "network/mainnet-swap": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "notifications/settings": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-16"
+    },
+    "send/amount": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "send/chat": {
+      "what": "780x1594 px, phone, video, themes: light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "send/receive": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "send/request-amount": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "send/review": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-16"
+    },
+    "send/search": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "send/sent": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "start/budget": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/code": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/fan-open": {
+      "what": "780x1594 px, phone, video, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "start/faucet": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/first-job": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/guest-home": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; testnet",
+      "captured": "2026-10-15"
+    },
+    "start/handle": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/sign-in": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; testnet",
+      "captured": "2026-10-15"
+    },
+    "start/wallet-setup": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; a fresh @kawase.test test account signing up",
+      "captured": "2026-10-15"
+    },
+    "start/welcome": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; testnet",
+      "captured": "2026-10-15"
+    },
+    "swap/done": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "swap/race": {
+      "what": "780x1594 px, phone, video, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "swap/receipt": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "swap/review": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-16"
+    },
+    "swap/ticket": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    },
+    "trade/markets": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "trade/token": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "voice/island": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-16"
+    },
+    "voice/mode": {
+      "what": "1170x2391 px, phone, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-16"
+    },
+    "voice/settings": {
+      "what": "1170x2391 px, phone, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-16"
+    },
+    "web/activity": {
+      "what": "2880x1800 px, desktop, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-16"
+    },
+    "web/margin": {
+      "what": "2880x1800 px, desktop, image, themes: light",
+      "source": "app.getkawase.xyz (live web app), a guest session with no account; mainnet market data, nothing signed",
+      "captured": "2026-10-15"
+    },
+    "web/signed-in-home": {
+      "what": "2880x1800 px, desktop, image, themes: dark, light",
+      "source": "local dev build (EXPO_PUBLIC_WALLET_PROVIDER=dev) against a local api (KAWASE_DEV_AUTH) on Arc testnet; test account @maya (a @kawase.test address and a throwaway testnet key)",
+      "captured": "2026-10-15"
+    }
+  }
+}
