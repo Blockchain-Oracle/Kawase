@@ -1,9 +1,12 @@
 // A guest's Home has no money yet, so it shows what is real without an account (value first, sign last): the markets
 // trending on Arc, each with its real mark, price and a sparkline, opening its token page — and one quiet plate that
-// says the person's own money appears here after they sign in (never a fake balance). Copycats are left out.
+// says the person's own money appears here after they sign in (never a fake balance). Copycats are left out. On a wide
+// desktop the guest's column is the sign-in stage instead: the venues Kawase reaches, by their real marks, and Sign in
+// in the middle of the room the balance and the feed will take (Abu, 10-15: "you have to put a sign-in in the middle").
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
@@ -24,6 +27,7 @@ import {
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { useMarket } from "@/markets/use-markets";
+import { ArcArt } from "@/onboarding/story-art";
 import { price } from "@/portfolio/format";
 import { useFx } from "@/portfolio/use-fx";
 import { useSignIn } from "@/sign-in/sign-in-provider";
@@ -114,6 +118,32 @@ export function SignInPlate() {
   );
 }
 
+/** The guest's column on a wide desktop: what Kawase reaches, and Sign in, centred in the room the balance will take. */
+export function SignInStage() {
+  const { t } = useT();
+  const { color } = useTheme();
+  const signIn = useSignIn();
+  const reduce = useReducedMotion();
+  return (
+    <View style={styles.stage}>
+      <ArcArt playing still={reduce} />
+      <View style={styles.stageCopy}>
+        <Text accessibilityRole="header" style={[TYPE.pageTitle, styles.centerText, { color: color.ink }]}>
+          {t("story.arcTitle")}
+        </Text>
+        <Text style={[TYPE.body, styles.centerText, { color: color.text2 }]}>{t("story.arcBody")}</Text>
+      </View>
+      <View style={styles.stageAction}>
+        <Button label={t("feed.home.signIn")} onPress={signIn.open} />
+        <Text style={[TYPE.caption, styles.centerText, { color: color.text3 }]}>{t("feed.home.guestMoney")}</Text>
+      </View>
+    </View>
+  );
+}
+
+const STAGE_MAX_PX = 440;
+const STAGE_ACTION_PX = 320;
+
 const styles = StyleSheet.create({
   wrap: { gap: SPACE.sm },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
@@ -121,4 +151,8 @@ const styles = StyleSheet.create({
   title: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   live: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   plate: { gap: SPACE.md, padding: SPACE.lg },
+  stage: { width: "100%", maxWidth: STAGE_MAX_PX, alignSelf: "center", alignItems: "center", gap: SPACE.xl },
+  stageCopy: { gap: SPACE.sm, alignItems: "center" },
+  stageAction: { width: "100%", maxWidth: STAGE_ACTION_PX, gap: SPACE.sm },
+  centerText: { textAlign: "center" },
 });

@@ -1,10 +1,25 @@
-// The agent's feed as a timeline (D37 "watch it work"): what Kawase did, grouped by day, with Watching (the next
-// scheduled runs, each with a draining ring) on top. Each row is one object: the venue's real mark (or the token's,
-// or a quiet glyph when neither exists), one line saying what happened, the outcome as a word with the venue, and the
-// time. A rail joins the marks of one day (21st 28340 "Activity Timeline", olewandowski1: day groups, a rail behind
-// the marks, relative times), rows rise in on a 40 ms stagger, and filter chips with counts sit above (21st 35042
-// "Chip Group" on the kit's FilterChips). Tapping a row opens its detail (the race it came from and its receipt).
-import { CalendarClock, EyeOff, FlaskConical, Hand, Sparkles, Waypoints, X, type LucideIcon } from "lucide-react-native";
+// The agent's feed as a wallet's activity list (D37 "watch it work"; Abu 10-15: "this is a wallet, it has to feel that
+// way"): grouped by day, with Watching (the next scheduled runs, each with a draining ring) on top. Each row reads like
+// Fuse's and Phantom's (Refero): the token's real mark with a small badge for what happened (a swap's two marks
+// overlapping), a short title ("Sent", "USDC → EURC", "Bridged"), who or where under it with the venue, and the amount
+// at the end with its sign ("+20 USDC" in the gain colour, "−5 USDC" in ink, grey when nothing moved), a swap's other
+// leg under it. Rows rise in on a 40 ms stagger and filter chips with counts sit above (21st 35042 "Chip Group" on the
+// kit's FilterChips). Tapping a row opens the same receipt everywhere (feed-detail-sheet).
+import {
+  ArrowDownLeft,
+  ArrowUpFromLine,
+  ArrowUpRight,
+  CalendarClock,
+  EyeOff,
+  FlaskConical,
+  Hand,
+  Sparkles,
+  Sprout,
+  TrendingUp,
+  Waypoints,
+  X,
+  type LucideIcon,
+} from "lucide-react-native";
 import * as React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -27,12 +42,14 @@ import { dismissFeedItem, dismissible } from "./use-agent-feed";
 export type FeedFilter = AgentFeedGroup | "all";
 const FILTERS: readonly FeedFilter[] = ["all", ...AGENT_FEED_GROUPS];
 
-const MARK = SIZE.markRow;
-const RING = SIZE.markRow;
-const RING_STROKE = 3;
+/** The row's face, a little larger than a list mark (Fuse's and Family's activity rows). */
+const FACE = SIZE.markRow + SPACE.xs;
+/** A swap's two marks, overlapping inside the face. */
+const SWAP_MARK = SIZE.markToken - SPACE.xxs;
+const SWAP_RING = 2;
+const RING = 14;
+const RING_STROKE = 2;
 const MS = 1000;
-/** The rail runs through the middle of the marks. */
-const RAIL_WIDTH = 2;
 /** Rows animate in only on the first screenful; later ones just appear. */
 const STAGGER_ROWS = 8;
 /** How far a phone row is swiped before letting go takes it away. */
@@ -40,14 +57,36 @@ const SWIPE_THRESHOLD = 72;
 const SWIPE_ACTION_WIDTH = 96;
 const HALF = 2;
 
-/** The run-kind badge on a token's mark (a calendar on a scheduled run). */
+/** The badge on the face: what happened (sent, received, bridged…), or that it failed or waits for the person. */
 const BADGE = 18;
 const BADGE_ICON = 11;
-const BADGE_OFFSET = 4;
-const KIND_GLYPH: Partial<Record<AgentFeedItem["kind"], LucideIcon>> = { automation: CalendarClock, practice: FlaskConical, suggestion: Sparkles };
+const BADGE_OFFSET = 3;
+const KIND_GLYPH: Partial<Record<AgentFeedItem["kind"], LucideIcon>> = {
+  send: ArrowUpRight,
+  receive: ArrowDownLeft,
+  bridge: Waypoints,
+  crosschain: Waypoints,
+  earn: Sprout,
+  lend: Sprout,
+  withdraw: ArrowUpFromLine,
+  margin: TrendingUp,
+  automation: CalendarClock,
+  practice: FlaskConical,
+  suggestion: Sparkles,
+};
 
 /** The filter chips with each group's count ("Done 3"); "All" counts every row. */
-export function FeedFilters({ feed, value, onChange }: { feed: AgentFeed | undefined; value: FeedFilter; onChange: (next: FeedFilter) => void }) {
+export function FeedFilters({
+  feed,
+  value,
+  onChange,
+  centered = false,
+}: {
+  feed: AgentFeed | undefined;
+  value: FeedFilter;
+  onChange: (next: FeedFilter) => void;
+  centered?: boolean;
+}) {
   const { t } = useT();
   const copy = useFeedCopy();
   const counts = new Map<FeedFilter, number>(feed?.groups.map((group) => [group.group, group.count]) ?? []);
@@ -56,7 +95,7 @@ export function FeedFilters({ feed, value, onChange }: { feed: AgentFeed | undef
     value: filter,
     label: feed ? t("feed.list.filterCount", { label: copy.group(filter), count: counts.get(filter) ?? 0 }) : copy.group(filter),
   }));
-  return <FilterChips options={options} value={value} onChange={onChange} label={t("feed.list.filterLabel")} />;
+  return <FilterChips options={options} value={value} onChange={onChange} label={t("feed.list.filterLabel")} centered={centered} />;
 }
 
 /** The rows a filter shows, Watching first (soonest first), then everything else newest first. */
@@ -71,30 +110,50 @@ export function rowsFor(feed: AgentFeed | undefined, filter: FeedFilter): AgentF
   return [...watching, ...rest];
 }
 
-/** The row's face: the venue's mark, else the token's, else a glyph for what it is. */
-export function FeedMark({ item }: { item: AgentFeedItem }) {
+/**
+ * The row's face: the token's mark (a swap's two, overlapping), else the venue's, else a glyph for what it is, with a
+ * badge for what happened. `ring` is the colour the face sits on, so the badge and the swap's front mark are cut out.
+ */
+export function FeedMark({ item, ring }: { item: AgentFeedItem; ring?: string | undefined }) {
   const { color } = useTheme();
+  const cut = ring ?? color.ground;
+  const chainId = ARC_CHAIN_IDS[item.network];
+  const mark = (token: NonNullable<AgentFeedItem["token"]>, size: number) => (
+    <TokenMark token={{ chainId, address: token.address, symbol: token.symbol, logoUrl: token.logoUrl ?? null }} size={size} />
+  );
+  const swap = item.kind === "swap" && item.token && item.other;
   const venue = item.venue && getVenueIdentity(item.venue) ? venueKey(item.venue) : null;
-  if (venue) return <Mark entity={venue} size={MARK} />;
-  if (item.token) {
-    const token = item.other?.token ?? item.token;
-    const mark = <TokenMark token={{ chainId: ARC_CHAIN_IDS[item.network], address: token.address, symbol: token.symbol, logoUrl: token.logoUrl ?? null }} size={MARK} />;
-    // A scheduled or practised run still wears its token; a small badge says what kind of run it is.
-    const badge = item.kind === "automation" || item.kind === "practice" ? KIND_GLYPH[item.kind] : item.outcome === "waiting" ? Hand : null;
-    if (!badge) return mark;
-    return (
-      <View>
-        {mark}
-        <View style={[styles.badge, { backgroundColor: color.card, borderColor: color.ground }]}>
-          <Icon icon={badge} size={BADGE_ICON} />
-        </View>
-      </View>
-    );
-  }
-  const glyph = item.outcome === "waiting" ? Hand : (KIND_GLYPH[item.kind] ?? Waypoints);
-  return (
+  const glyph = KIND_GLYPH[item.kind];
+  const badge =
+    item.outcome === "failed" || item.outcome === "skipped"
+      ? { icon: X, fill: color.destructive, tint: color.onFill }
+      : item.outcome === "waiting"
+        ? { icon: Hand, fill: color.warn, tint: color.ground }
+        : !swap && (item.token || venue) && glyph
+          ? { icon: glyph, fill: color.raised2, tint: color.ink }
+          : null;
+  const face = swap ? (
+    <View style={styles.face}>
+      <View style={styles.swapBack}>{mark(item.other!.token, SWAP_MARK)}</View>
+      <View style={[styles.swapFront, { borderColor: cut, backgroundColor: cut }]}>{mark(item.token!, SWAP_MARK)}</View>
+    </View>
+  ) : item.token ? (
+    mark(item.other?.token ?? item.token, FACE)
+  ) : venue ? (
+    <Mark entity={venue} size={FACE} />
+  ) : (
     <View style={[styles.glyph, { backgroundColor: color.raised2 }]}>
-      <Icon icon={glyph} size={SIZE.iconSm} />
+      <Icon icon={item.outcome === "waiting" ? Hand : (glyph ?? Waypoints)} size={SIZE.iconSm} />
+    </View>
+  );
+  return (
+    <View style={styles.face}>
+      {face}
+      {badge ? (
+        <View style={[styles.badge, { backgroundColor: badge.fill, borderColor: cut }]}>
+          <Icon icon={badge.icon} size={BADGE_ICON} tint={badge.tint} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -103,15 +162,13 @@ export function FeedRow({
   item,
   onPress,
   onDismiss,
-  rail,
   plated = false,
 }: {
   item: AgentFeedItem;
   onPress: (item: AgentFeedItem) => void;
   /** A held or found row the person can take away (on the web its × shows; a phone swipes it). */
   onDismiss?: (() => void) | undefined;
-  rail: { above: boolean; below: boolean };
-  /** On a plate (Activity): the row is inset like every list row on a panel, and the rail reaches the next row. */
+  /** On a plate (Activity): the row is inset like every list row on a panel. */
   plated?: boolean;
 }) {
   const { color } = useTheme();
@@ -119,10 +176,15 @@ export function FeedRow({
   const watching = item.outcome === "scheduled";
   const due = Math.floor(new Date(item.at).getTime() / MS);
   const period = PERIOD_SECONDS[item.reasonParams?.every ?? "day"] ?? PERIOD_SECONDS.day!;
-  const tone = item.outcome === "failed" ? color.destructive : item.outcome === "waiting" ? color.warn : color.text3;
-  const line = copy.line(item);
-  const detail = copy.detail(item);
+  const title = copy.title(item);
+  const under = copy.counterpart(item);
+  const amount = copy.amountOf(item);
+  const other = copy.otherLeg(item);
   const when = watching ? copy.until(item.at) : copy.time(item.at);
+  const underTone = item.outcome === "failed" ? color.destructive : item.outcome === "waiting" ? color.warn : color.text3;
+  const amountTone = amount?.tone === "up" ? color.up : amount?.tone === "ink" ? color.ink : color.text3;
+  const struck = item.outcome === "failed" || item.outcome === "skipped";
+  const figure = amount ? `${amount.sign}${amount.text}` : "";
   return (
     <Pressable
       onPress={() => {
@@ -130,25 +192,32 @@ export function FeedRow({
         onPress(item);
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${line}. ${detail}. ${when}`}
+      accessibilityLabel={[title, under, figure, other ?? when].filter(Boolean).join(". ")}
       style={({ pressed }) => [styles.row, plated ? styles.rowPlated : null, pressed ? { backgroundColor: color.rowPressed } : null]}
     >
-      <View style={styles.lead}>
-        {rail.above ? <View style={[styles.rail, plated ? styles.railAbovePlated : styles.railAbove, { backgroundColor: color.skeleton }]} /> : null}
-        {rail.below ? <View style={[styles.rail, plated ? styles.railBelowPlated : styles.railBelow, { backgroundColor: color.skeleton }]} /> : null}
-        <FeedMark item={item} />
-      </View>
+      <FeedMark item={item} ring={plated ? color.card : color.ground} />
       <View style={styles.copy}>
-        <Text numberOfLines={2} style={[TYPE.rowTitle, { color: color.ink }]}>
-          {line}
+        <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
+          {title}
         </Text>
-        <Text numberOfLines={2} style={[TYPE.rowDetail, { color: tone }]}>
-          {detail}
-        </Text>
+        {under ? (
+          <Text numberOfLines={1} style={[TYPE.rowDetail, { color: underTone }]}>
+            {under}
+          </Text>
+        ) : null}
       </View>
       <View style={styles.end}>
-        {watching ? <CountdownRing fromSec={due - period} toSec={due} size={RING} stroke={RING_STROKE} /> : null}
-        <Text style={[TYPE.meta, { color: color.text3 }]}>{when}</Text>
+        {figure ? (
+          <Text numberOfLines={1} style={[TYPE.rowAmount, { color: amountTone }, struck ? styles.struck : null]}>
+            {figure}
+          </Text>
+        ) : null}
+        <View style={styles.endLine}>
+          {watching ? <CountdownRing fromSec={due - period} toSec={due} size={RING} stroke={RING_STROKE} /> : null}
+          <Text numberOfLines={1} style={[TYPE.meta, { color: color.text3 }]}>
+            {other ?? when}
+          </Text>
+        </View>
       </View>
       {onDismiss && Platform.OS === "web" ? <DismissButton item={item} onDismiss={onDismiss} /> : null}
     </Pressable>
@@ -221,9 +290,12 @@ export function FeedTimeline({
   limit,
   onOpen,
   plated = false,
+  keep,
 }: {
   feed: AgentFeed | undefined;
   filter: FeedFilter;
+  /** A finer cut than the group (Activity's In · Out · Trades). */
+  keep?: ((item: AgentFeedItem) => boolean) | undefined;
   limit?: number;
   onOpen: (item: AgentFeedItem) => void;
   /** Each day's rows on a panel, the way Activity's "All money" list sits (Activity); Home keeps them on the ground. */
@@ -235,7 +307,9 @@ export function FeedTimeline({
   const reduced = useReducedMotion();
   const dismiss = useDismiss();
   if (!feed) return <LoadingState shape="feed" />;
-  const rows = rowsFor(feed, filter).slice(0, limit);
+  const rows = rowsFor(feed, filter)
+    .filter((row) => !keep || keep(row))
+    .slice(0, limit);
   const sections: { title: string; rows: AgentFeedItem[] }[] = [];
   for (const row of rows) {
     const title = row.outcome === "scheduled" ? t("feed.list.watchingHead") : row.group === "found" ? t("feed.list.foundHead") : copy.day(row.at);
@@ -252,13 +326,13 @@ export function FeedTimeline({
             {section.title}
           </Text>
           <Plate plated={plated}>
-            {section.rows.map((row, at) => {
+            {section.rows.map((row) => {
               const order = index++;
               return (
                 <Animated.View key={row.id} entering={reduced || order >= STAGGER_ROWS ? undefined : FadeInDown.delay(order * TIMING.stagger).duration(TIMING.staggerItem)}>
                   {dismissible(row) && Platform.OS !== "web" ? (
                     <SwipeAway item={row} onDismiss={() => dismiss(row)}>
-                      <FeedRow item={row} onPress={onOpen} plated={plated} rail={{ above: at > 0, below: at < section.rows.length - 1 }} />
+                      <FeedRow item={row} onPress={onOpen} plated={plated} />
                     </SwipeAway>
                   ) : (
                     <FeedRow
@@ -266,7 +340,6 @@ export function FeedTimeline({
                       onPress={onOpen}
                       onDismiss={dismissible(row) ? () => dismiss(row) : undefined}
                       plated={plated}
-                      rail={{ above: at > 0, below: at < section.rows.length - 1 }}
                     />
                   )}
                 </Animated.View>
@@ -290,17 +363,16 @@ const styles = StyleSheet.create({
   plate: { paddingVertical: SPACE.xs },
   headPlated: { paddingHorizontal: SPACE.lg },
   rowPlated: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: 0 },
-  railAbovePlated: { top: -SPACE.md, height: "50%" },
-  railBelowPlated: { bottom: -SPACE.md, height: "50%" },
   section: { gap: SPACE.xxs },
   head: { paddingHorizontal: SPACE.xs, paddingBottom: SPACE.xs },
-  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xs, borderRadius: SPACE.md },
-  lead: { width: MARK, alignItems: "center", alignSelf: "stretch", justifyContent: "center" },
-  rail: { position: "absolute", width: RAIL_WIDTH, start: (MARK - RAIL_WIDTH) / HALF },
-  railAbove: { top: -SPACE.sm, height: "50%" },
-  railBelow: { bottom: -SPACE.sm, height: "50%" },
+  row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm + SPACE.xxs, paddingHorizontal: SPACE.xs, borderRadius: SPACE.md },
+  face: { width: FACE, height: FACE },
+  swapBack: { position: "absolute", top: 0, start: 0 },
+  swapFront: { position: "absolute", bottom: 0, end: 0, borderRadius: FACE, borderWidth: SWAP_RING },
   badge: { position: "absolute", end: -BADGE_OFFSET, bottom: -BADGE_OFFSET, width: BADGE, height: BADGE, borderRadius: BADGE, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  glyph: { width: MARK, height: MARK, borderRadius: MARK / HALF, alignItems: "center", justifyContent: "center" },
+  glyph: { width: FACE, height: FACE, borderRadius: FACE / HALF, alignItems: "center", justifyContent: "center" },
   copy: { flex: 1, gap: SPACE.xxs },
-  end: { alignItems: "flex-end", gap: SPACE.xxs },
+  end: { alignItems: "flex-end", gap: SPACE.xxs, flexShrink: 0, maxWidth: "45%" },
+  endLine: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  struck: { textDecorationLine: "line-through" },
 });

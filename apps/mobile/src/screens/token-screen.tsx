@@ -40,7 +40,7 @@ import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
-import type { Candle, ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
+import type { AgentFeedItem, Candle, ChartRange, TokenAction, TokenActionView } from "@kawase/api-client";
 import { explorerAddressUrl, PUBLIC_LINKS } from "@kawase/config";
 import { CHAIN_IDS } from "@kawase/identity";
 import { AreaChart, type ChartPoint } from "@kawase/ui-native/components/area-chart";
@@ -72,6 +72,9 @@ import {
 } from "@/components/kit";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { FeedRow } from "@/activity/feed-row";
+import { FeedDetailSheet } from "@/home/feed-detail-sheet";
+import { useAgentFeed } from "@/home/use-agent-feed";
+import { findByTx } from "@/receipt/feed-receipt";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
@@ -289,6 +292,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const { locale } = useLocale();
   const { color } = useTheme();
   const router = useRouter();
+  // A movement opens the same receipt it opens on Home and in Activity (the feed's row for its transaction).
+  const agentFeed = useAgentFeed();
+  const [receiptOf, setReceiptOf] = React.useState<AgentFeedItem | null>(null);
   const insets = useSafeAreaInsets();
   const wide = useWide();
   const { status, user } = useSession();
@@ -710,7 +716,15 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           </View>
           <Panel>
             {mine.activity.map((item) => (
-              <FeedRow key={item.id} item={item} onPress={() => router.push("/activity")} />
+              <FeedRow
+                key={item.id}
+                item={item}
+                onPress={() => {
+                  const row = findByTx(agentFeed.feed?.groups, item.txHash ?? undefined);
+                  if (row) setReceiptOf(row);
+                  else router.push("/activity");
+                }}
+              />
             ))}
           </Panel>
         </View>
@@ -916,6 +930,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
 
   const sheets = (
     <>
+      {receiptOf ? <FeedDetailSheet item={receiptOf} onClose={() => setReceiptOf(null)} /> : null}
       <MainnetConsentSheet
         open={networkSwitch.consentNeeded}
         busy={networkSwitch.busy}

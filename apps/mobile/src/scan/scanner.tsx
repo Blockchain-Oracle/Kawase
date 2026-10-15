@@ -10,6 +10,7 @@ import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, View } fro
 import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { tokens } from "@kawase/ui-tokens";
 import type { PayCodeView } from "@kawase/api-client";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -29,8 +30,8 @@ const BREATHE_MS = 1400;
 const BREATHE_SCALE = 1.04;
 const EDGE = 16;
 const CORNER_RADIUS = 18;
-/** Kawase lime (ui-tokens, dark theme): the viewfinder sits on the camera, which is always dark. */
-const LIME = "#D4FF3A";
+/** Kawase magenta (ui-tokens accent): the viewfinder sits on the camera, which is always dark. */
+const VIEWFINDER = tokens.themes.dark.accent;
 
 function Viewfinder({ color }: { color: string }) {
   const reduced = useReducedMotionLive();
@@ -156,7 +157,7 @@ export function Scanner({
 
       <View className="flex-1 items-center justify-center px-8">
         {granted ? (
-          <Viewfinder color={LIME} />
+          <Viewfinder color={VIEWFINDER} />
         ) : permission ? (
           <View className="items-center gap-4">
             <Icon as={ScanLine} className="size-10 text-white" />

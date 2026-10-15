@@ -1,6 +1,9 @@
 // How one row of the agent's feed reads: one line that says what Kawase did ("Swapped 2 USDC → 1.71 EURC"), the
 // outcome as a word (never colour alone: Done, Held for you, Skipped and why, Watching, Found), the venue it went
 // through, and when. Shared by Home's feed, Activity and the detail sheet, so a row reads the same everywhere.
+// The list row reads like a wallet's (Fuse, Phantom, Family; Abu 10-15 "a wallet has to feel that way"): a short title
+// (`title`: "Sent", "USDC → EURC", "Bridged"), who or where under it (`counterpart`: "To Admin · via CCTP"), and the
+// amount at the end with its sign (`amountOf`: "+20 USDC" in the gain colour, "−5 USDC" in ink, grey when nothing moved).
 import type { AgentFeedGroup, AgentFeedItem } from "@kawase/api-client";
 import { getVenueIdentity } from "@kawase/identity";
 import { formatTokenAmount } from "@kawase/money";
@@ -17,7 +20,8 @@ const MINUTE_MS = 60_000;
 const HOUR_MINUTES = 60;
 const DAY_HOURS = 24;
 
-const short = (value: string) => (SHORT_ADDRESS.test(value) ? `${value.slice(0, HEAD)}…${value.slice(-TAIL)}` : value);
+/** A full address shortened to 0x1234…abcd; names stay as they are. */
+export const short = (value: string) => (SHORT_ADDRESS.test(value) ? `${value.slice(0, HEAD)}…${value.slice(-TAIL)}` : value);
 
 /** The automation's period in seconds, for the Watching row's ring (it empties over one period). */
 export const PERIOD_SECONDS: Record<string, number> = { hour: 3_600, day: 86_400, week: 604_800, month: 2_592_000 };
@@ -105,6 +109,74 @@ export function useFeedCopy() {
     return [outcome(item), venue ? t("feed.list.via", { venue }) : null].filter(Boolean).join(" · ");
   };
 
+  const done = (item: AgentFeedItem) => item.outcome === "confirmed" || item.outcome === "in_flight";
+
+  /** The wallet row's title: what happened in a word or two; a send that is held or failed reads "Send", not "Sent". */
+  const title = (item: AgentFeedItem): string => {
+    const moved = done(item);
+    switch (item.kind) {
+      case "swap": {
+        const from = item.other?.token.symbol ?? item.asked?.from ?? "";
+        const to = item.token?.symbol ?? item.asked?.to ?? "";
+        return from && to ? `${from} → ${to}` : t("swap.title");
+      }
+      case "send":
+        return moved ? t("activity.sent") : t("send.title");
+      case "receive":
+        return t("activity.received");
+      case "bridge":
+      case "crosschain":
+        return moved ? t("feed.list.titleBridged") : t("bridge.title");
+      case "earn":
+      case "lend":
+        return moved ? t("feed.list.titleDeposited") : t("earn.title");
+      case "withdraw":
+        return moved ? t("feed.list.titleWithdrew") : t("withdraw.title");
+      case "margin": {
+        const side = item.asked?.from === "long" || item.asked?.from === "short" ? t(`margin.${item.asked.from}`) : null;
+        return side && item.asked?.to ? t("feed.list.lineMarginBare", { side, market: item.asked.to }) : t("activityFeed.margin");
+      }
+      case "automation":
+        return t("feed.list.titleScheduled");
+      case "practice":
+        return t("feed.list.titlePractice");
+      default:
+        return line(item);
+    }
+  };
+
+  /** Under the title: where it stands when it did not simply go through, who or where, and the venue. */
+  const counterpart = (item: AgentFeedItem): string => {
+    const who = item.counterparty ? short(item.counterparty) : item.asked?.to && item.kind !== "swap" && item.kind !== "margin" ? item.asked.to : "";
+    const status = done(item) && item.outcome !== "in_flight" ? null : item.outcome === "scheduled" ? null : outcome(item);
+    const place =
+      !who || item.kind === "swap" || item.kind === "margin" || item.kind === "suggestion"
+        ? null
+        : item.kind === "receive"
+          ? t("activity.fromName", { name: who })
+          : item.kind === "earn" || item.kind === "lend"
+            ? who
+            : t("activity.toName", { name: who });
+    const venue = venueName(item);
+    if (item.kind === "suggestion") return outcome(item);
+    return [status, place, venue ? t("feed.list.via", { venue }) : null].filter(Boolean).join(" · ");
+  };
+
+  /**
+   * The amount at the row's end: signed only for money that moved (in, a swap's output: "+"; out: "−"), the gain
+   * colour for money in, ink for money out, grey for anything that did not move (held, failed, practised, scheduled).
+   */
+  const amountOf = (item: AgentFeedItem): { text: string; sign: "+" | "−" | ""; tone: "up" | "ink" | "quiet" } | null => {
+    const text = money(item.amount, item.token) || (item.asked?.amount && item.asked.from && item.kind !== "margin" ? `${item.asked.amount} ${item.asked.from}` : "");
+    if (!text) return null;
+    if (!done(item)) return { text, sign: "", tone: "quiet" };
+    const incoming = item.kind === "receive" || item.kind === "swap";
+    return { text, sign: incoming ? "+" : "−", tone: incoming ? "up" : "ink" };
+  };
+
+  /** A swap's other leg, as it left ("−2 USDC"). */
+  const otherLeg = (item: AgentFeedItem) => (item.other ? `${done(item) ? "−" : ""}${money(item.other.amount, item.other.token)}` : null);
+
   const time = (iso: string) => new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
   /** "in 2d 4h" / "in 35 min" until a scheduled run. */
@@ -128,5 +200,5 @@ export function useFeedCopy() {
 
   const group = (value: AgentFeedGroup | "all") => t(`feed.list.filter_${value}`);
 
-  return { line, outcome, detail, time, until, day, group, venueName, money };
+  return { line, outcome, detail, title, counterpart, amountOf, otherLeg, time, until, day, group, venueName, money };
 }

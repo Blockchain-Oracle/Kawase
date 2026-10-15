@@ -26,12 +26,15 @@ export function BalanceHero({
   loading,
   failedAt,
   onOpen,
+  centered = false,
 }: {
   portfolio: PortfolioView | undefined;
   loading: boolean;
   /** When the last good read was, if the latest one failed. */
   failedAt?: number | undefined;
   onOpen: () => void;
+  /** The desktop Home's fixed header: the figure in the middle of the agent's column (Abu, 10-15). */
+  centered?: boolean;
 }) {
   const { t } = useT();
   const { locale } = useLocale();
@@ -48,16 +51,16 @@ export function BalanceHero({
   const pct = portfolio?.change24hPct;
 
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${t("feed.home.balance")} ${text}`} accessibilityHint={t("feed.home.balanceHint")} onPress={onOpen} style={({ pressed }) => [styles.hero, pressed ? styles.pressed : null]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`${t("feed.home.balance")} ${text}`} accessibilityHint={t("feed.home.balanceHint")} onPress={onOpen} style={({ pressed }) => [styles.hero, centered ? styles.centered : null, pressed ? styles.pressed : null]}>
       <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.home.balance")}</Text>
       {portfolio ? (
-        <RollingFigure text={text} value={BigInt(Math.round(total * CENTS))} color={total === 0 ? color.text3 : color.ink} height={FIGURE_HEIGHT} align="left" sensitive />
+        <RollingFigure text={text} value={BigInt(Math.round(total * CENTS))} color={total === 0 ? color.text3 : color.ink} height={FIGURE_HEIGHT} align={centered ? "center" : "left"} sensitive />
       ) : loading ? (
         <Skeleton width="60%" height={FIGURE_HEIGHT} />
       ) : (
         <Text style={[TYPE.body, { color: color.text3 }]}>{t("feed.home.balanceUnknown")}</Text>
       )}
-      <View style={styles.row}>
+      <View style={[styles.row, centered ? styles.rowCentered : null]}>
         {pct !== null && pct !== undefined ? <ChangeChip change={pct / PERCENT} /> : null}
         {week ? <Sparkline points={week} /> : null}
         {failedAt ? <StaleTick asOf={failedAt} reason="refresh-failed" compact /> : null}
@@ -68,6 +71,8 @@ export function BalanceHero({
 
 const styles = StyleSheet.create({
   hero: { gap: SPACE.xs, paddingVertical: SPACE.sm },
+  centered: { alignItems: "center" },
+  rowCentered: { justifyContent: "center" },
   pressed: { opacity: 0.8 },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: SIZE.sparkline },
 });

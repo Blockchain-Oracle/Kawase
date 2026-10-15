@@ -203,7 +203,7 @@ export function StoryScreen() {
       body: t("story.budgetBody"),
       art: (s) => <BudgetArt copy={copy} {...s} />,
     },
-    { key: "arc", title: t("story.arcTitle"), body: t("story.arcBody"), art: (s) => <ArcArt copy={copy} {...s} /> },
+    { key: "arc", title: t("story.arcTitle"), body: t("story.arcBody"), art: (s) => <ArcArt {...s} /> },
     { key: "test", title: t("story.testTitle"), body: t("story.testBody"), art: (s) => <TestArt copy={copy} {...s} /> },
   ];
   titles.current = scenes.map((scene) => scene.title);

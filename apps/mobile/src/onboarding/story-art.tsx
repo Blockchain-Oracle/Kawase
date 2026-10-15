@@ -303,7 +303,7 @@ const ARC_MARKS = [
   "pay:applepay",
 ] as const;
 
-export function ArcArt({ playing, still }: SceneProps) {
+export function ArcArt({ playing, still }: Pick<SceneProps, "playing" | "still">) {
   const { color } = useTheme();
   const rows = Math.ceil(ARC_MARKS.length / ARC_COLUMNS);
   const clock = useClock(playing, still, rows);

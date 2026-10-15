@@ -16,6 +16,7 @@ export function FilterChips<T extends string>({
   onChange,
   label,
   bleed = 0,
+  centered = false,
 }: {
   options: readonly { value: T; label: string }[];
   value: T;
@@ -23,6 +24,8 @@ export function FilterChips<T extends string>({
   /** Group name for VoiceOver ("Market filter"). */
   label: string;
   bleed?: number;
+  /** Centred under a centred heading (desktop Home); it still scrolls when the chips outgrow the row. */
+  centered?: boolean;
 }) {
   const { color } = useTheme();
   return (
@@ -32,7 +35,7 @@ export function FilterChips<T extends string>({
       accessibilityRole="tablist"
       accessibilityLabel={label}
       style={{ marginHorizontal: -bleed }}
-      contentContainerStyle={[styles.row, { paddingHorizontal: bleed }]}
+      contentContainerStyle={[styles.row, centered ? styles.centered : null, { paddingHorizontal: bleed }]}
     >
       {options.map((o) => {
         const selected = o.value === value;
@@ -58,6 +61,7 @@ export function FilterChips<T extends string>({
 
 const styles = StyleSheet.create({
   row: { gap: SPACE.sm },
+  centered: { flexGrow: 1, justifyContent: "center" },
   chip: {
     justifyContent: "center",
     minHeight: CHIP_HEIGHT,

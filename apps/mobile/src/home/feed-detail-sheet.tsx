@@ -4,6 +4,8 @@
 // explorer and why. Then where to go next: the intent's own screen ("Open swap"), the conversation, or Why.
 // The sheet opens with what the row already knows; only a run that raced venues shimmers, in the race's own shape,
 // while its race is read. A row that could not be read says so with Retry and what still works.
+// Money that moved opens on its receipt slip, the same one wherever the row was tapped (Home, Activity, Why; Abu 10-15:
+// "it's still receipt"): a swap, a send, a bridge or a deposit with Share, and money that came in with who sent it.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
@@ -14,11 +16,29 @@ import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
-import { Button, diagnose, ErrorState, KeyValue, Panel, SectionLabel, SIZE, Skeleton, SPACE, TYPE, useHeldLoading, useTheme, type Diagnosis } from "@/components/kit";
+import {
+  Button,
+  diagnose,
+  ErrorState,
+  KeyValue,
+  Panel,
+  SectionLabel,
+  SIZE,
+  Skeleton,
+  SPACE,
+  TYPE,
+  useHeldLoading,
+  useTheme,
+  type Diagnosis,
+} from "@/components/kit";
 import { Sheet } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
 import { LIST_DETENTS } from "@/components/sheet/constants";
 import { RaceRows } from "@/chat/race-card";
+import { useFeedReceipt } from "@/receipt/feed-receipt";
+import { IncomingActions } from "@/receipt/incoming-actions";
+import { ReceiptSlip } from "@/receipt/receipt-slip";
+import { ShareReceiptButton } from "@/receipt/share-receipt";
 import { useOpenIn, type OpenTarget } from "@/chat/open-in";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
@@ -55,12 +75,21 @@ function Fact({ label, value, children }: { label: string; value: string; childr
   );
 }
 
-export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem; onClose: () => void; onAsk?: ((prompt: string) => void) | undefined }) {
+export function FeedDetailSheet({
+  item,
+  onClose,
+  onAsk,
+}: {
+  item: AgentFeedItem;
+  onClose: () => void;
+  onAsk?: ((prompt: string) => void) | undefined;
+}) {
   const { t } = useT();
   const { locale } = useLocale();
   const { color } = useTheme();
   const router = useRouter();
   const copy = useFeedCopy();
+  const feedReceipt = useFeedReceipt();
   const open = useOpenIn();
   const [detail, setDetail] = React.useState<AgentFeedDetail | null>(null);
   const [error, setError] = React.useState<Diagnosis | null>(null);
@@ -83,8 +112,12 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
   }, [read]);
 
   const row = detail?.item ?? item;
-  const expectsRace = Boolean(item.threadId) && RACED.has(item.kind) && item.outcome !== "scheduled" && item.group !== "found";
-  const where = row.counterparty && ADDRESS.test(row.counterparty) ? `${row.counterparty.slice(0, ADDRESS_HEAD)}…${row.counterparty.slice(-ADDRESS_TAIL)}` : row.counterparty;
+  const expectsRace =
+    Boolean(item.threadId) && RACED.has(item.kind) && item.outcome !== "scheduled" && item.group !== "found";
+  const where =
+    row.counterparty && ADDRESS.test(row.counterparty)
+      ? `${row.counterparty.slice(0, ADDRESS_HEAD)}…${row.counterparty.slice(-ADDRESS_TAIL)}`
+      : row.counterparty;
   const go = (target: OpenTarget) => {
     onClose();
     router.push(target.href);
@@ -95,17 +128,55 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
     ...(row.threadId ? [open.thread(row.threadId)] : []),
   ];
   const venue = copy.venueName(row);
-  const amount = row.other ? `${copy.money(row.other.amount, row.other.token)} → ${copy.money(row.amount, row.token)}` : copy.money(row.amount, row.token);
+  const amount = row.other
+    ? `${copy.money(row.other.amount, row.other.token)} → ${copy.money(row.amount, row.token)}`
+    : copy.money(row.amount, row.token);
   const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.at));
-  const prompt = row.group === "found" && row.suggestion ? t("feed.detail.foundPrompt", { what: copy.line(row) }) : null;
+  const prompt =
+    row.group === "found" && row.suggestion ? t("feed.detail.foundPrompt", { what: copy.line(row) }) : null;
+  const receipt = feedReceipt(row);
+  const incoming =
+    receipt &&
+    row.kind === "receive" &&
+    row.counterparty &&
+    ADDRESS.test(row.counterparty) &&
+    row.txHash &&
+    row.token &&
+    row.amount
+      ? row
+      : null;
 
   return (
-    <Sheet onClose={onClose} closeLabel={t("shell.kit.closeNamed", { name: t("feed.detail.title") })} detents={LIST_DETENTS}>
-      <View style={styles.face}>
-        <FeedMark item={row} />
-      </View>
-      <SheetHeading title={copy.line(row)} body={copy.detail(row)} />
+    <Sheet
+      onClose={onClose}
+      closeLabel={t("shell.kit.closeNamed", { name: t("feed.detail.title") })}
+      detents={LIST_DETENTS}
+    >
+      {receipt ? null : (
+        <>
+          <View style={styles.face}>
+            <FeedMark item={row} ring={color.popover} />
+          </View>
+          <SheetHeading title={copy.line(row)} body={copy.detail(row)} />
+        </>
+      )}
       <View style={styles.body}>
+        {incoming ? (
+          <IncomingActions
+            from={incoming.counterparty!}
+            amountBase={incoming.amount!}
+            asset={incoming.token!.symbol}
+            network={incoming.network}
+            at={incoming.at}
+            txHash={incoming.txHash!}
+            explorerUrl={incoming.explorerUrl}
+          />
+        ) : receipt ? (
+          <View style={styles.block}>
+            <ReceiptSlip receipt={receipt} ground={color.popover} />
+            <ShareReceiptButton receipt={receipt} />
+          </View>
+        ) : null}
         {detail?.asked ? (
           <View style={styles.block}>
             <SectionLabel>{t("feed.detail.asked")}</SectionLabel>
@@ -129,7 +200,12 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
             ))}
           </View>
         ) : error && expectsRace ? (
-          <ErrorState diagnosis={error} retry={() => void read()} stillWorks={t("feed.detail.stillWorks")} variant="strip" />
+          <ErrorState
+            diagnosis={error}
+            retry={() => void read()}
+            stillWorks={t("feed.detail.stillWorks")}
+            variant="strip"
+          />
         ) : detail?.race ? (
           <View style={styles.block}>
             <SectionLabel>{t("feed.detail.race", { count: detail.race.rows.length })}</SectionLabel>
@@ -137,28 +213,51 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
           </View>
         ) : null}
 
-        <Panel style={styles.panel}>
-          <View style={styles.receipt}>
-            <KeyValue label={t("feed.detail.outcome")} value={copy.outcome(row)} />
-            {amount ? (
-              <Fact label={t("feed.detail.amount")} value={amount}>
-                {row.token ? <TokenMark token={{ chainId: ARC_CHAIN_IDS[row.network], address: (row.other?.token ?? row.token).address, symbol: (row.other?.token ?? row.token).symbol }} size={SIZE.markChip} /> : null}
-              </Fact>
-            ) : null}
-            {venue ? (
-              <Fact label={t("feed.detail.venue")} value={venue}>
-                {row.venue && getVenueIdentity(row.venue) ? <Mark entity={venueKey(row.venue)} size={SIZE.markChip} /> : null}
-              </Fact>
-            ) : null}
-            {where ? (
-              <Fact label={row.kind === "receive" ? t("receipt.from") : t("feed.detail.where")} value={where}>
-                {row.counterparty && ADDRESS.test(row.counterparty) ? <DefaultAvatar seed={row.counterparty.toLowerCase()} size={SIZE.markChip} /> : null}
-              </Fact>
-            ) : null}
-            <KeyValue label={row.outcome === "scheduled" ? t("feed.detail.next") : t("feed.detail.when")} value={when} />
-            {row.txHash ? <KeyValue label={t("feed.detail.tx")} value={`${row.txHash.slice(0, HASH_HEAD)}…${row.txHash.slice(-HASH_TAIL)}`} /> : null}
-          </View>
-        </Panel>
+        {receipt ? null : (
+          <Panel style={styles.panel}>
+            <View style={styles.receipt}>
+              <KeyValue label={t("feed.detail.outcome")} value={copy.outcome(row)} />
+              {amount ? (
+                <Fact label={t("feed.detail.amount")} value={amount}>
+                  {row.token ? (
+                    <TokenMark
+                      token={{
+                        chainId: ARC_CHAIN_IDS[row.network],
+                        address: (row.other?.token ?? row.token).address,
+                        symbol: (row.other?.token ?? row.token).symbol,
+                      }}
+                      size={SIZE.markChip}
+                    />
+                  ) : null}
+                </Fact>
+              ) : null}
+              {venue ? (
+                <Fact label={t("feed.detail.venue")} value={venue}>
+                  {row.venue && getVenueIdentity(row.venue) ? (
+                    <Mark entity={venueKey(row.venue)} size={SIZE.markChip} />
+                  ) : null}
+                </Fact>
+              ) : null}
+              {where ? (
+                <Fact label={row.kind === "receive" ? t("receipt.from") : t("feed.detail.where")} value={where}>
+                  {row.counterparty && ADDRESS.test(row.counterparty) ? (
+                    <DefaultAvatar seed={row.counterparty.toLowerCase()} size={SIZE.markChip} />
+                  ) : null}
+                </Fact>
+              ) : null}
+              <KeyValue
+                label={row.outcome === "scheduled" ? t("feed.detail.next") : t("feed.detail.when")}
+                value={when}
+              />
+              {row.txHash ? (
+                <KeyValue
+                  label={t("feed.detail.tx")}
+                  value={`${row.txHash.slice(0, HASH_HEAD)}…${row.txHash.slice(-HASH_TAIL)}`}
+                />
+              ) : null}
+            </View>
+          </Panel>
+        )}
 
         <View style={styles.actions}>
           {prompt && onAsk ? (
@@ -171,16 +270,29 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
             />
           ) : null}
           {targets.map((target, index) => (
-            <Button key={target.label} label={target.label} variant={index === 0 && !prompt ? "primary" : "secondary"} onPress={() => go(target)} />
+            <Button
+              key={target.label}
+              label={target.label}
+              variant={index === 0 && !prompt ? "primary" : "secondary"}
+              onPress={() => go(target)}
+            />
           ))}
           {row.txHash ? (
             <Button
               label={t("feed.detail.why")}
               variant="secondary"
-              onPress={() => go({ label: "", href: { pathname: "/why/[tx]", params: { tx: row.txHash!, network: row.network } } })}
+              onPress={() =>
+                go({ label: "", href: { pathname: "/why/[tx]", params: { tx: row.txHash!, network: row.network } } })
+              }
             />
           ) : null}
-          {row.explorerUrl ? <Button label={t("feed.detail.explorer")} variant="ghost" onPress={() => void Linking.openURL(row.explorerUrl!)} /> : null}
+          {row.explorerUrl ? (
+            <Button
+              label={t("feed.detail.explorer")}
+              variant="ghost"
+              onPress={() => void Linking.openURL(row.explorerUrl!)}
+            />
+          ) : null}
         </View>
       </View>
     </Sheet>
