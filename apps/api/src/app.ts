@@ -49,6 +49,7 @@ import { inboxRoutes, publicRequestRoutes, requestRoutes } from "./requests/rout
 import { RequestService } from "./requests/service";
 import type { OpsExecutor } from "./send/ops";
 import { Recipients } from "./send/recipients";
+import { RelayerWatch } from "./send/relayer-watch";
 import { sendRoutes } from "./send/routes";
 import { SendService } from "./send/service";
 import { automationRoutes, needsYouRoutes } from "./automations/routes";
@@ -185,6 +186,8 @@ export type AppDeps = {
   automationTickMs?: number | undefined;
   /** Reads incoming transfers this often; off when unset. */
   watchIntervalMs?: number | undefined;
+  /** Reads each relayer's gas this often (logged, and on /health); off when unset. */
+  relayerWatchMs?: number | undefined;
   /** LiveKit Cloud for voice; voice sessions are refused without it. */
   livekit?: LiveKitConfig | undefined;
   /** The web app's address, for shared links. */
@@ -257,6 +260,8 @@ export function createApp(deps: AppDeps) {
     inbox,
     assets,
   );
+  const relayers = new RelayerWatch(deps.chains, deps.log);
+  if (deps.relayerWatchMs) relayers.start(deps.relayerWatchMs);
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
   // The ops wallet redeems a swap's signed leaves inside the weekly budget (D38); the leaf path is 503 without it.
@@ -407,7 +412,8 @@ export function createApp(deps: AppDeps) {
   });
   app.notFound((c) => problemResponse(c, problem(HTTP.notFound, "not_found"), c.get("requestId")));
 
-  app.get("/health", (c) => c.json({ ok: true, networks: deps.chains.available, minAppVersion: deps.minAppVersion ?? MIN_APP_VERSION_DEFAULT }));
+  // `relayers`: each network's gas for setups and gas-free sends ("empty" refuses them), from the last reading.
+  app.get("/health", (c) => c.json({ ok: true, networks: deps.chains.available, minAppVersion: deps.minAppVersion ?? MIN_APP_VERSION_DEFAULT, relayers: relayers.state() }));
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/client-events", clientEventRoutes());
   app.route("/public", publicRoutes(new PublicStatsService(deps.db)));

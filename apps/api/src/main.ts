@@ -29,6 +29,9 @@ import { createChains } from "./wallet/chain";
 
 config({ path: new URL("../../../.env", import.meta.url).pathname, quiet: true });
 
+/** Each relayer's gas is read this often (send/relayer-watch.ts). */
+const RELAYER_WATCH_MS = 600_000;
+
 const env = loadApiEnv();
 const log = createLogger({ service: "api", pretty: env.NODE_ENV === "development" });
 const { db, pool } = createDb(env.DATABASE_URL);
@@ -84,6 +87,7 @@ const app = createApp({
   reconcileIntervalMs: RECONCILE_INTERVAL_MS,
   automationTickMs: AUTOMATION_TICK_MS,
   watchIntervalMs: WATCH_INTERVAL_MS,
+  relayerWatchMs: RELAYER_WATCH_MS,
   webUrl: env.KAWASE_WEB_URL,
   push: new ExpoPush(env.EXPO_ACCESS_TOKEN),
   email: env.RESEND_API_KEY && env.EMAIL_FROM ? new ResendEmail(env.RESEND_API_KEY, env.EMAIL_FROM) : undefined,

@@ -26,7 +26,7 @@ const VERSION = "2";
 /** Legacy ECDSA recovery ids are 27/28; viem gives yParity 0/1 for compact signatures. */
 const LEGACY_V_OFFSET = 27n;
 /** The relayer carries sends only while it holds at least this much gas (0.05 USDC, in Arc's 18-decimal native units). */
-const RELAYER_MIN_GAS = 50_000_000_000_000_000n;
+export const RELAYER_MIN_GAS = 50_000_000_000_000_000n;
 
 export const EIP3009_ABI = parseAbi([
   "function name() view returns (string)",
