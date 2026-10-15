@@ -35,7 +35,7 @@ export function IosInvite() {
           required
           placeholder="you@example.com"
           disabled={pending || done}
-          className="h-12 min-w-0 flex-1 rounded-full border border-border bg-card px-5 text-[15px] text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+          className="h-12 w-full min-w-0 shrink-0 rounded-full sm:w-auto sm:flex-1 border border-border bg-card px-5 text-[15px] text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
         />
         <button type="submit" disabled={pending || done} className={`${BUTTON_SECONDARY} disabled:opacity-60`}>
           {pending ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : done ? <Check className="size-4" aria-hidden /> : null}
