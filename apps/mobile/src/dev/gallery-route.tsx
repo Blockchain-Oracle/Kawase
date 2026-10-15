@@ -210,16 +210,20 @@ const HAPTICS: readonly HapticEvent[] = [
   "agentDone",
 ];
 const SOUNDS: readonly SoundName[] = [
-  "confirmed",
-  "send",
   "received",
+  "send",
+  "confirmed",
   "error",
-  "tap",
-  "toggle",
-  "sheetOpen",
-  "sheetClose",
   "agentStep",
   "agentDone",
+  "sheetOpen",
+  "sheetClose",
+  "fanOpen",
+  "voiceStart",
+  "voiceEnd",
+  "scene",
+  "tap",
+  "toggle",
 ];
 const NOW = Date.now();
 const MINUTE = 60_000;
