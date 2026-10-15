@@ -2,6 +2,7 @@ import type { Catalog } from "../en/index";
 
 export const report: Catalog["report"] = {
   title: "Эта неделя",
+  pnl: "Прибыль и убыток за неделю",
   loading: "Собираем вашу неделю…",
   in: "Поступления ({{count}})",
   out: "Расходы ({{count}})",

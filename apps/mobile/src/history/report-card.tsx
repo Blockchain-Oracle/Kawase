@@ -6,13 +6,18 @@ import { StyleSheet, Text, View } from "react-native";
 import type { ReportView } from "@kawase/api-client";
 import { formatTokenAmount } from "@kawase/money";
 
-import { Panel, SectionLabel, SPACE, TYPE, useTheme } from "@/components/kit";
+import { ChangeChip, Panel, SectionLabel, Sparkline, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
 
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { usePrice } from "@/marketplace/use-agent-wallet";
+import { usePortfolio } from "@/portfolio/use-portfolio";
 
 const STABLE_DECIMALS = 6;
+const STABLE_UNIT = 1_000_000;
+const WEEK_MS = 604_800_000;
+/** Under a cent either way the week reads flat, in ink. */
+const PNL_FLAT = 0.005;
 
 export function ReportCard({ report, compact }: { report: ReportView; compact?: boolean }) {
   const { t } = useT();
@@ -52,12 +57,7 @@ export function ReportCard({ report, compact }: { report: ReportView; compact?: 
   );
   // In chat the card around it is the message's; on Activity it is a panel like every other group on the page.
   if (compact) return <View style={styles.stack}>{body}</View>;
-  return (
-    <Panel style={[styles.stack, styles.panel]}>
-      <SectionLabel>{t("report.title")}</SectionLabel>
-      {body}
-    </Panel>
-  );
+  return <WeekCard report={report} lines={lines} />;
 }
 
 const styles = StyleSheet.create({
@@ -65,4 +65,69 @@ const styles = StyleSheet.create({
   panel: { padding: SPACE.lg },
   columns: { flexDirection: "row", gap: SPACE.lg },
   column: { flex: 1, gap: SPACE.xxs },
+  weekRow: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.lg },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.xs },
+  chip: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: SIZE.chipHeight - SPACE.xs, borderRadius: SIZE.chipHeight, paddingHorizontal: SPACE.md },
 });
+
+/**
+ * Activity's week (Abu, 10-15: "use P&L, a percentage, not In and Out"): what the week made or lost — the balance's
+ * change over seven days less the money that came in or went out — as the one figure with its percentage and the
+ * week's sparkline; In, Out and the moves as small chips under it. Without a week of history it says what moved.
+ */
+function WeekCard({ report, lines }: { report: ReportView; lines: string[] }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { locale } = useLocale();
+  const { portfolio } = usePortfolio();
+  const usd = (value: number, signed = false) =>
+    new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2, ...(signed ? { signDisplay: "exceptZero" as const } : {}) }).format(value);
+  const priceOf = (asset: string) => (asset === "USDC" ? 1 : (portfolio?.assets.find((holding) => holding.token.symbol === asset)?.priceUsd ?? null));
+  const flow = (bucket: Record<string, string>) =>
+    Object.entries(bucket).reduce((sum, [asset, base]) => sum + Number(BigInt(base)) / STABLE_UNIT * (priceOf(asset) ?? 0), 0);
+  const inUsd = flow(report.received);
+  const outUsd = flow(report.sent);
+  const since = Date.now() - WEEK_MS;
+  const week = (portfolio?.history ?? []).filter((point) => new Date(point.t).getTime() >= since);
+  const start = week[0]?.usd ?? null;
+  const now = portfolio?.totalUsd ?? null;
+  const pnl = start !== null && now !== null ? now - start - (inUsd - outUsd) : null;
+  const base = start !== null ? start + Math.max(inUsd - outUsd, 0) : 0;
+  const pct = pnl !== null && base > 0 ? pnl / base : null;
+  const tone = pnl === null || Math.abs(pnl) < PNL_FLAT ? color.ink : pnl > 0 ? color.up : color.down;
+  return (
+    <Panel style={[styles.stack, styles.panel]}>
+      <SectionLabel>{t("report.title")}</SectionLabel>
+      <View style={styles.weekRow}>
+        <View style={styles.column}>
+          <Text style={[TYPE.meta, { color: color.text2 }]}>{t("report.pnl")}</Text>
+          <Text style={[TYPE.displayPrice, { color: tone }]} numberOfLines={1} adjustsFontSizeToFit>
+            {pnl !== null ? usd(pnl, true) : "—"}
+          </Text>
+          <ChangeChip change={pct} />
+        </View>
+        {week.length > 1 ? <Sparkline points={week.map((point) => point.usd)} /> : null}
+      </View>
+      <View style={styles.chips}>
+        <Chip label={t("report.in", { count: String(report.counts.received) })} value={usd(inUsd)} tone={color.up} />
+        <Chip label={t("report.out", { count: String(report.counts.sent) })} value={usd(outUsd)} />
+        {lines.map((line) => (
+          <View key={line} style={[styles.chip, { backgroundColor: color.raised2 }]}>
+            <Text style={[TYPE.chipLabel, { color: color.text2 }]}>{line}</Text>
+          </View>
+        ))}
+      </View>
+      {!report.complete ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("report.partial")}</Text> : null}
+    </Panel>
+  );
+}
+
+function Chip({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  const { color } = useTheme();
+  return (
+    <View style={[styles.chip, { backgroundColor: color.raised2 }]}>
+      <Text style={[TYPE.chipLabel, { color: color.text2 }]}>{label}</Text>
+      <Text style={[TYPE.chipLabel, { color: tone ?? color.ink }]}>{value}</Text>
+    </View>
+  );
+}

@@ -2,6 +2,7 @@ import type { Catalog } from "../en/index";
 
 export const report: Catalog["report"] = {
   title: "इस हफ़्ते",
+  pnl: "इस हफ़्ते का लाभ-हानि",
   loading: "आपका हफ़्ता तैयार हो रहा है…",
   in: "आया ({{count}})",
   out: "गया ({{count}})",
