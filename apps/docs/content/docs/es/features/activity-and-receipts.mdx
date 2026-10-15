@@ -1,0 +1,99 @@
+---
+title: "Actividad y recibos"
+description: "Todos los movimientos de tu dinero en una sola lista; cada fila abre el mismo recibo, que puedes compartir como imagen o comprobar en ArcScan, con el motivo a un toque."
+sourceHash: 38b2c6ce4de2a574
+---
+
+<Marks names="usdc eurc arc" />
+
+**Actividad** (el icono de pulso en el dock) es una sola lista de todo lo que se movió: envíos y cobros, intercambios con
+sus dos lados, puentes, ahorros, posiciones, ejecuciones de automatizaciones, solicitudes pagadas, el faucet y las
+prácticas. Se lee como una billetera: el dinero que entra es **+20 USDC** y el que sale **−5 USDC**.
+
+<Flow>
+  <FlowStep icon="list" title="Actividad">Cada movimiento, del más nuevo al más antiguo, con filtros.</FlowStep>
+  <FlowStep icon="receipt" title="El recibo" tone="accent">El mismo recibo para cada fila.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Demostrarlo" icon="qr" title="ArcScan">El código QR abre la transacción.</FlowStep>
+    <FlowStep when="Enseñarlo" icon="share" title="Compartir">El recibo como imagen.</FlowStep>
+    <FlowStep when="Entenderlo" icon="sparkles" title="Por qué">La decisión que hay detrás.</FlowStep>
+  </FlowFork>
+</Flow>
+
+## La lista
+
+<Shot src="activity/list" alt="Actividad: la ganancia o pérdida de la semana, entradas y salidas, los filtros, envíos programados en vigilancia y filas como −1 USDC enviado." zoom="70 57.5 7" lens="78 31">
+  <Pin box="4 17.5 92 21.5">Esta semana: ganancia o pérdida, entradas y salidas</Pin>
+
+  <Pin box="4 41.5 92 5.5">Todo · Entradas · Salidas · Operaciones · Vigilando · Hallado</Pin>
+
+  <Pin box="4 51.5 92 15.5">Vigilando: lo que se ejecuta después, con cuenta atrás</Pin>
+
+  <Pin box="4 73.5 92 15">Cada movimiento: qué, con quién, el importe con signo y la hora</Pin>
+
+  <Pin box="64 8.5 32 6.5">Exporta tu historial</Pin>
+</Shot>
+
+Cada fila dice en qué punto está: hecho, en curso, en espera, omitido y por qué, o práctica. **Vigilando** muestra lo que
+se ejecuta después (un envío programado, con un anillo que cuenta atrás); **En espera** es lo que te espera a ti;
+**Hallado** es lo que Kawase notó por ti, como dinero parado.
+
+<Clip src="activity/open-receipt" alt="Tocando una fila de −5 USDC en Actividad: el recibo sube y se abre a pantalla completa con Compartir recibo y Por qué pasó esto." />
+
+## El recibo
+
+Toca cualquier fila. Cada transacción abre **el mismo recibo**: un envío, un cobro, un intercambio («Intercambiaste … vía
+KyberSwap») o un puente.
+
+<Walkthrough>
+  <WalkStep title="Qué se movió" src="activity/receipt" zoom="80 57 10">
+    La marca y el número del recibo, qué se movió y con quién, con el hanko de Kawase estampado junto al importe.
+
+    <Pin at="54 48.5">El número del recibo</Pin>
+
+    <Pin box="6 51.5 55 11">Enviaste o recibiste, el importe y su token</Pin>
+
+    <Pin box="8 66 84 11">Cuándo, en qué red y la transacción</Pin>
+  </WalkStep>
+  <WalkStep title="Verifícalo en la cadena" src="activity/receipt" zoom="80 88 11">
+    Bajo la perforación, el código QR del talón abre la transacción en **ArcScan** (testnet.arcscan.app en la red de
+    pruebas). Cualquiera puede escanearlo desde tu pantalla o desde la imagen compartida.
+
+    <Pin box="6 84.5 50 6">El enlace al explorador</Pin>
+  </WalkStep>
+  <WalkStep title="Compartir, abrir o preguntar por qué" src="activity/receipt-actions">
+    **Compartir recibo** lo convierte en una imagen con tu tema (texto con el enlace del explorador donde no se pueden
+    compartir imágenes). **Abrir envío** vuelve a la pantalla de origen. **Por qué pasó esto** muestra la decisión.
+
+    <Pin box="4 71.5 92 6.5">Compartir el recibo como imagen</Pin>
+
+    <Pin box="4 80 92 7">Volver a la pantalla de origen</Pin>
+
+    <Pin box="4 88 92 7">Por qué pasó esto</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Por qué pasó esto
+
+**Por qué** es el registro de la decisión detrás de un movimiento: la petición de la que vino (tus palabras, una
+automatización, una regla), qué se comprobó, qué regla lo dejó pasar o lo hizo esperar, y qué respondiste. Si una ejecución
+nunca llegó a la cadena, dice qué la detuvo.
+
+<Shot src="activity/why" alt="Por qué pasó esto: el recibo y una cronología: lo pediste en la app (USDC · 5 · @nia), comprobaciones superadas con un aviso (primer pago a esta dirección).">
+  <Pin box="4 74.5 50 4.5">Qué tipo de movimiento fue</Pin>
+
+  <Pin box="4 80.5 92 10">La petición de origen, palabra por palabra</Pin>
+
+  <Pin box="4 91.5 92 8">Qué se comprobó y qué avisó</Pin>
+</Shot>
+
+## Dinero que llegó
+
+El recibo de dinero **recibido** dice **Enviado por** y ofrece **Guardar**, que guarda la dirección del pago como contacto
+para que el próximo pago de vuelta vaya exactamente a esa dirección. Consulta [contactos](./contacts-and-handles.mdx).
+
+## La bandeja y el informe semanal
+
+La campana de Inicio es la **bandeja**: cada pago recibido, solicitud pagada, pago completado y automatización omitida
+llega allí y abre el recibo correcto ([notificaciones](./notifications.mdx)). Desde Actividad también puedes leer **el
+informe de la semana** y **exportar** tu historial.
