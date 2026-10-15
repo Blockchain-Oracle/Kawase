@@ -1,7 +1,7 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-15 morning (Abu's 10-15 review acted on; plan breezy-puzzling-starfish)
+Last updated: 2026-10-15 midday (Abu's two 10-15 rounds acted on; plan breezy-puzzling-starfish)
 
 ## 2026-10-15 — Abu's signed-in review (Privy, @ajweb3)
 
@@ -31,6 +31,35 @@ Live: web `c8e3963e` (app.getkawase.xyz/version.txt), api `c8e3963e` (deploy `wo
   Android preview APK `30b900fe` queued on EAS.
 - **Still open:** Abu's Privy sign-in to confirm setup + mainnet; agent long/short tried live in chat; a dev-mode
   bridge/send/earn tx run; README/docs (Turnkey → Privy); demo video; repo public (ask first).
+
+### 10-15 midday — second round (live web `dfe9e8d9`)
+
+Abu's notes, all built and checked on the dev build or production:
+- **Run card (Home + chat):** a Done/failed chip, the token pair's marks, venue marks on the fold, and a receipt ledger
+  (You paid / You got with marks, via + venue mark), with View on ArcScan, Share (the themed slip) and Open swap.
+  Venues that didn't quote fold into greyed breadcrumbs.
+- **Failure card:** a calm plate, "No money moved" shown as a shield chip; an expired-while-blocked intent shows its
+  real fix.
+- **Chat composer:** Home's look (為替 mark, live mini orb, raised). The action chips now respond (insert on press-in).
+- **Connect at the end:** Swap and Bridge on a phone show "You get ≈ X via <venue> · best of N" under the amount, guests
+  included; "Sign in to swap/bridge" comes only at the end. The token picker opens on "Popular on Arc".
+- **Activity:** received money is on the timeline; This week leads with P&L + % + a sparkline; detail sheets have
+  marks and padding, and say From for money that came in. The feed restores from the device on a cold open.
+- **Receipt slip:** a wide ticket from 600 px (stub beside), the asset mark by the amount.
+- **Token page:** the logo beside the name; BasedBot/DexScreener/ArcScan pills under the chart; desktop action row +
+  ticket drawer (no empty column); More as grouped icon tiles with real disabled states. The Live chart draws from
+  on-chain trades when history (GeckoTerminal, ~10 calls/min) is busy.
+- **Long/Short:** a "Long or short" board atop Markets (mainnet markets for every session) with Owarine-style live
+  lines vs the hour's open; the ticket uses leverage chips, a 3-cell strip and folded TP/SL; the phone sheet has a live
+  mini chart; prices come from the api's Coinbase ticker relay (`/markets/live/prices`).
+- **Builds:** iOS built locally (EAS free plan out of iOS builds until 11-01) and submitted (`42b1c9eb`); it carries
+  the `production` channel, so `eas update --channel production` ships JS to it. Android preview APK `30b900fe`.
+
+**Sweep checklist (run on every screen before calling a round done):** every token/venue/chain/person shows its mark;
+anything that can't be done looks disabled and says why; empty pickers and lists offer something; loading is the
+content's own shape and never a block that later vanishes; a guest sees quotes and figures before any sign-in; a
+desktop window uses its width (no empty columns); every action has an icon; no chip stretches in a column; copy
+never contradicts itself (one cause per failure).
 
 ## 2026-10-14 — revamp underway (deadline 10-17 11:59 PM ET = Sun 10-18 04:59 WAT)
 
