@@ -40,7 +40,7 @@ was reused is listed under [Prior work](#prior-work-and-what-was-reused).
 | Live usage counts                                       | [getkawase.xyz/live](https://getkawase.xyz/live)                                                                                                                                                                   |
 | Showcase                                                | [getkawase.xyz](https://getkawase.xyz)                                                                                                                                                                             |
 | Docs, in ten languages                                  | [docs.getkawase.xyz](https://docs.getkawase.xyz)                                                                                                                                                                   |
-| iPhone                                                  | TestFlight, invite only for now (build 1.0.0 (9), 2026-10-03); a public link will be on the showcase                                                                                                               |
+| iPhone                                                  | TestFlight public link: **[testflight.apple.com/join/PD3fgXZx](https://testflight.apple.com/join/PD3fgXZx)** (opens once Apple's beta review passes)                                                               |
 | Android                                                 | [APK, EAS build e644e19d](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed)                                                                                           |
 | Mac                                                     | [Desktop preview](https://getkawase.xyz/download/Kawase-mac.dmg) (Apple silicon, not notarized yet)                                                                                                                |
 | Public API                                              | [`/health`](https://api.getkawase.xyz/health), [`/capabilities`](https://api.getkawase.xyz/capabilities), [`/public/stats`](https://api.getkawase.xyz/public/stats), [`/status`](https://api.getkawase.xyz/status) |
@@ -50,7 +50,7 @@ web an email code stands in for Face ID.
 
 ### Where it stands (2026-10-15)
 
-- **Sign-in and the wallet are Privy's** (an email code or Google): the key is split up in Privy's secure enclaves and
+- **Sign-in and the wallet are Privy's** (an email code, Apple or Google): the key is split up in Privy's secure enclaves and
   never reaches Kawase. On the web an emailed code stands in for Face ID before anything binding is signed; the
   [judge walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough) says step by step what runs today.
 - **Testnet:** every flow below has been run end to end with real Arc testnet transactions, recorded as it was built.
