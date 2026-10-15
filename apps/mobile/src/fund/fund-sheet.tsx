@@ -35,7 +35,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
-import { MarkStack, SheetHeaderRow } from "./sheet-parts";
+import { LeadingSlot, MarkStack, MarkStackSkeleton, SheetHeaderRow } from "./sheet-parts";
 import { WalletPanel } from "./wallet-panel";
 
 const CIRCLE_FAUCET = "https://faucet.circle.com";
@@ -190,25 +190,25 @@ function FundBody({ onClose, onFunded }: Omit<FundSheetProps, "open">) {
           index={1}
           title={t("buy.rowTitle")}
           detail={t("fund.buyDetail")}
-          leading={<MarkStack entities={wallets} />}
+          leading={<LeadingSlot><MarkStack entities={wallets} /></LeadingSlot>}
           onPress={() => {
             onClose();
             buy.open();
           }}
         />
-        <SheetRow index={2} title={t("fund.receiveTitle")} detail={t("fund.receiveBody")} leading={<Mark entity={ids.chain} size={SIZE.markToken} />} onPress={() => go("/wallet/receive")} />
+        <SheetRow index={2} title={t("fund.receiveTitle")} detail={t("fund.receiveBody")} leading={<LeadingSlot><Mark entity={ids.chain} size={SIZE.markToken} /></LeadingSlot>} onPress={() => go("/wallet/receive")} />
         <SheetRow
           index={3}
           title={t("fund.exchangeTitle")}
           detail={testnet ? t("fund.mainnetOnly") : t("fund.exchangeBody")}
-          leading={exchangeList.length > 0 ? <MarkStack entities={exchangeList.map((entry) => exchangeKey(entry.slug))} /> : <Skeleton width={SIZE.markToken} height={SIZE.markToken} radius={RADIUS.pill} />}
+          leading={<LeadingSlot>{exchangeList.length > 0 ? <MarkStack entities={exchangeList.map((entry) => exchangeKey(entry.slug))} /> : <MarkStackSkeleton />}</LeadingSlot>}
           onPress={() => setPanel("exchanges")}
         />
         <SheetRow
           index={4}
           title={t("fund.bridgeTitle")}
           detail={testnet ? t("fund.mainnetOnly") : waiting.length > 0 ? t("fund.chainWaitingRow", { amount: money("USDC", waiting[0]!.balance), chain: waiting[0]!.name }) : t("fund.bridgeBody")}
-          leading={<MarkStack entities={sources.map((entity) => entity.id)} />}
+          leading={<LeadingSlot><MarkStack entities={sources.map((entity) => entity.id)} /></LeadingSlot>}
           onPress={() => setPanel("bridge")}
         />
         {/* A browser's own wallets pay in on the web; on a phone the Receive code is the way for any wallet app. */}
@@ -217,7 +217,7 @@ function FundBody({ onClose, onFunded }: Omit<FundSheetProps, "open">) {
             index={5}
             title={t("fund.walletTitle")}
             detail={t("fund.walletBody")}
-            leading={<MarkStack entities={["wallet:metamask", "wallet:rabby", "wallet:phantom"]} />}
+            leading={<LeadingSlot><MarkStack entities={["wallet:metamask", "wallet:rabby", "wallet:phantom"]} /></LeadingSlot>}
             onPress={() => {
               if (!account || !address) {
                 onClose();
@@ -390,7 +390,7 @@ function FaucetRow({
   return (
     <View style={[styles.faucet, { backgroundColor: color.raised2 }]}>
       <View style={styles.faucetHead}>
-        <MarkStack entities={[ids.usdc, ids.eurc]} />
+        <LeadingSlot><MarkStack entities={[ids.usdc, ids.eurc]} /></LeadingSlot>
         <View style={styles.grow}>
           <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("fund.testTitle")}</Text>
           {faucet.state === "loading" && account && hasWallet ? (

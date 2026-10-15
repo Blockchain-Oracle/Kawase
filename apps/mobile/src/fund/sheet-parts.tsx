@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Mark } from "@kawase/ui-native/components/mark";
 
 import { ChevronLeft, Icon, X } from "@/components/kit/icons";
+import { Skeleton } from "@/components/kit/states";
 import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { fire } from "@/feedback/fire";
 
@@ -43,11 +44,32 @@ export function SheetHeaderRow({ title, back, close }: { title: string; back?: {
 }
 
 /** Up to three marks overlapping, each ringed in the row's fill so the stack reads as separate coins. */
+/** The width a full stack takes: every row's leading slot is this wide, so titles line up and never move as marks load. */
+const stackWidth = (size: number, count: number) => size + (count - 1) * size * (1 - STACK_OVERLAP);
+
+/** A row's leading slot, as wide as a full stack whatever it holds (one mark, a stack, or its loading shape). */
+export function LeadingSlot({ children, size = SIZE.markToken }: { children: React.ReactNode; size?: number }) {
+  return <View style={[styles.slot, { width: stackWidth(size, STACK_MAX), height: size }]}>{children}</View>;
+}
+
+/** A stack still loading: the same overlapping circles, quiet. */
+export function MarkStackSkeleton({ size = SIZE.markToken }: { size?: number }) {
+  return (
+    <View style={[styles.stack, { height: size, width: stackWidth(size, STACK_MAX) }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {Array.from({ length: STACK_MAX }, (_, index) => (
+        <View key={index} style={[styles.ghost, { left: index * size * (1 - STACK_OVERLAP) }]}>
+          <Skeleton width={size} height={size} radius={RADIUS.pill} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function MarkStack({ entities, size = SIZE.markToken }: { entities: readonly string[]; size?: number }) {
   const { color } = useTheme();
   const shown = entities.slice(0, STACK_MAX);
   return (
-    <View style={[styles.stack, { height: size, width: size + (shown.length - 1) * size * (1 - STACK_OVERLAP) }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View style={[styles.stack, { height: size, width: stackWidth(size, shown.length) }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {shown.map((entity, index) => (
         <View key={entity} style={[styles.coin, { left: index * size * (1 - STACK_OVERLAP), borderColor: color.raised2, backgroundColor: color.paper, borderRadius: RADIUS.pill }]}>
           <Mark entity={entity} size={size - STACK_RING * SIDES} />
@@ -62,5 +84,7 @@ const styles = StyleSheet.create({
   title: { flex: 1, textAlign: "center" },
   button: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
   stack: { justifyContent: "center" },
+  slot: { justifyContent: "center", alignItems: "flex-start" },
+  ghost: { position: "absolute" },
   coin: { position: "absolute", borderWidth: STACK_RING },
 });
