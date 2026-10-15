@@ -1,72 +1,151 @@
 ---
-title: "开始使用"
-description: "在浏览器、Mac、iPhone 或 Android 上以访客身份打开 Kawase，获取免费的测试币并完成首笔转账。"
-sourceHash: 5fa353c23aeb3f20
+title: "快速上手"
+description: "在任意浏览器、iPhone 或 Android 上以访客身份打开 Kawase；用邮箱验证码、Google 或 Apple 登录；领取免费测试 USDC，完成第一笔付款。"
+sourceHash: 9ed5c43efae036ad
 ---
 
-## 1. 打开应用
+<Flow>
+  <FlowStep icon="eye" title="先看看">以访客身份：无需账户，无需安装。</FlowStep>
+  <FlowStep icon="mail" title="登录">邮箱验证码、Google 或 Apple。没有密码，没有 PIN。</FlowStep>
+  <FlowStep icon="wallet" title="设置">你的钱包和每周预算。手续费由 Kawase 支付。</FlowStep>
+  <FlowStep icon="sparkles" title="提出请求" tone="accent">先领免费测试 USDC，再完成第一笔付款。</FlowStep>
+</Flow>
+
+## 打开应用
 
 <Tabs items={['Web', 'iPhone', 'Android']}>
   <Tab value="Web">
-    在任意现代浏览器中打开 [app.getkawase.xyz](https://app.getkawase.xyz)。你会以**访客**身份开始：无需注册，也无需
-    提供邮箱。你可以和 Kawase 聊天、与它语音交流、浏览每个页面，看看它能做什么。
-
-    在网页上，每当转账需要你确认时，**邮箱验证码**会代替 Face ID。你可以安装网页应用，也可以使用
-    [Mac 桌面应用](./features/web-and-desktop.mdx)。
+    在电脑或手机上的任意现代浏览器中打开 [app.getkawase.xyz](https://app.getkawase.xyz)。你可以从浏览器把它安装成应用
+    （[网页版与桌面版](./features/web-and-desktop.mdx)）。在网页上，凡是需要你确认的付款，都用**邮箱验证码**代替
+    Face ID。
   </Tab>
   <Tab value="iPhone">
-    Kawase 的 iPhone 版本目前处于测试阶段，通过 **TestFlight** 发布。先从 App Store 安装 TestFlight，
-    然后打开你收到的邀请链接。公开的 TestFlight 链接将在应用上线时发布到展示页面。
+    iPhone 版 Kawase 正在 Apple 的 **TestFlight** 上公开测试。在 iPhone 上打开
+    [getkawase.xyz/download](https://getkawase.xyz/download)：一旦 Apple 的测试审核开放测试者，它就会打开 TestFlight
+    邀请；在此之前打开网页版。
   </Tab>
   <Tab value="Android">
-    从 Kawase 下载 Android 版本（APK）：
-    [getkawase.xyz/download](https://getkawase.xyz/download)。
-    在手机上打开它并允许安装。在 Android 上，你需要使用**指纹或屏幕锁**进行确认。
+    从 [getkawase.xyz/download](https://getkawase.xyz/download) 下载 APK，打开后在 Android 提示时允许安装。在 Android
+    上，确认方式是你的**指纹或屏幕锁**。
   </Tab>
 </Tabs>
 
-## 2. 选择语言
+## 先看看，再登录
 
-语言选项位于第一个页面。Kawase 支持[十种语言](./features/languages.mdx)，切换为阿拉伯语或乌尔都语后，整个界面会立即变为从右向左排列。你可以随时在设置中再次更改语言。
+你一开始是**访客**。每个页面都能打开，你可以和 Kawase 聊天、对它说话，看看它会怎么做。登录时，访客期间的一切都不会丢失：
+你的对话和联系人会一并转入你的账户。
 
-## 3. 想保留数据时登录
+<Walkthrough light>
+  <WalkStep title="选择语言" src="start/welcome" zoom="83 3 8" lens="72 41">
+    语言选项就在第一个页面上。Kawase 支持[十种语言](./features/languages.mdx)；选择阿拉伯语和乌尔都语时，整个界面会立即
+    变为从右到左。
 
-访客可以探索所有功能。要持有资金，请使用以下方式登录：
+    <Pin at="66 3">欢迎故事的声音</Pin>
 
-- **邮箱验证码**，
-- **Apple**，或
-- **Google**。
+    <Pin box="5 74.5 90 7">以访客身份先看看</Pin>
 
-无需密码，也无需 PIN。登录后，系统会创建你的钱包（参见[安全性](./safety.mdx)）：一个地址即可在两个网络上使用。你以访客身份进行的所有操作——聊天记录、联系人——都会转入你的账户。
+    <Pin box="5 82.5 90 7">或者现在就创建账户</Pin>
+  </WalkStep>
+  <WalkStep title="先看看" src="start/guest-home" zoom="29 4 12">
+    首页显示 Arc 上的热门内容。在输入栏里打字，轻点光球说话，或打开 **+** 执行任意操作。
 
-设置钱包完全免费：你只需签署一次授权，网络费用由 Kawase 支付。
+    <Pin box="5 81.5 72 6.5">用你自己的话告诉 Kawase 要做什么</Pin>
 
-## 4. 获取测试币
+    <Pin box="81 81 14 7.5">所有操作：转账、兑换、充值……</Pin>
 
-新账户会从**测试网**开始，测试网上的资金没有实际价值。你可以让 Kawase“给我测试币”，也可以从主页面打开水龙头。每天可以领取一次，每次大约获得 **20 test USDC and 20 test EURC**，由 Circle 的水龙头发放。如果应用内领取失败，可以前往 Circle 自己的水龙头：[faucet.circle.com](https://faucet.circle.com)（选择“Arc Testnet”）。
+    <Pin box="43 91 14 7">和 Kawase 说话</Pin>
+  </WalkStep>
+  <WalkStep title="登录" src="start/sign-in">
+    登录后你才能持有资金。没有密码，也没有 PIN。
 
-## 5. 接受每日额度
+    <Pin box="5 61 90 7">邮箱验证码</Pin>
 
-Kawase 会请你接受一次**每日额度**：这是智能代理每天可以代你转出的 USDC 金额，无需再次询问。你可以通过一次 Face ID 批准。批准前，卡片上会显示默认额度；详情请参见[限额表](./safety.mdx#default-limits)。
+    <Pin box="5 82.5 90 7">Google</Pin>
 
-## 6. 完成首笔转账
+    <Pin box="5 91 90 7">Apple</Pin>
+  </WalkStep>
+  <WalkStep title="输入验证码" src="start/code">
+    输入邮件中的六位数字。最后一位输入完成后，Kawase 立即为你登录。
 
-例如，输入或说（用朋友的 @用户名，或粘贴你自己另一个钱包的地址）：
+    <Pin box="5 74.5 90 7">邮件中的六位数字</Pin>
+  </WalkStep>
+</Walkthrough>
 
-> 转 1 dollar 给 @friend
+## 你的钱包和每周预算
 
-Kawase 会找到收款人，检查你的余额和限额，并显示转账卡片：准确金额、币种、收款人和网络。在每日额度内时，转账会立即发送；超过额度时，则会等待你的 Face ID。卡片会一直跟踪这笔转账，直到网络确认，收据中也会附上区块浏览器链接。
+登录会创建你的钱包：**一个在两个网络上都可用的地址**，由你自己持有（见[安全](./safety.mdx)）。接下来是三个简短的步骤。
 
-## 7. 试试其他功能
+<Walkthrough>
+  <WalkStep title="选择用户名" src="start/handle" zoom="17 47 12">
+    别人可以通过你的 `@用户名` 付款给你。这是可选的，之后也可以在设置中修改（[用户名](./features/contacts-and-handles.mdx)）。
 
-- “swap 2 dollars to euros”
-- “move 1 dollar to Base”
-- “put 5 dollars in savings”
-- “every Friday at 9 send 1 dollar to Alex”
-- “keep 20 dollars in my wallet and save the rest”
-- “buy 10 dollars of USDC with a card” （测试网上的 Circle 沙盒）
-- “remember that Alex is my brother”
+    <Pin box="5 37 90 7.5">你的用户名，输入时即时检查</Pin>
 
-在**主网**上，你还可以使用 Markets、交易任意代币、做多和做空，以及借款。请参阅[功能介绍](./features/swap-and-trade.mdx)。
+    <Pin box="5 84 90 7">继续，或暂时跳过</Pin>
+  </WalkStep>
+  <WalkStep title="设置钱包" src="start/wallet-setup">
+    Kawase 创建钱包并在网络上完成设置。只需几秒钟，而且**网络手续费由 Kawase 支付**。
 
-每项操作都会先显示一张卡片，并准确告诉你需要进行什么操作。
+    <Pin box="5 34.5 90 6.5">钱包已创建</Pin>
+
+    <Pin box="5 41.5 90 10">通过 Kawase 的中继在 Arc Testnet 上完成设置</Pin>
+  </WalkStep>
+  <WalkStep title="你的每周预算" src="start/budget">
+    在预算范围内，Kawase 会替你兑换、转移资金和赚取收益，**不必每次都问你**，单次不超过设定金额。付款给新的人、开仓或提高
+    限额，始终都会先问你。你可以在这里修改金额，也可以之后在[预算](./features/limits-and-control.mdx)中修改。
+
+    <Pin box="5 30.5 85 8">涵盖内容</Pin>
+
+    <Pin box="5 69.5 90 7">开启</Pin>
+
+    <Pin box="5 77.5 90 7">或者设置你自己的金额</Pin>
+  </WalkStep>
+  <WalkStep title="给 Kawase 第一项任务" src="start/first-job">
+    选一项，看它完成；也可以之后再来。
+
+    <Pin box="5 21.5 90 7.5">来自 Circle 的免费测试 USDC</Pin>
+  </WalkStep>
+  <WalkStep title="免费测试资金" src="start/faucet">
+    新账户从**测试网**开始，那里的钱没有价值。每次领取可从 Circle 水龙头获得 **20 测试 USDC 和 20 测试 EURC**。如果领取
+    被拒绝，卡片会链接到 Circle 自己的水龙头（[faucet.circle.com](https://faucet.circle.com)，选择 “Arc Testnet”）。
+
+    <Pin box="4 9.5 50 10">到账后的余额</Pin>
+
+    <Pin box="4 41.5 92 18">来自 Circle 水龙头的 20 USDC 和 20 EURC</Pin>
+
+    <Pin at="53 4">测试网：只有测试资金</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## 测试网与主网
+
+首页顶部的**网络开关**显示你所在的网络，轻点一下即可双向切换。测试网免费，用起来和真实网络一样；第一次切换到主网时，
+会请你确认那里的钱是真实资金。见[网络切换](./features/network-toggle.mdx)。
+
+## 你的第一个请求
+
+像对人说话一样，输入或说出你想做的事：
+
+> 给 @sam 转 1 美元
+
+<Clip src="send/chat" alt="在聊天中输入 “send 2 dollars to @sam”：Kawase 理解请求、准备转账并发出，签名 → 已发送 → 已确认。" />
+
+Kawase 找到收款人，检查你的余额和预算，并显示付款卡片：确切金额、代币、收款人和网络。新的收款人始终需要你确认；在预算
+范围内，付给联系人的款项会立即发出。卡片会一直跟进，直到网络确认付款，收据链接到区块浏览器。完整流程见
+[转账、收款和收款请求](./features/send-receive-request.mdx)。
+
+其余一切只需轻点 **+**：充值、转账、收款、兑换和跨链。
+
+<Clip src="start/fan-open" alt="在首页轻点 +：跨链、兑换、收款、转账和充值依次展开，然后充值页面打开，列出所有入金方式。" />
+
+接着试试：
+
+- “把 2 美元换成欧元”
+- “把 1 美元转到 Base”
+- “把 5 美元存进储蓄”
+- “每周五 9 点给 Sam 转 1 美元”
+- “用银行卡买 10 美元的 USDC”（测试网上使用 Circle 的沙盒）
+- “记住 Sam 是我哥哥”
+
+每个请求都会先显示一张卡片，并准确说明需要你做什么。在**主网**上还有更多：Arc 上的所有代币、[做多和做空](./features/long-short.mdx)
+以及借款。

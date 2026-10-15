@@ -1,86 +1,158 @@
 ---
 title: "Primeros pasos"
-description: "Abre Kawase en el navegador como invitado, en Mac o en iPhone o Android. Después, consigue Dinero de prueba gratis y haz tu primer pago."
-sourceHash: 5fa353c23aeb3f20
+description: "Abre Kawase como invitado en cualquier navegador, en iPhone o Android; inicia sesión con un código por email, Google o Apple; consigue USDC de prueba gratis y haz tu primer pago."
+sourceHash: 9ed5c43efae036ad
 ---
 
-## 1. Abre la app
+<Flow>
+  <FlowStep icon="eye" title="Echar un vistazo">Como invitado: sin cuenta y sin instalar nada.</FlowStep>
+  <FlowStep icon="mail" title="Iniciar sesión">Un código por email, Google o Apple. Sin contraseña ni PIN.</FlowStep>
+  <FlowStep icon="wallet" title="Configurar">Tu billetera y tu presupuesto semanal. Kawase paga la comisión.</FlowStep>
+  <FlowStep icon="sparkles" title="Pedir" tone="accent">USDC de prueba gratis y, después, tu primer pago.</FlowStep>
+</Flow>
+
+## Abrir la app
 
 <Tabs items={['Web', 'iPhone', 'Android']}>
   <Tab value="Web">
-    Abre [app.getkawase.xyz](https://app.getkawase.xyz) en cualquier navegador moderno. Empiezas como **invitado**: no
-    necesitas registrarte ni dar tu correo electrónico. Puedes chatear con Kawase, hablarle, explorar todas las pantallas
-    y ver qué haría.
-
-    En la web, un **código por correo electrónico** sustituye a Face ID cuando un pago necesita tu confirmación. Puedes
-    instalar la aplicación web o usar la [aplicación de escritorio para Mac](./features/web-and-desktop.mdx).
+    Abre [app.getkawase.xyz](https://app.getkawase.xyz) en cualquier navegador moderno, en un ordenador o en el móvil.
+    Puedes instalarla como app desde el navegador ([web y escritorio](./features/web-and-desktop.mdx)). En la web, un
+    **código por email** sustituye a Face ID siempre que un pago necesita tu confirmación.
   </Tab>
   <Tab value="iPhone">
-    Kawase para iPhone se distribuye mediante **TestFlight** mientras está en fase beta. Instala TestFlight desde App
-    Store y abre el enlace de invitación que recibiste. Publicaremos un enlace público de TestFlight en la página de
-    novedades cuando esté disponible.
+    Kawase para iPhone es una beta pública en **TestFlight** de Apple. Abre
+    [getkawase.xyz/download](https://getkawase.xyz/download) en el iPhone: abre la invitación de TestFlight en cuanto la
+    revisión beta de Apple admite testers, y la app web mientras tanto.
   </Tab>
   <Tab value="Android">
-    Descarga la versión de Android (APK) desde Kawase:
-    [getkawase.xyz/download](https://getkawase.xyz/download).
-    Ábrela en el teléfono y permite la instalación. En Android, la confirmación se hace con tu **huella digital o el
-    bloqueo de pantalla**.
+    Descarga el APK desde [getkawase.xyz/download](https://getkawase.xyz/download), ábrelo y permite la instalación
+    cuando Android lo pida. En Android, tu confirmación es tu **huella o el bloqueo de pantalla**.
   </Tab>
 </Tabs>
 
-## 2. Elige tu idioma
+## Echa un vistazo y después inicia sesión
 
-El selector de idioma aparece en la primera pantalla. Kawase está disponible en [diez idiomas](./features/languages.mdx).
-El árabe y el urdu cambian todo el diseño a derecha a izquierda de inmediato. Puedes volver a cambiarlo en cualquier
-momento desde Ajustes.
+Empiezas como **invitado**. Se abren todas las pantallas, puedes escribirle a Kawase y hablarle, y ver lo que haría. Nada
+de lo que hiciste como invitado se pierde al iniciar sesión: tu chat y tus contactos pasan a tu cuenta.
 
-## 3. Inicia sesión cuando quieras guardar tus datos
+<Walkthrough light>
+  <WalkStep title="Elige tu idioma" src="start/welcome" zoom="83 3 8" lens="72 41">
+    El selector de idioma está en la primera pantalla. Kawase habla [diez idiomas](./features/languages.mdx); el árabe y
+    el urdu ponen toda la interfaz de derecha a izquierda al instante.
 
-Los invitados pueden explorar todas las funciones. Para guardar dinero, inicia sesión con:
+    <Pin at="66 3">El sonido de la historia de bienvenida</Pin>
 
-- un **código por correo electrónico**,
-- **Apple** o
-- **Google**.
+    <Pin box="5 74.5 90 7">Echar un vistazo como invitado</Pin>
 
-No hay contraseña ni PIN. Al iniciar sesión se crea tu billetera (consulta [seguridad](./safety.mdx)): una dirección que
-funciona en las dos redes. Todo lo que hiciste como invitado —tus chats y tus contactos— pasa a tu cuenta.
+    <Pin box="5 82.5 90 7">O crear una cuenta ahora</Pin>
+  </WalkStep>
+  <WalkStep title="Echa un vistazo" src="start/guest-home" zoom="29 4 12">
+    Inicio muestra lo que es tendencia en Arc. Escribe en la barra, toca el orbe para hablar o abre **+** para cualquier
+    acción.
 
-Configurar la billetera no te cuesta nada: firmas una autorización y Kawase paga la comisión de la red.
+    <Pin box="5 81.5 72 6.5">Dile a Kawase qué hacer, con tus palabras</Pin>
 
-## 4. Consigue Dinero de prueba
+    <Pin box="81 81 14 7.5">Todas las acciones: enviar, intercambiar, añadir dinero…</Pin>
 
-Las cuentas nuevas empiezan en la **Red de pruebas**, donde el dinero no tiene valor. Pídele a Kawase «dame Dinero de
-prueba» o abre el faucet desde la pantalla de inicio. Cada solicitud entrega unos **20 USDC de prueba y 20 EURC de
-prueba** desde el faucet de Circle, una vez al día. Si la solicitud desde la app no funciona, el faucet de Circle está
-en [faucet.circle.com](https://faucet.circle.com) (elige «Arc Testnet»).
+    <Pin box="43 91 14 7">Habla con Kawase</Pin>
+  </WalkStep>
+  <WalkStep title="Inicia sesión" src="start/sign-in">
+    Iniciar sesión es lo que te permite tener dinero. No hay contraseña ni PIN.
 
-## 5. Acepta tu asignación diaria
+    <Pin box="5 61 90 7">Un código por email</Pin>
 
-Kawase te pide una vez que aceptes una **asignación diaria**: una cantidad de USDC al día que el agente puede enviar por ti
-sin volver a preguntarte. La apruebas con un Face ID. El valor predeterminado aparece en la tarjeta antes de aprobarlo;
-consulta la [tabla de límites](./safety.mdx#default-limits).
+    <Pin box="5 82.5 90 7">Google</Pin>
 
-## 6. Haz tu primer pago
+    <Pin box="5 91 90 7">Apple</Pin>
+  </WalkStep>
+  <WalkStep title="Escribe el código" src="start/code">
+    Escribe los seis dígitos del email. Kawase inicia tu sesión en cuanto pones el último.
 
-Escribe o di, por ejemplo (con el @usuario de un amigo, o pegando la dirección de otra billetera tuya):
+    <Pin box="5 74.5 90 7">Los seis dígitos del email</Pin>
+  </WalkStep>
+</Walkthrough>
 
-> envía 1 dólar a @amigo
+## Tu billetera y tu presupuesto semanal
 
-Kawase encuentra al destinatario, comprueba tu saldo y tus límites y muestra la tarjeta del pago: cantidad exacta,
-moneda, destinatario y red. Si está dentro de tu asignación, lo envía de inmediato; si la supera, espera tu Face ID. La
-tarjeta sigue el pago hasta que la red lo confirma y el recibo incluye un enlace al explorador de bloques.
+Al iniciar sesión se crea tu billetera: **una sola dirección que funciona en las dos redes**, y es tuya (consulta
+[seguridad](./safety.mdx)). Siguen tres pasos cortos.
 
-## 7. Prueba el resto
+<Walkthrough>
+  <WalkStep title="Elige tu alias" src="start/handle" zoom="17 47 12">
+    Pueden pagarte a tu `@alias`. Es opcional y puedes cambiarlo después en Ajustes
+    ([alias](./features/contacts-and-handles.mdx)).
+
+    <Pin box="5 37 90 7.5">Tu alias, comprobado mientras escribes</Pin>
+
+    <Pin box="5 84 90 7">Continuar u omitir por ahora</Pin>
+  </WalkStep>
+  <WalkStep title="Preparando tu billetera" src="start/wallet-setup">
+    Kawase crea la billetera y la configura en la red. Tarda unos segundos y **Kawase paga la comisión de red**.
+
+    <Pin box="5 34.5 90 6.5">Tu billetera, creada</Pin>
+
+    <Pin box="5 41.5 90 10">Configurada en Arc Testnet a través del relayer de Kawase</Pin>
+  </WalkStep>
+  <WalkStep title="Tu presupuesto semanal" src="start/budget">
+    Dentro del presupuesto, Kawase intercambia, mueve y hace rendir tu dinero **sin preguntarte cada vez**, hasta un
+    importe fijo por acción. Pagar a alguien nuevo, abrir una posición o subir un límite siempre te pregunta. Puedes
+    cambiar las cifras aquí o más tarde en [Presupuesto](./features/limits-and-control.mdx).
+
+    <Pin box="5 30.5 85 8">Qué cubre</Pin>
+
+    <Pin box="5 69.5 90 7">Actívalo</Pin>
+
+    <Pin box="5 77.5 90 7">O pon tus propias cifras</Pin>
+  </WalkStep>
+  <WalkStep title="Dale a Kawase su primer encargo" src="start/first-job">
+    Elige uno y míralo trabajar, o vuelve a ello más tarde.
+
+    <Pin box="5 21.5 90 7.5">USDC de prueba gratis de Circle</Pin>
+  </WalkStep>
+  <WalkStep title="Dinero de prueba gratis" src="start/faucet">
+    Las cuentas nuevas empiezan en la **red de pruebas**, donde el dinero no tiene valor. Cada solicitud trae **20 USDC y
+    20 EURC de prueba** del faucet de Circle. Si una solicitud se rechaza, la tarjeta enlaza al faucet de Circle
+    ([faucet.circle.com](https://faucet.circle.com), «Arc Testnet»).
+
+    <Pin box="4 9.5 50 10">Tu saldo, en cuanto llega</Pin>
+
+    <Pin box="4 41.5 92 18">20 USDC y 20 EURC del faucet de Circle</Pin>
+
+    <Pin at="53 4">Red de pruebas: solo dinero de prueba</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Red de pruebas y red principal
+
+El **selector de red** arriba en Inicio dice dónde estás y cambia con un toque, en los dos sentidos. La red de pruebas es
+gratis y se comporta como la de verdad; el primer cambio a la red principal te pide confirmar que allí el dinero es real.
+Consulta [el cambio de red](./features/network-toggle.mdx).
+
+## Tu primera petición
+
+Escribe o di lo que quieres, como se lo dirías a una persona:
+
+> envía 1 dólar a @sam
+
+<Clip src="send/chat" alt="Escribiendo «send 2 dollars to @sam» en el chat: Kawase lo entiende, prepara el envío y sale, Firmando → Enviado → Confirmado." />
+
+Kawase encuentra al destinatario, comprueba tu saldo y tu presupuesto, y muestra la tarjeta del pago: el importe exacto,
+el token, el destinatario y la red. Alguien nuevo siempre espera tu confirmación; dentro de tu presupuesto, un pago a un
+contacto sale al momento. La tarjeta sigue el pago hasta que la red lo confirma, y su recibo enlaza al explorador. Todo el
+recorrido está en [Enviar, recibir y solicitar](./features/send-receive-request.mdx).
+
+Todo lo demás está a un toque en **+**: añadir dinero, enviar, recibir, intercambiar y usar un puente.
+
+<Clip src="start/fan-open" alt="Tocando + en Inicio: Puente, Intercambiar, Recibir, Enviar y Añadir dinero se despliegan, y Añadir dinero se abre con todas las formas de recargar." />
+
+Después prueba:
 
 - «cambia 2 dólares a euros»
 - «mueve 1 dólar a Base»
 - «pon 5 dólares en ahorros»
-- «envía 1 dólar a Alex todos los viernes a las 9»
-- «guarda 20 dólares en mi billetera y ahorra el resto»
-- «compra 10 dólares de USDC con una tarjeta» (el entorno de pruebas de Circle en la Red de pruebas)
-- «recuerda que Alex es mi hermano»
+- «cada viernes a las 9 envía 1 dólar a Sam»
+- «compra 10 dólares de USDC con tarjeta» (el sandbox de Circle en la red de pruebas)
+- «recuerda que Sam es mi hermano»
 
-En la **Red principal** también están disponibles Mercados, Operar cualquier token, Largo y corto y Pedir y prestar. Consulta
-las [funciones](./features/swap-and-trade.mdx).
-
-Cada acción muestra primero una tarjeta y te indica exactamente qué necesita de ti.
+Cada una muestra primero una tarjeta y dice exactamente qué necesita de ti. En la **red principal** hay más: todos los
+tokens de Arc, [largo y corto](./features/long-short.mdx) y préstamos.
