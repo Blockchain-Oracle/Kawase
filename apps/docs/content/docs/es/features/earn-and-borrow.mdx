@@ -1,43 +1,79 @@
 ---
 title: "Generar rendimiento y pedir prestado"
-description: "Compara dónde puede generar rendimiento tu dinero en Arc (Aave V4, bóvedas de Morpho y Aero), deposita y retira con una sola aprobación, y pide prestado usando lo que tienes como garantía, con un indicador de salud en tiempo real."
-sourceHash: e6e77a22bbe7996c
+description: "Haz rendir tu USDC en bóvedas de Morpho (con Aave V4 y Aero al lado), configura el ahorro automático para tener listo lo que necesitas y pide prestado contra lo que tienes en Aave V4 con un indicador de salud en vivo."
+sourceHash: d63b7f02271fde82
 ---
 
 <Status ids="yield lend" />
 
 <Marks names="aave morpho aero circle usdc eurc cirbtc weth" />
 
-## Opciones de rendimiento
+<Flow>
+  <FlowStep icon="search" title="Comparar">Tasas en vivo de cada fuente que acepta tu activo.</FlowStep>
+  <FlowStep icon="savings" title="Depositar" tone="accent">Un deslizamiento, una transacción, en la bóveda que elijas.</FlowStep>
+  <FlowStep icon="repeat" title="Ahorro automático">Ten un importe listo; el resto rinde.</FlowStep>
+  <FlowStep icon="wallet" title="Recuperarlo" tone="ink">Cualquier importe, cuando quieras.</FlowStep>
+</Flow>
 
-«¿Dónde pueden generar rendimiento mis 200 dólares?». Kawase compara todas las opciones que aceptan tu activo, con **datos en tiempo real**:
+## Ganar, paso a paso
 
-- **Aave V4** para suministrar: la tasa actual, cuánto podría pagar el mercado ahora mismo y su tamaño;
-- **Bóvedas de Morpho** incluidas en App Kit Earn de Circle, ordenadas según lo que podrían devolverte ahora. Nunca se ofrece una bóveda que no pueda devolverte tu dinero, y se señala la poca liquidez;
-- **Aero**: campañas de liquidez de Merkl, mostradas como **avanzadas** y solo para consultar.
+«Pon 50 dólares en ahorros», «¿dónde pueden rendir mis 200 dólares?», o **Ganar** desde Inicio.
 
-Las opciones se ordenan por tasa entre las fuentes que podrían devolverte tu cantidad, y la mejor aparece marcada. Al tocar Aave, se abre el formulario para suministrar; al tocar una bóveda, se abre Earn para esa bóveda.
+<Walkthrough>
+  <WalkStep title="Ganar" src="earn/vaults">
+    El titular es la mejor tasa que tu activo puede ganar ahora, leída en vivo. Debajo: el **ahorro automático** y cada
+    bóveda con su tasa y lo que podría pagar ahora mismo.
 
-## Generar rendimiento con bóvedas de Morpho
+    <Pin box="4 34.5 47 5.5">El activo con el que ganar</Pin>
 
-«Guarda 50 dólares», o abre la pantalla de **Generar rendimiento**. Deposita USDC en la bóveda que elijas (o en la mejor que esté activa) y retira cualquier cantidad. Tus **posiciones** se consultan en tiempo real en las bóvedas. Cada depósito o retiro requiere **un Face ID** y se envía como una sola transacción. [Ahorro automático](./automations.mdx#auto-save) usa las mismas bóvedas por su cuenta.
+    <Pin box="4 43 92 24.5">Ahorra lo que no necesitas</Pin>
 
-En la red de pruebas, Generar rendimiento usa las bóvedas de prueba de Morpho de Arc.
+    <Pin box="4 75 92 20">Bóvedas: tasa y lo que pueden pagar ahora</Pin>
+  </WalkStep>
+  <WalkStep title="Depositar" src="earn/ticket">
+    Elige una bóveda (o deja que Kawase tome la mejor activa), escribe el importe, luego **Revisar** y desliza. Cada depósito
+    o retiro es **una sola transacción** desde tu propia billetera.
 
-## Pedir prestado y suministrar en Aave V4
+    <Pin box="4 13.5 92 9">La bóveda, su fuente y su tasa</Pin>
 
-La pantalla de **Pedir prestado** (desde Generar rendimiento en la red principal) muestra primero tu posición en Aave V4: lo que debes (con **Pagar**), lo que has suministrado (con **Añadir** y **Retirar**), el **indicador de salud** y cuánto margen te queda. Después muestra cuánto puedes pedir prestado y a qué tasa.
+    <Pin at="75 28">Sobre esta bóveda</Pin>
 
-- **Pide prestado** USDC, EURC, cirBTC o WETH usando como garantía **USDC, cirBTC o WETH**. EURC no puede usarse como garantía en Aave V4. Kawase elige la garantía de tu cartera (el activo que tienes y que más vale después de aplicar su factor) y la incluye **en la misma transacción**.
-- El indicador cambia con cada dígito que escribes. El máximo te mantiene en el nivel mínimo seguro.
-- Se rechaza un préstamo que deje la salud **por debajo de 1.25**; si queda **por debajo de 1.5**, recibirás una advertencia.
-- Si tienes un solo activo como garantía, el formulario muestra el **precio al que se liquidaría**.
-- **Paga** una parte o todo. «Todo» paga la cantidad completa con un pequeño margen para los intereses y restablece la aprobación.
+    <Pin box="4 73.5 92 7">Revisar y deslizar</Pin>
+  </WalkStep>
+</Walkthrough>
 
-Cada acción se vuelve a comprobar con precios actualizados cuando la apruebas, se simula desde tu cartera y se envía como **una sola transacción**. Confirmas deslizando y usando Face ID.
+Tus **posiciones** se leen en vivo de las bóvedas. Nunca se ofrece una bóveda que no pudiera devolverte el dinero ahora, y la
+liquidez baja se marca. En la red de pruebas, Ganar usa las bóvedas de prueba de Arc Testnet con dinero de prueba.
 
-## No disponible en la red de pruebas
+### Dónde puede rendir
 
-Aave V4 solo está en la red principal de Arc, así que pedir prestado y suministrar en Aave también. Las bóvedas de Morpho funcionan en ambas redes.
+«¿Dónde pueden rendir mis 200 dólares?» compara cada fuente que acepta tu activo, con **lecturas en vivo**: el depósito en
+**Aave V4** (la tasa, lo que el mercado podría pagar ahora, su tamaño), las **bóvedas de Morpho** listadas por App Kit Earn de
+Circle y las campañas de liquidez de **Aero** de Merkl (mostradas como avanzadas, solo lectura). Se ordenan por tasa entre
+las que podrían devolverte tu importe.
+
+## Ahorro automático
+
+«Deja 100 dólares en mi billetera y ahorra el resto.» El **ahorro automático** mantiene ese importe listo y lleva lo que
+sobre a tus propios ahorros en bóveda; cuando tu billetera baja del límite, la recarga. Comprueba a diario y cada vez que
+llega dinero, y su permiso solo le deja mover USDC **entre tu billetera y tus propios ahorros**. Consulta
+[automatizaciones](./automations.mdx).
+
+## Pedir prestado y depositar en Aave V4
+
+**Pedir prestado** (red principal) muestra primero tu posición en Aave V4: lo que debes (con **Devolver**), lo que
+depositaste (con **Añadir** y **Retirar**), el **indicador de salud** y el margen que queda; después, lo que puedes pedir y a
+qué tasa.
+
+- **Pide prestado** USDC, EURC, cirBTC o WETH contra **USDC, cirBTC o WETH**. EURC no puede ser garantía en Aave V4. Kawase
+  elige la garantía de tu billetera y la deposita **en la misma transacción**.
+- El indicador se mueve con cada dígito que escribes; **Máx** te deja en el mínimo seguro. Un préstamo que dejaría la salud
+  **por debajo de 1,25 se rechaza**, y **por debajo de 1,5** recibes un aviso. Con un solo activo de garantía, el ticket
+  muestra el precio al que se liquidaría.
+- **Devuelve** una parte o todo. «Todo» lo devuelve con un pequeño margen para los intereses y restablece la aprobación.
+
+Cada acción se vuelve a comprobar con precios frescos al aprobar, se simula desde tu billetera y se envía en una sola
+transacción que confirmas deslizando. Aave V4 está solo en la red principal de Arc; las bóvedas de Morpho funcionan en las
+dos redes.
 
 <ScopeList ids="yield lend" />
