@@ -1,0 +1,95 @@
+// /download's "Email me when it opens" (Abu, 10-15: "request access to join, and then we'll send you a link"): the
+// address joins the iPhone app's public TestFlight group through the App Store Connect API, so Apple itself emails the
+// TestFlight invitation the minute its beta review lets testers in. Kawase then sends one email of its own, in its own
+// layout, saying so and what works meanwhile. Nothing is stored here: the address goes to Apple, and to Resend for that
+// one email. Limits: one request per address in ten minutes, and a cap for the whole list per hour.
+import { createPrivateKey, sign } from "node:crypto";
+
+import { PUBLIC_LINKS } from "@kawase/config";
+import type { Logger } from "@kawase/log";
+
+import type { ResendEmail } from "../notify/email";
+import { emailHtml, emailText, type EmailContent } from "../notify/email-layout";
+
+export type TestflightConfig = { keyId: string; issuer: string; privateKey: string; groupId: string };
+export type InviteResult = "sent" | "already" | "unavailable" | "failed" | "busy";
+
+const API = "https://api.appstoreconnect.apple.com/v1/betaTesters";
+/** Apple accepts tokens up to 20 minutes long; a short one is enough for one call. */
+const TOKEN_SECONDS = 300;
+const MS = 1000;
+const HTTP_CONFLICT = 409;
+const TIMEOUT_MS = 10_000;
+const PER_ADDRESS_MS = 600_000;
+const HOUR_MS = 3_600_000;
+const PER_HOUR = 100;
+
+const CONFIRMATION: Omit<EmailContent, "preheader"> = {
+  rtl: false,
+  label: "Kawase for iPhone",
+  headline: "You're on the list",
+  body: "Apple will email you the TestFlight invitation the minute Kawase's beta opens: open it on your iPhone, install TestFlight, then Kawase. Until then Kawase works in your browser and on Android, with the same account.",
+  primary: { label: "Open Kawase in your browser", href: PUBLIC_LINKS.webApp },
+  secondary: [{ label: "Get the Android app", href: `${PUBLIC_LINKS.landing}/download` }],
+  footer: ["You asked for this on getkawase.xyz/download. Kawase sends nothing else to this address unless you sign up."],
+};
+
+export class TestflightInvites {
+  private readonly recent = new Map<string, number>();
+  private hour: number[] = [];
+
+  constructor(
+    private readonly config: TestflightConfig | undefined,
+    private readonly email: ResendEmail | undefined,
+    private readonly log?: Logger,
+  ) {}
+
+  private token(): string {
+    const { keyId, issuer, privateKey } = this.config!;
+    const key = createPrivateKey(privateKey.replace(/\\n/g, "\n"));
+    const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const now = Math.floor(Date.now() / MS);
+    const head = b64({ alg: "ES256", kid: keyId, typ: "JWT" });
+    const body = b64({ iss: issuer, iat: now, exp: now + TOKEN_SECONDS, aud: "appstoreconnect-v1" });
+    return `${head}.${body}.${sign("sha256", Buffer.from(`${head}.${body}`), { key, dsaEncoding: "ieee-p1363" }).toString("base64url")}`;
+  }
+
+  async invite(address: string): Promise<InviteResult> {
+    if (!this.config) return "unavailable";
+    const now = Date.now();
+    this.hour = this.hour.filter((at) => now - at < HOUR_MS);
+    const last = this.recent.get(address);
+    if ((last && now - last < PER_ADDRESS_MS) || this.hour.length >= PER_HOUR) return "busy";
+    this.recent.set(address, now);
+    this.hour.push(now);
+    try {
+      const response = await fetch(API, {
+        method: "POST",
+        headers: { authorization: `Bearer ${this.token()}`, "content-type": "application/json" },
+        body: JSON.stringify({
+          data: { type: "betaTesters", attributes: { email: address }, relationships: { betaGroups: { data: [{ type: "betaGroups", id: this.config.groupId }] } } },
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        // Apple answers 409 both for an address already on the list and for one it won't take: only the first says so.
+        const body = (await response.json().catch(() => null)) as { errors?: { code?: string; detail?: string }[] } | null;
+        const first = body?.errors?.[0];
+        if (response.status === HTTP_CONFLICT && /DUPLICATE|already/i.test(`${first?.code ?? ""} ${first?.detail ?? ""}`)) return "already";
+        this.log?.warn({ status: response.status, code: first?.code }, "testflight invite refused");
+        return "failed";
+      }
+      // Apple has the address: one email of Kawase's own says what happens next (a failure here changes nothing).
+      if (this.email) {
+        const content = { ...CONFIRMATION, preheader: "Apple sends the TestFlight invitation the minute the beta opens." };
+        await this.email
+          .send({ to: address, subject: "You're on the list for Kawase on iPhone", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-testflight-${Buffer.from(address).toString("base64url")}` })
+          .catch((error: unknown) => this.log?.warn({ err: error }, "testflight confirmation email failed"));
+      }
+      return "sent";
+    } catch (error) {
+      this.log?.warn({ err: error }, "testflight invite failed");
+      return "failed";
+    }
+  }
+}

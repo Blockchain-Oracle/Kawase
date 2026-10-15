@@ -45,6 +45,7 @@ import type {
 } from "@kawase/api-client";
 import {
   approvals,
+  automationRuns,
   type Db,
   intentDrafts,
   intents,
@@ -54,6 +55,7 @@ import {
   users,
   withOutbox,
   txAttempts,
+  withdrawals,
 } from "@kawase/db";
 import { allowanceAvailable, encodeRedeemTransfer } from "@kawase/integrations-delegation";
 import {
@@ -1232,15 +1234,32 @@ export class SendService {
       await this.contacts.markPaid(tx, intent.userId, intent.network, draft.to, at);
       if (intent.paymentRequestId)
         await this.requests.markPaid(tx, intent.paymentRequestId, { txHash: receipt.transactionHash, from: draft.from, intentId: intent.id });
-      await this.inbox.add(tx, {
-        userId: intent.userId,
-        network: intent.network,
-        kind: "send_completed",
-        params: { amount: draft.amount.toString(), ...tokenParams((await this.currentDraft(intent))?.payload as DraftPayload | undefined, this.clients(intent.network).network, draft), to: draft.to },
-        intentId: intent.id,
-        txHash: receipt.transactionHash,
-        dedupeKey: `send_completed:${intent.id}`,
-      });
+      // A withdrawal's own send is told once, by the withdrawal when it arrives (withdraw/withdrawals.ts); an
+      // automation's send says which run made it, so its email and push open that run.
+      const [withdrawal] = await tx
+        .select({ id: withdrawals.id })
+        .from(withdrawals)
+        .where(sql`${withdrawals.steps} @> ${JSON.stringify([{ intentId: intent.id }])}::jsonb`)
+        .limit(1);
+      const [run] =
+        intent.originSurface === "automation"
+          ? await tx.select({ id: automationRuns.id, automationId: automationRuns.automationId }).from(automationRuns).where(eq(automationRuns.intentId, intent.id)).limit(1)
+          : [];
+      if (!withdrawal)
+        await this.inbox.add(tx, {
+          userId: intent.userId,
+          network: intent.network,
+          kind: "send_completed",
+          params: {
+            amount: draft.amount.toString(),
+            ...tokenParams((await this.currentDraft(intent))?.payload as DraftPayload | undefined, this.clients(intent.network).network, draft),
+            to: draft.to,
+            ...(run ? { runId: run.id, automationId: run.automationId } : {}),
+          },
+          intentId: intent.id,
+          txHash: receipt.transactionHash,
+          dedupeKey: `send_completed:${intent.id}`,
+        });
       return {
         result: { completed: true },
         events: [

@@ -91,6 +91,10 @@ const app = createApp({
   webUrl: env.KAWASE_WEB_URL,
   push: new ExpoPush(env.EXPO_ACCESS_TOKEN),
   email: env.RESEND_API_KEY && env.EMAIL_FROM ? new ResendEmail(env.RESEND_API_KEY, env.EMAIL_FROM) : undefined,
+  testflight:
+    env.ASC_KEY_ID && env.ASC_ISSUER_ID && env.ASC_PRIVATE_KEY && env.ASC_BETA_GROUP_ID
+      ? { keyId: env.ASC_KEY_ID, issuer: env.ASC_ISSUER_ID, privateKey: env.ASC_PRIVATE_KEY, groupId: env.ASC_BETA_GROUP_ID }
+      : undefined,
   notifyTickMs: NOTIFY_TICK_MS,
   webOrigins: [
     ...env.KAWASE_WEB_ORIGINS.split(",")

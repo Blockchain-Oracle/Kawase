@@ -270,7 +270,18 @@ export class NotifyService {
           outcomes.set(delivery.id, { status: "skipped", error: "no_email" });
           continue;
         }
-        emails.push({ delivery, to: user.email, email: renderEmail(rendered, locale, this.channels.webUrl, isRtlLocale(locale)) });
+        emails.push({
+          delivery,
+          to: user.email,
+          email: renderEmail(
+            { kind: liveKind(item.kind), network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash },
+            rendered,
+            locale,
+            this.channels.webUrl,
+            isRtlLocale(locale),
+            user.timezone,
+          ),
+        });
       }
     }
 

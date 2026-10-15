@@ -1,10 +1,12 @@
-// Colours: the light theme of packages/ui-tokens (ink button, lime label), since mail clients default to light.
 // What a push or an email says about an inbox item, in the person's language: the same words as the inbox row (the
 // catalogs are shared with the app), testnet prefixed so test money never reads as real, and the app screen it opens.
 import type { InboxKind } from "@kawase/api-client";
 import { CATALOGS, type CatalogLocale } from "@kawase/i18n";
 import { ASSETS, amount, formatAmount, formatTokenAmount, type AssetId } from "@kawase/money";
 import type { NetworkId } from "@kawase/networks";
+import { EXPLORERS } from "@kawase/config";
+
+import { emailHtml, emailText, receiptQrUrl, shortHash, type EmailContent, type EmailFact } from "./email-layout";
 
 const ADDRESS_HEAD = 6;
 const ADDRESS_TAIL = 4;
@@ -14,7 +16,7 @@ const TOKEN_DIGITS = 6;
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
 type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
-type Block = "notify" | "automation" | "inbox" | "alerts";
+type Block = "notify" | "automation" | "inbox" | "alerts" | "receipt" | "network";
 
 export function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
   const pick = (catalog: unknown) => (catalog as Record<Block, Record<string, unknown>>)[block]?.[key];
@@ -68,8 +70,16 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       body = hide ? text(locale, "notify", "receivedBody", { name }) : text(locale, "notify", "requestPaidBody", { amount: sum, name });
       break;
     case "send_completed":
+      if (p.withdrawal) {
+        // The whole withdrawal arrived (withdraw/withdrawals.ts): where it went, not the deposit address.
+        title = hide ? text(locale, "notify", "withdrawnTitleHidden") : text(locale, "notify", "withdrawnTitle", { amount: sum, name });
+        body = text(locale, "notify", "withdrawnBody", { name });
+        break;
+      }
       title = hide ? text(locale, "notify", "sentTitleHidden") : text(locale, "notify", "sentTitle", { amount: sum });
-      body = text(locale, "notify", "sentBody", { name });
+      body = p.runId ? text(locale, "notify", "automationRanLabel") : text(locale, "notify", "sentBody", { name });
+      // An automation's send opens the run that made it.
+      if (p.runId) path = `/why/run/${p.runId}`;
       break;
     case "automation_skipped":
       title = text(locale, "notify", "skippedTitle");
@@ -178,25 +188,85 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
   return { title, body, path };
 }
 
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+/** What moved, for the email's receipt block: the kinds that carry an amount and a direction. */
+const MONEY_IN: ReadonlySet<InboxKind> = new Set(["payment_received", "request_paid"]);
+const MONEY_OUT: ReadonlySet<InboxKind> = new Set(["send_completed"]);
+const FOLIO_DIGITS = 6;
+const HEX_PREFIX = 2;
 
-/** The email for one item: plain words, one link into the app, and why it came. */
-export function renderEmail(rendered: RenderedNotification, locale: CatalogLocale, webUrl: string, rtl: boolean) {
-  const link = `${webUrl.replace(/\/$/, "")}${rendered.path}`;
-  const open = text(locale, "notify", "emailOpen");
-  const never = text(locale, "notify", "emailNeverApprove");
-  const why = text(locale, "notify", "emailWhy");
-  const lines = [rendered.title, rendered.body].filter(Boolean);
-  return {
-    subject: rendered.title,
-    text: [...lines, "", `${open}: ${link}`, "", never, why].join("\n"),
-    html: `<!doctype html><html dir="${rtl ? "rtl" : "ltr"}"><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#101210;background:#F7F8F4;line-height:1.5">
-<p style="font-size:18px;font-weight:600;margin:0 0 4px">${escapeHtml(rendered.title)}</p>
-${rendered.body ? `<p style="margin:0 0 16px">${escapeHtml(rendered.body)}</p>` : ""}
-<p><a href="${escapeHtml(link)}" style="display:inline-block;background:#101210;color:#D4FF3A;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:600">${escapeHtml(open)}</a></p>
-<p style="color:#5C6158;font-size:13px;margin-top:24px">${escapeHtml(never)}<br>${escapeHtml(why)}</p>
-</body></html>`,
-  };
+/**
+ * The email for one item, in Kawase's layout (email-layout.ts): money that moved reads as its receipt ("You sent" over
+ * the amount, who with, when, the network and the transaction linked to ArcScan) with a button to the receipt in the
+ * app; anything else is its title and words with a button to what it is about. Nothing is approved from an email (D31).
+ */
+export function renderEmail(item: Item, rendered: RenderedNotification, locale: CatalogLocale, webUrl: string, rtl: boolean, timeZone?: string | null) {
+  const base = webUrl.replace(/\/$/, "");
+  const link = `${base}${rendered.path}`;
+  const p = item.params;
+  const footer = [text(locale, "notify", "emailNeverApprove"), text(locale, "notify", "emailWhy")];
+  const testnet = item.network === "testnet";
+  const networkName = testnet ? `${text(locale, "network", "arcTestnet")} · ${text(locale, "receipt", "testMoney")}` : text(locale, "network", "arc");
+  const money = MONEY_IN.has(item.kind) || MONEY_OUT.has(item.kind) ? amountText(p, locale) : "";
+  let content: EmailContent;
+  if (money) {
+    const incoming = MONEY_IN.has(item.kind);
+    const counterparty = incoming ? p.from : p.to;
+    const name = p.name || (counterparty ? short(counterparty) : "");
+    const hash = item.txHash ?? null;
+    const explorer = hash ? `${testnet ? EXPLORERS.arcTestnet : EXPLORERS.arc}/tx/${hash}` : null;
+    const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: timeZone ?? "UTC" }).format(new Date());
+    const facts: EmailFact[] = [
+      { label: text(locale, "receipt", "when"), value: when },
+      { label: text(locale, "receipt", "network"), value: networkName },
+      ...(hash && explorer ? [{ label: text(locale, "receipt", "transaction"), value: shortHash(hash), href: explorer, mono: true }] : []),
+    ];
+    const coin = p.asset === "USDC" ? "usdc" : p.asset === "EURC" ? "eurc" : undefined;
+    const host = explorer ? new URL(explorer).host : "";
+    content = {
+      rtl,
+      preheader: [rendered.title, rendered.body].filter(Boolean).join(" · "),
+      // The receipt slip, as the app draws it: folio, what moved and with whom, the hanko, the facts, the QR stub.
+      slip: {
+        folio: `${text(locale, "receipt", "title")} ${hash ? `#${hash.slice(HEX_PREFIX, HEX_PREFIX + FOLIO_DIGITS).toUpperCase()}` : ""}`.trim(),
+        label: p.withdrawal ? text(locale, "notify", "withdrewLabel") : p.runId ? text(locale, "notify", "automationRanLabel") : text(locale, "receipt", incoming ? "received" : "sent"),
+        amount: `${incoming ? "+" : ""}${money}`,
+        tone: incoming ? "in" : "neutral",
+        coin,
+        lead: name ? `${text(locale, "receipt", incoming ? "from" : "to")} ${name}` : undefined,
+        facts,
+        verify:
+          hash && explorer
+            ? {
+                title: text(locale, "receipt", "verifyTitle"),
+                link: { label: text(locale, "receipt", "openExplorer", { explorer: host }), href: explorer },
+                qr: receiptQrUrl(item.network === "testnet" ? "testnet" : "mainnet", hash),
+                footer: text(locale, "receipt", "footer"),
+              }
+            : undefined,
+      },
+      headline: money,
+      primary: { label: text(locale, "notify", hash ? "emailReceipt" : "emailOpen"), href: link },
+      footer,
+    };
+  } else {
+    content = {
+      rtl,
+      preheader: rendered.body || rendered.title,
+      eyebrow: testnet && !rendered.title.startsWith(text(locale, "notify", "testnet")) ? text(locale, "notify", "testnet") : undefined,
+      headline: rendered.title,
+      body: rendered.body || undefined,
+      primary: { label: text(locale, "notify", "emailOpen"), href: link },
+      footer,
+    };
+  }
+  return { subject: rendered.title, text: emailText(content), html: emailHtml(content) };
+}
+
+/** The amount an item carries, formatted for its email ("4.49 USDC"), or "" when it carries none. */
+function amountText(p: Record<string, string>, locale: CatalogLocale): string {
+  if (!p.asset || !p.amount) return "";
+  if (p.asset in ASSETS) return formatAmount(amount(p.asset as AssetId, BigInt(p.amount)), locale);
+  return p.decimals ? formatTokenAmount(BigInt(p.amount), Number(p.decimals), p.asset, locale, { fractionDigits: TOKEN_DIGITS, trimZeros: true }) : "";
 }
 
 /** Base units in a token's own decimals as a plain number ("12.5"), for tokens the shared money formatter does not know. */

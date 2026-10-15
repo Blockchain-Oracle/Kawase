@@ -45,6 +45,7 @@ import { notifyRoutes } from "./notify/routes";
 import { NotifyService } from "./notify/service";
 import { publicRoutes } from "./public/routes";
 import { PublicStatsService } from "./public/service";
+import { TestflightInvites, type TestflightConfig } from "./public/testflight";
 import { inboxRoutes, publicRequestRoutes, requestRoutes } from "./requests/routes";
 import { RequestService } from "./requests/service";
 import type { OpsExecutor } from "./send/ops";
@@ -195,6 +196,8 @@ export type AppDeps = {
   /** Push (Expo) and email (Resend), Stage 9; a channel is off when unset. */
   push?: ExpoPush | undefined;
   email?: ResendEmail | undefined;
+  /** /download's TestFlight list (App Store Connect); off when unset. */
+  testflight?: TestflightConfig | undefined;
   /** Sends due notifications this often; off when unset (tests drive delivery themselves). */
   notifyTickMs?: number | undefined;
   /** The x402 marketplace: per-user agent wallets (Circle DCW) and Circle's catalog; off when either is unset. */
@@ -279,7 +282,7 @@ export function createApp(deps: AppDeps) {
   // Aero LP rides with earn and borrow: its pools are yield options, its positions count with the others.
   lend.lp = new LpService(deps.chains, wallets, deps.log);
   const withdraw = new WithdrawService(deps.db, deps.chains, assets, deps.bridges ?? noBridges);
-  const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log);
+  const withdrawalRuns = new WithdrawalService(deps.db, withdraw, deps.chains, deps.log, inbox);
   withdrawalRuns.bind({ sends, swaps, crosschain });
   const onramp = new OnrampService(deps.db, deps.chains, wallets, deps.onramp ?? noOnramp, deps.log, deps.circleWebhookKey, { pageBaseUrl: deps.onrampPageUrl });
   // A Coinbase delivery lands on Base; its Bring-to-Arc leg is a cross-chain intent (without this it waits forever).
@@ -416,7 +419,7 @@ export function createApp(deps: AppDeps) {
   app.get("/health", (c) => c.json({ ok: true, networks: deps.chains.available, minAppVersion: deps.minAppVersion ?? MIN_APP_VERSION_DEFAULT, relayers: relayers.state() }));
   app.get("/capabilities", async (c) => c.json({ capabilities: await capabilityView(deps.db, deps.chains.available) }));
   app.route("/client-events", clientEventRoutes());
-  app.route("/public", publicRoutes(new PublicStatsService(deps.db)));
+  app.route("/public", publicRoutes(new PublicStatsService(deps.db), new TestflightInvites(deps.testflight, deps.email, deps.log)));
   // Dev sign-in exists only on a developer's machine: asked for, outside production, and never beside mainnet.
   const devSignIn = deps.devSignIn === true && !deps.chains.available.includes("mainnet");
   app.route("/auth", authRoutes(deps.db, auth, (input) => account.signedIn(input), { devSignIn }));

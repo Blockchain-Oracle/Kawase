@@ -3,13 +3,16 @@
 // first (from the user agent), each with its live state, its steps and, on a desktop, a QR for the phone in the other
 // hand. iPhone links to TestFlight only while Apple's join page takes testers (the gate in `server/store-release.ts`);
 // until then it says Kawase is in Apple's beta review and points the iPhone at the web app, which works there today. The
-// Mac app isn't finished (the owner, 10-15), so the Mac row says it's on its way and offers the web app.
+// Mac app isn't finished (the owner, 10-15), so the Mac row says it's on its way and offers the web app. While Apple
+// reviews the beta, an iPhone visitor can leave an email: it joins the public TestFlight group and Apple sends the
+// invitation the minute testers are let in (`components/landing/ios-invite.tsx`).
 import { ArrowUpRight, Check, Globe, Laptop } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
 import { PhoneShot } from "@/components/landing/devices";
+import { IosInvite } from "@/components/landing/ios-invite";
 import { AndroidGlyph, AppleGlyph } from "@/components/landing/glyphs";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/landing/hero";
 import { QrPlate, StoreBadges } from "@/components/landing/stores";
@@ -82,6 +85,7 @@ function IosCard({ release, mine }: { release: StoreRelease; mine: boolean }) {
           <a href={links.webApp} className={`${BUTTON_PRIMARY} mt-6`}>
             Open the web app <ArrowUpRight className="size-4" aria-hidden />
           </a>
+          <IosInvite />
         </>
       )}
     </Card>

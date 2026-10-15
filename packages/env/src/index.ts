@@ -112,6 +112,14 @@ export const apiEnvSchema = z.object({
   /** Email (Stage 9): Resend, from an address on a domain verified there. Email is off without both. */
   RESEND_API_KEY: z.preprocess(blankIsUnset, z.string().optional()),
   EMAIL_FROM: z.preprocess(blankIsUnset, z.string().optional()),
+  /**
+   * /download's "Email me when it opens" (public/testflight.ts): an App Store Connect API key that may add testers, and
+   * the public TestFlight group they join. The list is off without all four.
+   */
+  ASC_KEY_ID: z.preprocess(blankIsUnset, z.string().optional()),
+  ASC_ISSUER_ID: z.preprocess(blankIsUnset, z.string().optional()),
+  ASC_PRIVATE_KEY: z.preprocess(blankIsUnset, z.string().optional()),
+  ASC_BETA_GROUP_ID: z.preprocess(blankIsUnset, z.string().optional()),
   /** The oldest app version served ("1.2.0"); older apps show "Update required". Unset = every version. */
   KAWASE_MIN_APP_VERSION: z.preprocess(blankIsUnset, z.string().regex(/^\d+(\.\d+){0,2}$/).optional()),
   /** The testnet x402 demo seller (apps/x402-seller): Circle's catalog has no testnet listings. */

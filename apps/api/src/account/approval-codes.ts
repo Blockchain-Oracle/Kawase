@@ -12,6 +12,7 @@ import { isRtlLocale, type CatalogLocale } from "@kawase/i18n";
 
 import { HTTP, problem } from "../http/problem";
 import type { ResendEmail } from "../notify/email";
+import { emailHtml, emailText } from "../notify/email-layout";
 import { text } from "../notify/render";
 import type { SessionUser } from "../types";
 
@@ -26,7 +27,6 @@ const MAX_TRIES = 5;
 const MASK_KEEP = 2;
 
 const hashOf = (userId: string, code: string) => createHash("sha256").update(`${userId}:${code}`).digest("hex");
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 
 /** "abubakr@gmail.com" → "ab•••@gmail.com": enough to recognise, not to read off a screen. */
 export function maskEmail(email: string): string {
@@ -69,15 +69,21 @@ export class ApprovalCodes {
     const subject = text(locale, "notify", "approvalCodeSubject", { code });
     const body = text(locale, "notify", "approvalCodeBody");
     const never = text(locale, "notify", "approvalCodeNever");
+    // The same card as every Kawase email (notify/email-layout.ts): the mark, the code large in its own box.
+    const content = {
+      rtl: isRtlLocale(locale),
+      preheader: body,
+      label: text(locale, "notify", "approvalCodeLabel"),
+      headline: text(locale, "notify", "approvalCodeHeadline"),
+      body,
+      code,
+      footer: [never],
+    };
     await this.email.send({
       to: user.email,
       subject,
-      text: [body, "", code, "", never].join("\n"),
-      html: `<!doctype html><html dir="${isRtlLocale(locale) ? "rtl" : "ltr"}"><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0A0A0A;background:#F5F5F5;line-height:1.5">
-<p style="margin:0 0 12px">${escapeHtml(body)}</p>
-<p style="font-size:32px;font-weight:700;letter-spacing:8px;font-family:ui-monospace,Menlo,monospace;margin:0 0 16px">${code}</p>
-<p style="color:#5C5C5C;font-size:13px;margin-top:24px">${escapeHtml(never)}</p>
-</body></html>`,
+      text: emailText(content),
+      html: emailHtml(content),
       idempotencyKey: `kawase-approval-${row.id}`,
     });
     return { sentTo: maskEmail(user.email), expiresAt: expiresAt.toISOString() };

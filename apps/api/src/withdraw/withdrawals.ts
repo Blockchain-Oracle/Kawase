@@ -25,6 +25,7 @@ import type { Logger } from "@kawase/log";
 import { hasBrake } from "@kawase/policy";
 
 import type { CrossChainService } from "../crosschain/service";
+import type { InboxService } from "../inbox/service";
 import { HTTP, problem } from "../http/problem";
 import { failBundled, offerBundled, recordBundled, type BundleEngine, type BundlePart } from "../intents/bundle";
 import { refusedBeforeSending, walletGasPrice } from "../intents/chain";
@@ -129,6 +130,8 @@ export class WithdrawalService {
     private readonly planner: WithdrawService,
     private readonly chains?: Chains,
     private readonly log?: Logger,
+    /** Tells the person once the money arrived (push and email), with the last move's transaction. */
+    private readonly inbox?: InboxService,
   ) {}
 
   /** The engines the steps run on (created after this service in the app). */
@@ -250,6 +253,28 @@ export class WithdrawalService {
     // It worked: the destination is one of My places now, so the next withdrawal there is a tap.
     if (done) {
       const target = row.destination;
+      // One notice for the whole withdrawal (its own send step tells nothing; send/service.ts): what arrived where,
+      // with the last move's transaction for the receipt.
+      const last = steps.at(-1);
+      const hash = last?.explorerUrl?.match(/0x[0-9a-fA-F]{64}/)?.[0] ?? null;
+      const name = target.exchange?.name ?? target.label ?? target.brand ?? "";
+      await this.inbox
+        ?.add(this.db, {
+          userId: row.userId,
+          network: row.network,
+          kind: "send_completed",
+          params: {
+            amount: last?.received ?? last?.moved ?? last?.amount ?? "0",
+            asset: last?.token.symbol ?? "USDC",
+            ...(last ? { decimals: String(last.token.decimals) } : {}),
+            to: target.address,
+            name,
+            withdrawal: row.id,
+          },
+          txHash: hash,
+          dedupeKey: `withdrawal_completed:${row.id}`,
+        })
+        .catch((error: unknown) => this.log?.warn({ err: error, withdrawalId: row.id }, "withdrawal notice failed"));
       await this.planner.savePlace({ ...user, activeNetwork: row.network }, { kind: target.kind, brand: target.brand, chain: target.chain.key, address: target.address, label: target.label }).catch(() => undefined);
     }
     return next!;
