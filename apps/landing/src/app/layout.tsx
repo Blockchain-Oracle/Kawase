@@ -19,7 +19,10 @@ export const metadata: Metadata = {
     description: "A voice-first AI money app for everything on Arc, in ten languages, with on-chain limits.",
     type: "website",
     siteName: "Kawase",
+    // The README banner at 1200×600: real captures of the app, composed (provenance in .github/assets).
+    images: [{ url: "/og.png", width: 1200, height: 600, alt: "Kawase: money that moves when you speak" }],
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
