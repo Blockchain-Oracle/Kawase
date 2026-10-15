@@ -1,0 +1,21 @@
+{
+  "captured": "2026-10-15",
+  "source": "https://app.getkawase.xyz (web build 3f6ce241), headless Chrome, a fresh guest session with no account (no personal data), reduced motion so moving figures were not caught mid-roll",
+  "screens": {
+    "screens/phone-welcome.png": "390x844 @3x, the welcome story (its 'Example' route race), testnet guest",
+    "screens/phone-home.png": "390x844 @3x, Home as a mainnet guest",
+    "screens/phone-sign-in.png": "390x844 @3x, + → Add money as a guest opens the sign-in sheet (email code, Google, Apple)",
+    "screens/phone-marketplace.png": "390x844 @3x, /marketplace on mainnet (Circle's x402 catalog, 84 tools)",
+    "screens/phone-longshort.png": "390x844 @3x, /margin on mainnet (live cirBTC price and 1D candles)",
+    "screens/desktop-home.png": "1440x900 @2x, Home as a mainnet guest",
+    "screens/desktop-marketplace.png": "1440x900 @2x, /marketplace on mainnet",
+    "screens/desktop-longshort.png": "1440x900 @2x, /margin on mainnet",
+    "screens/desktop-token.png": "1440x900 @2x, Malachite (MALA) token page, testnet guest viewing mainnet market data"
+  },
+  "compositions": {
+    "banner.png": "editorial composition (HTML rendered to PNG): the app icon, the landing page's tagline and the captures desktop-home, phone-welcome and phone-marketplace. Not a recording.",
+    "demo-cover.png": "editorial composition: desktop-longshort behind a play button, linking to getkawase.xyz/demo. Not a recording or a transaction receipt."
+  },
+  "fonts": "Roboto Condensed Black and Inter (Google Fonts, SIL Open Font License), the app's own faces",
+  "brand": "apps/landing/src/app/icon.svg (Kawase's mark)"
+}

@@ -44,25 +44,43 @@ const HASH_EDGE = 10;
 const HASH_TAIL = 8;
 const shortHash = (hash: string) => `${hash.slice(0, HASH_EDGE)}…${hash.slice(-HASH_TAIL)}`;
 
+/** The YouTube video id in a watch, share or embed link; null for any other address (a file is played as one). */
+function youTubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+  return match?.[1] ?? null;
+}
+
 function Video() {
-  if (links.demoVideo) {
+  const url = links.demoVideo;
+  const id = url ? youTubeId(url) : null;
+  if (url && id) {
     return (
-      <video
+      <iframe
         className="aspect-video w-full rounded-3xl border border-border bg-card"
-        src={links.demoVideo}
-        controls
-        preload="metadata"
+        src={`https://www.youtube-nocookie.com/embed/${id}`}
+        title="The Kawase demo"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
       />
     );
   }
+  if (url) {
+    return <video className="aspect-video w-full rounded-3xl border border-border bg-card" src={url} controls preload="metadata" />;
+  }
+  // Until the recording is published: the cover (a composition of live app screens, not a recording) and a plain note.
   return (
-    <div className="stipple flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-3xl border border-border bg-card p-6 text-center">
-      <p className="font-display text-xl font-semibold">The demo video is coming</p>
-      <p className="max-w-md text-sm text-muted-foreground">
-        Until it is published, the table below is the proof: each row is a real transaction on Arc testnet that you
-        can open on the explorer.
-      </p>
-    </div>
+    <figure className="flex flex-col gap-3">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
+        <img src="/demo/cover.png" alt="The Kawase demo cover: the live Long / Short screen behind a play button. The recording is coming." className="aspect-video w-full object-cover opacity-70" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/95 to-transparent p-6 text-center">
+          <p className="font-display text-xl font-semibold">The demo video is coming</p>
+        </div>
+      </div>
+      <figcaption className="text-center text-sm text-muted-foreground">
+        The cover is a composition of live app screens, not a recording. Until the video is published, the table below
+        is the proof: each row is a real transaction on Arc testnet that you can open on the explorer.
+      </figcaption>
+    </figure>
   );
 }
 

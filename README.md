@@ -1,68 +1,109 @@
-# Kawase (為替)
-
-Kawase is an AI money agent for Arc: you chat with it or talk to it in any of ten languages, and it sends, swaps,
-bridges, earns and runs automations from your own wallet. What it may do on its own is written on chain as signed
-delegations with caps, so it acts freely inside them, and anything outside them waits for your Face ID.
-
 <p align="center">
-  <img src="docs/media/phone-welcome.png" width="300" alt="Kawase's first screen: 'Send 10 USDC to @amina' becomes an exact payment card on Arc Testnet, with the language pill and 'Try it first, sign in later'" />
+  <a href="https://app.getkawase.xyz">
+    <img src=".github/assets/banner.png" width="960" alt="Kawase 為替. Money that moves when you speak. The AI money agent for everything on Arc, shown on the desktop Home with live Arc markets, the welcome screen's route race, and the x402 Marketplace on a phone." />
+  </a>
 </p>
 
-<table>
-  <tr>
-    <td><img src="docs/media/phone-home.png" width="200" alt="Home as a guest: Your money agent on Arc, Try in chat, and what is trending on Arc" /></td>
-    <td><img src="docs/media/phone-markets.png" width="200" alt="Markets: search, trending tokens on Arc and the heatmap" /></td>
-    <td><img src="docs/media/phone-token-argus.png" width="200" alt="ARGUS's token page on Arc mainnet: price, chart, stats and safety" /></td>
-    <td><img src="docs/media/phone-help.png" width="200" alt="Help and trust: what Kawase can and cannot do with your money and where it lives" /></td>
-  </tr>
-  <tr>
-    <td align="center">Home (guest)</td>
-    <td align="center">Markets</td>
-    <td align="center">A token page (ARGUS, mainnet)</td>
-    <td align="center">Help &amp; trust</td>
-  </tr>
-</table>
+<h1 align="center">Kawase · 為替</h1>
+<p align="center">Money that moves when you speak.<br/>The AI money agent for everything on Arc, in ten languages, on iPhone, Android and the web.</p>
 
-Screenshots of the live web app, taken as a guest on 2026-10-03 with live prices (more, at phone and desktop width, in
-[`docs/media`](docs/media)).
+<p align="center">
+  <a href="https://app.getkawase.xyz"><b>Open Kawase</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://getkawase.xyz/demo"><b>Demo</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://getkawase.xyz/demo#evidence"><b>On-chain evidence</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://getkawase.xyz/live"><b>Live counts</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://docs.getkawase.xyz"><b>Documentation</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://testflight.apple.com/join/PD3fgXZx"><b>iPhone (TestFlight)</b></a>
+</p>
 
-Built for the [Tameion Agents Hackathon](https://tameion.thecanteenapp.com/) (Canteen with Circle and Arc,
-2026-09-27 to 2026-10-10). The repository's history starts on 2026-09-30, inside the event. What existed before and what
-was reused is listed under [Prior work](#prior-work-and-what-was-reused).
+**Kawase is an AI money agent for Arc, Circle's stablecoin network.** You type or say what you want, in your language,
+and it sends, swaps, bridges, earns, trades and pays for data from your own wallet. Every route is raced before you
+commit, and what the agent may do on its own is a budget you sign once and Arc enforces, so it acts freely inside it and
+anything outside it waits for you.
+
+Built for the [Tameion Agents Hackathon](https://tameion.thecanteenapp.com/) (Canteen with Circle and Arc). *Kawase*
+(為替) is Japanese for exchange and remittance. Every flow runs on **Arc testnet** with real transactions, and the
+api, the app and the budget are live on **Arc mainnet**; see [what is verified](#what-is-verified) for exactly what has
+moved where.
+
+## Problem and value
+
+### Problem
+
+Moving dollars on chain still asks a person to think like an engineer: which chain, which bridge, which gas token,
+what slippage, which of five routes really delivers the most. And an "agent" that can move your money is only as safe
+as the promise behind it.
+
+### Value
+
+Kawase turns the request into the result. Say "bring my USDC from Base" or "swap 5 USDC to EURC": it checks every route
+(Circle's App Kit, KyberSwap, LI.FI, CCTP, Across, Relay and more), shows each quote with its venue's real logo, and
+picks what arrives after fees. Inside a weekly budget you sign once (an on-chain delegation with caps) it just does it;
+above it, it asks for Face ID, a fingerprint or, on the web, an emailed code. A spoken "yes" never moves money.
+
+| Way in | What you do | Start here |
+| --- | --- | --- |
+| **Ask** | Type on Home, open a chat, or hold the orb and talk. The agent drafts the action as a card with every number on it. | [Open Kawase](https://app.getkawase.xyz) · [chat and voice](https://docs.getkawase.xyz/docs) |
+| **Move money** | Send to a contact, an @handle or an address; swap any Arc token; bridge to six chains; add money by card, exchange, another chain or a wallet. | [Swap](https://app.getkawase.xyz/swap) · [Bridge](https://app.getkawase.xyz/bridge) |
+| **Grow it** | Earn in Circle's App Kit vaults, borrow on Aave V4, or go long or short on Arc's majors with take-profit and stop-loss (mainnet). | [Earn](https://app.getkawase.xyz/earn) · [Long / Short](https://app.getkawase.xyz/margin) |
+| **Let it run** | A weekly budget, automations (scheduled sends, Auto-save, rules), and an agent wallet that pays per call for x402 data from Circle's catalog. | [Marketplace](https://app.getkawase.xyz/marketplace) · [Automations](https://app.getkawase.xyz/automations) |
+| **Check it** | Every move has a receipt, a "why" page and its explorer link; Activity has the week's P&L. | [Evidence](https://getkawase.xyz/demo#evidence) |
+
+## Who we're building for
+
+People who hold or earn digital dollars and should not need a tutorial to use them: someone paid in USDC who sends
+money home, a freelancer moving between chains, a first-time saver who wants yield without reading vault docs. That is
+why the first screen asks for nothing: a guest sees live quotes, markets and the race before any sign-in, and the app
+speaks Arabic, Bengali, Chinese, English, French, Hindi, Portuguese, Russian, Spanish and Urdu (right-to-left where it
+should be). Paying users and repeat use are not validated yet; the production api counts 2 accounts and 15 guest
+sessions since its last reset ([/public/stats](https://api.getkawase.xyz/public/stats), 2026-10-15).
+
+## Demo video
+
+<p align="center">
+  <a href="https://getkawase.xyz/demo">
+    <img src=".github/assets/demo-cover.png" width="960" alt="Watch the Kawase demo: Ask. It races. It's done. The live Long / Short screen behind a magenta play button." />
+  </a>
+</p>
+
+The recording is coming to [getkawase.xyz/demo](https://getkawase.xyz/demo). The cover is an editorial composition
+built on a live app capture (2026-10-15); it is not a recording or a transaction receipt. Until the video is up, the
+same page lists every testnet transaction behind the claims below, each opening on its explorer.
 
 ## Try it
 
-| What                                                    | Where                                                                                                                                                                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Web app (start as a guest, no sign-up)                  | **[app.getkawase.xyz](https://app.getkawase.xyz)**                                                                                                                                                                 |
-| Judge walkthrough (5 minutes on testnet, then mainnet)  | [docs.getkawase.xyz/docs/judge-walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough)                                                                                                                     |
-| Demo video and every testnet transaction behind a claim | [getkawase.xyz/demo](https://getkawase.xyz/demo)                                                                                                                                                                   |
-| Live usage counts                                       | [getkawase.xyz/live](https://getkawase.xyz/live)                                                                                                                                                                   |
-| Showcase                                                | [getkawase.xyz](https://getkawase.xyz)                                                                                                                                                                             |
-| Docs, in ten languages                                  | [docs.getkawase.xyz](https://docs.getkawase.xyz)                                                                                                                                                                   |
-| iPhone                                                  | TestFlight public link: **[testflight.apple.com/join/PD3fgXZx](https://testflight.apple.com/join/PD3fgXZx)** (opens once Apple's beta review passes)                                                               |
-| Android                                                 | [APK, EAS build e644e19d](https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed)                                                                                           |
-| Mac                                                     | [Desktop preview](https://getkawase.xyz/download/Kawase-mac.dmg) (Apple silicon, not notarized yet)                                                                                                                |
-| Public API                                              | [`/health`](https://api.getkawase.xyz/health), [`/capabilities`](https://api.getkawase.xyz/capabilities), [`/public/stats`](https://api.getkawase.xyz/public/stats), [`/status`](https://api.getkawase.xyz/status) |
+1. Open [app.getkawase.xyz](https://app.getkawase.xyz) and tap **Look around**: no account. Type "Swap 5 USDC to EURC"
+   on Home and watch the venues race, each with its quote and logo.
+2. Sign in with an email code, Apple or Google. Privy makes your wallet; Kawase upgrades it with one signature and pays
+   that gas itself, so a new wallet needs no gas at all. On testnet, **+ → Add money → Get test money**.
+3. In **Settings → Weekly budget**, sign a budget once (for example $200 a week, $50 per action). Ask for the swap
+   again: inside the budget it goes with no prompt, and the run card links to ArcScan.
 
-New accounts start on **Arc testnet**, where money has no value; claim test money from the faucet card on Home. On the
-web an email code stands in for Face ID.
+[Judge walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough) · [safety](https://docs.getkawase.xyz/docs/safety) · [withdraw without Kawase](https://docs.getkawase.xyz/docs/withdraw-without-kawase)
 
-### Where it stands (2026-10-15)
+<table>
+  <tr>
+    <td><img src=".github/assets/screens/phone-welcome.png" width="180" alt="The welcome screen: 'Bring my USDC from Base to Arc' checks five routes, picks the best one, and arrives on Arc" /></td>
+    <td><img src=".github/assets/screens/phone-home.png" width="180" alt="Home as a guest on mainnet: sign in to see your money, and what is trending on Arc, live" /></td>
+    <td><img src=".github/assets/screens/phone-sign-in.png" width="180" alt="Sign in to add money: an email code, Continue with Google, Continue with Apple" /></td>
+    <td><img src=".github/assets/screens/phone-marketplace.png" width="180" alt="The Marketplace: 84 paid tools from Circle's x402 catalog, with their logos and price per call" /></td>
+    <td><img src=".github/assets/screens/phone-longshort.png" width="180" alt="Long / Short: cirBTC with a live price and chart, long up to 3.4×, short up to 2.4×" /></td>
+  </tr>
+</table>
 
-- **Sign-in and the wallet are Privy's** (an email code, Apple or Google): the key is split up in Privy's secure enclaves and
-  never reaches Kawase. On the web an emailed code stands in for Face ID before anything binding is signed; the
-  [judge walkthrough](https://docs.getkawase.xyz/docs/judge-walkthrough) says step by step what runs today.
-- **Testnet:** every flow below has been run end to end with real Arc testnet transactions, recorded as it was built.
-  44 of them are on [/demo](https://getkawase.xyz/demo), grouped by what they prove, each with its explorer link and
-  the build log or test that produced it.
-- **Mainnet:** switched on in the api and the app (consent, setup, a USDC 500 daily allowance). Kawase's mainnet
-  relayer and agent wallet have not been funded yet, so a mainnet wallet setup answers "Kawase is getting mainnet
-  ready". **No real money has moved through Kawase on mainnet yet.** Mainnet-only features (any-token trading, Kawase
-  Margin, Aave V4) are built against mainnet contracts and live quotes.
-- **Usage:** the production api counts 2 accounts and 78 guest sessions, and no completed money movements of its own yet
-  ([/public/stats](https://api.getkawase.xyz/public/stats)). The testnet evidence above came from API tests and the iOS
-  simulator against Arc testnet.
+<table>
+  <tr>
+    <td><img src=".github/assets/screens/desktop-marketplace.png" width="440" alt="The Marketplace on desktop: categories with counts and every tool's logo" /></td>
+    <td><img src=".github/assets/screens/desktop-token.png" width="440" alt="A token page: Malachite's live chart with BasedBot, DexScreener and ArcScan links" /></td>
+  </tr>
+</table>
+
+<sub>Guest captures of the live app, 2026-10-15 ([provenance](.github/assets/provenance.json)).</sub>
 
 ## What it does
 
@@ -71,7 +112,7 @@ with the precise scope of each in [`capability-scope.ts`](packages/config/src/ca
 and the docs' [availability page](https://docs.getkawase.xyz/docs/availability) all read that registry, and the agent
 reads it before it says something can be done.
 
-| Area                     | What it does (built and proven on testnet; see the pauses above for the live app)                                                                                                                                                                                                                                                                                                                                                         | Mainnet                                                    | Testnet                                                        |
+| Area                     | What it does (built and proven on testnet)                                                                                                                                                                                                                                                                                                                                                         | Mainnet                                                    | Testnet                                                        |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
 | **Send and withdraw**    | Any token on Arc to a saved contact, an @handle, a typed or scanned address, with a recipient check on every payment (token contracts and look-alikes refused). USDC to someone on Base, Ethereum, Arbitrum, OP Mainnet, Polygon or Avalanche. Withdraw one token or everything to an exchange, your own wallet or your bank through an exchange. A wallet with no gas still sends USDC or EURC (EIP-3009; Kawase's relayer pays the fee) | ✓                                                          | ✓ (no exchanges)                                               |
 | **Requests**             | Payment requests and links in any token, split bills.                                                                                                                                                                                                                                                                                                                                                                                     | ✓                                                          | ✓                                                              |
@@ -87,14 +128,6 @@ reads it before it says something can be done.
 | **Voice**                | Talk on iPhone, Android or the web in your language; it answers aloud and shows the same cards as chat. A spoken "yes" never approves a payment                                                                                                                                                                                                                                                                                           | ✓                                                          | ✓                                                              |
 | **Memory and insights**  | Remembers what you ask it to (editable, forgettable), searches every past conversation, "For you" cards on Home, Arc questions answered with sources, a "why" behind every movement                                                                                                                                                                                                                                                       | ✓                                                          | ✓                                                              |
 | **Test money**           | About 20 USDC and 20 EURC a day from Circle's faucet                                                                                                                                                                                                                                                                                                                                                                                      | not available                                              | ✓                                                              |
-
-Across the app: ten languages from the first screen (Arabic and Urdu right-to-left), a display currency (28 fiat
-currencies), the network shown three ways at all times, an inbox with push and email, Help & trust with live status,
-and a wallet you can export.
-
-**Not yet:** swaps that run unattended (every swap or DCA buy waits for your tap), limit orders, refunds from x402
-sellers (x402 has no refund standard), Hibachi perps, Aave V4 and margin on testnet, voice inside the desktop app, and
-passkeys as the wallet's signing factor.
 
 ## How the agent decides
 
@@ -144,7 +177,8 @@ passkeys as the wallet's signing factor.
 - **Hosting**: everything (api, web app, voice worker, docs, showcase, Postgres) runs on a **Coolify** server behind
   Traefik and Let's Encrypt, one Dockerfile per service built from the monorepo root.
 
-### Circle and Arc pieces in use
+## Built on Arc and Circle
+
 
 | Piece                                 | What Kawase does with it                                                                                  |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -159,33 +193,46 @@ passkeys as the wallet's signing factor.
 
 Kawase uses its own relayer rather than Circle's Paymaster, and does not use USYC.
 
-### Repository map
+## What is verified
 
-| Path                                                                         | What it is                                                                                                                   |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`apps/api`](apps/api)                                                       | Hono API: auth, the agent's chat stream, intents and approvals, the runners (automations, watchers, notifications), webhooks |
-| [`apps/mobile`](apps/mobile)                                                 | Expo / React Native app for iOS, Android and the web                                                                         |
-| [`apps/voice-agent`](apps/voice-agent)                                       | LiveKit Agents worker                                                                                                        |
-| [`apps/docs`](apps/docs), [`apps/landing`](apps/landing)                     | the docs (Fumadocs) and the showcase with `/demo` and `/live` (Next.js)                                                      |
-| [`apps/desktop`](apps/desktop)                                               | Tauri window around the web app                                                                                              |
-| [`apps/x402-seller`](apps/x402-seller)                                       | Kawase's testnet x402 demo seller                                                                                            |
-| `apps/executor`, `apps/chain-watcher`                                        | placeholders from the scaffold; their jobs run inside `apps/api` today                                                       |
-| [`packages/agent`](packages/agent)                                           | the single agent: turn, prompts, tools                                                                                       |
-| [`packages/policy`](packages/policy), [`packages/intents`](packages/intents) | the pure policy engine; versioned, EIP-712-hashed drafts                                                                     |
-| [`packages/integrations/*`](packages/integrations)                           | delegation (7702 + 7710), App Kit, KyberSwap, bridges (Across, Relay), Aave V4, x402                                         |
-| [`packages/config`](packages/config)                                         | every constant: limits, the capability registry, fees, locales, models                                                       |
-| [`packages/db`](packages/db)                                                 | Drizzle schema and committed migrations                                                                                      |
-| [`packages/i18n`](packages/i18n)                                             | the ten languages' catalogs                                                                                                  |
-| [`packages/networks`](packages/networks), [`packages/money`](packages/money) | the two Arc networks and verified addresses; exact money types                                                               |
-| [`plan/`](plan), [`context/`](context)                                       | the build plan and logs; the research behind it                                                                              |
+**Arc testnet, end to end through the api (2026-10-15).** The api's live suites ran each money path with real
+transactions ([`apps/api/test`](apps/api/test), `*-testnet.test.ts`), all passing:
+
+| Flow | What happened | Transaction |
+| --- | --- | --- |
+| Wallet | sign-in registers the wallet; relayed EIP-7702 setup; an allowance accepted, then revoked on chain | suite `wallet-testnet` |
+| Send | inside the allowance with no prompt; a frozen send resolved and resumed; one signed by the wallet | [allowance send](https://testnet.arcscan.app/tx/0xa6b7b60c3412f585888ae30540c2fbeb52d3c22f0babc5c96a95db86c289c9e0) · [wallet send](https://testnet.arcscan.app/tx/0x491fb36f1e7a9a9ff66003382edb660d950304607d33d24ea867035fd9f3de57) |
+| Gas-free send | a wallet with no USDC to spare sends all of it; Kawase's relayer pays (EIP-3009) | [relayed send](https://testnet.arcscan.app/tx/0xac4f63a576222fd1cdeda8f26e0ab5aeafdae18dd910d5f7d8996fad8b317ad0) |
+| Swap | USDC → EURC, one signed transaction, settled by its own receipt | [swap](https://testnet.arcscan.app/tx/0xa97005cd72ed9a206b0cfecfdba584930d9c5d5c7b747097b402a64755b6c1ae) |
+| Route race | the swap through the venue the race picked (App Kit), and a CCTP move from the move ticket | [swap](https://testnet.arcscan.app/tx/0x6518ecbe8a163d36f69d1fc2f91bacf3090b6aafe644df01ba9280d1947a1af6) · [move](https://testnet.arcscan.app/tx/0xad23089a481dd820ac3a55f95f9a77ff3a1bae83d8230c0de846fc3fd3401549) |
+| Bridge | Arc → Base Sepolia, one signature, minted by Circle's forwarder | [burn on Arc](https://testnet.arcscan.app/tx/0x83784a163eb81dc223c8b956df9e6233315d46e14100bbb6b169df3878402900) · [mint on Base](https://sepolia.basescan.org/tx/0x8a463f7c3285581a4ef2c6364e2889b7dea222bd3fa500b27c2e58ba26895a86) |
+| Earn | a vault deposit and a withdrawal, one signed transaction each | [deposit](https://testnet.arcscan.app/tx/0x186b62f7d05fd3ff550b8b28a8e0f6754d746698867f6ade895543d56787e4bf) · [withdraw](https://testnet.arcscan.app/tx/0xd3ab115bc9933c428625ba3cdf9450c734e33da70f709999d131471b82ed6d69) |
+| x402 | the agent wallet topped up under its grant, paid the demo seller through Gateway, and returned the rest | [top-up](https://testnet.arcscan.app/tx/0xe3ce93c2f0a47483fda117f98645007ffc5b8463f285101bb0980e9d2d9a0016) · [return](https://testnet.arcscan.app/tx/0xd2db35f6cff006856b6f1e174a22c1a8a0599f4045449833a3ff7eaddd86569c) |
+
+**Earlier evidence:** 44 more testnet transactions recorded as each feature was built, grouped by what they prove, on
+[getkawase.xyz/demo](https://getkawase.xyz/demo#evidence), each naming the build log or test that produced it.
+
+**Mainnet:** the api and the app are live on Arc mainnet (consent, setup, the weekly budget, live markets, the x402
+catalog, Long / Short on Aave V4). Kawase's mainnet relayer and agent ops wallet are funded, and `/health` reports each
+network's relayer gas. **No real money has moved through Kawase on mainnet yet**; the swap, margin and bridge paths
+there are built against mainnet contracts and live quotes.
+
+**Not yet:** swaps that run unattended (every swap or DCA buy waits for your tap), limit orders, refunds from x402
+sellers (x402 has no refund standard), Aave V4 and margin on testnet, voice inside the desktop app, passkeys as the
+wallet's signing factor, and mainnet wallet history while the history provider's quota is spent.
 
 ## Security model
 
+- **Inside the weekly budget** (one signature: a weekly total, a cap per action, the kinds of action it covers, and only
+  you and people you saved) swaps, moves to your own wallets, vault deposits, sends to contacts and paid services go
+  with no Face ID. For each one the api hands the phone a one-shot delegation leaf; the phone checks it against what it
+  expects and signs it, and Kawase's agent wallet redeems it on chain. Pausing the budget (one relayed transaction, no
+  Face ID) ends every grant at once.
 - **Inside the everyday allowance** (USDC only, `transfer` only, a daily period cap, only Kawase's agent wallet may
   redeem it, 90-day expiry, no native value) Kawase sends without asking. The **chain** refuses anything outside it;
   this was tested on Arc testnet, including a leaked agent key, which the chain reverted.
-- **Above it**, and for every swap, bridge, vault move, EURC payment, look-alike address or limit change, you confirm
-  with Face ID (fingerprint on Android, an email code on the web) over the exact transaction.
+- **Outside them** (above a cap, a kind the budget doesn't cover, a new recipient), and for any look-alike address or
+  limit change, you confirm with Face ID (fingerprint on Android, an email code on the web) over the exact transaction.
 - **Automation grants** are pinned on chain: a scheduled payment can only pay its one recipient up to its amount per
   period; Auto-save can only move between your wallet and your own savings; bridge rules only to your own address with
   the fee capped. Cancelling revokes the grant in the same step.
@@ -232,13 +279,32 @@ Checks: `pnpm typecheck`, `pnpm lint`. The api's tests run against Arc testnet w
 money: `pnpm --filter @kawase/api test`. The delegation package proves the on-chain limits on its own:
 `pnpm --filter @kawase/integrations-delegation test:arc-testnet`.
 
+## Find the code
+
+| Path                                                                         | What it is                                                                                                                   |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [`apps/api`](apps/api)                                                       | Hono API: auth, the agent's chat stream, intents and approvals, the runners (automations, watchers, notifications), webhooks |
+| [`apps/mobile`](apps/mobile)                                                 | Expo / React Native app for iOS, Android and the web                                                                         |
+| [`apps/voice-agent`](apps/voice-agent)                                       | LiveKit Agents worker                                                                                                        |
+| [`apps/docs`](apps/docs), [`apps/landing`](apps/landing)                     | the docs (Fumadocs) and the showcase with `/demo` and `/live` (Next.js)                                                      |
+| [`apps/desktop`](apps/desktop)                                               | Tauri window around the web app                                                                                              |
+| [`apps/x402-seller`](apps/x402-seller)                                       | Kawase's testnet x402 demo seller                                                                                            |
+| `apps/executor`, `apps/chain-watcher`                                        | placeholders from the scaffold; their jobs run inside `apps/api` today                                                       |
+| [`packages/agent`](packages/agent)                                           | the single agent: turn, prompts, tools                                                                                       |
+| [`packages/policy`](packages/policy), [`packages/intents`](packages/intents) | the pure policy engine; versioned, EIP-712-hashed drafts                                                                     |
+| [`packages/integrations/*`](packages/integrations)                           | delegation (7702 + 7710), App Kit, KyberSwap, bridges (Across, Relay), Aave V4, x402                                         |
+| [`packages/config`](packages/config)                                         | every constant: limits, the capability registry, fees, locales, models                                                       |
+| [`packages/db`](packages/db)                                                 | Drizzle schema and committed migrations                                                                                      |
+| [`packages/i18n`](packages/i18n)                                             | the ten languages' catalogs                                                                                                  |
+| [`packages/networks`](packages/networks), [`packages/money`](packages/money) | the two Arc networks and verified addresses; exact money types                                                               |
+| [`plan/`](plan), [`context/`](context)                                       | the architecture, product cards and build logs; the Arc notes the agent's knowledge is built from, and the prior work        |
+
 ## Prior work and what was reused
 
-The hackathon judges the work done between **2026-09-27 and 2026-10-10**. This is where Kawase started.
+The event opened on **2026-09-27**. This is where Kawase started.
 
 - **This repository** begins with commit `be83488` on **2026-09-30** ("Bootstrap Kawase: monorepo scaffold, plan,
-  research context, Stage 1 spikes"). All 294 commits up to 2026-10-03 fall inside the event: 20 on 09-30, 33 on
-  10-01, 218 on 10-02 and 23 on 10-03. The bootstrap commit holds the research notes, the plan, the notes of the first
+  research context, Stage 1 spikes"). All 680 commits, from 2026-09-30 to 2026-10-15, fall inside the event. The bootstrap commit holds the research notes, the plan, the notes of the first
   spikes and the package scaffolds with the first constants and money types, all written during the event, plus Expo's
   starter template for the app. Nothing of Kawase existed before it.
 - **Starting point:** no users, no deployment, no money moved.
@@ -258,5 +324,5 @@ The hackathon judges the work done between **2026-09-27 and 2026-10-10**. This i
   simple-icons with their provenance recorded in [`packages/identity`](packages/identity).
 - **Open-source libraries** do the heavy lifting where they exist: MetaMask's Delegation Framework (smart-accounts-kit),
   Circle's App Kit and SDKs, viem, LiveKit Agents, Expo, Hono, Drizzle and Fumadocs.
-- **How it was built:** by Abubakr Jimoh with AI coding agents (Claude Code; OpenAI Codex until 2026-10-02). The plan,
-  the decisions and the build logs are in [`plan/`](plan).
+- **How it was built:** by Abubakr Jimoh with AI coding agents (Claude Code; OpenAI Codex until 2026-10-02). The architecture, the product
+  cards and the build logs are in [`plan/`](plan).
