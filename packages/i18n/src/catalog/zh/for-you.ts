@@ -36,7 +36,7 @@ export const forYou: Catalog["forYou"] = {
   trendingBodyListed: "{{tokenName}} 今天 {{change}}，流动性 {{liquidity}}，在已验证列表中。你没有持有。这不是投资建议：请先看看它的页面。",
   trendingBodyUnverified: "{{tokenName}} 今天 {{change}}，流动性 {{liquidity}}。它未经验证，你也没有持有。这不是投资建议：请先检查它的安全性。",
   trendingAction: "查看 {{token}}",
-  serviceTitle: "关于你的 {{token}} 的付费服务",
+  serviceTitle: "{{service}} 可以解答你的 {{token}}",
   serviceBody: "你持有 {{token}}。{{service}} 每次回答收费 {{price}}，从你的代理钱包支付：“{{what}}”",
   serviceAction: "打开代理钱包",
 };

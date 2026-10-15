@@ -8,6 +8,7 @@ export const assets: Catalog["assets"] = {
   yourAssets: "Seus ativos",
   onOtherChains: "Em outras redes",
   results: "Tokens na Arc",
+  popular: "Populares na Arc",
   hiddenCount: "Ocultos ({{count}})",
   noMatch: "Nada corresponde",
   addMoney: "Adicionar dinheiro",

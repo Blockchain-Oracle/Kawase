@@ -8,6 +8,7 @@ export const assets: Catalog["assets"] = {
   yourAssets: "Vos actifs",
   onOtherChains: "Sur d'autres réseaux",
   results: "Jetons sur Arc",
+  popular: "Populaires sur Arc",
   hiddenCount: "Masqués ({{count}})",
   noMatch: "Aucun résultat",
   addMoney: "Ajouter de l'argent",

@@ -106,6 +106,9 @@ function useRaceFormat() {
   };
 }
 
+/** The greyed breadcrumbs of venues that did not quote. */
+const NOT_QUOTED_MARK = 18;
+const NOT_QUOTED_OPACITY = 0.75;
 const EYEBROW: Record<AgentRaceRequest["kind"], string> = {
   swap: "feed.raceSwap",
   bridge: "feed.raceBridge",
@@ -280,11 +283,36 @@ export function RaceRows({ race, live }: { race: RouteRace; live: boolean }) {
     if (live && quoted > seen.current) tapFeedback("selection");
     seen.current = quoted;
   }, [quoted, live]);
+  // Venues that answered (or are still being asked) keep their rows; the ones that could not quote fold into one line
+  // of greyed breadcrumbs under a single reason, so five "Not on this network" rows never bury the answer.
+  const shown = race.rows.filter((row) => row.status === "quoted" || row.status === "checking");
+  const out = race.rows.filter((row) => row.status === "failed" || row.status === "unavailable");
+  const reasons = [...new Set(out.map((row) => row.reason))];
   return (
     <View className="gap-1" accessibilityRole="list">
-      {race.rows.map((quote) => (
+      {shown.map((quote) => (
         <RaceRow key={quote.venue} quote={quote} kind={race.kind} best={race.best === quote.venue} live={live} />
       ))}
+      {out.length > 0 ? <NotQuoted rows={out} reason={reasons.length === 1 ? (reasons[0] ?? null) : null} /> : null}
+    </View>
+  );
+}
+
+/** The venues that did not quote, as breadcrumbs: each one's mark and name, greyed, with one shared reason. */
+function NotQuoted({ rows, reason }: { rows: readonly RouteQuote[]; reason: string | null }) {
+  const { t } = useT();
+  const format = useRaceFormat();
+  return (
+    <View className="gap-2 px-2 pt-2" accessible accessibilityLabel={`${reason ? format.reason(reason) : t("routes.notQuoted")}: ${rows.map((row) => row.label).join(", ")}`}>
+      <Text className={cn("text-muted-foreground text-xs font-medium", TEXT_START)}>{reason ? format.reason(reason) : t("routes.notQuoted")}</Text>
+      <View className="flex-row flex-wrap gap-1.5">
+        {rows.map((row) => (
+          <View key={row.venue} className="bg-secondary flex-row items-center gap-1.5 rounded-full py-1 ps-1 pe-2.5" style={{ opacity: NOT_QUOTED_OPACITY }}>
+            <Mark entity={row.mark} size={NOT_QUOTED_MARK} />
+            <Text className="text-muted-foreground text-xs">{row.label}</Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }

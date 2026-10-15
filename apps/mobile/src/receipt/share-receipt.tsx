@@ -35,7 +35,7 @@ function useReceiptText() {
 }
 
 /** "Share receipt": a preview of the image card and one Share button. */
-export function ShareReceiptButton({ receipt, variant = "secondary" }: { receipt: ReceiptData; variant?: "secondary" | "ghost" }) {
+export function ShareReceiptButton({ receipt, variant = "secondary", compact = false }: { receipt: ReceiptData; variant?: "secondary" | "ghost"; compact?: boolean }) {
   const { t } = useT();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = React.useState(false);
@@ -62,7 +62,7 @@ export function ShareReceiptButton({ receipt, variant = "secondary" }: { receipt
 
   return (
     <>
-      <Button variant={variant} onPress={() => setOpen(true)}>
+      <Button variant={variant} {...(compact ? { size: "sm" as const } : {})} onPress={() => setOpen(true)}>
         <Icon as={Share2} className="size-4" />
         <Text>{t("receipt.share")}</Text>
       </Button>

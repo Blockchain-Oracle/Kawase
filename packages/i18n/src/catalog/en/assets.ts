@@ -6,6 +6,7 @@ export const assets = {
   yourAssets: "Your assets",
   onOtherChains: "On other chains",
   results: "Tokens on Arc",
+  popular: "Popular on Arc",
   hiddenCount: "Hidden ({{count}})",
   noMatch: "Nothing matches that",
   addMoney: "Add money",

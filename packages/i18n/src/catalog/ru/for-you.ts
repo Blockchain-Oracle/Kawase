@@ -38,7 +38,7 @@ export const forYou: Catalog["forYou"] = {
   trendingBodyListed: "{{tokenName}}: {{change}} за сегодня, ликвидность {{liquidity}}, есть в проверенном списке. У вас его нет. Это не совет: сначала посмотрите его страницу.",
   trendingBodyUnverified: "{{tokenName}}: {{change}} за сегодня, ликвидность {{liquidity}}. Токен не проверен, и у вас его нет. Это не совет: сначала проверьте его безопасность.",
   trendingAction: "Открыть {{token}}",
-  serviceTitle: "Платный сервис о вашем {{token}}",
+  serviceTitle: "{{service}} ответит про ваш {{token}}",
   serviceBody: "У вас есть {{token}}. {{service}} отвечает за {{price}} за запрос из кошелька агента: «{{what}}»",
   serviceAction: "Открыть кошелёк агента",
 };

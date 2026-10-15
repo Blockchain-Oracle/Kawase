@@ -4,6 +4,8 @@ export const receipt: Catalog["receipt"] = {
   title: "رسید",
   sent: "آپ نے بھیجے",
   received: "آپ کو ملے",
+  swapped: "آپ نے تبادلہ کیا",
+  via: "بذریعہ",
   to: "کس کو",
   from: "کس سے",
   when: "کب",

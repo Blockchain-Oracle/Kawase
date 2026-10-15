@@ -2,6 +2,8 @@ export const receipt = {
   title: "Receipt",
   sent: "You sent",
   received: "You received",
+  swapped: "You swapped",
+  via: "Via",
   to: "To",
   from: "From",
   when: "When",

@@ -8,6 +8,7 @@ export const assets: Catalog["assets"] = {
   yourAssets: "你的资产",
   onOtherChains: "在其他链上",
   results: "Arc 上的代币",
+  popular: "Arc 上热门",
   hiddenCount: "已隐藏（{{count}}）",
   noMatch: "没有匹配项",
   addMoney: "充值",

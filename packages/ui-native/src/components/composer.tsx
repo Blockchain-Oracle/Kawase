@@ -29,6 +29,8 @@ import { cn, INPUT_TEXT_START } from "@kawase/ui-native/lib/utils";
 const WEB_NO_RESIZE = { resize: "none" } as object;
 /** How long after a send a returning whole message counts as iOS's autocorrect echo. */
 const AUTOCORRECT_ECHO_MS = 400;
+/** How long the action chips outlive the field's focus, so a tap on one lands. */
+const BLUR_GRACE_MS = 180;
 /** An autocorrection can shorten a word or two. */
 const ECHO_SLACK_CHARS = 4;
 
@@ -101,6 +103,10 @@ function Composer({
   const reduced = useReducedMotionLive();
   const input = React.useRef<TextInput>(null);
   const [focused, setFocused] = React.useState(false);
+  const blurTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+  }, []);
   const canSend = !disabled && value.trim().length > 0;
   const layout = reduced ? undefined : LinearTransition.springify().damping(SPRING.layout.damping).stiffness(SPRING.layout.stiffness);
 
@@ -172,7 +178,8 @@ function Composer({
               <Pressable
                 key={action.label}
                 accessibilityRole="button"
-                onPress={() => insert(action)}
+                // On press-in: it lands before the field's blur can take the chips away.
+                onPressIn={() => insert(action)}
                 className="border-border bg-card active:opacity-80 min-h-10 flex-row items-center gap-1.5 rounded-full border px-3.5"
               >
                 {action.icon ? <Icon as={action.icon} className="text-foreground size-4" /> : null}
@@ -208,8 +215,14 @@ function Composer({
                 accessibilityLabel={labels.placeholder}
                 placeholderTextColorClassName="accent-muted-foreground"
                 editable={!disabled || generating}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
+                onFocus={() => {
+                  if (blurTimer.current) clearTimeout(blurTimer.current);
+                  setFocused(true);
+                }}
+                // A chip tap blurs the field before its press lands: the chips stay a moment so the tap is not lost.
+                onBlur={() => {
+                  blurTimer.current = setTimeout(() => setFocused(false), BLUR_GRACE_MS);
+                }}
                 onContentSizeChange={(event) => onContentSize(event.nativeEvent.contentSize.height)}
                 multiline
                 scrollEnabled

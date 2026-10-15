@@ -9,6 +9,10 @@ import * as React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 
 import type { AgentFeedDetail, AgentFeedItem } from "@kawase/api-client";
+import { getVenueIdentity, venueKey } from "@kawase/identity";
+import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
+import { Mark } from "@kawase/ui-native/components/mark";
+import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
 import { Button, diagnose, ErrorState, KeyValue, Panel, SectionLabel, SIZE, Skeleton, SPACE, TYPE, useHeldLoading, useTheme, type Diagnosis } from "@/components/kit";
 import { Sheet } from "@/components/sheet/Sheet";
@@ -18,9 +22,11 @@ import { RaceRows } from "@/chat/race-card";
 import { useOpenIn, type OpenTarget } from "@/chat/open-in";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { ARC_CHAIN_IDS } from "@/safety/use-safety";
 import { api } from "@/session/api";
 
 import { useFeedCopy } from "./feed-copy";
+import { FeedMark } from "./feed-timeline";
 
 const HASH_HEAD = 10;
 const HASH_TAIL = 6;
@@ -32,6 +38,22 @@ const SKELETON_ROWS = Array.from({ length: SKELETON_COUNT }, (_, row) => row);
 const SKELETON_AMOUNT = 64;
 /** The kinds whose run raced venues first (the race is read from the conversation that made it). */
 const RACED: ReadonlySet<AgentFeedItem["kind"]> = new Set(["swap", "bridge", "crosschain", "earn", "lend"]);
+
+/** A fact with a mark beside its value (the token, the venue, the person). */
+function Fact({ label, value, children }: { label: string; value: string; children?: React.ReactNode }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.fact} accessible accessibilityLabel={`${label} ${value}`}>
+      <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{label}</Text>
+      <View style={styles.factValue}>
+        {children}
+        <Text numberOfLines={1} style={[TYPE.rowStrong, styles.shrink, { color: color.ink }]}>
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem; onClose: () => void; onAsk?: ((prompt: string) => void) | undefined }) {
   const { t } = useT();
@@ -79,6 +101,9 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
 
   return (
     <Sheet onClose={onClose} closeLabel={t("shell.kit.closeNamed", { name: t("feed.detail.title") })} detents={LIST_DETENTS}>
+      <View style={styles.face}>
+        <FeedMark item={row} />
+      </View>
       <SheetHeading title={copy.line(row)} body={copy.detail(row)} />
       <View style={styles.body}>
         {detail?.asked ? (
@@ -112,12 +137,24 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
           </View>
         ) : null}
 
-        <Panel>
+        <Panel style={styles.panel}>
           <View style={styles.receipt}>
             <KeyValue label={t("feed.detail.outcome")} value={copy.outcome(row)} />
-            {amount ? <KeyValue label={t("feed.detail.amount")} value={amount} /> : null}
-            {venue ? <KeyValue label={t("feed.detail.venue")} value={venue} /> : null}
-            {where ? <KeyValue label={t("feed.detail.where")} value={where} /> : null}
+            {amount ? (
+              <Fact label={t("feed.detail.amount")} value={amount}>
+                {row.token ? <TokenMark token={{ chainId: ARC_CHAIN_IDS[row.network], address: (row.other?.token ?? row.token).address, symbol: (row.other?.token ?? row.token).symbol }} size={SIZE.markChip} /> : null}
+              </Fact>
+            ) : null}
+            {venue ? (
+              <Fact label={t("feed.detail.venue")} value={venue}>
+                {row.venue && getVenueIdentity(row.venue) ? <Mark entity={venueKey(row.venue)} size={SIZE.markChip} /> : null}
+              </Fact>
+            ) : null}
+            {where ? (
+              <Fact label={t("feed.detail.where")} value={where}>
+                {row.counterparty && ADDRESS.test(row.counterparty) ? <DefaultAvatar seed={row.counterparty.toLowerCase()} size={SIZE.markChip} /> : null}
+              </Fact>
+            ) : null}
             <KeyValue label={row.outcome === "scheduled" ? t("feed.detail.next") : t("feed.detail.when")} value={when} />
             {row.txHash ? <KeyValue label={t("feed.detail.tx")} value={`${row.txHash.slice(0, HASH_HEAD)}…${row.txHash.slice(-HASH_TAIL)}`} /> : null}
           </View>
@@ -154,6 +191,11 @@ const styles = StyleSheet.create({
   body: { gap: SPACE.lg, paddingTop: SPACE.md },
   block: { gap: SPACE.sm },
   receipt: { gap: SPACE.sm },
+  panel: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md },
+  face: { alignItems: "center", paddingTop: SPACE.sm },
+  fact: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACE.md },
+  factValue: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, flexShrink: 1 },
+  shrink: { flexShrink: 1 },
   actions: { gap: SPACE.sm },
   skeletonRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
   grow: { flex: 1 },

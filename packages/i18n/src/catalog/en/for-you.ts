@@ -36,7 +36,7 @@ export const forYou = {
   trendingBodyListed: "{{tokenName}} is {{change}} today with {{liquidity}} of liquidity, and it's on a verified list. You don't hold it. This isn't advice: see its page first.",
   trendingBodyUnverified: "{{tokenName}} is {{change}} today with {{liquidity}} of liquidity. It isn't verified and you don't hold it. This isn't advice: check its safety first.",
   trendingAction: "See {{token}}",
-  serviceTitle: "A paid service about your {{token}}",
+  serviceTitle: "{{service}} can answer about your {{token}}",
   serviceBody: "You hold {{token}}. {{service}} answers for {{price}} a call, paid from your agent wallet: “{{what}}”",
   serviceAction: "Open agent wallet",
 };

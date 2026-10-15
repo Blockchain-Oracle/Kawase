@@ -38,7 +38,7 @@ export const forYou: Catalog["forYou"] = {
   trendingBodyListed: "{{tokenName}} va {{change}} hoy con {{liquidity}} de liquidez y está en una lista verificada. No lo tienes. Esto no es un consejo: mira su página primero.",
   trendingBodyUnverified: "{{tokenName}} va {{change}} hoy con {{liquidity}} de liquidez. No está verificado y no lo tienes. Esto no es un consejo: revisa su seguridad primero.",
   trendingAction: "Ver {{token}}",
-  serviceTitle: "Un servicio de pago sobre tu {{token}}",
+  serviceTitle: "{{service}} puede responder sobre tu {{token}}",
   serviceBody: "Tienes {{token}}. {{service}} responde por {{price}} la consulta, pagada desde tu billetera del agente: “{{what}}”",
   serviceAction: "Abrir billetera del agente",
 };

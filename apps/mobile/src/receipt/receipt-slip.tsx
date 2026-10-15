@@ -27,6 +27,8 @@ export type ReceiptData = {
   txHash: string | null;
   explorerUrl: string | null;
   note?: string | null | undefined;
+  /** A swap reads "You swapped … via <venue>" (`counterparty` is the venue); a transfer (the default) "You sent … to". */
+  kind?: "transfer" | "swap" | undefined;
 };
 
 const SLIP = { maxWidth: 380, pad: 22, radius: 20, mark: 26, hanko: 78, perf: 18, notch: 18, qr: 92, netMark: 16 } as const;
@@ -95,12 +97,14 @@ export const ReceiptSlip = React.forwardRef<View, { receipt: ReceiptData; export
         </View>
         <View style={styles.result}>
           <View style={styles.flex}>
-            <Text style={[TYPE.label, styles.caps, { color: color.text2 }]}>{receipt.direction === "sent" ? t("receipt.sent") : t("receipt.received")}</Text>
+            <Text style={[TYPE.label, styles.caps, { color: color.text2 }]}>
+              {receipt.kind === "swap" ? t("receipt.swapped") : receipt.direction === "sent" ? t("receipt.sent") : t("receipt.received")}
+            </Text>
             <Text style={[TYPE.displayPrice, { color: color.ink }]} numberOfLines={1} adjustsFontSizeToFit>
               {receipt.amount}
             </Text>
             <Text style={[TYPE.body, { color: color.text2 }]} numberOfLines={1}>
-              {receipt.direction === "sent" ? t("receipt.to") : t("receipt.from")} <Text style={{ color: color.ink }}>{receipt.counterparty}</Text>
+              {receipt.kind === "swap" ? t("receipt.via") : receipt.direction === "sent" ? t("receipt.to") : t("receipt.from")} <Text style={{ color: color.ink }}>{receipt.counterparty}</Text>
             </Text>
           </View>
           <View style={styles.hanko} pointerEvents="none">

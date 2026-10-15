@@ -38,7 +38,7 @@ export const forYou: Catalog["forYou"] = {
   trendingBodyListed: "{{tokenName}} আজ {{change}}, {{liquidity}} তারল্য নিয়ে, এবং যাচাই করা তালিকায় আছে। এটি আপনার কাছে নেই। এটি পরামর্শ নয়: আগে এর পেজ দেখুন।",
   trendingBodyUnverified: "{{tokenName}} আজ {{change}}, {{liquidity}} তারল্য নিয়ে। এটি যাচাই করা নয় এবং আপনার কাছে নেই। এটি পরামর্শ নয়: আগে এর নিরাপত্তা দেখুন।",
   trendingAction: "{{token}} দেখুন",
-  serviceTitle: "আপনার {{token}} নিয়ে একটি পেইড সেবা",
+  serviceTitle: "{{service}} আপনার {{token}} নিয়ে উত্তর দিতে পারে",
   serviceBody: "আপনার কাছে {{token}} আছে। {{service}} প্রতি উত্তরে {{price}} নেয়, আপনার এজেন্ট ওয়ালেট থেকে: “{{what}}”",
   serviceAction: "এজেন্ট ওয়ালেট খুলুন",
 };

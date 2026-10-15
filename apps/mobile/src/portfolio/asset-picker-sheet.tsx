@@ -39,6 +39,8 @@ type AssetPickerSheetProps = {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
+/** How many popular tokens the picker offers before anything is typed. */
+const POPULAR_MAX = 12;
 const matches = (token: TokenView, query: string) => {
   const needle = query.trim().toLowerCase();
   return !needle || token.symbol.toLowerCase().includes(needle) || token.name.toLowerCase().includes(needle) || token.address.toLowerCase() === needle;
@@ -61,6 +63,33 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
   React.useEffect(() => {
     if (open) void refresh();
   }, [open, refresh]);
+
+  // Before anything is typed, "any" opens on what people trade on Arc (stablecoins and FX, then trending), never on
+  // "Nothing matches that".
+  const [popular, setPopular] = React.useState<TokenSearchResult[]>([]);
+  React.useEffect(() => {
+    if (!open || mode !== "any") return undefined;
+    let live = true;
+    void Promise.all([api.markets.list("fx", network).catch(() => null), api.markets.list("trending", network).catch(() => null)]).then((lists) => {
+      if (!live) return;
+      const rows = lists.flatMap((list) => list?.market.rows ?? []);
+      const seen = new Set<string>();
+      setPopular(
+        rows
+          .filter((row) => {
+            const key = row.token.address.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, POPULAR_MAX)
+          .map((row): TokenSearchResult => ({ token: row.token, priceUsd: row.priceUsd, liquidityUsd: row.liquidityUsd, held: false })),
+      );
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, mode, network]);
 
   // Search the whole network for what the holdings do not cover.
   React.useEffect(() => {
@@ -116,6 +145,7 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
   const heldAddresses = new Set(held.map((holding) => holding.token.address.toLowerCase()));
   const other = (portfolio?.otherChains ?? []).filter((holding) => matches(holding.token, query));
   const found = results.filter((result) => !heldAddresses.has(result.token.address.toLowerCase()));
+  const suggested = query.trim() ? [] : popular.filter((result) => !heldAddresses.has(result.token.address.toLowerCase()));
   const hidden = (portfolio?.hidden ?? []).filter((holding) => matches(holding.token, query));
 
   const searchRow = (result: TokenSearchResult): PickerItem => {
@@ -150,6 +180,7 @@ export function AssetPickerSheet({ open, onClose, title, mode, onSelect, unavail
         sections={[
           { key: "held", label: t("assets.yourAssets"), items: held.map((holding) => holdingRow(holding)) },
           { key: "found", label: t("assets.results"), items: found.map(searchRow) },
+          { key: "popular", label: t("assets.popular"), items: suggested.map(searchRow) },
           { key: "other", label: t("assets.onOtherChains"), items: other.map((holding) => holdingRow(holding, true)) },
         ]}
         hidden={{

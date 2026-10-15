@@ -39,6 +39,9 @@ import { useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
 import { SwapTokenMark, useSwapMoney } from "@/swap/swap-tokens";
 import { isSwapMoving, isSwapOpen, useSwap } from "@/swap/use-swap";
 
+import { ShareReceiptButton } from "@/receipt/share-receipt";
+import type { ReceiptData } from "@/receipt/receipt-slip";
+
 import { useOpenIn } from "./open-in";
 import { RaceRows } from "./race-card";
 import { ToolCard, type ToolPart } from "./tool-cards";
@@ -203,6 +206,7 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
       </View>
       <ReceiptActions
         explorerUrl={intent.tx?.explorerUrl ?? null}
+        share={{ kind: "swap", direction: "sent", amount: `${paid} → ${got}`, counterparty: draft.provider, network: intent.network, at: intent.completedAt ?? intent.createdAt, txHash: intent.tx?.hash ?? null, explorerUrl: intent.tx?.explorerUrl ?? null }}
         open={{ label: open.intent("swap", intent.id).label, onPress: () => router.push(open.intent("swap", intent.id).href) }}
       />
     </View>
@@ -260,7 +264,10 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
         <View style={[styles.rule, { backgroundColor: color.hairline }]} />
         <LedgerLine label={t("feed.run.toLabel")} mark={null} value={name} />
       </View>
-      <ReceiptActions explorerUrl={intent.tx?.explorerUrl ?? null} />
+      <ReceiptActions
+        explorerUrl={intent.tx?.explorerUrl ?? null}
+        share={{ direction: "sent", amount, counterparty: name, network: intent.network, at: intent.completedAt ?? intent.createdAt, txHash: intent.tx?.hash ?? null, explorerUrl: intent.tx?.explorerUrl ?? null }}
+      />
     </View>
   );
   return (
@@ -344,7 +351,7 @@ function LedgerLine({ label, mark, value, tone }: { label: string; mark: React.R
 }
 
 /** "View on ArcScan" (it opens the explorer, so it says so with its icon), and the way back to the intent's screen. */
-function ReceiptActions({ explorerUrl, open }: { explorerUrl: string | null; open?: { label: string; onPress: () => void } | undefined }) {
+function ReceiptActions({ explorerUrl, open, share }: { explorerUrl: string | null; open?: { label: string; onPress: () => void } | undefined; share?: ReceiptData | null | undefined }) {
   const { t } = useT();
   return (
     <View style={styles.row}>
@@ -358,6 +365,7 @@ function ReceiptActions({ explorerUrl, open }: { explorerUrl: string | null; ope
           onPress={() => void Linking.openURL(explorerUrl)}
         />
       ) : null}
+      {share ? <ShareReceiptButton receipt={share} compact /> : null}
       {open ? <Button size="sm" block={false} variant="ghost" leading={<Icon icon={ArrowUpRight} size={SIZE.iconSm} />} label={open.label} onPress={open.onPress} /> : null}
     </View>
   );

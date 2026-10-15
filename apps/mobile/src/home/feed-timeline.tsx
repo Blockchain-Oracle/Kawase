@@ -34,6 +34,10 @@ const RAIL_WIDTH = 2;
 const STAGGER_ROWS = 8;
 const HALF = 2;
 
+/** The run-kind badge on a token's mark (a calendar on a scheduled run). */
+const BADGE = 18;
+const BADGE_ICON = 11;
+const BADGE_OFFSET = 4;
 const KIND_GLYPH: Partial<Record<AgentFeedItem["kind"], LucideIcon>> = { automation: CalendarClock, practice: FlaskConical, suggestion: Sparkles };
 
 /** The filter chips with each group's count ("Done 3"); "All" counts every row. */
@@ -62,13 +66,24 @@ export function rowsFor(feed: AgentFeed | undefined, filter: FeedFilter): AgentF
 }
 
 /** The row's face: the venue's mark, else the token's, else a glyph for what it is. */
-function FeedMark({ item }: { item: AgentFeedItem }) {
+export function FeedMark({ item }: { item: AgentFeedItem }) {
   const { color } = useTheme();
   const venue = item.venue && getVenueIdentity(item.venue) ? venueKey(item.venue) : null;
   if (venue) return <Mark entity={venue} size={MARK} />;
-  if (item.token && item.kind !== "automation") {
+  if (item.token) {
     const token = item.other?.token ?? item.token;
-    return <TokenMark token={{ chainId: ARC_CHAIN_IDS[item.network], address: token.address, symbol: token.symbol }} size={MARK} />;
+    const mark = <TokenMark token={{ chainId: ARC_CHAIN_IDS[item.network], address: token.address, symbol: token.symbol }} size={MARK} />;
+    // A scheduled or practised run still wears its token; a small badge says what kind of run it is.
+    const badge = item.kind === "automation" || item.kind === "practice" ? KIND_GLYPH[item.kind] : item.outcome === "waiting" ? Hand : null;
+    if (!badge) return mark;
+    return (
+      <View>
+        {mark}
+        <View style={[styles.badge, { backgroundColor: color.card, borderColor: color.ground }]}>
+          <Icon icon={badge} size={BADGE_ICON} />
+        </View>
+      </View>
+    );
   }
   const glyph = item.outcome === "waiting" ? Hand : (KIND_GLYPH[item.kind] ?? Waypoints);
   return (
@@ -203,6 +218,7 @@ const styles = StyleSheet.create({
   rail: { position: "absolute", width: RAIL_WIDTH, start: (MARK - RAIL_WIDTH) / HALF },
   railAbove: { top: -SPACE.sm, height: "50%" },
   railBelow: { bottom: -SPACE.sm, height: "50%" },
+  badge: { position: "absolute", end: -BADGE_OFFSET, bottom: -BADGE_OFFSET, width: BADGE, height: BADGE, borderRadius: BADGE, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   glyph: { width: MARK, height: MARK, borderRadius: MARK / HALF, alignItems: "center", justifyContent: "center" },
   copy: { flex: 1, gap: SPACE.xxs },
   end: { alignItems: "flex-end", gap: SPACE.xxs },

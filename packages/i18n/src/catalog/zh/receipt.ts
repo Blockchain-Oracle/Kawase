@@ -4,6 +4,8 @@ export const receipt: Catalog["receipt"] = {
   title: "收据",
   sent: "你已发送",
   received: "你已收到",
+  swapped: "你兑换了",
+  via: "经由",
   to: "收款人",
   from: "付款人",
   when: "时间",

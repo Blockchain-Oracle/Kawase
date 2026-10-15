@@ -8,6 +8,7 @@ export const assets: Catalog["assets"] = {
   yourAssets: "आपके एसेट",
   onOtherChains: "दूसरी चेन पर",
   results: "Arc पर टोकन",
+  popular: "Arc पर लोकप्रिय",
   hiddenCount: "छिपे हुए ({{count}})",
   noMatch: "कुछ मेल नहीं खाता",
   addMoney: "पैसे जोड़ें",

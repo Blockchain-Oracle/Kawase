@@ -8,6 +8,7 @@ export const assets: Catalog["assets"] = {
   yourAssets: "آپ کے اثاثے",
   onOtherChains: "دوسری چینز پر",
   results: "Arc پر ٹوکن",
+  popular: "Arc پر مقبول",
   hiddenCount: "چھپے ہوئے ({{count}})",
   noMatch: "کچھ نہیں ملا",
   addMoney: "رقم شامل کریں",

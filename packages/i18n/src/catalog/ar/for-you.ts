@@ -36,7 +36,7 @@ export const forYou: Catalog["forYou"] = {
   trendingBodyListed: "{{tokenName}} عند {{change}} اليوم بسيولة {{liquidity}}، وهو في قائمة موثّقة. لا تملكه. هذه ليست نصيحة: اطّلع على صفحته أولًا.",
   trendingBodyUnverified: "{{tokenName}} عند {{change}} اليوم بسيولة {{liquidity}}. غير موثّق ولا تملكه. هذه ليست نصيحة: تحقّق من أمانه أولًا.",
   trendingAction: "عرض {{token}}",
-  serviceTitle: "خدمة مدفوعة عن {{token}} لديك",
+  serviceTitle: "‏{{service}} يجيب عن {{token}} الخاص بك",
   serviceBody: "لديك {{token}}. تجيب {{service}} مقابل {{price}} للطلب، تُدفع من محفظة الوكيل: «{{what}}»",
   serviceAction: "افتح محفظة الوكيل",
 };
