@@ -34,7 +34,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEFAULT_VOICE_PREFS } from "@kawase/config";
 import { LANGUAGE_NAMES } from "@kawase/i18n/names";
-import { arcIdentity } from "@kawase/identity";
+import { arcIdentity, fiatKey } from "@kawase/identity";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
@@ -223,7 +223,12 @@ export function SettingsScreen() {
           <ListRow
             leading={<Glyph icon={Coins} />}
             title={t("settings.displayCurrency")}
-            trailing={<Value text={currencyName(displayCurrency)} />}
+            trailing={
+              <View style={styles.currency}>
+                <Mark entity={fiatKey(displayCurrency)} size={SIZE.iconSm} />
+                <Value text={currencyName(displayCurrency)} />
+              </View>
+            }
             onPress={() => setCurrencyOpen(true)}
           />
         </Group>
@@ -370,6 +375,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   value: { maxWidth: VALUE_MAX_W },
+  currency: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   segmentRow: { gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md },
   segmentHead: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
 });

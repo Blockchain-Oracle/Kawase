@@ -7,7 +7,7 @@ import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES } from "@kawase/networks"
  * registry cannot drift from the verified values. Mark files live in svg/ with a row in PROVENANCE.md each;
  * an entity whose file has not arrived yet renders the labelled neutral disc, never a stand-in logo.
  */
-export type EntityKind = "chain" | "token" | "provider" | "venue" | "name-service" | "exchange" | "wallet" | "pay";
+export type EntityKind = "chain" | "token" | "provider" | "venue" | "name-service" | "exchange" | "wallet" | "pay" | "fiat";
 
 export type MarkVariant = "color" | "mono";
 
@@ -43,6 +43,8 @@ export const venueKey = (slug: string) => `venue:${slug}`;
 export const exchangeKey = (slug: string) => `exchange:${slug}`;
 export const walletKey = (slug: string) => `wallet:${slug}`;
 export const payKey = (slug: string) => `pay:${slug}`;
+/** A display currency by its ISO 4217 code ("fiat:NGN"): the issuing country's flag. */
+export const fiatKey = (code: string) => `fiat:${code.toUpperCase()}`;
 
 const USDC_DECIMALS = 6;
 const EURC_DECIMALS = 6;
@@ -242,6 +244,36 @@ export const ENTITIES: readonly Entity[] = [
   { id: providerKey("coinbase"), kind: "provider", name: "Coinbase", brandColor: "#0052FF", shape: "tile", marks: { color: "coinbase", mono: "coinbase-mono" } },
   { id: providerKey("circle_onramp"), kind: "provider", name: "Circle", brandColor: "#00E599", shape: "uncontained", marks: { color: "circle", mono: "circle-mono" } },
   { id: providerKey("coinbase_onramp"), kind: "provider", name: "Coinbase", brandColor: "#0052FF", shape: "tile", marks: { color: "coinbase", mono: "coinbase-mono" } },
+
+  // Display currencies (Settings → Display currency): the issuing country's flag, round (circle-flags, MIT).
+  { id: fiatKey("USD"), kind: "fiat", name: "US Dollar", symbol: "USD", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-us" } },
+  { id: fiatKey("EUR"), kind: "fiat", name: "Euro", symbol: "EUR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-eu" } },
+  { id: fiatKey("GBP"), kind: "fiat", name: "British Pound", symbol: "GBP", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-gb" } },
+  { id: fiatKey("NGN"), kind: "fiat", name: "Nigerian Naira", symbol: "NGN", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ng" } },
+  { id: fiatKey("KES"), kind: "fiat", name: "Kenyan Shilling", symbol: "KES", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ke" } },
+  { id: fiatKey("GHS"), kind: "fiat", name: "Ghanaian Cedi", symbol: "GHS", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-gh" } },
+  { id: fiatKey("ZAR"), kind: "fiat", name: "South African Rand", symbol: "ZAR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-za" } },
+  { id: fiatKey("EGP"), kind: "fiat", name: "Egyptian Pound", symbol: "EGP", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-eg" } },
+  { id: fiatKey("INR"), kind: "fiat", name: "Indian Rupee", symbol: "INR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-in" } },
+  { id: fiatKey("PKR"), kind: "fiat", name: "Pakistani Rupee", symbol: "PKR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-pk" } },
+  { id: fiatKey("BDT"), kind: "fiat", name: "Bangladeshi Taka", symbol: "BDT", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-bd" } },
+  { id: fiatKey("CNY"), kind: "fiat", name: "Chinese Yuan", symbol: "CNY", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-cn" } },
+  { id: fiatKey("JPY"), kind: "fiat", name: "Japanese Yen", symbol: "JPY", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-jp" } },
+  { id: fiatKey("KRW"), kind: "fiat", name: "South Korean Won", symbol: "KRW", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-kr" } },
+  { id: fiatKey("IDR"), kind: "fiat", name: "Indonesian Rupiah", symbol: "IDR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-id" } },
+  { id: fiatKey("PHP"), kind: "fiat", name: "Philippine Peso", symbol: "PHP", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ph" } },
+  { id: fiatKey("VND"), kind: "fiat", name: "Vietnamese Dong", symbol: "VND", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-vn" } },
+  { id: fiatKey("SGD"), kind: "fiat", name: "Singapore Dollar", symbol: "SGD", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-sg" } },
+  { id: fiatKey("AED"), kind: "fiat", name: "UAE Dirham", symbol: "AED", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ae" } },
+  { id: fiatKey("SAR"), kind: "fiat", name: "Saudi Riyal", symbol: "SAR", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-sa" } },
+  { id: fiatKey("TRY"), kind: "fiat", name: "Turkish Lira", symbol: "TRY", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-tr" } },
+  { id: fiatKey("BRL"), kind: "fiat", name: "Brazilian Real", symbol: "BRL", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-br" } },
+  { id: fiatKey("MXN"), kind: "fiat", name: "Mexican Peso", symbol: "MXN", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-mx" } },
+  { id: fiatKey("ARS"), kind: "fiat", name: "Argentine Peso", symbol: "ARS", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ar" } },
+  { id: fiatKey("COP"), kind: "fiat", name: "Colombian Peso", symbol: "COP", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-co" } },
+  { id: fiatKey("CAD"), kind: "fiat", name: "Canadian Dollar", symbol: "CAD", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ca" } },
+  { id: fiatKey("AUD"), kind: "fiat", name: "Australian Dollar", symbol: "AUD", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-au" } },
+  { id: fiatKey("CHF"), kind: "fiat", name: "Swiss Franc", symbol: "CHF", brandColor: "#FFFFFF", shape: "disc", marks: { color: "flag-ch" } },
 
   // Pay methods (Buy): the wallets' own marks, black or white per their guidelines.
   { id: payKey("applepay"), kind: "pay", name: "Apple Pay", brandColor: "#000000", shape: "uncontained", marks: { color: "applepay", mono: "applepay-mono" } },

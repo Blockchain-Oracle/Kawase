@@ -42,6 +42,34 @@ import MarkEurc from "./eurc";
 import MarkEurcMono from "./eurc-mono";
 import MarkExa from "./exa";
 import MarkExaMono from "./exa-mono";
+import MarkFlagAe from "./flag-ae";
+import MarkFlagAr from "./flag-ar";
+import MarkFlagAu from "./flag-au";
+import MarkFlagBd from "./flag-bd";
+import MarkFlagBr from "./flag-br";
+import MarkFlagCa from "./flag-ca";
+import MarkFlagCh from "./flag-ch";
+import MarkFlagCn from "./flag-cn";
+import MarkFlagCo from "./flag-co";
+import MarkFlagEg from "./flag-eg";
+import MarkFlagEu from "./flag-eu";
+import MarkFlagGb from "./flag-gb";
+import MarkFlagGh from "./flag-gh";
+import MarkFlagId from "./flag-id";
+import MarkFlagIn from "./flag-in";
+import MarkFlagJp from "./flag-jp";
+import MarkFlagKe from "./flag-ke";
+import MarkFlagKr from "./flag-kr";
+import MarkFlagMx from "./flag-mx";
+import MarkFlagNg from "./flag-ng";
+import MarkFlagPh from "./flag-ph";
+import MarkFlagPk from "./flag-pk";
+import MarkFlagSa from "./flag-sa";
+import MarkFlagSg from "./flag-sg";
+import MarkFlagTr from "./flag-tr";
+import MarkFlagUs from "./flag-us";
+import MarkFlagVn from "./flag-vn";
+import MarkFlagZa from "./flag-za";
 import MarkGaszip from "./gaszip";
 import MarkGoldsky from "./goldsky";
 import MarkGoogle from "./google";
@@ -139,6 +167,34 @@ export const MARKS = {
   "eurc-mono": MarkEurcMono,
   "exa": MarkExa,
   "exa-mono": MarkExaMono,
+  "flag-ae": MarkFlagAe,
+  "flag-ar": MarkFlagAr,
+  "flag-au": MarkFlagAu,
+  "flag-bd": MarkFlagBd,
+  "flag-br": MarkFlagBr,
+  "flag-ca": MarkFlagCa,
+  "flag-ch": MarkFlagCh,
+  "flag-cn": MarkFlagCn,
+  "flag-co": MarkFlagCo,
+  "flag-eg": MarkFlagEg,
+  "flag-eu": MarkFlagEu,
+  "flag-gb": MarkFlagGb,
+  "flag-gh": MarkFlagGh,
+  "flag-id": MarkFlagId,
+  "flag-in": MarkFlagIn,
+  "flag-jp": MarkFlagJp,
+  "flag-ke": MarkFlagKe,
+  "flag-kr": MarkFlagKr,
+  "flag-mx": MarkFlagMx,
+  "flag-ng": MarkFlagNg,
+  "flag-ph": MarkFlagPh,
+  "flag-pk": MarkFlagPk,
+  "flag-sa": MarkFlagSa,
+  "flag-sg": MarkFlagSg,
+  "flag-tr": MarkFlagTr,
+  "flag-us": MarkFlagUs,
+  "flag-vn": MarkFlagVn,
+  "flag-za": MarkFlagZa,
   "gaszip": MarkGaszip,
   "goldsky": MarkGoldsky,
   "google": MarkGoogle,

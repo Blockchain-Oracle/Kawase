@@ -1,5 +1,6 @@
-// The display currency sheet (B2-3, plan §A.4 14): every common fiat Kawase has a daily rate for, each named in the
-// person's language with its symbol (Intl.DisplayNames — no names are written into the app), the current one ticked.
+// The display currency sheet (B2-3, plan §A.4 14): every common fiat Kawase has a daily rate for, each with its
+// issuer's flag (packages/identity, circle-flags), named in the person's language with its symbol (Intl.DisplayNames —
+// no names are written into the app), the current one ticked.
 // A tap saves it to the account; balances, Home, Markets, token pages, cards and the agent's replies follow.
 import * as React from "react";
 import { toast } from "sonner-native";
@@ -7,6 +8,8 @@ import { ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DISPLAY_CURRENCIES } from "@kawase/config";
+import { fiatKey } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { Sheet } from "@kawase/ui-native/components/sheet";
 
@@ -17,6 +20,7 @@ import { useThemeColors } from "@/theme/use-theme-colors";
 
 /** The list takes at most this share of the screen; it scrolls. */
 const LIST_HEIGHT_SHARE = 0.6;
+const FLAG = 32;
 
 /** "Euro" in the person's language, or the code when the device cannot name it. */
 export function useCurrencyName() {
@@ -67,7 +71,7 @@ export function CurrencySheet({ open, onClose }: { open: boolean; onClose: () =>
       <ScrollView style={{ maxHeight: height * LIST_HEIGHT_SHARE }}>
       <ListGroup>
         {DISPLAY_CURRENCIES.map((code) => (
-          <ListRow key={code} title={name(code)} subtitle={`${code} · ${symbolOf(code, locale)}`} selected={code === current} accessibilityRole="radio" onPress={() => void choose(code)} />
+          <ListRow key={code} leading={<Mark entity={fiatKey(code)} size={FLAG} />} title={name(code)} subtitle={`${code} · ${symbolOf(code, locale)}`} selected={code === current} accessibilityRole="radio" onPress={() => void choose(code)} />
         ))}
       </ListGroup>
       </ScrollView>
