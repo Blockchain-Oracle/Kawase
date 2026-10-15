@@ -36,8 +36,12 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 8. [ ] Sweep checklist on every screen, signed in, phone + desktop (STATUS sweep rules below). Done so far (10-15,
        live): Home (feed row logo, no flat-zero line, markets for an empty account, two columns on a wide desktop),
        Activity (week card: no flat line, neutral zero In, honest "couldn't be read"), Swap/Bridge (quote when short,
-       no truncated pill), Agent wallet, Settings, Markets, Voice settings. Next: Send, Receive, Add money, Earn,
-       Borrow, Long/Short ticket, Contacts, Automations, Budget, Account, token page, Chat, desktop pages.
+       no truncated pill), Agent wallet, Settings, Markets, Voice settings, Send, Receive (skeleton → content in 1 s),
+       token page, Earn (vault names wrap: two "Steakhouse Prime U…" looked the same), Borrow, Automations and Contacts
+       (designed empty states), Long/Short (majors chart from Coinbase candles when GeckoTerminal is busy; the live price
+       rolls quickly so its last digits don't show two at once). Note: dimmed screenshots right after a navigation are
+       the browser pane's capture, not the app (measured: full opacity in the page). Next: Add money sheet, Budget,
+       Account, desktop pages, the route row's "Re…" truncation in a cancelled move card.
 9. [x] The + fan's first open (10-14 "~1 s"): measured on the live web in a fresh tab, no long task, worst frame 17 ms.
        Native: check on the device pass (item 12).
 10. [ ] RouteList polish (10-14). Venue honesty exists: rows carry `executable`, the best route is chosen among
