@@ -1,70 +1,112 @@
 ---
 title: "Automações"
-description: "Pagamentos programados, poupança automática, DCA e regras (saldo, dinheiro que entra ou sai, preço) que funcionam sozinhos dentro de permissões que você assina uma vez, com execuções de teste primeiro e Precisa de você para tudo que não puderem fazer sozinhos."
-sourceHash: 4d4a986aeccb8f32
+description: "Envios agendados, compras regulares, poupança automática, arredondamentos e regras de saldo que rodam sozinhos dentro de um limite que sua carteira assina uma vez na Arc, com treino antes e «Observando» no Início para o que vem a seguir."
+sourceHash: 9ebe869e5f9f181a
 ---
 
 <Status ids="automations" />
 
-As Automações fazem as coisas acontecerem sem você precisar abrir o app. Cada automação
-funciona **sem supervisão**, mas dentro de uma permissão na blockchain que você assina uma vez. Assim, nem o próprio Kawase pode fazer mais do que isso.
+Automações são coisas que devem acontecer sem você abrir o app. Cada uma roda **sem você**, mas dentro de um limite que a
+sua carteira assina uma vez na Arc, então nem o próprio Kawase consegue fazê-la ir além.
 
-## Pagamentos programados
+<Flow>
+  <FlowStep icon="calendar" title="Descreva">Um modelo ou suas próprias palavras.</FlowStep>
+  <FlowStep icon="eye" title="Leia o cartão">As próximas execuções e o máximo que ela poderia mover.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Ainda em dúvida" icon="repeat" title="Treinar primeiro" tone="quiet">Simulações na Arc; nada se move.</FlowStep>
+    <FlowStep when="Pronto" icon="key" title="Ative" tone="accent">Uma assinatura: a Arc garante o limite.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="clock" title="Observando" tone="ink">Roda na hora certa, uma única vez.</FlowStep>
+</Flow>
 
-"Toda sexta às 9, envie 10 dólares para Alex." O Kawase repete a instrução, mostra as próximas execuções e o valor máximo que poderá movimentar.
-Depois, você ativa tudo com **um Face ID**. Isso assina a **permissão** da automação: ela só pode transferir esse token, apenas
-para o endereço de Alex (fixado na blockchain) e até o valor permitido por período. Você pode programar: todos os dias, toda semana em um dia útil
-ou todo mês, do dia 1 ao 28, no seu próprio fuso horário.
+## Um envio agendado, passo a passo
 
-Cada execução acontece **exatamente uma vez**: se o servidor do Kawase reiniciar no meio da execução, ela será recuperada com o mesmo ID e nunca
-será paga duas vezes. As execuções semanais e mensais recebem um **lembrete um dia antes** (com um aviso se faltar dinheiro na sua carteira). Uma execução
-que não puder acontecer será **pulada com um motivo** na sua caixa de entrada. Se for pulada por falta de dinheiro, será **tentada novamente uma vez**
-quando o dinheiro chegar.
+«Toda sexta às 9 envie 1 dólar para o Sam», ou **Configurações → Automações → Nova**.
 
-## Poupança automática
+<Walkthrough>
+  <WalkStep title="Escolha o que ela faz" src="automations/new">
+    **Enviar com agenda**, **Comprar regularmente** (você confirma cada compra num preço atualizado), **Guardar e poupar**,
+    **Arredondar meus pagamentos**, um **Alerta de saldo baixo**, ou **Poupar acima de um limite**.
 
-"Deixe 100 dólares na minha carteira e guarde o restante." A poupança automática mantém esse valor disponível e transfere tudo que passar dele para a sua
-própria reserva (veja [Render](./earn-and-borrow.mdx)). Quando o saldo da carteira fica abaixo desse limite, ela repõe o valor usando a reserva. Ela verifica o saldo todos os dias e sempre que entra dinheiro. As permissões dela só permitem transferir USDC **entre sua carteira e sua própria
-reserva**, nunca para outro lugar.
+    <Pin box="4 16 92 68.5">Seis tipos de automação</Pin>
+  </WalkStep>
+  <WalkStep title="Para quem, quanto, quando" src="automations/schedule">
+    Um contato, `@usuário` ou endereço; USDC ou EURC; todo dia, toda semana num dia, ou todo mês num dia; o horário, no seu
+    fuso. A linha de baixo lê a agenda de volta.
 
-## DCA
+    <Pin box="4 35.5 92 6">Para: um contato, um @usuário ou um endereço</Pin>
 
-- O **DCA** ("compre 20 dólares de cirBTC toda semana") compra um token com um valor fixo em uma programação. Cada execução espera por você em
-  **Precisa de você**, com uma nova cotação pronta para executar.
+    <Pin box="4 49 92 6.5">O valor de cada vez</Pin>
 
-## Regras
+    <Pin box="4 62.5 92 5">O dia e depois o horário</Pin>
 
-"Quando meu saldo passar de 500, faça uma ponte com o que passar de 400 para o meu endereço na Base." Uma regra tem:
+    <Pin box="4 81 60 4">A agenda, lida de volta</Pin>
 
-- um **gatilho**: o saldo passa de um valor para cima ou para baixo; entra dinheiro (opcionalmente de alguém ou de pelo menos um
-  determinado valor); sai dinheiro (**arredondamentos**); ou o **preço** de um token passa de um nível (verificado na cotação pronta para execução a cada dois minutos);
-- uma **ação**: fazer uma ponte com USDC para o seu próprio endereço em outra rede (a taxa da rota tem um limite na blockchain), guardar na sua
-  reserva, **enviar para alguém** (com limite na blockchain), **trocar** ou apenas avisar você;
-- um **valor**: o que passar de um limite, uma parte do dinheiro que entrou ou um valor fixo.
+    <Pin box="4 86 92 6">Criar rascunho: nada roda ainda</Pin>
+  </WalkStep>
+  <WalkStep title="Leia o cartão" src="automations/card">
+    O cartão mostra as **próximas execuções** e **o máximo que ela poderia mover**: «No máximo 1,00 USDC por semana, e só
+    para este endereço. A Arc garante isso.» Ative, treine primeiro, ou pergunte o que aconteceria se rodasse agora.
 
-Uma regra de saldo ou de preço é ativada **uma vez por cruzamento** e fica pronta novamente quando o valor volta. Uma regra de
-**arredondamento** ("arredonde meus pagamentos e guarde o troco") guarda a diferença de cada envio na sua própria reserva.
+    <Pin box="4 49.5 92 7.5">As próximas execuções</Pin>
 
-## Teste primeiro
+    <Pin box="4 59.5 92 9.5">O máximo que ela poderá mover, garantido na Arc</Pin>
 
-Uma nova automação pode começar em **modo de teste**: ela funciona sem uma permissão, e cada execução é a transferência exata em modo de teste na
-Arc, registrada como **"teria acontecido"**. Nada é movimentado. Quando você estiver satisfeito, **Ativar** assina a permissão. Pergunte "o que aconteceria se
-isso fosse executado agora?" para fazer um teste sob demanda. Com o [modo de teste](./limits-and-control.mdx#practice-mode) global ativado, todas as
-automações funcionam em modo de teste.
+    <Pin box="4 76.5 92 6.5">Ative (Face ID, ou um código por email na web)</Pin>
 
-## Precisa de você
+    <Pin box="4 84.5 92 6.5">Ou treine primeiro</Pin>
+  </WalkStep>
+  <WalkStep title="Ativada" src="automations/on" zoom="87.7 52.4 6">
+    Ativar assina a **permissão** da própria automação: ela só pode transferir aquele token, só para aquele endereço (fixado
+    na rede) e só até o valor por período. A partir daí o Kawase roda sem perguntar; você pode pausar, pular uma execução ou
+    cancelar quando quiser.
 
-Uma automação nunca troca tokens sozinha e nunca paga acima do limite da permissão, nem ignora sua lista de permissões ou as regras para novos destinatários. Quando uma
-execução chega a uma dessas etapas, ela fica em **Precisa de você** (na caixa de entrada e em Automações, com uma notificação push quando configurada).
-Ao aprovar, você abre o mesmo envio ou troca que faria manualmente. Itens sem resposta recebem um lembrete depois de 12 horas e expiram após
-24 horas. Veja [Precisa de você](./limits-and-control.mdx#needs-you).
+    <Pin box="4 84 92 6.5">Gerenciar automações</Pin>
+  </WalkStep>
+  <WalkStep title="Observando" src="automations/watching" zoom="70 76 6">
+    **O que o Kawase fez**, no Início, tem um filtro **Observando**: o que roda a seguir, com um anel em contagem regressiva.
 
-## Como gerenciar
+    <Pin at="69 64.3">Observando</Pin>
 
-Na tela de Automações ou no chat: listar, **pausar**, **retomar**, **pular a próxima execução**, **editar** e **cancelar**.
+    <Pin box="4 70 92 9">A próxima execução e a contagem regressiva</Pin>
+  </WalkStep>
+</Walkthrough>
 
-- **Editar** no mesmo lugar: pedir menos aplica a mudança na hora; pedir mais assina uma nova permissão junto com a
-  revogação da antiga.
-- **Cancelar** também **revoga a permissão na blockchain**, então a autorização deixa de existir, em vez de apenas ficar oculta.
+## Como as execuções se comportam
+
+- **Uma única vez.** Se o servidor do Kawase reiniciar no meio de uma execução, ela é retomada com o mesmo id e nunca é paga
+  duas vezes.
+- **Lembretes.** Execuções semanais e mensais avisam um dia antes, com um alerta quando falta saldo na carteira.
+- **Pulada com motivo.** Uma execução que não pode seguir é pulada e diz por quê na caixa de entrada; se foi por falta de
+  dinheiro, tenta de novo uma vez quando o dinheiro chega.
+
+## Regras e poupança
+
+- **Guardar e poupar** (poupança automática): deixe um valor pronto na carteira; o resto rende na sua própria
+  [poupança em cofre](./earn-and-borrow.mdx) e volta quando faltar.
+- **Arredondar meus pagamentos**: poupe o troco de cada pagamento que você envia.
+- **Poupar acima de um limite** e **Alerta de saldo baixo**: agem ou avisam quando o saldo cruza uma linha, uma vez por
+  cruzamento.
+- No chat dá para ir além: «quando meu saldo passar de 500, mande pela ponte o que passar de 400 para o meu endereço na
+  Base», ou agir quando entra dinheiro ou o preço de um token cruza um nível.
+
+## Treinar primeiro
+
+Uma automação nova pode começar em **treino**: cada execução é a transferência exata simulada na Arc, registrada como
+**«teria feito»**. Nada se move. Quando estiver satisfeito, **ative**. Pergunte «o que aconteceria se rodasse agora?» quando
+quiser.
+
+## Esperando você
+
+Uma automação nunca troca sozinha, e nunca paga acima da permissão ou das suas regras. Quando uma execução chega a esse
+ponto, ela espera em **Esperando você** (caixa de entrada e Automações, com push se as notificações estiverem ativas).
+Aprovar abre exatamente o envio ou a troca que você faria à mão, conferido de novo. O que fica sem resposta é lembrado
+após 12 horas e expira após 24.
+
+## Gerenciar
+
+Em Automações ou no chat: listar, **pausar**, **retomar**, **pular a próxima execução**, **editar** e **cancelar**. Pedir menos
+vale na hora; pedir mais assina uma nova permissão junto com a revogação da antiga. **Cancelar** também revoga a permissão na
+rede, então ela some de verdade, não só fica escondida.
 
 <ScopeList ids="automations" />

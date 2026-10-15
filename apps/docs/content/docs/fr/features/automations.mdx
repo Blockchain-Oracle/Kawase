@@ -1,71 +1,115 @@
 ---
 title: "Automatisations"
-description: "Paiements programmés, épargne automatique, DCA et règles (solde, entrées ou sorties d'argent, prix) qui s'exécutent automatiquement grâce à des autorisations que vous signez une seule fois, avec des essais en mode pratique et une intervention requise pour tout ce qu'elles ne peuvent pas faire seules."
-sourceHash: 4d4a986aeccb8f32
+description: "Envois programmés, achats réguliers, épargne auto, arrondis et règles de solde qui s'exécutent seuls dans une limite que votre portefeuille signe une fois sur Arc, avec un essai d'abord et « En veille » sur l'accueil pour ce qui vient ensuite."
+sourceHash: 9ebe869e5f9f181a
 ---
 
 <Status ids="automations" />
 
-Les automatisations permettent à un agent de vous faire gagner du temps : elles exécutent les actions qui ne devraient pas vous obliger à ouvrir l'application. Chaque automatisation
-s'exécute **sans intervention**, dans le cadre d'une autorisation sur la blockchain que vous signez une seule fois. Même Kawase ne peut donc pas lui faire faire davantage.
+Les automatisations, ce sont les choses qui doivent se faire sans que vous ouvriez l'application. Chacune s'exécute **sans
+vous**, mais dans une limite que votre portefeuille signe une fois sur Arc : même Kawase ne peut pas lui faire faire plus.
 
-## Paiements programmés
+<Flow>
+  <FlowStep icon="calendar" title="La décrire">Un modèle, ou vos propres mots.</FlowStep>
+  <FlowStep icon="eye" title="Lire la carte">Les prochaines exécutions, et le maximum qu'elle pourrait déplacer.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Pas encore sûr" icon="repeat" title="S'entraîner d'abord" tone="quiet">Des essais sur Arc ; rien ne bouge.</FlowStep>
+    <FlowStep when="Prêt" icon="key" title="L'activer" tone="accent">Une signature : Arc fait respecter la limite.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="clock" title="En veille" tone="ink">Elle s'exécute à l'heure, une seule fois.</FlowStep>
+</Flow>
 
-« Chaque vendredi à 9 h, envoie 10 dollars à Alex. » Kawase vous affiche les prochaines exécutions et le montant maximum qui pourrait être transféré,
-puis vous l'activez avec **un seul Face ID**. Cela signe l'**autorisation** de l'automatisation : elle ne peut transférer que ce jeton,
-à l'adresse d'Alex (enregistrée sur la blockchain), et dans la limite du montant prévu pour chaque période. Fréquences disponibles : tous les jours, toutes les semaines un jour donné,
-ou tous les mois du 1er au 28, selon votre fuseau horaire.
+## Un envoi programmé, étape par étape
 
-Chaque exécution a lieu **exactement une fois** : si le serveur de Kawase redémarre en cours d'exécution, celle-ci est récupérée avec le même identifiant et n'est jamais
-payée deux fois. Les exécutions hebdomadaires et mensuelles font l'objet d'un **rappel la veille** (avec une alerte si le solde de votre portefeuille est insuffisant). Une exécution
-qui ne peut pas avoir lieu est **ignorée avec une explication** dans votre boîte de réception. Si elle est ignorée par manque d'argent, elle est **réessayée une fois**
-lorsque l'argent arrive.
+« Chaque vendredi à 9 h, envoie 1 dollar à Sam », ou **Réglages → Automatisations → Nouvelle**.
 
-## Épargne automatique
+<Walkthrough>
+  <WalkStep title="Choisir ce qu'elle fait" src="automations/new">
+    **Envoyer selon un calendrier**, **Acheter régulièrement** (vous confirmez chaque achat à un prix frais), **Garder et
+    épargner**, **Arrondir mes paiements**, une **Alerte de solde bas**, ou **Épargner au-delà d'un seuil**.
 
-« Garde 100 dollars dans mon portefeuille et épargne le reste. » L'épargne automatique conserve ce montant disponible et transfère tout ce qui le dépasse dans votre
-épargne personnelle du coffre (voir [Rendement](./earn-and-borrow.mdx)). Lorsque le solde de votre portefeuille passe sous ce seuil, elle le renfloue depuis
-votre épargne. Elle vérifie le solde chaque jour et chaque fois que de l'argent arrive. Ses autorisations permettent uniquement de transférer des USDC **entre votre portefeuille et votre propre
-épargne**, et jamais ailleurs.
+    <Pin box="4 16 92 68.5">Six sortes d'automatisation</Pin>
+  </WalkStep>
+  <WalkStep title="Qui, combien, quand" src="automations/schedule">
+    Un contact, un `@identifiant` ou une adresse ; USDC ou EURC ; chaque jour, chaque semaine un jour donné, ou chaque mois à
+    une date ; l'heure, dans votre fuseau horaire. La ligne dessous relit le calendrier.
 
-## DCA
+    <Pin box="4 35.5 92 6">À : un contact, un @identifiant ou une adresse</Pin>
 
-- La **DCA** (« achète 20 dollars de cirBTC chaque semaine ») achète un jeton pour un montant fixe, selon un calendrier. Chaque exécution vous attend dans
-  **Vous devez intervenir**, avec un nouveau prix exécutable.
+    <Pin box="4 49 92 6.5">Le montant à chaque fois</Pin>
 
-## Règles
+    <Pin box="4 62.5 92 5">Le jour, puis l'heure</Pin>
 
-« Lorsque mon solde dépasse 500, transfère ce qui dépasse 400 vers mon adresse Base. » Une règle comprend :
+    <Pin box="4 81 60 4">Le calendrier, relu</Pin>
 
-- un **déclencheur** : le solde dépasse ou passe sous un montant ; de l'argent arrive (éventuellement d'une personne donnée, ou pour au moins un
-  certain montant) ; de l'argent sort (**arrondis**) ; ou le **prix** d'un jeton franchit un seuil (vérifié sur le prix exécutable toutes les deux minutes) ;
-- une **action** : transférer des USDC vers votre propre adresse sur un autre réseau (les frais du pont sont plafonnés sur la blockchain), placer de l'argent dans votre
-  coffre, **envoyer de l'argent à quelqu'un** (avec une limite sur la blockchain), **échanger**, ou simplement vous alerter ;
-- un **montant** : ce qui dépasse un seuil, une part de l'argent reçu ou un montant fixe.
+    <Pin box="4 86 92 6">Créer le brouillon : rien ne s'exécute encore</Pin>
+  </WalkStep>
+  <WalkStep title="Lire la carte" src="automations/card">
+    La carte montre les **prochaines exécutions** et le **maximum qu'elle pourrait jamais déplacer** : « 1,00 USDC par semaine
+    au plus, et seulement vers cette adresse. Arc le fait respecter. » Activez-la, entraînez-vous d'abord, ou demandez ce qui
+    se passerait si elle s'exécutait maintenant.
 
-Une règle fondée sur le solde ou le prix se déclenche **une fois par franchissement** et se réarme lorsque le seuil est à nouveau franchi dans l'autre sens. Une règle d'**arrondi** (« arrondis mes
-paiements et épargne la différence ») place la différence de chaque envoi dans votre propre coffre.
+    <Pin box="4 49.5 92 7.5">Les prochaines exécutions</Pin>
 
-## Commencer en mode pratique
+    <Pin box="4 59.5 92 9.5">Le maximum qu'elle pourra déplacer, imposé sur Arc</Pin>
 
-Une nouvelle automatisation peut commencer en **mode pratique** : elle s'exécute sans autorisation, et chaque exécution correspond exactement au transfert qui aurait été effectué, sous forme d'essai sur
-Arc, avec la mention **« aurait été effectué »**. Rien ne bouge. Lorsque tout vous convient, **Activer** signe son autorisation. Demandez « que se passerait-il si
-cette automatisation s'exécutait maintenant ? » pour lancer un essai à la demande. Lorsque le [mode pratique](./limits-and-control.mdx#practice-mode) global est activé, toutes les
-automatisations s'exécutent en mode pratique.
+    <Pin box="4 76.5 92 6.5">L'activer (Face ID, ou un code par email sur le web)</Pin>
 
-## Vous devez intervenir
+    <Pin box="4 84.5 92 6.5">Ou s'entraîner d'abord</Pin>
+  </WalkStep>
+  <WalkStep title="Activée" src="automations/on" zoom="87.7 52.4 6">
+    L'activer signe l'**autorisation** propre à l'automatisation : elle ne peut transférer que ce jeton, que vers cette
+    adresse (fixée sur la chaîne), et que jusqu'au montant par période. Ensuite Kawase l'exécute sans vous demander ; vous
+    pouvez la mettre en pause, sauter une exécution ou l'annuler à tout moment.
 
-Une automatisation n'échange jamais de jetons seule et ne paie jamais plus que ce que son autorisation permet, ni en dehors de votre liste autorisée ou de vos règles concernant les nouveaux bénéficiaires. Lorsqu'une
-exécution arrive à une telle étape, elle attend dans **Vous devez intervenir** (dans la boîte de réception et les Automatisations, avec une notification push si les notifications sont configurées).
-L'approbation ouvre le même envoi ou échange que celui que vous effectueriez manuellement. Les éléments sans réponse font l'objet d'un rappel après 12 heures et expirent après
-24 heures. Voir [Vous devez intervenir](./limits-and-control.mdx#needs-you).
+    <Pin box="4 84 92 6.5">Gérer les automatisations</Pin>
+  </WalkStep>
+  <WalkStep title="En veille" src="automations/watching" zoom="70 76 6">
+    **Ce que Kawase a fait**, sur l'accueil, a un filtre **En veille** : ce qui s'exécute ensuite, avec un anneau qui décompte.
+
+    <Pin at="69 64.3">En veille</Pin>
+
+    <Pin box="4 70 92 9">La prochaine exécution et son compte à rebours</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Comment se passent les exécutions
+
+- **Une seule fois.** Si le serveur de Kawase redémarre en pleine exécution, celle-ci est reprise sous le même identifiant
+  et jamais payée deux fois.
+- **Rappels.** Les exécutions hebdomadaires et mensuelles ont un rappel la veille, avec une alerte si votre portefeuille
+  est trop bas.
+- **Ignorée avec une raison.** Une exécution impossible est ignorée et dit pourquoi dans votre boîte de réception ; celle
+  ignorée faute d'argent est relancée une fois quand l'argent arrive.
+
+## Règles et épargne
+
+- **Garder et épargner** (épargne auto) : gardez un montant prêt dans votre portefeuille ; le reste rapporte dans votre
+  propre [épargne en coffre](./earn-and-borrow.mdx) et revient quand vous êtes à court.
+- **Arrondir mes paiements** : épargnez la monnaie de chaque paiement envoyé.
+- **Épargner au-delà d'un seuil** et **Alerte de solde bas** : agissent ou vous préviennent quand votre solde franchit un
+  seuil, une fois par franchissement.
+- Dans la discussion, vous pouvez aller plus loin : « quand mon solde dépasse 500, envoie par pont ce qui dépasse 400 vers
+  mon adresse Base », ou agir quand de l'argent arrive ou que le prix d'un jeton franchit un niveau.
+
+## S'entraîner d'abord
+
+Une nouvelle automatisation peut commencer en **entraînement** : chaque exécution est le transfert exact en simulation sur
+Arc, enregistré comme **« aurait fait »**. Rien ne bouge. Quand vous êtes satisfait, **activez-la**. Demandez « que se
+passerait-il si elle s'exécutait maintenant ? » à tout moment.
+
+## Vous attend
+
+Une automatisation n'échange jamais seule, et ne paie jamais au-delà de son autorisation ou de vos règles. Quand une
+exécution arrive à une telle étape, elle attend dans **Vous attend** (boîte de réception et Automatisations, avec une
+notification push si elles sont activées). Approuver ouvre l'envoi ou l'échange exact que vous feriez à la main, revérifié.
+Les demandes sans réponse sont rappelées après 12 heures et expirent après 24.
 
 ## Les gérer
 
-Depuis l'écran Automatisations ou dans le chat : afficher la liste, **mettre en pause**, **reprendre**, **ignorer la prochaine exécution**, **modifier** et **annuler**.
-
-- **Modification** sur place : demander un montant inférieur s'applique immédiatement ; demander un montant supérieur signe une nouvelle autorisation en même temps que la
-  révocation de l'ancienne.
-- **L'annulation** **révoque également l'autorisation sur la blockchain** : la permission est supprimée, et pas seulement masquée.
+Depuis Automatisations ou dans la discussion : lister, **mettre en pause**, **reprendre**, **sauter la prochaine
+exécution**, **modifier** et **annuler**. Demander moins s'applique tout de suite ; demander plus signe une nouvelle
+autorisation en même temps que le retrait de l'ancienne. **Annuler** retire aussi l'autorisation sur la chaîne : la
+permission disparaît, elle n'est pas juste masquée.
 
 <ScopeList ids="automations" />
