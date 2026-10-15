@@ -104,6 +104,16 @@ UI and agent, from Abu's screenshots:
       "Services" (Markets → Services → See all) or behind Settings → Agent wallet's empty history. Fix: a
       Marketplace entry with real logos on Markets, a Marketplace row in Settings beside Agent wallet, and every
       tool named in a chat card or in the agent wallet's history opens that tool (the api now sends `tool`).
+- [ ] Mainnet wallet setup (Abu, 10-15): /wallet/setup/request answers 503 network_not_ready because Kawase's mainnet
+      relayer 0x18fb4f6679dcb927Ef70b3B9Be8B0440e7836b78 (sponsors every setup and gas-free send) holds 0 USDC (min
+      0.05). Abu funds it (≈10 USDC); ops 0x2afa6cb26f360adecbd8a014030a8aff17ae8b3b (gas for budgeted agent actions)
+      also 0. Then watch his setup land on prod; add an ops alert/health field when a relayer runs low.
+- [ ] Real-device testing on Abu's iPhone through macOS iPhone Mirroring (computer use), not only the simulator:
+      Apple/Google sign-in on a real Apple account (Claude stops at the provider's own page), device-only bugs. Look
+      at github.com/ShawnPana/phone-harness for a skill that sets this up (no separate harness agent; Claude Code
+      only). Note: EAS free plan's iOS builds are used up until Nov 1, so new iOS binaries are local builds
+      (`eas build --local`); JS ships by OTA to TestFlight build 19 (production channel). The old simulator build
+      had no channel (fixed in eas.json for the next one) so it ran 10-14 JS with native Apple sign-in.
 - [ ] Public TestFlight: an external group with a public link (Beta App Review once per version; JS ships by EAS
       Update without review). Lower priority than working features and the web (Abu, 10-15).
 

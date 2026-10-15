@@ -52,7 +52,8 @@ function siteIcon(website: string | null): string | null {
   }
 }
 
-export function ToolMark({ tool, size = SIZE.markRow }: { tool: CatalogToolView; size?: number }) {
+/** `badge`: the reseller's mark at the corner of a third-party tool (off in a stack of logos, where it crowds). */
+export function ToolMark({ tool, size = SIZE.markRow, badge: showBadge = true }: { tool: CatalogToolView; size?: number; badge?: boolean }) {
   const { color } = useTheme();
   const [iconFailed, setIconFailed] = React.useState(false);
   // The brand's own icon (served by the api for a resold tool, "Tavily" through Orthogonal), else a first-party
@@ -84,7 +85,7 @@ export function ToolMark({ tool, size = SIZE.markRow }: { tool: CatalogToolView;
   return (
     <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {face}
-      {tool.party === "third" && tool.providerMark ? (
+      {showBadge && tool.party === "third" && tool.providerMark ? (
         <View style={[styles.badge, { backgroundColor: color.card, borderRadius: RADIUS.pill }]}>
           <Mark entity={tool.providerMark} size={badge} />
         </View>

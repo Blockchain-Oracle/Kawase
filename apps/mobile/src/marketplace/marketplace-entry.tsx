@@ -17,10 +17,10 @@ import { useT } from "@/i18n";
 import { ToolMark } from "./tool-parts";
 import { useCatalog } from "./use-catalog";
 
-const FACES = 4;
-const FACE = 30;
+const FACES = 3;
+const FACE = 28;
 /** How far each logo tucks under the one before it. */
-const OVERLAP = 10;
+const OVERLAP = 8;
 const RING = 2;
 /** A placeholder disc is the size of a logo with its ring on both sides. */
 const GHOST = FACE + RING + RING;
@@ -56,7 +56,7 @@ export function MarketplaceEntry() {
           {faces.length > 0
             ? faces.map((tool, index) => (
                 <View key={tool.key} style={[styles.face, { marginStart: index === 0 ? 0 : -OVERLAP, borderColor: color.card, zIndex: FACES - index }]}>
-                  <ToolMark tool={tool} size={FACE} />
+                  <ToolMark tool={tool} size={FACE} badge={false} />
                 </View>
               ))
             : Array.from({ length: FACES }, (_, index) => (
@@ -70,7 +70,7 @@ export function MarketplaceEntry() {
           <Text numberOfLines={1} style={[TYPE.rowTitle, { color: color.ink }]}>
             {title}
           </Text>
-          <Text numberOfLines={1} style={[TYPE.rowDetail, { color: color.text3 }]}>
+          <Text numberOfLines={2} style={[TYPE.rowDetail, { color: color.text3 }]}>
             {body}
           </Text>
         </View>
