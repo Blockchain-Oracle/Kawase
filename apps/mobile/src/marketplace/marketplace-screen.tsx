@@ -27,7 +27,7 @@ import { useCatalog } from "./use-catalog";
 
 const GRID_COLUMNS = 3;
 /** The category column: names and counts only, so the grid keeps the room (Abu, 10-15: "smaller"). */
-const SIDEBAR_WIDTH = 196;
+const SIDEBAR_WIDTH = 224;
 /** How many recent paid calls the strip shows. */
 const RECENT_MAX = 8;
 const RECENT_CARD = 168;
