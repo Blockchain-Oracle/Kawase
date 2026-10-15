@@ -1,5 +1,5 @@
 // The rehearsal before the signature (Abu, 10-16, after Aomi: "you should be able to simulate your transaction" so the
-// person can trust what the agent is about to run): once a swap's or a send's version is ready, the api runs its exact calls from
+// person can trust what the agent is about to run): once a swap's, a send's or a bridge's version is ready, the api runs its exact calls from
 // the person's own address on Arc's latest state (eth_simulateV1) and the card shows what will leave and arrive — by
 // the chain's own logs, not the quote — the contracts it touches, and the block it was rehearsed on. A rehearsal that
 // reverts stops the swap before anything is signed, in Arc's own words; when the simulator can't be reached the card
@@ -26,7 +26,7 @@ export type Rehearsal = { status: "running" } | { status: "error" } | RehearsalV
 type Network = "mainnet" | "testnet";
 
 /** Rehearses each ready version of a swap or a send once (a new quote or recipient is a new version, rehearsed again). */
-export function useRehearsal(kind: "swaps" | "sends", intent: { id: string; version: number }, ready: boolean): Rehearsal | null {
+export function useRehearsal(kind: "swaps" | "sends" | "bridges", intent: { id: string; version: number }, ready: boolean): Rehearsal | null {
   const [result, setResult] = React.useState<{ key: string; value: Rehearsal } | null>(null);
   const key = `${intent.id}:${intent.version}`;
   React.useEffect(() => {

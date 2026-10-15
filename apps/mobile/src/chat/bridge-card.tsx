@@ -25,6 +25,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useResumeWhenFixed } from "@/intents/use-resume";
 
 import { AgentCard } from "./card";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "./rehearsal";
 
 export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
   const { t } = useT();
@@ -40,6 +41,8 @@ export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
   const eyebrow = `${t("bridge.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
   // Fixed elsewhere (signed in, set up, money added): the same bridge is quoted and checked again (R12).
   useResumeWhenFixed(isIntentOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
+  const ready = isIntentOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
+  const rehearsal = useRehearsal("bridges", intent, ready);
 
   if (!isIntentOpen(intent)) {
     return (
@@ -71,7 +74,6 @@ export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
   };
   const blocking = intent.blocking;
   const fix = blocking ? fixFor(blocking) : undefined;
-  const ready = !blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (
@@ -91,9 +93,10 @@ export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
           ) : null}
         </View>
       ) : null}
+      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
       <View className="gap-2">
-        {ready ? (
-          <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft))}>
+        {ready && rehearsal?.status !== "reverted" ? (
+          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal)} onPress={() => void controller.approve(prompt(intent.draft))}>
             <Icon as={ScanFace} className="text-primary-foreground size-5" />
             <Text>{controller.busy ? t("bridge.bridging") : approveLabel}</Text>
           </Button>

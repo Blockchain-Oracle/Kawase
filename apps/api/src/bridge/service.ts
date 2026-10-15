@@ -72,6 +72,7 @@ import { parseRequestAmount } from "../send/facts";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { simulate, type Simulation } from "../intents/simulate";
 import { compareRoutes, type RouteQuote } from "./compare";
 import type { BridgeEngine } from "./engine";
 
@@ -394,22 +395,21 @@ export class BridgeService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<BridgeApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
-
+  /**
+   * The exact calls this version would sign, re-checked on fresh facts (the route's fee still under the cap the person
+   * saw, App Kit's calls still the ones Kawase accepts). Reads only: a change is the caller's to act on.
+   */
+  private async freshCalls(user: SessionUser, before: IntentRow) {
+    const intentId = before.id;
     const current = await this.currentDraft(before);
     const payload = current?.payload as DraftPayload | undefined;
-    if (!current?.draftHash || !payload?.draft) return this.redraft(user, intentId);
+    if (!current?.draftHash || !payload?.draft) return { kind: "changed" as const };
     const draft = loadBridgeDraft(payload.draft);
-    if (bridgeDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
+    if (bridgeDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
     const fresh = await this.evaluate(user, before, before.request as StoredBridgeRequest);
     if (fresh.route.status === "unavailable") throw problem(HTTP.badGateway, "quote_unavailable");
     // The version stands while the route's fee, as quoted now, is still within the cap the person saw.
-    if (fresh.evaluation.blocking || fresh.route.status !== "ok" || fresh.route.quotedFee > draft.maxRouteFee || !fresh.destination) return this.redraft(user, intentId);
+    if (fresh.evaluation.blocking || fresh.route.status !== "ok" || fresh.route.quotedFee > draft.maxRouteFee || !fresh.destination) return { kind: "changed" as const };
 
     const { network, client } = this.clients(before.network);
     let calls: SwapCall[];
@@ -427,11 +427,35 @@ export class BridgeService {
       throw problem(HTTP.badGateway, "quote_unavailable");
     }
     const check = checkBridgeCalls(network, calls, { usdc: draft.token, amount: draft.amount, recipient: draft.recipient, domain: draft.destinationDomain, maxFee: draft.maxRouteFee });
-    if (!check.ok && check.reason === "above_fee_cap") return this.redraft(user, intentId);
+    if (!check.ok && check.reason === "above_fee_cap") return { kind: "changed" as const };
     if (!check.ok) {
       this.log.error({ intentId, reason: check.reason }, "security.bridge_calls_refused");
       throw problem(HTTP.badGateway, "quote_unavailable", "the bridge route returned calls Kawase does not accept");
     }
+    return { kind: "calls" as const, draft, calls, client, draftHash: current.draftHash };
+  }
+
+  /** The rehearsal before the signature (Abu, 10-16, after Aomi): this version's exact batch, run on Arc's latest block. */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion || before.expiresAt.getTime() < Date.now()) return { status: "changed" };
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, calls } = fresh;
+    const data = encodeSelfBatch(calls).toLowerCase() as Hex;
+    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], [{ address: draft.token, symbol: "USDC", decimals: USDC_DECIMALS }]);
+  }
+
+  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<BridgeApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft, calls, client, draftHash } = fresh;
 
     // Lower-case, as a parsed signed transaction reads it back (App Kit's calldata can carry upper-case hex).
     const data = encodeSelfBatch(calls).toLowerCase() as Hex;
@@ -469,7 +493,7 @@ export class BridgeService {
         id,
         intentId,
         draftVersion: intent.currentDraftVersion,
-        draftHash: current.draftHash!,
+        draftHash,
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",

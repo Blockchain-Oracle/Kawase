@@ -40,6 +40,10 @@ export function bridgeRoutes(bridges: BridgeService) {
     const input = await parse(approveSchema, await c.req.json());
     return c.json(await bridges.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));
   });
+  app.post("/:id/simulate", requireAccount, async (c) => {
+    const input = await parse(approveSchema, await c.req.json());
+    return c.json({ simulation: await bridges.simulate(c.get("user")!, c.req.param("id"), input.version) });
+  });
   app.post("/:id/signature", requireAccount, async (c) => {
     const input = await parse(signatureSchema, await c.req.json());
     return c.json(

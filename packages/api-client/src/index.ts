@@ -371,6 +371,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         call<BridgeApproveResponse>("POST", `/bridges/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<BridgeApproveResponse>("POST", `/bridges/${id}/signature`, { approvalId, signedTransaction }),
+      /** Rehearse this version on Arc's latest block before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/bridges/${id}/simulate`, { version }),
     },
 
     earn: {
