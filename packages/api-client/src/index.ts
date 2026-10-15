@@ -58,6 +58,7 @@ import type {
   InboxItem,
   NotificationSettings,
   NotificationSettingsChange,
+  RehearsalView,
 } from "./types";
 import type { Candle, ChartRange, MarketListView, MarketSegment, NetworkTotalsView, PortfolioView, TokenDetailView, TokenSearchResult, TokenTradesView, WatchRow } from "./assets";
 import type { ClientEvent } from "./client-events";
@@ -352,6 +353,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         call<SwapApproveResponse>("POST", `/swaps/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<SwapApproveResponse>("POST", `/swaps/${id}/signature`, { approvalId, signedTransaction }),
+      /** Rehearse one version on Arc's latest state before the signature (what leaves, what arrives, or the revert). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/swaps/${id}/simulate`, { version }),
     },
 
     bridges: {

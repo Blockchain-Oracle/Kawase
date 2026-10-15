@@ -44,6 +44,7 @@ import type { ReceiptData } from "@/receipt/receipt-slip";
 
 import { useOpenIn } from "./open-in";
 import { RaceRows } from "./race-card";
+import { RehearsalBlock, rehearsalAllows, useSwapRehearsal } from "./rehearsal";
 import { ToolCard, type ToolPart } from "./tool-cards";
 
 /** The steps a run carries to the receipt itself; any other propose step is shown as its own card inside the run. */
@@ -172,13 +173,17 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
   const automatic = part.approval?.isAutomatic === true && part.approval.approved !== false;
   const ready = isSwapOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
   const state = txStateOf(intent, controller.busy);
+  // Rehearsed on Arc before anything is signed (Aomi's "SIMULATED ✓"): a revert stops it here.
+  const rehearsal = useSwapRehearsal(intent, ready);
+  const rehearsed = rehearsalAllows(rehearsal);
 
-  // Inside the budget and watched live: the run goes on by itself, once (never again after a reload).
+  // Inside the budget and watched live: once the rehearsal passes, the run goes on by itself, once (never again after
+  // a reload).
   React.useEffect(() => {
-    if (!ready || !automatic || !live || actedOn.has(intent.id) || controller.busy) return;
+    if (!ready || !automatic || !live || !rehearsed || actedOn.has(intent.id) || controller.busy) return;
     actedOn.add(intent.id);
     void controller.approve(prompt(intent.draft, intent.network));
-  }, [ready, automatic, live, intent.id, intent.draft, intent.network, controller, prompt]);
+  }, [ready, automatic, live, rehearsed, intent.id, intent.draft, intent.network, controller, prompt]);
 
   const phase: RunPhase = intent.blocking && isSwapOpen(intent) ? "blocked" : isSwapOpen(intent) ? "approve" : isSwapMoving(intent) ? "steps" : state.kind === "confirmed" ? "receipt" : "failed";
   React.useEffect(() => onPhase(phase), [phase, onPhase]);
@@ -222,11 +227,17 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
     <TxMorph morphed={state.kind === "confirmed"} receipt={receipt}>
       <View style={styles.step}>
         {draft && isSwapOpen(intent) ? <Text style={[TYPE.body, { color: color.ink }]}>{t("feed.run.swapLine", { paid, got, venue: draft.provider })}</Text> : null}
+        {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
         {ready ? (
           automatic ? (
-            <InsideBudgetLine />
-          ) : (
-            <SlideToConfirm label={t("feed.run.slideSwap")} onConfirm={() => void controller.approve(prompt(intent.draft, intent.network))} busy={controller.busy} resetKey={`${intent.id}:${intent.version}`} />
+            rehearsal?.status === "reverted" ? null : <InsideBudgetLine />
+          ) : rehearsal?.status === "reverted" ? null : (
+            <SlideToConfirm
+              label={t("feed.run.slideSwap")}
+              onConfirm={() => void controller.approve(prompt(intent.draft, intent.network))}
+              busy={controller.busy || !rehearsed}
+              resetKey={`${intent.id}:${intent.version}`}
+            />
           )
         ) : isSwapOpen(intent) ? (
           <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.pricing")}</ShimmerText>

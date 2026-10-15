@@ -843,3 +843,21 @@ export type NotificationSettings = {
   hideAmounts: boolean;
 };
 export type NotificationSettingsChange = { prefs?: NotificationPrefs; quietHours?: QuietHours | null; hideAmounts?: boolean };
+
+/**
+ * A transaction rehearsed on Arc's latest state before anyone signs it (the api's eth_simulateV1 run): what the wallet
+ * pays (−) and gets (+) per token, the contracts it touches, or the revert that stopped it. "changed": the version moved
+ * on (a new quote), so there is nothing to rehearse; "unavailable": the simulator could not be reached.
+ */
+export type RehearsalView =
+  | {
+      status: "ok";
+      block: string;
+      gasUsed: string;
+      changes: { token: { address: string; symbol: string; decimals: number }; delta: string; display: string }[];
+      contracts: string[];
+      at: string;
+    }
+  | { status: "reverted"; reason: string; at: string }
+  | { status: "unavailable"; at: string }
+  | { status: "changed" };

@@ -25,6 +25,7 @@ import { isSwapOpen, useSwap } from "@/swap/use-swap";
 import { useResumeWhenFixed } from "@/intents/use-resume";
 
 import { AgentCard } from "./card";
+import { RehearsalBlock, rehearsalAllows, useSwapRehearsal } from "./rehearsal";
 
 export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const { t } = useT();
@@ -68,6 +69,7 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const blocking = intent.blocking;
   const fix = blocking ? fixFor(blocking) : undefined;
   const ready = !blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
+  const rehearsal = useSwapRehearsal(intent, ready);
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (
@@ -89,9 +91,10 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
         </View>
       ) : null}
       {ready ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
+      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
       <View className="gap-2">
-        {ready ? (
-          <Button size="lg" disabled={controller.busy} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>
+        {ready && rehearsal?.status !== "reverted" ? (
+          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal)} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>
             <Icon as={ScanFace} className="text-primary-foreground size-5" />
             <Text>{controller.busy ? t("swap.swapping") : approveLabel}</Text>
           </Button>

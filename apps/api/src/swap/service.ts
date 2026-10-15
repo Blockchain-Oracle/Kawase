@@ -63,6 +63,7 @@ import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFac
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
 import type { InboxService } from "../inbox/service";
+import { simulate, type Simulation } from "../intents/simulate";
 import { pausedAll } from "../safety/settings";
 import type { BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
@@ -625,6 +626,21 @@ export class SwapService {
     }
 
     return { kind: "calls" as const, before, current, draft, calls, venue };
+  }
+
+  /**
+   * The rehearsal before the signature (Aomi's "SIMULATED ✓", Abu 10-16): the very calls Approve would send, run from
+   * the person's own address on Arc's latest state, so the card can show what leaves and arrives and catch a revert
+   * before anything is signed. Nothing is stored or sent.
+   */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const fresh = await this.freshCalls(user, intentId, version);
+    if (fresh.kind !== "calls") return { status: "changed" };
+    const { before, draft, calls } = fresh;
+    const view = (fresh.current.payload as DraftPayload).view;
+    const tokens = view?.tokens ? [view.tokens.in, view.tokens.out].map((token) => ({ address: token.address, symbol: token.symbol, decimals: token.decimals })) : [];
+    const data = encodeSelfBatch(calls).toLowerCase() as Hex;
+    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], tokens);
   }
 
   private async redraft(user: SessionUser, intentId: string): Promise<SwapApproveResponse> {

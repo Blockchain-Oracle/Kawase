@@ -20,6 +20,7 @@ const asset = z
 const requestSchema = z.object({ tokenIn: asset, tokenOut: asset, amount: z.string().max(AMOUNT_MAX).nullable().optional(), venue: z.enum(SWAP_VENUES).nullable().optional() });
 /** `override`: the person confirmed a braked (risky) action on its card. */
 const approveSchema = z.object({ version: z.number().int().positive(), override: z.boolean().optional() });
+const simulateSchema = z.object({ version: z.number().int().positive() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });
 
 async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.infer<T>> {
@@ -47,6 +48,11 @@ export function swapRoutes(swaps: SwapService) {
     // The brake: a risky draft goes ahead only with the person's explicit override.
     requireBrakeOverride((await swaps.get(c.get("userId")!, c.req.param("id"))).results, input.override);
     return c.json(await swaps.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));
+  });
+  // The rehearsal before the signature: what this version would do on Arc's latest state (nothing sent, nothing kept).
+  app.post("/:id/simulate", requireAccount, async (c) => {
+    const input = await parse(simulateSchema, await c.req.json());
+    return c.json({ simulation: await swaps.simulate(c.get("user")!, c.req.param("id"), input.version) });
   });
   app.post("/:id/signature", requireAccount, async (c) => {
     const input = await parse(signatureSchema, await c.req.json());
