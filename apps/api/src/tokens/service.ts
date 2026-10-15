@@ -48,6 +48,7 @@ import type { Logger } from "@kawase/log";
 import { USDC_ERC20_DECIMALS } from "@kawase/money";
 
 import { HTTP, problem } from "../http/problem";
+import { coinbaseCandles } from "../market/coinbase-candles";
 import { priceKey, type WalletHolding } from "../market/alchemy";
 import type { LiveQuote, MarketData, PoolRow, TokenMarket } from "../market/sources";
 import type { SessionUser } from "../types";
@@ -661,6 +662,13 @@ export class AssetService {
     if (!isAddress(address)) throw problem(HTTP.badRequest, "validation", "expected a token address");
     const mainnet = network === "testnet" ? TESTNET_PRICE_TWINS[address.toLowerCase()] : address;
     if (!mainnet) return [];
+    // The long/short majors chart from Coinbase's candles (GeckoTerminal's ten calls a minute ran dry, 10-15); any
+    // other token, or a Coinbase failure, reads its deepest pool's history.
+    const major = CANONICAL_TOKENS.mainnet.find((token) => token.address.toLowerCase() === mainnet.toLowerCase());
+    if (major) {
+      const candles = await coinbaseCandles(major.symbol, range).catch(() => null);
+      if (candles && candles.length > 0) return candles;
+    }
     const { prices } = await this.prices("mainnet", [mainnet]);
     const pool = prices.get(mainnet.toLowerCase())?.market?.pool;
     if (!pool) return [];

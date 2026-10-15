@@ -19,13 +19,22 @@ export type OdometerProps = {
   suffix?: string;
   /** `0` rolls every changed digit the same way; `undefined` follows the direction of the change (up on a rise). */
   trend?: number;
+  /**
+   * A live price that ticks several times a second: a quick roll, so each one finishes before the next (at NumberFlow's
+   * default 0.9 s the last digits were always mid-roll and showed two at once).
+   */
+  live?: boolean;
   className?: string;
 };
 
-export function Odometer({ value, format, locales, prefix, suffix, trend, className }: OdometerProps) {
+const LIVE_ROLL = { duration: 400, easing: "cubic-bezier(0.2, 0, 0, 1)" } as const;
+const LIVE_FADE = { duration: 200, easing: "ease-out" } as const;
+
+export function Odometer({ value, format, locales, prefix, suffix, trend, live = false, className }: OdometerProps) {
   return (
     <NumberFlow
       value={value}
+      {...(live ? { spinTiming: LIVE_ROLL, transformTiming: LIVE_ROLL, opacityTiming: LIVE_FADE } : {})}
       {...(format ? { format } : {})}
       {...(locales ? { locales } : {})}
       {...(prefix ? { prefix } : {})}

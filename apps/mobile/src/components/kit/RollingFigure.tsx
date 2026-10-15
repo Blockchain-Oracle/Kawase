@@ -36,6 +36,8 @@ export function RollingFigure({
   accessibilityLabel?: string;
   /** A balance or a result: masked while balances are hidden. */
   sensitive?: boolean;
+  /** A live price ticking several times a second: the web twin rolls quicker (read there; the Skia figure ignores it). */
+  live?: boolean;
 }) {
   const fallback = useDisplayFont(Math.round(height * FONT_SHARE));
   const source = useSharedValue<LiveFigure>({ text, trend: 0 });

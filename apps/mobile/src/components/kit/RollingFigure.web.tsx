@@ -22,6 +22,7 @@ export function RollingFigure({
   align = "right",
   accessibilityLabel,
   sensitive = false,
+  live = false,
 }: {
   text: string;
   /** Unused on the web (kept so a caller's props match the native twin). */
@@ -32,6 +33,8 @@ export function RollingFigure({
   align?: "left" | "right" | "center";
   accessibilityLabel?: string;
   sensitive?: boolean;
+  /** A live price ticking several times a second: a quick roll (see ui-web's Odometer). */
+  live?: boolean;
 }) {
   const { t } = useT();
   const [hiddenAll] = useHideBalances();
@@ -62,6 +65,7 @@ export function RollingFigure({
             value={figure.value}
             prefix={figure.prefix}
             suffix={figure.suffix}
+            live={live}
             format={{
               minimumFractionDigits: figure.decimals,
               maximumFractionDigits: figure.decimals,
