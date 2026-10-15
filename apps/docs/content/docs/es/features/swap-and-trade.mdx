@@ -1,70 +1,127 @@
 ---
 title: "Operar cualquier token"
-description: "Mercados, una página para cada token en Arc con sus comprobaciones de seguridad, y compra, venta o intercambio de cualquier par al mejor precio de tres plataformas, confirmado con un deslizamiento."
-sourceHash: 7e1dd705a5bc50d0
+description: "Mercados, una página para cada token de Arc con sus controles de seguridad, y comprar, vender o intercambiar cualquier par al mejor de seis plataformas en carrera, confirmado con un solo deslizamiento."
+sourceHash: 111c991d081193f4
 ---
 
 <Status ids="swap" />
 
 <Marks names="arc usdc eurc kyberswap circle lifi" />
 
+<Flow>
+  <FlowStep icon="coins" title="Elige un par">Paga con cualquier token que tengas y recibe cualquier token.</FlowStep>
+  <FlowStep icon="route" title="La carrera" tone="accent">Seis plataformas cotizan a la vez; gana la que más entrega.</FlowStep>
+  <FlowStep icon="hand" title="Desliza">La revisión muestra lo mínimo que recibes. Un deslizamiento.</FlowStep>
+  <FlowStep icon="receipt" title="Recibo" tone="ink">Aprobación e intercambio en una sola transacción.</FlowStep>
+</Flow>
+
+## La carrera de rutas
+
+Escribe un importe y Kawase pregunta a **KyberSwap, Circle App Kit, LI.FI, Uniswap, 0x y Socket** en el mismo momento.
+Cada respuesta aparece según llega; se elige la que entrega más **después de comisiones**, y las demás se listan con lo
+que entregarían o por qué no pudieron cotizar. Los invitados también ven la carrera: solo inicias sesión al final.
+
+<Clip src="swap/race" alt="Intercambiando 25 USDC por oro de Matrixdock (XAUm) en la red principal de Arc como invitado: preguntando a todas las plataformas, luego KyberSwap mejor de 5, 6/6 respondieron, y la lista de rutas." />
+
+## Intercambiar, paso a paso
+
+<Walkthrough>
+  <WalkStep title="El ticket" src="swap/ticket">
+    **Intercambiar** desde **+**, **Comprar · Vender** en la página de un token, o simplemente pídelo («cambia 2 dólares a
+    euros»). Elige qué pagas y qué recibes, y luego el importe. La mejor cotización aparece debajo antes de comprometerte.
+
+    <Pin box="4 15.5 37 8">Pagas: cualquier token que tengas</Pin>
+
+    <Pin box="52 15.5 44 8">Recibes: cualquier token de Arc</Pin>
+
+    <Pin box="5 67.5 90 9.5">La plataforma ganadora y cuántas respondieron</Pin>
+  </WalkStep>
+  <WalkStep title="Revisar" src="swap/review">
+    La revisión muestra lo que recibes **como mínimo** (el mínimo en la cadena), el impacto en el precio y cada ruta. Toca
+    otra ruta para elegirla tú.
+
+    <Pin at="68 15">Lo que recibes y lo mínimo garantizado</Pin>
+
+    <Pin box="5 28 90 13">La mejor ruta: plataforma, importe y comisión</Pin>
+
+    <Pin box="5 44 90 6">Las plataformas que no cotizaron</Pin>
+
+    <Pin box="5 84 90 7">Desliza para cambiar</Pin>
+  </WalkStep>
+  <WalkStep title="Intercambiado" src="swap/done">
+    Solo la plataforma elegida construye la transacción, con la mitad del deslizamiento de precio mostrado, y Kawase revisa
+    sus llamadas (el router, los importes, tú como único destinatario, el mínimo en la cadena) antes de pedírselo a tu
+    billetera. La aprobación y el intercambio salen en **una sola transacción** desde tu propia billetera.
+
+    <Pin box="4 53 92 11">Lo que recibiste por lo que pagaste</Pin>
+
+    <Pin box="25 72 50 5">La transacción en ArcScan</Pin>
+  </WalkStep>
+  <WalkStep title="Su recibo" src="swap/receipt">
+    En [Actividad](./activity-and-receipts.mdx) un intercambio se lee como en una billetera (**+2,56 EURC**, −2 USDC) y abre
+    el mismo recibo: «Intercambiaste 2 USDC → 2,56 EURC, vía Circle App Kit».
+
+    <Pin box="6 51.5 60 13">Los dos lados y la plataforma</Pin>
+  </WalkStep>
+</Walkthrough>
+
 ## Mercados
 
-La pestaña **Mercados** (en la barra inferior, entre Inicio y el orbe) también está disponible para quienes no tienen cuenta:
+La pestaña **Mercados** (en el dock, junto a Inicio) también está abierta a invitados. En la red de pruebas muestra los
+mercados de la red principal y ofrece cambiar.
 
-- **Busca** por nombre, símbolo o dirección del contrato.
-- Segmentos **Tendencias · Meme · Largo/Corto · Acciones y divisas · Nuevos**, un carrusel de mercados populares y un **mapa de calor**. Cada
-  casilla tiene un tamaño según el volumen del día y un color según su variación.
-- Las filas muestran el precio, la variación del día, el volumen y la liquidez. Un token que copia a otro lleva una etiqueta de **clon**;
-  las falsificaciones siguen marcadas en la lista y nunca aparecen en el carrusel ni en el mapa de calor.
+<Shot src="trade/markets" alt="Mercados en la red principal de Arc: búsqueda, la entrada al Marketplace, el panel Largo o corto con el gráfico en vivo de EURC y las pestañas Tendencia, Meme, Servicios y Acciones.">
+  <Pin box="4 15.5 92 6">Busca por nombre, símbolo o dirección de contrato</Pin>
 
-Los Mercados solo están disponibles en la red principal de Arc. En la red de pruebas, la pestaña lo indica y ofrece cambiar de red.
+  <Pin box="4 24 92 10">Herramientas de pago que tu agente puede usar</Pin>
+
+  <Pin box="4 44.5 70 34">Largo o corto, en vivo: consulta [Largo y corto](./long-short.mdx)</Pin>
+
+  <Pin box="4 81 92 5">Lista de seguimiento · Tendencia · Meme · Servicios · Acciones y divisas · Nuevo</Pin>
+</Shot>
+
+Un token que copia a otro lleva una etiqueta de **imitación**; las falsificaciones siguen marcadas en la lista y nunca
+llegan al carrusel de tendencias.
 
 ## Una página para cada token
 
-Toca cualquier token en Mercados, Inicio o una tarjeta del chat para abrir su página:
+Toca cualquier token, en Mercados, en Inicio o en una tarjeta del chat:
 
-- su icono, precio y variación, además de un gráfico que puedes explorar con intervalos de una hora hasta todo el historial;
-- **cuánto tienes** de ese token;
-- capitalización de mercado, liquidez, volumen, titulares, valor totalmente diluido y el contrato (cópialo con un toque);
-- **Seguridad**: un veredicto con sus motivos, las comprobaciones de **GoPlus** (honeypot, impuestos de compra y venta y permisos del propietario) y cualquier
-  token parecido, con enlaces;
-- **Comprar · Vender** y una hoja de **Más** que muestra todas las demás acciones, junto con el motivo cuando alguna no está disponible.
+<Shot src="trade/token" alt="Malachite (MALA): precio, un gráfico en vivo con rangos de Live a Todo, enlaces a BasedBot, DexScreener y ArcScan, estadísticas, y Comprar, Vender y Más.">
+  <Pin at="66 14.7">Precio y variación</Pin>
 
-## Tu cartera, todos tus tokens
+  <Pin box="4 51 92 4.5">En vivo, de una hora a todo el historial</Pin>
 
-Inicio muestra **todos los tokens que tiene tu dirección** en Arc y en Ethereum, Base, Arbitrum, OP, Polygon y Avalanche, cada uno con
-su icono y valor reales. Kawase oculta lo que podría llevarte a equivocarte:
+  <Pin box="4 57 92 8">El token en BasedBot, DexScreener y ArcScan</Pin>
 
-- un **suplantador** (una stablecoin o un símbolo conocido en otra dirección, o con otros decimales) se oculta;
-- un token **sin precio ni pool** pasa a Ocultos;
-- un token sin precio nunca cuenta para el total.
+  <Pin box="4 72 92 16">Capitalización, liquidez, volumen, titulares</Pin>
 
-## Compra, venta o intercambio de cualquier par
+  <Pin at="89.5 95">Más: cualquier otra acción, o por qué no está disponible</Pin>
+</Shot>
 
-«Compra 20 dólares de ARGUS», «vende la mitad de mis cirBTC» o usa la opción de una página de token. Pagas con **cualquier token que tengas**
-y recibes cualquier otro token (búscalo por nombre, símbolo o dirección). Para cada operación, Kawase consulta **tres plataformas a la vez**: KyberSwap,
-el App Kit de Circle y LI.FI, y recomienda la que ofrece más. Las demás aparecen con lo que entregarían o con el motivo por el que no pudieron dar una cotización.
+Más abajo: **cuánto tienes** de él, el contrato (cópialo con un toque) y la **Seguridad**: un veredicto con sus motivos,
+los controles de **GoPlus** (honeypot, impuestos de compra y venta, poderes del propietario) y las imitaciones, enlazadas.
 
-La revisión muestra como mínimo cuánto recibes, el impacto en el precio frente al precio de mercado y la ruta. Confirmas
-**deslizando** la tarjeta y, después, con **Face ID**. Solo la plataforma elegida crea la transacción, con la mitad del deslizamiento que se te
-mostró, y Kawase comprueba sus llamadas (router, cantidades, destinatario y el mínimo en la cadena) antes de pedir acceso a tu cartera. La
-aprobación y la operación se envían como **una sola transacción** desde tu propia cartera.
+## Tu cartera, cada token
 
-## Reglas de los tokens
+Inicio muestra **cada token que tiene tu dirección** en Arc y en Ethereum, Base, Arbitrum, OP, Polygon y Avalanche, cada
+uno con su marca real y su valor. Un **impostor** (un símbolo conocido en otra dirección, o con otros decimales) se
+oculta; un token **sin precio ni pool** va a Ocultos; un token sin precio nunca cuenta en tu total.
 
-Cada compra pasa primero por tus **reglas de tokens**:
+## Reglas de tokens
 
-- los suplantadores y honeypots quedan **bloqueados**;
-- un token **no verificado** se limita a **$50 por operación** y **$200 al día**;
-- el impacto en el precio puede ser como máximo del **5%** para todo lo que no sea una stablecoin.
+Cada compra pasa antes por tus **reglas de tokens** (Ajustes → Presupuesto → Reglas de tokens):
 
-Una operación bloqueada indica qué regla la detuvo y qué tendría que cambiar para permitirla.
+- las imitaciones, los honeypots y los tokens que no se pueden vender **nunca** se compran, digan lo que digan las reglas;
+- **qué tokens**: solo verificados, o verificados y populares con avisos;
+- límites para tokens **no verificados** por operación y por día, con el contador de hoy;
+- el **impacto en el precio** que aceptas (del 1 % al 15 %; un intercambio que perdería más se rechaza).
+
+Endurecer una regla se aplica al momento; relajarla pide Face ID, y tu billetera firma las nuevas reglas.
 
 ## En la red de pruebas
 
-Arc Testnet solo permite operar con **USDC ↔ EURC**, mediante la misma opción. Todos los demás tokens y las monedas meme solo están disponibles en la red principal.
-
-Las posiciones largas y cortas tienen su propia página: [Largo y corto](./long-short.mdx).
+Arc Testnet tiene **USDC ↔ EURC** para operar, con el mismo ticket y la misma carrera (cotiza Circle App Kit; las demás
+responden que no están en esa red). Todos los demás tokens, y los memes, son solo de la red principal.
 
 <ScopeList ids="swap" />
