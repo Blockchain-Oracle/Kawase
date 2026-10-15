@@ -1,37 +1,65 @@
 ---
 title: "Voz"
-description: "Habla con Kawase en iPhone, Android y la web en tu idioma; responde en voz alta y muestra las mismas tarjetas que el chat. Los pagos por voz siempre esperan que toques la pantalla."
-sourceHash: 2856bf7c72c232cc
+description: "Habla con Kawase en iPhone, Android y la web en tu idioma; responde en voz alta y muestra las mismas tarjetas que el chat. Los pagos por voz siempre esperan tu toque."
+sourceHash: 0700c227acf478ec
 ---
 
 <Status ids="voice" />
 
-Toca la esfera en la barra inferior y habla. La página se desenfoca, la esfera sube y escucha; muestra las palabras que oyó, responde en voz alta
-y pone en pantalla las mismas **tarjetas** que el chat.
+<Flow>
+  <FlowStep icon="mic" title="Toca el orbe">La página se difumina y el orbe sube.</FlowStep>
+  <FlowStep icon="chat" title="Dilo">Los subtítulos muestran lo que oyó y lo que dice.</FlowStep>
+  <FlowStep icon="list" title="Tarjetas">Las mismas tarjetas que el chat, en el mismo hilo.</FlowStep>
+  <FlowStep icon="hand" title="Tu toque" tone="accent">Un «sí» dicho en voz alta nunca aprueba un pago.</FlowStep>
+</Flow>
 
-- **Una sola conversación.** Lo que dices por voz aparece en tu conversación de chat, y al escribir puedes continuar desde donde lo dejaste.
-- **Subtítulos en ambos lados**: lo que Kawase oyó y lo que está diciendo.
-- **Un "sí" hablado nunca aprueba un pago.** Un envío por voz se prepara en su tarjeta y espera que toques la pantalla y uses Face ID
-  (huella digital o bloqueo de pantalla en Android), incluso si está dentro de tu límite diario.
-- **Silencia** con un toque: mientras esté silenciado, no se oye ni se envía nada. **Escribir en su lugar** siempre está disponible.
-- **La esfera muestra la red**: verde lima en la Red principal y azul cielo en la Red de pruebas.
+## Hablar con Kawase
+
+Toca el orbe en el centro del dock (**Habla con Kawase** en la barra lateral en el ordenador) y habla. Kawase te saluda,
+escucha, responde en voz alta y pone en pantalla las mismas **tarjetas** que el chat.
+
+<Shot src="voice/mode" alt="El modo voz: el orbe magenta, su estado, las sugerencias Prueba a decir (lo que es tendencia en Arc, cambiar 5 USDC a EURC, traer mis USDC desde Base, poner a trabajar mis USDC parados) y el dock con el teclado, el micrófono y Terminar." zoom="50 44.3 11">
+  <Pin at="50 23.5">El orbe: escuchando, pensando, hablando</Pin>
+
+  <Pin box="4 52 92 15">Prueba a decir: toca una para empezar</Pin>
+
+  <Pin at="32.4 93.4">Escribir en su lugar</Pin>
+
+  <Pin at="50 93.4">Silenciar: no se oye ni se envía nada</Pin>
+
+  <Pin at="67.3 93.4">Terminar</Pin>
+</Shot>
+
+- **Una sola conversación.** Lo que dijiste por voz está en tu hilo de chat, y al escribir sigues donde lo dejaste.
+- **Subtítulos en los dos lados**: lo que Kawase oyó y lo que está diciendo.
+- **Un «sí» dicho en voz alta nunca aprueba un pago.** Un envío por voz se prepara en su tarjeta y espera tu toque y Face ID
+  (huella o bloqueo de pantalla en Android, un código por email en la web).
+- **Escribir en su lugar** está siempre a un toque, y **silenciar** impide que se oiga o se envíe nada.
 
 ## En la web
 
-La Voz también funciona en la aplicación web: permite el acceso al micrófono cuando el navegador lo solicite. Si lo rechazas o no hay micrófono,
-Kawase sigue conectado, te explica cómo permitirlo y puedes escribir justo al lado. La voz de Kawase sigue reproduciéndose.
+La voz también funciona en la app web: permite el micrófono cuando el navegador lo pida. Si lo rechazas, o no hay micrófono,
+Kawase sigue conectado, te dice cómo permitirlo y el teclado está justo al lado. La voz de Kawase sigue sonando.
 
 ## Ajustes → Voz
 
-- **Voz de Kawase**: una de seis.
-- **Velocidad al hablar**: relajada, normal o rápida.
-- **Kawase habla primero**: te saluda en cuanto se abre la Voz; si está desactivado, espera a que hables.
+<Shot src="voice/settings" alt="Ajustes → Voz: seis voces (Marin, Aster, Beacon, Cinder, Stone, Vesper), cada una con un botón de altavoz, Velocidad al hablar (Tranquila, Normal, Rápida) y Kawase habla primero." zoom="83 33 9">
+  <Pin box="4 30 92 45">La voz de Kawase: una de seis</Pin>
 
-Los cambios se aplican la próxima vez que empieces a hablar.
+  <Pin at="50 85">Tranquila · Normal · Rápida</Pin>
+
+  <Pin at="50 96">Kawase habla primero, o te espera</Pin>
+</Shot>
+
+Toca el altavoz junto a una voz: se abre la voz y Kawase te saluda con ella. Los cambios se aplican la próxima vez que
+empieces a hablar.
 
 ## Cómo funciona
 
-El teléfono o el navegador se conecta a una sala de LiveKit mediante WebRTC, y el servicio de voz de Kawase se conecta a la misma sala. Cada solicitud de dinero o de cuenta se entrega a **la misma intervención del agente que usa el chat** (las mismas herramientas, los mismos límites y la misma conversación); las tarjetas aparecen en tu pantalla mientras se reproduce la respuesta. Antes de decir en voz alta cantidades, activos, @handles o la red, el servicio las comprueba con los resultados de las herramientas y corrige cualquier diferencia. Si la Voz en tiempo real no puede iniciarse, Kawase cambia a un proceso de
-escuchar → responder → hablar, con el mismo agente. LiveKit no graba la conversación.
+El teléfono o el navegador entra en una sala de LiveKit por WebRTC, y el agente de voz de Kawase entra en la misma sala. Cada
+petición de dinero o de cuenta pasa **al mismo turno del agente que el chat** (mismas herramientas, mismos límites, mismo
+hilo); las tarjetas llegan a tu pantalla mientras se dice la respuesta. Antes de decir importes, activos, @handles o la red, el
+agente de voz los comprueba con lo que devolvieron las herramientas y corrige cualquier diferencia. Si la voz en tiempo real no
+arranca, Kawase pasa a una cadena escuchar → responder → hablar con el mismo agente detrás. LiveKit no graba la conversación.
 
 <ScopeList ids="voice" />
