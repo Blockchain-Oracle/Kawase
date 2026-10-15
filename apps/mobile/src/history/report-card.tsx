@@ -52,13 +52,19 @@ export function ReportCard({ report, compact }: { report: ReportView; compact?: 
         </View>
       </View>
       {lines.length > 0 ? <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{lines.join(" · ")}</Text> : null}
-      {!report.complete ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("report.partial")}</Text> : null}
+      {!report.complete ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t(unread(report) ? "report.unread" : "report.partial")}</Text> : null}
     </>
   );
   // In chat the card around it is the message's; on Activity it is a panel like every other group on the page.
   if (compact) return <View style={styles.stack}>{body}</View>;
   return <WeekCard report={report} lines={lines} />;
 }
+
+/**
+ * Nothing at all came back from the chain's history (the explorer refused, the indexer's quota spent): not "only the
+ * latest part", but that the history could not be read, while Kawase's own moves (its database) are all there.
+ */
+const unread = (report: ReportView) => !report.complete && report.counts.received + report.counts.sent === 0;
 
 const styles = StyleSheet.create({
   stack: { gap: SPACE.md },
@@ -107,10 +113,11 @@ function WeekCard({ report, lines }: { report: ReportView; lines: string[] }) {
           </Text>
           <ChangeChip change={pct} />
         </View>
-        {week.length > 1 ? <Sparkline points={week.map((point) => point.usd)} /> : null}
+        {/* A flat zero is no line (an empty wallet's week drew as a bare rule). */}
+        {week.length > 1 && week.some((point) => point.usd > 0) ? <Sparkline points={week.map((point) => point.usd)} /> : null}
       </View>
       <View style={styles.chips}>
-        <Chip label={t("report.in", { count: String(report.counts.received) })} value={usd(inUsd)} tone={color.up} />
+        <Chip label={t("report.in", { count: String(report.counts.received) })} value={usd(inUsd)} {...(inUsd > 0 ? { tone: color.up } : {})} />
         <Chip label={t("report.out", { count: String(report.counts.sent) })} value={usd(outUsd)} />
         {lines.map((line) => (
           <View key={line} style={[styles.chip, { backgroundColor: color.raised2 }]}>
@@ -118,7 +125,7 @@ function WeekCard({ report, lines }: { report: ReportView; lines: string[] }) {
           </View>
         ))}
       </View>
-      {!report.complete ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t("report.partial")}</Text> : null}
+      {!report.complete ? <Text style={[TYPE.meta, { color: color.text3 }]}>{t(unread(report) ? "report.unread" : "report.partial")}</Text> : null}
     </Panel>
   );
 }

@@ -12,4 +12,5 @@ export const report: Catalog["report"] = {
   services: "الخدمات ({{count}}): {{amount}}",
   automations: "الأتمتة: نُفّذ {{ran}}، وتُخطّي {{skipped}}",
   partial: "أمكن قراءة الجزء الأحدث فقط من هذا الأسبوع.",
+  unread: "تعذّرت قراءة سجل المحفظة لهذا الأسبوع الآن. كل ما فعله Kawase ما زال هنا.",
 };

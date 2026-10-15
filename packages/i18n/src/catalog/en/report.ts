@@ -10,4 +10,5 @@ export const report = {
   services: "{{amount}} on {{count}} services",
   automations: "Automations: {{ran}} ran, {{skipped}} skipped",
   partial: "Only the latest part of this week could be read.",
+  unread: "This week's wallet history couldn't be read just now. Everything Kawase did is still here.",
 } as const;

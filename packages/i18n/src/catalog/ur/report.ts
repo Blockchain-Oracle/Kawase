@@ -12,4 +12,5 @@ export const report: Catalog["report"] = {
   services: "‏{{count}} سروسز پر {{amount}}",
   automations: "آٹومیشن: {{ran}} چلیں، {{skipped}} چھوڑی گئیں",
   partial: "اس ہفتے کا صرف تازہ حصہ پڑھا جا سکا۔",
+  unread: "اس ہفتے کی والیٹ ہسٹری ابھی پڑھی نہیں جا سکی۔ Kawase نے جو کچھ کیا وہ سب یہیں ہے۔",
 };

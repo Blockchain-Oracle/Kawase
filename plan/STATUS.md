@@ -18,6 +18,12 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 3. [x] api deploy of the relayer watch + 3 s drain: 239 of 240 half-second probes 200 through the swap (one dropped
        connection), against 15–30 s of 502 before; /health shows `relayers: {testnet: ok, mainnet: ok}`.
 
+**Needs Abu's call**
+- [ ] Mainnet wallet history ("All money", the weekly report) reads Alchemy first, then the explorer. Alchemy's free
+      monthly quota is spent (429), and explorer.arc.io answers 403 behind Cloudflare's bot check ("Just a moment…"),
+      which Kawase must not dodge. So mainnet history is empty until one of: a new/paid Alchemy key (Abu's account),
+      or Blockscout's keyed API. Kawase's own timeline (its database) is unaffected. The screen now says so honestly.
+
 **Verify (built, not yet seen live)**
 4. [x] Agent wallet redesign seen signed in on prod (Abu's session in the pane, viewing only): hero, spent-today bar,
        cells, Almost empty, top-up, rules, categories, empty Spending. Fixed from it: "asks for Face ID once" (wrong

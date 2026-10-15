@@ -12,4 +12,5 @@ export const report: Catalog["report"] = {
   services: "{{count}} सेवाओं पर {{amount}}",
   automations: "ऑटोमेशन: {{ran}} चले, {{skipped}} छोड़े गए",
   partial: "इस हफ़्ते का सिर्फ़ ताज़ा हिस्सा पढ़ा जा सका।",
+  unread: "इस हफ़्ते का वॉलेट इतिहास अभी पढ़ा नहीं जा सका। Kawase ने जो कुछ किया, वह सब यहीं है।",
 };

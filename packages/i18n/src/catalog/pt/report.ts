@@ -12,4 +12,5 @@ export const report: Catalog["report"] = {
   services: "{{amount}} em {{count}} serviços",
   automations: "Automações: {{ran}} executadas, {{skipped}} puladas",
   partial: "Só foi possível ler a parte mais recente desta semana.",
+  unread: "Não foi possível ler o histórico desta semana agora. Tudo o que o Kawase fez continua aqui.",
 };
