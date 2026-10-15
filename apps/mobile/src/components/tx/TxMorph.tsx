@@ -5,7 +5,7 @@
  * compose body the same way TxCta wraps its own plate.
  */
 import { type ReactNode, useEffect, useState } from "react";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -58,9 +58,12 @@ export function TxMorph({ morphed, receipt, children }: { morphed: boolean; rece
           entering={
             reduce
               ? FadeIn.duration(CROSSFADE_MS)
-              : FadeInDown.duration(ENTER_MS)
-                  .delay(ENTER_DELAY_MS)
-                  .withInitialValues({ transform: [{ translateY: STAGGER_RISE / HALF }] })
+              : Platform.OS === "web"
+                ? // A custom entering animation is pinned absolute on the web (see SheetRow): the predefined one isn't.
+                  FadeInDown.duration(ENTER_MS).delay(ENTER_DELAY_MS)
+                : FadeInDown.duration(ENTER_MS)
+                    .delay(ENTER_DELAY_MS)
+                    .withInitialValues({ transform: [{ translateY: STAGGER_RISE / HALF }] })
           }
         >
           {receipt}

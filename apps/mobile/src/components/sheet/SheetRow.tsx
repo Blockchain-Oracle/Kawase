@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useGroupFill } from "@/components/kit/Surface";
 import { usePressScale } from "@/components/kit/usePressScale";
@@ -42,9 +42,17 @@ export function SheetRow({
   const press = usePressScale(ROW_PRESS_SCALE);
   return (
     <Animated.View
-      entering={FadeInDown.duration(TIMING.staggerItem)
-        .delay(index * TIMING.stagger)
-        .withInitialValues({ transform: [{ translateY: STAGGER_RISE }] })}
+      // On the web a custom entering animation (`withInitialValues`) is pinned `position: absolute` at a snapshot
+      // taken while the sheet still slides up from below the screen (Reanimated 4.5's web cleanup), so every row left
+      // the layout and the sheet shrank to its heading (Abu, 10-15: "it opens, then truncates"). The web uses the
+      // predefined fade-up, which is never pinned; the phone keeps its shorter rise.
+      entering={
+        Platform.OS === "web"
+          ? FadeInDown.duration(TIMING.staggerItem).delay(index * TIMING.stagger)
+          : FadeInDown.duration(TIMING.staggerItem)
+              .delay(index * TIMING.stagger)
+              .withInitialValues({ transform: [{ translateY: STAGGER_RISE }] })
+      }
     >
       <Animated.View style={press.style}>
         <Pressable
