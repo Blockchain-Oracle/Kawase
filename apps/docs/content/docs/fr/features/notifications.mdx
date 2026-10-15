@@ -1,26 +1,48 @@
 ---
 title: "Notifications"
-description: "Une boîte de réception dans l'app pour tout ce qui arrive à votre argent, avec des notifications push et des e-mails pour les événements de votre choix."
-sourceHash: fab729b865e31134
+description: "Une boîte de réception pour tout ce qui arrive à votre argent, avec des notifications push sur votre téléphone et des emails pour les événements choisis, et des heures calmes."
+sourceHash: ff4dd3e28a238c13
 ---
 
-La **boîte de réception** de Kawase est le registre de tout ce qui se passe : chaque paiement reçu, demande payée, paiement terminé,
-automatisation ignorée et alerte de règle y apparaît. Touchez une notification pour ouvrir l'écran correspondant.
+Kawase vous prévient quand de l’argent bouge et quand il a fait quelque chose pour vous. Rien d’autre.
 
-En plus de la boîte de réception, Kawase peut vous prévenir par **notification push** (sur votre téléphone) et par **e-mail**. Dans Paramètres → Notifications, vous choisissez,
-pour chaque événement et chaque canal, ce que vous voulez recevoir. Voici les réglages par défaut :
+<Flow>
+  <FlowStep icon="bell" title="Quelque chose arrive">De l’argent reçu, une demande payée, une exécution sautée.</FlowStep>
+  <FlowStep icon="inbox" title="La boîte de réception" tone="accent">Toujours : chaque événement, une fois.</FlowStep>
+  <FlowStep icon="mail" title="Push et email">Les événements choisis, par canal.</FlowStep>
+  <FlowStep icon="receipt" title="Touchez-le" tone="ink">Il ouvre le bon reçu ou le bon écran.</FlowStep>
+</Flow>
 
-| Événement | Notification push | E-mail |
-|---|---|---|
-| Argent reçu | activée | activé |
-| Votre demande a été payée | activée | activé |
-| Votre paiement est terminé | activée | désactivé |
-| Une automatisation a été ignorée | activée | activé |
-| Une alerte de règle | activée | activé |
+## La boîte de réception
 
-Les **heures calmes**, selon votre fuseau horaire, mettent les notifications push en attente jusqu'au matin. Les e-mails continuent d'être envoyés.
-Les événements de sécurité ne peuvent jamais être désactivés.
+La cloche sur l’Accueil ouvre la **boîte de réception** : chaque paiement reçu, demande payée, paiement effectué,
+automatisation sautée et alerte de règle, du plus récent au plus ancien, chacun ouvrant son reçu. **Tout marquer comme lu**
+efface la pastille.
 
-Chaque notification est envoyée au maximum une fois par canal, même si Kawase réessaie. L'envoi des notifications push et des e-mails est intégré
-à l'app et au serveur. Il sera activé lorsque les comptes des fournisseurs de notifications push (Apple et Google) et d'e-mails seront connectés pour la
-version publique. La boîte de réception fonctionne dès aujourd'hui.
+<Shot src="activity/inbox" alt="La boîte de réception : Envoyé à 0x9444…2439 −5,00 USDC, Envoyé à 0xe8CB…3e0B −5,00 USDC, Envoyé à 0x6561…7f4f −1,00 USDC, et deux lignes Reçu de, +20,00 EURC et +20,00 USDC.">
+  <Pin box="4 12 92 9.5">Chaque événement, avec son montant et son heure</Pin>
+
+  <Pin box="66 5.5 30 4.5">Tout marquer comme lu</Pin>
+</Shot>
+
+## Réglages → Notifications
+
+<Shot src="notifications/settings" alt="Notifications : sur le web, par email et dans votre boîte de réception ; une section Email ; et Ce qu'on vous signale, un interrupteur par événement, d’Argent reçu à Graduations de jetons.">
+  <Pin box="4 15.5 92 7.5">Sur le web : email et boîte de réception</Pin>
+
+  <Pin box="4 46 92 54">Ce qu'on vous signale, par événement</Pin>
+</Shot>
+
+Par événement et par canal, vous choisissez ce qui vous parvient : **argent reçu**, **quelqu’un vous demande de payer**,
+**une demande payée**, **un envoi effectué**, **une automatisation sautée**, **alertes de règles**, **nouvelles
+connexions**, **appareils déconnectés**, **alertes de santé** pour les positions ouvertes, **prise de profit et stop-loss**,
+et **graduations de jetons**.
+
+- **Sur votre téléphone** : push, et email.
+- **Sur le web** : la boîte de réception et l’email (l’app web n’a pas de push).
+- **Les heures calmes**, dans votre propre fuseau horaire, retiennent les push jusqu’à leur fin ; votre boîte de réception et
+  vos emails reçoivent tout quand même.
+
+L’email arrive bientôt : l’écran de réglages le dit, et vos choix sont conservés en attendant. Les emails de Kawase portent le
+même [reçu](./activity-and-receipts.mdx) que l’app. Chaque notification est livrée au plus une fois par canal, même si Kawase
+réessaie.

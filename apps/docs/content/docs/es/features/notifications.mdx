@@ -1,26 +1,47 @@
 ---
 title: "Notificaciones"
-description: "Una bandeja de entrada dentro de la app para todo lo que ocurre con tu dinero, con notificaciones push y por email para los eventos que elijas."
-sourceHash: fab729b865e31134
+description: "Una bandeja para todo lo que le pasa a tu dinero, con notificaciones push en tu teléfono y email para los eventos que elijas, y horas de silencio."
+sourceHash: ff4dd3e28a238c13
 ---
 
-La **bandeja de entrada** de Kawase es el registro: allí aparece cada pago recibido, solicitud pagada, pago completado, automatización omitida y
-alerta de una regla. Al tocar una notificación, se abre la pantalla correspondiente.
+Kawase te avisa cuando se mueve dinero y cuando hizo algo por ti. Nada más.
 
-Además de la bandeja de entrada, Kawase puede avisarte mediante **notificaciones push** (en tu teléfono) y **email**. En Ajustes → Notificaciones eliges,
-para cada evento y canal, qué quieres recibir. Estas son las opciones predeterminadas:
+<Flow>
+  <FlowStep icon="bell" title="Pasa algo">Dinero recibido, una petición pagada, una ejecución saltada.</FlowStep>
+  <FlowStep icon="inbox" title="La bandeja" tone="accent">Siempre: cada evento, una vez.</FlowStep>
+  <FlowStep icon="mail" title="Push y email">Los eventos que elegiste, por canal.</FlowStep>
+  <FlowStep icon="receipt" title="Tócalo" tone="ink">Abre el recibo o la pantalla correcta.</FlowStep>
+</Flow>
 
-| Evento | Push | Email |
-|---|---|---|
-| Dinero recibido | activado | activado |
-| Tu solicitud fue pagada | activado | activado |
-| Tu pago se completó | activado | desactivado |
-| Se omitió una automatización | activado | activado |
-| Alerta de una regla | activado | activado |
+## La bandeja
 
-Las **horas de silencio** según tu zona horaria retienen las notificaciones push hasta la mañana; los emails siguen llegando. Los eventos de seguridad nunca
-se pueden silenciar.
+La campana de Inicio abre la **bandeja**: cada pago recibido, petición pagada, pago completado, automatización saltada y
+aviso de regla, del más reciente al más antiguo, cada uno abriendo su recibo. **Marcar todo como leído** borra el punto.
 
-Cada notificación se envía como máximo una vez por canal, aunque Kawase vuelva a intentarlo. La entrega de notificaciones push y emails está integrada en
-la app y el servidor; se activará cuando se conecten las cuentas de los proveedores de notificaciones push (Apple y Google) y de email para el lanzamiento
-público. La bandeja de entrada ya funciona.
+<Shot src="activity/inbox" alt="La bandeja: Enviado a 0x9444…2439 −5,00 USDC, Enviado a 0xe8CB…3e0B −5,00 USDC, Enviado a 0x6561…7f4f −1,00 USDC, y dos filas Recibido de, +20,00 EURC y +20,00 USDC.">
+  <Pin box="4 12 92 9.5">Cada evento, con su importe y su hora</Pin>
+
+  <Pin box="66 5.5 30 4.5">Marcar todo como leído</Pin>
+</Shot>
+
+## Ajustes → Notificaciones
+
+<Shot src="notifications/settings" alt="Notificaciones: en la web, por email y en tu bandeja; una sección Email; y Qué avisarte, un interruptor por evento, de Dinero recibido a Graduaciones de tokens.">
+  <Pin box="4 15.5 92 7.5">En la web: email y tu bandeja</Pin>
+
+  <Pin box="4 46 92 54">Qué avisarte, por evento</Pin>
+</Shot>
+
+Por evento y por canal, eliges qué te llega: **dinero recibido**, **alguien te pide un pago**, **una petición pagada**,
+**un envío completado**, **una automatización saltada**, **avisos de reglas**, **nuevos inicios de sesión**, **sesiones
+cerradas en dispositivos**, **alertas de salud** de posiciones abiertas, **toma de ganancias y stop-loss**, y
+**graduaciones de tokens**.
+
+- **En tu teléfono**: push y email.
+- **En la web**: la bandeja y el email (la app web no tiene push).
+- **Las horas de silencio**, en tu propia zona horaria, retienen los push hasta que terminan; tu bandeja y tu email siguen
+  recibiendo todo.
+
+El email llega pronto: la pantalla de ajustes lo indica y tus opciones se guardan hasta entonces. Los emails de Kawase llevan
+el mismo [recibo](./activity-and-receipts.mdx) que la app. Cada notificación se entrega como máximo una vez por canal, aunque
+Kawase lo reintente.

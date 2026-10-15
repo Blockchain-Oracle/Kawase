@@ -1,21 +1,46 @@
 ---
 title: "Notificações"
-description: "Uma caixa de entrada no app para tudo o que acontece com seu dinheiro, com notificações push e por e-mail para os eventos que você escolher."
-sourceHash: fab729b865e31134
+description: "Uma caixa de entrada para tudo o que acontece com o seu dinheiro, com push no celular e email para os eventos que você escolher, e horário de silêncio."
+sourceHash: ff4dd3e28a238c13
 ---
 
-A **caixa de entrada** da Kawase é o registro de tudo: cada pagamento recebido, pedido pago, pagamento concluído, automação ignorada e alerta de regra aparece lá. Ao tocar em um item, você abre a tela certa.
+O Kawase avisa quando dinheiro se move e quando ele fez algo por você. Nada além disso.
 
-Além da caixa de entrada, a Kawase pode avisar você por **push** (no celular) e por **e-mail**. Em Configurações → Notificações, você escolhe, por evento e por canal, o que quer receber. As opções padrão são:
+<Flow>
+  <FlowStep icon="bell" title="Algo acontece">Dinheiro recebido, um pedido pago, uma execução pulada.</FlowStep>
+  <FlowStep icon="inbox" title="A caixa de entrada" tone="accent">Sempre: cada evento, uma vez.</FlowStep>
+  <FlowStep icon="mail" title="Push e email">Os eventos que você escolheu, por canal.</FlowStep>
+  <FlowStep icon="receipt" title="Toque nele" tone="ink">Ele abre o recibo ou a tela certa.</FlowStep>
+</Flow>
 
-| Evento | Push | E-mail |
-|---|---|---|
-| Dinheiro recebido | ativado | ativado |
-| Seu pedido foi pago | ativado | ativado |
-| Seu pagamento foi concluído | ativado | desativado |
-| Uma automação foi ignorada | ativado | ativado |
-| Um alerta de regra | ativado | ativado |
+## A caixa de entrada
 
-O **horário de silêncio** no seu próprio fuso horário pausa as notificações push até de manhã. Os e-mails continuam sendo enviados. Eventos de segurança nunca podem ser silenciados.
+O sino no Início abre a **caixa de entrada**: cada pagamento recebido, pedido pago, pagamento concluído, automação pulada e
+alerta de regra, do mais novo para o mais antigo, cada um abrindo seu recibo. **Marcar tudo como lido** apaga o ponto.
 
-Cada notificação é enviada no máximo uma vez por canal, mesmo quando a Kawase tenta enviá-la novamente. O envio de notificações push e e-mails já está integrado ao app e ao servidor. Esses recursos serão ativados quando as contas dos provedores de push (Apple e Google) e de e-mail forem conectadas para o lançamento público. A caixa de entrada já funciona hoje.
+<Shot src="activity/inbox" alt="A caixa de entrada: Enviado para 0x9444…2439 −5,00 USDC, Enviado para 0xe8CB…3e0B −5,00 USDC, Enviado para 0x6561…7f4f −1,00 USDC, e duas linhas Recebido de, +20,00 EURC e +20,00 USDC.">
+  <Pin box="4 12 92 9.5">Cada evento, com o valor e a hora</Pin>
+
+  <Pin box="66 5.5 30 4.5">Marcar tudo como lido</Pin>
+</Shot>
+
+## Configurações → Notificações
+
+<Shot src="notifications/settings" alt="Notificações: na web, por email e na sua caixa de entrada; uma seção Email; e O que avisar, um interruptor por evento, de Dinheiro recebido a Graduações de tokens.">
+  <Pin box="4 15.5 92 7.5">Na web: email e caixa de entrada</Pin>
+
+  <Pin box="4 46 92 54">O que avisar, por evento</Pin>
+</Shot>
+
+Por evento e por canal, você escolhe o que chega até você: **dinheiro recebido**, **alguém pede que você pague**, **um pedido
+pago**, **um envio concluído**, **uma automação pulada**, **alertas de regras**, **novos acessos**, **aparelhos
+desconectados**, **alertas de saúde** de posições abertas, **take-profit e stop-loss**, e **graduações de tokens**.
+
+- **No celular**: push e email.
+- **Na web**: a caixa de entrada e o email (o app web não tem push).
+- **O horário de silêncio**, no seu próprio fuso, segura os push até acabar; sua caixa de entrada e seu email continuam
+  recebendo tudo.
+
+O email começa em breve: a tela de configurações avisa, e suas escolhas ficam salvas até lá. Os emails do Kawase trazem o
+mesmo [recibo](./activity-and-receipts.mdx) do app. Cada notificação é entregue no máximo uma vez por canal, mesmo que o
+Kawase tente de novo.
