@@ -1,41 +1,92 @@
 ---
 title: "Contatos e @handles"
-description: "Salve pessoas por nome, pague por nome ou @handle e receba avisos sobre endereços alterados ou parecidos."
-sourceHash: 456835ae75f4f0c4
+description: "Reserve um @usuário para receber pagamentos, salve as pessoas que você paga (ou quem enviou um dinheiro que chegou) e seja avisado sobre endereços trocados ou parecidos."
+sourceHash: 6a3ab4fa987e7610
 ---
 
 <Status ids="contacts" />
 
-## Contatos
+<Flow>
+  <FlowStep icon="at-sign" title="Reserve um nome">As pessoas pagam você em @você.</FlowStep>
+  <FlowStep icon="user-plus" title="Salve pessoas">Por nome, @usuário ou endereço, ou a partir de um recibo.</FlowStep>
+  <FlowStep icon="send" title="Pague pelo nome" tone="accent">«Envie 5 dólares para o Sam.»</FlowStep>
+  <FlowStep icon="shield" title="Protegido">Endereços trocados ou parecidos são detectados.</FlowStep>
+</Flow>
 
-Um contato é um nome (e apelidos) com um ou mais endereços. Kawase usa os contatos para entender “enviar para Alex” e
-proteger você:
+## Seu @usuário
 
-- **Alterações de endereço ficam retidas.** Quando o endereço de um contato muda, o novo endereço espera **24 horas** antes que o dinheiro possa ser enviado para
-  ele, e o contato fica congelado enquanto isso. Um endereço alterado é uma forma comum de roubar um pagamento.
-- **Endereços parecidos são sinalizados.** Um endereço cujos quatro primeiros e quatro últimos caracteres sejam iguais aos de um dos seus contatos é
-  tratado como parecido: Kawase interrompe a ação e pede o Face ID.
-- **Histórico de pagamentos** aumenta a confiança em cada endereço e rede: o primeiro pagamento para um endereço recebe mais cuidado
-  do que os pagamentos repetidos.
+Um `@usuário` é um nome público opcional pelo qual pagam você: «envie 10 para @maya». Você escolhe logo depois de entrar
+(ou pula) e muda depois em **Configurações → Nome de usuário**.
 
-Se você mencionar alguém que Kawase não conhece, o app pedirá para salvar essa pessoa e continuará com o mesmo pagamento — você não
-precisa começar de novo.
+<Shot src="start/handle" alt="Escolha seu nome de usuário: @ines digitado, marcado como Disponível, com Continuar e Pular por enquanto." zoom="17 47 12" lens="68 58">
+  <Pin box="5 37 90 7.5">Verificado enquanto você digita</Pin>
 
-### Adicionar pessoas
-
-- **Salvar um remetente**: o dinheiro recebido de alguém oferece a opção **Salvar remetente como contato**, com o endereço usado no
-  pagamento.
-- **Importar do seu celular**: Contatos → Importar lê nomes e e-mails **somente no seu celular**. **Encontrar quem está no Kawase**
-  envia apenas e-mails com hash, nunca os nomes, e-mails ou números; as pessoas que permitem ser encontradas são adicionadas pelo
-  @handle em um toque, e você pode convidar as demais. A opção para permitir que outras pessoas encontrem você dessa forma fica na mesma página.
-
-## @handles
-
-Um `@handle` é um nome público opcional pelo qual você pode receber pagamentos: “enviar 10 para @abu”. Regras:
+  <Pin box="5 84 90 7">Ficar com ele, ou pular por enquanto</Pin>
+</Shot>
 
 - De 3 a 20 caracteres: letras minúsculas, números e sublinhado.
-- É único, independentemente de maiúsculas e minúsculas; nomes que possam se passar pelo Kawase, Arc, Circle ou por membros da equipe são reservados.
-- Você escolhe o seu durante o cadastro inicial (ou pode pular essa etapa) e pode alterá-lo em Configurações.
+- Único sem diferenciar maiúsculas; nomes que imitariam o Kawase, a Arc, a Circle ou a equipe são reservados.
+- Um nome de usuário leva à carteira Kawase da pessoa. Se ela ainda não tem carteira, o Kawase avisa em vez de adivinhar.
 
-Um handle corresponde ao endereço da carteira Kawase da pessoa. Se a pessoa ainda não tiver configurado uma carteira, Kawase avisará você
-em vez de tentar adivinhar.
+## Salvar um contato
+
+Um contato é um nome (e apelidos) com um ou mais endereços. É pelos contatos que o Kawase entende «envie para o Sam», e é
+assim que ele protege você.
+
+<Walkthrough>
+  <WalkStep title="Contatos" src="contacts/empty">
+    **Configurações → Contatos**, ou o botão de contatos em Enviar. **Pessoas** são quem você paga; **Meus destinos** são
+    suas próprias carteiras e contas em corretoras para onde você saca.
+
+    <Pin box="30 70 40 5.5">Adicionar um contato</Pin>
+
+    <Pin at="72 95">Importar do celular</Pin>
+
+    <Pin box="5 12.8 47 4.8">Pessoas e Meus destinos</Pin>
+  </WalkStep>
+  <WalkStep title="Nome e endereço" src="contacts/new">
+    Um nome e um `@usuário` ou um endereço `0x`. O nome de usuário é verificado enquanto você digita.
+
+    <Pin box="5 69.5 90 7">O nome da pessoa</Pin>
+
+    <Pin box="5 82 65 7">Um @usuário ou um endereço</Pin>
+
+    <Pin box="72 82 24 7">Ou cole um</Pin>
+  </WalkStep>
+  <WalkStep title="Salvo" src="contacts/list">
+    A partir de agora, «envie 5 dólares para o Sam» simplesmente funciona, e um pagamento a um contato salvo pode sair
+    **dentro do seu orçamento semanal** sem perguntar.
+
+    <Pin box="5 29.5 90 8.5">Salvo, por nome e @usuário</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Se você mencionar alguém que o Kawase não conhece, ele pede para salvar e continua o mesmo pagamento: você não começa do
+zero.
+
+### Salvar quem enviou um dinheiro que chegou
+
+Abra um pagamento recebido em [Atividade](./activity-and-receipts.mdx): o recibo mostra quem **enviou** e oferece
+**Salvar**, com o endereço do próprio pagamento.
+
+<Shot src="contacts/save-sender" alt="Um recibo de 2,00 USDC recebidos e, abaixo, Enviado por: o endereço de quem enviou, Não está nos seus contatos, e um botão Salvar." zoom="82 80.6 9">
+  <Pin box="4 76.5 92 8.5">Enviado por: o endereço de origem</Pin>
+
+  <Pin at="62 84.5">Ainda não está nos seus contatos</Pin>
+</Shot>
+
+### Importar do celular
+
+**Contatos → Importar** lê nomes e emails **só no seu celular**. **Encontrar quem está no Kawase** envia apenas emails com
+hash, nunca os nomes, emails ou números em si; quem aceita ser encontrado é adicionado pelo @usuário com um toque, e você
+pode convidar o resto. Se outras pessoas podem achar você assim é um botão na mesma página.
+
+## Como os contatos protegem você
+
+- **Trocas de endereço ficam retidas.** Quando o endereço de um contato muda, o novo espera **24 horas** antes de poder
+  receber dinheiro, e o contato fica congelado enquanto isso. Trocar o endereço é um golpe clássico para desviar um
+  pagamento.
+- **Endereços parecidos são sinalizados.** Um endereço cujos quatro primeiros e quatro últimos caracteres batem com os de
+  um contato é tratado como imitação: o Kawase para e pede sua confirmação.
+- **O histórico gera confiança** por endereço e por rede: um primeiro pagamento a um endereço é tratado com mais cuidado
+  que um repetido, e pode ir antes como [valor de teste](./send-receive-request.mdx).
