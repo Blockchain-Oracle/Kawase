@@ -1,7 +1,7 @@
 # Kawase architecture (detailed)
 
-Purpose: the detailed architecture from the planning session (2026-09-29), kept current as the build changes. It extends §Architecture in `MASTER-PLAN.md`. If this file and the code disagree, update this file.
-Sources: the Plan-agent design of 2026-09-29; `context/08-product-research/*` (see citations inline); doc checks of the verified stack (MASTER-PLAN §Verified stack).
+Purpose: a dated architecture design from the 2026-09-29 planning session, revised through 2026-10-01. It records the design at that time; the [public README](../README.md#architecture) and current source describe the implementation now.
+Sources at creation: the planning session, local product research cited inline, and checks against the stack available then. Some historical citations below refer to working notes that are not published.
 Last updated: 2026-10-01
 
 ## 1. Key decisions (K1–K6)

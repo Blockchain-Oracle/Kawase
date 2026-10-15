@@ -2,7 +2,7 @@
 
 Purpose: the single, end-to-end definition of what a Kawase user can do, how, and what every screen shows as a result. Every build slice implements a capability card from here; nothing is built from a feature name alone. Method: the `product-how-tree` skill (Abu, 2026-10-02, D36).
 
-Sources: `context/08-product-research/ABU-BRIEF-VERBATIM.md`, `DECISIONS-FROM-ABU.md` (D1–D36), `FEATURE-INVENTORY.md` (A–U), the research folders `01`–`17`, the reference study `docs/design/reference-study-2026-09-30/`, Senryo's trading design (`metropolis`, read-only), live API checks recorded in each area file, and the approved plan `~/.claude/plans/noble-nibbling-shannon.md`.
+Sources at creation: Abu's brief and decisions, the feature inventory and research, a design reference study, Senryo's trading design, and live API checks recorded in the capability cards. The working notes and agent plan remain local; this directory is the public product definition. For current availability, see [the docs](https://docs.getkawase.xyz/docs/availability) and the [repository README](../../README.md#what-is-verified).
 Verified: 2026-10-02 (each file carries its own date per fact)
 
 ## Files
@@ -16,7 +16,6 @@ Verified: 2026-10-02 (each file carries its own date per fact)
 | `routes.md` | route tables where routes vary by instance (asset × destination × chain) |
 | `surfaces.md` | every screen, sheet, picker, empty state and sign-in step: before → after → why |
 | `trace.md` | capability ↔ entry point, both ways |
-| `gaps.md` | gaps and bugs with file:line, money and safety first |
 | `decisions.md` | product-internal decisions with rationale |
 
 ## Promise
@@ -30,7 +29,7 @@ Verified: 2026-10-02 (each file carries its own date per fact)
 5. Shijima, Agari and Senryo for flow patterns.
 6. Older plans.
 
-Implementation sequencing is never a scope cut. "Blocked" means "find another provider or route", recorded in `gaps.md` until solved.
+Implementation sequencing is never a scope cut. "Blocked" means "find another provider or route"; the working gap list stays local while current public availability is documented above.
 
 ## Personas and their end-to-end journeys
 | Persona | First launch → value → return |

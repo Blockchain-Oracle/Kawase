@@ -60,8 +60,9 @@ People who hold or earn digital dollars and should not need a tutorial to use th
 money home, a freelancer moving between chains, a first-time saver who wants yield without reading vault docs. That is
 why the first screen asks for nothing: a guest sees live quotes, markets and the race before any sign-in, and the app
 speaks Arabic, Bengali, Chinese, English, French, Hindi, Portuguese, Russian, Spanish and Urdu (right-to-left where it
-should be). Paying users and repeat use are not validated yet; the production api counts 2 accounts and 15 guest
-sessions since its last reset ([/public/stats](https://api.getkawase.xyz/public/stats), 2026-10-15).
+should be). Paying users and repeat use are not validated yet. The production api publishes its current account and
+guest-session counts at [/public/stats](https://api.getkawase.xyz/public/stats); these are usage counters, not proof of
+paid or repeat use.
 
 ## Demo video
 
@@ -297,16 +298,17 @@ money: `pnpm --filter @kawase/api test`. The delegation package proves the on-ch
 | [`packages/db`](packages/db)                                                 | Drizzle schema and committed migrations                                                                                      |
 | [`packages/i18n`](packages/i18n)                                             | the ten languages' catalogs                                                                                                  |
 | [`packages/networks`](packages/networks), [`packages/money`](packages/money) | the two Arc networks and verified addresses; exact money types                                                               |
-| [`plan/`](plan), [`context/`](context)                                       | the architecture, product cards and build logs; the Arc notes the agent's knowledge is built from, and the prior work        |
+| [`plan/`](plan), [`context/`](context)                                       | dated architecture and build logs, product cards, the Arc notes behind the agent's knowledge, and prior-work provenance    |
 
 ## Prior work and what was reused
 
 The event opened on **2026-09-27**. This is where Kawase started.
 
 - **This repository** begins with commit `be83488` on **2026-09-30** ("Bootstrap Kawase: monorepo scaffold, plan,
-  research context, Stage 1 spikes"). All 680 commits, from 2026-09-30 to 2026-10-15, fall inside the event. The bootstrap commit holds the research notes, the plan, the notes of the first
-  spikes and the package scaffolds with the first constants and money types, all written during the event, plus Expo's
-  starter template for the app. Nothing of Kawase existed before it.
+  research context, Stage 1 spikes"). Its history through 2026-10-15 falls inside the event. The bootstrap commit
+  holds the research notes, the plan, the notes of the first spikes and the package scaffolds with the first constants
+  and money types, all written during the event, plus Expo's starter template for the app. Nothing of Kawase existed
+  before it.
 - **Starting point:** no users, no deployment, no money moved.
 - **Research** in [`context/`](context) was compiled on 2026-09-29 from public sources: the hackathon pages and kickoff,
   Arc and Circle documentation, Canteen's talks and articles. Circle's sample repositories are read through
