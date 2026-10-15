@@ -1,6 +1,6 @@
 export const report = {
   title: "This week",
-  pnl: "This week's profit and loss",
+  pnl: "Profit and loss",
   loading: "Putting your week together…",
   in: "In ({{count}})",
   out: "Out ({{count}})",

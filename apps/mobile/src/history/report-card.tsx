@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
   panel: { padding: SPACE.lg },
   columns: { flexDirection: "row", gap: SPACE.lg },
   column: { flex: 1, gap: SPACE.xxs },
+  start: { alignItems: "flex-start" },
   weekRow: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.lg },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.xs },
   chip: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: SIZE.chipHeight - SPACE.xs, borderRadius: SIZE.chipHeight, paddingHorizontal: SPACE.md },
@@ -99,7 +100,7 @@ function WeekCard({ report, lines }: { report: ReportView; lines: string[] }) {
     <Panel style={[styles.stack, styles.panel]}>
       <SectionLabel>{t("report.title")}</SectionLabel>
       <View style={styles.weekRow}>
-        <View style={styles.column}>
+        <View style={[styles.column, styles.start]}>
           <Text style={[TYPE.meta, { color: color.text2 }]}>{t("report.pnl")}</Text>
           <Text style={[TYPE.displayPrice, { color: tone }]} numberOfLines={1} adjustsFontSizeToFit>
             {pnl !== null ? usd(pnl, true) : "—"}
