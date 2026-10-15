@@ -5,8 +5,9 @@
 // until then it says Kawase is in Apple's beta review and points the iPhone at the web app, which works there today. The
 // Mac app isn't finished (the owner, 10-15), so the Mac row says it's on its way and offers the web app. While Apple
 // reviews the beta, an iPhone visitor can leave an email: it joins the public TestFlight group and Apple sends the
-// invitation the minute testers are let in; on Android the same field mails the APK and how to install it
-// (`components/landing/app-invite.tsx`). Kawase isn't on Google Play, so the Android steps say what Play Protect may ask.
+// invitation the minute testers are let in; on Android the same field mails the APK and how to install it. The form sits
+// in the hero, above the fold, with an iPhone / Android choice (`components/landing/app-invite.tsx`). Kawase isn't on
+// Google Play, so the Android steps say what Play Protect may ask.
 import { ArrowUpRight, Check, Globe, Laptop } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
@@ -86,7 +87,6 @@ function IosCard({ release, mine }: { release: StoreRelease; mine: boolean }) {
           <a href={links.webApp} className={`${BUTTON_PRIMARY} mt-6`}>
             Open the web app <ArrowUpRight className="size-4" aria-hidden />
           </a>
-          <AppInvite platform="ios" />
         </>
       )}
     </Card>
@@ -114,8 +114,6 @@ function AndroidCard({ release, mine }: { release: StoreRelease; mine: boolean }
       <a href={release.apk} download className={`${BUTTON_PRIMARY} mt-6`}>
         Download the APK <ArrowUpRight className="size-4" aria-hidden />
       </a>
-      {/* On the phone itself the button is right there; elsewhere the link goes by email to the phone. */}
-      {mine ? null : <AppInvite platform="android" />}
     </Card>
   );
 }
@@ -173,7 +171,9 @@ export default async function Download() {
             <p className="mt-6 text-[20px] leading-[1.5] text-[var(--lp-ink-soft)]">
               iPhone, Android or the browser. One account on all three, and everything you do follows you.
             </p>
-            <StoreBadges release={release} className="mt-9" />
+            {/* Get it by email without scrolling (Abu, 10-16): the visitor's own phone is chosen for them. */}
+            <AppInvite initial={platform === "android" ? "android" : "ios"} />
+            <StoreBadges release={release} className="mt-8" />
           </div>
           <div className="relative hidden h-[520px] w-[520px] lg:block" aria-hidden>
             <PhoneShot name="token" alt="" className="absolute top-16 left-0 -rotate-[8deg] [--phone-w:210px]" />
