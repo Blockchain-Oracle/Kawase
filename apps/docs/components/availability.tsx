@@ -90,7 +90,7 @@ export function ScopeList({ lang, ids }: { lang: string; ids?: AreaId[] }) {
           <h3 className="font-display text-base font-semibold">{areaLabel(id, lang)}</h3>
           {scope.supports.length > 0 ? (
             <>
-              <p className="mt-3 text-xs font-semibold text-success">{t.scope.supports}</p>
+              <p className="mt-3 text-xs font-semibold text-foreground">{t.scope.supports}</p>
               <ul className="mt-1 list-disc space-y-1 ps-5 text-sm">
                 {scope.supports.map((line) => (
                   <li key={line}>{translateScope(lang, line)}</li>
