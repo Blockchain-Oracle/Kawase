@@ -1,7 +1,41 @@
 # Kawase build status
 
 Purpose: the resume point. A new session reads memory, then this file, then the current stage file.
-Last updated: 2026-10-15 midday (Abu's two 10-15 rounds acted on; plan breezy-puzzling-starfish)
+Last updated: 2026-10-15 ~13:45 WAT (OPEN LIST at the top is the single to-do; plan breezy-puzzling-starfish)
+
+## OPEN LIST — one place for everything still owed (rebuilt 10-15 ~13:45 WAT from every round below)
+
+Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only with live evidence.
+
+**Now (in flight)**
+1. [ ] Abu's mainnet wallet setup lands (account 01a13ed0…, wallet 0x53fD9a…; relayer funded 6.98 USDC) → then the
+       mainnet test: a real swap, a send, the agent's long/short in chat, a paid x402 call (Abu's money; he approves).
+2. [ ] iOS build 22 built locally with today's JS (Privy only) → `eas submit` → swap it into the Public beta review, so a
+       fresh install's first launch is not the old Turnkey code. Public link https://testflight.apple.com/join/PD3fgXZx.
+3. [ ] api deploy of the relayer watch + 3 s drain (first try failed on an npm network blip) → probe shows no 502.
+
+**Verify (built, not yet seen live)**
+4. [ ] Agent wallet redesign, signed in (dev mode on localhost).
+5. [ ] Apple sign-in on iOS through the web flow, on Abu's iPhone via iPhone Mirroring (stop at Apple's page).
+6. [ ] The 1 crash TestFlight logged on build 21 (Xcode Organizer → Crashes).
+7. [ ] Native Markets on testnet: "Switch to mainnet" has its button (10-14 open item; fixed on web).
+
+**Build (owed from earlier rounds)**
+8. [ ] Sweep checklist on every screen, signed in, phone + desktop (STATUS sweep rules below).
+9. [ ] The + fan's first open takes ~1 s (10-14).
+10. [ ] RouteList polish (10-14); venue honesty: a venue we have never executed through is marked quote-only (plan A4).
+11. [ ] Dev-mode run with tx hashes: bridge, send, earn (10-15 morning).
+12. [ ] Real-device pass on Abu's iPhone (iPhone Mirroring; phone-harness optional).
+
+**Submission**
+13. [ ] README "Where it stands" refreshed with the mainnet evidence; docs check.
+14. [ ] Demo script + video.
+15. [ ] Secret scan of the whole history (gitleaks) → ask Abu → repo public.
+16. [ ] Submit with a 2 h buffer.
+
+Done today and checked live (details in the rounds below): Turnkey out; Apple sign-in on the web; voice picker hello
+(seen live: greeting arrives); voice over pushed pages; Marketplace entry + links; Markets retry + deploy 502 cause;
+Long or short on testnet; relayer funded; public TestFlight group submitted.
 
 ## 2026-10-15 — Abu's signed-in review (Privy, @ajweb3)
 
@@ -88,7 +122,8 @@ UI and agent, from Abu's screenshots:
       (session `greet`; five of the six voices exist only in GPT-Live, so no recordings). Found on the way: a waiting
       session kept the old voice for 5 min after a change (now dropped on save), and on a phone voice opened under
       pushed pages (Chat, Settings) because the overlay lived in the tabs; it now sits above every page. fc1a4c13.
-      [ ] check live after the web publish.
+      Checked live 10-15: the speaker opens voice and the hello arrives (mic blocked in the test browser, so the
+      fallback voice spoke; with a microphone GPT-Live speaks in the chosen voice).
 - [x] Agent wallet page past mediocre (bd64bf5a: hero balance, today's spend against the daily budget, Gateway and
       on-hand cells, two columns on desktop). [ ] check signed in (dev mode).
 - [ ] Test on mainnet production, not only the local testnet api.
