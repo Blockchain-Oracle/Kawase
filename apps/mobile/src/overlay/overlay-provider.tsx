@@ -14,6 +14,12 @@ import { BackHandler, Platform, View, type ViewProps } from "react-native";
 
 import { BlurTarget, BlurTargetProvider } from "@kawase/ui-native/components/blur-target";
 
+import { useSession } from "@/session/session-provider";
+import { prefetchVoice } from "@/voice/prefetch";
+
+/** How long after the app settles (or a conversation ends) the next voice session is made ready. */
+const VOICE_HEAD_START_MS = 2_500;
+
 type OverlayKind = "voice" | "fan";
 
 type OverlayState = {
@@ -67,6 +73,17 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       setComposing,
     };
   }, [current, leaving, composing]);
+
+  // Talk to Kawase starts sooner: once the signed-in app has settled, the voice code loads and a session waits; after
+  // each conversation the next one is made ready the same way (voice/prefetch.ts).
+  const { status, user } = useSession();
+  const network = user?.activeNetwork;
+  const talking = current === "voice";
+  React.useEffect(() => {
+    if (status !== "account" || !network || talking) return undefined;
+    const timer = setTimeout(() => prefetchVoice(network), VOICE_HEAD_START_MS);
+    return () => clearTimeout(timer);
+  }, [status, network, talking]);
 
   // Back (Android) and Escape (web) close the open overlay first.
   React.useEffect(() => {

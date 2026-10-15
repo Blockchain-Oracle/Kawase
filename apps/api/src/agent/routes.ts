@@ -3,7 +3,7 @@
 // history is loaded here and this turn is committed incrementally when the stream ends, so threads survive devices and
 // restarts (M1). Guests can chat too: the agent tells them what needs an account.
 import { randomBytes } from "node:crypto";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, exists, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { createUIMessageStreamResponse, isToolUIPart, readUIMessageStream, type UIMessage } from "ai";
 import { z } from "zod";
@@ -428,7 +428,8 @@ export function agentRoutes(deps: AgentDeps, runner: ReturnType<typeof createTur
     const rows = await db
       .select({ id: threads.id, title: threads.title, network: threads.network, lastMessageAt: threads.lastMessageAt })
       .from(threads)
-      .where(eq(threads.userId, c.get("userId")!))
+      // A thread with nothing said in it (a voice session opened and closed, or minted ahead of an open) is not listed.
+      .where(and(eq(threads.userId, c.get("userId")!), exists(db.select({ one: sql`1` }).from(threadMessages).where(eq(threadMessages.threadId, threads.id)))))
       .orderBy(desc(threads.lastMessageAt))
       .limit(THREADS_PAGE);
     return c.json({ threads: rows });

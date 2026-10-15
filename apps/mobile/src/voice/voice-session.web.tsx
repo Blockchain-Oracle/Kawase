@@ -16,9 +16,10 @@ import { Button } from "@kawase/ui-native/components/ui/button";
 import { Text } from "@kawase/ui-native/components/ui/text";
 
 import { useT } from "@/i18n";
-import { api } from "@/session/api";
+import { useSession } from "@/session/session-provider";
 
 import { Conversation, TypeInstead } from "./conversation";
+import { takeVoiceSession } from "./prefetch";
 import { isMicrophoneFailure } from "./mic-failure";
 
 export type VoiceSessionProps = {
@@ -33,19 +34,19 @@ export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps)
   const [session, setSession] = React.useState<Session>();
   const [failed, setFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
+  const network = useSession().user?.activeNetwork ?? "testnet";
 
   React.useEffect(() => {
     let live = true;
     setFailed(false);
     setSession(undefined);
-    api.voice
-      .session()
+    takeVoiceSession(network)
       .then((started) => live && setSession(started))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, [attempt]);
+  }, [attempt, network]);
 
   if (failed) {
     return (

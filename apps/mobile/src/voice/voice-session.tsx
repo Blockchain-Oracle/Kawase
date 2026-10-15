@@ -15,9 +15,10 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 
 import { claimVoiceAudio, cue } from "@/feedback/feedback";
 import { useT } from "@/i18n";
-import { api } from "@/session/api";
+import { useSession } from "@/session/session-provider";
 
 import { Conversation, TypeInstead } from "./conversation";
+import { takeVoiceSession } from "./prefetch";
 import { isMicrophoneFailure } from "./mic-failure";
 
 export type VoiceSessionProps = {
@@ -34,6 +35,7 @@ export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps)
   const [session, setSession] = React.useState<Session>();
   const [failed, setFailed] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
+  const network = useSession().user?.activeNetwork ?? "testnet";
   const closeAudio = React.useRef<() => Promise<void>>(() => Promise.resolve());
 
   React.useEffect(() => {
@@ -64,7 +66,7 @@ export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps)
       })());
     closeAudio.current = close;
     ready
-      .then(() => (live ? api.voice.session() : undefined))
+      .then(() => (live ? takeVoiceSession(network) : undefined))
       .then((started) => live && setSession(started))
       .catch(() => {
         if (live) setFailed(true);
@@ -74,7 +76,7 @@ export function VoiceSession({ level, onTypeInstead, onEnd }: VoiceSessionProps)
       live = false;
       void close().catch(() => undefined);
     };
-  }, [attempt]);
+  }, [attempt, network]);
 
   // The person ended voice (the overlay closed): the end cue plays once LiveKit has given the audio back.
   React.useEffect(
