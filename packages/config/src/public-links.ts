@@ -9,9 +9,9 @@ export const PUBLIC_LINKS = {
   api: "https://api.getkawase.xyz",
   docs: "https://docs.getkawase.xyz",
   landing: "https://getkawase.xyz",
-  github: "https://github.com/Blockchain-Oracle/kawase",
+  github: "https://github.com/Blockchain-Oracle/Kawase",
   /** Where a person reports a problem (no support mailbox exists yet; the repository's issues are public and watched). */
-  support: "https://github.com/Blockchain-Oracle/kawase/issues/new",
+  support: "https://github.com/Blockchain-Oracle/Kawase/issues/new",
   /** EAS preview build e644e19d (universal APK). Do not use fc084aa7 (blank-screen bug). */
   androidApk: "https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed",
   testFlight: null as string | null,

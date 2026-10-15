@@ -25,4 +25,4 @@ Status: done (2026-09-30)
 - 2026-09-29: kickoff transcript saved: `context/05-canteen-ecosystem/transcripts/kickoff-repeat-2026-09-29.md`. Line 221 confirms on-chain enforcement ("use code to enforce specific rules, and not just trust the agents"), which is our delegation-caveat design. Nothing contradicts the plan.
 - Waiting on Abu: GitHub repo (name, visibility) + GitHub App install in Coolify.
 - 2026-09-30: audit. Still open: a git source in Coolify (GitHub App per D27, or a deploy key like Abu's other projects) and the first commit + push (the GitHub repo is empty). `deploy/coolify.md` rewritten from the Coolify skill, the live server's existing apps and the Coolify source.
-- 2026-09-30: first commit pushed to `Blockchain-Oracle/kawase` (`main`); Coolify deploy key `kawase-deploy-key` created and added read-only to the repo (used instead of the GitHub App, on Abu's go-ahead). Stage 0 closed.
+- 2026-09-30: first commit pushed to `Blockchain-Oracle/Kawase` (`main`); Coolify deploy key `kawase-deploy-key` created and added read-only to the repo (used instead of the GitHub App, on Abu's go-ahead). Stage 0 closed.
