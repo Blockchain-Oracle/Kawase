@@ -59,28 +59,32 @@ Abu's notes, all built and checked on the dev build or production:
 
 Turnkey goes completely (Abu: no patches, nothing kept behind), and nothing Turnkey did is lost; each capability maps
 to Privy or to our own api:
-- [ ] Turnkey out of api, client, db, env, wallet package, app, tests, docs (DB reset done 10-15).
-- [ ] Web owner's check: an emailed code again (our api + Resend), as the buttons say ("…with an email code").
-- [ ] Sign out a device / everywhere: that device's Privy session (`sid`) is refused from then on.
-- [ ] Device proof (M12) on the web too, signed by the Privy wallet.
-- [ ] Apple sign-in: enabled in the Privy dashboard (`apple_oauth` is off).
+- [x] Turnkey out of api, client, db, env, wallet package, app, tests, docs (DB reset done 10-15; live fd1616bb).
+- [x] Web owner's check: an emailed code again (our api + Resend), as the buttons say ("…with an email code").
+- [x] Sign out a device / everywhere: that device's Privy session (`sid`) is refused from then on.
+- [x] Device proof (M12) on the web too, signed by the Privy wallet.
+- [ ] Apple sign-in: Services ID xyz.kawase.app.signin (auth.privy.io + Privy callback), key N6866U8F33 made;
+      Privy form filled but for the signing key (Abu pastes it; Claude does not type private keys). iOS uses the
+      web flow on the same client id.
 
 UI and agent, from Abu's screenshots:
-- [ ] Composer chips above the field do nothing on click (the blur closed the composer first).
-- [ ] Sign-in modal centred on the window, not the content beside the sidebar.
-- [ ] "What Kawase can do" tiles do nothing when tapped.
-- [ ] Desktop: a typed-chat door beside "Talk to Kawase" (voice); both reachable directly.
-- [ ] Voice agent: "list the marketplace" finds nothing while "DeFi Llama" finds 31.
-- [ ] Languages carry no flag (a language is not a country); display currencies do carry flags.
-- [ ] Receive flashes "Set up your wallet" before the address.
-- [ ] Add money rows reshuffle while opening.
-- [ ] Feed items dismissible (held → cancel, found → dismiss; swipe on a phone, × on the web; done money is not).
-- [ ] Marketplace: in the main navigation, every service's logo, a narrower category column, recently called tools;
-      Try-it: "Pay 0.001 USDC" with the USDC mark in one button that fits, a better top-up plate.
-- [ ] Budget ring "$0 of $200" centred; token page Buy/Sell icon + label centred.
-- [ ] Apple Pay / Google Pay marks readable on dark plates.
-- [ ] Display currency with flags (sourced marks).
-- [ ] Voice picker plays a sample on tap.
+- [x] Composer chips above the field do nothing on click (the blur closed the composer first).
+- [x] Sign-in modal centred on the window, not the content beside the sidebar.
+- [x] "What Kawase can do" tiles do nothing when tapped.
+- [x] Desktop: a typed-chat door beside "Talk to Kawase" (voice); both reachable directly.
+- [x] Voice agent: "list the marketplace" finds nothing while "DeFi Llama" finds 31.
+- [x] Languages carry no flag (a language is not a country); display currencies do carry flags.
+- [x] Receive flashes "Set up your wallet" before the address.
+- [x] Add money rows reshuffle while opening.
+- [x] Feed items dismissible (held → cancel, found → dismiss; swipe on a phone, × on the web; done money is not).
+- [x] Marketplace: in the main navigation (desktop), every service's logo, a narrower category column, recently
+      called tools; Try-it: "Pay 0.001 USDC" with the USDC mark in one button that fits, a neutral top-up plate.
+      Phone: still reached from Markets and the agent wallet.
+- [x] Budget ring "$0 of $200" centred; token page Buy/Sell icon + label centred.
+- [x] Apple Pay / Google Pay marks readable on dark plates.
+- [x] Display currency with flags (circle-flags 2.8.0, MIT, in packages/identity with provenance).
+- [ ] Voice picker plays a sample on tap: five of the six voices exist only in GPT-Live (the speech API knows
+      marin only), so the preview should be a short live hello in that voice through the voice mode itself.
 - [ ] Agent wallet page past mediocre.
 - [ ] Test on mainnet production, not only the local testnet api.
 - [ ] Public TestFlight: an external group with a public link (Beta App Review once per version; JS ships by EAS
