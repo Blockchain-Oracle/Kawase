@@ -1,74 +1,133 @@
 ---
 title: "Envoyer, recevoir et demander"
-description: "Payez n'importe qui avec n'importe quel jeton, par nom, @handle, adresse ou QR code ; ajoutez de l'argent depuis une carte, une plateforme d'échange ou un autre réseau ; demandez de l'argent ou partagez une addition avec un lien."
-sourceHash: b36cb5ffbd11f715
+description: "Payez n'importe qui par @identifiant, contact, adresse ou code QR, avec n'importe quel jeton que vous détenez sur Arc ; recevez sur une seule adresse et son code QR ; demandez de l'argent avec un lien."
+sourceHash: 033925a80eaeb0ac
 ---
 
 <Status ids="send request payment_links" />
 
 <Marks names="usdc eurc arc" />
 
-## Envoyer de l'argent
+<Flow>
+  <FlowStep icon="at-sign" title="Qui">Un @identifiant, un contact, une adresse ou un code QR.</FlowStep>
+  <FlowStep icon="shield" title="Vérifié">Le destinataire, votre solde, votre budget.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Un contact, dans votre budget" icon="zap" title="Envoyé tout de suite" />
+    <FlowStep when="Quelqu'un de nouveau, ou au-delà" icon="fingerprint" title="Vous confirmez" tone="accent">Face ID, votre empreinte, ou un code par email sur le web.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="receipt" title="Reçu" tone="ink">Payé seulement quand la chaîne montre le transfert exact.</FlowStep>
+</Flow>
 
-Dites ou écrivez à qui envoyer de l'argent et combien (« envoyer 20 dollars à Alex », « payer 5 euros à @mira »), ou utilisez l'écran Envoyer de l'argent. Vous pouvez envoyer **n'importe quel
-jeton que vous détenez sur Arc**. Kawase :
+## Envoyer, étape par étape
 
-1. **Trouve le destinataire** : un contact enregistré, un `@handle` Kawase, une adresse `0x…` que vous avez saisie vous-même, ou un **QR code** que vous
-   avez scanné. L'agent ne peut utiliser qu'une adresse provenant de vos contacts, d'un code que vous avez scanné ou de votre propre message,
-   mot pour mot.
-2. **Choisit le jeton** que vous détenez ou vous demande lequel utiliser si ce n'est pas clair.
-3. **Vérifie le destinataire à chaque paiement** : un contrat de jeton ou une imitation d'un contact enregistré est refusé, un contrat
-   qui n'est pas un portefeuille déclenche un avertissement, la liste de blocage de l'émetteur du jeton est vérifiée lorsqu'elle existe, et votre propre adresse
-   est signalée comme étant la vôtre. Kawase vérifie aussi votre solde, vos limites et si l'adresse d'un contact a changé récemment.
-4. **Affiche la carte de paiement** avec le montant exact, le jeton, le destinataire et le réseau.
+Ouvrez **Envoyer** depuis **+**, ou dites-le simplement (« envoie 5 dollars à @ines », « paie Sam 5 euros »). Vous
+pouvez envoyer **n'importe quel jeton que vous détenez sur Arc**.
 
-Ensuite, l'une de ces deux situations se produit :
+<Walkthrough>
+  <WalkStep title="Trouver qui" src="send/search">
+    Tapez un `@identifiant` ou un nom, collez une adresse ou scannez un code QR. Les personnes sur Kawase apparaissent
+    par leur identifiant.
 
-| Situation | Ce que vous faites |
-|---|---|
-| Dans la limite restante du jour pour ce jeton, vers une personne à qui vous avez déjà payé ou que vous avez nommée dans cette demande | Rien. L'argent est envoyé immédiatement et Kawase vous le confirme. |
-| Au-dessus de la limite, avec un jeton qui n'en fait pas partie, vers une nouvelle adresse ou vers une adresse similaire | Confirmez avec Face ID (empreinte digitale ou verrouillage de l'écran sur Android, code envoyé par e-mail sur le Web). |
+    <Pin box="5 12 90 5.5">Un @identifiant, un nom ou une adresse 0x</Pin>
 
-Un paiement vers une adresse que vous venez d'ajouter peut vous proposer d'envoyer d'abord un **montant de test**. Un paiement est marqué **payé** uniquement lorsque le reçu du réseau confirme le transfert exact. Si la réponse n'est pas claire, la carte indique « vérification en cours » et Kawase continue de vérifier ; l'argent n'est jamais envoyé deux fois.
+    <Pin box="4 18.5 92 5">Coller, scanner un code QR ou enregistrer un contact</Pin>
 
-**Son portefeuille est sur un autre réseau ?** La vérification vous le propose : USDC ouvre la [carte de transfert](./bridge-and-withdraw.mdx) avec le même montant et le même destinataire ; pour tout autre jeton, Kawase propose d'abord de le convertir en USDC.
+    <Pin box="5 28.5 90 8">Trouvé sur Kawase par son identifiant</Pin>
+  </WalkStep>
+  <WalkStep title="Combien" src="send/amount" zoom="61 16 10">
+    Tapez le montant ou prenez une part de ce que vous détenez. Touchez le jeton pour payer avec un autre.
+
+    <Pin box="4 13.3 34 5.5">Qui vous payez</Pin>
+
+    <Pin box="4 31.5 92 4.5">Un quart, la moitié, trois quarts ou tout</Pin>
+
+    <Pin at="53 64.6">Une note privée, jamais écrite sur la chaîne</Pin>
+  </WalkStep>
+  <WalkStep title="Vérifier" src="send/review">
+    Tout est sur une seule carte avant que rien ne bouge : le montant, le destinataire et **d'où vient son adresse**, le
+    réseau et ses frais, et ce dont Kawase a besoin de vous.
+
+    <Pin box="5 31.5 90 12.5">Le destinataire, et comment Kawase connaît l'adresse</Pin>
+
+    <Pin box="5 46 90 9">Un premier paiement peut partir d'abord en montant de test</Pin>
+
+    <Pin box="5 77 90 6.5">Quelqu'un de nouveau : confirmez avec un code par email (Face ID sur un téléphone)</Pin>
+
+    <Pin box="5 89.5 90 8">Son portefeuille est sur une autre chaîne ? Passez par un pont</Pin>
+  </WalkStep>
+  <WalkStep title="Envoyé" src="send/sent">
+    La carte suit le paiement jusqu'à ce que le réseau le confirme. Il n'est marqué **payé** que quand le reçu de la
+    chaîne montre le transfert exact ; si la réponse tarde, elle affiche « vérification en cours » et n'envoie jamais deux
+    fois.
+
+    <Pin box="4 76.5 92 21">Envoyé : à qui, et combien</Pin>
+  </WalkStep>
+  <WalkStep title="Le reçu" src="activity/receipt" zoom="80 88 11">
+    Chaque paiement a son reçu : ce qui a bougé, vers qui, quand, sur quel réseau, et la transaction. Son code QR ouvre la
+    transaction sur ArcScan. Voir [Activité et reçus](./activity-and-receipts.mdx).
+  </WalkStep>
+</Walkthrough>
+
+### Ce qui est vérifié à chaque paiement
+
+- **D'où vient l'adresse.** Kawase ne paie qu'une adresse venant de vos contacts, d'un identifiant, d'un code scanné ou
+  de votre propre message, mot pour mot.
+- **Le destinataire lui-même.** Un contrat de jeton ou un sosie d'un contact enregistré est refusé ; un contrat qui
+  n'est pas un portefeuille est signalé ; la liste noire de l'émetteur du jeton est consultée quand il en a une ; votre
+  propre adresse est signalée comme la vôtre.
+- **Votre argent et vos règles.** Votre solde, votre [budget de la semaine](./limits-and-control.mdx), et si l'adresse
+  d'un contact a changé récemment.
+
+## En le demandant à Kawase
+
+Dites-le ou écrivez-le comme à une personne. Kawase prépare **la même carte**, avec les mêmes vérifications, et attend
+votre toucher : un « oui » prononcé n'approuve jamais un paiement.
+
+<Clip src="send/chat" alt="Saisie de « send 2 dollars to @sam » dans la discussion : Kawase prépare la carte de paiement, et le paiement part." />
+
+## Recevoir
+
+Votre portefeuille a **une seule adresse sur les deux réseaux**, et il accepte **n'importe quel jeton sur Arc**.
+
+<Shot src="send/receive" alt="Recevoir : un code QR avec la marque Arc, @maya et l'adresse sur Arc Testnet, Demander un montant, Copier l'adresse et Partager.">
+  <Pin at="50 30">Votre adresse en code QR</Pin>
+
+  <Pin box="4 53.5 92 8">Votre @identifiant et votre adresse, sur ce réseau</Pin>
+
+  <Pin at="45 76">Demander un montant précis</Pin>
+
+  <Pin box="4 83 92 13.5">La copier, ou la partager</Pin>
+</Shot>
+
+**Ajouter de l'argent** (depuis **+**) réunit tous les moyens : [acheter avec Apple Pay ou une carte](./buy.mdx), depuis
+une plateforme d'échange, des USDC qui vous attendent sur une autre chaîne (amenés sur Arc sans frais de gaz), votre
+adresse et son code QR, et des USDC de test sur le réseau de test. L'argent reçu apparaît dans
+[Activité](./activity-and-receipts.mdx) et la boîte de réception, peut déclencher vos
+[automatisations](./automations.mdx), et propose d'**enregistrer l'expéditeur** comme contact.
 
 ## Scanner pour payer
 
-Appuyez sur **Scanner** dans le menu d'actions rapides, dans Envoyer de l'argent ou dans l'en-tête de la conversation. Le scanner lit :
+**Scanner un code QR** dans Envoyer (ou dans **+**) lit une adresse seule, un lien de paiement avec montant et jeton
+(EIP-681), ou un lien de demande Kawase. Un code pour l'autre réseau Arc, une autre chaîne ou une demande close explique
+pourquoi, avec un changement de réseau quand cela aide.
 
-- une adresse seule ou un lien de paiement avec un montant et un jeton (EIP-681) : Envoyer de l'argent s'ouvre avec les champs remplis et les vérifications habituelles sont effectuées ;
-- un lien de demande Kawase : sa page de paiement s'ouvre.
+## Demander et partager
 
-Un code pour l'autre réseau Arc, un autre réseau ou une demande clôturée explique le problème et propose de changer de réseau lorsque cela peut aider. Vous
-pouvez aussi coller un code.
+« Demande 15 dollars à Sam pour le dîner », ou **Demander**. Kawase crée une **demande de paiement** dans n'importe quel
+jeton sur Arc, avec un lien à partager. La personne qui paie l'ouvre dans n'importe quel navigateur ; la demande est
+marquée payée quand un paiement Kawase ou un simple transfert correspondant arrive.
 
-## Recevoir et ajouter de l'argent
+<Shot src="send/request-amount" alt="Demander : 15 USDC sur le pavé, un champ de note pour la personne qui paie, et Créer la demande.">
+  <Pin box="35.5 12.7 29 5">N'importe quel jeton sur Arc</Pin>
 
-Votre portefeuille possède **une seule adresse sur les deux réseaux** et accepte **n'importe quel jeton sur Arc**. **Ajouter de l'argent** regroupe toutes les options :
+  <Pin at="80 25">Le montant que vous demandez</Pin>
 
-- **Acheter** par carte ([Acheter](./buy.mdx)) ;
-- **Depuis une plateforme d'échange** : le logo de la plateforme et ses propres étapes (Coinbase via Base, puis Transférer vers Arc) ;
-- **Depuis un autre réseau** : des USDC qui attendent à votre adresse ailleurs, transférés vers Arc sans frais de gas ;
-- **Recevoir** : votre adresse et son QR code ;
-- **USDC de test** sur le réseau de test.
+  <Pin box="4 37 92 6.5">Une note pour la personne, jamais écrite sur la chaîne</Pin>
 
-L'argent reçu apparaît dans Activité et dans la boîte de réception, peut déclencher vos [Automatisations](./automations.mdx) et propose
-**Enregistrer l'expéditeur comme contact**.
+  <Pin box="4 91.5 92 7">Créer la demande et son lien</Pin>
+</Shot>
 
-## Demander de l'argent et partager une addition
-
-« Demander 15 dollars à Sam pour le dîner », ou ouvrez Demander de l'argent. Kawase crée une **demande de paiement** dans n'importe quel jeton sur Arc avec un
-lien à partager. La personne qui paie peut l'ouvrir dans n'importe quel navigateur ; la demande est marquée comme payée lorsqu'un paiement Kawase ou un
-transfert classique correspondant est reçu.
-
-**Partager une addition** : « partager 30 dollars pour le dîner avec Amina et Tunde ». À parts égales ou manuellement, avec vous ou sans vous.
-Chaque personne reçoit sa propre demande et son propre lien, et une carte de progression indique qui a payé.
-
-## Reçus et liens
-
-- **Partager un reçu** d'un paiement terminé sous forme de carte image (ou de texte avec le lien vers l'explorateur sur le Web).
-- Chaque action possède son propre lien (`/i/…`). Les notifications ouvrent la carte correspondante ; si un lien est ouvert alors que vous n'êtes pas connecté, vous y revenez
-  après la connexion. Une carte bloquée par un problème que vous corrigez ensuite (connexion, configuration, limites, ajout d'argent) est automatiquement vérifiée à nouveau.
+**Partager une addition** : « partage 30 dollars pour le dîner avec Ines et Sam ». Parts égales ou à la main, avec ou
+sans vous. Chacun reçoit sa propre demande et son lien, et une carte de progression montre qui a payé.
 
 <ScopeList ids="send request" />

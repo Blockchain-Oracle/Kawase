@@ -1,64 +1,131 @@
 ---
 title: "Enviar, recibir y pedir dinero"
-description: "Paga a cualquiera con cualquier token usando su nombre, @handle, dirección o código QR; añade dinero desde una tarjeta, un exchange u otra red; pide dinero o divide una cuenta con un enlace."
-sourceHash: b36cb5ffbd11f715
+description: "Paga a cualquiera por @alias, contacto, dirección o código QR con cualquier token que tengas en Arc; recibe en una sola dirección y su código QR; pide dinero con un enlace."
+sourceHash: 033925a80eaeb0ac
 ---
 
 <Status ids="send request payment_links" />
 
 <Marks names="usdc eurc arc" />
 
-## Enviar dinero
+<Flow>
+  <FlowStep icon="at-sign" title="A quién">Un @alias, un contacto, una dirección o un código QR.</FlowStep>
+  <FlowStep icon="shield" title="Comprobado">El destinatario, tu saldo, tu presupuesto.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Un contacto, dentro del presupuesto" icon="zap" title="Sale al momento" />
+    <FlowStep when="Alguien nuevo, o por encima" icon="fingerprint" title="Tú confirmas" tone="accent">Face ID, tu huella o un código por email en la web.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="receipt" title="Recibo" tone="ink">Pagado solo cuando la cadena muestra la transferencia exacta.</FlowStep>
+</Flow>
 
-Di o escribe a quién y cuánto («envía 20 dólares a Alex», «paga 5 euros a @mira»), o usa la pantalla Enviar dinero. Puedes enviar **cualquier
-token que tengas en Arc**. Kawase:
+## Enviar, paso a paso
 
-1. **Encuentra al destinatario**: un contacto guardado, un `@handle` de Kawase, una dirección `0x…` que hayas escrito tú mismo o un **código QR** que hayas escaneado. El agente solo puede usar una dirección que provenga de tus contactos, de un código que hayas escaneado o de tu propio mensaje, palabra por palabra.
-2. **Elige el token** que tienes o te pregunta si no está claro.
-3. **Comprueba el destinatario en cada pago**: rechaza un contrato de token o una imitación de un contacto guardado, avisa si una dirección no es de una cartera, comprueba la lista de bloqueo del emisor del token cuando existe y marca tu propia dirección como tuya. También comprueba tu saldo, tus límites y si la dirección de un contacto ha cambiado recientemente.
-4. **Muestra la tarjeta de pago** con el importe exacto, el token, el destinatario y la red.
+Abre **Enviar** desde **+**, o simplemente dilo («envía 5 dólares a @ines», «paga a Sam 5 euros»). Puedes enviar
+**cualquier token que tengas en Arc**.
 
-Después ocurre una de estas dos cosas:
+<Walkthrough>
+  <WalkStep title="Encuentra a quién" src="send/search">
+    Escribe un `@alias` o un nombre, pega una dirección o escanea un código QR. Las personas en Kawase aparecen por su
+    alias.
 
-| Situación | Qué haces |
-|---|---|
-| Está dentro del importe disponible de hoy para ese token y es para alguien a quien ya has pagado o que has mencionado en esta solicitud | Nada. Se envía de inmediato y Kawase te lo indica. |
-| Supera el importe disponible, es un token que está fuera de ese límite, una dirección nueva o una dirección parecida a otra | Confirma con Face ID (huella dactilar o bloqueo de pantalla en Android, un código por correo electrónico en la web). |
+    <Pin box="5 12 90 5.5">Un @alias, un nombre o una dirección 0x</Pin>
 
-Un pago a una dirección que acabas de añadir puede sugerir enviar primero un **importe de prueba**. Un pago solo se marca como **pagado** cuando el comprobante de la red muestra la transferencia exacta. Si la respuesta no está clara, la tarjeta indica «comprobando» y Kawase sigue buscando; nunca envía el pago dos veces.
+    <Pin box="4 18.5 92 5">Pegar, escanear un código QR o guardar un contacto</Pin>
 
-**¿Su cartera está en otra red?** La revisión te lo ofrece: con USDC se abre la [tarjeta de movimiento](./bridge-and-withdraw.mdx) con el mismo importe y destinatario; para cualquier otro token, ofrece convertirlo primero a USDC.
+    <Pin box="5 28.5 90 8">Encontrado en Kawase por su alias</Pin>
+  </WalkStep>
+  <WalkStep title="Cuánto" src="send/amount" zoom="61 16 10">
+    Escribe el importe o toma una parte de lo que tienes. Toca el token para pagar con otro.
+
+    <Pin box="4 13.3 34 5.5">A quién pagas</Pin>
+
+    <Pin box="4 31.5 92 4.5">Un cuarto, la mitad, tres cuartos o todo</Pin>
+
+    <Pin at="53 64.6">Una nota privada, nunca escrita en la cadena</Pin>
+  </WalkStep>
+  <WalkStep title="Revisar" src="send/review">
+    Todo está en una sola tarjeta antes de que nada se mueva: el importe, a quién va y **de dónde salió esa dirección**,
+    la red y su comisión, y lo que Kawase necesita de ti.
+
+    <Pin box="5 31.5 90 12.5">El destinatario, y cómo conoce Kawase la dirección</Pin>
+
+    <Pin box="5 46 90 9">Un primer pago puede ir antes como importe de prueba</Pin>
+
+    <Pin box="5 77 90 6.5">Alguien nuevo: confirma con un código por email (Face ID en el móvil)</Pin>
+
+    <Pin box="5 89.5 90 8">¿Su billetera está en otra cadena? Usa un puente</Pin>
+  </WalkStep>
+  <WalkStep title="Enviado" src="send/sent">
+    La tarjeta sigue el pago hasta que la red lo confirma. Solo se marca **pagado** cuando el recibo de la cadena muestra
+    la transferencia exacta; si la respuesta tarda, dice «aún comprobando» y nunca envía dos veces.
+
+    <Pin box="4 76.5 92 21">Enviado: a quién y cuánto</Pin>
+  </WalkStep>
+  <WalkStep title="El recibo" src="activity/receipt" zoom="80 88 11">
+    Cada pago tiene su recibo: qué se movió, a quién, cuándo, en qué red y la transacción. Su código QR abre la
+    transacción en ArcScan. Consulta [Actividad y recibos](./activity-and-receipts.mdx).
+  </WalkStep>
+</Walkthrough>
+
+### Qué se comprueba en cada pago
+
+- **De dónde salió la dirección.** Kawase solo paga a una dirección de tus contactos, de un alias, de un código que
+  escaneaste o de tu propio mensaje, palabra por palabra.
+- **El propio destinatario.** Un contrato de token o una imitación de un contacto guardado se rechaza; un contrato que
+  no es una billetera recibe un aviso; se consulta la lista de bloqueo del emisor del token si la tiene; tu propia
+  dirección aparece como tuya.
+- **Tu dinero y tus reglas.** Tu saldo, tu [presupuesto semanal](./limits-and-control.mdx) y si la dirección de un
+  contacto cambió hace poco.
+
+## Pidiéndoselo a Kawase
+
+Dilo o escríbelo como se lo dirías a una persona. Kawase prepara **la misma tarjeta**, con las mismas comprobaciones, y
+espera tu toque: un «sí» hablado nunca aprueba un pago.
+
+<Clip src="send/chat" alt="Escribiendo «send 2 dollars to @sam» en el chat: Kawase prepara la tarjeta del pago y se envía." />
+
+## Recibir
+
+Tu billetera tiene **una sola dirección en las dos redes** y acepta **cualquier token en Arc**.
+
+<Shot src="send/receive" alt="Recibir: un código QR con la marca de Arc, @maya y la dirección en Arc Testnet, Pedir un importe, Copiar dirección y Compartir.">
+  <Pin at="50 30">Tu dirección como código QR</Pin>
+
+  <Pin box="4 53.5 92 8">Tu @alias y tu dirección, en esta red</Pin>
+
+  <Pin at="45 76">Pedir un importe exacto</Pin>
+
+  <Pin box="4 83 92 13.5">Cópiala o compártela</Pin>
+</Shot>
+
+**Añadir dinero** (desde **+**) reúne todas las formas de entrada: [comprar con Apple Pay o tarjeta](./buy.mdx), desde
+un exchange, USDC que te espera en otra cadena (traído a Arc sin gas), tu dirección y su código QR, y USDC de prueba en la
+red de pruebas. El dinero que llega aparece en [Actividad](./activity-and-receipts.mdx) y en la bandeja, puede activar tus
+[automatizaciones](./automations.mdx) y ofrece **guardar al remitente** como contacto.
 
 ## Escanear para pagar
 
-Toca **Escanear** en el menú de acciones rápidas, en Enviar dinero o en la cabecera del chat. El escáner lee:
+**Escanear un código QR** en Enviar (o en **+**) lee una dirección sola, un enlace de pago con importe y token (EIP-681) o
+un enlace de solicitud de Kawase. Un código de la otra red de Arc, de otra cadena o de una solicitud cerrada explica el
+motivo, con un cambio de red cuando ayuda.
 
-- una dirección sin más datos o un enlace de pago con un importe y un token (EIP-681): Enviar dinero se abre con los datos rellenados y se realizan las comprobaciones habituales;
-- un enlace de solicitud de Kawase: se abre su página de pago.
+## Pedir y dividir
 
-Un código de la otra red de Arc, de otra cadena o de una solicitud cerrada indica el motivo y ofrece cambiar de red cuando es posible. También puedes pegar un código.
+«Pide 15 dólares a Sam por la cena», o **Solicitar**. Kawase crea una **solicitud de pago** en cualquier token de Arc con
+un enlace para compartir. Quien paga lo abre en cualquier navegador; se marca pagada cuando llega un pago de Kawase o una
+transferencia simple que coincide.
 
-## Recibir y añadir dinero
+<Shot src="send/request-amount" alt="Solicitar: 15 USDC en el teclado, un campo de nota para quien paga y Crear petición.">
+  <Pin box="35.5 12.7 29 5">Cualquier token en Arc</Pin>
 
-Tu cartera tiene **una dirección en ambas redes** y acepta **cualquier token en Arc**. **Añadir dinero** reúne todas las opciones:
+  <Pin at="80 25">El importe que pides</Pin>
 
-- **Comprar** con una tarjeta ([Comprar](./buy.mdx));
-- **Desde un exchange**: el logotipo del exchange y sus propios pasos (Coinbase a través de Base y después Traer a Arc);
-- **Desde otra red**: USDC que está en tu dirección en otra red y que se lleva a Arc sin gas;
-- **Recibir**: tu dirección y su código QR;
-- **USDC de prueba** en la red de pruebas.
+  <Pin box="4 37 92 6.5">Una nota para quien paga, nunca escrita en la cadena</Pin>
 
-El dinero que llega aparece en Actividad y en la bandeja de entrada, puede activar tus [automatizaciones](./automations.mdx) y ofrece **Guardar remitente como contacto**.
+  <Pin box="4 91.5 92 7">Crear la petición y su enlace</Pin>
+</Shot>
 
-## Pedir dinero y dividir
-
-«Pide 15 dólares a Sam para la cena» o abre Pedir dinero. Kawase crea una **solicitud de pago** en cualquier token de Arc con un enlace para compartir. La persona que paga puede abrirla en cualquier navegador; la solicitud se marca como pagada cuando llega un pago de Kawase o una transferencia directa que coincida.
-
-**Dividir una cuenta**: «divide 30 dólares de la cena con Amina y Tunde». Puedes dividirla a partes iguales o establecer los importes manualmente, incluyéndote o no. Cada persona recibe su propia solicitud y enlace, y una tarjeta de progreso muestra quién ha pagado.
-
-## Comprobantes y enlaces
-
-- **Comparte un comprobante** de un pago terminado como tarjeta de imagen (o como texto con el enlace del explorador en la web).
-- Cada acción tiene su propio enlace (`/i/…`). Las notificaciones abren la tarjeta exacta; si abres un enlace sin haber iniciado sesión, vuelve a esa tarjeta después de iniciar sesión. Una tarjeta bloqueada por algo que luego solucionas (iniciar sesión, completar la configuración, ajustar los límites o añadir dinero) se vuelve a comprobar automáticamente.
+**Dividir una cuenta**: «divide 30 dólares de la cena con Ines y Sam». A partes iguales o a mano, contigo incluido o no.
+Cada persona recibe su propia solicitud y su enlace, y una tarjeta de progreso muestra quién ha pagado.
 
 <ScopeList ids="send request" />
