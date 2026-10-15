@@ -53,6 +53,9 @@ function MarketTab({ market, livePrice, selected, onPress }: { market: MarginMar
   );
 }
 
+/** From here up the price axis drops the cents (they do not fit its 72 px). */
+const AXIS_WHOLE_FROM = 1_000;
+
 export function ChartPanel({ trade, markets, position, height }: { trade: Trade; markets: readonly MarginMarketView[]; position: MarginPositionView | undefined; height: number }) {
   const { t } = useT();
   const { locale } = useLocale();
@@ -107,6 +110,7 @@ export function ChartPanel({ trade, markets, position, height }: { trade: Trade;
         height={height}
         onScrub={setScrub}
         formatValue={(value) => format.usd(value)}
+          formatAxis={(value) => format.usd(value, value >= AXIS_WHOLE_FROM ? 0 : undefined)}
         formatTime={(seconds) => timeFormat.format(new Date(seconds * MS_PER_SECOND))}
         accessibilityLabel={t("desktop.chartLabel", { market: view?.market ?? "", range, price: format.price(view?.price) })}
       />

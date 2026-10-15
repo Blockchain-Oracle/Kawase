@@ -39,6 +39,9 @@ const MS = 1000;
 
 const priceOf = (eightDecimals: string | null | undefined) => (eightDecimals ? Number(formatUnits(BigInt(eightDecimals), PRICE_DECIMALS)) : undefined);
 
+/** From here up the price axis drops the cents (they do not fit its 72 px). */
+const AXIS_WHOLE_FROM = 1_000;
+
 /** Closing a position: a fresh close order per share chosen; the ticket follows it to its receipt. */
 export function usePositionClose(positionId: string, onFinished: () => void) {
   const { t } = useT();
@@ -136,6 +139,7 @@ export function PositionChart({ position }: { position: MarginPositionView }) {
           side={position.side}
           height={CHART_H}
           formatValue={(value) => format.usd(value)}
+          formatAxis={(value) => format.usd(value, value >= AXIS_WHOLE_FROM ? 0 : undefined)}
           formatTime={(seconds) => timeFormat.format(new Date(seconds * MS))}
           accessibilityLabel={t("desktop.chartLabel", { market: position.market, range, price: format.price(position.markPrice) })}
         />

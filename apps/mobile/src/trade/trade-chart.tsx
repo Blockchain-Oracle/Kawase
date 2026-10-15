@@ -30,6 +30,8 @@ type Props = {
   side?: MarginSide | undefined;
   height: number;
   formatValue: (value: number) => string;
+  /** The price axis's gridline labels (72 px): shorter than `formatValue` ("$83,096", not "$83,096.12" cut off). */
+  formatAxis?: (value: number) => string;
   formatTime: (seconds: number) => string;
   accessibilityLabel: string;
   /** The bar under the pointer or finger, and null when it leaves (a page's hero price can follow it). */
@@ -61,7 +63,7 @@ const DOT = "1 4";
 const STROKE = 1;
 const STROKE_BOLD = 1.5;
 
-export function TradeChart({ candles, livePrice, levels, side, height, formatValue, formatTime, accessibilityLabel, onScrub }: Props) {
+export function TradeChart({ candles, livePrice, levels, side, height, formatValue, formatAxis = formatValue, formatTime, accessibilityLabel, onScrub }: Props) {
   const { t } = useT();
   const { color } = useTheme();
   const [width, setWidth] = React.useState(0);
@@ -212,7 +214,7 @@ export function TradeChart({ candles, livePrice, levels, side, height, formatVal
         {drawn
           ? ticks.map((tick) => (
               <Text key={tick} pointerEvents="none" numberOfLines={1} style={[TYPE.micro, { position: "absolute", color: color.text3, fontVariant: NUMERIC_VARIANT, top: y(tick) - GAP, end: 0, width: AXIS_W - GAP, textAlign: "right" }]}>
-                {formatValue(tick)}
+                {formatAxis(tick)}
               </Text>
             ))
           : null}
