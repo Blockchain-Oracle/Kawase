@@ -274,7 +274,7 @@ export class NotifyService {
           delivery,
           to: user.email,
           email: renderEmail(
-            { kind: liveKind(item.kind), network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash },
+            { kind: liveKind(item.kind), network: item.network, params: item.params, intentId: item.intentId, requestId: item.requestId, txHash: item.txHash, at: item.createdAt.toISOString() },
             rendered,
             locale,
             this.channels.webUrl,

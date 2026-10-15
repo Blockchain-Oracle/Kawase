@@ -195,7 +195,7 @@ ${content.slip ? slipCard(content.slip, content.rtl) : plainCard(content)}
 ${content.primary ? `<a href="${escapeHtml(content.primary.href)}" style="display:inline-block;background:${INK};color:#FFFFFF;font:600 15px/1 ${FONT};padding:15px 26px;border-radius:999px;text-decoration:none">${escapeHtml(content.primary.label)}</a>` : ""}
 ${links}
 <div style="margin:24px 0 0;font:12px/1.6 ${FONT};color:${TEXT2}">${content.footer.map(escapeHtml).join("<br>")}</div>
-<div style="margin:16px 0 0;font:12px/1.6 ${FONT};color:${TEXT2}"><a href="https://getkawase.xyz" style="color:${TEXT2};text-decoration:none">getkawase.xyz</a> · Money that moves when you speak</div>
+<div style="margin:16px 0 0;font:12px/1.6 ${FONT};color:${TEXT2}">Kawase · getkawase.xyz</div>
 </td></tr>
 </table>
 </td></tr>

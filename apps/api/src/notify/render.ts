@@ -15,7 +15,16 @@ const TOKEN_DIGITS = 6;
 
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
-type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
+type Item = {
+  kind: InboxKind;
+  network: NetworkId;
+  params: Record<string, string>;
+  intentId?: string | null;
+  requestId?: string | null;
+  txHash?: string | null;
+  /** When it happened (the inbox item's time): the receipt's "When", even when the email goes out later. */
+  at?: string | undefined;
+};
 type Block = "notify" | "automation" | "inbox" | "alerts" | "receipt" | "network" | "activityFeed";
 
 export function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
@@ -229,7 +238,7 @@ export function renderEmail(item: Item, rendered: RenderedNotification, locale: 
     const name = bridge ? (p.chain ?? "") : p.name || (counterparty ? short(counterparty) : "");
     const hash = item.txHash ?? null;
     const explorer = hash ? `${testnet ? EXPLORERS.arcTestnet : EXPLORERS.arc}/tx/${hash}` : null;
-    const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: timeZone ?? "UTC" }).format(new Date());
+    const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: timeZone ?? "UTC" }).format(item.at ? new Date(item.at) : new Date());
     const facts: EmailFact[] = [
       ...(swap && p.amountIn && p.symbolIn ? [{ label: text(locale, "activityFeed", "paid"), value: `${p.amountIn} ${p.symbolIn}` }] : []),
       { label: text(locale, "receipt", "when"), value: when },

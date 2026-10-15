@@ -26,21 +26,22 @@ const PER_ADDRESS_MS = 600_000;
 const HOUR_MS = 3_600_000;
 const PER_HOUR = 100;
 
+// Plain and transactional on purpose (Gmail files "you're on the list" mail with links to other apps under
+// Promotions): what was asked, what happens next, one link.
 const CONFIRMATION: Omit<EmailContent, "preheader"> = {
   rtl: false,
   label: "Kawase for iPhone",
-  headline: "You're on the list",
-  body: "Apple will email you the TestFlight invitation the minute Kawase's beta opens: open it on your iPhone, install TestFlight, then Kawase. Until then Kawase works in your browser and on Android, with the same account.",
-  primary: { label: "Open Kawase in your browser", href: PUBLIC_LINKS.webApp },
-  secondary: [{ label: "On Android? Download the APK", href: PUBLIC_LINKS.androidApk }],
-  footer: ["You asked for this on getkawase.xyz/download. Kawase sends nothing else to this address unless you sign up."],
+  headline: "TestFlight request received",
+  body: "Apple will email you the TestFlight invitation as soon as Kawase's beta opens. Open it on your iPhone, install TestFlight, then Kawase. Until then you can use Kawase in your browser with the same account.",
+  primary: { label: "Open Kawase", href: PUBLIC_LINKS.webApp },
+  footer: ["You asked for this on getkawase.xyz/download. This is the only email Kawase sends you about it."],
 };
 
 const ANDROID: Omit<EmailContent, "preheader"> = {
   rtl: false,
   label: "Kawase for Android",
   headline: "Your download link",
-  body: "Open this email on your Android phone. Kawase isn't on Google Play yet: the app comes straight from us as an APK.",
+  body: "Open this email on your Android phone. Kawase isn't on Google Play yet, so the app comes straight from us as an APK.",
   steps: [
     "Tap Download the APK below.",
     "Open the file. Android asks once to allow installs from your browser: allow it.",
@@ -48,8 +49,7 @@ const ANDROID: Omit<EmailContent, "preheader"> = {
     "Open Kawase. Updates arrive by themselves from then on.",
   ],
   primary: { label: "Download the APK", href: PUBLIC_LINKS.androidApk },
-  secondary: [{ label: "Open Kawase in your browser", href: PUBLIC_LINKS.webApp }],
-  footer: ["You asked for this on getkawase.xyz/download. Kawase sends nothing else to this address unless you sign up."],
+  footer: ["You asked for this on getkawase.xyz/download. This is the only email Kawase sends you about it."],
 };
 
 export class TestflightInvites {
@@ -120,9 +120,9 @@ export class TestflightInvites {
       }
       // Apple has the address: one email of Kawase's own says what happens next (a failure here changes nothing).
       if (this.email) {
-        const content = { ...CONFIRMATION, preheader: "Apple sends the TestFlight invitation the minute the beta opens." };
+        const content = { ...CONFIRMATION, preheader: "Apple emails the TestFlight invitation as soon as the beta opens." };
         await this.email
-          .send({ to: address, subject: "You're on the list for Kawase on iPhone", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-testflight-${Buffer.from(address).toString("base64url")}` })
+          .send({ to: address, subject: "Kawase on iPhone: your TestFlight request", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-testflight-${Buffer.from(address).toString("base64url")}` })
           .catch((error: unknown) => this.log?.warn({ err: error }, "testflight confirmation email failed"));
       }
       return "sent";
