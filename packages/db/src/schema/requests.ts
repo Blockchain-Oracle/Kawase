@@ -89,7 +89,7 @@ export const indexerCursors = pgTable(
 );
 
 /** "invoice_due" and "invoice_overdue" are retired (migration 0090): Postgres cannot drop an enum value, so they stay, unused. */
-export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "needs_you", "automation_reminder", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue", "request_received", "position_health", "position_closed", "token_graduated"]);
+export const inboxKindEnum = pgEnum("inbox_kind", ["payment_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "needs_you", "automation_reminder", "device_signed_in", "device_signed_out", "invoice_due", "invoice_overdue", "request_received", "position_health", "position_closed", "token_graduated", "swap_completed", "bridge_completed"]);
 
 /** The in-app inbox, the source of truth for what happened (push and email arrive in Stage 9). */
 export const inboxItems = pgTable(

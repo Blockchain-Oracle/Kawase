@@ -63,6 +63,7 @@ import { evaluateBridge, type BridgeEvaluation, type PolicyResult } from "@kawas
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import type { InboxService } from "../inbox/service";
 import { pausedAll } from "../safety/settings";
 import { intentExists, jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
 import { OpsAttempts } from "../intents/ops-attempts";
@@ -114,6 +115,13 @@ function restingState(evaluation: BridgeEvaluation): IntentState {
 
 export class BridgeService {
   private readonly tracking = new Set<string>();
+  /** Tells the person the money arrived on the other chain (push and its receipt by email); set in app.ts. */
+  private inbox?: InboxService;
+
+  withInbox(inbox: InboxService) {
+    this.inbox = inbox;
+    return this;
+  }
 
   constructor(
     private readonly db: Db,
@@ -763,6 +771,16 @@ export class BridgeService {
           .update(txAttempts)
           .set({ status: "confirmed", receipt: { ...progress, forward: forward!.forward, mintTxHash: forward!.forwardTxHash, received: received.toString() } })
           .where(eq(txAttempts.id, attempt.id));
+        // Its receipt: what arrived where, with the Arc transaction it left by (push, and the slip by email).
+        await this.inbox?.add(tx, {
+          userId: intent.userId,
+          network: intent.network,
+          kind: "bridge_completed",
+          params: { amount: received.toString(), asset: "USDC", chain: getChainIdentity(destination.chainId)?.name ?? destination.kitChain.replace(/_/g, " "), venue: "Circle CCTP" },
+          intentId,
+          txHash: attempt.txHash,
+          dedupeKey: `bridge_completed:${intentId}`,
+        });
       });
       return true;
     } finally {

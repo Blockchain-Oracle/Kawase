@@ -29,6 +29,8 @@ const KIND_LABEL: Record<NotificationKind, string> = {
   request_received: "notifications.kindRequestReceived",
   request_paid: "notifications.kindRequestPaid",
   send_completed: "notifications.kindSendCompleted",
+  swap_completed: "notifications.kindSwapCompleted",
+  bridge_completed: "notifications.kindBridgeCompleted",
   automation_skipped: "notifications.kindAutomationSkipped",
   rule_alert: "notifications.kindRuleAlert",
   device_signed_in: "alerts.kindDeviceSignedIn",

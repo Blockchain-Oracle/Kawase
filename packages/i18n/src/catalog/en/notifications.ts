@@ -18,6 +18,8 @@ export const notifications = {
   kindPaymentReceived: "Money received",
   kindRequestPaid: "A request was paid",
   kindSendCompleted: "A send went through",
+  kindSwapCompleted: "A swap went through",
+  kindBridgeCompleted: "A bridge arrived",
   kindAutomationSkipped: "An automation was skipped",
   kindRuleAlert: "A rule's alert",
   quietTitle: "Quiet hours",

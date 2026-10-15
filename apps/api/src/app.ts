@@ -268,8 +268,8 @@ export function createApp(deps: AppDeps) {
   if (deps.watchIntervalMs)
     new IncomingWatcher(deps.db, deps.chains, requests, inbox, deps.log, { backfill: !deps.market?.wallets, notice: (userId, network, token, amount) => assets.arrivalNotice(userId, network, token, amount) }).start(deps.watchIntervalMs);
   // The ops wallet redeems a swap's signed leaves inside the weekly budget (D38); the leaf path is 503 without it.
-  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets, deps.ops);
-  const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops);
+  const swaps = new SwapService(deps.db, deps.chains, wallets, deps.swaps ?? noSwaps, deps.log, assets, deps.ops).withInbox(inbox);
+  const bridges = new BridgeService(deps.db, deps.chains, wallets, deps.bridges ?? noBridges, deps.log, deps.ops).withInbox(inbox);
   const earn = new EarnService(deps.db, deps.chains, wallets, deps.earn ?? noEarn, deps.log, deps.ops);
   const margin = new MarginService(deps.db, deps.chains, wallets, deps.log, deps.ops, inbox);
   const protection = new MarginProtection(deps.db, deps.chains, wallets, margin, deps.log, inbox);

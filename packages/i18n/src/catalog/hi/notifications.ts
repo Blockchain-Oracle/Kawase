@@ -20,6 +20,8 @@ export const notifications: Catalog["notifications"] = {
   kindPaymentReceived: "पैसा मिला",
   kindRequestPaid: "अनुरोध का भुगतान हुआ",
   kindSendCompleted: "भेजा गया पैसा पहुँचा",
+  kindSwapCompleted: "एक स्वैप हुआ",
+  kindBridgeCompleted: "एक ब्रिज पहुँचा",
   kindAutomationSkipped: "ऑटोमेशन छोड़ा गया",
   kindRuleAlert: "नियम का अलर्ट",
   quietTitle: "शांत समय",

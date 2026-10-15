@@ -2,7 +2,7 @@
 // event kinds, what each channel does by default, and the timings of delivery, so the api and the app agree.
 
 /** Every inbox event, in the order Settings → Notifications lists them. */
-export const NOTIFICATION_KINDS = ["payment_received", "request_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "device_signed_in", "device_signed_out", "position_health", "position_closed", "token_graduated"] as const;
+export const NOTIFICATION_KINDS = ["payment_received", "request_received", "request_paid", "send_completed", "automation_skipped", "rule_alert", "device_signed_in", "device_signed_out", "position_health", "position_closed", "token_graduated", "swap_completed", "bridge_completed"] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export const NOTIFICATION_CHANNELS = ["push", "email"] as const;
@@ -22,6 +22,9 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationKind, Record<Notification
   request_received: { push: true, email: true },
   request_paid: { push: true, email: true },
   send_completed: { push: true, email: true },
+  // A swap's and a bridge's receipts, the same slip the app shows (Abu 10-15: every transaction sends its receipt).
+  swap_completed: { push: true, email: true },
+  bridge_completed: { push: true, email: true },
   automation_skipped: { push: true, email: true },
   rule_alert: { push: true, email: true },
   // Security (cards/automate-safety.md "security: new device"): always both, so a stolen session is seen at once.

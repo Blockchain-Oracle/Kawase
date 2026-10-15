@@ -16,7 +16,7 @@ const TOKEN_DIGITS = 6;
 export type RenderedNotification = { title: string; body: string; /** The app path the tap opens. */ path: string };
 
 type Item = { kind: InboxKind; network: NetworkId; params: Record<string, string>; intentId?: string | null; requestId?: string | null; txHash?: string | null };
-type Block = "notify" | "automation" | "inbox" | "alerts" | "receipt" | "network";
+type Block = "notify" | "automation" | "inbox" | "alerts" | "receipt" | "network" | "activityFeed";
 
 export function text(locale: CatalogLocale, block: Block, key: string, values: Record<string, string> = {}): string {
   const pick = (catalog: unknown) => (catalog as Record<Block, Record<string, unknown>>)[block]?.[key];
@@ -80,6 +80,17 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       body = p.runId ? text(locale, "notify", "automationRanLabel") : text(locale, "notify", "sentBody", { name });
       // An automation's send opens the run that made it.
       if (p.runId) path = `/why/run/${p.runId}`;
+      break;
+    // A swap's and a bridge's receipts (swap/service.ts, bridge/service.ts): what left, what came back, where.
+    case "swap_completed": {
+      const paid = p.amountIn && p.symbolIn ? `${p.amountIn} ${p.symbolIn}` : "";
+      title = hide ? text(locale, "notify", "swappedTitleHidden") : text(locale, "notify", "swappedTitle", { paid, got: sum });
+      body = p.venue ? text(locale, "notify", "swappedBody", { venue: p.venue }) : "";
+      break;
+    }
+    case "bridge_completed":
+      title = hide ? text(locale, "notify", "bridgedTitleHidden") : text(locale, "notify", "bridgedTitle", { amount: sum, chain: p.chain ?? "" });
+      body = text(locale, "notify", "bridgedBody", { chain: p.chain ?? "" });
       break;
     case "automation_skipped":
       title = text(locale, "notify", "skippedTitle");
@@ -190,7 +201,9 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
 
 /** What moved, for the email's receipt block: the kinds that carry an amount and a direction. */
 const MONEY_IN: ReadonlySet<InboxKind> = new Set(["payment_received", "request_paid"]);
-const MONEY_OUT: ReadonlySet<InboxKind> = new Set(["send_completed"]);
+const MONEY_OUT: ReadonlySet<InboxKind> = new Set(["send_completed", "bridge_completed"]);
+/** A swap's slip shows what came back (+), with what it paid among the facts. */
+const SWAPS: ReadonlySet<InboxKind> = new Set(["swap_completed"]);
 const FOLIO_DIGITS = 6;
 const HEX_PREFIX = 2;
 
@@ -206,16 +219,19 @@ export function renderEmail(item: Item, rendered: RenderedNotification, locale: 
   const footer = [text(locale, "notify", "emailNeverApprove"), text(locale, "notify", "emailWhy")];
   const testnet = item.network === "testnet";
   const networkName = testnet ? `${text(locale, "network", "arcTestnet")} · ${text(locale, "receipt", "testMoney")}` : text(locale, "network", "arc");
-  const money = MONEY_IN.has(item.kind) || MONEY_OUT.has(item.kind) ? amountText(p, locale) : "";
+  const money = MONEY_IN.has(item.kind) || MONEY_OUT.has(item.kind) || SWAPS.has(item.kind) ? amountText(p, locale) : "";
   let content: EmailContent;
   if (money) {
-    const incoming = MONEY_IN.has(item.kind);
-    const counterparty = incoming ? p.from : p.to;
-    const name = p.name || (counterparty ? short(counterparty) : "");
+    const swap = SWAPS.has(item.kind);
+    const bridge = item.kind === "bridge_completed";
+    const incoming = MONEY_IN.has(item.kind) || swap;
+    const counterparty = MONEY_IN.has(item.kind) ? p.from : p.to;
+    const name = bridge ? (p.chain ?? "") : p.name || (counterparty ? short(counterparty) : "");
     const hash = item.txHash ?? null;
     const explorer = hash ? `${testnet ? EXPLORERS.arcTestnet : EXPLORERS.arc}/tx/${hash}` : null;
     const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: timeZone ?? "UTC" }).format(new Date());
     const facts: EmailFact[] = [
+      ...(swap && p.amountIn && p.symbolIn ? [{ label: text(locale, "activityFeed", "paid"), value: `${p.amountIn} ${p.symbolIn}` }] : []),
       { label: text(locale, "receipt", "when"), value: when },
       { label: text(locale, "receipt", "network"), value: networkName },
       ...(hash && explorer ? [{ label: text(locale, "receipt", "transaction"), value: shortHash(hash), href: explorer, mono: true }] : []),
@@ -228,11 +244,25 @@ export function renderEmail(item: Item, rendered: RenderedNotification, locale: 
       // The receipt slip, as the app draws it: folio, what moved and with whom, the hanko, the facts, the QR stub.
       slip: {
         folio: `${text(locale, "receipt", "title")} ${hash ? `#${hash.slice(HEX_PREFIX, HEX_PREFIX + FOLIO_DIGITS).toUpperCase()}` : ""}`.trim(),
-        label: p.withdrawal ? text(locale, "notify", "withdrewLabel") : p.runId ? text(locale, "notify", "automationRanLabel") : text(locale, "receipt", incoming ? "received" : "sent"),
+        label: swap
+          ? text(locale, "receipt", "swapped")
+          : bridge
+            ? text(locale, "notify", "bridgedLabel")
+            : p.withdrawal
+              ? text(locale, "notify", "withdrewLabel")
+              : p.runId
+                ? text(locale, "notify", "automationRanLabel")
+                : text(locale, "receipt", incoming ? "received" : "sent"),
         amount: `${incoming ? "+" : ""}${money}`,
         tone: incoming ? "in" : "neutral",
         coin,
-        lead: name ? `${text(locale, "receipt", incoming ? "from" : "to")} ${name}` : undefined,
+        lead: swap
+          ? p.venue
+            ? `${text(locale, "receipt", "via")} ${p.venue}`
+            : undefined
+          : name
+            ? `${text(locale, "receipt", MONEY_IN.has(item.kind) ? "from" : "to")} ${name}`
+            : undefined,
         facts,
         verify:
           hash && explorer
@@ -245,7 +275,7 @@ export function renderEmail(item: Item, rendered: RenderedNotification, locale: 
             : undefined,
       },
       headline: money,
-      primary: { label: text(locale, "notify", hash ? "emailReceipt" : "emailOpen"), href: link },
+      primary: { label: text(locale, "notify", hash ? "emailReceipt" : "emailOpen"), href: hash ? `${base}/why/${hash}?network=${item.network}` : link },
       footer,
     };
   } else {

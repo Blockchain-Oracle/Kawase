@@ -42,7 +42,7 @@ import {
   TOKEN_RULES,
 } from "@kawase/config";
 import type { SwapApproveResponse, SwapDraftView, SwapIntent, SwapRequest, SwapRouteView, TokenView, UnsignedTransaction } from "@kawase/api-client";
-import { approvals, intentDrafts, intents, newId, txAttempts, type Db } from "@kawase/db";
+import { approvals, intentDrafts, intents, newId, txAttempts, withdrawals, type Db } from "@kawase/db";
 import type { SwapCall } from "@kawase/integrations-app-kit";
 import { LeafPlanRefused, buildSwapLeaves, encodeRedeemLeaves, encodeSelfBatch, isWalletSetUp, planSwapLeaves, readGrantNonce, type SwapLeafPlan } from "@kawase/integrations-delegation";
 import { PERMIT2_ADDRESS } from "@kawase/wallet";
@@ -62,6 +62,7 @@ import { evaluateSwap, type PolicyResult, type SwapEvaluation, type SwapQuoteFac
 
 import { capabilityView } from "../capabilities/service";
 import { HTTP, problem } from "../http/problem";
+import type { InboxService } from "../inbox/service";
 import { pausedAll } from "../safety/settings";
 import type { BundlePart } from "../intents/bundle";
 import { jsonSafe, nextAttemptNo, receiptSummary, refusedBeforeSending, walletGasPrice, type Tx } from "../intents/chain";
@@ -140,6 +141,13 @@ function restingState(evaluation: SwapEvaluation): IntentState {
 
 export class SwapService {
   private readonly tracking = new Set<string>();
+  /** Tells the person a swap went through (push and its receipt by email); set after the inbox exists (app.ts). */
+  private inbox?: InboxService;
+
+  withInbox(inbox: InboxService) {
+    this.inbox = inbox;
+    return this;
+  }
   private readonly venues: SwapVenues;
 
   constructor(
@@ -871,7 +879,8 @@ export class SwapService {
 
   /** Done only when exactly `amountIn` left the wallet and at least `minOut` came back, in this receipt. */
   private async settle(intent: IntentRow, attempt: AttemptRow, receipt: TransactionReceipt) {
-    const stored = ((await this.currentDraft(intent))?.payload as DraftPayload | undefined)?.draft;
+    const payload = (await this.currentDraft(intent))?.payload as DraftPayload | undefined;
+    const stored = payload?.draft;
     if (!stored) return;
     const draft = loadSwapDraft(stored);
     const moved = swapWitness(receipt, draft);
@@ -892,6 +901,32 @@ export class SwapService {
         .update(txAttempts)
         .set({ status: "confirmed", receipt: { received: moved.in.toString(), chain: jsonSafe(receiptSummary(receipt)) } })
         .where(eq(txAttempts.id, attempt.id));
+      // Its receipt (push, and the slip by email): what left, what came back and where it was swapped. A withdrawal's
+      // own conversion is told once, by the withdrawal when it arrives.
+      const view = payload?.view;
+      if (!this.inbox || !view) return;
+      const [withdrawal] = await tx
+        .select({ id: withdrawals.id })
+        .from(withdrawals)
+        .where(sql`${withdrawals.steps} @> ${JSON.stringify([{ intentId: intent.id }])}::jsonb`)
+        .limit(1);
+      if (withdrawal) return;
+      await this.inbox.add(tx, {
+        userId: intent.userId,
+        network: intent.network,
+        kind: "swap_completed",
+        params: {
+          amountIn: view.amountIn,
+          symbolIn: view.tokenIn,
+          amount: moved.in.toString(),
+          asset: view.tokenOut,
+          ...(view.tokens ? { decimals: String(view.tokens.out.decimals) } : {}),
+          venue: view.provider,
+        },
+        intentId: intent.id,
+        txHash: receipt.transactionHash,
+        dedupeKey: `swap_completed:${intent.id}`,
+      });
     });
   }
 

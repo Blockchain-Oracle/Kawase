@@ -20,6 +20,8 @@ export const notifications: Catalog["notifications"] = {
   kindPaymentReceived: "收到款项",
   kindRequestPaid: "收款请求已付款",
   kindSendCompleted: "转账已完成",
+  kindSwapCompleted: "兑换已完成",
+  kindBridgeCompleted: "跨链已到账",
   kindAutomationSkipped: "自动化被跳过",
   kindRuleAlert: "规则提醒",
   quietTitle: "免打扰时段",

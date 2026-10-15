@@ -20,6 +20,8 @@ export const notifications: Catalog["notifications"] = {
   kindPaymentReceived: "Argent reçu",
   kindRequestPaid: "Une demande payée",
   kindSendCompleted: "Un envoi effectué",
+  kindSwapCompleted: "Un échange est passé",
+  kindBridgeCompleted: "Un transfert est arrivé",
   kindAutomationSkipped: "Une automatisation sautée",
   kindRuleAlert: "Alertes de règles",
   quietTitle: "Heures calmes",

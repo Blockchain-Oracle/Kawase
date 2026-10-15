@@ -802,7 +802,7 @@ export type PublicPaymentRequest = {
   requester: { handle: string | null; address: string };
 };
 
-export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "request_received" | "position_health" | "position_closed" | "token_graduated";
+export type InboxKind = "payment_received" | "request_paid" | "send_completed" | "automation_skipped" | "rule_alert" | "needs_you" | "automation_reminder" | "device_signed_in" | "device_signed_out" | "request_received" | "position_health" | "position_closed" | "token_graduated" | "swap_completed" | "bridge_completed";
 
 export type InboxItem = {
   id: string;

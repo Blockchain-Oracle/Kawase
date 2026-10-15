@@ -435,6 +435,13 @@
       "when": 1791001004000,
       "tag": "0140_turnkey_out",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791001005000,
+      "tag": "0150_swap_bridge_receipts",
+      "breakpoints": true
     }
   ]
 }

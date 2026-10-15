@@ -148,7 +148,10 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const { locale } = useLocale();
   const ids = arcIdentity(item.network);
   const p = item.params;
-  const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" ? p.to : p.from;
+  const counterparty = item.kind === "send_completed" || item.kind === "automation_skipped" || item.kind === "bridge_completed" ? p.to : p.from;
+  // A swap's and a bridge's receipts (the same words as the feed's rows): a swap shows what came back, a bridge what left.
+  const swapped = item.kind === "swap_completed";
+  const bridged = item.kind === "bridge_completed";
   const name = p.name || (counterparty ? shortAddress(counterparty) : "");
   const amount = money(p.asset, p.amount, p.decimals);
   const skipped = item.kind === "automation_skipped";
@@ -159,7 +162,7 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
   const quiet = alert || waiting || reminder;
   // A5-3: someone on Kawase asked the person to pay; nothing moved yet, so the amount carries no sign.
   const asked = item.kind === "request_received";
-  const incoming = item.kind !== "send_completed" && !skipped && !quiet && !asked;
+  const incoming = item.kind !== "send_completed" && !bridged && !skipped && !quiet && !asked;
   const title =
     asked
       ? t(p.reminder ? "inbox.remindedYou" : "inbox.askedYou", { name, amount })
@@ -173,6 +176,10 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
       ? p.trigger === "money_in"
         ? t("automation.ruleAlertMoneyIn", { amount })
         : t(p.trigger === "balance_above" ? "automation.ruleAlertAbove" : "automation.ruleAlertBelow", { amount: money("USDC", p.threshold) })
+      : swapped
+      ? t("activity.swappedTitle", { from: p.symbolIn ?? "", to: p.asset ?? "" })
+      : bridged
+      ? t("activity.bridgedTo", { chain: p.chain ?? "" })
       : item.kind === "payment_received"
       ? t("inbox.receivedFrom", { name })
       : item.kind === "request_paid"
@@ -189,7 +196,9 @@ function MoneyRow({ item, onPress }: { item: InboxItem; onPress: () => void }) {
         : t("notify.needsYouSend", { amount, name })
       : reminder
         ? [p.automationKind === "dca" ? `${p.tokenAmount ?? ""} ${p.symbolIn ?? ""} → ${p.name ?? ""}` : `${amount} → ${name}`, p.short ? t("notify.reminderShort") : null, p.at ? dates.moment(p.at) : null].filter(Boolean).join(" · ")
-        : item.kind === "request_paid"
+        : swapped && p.venue
+      ? [t("feed.list.via", { venue: p.venue }), dates.moment(item.createdAt)].join(" · ")
+      : item.kind === "request_paid"
       ? t("inbox.requestPaidBy", { amount, name })
       : alert && p.balance
         ? `${t("automation.ruleAlertBalance", { amount: money("USDC", p.balance) })} · ${dates.moment(item.createdAt)}`
