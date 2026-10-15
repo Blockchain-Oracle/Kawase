@@ -681,6 +681,15 @@
       "light"
     ]
   },
+  "voice/island": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
+      "light"
+    ]
+  },
   "voice/mode": {
     "kind": "image",
     "device": "phone",

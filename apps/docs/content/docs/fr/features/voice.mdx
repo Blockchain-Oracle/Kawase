@@ -1,7 +1,7 @@
 ---
 title: "Voix"
 description: "Parlez à Kawase sur iPhone, Android et le web dans votre langue ; il répond à voix haute et affiche les mêmes cartes que le chat. Les paiements à la voix attendent toujours votre geste."
-sourceHash: 0700c227acf478ec
+sourceHash: 95bff41c297e1751
 ---
 
 <Status ids="voice" />
@@ -18,10 +18,12 @@ sourceHash: 0700c227acf478ec
 Touchez l’orbe au milieu du dock (**Parler à Kawase** dans la barre latérale sur ordinateur) et parlez. Kawase vous salue,
 écoute, répond à voix haute et affiche à l’écran les mêmes **cartes** que le chat.
 
-<Shot src="voice/mode" alt="Le mode voix : l’orbe magenta, son état, les suggestions Essayez de dire (les tendances sur Arc, échanger 5 USDC en EURC, ramener mes USDC depuis Base, faire travailler mes USDC inactifs) et le dock avec le clavier, le micro et Terminer." zoom="50 44.3 11">
-  <Pin at="50 23.5">L’orbe : à l’écoute, réflexion, parle</Pin>
+<Shot src="voice/mode" alt="Le mode voix : la page floutée derrière l’orbe magenta, À l’écoute en dessous, un chevron en haut à droite, et le dock avec le clavier, le micro et Terminer, dans un halo le long du bord de l’écran." zoom="90.7 4 8">
+  <Pin at="50 23.5">L’orbe suit les voix</Pin>
 
-  <Pin box="4 52 92 15">Essayez de dire : touchez-en une pour commencer</Pin>
+  <Pin at="50 44.4">À l’écoute, réflexion ou parle</Pin>
+
+  <Pin at="90.7 4">Continuer à parler en arrière-plan</Pin>
 
   <Pin at="32.4 93.4">Écrire à la place</Pin>
 
@@ -37,6 +39,23 @@ Touchez l’orbe au milieu du dock (**Parler à Kawase** dans la barre latérale
   geste et Face ID (empreinte ou verrouillage d’écran sur Android, un code par email sur le web).
 - **Écrire à la place** est toujours à un geste, et **couper le micro** empêche que quoi que ce soit soit entendu ou envoyé.
 
+## Continuer à parler en utilisant l’app
+
+Le chevron en haut (ou un toucher à côté, Échap ou Retour) réduit la conversation en un **îlot noir** en haut de la page
+que vous ouvrez : l’orbe en direct, ce que fait Kawase et ses derniers mots, couper le micro et terminer. Une carte pour
+laquelle Kawase a besoin de vous monte sur cette page, et un halo le long du bord de l’écran indique que la voix est
+active. Touchez l’îlot pour rouvrir la vue complète ; seul **Terminer** met fin à la conversation.
+
+<Shot src="voice/island" alt="L’Accueil avec la voix réduite : un îlot noir en haut avec l’orbe, À l’écoute, Hi! I'm here and listening., un micro et Terminer, et un halo autour du bord de l’écran." zoom="45 3.8 12">
+  <Pin box="12 0.5 76 7">L’îlot : ce que Kawase fait et dit</Pin>
+
+  <Pin at="70.2 3.8">Couper le micro</Pin>
+
+  <Pin at="81.4 3.8">Terminer</Pin>
+
+  <Pin at="1.5 50">Le halo : la voix est active</Pin>
+</Shot>
+
 ## Sur le web
 
 La voix marche aussi dans l’app web : autorisez le micro quand le navigateur le demande. Si vous refusez, ou s’il n’y a pas
@@ -46,15 +65,15 @@ jouer.
 ## Réglages → Voix
 
 <Shot src="voice/settings" alt="Réglages → Voix : six voix (Marin, Aster, Beacon, Cinder, Stone, Vesper), chacune avec un bouton haut-parleur, Vitesse de parole (Posée, Normale, Rapide) et Kawase parle en premier." zoom="83 33 9">
-  <Pin box="4 30 92 45">La voix de Kawase : une parmi six</Pin>
+  <Pin box="4 29.2 92 45.8">La voix de Kawase : une parmi six</Pin>
 
-  <Pin at="50 85">Posée · Normale · Rapide</Pin>
+  <Pin at="34 85.2">Posée · Normale · Rapide</Pin>
 
   <Pin at="50 96">Kawase parle en premier, ou vous attend</Pin>
 </Shot>
 
-Touchez le haut-parleur à côté d’une voix : la voix s’ouvre et Kawase vous dit bonjour avec elle. Les changements s’appliquent
-la prochaine fois que vous commencez à parler.
+Touchez le haut-parleur à côté d’une voix : Kawase vous dit bonjour avec elle sur place, sans le micro. Les
+changements s’appliquent la prochaine fois que vous commencez à parler.
 
 ## Comment ça marche
 

@@ -1,7 +1,7 @@
 ---
 title: "Voz"
 description: "Habla con Kawase en iPhone, Android y la web en tu idioma; responde en voz alta y muestra las mismas tarjetas que el chat. Los pagos por voz siempre esperan tu toque."
-sourceHash: 0700c227acf478ec
+sourceHash: 95bff41c297e1751
 ---
 
 <Status ids="voice" />
@@ -18,10 +18,12 @@ sourceHash: 0700c227acf478ec
 Toca el orbe en el centro del dock (**Hablar con Kawase** en la barra lateral en el ordenador) y habla. Kawase te saluda,
 escucha, responde en voz alta y pone en pantalla las mismas **tarjetas** que el chat.
 
-<Shot src="voice/mode" alt="El modo voz: el orbe magenta, su estado, las sugerencias Prueba a decir (lo que es tendencia en Arc, cambiar 5 USDC a EURC, traer mis USDC desde Base, poner a trabajar mis USDC parados) y el dock con el teclado, el micrófono y Terminar." zoom="50 44.3 11">
-  <Pin at="50 23.5">El orbe: escuchando, pensando, hablando</Pin>
+<Shot src="voice/mode" alt="El modo voz: la página difuminada detrás del orbe magenta, Escuchando debajo, un chevrón arriba a la derecha y el dock con el teclado, el micrófono y Terminar, dentro de un brillo a lo largo del borde de la pantalla." zoom="90.7 4 8">
+  <Pin at="50 23.5">El orbe sigue las voces</Pin>
 
-  <Pin box="4 52 92 15">Prueba a decir: toca una para empezar</Pin>
+  <Pin at="50 44.4">Escuchando, pensando o hablando</Pin>
+
+  <Pin at="90.7 4">Seguir hablando en segundo plano</Pin>
 
   <Pin at="32.4 93.4">Escribir en su lugar</Pin>
 
@@ -36,6 +38,23 @@ escucha, responde en voz alta y pone en pantalla las mismas **tarjetas** que el 
   (huella o bloqueo de pantalla en Android, un código por email en la web).
 - **Escribir en su lugar** está siempre a un toque, y **silenciar** impide que se oiga o se envíe nada.
 
+## Sigue hablando mientras usas la app
+
+El chevrón de arriba (o un toque fuera, Escape o Atrás) reduce la conversación a una **isla negra** en la parte
+superior de la página que abras: el orbe en vivo, lo que está haciendo Kawase y sus últimas palabras, silenciar y
+terminar. Una tarjeta para la que Kawase te necesita sube en esa página, y un brillo a lo largo del borde de la pantalla
+indica que la voz está activa. Toca la isla para volver a la vista completa; solo **Terminar** acaba la conversación.
+
+<Shot src="voice/island" alt="Inicio con la voz minimizada: una isla negra arriba con el orbe, Escuchando, Hi! I'm here and listening., un micrófono y Terminar, y un brillo alrededor del borde de la pantalla." zoom="45 3.8 12">
+  <Pin box="12 0.5 76 7">La isla: lo que Kawase hace y dice</Pin>
+
+  <Pin at="70.2 3.8">Silenciar</Pin>
+
+  <Pin at="81.4 3.8">Terminar</Pin>
+
+  <Pin at="1.5 50">El brillo: la voz está activa</Pin>
+</Shot>
+
 ## En la web
 
 La voz también funciona en la app web: permite el micrófono cuando el navegador lo pida. Si lo rechazas, o no hay micrófono,
@@ -44,15 +63,15 @@ Kawase sigue conectado, te dice cómo permitirlo y el teclado está justo al lad
 ## Ajustes → Voz
 
 <Shot src="voice/settings" alt="Ajustes → Voz: seis voces (Marin, Aster, Beacon, Cinder, Stone, Vesper), cada una con un botón de altavoz, Velocidad al hablar (Tranquila, Normal, Rápida) y Kawase habla primero." zoom="83 33 9">
-  <Pin box="4 30 92 45">La voz de Kawase: una de seis</Pin>
+  <Pin box="4 29.2 92 45.8">La voz de Kawase: una de seis</Pin>
 
-  <Pin at="50 85">Tranquila · Normal · Rápida</Pin>
+  <Pin at="34 85.2">Tranquila · Normal · Rápida</Pin>
 
   <Pin at="50 96">Kawase habla primero, o te espera</Pin>
 </Shot>
 
-Toca el altavoz junto a una voz: se abre la voz y Kawase te saluda con ella. Los cambios se aplican la próxima vez que
-empieces a hablar.
+Toca el altavoz junto a una voz: Kawase te saluda con ella ahí mismo, sin el micrófono. Los cambios se aplican la
+próxima vez que empieces a hablar.
 
 ## Cómo funciona
 

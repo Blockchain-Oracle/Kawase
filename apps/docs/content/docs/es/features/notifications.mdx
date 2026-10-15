@@ -1,7 +1,7 @@
 ---
 title: "Notificaciones"
 description: "Una bandeja para todo lo que le pasa a tu dinero, con notificaciones push en tu teléfono y email para los eventos que elijas, y horas de silencio."
-sourceHash: ff4dd3e28a238c13
+sourceHash: 7aa80f6050352e76
 ---
 
 Kawase te avisa cuando se mueve dinero y cuando hizo algo por ti. Nada más.
@@ -15,8 +15,9 @@ Kawase te avisa cuando se mueve dinero y cuando hizo algo por ti. Nada más.
 
 ## La bandeja
 
-La campana de Inicio abre la **bandeja**: cada pago recibido, petición pagada, pago completado, automatización saltada y
-aviso de regla, del más reciente al más antiguo, cada uno abriendo su recibo. **Marcar todo como leído** borra el punto.
+La campana de Inicio abre la **bandeja**: cada pago recibido, petición pagada, envío, intercambio y puente
+completados, automatización saltada y aviso de regla, del más reciente al más antiguo, cada uno abriendo su recibo.
+**Marcar todo como leído** borra el punto.
 
 <Shot src="activity/inbox" alt="La bandeja: Enviado a 0x9444…2439 −5,00 USDC, Enviado a 0xe8CB…3e0B −5,00 USDC, Enviado a 0x6561…7f4f −1,00 USDC, y dos filas Recibido de, +20,00 EURC y +20,00 USDC.">
   <Pin box="4 12 92 9.5">Cada evento, con su importe y su hora</Pin>
@@ -26,22 +27,24 @@ aviso de regla, del más reciente al más antiguo, cada uno abriendo su recibo. 
 
 ## Ajustes → Notificaciones
 
-<Shot src="notifications/settings" alt="Notificaciones: en la web, por email y en tu bandeja; una sección Email; y Qué avisarte, un interruptor por evento, de Dinero recibido a Graduaciones de tokens.">
-  <Pin box="4 15.5 92 7.5">En la web: email y tu bandeja</Pin>
+<Shot src="notifications/settings" alt="Notificaciones: en la web, por email y en tu bandeja; Email: los emails llegan a la dirección de la cuenta de prueba; y Qué avisarte, un interruptor de email por evento, desde Dinero recibido.">
+  <Pin box="4 18.5 92 6">En la web: email y tu bandeja</Pin>
 
-  <Pin box="4 46 92 54">Qué avisarte, por evento</Pin>
+  <Pin box="4 28 92 7">Los emails llegan a la dirección con que entraste</Pin>
+
+  <Pin box="4 38.5 92 61.5">Qué avisarte, por evento</Pin>
 </Shot>
 
 Por evento y por canal, eliges qué te llega: **dinero recibido**, **alguien te pide un pago**, **una petición pagada**,
-**un envío completado**, **una automatización saltada**, **avisos de reglas**, **nuevos inicios de sesión**, **sesiones
-cerradas en dispositivos**, **alertas de salud** de posiciones abiertas, **toma de ganancias y stop-loss**, y
-**graduaciones de tokens**.
+**un envío completado**, **un cambio se completó**, **un puente llegó**, **una automatización saltada**, **avisos de
+reglas**, **nuevos inicios de sesión**, **sesiones cerradas en dispositivos**, **alertas de salud** de posiciones
+abiertas, **toma de ganancias y stop-loss**, y **graduaciones de tokens**.
 
 - **En tu teléfono**: push y email.
 - **En la web**: la bandeja y el email (la app web no tiene push).
 - **Las horas de silencio**, en tu propia zona horaria, retienen los push hasta que terminan; tu bandeja y tu email siguen
   recibiendo todo.
 
-El email llega pronto: la pantalla de ajustes lo indica y tus opciones se guardan hasta entonces. Los emails de Kawase llevan
-el mismo [recibo](./activity-and-receipts.mdx) que la app. Cada notificación se entrega como máximo una vez por canal, aunque
-Kawase lo reintente.
+Los emails llegan a la dirección con la que iniciaste sesión. Un envío, un intercambio o un puente te manda por email el
+mismo [recibo](./activity-and-receipts.mdx) que la app, con cuándo pasó y un código QR a ArcScan. Cada notificación se
+entrega como máximo una vez por canal, aunque Kawase lo reintente.

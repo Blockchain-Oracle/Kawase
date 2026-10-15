@@ -9,7 +9,7 @@ description: Pay anyone by @handle, contact, address or QR code in any token you
 
 <Flow>
   <FlowStep icon="at-sign" title="Who">An @handle, a contact, an address or a QR code.</FlowStep>
-  <FlowStep icon="shield" title="Checked">The recipient, your balance, your budget.</FlowStep>
+  <FlowStep icon="shield" title="Checked">The recipient, your budget, then a rehearsal on Arc.</FlowStep>
   <FlowFork>
     <FlowStep when="A contact, inside your budget" icon="zap" title="Sent at once" />
     <FlowStep when="Someone new, or above it" icon="fingerprint" title="You confirm" tone="accent">Face ID, your fingerprint, or an email code on the web.</FlowStep>
@@ -43,15 +43,17 @@ hold on Arc**.
   </WalkStep>
   <WalkStep title="Review" src="send/review">
     Everything is on one card before anything moves: the amount, who it goes to and **where that address came from**,
-    the network and its fee, and what Kawase needs from you.
+    the network and its fee, and what Kawase needs from you. Kawase then **rehearses the send on Arc** from your own
+    address: what will leave, by the chain's own logs, and the block it ran on. A send that would fail stops here,
+    before you sign. Below it, **Their wallet is on another chain?** sends USDC there by a bridge instead.
 
-    <Pin box="5 31.5 90 12.5">The recipient, and how Kawase knows the address</Pin>
+    <Pin box="5 31.8 90 12">The recipient, and how Kawase knows the address</Pin>
 
-    <Pin box="5 46 90 9">A first payment can go as a test amount first</Pin>
+    <Pin box="5 46 90 10.3">A first payment can go as a test amount first</Pin>
 
-    <Pin box="5 77 90 6.5">Someone new: confirm with an email code (Face ID on a phone)</Pin>
+    <Pin box="5 76.6 90 11">Rehearsed on Arc: what will leave, and the block</Pin>
 
-    <Pin box="5 89.5 90 8">Their wallet is on another chain? Bridge it instead</Pin>
+    <Pin box="5 89.7 90 7">Confirm with an email code (Face ID on a phone)</Pin>
   </WalkStep>
   <WalkStep title="Sent" src="send/sent">
     The card follows the payment until the network confirms it. It is marked **paid** only when the chain's receipt

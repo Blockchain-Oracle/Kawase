@@ -14,8 +14,8 @@ Kawase tells you when money moves and when it did something for you. Nothing els
 
 ## The inbox
 
-The bell on Home opens the **inbox**: every payment received, request paid, payment completed, automation skipped and
-rule alert, newest first, each opening its receipt. **Mark all read** clears the dot.
+The bell on Home opens the **inbox**: every payment received, request paid, send, swap and bridge completed, automation
+skipped and rule alert, newest first, each opening its receipt. **Mark all read** clears the dot.
 
 <Shot src="activity/inbox" alt="The inbox: Sent to 0x9444…2439 −5.00 USDC, Sent to 0xe8CB…3e0B −5.00 USDC, Sent to 0x6561…7f4f −1.00 USDC, and two Received from rows of +20.00 EURC and +20.00 USDC.">
   <Pin box="4 12 92 9.5">Each event, with its amount and time</Pin>
@@ -25,20 +25,23 @@ rule alert, newest first, each opening its receipt. **Mark all read** clears the
 
 ## Settings → Notifications
 
-<Shot src="notifications/settings" alt="Notifications: on the web, by email and in your inbox; an Email section; and What to tell you, a switch per event from Money received to Token graduations.">
-  <Pin box="4 15.5 92 7.5">On the web: email and your inbox</Pin>
+<Shot src="notifications/settings" alt="Notifications: on the web, by email and in your inbox; Email: emails go to the test account's address; and What to tell you, an email switch per event from Money received down.">
+  <Pin box="4 18.5 92 6">On the web: email and your inbox</Pin>
 
-  <Pin box="4 46 92 54">What to tell you, per event</Pin>
+  <Pin box="4 28 92 7">Emails go to the address you signed in with</Pin>
+
+  <Pin box="4 38.5 92 61.5">What to tell you, per event</Pin>
 </Shot>
 
 Per event and per channel, you choose what reaches you: **money received**, **someone asks you to pay**, **a request was
-paid**, **a send went through**, **an automation was skipped**, **a rule's alert**, **new sign-ins**, **devices signed
-out**, **health alerts** for open positions, **take-profit and stop-loss**, and **token graduations**.
+paid**, **a send went through**, **a swap went through**, **a bridge arrived**, **an automation was skipped**, **a
+rule's alert**, **new sign-ins**, **devices signed out**, **health alerts** for open positions, **take-profit and
+stop-loss**, and **token graduations**.
 
 - **On your phone**: push, and email.
 - **On the web**: the inbox and email (the web app has no push).
 - **Quiet hours** in your own time zone hold push until they end; your inbox and email still get everything.
 
-Email is starting soon: the settings screen says so, and your choices are kept until it does. Kawase's emails carry
-the same [receipt slip](./activity-and-receipts.mdx) as the app. Each notification is delivered at most once per
-channel, even if Kawase retries.
+Emails go to the address you signed in with. A send, a swap or a bridge emails you the same
+[receipt slip](./activity-and-receipts.mdx) as the app, with when it happened and a QR code to ArcScan. Each
+notification is delivered at most once per channel, even if Kawase retries.

@@ -1,7 +1,7 @@
 ---
 title: "Échanger n'importe quel jeton"
 description: "Les marchés, une page pour chaque jeton d'Arc avec ses contrôles de sécurité, et l'achat, la vente ou l'échange de n'importe quelle paire au meilleur de six plateformes mises en concurrence, confirmé d'un seul glissement."
-sourceHash: 111c991d081193f4
+sourceHash: 38cd4364250c2fb4
 ---
 
 <Status ids="swap" />
@@ -11,7 +11,7 @@ sourceHash: 111c991d081193f4
 <Flow>
   <FlowStep icon="coins" title="Choisir une paire">Payez avec n'importe quel jeton détenu, recevez n'importe quel jeton.</FlowStep>
   <FlowStep icon="route" title="La course" tone="accent">Six plateformes cotent en même temps ; celle qui livre le plus gagne.</FlowStep>
-  <FlowStep icon="hand" title="Glisser">La vérification montre le minimum reçu. Un seul glissement.</FlowStep>
+  <FlowStep icon="hand" title="Glisser">Le minimum reçu, répété sur Arc. Un seul glissement.</FlowStep>
   <FlowStep icon="receipt" title="Reçu" tone="ink">Autorisation et échange en une seule transaction.</FlowStep>
 </Flow>
 
@@ -40,15 +40,17 @@ vous connectez qu'à la fin.
   </WalkStep>
   <WalkStep title="Vérifier" src="swap/review">
     La vérification montre ce que vous recevez **au minimum** (le minimum inscrit sur la chaîne), l'impact sur le prix et
-    chaque itinéraire. Touchez-en un autre pour le choisir vous-même.
+    chaque itinéraire. Touchez-en un autre pour le choisir vous-même. Avant que le glissement se débloque, Kawase **répète l'échange sur Arc** depuis votre adresse : ce qui part et ce qui arrive d'après les journaux de la chaîne, les contrats touchés et le bloc. Un échange qui échouerait s'arrête là, dans les mots d'Arc.
 
     <Pin at="68 15">Ce que vous recevez, et le minimum garanti</Pin>
 
-    <Pin box="5 28 90 13">Le meilleur itinéraire : plateforme, montant, frais</Pin>
+    <Pin box="5 28 90 14.6">Le meilleur itinéraire : plateforme, montant, frais</Pin>
 
-    <Pin box="5 44 90 6">Les plateformes qui n'ont pas coté</Pin>
+    <Pin box="5 44.2 90 5.4">Les plateformes qui n'ont pas coté</Pin>
 
-    <Pin box="5 84 90 7">Glissez pour échanger</Pin>
+    <Pin box="5 66.8 90 14">Répété sur Arc : ce qui part et arrive, ce qu'il touche</Pin>
+
+    <Pin box="5 84 90 6.8">Glissez pour échanger</Pin>
   </WalkStep>
   <WalkStep title="Échangé" src="swap/done">
     Seule la plateforme choisie construit la transaction, avec la moitié du glissement de prix affiché, et Kawase vérifie

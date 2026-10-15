@@ -1,7 +1,7 @@
 ---
 title: "Notificações"
 description: "Uma caixa de entrada para tudo o que acontece com o seu dinheiro, com push no celular e email para os eventos que você escolher, e horário de silêncio."
-sourceHash: ff4dd3e28a238c13
+sourceHash: 7aa80f6050352e76
 ---
 
 O Kawase avisa quando dinheiro se move e quando ele fez algo por você. Nada além disso.
@@ -15,8 +15,9 @@ O Kawase avisa quando dinheiro se move e quando ele fez algo por você. Nada al�
 
 ## A caixa de entrada
 
-O sino no Início abre a **caixa de entrada**: cada pagamento recebido, pedido pago, pagamento concluído, automação pulada e
-alerta de regra, do mais novo para o mais antigo, cada um abrindo seu recibo. **Marcar tudo como lido** apaga o ponto.
+O sino no Início abre a **caixa de entrada**: cada pagamento recebido, pedido pago, envio, troca e ponte concluídos,
+automação pulada e alerta de regra, do mais novo para o mais antigo, cada um abrindo seu recibo. **Marcar tudo como
+lido** apaga o ponto.
 
 <Shot src="activity/inbox" alt="A caixa de entrada: Enviado para 0x9444…2439 −5,00 USDC, Enviado para 0xe8CB…3e0B −5,00 USDC, Enviado para 0x6561…7f4f −1,00 USDC, e duas linhas Recebido de, +20,00 EURC e +20,00 USDC.">
   <Pin box="4 12 92 9.5">Cada evento, com o valor e a hora</Pin>
@@ -26,21 +27,24 @@ alerta de regra, do mais novo para o mais antigo, cada um abrindo seu recibo. **
 
 ## Configurações → Notificações
 
-<Shot src="notifications/settings" alt="Notificações: na web, por email e na sua caixa de entrada; uma seção Email; e O que avisar, um interruptor por evento, de Dinheiro recebido a Graduações de tokens.">
-  <Pin box="4 15.5 92 7.5">Na web: email e caixa de entrada</Pin>
+<Shot src="notifications/settings" alt="Notificações: na web, por email e na sua caixa de entrada; Email: os emails vão para o endereço da conta de teste; e O que avisar, um interruptor de email por evento, a partir de Dinheiro recebido.">
+  <Pin box="4 18.5 92 6">Na web: email e caixa de entrada</Pin>
 
-  <Pin box="4 46 92 54">O que avisar, por evento</Pin>
+  <Pin box="4 28 92 7">Os emails vão para o endereço com que você entrou</Pin>
+
+  <Pin box="4 38.5 92 61.5">O que avisar, por evento</Pin>
 </Shot>
 
-Por evento e por canal, você escolhe o que chega até você: **dinheiro recebido**, **alguém pede que você pague**, **um pedido
-pago**, **um envio concluído**, **uma automação pulada**, **alertas de regras**, **novos acessos**, **aparelhos
-desconectados**, **alertas de saúde** de posições abertas, **take-profit e stop-loss**, e **graduações de tokens**.
+Por evento e por canal, você escolhe o que chega até você: **dinheiro recebido**, **alguém pede que você pague**, **um
+pedido pago**, **um envio concluído**, **uma troca foi concluída**, **uma ponte chegou**, **uma automação pulada**,
+**alertas de regras**, **novos acessos**, **aparelhos desconectados**, **alertas de saúde** de posições abertas,
+**take-profit e stop-loss**, e **graduações de tokens**.
 
 - **No celular**: push e email.
 - **Na web**: a caixa de entrada e o email (o app web não tem push).
 - **O horário de silêncio**, no seu próprio fuso, segura os push até acabar; sua caixa de entrada e seu email continuam
   recebendo tudo.
 
-O email começa em breve: a tela de configurações avisa, e suas escolhas ficam salvas até lá. Os emails do Kawase trazem o
-mesmo [recibo](./activity-and-receipts.mdx) do app. Cada notificação é entregue no máximo uma vez por canal, mesmo que o
-Kawase tente de novo.
+Os emails vão para o endereço com que você entrou. Um envio, uma troca ou uma ponte manda por email o mesmo
+[recibo](./activity-and-receipts.mdx) do app, com quando aconteceu e um QR code para o ArcScan. Cada notificação é
+entregue no máximo uma vez por canal, mesmo que o Kawase tente de novo.

@@ -1,7 +1,7 @@
 ---
 title: "Operar cualquier token"
 description: "Mercados, una página para cada token de Arc con sus controles de seguridad, y comprar, vender o intercambiar cualquier par al mejor de seis plataformas en carrera, confirmado con un solo deslizamiento."
-sourceHash: 111c991d081193f4
+sourceHash: 38cd4364250c2fb4
 ---
 
 <Status ids="swap" />
@@ -11,7 +11,7 @@ sourceHash: 111c991d081193f4
 <Flow>
   <FlowStep icon="coins" title="Elige un par">Paga con cualquier token que tengas y recibe cualquier token.</FlowStep>
   <FlowStep icon="route" title="La carrera" tone="accent">Seis plataformas cotizan a la vez; gana la que más entrega.</FlowStep>
-  <FlowStep icon="hand" title="Desliza">La revisión muestra lo mínimo que recibes. Un deslizamiento.</FlowStep>
+  <FlowStep icon="hand" title="Desliza">Lo mínimo que recibes, ensayado en Arc. Un deslizamiento.</FlowStep>
   <FlowStep icon="receipt" title="Recibo" tone="ink">Aprobación e intercambio en una sola transacción.</FlowStep>
 </Flow>
 
@@ -38,15 +38,17 @@ que entregarían o por qué no pudieron cotizar. Los invitados también ven la c
   </WalkStep>
   <WalkStep title="Revisar" src="swap/review">
     La revisión muestra lo que recibes **como mínimo** (el mínimo en la cadena), el impacto en el precio y cada ruta. Toca
-    otra ruta para elegirla tú.
+    otra ruta para elegirla tú. Antes de que se desbloquee el deslizador, Kawase **ensaya el intercambio en Arc** desde tu dirección: lo que sale y lo que llega según los registros de la cadena, los contratos que toca y el bloque. Un intercambio que fallaría se detiene ahí, con las palabras de Arc.
 
     <Pin at="68 15">Lo que recibes y lo mínimo garantizado</Pin>
 
-    <Pin box="5 28 90 13">La mejor ruta: plataforma, importe y comisión</Pin>
+    <Pin box="5 28 90 14.6">La mejor ruta: plataforma, importe y comisión</Pin>
 
-    <Pin box="5 44 90 6">Las plataformas que no cotizaron</Pin>
+    <Pin box="5 44.2 90 5.4">Las plataformas que no cotizaron</Pin>
 
-    <Pin box="5 84 90 7">Desliza para cambiar</Pin>
+    <Pin box="5 66.8 90 14">Ensayado en Arc: lo que sale y llega, lo que toca</Pin>
+
+    <Pin box="5 84 90 6.8">Desliza para cambiar</Pin>
   </WalkStep>
   <WalkStep title="Intercambiado" src="swap/done">
     Solo la plataforma elegida construye la transacción, con la mitad del deslizamiento de precio mostrado, y Kawase revisa
