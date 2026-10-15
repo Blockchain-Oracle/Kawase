@@ -1,39 +1,76 @@
 ---
 title: "Acheter par carte"
-description: "Achetez des USDC ou des EURC avec une carte de débit, Apple Pay ou Google Pay via l’Onramp de Circle. Les fonds sont envoyés vers votre propre portefeuille sur Arc et confirmés dès leur arrivée sur la blockchain."
-sourceHash: 305adca20f73622e
+description: "Achetez des USDC ou des EURC avec Apple Pay, Google Pay, une carte de débit ou un virement, dans Kawase, via Circle (directement sur Arc) ou Coinbase (via Base), suivis jusqu'à leur arrivée dans votre portefeuille."
+sourceHash: 7644e5f1fdac9b70
 ---
 
 <Status ids="buy" />
 
 <Marks names="circle apple google usdc eurc" />
 
-« Acheter 50 dollars de USDC », ou **Ajouter de l'argent → Acheter par carte** (la première ligne).
+<Flow>
+  <FlowStep icon="dollar" title="Montant">USDC ou EURC, un préréglage ou le vôtre.</FlowStep>
+  <FlowStep icon="card" title="Payer avec">Apple Pay, Google Pay, carte ou banque.</FlowStep>
+  <FlowStep icon="lock" title="Paiement" tone="accent">Dans Kawase ; carte et identité vérifiées par le prestataire.</FlowStep>
+  <FlowStep icon="check" title="Sur Arc" tone="ink">Suivi jusqu'à l'arrivée dans votre portefeuille.</FlowStep>
+</Flow>
 
-<Steps>
-<Step>
-### Choisir le montant
-Choisissez un montant prédéfini ou saisissez un montant en dollars ou en euros. La fenêtre affiche les moyens de paiement proposés par Circle et indique clairement s’il s’agit d’**Argent réel** (Réseau principal) ou du **bac à sable de Circle** (Réseau de test, cartes de test uniquement).
-</Step>
-<Step>
-### Payer avec Circle
-**Acheter** ouvre le paiement Circle en plein écran, là où Apple Pay fonctionne. Kawase crée la session sur son serveur, pour **votre propre adresse** sur Arc.
-</Step>
-<Step>
-### Fonds reçus
-De retour dans Kawase, la commande est suivie jusqu’à **la confirmation de l’envoi sur la blockchain**. Vous voyez alors « Vos fonds sont disponibles ». Si le paiement n’a pas abouti, la raison indiquée par Circle s’affiche avec **Réessayer**.
-</Step>
-</Steps>
+## Acheter, étape par étape
+
+« Achète 50 dollars d'USDC », ou **+ → Ajouter de l'argent → Acheter avec Apple Pay ou une carte**.
+
+<Walkthrough>
+  <WalkStep title="Ajouter de l'argent" src="buy/add-money">
+    **Ajouter de l'argent** réunit tous les moyens : des USDC de test sur le réseau de test, l'achat, votre propre adresse,
+    une plateforme d'échange, une autre chaîne ou un portefeuille de navigateur (MetaMask, Rabby).
+
+    <Pin box="4 41.5 92 9">Acheter avec Apple Pay ou une carte</Pin>
+
+    <Pin box="4 89 92 8.5">Ou depuis un portefeuille dans votre navigateur</Pin>
+  </WalkStep>
+  <WalkStep title="Combien" src="buy/amount">
+    Choisissez USDC ou EURC et un montant. **Vous recevez** montre ce qui arrive après les frais du prestataire, avant de
+    payer.
+
+    <Pin box="4 31.5 92 5">USDC ou EURC</Pin>
+
+    <Pin box="4 49.5 92 5">25 $ · 50 $ · 100 $ · 250 $</Pin>
+
+    <Pin box="4 80.5 92 8">Ce qui arrive, après frais</Pin>
+  </WalkStep>
+  <WalkStep title="Payer avec" src="buy/methods">
+    Tous les moyens de paiement qui fonctionnent sur votre appareil, avec le prestataire et le trajet : **Circle** envoie
+    directement dans votre portefeuille sur Arc ; **Coinbase** (numéros de téléphone américains) livre sur Base et Kawase
+    l'amène sur Arc. Apple Pay apparaît sur un iPhone, Google Pay là où le navigateur le propose.
+
+    <Pin box="4 51.5 92 8.5">Circle : directement sur Arc</Pin>
+
+    <Pin box="4 62.5 92 10">Coinbase : via Base, avec ce que vous recevez</Pin>
+
+    <Pin at="88 97">Sur le réseau de test : le bac à sable de Circle, cartes de test uniquement</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Paiement et livraison
+
+Le paiement du prestataire s'ouvre **dans Kawase** (sur le web aussi), avec sa barre en haut : **Paiement → Achat → Sur
+Arc** (Coinbase ajoute **Transfert vers Arc**). Les vérifications de carte et d'identité sont celles du prestataire, jamais
+de Kawase. Vous pouvez quitter l'écran : Kawase suit la commande jusqu'à ce que **la chaîne confirme la livraison**, puis
+affiche « Vous êtes approvisionné ». Si le paiement n'a pas abouti, la raison du prestataire s'affiche avec **Réessayer**,
+et l'écran dit toujours si de l'argent a bougé.
 
 ## Acheter un autre jeton
 
-Demandez n’importe quel autre jeton (« acheter 30 dollars de cirBTC avec Apple Pay »). Kawase achète d’abord des USDC, puis ouvre l’échange correspondant aux fonds reçus, avec une autorisation supplémentaire et les deux frais affichés. L’opération continue uniquement avec un jeton officiel ou répertorié, jamais avec une imitation.
+Demandez n'importe quel autre jeton (« achète 30 dollars de cirBTC avec Apple Pay ») et Kawase achète d'abord des USDC, puis
+ouvre l'[échange](./swap-and-trade.mdx) pour ce qui est arrivé, avec une autorisation de plus et les deux frais affichés. Il
+ne poursuit jamais que vers un jeton canonique ou listé, jamais un sosie.
 
-## Où l’utiliser
+## Où cela fonctionne
 
-- **Réseau principal** : l’Onramp de Circle en production, avec de vraies cartes. Apple Pay et Google Pay apparaissent lorsque Circle a terminé la vérification commerciale du domaine de Kawase. Le paiement affiche les moyens proposés.
-- **Réseau de test** : l’Onramp de Circle en bac à sable, avec des cartes de test. Aucun argent réel ne circule. Le [robinet](../getting-started.mdx#4-get-test-money) gratuit fonctionne aussi.
+- **Réseau principal** : de l'argent réel, avec les limites et vérifications du prestataire.
+- **Réseau de test** : le bac à sable de Circle avec des cartes de test ; aucun argent réel ne bouge. Les USDC de test
+  gratuits d'Ajouter de l'argent fonctionnent aussi.
 
-Le retrait vers un compte bancaire n’est pas encore disponible. Pour récupérer votre argent, envoyez-le vers une plateforme d’échange qui accepte les dépôts sur Arc (voir [Retirer des fonds sans Kawase](../withdraw-without-kawase.mdx)).
+Vendre vers un compte bancaire passe par une plateforme d'échange : voir [Retirer](./bridge-and-withdraw.mdx#retirer).
 
 <ScopeList ids="buy" />

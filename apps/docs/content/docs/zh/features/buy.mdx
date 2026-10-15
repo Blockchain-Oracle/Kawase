@@ -1,39 +1,69 @@
 ---
 title: "用 Apple Pay 或银行卡购买"
-description: "通过 Circle 的 Onramp 使用借记卡、Apple Pay 或 Google Pay 购买 USDC 或 EURC。资金会到账你在 Arc 上自己的钱包，并在上链后确认。"
-sourceHash: 305adca20f73622e
+description: "在 Kawase 内用 Apple Pay、Google Pay、借记卡或银行转账购买 USDC 或 EURC，通过 Circle（直达 Arc）或 Coinbase（经由 Base），一直跟进到资金进入你的钱包。"
+sourceHash: 7644e5f1fdac9b70
 ---
 
 <Status ids="buy" />
 
 <Marks names="circle apple google usdc eurc" />
 
-“购买 50 美元的 USDC”，或选择 **充值 → 用银行卡购买**（第一行）。
+<Flow>
+  <FlowStep icon="dollar" title="金额">USDC 或 EURC，预设金额或自定。</FlowStep>
+  <FlowStep icon="card" title="支付方式">Apple Pay、Google Pay、银行卡或银行转账。</FlowStep>
+  <FlowStep icon="lock" title="结账" tone="accent">在 Kawase 内；银行卡和身份由服务商核验。</FlowStep>
+  <FlowStep icon="check" title="到达 Arc" tone="ink">一直跟进到进入你的钱包。</FlowStep>
+</Flow>
 
-<Steps>
-<Step>
-### 选择金额
-选择预设金额，或输入金额，单位可以是美元或欧元。页面会显示 Circle 提供的付款方式，并明确说明这是**真实资金**（主网），还是 **Circle 的沙盒**（测试网，仅限测试卡）。
-</Step>
-<Step>
-### 在 Circle 付款
-**购买**会全屏打开 Circle 的结账页面（Apple Pay 可在这里使用）。Kawase 会在服务器上创建付款会话，收款地址是你在 Arc 上的**个人地址**。
-</Step>
-<Step>
-### 资金到账
-回到 Kawase 后，订单会一直跟踪，直到**链上确认到账**。然后你会看到“资金已到账”。如果付款没有完成，页面会显示 Circle 提供的原因，并出现**重试**。
-</Step>
-</Steps>
+## 购买，一步一步
+
+“买 50 美元的 USDC”，或 **+ → 充值 → 用 Apple Pay 或银行卡购买**。
+
+<Walkthrough>
+  <WalkStep title="充值" src="buy/add-money">
+    **充值**汇集了所有入金方式：测试网上的测试 USDC、购买、你自己的地址、交易所、其他链，或浏览器钱包（MetaMask、Rabby）。
+
+    <Pin box="4 41.5 92 9">用 Apple Pay 或银行卡购买</Pin>
+
+    <Pin box="4 89 92 8.5">或从浏览器中的钱包转入</Pin>
+  </WalkStep>
+  <WalkStep title="买多少" src="buy/amount">
+    选择 USDC 或 EURC 以及金额。**你将获得**会在你付款前显示扣除服务商费用后的到账金额。
+
+    <Pin box="4 31.5 92 5">USDC 或 EURC</Pin>
+
+    <Pin box="4 49.5 92 5">$25 · $50 · $100 · $250</Pin>
+
+    <Pin box="4 80.5 92 8">扣除费用后的到账金额</Pin>
+  </WalkStep>
+  <WalkStep title="支付方式" src="buy/methods">
+    你的设备上可用的每种支付方式，附服务商和路径：**Circle** 直接打到你在 Arc 上的钱包；**Coinbase**（限美国手机号）先到
+    Base，再由 Kawase 转到 Arc。Apple Pay 在 iPhone 上显示，Google Pay 在浏览器支持时显示。
+
+    <Pin box="4 51.5 92 8.5">Circle：直达 Arc</Pin>
+
+    <Pin box="4 62.5 92 10">Coinbase：经由 Base，显示到账金额</Pin>
+
+    <Pin at="88 97">测试网上：Circle 沙盒，仅限测试卡</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## 结账和到账
+
+服务商的结账页**在 Kawase 内**打开（网页版也是），顶部有进度条：**付款中 → 购买中 → 已到 Arc**（Coinbase 多一步**转到 Arc**）。
+银行卡和身份核验由服务商完成，从不由 Kawase 完成。你可以离开：Kawase 会一直跟进订单，直到**链上确认到账**，然后显示“已到账”。
+如果付款没有完成，会显示服务商给出的原因和**重试**，并且总会说明是否有资金变动。
 
 ## 购买其他代币
 
-你可以请求购买其他代币（“用 Apple Pay 购买 30 美元的 cirBTC”）。Kawase 会先购买 USDC，然后打开兑换页面，将到账的 USDC 兑换成目标代币。你需要再次确认，页面也会显示两项费用。整个流程只会继续使用规范代币或已列出的代币，不会使用冒牌代币。
+要买其他代币（“用 Apple Pay 买 30 美元的 cirBTC”），Kawase 会先买 USDC，再为到账的金额打开[兑换](./swap-and-trade.mdx)，多一次
+授权并显示两笔费用。它只会继续兑换成正规或已上架的代币，绝不会是仿冒币。
 
-## 支持的平台
+## 在哪里可用
 
-- **主网**：Circle 的生产环境 Onramp，支持真实银行卡。Circle 完成对 Kawase 域名的业务审核后，Apple Pay 和 Google Pay 才会显示；结账页面会列出可用的付款方式。
-- **测试网**：Circle 的 Onramp 沙盒，使用测试卡。不涉及真实资金。免费的[水龙头](../getting-started.mdx#4-get-test-money)也可以使用。
+- **主网**：真实资金，遵循服务商自己的限额和核验。
+- **测试网**：Circle 沙盒，使用测试卡；不会有真实资金变动。充值中的免费测试 USDC 也可以用。
 
-目前还不能提现到银行账户。如需提现，请转账到支持 Arc 充值的交易所（请参阅[不通过 Kawase 提现](../withdraw-without-kawase.mdx)）。
+卖出到银行账户需要经由交易所：见[提现](./bridge-and-withdraw.mdx)。
 
 <ScopeList ids="buy" />
