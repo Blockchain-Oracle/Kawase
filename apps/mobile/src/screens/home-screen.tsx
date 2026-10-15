@@ -27,6 +27,7 @@ import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import {
   Button,
+  type Diagnosis,
   EmptyState,
   ErrorState,
   SectionLabel,
@@ -56,6 +57,8 @@ import { usePortfolio } from "@/portfolio/use-portfolio";
 import { useSession } from "@/session/session-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
+/** The feed came back without the wallet history (a source timed out): a server-side miss worth one retry. */
+const HISTORY_UNREAD: Diagnosis = { kind: "server", retryable: true };
 /** Home shows a glance; Activity has the whole feed. */
 const FEED_ROWS = 12;
 const EMPTY_PROMPT_KEY = "feed.home.emptyPrompt";
@@ -144,6 +147,9 @@ export function HomeScreen() {
   const onScrollEnd = (y: number) => setScrolledPast(runBottom > 0 && y > runBottom);
 
   const rows = rowsFor(feed.feed, filter);
+  // "Nothing yet" only when the history was read: an unread history with no rows is a failure to say, never an empty
+  // wallet (the device pass found both lines at once on a cold open).
+  const historyUnread = !!feed.feed && feed.feed.partial.includes("activity") && rowsFor(feed.feed, "all").length === 0;
   const feedSection = account ? (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
@@ -163,12 +169,13 @@ export function HomeScreen() {
       {feed.feed && rowsFor(feed.feed, "all").length > 0 ? (
         <FeedFilters feed={feed.feed} value={filter} onChange={setFilter} />
       ) : null}
-      {feed.feed && feed.feed.partial.length > 0 ? (
+      {/* Some rows read: a quiet note under them. None read because the history failed: the retry strip below says it. */}
+      {feed.feed && feed.feed.partial.length > 0 && !historyUnread ? (
         <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.home.partial")}</Text>
       ) : null}
-      {!feed.feed && feed.error ? (
+      {(!feed.feed && feed.error) || historyUnread ? (
         <ErrorState
-          diagnosis={feed.error}
+          diagnosis={feed.error ?? HISTORY_UNREAD}
           retry={() => void feed.refresh()}
           stillWorks={t("feed.home.feedStillWorks")}
           variant="strip"
