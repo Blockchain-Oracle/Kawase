@@ -89,6 +89,7 @@ export const shell: Catalog["shell"] = {
   dock: {
     home: "الرئيسية",
     markets: "الأسواق",
+    marketplace: "السوق",
     activity: "النشاط",
     settings: "الإعدادات",
     actions: "الإجراءات",

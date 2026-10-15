@@ -6,7 +6,7 @@
 // below 1280 px (icons only). It stays beside every page of the signed-in area, so it navigates by route: inside the
 // tabs it switches tab, from a pushed page it goes back down to the tabs.
 import { useRouter, useSegments } from "expo-router";
-import { Activity, Home, LineChart, MessageSquareText, Settings } from "lucide-react-native";
+import { Activity, Home, LineChart, MessageSquareText, Settings, Store } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
@@ -65,7 +65,7 @@ export function DesktopSidebar() {
   // ["(app)", "(tabs)", "markets"] on a tab (Home has no third segment); a pushed page selects no row.
   const path = segments as readonly string[];
   const onTabs = path[1] === "(tabs)";
-  const activeKey = onTabs ? (path[2] ?? "index") : path[1] === "chat" ? "chat" : "";
+  const activeKey = onTabs ? (path[2] ?? "index") : path[1] === "chat" || path[1] === "marketplace" ? path[1] : "";
   const name = !account
     ? t("common.guest")
     : user?.handle
@@ -75,6 +75,7 @@ export function DesktopSidebar() {
   const go = (key: string) => {
     if (key === "voice") return overlay.open("voice");
     if (key === "chat") return activeKey === "chat" ? undefined : router.push("/chat");
+    if (key === "marketplace") return activeKey === "marketplace" ? undefined : router.push("/marketplace");
     if (isMoney(key)) return gate(key);
     if (!isTab(key) || key === activeKey) return undefined;
     if (onTabs) router.navigate(TAB_HREFS[key]);
@@ -88,6 +89,7 @@ export function DesktopSidebar() {
       rows: [
         { key: "index", label: t("shell.dock.home"), icon: Home },
         { key: "markets", label: t("shell.dock.markets"), icon: LineChart },
+        { key: "marketplace", label: t("shell.dock.marketplace"), icon: Store },
         { key: "activity", label: t("shell.dock.activity"), icon: Activity },
         { key: "settings", label: t("shell.dock.settings"), icon: Settings },
         { key: "chat", label: t("shell.dock.chat"), icon: MessageSquareText },

@@ -83,6 +83,8 @@ UI and agent, from Abu's screenshots:
 - [ ] Voice picker plays a sample on tap.
 - [ ] Agent wallet page past mediocre.
 - [ ] Test on mainnet production, not only the local testnet api.
+- [ ] Public TestFlight: an external group with a public link (Beta App Review once per version; JS ships by EAS
+      Update without review). Lower priority than working features and the web (Abu, 10-15).
 
 **Sweep checklist (run on every screen before calling a round done):** every token/venue/chain/person shows its mark;
 anything that can't be done looks disabled and says why; empty pickers and lists offer something; loading is the

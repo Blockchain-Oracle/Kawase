@@ -15,6 +15,7 @@ import {
 import * as WebBrowser from "expo-web-browser";
 
 import { WEB_APP_URL } from "@/wallet/config";
+import { APPLE_WEB_FLOW } from "@/wallet/privy-account.native";
 import type { AccountMethods } from "./account-methods";
 import { privyAccountMethods, type PrivyLinked } from "./use-account-methods-privy-core";
 
@@ -34,7 +35,7 @@ export function usePrivyAccountMethods(): AccountMethods {
     accounts: (user?.linked_accounts ?? []) as readonly PrivyLinked[],
     refreshAccounts: async () => ((await refreshUser()).user.linked_accounts ?? []) as readonly PrivyLinked[],
     link: async (provider) => {
-      await link({ provider });
+      await link({ provider, ...(provider === "apple" ? APPLE_WEB_FLOW : {}) });
     },
     unlinkOAuth: async (provider, subject) => {
       await unlinkOAuth({ provider, subject });

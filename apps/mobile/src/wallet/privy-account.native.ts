@@ -1,5 +1,6 @@
 // iOS and Android: Privy's Expo SDK behind the shared sign-in core (email code, Google, Apple as enabled on the Privy
-// app; Apple is the system sheet on iOS). Typed data and raw hashes have no built-in UI in the Expo SDK, so signing is
+// app). Apple runs Privy's web flow on every platform: the Privy app's one Apple client is the Services ID the web needs
+// (xyz.kawase.app.signin), so iOS uses it too rather than the native sheet (which would need the bundle id instead). Typed data and raw hashes have no built-in UI in the Expo SDK, so signing is
 // silent; our own Face ID gate stays where the budget asks for it.
 import "./privy-polyfills.native";
 
@@ -27,6 +28,9 @@ export function privyEmail(user: User | null | undefined): string | undefined {
   return undefined;
 }
 
+/** Apple through the web flow on iOS too (see the header): the same client id as the web app. */
+export const APPLE_WEB_FLOW = { isLegacyAppleIosBehaviorEnabled: true } as const;
+
 function usePrivyKit(): PrivyKit {
   const { isReady, user, logout, refreshUser } = usePrivy();
   const { sendCode, loginWithCode } = useLoginWithEmail();
@@ -45,7 +49,7 @@ function usePrivyKit(): PrivyKit {
       await loginWithCode({ code, email });
     },
     oauth: async (provider) => {
-      await login({ provider });
+      await login({ provider, ...(provider === "apple" ? APPLE_WEB_FLOW : {}) });
     },
     createWallet: async () => {
       await create();

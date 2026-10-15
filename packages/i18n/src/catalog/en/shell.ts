@@ -5,6 +5,7 @@ export const shell = {
   dock: {
     home: "Home",
     markets: "Markets",
+    marketplace: "Marketplace",
     activity: "Activity",
     settings: "Settings",
     actions: "Actions",
