@@ -1,53 +1,95 @@
 ---
 title: "Carteira do agente e marketplace"
-description: "Kawase paga por serviços a cada chamada usando x402, com sua própria carteira de agente, dentro de um orçamento diário e de um limite por chamada definidos por você. Cada compra recebe um comprovante."
-sourceHash: b30083e867ea8387
+description: "O Kawase paga serviços por chamada via x402 a partir da própria carteira do agente, dentro de um orçamento diário e de um limite por chamada que você define, do catálogo de ferramentas pagas da Circle na Arc, com recibo de cada compra."
+sourceHash: fa648701e7336a30
 ---
 
 <Status ids="marketplace" />
 
 <Marks names="circle usdc blockrun exa defillama" />
 
-**x402** é um padrão aberto para pagar por uma solicitação na web com stablecoins: o serviço responde "402 Payment Required"
-com um preço, o cliente paga em USDC e recebe o resultado. Kawase usa isso para **comprar respostas para você**: pesquisas na web e notícias,
-cotações de mercados de previsão, rendimentos e preços do DefiLlama, preços de ações e enriquecimento de dados, no **catálogo x402 da Circle** na Arc.
+**x402** é um padrão aberto para pagar uma requisição web com stablecoins: o serviço responde «402 Payment Required» com um
+preço, o cliente paga em USDC e recebe o resultado. O Kawase usa isso para **comprar respostas para você**: busca na web e
+notícias, probabilidades de mercados de previsão, rendimentos e preços da DefiLlama, cotações de ações, enriquecimento de
+dados, do **catálogo x402 da Circle** na Arc.
 
-## Sua carteira de agente
+<Flow>
+  <FlowStep icon="wallet" title="Recarregar">A carteira do agente, separada da sua.</FlowStep>
+  <FlowStep icon="store" title="Um serviço">O preço por chamada e o que ele devolve.</FlowStep>
+  <FlowStep icon="sliders" title="Dentro do orçamento" tone="accent">Um orçamento diário e um limite por chamada.</FlowStep>
+  <FlowStep icon="receipt" title="Com recibo" tone="ink">«Pago 0,001 USDC a …», sempre.</FlowStep>
+</Flow>
 
-As compras nunca saem diretamente da sua carteira principal. Kawase tem uma **carteira de agente** separada para você, que só pode
-gastar o valor que você colocar nela:
+## O marketplace
 
-- **Adicionar saldo** da sua carteira Kawase usando um valor predefinido. Na primeira vez, você assina uma **autorização limitada para o marketplace** com Face ID;
-  nas próximas vezes, não é preciso confirmar, desde que estejam dentro desse limite. Você também pode adicionar saldo com **Apple Pay ou cartão** pelo Onramp da Circle, direto
-  na carteira do agente.
-- O saldo é dividido entre o **Circle Gateway** (pronto para nanopagamentos, aceitos pela maioria dos vendedores) e uma parte **disponível**
-  para vendedores que aceitam USDC comum (EIP-3009). Quando uma compra em USDC comum precisa de mais saldo disponível, Kawase o repõe usando o
-  Gateway.
-- **Devolver à minha carteira** envia as duas partes de volta a qualquer momento.
+**Mercados → Marketplace** (na barra lateral no computador) lista cada ferramenta paga que o seu agente pode chamar: cerca de
+84 na rede principal da Arc, por categoria, cada uma com a marca do vendedor, o preço por chamada e quantas chamadas um dólar
+compra.
 
-Configurações → **Carteira do agente** mostra o saldo, o que foi gasto hoje, o endereço e o histórico completo de compras e
-movimentações.
+<Walkthrough light>
+  <WalkStep title="O catálogo" src="marketplace/list" zoom="88 24.5 11">
+    Busque ou navegue por categoria: dados, busca e pesquisa, social, infraestrutura, finanças, criação, mercados de previsão.
 
-## Orçamentos definidos por você
+    <Pin box="4 8.5 92 4.5">Buscar serviços</Pin>
+
+    <Pin box="4 15 92 4.5">Categorias, com a contagem</Pin>
+
+    <Pin box="4 21 92 7.5">Um serviço: vendedor, endpoints, preço por chamada</Pin>
+  </WalkStep>
+  <WalkStep title="Um serviço" src="marketplace/service">
+    Cada serviço mostra o que devolve, como pode ser pago (Circle Gateway ou qualquer carteira), seus endpoints e faixa de
+    preço, e **Experimente**: uma chamada real, paga pela carteira do agente.
+
+    <Pin box="4 23.5 92 7">Quem vende, próprio ou de terceiros</Pin>
+
+    <Pin box="4 46.5 92 6">Como pode ser pago</Pin>
+
+    <Pin box="4 80 92 7">Experimente pelo preço dele</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## A carteira do seu agente
+
+As compras nunca saem direto da sua carteira principal. O Kawase mantém uma **carteira do agente** separada para você, e ela
+só pode gastar o que você coloca.
+
+<Shot src="marketplace/agent-wallet" alt="Carteira do agente na rede de testes: saldo de 0,00 USDC, gasto hoje 0,00 de 5,00 USDC, pronto para pagar e disponível, Quase vazia, e Recarregar com 1, 2 ou 5 USDC ou com Apple Pay ou cartão.">
+  <Pin at="84 16">O saldo dela</Pin>
+
+  <Pin box="4 30 92 7">Pronto para pagar (Circle Gateway) e disponível (USDC simples)</Pin>
+
+  <Pin box="4 76.5 92 13">Recarregar a partir da sua carteira</Pin>
+
+  <Pin box="4 91 92 7">Ou comprar direto para ela</Pin>
+</Shot>
+
+- **Recarregue** a partir da sua carteira Kawase com um valor pronto. A primeira recarga pede que você confirme uma vez:
+  depois o Kawase só pode mover USDC para a carteira do agente, com um limite diário. Ou recarregue com **Apple Pay ou
+  cartão**, direto para ela.
+- O saldo é dividido entre o **Circle Gateway** (pronto para nanopagamentos, que a maioria dos vendedores aceita) e uma parte
+  **disponível** para vendedores que aceitam USDC simples. O Kawase repõe essa parte a partir do Gateway sozinho.
+- **Devolver para minha carteira** traz as duas partes de volta quando você quiser.
+
+## Os orçamentos que você define
 
 - um **orçamento diário** e um **limite por chamada**;
-- **pedir minha confirmação primeiro** acima do limite: a compra aguarda seu consentimento em um cartão no chat;
-- as **categorias** das quais Kawase pode comprar;
+- **pergunte antes de cada compra**, ou só acima do limite, num cartão de consentimento no chat;
+- as **categorias** em que o Kawase pode comprar;
 - **vendedores bloqueados**: toque em qualquer compra para bloquear o vendedor.
 
-A redução dos limites entra em vigor na hora; para aumentá-los, é preciso usar o Face ID. Uma recusa informa qual regra a impediu.
+Apertar vale na hora; afrouxar pede sua confirmação. Uma recusa nomeia a regra que a causou.
 
-## Comprovante em todas as compras
+## Toda compra com recibo
 
-O chat mostra o que Kawase encontrou (a marca do vendedor, o que ele retorna e o preço) e, depois do pagamento, um comprovante: "Paid 0.002
-USDC to …". A resposta do vendedor é marcada como **não verificada**. O x402 ainda não tem um padrão de reembolso: se uma chamada falhar depois do pagamento,
-o comprovante informa que o vendedor ficou com o valor; um pagamento que a Circle informa como falho é marcado como **não cobrado**. Kawase trata textos externos como dados, nunca como instruções, e
-avisa quando uma resposta tenta dizer o que ele deve fazer.
+O chat mostra o que o Kawase encontrou (a marca do vendedor, o que devolve, o preço) e, depois de pagar, um recibo: «Pago
+0,002 USDC a …». A resposta do vendedor é marcada como **não verificada**. O x402 ainda não tem padrão de reembolso: se uma
+chamada falha depois do pagamento, o recibo diz que o vendedor ficou com ele; um pagamento que a Circle informa como falho é
+marcado **não cobrado**. O Kawase trata texto de fora como dado, nunca como instrução.
 
 ## Redes
 
-- **Rede principal**: catálogo da Circle (cerca de 2,100 listagens na Arc), pago pelas duas formas.
-- **Rede de testes**: o catálogo da Circle não tem listagens na rede de testes, então Kawase usa seu próprio vendedor de demonstração (`seller.getkawase.xyz`) para
-  testar tudo do início ao fim com dinheiro de teste.
+- **Rede principal**: o catálogo da Circle, pago pelos dois trilhos.
+- **Rede de testes**: o catálogo da Circle não tem ofertas de teste, então o Kawase roda seu próprio vendedor de demonstração
+  (`seller.getkawase.xyz`) para testar de ponta a ponta com dinheiro de teste.
 
 <ScopeList ids="marketplace" />
