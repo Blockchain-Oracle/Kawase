@@ -1,4 +1,4 @@
-// Kawase's testnet x402 demo seller (cards/marketplace.md "What if … Testnet"; MASTER-PLAN:233). Circle's catalog
+// Kawase's testnet x402 demo seller (cards/marketplace.md "What if … Testnet"). Circle's catalog
 // has no Arc Testnet listings, so this stands in: three paid money-data endpoints on Arc Testnet, priced like the
 // mainnet ones (BlockRun's DefiLlama yields at $0.006), paid through Circle Gateway nanopayments with `@x402/express`'s
 // paymentMiddleware and Circle's Gateway facilitator. Its data is real (DefiLlama, the ECB via Frankfurter, Arc's RPC).

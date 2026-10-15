@@ -1,5 +1,5 @@
 // Circle's x402 catalog (cards/marketplace.md): every Arc listing, read once per network and cached, searched here.
-// Only listings from the catalog can be bought (MASTER-PLAN §Security). On testnet the catalog is empty, so Kawase's
+// Only listings from the catalog can be bought (ARCHITECTURE §10). On testnet the catalog is empty, so Kawase's
 // own demo seller publishes its listings in the same shape at `{seller}/listings`. A listing whose URL could point the
 // api inside its own network (not https, a template in the host, a private address) is left out (guard.ts).
 import { getAddress, isAddress, type Address } from "viem";

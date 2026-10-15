@@ -1,4 +1,4 @@
-// Automations (Stage 8; MASTER-PLAN "Automations + delegated authority"): "every Tuesday send $1 to Alex", run by
+// Automations (Stage 8, automations and delegated authority): "every Tuesday send $1 to Alex", run by
 // Kawase without asking again, bounded on chain by the automation's own grant.
 //
 // Auto-save (8b) is the second kind: "keep $20 ready, the rest earns". Its grants (three, signed with one Face ID)

@@ -9,9 +9,6 @@
     "summary": "Senryo's look exactly (D40): light-first neutrals (#F5F5F5 ground, white cards, #ECECEC insets), black primary actions, #FA00FF magenta with black labels only for trade, publish, selected controls and the focus ring, up/down only for direction, Inter for the interface and Roboto Condensed Black for money and page titles. Testnet is neutral plates plus the mode capsule, never a hue wash."
   },
   "authority": {
-    "decisions": "context/08-product-research/DECISIONS-FROM-ABU.md (D37-D43)",
-    "research": "plan/research/2026-10-14/03-senryo-design.md, 05-21st-components.md",
-    "docsPack": "plan/docs-packs/look.md",
     "designSystem": "DESIGN.md"
   },
   "sources": {
@@ -24,8 +21,8 @@
       "apps/mobile/src/components/{kit,sheet,shell,toast,tx}",
       "packages/ui-web/src/components/ui"
     ],
-    "senryo": "/Users/abu/dev/hackathon/metropolis (packages/tokens/src, apps/mobile/src/components)",
-    "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/{states,tx}"
+    "senryo": "senryo (packages/tokens/src, apps/mobile/src/components)",
+    "mitoshi": "mitoshi:web/src/components/{states,tx}"
   },
   "design": {
     "colorMode": "light-default-with-dark",
@@ -365,7 +362,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/Button.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/Button.tsx"
           }
         ],
         "port": "Senryo port: 56 pt plate (44 compact), 28/22 radius, black primary, quiet secondary one step lighter than its ground, ghost in link ink, destructive on its wash; 0.97 press scale (100/160 ms) and a press haptic.",
@@ -394,7 +391,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/ListRow.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/ListRow.tsx"
           }
         ],
         "port": "Leading real mark, title, detail, chevron or trailing control; rows separated by height, not lines; pressed row fill; tick haptic.",
@@ -425,7 +422,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/Switch.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/Switch.tsx"
           }
         ],
         "port": "Thumb travels in 100 ms on the press curve; switch role with checked state.",
@@ -443,7 +440,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/SearchField.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/SearchField.tsx"
           }
         ],
         "port": "Inset fill, leading search glyph, clear button when not empty; search label from the shell catalogue.",
@@ -543,7 +540,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/DisclosureRow.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/DisclosureRow.tsx"
           }
         ],
         "port": "Title and value at rest, the detail behind one tap (the Senryo \"detail behind one disclosure\" rule); expanded state for assistive tech.",
@@ -637,7 +634,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/LiveOdometer.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/LiveOdometer.tsx"
           }
         ],
         "port": "Native: Skia picture recorded on the UI thread, direction-aware digit roll, Roboto Condensed Black from the same TTF the app embeds; masks while balances are hidden.",
@@ -676,7 +673,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/kit/GlassPlate.tsx"
+            "senryo": "senryo:apps/mobile/src/components/kit/GlassPlate.tsx"
           }
         ],
         "port": "iOS 26 Liquid Glass where available, the opaque glass token elsewhere and under Reduce Transparency; dock and capsule material only.",
@@ -725,7 +722,7 @@
             "role": "spec"
           },
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/LoadingState.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/LoadingState.tsx"
           }
         ],
         "port": "Skeletons shaped like the real layout, pulsing 1200 ms (static under Reduce Motion); a named wait adds the 3 x 3 pixel loader and elapsed seconds.",
@@ -742,7 +739,7 @@
             "role": "spec"
           },
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/EmptyState.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/EmptyState.tsx"
           }
         ],
         "port": "Says why in at most five words, one line of detail, and names the next action; filled group, no border.",
@@ -765,7 +762,7 @@
             "role": "spec"
           },
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/ErrorState.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/ErrorState.tsx"
           }
         ],
         "port": "Diagnosis in human words, what still works, one action (the fix or Retry), technical line behind a disclosure; strip variant for inline use.",
@@ -776,7 +773,7 @@
         "native": "apps/mobile/src/components/kit/states.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/StaleTick.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/StaleTick.tsx"
           },
           {
             "composedFrom": "Mitoshi StaleTick + ReadFailure"
@@ -802,7 +799,7 @@
             "role": "spec"
           },
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/{useHeldLoading.ts,WaitingText.tsx}"
+            "mitoshi": "mitoshi:web/src/components/states/{useHeldLoading.ts,WaitingText.tsx}"
           }
         ],
         "port": "Skeleton only after 120 ms, held at least 300 ms; a short verb that shimmers, elapsed seconds after 3 s, \"Still waiting · Retry\" at 15 s.",
@@ -813,7 +810,7 @@
         "native": "apps/mobile/src/components/tx/BlockedCta.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/BlockedCta.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/BlockedCta.tsx"
           },
           {
             "composedFrom": "Button + WaitingText"
@@ -827,7 +824,7 @@
         "native": "apps/mobile/src/components/tx/TxCta.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxCta.tsx"
+            "mitoshi": "mitoshi:web/src/components/tx/TxCta.tsx"
           },
           {
             "composedFrom": "Button anatomy + TxSteps + TxMorph + BlockedCta"
@@ -861,7 +858,7 @@
         "native": "apps/mobile/src/components/tx/TxMorph.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxMorph.tsx"
+            "mitoshi": "mitoshi:web/src/components/tx/TxMorph.tsx"
           },
           {
             "composedFrom": "Mitoshi tx/TxMorph.tsx with Reanimated layout transitions (a motion wrapper with no look of its own; it morphs the CTA and the host's receipt)"
@@ -875,7 +872,7 @@
         "native": "apps/mobile/src/components/tx/TxFailureCard.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/TxFailureCard.tsx"
+            "mitoshi": "mitoshi:web/src/components/tx/TxFailureCard.tsx"
           },
           {
             "21st": 23621,
@@ -892,7 +889,7 @@
         "native": "apps/mobile/src/components/tx/useTxLifecycle.ts",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/tx/useTxLifecycle.ts"
+            "mitoshi": "mitoshi:web/src/components/tx/useTxLifecycle.ts"
           },
           {
             "composedFrom": "Mitoshi tx/useTxLifecycle.ts and its TxState reducer (logic, no visible part)"
@@ -906,7 +903,7 @@
         "native": "apps/mobile/src/components/tx/journal.ts",
         "source": [
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/packages/calls/src/{intent-journal.ts,use-intent-recovery.ts}"
+            "senryo": "senryo:packages/calls/src/{intent-journal.ts,use-intent-recovery.ts}"
           },
           {
             "composedFrom": "Senryo packages/calls intent-journal.ts and use-intent-recovery.ts (logic, no visible part); the reader lives in tx/recovery.ts"
@@ -932,7 +929,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/sheet/*"
+            "senryo": "senryo:apps/mobile/src/components/sheet/*"
           }
         ],
         "port": "Root sheet layer above every page and the dock; detents 0.62/0.88/1 (LIST_DETENTS), closes past 25 % (120 pt max) or a 900 pt/s flick, upward drag resisted /6; the page beneath steps back to 0.96; the dock hides while any sheet holds it. On a desktop window the same API is a 384 px right drawer.",
@@ -956,7 +953,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/Dock.tsx"
+            "senryo": "senryo:apps/mobile/src/components/shell/Dock.tsx"
           }
         ],
         "port": "Icon-only glass capsule, a bubble that springs to the active slot (measured, so it mirrors in RTL), the orb as a centre action, badge, hides under sheets and the keyboard.",
@@ -989,7 +986,7 @@
             "verified": "21st get 1600 returns haydenbleasel/pill (2026-10-14)"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/ModeCapsule.tsx"
+            "senryo": "senryo:apps/mobile/src/components/shell/ModeCapsule.tsx"
           }
         ],
         "port": "Mainnet/Testnet in words on neutral plates (never a hue wash), Arc mark, a two-position switch whose knob springs; one tap switches, a hold opens both networks; testnet reads by shape too (dashed rim, hollow track).",
@@ -1000,7 +997,7 @@
         "native": "apps/mobile/src/components/shell/LiveRegionHost.tsx",
         "source": [
           {
-            "mitoshi": "/Users/abu/dev/hackathon/crypto-world-fair/web/src/components/states/LiveRegion.tsx"
+            "mitoshi": "mitoshi:web/src/components/states/LiveRegion.tsx"
           },
           {
             "composedFrom": "Mitoshi states/LiveRegion.tsx (an accessibility live region, no visible part)"
@@ -1048,7 +1045,7 @@
             "role": "seen"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/components/shell/Dock.tsx"
+            "senryo": "senryo:apps/mobile/src/components/shell/Dock.tsx"
           }
         ],
         "port": "Home · Markets · centre · Activity · Settings, icon-only glass; the centre is a black disc whose plus turns to × (fanLead spring); tap = fan, hold (350 ms) = voice orb.",
@@ -1065,7 +1062,7 @@
             "role": "spec"
           },
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/features/onboarding/Story.tsx"
+            "senryo": "senryo:apps/mobile/src/features/onboarding/Story.tsx"
           }
         ],
         "port": "Senryo's story: position as a float on the UI thread, Pan + Tap exclusive, flick velocity, spring settle; copy travels at 0.35 depth and fades; segments; adjustable for assistive tech; scene cue on landing.",
@@ -1096,7 +1093,7 @@
         "native": "apps/mobile/src/onboarding/notifications-ask.tsx, apps/mobile/src/screens/setup-screen.tsx (FirstJob)",
         "source": [
           {
-            "senryo": "/Users/abu/dev/hackathon/metropolis/apps/mobile/src/features/setup/setup-order.ts"
+            "senryo": "senryo:apps/mobile/src/features/setup/setup-order.ts"
           }
         ],
         "port": "Setup ends on the first agent run (three real requests by network, real marks); notifications asked once in a kit Sheet after it.",
@@ -1116,7 +1113,7 @@
           "29368": "rows insert, re-rank and light up as the stream changes them: Reanimated LinearTransition (spring) for the re-rank, a fade-in of the new value instead of the number morph, shaped skeletons for rows still pricing, loading/empty/error states and reduced motion (100 ms) from its contract"
         },
         "deviations": [
-          "one column list, not a table: Wise compare-sheet layout (plan/research 08-references #1) — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
+          "one column list, not a table: Wise compare-sheet layout — logo, name, you receive, delta to best, ETA; fee and facts behind one chevron",
           "no ▲/▼ change glyphs: a route row changes once (checking → quoted), so the light-up carries it: the mark goes 0.38 → 1 and 29368's ChangePulse wash (accent at 10%, 0.85 → 0 over 1.4 s, fade-out only) runs once; reduced motion skips the wash",
           "routes Kawase cannot run are never offered: they collapse into one 'Didn't quote' disclosure with their reason",
           "motion/react replaced by react-native-reanimated so one file serves iOS, Android and the web (react-native-web)",

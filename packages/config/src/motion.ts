@@ -1,6 +1,6 @@
 /**
  * Motion durations and geometry (milliseconds, points). Starting points adapted from the reference study's
- * clips (docs/design/reference-study-2026-09-30, M01–M18); see DESIGN.md §Motion. The apps read these so no
+ * clips (a reference study of wallet apps, M01–M18); see DESIGN.md §Motion. The apps read these so no
  * screen carries its own magic numbers.
  */
 export const MOTION = {

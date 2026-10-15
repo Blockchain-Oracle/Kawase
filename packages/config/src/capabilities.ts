@@ -34,7 +34,7 @@ const TARGET: Record<CapabilityId, Record<NetworkId, CapabilityState>> = {
   // App Kit Earn lists Morpho vaults on Arc and mock Morpho vaults on Arc Testnet (checked 2026-10-01).
   yield: { mainnet: "available", testnet: "available" },
   automations: { mainnet: "available", testnet: "available" },
-  // Circle's x402 catalog has mainnet listings only (D14 research); testnet pays Kawase's own demo seller (MASTER-PLAN:233).
+  // Circle's x402 catalog has mainnet listings only (D14 research); testnet pays Kawase's own demo seller (apps/x402-seller).
   marketplace: { mainnet: "available", testnet: "available" },
   voice: { mainnet: "available", testnet: "available" },
   // Test money is a testnet thing by definition.

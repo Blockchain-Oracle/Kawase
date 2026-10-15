@@ -3,7 +3,7 @@
 Purpose: the single source for every visual decision. Every colour, font, radius, space, elevation, motion and spring value in the apps resolves to a token in `packages/ui-tokens/tokens.json`. `pnpm --filter @kawase/ui-tokens build` generates `native.css` (Uniwind), `web.css` (docs and landing) and `tokens.ts`, then `check-contrast.mjs` fails the build if any text pair in any of the four themes drops below 4.5:1.
 Last updated: 2026-10-14 (D40, Stage 2 look lane)
 Decision: D40, Abu on 2026-10-14: "Exactly Senryo, magenta"; every component from 21st.dev; designed loading, empty, error and offline states everywhere; no mocks. This replaces "Lime on Ink" (D35); the orb stays as the voice symbol. Token **names** did not change; their values did.
-Sources: Senryo (`/Users/abu/dev/hackathon/metropolis`: `packages/tokens/src/{palette,scale,fonts,sound}.ts`, `apps/mobile/src/components`), Mitoshi (`crypto-world-fair/web/src/components/{states,tx}`), `plan/research/2026-10-14/03-senryo-design.md` and `05-21st-components.md`, the look docs pack (`plan/docs-packs/look.md`). Component provenance: `apps/mobile/.21st/design.json`.
+Sources: Senryo (the owner's earlier app: its palette, scale, fonts, sounds and components), Mitoshi (its loading, empty, error and transaction states), and 21st.dev components. Component provenance: `apps/mobile/.21st/design.json`.
 
 ## Direction
 - One line: **quiet light plates, black actions, one magenta for the moment that matters, money in condensed black figures that roll.**

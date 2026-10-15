@@ -1,6 +1,6 @@
 /**
- * Kawase's public addresses (domain getkawase.xyz, bought 2026-10-02; the sslip.io hosts stay as aliases): where a person or a judge reaches each surface (deploy/coolify.md "Planned
- * applications"; Android build from deploy/android.md, 2026-10-02). The docs and the landing read these, so a link
+ * Kawase's public addresses (domain getkawase.xyz, bought 2026-10-02; the sslip.io hosts stay as aliases): where a person or a judge reaches each surface (Android build from
+ * deploy/android.md, 2026-10-02). The docs and the landing read these, so a link
  * changes in one place. `testFlight` stays null until a public TestFlight link exists; surfaces then say
  * "invite only" instead of inventing one.
  */

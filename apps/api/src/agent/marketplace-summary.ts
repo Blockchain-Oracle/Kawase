@@ -1,5 +1,5 @@
 // What the model reads of a marketplace result: display strings, the rule that applied, and a seller's answer
-// quarantined as untrusted data (MASTER-PLAN §Security: x402 bodies are wrapped and never instructions). The card
+// quarantined as untrusted data (ARCHITECTURE §10, security: x402 bodies are wrapped and never instructions). The card
 // renders the full result; this stays small.
 import type { AgentTopUpProposal, AgentWalletLine, BuyOutcome, InspectServiceResult, ServiceListing } from "@kawase/api-client";
 import { untrusted } from "@kawase/agent";

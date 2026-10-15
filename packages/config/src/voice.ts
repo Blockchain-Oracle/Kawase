@@ -1,7 +1,7 @@
 import type { SupportedLocale } from "./locales";
 
 /**
- * Voice (Stage 10; MASTER-PLAN "Voice", context/08-product-research/09-voice-decision): LiveKit carries the audio;
+ * Voice (Stage 10): LiveKit carries the audio;
  * speech becomes text (STT), Kawase's own agent answers (the same turn as chat — one brain, one transcript), and the
  * answer is spoken (TTS). Per language: ElevenLabs Scribe v2 realtime hears all ten; ElevenLabs Flash v2.5 speaks
  * eight of them, and OpenAI's TTS speaks Bengali and Urdu, which Flash v2.5 does not (vendor language lists, checked

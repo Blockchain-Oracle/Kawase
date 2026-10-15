@@ -1,4 +1,4 @@
-// The smart sheet (resolve and resume, D13; context/08-product-research/SMART-PRECONDITIONS.md): when a run stops on a
+// The smart sheet (resolve and resume, D13): when a run stops on a
 // typed blocker, its card shows one button that names the fix ("Add Alex's address", "Add money", "Set a budget",
 // "Switch to Arc Testnet", "Sign in"), and the button opens a sheet with exactly that fix — never an error page.
 // When the fix is done the SAME run carries on from the step that stopped: `onFixed` re-checks every fact (a new

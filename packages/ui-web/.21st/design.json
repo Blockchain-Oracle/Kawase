@@ -76,12 +76,12 @@
     {
       "date": "2026-09-30",
       "decision": "Direction C, Koe (voice-first stage), chosen by Abu from three built directions",
-      "evidence": "plan/design/DIRECTIONS.md"
+      "evidence": "DESIGN.md"
     },
     {
       "date": "2026-09-30",
       "decision": "Direction revamped to \"Lime on Ink\" (D34/D35) from the Solflare/Phantom/Fomo reference study; Koe superseded",
-      "evidence": "plan/design/REVAMP-PLAN.md"
+      "evidence": "DESIGN.md"
     }
   ],
   "evidence": [

@@ -851,7 +851,7 @@ export class MarketplaceService {
 
   /**
    * One paid call for the agent. `tainted` is set once paid data was read in this turn: from then on every purchase
-   * waits for the person's tap (MASTER-PLAN §Security, the tainted-turn rule).
+   * waits for the person's tap (ARCHITECTURE §10, the tainted-turn rule).
    */
   async buy(user: SessionUser, input: BuyServiceInput, context: { threadId: string | null; tainted: boolean }): Promise<BuyOutcome> {
     const network = user.activeNetwork;

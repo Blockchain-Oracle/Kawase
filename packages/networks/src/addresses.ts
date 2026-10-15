@@ -5,7 +5,8 @@ import type { NetworkId } from "./network-id";
  * Verified Arc contract addresses. Each block cites its source; do not edit without re-verifying.
  * - Assets, CCTP, Gateway, Memo, system contracts: context/01-arc/network-config.md (checked with eth_getCode, 2026-09-29)
  * - MetaMask Delegation Framework v1.3.0 (identical on both networks):
- *   context/08-product-research/03-wallets-custody-limits/delegation-session-keys-limits.md §2a
+ *   github.com/MetaMask/delegation-framework documents/Deployments.md and npm @metamask/delegation-deployments@2.0.0,
+ *   bytecode checked on Arc mainnet and testnet (2026-09-29)
  */
 
 /** Same address on both networks. */

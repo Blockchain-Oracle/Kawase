@@ -28,8 +28,7 @@ export type LimitDefaults = {
 
 /**
  * Consumer defaults per network. Users can change them (loosening = step-up + wallet signature).
- * Source: context/08-product-research/07-automations-contacts-safety/limits-and-safety.md §1. The research labels these
- * as judgment calls based on precedents (Circle Agent Wallet caps, Bankr 24 h cooldown, App Kit 300 bps), not benchmarks.
+ * Source: Kawase's limits research. These are judgment calls based on precedents (Circle Agent Wallet caps, Bankr 24 h cooldown, App Kit 300 bps), not benchmarks.
  * Testnet values are looser because no real money is at risk [INFERENCE].
  */
 export const DEFAULT_LIMITS = {

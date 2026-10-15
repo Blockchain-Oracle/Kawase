@@ -1,4 +1,4 @@
-// Earning on idle USDC (Stage 6c; MASTER-PLAN "Earn vaults ... deposit and withdraw, positions"), built like swaps.
+// Earning on idle USDC (Stage 6c: vaults, deposit and withdraw, positions), built like swaps.
 //
 // Overview: the USDC vaults App Kit lists on the network (yield, 30-day yield, how much can be paid out now, curator,
 // Circle's monitoring, warnings) and what the person holds in each, read from the vault itself. Drafting: the vault

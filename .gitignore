@@ -19,3 +19,25 @@ refs/*/
 .claude/worktrees/
 .pnpm-store/
 .dev-pg/
+
+# Local planning, research and agent tooling: kept on disk, not published. What stays public: plan/ARCHITECTURE.md,
+# plan/product/ (the cards the code cites), plan/spikes/ and plan/stages/ (the logs behind /demo's evidence),
+# context/01-arc/ (the agent's Arc knowledge build reads it) and context/07-prior-work/ (cited by the README).
+/plan/STATUS.md
+/plan/MASTER-PLAN.md
+/plan/EXPO-RULES.md
+/plan/COVERAGE.md
+/plan/prompts/
+/plan/reviews/
+/plan/research/
+/plan/design/
+/plan/docs-packs/
+/context/*
+!/context/01-arc/
+!/context/07-prior-work/
+/docs/design/
+/docs/demo/
+/deploy/coolify.md
+/.21st/
+/.claude/
+/apps/mobile/.claude/

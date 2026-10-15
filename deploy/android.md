@@ -48,7 +48,7 @@ After step 2, every release is `production` build → `submit` (track `internal`
 ## Before a wider release (closed/open testing, production)
 
 Privacy policy URL, account deletion (in app and a web link), Data safety, content rating, target audience, financial
-features declaration, store listing with screenshots — tracked in `plan/COVERAGE.md` (Q, U).
+features declaration, store listing with screenshots.
 
 ## Local builds and the emulator (2026-10-02)
 

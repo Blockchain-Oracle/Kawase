@@ -1,9 +1,8 @@
 import { NETWORKS, NETWORK_ADDRESSES, SHARED_ADDRESSES } from "@kawase/networks";
 
 /**
- * The entities Kawase shows with their real artwork. Keys follow the reference study's asset-delivery contract
- * (docs/design/reference-study-2026-09-30/08-logos-and-identity.md): chains by chain id, tokens by chain id +
- * lowercase address, providers and venues by slug. Chain ids and addresses come from @kawase/networks so the
+ * The entities Kawase shows with their real artwork. Keys follow the reference study's asset-delivery contract: chains
+ * by chain id, tokens by chain id + lowercase address, providers and venues by slug. Chain ids and addresses come from @kawase/networks so the
  * registry cannot drift from the verified values. Mark files live in svg/ with a row in PROVENANCE.md each;
  * an entity whose file has not arrived yet renders the labelled neutral disc, never a stand-in logo.
  */

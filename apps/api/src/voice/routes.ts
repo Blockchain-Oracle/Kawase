@@ -1,4 +1,4 @@
-// Voice (Stage 10; MASTER-PLAN "Voice" flow): the app asks for a session and joins a LiveKit room with the token it
+// Voice (Stage 10, the voice flow): the app asks for a session and joins a LiveKit room with the token it
 // gets; the same token dispatches Kawase's voice worker into that room, carrying (in metadata only the worker reads)
 // a voice token for this person and this thread. The worker turns speech into text and calls `POST /voice/turn`, which
 // runs the very same agent turn as chat — one brain, one transcript — and streams the answer back to be spoken; the

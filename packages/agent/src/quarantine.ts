@@ -1,4 +1,4 @@
-// Prompt-injection quarantine (A5; MASTER-PLAN §Security): text that people or services outside Kawase wrote — a
+// Prompt-injection quarantine (A5; ARCHITECTURE §10): text that people or services outside Kawase wrote — a
 // seller's answer or listing, a vault's or token's name, an on-chain memo, a contact's notes, words from past
 // conversations — reaches the model fenced as data: `<untrusted source="…">…</untrusted>`, with any tag inside
 // defused, and flagged when it reads like instructions to the model. The instructions tell the model that fenced text

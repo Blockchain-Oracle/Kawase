@@ -17,7 +17,7 @@ export type FormatOptions = {
 
 /**
  * Locale-aware display of an exact amount. Intl.NumberFormat rejects "USDC" as a currency code,
- * so the number is formatted as a plain decimal and the symbol appended (context/08-product-research/05-voice-language-genui/i18n.md).
+ * so the number is formatted as a plain decimal and the symbol appended.
  * Formatting works from bigint strings, so large amounts never lose precision.
  */
 export function formatAmount(value: Amount, locale: string, options: FormatOptions = {}): string {

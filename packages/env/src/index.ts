@@ -114,7 +114,7 @@ export const apiEnvSchema = z.object({
   EMAIL_FROM: z.preprocess(blankIsUnset, z.string().optional()),
   /** The oldest app version served ("1.2.0"); older apps show "Update required". Unset = every version. */
   KAWASE_MIN_APP_VERSION: z.preprocess(blankIsUnset, z.string().regex(/^\d+(\.\d+){0,2}$/).optional()),
-  /** The testnet x402 demo seller (apps/x402-seller): Circle's catalog has no testnet listings (MASTER-PLAN:233). */
+  /** The testnet x402 demo seller (apps/x402-seller): Circle's catalog has no testnet listings. */
   X402_DEMO_SELLER_URL: z.preprocess(blankIsUnset, z.url().optional()),
   /** Onramp: the hostname of a page that embeds the widget in an iframe. Unset in the app's flow (top level). */
   ONRAMP_REFERRER_DOMAIN: z.preprocess(blankIsUnset, z.string().regex(/^[a-z0-9.-]+$/).optional()),
