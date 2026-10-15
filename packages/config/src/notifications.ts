@@ -12,15 +12,16 @@ export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export type NotificationPrefs = Partial<Record<NotificationKind, Partial<Record<NotificationChannel, boolean>>>>;
 
 /**
- * Push tells about everything. Email is for money that reached the person and for what Kawase did or skipped on its
- * own; a send they just made themselves is already on their screen.
+ * Push tells about everything. Email carries the receipt for money that moved either way (Abu, 10-15: "performing
+ * transactions and it sends receipts"; a withdrawal's arrival and an automation's run come as sends too) and what
+ * Kawase did or skipped on its own.
  */
 export const NOTIFICATION_DEFAULTS: Record<NotificationKind, Record<NotificationChannel, boolean>> = {
   payment_received: { push: true, email: true },
   // Someone on Kawase asked the person for money: the in-app ask stands in for sharing a link, so both channels tell.
   request_received: { push: true, email: true },
   request_paid: { push: true, email: true },
-  send_completed: { push: true, email: false },
+  send_completed: { push: true, email: true },
   automation_skipped: { push: true, email: true },
   rule_alert: { push: true, email: true },
   // Security (cards/automate-safety.md "security: new device"): always both, so a stolen session is seen at once.

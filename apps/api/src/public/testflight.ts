@@ -64,7 +64,8 @@ export class TestflightInvites {
 
   private token(): string {
     const { keyId, issuer, privateKey } = this.config!;
-    const key = createPrivateKey(privateKey.replace(/\\n/g, "\n"));
+    // The .p8 in one env line: Coolify stores "\\n" for each break, a shell export "\n"; base64 never holds a backslash.
+    const key = createPrivateKey(privateKey.replace(/\\+n/g, "\n"));
     const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
     const now = Math.floor(Date.now() / MS);
     const head = b64({ alg: "ES256", kid: keyId, typ: "JWT" });
