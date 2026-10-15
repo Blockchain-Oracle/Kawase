@@ -12,8 +12,11 @@ export const PUBLIC_LINKS = {
   github: "https://github.com/Blockchain-Oracle/Kawase",
   /** Where a person reports a problem (no support mailbox exists yet; the repository's issues are public and watched). */
   support: "https://github.com/Blockchain-Oracle/Kawase/issues/new",
-  /** EAS preview build e644e19d (universal APK). Do not use fc084aa7 (blank-screen bug). */
-  androidApk: "https://expo.dev/accounts/abu.dev/projects/kawase/builds/e644e19d-72ca-4afd-b212-cf35a98b56ed",
+  /**
+   * The APK itself (EAS preview build 30b900fe, 2026-10-15, Privy sign-in): a direct download, no Expo account. Its
+   * channel (preview) serves the production branch, so it takes the same over-the-air updates as TestFlight.
+   */
+  androidApk: "https://expo.dev/artifacts/eas/S8YsBPctqoYNckaBSmG3YFJJgFAa-Lnfbxr_i-aR5eA.apk",
   testFlight: null as string | null,
   /** The Tauri desktop app for Apple-silicon Macs (apps/desktop), served by the landing from public/download. */
   desktopMac: "https://getkawase.xyz/download/Kawase-mac.dmg",

@@ -8,6 +8,7 @@ import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { links } from "@/lib/links";
 
 import "./globals.css";
+import "./landing.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(links.landing),
@@ -30,12 +31,13 @@ export const viewport: Viewport = {
   colorScheme: "dark light",
 };
 
-// Applies a remembered light theme before the first paint (ink is the default).
-const THEME_SCRIPT = `try{if(localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})==="light")document.documentElement.classList.remove("dark")}catch(e){}`;
+// Applies a remembered dark theme before the first paint. Paper is the default: the README banner's look, the owner's
+// pick for the landing (10-15); ink is the same page at night, one tap away.
+const THEME_SCRIPT = `try{if(localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})==="dark")document.documentElement.classList.add("dark")}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

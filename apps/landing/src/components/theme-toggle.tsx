@@ -1,6 +1,6 @@
 "use client";
 
-// Ink (dark) is the default; paper (light) is a full second theme from the same tokens. The choice is remembered
+// Paper (light) is the default, the banner's look; ink (dark) is a full second theme from the same tokens. The choice is remembered
 // per browser; the inline script in the layout applies it before the first paint.
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 export function ThemeToggle() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));

@@ -1,0 +1,218 @@
+/*
+ * The landing's materials (10-15 rebuild, the owner: "use the banner's colours, figure out the dark one too"). Paper is
+ * the banner itself: #F5F5F5 with one magenta light low on the right; ink is the same composition at night, the light
+ * stronger. Mitoshi's structure and devices (crypto-world-fair styles/landing*.css), Kawase's colours and type.
+ */
+/* In Tailwind's components layer, so a page's utilities (position, width, opacity) override these defaults. */
+@layer components {
+  :root {
+    --lp-glow: rgba(250, 0, 255, 0.16);
+    --lp-glow-soft: rgba(250, 0, 255, 0.07);
+    --lp-grid: rgba(0, 0, 0, 0.045);
+    --lp-metal: #1b1b1d;
+    --lp-bezel: #050505;
+    --lp-shadow: 0 30px 80px rgba(0, 0, 0, 0.18), 0 6px 18px rgba(0, 0, 0, 0.08);
+    --lp-window: #ffffff;
+    --lp-window-bar: #ececec;
+    --lp-chip: #ffffff;
+    --lp-chip-border: #e3e3e3;
+    --lp-tile: #ffffff;
+    --lp-ink-soft: #3d3d3d;
+  }
+
+  .dark {
+    --lp-glow: rgba(250, 0, 255, 0.26);
+    --lp-glow-soft: rgba(250, 0, 255, 0.1);
+    --lp-grid: rgba(255, 255, 255, 0.045);
+    --lp-metal: #2c2c30;
+    --lp-bezel: #000000;
+    --lp-shadow: 0 40px 100px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --lp-window: #1c1c1c;
+    --lp-window-bar: #242424;
+    --lp-chip: #1c1c1c;
+    --lp-chip-border: #333333;
+    --lp-tile: #1a1a1a;
+    --lp-ink-soft: #c9c9c9;
+  }
+
+  /* The banner's light: one radial magenta low on the right, a second faint one behind the copy. */
+  .lp-glow {
+    background:
+      radial-gradient(900px 620px at 86% 82%, var(--lp-glow), transparent 70%),
+      radial-gradient(700px 520px at 6% 4%, var(--lp-glow-soft), transparent 70%);
+  }
+
+  /* A faint grid that fades out toward the edges (Mitoshi's masked grid, quieter). */
+  .lp-grid {
+    background-image:
+      linear-gradient(var(--lp-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--lp-grid) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  }
+
+  /* ── Devices ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+  /* Zero specificity (:where), so a page's utilities (position, width) always win over these defaults. */
+  :where(.phone) {
+    position: relative;
+    width: var(--phone-w, 280px);
+    aspect-ratio: 433 / 882;
+    filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.22));
+  }
+  .dark .phone {
+    filter: drop-shadow(0 40px 60px rgba(0, 0, 0, 0.55));
+  }
+  .phone-body,
+  .phone-island {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .phone-island {
+    pointer-events: none;
+  }
+  .phone-metal {
+    fill: var(--lp-metal);
+  }
+  .phone-bezel {
+    fill: var(--lp-bezel);
+  }
+  .phone-island-pill {
+    fill: #000;
+  }
+  .phone-island-lens {
+    fill: #0f1630;
+  }
+  /* The screen: 389.5 × 843.5 at (21.25, 19.25) of the 433 × 882 body, rx 55.75. */
+  .phone-screen {
+    position: absolute;
+    left: 4.907%;
+    top: 2.182%;
+    width: 90.18%;
+    height: 95.63%;
+    border-radius: 12.9% / 6.6%;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+  .shot,
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .shot img {
+    object-fit: cover;
+    object-position: top;
+  }
+
+  :where(.window) {
+    overflow: hidden;
+    border-radius: 18px;
+    background: var(--lp-window);
+    box-shadow: var(--lp-shadow);
+  }
+  .window-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 14px;
+    background: var(--lp-window-bar);
+  }
+  .window-light {
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+    background: #ff5f57;
+  }
+  .window-light:nth-child(2) {
+    background: #febc2e;
+  }
+  .window-light:nth-child(3) {
+    background: #28c840;
+  }
+  .window-address {
+    margin-inline: auto;
+    padding: 3px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--muted-foreground);
+    background: var(--background);
+  }
+  .window .shot img {
+    height: auto;
+  }
+
+  /* ── The tape ───────────────────────────────────────────────────────────────────────────────────────────────── */
+  .lp-tape {
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .lp-tape-track {
+    display: flex;
+    width: max-content;
+    animation: lp-tape 60s linear infinite;
+  }
+  .lp-tape:hover .lp-tape-track {
+    animation-play-state: paused;
+  }
+  @keyframes lp-tape {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lp-tape {
+      overflow-x: auto;
+    }
+    .lp-tape-track {
+      animation: none;
+    }
+  }
+
+  /* ── Chips, tiles, badges ───────────────────────────────────────────────────────────────────────────────────── */
+  .lp-chip {
+    background: var(--lp-chip);
+    border: 1px solid var(--lp-chip-border);
+  }
+  .lp-tile {
+    background: var(--lp-tile);
+  }
+
+  /* The live dot: a pip that breathes (still with reduced motion). */
+  .lp-live {
+    position: relative;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #1fc16b;
+  }
+  .lp-live::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    background: #1fc16b;
+    opacity: 0.35;
+    animation: lp-breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes lp-breathe {
+    50% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lp-live::after {
+      animation: none;
+    }
+  }
+
+  /* The QR plate: always dark modules on white, in both themes, so every camera reads it. */
+  .lp-qr svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}

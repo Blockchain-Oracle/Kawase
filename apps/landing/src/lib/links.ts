@@ -17,9 +17,9 @@ export const links = {
 } as const;
 
 export const NAV = [
-  { label: "What it does", href: "/#capabilities" },
+  { label: "Inside", href: "/#inside" },
+  { label: "How it works", href: "/#tour" },
   { label: "Safety", href: "/#safety" },
   { label: "Demo", href: "/demo" },
-  { label: "Live", href: "/live" },
   { label: "Docs", href: links.docs },
 ] as const;
