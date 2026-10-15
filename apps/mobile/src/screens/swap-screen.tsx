@@ -35,6 +35,7 @@ import { usePortfolio } from "@/portfolio/use-portfolio";
 import { swapRace } from "@/routes/from-draft";
 import { intentEnded, intentTx, useOutcomeFeedback, useTicketJournal } from "@/routes/intent-tx";
 import { LiveRace } from "@/routes/live-race";
+import { QuotePreview } from "@/routes/quote-preview";
 import { RouteList } from "@/routes/route-list";
 import { TicketCta } from "@/routes/ticket-cta";
 import { TicketHeader } from "@/routes/ticket-header";
@@ -343,9 +344,13 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
           problem={short ? t("ticket.notEnough", { symbol: tokenIn.symbol }) : null}
           label={t("ticket.pay")}
         />
+        {/* What the amount gets, before anything else is asked (signed out too): the race, folded to its winner. */}
+        {!wide && raceRequest ? <QuotePreview request={raceRequest} selected={preferred} onSelect={setPreferred} /> : null}
       </ScrollView>
       <View style={styles.footer}>
-        {amountBlocker ? (
+        {amountBlocker?.fix?.kind === "sign-in" ? (
+          <Button label={t("ticket.signInSwap")} onPress={() => signIn.open()} />
+        ) : amountBlocker ? (
           <BlockedCta blocker={amountBlocker} onFix={onFix} />
         ) : (
           <Button label={creating || controller.busy ? t("ticket.quoting") : t("swap.review")} loading={creating || controller.busy} onPress={() => void review()} />

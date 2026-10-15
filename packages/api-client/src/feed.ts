@@ -13,7 +13,7 @@ export const AGENT_FEED_GROUPS: readonly AgentFeedGroup[] = ["done", "held", "sk
 export type AgentFeedOrigin = "agent" | "automation" | "you";
 
 /** What the row is about, for its mark and its verb. */
-export type AgentFeedKind = "send" | "swap" | "bridge" | "earn" | "margin" | "crosschain" | "lend" | "withdraw" | "automation" | "practice" | "suggestion";
+export type AgentFeedKind = "send" | "swap" | "bridge" | "earn" | "margin" | "crosschain" | "lend" | "withdraw" | "automation" | "practice" | "suggestion" | "receive";
 
 export type AgentFeedItem = {
   /** Stable across reads: "<source>:<id>". */

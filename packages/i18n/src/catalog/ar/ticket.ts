@@ -35,6 +35,8 @@ export const ticket: Catalog["ticket"] = {
   recommended: "موصى به",
   alternatives: "مسارات أخرى",
   needAmount: "أدخل مبلغًا",
+  signInSwap: "سجّل الدخول للمبادلة",
+  signInBridge: "سجّل الدخول للنقل",
   notEnough: "لا يكفي {{symbol}}",
   mainnetOnly: "هذا الرمز يُتداول على الشبكة الرئيسية فقط — تنتقل؟",
   refreshing: "نجلب سعرًا جديدًا…",

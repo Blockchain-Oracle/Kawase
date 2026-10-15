@@ -97,6 +97,8 @@ export const feed: Catalog["feed"] = {
     lineEarn: "收益：{{amount}} {{place}}",
     lineWithdraw: "已提取 {{amount}} 到 {{place}}",
     lineMargin: "用 {{amount}} 交易",
+    lineReceive: "收到 {{name}} 的 {{amount}}",
+    lineReceiveBare: "收到 {{amount}}",
     lineMarginSide: "用 {{amount}} {{side}} {{market}}",
     lineMarginBare: "{{side}} {{market}}",
     lineMarginAny: "一笔做多或做空",

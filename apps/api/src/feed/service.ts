@@ -48,6 +48,8 @@ const BY_STATUS: Record<FeedItem["status"], { group: AgentFeedGroup; outcome: Ag
 
 /** Activity's kinds that are Kawase's own work (a receive or a faucet drip is the world's, not the agent's). */
 const KAWASE_KINDS = new Set<FeedItem["kind"]>(["send", "swap", "bridge", "earn", "margin", "automation", "practice", "withdraw"]);
+/** Money that came in is on the same timeline (Abu, 10-15: a payment he received was only under Inbox). */
+const INCOMING_KINDS = new Set<FeedItem["kind"]>(["receive", "request_paid", "faucet"]);
 
 const text = (value: unknown) => (typeof value === "string" && value.length > 0 ? value : null);
 
@@ -240,7 +242,7 @@ export class FeedService {
 
   /** Activity's rows that are Kawase's work, named by who started them. */
   private async fromActivity(user: SessionUser, network: NetworkId, rows: FeedItem[]): Promise<AgentFeedItem[]> {
-    const mine = rows.filter((row) => KAWASE_KINDS.has(row.kind) || row.intentId || row.runId);
+    const mine = rows.filter((row) => KAWASE_KINDS.has(row.kind) || INCOMING_KINDS.has(row.kind) || row.intentId || row.runId);
     const ids = [...new Set(mine.map((row) => row.intentId).filter((id): id is string => Boolean(id)))];
     const origins = new Map<string, { surface: string; threadId: string | null }>();
     if (ids.length > 0) {
@@ -255,7 +257,7 @@ export class FeedService {
       const origin = row.intentId ? origins.get(row.intentId) : undefined;
       const by: AgentFeedOrigin = row.fromAutomation || row.runId ? "automation" : origin && AGENT_SURFACES.has(origin.surface) ? "agent" : origin?.surface === "automation" ? "automation" : "you";
       return {
-        ...blank({ id: `activity:${row.id}`, group, source: "activity", kind: row.kind as AgentFeedKind, origin: by, network, at: row.at, outcome }),
+        ...blank({ id: `activity:${row.id}`, group, source: "activity", kind: INCOMING_KINDS.has(row.kind) ? "receive" : (row.kind as AgentFeedKind), origin: by, network, at: row.at, outcome }),
         token: row.token,
         amount: row.amount,
         other: row.other,

@@ -31,13 +31,27 @@ export type ReceiptData = {
   kind?: "transfer" | "swap" | undefined;
 };
 
-const SLIP = { maxWidth: 380, pad: 22, radius: 20, mark: 26, hanko: 78, perf: 18, notch: 18, qr: 92, netMark: 16 } as const;
+const SLIP = {
+  wideMax: 760,
+  stubWide: 220,
+  maxWidth: 380,
+  pad: 22,
+  radius: 20,
+  mark: 26,
+  hanko: 78,
+  perf: 18,
+  notch: 18,
+  qr: 92,
+  netMark: 16,
+} as const;
 const HASH_HEAD = 8;
 const HASH_TAIL = 6;
 const DASH = "4 5";
 const TRACKING = 0.9;
 const HALF = 2;
 const HANKO_TILT = "-10deg";
+/** From this width the slip lays out as a wide ticket (a desktop page); below it, the stub sits under the body. */
+const WIDE_AT = 600;
 const HEX_PREFIX = 2;
 /** The mark in the QR's centre, as a share of the code (error correction H keeps it readable). */
 const QR_CENTER = 0.2;
@@ -49,12 +63,44 @@ function Perforation({ notch, rule }: { notch: string | null; rule: string }) {
   return (
     <View style={styles.perf} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height={SLIP.perf}>
-        <Line x1={SLIP.notch} x2="100%" y1={SLIP.perf / HALF} y2={SLIP.perf / HALF} stroke={rule} strokeWidth={1} strokeDasharray={DASH} />
+        <Line
+          x1={SLIP.notch}
+          x2="100%"
+          y1={SLIP.perf / HALF}
+          y2={SLIP.perf / HALF}
+          stroke={rule}
+          strokeWidth={1}
+          strokeDasharray={DASH}
+        />
       </Svg>
       {notch ? (
         <>
           <View style={[styles.notch, styles.notchStart, { backgroundColor: notch }]} />
           <View style={[styles.notch, styles.notchEnd, { backgroundColor: notch }]} />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function SidePerforation({ notch, rule }: { notch: string | null; rule: string }) {
+  return (
+    <View style={styles.sidePerf} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={SLIP.perf} height="100%">
+        <Line
+          x1={SLIP.perf / HALF}
+          x2={SLIP.perf / HALF}
+          y1={SLIP.notch}
+          y2="100%"
+          stroke={rule}
+          strokeWidth={1}
+          strokeDasharray={DASH}
+        />
+      </Svg>
+      {notch ? (
+        <>
+          <View style={[styles.notch, styles.notchTop, { backgroundColor: notch }]} />
+          <View style={[styles.notch, styles.notchBottom, { backgroundColor: notch }]} />
         </>
       ) : null}
     </View>
@@ -75,98 +121,160 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
  * `exporting`: drawn for the shared image (no notches, no shadow, the explorer link as words beside the QR).
  * `ground`: the colour the slip sits on, for the notches (the page's ground by default).
  */
-export const ReceiptSlip = React.forwardRef<View, { receipt: ReceiptData; exporting?: boolean; ground?: string | undefined }>(function ReceiptSlip({ receipt, exporting = false, ground }, ref) {
+export const ReceiptSlip = React.forwardRef<
+  View,
+  { receipt: ReceiptData; exporting?: boolean; ground?: string | undefined }
+>(function ReceiptSlip({ receipt, exporting = false, ground }, ref) {
   const { t } = useT();
   const { locale } = useLocale();
   const { color } = useTheme();
-  const when = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(receipt.at));
-  const folio = receipt.txHash ? `#${receipt.txHash.slice(HEX_PREFIX, HEX_PREFIX + HASH_TAIL).toUpperCase()}` : t("receipt.title");
+  const when = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(receipt.at));
+  const folio = receipt.txHash
+    ? `#${receipt.txHash.slice(HEX_PREFIX, HEX_PREFIX + HASH_TAIL).toUpperCase()}`
+    : t("receipt.title");
   const network = receipt.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const value = [TYPE.rowStrong, styles.end, { color: color.ink }];
   const explorer = receipt.explorerUrl;
+  // On a desktop page the slip is a wide ticket: the stub stands beside the body behind a vertical perforation.
+  const [width, setWidth] = React.useState(0);
+  const wide = !exporting && width >= WIDE_AT;
   return (
-    <View ref={ref} collapsable={false} style={[styles.paper, { backgroundColor: color.card }, exporting ? null : ELEVATION.receipt]}>
-      <View style={styles.body}>
-        <View style={styles.head}>
-          <KawaseMark size={SLIP.mark} />
-          <Text style={[TYPE.rowTitle, { color: color.ink }]}>Kawase</Text>
-          <View style={styles.flex} />
-          <Text style={[TYPE.label, styles.caps, { color: color.text2 }]}>
-            {t("receipt.title")} {folio}
-          </Text>
-        </View>
-        <View style={styles.result}>
-          <View style={styles.flex}>
+    <View style={styles.frame} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+      <View
+        ref={ref}
+        collapsable={false}
+        style={[
+          styles.paper,
+          wide ? styles.paperWide : null,
+          { backgroundColor: color.card },
+          exporting ? null : ELEVATION.receipt,
+        ]}
+      >
+        <View style={[styles.body, wide ? styles.bodyWide : null]}>
+          <View style={styles.head}>
+            <KawaseMark size={SLIP.mark} />
+            <Text style={[TYPE.rowTitle, { color: color.ink }]}>Kawase</Text>
+            <View style={styles.flex} />
             <Text style={[TYPE.label, styles.caps, { color: color.text2 }]}>
-              {receipt.kind === "swap" ? t("receipt.swapped") : receipt.direction === "sent" ? t("receipt.sent") : t("receipt.received")}
-            </Text>
-            <Text style={[TYPE.displayPrice, { color: color.ink }]} numberOfLines={1} adjustsFontSizeToFit>
-              {receipt.amount}
-            </Text>
-            <Text style={[TYPE.body, { color: color.text2 }]} numberOfLines={1}>
-              {receipt.kind === "swap" ? t("receipt.via") : receipt.direction === "sent" ? t("receipt.to") : t("receipt.from")} <Text style={{ color: color.ink }}>{receipt.counterparty}</Text>
+              {t("receipt.title")} {folio}
             </Text>
           </View>
-          <View style={styles.hanko} pointerEvents="none">
-            <Hanko size={SLIP.hanko} id={`receipt-hanko-${receipt.txHash ?? "x"}`} />
+          <View style={styles.result}>
+            <View style={styles.flex}>
+              <Text style={[TYPE.label, styles.caps, { color: color.text2 }]}>
+                {receipt.kind === "swap"
+                  ? t("receipt.swapped")
+                  : receipt.direction === "sent"
+                    ? t("receipt.sent")
+                    : t("receipt.received")}
+              </Text>
+              <Text style={[TYPE.displayPrice, { color: color.ink }]} numberOfLines={1} adjustsFontSizeToFit>
+                {receipt.amount}
+              </Text>
+              <Text style={[TYPE.body, { color: color.text2 }]} numberOfLines={1}>
+                {receipt.kind === "swap"
+                  ? t("receipt.via")
+                  : receipt.direction === "sent"
+                    ? t("receipt.to")
+                    : t("receipt.from")}{" "}
+                <Text style={{ color: color.ink }}>{receipt.counterparty}</Text>
+              </Text>
+            </View>
+            <View style={styles.hanko} pointerEvents="none">
+              <Hanko size={SLIP.hanko} id={`receipt-hanko-${receipt.txHash ?? "x"}`} />
+            </View>
           </View>
-        </View>
-        <View style={[styles.rule, { backgroundColor: color.hairline }]} />
-        <View style={styles.facts}>
-          <Fact label={t("receipt.when")}>
-            <Text style={value}>{when}</Text>
-          </Fact>
-          <Fact label={t("receipt.network")}>
-            <Mark entity={arcIdentity(receipt.network).chain} size={SLIP.netMark} />
-            <Text style={value}>{receipt.network === "testnet" ? `${network} · ${t("receipt.testMoney")}` : network}</Text>
-          </Fact>
-          {receipt.note ? (
-            <Fact label={t("receipt.note")}>
-              <Text style={value} numberOfLines={2}>
-                {receipt.note}
+          <View style={[styles.rule, { backgroundColor: color.hairline }]} />
+          <View style={styles.facts}>
+            <Fact label={t("receipt.when")}>
+              <Text style={value}>{when}</Text>
+            </Fact>
+            <Fact label={t("receipt.network")}>
+              <Mark entity={arcIdentity(receipt.network).chain} size={SLIP.netMark} />
+              <Text style={value}>
+                {receipt.network === "testnet" ? `${network} · ${t("receipt.testMoney")}` : network}
               </Text>
             </Fact>
-          ) : null}
-          {receipt.txHash ? (
-            <Fact label={t("receipt.transaction")}>
-              <Text style={value}>{shortHash(receipt.txHash)}</Text>
-            </Fact>
-          ) : null}
-        </View>
-      </View>
-      {explorer ? (
-        <>
-          <Perforation notch={exporting ? null : (ground ?? color.ground)} rule={color.hairline} />
-          <View style={styles.stub}>
-            <View style={[styles.flex, styles.stubWords]}>
-              <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("receipt.verifyTitle")}</Text>
-              {exporting ? (
-                <Text style={[TYPE.meta, { color: color.text2 }]} numberOfLines={1}>
-                  {t("receipt.scanToVerify", { explorer: explorerHost(explorer) })}
+            {receipt.note ? (
+              <Fact label={t("receipt.note")}>
+                <Text style={value} numberOfLines={2}>
+                  {receipt.note}
                 </Text>
-              ) : (
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => {
-                    fire("tick");
-                    void Linking.openURL(explorer);
-                  }}
-                >
-                  <Text style={[TYPE.meta, styles.link, { color: color.ink }]}>{t("receipt.openExplorer", { explorer: explorerHost(explorer) })}</Text>
-                </Pressable>
-              )}
-              <Text style={[TYPE.meta, { color: color.text2 }]}>{t("receipt.footer")}</Text>
-            </View>
-            <DottedQr value={explorer} size={SLIP.qr} dotColor={color.ink} background={color.card} center={<KawaseMark size={SLIP.qr * QR_CENTER} />} />
+              </Fact>
+            ) : null}
+            {receipt.txHash ? (
+              <Fact label={t("receipt.transaction")}>
+                <Text style={value}>{shortHash(receipt.txHash)}</Text>
+              </Fact>
+            ) : null}
           </View>
-        </>
-      ) : null}
+        </View>
+        {explorer ? (
+          <>
+            {wide ? (
+              <SidePerforation notch={ground ?? color.ground} rule={color.hairline} />
+            ) : (
+              <Perforation notch={exporting ? null : (ground ?? color.ground)} rule={color.hairline} />
+            )}
+            <View style={[styles.stub, wide ? styles.stubWide : null]}>
+              <View style={[wide ? null : styles.flex, styles.stubWords]}>
+                <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t("receipt.verifyTitle")}</Text>
+                {exporting ? (
+                  <Text style={[TYPE.meta, { color: color.text2 }]} numberOfLines={1}>
+                    {t("receipt.scanToVerify", { explorer: explorerHost(explorer) })}
+                  </Text>
+                ) : (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => {
+                      fire("tick");
+                      void Linking.openURL(explorer);
+                    }}
+                  >
+                    <Text style={[TYPE.meta, styles.link, { color: color.ink }]}>
+                      {t("receipt.openExplorer", { explorer: explorerHost(explorer) })}
+                    </Text>
+                  </Pressable>
+                )}
+                <Text style={[TYPE.meta, { color: color.text2 }]}>{t("receipt.footer")}</Text>
+              </View>
+              <DottedQr
+                value={explorer}
+                size={SLIP.qr}
+                dotColor={color.ink}
+                background={color.card}
+                center={<KawaseMark size={SLIP.qr * QR_CENTER} />}
+              />
+            </View>
+          </>
+        ) : null}
+      </View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
+  frame: { width: "100%" },
   paper: { width: "100%", maxWidth: SLIP.maxWidth, alignSelf: "center", borderRadius: SLIP.radius },
+  paperWide: { maxWidth: SLIP.wideMax, flexDirection: "row" },
+  bodyWide: { flex: 1 },
+  stubWide: {
+    width: SLIP.stubWide,
+    flexDirection: "column-reverse",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    paddingTop: SLIP.pad,
+    paddingStart: SPACE.md,
+  },
+  sidePerf: { width: SLIP.perf, alignItems: "center" },
+  notchTop: { top: -SLIP.notch / HALF, left: 0 },
+  notchBottom: { bottom: -SLIP.notch / HALF, left: 0 },
   body: { padding: SLIP.pad, gap: SPACE.lg },
   head: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   flex: { flex: 1, minWidth: 0 },
@@ -182,7 +290,14 @@ const styles = StyleSheet.create({
   notch: { position: "absolute", width: SLIP.notch, height: SLIP.notch, borderRadius: SLIP.notch / HALF },
   notchStart: { left: -SLIP.notch / HALF },
   notchEnd: { right: -SLIP.notch / HALF },
-  stub: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SLIP.pad, paddingTop: SPACE.sm, paddingBottom: SLIP.pad },
+  stub: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACE.md,
+    paddingHorizontal: SLIP.pad,
+    paddingTop: SPACE.sm,
+    paddingBottom: SLIP.pad,
+  },
   stubWords: { gap: SPACE.xs },
   link: { textDecorationLine: "underline" },
 });

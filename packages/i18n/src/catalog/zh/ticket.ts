@@ -35,6 +35,8 @@ export const ticket: Catalog["ticket"] = {
   recommended: "推荐",
   alternatives: "其他路径",
   needAmount: "输入金额",
+  signInSwap: "登录后兑换",
+  signInBridge: "登录后跨链",
   notEnough: "{{symbol}} 不足",
   mainnetOnly: "此代币仅在主网交易——切换吗？",
   refreshing: "正在获取新价格…",

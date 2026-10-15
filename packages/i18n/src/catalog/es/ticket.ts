@@ -35,6 +35,8 @@ export const ticket: Catalog["ticket"] = {
   recommended: "Recomendado",
   alternatives: "Otras rutas",
   needAmount: "Introduce un importe",
+  signInSwap: "Inicia sesión para cambiar",
+  signInBridge: "Inicia sesión para mover",
   notEnough: "No tienes suficiente {{symbol}}",
   mainnetOnly: "Este token solo se opera en mainnet — ¿cambiar?",
   refreshing: "Buscando un precio nuevo…",

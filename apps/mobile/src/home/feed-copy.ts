@@ -64,6 +64,8 @@ export function useFeedCopy() {
       }
       case "automation":
         return who ? t("feed.list.lineAutomationTo", { amount: what, name: who }) : t("feed.list.lineAutomation");
+      case "receive":
+        return who ? t("feed.list.lineReceive", { amount: what, name: who }) : t("feed.list.lineReceiveBare", { amount: what });
       case "suggestion":
         return item.suggestion ? t(copyFor(item.suggestion).title, item.suggestion.facts) : t("feed.list.lineFound");
       default:

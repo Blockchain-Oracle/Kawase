@@ -35,6 +35,8 @@ export const ticket: Catalog["ticket"] = {
   recommended: "تجویز کردہ",
   alternatives: "دوسرے راستے",
   needAmount: "رقم درج کریں",
+  signInSwap: "تبادلے کے لیے سائن ان کریں",
+  signInBridge: "منتقل کرنے کے لیے سائن ان کریں",
   notEnough: "{{symbol}} کافی نہیں",
   mainnetOnly: "یہ ٹوکن صرف مین نیٹ پر ٹریڈ ہوتا ہے — بدلیں؟",
   refreshing: "نئی قیمت لا رہے ہیں…",

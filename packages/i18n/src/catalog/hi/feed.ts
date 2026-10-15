@@ -97,6 +97,8 @@ export const feed: Catalog["feed"] = {
     lineEarn: "कमाई: {{amount}} {{place}}",
     lineWithdraw: "{{amount}} {{place}} निकाले",
     lineMargin: "{{amount}} से ट्रेड",
+    lineReceive: "{{name}} से {{amount}} मिले",
+    lineReceiveBare: "{{amount}} मिले",
     lineMarginSide: "{{amount}} से {{market}} {{side}}",
     lineMarginBare: "{{market}} {{side}}",
     lineMarginAny: "एक लॉन्ग या शॉर्ट",

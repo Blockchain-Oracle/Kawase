@@ -101,6 +101,8 @@ export const feed = {
     lineEarn: "Earn: {{amount}} {{place}}",
     lineWithdraw: "Withdrew {{amount}} to {{place}}",
     lineMargin: "Trade with {{amount}}",
+    lineReceive: "Received {{amount}} from {{name}}",
+    lineReceiveBare: "Received {{amount}}",
     lineMarginSide: "{{side}} {{market}} with {{amount}}",
     lineMarginBare: "{{side}} {{market}}",
     lineMarginAny: "A long or short",

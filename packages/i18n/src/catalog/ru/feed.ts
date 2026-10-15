@@ -97,6 +97,8 @@ export const feed: Catalog["feed"] = {
     lineEarn: "Доход: {{amount}} {{place}}",
     lineWithdraw: "Вывод {{amount}} в {{place}}",
     lineMargin: "Сделка на {{amount}}",
+    lineReceive: "Получено {{amount}} от {{name}}",
+    lineReceiveBare: "Получено {{amount}}",
     lineMarginSide: "{{side}} {{market}} на {{amount}}",
     lineMarginBare: "{{side}} {{market}}",
     lineMarginAny: "Лонг или шорт",

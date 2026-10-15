@@ -33,6 +33,8 @@ export const ticket = {
   recommended: "Recommended",
   alternatives: "Other routes",
   needAmount: "Enter an amount",
+  signInSwap: "Sign in to swap",
+  signInBridge: "Sign in to bridge",
   notEnough: "Not enough {{symbol}}",
   mainnetOnly: "Trading this token is mainnet only — switch?",
   refreshing: "Getting a fresh price…",

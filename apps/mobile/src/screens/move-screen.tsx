@@ -37,6 +37,7 @@ import { usePortfolio } from "@/portfolio/use-portfolio";
 import { moveRace } from "@/routes/from-draft";
 import { useTicketJournal } from "@/routes/intent-tx";
 import { LiveRace } from "@/routes/live-race";
+import { QuotePreview } from "@/routes/quote-preview";
 import { RouteList } from "@/routes/route-list";
 import { TicketHeader } from "@/routes/ticket-header";
 import { api } from "@/session/api";
@@ -299,9 +300,13 @@ export function MoveScreen({ prefill }: { prefill: MovePrefill }) {
           note={direction === "in" ? t("move.bringNote") : undefined}
           label={t("move.amount")}
         />
+        {/* What arrives, before anything else is asked (signed out too): the bridges' race, folded to its winner. */}
+        {!wide && raceRequest ? <QuotePreview request={raceRequest} /> : null}
       </ScrollView>
       <View style={styles.footer}>
-        {blocker ? (
+        {blocker?.fix?.kind === "sign-in" ? (
+          <Button label={t("ticket.signInBridge")} onPress={() => signIn.open()} />
+        ) : blocker ? (
           <BlockedCta
             blocker={blocker}
             onFix={(fix) => {

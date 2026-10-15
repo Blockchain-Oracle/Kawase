@@ -214,6 +214,9 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
 
   if (intent.blocking && isSwapOpen(intent))
     return <SmartFix blocking={intent.blocking} reason={policyText(intent.blocking, intent.network)} network={intent.network} onFixed={() => void controller.revise({})} />;
+  // An intent that expired while something blocked it failed for that reason, not for the quote: show its fix.
+  if (state.kind === "failed" && intent.blocking && !intent.tx)
+    return <SmartFix blocking={intent.blocking} reason={policyText(intent.blocking, intent.network)} network={intent.network} onFixed={() => void controller.revise({})} />;
   if (state.kind === "failed") return <TxFailureCard state={state} explorerUrl={intent.tx?.explorerUrl ?? null} onRetry={() => void controller.revise({})} />;
   return (
     <TxMorph morphed={state.kind === "confirmed"} receipt={receipt}>
@@ -472,7 +475,7 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
 
       {/* The agent's words describe the step as it was proposed; once it is moving or done, the steps and the receipt
           speak instead (never "ready for your confirmation" under a receipt). */}
-      {pieces.text && !(step && (phase === "steps" || phase === "receipt")) ? <Text style={[TYPE.caption, { color: color.text2 }]}>{pieces.text}</Text> : streaming && !step && !raceLive ? <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.thinking")}</ShimmerText> : null}
+      {pieces.text && !(step && (phase === "steps" || phase === "receipt" || phase === "failed")) ? <Text style={[TYPE.caption, { color: color.text2 }]}>{pieces.text}</Text> : streaming && !step && !raceLive ? <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.thinking")}</ShimmerText> : null}
     </Animated.View>
   );
 }

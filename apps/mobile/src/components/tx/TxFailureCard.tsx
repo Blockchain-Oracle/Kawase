@@ -11,6 +11,8 @@ import { useT } from "@/i18n";
 
 import { Button } from "../kit/Button";
 import { type BlockerFix, fixForDiagnosis } from "../kit/diagnosis";
+import { ExternalLink, RotateCcw, ShieldCheck } from "lucide-react-native";
+
 import { ChevronDown, Icon, TriangleAlert } from "../kit/icons";
 import { SHEET_SHAPE, SIZE, SPACE, TYPE, useTheme } from "../kit/theme";
 import type { TxState } from "./tx-state";
@@ -37,24 +39,32 @@ export function TxFailureCard({
   const detour = fix && fix.kind !== "retry" && onFix ? fix : null;
   // Retry only when nothing moved: after a partial or unknown outcome a second try could pay twice.
   const retry = onRetry && diagnosis.retryable && state.moneyMoved === "no" ? onRetry : null;
+  // Calm, not alarming: a neutral plate, the alert in a small red disc, and whether money moved as its own chip —
+  // a shield when nothing moved, a warning when it is unclear, red only when some did.
+  const moved = state.moneyMoved;
+  const chip = moved === "no" ? { wash: color.upWash, ink: color.up, icon: ShieldCheck } : moved === "unknown" ? { wash: color.warnWash, ink: color.warn, icon: TriangleAlert } : { wash: color.destructiveWash, ink: color.destructive, icon: TriangleAlert };
   return (
-    <View accessibilityRole="alert" style={[styles.card, { backgroundColor: color.destructiveWash }]}>
+    <View accessibilityRole="alert" style={[styles.card, { backgroundColor: color.raised2 }]}>
       <View style={styles.head}>
-        <Icon icon={TriangleAlert} size={SIZE.icon} tint={color.destructive} />
+        <View style={[styles.disc, { backgroundColor: color.destructiveWash }]}>
+          <Icon icon={TriangleAlert} size={SIZE.iconSm} tint={color.destructive} />
+        </View>
         <View style={styles.copy}>
           <Text style={[TYPE.rowTitle, { color: color.ink }]}>{t(`shell.diagnosis.${diagnosis.kind}.title`)}</Text>
-          <Text style={[TYPE.body, { color: color.text2 }]}>{t(`shell.diagnosis.${diagnosis.kind}.body`)}</Text>
-          <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t(`shell.tx.moneyMoved.${state.moneyMoved}`)}</Text>
+          <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t(`shell.diagnosis.${diagnosis.kind}.body`)}</Text>
         </View>
+      </View>
+      <View style={[styles.chip, { backgroundColor: chip.wash }]}>
+        <Icon icon={chip.icon} size={SIZE.iconSm} tint={chip.ink} />
+        <Text style={[TYPE.chipLabel, { color: chip.ink }]}>{t(`shell.tx.moneyMoved.${moved}`)}</Text>
       </View>
       {detour || retry || explorerUrl ? (
         <View style={styles.actions}>
-          {detour ? (
-            <Button label={t(`shell.fix.${detour.kind}`)} onPress={() => onFix?.(detour)} size="sm" block={false} />
-          ) : null}
+          {detour ? <Button label={t(`shell.fix.${detour.kind}`)} onPress={() => onFix?.(detour)} size="sm" block={false} /> : null}
           {retry ? (
             <Button
               label={t("shell.tx.tryAgain")}
+              leading={<Icon icon={RotateCcw} size={SIZE.iconSm} />}
               onPress={retry}
               size="sm"
               variant={detour ? "ghost" : "secondary"}
@@ -64,6 +74,7 @@ export function TxFailureCard({
           {explorerUrl ? (
             <Button
               label={t("shell.tx.explorer")}
+              leading={<Icon icon={ExternalLink} size={SIZE.iconSm} />}
               onPress={() => void Linking.openURL(explorerUrl)}
               size="sm"
               variant="ghost"
@@ -102,8 +113,10 @@ export function TxFailureCard({
 
 const styles = StyleSheet.create({
   card: { borderRadius: SHEET_SHAPE.rowRadius, padding: SPACE.lg, gap: SPACE.md },
-  head: { flexDirection: "row", gap: SPACE.md },
-  copy: { flex: 1, gap: SPACE.xs },
+  head: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  disc: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: SIZE.touch, alignItems: "center", justifyContent: "center" },
+  chip: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, alignSelf: "flex-start", borderRadius: SIZE.chipHeight, paddingHorizontal: SPACE.md, height: SIZE.chipHeight - SPACE.xs },
+  copy: { flex: 1, gap: SPACE.xxs },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
   technical: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   flip: { transform: [{ rotate: "180deg" }] },

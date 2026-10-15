@@ -97,6 +97,8 @@ export const feed: Catalog["feed"] = {
     lineEarn: "عائد: {{amount}} {{place}}",
     lineWithdraw: "سُحب {{amount}} إلى {{place}}",
     lineMargin: "صفقة بـ {{amount}}",
+    lineReceive: "استلمت {{amount}} من {{name}}",
+    lineReceiveBare: "استلمت {{amount}}",
     lineMarginSide: "{{side}} {{market}} بمبلغ {{amount}}",
     lineMarginBare: "{{side}} {{market}}",
     lineMarginAny: "صفقة شراء أو بيع على المكشوف",

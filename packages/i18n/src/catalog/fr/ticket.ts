@@ -35,6 +35,8 @@ export const ticket: Catalog["ticket"] = {
   recommended: "Recommandé",
   alternatives: "Autres routes",
   needAmount: "Saisissez un montant",
+  signInSwap: "Connectez-vous pour échanger",
+  signInBridge: "Connectez-vous pour transférer",
   notEnough: "Pas assez de {{symbol}}",
   mainnetOnly: "Ce jeton s'échange uniquement sur le mainnet — changer ?",
   refreshing: "Nouveau prix en cours…",

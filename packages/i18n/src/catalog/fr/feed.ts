@@ -97,6 +97,8 @@ export const feed: Catalog["feed"] = {
     lineEarn: "Placement : {{amount}} {{place}}",
     lineWithdraw: "{{amount}} retirés vers {{place}}",
     lineMargin: "Trade avec {{amount}}",
+    lineReceive: "Reçu {{amount}} de {{name}}",
+    lineReceiveBare: "Reçu {{amount}}",
     lineMarginSide: "{{side}} {{market}} avec {{amount}}",
     lineMarginBare: "{{side}} {{market}}",
     lineMarginAny: "Une position longue ou courte",
