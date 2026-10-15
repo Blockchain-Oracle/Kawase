@@ -70,15 +70,15 @@ function Video() {
   // Until the recording is published: the cover (a composition of live app screens, not a recording) and a plain note.
   return (
     <figure className="flex flex-col gap-3">
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
-        <img src="/demo/cover.png" alt="The Kawase demo cover: the live Long / Short screen behind a play button. The recording is coming." className="aspect-video w-full object-cover opacity-70" />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background/95 to-transparent p-6 text-center">
-          <p className="font-display text-xl font-semibold">The demo video is coming</p>
-        </div>
+      <div className="overflow-hidden rounded-3xl border border-border bg-card">
+        <img src="/demo/cover.png" alt="The Kawase demo cover: the live Long / Short screen behind a play button. The recording is coming." className="aspect-video w-full object-cover" />
       </div>
-      <figcaption className="text-center text-sm text-muted-foreground">
-        The cover is a composition of live app screens, not a recording. Until the video is published, the table below
-        is the proof: each row is a real transaction on Arc testnet that you can open on the explorer.
+      <figcaption className="flex flex-col items-center gap-1 text-center">
+        <span className="font-display text-xl font-semibold">The demo video is coming</span>
+        <span className="max-w-xl text-sm text-muted-foreground">
+          The cover is a composition of live app screens, not a recording. Until the video is published, the table below
+          is the proof: each row is a real transaction on Arc testnet that you can open on the explorer.
+        </span>
       </figcaption>
     </figure>
   );
