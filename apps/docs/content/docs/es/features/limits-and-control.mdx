@@ -1,69 +1,115 @@
 ---
-title: "Límites y control"
-description: "Tu límite por token, las propias comprobaciones de Kawase, el freno, las reglas de tokens, Pausar todo, el selector de riesgo, el modo de práctica, el kit de salida, Necesita tu atención y el motivo de cada movimiento."
-sourceHash: b500a73c1084f3dd
+title: "Presupuesto y control"
+description: "Un presupuesto semanal que tu billetera firma en Arc, lo que cubre, lo que siempre pregunta, y los controles alrededor: la pausa, el nivel de riesgo, el modo práctica, las reglas de tokens, Te espera, mantener pulsado para revocar todo y el kit de salida."
+sourceHash: a15a470add549db1
 ---
 
 <Marks names="usdc eurc arc" />
 
-Todo lo que el agente puede hacer sin preguntarte está escrito en **Ajustes → Billetera y límites**, y Arc mismo aplica la mayor parte de estas reglas.
-En esta página puedes ver qué puedes cambiar allí. El modelo en el que se basa está en la [página de seguridad](../safety.mdx).
+Todo lo que Kawase puede hacer sin preguntar cabe en un **presupuesto semanal**, firmado por tu billetera y aplicado por la propia
+Arc. Dentro de él, Kawase actúa sin preguntar cada vez; todo lo demás te espera. El modelo que lo sostiene está en la
+[página de seguridad](../safety.mdx).
 
-## Tu límite por token
+<Flow>
+  <FlowStep icon="sparkles" title="Una petición">Escrita, dicha o lanzada por una automatización.</FlowStep>
+  <FlowStep icon="shield" title="La revisión del presupuesto">Categoría, plataforma, por acción, la semana, la persona.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Dentro del presupuesto" icon="zap" title="Sale al momento">Contado en «esta semana».</FlowStep>
+    <FlowStep when="Alguien nuevo, una posición, una subida" icon="fingerprint" title="Te pregunta" tone="accent">Face ID, o un código por correo en la web.</FlowStep>
+  </FlowFork>
+</Flow>
 
-El **comprobante de autorización** muestra, para cada token, lo que aplica Arc (el permiso que firmaste), el límite inferior propio de Kawase, lo que te queda hoy y cualquier aumento temporal.
+## Tu presupuesto semanal
 
-- **Añadir un token**: cualquier token que tengas o una dirección que pegues, comprobada en la red.
-- **Baja** un número y se guarda al instante.
-- **Sube** uno y verás **Ahora → Después**: una aprobación firma el nuevo permiso en la red **junto con** la revocación del anterior, para que nunca haya dos permisos activos a la vez.
+Lo activas justo después de configurar tu billetera ([primeros pasos](../getting-started.mdx)); después vive en
+**Ajustes → Presupuesto semanal**.
 
-## Lo que Kawase comprueba por su cuenta
+<Walkthrough>
+  <WalkStep title="Esta semana" src="limits/budget">
+    El anillo muestra lo que Kawase gastó por ti esta semana sin preguntar, frente al tope semanal. Se renueva cada lunes.
 
-Además del límite de la red, Kawase aplica sus propias reglas:
+    <Pin at="70 18">Gastado esta semana, de tu tope</Pin>
 
-- un límite **por pago**;
-- **destinatarios nuevos**: durante las primeras horas después de añadir a alguien, el límite y las automatizaciones permanecen desactivados para esa dirección; tu propio pago sí se procesa y se sugiere un importe de prueba;
-- **solo lista permitida**: el agente solo paga a las personas de tu lista;
-- un **aumento temporal**: más durante un tiempo y luego vuelve a reducirse automáticamente.
+    <Pin box="4 45 92 13.5">Por semana, y por acción</Pin>
 
-## El freno
+    <Pin box="4 66.5 92 32">Lo que cubre</Pin>
+  </WalkStep>
+  <WalkStep title="Lo que cubre" src="limits/covers">
+    **Intercambios**, **movimientos a tus billeteras**, **Ganar**, **envíos a contactos** guardados y **servicios de pago**:
+    cada uno es un interruptor. Las **plataformas** son las de intercambio y puente que puede usar; **Mientras no estás** es lo
+    que puede funcionar cuando no estás en la app (pagar solo a tus contactos guardados hasta un tope cada uno, mover dinero
+    dentro y fuera de tus bóvedas, mover USDC solo a tu propia dirección en Base).
 
-Algunas solicitudes son lo bastante inusuales como para detenerse y mostrarte el motivo, incluso dentro de tus límites: **más de la mitad de tu saldo a alguien nuevo**, una operación cuyo **impacto en el precio** supera tu regla o un **apalancamiento superior a 5×**. La tarjeta muestra un panel de freno; tú decides y, si apruebas, la operación continúa. Una automatización que activa el freno espera en Necesita tu atención.
+    <Pin box="4 42 92 5.5">Las plataformas que puede usar</Pin>
+
+    <Pin box="4 49 92 5.5">Mientras no estás</Pin>
+
+    <Pin box="4 56 92 5.5">Esta semana: cuántas salieron sin preguntar</Pin>
+
+    <Pin box="4 75 92 6">El peor caso, en una frase</Pin>
+  </WalkStep>
+  <WalkStep title="Controles" src="limits/controls">
+    **Pausar Kawase** detiene todo lo que hace por su cuenta (cada acción te espera entonces). El **nivel de riesgo** fija
+    cuánto puede hacer: **Prudente** (cada pago te espera, también desde el chat), **Equilibrado** (dentro de tu presupuesto,
+    una petición escrita sale al momento) o **Autónomo** (puede actuar sobre sus propias sugerencias dentro de tus límites y
+    luego te avisa). El **modo práctica** convierte cada acción en una simulación.
+
+    <Pin box="4 42 92 7">Pausar Kawase</Pin>
+
+    <Pin box="4 52.5 92 8">Prudente · Equilibrado · Autónomo</Pin>
+
+    <Pin box="4 60.5 92 7.5">Modo práctica</Pin>
+
+    <Pin box="3 87 94 7">Mantén pulsado para revocar todo</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Bajar un número se guarda al momento. Subir uno te muestra el cambio y pide a tu billetera que firme el nuevo presupuesto, lo
+que también desactiva el anterior: nunca hay dos presupuestos activos a la vez. **Mantén pulsado para revocar todo** retira
+todos los permisos en Arc en una sola transacción.
+
+## Lo que siempre pregunta
+
+Incluso dentro del presupuesto, esto te espera, con el motivo en la tarjeta y la solución al lado:
+
+- un **primer pago a esta persona**, o un **destino nuevo**;
+- **abrir una posición**, o cualquier cosa que **supere tu límite por operación** o sea **más de lo que queda esta semana**;
+- una categoría o plataforma que **no forma parte de tu presupuesto**;
+- un token que Kawase no avala, un precio que **no se pudo comprobar**, o uno **peor que el precio de mercado**;
+- cualquier cosa mientras Kawase está **en pausa**, en modo **Prudente** o en **práctica**.
+
+Aprobar una vez cubre esa sola acción; el presupuesto solo cambia cuando tú lo cambias.
+
+## Modo práctica
+
+Con la práctica activada, Kawase ejecuta **exactamente la transacción** que pediste como simulación en Arc, desde tu propia
+dirección, y muestra **«Habría enviado»** con la respuesta de la cadena. **No se mueve nada.** Las automatizaciones también
+funcionan en práctica, y una compra en el marketplace responde «Pagaría» con el precio real.
 
 ## Reglas de tokens
 
-**Billetera y límites → Reglas de tokens** define qué tokens puede comprar Kawase por ti: **solo verificados**, o verificados y populares con advertencias; límites para tokens no verificados por operación y por día, con el indicador de hoy; y el impacto máximo en el precio que aceptas. Las imitaciones y los tokens de alto riesgo siempre se bloquean. Al endurecer las reglas, se aplican al instante; al flexibilizarlas, se pide Face ID y la firma de tu billetera.
+Las **reglas de tokens** fijan qué tokens puede comprar Kawase por ti, con topes por operación y por día para tokens no
+verificados y el impacto de precio máximo que aceptas; mira
+[Operar cualquier token](./swap-and-trade.mdx#reglas-de-tokens).
 
-## Pausar todo
+## Te espera
 
-Un interruptor desactiva todo lo que el agente hace **sin preguntarte**: ningún pago usa el límite (cada uno espera tu Face ID), se omiten todas las ejecuciones de automatizaciones y el agente no compra nada en el mercado. Lo que hagas tú sigue funcionando, incluidos los intercambios, los puentes y las retiradas, para que siempre puedas sacar tu dinero. Mientras está pausado, aparece una franja encima de cada pantalla.
-
-## El selector de riesgo
-
-**Protegido · Equilibrado · Autónomo**:
-
-- **Protegido**: todos los pagos esperan tu confirmación, también en el chat.
-- **Equilibrado**: dentro de tu límite, una solicitud escrita se procesa al instante.
-- **Autónomo**: Kawase puede actuar por su cuenta siguiendo sus sugerencias dentro de tus límites y luego te avisa.
-
-## Modo de práctica
-
-Con la práctica activada, Kawase ejecuta **la transacción exacta** que pediste como una simulación en Arc, desde tu propia dirección, y muestra **«Habría enviado»** junto con la respuesta de la red. **No se mueve nada.** La práctica también incluye las automatizaciones, y una compra en el mercado responde **«pagaría»** con el precio actual, sin pagar nada. Los intercambios, puentes, movimientos de ahorro y órdenes de margen se rechazan antes de firmar cualquier cosa, para que la franja de PRÁCTICA nunca oculte un pago real.
+Hay pasos que una automatización nunca puede dar sola: **cada intercambio**, un pago por encima de su permiso, o uno que tus
+reglas retienen. Esperan en **Te espera**, en la bandeja y en Automatizaciones, con una notificación push donde las
+notificaciones están activadas. Responde desde donde quieras, una sola vez; aprobar abre exactamente el envío o intercambio que
+harías a mano, revisado de nuevo. Los elementos sin respuesta se recuerdan a las **12 horas** y caducan a las **24**.
 
 ## El kit de salida
 
-Si algo no te parece bien: **pausa**, después **mantén pulsado para revocar** todos los permisos de la red con **un Face ID** (una transacción) y luego **saca el dinero**, lo que abre [Retirar](./bridge-and-withdraw.mdx#withdraw) para todo. Las automatizaciones cuyos permisos se revoquen terminan.
+Si algo no cuadra: **Pausar todo**, luego **mantén pulsado para revocar** todos los permisos, luego **Sacar mi dinero**, que
+abre [Retirar](./bridge-and-withdraw.mdx#retirar) para todo. Está al final de Retirar.
 
-## Necesita tu atención
+## Actividad y motivo
 
-Hay pasos que una automatización nunca puede hacer por su cuenta: **cualquier intercambio**, un pago **por encima de su permiso** o uno que tu **lista permitida** o el **periodo de espera** bloquee. Esperan en **Necesita tu atención**, en la bandeja de entrada y en Automatizaciones, con una notificación push si las notificaciones están configuradas. Responde desde cualquier lugar, una sola vez: si respondes de nuevo, verás que ya se respondió y cuándo y dónde. Al aprobar, se abre exactamente el envío o intercambio que harías manualmente, después de volver a comprobarlo. Los elementos sin respuesta reciben un recordatorio después de **12 horas** y caducan después de **24**.
-
-## Actividad y motivos
-
-**Actividad** es un solo historial con todos los tokens que entran y salen: envíos, recepciones, intercambios con ambas partes, puentes, ahorros, margen, ejecuciones de automatizaciones, solicitudes pagadas, el grifo y las ejecuciones de práctica. Cada fila indica su estado (comprobando, omitido y el motivo, práctica, esperando). Filtros: **Todo · Entradas · Salidas · Operaciones · Automatizaciones · Necesita tu atención**, este último con su cantidad.
-
-Toca una fila para ver su comprobante (importe, hora, red, la otra parte y la transacción) y después **Por qué**: el registro de decisiones que hay detrás o, si una ejecución nunca llegó a la red, qué la detuvo y cómo respondiste. Desde Actividad también puedes leer **el informe de la semana** y **exportar** tu historial como CSV o beancount.
+Cada movimiento está en [Actividad](./activity-and-receipts.mdx), y cada recibo tiene **Por qué pasó esto**: la petición de la
+que vino, lo que se comprobó y qué regla lo dejó pasar o lo hizo esperar.
 
 ## Desde el chat
 
-Pregunta «¿cuáles son mis límites?», «pausa todo», «pon el selector en protegido», «sube mi límite de USDC a 50» o «revoca todo». Cada respuesta es una tarjeta y los cambios se aprueban en ella.
+Pregunta «¿cuáles son mis límites?», «pausa todo», «pon el nivel en prudente» o «revoca todo». Cada respuesta es una tarjeta, y
+los cambios se aprueban en la tarjeta.

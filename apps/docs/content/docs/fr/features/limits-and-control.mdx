@@ -1,70 +1,119 @@
 ---
-title: "Limites et contrôle"
-description: "Votre plafond par jeton, les propres contrôles de Kawase, le frein, les règles sur les jetons, Tout mettre en pause, le réglage du risque, le mode entraînement, le kit de sortie, Besoin de vous et la raison de chaque mouvement."
-sourceHash: b500a73c1084f3dd
+title: "Budget et contrôle"
+description: "Un budget hebdomadaire que votre portefeuille signe sur Arc, ce qu’il couvre, ce qui demande toujours, et les réglages autour : la pause, le niveau de risque, le mode entraînement, les règles des jetons, Vous attend, maintenir pour tout révoquer et le kit de sortie."
+sourceHash: a15a470add549db1
 ---
 
 <Marks names="usdc eurc arc" />
 
-Tout ce que l’agent peut faire sans vous demander votre accord est indiqué dans **Paramètres → Portefeuille et limites**, et la plupart de ces règles sont appliquées
-par Arc lui-même. Cette page vous montre ce que vous pouvez y modifier. Le modèle qui se cache derrière est présenté sur la [page sur la sécurité](../safety.mdx).
+Tout ce que Kawase peut faire sans demander tient dans un **budget hebdomadaire**, signé par votre portefeuille et appliqué par
+Arc lui-même. À l’intérieur, Kawase agit sans demander à chaque fois ; tout le reste vous attend. Le modèle derrière est expliqué
+sur la [page sécurité](../safety.mdx).
 
-## Votre plafond, pour chaque jeton
+<Flow>
+  <FlowStep icon="sparkles" title="Une demande">Écrite, dite, ou lancée par une automatisation.</FlowStep>
+  <FlowStep icon="shield" title="Le contrôle du budget">Catégorie, plateforme, par action, la semaine, la personne.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Dans le budget" icon="zap" title="Part tout de suite">Compté dans « cette semaine ».</FlowStep>
+    <FlowStep when="Quelqu’un de nouveau, une position, une hausse" icon="fingerprint" title="Vous demande" tone="accent">Face ID, ou un code par e-mail sur le web.</FlowStep>
+  </FlowFork>
+</Flow>
 
-Le **reçu d’autorisation** indique, pour chaque jeton, ce qu’Arc applique (l’autorisation que vous avez signée) et le plafond inférieur fixé par Kawase, ce qu’il
-vous reste pour aujourd’hui, ainsi que toute augmentation temporaire.
+## Votre budget de la semaine
 
-- **Ajouter un jeton** : n’importe quel jeton que vous détenez, ou une adresse que vous collez, vérifiée sur la blockchain.
-- **Réduisez** un montant et il est enregistré immédiatement.
-- **Augmentez** un montant et vous voyez **Maintenant → Après** : une seule approbation signe la nouvelle autorisation on-chain **avec** la révocation de l’ancienne, afin que deux autorisations ne soient jamais actives en même temps.
+Vous l’activez juste après avoir configuré votre portefeuille ([bien démarrer](../getting-started.mdx)) ; ensuite il se trouve
+dans **Réglages → Budget hebdomadaire**.
 
-## Les contrôles propres à Kawase
+<Walkthrough>
+  <WalkStep title="Cette semaine" src="limits/budget">
+    L’anneau montre ce que Kawase a dépensé pour vous cette semaine sans demander, face au plafond hebdomadaire. Il repart
+    chaque lundi.
 
-En plus de la limite de la blockchain, Kawase applique ses propres règles :
+    <Pin at="70 18">Dépensé cette semaine, sur votre plafond</Pin>
 
-- un plafond **par paiement** ;
-- les **nouveaux destinataires** : pendant les premières heures après l’ajout d’une personne, le plafond et les automatisations restent désactivés pour cette adresse ; votre propre paiement passe tout de même, avec un montant de test suggéré ;
-- **liste autorisée uniquement** : l’agent paie uniquement les personnes de votre liste ;
-- une **augmentation temporaire** : le plafond augmente pendant un moment, puis revient automatiquement à son niveau précédent.
+    <Pin box="4 45 92 13.5">Par semaine, et par action</Pin>
 
-## Le frein
+    <Pin box="4 66.5 92 32">Ce qu’il couvre</Pin>
+  </WalkStep>
+  <WalkStep title="Ce qu’il couvre" src="limits/covers">
+    **Échanges**, **transferts vers vos portefeuilles**, **Gagner**, **envois aux contacts** enregistrés et **services
+    payants** : chacun est un interrupteur. Les **plateformes** sont les plateformes d’échange et de pont qu’il peut utiliser ;
+    **Pendant votre absence** est ce qui peut tourner quand vous n’êtes pas dans l’app (payer seulement vos contacts
+    enregistrés, jusqu’à un plafond chacun, déplacer l’argent vers vos coffres et en retour, déplacer des USDC seulement vers
+    votre propre adresse sur Base).
 
-Certaines demandes sont suffisamment inhabituelles pour être interrompues et vous expliquer pourquoi, même si elles respectent vos limites : **plus de la moitié de votre solde vers une nouvelle personne**, un échange dont l’**impact sur le prix** dépasse votre règle, ou un **effet de levier supérieur à 5×**. La carte affiche un panneau de frein ; vous décidez, et l’approbation permet de continuer. Une automatisation qui déclenche le frein attend plutôt dans la section Besoin de vous.
+    <Pin box="4 42 92 5.5">Les plateformes qu’il peut utiliser</Pin>
 
-## Règles sur les jetons
+    <Pin box="4 49 92 5.5">Pendant votre absence</Pin>
 
-**Portefeuille et limites → Règles sur les jetons** définit les jetons que Kawase peut acheter pour vous : **vérifiés uniquement**, ou vérifiés et populaires avec des avertissements ; les plafonds pour les jetons non vérifiés par échange et par jour, avec le compteur du jour ; ainsi que l’impact maximal sur le prix que vous acceptez. Les copies et les jetons à haut risque sont toujours bloqués. Un renforcement des règles s’applique immédiatement ; un assouplissement demande Face ID et la signature de votre portefeuille.
+    <Pin box="4 56 92 5.5">Cette semaine : combien sont partis sans demander</Pin>
 
-## Tout mettre en pause
+    <Pin box="4 75 92 6">Le pire cas, en une phrase</Pin>
+  </WalkStep>
+  <WalkStep title="Réglages" src="limits/controls">
+    **Mettre Kawase en pause** arrête tout ce qu’il fait de lui-même (chaque action vous attend alors). Le **niveau de risque**
+    fixe ce qu’il peut faire : **Prudent** (chaque paiement vous attend, même depuis le chat), **Équilibré** (dans votre budget,
+    une demande écrite part tout de suite) ou **Autonome** (il peut agir sur ses propres suggestions dans vos limites, puis vous
+    prévient). Le **mode entraînement** transforme chaque action en simulation.
 
-Un seul bouton désactive tout ce que l’agent fait **sans vous demander votre accord** : aucun paiement n’utilise le plafond (chacun attend votre Face ID), chaque exécution d’automatisation est ignorée et l’agent n’achète rien sur le marché. Ce que vous faites vous-même continue de fonctionner, y compris les échanges, les ponts et les retraits, afin que vous puissiez toujours sortir votre argent. Pendant la pause, une bannière s’affiche en haut de chaque écran.
+    <Pin box="4 42 92 7">Mettre Kawase en pause</Pin>
 
-## Le réglage du risque
+    <Pin box="4 52.5 92 8">Prudent · Équilibré · Autonome</Pin>
 
-**Protection · Équilibré · Autonome** :
+    <Pin box="4 60.5 92 7.5">Mode entraînement</Pin>
 
-- **Protection** : chaque paiement attend votre confirmation, y compris dans le chat.
-- **Équilibré** : dans les limites de votre plafond, une demande saisie est exécutée immédiatement.
-- **Autonome** : Kawase peut agir de lui-même à partir de ses suggestions, dans vos limites, puis vous en informe.
+    <Pin box="3 87 94 7">Maintenir pour tout révoquer</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Baisser un chiffre s’enregistre aussitôt. En augmenter un vous montre le changement et demande à votre portefeuille de signer
+le nouveau budget, ce qui désactive aussi l’ancien : deux budgets ne sont jamais actifs en même temps. **Maintenir pour tout
+révoquer** reprend toutes les autorisations sur Arc en une seule transaction.
+
+## Ce qui demande toujours
+
+Même dans le budget, ceci vous attend, avec la raison sur la carte et la solution à côté :
+
+- un **premier paiement à cette personne**, ou une **nouvelle destination** ;
+- **ouvrir une position**, ou tout ce qui est **au-dessus de votre limite par opération** ou **plus que ce qui reste cette
+  semaine** ;
+- une catégorie ou une plateforme **hors de votre budget** ;
+- un jeton que Kawase ne garantit pas, un prix **impossible à vérifier**, ou **moins bon que le prix du marché** ;
+- tout ce qui arrive pendant que Kawase est **en pause**, en mode **Prudent** ou en **entraînement**.
+
+Approuver une fois couvre cette seule action ; le budget lui-même ne change que quand vous le changez.
 
 ## Mode entraînement
 
-Lorsque le mode entraînement est activé, Kawase exécute **la transaction exacte** que vous avez demandée sous forme de simulation sur Arc, depuis votre propre adresse, et affiche **« Aurait envoyé »** avec la réponse de la blockchain. **Rien ne bouge.** Le mode entraînement couvre aussi les automatisations, et un achat sur le marché affiche **« paierait »** avec le prix en temps réel, sans aucun paiement. Les échanges, les ponts, les mouvements d’épargne et les ordres sur marge sont refusés avant toute signature, afin que la bannière ENTRAÎNEMENT ne masque jamais un vrai paiement.
+Avec l’entraînement activé, Kawase exécute **exactement la transaction** demandée en simulation sur Arc, depuis votre propre
+adresse, et affiche **« Aurait envoyé »** avec la réponse de la chaîne. **Rien ne bouge.** Les automatisations tournent aussi en
+entraînement, et un achat sur la place de marché répond « Paierait » avec le prix réel.
+
+## Règles des jetons
+
+Les **règles des jetons** fixent les jetons que Kawase peut acheter pour vous, avec des plafonds par échange et par jour pour
+les jetons non vérifiés et l’impact de prix maximal que vous acceptez ; voir
+[Échanger n’importe quel jeton](./swap-and-trade.mdx#règles-des-jetons).
+
+## Vous attend
+
+Certaines étapes, une automatisation ne peut jamais les faire seule : **chaque échange**, un paiement au-dessus de son
+autorisation, ou un paiement que vos règles retiennent. Elles attendent dans **Vous attend**, dans la boîte de réception et
+dans Automatisations, avec une notification push là où les notifications sont activées. Répondez d’où vous voulez, une seule
+fois ; approuver ouvre exactement l’envoi ou l’échange que vous feriez à la main, revérifié. Les éléments sans réponse sont
+rappelés après **12 heures** et expirent après **24**.
 
 ## Le kit de sortie
 
-Si quelque chose vous semble anormal : **mettez en pause**, puis **maintenez pour révoquer** toutes les autorisations sur le réseau avec **un seul Face ID** (une seule transaction), puis **sortez votre argent**, ce qui ouvre la page [Retirer](./bridge-and-withdraw.mdx#withdraw) pour tout retirer. Les automatisations dont les autorisations sont révoquées prennent fin.
+Si quelque chose ne va pas : **Tout mettre en pause**, puis **maintenir pour révoquer** toutes les autorisations, puis
+**Sortir mon argent**, qui ouvre [Retirer](./bridge-and-withdraw.mdx#retirer) pour tout. Il se trouve en bas de Retirer.
 
-## Besoin de vous
+## Activité et raison
 
-Certaines étapes qu’une automatisation ne peut jamais effectuer seule : **chaque échange**, un paiement **supérieur à son autorisation**, ou un paiement bloqué par votre **liste autorisée** ou votre **délai d’attente**. Elles attendent dans **Besoin de vous**, dans la boîte de réception et dans les Automatisations, avec une notification push si les notifications sont configurées. Répondez depuis n’importe où, une seule fois : une deuxième réponse détecte que la demande a déjà reçu une réponse et indique quand et où. L’approbation ouvre exactement l’envoi ou l’échange que vous feriez manuellement, après une nouvelle vérification. Les demandes sans réponse font l’objet d’un rappel après **12 heures** et expirent après **24 heures**.
-
-## Activité et raisons
-
-**Activité** est un flux unique qui répertorie tous les jetons entrants et sortants : envois, réceptions, échanges avec leurs deux mouvements, ponts, épargne, marge, exécutions d’automatisations, demandes payées, le robinet et les exécutions en mode entraînement. Chaque ligne indique son état (vérification, ignorée et pourquoi, entraînement, en attente). Filtres : **Tout · Entrées · Sorties · Échanges · Automatisations · Besoin de vous**, ce dernier affichant son nombre.
-
-Touchez une ligne pour voir son reçu (montant, heure, réseau, l’autre partie, la transaction), puis **Pourquoi** : l’historique de la décision, ou, pour une exécution qui n’a jamais atteint la blockchain, ce qui l’a arrêtée et la façon dont vous avez répondu. Depuis Activité, vous pouvez aussi consulter **le rapport de la semaine** et **exporter** votre historique au format CSV ou beancount.
+Chaque mouvement est dans [Activité](./activity-and-receipts.mdx), et chaque reçu a **Pourquoi c'est arrivé** : la demande
+d’origine, ce qui a été vérifié, et la règle qui l’a laissé passer ou l’a fait attendre.
 
 ## Depuis le chat
 
-Demandez : « quels sont mes plafonds ? », « mets tout en pause », « règle le cadran sur protection », « augmente mon plafond USDC à 50 » ou « révoque tout ». Chaque réponse est une carte, et les modifications sont approuvées sur la carte.
+Demandez « quelles sont mes limites ? », « mets tout en pause », « passe le niveau sur prudent » ou « révoque tout ».
+Chaque réponse est une carte, et les changements s’approuvent sur la carte.
