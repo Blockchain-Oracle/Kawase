@@ -31,6 +31,7 @@
     },
     "simulator": {
       "extends": "production",
+      "channel": "production",
       "distribution": "internal",
       "environment": "production",
       "ios": {
