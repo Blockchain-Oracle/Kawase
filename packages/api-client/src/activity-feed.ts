@@ -8,7 +8,8 @@ import type { WithdrawalView } from "./withdraw";
 
 export type FeedKind = "receive" | "send" | "swap" | "bridge" | "earn" | "margin" | "automation" | "request_paid" | "faucet" | "practice" | "withdraw" | "other";
 export type FeedStatus = "confirmed" | "checking" | "skipped" | "failed" | "practiced" | "waiting";
-export type FeedToken = { address: string; symbol: string; decimals: number };
+/** `logoUrl`: the token's own logo when Kawase's registry has no mark for it (a trending Arc token). */
+export type FeedToken = { address: string; symbol: string; decimals: number; logoUrl?: string | null };
 
 export type FeedItem = {
   id: string;

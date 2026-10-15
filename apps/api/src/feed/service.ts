@@ -193,7 +193,10 @@ export class FeedService {
       ...(found?.suggestions ?? []).map((suggestion) => ({
         ...blank({ id: `suggestion:${suggestion.id}`, group: "found", source: "suggestion", kind: "suggestion", origin: "agent", network, at: now.toISOString(), outcome: "suggested" }),
         // A trending token's row wears the token's own mark.
-        token: suggestion.kind === "trending_token" && suggestion.facts.address ? { address: suggestion.facts.address, symbol: suggestion.facts.token ?? "", decimals: TOKEN_DECIMALS } : null,
+        token:
+          suggestion.kind === "trending_token" && suggestion.facts.address
+            ? { address: suggestion.facts.address, symbol: suggestion.facts.token ?? "", decimals: TOKEN_DECIMALS, logoUrl: suggestion.facts.logo ?? null }
+            : null,
         suggestion,
       })),
     ];

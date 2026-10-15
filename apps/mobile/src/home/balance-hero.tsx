@@ -42,7 +42,8 @@ export function BalanceHero({
   const week = React.useMemo(() => {
     const since = Date.now() - WEEK_MS;
     const points = (portfolio?.history ?? []).filter((point) => new Date(point.t).getTime() >= since).map((point) => point.usd);
-    return points.length >= MIN_POINTS ? points : null;
+    // A week of nothing is no line: an empty wallet's flat zero drew as a grey box under "$0.00".
+    return points.length >= MIN_POINTS && points.some((usd) => usd > 0) ? points : null;
   }, [portfolio?.history]);
   const pct = portfolio?.change24hPct;
 

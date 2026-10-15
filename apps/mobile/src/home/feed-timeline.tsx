@@ -78,7 +78,7 @@ export function FeedMark({ item }: { item: AgentFeedItem }) {
   if (venue) return <Mark entity={venue} size={MARK} />;
   if (item.token) {
     const token = item.other?.token ?? item.token;
-    const mark = <TokenMark token={{ chainId: ARC_CHAIN_IDS[item.network], address: token.address, symbol: token.symbol }} size={MARK} />;
+    const mark = <TokenMark token={{ chainId: ARC_CHAIN_IDS[item.network], address: token.address, symbol: token.symbol, logoUrl: token.logoUrl ?? null }} size={MARK} />;
     // A scheduled or practised run still wears its token; a small badge says what kind of run it is.
     const badge = item.kind === "automation" || item.kind === "practice" ? KIND_GLYPH[item.kind] : item.outcome === "waiting" ? Hand : null;
     if (!badge) return mark;

@@ -370,6 +370,8 @@ export class SuggestionService {
             change: `${row.change24hPct! > 0 ? "+" : ""}${row.change24hPct!.toFixed(PCT_DIGITS)}%`,
             liquidity: compactUsd(row.liquidityUsd ?? 0),
             status: row.token.status,
+            // The row wears the token's own logo (Home's feed has no registry mark for most Arc tokens).
+            ...(row.token.logoUrl ? { logo: row.token.logoUrl } : {}),
           },
           action: { type: "route", path: `/token/${row.token.chainId}/${row.token.address}` },
           priority: PRIORITY.trending_token,
