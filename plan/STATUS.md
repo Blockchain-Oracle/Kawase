@@ -8,8 +8,10 @@ Last updated: 2026-10-15 ~13:45 WAT (OPEN LIST at the top is the single to-do; p
 Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only with live evidence.
 
 **Now (in flight)**
-1. [ ] Abu's mainnet wallet setup lands (account 01a13ed0…, wallet 0x53fD9a…; relayer funded 6.98 USDC) → then the
-       mainnet test: a real swap, a send, the agent's long/short in chat, a paid x402 call (Abu's money; he approves).
+1. [ ] Mainnet: Abu tests it himself later (10-15: "don't worry about me sending"; relayer 6.98 + ops 2.98 USDC funded,
+       his Kawase wallet 0x53fD9ad5D446C3E487495F89EC1C112DA20FD539 holds 0). Claude spends nothing on mainnet.
+       Instead, the testnet end-to-end run (wallet setup, send, gasless send, swap, bridge, earn, marketplace, front
+       door, routes, budget) through the api on Arc testnet, with tx hashes for the README (running 10-15).
 2. [ ] iOS build 23 built locally (13:42, Privy-only JS embedded, production channel, runtime 1.0.0), uploaded with
        `eas submit` and processed ("Ready to Submit", internal groups). Apple allows one 1.0.0 build in Beta App Review
        at a time, so 21 stays in review; once 21 is approved, add 23 to Public beta (later builds of an approved version
