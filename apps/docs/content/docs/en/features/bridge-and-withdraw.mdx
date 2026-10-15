@@ -24,36 +24,38 @@ description: Move USDC from Arc to Base, Ethereum, Arbitrum, Optimism, Polygon o
 
     <Pin box="4 72.5 92 24">Where it should arrive</Pin>
   </WalkStep>
-  <WalkStep title="To whom, and how much" src="bridge/ticket" zoom="77 20.5 9">
+  <WalkStep title="To whom, and how much" src="bridge/ticket">
     The recipient can be **you** (the same address on the other chain), a **contact**, an **@handle** or any
     **0x address**. Pick USDC or EURC and the amount.
 
-    <Pin at="26 20.5">From Arc</Pin>
+    <Pin box="4 16.5 41 8">From Arc</Pin>
+
+    <Pin box="55 16.5 41 8">To the chain you chose</Pin>
 
     <Pin box="5 29 90 6.5">You, a contact, an @handle or an address</Pin>
 
-    <Pin at="40 48">What to move</Pin>
+    <Pin box="4 45.5 40 5">What to move</Pin>
   </WalkStep>
-  <WalkStep title="The routes" src="bridge/review" zoom="40 20.7 9">
+  <WalkStep title="The routes" src="bridge/review">
     **Circle CCTP, Across, Relay, LI.FI, deBridge, Socket and Gas.zip** are asked for a live quote. They are ranked by
     **what arrives after fees**, ties going to the faster one; the best is picked and you can tap another. Before your
     wallet is asked, Kawase builds the chosen route and **checks it** (who pays, who receives, the token, the amount,
     the minimum, the destination), then simulates it from your wallet.
 
-    <Pin at="50 15.3">What arrives, on which chain</Pin>
+    <Pin at="60 15.3">What arrives, on which chain</Pin>
 
     <Pin box="5 28 90 13">The winning bridge, what you receive, its fee</Pin>
 
     <Pin box="5 66.5 90 7.5">Slide to send</Pin>
   </WalkStep>
-  <WalkStep title="Delivered" src="bridge/tracking" zoom="50 33 10">
+  <WalkStep title="Delivered" src="bridge/tracking">
     Every move is followed: **Signed → Sent → Arriving → Delivered**, with explorer links on both chains. Kawase checks
     the amount that left your wallet, then the fill through the bridge's own status (Circle's attestation, Across's
     deposit status, Relay's request status). If a bridge **refunds** instead, the card says so. Nothing is sent twice.
 
-    <Pin at="50 24">What arrived, and by which bridge</Pin>
+    <Pin box="8 21.5 84 9">What arrived, and by which bridge</Pin>
 
-    <Pin at="50 36.3">See it on both chains</Pin>
+    <Pin box="8 30.5 84 12">See it on both chains</Pin>
   </WalkStep>
 </Walkthrough>
 
@@ -77,7 +79,7 @@ permit is checked (your address, the amount, Relay's contract and that network's
     Arc or another chain, or **your bank** through an exchange. Kawase knows which assets and networks each exchange
     accepts and warns you before you send something it would not credit.
 
-    <Pin at="62 34.8">Everything, or pick tokens</Pin>
+    <Pin at="67 34.8">Everything, or pick tokens</Pin>
 
     <Pin box="4 50.5 92 22.5">Exchanges, with their own steps</Pin>
 
@@ -91,7 +93,7 @@ permit is checked (your address, the amount, Relay's contract and that network's
     way, **Finish it** picks up where it was. The **exit kit** sits under it: pause Kawase, take every permission back,
     then move your money out.
 
-    <Pin at="50 61.8">The exit kit</Pin>
+    <Pin box="4 57.5 92 14">The exit kit</Pin>
 
     <Pin box="4 75.5 92 6">Pause everything Kawase does on its own</Pin>
 

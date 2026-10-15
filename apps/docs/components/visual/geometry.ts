@@ -38,8 +38,9 @@ export function lensFor(zoom: ZoomSpec, ratio: number, device: Device, light: st
     cy = Math.min(Math.max(cy, L + 1), H - L - 1);
   }
 
-  // The image is k times the lens; background-position percentages place the spot's centre at the lens's centre.
-  const k = size / (2 * R);
+  // The spot (2R wide) fills the lens (size wide), so the image is drawn at size / 2R of the screen's width, which is
+  // k = 50 / R lens widths. Background-position percentages then put the spot's centre at the lens's centre.
+  const k = 50 / R;
   const bgX = ((0.5 - (X / 100) * k) / (1 - k)) * 100;
   const bgY = ((0.5 - (zoom.y / 100) * k * ratio) / (1 - k * ratio)) * 100;
 

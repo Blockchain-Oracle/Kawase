@@ -28,20 +28,20 @@ hold on Arc**.
 
     <Pin box="5 12 90 5.5">An @handle, a name or an 0x address</Pin>
 
-    <Pin at="62 21">Paste, scan a QR code or save a contact</Pin>
+    <Pin box="4 18.5 92 5">Paste, scan a QR code or save a contact</Pin>
 
     <Pin box="5 28.5 90 8">Found on Kawase by their handle</Pin>
   </WalkStep>
-  <WalkStep title="How much" src="send/amount" zoom="61 16 9">
+  <WalkStep title="How much" src="send/amount" zoom="61 16 10">
     Type the amount or take a share of what you hold. Tap the token to pay in another one.
 
-    <Pin at="26 16">Who you're paying</Pin>
+    <Pin box="4 13.3 34 5.5">Who you're paying</Pin>
 
-    <Pin at="50 33.7">A quarter, half, three quarters or all of it</Pin>
+    <Pin box="4 31.5 92 4.5">A quarter, half, three quarters or all of it</Pin>
 
-    <Pin at="26 64.6">A private note, never written on the chain</Pin>
+    <Pin at="53 64.6">A private note, never written on the chain</Pin>
   </WalkStep>
-  <WalkStep title="Review" src="send/review" zoom="44 41 8">
+  <WalkStep title="Review" src="send/review">
     Everything is on one card before anything moves: the amount, who it goes to and **where that address came from**,
     the network and its fee, and what Kawase needs from you.
 
@@ -49,15 +49,17 @@ hold on Arc**.
 
     <Pin box="5 46 90 9">A first payment can go as a test amount first</Pin>
 
-    <Pin at="50 80">Someone new: confirm with an email code (Face ID on a phone)</Pin>
+    <Pin box="5 77 90 6.5">Someone new: confirm with an email code (Face ID on a phone)</Pin>
 
-    <Pin at="50 94">Their wallet is on another chain? Bridge it instead</Pin>
+    <Pin box="5 89.5 90 8">Their wallet is on another chain? Bridge it instead</Pin>
   </WalkStep>
   <WalkStep title="Sent" src="send/sent">
     The card follows the payment until the network confirms it. It is marked **paid** only when the chain's receipt
     shows the exact transfer; if the answer is slow, it says "still checking" and never sends twice.
+
+    <Pin box="4 76.5 92 21">Sent: to whom, and how much</Pin>
   </WalkStep>
-  <WalkStep title="The receipt" src="activity/receipt" zoom="84 87 9">
+  <WalkStep title="The receipt" src="activity/receipt" zoom="80 88 11">
     Every payment has a receipt slip: what moved, to whom, when, on which network, and the transaction. Its QR code
     opens the transaction on ArcScan. See [Activity and receipts](./activity-and-receipts.mdx).
   </WalkStep>
@@ -83,14 +85,14 @@ for your tap: a spoken "yes" never approves a payment.
 
 Your wallet has **one address on both networks**, and it takes **any token on Arc**.
 
-<Shot src="send/receive" alt="Receive: a QR code with the Arc mark, @maya and the address on Arc Testnet, Ask for an amount, Copy address and Share." zoom="27 57.5 9">
+<Shot src="send/receive" alt="Receive: a QR code with the Arc mark, @maya and the address on Arc Testnet, Ask for an amount, Copy address and Share.">
   <Pin at="50 30">Your address as a QR code</Pin>
 
   <Pin box="4 53.5 92 8">Your @handle and your address, on this network</Pin>
 
-  <Pin at="28 76">Ask for an exact amount</Pin>
+  <Pin at="45 76">Ask for an exact amount</Pin>
 
-  <Pin box="4 83 92 6.5">Copy it, or share it</Pin>
+  <Pin box="4 83 92 13.5">Copy it, or share it</Pin>
 </Shot>
 
 **Add money** (from **+**) gathers every way in: [buy with Apple Pay or a card](./buy.mdx), from an exchange, USDC
@@ -111,9 +113,9 @@ link you share. The person paying opens it in any browser; it is marked paid whe
 transfer arrives.
 
 <Shot src="send/request-amount" alt="Request: 15 USDC on the keypad, a note field for the person who pays, and Create request.">
-  <Pin at="58 15">Any token on Arc</Pin>
+  <Pin box="35.5 12.7 29 5">Any token on Arc</Pin>
 
-  <Pin at="50 27">The amount you ask for</Pin>
+  <Pin at="80 25">The amount you ask for</Pin>
 
   <Pin box="4 37 92 6.5">A note for them, never written on the chain</Pin>
 

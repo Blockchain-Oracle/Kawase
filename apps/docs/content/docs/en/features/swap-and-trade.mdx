@@ -25,21 +25,21 @@ what it would deliver, or why it couldn't quote. Guests see the race too: you on
 ## Swap, step by step
 
 <Walkthrough>
-  <WalkStep title="The ticket" src="swap/ticket" zoom="40 72 9">
+  <WalkStep title="The ticket" src="swap/ticket">
     **Swap** from **+**, a token page's **Buy · Sell**, or just ask ("swap 2 dollars to euros"). Pick what you pay and
     what you get, then the amount. The best quote shows under it before you commit to anything.
 
-    <Pin at="24 19.4">You pay: any token you hold</Pin>
+    <Pin box="4 15.5 37 8">You pay: any token you hold</Pin>
 
-    <Pin at="74 19.4">You get: any token on Arc</Pin>
+    <Pin box="52 15.5 44 8">You get: any token on Arc</Pin>
 
     <Pin box="5 67.5 90 9.5">The winning venue, and how many answered</Pin>
   </WalkStep>
-  <WalkStep title="Review" src="swap/review" zoom="78 20.5 8">
+  <WalkStep title="Review" src="swap/review">
     The review shows what you get **at least** (the on-chain minimum), the price impact, and every route. Tap another
     route to pick it yourself.
 
-    <Pin at="40 15">What you get, and the least you'll get</Pin>
+    <Pin at="68 15">What you get, and the least you'll get</Pin>
 
     <Pin box="5 28 90 13">The best route: venue, amount, fee</Pin>
 
@@ -47,20 +47,20 @@ what it would deliver, or why it couldn't quote. Guests see the race too: you on
 
     <Pin box="5 84 90 7">Slide to swap</Pin>
   </WalkStep>
-  <WalkStep title="Swapped" src="swap/done" zoom="50 74.6 9">
+  <WalkStep title="Swapped" src="swap/done">
     Only the chosen venue builds the transaction, at half the slippage you were shown, and Kawase checks its calls (the
     router, the amounts, you as the only recipient, the on-chain minimum) before your wallet is asked. The approval and
     the swap go out as **one transaction** from your own wallet.
 
-    <Pin at="50 60.5">What you got, for what you paid</Pin>
+    <Pin box="4 53 92 11">What you got, for what you paid</Pin>
 
-    <Pin at="50 74.6">The transaction on ArcScan</Pin>
+    <Pin box="25 72 50 5">The transaction on ArcScan</Pin>
   </WalkStep>
   <WalkStep title="Its receipt" src="swap/receipt">
     In [Activity](./activity-and-receipts.mdx) a swap reads like a wallet (**+2.56 EURC**, −2 USDC) and opens the same
     receipt slip: "You swapped 2 USDC → 2.56 EURC, via Circle App Kit".
 
-    <Pin at="40 57">Both legs, and the venue</Pin>
+    <Pin box="6 51.5 60 13">Both legs, and the venue</Pin>
   </WalkStep>
 </Walkthrough>
 
@@ -69,14 +69,14 @@ what it would deliver, or why it couldn't quote. Guests see the race too: you on
 The **Markets** tab (in the dock, beside Home) is open to guests too. On testnet it shows mainnet's markets and offers
 the switch.
 
-<Shot src="trade/markets" alt="Markets on Arc mainnet: search, the Marketplace entry, the Long or short board with EURC's live chart, and the Trending, Meme, Services and Stocks segments." zoom="50 83.4 9">
+<Shot src="trade/markets" alt="Markets on Arc mainnet: search, the Marketplace entry, the Long or short board with EURC's live chart, and the Trending, Meme, Services and Stocks segments.">
   <Pin box="4 15.5 92 6">Search by name, symbol or contract address</Pin>
 
   <Pin box="4 24 92 10">Paid tools your agent can call</Pin>
 
   <Pin box="4 44.5 70 34">Long or short, live: see [Long and short](./long-short.mdx)</Pin>
 
-  <Pin at="50 83.4">Watchlist · Trending · Meme · Services · Stocks & FX · New</Pin>
+  <Pin box="4 81 92 5">Watchlist · Trending · Meme · Services · Stocks & FX · New</Pin>
 </Shot>
 
 A token that copies another one carries a **copycat** chip; fakes stay flagged in the list and never reach the hot
@@ -86,10 +86,10 @@ carousel.
 
 Tap any token, in Markets, on Home or in a chat card:
 
-<Shot src="trade/token" alt="Malachite (MALA): price, a live chart with ranges from Live to All, BasedBot, DexScreener and ArcScan links, stats, and Buy, Sell and More." zoom="50 53 9">
-  <Pin at="40 14.7">Price and change</Pin>
+<Shot src="trade/token" alt="Malachite (MALA): price, a live chart with ranges from Live to All, BasedBot, DexScreener and ArcScan links, stats, and Buy, Sell and More.">
+  <Pin at="66 14.7">Price and change</Pin>
 
-  <Pin at="50 53">Live, one hour to all time</Pin>
+  <Pin box="4 51 92 4.5">Live, one hour to all time</Pin>
 
   <Pin box="4 57 92 8">The token on BasedBot, DexScreener and ArcScan</Pin>
 
