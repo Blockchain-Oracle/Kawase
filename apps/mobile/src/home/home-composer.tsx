@@ -339,6 +339,14 @@ function OpenField({
   const [height, setHeight] = React.useState(FIELD_MIN);
   const canSend = !busy && value.trim().length > 0;
   const dark = name === "dark";
+  // On the web a click blurs the field before it lands: closing at once took the chips away under the pointer
+  // (Abu, 10-15: "when I click on any of these buttons, nothing happens"). A press on anything here keeps it open.
+  const closing = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const holdOpen = React.useCallback(() => {
+    clearTimeout(closing.current);
+    closing.current = undefined;
+  }, []);
+  React.useEffect(() => holdOpen, [holdOpen]);
   // The field takes the keyboard as it opens (autoFocus alone loses to the entering animation on the web, and the
   // keys would go to the page's shortcuts instead).
   React.useEffect(() => {
@@ -410,6 +418,7 @@ function OpenField({
               <Pressable
                 key={chip.key}
                 accessibilityRole="button"
+                onPressIn={holdOpen}
                 onPress={() => pick(chip)}
                 style={({ pressed }) => [
                   styles.chip,
@@ -425,6 +434,7 @@ function OpenField({
         <View style={styles.openRow}>
           <RoundAction
             label={t("feed.home.history")}
+            onPressIn={holdOpen}
             onPress={() => {
               fire("tick");
               onHistory();
@@ -449,8 +459,9 @@ function OpenField({
               placeholderTextColor={color.text3}
               accessibilityLabel={t("feed.home.placeholder")}
               onBlur={() => {
-                if (value.trim().length === 0) onClose();
+                if (value.trim().length === 0) closing.current = setTimeout(onClose, BLUR_GRACE_MS);
               }}
+              onFocus={holdOpen}
               onContentSizeChange={(event) =>
                 setHeight(Math.min(FIELD_MAX, Math.max(FIELD_MIN, event.nativeEvent.contentSize.height)))
               }
@@ -473,6 +484,7 @@ function OpenField({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t("home.send")}
+                  onPressIn={holdOpen}
                   onPress={submit}
                   style={({ pressed }) => [
                     styles.send,
@@ -483,7 +495,7 @@ function OpenField({
                 </Pressable>
               </Animated.View>
             ) : (
-              <RoundAction label={t("home.dockVoice")} onPress={onTalk}>
+              <RoundAction label={t("home.dockVoice")} onPressIn={holdOpen} onPress={onTalk}>
                 <Icon icon={Mic} size={SIZE.iconSm} tint={color.text2} />
               </RoundAction>
             )}
@@ -495,16 +507,20 @@ function OpenField({
 }
 
 const PRESSED = 0.8;
+/** An empty field's blur closes the composer this much later, so a click on a chip or a button beside it lands first. */
+const BLUR_GRACE_MS = 180;
 const WEB_INPUT = { outlineStyle: "none", resize: "none" } as object;
 
 function RoundAction({
   label,
+  onPressIn,
   onPress,
   children,
   filled,
   plate,
 }: {
   label: string;
+  onPressIn?: () => void;
   onPress: () => void;
   children: React.ReactNode;
   filled?: boolean;
@@ -523,6 +539,7 @@ function RoundAction({
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={SPACE.xs}
+      {...(onPressIn ? { onPressIn } : {})}
       onPress={onPress}
       style={({ pressed }) => [
         plate ? [styles.plate, ELEVATION.dock] : styles.round,

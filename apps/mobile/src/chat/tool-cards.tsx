@@ -4,7 +4,7 @@
 // result, the receive address, the authority receipt — and the network-switch card, which runs on the device: the
 // person taps, the app switches (with the real-money sheet for mainnet), and the agent continues with the answer.
 import * as Clipboard from "expo-clipboard";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
@@ -29,7 +29,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import * as React from "react";
-import { Linking, View } from "react-native";
+import { Linking, Pressable, View } from "react-native";
 import { toast } from "sonner-native";
 
 import type {
@@ -73,7 +73,9 @@ import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { CounterpartyAvatar, shortAddress, useCounterpartyName, useSignedAmount } from "@/activity/activity-row";
 import { MainnetConsentSheet } from "@/components/network-pill";
+import { fire } from "@/feedback/fire";
 import { useFund } from "@/fund/fund-provider";
+import { useOverlay } from "@/overlay/overlay-provider";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { useSession } from "@/session/session-provider";
@@ -328,13 +330,40 @@ const CAPABILITY_ICON: Record<string, LucideIcon> = {
   buy: CreditCard,
   memory: Brain,
 };
+/** Where a tile opens (Abu, 10-15: tapping one did nothing): its own screen; test money and card buys open the money
+ * sheet, and Voice opens the voice mode. */
+const CAPABILITY_ROUTE: Partial<Record<string, Href>> = {
+  send: "/send",
+  request: "/request",
+  contacts: "/contacts",
+  swap: "/swap",
+  bridge: "/move",
+  yield: "/earn",
+  automations: "/automations",
+  marketplace: "/marketplace",
+  payment_links: "/request",
+  margin: "/margin",
+  lend: "/borrow",
+  memory: "/memory",
+};
+const CAPABILITY_SHEET = new Set(["faucet", "buy"]);
 /** How many tiles show before "See all": three rows of two. */
 const CAPABILITY_PREVIEW = 6;
 
 function CapabilitiesCard({ output }: { output: { network: Network; capabilities: CapabilityLine[] } }) {
   const { t } = useT();
   const name = useNetworkName();
+  const router = useRouter();
+  const fund = useFund();
+  const overlay = useOverlay();
   const [all, setAll] = React.useState(false);
+  const go = (id: string) => {
+    fire("tick");
+    if (id === "voice") return overlay.open("voice");
+    if (CAPABILITY_SHEET.has(id)) return fund.open();
+    const route = CAPABILITY_ROUTE[id];
+    if (route) router.push(route);
+  };
   // Available first, then what is coming; what is unavailable everywhere is left out.
   const order = { available: 0, coming: 1, unavailable: 2 } as const;
   const lines = output.capabilities
@@ -345,7 +374,13 @@ function CapabilitiesCard({ output }: { output: { network: Network; capabilities
     <AgentCard eyebrow={`${t("chat.cardCapabilities")} · ${name(output.network)}`}>
       <View className="flex-row flex-wrap gap-2">
         {shown.map((line) => (
-          <View key={line.id} className="bg-secondary basis-[48%] grow gap-2 rounded-2xl p-3">
+          <Pressable
+            key={line.id}
+            accessibilityRole="button"
+            accessibilityLabel={t(`capability.${line.id}`)}
+            onPress={() => go(line.id)}
+            className="bg-secondary active:opacity-80 basis-[48%] grow gap-2 rounded-2xl p-3"
+          >
             <View className="flex-row items-center justify-between">
               <Icon as={CAPABILITY_ICON[line.id] ?? Sparkles} className="text-foreground size-5" />
               <CapabilityDot state={line.here} />
@@ -356,7 +391,7 @@ function CapabilitiesCard({ output }: { output: { network: Network; capabilities
             {line.here !== "available" ? (
               <CapabilityChip state={line.here} otherNetwork={line.otherNetwork} here={output.network} />
             ) : null}
-          </View>
+          </Pressable>
         ))}
       </View>
       {lines.length > CAPABILITY_PREVIEW ? (

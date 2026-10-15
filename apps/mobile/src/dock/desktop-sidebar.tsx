@@ -1,12 +1,12 @@
 // The floating rail on a desktop window (Senryo/Mitoshi web shell, 21st.dev unlumen/sidebar-001 #21517 as the spec). It
-// mirrors the phone's dock: Home · Markets · Activity · Settings, "Talk to Kawase" (the voice overlay rises from that
-// row), and under "Move money" the + fan's five actions — Send · Receive · Add money · Swap · Bridge — through the same
+// mirrors the phone's dock: Home · Markets · Activity · Settings, "Chat with Kawase" (the typed conversation; Abu,
+// 10-15: voice alone was the only door to it) and "Talk to Kawase" (the voice overlay rises from that row), and under "Move money" the + fan's five actions — Send · Receive · Add money · Swap · Bridge — through the same
 // account gate (a guest gets the sign-in sheet in place and the action follows it). The mode capsule and the inbox sit
 // in the header, the person at the bottom (or Sign in and the language pill for a guest). 248 px wide, 88 px compact
 // below 1280 px (icons only). It stays beside every page of the signed-in area, so it navigates by route: inside the
 // tabs it switches tab, from a pushed page it goes back down to the tabs.
 import { useRouter, useSegments } from "expo-router";
-import { Activity, Home, LineChart, Settings } from "lucide-react-native";
+import { Activity, Home, LineChart, MessageSquareText, Settings } from "lucide-react-native";
 import * as React from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 
@@ -65,7 +65,7 @@ export function DesktopSidebar() {
   // ["(app)", "(tabs)", "markets"] on a tab (Home has no third segment); a pushed page selects no row.
   const path = segments as readonly string[];
   const onTabs = path[1] === "(tabs)";
-  const activeKey = onTabs ? (path[2] ?? "index") : "";
+  const activeKey = onTabs ? (path[2] ?? "index") : path[1] === "chat" ? "chat" : "";
   const name = !account
     ? t("common.guest")
     : user?.handle
@@ -74,6 +74,7 @@ export function DesktopSidebar() {
 
   const go = (key: string) => {
     if (key === "voice") return overlay.open("voice");
+    if (key === "chat") return activeKey === "chat" ? undefined : router.push("/chat");
     if (isMoney(key)) return gate(key);
     if (!isTab(key) || key === activeKey) return undefined;
     if (onTabs) router.navigate(TAB_HREFS[key]);
@@ -89,6 +90,7 @@ export function DesktopSidebar() {
         { key: "markets", label: t("shell.dock.markets"), icon: LineChart },
         { key: "activity", label: t("shell.dock.activity"), icon: Activity },
         { key: "settings", label: t("shell.dock.settings"), icon: Settings },
+        { key: "chat", label: t("shell.dock.chat"), icon: MessageSquareText },
         {
           key: "voice",
           label: t("shell.dock.voice"),

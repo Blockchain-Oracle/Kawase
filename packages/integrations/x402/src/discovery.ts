@@ -94,6 +94,31 @@ export function toListing(item: RawItem, network: NetworkContext, trusted: reado
 
 const words = (text: string) => (text.toLowerCase().match(WORD) ?? []).filter((word) => word.length >= MIN_TOKEN);
 
+/**
+ * Words that name the catalog itself, not a service in it ("list all the marketplace services", "what tools can you
+ * call"): they match nothing, so a search made only of them browses the whole catalog instead of finding nothing.
+ */
+const CATALOG_WORDS = new Set([
+  "all", "any", "every", "everything", "list", "show", "available", "catalog", "catalogue", "marketplace", "market",
+  "services", "service", "tools", "tool", "apis", "api", "endpoints", "paid", "x402", "what", "which", "can", "you",
+  "call", "use", "the", "of", "me", "there",
+]);
+
+/** A browse with no words: each category's cheapest in turn, so one page shows the catalog's range. */
+function interleave(listings: Listing[]): Listing[] {
+  const byCategory = new Map<string, Listing[]>();
+  for (const listing of [...listings].sort((a, b) => (a.price < b.price ? -1 : a.price > b.price ? 1 : 0))) {
+    const list = byCategory.get(listing.provider.category) ?? [];
+    list.push(listing);
+    byCategory.set(listing.provider.category, list);
+  }
+  const queues = [...byCategory.values()];
+  const out: Listing[] = [];
+  for (let round = 0; out.length < listings.length; round++)
+    for (const queue of queues) if (queue[round]) out.push(queue[round]!);
+  return out;
+}
+
 /** How well a listing matches the words asked for (0 = not at all). */
 function score(listing: Listing, query: string[]): number {
   if (query.length === 0) return 1;
@@ -211,15 +236,18 @@ export class Discovery {
   async search(
     network: NetworkContext,
     input: { query: string; categories?: readonly MarketplaceCategory[] | undefined; limit: number },
-  ): Promise<{ listings: Listing[]; total: number }> {
-    const query = words(input.query);
+  ): Promise<{ listings: Listing[]; total: number; byCategory: Partial<Record<MarketplaceCategory, number>> }> {
+    const query = words(input.query).filter((word) => !CATALOG_WORDS.has(word));
     const allowed = input.categories && input.categories.length > 0 ? new Set(input.categories) : undefined;
-    const ranked = (await this.all(network))
-      .filter((listing) => !allowed || allowed.has(listing.provider.category))
+    const shelf = (await this.all(network)).filter((listing) => !allowed || allowed.has(listing.provider.category));
+    const byCategory: Partial<Record<MarketplaceCategory, number>> = {};
+    for (const listing of shelf) byCategory[listing.provider.category] = (byCategory[listing.provider.category] ?? 0) + 1;
+    if (query.length === 0) return { listings: interleave(shelf).slice(0, input.limit), total: shelf.length, byCategory };
+    const ranked = shelf
       .map((listing) => ({ listing, score: score(listing, query) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || (a.listing.price < b.listing.price ? -1 : a.listing.price > b.listing.price ? 1 : 0));
-    return { listings: ranked.slice(0, input.limit).map((entry) => entry.listing), total: ranked.length };
+    return { listings: ranked.slice(0, input.limit).map((entry) => entry.listing), total: ranked.length, byCategory };
   }
 
   /** The listing a URL belongs to: the same resource, or a template it fills in. */

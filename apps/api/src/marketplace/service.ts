@@ -670,9 +670,9 @@ export class MarketplaceService {
     const allowed = category ? [category] : settings?.allowedCategories;
     const blocked = new Set((settings?.blockedSellers ?? []).map((seller) => seller.key));
     // Read past the limit so blocked sellers removed below still leave a full page.
-    const { listings, total } = await this.discovery.search(context, { query, categories: allowed, limit: X402_SEARCH_LIMIT + (settings?.blockedSellers.length ?? 0) });
+    const { listings, total, byCategory } = await this.discovery.search(context, { query, categories: allowed, limit: X402_SEARCH_LIMIT + (settings?.blockedSellers.length ?? 0) });
     const shown = listings.filter((listing) => !blocked.has(listing.payTo.toLowerCase()) && !blocked.has(listing.provider.name.toLowerCase()));
-    return { network, services: shown.slice(0, X402_SEARCH_LIMIT).map(listingView), total };
+    return { network, services: shown.slice(0, X402_SEARCH_LIMIT).map(listingView), total, byCategory };
   }
 
   /** One listing with a live price (its 402 asked now, nothing paid). */

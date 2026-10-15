@@ -93,6 +93,7 @@ export const shell: Catalog["shell"] = {
     settings: "سیٹنگز",
     actions: "کام",
     voice: "‏Kawase سے بات کریں",
+    chat: "‏Kawase سے چیٹ کریں",
     navigation: "نیویگیشن",
   },
   fan: {

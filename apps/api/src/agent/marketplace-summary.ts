@@ -29,7 +29,12 @@ const service = (listing: ServiceListing) => ({
   price: listing.priceDisplay,
 });
 
-export const summarizeServices = (services: ServiceListing[], total: number) => ({ total, services: services.map(service) });
+/** A search's page, with how many services each category holds (a browse answers "what can you call" from it). */
+export const summarizeServices = (services: ServiceListing[], total: number, byCategory?: Partial<Record<string, number>>) => ({
+  total,
+  ...(byCategory ? { byCategory } : {}),
+  services: services.map(service),
+});
 
 export function summarizeInspect(result: InspectServiceResult) {
   if (result.status !== "listed") return { status: result.status };

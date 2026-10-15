@@ -9,6 +9,7 @@ export const shell = {
     settings: "Settings",
     actions: "Actions",
     voice: "Talk to Kawase",
+    chat: "Chat with Kawase",
     navigation: "Navigation",
   },
   fan: {

@@ -410,9 +410,9 @@ export function buildTools(context: AgentContext, trust: TurnTrust = turnTrust(c
     // Paid services (x402, cards/marketplace.md). Free built-ins come first; these are for what they cannot answer.
     search_services: tool({
       description:
-        "Search Circle's catalog of paid services on Arc (x402) for one your free tools cannot answer: news and web search, prediction-market odds, DefiLlama yields, prices and protocols, stock prices, candles, data enrichment. Free; nothing is paid. Use words for what you need (\"defillama yields\", \"news search\", \"polymarket fed\"). Results give each service's URL, what it returns and its price.",
+        "Search Circle's catalog of paid services on Arc (x402) for one your free tools cannot answer: news and web search, prediction-market odds, DefiLlama yields, prices and protocols, stock prices, candles, data enrichment. Free; nothing is paid. Use words for what you need (\"defillama yields\", \"news search\", \"polymarket fed\"). To show everything on offer (\"what can you call?\", \"list the marketplace\"), leave the query empty: you get a sample from every category and how many services each holds. Results give each service's URL, what it returns and its price.",
       inputSchema: z.object({
-        query: z.string().min(1).max(SERVICE_QUERY_MAX).describe("What you need, in a few English words"),
+        query: z.string().max(SERVICE_QUERY_MAX).default("").describe("What you need, in a few English words; empty browses the whole catalog"),
         category: z.enum(["SOCIAL", "SEARCH", "FINANCIAL", "DATA", "INFRASTRUCTURE", "PREDICTION", "CREATIVE", "OTHER"]).optional(),
       }),
       execute: async (input) => context.searchServices({ query: input.query, category: input.category }),

@@ -11,6 +11,7 @@ import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView, BottomShe
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, INPUT_TEXT_START, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useStageFrame } from "@kawase/ui-native/lib/stage";
 import { useWide } from "@kawase/ui-native/lib/wide";
 import { ChevronLeft, X } from "lucide-react-native";
 import * as React from "react";
@@ -60,6 +61,9 @@ const MAX_HEIGHT_SHARE = 0.9;
 /** The dialog's width on desktop, and its share of the window's height. */
 const DIALOG_WIDTH = 520;
 const DIALOG_HEIGHT_SHARE = 0.85;
+/** The room a dialog keeps from the stage's edges. */
+const DIALOG_GUTTER = 24;
+const HALF = 2;
 
 function Sheet(props: SheetProps) {
   const wide = useWide();
@@ -110,9 +114,15 @@ function SheetHeader({ title, subtitle, onBack, backLabel, headerEnd, closeLabel
   );
 }
 
-/** Desktop: a centred dialog over the scrim (Escape, the scrim and the close button dismiss it). */
+/**
+ * Desktop: a dialog over the scrim (Escape, the scrim and the close button dismiss it), centred on the content beside
+ * the sidebar when there is one, so it sits under the page the person is reading.
+ */
 function DialogSheet({ open, onClose, title, subtitle, colors, closeLabel, onBack, backLabel, headerEnd, children, className }: SheetProps) {
-  const { height } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const stage = useStageFrame();
+  const shift = stage ? stage.x + stage.width / HALF - width / HALF : 0;
+  const maxWidth = stage ? Math.min(DIALOG_WIDTH, stage.width - DIALOG_GUTTER * HALF) : DIALOG_WIDTH;
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center px-6">
@@ -120,7 +130,7 @@ function DialogSheet({ open, onClose, title, subtitle, colors, closeLabel, onBac
         <View
           accessibilityViewIsModal
           className="border-border w-full overflow-hidden border"
-          style={{ maxWidth: DIALOG_WIDTH, maxHeight: Math.round(height * DIALOG_HEIGHT_SHARE), backgroundColor: colors.background, borderRadius: RADIUS }}
+          style={{ maxWidth, maxHeight: Math.round(height * DIALOG_HEIGHT_SHARE), backgroundColor: colors.background, borderRadius: RADIUS, transform: [{ translateX: shift }] }}
         >
           <ScrollView contentContainerStyle={{ paddingTop: CONTENT_BOTTOM, paddingBottom: CONTENT_BOTTOM }} keyboardShouldPersistTaps="handled">
             <SheetHeader title={title} subtitle={subtitle} onBack={onBack} backLabel={backLabel} headerEnd={headerEnd} closeLabel={closeLabel} onClose={onClose} />

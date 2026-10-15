@@ -18,6 +18,7 @@ import { TestnetStrip } from "@kawase/ui-native/components/network-chip";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
+import { setStageFrame } from "@kawase/ui-native/lib/stage";
 import { useWide, WideFrameContext, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 
 import { UpdateRequiredScreen, useUpdateRequired } from "@/account/update-gate";
@@ -140,6 +141,13 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
   const overlay = useOverlay();
   const { user } = useSession();
   const testnet = (user?.activeNetwork ?? "testnet") === "testnet";
+  // Where the stage sits in the window: dialogs centre on it rather than on the window (sidebar included).
+  const stage = React.useRef<View>(null);
+  const measureStage = () => stage.current?.measureInWindow((x, _y, width) => setStageFrame({ x, width }));
+  React.useEffect(() => {
+    if (!wide) setStageFrame(null);
+    return () => setStageFrame(null);
+  }, [wide]);
   // On a desktop window the rail and the one stage float on a slightly deeper ground, 16 px off the window's edge, with
   // the stage's 24 px corners (the Senryo/Mitoshi web shell); on a phone the page is the whole window.
   return (
@@ -154,6 +162,8 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
       >
         {wide ? <DesktopSidebar /> : null}
         <View
+          ref={stage}
+          onLayout={wide ? measureStage : undefined}
           className="bg-background flex-1"
           style={wide ? { borderRadius: LAYOUT.stageRadius, overflow: "hidden" } : undefined}
         >

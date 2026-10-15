@@ -308,7 +308,7 @@ export function buildAgentContext(input: {
     async searchServices({ query, category }) {
       if (!marketplace) return { network, services: [], total: 0, summary: { status: "unavailable" } };
       const found = await marketplace.search(user, query, category);
-      return { ...found, summary: summarizeServices(found.services, found.total) };
+      return { ...found, summary: summarizeServices(found.services, found.total, found.byCategory) };
     },
 
     async inspectService(request) {

@@ -55,6 +55,35 @@ Abu's notes, all built and checked on the dev build or production:
 - **Builds:** iOS built locally (EAS free plan out of iOS builds until 11-01) and submitted (`42b1c9eb`); it carries
   the `production` channel, so `eas update --channel production` ships JS to it. Android preview APK `30b900fe`.
 
+### 10-15 evening — third round (Abu's list, open until each is checked live)
+
+Turnkey goes completely (Abu: no patches, nothing kept behind), and nothing Turnkey did is lost; each capability maps
+to Privy or to our own api:
+- [ ] Turnkey out of api, client, db, env, wallet package, app, tests, docs (DB reset done 10-15).
+- [ ] Web owner's check: an emailed code again (our api + Resend), as the buttons say ("…with an email code").
+- [ ] Sign out a device / everywhere: that device's Privy session (`sid`) is refused from then on.
+- [ ] Device proof (M12) on the web too, signed by the Privy wallet.
+- [ ] Apple sign-in: enabled in the Privy dashboard (`apple_oauth` is off).
+
+UI and agent, from Abu's screenshots:
+- [ ] Composer chips above the field do nothing on click (the blur closed the composer first).
+- [ ] Sign-in modal centred on the window, not the content beside the sidebar.
+- [ ] "What Kawase can do" tiles do nothing when tapped.
+- [ ] Desktop: a typed-chat door beside "Talk to Kawase" (voice); both reachable directly.
+- [ ] Voice agent: "list the marketplace" finds nothing while "DeFi Llama" finds 31.
+- [ ] Languages carry no flag (a language is not a country); display currencies do carry flags.
+- [ ] Receive flashes "Set up your wallet" before the address.
+- [ ] Add money rows reshuffle while opening.
+- [ ] Feed items dismissible (held → cancel, found → dismiss; swipe on a phone, × on the web; done money is not).
+- [ ] Marketplace: in the main navigation, every service's logo, a narrower category column, recently called tools;
+      Try-it: "Pay 0.001 USDC" with the USDC mark in one button that fits, a better top-up plate.
+- [ ] Budget ring "$0 of $200" centred; token page Buy/Sell icon + label centred.
+- [ ] Apple Pay / Google Pay marks readable on dark plates.
+- [ ] Display currency with flags (sourced marks).
+- [ ] Voice picker plays a sample on tap.
+- [ ] Agent wallet page past mediocre.
+- [ ] Test on mainnet production, not only the local testnet api.
+
 **Sweep checklist (run on every screen before calling a round done):** every token/venue/chain/person shows its mark;
 anything that can't be done looks disabled and says why; empty pickers and lists offer something; loading is the
 content's own shape and never a block that later vanishes; a guest sees quotes and figures before any sign-in; a
