@@ -36,7 +36,8 @@ export function MarketplaceEntry() {
   const faces = catalog.tools.filter((tool) => tool.mark || tool.logo).slice(0, FACES);
   const total = catalog.view?.totals.tools ?? 0;
   const title = t("shell.dock.marketplace");
-  const body = total > 0 ? t("market402.entryBody", { n: total }) : t("market402.entryBodyIdle");
+  // A count only reads right from two up ("1 paid tools"): one tool (testnet's demo seller) or none says what it is.
+  const body = total > 1 ? t("market402.entryBody", { n: total }) : t("market402.entryBodyIdle");
 
   return (
     <Animated.View style={press.style}>

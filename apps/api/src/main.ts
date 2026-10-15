@@ -100,12 +100,26 @@ const server = serve({ fetch: app.fetch, port: env.PORT, hostname: "::" }, (info
   log.info({ port: info.port, networks: env.MAINNET_ENABLED ? ["testnet", "mainnet"] : ["testnet"] }, "api listening");
 });
 
+// A deploy (Coolify's rolling update) starts the new container, waits for it to be healthy, then stops this one. The
+// proxy keeps sending this container its share of requests until it is gone, so closing the port at once answered
+// those with 502 and no CORS header, for as long as the open live-market streams kept the process up (about 30 s,
+// until Docker killed it; Abu's "Couldn't load markets", 10-15). Now it keeps serving a moment, then ends every
+// connection (the streams reconnect to the new container) and exits, so it leaves the proxy's rotation at once.
+const DRAIN_MS = 3_000;
+const EXIT_DEADLINE_MS = 10_000;
+let stopping = false;
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
+    if (stopping) return;
+    stopping = true;
     log.info({ signal }, "shutting down");
     stopHealth();
-    server.close(() => {
-      void pool.end().then(() => process.exit(0));
-    });
+    setTimeout(() => process.exit(0), EXIT_DEADLINE_MS).unref();
+    setTimeout(() => {
+      server.close(() => {
+        void pool.end().finally(() => process.exit(0));
+      });
+      if ("closeAllConnections" in server) server.closeAllConnections();
+    }, DRAIN_MS);
   });
 }

@@ -43,9 +43,11 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
 export function marginRoutes(margin: MarginService, protection?: MarginProtection) {
   const app = new Hono<AppEnv>();
   // Markets are public data (R13): a guest sees them too, on the network they name (mainnet by default).
+  // Public data: the network asked for (Markets' Long or short board reads mainnet's for everyone, a testnet session
+  // included), else the session's, else mainnet. The session's used to win, so a testnet guest's board came back empty.
   app.get("/markets", async (c) => {
     const asked = networkSchema.safeParse(c.req.query("network"));
-    const network = c.get("user")?.activeNetwork ?? (asked.success ? asked.data : "mainnet");
+    const network = asked.success ? asked.data : (c.get("user")?.activeNetwork ?? "mainnet");
     return c.json(await margin.markets(network));
   });
   app.use("/positions", requireUser);

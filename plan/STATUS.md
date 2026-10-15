@@ -92,10 +92,14 @@ UI and agent, from Abu's screenshots:
 - [x] Agent wallet page past mediocre (bd64bf5a: hero balance, today's spend against the daily budget, Gateway and
       on-hand cells, two columns on desktop). [ ] check signed in (dev mode).
 - [ ] Test on mainnet production, not only the local testnet api.
-- [ ] Markets on testnet shows "Kawase is having trouble / Couldn't load markets" (Abu 10-15, a guest on testnet;
-      mainnet fine). The api answers every /markets read (testnet session, mainnet rows) with 200 and Claude could
-      not reproduce it live; the screen showed its error after one failed read (likely an api restart during a
-      deploy) and nothing retried until a remount. Fix: retry quietly before the error, a good poll clears it.
+- [x] Markets on testnet: "Kawase is having trouble / Couldn't load markets" (Abu 10-15). Root causes, measured:
+      (1) every api deploy answered ~15–30 s of 502 with no CORS header: Coolify's rolling update stops the old
+      container while the proxy still routes to it, and the api closed its port on SIGTERM while open live-market
+      streams kept it alive until Docker killed it (~38 s). The api now serves 3 s more, then ends every connection
+      and exits (3.6 s, tested locally). (2) The screen showed its error after one failed read and nothing retried:
+      now two quiet retries, and a good poll clears it. (3) Found on the way: /margin/markets and the launchpad
+      curve answered for the session's network over the one asked, so a testnet guest's Long or short board was
+      empty and a mainnet token's curve missing; the asked network now wins (margin test covers it).
 - [ ] Discoverability (skill run 10-15): on a phone the Marketplace is three taps deep under a chip called
       "Services" (Markets → Services → See all) or behind Settings → Agent wallet's empty history. Fix: a
       Marketplace entry with real logos on Markets, a Marketplace row in Settings beside Agent wallet, and every

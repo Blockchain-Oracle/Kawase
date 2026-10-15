@@ -682,7 +682,9 @@ export function railsEndpoints(call: Call) {
   return {
     launchpad: {
       /** Public (R13): null when no launchpad Kawase reads launched it. */
-      token: (address: string) => call<{ launchpad: LaunchpadView | null }>("GET", `/launchpad/tokens/${address}`),
+      /** Public: the token's curve on the network named (its own), else the session's. */
+      token: (address: string, network?: NetworkId) =>
+        call<{ launchpad: LaunchpadView | null }>("GET", `/launchpad/tokens/${address}${network ? `?network=${network}` : ""}`),
       watch: (address: string) => call<{ launchpad: LaunchpadView | null }>("POST", `/launchpad/tokens/${address}/watch`),
       unwatch: (address: string) => call<{ launchpad: LaunchpadView | null }>("DELETE", `/launchpad/tokens/${address}/watch`),
     },

@@ -65,6 +65,11 @@ test("margin: live markets, and real plans that wait for money", { skip: !proces
   await expectStatus(signIn, 201, "sign-in");
   const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
   userId = user.id;
+  // A session on testnet still reads mainnet's markets when it asks for them (Markets' Long or short board).
+  const asked = (await (await app.request("/margin/markets?network=mainnet", { headers: { authorization: `Bearer ${token}` } })).json()) as MarginMarketsView;
+  assert.equal(asked.network, "mainnet");
+  assert.equal(asked.available, true);
+  assert.ok(asked.markets.length > 0);
   const call = (method: string, path: string, payload?: unknown) =>
     app.request(path, payload === undefined ? { method, headers: { authorization: `Bearer ${token}` } } : jsonRequest(method, payload, token));
 

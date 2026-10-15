@@ -14,7 +14,8 @@ export function launchpadRoutes(launchpads: LaunchpadService) {
     const address = c.req.param("address");
     if (!ADDRESS.test(address)) return c.json({ launchpad: null });
     const asked = c.req.query("network");
-    const network = c.get("user")?.activeNetwork ?? (asked && NETWORKS.has(asked) ? (asked as "mainnet" | "testnet") : "mainnet");
+    // The network asked for (a token page names its token's own), else the session's, else mainnet.
+    const network = asked && NETWORKS.has(asked) ? (asked as "mainnet" | "testnet") : (c.get("user")?.activeNetwork ?? "mainnet");
     return c.json({ launchpad: await launchpads.token(c.get("user"), network, address) });
   });
   app.post("/tokens/:address/watch", requireAccount, async (c) => c.json({ launchpad: await launchpads.watch(c.get("user")!, c.req.param("address")) }));

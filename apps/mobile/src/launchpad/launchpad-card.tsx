@@ -30,8 +30,9 @@ export function LaunchpadCard({ address }: { address: string }) {
   const [busy, setBusy] = React.useState(false);
   React.useEffect(() => {
     let live = true;
+    // The card is shown for Arc mainnet tokens only: their curve is mainnet's, whatever network the session is on.
     void api.launchpad
-      .token(address)
+      .token(address, "mainnet")
       .then((result) => live && setView(result.launchpad))
       .catch(() => live && setView(null));
     return () => {
