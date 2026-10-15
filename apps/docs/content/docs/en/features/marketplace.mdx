@@ -1,6 +1,6 @@
 ---
 title: Agent wallet and marketplace
-description: Kawase pays for services per call over x402 from its own agent wallet, inside a daily budget and a per-call cap you set, with every purchase receipted.
+description: Kawase pays for services per call over x402 from its own agent wallet, inside a daily budget and a per-call cap you set, from Circle's catalog of paid tools on Arc, with every purchase receipted.
 ---
 
 <Status ids="marketplace" />
@@ -8,44 +8,85 @@ description: Kawase pays for services per call over x402 from its own agent wall
 <Marks names="circle usdc blockrun exa defillama" />
 
 **x402** is an open standard for paying for a web request with stablecoins: the service answers "402 Payment Required"
-with a price, the client pays in USDC and gets the result. Kawase uses it to **buy answers for you**: web search and news,
-prediction-market odds, DefiLlama yields and prices, stock prices, data enrichment, from **Circle's x402 catalog** on Arc.
+with a price, the client pays in USDC and gets the result. Kawase uses it to **buy answers for you**: web search and
+news, prediction-market odds, DefiLlama yields and prices, stock prices, data enrichment, from **Circle's x402
+catalog** on Arc.
+
+<Flow>
+  <FlowStep icon="wallet" title="Top up">The agent wallet, apart from your own.</FlowStep>
+  <FlowStep icon="store" title="A service">Its price per call, and what it returns.</FlowStep>
+  <FlowStep icon="sliders" title="Inside your budget" tone="accent">A daily budget and a cap per call.</FlowStep>
+  <FlowStep icon="receipt" title="Receipted" tone="ink">"Paid 0.001 USDC to …", every time.</FlowStep>
+</Flow>
+
+## The marketplace
+
+**Markets → Marketplace** (in the sidebar on a computer) lists every paid tool your agent can call: about 84 on Arc
+mainnet, by category, each with its seller's mark, its price per call and how many calls a dollar buys.
+
+<Walkthrough light>
+  <WalkStep title="The catalog" src="marketplace/list" zoom="88 25 8">
+    Search, or browse by category: data, search and research, social, infrastructure, finance, creative, prediction
+    markets.
+
+    <Pin box="4 8.5 92 4.5">Search services</Pin>
+
+    <Pin at="50 17">Categories, with counts</Pin>
+
+    <Pin box="4 21 92 7.5">A service: seller, endpoints, price per call</Pin>
+  </WalkStep>
+  <WalkStep title="A service" src="marketplace/service" zoom="30 33.8 9">
+    Each service shows what it returns, how it can be paid (Circle Gateway, or any wallet), its endpoints and price
+    range, and **Try it**: one real call, paid from the agent wallet.
+
+    <Pin at="40 26.4">Who sells it, and first or third party</Pin>
+
+    <Pin at="40 49.5">How it can be paid</Pin>
+
+    <Pin box="4 80 92 7">Try it for its price</Pin>
+  </WalkStep>
+</Walkthrough>
 
 ## Your agent wallet
 
-Purchases never come out of your main wallet directly. Kawase has a separate **agent wallet** for you, and it can only
-spend what you put in:
+Purchases never come out of your main wallet directly. Kawase keeps a separate **agent wallet** for you, and it can
+only spend what you put in.
 
-- **Top up** from your Kawase wallet with a preset. The first top-up signs a **capped marketplace grant** with Face ID;
-  later top-ups need no prompt, inside that cap. Or top up with **Apple Pay or a card** through Circle's Onramp, straight
-  into the agent wallet.
-- Its balance is split between **Circle Gateway** (ready for nanopayments, which most sellers take) and a part **on hand**
-  for sellers that take plain USDC (EIP-3009). When a plain-USDC purchase needs more on hand, Kawase refills it from
-  Gateway itself.
+<Shot src="marketplace/agent-wallet" alt="Agent wallet on testnet: a balance of 0.00 USDC, spent today 0.00 of 5.00 USDC, ready to pay and on hand, Almost empty, and Top up with 1, 2 or 5 USDC or with Apple Pay or a card." zoom="50 23.3 9">
+  <Pin at="40 16">Its balance</Pin>
+
+  <Pin box="4 30 92 7">Ready to pay (Circle Gateway) and on hand (plain USDC)</Pin>
+
+  <Pin box="4 76.5 92 13">Top up from your wallet</Pin>
+
+  <Pin box="4 91 92 7">Or buy straight into it</Pin>
+</Shot>
+
+- **Top up** from your Kawase wallet with a preset. The first top-up asks you to confirm once: Kawase may then move USDC
+  only into your agent wallet, with a daily limit. Or top up with **Apple Pay or a card**, straight into it.
+- Its balance is split between **Circle Gateway** (ready for nanopayments, which most sellers take) and a part **on
+  hand** for sellers that take plain USDC. Kawase refills what's on hand from Gateway itself.
 - **Return to my wallet** sends both parts back at any time.
-
-Settings → **Agent wallet** shows the balance, what was spent today, the address and the full history of purchases and
-moves.
 
 ## Budgets you set
 
 - a **daily budget** and a **per-call cap**;
-- **ask me first** above the cap: the purchase waits on a consent card in chat;
+- **ask me before every purchase**, or only above the cap, on a consent card in chat;
 - the **categories** Kawase may buy from;
 - **blocked sellers**: tap any purchase to block its seller.
 
-Tightening applies at once; loosening asks for Face ID. A refusal names the rule that stopped it.
+Tightening applies at once; loosening asks you to confirm. A refusal names the rule that stopped it.
 
 ## Every purchase receipted
 
-Chat shows what Kawase found (the seller's mark, what it returns and the price) and, after paying, a receipt: "Paid 0.002
-USDC to …". The seller's answer is labelled **unchecked**. x402 has no refund standard yet: if a call fails after payment,
-the receipt says the seller kept it; a payment that Circle reports as failed is marked **not charged**. Kawase treats outside text as data, never as instructions, and
-says so when an answer tries to tell it what to do.
+Chat shows what Kawase found (the seller's mark, what it returns, the price) and, after paying, a receipt: "Paid 0.002
+USDC to …". The seller's answer is labelled **unchecked**. x402 has no refund standard yet: if a call fails after
+payment, the receipt says the seller kept it; a payment that Circle reports as failed is marked **not charged**. Kawase
+treats outside text as data, never as instructions.
 
 ## Networks
 
-- **Mainnet**: Circle's catalog (about 2,100 listings on Arc), paid over both rails.
+- **Mainnet**: Circle's catalog, paid over both rails.
 - **Testnet**: Circle's catalog has no testnet listings, so Kawase runs its own demo seller (`seller.getkawase.xyz`) to
   try it end to end with test money.
 

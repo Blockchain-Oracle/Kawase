@@ -1,73 +1,111 @@
 ---
 title: Bridge and withdraw
-description: Withdraw any token to an exchange, your own wallet or your bank through an exchange; send USDC to anyone on six networks over CCTP, Across or Relay; bring USDC to Arc with no gas.
+description: Move USDC from Arc to Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche, to you or anyone, at the best of seven bridges; bring USDC to Arc with no gas; withdraw any token to an exchange, your own wallet or your bank.
 ---
 
 <Status ids="bridge send" />
 
 <Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-Ask Kawase ("send 20 dollars to Alex on Base", "bring my USDC from Base to Arc") and it puts a **move card** in front of
-you, which also opens full screen as **Move to another chain**. It moves USDC between Arc and **Base, Ethereum, Arbitrum,
-Optimism, Polygon or Avalanche**.
+<Flow>
+  <FlowStep icon="network" title="Where">A chain, and who it's for.</FlowStep>
+  <FlowStep icon="route" title="The race" tone="accent">Seven bridges quote; the most that arrives wins.</FlowStep>
+  <FlowStep icon="hand" title="Slide">One transaction, checked before you sign.</FlowStep>
+  <FlowStep icon="check" title="Delivered" tone="ink">Followed until it lands on the other chain.</FlowStep>
+</Flow>
 
-## Out of Arc, to anyone
+## Bridge, step by step
 
-The recipient can be **you**, a **contact**, an **@handle** or any **0x address**. Kawase asks three providers for a live
-quote:
+**Bridge** from **+** (or Swap's Bridge tab), or ask: "send 20 dollars to Alex on Base", "move 1 dollar to Base".
 
-- **Circle CCTP**: Circle burns the USDC on Arc and mints it on the other network;
-- **Across** and **Relay**: a solver pays out on the other side, and is repaid from your deposit.
+<Walkthrough>
+  <WalkStep title="Choose a chain" src="bridge/chains">
+    Base, Ethereum, Arbitrum, Optimism, Polygon or Avalanche, each with its own mark.
 
-They are ranked by **what arrives after fees**, with ties going to the faster one. Up to three routes are shown with the
-provider's mark, what arrives, the fee and the expected time. The best one is picked for you, and you can tap another.
+    <Pin box="4 72.5 92 24">Where it should arrive</Pin>
+  </WalkStep>
+  <WalkStep title="To whom, and how much" src="bridge/ticket" zoom="77 20.5 9">
+    The recipient can be **you** (the same address on the other chain), a **contact**, an **@handle** or any
+    **0x address**. Pick USDC or EURC and the amount.
 
-Before your wallet is asked, Kawase builds the chosen provider's transaction and **checks it**: for Across it decodes the
-deposit (who pays, who receives, which token, the amount, the minimum, the destination, no extra message); for Relay it
-checks the approval and deposit into Relay's listed depository; for CCTP, Circle's own call checks. The transaction is
-simulated from your wallet, then sent as **one transaction** after you slide and confirm with Face ID.
+    <Pin at="26 20.5">From Arc</Pin>
 
-## Bring to Arc
+    <Pin box="5 29 90 6.5">You, a contact, an @handle or an address</Pin>
 
-If you hold USDC at the same address on another network, Kawase finds it (the balances are shown, the largest picked) and
-brings it to Arc with **Relay's permit**: one signature, and **no gas needed on that network**. The permit is checked
-(your address, the amount, Relay's contract and that network's USDC) before you sign.
+    <Pin at="40 48">What to move</Pin>
+  </WalkStep>
+  <WalkStep title="The routes" src="bridge/review" zoom="40 20.7 9">
+    **Circle CCTP, Across, Relay, LI.FI, deBridge, Socket and Gas.zip** are asked for a live quote. They are ranked by
+    **what arrives after fees**, ties going to the faster one; the best is picked and you can tap another. Before your
+    wallet is asked, Kawase builds the chosen route and **checks it** (who pays, who receives, the token, the amount,
+    the minimum, the destination), then simulates it from your wallet.
 
-## Following a move
+    <Pin at="50 15.3">What arrives, on which chain</Pin>
 
-Every move is tracked: **Signed → Sent → Arriving → Delivered**, with explorer links. Kawase checks the amount that left
-your wallet on the receipt, then the fill through the provider's own status (Across deposit status, Relay request status
-or Circle's attestation). If a provider **refunds** instead, the card says so plainly. Nothing is ever sent twice.
+    <Pin box="5 28 90 13">The winning bridge, what you receive, its fee</Pin>
 
-## On testnet
+    <Pin box="5 66.5 90 7.5">Slide to send</Pin>
+  </WalkStep>
+  <WalkStep title="Delivered" src="bridge/tracking" zoom="50 33 10">
+    Every move is followed: **Signed → Sent → Arriving → Delivered**, with explorer links on both chains. Kawase checks
+    the amount that left your wallet, then the fill through the bridge's own status (Circle's attestation, Across's
+    deposit status, Relay's request status). If a bridge **refunds** instead, the card says so. Nothing is sent twice.
 
-Arc Testnet uses **CCTP only**; Across and Relay serve Arc mainnet. Bring to Arc is mainnet only.
+    <Pin at="50 24">What arrived, and by which bridge</Pin>
+
+    <Pin at="50 36.3">See it on both chains</Pin>
+  </WalkStep>
+</Walkthrough>
+
+**Their wallet is on another chain?** The [Send](./send-receive-request.mdx) review offers the bridge with the same
+amount and recipient.
+
+## Bring USDC to Arc
+
+If you hold USDC at the same address on another network, **Add money → From another chain** finds it (the largest
+balance first) and brings it to Arc with **Relay's permit**: one signature and **no gas needed on that network**. The
+permit is checked (your address, the amount, Relay's contract and that network's USDC) before you sign. Mainnet only.
 
 ## Withdraw
 
-**Withdraw** (from Home, or "withdraw everything to my Kraken") takes one token, several or everything out of Kawase:
+**Withdraw** takes one token, several or everything out of Kawase, in one confirmation.
 
-<Steps>
-<Step>
-### What
-Pick the tokens. Each one goes **as itself** or **as cash** (converted to USDC first).
-</Step>
-<Step>
-### Where
-An **exchange** (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, or Coinbase through Base), **your own wallet** on Arc or
-another chain, or **your bank** through an exchange. Kawase knows which assets and networks each exchange accepts and
-warns you before you send something it would not credit. Places you withdraw to are saved in **My places**.
-</Step>
-<Step>
-### One confirmation
-Kawase plans a line per token: a transfer on Arc, a bridge, or a conversion first. You slide once and confirm with one
-Face ID. A tracker follows every line to the end; if something stops half way, **Finish it** picks up where it was.
-</Step>
-</Steps>
+<Walkthrough>
+  <WalkStep title="What, and where" src="bridge/withdraw">
+    Pick tokens or tap **Everything**; each goes **as itself** or **as cash** (converted to USDC first). Then where:
+    an **exchange** (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, or Coinbase through Base), **your other wallet** on
+    Arc or another chain, or **your bank** through an exchange. Kawase knows which assets and networks each exchange
+    accepts and warns you before you send something it would not credit.
 
-Tokens other than USDC cross chains as USDC (converted first). On testnet, exchanges aren't offered; withdraw goes to your
-own wallet. In the **exit kit**, "move the money out" opens Withdraw for everything.
+    <Pin at="62 34.8">Everything, or pick tokens</Pin>
 
-To take your money out without Kawase at all, follow [Withdraw without Kawase](../withdraw-without-kawase.mdx).
+    <Pin box="4 50.5 92 22.5">Exchanges, with their own steps</Pin>
+
+    <Pin box="4 79.5 92 7.5">Your other wallet, on any chain</Pin>
+
+    <Pin box="4 87.5 92 7">Your bank, through an exchange</Pin>
+  </WalkStep>
+  <WalkStep title="One confirmation, every line" src="limits/exit-kit">
+    Kawase plans a line per token (a transfer on Arc, a bridge, or a conversion first). **One Face ID covers every
+    line**, and each step is checked again before it is sent. A tracker follows every line; if something stops half
+    way, **Finish it** picks up where it was. The **exit kit** sits under it: pause Kawase, take every permission back,
+    then move your money out.
+
+    <Pin at="50 61.8">The exit kit</Pin>
+
+    <Pin box="4 75.5 92 6">Pause everything Kawase does on its own</Pin>
+
+    <Pin box="4 87.5 92 6.5">Move my money out: Withdraw, for everything</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Places you withdraw to are saved in **Contacts → My places**. Exchanges hold real money, so they open on Arc mainnet;
+on testnet, withdraw goes to your own wallet. To take your money out without Kawase at all, follow
+[Withdraw without Kawase](../withdraw-without-kawase.mdx).
+
+## On testnet
+
+Arc Testnet bridges with **Circle CCTP** (the others answer that they aren't on that network), to the testnets of the
+same six chains. Bring USDC to Arc and exchanges are mainnet only.
 
 <ScopeList ids="bridge send" />

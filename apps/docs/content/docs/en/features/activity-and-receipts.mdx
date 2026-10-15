@@ -21,19 +21,23 @@ wallet: money in is **+20 USDC**, money out is **−5 USDC**.
 
 ## The list
 
-<Shot src="activity/list" alt="Activity: this week's profit and loss, money in and out, filters, and rows such as −5 USDC sent and +20 USDC received.">
-  <Pin box="4 12 92 18">This week: profit and loss, money in and money out</Pin>
+<Shot src="activity/list" alt="Activity: this week's profit and loss, money in and out, the filters, scheduled sends being watched, and rows such as −1 USDC sent." zoom="68 57 7">
+  <Pin box="4 17.5 92 21.5">This week: profit and loss, money in and money out</Pin>
 
-  <Pin at="50 33">All · In · Out · Held · Found</Pin>
+  <Pin at="50 44.3">All · In · Out · Trades · Watching · Found</Pin>
 
-  <Pin box="4 38 92 17">Each row: what happened, who, the amount and the time</Pin>
+  <Pin box="4 51.5 92 15.5">Watching: what runs next, with a countdown</Pin>
 
-  <Pin at="83 7">Export as CSV or beancount</Pin>
+  <Pin box="4 73.5 92 15">Each movement: what, with whom, the signed amount, the time</Pin>
+
+  <Pin at="81.5 11.7">Export your history</Pin>
 </Shot>
 
-Each row says where it stands: done, checking, held for you, skipped and why, or practice. **Held** is something that
-waits for you (a payment to confirm, an automation's step); **Found** is what Kawase noticed for you, such as money
-sitting idle.
+Each row says where it stands: done, moving, held for you, skipped and why, or practice. **Watching** lists what
+runs next (a scheduled send, with a ring counting down to it); **Held** is something that waits for you; **Found** is
+what Kawase noticed for you, such as money sitting idle.
+
+<Clip src="activity/open-receipt" alt="Tapping a −5 USDC row in Activity: the receipt slip slides up, then opens to full height with Share receipt and Why this happened." />
 
 ## The receipt slip
 
@@ -50,7 +54,7 @@ bridge.
 
     <Pin box="8 66 84 11">When, which network, and the transaction</Pin>
   </WalkStep>
-  <WalkStep title="Check it on chain" src="activity/receipt" zoom="80 86.5 10">
+  <WalkStep title="Check it on chain" src="activity/receipt" zoom="78 88 9">
     Under the perforation, the stub's QR code opens the transaction on **ArcScan** (testnet.arcscan.app on testnet).
     Anyone can scan it from your screen or from the shared image.
 
@@ -60,9 +64,11 @@ bridge.
     **Share receipt** makes the slip an image in your theme (text with the explorer link where images can't be shared).
     **Open send** goes back to the screen it came from. **Why this happened** shows the decision behind it.
 
-    <Pin box="4 24 92 7">Share the slip as an image</Pin>
+    <Pin box="4 71.5 92 6.5">Share the slip as an image</Pin>
 
-    <Pin box="4 41 92 7">Why this happened</Pin>
+    <Pin box="4 80 92 7">Back to the screen it came from</Pin>
+
+    <Pin box="4 88 92 7">Why this happened</Pin>
   </WalkStep>
 </Walkthrough>
 
@@ -71,6 +77,14 @@ bridge.
 **Why** is the decision record behind a movement: the request it came from (your words, an automation, a rule), what
 was checked, which rule let it go at once or made it wait, and how you answered. For a run that never reached the
 chain, it says what stopped it.
+
+<Shot src="activity/why" alt="Why this happened: the receipt, then a timeline: You asked in the app (USDC · 5 · @nia), Checks passed, with a warning (first payment to this address)." zoom="50 95 10">
+  <Pin at="25 77">What kind of movement it was</Pin>
+
+  <Pin at="70 84">The request it came from, word for word</Pin>
+
+  <Pin at="80 95">What was checked, and what it warned about</Pin>
+</Shot>
 
 ## Money that came in
 

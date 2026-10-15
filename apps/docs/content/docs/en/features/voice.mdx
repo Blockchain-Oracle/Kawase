@@ -5,15 +5,35 @@ description: Talk to Kawase on iPhone, Android and the web in your language; it 
 
 <Status ids="voice" />
 
-Tap the orb in the dock and speak. The page blurs, the orb rises and listens; it shows the words it heard, answers aloud,
-and puts the same **cards** on screen as chat does.
+<Flow>
+  <FlowStep icon="mic" title="Tap the orb">The page blurs and the orb rises.</FlowStep>
+  <FlowStep icon="chat" title="Say it">Captions show what it heard and what it says.</FlowStep>
+  <FlowStep icon="list" title="Cards">The same cards as chat, in the same thread.</FlowStep>
+  <FlowStep icon="hand" title="Your tap" tone="accent">A spoken "yes" never approves a payment.</FlowStep>
+</Flow>
+
+## Talking to Kawase
+
+Tap the orb in the middle of the dock (**Talk to Kawase** in the sidebar on a computer) and speak. Kawase greets you,
+listens, answers aloud and puts the same **cards** on screen as chat does.
+
+<Shot src="voice/mode" alt="Voice mode: the magenta orb, its status, Try saying chips (What's trending on Arc?, Swap 5 USDC to EURC, Bring my USDC from Base, Put my idle USDC to work) and the dock with the keyboard, the microphone and end." zoom="50 44.5 9">
+  <Pin at="50 23.5">The orb: listening, thinking, speaking</Pin>
+
+  <Pin box="4 52 92 15">Try saying: tap one to start</Pin>
+
+  <Pin at="32.4 93.4">Type instead</Pin>
+
+  <Pin at="50 93.4">Mute: nothing is heard or sent</Pin>
+
+  <Pin at="67.3 93.4">End</Pin>
+</Shot>
 
 - **One conversation.** What you said by voice is in your chat thread, and typing picks it up where you left off.
 - **Captions on both sides**: what Kawase heard, and what it is saying.
-- **A spoken "yes" never approves a payment.** A send by voice is prepared on its card and waits for your tap and Face ID
-  (fingerprint or screen lock on Android) — even inside your daily allowance.
-- **Mute** with one tap: nothing is heard or sent while muted. **Type instead** is always there.
-- **The orb shows the network**: lime on mainnet, sky blue on testnet.
+- **A spoken "yes" never approves a payment.** A send by voice is prepared on its card and waits for your tap and Face
+  ID (fingerprint or screen lock on Android, an email code on the web).
+- **Type instead** is always one tap away, and **mute** stops anything being heard or sent.
 
 ## On the web
 
@@ -22,18 +42,22 @@ Kawase stays connected, says how to allow it, and typing is right beside it. Kaw
 
 ## Settings → Voice
 
-- **Kawase's voice**: one of six.
-- **Speaking speed**: relaxed, normal or brisk.
-- **Kawase speaks first**: it greets you as soon as voice opens; turned off, it waits for you.
+<Shot src="voice/settings" alt="Settings → Voice: six voices (Marin, Aster, Beacon, Cinder, Stone, Vesper) each with a speaker button, Speaking speed (Relaxed, Normal, Brisk) and Kawase speaks first." zoom="77.5 33 6">
+  <Pin box="4 30 92 45">Kawase's voice: one of six</Pin>
 
-Changes apply the next time you start talking.
+  <Pin at="50 85">Relaxed · Normal · Brisk</Pin>
+
+  <Pin at="50 96">Kawase speaks first, or waits for you</Pin>
+</Shot>
+
+Tap the speaker beside a voice: voice opens and Kawase says hello in it. Changes apply the next time you start talking.
 
 ## How it works
 
 The phone or browser joins a LiveKit room over WebRTC, and Kawase's voice worker joins the same room. Every money or
-account request is handed to **the same agent turn as chat** (same tools, same limits, same thread); the cards arrive on
-your screen while the answer is spoken. Before speaking amounts, assets, @handles or the network, the worker checks them
-against what the tools returned and corrects a mismatch. If the realtime voice can't start, Kawase falls back to a
+account request is handed to **the same agent turn as chat** (same tools, same limits, same thread); the cards arrive
+on your screen while the answer is spoken. Before speaking amounts, assets, @handles or the network, the worker checks
+them against what the tools returned and corrects a mismatch. If the realtime voice can't start, Kawase falls back to a
 listen → answer → speak pipeline with the same agent behind it. LiveKit doesn't record the conversation.
 
 <ScopeList ids="voice" />

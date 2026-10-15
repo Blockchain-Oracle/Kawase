@@ -1,71 +1,105 @@
 ---
 title: Automations
-description: Scheduled payments, Auto-save, DCA and rules (balance, money in or out, price) that run by themselves inside grants you sign once, with practice runs first and Needs you for anything they may not do alone.
+description: Scheduled sends, regular buys, Auto-save, round-ups and balance rules that run by themselves inside a limit your wallet signs once on Arc, with a practice run first and Watching on Home for what runs next.
 ---
 
 <Status ids="automations" />
 
-Automations are where an agent earns its keep: things that should happen without you opening the app. Every automation
-runs **unattended**, but inside an on-chain grant you sign once, so even Kawase itself cannot make it do more.
+Automations are things that should happen without you opening the app. Each one runs **unattended**, but inside a
+limit your wallet signs once on Arc, so even Kawase itself cannot make it do more.
 
-## Scheduled payments
+<Flow>
+  <FlowStep icon="calendar" title="Describe it">A template, or in your own words.</FlowStep>
+  <FlowStep icon="eye" title="Read the card">Next runs, and the most it could ever move.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Not sure yet" icon="repeat" title="Practise first" tone="quiet">Dry runs on Arc; nothing moves.</FlowStep>
+    <FlowStep when="Ready" icon="key" title="Turn it on" tone="accent">One signature: Arc enforces the limit.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="clock" title="Watching" tone="ink">It runs on time, exactly once.</FlowStep>
+</Flow>
 
-"Every Friday at 9 send 10 dollars to Alex." Kawase reads it back with the next runs and the maximum it could ever move,
-then you turn it on with **one Face ID**. That signs the automation's own **grant**: it may only transfer that token, only
-to Alex's address (pinned on chain), and only up to the amount per period. Schedules: every day, every week on a weekday,
-or every month on day 1–28, in your own time zone.
+## A scheduled send, step by step
 
-Each run happens **exactly once**: if Kawase's server restarts mid-run, the run is recovered under the same id and never
-paid twice. Weekly and monthly runs get a **reminder a day before** (with a heads-up when your wallet is short). A run
-that can't go ahead is **skipped with a reason** in your inbox, and a run skipped for lack of money is **retried once**
-when money arrives.
+"Every Friday at 9 send 1 dollar to Sam", or **Settings → Automations → New**.
 
-## Auto-save
+<Walkthrough>
+  <WalkStep title="Pick what it does" src="automations/new">
+    **Send on a schedule**, **Buy regularly** (you confirm each buy at a fresh price), **Keep and save**, **Round up my
+    payments**, a **Low balance alert**, or **Save above a line**.
 
-"Keep 100 dollars in my wallet and save the rest." Auto-save keeps that amount ready and moves anything above it into your
-own vault savings (see [Earn](./earn-and-borrow.mdx)). When your wallet drops below the line, it tops it back up from
-savings. It checks daily and whenever money arrives. Its grants only allow moving USDC **between your wallet and your own
-savings**, never anywhere else.
+    <Pin box="4 16 92 68.5">Six kinds of automation</Pin>
+  </WalkStep>
+  <WalkStep title="Who, how much, when" src="automations/schedule" zoom="30 83 8">
+    A contact, `@handle` or address; USDC or EURC; every day, every week on a weekday, or every month on a day; the
+    time, in your own time zone. The line under it reads the schedule back.
 
-## DCA
+    <Pin box="4 35.5 92 6">To: a contact, an @handle or an address</Pin>
 
-- **DCA** ("buy 20 dollars of cirBTC every week") buys a token with a fixed amount on a schedule. Each run waits for you in
-  **Needs you** with a fresh executable quote.
+    <Pin box="4 49 92 6.5">The amount each time</Pin>
 
-## Rules
+    <Pin at="50 64.8">The day and the time</Pin>
 
-"When my balance goes above 500, bridge what's above 400 to my Base address." A rule has:
+    <Pin box="4 86 92 6">Draft it: nothing runs yet</Pin>
+  </WalkStep>
+  <WalkStep title="Read the card" src="automations/card" zoom="50 64 12">
+    The card shows the **next runs** and the **most it could ever move**: "At most 1.00 USDC a week can ever go, and
+    only to this address. Arc enforces it." Turn it on, practise first, or ask what would happen if it ran now.
 
-- a **trigger**: the balance goes above or below an amount; money arrives (optionally from someone, or at least an
-  amount); money goes out (**round-ups**); or a token's **price** crosses a level (checked on the executable quote every
-  two minutes);
-- an **action**: bridge USDC to your own address on another network (the route fee is capped on chain), save into your
-  vault, **send to someone** (bounded on chain), **swap**, or just alert you;
-- an **amount**: what is above a line, a share of the money that arrived, or a fixed amount.
+    <Pin box="4 49.5 92 7.5">The next runs</Pin>
 
-A balance or price rule fires **once per crossing** and re-arms when it goes back. A **round-up** rule ("round up my
-payments and save the change") saves the difference from each send into your own vault.
+    <Pin box="4 59.5 92 9.5">The most it could ever move, enforced on Arc</Pin>
+
+    <Pin box="4 76.5 92 6.5">Turn it on (Face ID, or an email code on the web)</Pin>
+
+    <Pin box="4 84.5 92 6.5">Or practise first</Pin>
+  </WalkStep>
+  <WalkStep title="On" src="automations/on" zoom="87.7 52.4 6">
+    Turning it on signs the automation's own **grant**: it may only transfer that token, only to that address (pinned
+    on chain), and only up to the amount per period. From then on Kawase runs it without asking; you can pause, skip
+    or cancel any time.
+
+    <Pin box="4 84 92 6.5">Manage automations</Pin>
+  </WalkStep>
+  <WalkStep title="Watching" src="automations/watching" zoom="72 76 6">
+    Home's **What Kawase did** has a **Watching** filter: what runs next, with a ring counting down to it.
+
+    <Pin at="69 64.3">Watching</Pin>
+
+    <Pin box="4 70 92 9">The next run and its countdown</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## How runs behave
+
+- **Exactly once.** If Kawase's server restarts mid-run, the run is recovered under the same id and never paid twice.
+- **Reminders.** Weekly and monthly runs get a reminder a day before, with a heads-up when your wallet is short.
+- **Skipped with a reason.** A run that can't go ahead is skipped and says why in your inbox; one skipped for lack of
+  money is retried once when money arrives.
+
+## Rules and saving
+
+- **Keep and save** (Auto-save): keep an amount ready in your wallet; the rest earns in your own
+  [vault savings](./earn-and-borrow.mdx) and comes back when you run low.
+- **Round up my payments**: save the change from each payment you send.
+- **Save above a line** and **Low balance alert**: act or tell you when your balance crosses a line, once per crossing.
+- In chat you can go further: "when my balance goes above 500, bridge what's above 400 to my Base address", or act
+  when money arrives or a token's price crosses a level.
 
 ## Practice first
 
-A new automation can start in **practice**: it runs without a grant, and each run is the exact transfer as a dry run on
-Arc, recorded as **"would have"**. Nothing moves. When you're happy, **Go live** signs its grant. Ask "what would happen if
-this ran now?" for a dry run on demand. With global [practice mode](./limits-and-control.mdx#practice-mode) on, every
-automation runs in practice.
+A new automation can start in **practice**: each run is the exact transfer as a dry run on Arc, recorded as **"would
+have"**. Nothing moves. When you're happy, **turn it on**. Ask "what would happen if this ran now?" any time.
 
 ## Needs you
 
-An automation never swaps on its own, and never pays above its grant or past your allowlist or new-recipient rules. When a
-run reaches such a step it waits in **Needs you** (inbox and Automations, with a push where notifications are set up).
-Approving opens the same send or swap you'd make by hand. Unanswered items are reminded after 12 hours and expire after
-24. See [Needs you](./limits-and-control.mdx#needs-you).
+An automation never swaps on its own, and never pays above its grant or past your rules. When a run reaches such a step
+it waits in **Needs you** (inbox and Automations, with a push where notifications are on). Approving opens the very
+send or swap you'd make by hand, re-checked. Unanswered items are reminded after 12 hours and expire after 24.
 
 ## Managing them
 
-From the Automations screen or in chat: list, **pause**, **resume**, **skip the next run**, **edit** and **cancel**.
-
-- **Editing** in place: asking for less applies at once; asking for more signs a new grant together with the old one's
-  revoke.
-- **Cancelling** also **revokes the grant on chain**, so the permission is gone, not just hidden.
+From Automations or in chat: list, **pause**, **resume**, **skip the next run**, **edit** and **cancel**. Asking for less
+applies at once; asking for more signs a new grant together with the old one's revoke. **Cancelling** also revokes the
+grant on chain, so the permission is gone, not just hidden.
 
 <ScopeList ids="automations" />

@@ -1,71 +1,126 @@
 ---
 title: Trade any token
-description: Markets, a page for every token on Arc with its safety checks, and buying, selling or swapping any pair at the best of three venues, confirmed with one slide.
+description: Markets, a page for every token on Arc with its safety checks, and buying, selling or swapping any pair at the best of six venues raced at once, confirmed with one slide.
 ---
 
 <Status ids="swap" />
 
 <Marks names="arc usdc eurc kyberswap circle lifi" />
 
+<Flow>
+  <FlowStep icon="coins" title="Pick a pair">Pay with any token you hold, get any token.</FlowStep>
+  <FlowStep icon="route" title="The race" tone="accent">Six venues quote at once; the most delivered wins.</FlowStep>
+  <FlowStep icon="hand" title="Slide">The review shows the least you get. One slide.</FlowStep>
+  <FlowStep icon="receipt" title="Receipt" tone="ink">Approval and swap in one transaction.</FlowStep>
+</Flow>
+
+## The route race
+
+Type an amount and Kawase asks **KyberSwap, Circle App Kit, LI.FI, Uniswap, 0x and Socket** at the same moment. Each
+answer lands as it comes; the one that delivers the most **after fees** is picked, and every other venue is listed with
+what it would deliver, or why it couldn't quote. Guests see the race too: you only sign in at the end.
+
+<Clip src="swap/race" alt="Swapping 25 USDC for Matrixdock Gold (XAUm) on Arc mainnet as a guest: Asking every venue…, then KyberSwap best of 5, 6/6 answered, and the routes list." />
+
+## Swap, step by step
+
+<Walkthrough>
+  <WalkStep title="The ticket" src="swap/ticket" zoom="40 72 9">
+    **Swap** from **+**, a token page's **Buy · Sell**, or just ask ("swap 2 dollars to euros"). Pick what you pay and
+    what you get, then the amount. The best quote shows under it before you commit to anything.
+
+    <Pin at="24 19.4">You pay: any token you hold</Pin>
+
+    <Pin at="74 19.4">You get: any token on Arc</Pin>
+
+    <Pin box="5 67.5 90 9.5">The winning venue, and how many answered</Pin>
+  </WalkStep>
+  <WalkStep title="Review" src="swap/review" zoom="78 20.5 8">
+    The review shows what you get **at least** (the on-chain minimum), the price impact, and every route. Tap another
+    route to pick it yourself.
+
+    <Pin at="40 15">What you get, and the least you'll get</Pin>
+
+    <Pin box="5 28 90 13">The best route: venue, amount, fee</Pin>
+
+    <Pin box="5 44 90 6">The venues that didn't quote</Pin>
+
+    <Pin box="5 84 90 7">Slide to swap</Pin>
+  </WalkStep>
+  <WalkStep title="Swapped" src="swap/done" zoom="50 74.6 9">
+    Only the chosen venue builds the transaction, at half the slippage you were shown, and Kawase checks its calls (the
+    router, the amounts, you as the only recipient, the on-chain minimum) before your wallet is asked. The approval and
+    the swap go out as **one transaction** from your own wallet.
+
+    <Pin at="50 60.5">What you got, for what you paid</Pin>
+
+    <Pin at="50 74.6">The transaction on ArcScan</Pin>
+  </WalkStep>
+  <WalkStep title="Its receipt" src="swap/receipt">
+    In [Activity](./activity-and-receipts.mdx) a swap reads like a wallet (**+2.56 EURC**, −2 USDC) and opens the same
+    receipt slip: "You swapped 2 USDC → 2.56 EURC, via Circle App Kit".
+
+    <Pin at="40 57">Both legs, and the venue</Pin>
+  </WalkStep>
+</Walkthrough>
+
 ## Markets
 
-The **Markets** tab (in the dock, between Home and the orb) is open to guests too:
+The **Markets** tab (in the dock, beside Home) is open to guests too. On testnet it shows mainnet's markets and offers
+the switch.
 
-- **Search** by name, symbol or contract address.
-- Segments **Trending · Meme · Long/Short · Stocks & FX · New**, a carousel of hot markets, and a **heatmap** where each
-  tile is sized by the day's volume and coloured by its move.
-- Rows show the price, the day's change, volume and liquidity. A token that copies another one carries a **copycat**
-  chip; fakes stay flagged in the list and never reach the carousel or the heatmap.
+<Shot src="trade/markets" alt="Markets on Arc mainnet: search, the Marketplace entry, the Long or short board with EURC's live chart, and the Trending, Meme, Services and Stocks segments." zoom="50 83.4 9">
+  <Pin box="4 15.5 92 6">Search by name, symbol or contract address</Pin>
 
-Markets are an Arc mainnet thing. On testnet the tab says so and offers the switch.
+  <Pin box="4 24 92 10">Paid tools your agent can call</Pin>
+
+  <Pin box="4 44.5 70 34">Long or short, live: see [Long and short](./long-short.mdx)</Pin>
+
+  <Pin at="50 83.4">Watchlist · Trending · Meme · Services · Stocks & FX · New</Pin>
+</Shot>
+
+A token that copies another one carries a **copycat** chip; fakes stay flagged in the list and never reach the hot
+carousel.
 
 ## A page for every token
 
-Tap any token, in Markets, on Home or in a chat card, to open its page:
+Tap any token, in Markets, on Home or in a chat card:
 
-- its mark, price and change, and a chart you can scrub with ranges from one hour to all time;
-- **what you hold** of it;
-- market cap, liquidity, volume, holders, fully diluted value and the contract (copy it in one tap);
-- **Safety**: a verdict with its reasons, the checks from **GoPlus** (honeypot, buy and sell taxes, owner powers) and any
-  look-alikes, linked;
-- **Buy · Sell**, and a **More** sheet that lists every other action, each with the reason when it isn't available.
+<Shot src="trade/token" alt="Malachite (MALA): price, a live chart with ranges from Live to All, BasedBot, DexScreener and ArcScan links, stats, and Buy, Sell and More." zoom="50 53 9">
+  <Pin at="40 14.7">Price and change</Pin>
+
+  <Pin at="50 53">Live, one hour to all time</Pin>
+
+  <Pin box="4 57 92 8">The token on BasedBot, DexScreener and ArcScan</Pin>
+
+  <Pin box="4 72 92 16">Market cap, liquidity, volume, holders</Pin>
+
+  <Pin at="89.5 95">More: every other action, or why it isn't available</Pin>
+</Shot>
+
+Further down: **what you hold** of it, the contract (copy it in one tap) and **Safety**: a verdict with its reasons,
+the checks from **GoPlus** (honeypot, buy and sell taxes, owner powers) and any look-alikes, linked.
 
 ## Your portfolio, every token
 
-Home shows **every token your address holds** on Arc and on Ethereum, Base, Arbitrum, OP, Polygon and Avalanche, each with
-its real mark and value. Kawase hides what would mislead you:
-
-- an **impostor** (a stablecoin's or a well-known symbol at another address, or with other decimals) is hidden;
-- a token with **no price and no pool** goes to Hidden;
-- an unpriced token never counts toward your total.
-
-## Buy, sell or swap any pair
-
-"Buy 20 dollars of ARGUS", "sell half my cirBTC", or the ticket from a token page. You pay with **any token you hold**
-and get any token (search by name, symbol or address). For every trade Kawase asks **three venues at once**, KyberSwap,
-Circle's App Kit and LI.FI, and recommends the one that delivers the most. The others are listed with what they would
-deliver, or why they couldn't quote.
-
-The review shows the amount you get **at least**, the price impact against the market price and the route. You confirm by
-**sliding** on the card, then **Face ID**. Only the chosen venue builds the transaction, at half the slippage you were
-shown, and Kawase checks its calls (router, amounts, recipient, the on-chain minimum) before your wallet is asked. The
-approval and the trade go out as **one transaction** from your own wallet.
+Home shows **every token your address holds** on Arc and on Ethereum, Base, Arbitrum, OP, Polygon and Avalanche, each
+with its real mark and value. An **impostor** (a well-known symbol at another address, or with other decimals) is
+hidden; a token with **no price and no pool** goes to Hidden; an unpriced token never counts toward your total.
 
 ## Token rules
 
-Every buy passes your **token rules** first:
+Every buy passes your **token rules** first (Settings → Budget → Token rules):
 
-- impersonators and honeypots are **blocked**;
-- an **unverified** token is limited to **$50 a trade** and **$200 a day**;
-- price impact may be at most **5%** for anything that isn't a stablecoin.
+- copycats, honeypots and tokens that can't be sold are **never** bought, whatever the rules say;
+- **which tokens**: verified only, or verified and popular with warnings;
+- caps for **unverified** tokens per trade and per day, with today's meter;
+- the **price impact** you accept (1% to 15%; a swap that would lose more is refused).
 
-A blocked trade says which rule stopped it and what would change the answer.
+Tightening a rule applies at once; loosening one asks for Face ID, and your wallet signs the new rules.
 
 ## On testnet
 
-Arc Testnet has only **USDC ↔ EURC** to trade, through the same ticket. Every other token, and meme coins, are mainnet
-only.
-
-Long and short positions have their own page: [Long and short](./long-short.mdx).
+Arc Testnet has **USDC ↔ EURC** to trade, through the same ticket and the same race (Circle App Kit quotes it; the
+others say they aren't on that network). Every other token, and meme coins, are mainnet only.
 
 <ScopeList ids="swap" />

@@ -19,6 +19,16 @@
       "light"
     ]
   },
+  "activity/open-receipt": {
+    "kind": "video",
+    "device": "phone",
+    "w": 780,
+    "h": 1594,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
   "activity/receipt": {
     "kind": "image",
     "device": "phone",
@@ -236,6 +246,15 @@
     "h": 2391,
     "themes": [
       "dark",
+      "light"
+    ]
+  },
+  "earn/borrow": {
+    "kind": "image",
+    "device": "phone",
+    "w": 1170,
+    "h": 2391,
+    "themes": [
       "light"
     ]
   },
@@ -499,6 +518,16 @@
       "light"
     ]
   },
+  "start/fan-open": {
+    "kind": "video",
+    "device": "phone",
+    "w": 780,
+    "h": 1594,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
   "start/faucet": {
     "kind": "image",
     "device": "phone",
@@ -671,6 +700,16 @@
       "light"
     ]
   },
+  "web/activity": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
   "web/home": {
     "kind": "image",
     "device": "desktop",
@@ -704,6 +743,16 @@
     "w": 2880,
     "h": 1800,
     "themes": [
+      "light"
+    ]
+  },
+  "web/signed-in-home": {
+    "kind": "image",
+    "device": "desktop",
+    "w": 2880,
+    "h": 1800,
+    "themes": [
+      "dark",
       "light"
     ]
   }

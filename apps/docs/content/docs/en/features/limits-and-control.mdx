@@ -1,93 +1,114 @@
 ---
-title: Limits and control
-description: Your allowance per token, Kawase's own checks, the brake, token rules, Pause all, the risk dial, practice mode, the exit kit, Needs you, and a why behind every movement.
+title: Budget and control
+description: One weekly budget your wallet signs on Arc, what it covers, what always asks, and the controls around it — pause, the risk dial, practice mode, token rules, Needs you, hold to revoke everything and the exit kit.
 ---
 
 <Marks names="usdc eurc arc" />
 
-Everything the agent may do without asking is written down in **Settings → Wallet & limits**, and most of it is enforced
-by Arc itself. This page shows what you can change there. The model behind it is on the [safety page](../safety.mdx).
+Everything Kawase may do without asking is one **weekly budget**, signed by your wallet and enforced by Arc itself.
+Inside it, Kawase acts without asking each time; anything else waits for you. The model behind it is on the
+[safety page](../safety.mdx).
 
-## Your allowance, per token
+<Flow>
+  <FlowStep icon="sparkles" title="A request">Typed, spoken, or an automation's run.</FlowStep>
+  <FlowStep icon="shield" title="The budget check">Category, venue, per action, the week, the person.</FlowStep>
+  <FlowFork>
+    <FlowStep when="Inside the budget" icon="zap" title="Goes at once">Counted in "this week".</FlowStep>
+    <FlowStep when="Someone new, a position, a raise" icon="fingerprint" title="Asks you" tone="accent">Face ID, or an email code on the web.</FlowStep>
+  </FlowFork>
+</Flow>
 
-The **authority receipt** shows, for each token, what Arc enforces (the grant you signed) and Kawase's own lower cap, what
-is left today, and any temporary raise.
+## Your weekly budget
 
-- **Add a token**: any token you hold, or an address you paste, checked on chain.
-- **Lower** a number and it saves at once.
-- **Raise** one and you see **Now → After**: one approval signs the new on-chain grant **together with** the revoke of the
-  old one, so two grants are never live at the same time.
+You turn it on right after setting up your wallet ([getting started](../getting-started.mdx)); afterwards it lives in
+**Settings → Weekly budget**.
 
-## What Kawase checks on its own
+<Walkthrough>
+  <WalkStep title="This week" src="limits/budget" zoom="50 40 10">
+    The ring shows what Kawase spent for you this week, without asking, against the weekly cap. It resets every
+    Monday.
 
-On top of the chain's limit, Kawase applies rules of its own:
+    <Pin at="50 25">Spent this week, of your cap</Pin>
 
-- a **per-payment** cap;
-- **new recipients**: for the first hours after you add someone, the allowance and automations stay off that address;
-  your own payment still goes through, with a test amount suggested;
-- **allowlist only**: the agent pays only people on your list;
-- a **temporary raise**: more for a while, then back by itself.
+    <Pin box="4 45 92 13.5">Per week, and per action</Pin>
 
-## The brake
+    <Pin box="4 66.5 92 32">What it covers</Pin>
+  </WalkStep>
+  <WalkStep title="What it covers" src="limits/covers">
+    **Swaps**, **moves to your own wallets**, **Earn**, **sends to your saved contacts** and **paid services**: each is
+    a switch. **Venues** are the swap and bridge venues it may use; **While you're away** is what may run when you're
+    not in the app (paying only saved contacts up to a cap each, moving money in and out of your own vaults, moving
+    USDC only to your own address on Base).
 
-Some requests are unusual enough to stop and show you why, even inside your limits: **more than half your balance to
-someone new**, a trade whose **price impact** is over your rule, or **leverage above 5×**. The card shows a brake panel;
-it's your call, and approving goes ahead. An automation that hits the brake waits in Needs you instead.
+    <Pin at="50 44.8">The venues it may use</Pin>
 
-## Token rules
+    <Pin at="50 51.8">While you're away</Pin>
 
-**Wallet & limits → Token rules** sets which tokens Kawase may buy for you: **verified only**, or verified and popular
-ones with warnings; caps for unverified tokens per trade and per day, with today's meter; and the highest price impact you
-accept. Copycats and high-risk tokens are always blocked. Tightening applies at once; loosening asks for Face ID and your
-wallet's signature.
+    <Pin at="50 58.9">This week: how many went without asking</Pin>
 
-## Pause all
+    <Pin at="50 78">The worst case, in one sentence</Pin>
+  </WalkStep>
+  <WalkStep title="Controls" src="limits/controls">
+    **Pause Kawase** stops everything it does on its own (each action then waits for you). The **risk dial** sets how
+    much it may do: **Guard** (every payment waits for you, chat too), **Balanced** (inside your budget, a typed request
+    goes at once) or **Autonomous** (it may act on its own suggestions inside your limits, then tells you). **Practice
+    mode** turns every action into a dry run.
 
-One switch turns off everything the agent does **without asking**: no payment uses the allowance (each one waits for your
-Face ID), every automation run is skipped, and the agent buys nothing in the marketplace. What you do yourself still
-works, swaps, bridges and withdrawals included, so you can always move your money out. While paused, a strip sits above
-every screen.
+    <Pin box="4 42 92 7">Pause Kawase</Pin>
 
-## The risk dial
+    <Pin box="4 52.5 92 8">Guard · Balanced · Autonomous</Pin>
 
-**Guard · Balanced · Autonomous**:
+    <Pin box="4 60.5 92 7.5">Practice mode</Pin>
 
-- **Guard**: every payment waits for your confirmation, chat too.
-- **Balanced**: inside your allowance, a typed request goes at once.
-- **Autonomous**: Kawase may act on its own suggestions inside your limits, then tells you.
+    <Pin box="3 87 94 7">Hold to revoke everything</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Lowering a number saves at once. Raising one shows you the change and asks your wallet to sign the new budget, which
+also switches off the old one: two budgets are never live at the same time. **Hold to revoke everything** takes every
+permission back on Arc in one transaction.
+
+## What always asks
+
+Even inside the budget, these wait for you, with the reason on the card and the fix beside it:
+
+- a **first payment** to someone, or a **new destination**;
+- **opening a position**, or anything **above your limit per action** or **more than what's left this week**;
+- a category or venue that is **not part of your budget**;
+- a token Kawase doesn't vouch for, a price it **couldn't check**, or one **worse than the market price**;
+- anything while Kawase is **paused**, in **Guard** mode or in **practice**.
+
+Approving once covers that one action; the budget itself only changes when you change it.
 
 ## Practice mode
 
-With practice on, Kawase runs **the exact transaction** you asked for as a dry run on Arc, from your own address, and shows
-**"Would have sent"** with the chain's answer. **Nothing moves.** Practice also covers automations, and a marketplace
-purchase answers **"would pay"** with the live price and nothing paid. Swaps, bridges, savings moves and margin orders are
-refused before anything is signed, so the PRACTICE strip never hides a real payment.
+With practice on, Kawase runs **the exact transaction** you asked for as a dry run on Arc, from your own address, and
+shows **"Would have sent"** with the chain's answer. **Nothing moves.** Automations run in practice too, and a
+marketplace purchase answers "would pay" with the live price.
 
-## The exit kit
+## Token rules
 
-If something feels wrong: **pause**, then **hold to revoke** every permission on the network with **one Face ID** (one
-transaction), then **move the money out**, which opens [Withdraw](./bridge-and-withdraw.mdx#withdraw) for everything.
-Automations whose grants are revoked end.
+**Token rules** set which tokens Kawase may buy for you, with caps for unverified tokens per trade and per day and the
+highest price impact you accept; see [Trade any token](./swap-and-trade.mdx#token-rules).
 
 ## Needs you
 
-Some steps an automation may never take alone: **every swap**, a payment **above its grant**, or one your **allowlist** or
-**cooldown** holds back. They wait in **Needs you**, in the inbox and in Automations, with a push notification where
-notifications are set up. Answer from anywhere, once: a second answer finds it already answered and says when and where.
-Approving opens the very send or swap you would make by hand, re-checked. Unanswered items are reminded after **12
-hours** and expire after **24**.
+Some steps an automation may never take alone: **every swap**, a payment above its grant, or one your rules hold back.
+They wait in **Needs you**, in the inbox and in Automations, with a push notification where notifications are on.
+Answer from anywhere, once; approving opens the very send or swap you would make by hand, re-checked. Unanswered items
+are reminded after **12 hours** and expire after **24**.
+
+## The exit kit
+
+If something feels wrong: **Pause everything**, then **hold to revoke** every permission, then **Move my money out**,
+which opens [Withdraw](./bridge-and-withdraw.mdx#withdraw) for everything. It sits at the bottom of Withdraw.
 
 ## Activity and why
 
-**Activity** is one feed of every token in and out: sends, receives, swaps with both legs, bridges, savings, margin,
-automation runs, requests paid, the faucet and practice runs. Each row says where it stands (checking, skipped and why,
-practice, waiting). Filters: **All · In · Out · Trades · Automations · Needs you**, the last with its count.
-
-Tap a row for its receipt (amount, time, network, the other side, the transaction), then **Why**: the decision record
-behind it, or for a run that never reached the chain, what stopped it and how you answered. From Activity you can also
-read **the week's report** and **export** your history as CSV or beancount.
+Every movement is in [Activity](./activity-and-receipts.mdx), and every receipt has **Why this happened**: the request
+it came from, what was checked, and which rule let it go or made it wait.
 
 ## From chat
 
-Ask "what are my limits?", "pause everything", "set the dial to guard", "raise my USDC allowance to 50" or "revoke
-everything". Each answer is a card, and changes are approved on the card.
+Ask "what are my limits?", "pause everything", "set the dial to guard" or "revoke everything". Each answer is a card,
+and changes are approved on the card.

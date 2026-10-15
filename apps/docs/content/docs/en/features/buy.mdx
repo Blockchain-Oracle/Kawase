@@ -1,46 +1,72 @@
 ---
 title: Buy with Apple Pay or card
-description: Buy USDC or EURC with a debit card, Apple Pay or Google Pay through Circle's Onramp, delivered to your own wallet on Arc and confirmed when it lands on chain.
+description: Buy USDC or EURC with Apple Pay, Google Pay, a debit card or a bank transfer, inside Kawase, through Circle (straight to Arc) or Coinbase (via Base), followed until it lands in your wallet.
 ---
 
 <Status ids="buy" />
 
 <Marks names="circle apple google usdc eurc" />
 
-"Buy 50 dollars of USDC", or **Add money → Buy with Apple Pay or card** (the first row).
+<Flow>
+  <FlowStep icon="dollar" title="Amount">USDC or EURC, a preset or your own.</FlowStep>
+  <FlowStep icon="card" title="Pay with">Apple Pay, Google Pay, card or bank.</FlowStep>
+  <FlowStep icon="lock" title="Checkout" tone="accent">Inside Kawase; card and ID checked by the provider.</FlowStep>
+  <FlowStep icon="check" title="On Arc" tone="ink">Followed until it lands in your wallet.</FlowStep>
+</Flow>
 
-<Steps>
-<Step>
-### Choose the amount
-Pick a preset or type an amount, in dollars or euros. The sheet shows the payment methods Circle offers and says plainly
-whether this is **real money** (mainnet) or **Circle's sandbox** (testnet, test cards only).
-</Step>
-<Step>
-### Pay at Circle
-**Buy** opens Circle's checkout full screen (where Apple Pay works). Kawase creates the session on its server, for **your
-own address** on Arc.
-</Step>
-<Step>
-### Funded
-Back in Kawase, the order is followed until **the chain confirms the delivery**, then you see "You're funded". If the
-payment didn't complete, Circle's reason is shown with **Try again**.
-</Step>
-</Steps>
+## Buy, step by step
+
+"Buy 50 dollars of USDC", or **+ → Add money → Buy with Apple Pay or card**.
+
+<Walkthrough>
+  <WalkStep title="Add money" src="buy/add-money">
+    **Add money** gathers every way in: test USDC on testnet, buying, your own address, an exchange, another chain, or
+    a browser wallet (MetaMask, Rabby).
+
+    <Pin box="4 41.5 92 9">Buy with Apple Pay or card</Pin>
+
+    <Pin at="50 92.8">Or from a wallet in your browser</Pin>
+  </WalkStep>
+  <WalkStep title="How much" src="buy/amount" zoom="20 84.4 9">
+    Pick USDC or EURC and an amount. **You get** shows what arrives after the provider's fees, before you pay.
+
+    <Pin at="50 34">USDC or EURC</Pin>
+
+    <Pin at="50 52">$25 · $50 · $100 · $250</Pin>
+
+    <Pin box="4 80.5 92 8">What arrives, after fees</Pin>
+  </WalkStep>
+  <WalkStep title="Pay with" src="buy/methods">
+    Every way to pay that works on your device, with the provider and the route: **Circle** sends straight to your
+    wallet on Arc; **Coinbase** (US phone numbers) delivers on Base and Kawase brings it to Arc. Apple Pay shows on an
+    iPhone, Google Pay where the browser offers it.
+
+    <Pin box="4 51.5 92 8.5">Circle: straight to Arc</Pin>
+
+    <Pin box="4 62.5 92 10">Coinbase: via Base, with what you get</Pin>
+
+    <Pin at="50 97">On testnet: Circle's sandbox, test cards only</Pin>
+  </WalkStep>
+</Walkthrough>
+
+## Checkout and delivery
+
+The provider's checkout opens **inside Kawase** (on the web too), with its rail on top: **Paying → Buying → On Arc**
+(Coinbase adds **Moving to Arc**). Card and identity checks are the provider's, never Kawase's. It is safe to leave:
+Kawase follows the order until **the chain confirms the delivery**, then says "You're funded". If the payment didn't
+complete, the provider's reason is shown with **Try again**, and it always says whether any money moved.
 
 ## Buying another token
 
-Ask for any other token ("buy 30 dollars of cirBTC with Apple Pay") and Kawase buys USDC first, then opens the swap for
-what arrived, with one more approval and both fees shown. It only ever continues to a canonical or listed token, never a
-look-alike.
+Ask for any other token ("buy 30 dollars of cirBTC with Apple Pay") and Kawase buys USDC first, then opens the
+[swap](./swap-and-trade.mdx) for what arrived, with one more approval and both fees shown. It only ever continues to a
+canonical or listed token, never a look-alike.
 
 ## Where it runs
 
-- **Mainnet**: Circle's production Onramp with real cards. Apple Pay and Google Pay appear once Circle finishes its
-  business check of Kawase's domain; the checkout shows which methods it offers.
-- **Testnet**: Circle's Onramp sandbox with test cards. No real money moves. The free
-  [faucet](../getting-started.mdx#4-get-test-money) works too.
+- **Mainnet**: real money, with the provider's own limits and checks.
+- **Testnet**: Circle's sandbox with test cards; no real money moves. The free test USDC in Add money works too.
 
-Selling to a bank account isn't built. To cash out, send to an exchange that accepts Arc deposits (see
-[Withdraw without Kawase](../withdraw-without-kawase.mdx)).
+Selling to a bank account goes through an exchange: see [Withdraw](./bridge-and-withdraw.mdx#withdraw).
 
 <ScopeList ids="buy" />

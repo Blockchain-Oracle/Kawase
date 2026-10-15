@@ -1,51 +1,76 @@
 ---
 title: Earn and borrow
-description: Compare where your money can earn on Arc (Aave V4, Morpho vaults, Aero), deposit and withdraw with one approval, and borrow against what you hold with a live health gauge.
+description: Put USDC to work in Morpho vaults (and see Aave V4 and Aero beside them), set Auto-save to keep what you need ready, and borrow against what you hold on Aave V4 with a live health gauge.
 ---
 
 <Status ids="yield lend" />
 
 <Marks names="aave morpho aero circle usdc eurc cirbtc weth" />
 
-## Yield options
+<Flow>
+  <FlowStep icon="search" title="Compare">Live rates from every source that takes your asset.</FlowStep>
+  <FlowStep icon="savings" title="Deposit" tone="accent">One slide, one transaction, into the vault you pick.</FlowStep>
+  <FlowStep icon="repeat" title="Auto-save">Keep an amount ready; the rest earns.</FlowStep>
+  <FlowStep icon="wallet" title="Take it back" tone="ink">Any amount, whenever you want.</FlowStep>
+</Flow>
 
-"Where can my 200 dollars earn?" Kawase compares every source that takes your asset, from **live reads**:
+## Earn, step by step
 
-- **Aave V4** supply: the current rate, how much the market could pay out right now, and its size;
-- **Morpho vaults** listed by Circle's App Kit Earn, ranked by what they could give back now. A vault that couldn't return
-  your money is never offered, and low liquidity is flagged;
-- **Aero** liquidity campaigns from Merkl: shown as **advanced**, read only.
+"Put 50 dollars in savings", "where can my 200 dollars earn?", or **Earn** from Home.
 
-Options are ranked by rate among the sources that could return your amount, with the best one marked. Tapping Aave opens
-the supply ticket; tapping a vault opens Earn for that vault.
+<Walkthrough>
+  <WalkStep title="Earn" src="earn/vaults" zoom="24 18 10">
+    The headline is the best rate your asset can earn right now, read live. Below it: **Auto-save**, and every vault
+    with its rate and how much it could pay out right now.
 
-## Earn with Morpho vaults
+    <Pin at="30 37">The asset to earn on</Pin>
 
-"Put 50 dollars in savings", or the **Earn** screen. Deposit USDC into the vault you pick (or the best active one) and
-withdraw any amount back. Your **positions** are read live from the vaults. Each deposit or withdrawal is **one Face ID**,
-sent as one transaction. [Auto-save](./automations.mdx#auto-save) uses the same vaults by itself.
+    <Pin box="4 43 92 24.5">Auto-save what you don't need</Pin>
 
-On testnet, Earn uses Arc Testnet's mock Morpho vaults.
+    <Pin box="4 75 92 20">Vaults: rate, and what they can pay out now</Pin>
+  </WalkStep>
+  <WalkStep title="Deposit" src="earn/ticket" zoom="50 41 9">
+    Pick a vault (or let Kawase take the best active one), type the amount, then **Review** and slide. Each deposit or
+    withdrawal is **one transaction** from your own wallet.
+
+    <Pin box="4 13.5 92 9">The vault, its source and its rate</Pin>
+
+    <Pin at="50 28">About this vault</Pin>
+
+    <Pin box="4 73.5 92 7">Review, then slide</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Your **positions** are read live from the vaults. A vault that couldn't give your money back now is never offered, and
+low liquidity is flagged. On testnet, Earn uses Arc Testnet's test vaults with test money.
+
+### Where it can earn
+
+"Where can my 200 dollars earn?" compares every source that takes your asset, from **live reads**: **Aave V4** supply
+(the rate, how much the market could pay out now, its size), **Morpho vaults** listed by Circle's App Kit Earn, and
+**Aero** liquidity campaigns from Merkl (shown as advanced, read only). They are ranked by rate among the sources that
+could return your amount.
+
+## Auto-save
+
+"Keep 100 dollars in my wallet and save the rest." **Auto-save** keeps that amount ready and moves anything above it into
+your own vault savings; when your wallet drops below the line, it tops it back up. It checks daily and whenever money
+arrives, and its permission only lets it move USDC **between your wallet and your own savings**. See
+[automations](./automations.mdx).
 
 ## Borrow and supply on Aave V4
 
-The **Borrow** screen (from Earn on mainnet) shows your Aave V4 position first: what you owe (with **Repay**), what you
-supplied (with **Add** and **Withdraw**), the **health gauge** and how much room is left. Then what you can borrow, and at
-what rate.
+**Borrow** (mainnet) shows your Aave V4 position first: what you owe (with **Repay**), what you supplied (with **Add**
+and **Withdraw**), the **health gauge** and how much room is left; then what you can borrow, and at what rate.
 
-- **Borrow** USDC, EURC, cirBTC or WETH against collateral of **USDC, cirBTC or WETH**. EURC can't be collateral on Aave V4.
-  Kawase picks the collateral from your wallet (the held asset worth most after its factor) and puts it in **in the same
-  transaction**.
-- The gauge moves with every digit you type. Max keeps you at the safe floor.
-- A loan that would leave health **under 1.25 is refused**; **under 1.5** you're warned.
-- With one collateral asset, the ticket shows the **price at which it would be liquidated**.
+- **Borrow** USDC, EURC, cirBTC or WETH against **USDC, cirBTC or WETH**. EURC can't be collateral on Aave V4. Kawase
+  picks the collateral from your wallet and supplies it **in the same transaction**.
+- The gauge moves with every digit you type; **Max** keeps you at the safe floor. A loan that would leave health
+  **under 1.25 is refused**, and **under 1.5** you're warned. With one collateral asset, the ticket shows the price at
+  which it would be liquidated.
 - **Repay** part or all. "All" repays everything with a small margin for interest, and resets the approval.
 
-Every action is re-checked against fresh prices when you approve, simulated from your wallet, and sent as **one
-transaction**. You confirm by sliding and Face ID.
-
-## Not on testnet
-
-Aave V4 is on Arc mainnet only, so borrowing and Aave supply are too. Morpho vaults work on both networks.
+Every action is re-checked against fresh prices when you approve, simulated from your wallet, and sent as one
+transaction you confirm by sliding. Aave V4 is on Arc mainnet only; Morpho vaults work on both networks.
 
 <ScopeList ids="yield lend" />

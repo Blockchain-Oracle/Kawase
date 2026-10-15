@@ -1,58 +1,94 @@
 ---
 title: Long and short
-description: Kawase Margin opens a leveraged long or short through your own Aave V4 account on Arc, as one transaction you confirm by sliding, with the liquidation price shown first.
+description: Kawase Margin opens a leveraged long or short on cirBTC, WETH or EURC through your own Aave V4 account on Arc mainnet, as one transaction you confirm by sliding, with the liquidation price shown first and an optional take-profit and stop-loss.
 ---
 
 <Status ids="margin" />
 
 <Marks names="aave cirbtc weth eurc usdc kyberswap" />
 
+<Flow>
+  <FlowStep icon="candles" title="Pick a market">cirBTC, WETH or EURC, priced live.</FlowStep>
+  <FlowStep icon="sliders" title="The ticket">Margin, leverage, take-profit and stop-loss.</FlowStep>
+  <FlowStep icon="hand" title="Slide" tone="accent">One transaction from your own Aave account.</FlowStep>
+  <FlowStep icon="eye" title="Your position" tone="ink">Live P&L, health, and Close 25% to All.</FlowStep>
+</Flow>
+
 **Kawase Margin** lets you bet on a price going up (**long**) or down (**short**) with more than you put in. It runs on
 **Aave V4** on Arc mainnet, through **your own** Aave account: no exchange account, no flash loan, and nothing held by
-Kawase.
+Kawase. Aave V4 has no testnet, so on testnet the screen explains this and offers the switch.
+
+## Long or short, step by step
+
+<Walkthrough light>
+  <WalkStep title="The markets" src="trade/markets" zoom="29 67.4 9">
+    **Markets → Long or short** shows Arc's majors with leverage, live: the price, its move since the hour's open
+    ("Longs ahead since 8:45 PM") and how far each side goes.
+
+    <Pin box="4 44.5 70 34">A market, its live line, and who's ahead</Pin>
+
+    <Pin at="28 73">Long: up to the market's leverage, or Not offered</Pin>
+
+    <Pin at="65 73">Short</Pin>
+  </WalkStep>
+  <WalkStep title="Long / Short" src="long-short/margin" zoom="30 31.3 10">
+    Pick the market, read the chart (one hour to one month), see your open positions, then **Long** or **Short**.
+
+    <Pin box="3 17.5 94 7.5">cirBTC, WETH, EURC: live prices</Pin>
+
+    <Pin at="50 37.6">1H · 1D · 1W · 1M</Pin>
+
+    <Pin at="26.5 94.3">Long cirBTC, up to 3.4×</Pin>
+
+    <Pin at="73 94.3">Short cirBTC, up to 2.4×</Pin>
+  </WalkStep>
+  <WalkStep title="The ticket" src="long-short/ticket" zoom="50 87 12">
+    Choose a side, type your margin, tap a leverage. The strip under it shows **what you put in**, the **exposure**
+    and the **liquidation price** before anything is signed.
+
+    <Pin at="50 30.8">Long or short</Pin>
+
+    <Pin box="4 74.5 92 5.5">Leverage, capped by the market</Pin>
+
+    <Pin box="4 82 92 10">You put in · exposure · liquidation price</Pin>
+  </WalkStep>
+  <WalkStep title="Take-profit and stop-loss" src="long-short/ticket-tpsl">
+    Fold open **Take-profit · stop-loss** to close by itself at +10% or +25%, or −5% or −10%. Kawase closes it with a
+    permission your wallet signs on Arc, and closing the position switches that permission off with the same signature.
+    You confirm the whole ticket by **sliding**, then Face ID.
+
+    <Pin box="4 74.5 92 10.5">Take-profit and stop-loss presets</Pin>
+
+    <Pin box="4 87.5 92 7.5">Slide to open (here: sign in to trade)</Pin>
+  </WalkStep>
+</Walkthrough>
+
+The captures are a guest's view of mainnet: the last step asks a guest to sign in. Signed in, it reads **Slide to open
+Long**, and the ticket follows the transaction from checking to final. Any change to the plan resets the slide, so you
+never confirm numbers you didn't see.
 
 ## How a position is built
 
-- **Long X**: your USDC margin is swapped to X and supplied as collateral, then Kawase borrows USDC against it, swaps it to
-  more X and supplies that, a few times in a loop.
+- **Long X**: your USDC margin is swapped to X and supplied as collateral, then Kawase borrows USDC against it, swaps it
+  to more X and supplies that, a few times in a loop.
 - **Short X**: your USDC is supplied as collateral, then Kawase borrows X, swaps it to USDC and supplies that, in a loop.
 - **Closing** runs it backwards: withdraw, swap, repay, then the rest comes back to your wallet.
 
-The whole position opens or closes as **one transaction** from your own wallet (an EIP-7702 batch). The swap legs come from
-KyberSwap with checked calldata. Each loop borrows only down to a safe health at oracle prices, and the account opens at a
-**health of 1.10 or more**.
+The whole position opens or closes as **one transaction** from your own wallet (an EIP-7702 batch). The swap legs come
+from KyberSwap with checked calldata. Each loop borrows only down to a safe health at oracle prices, and the account
+opens at a **health of 1.10 or more**.
 
-## Markets
+## Markets and leverage
 
-Markets come from Aave V4's live reserves on Arc. Today:
+Markets come from Aave V4's live reserves on Arc: **cirBTC** (Circle's Bitcoin) and **WETH**, long and short; **EURC**,
+short only, because EURC can't be collateral on Aave V4. Leverage is capped by each asset's collateral factor (today
+about **3.4× long cirBTC**, **4.1× long WETH** and **2.4× short**). Margin is paid in **USDC**.
 
-- **cirBTC** (Circle's Bitcoin) and **WETH**: long and short;
-- **EURC**: short only, because EURC can't be collateral on Aave V4.
+## Your positions
 
-Leverage is capped by each asset's collateral factor. At today's factors that is about **3.4× long cirBTC**, **4× long
-WETH** and **2.4× for a short**. Margin is paid in **USDC**.
-
-## The ticket
-
-"Long Bitcoin 2x with 10 dollars", or the **Long/Short** screen. Choosing a side drafts a real plan at once ($10, 2×), so
-the ticket opens with live numbers:
-
-- your margin and the leveraged size, with presets and Max;
-- a **leverage ruler** capped by the market, with a tick at every half step;
-- the **liquidation price** and how far away it is, the account's **health**, the borrow rate and the network fee;
-- the route, and a risk line.
-
-You confirm by **sliding** (mint for a long, red for a short), then Face ID. The ticket follows the transaction from
-checking to final. Any change to the plan resets the slide, so you never confirm numbers you didn't see.
-
-## Positions
-
-Each position has its own page: profit and loss split into **price** and **borrowing cost**, a **health gauge**, its
-liquidation price, and **Close 25% · 50% · 75% · All**, which drafts the unwind into the same ticket. Home's **For you**
-card warns you when an open position's health drops under 1.25 or liquidation is within a 10% move.
-
-## Not on testnet
-
-Aave V4 is on Arc mainnet only, so Kawase Margin is too. On testnet the screen explains this and offers the switch.
+Each position has its own page: **P&L** split into **price** and **borrow interest**, entry and mark price, size,
+equity, a **health** gauge and the liquidation price, and **Close 25% · 50% · 75% · All**, which drafts the unwind into
+the same ticket ("Slide to close"). Home warns you when an open position's health drops under 1.25 or liquidation is
+within a 10% move.
 
 <ScopeList ids="margin" />

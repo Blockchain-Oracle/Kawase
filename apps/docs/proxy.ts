@@ -36,7 +36,7 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
 }
 
 export const config = {
-  // Everything except Next's assets, the search api, the llms files and static files with an extension (but
-  // `.md` twins of docs pages do pass).
-  matcher: ["/((?!api|_next/static|_next/image|llms\\.txt|llms-full\\.txt|.*\\.(?:ico|svg|png|jpg|webp|txt|xml|json)$).*)"],
+  // Everything except Next's assets, the search api, the llms files, the docs' captures and clips (public/media), and
+  // static files with an extension (but `.md` twins of docs pages do pass).
+  matcher: ["/((?!api|_next/static|_next/image|media/|llms\\.txt|llms-full\\.txt|.*\\.(?:ico|svg|png|jpg|webp|mp4|txt|xml|json)$).*)"],
 };

@@ -1,25 +1,42 @@
 ---
 title: Notifications
-description: An in-app inbox for everything that happens to your money, with push and email for the events you choose.
+description: An inbox for everything that happens to your money, with push on your phone and email for the events you choose, and quiet hours.
 ---
 
-Kawase's **inbox** is the record: every payment received, request paid, payment completed, automation skipped and rule
-alert lands there, and tapping one opens the right screen.
+Kawase tells you when money moves and when it did something for you. Nothing else.
 
-On top of the inbox, Kawase can tell you by **push** (on your phone) and **email**. In Settings → Notifications you choose,
-per event and per channel, what reaches you. The defaults:
+<Flow>
+  <FlowStep icon="bell" title="Something happens">Money in, a request paid, a run skipped.</FlowStep>
+  <FlowStep icon="inbox" title="The inbox" tone="accent">Always: every event, once.</FlowStep>
+  <FlowStep icon="mail" title="Push and email">The events you chose, per channel.</FlowStep>
+  <FlowStep icon="receipt" title="Tap it" tone="ink">It opens the right receipt or screen.</FlowStep>
+</Flow>
 
-| Event | Push | Email |
-|---|---|---|
-| Money received | on | on |
-| Your request was paid | on | on |
-| Your payment completed | on | off |
-| An automation was skipped | on | on |
-| A rule alert | on | on |
+## The inbox
 
-**Quiet hours** in your own time zone hold push notifications until morning; email still goes. Security events can never
-be muted.
+The bell on Home opens the **inbox**: every payment received, request paid, payment completed, automation skipped and
+rule alert, newest first, each opening its receipt. **Mark all read** clears the dot.
 
-Each notification is delivered at most once per channel, even if Kawase retries. Push and email delivery are built into
-the app and the server; they switch on as the push (Apple and Google) and email provider accounts are connected for the
-public release. The inbox works today.
+<Shot src="activity/inbox" alt="The inbox: Sent to 0x9444…2439 −5.00 USDC, Sent to 0xe8CB…3e0B −5.00 USDC, Sent to 0x6561…7f4f −1.00 USDC, and two Received from rows of +20.00 EURC and +20.00 USDC.">
+  <Pin box="4 12 92 9.5">Each event, with its amount and time</Pin>
+
+  <Pin at="80 7.6">Mark all read</Pin>
+</Shot>
+
+## Settings → Notifications
+
+<Shot src="notifications/settings" alt="Notifications: on the web, by email and in your inbox; an Email section; and What to tell you, a switch per event from Money received to Token graduations." zoom="50 21.6 12">
+  <Pin box="4 46 92 54">What to tell you, per event</Pin>
+</Shot>
+
+Per event and per channel, you choose what reaches you: **money received**, **someone asks you to pay**, **a request was
+paid**, **a send went through**, **an automation was skipped**, **a rule's alert**, **new sign-ins**, **devices signed
+out**, **health alerts** for open positions, **take-profit and stop-loss**, and **token graduations**.
+
+- **On your phone**: push, and email.
+- **On the web**: the inbox and email (the web app has no push).
+- **Quiet hours** in your own time zone hold push until they end; your inbox and email still get everything.
+
+Email is starting soon: the settings screen says so, and your choices are kept until it does. Kawase's emails carry
+the same [receipt slip](./activity-and-receipts.mdx) as the app. Each notification is delivered at most once per
+channel, even if Kawase retries.

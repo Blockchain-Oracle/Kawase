@@ -1,19 +1,55 @@
 ---
 title: The network toggle
-description: Switch between Arc mainnet (real money) and Arc testnet (test money) in one tap, with the network shown three ways at all times.
+description: Switch between Arc mainnet (real money) and Arc testnet (test money) in one tap, with the network shown on every screen.
 ---
 
 Kawase works on two networks: **Arc mainnet**, where money is real, and **Arc testnet**, where it is not. The **network
-pill** in the header switches between them in one tap, both ways, like dark mode.
+pill** at the top of Home switches between them in one tap, both ways, like dark mode.
+
+<Flow>
+  <FlowStep icon="toggle" title="Tap the pill">Testnet ⇄ Mainnet, both ways.</FlowStep>
+  <FlowFork>
+    <FlowStep when="First time to mainnet" icon="shield" title="Real money" tone="accent">Tick "I understand this is real money".</FlowStep>
+    <FlowStep when="After that" icon="zap" title="Instant">Like switching dark mode.</FlowStep>
+  </FlowFork>
+  <FlowStep icon="eye" title="Always shown" tone="ink">The pill, a strip or a Real money chip.</FlowStep>
+</Flow>
+
+## Testnet and mainnet, side by side
+
+<div className="grid gap-x-6 sm:grid-cols-2">
+
+<Shot src="start/guest-home" alt="Home on Arc Testnet: the pill reads Testnet, switched off." zoom="32 4 11">
+  <Pin at="53 4">Testnet: test money only</Pin>
+</Shot>
+
+<Shot src="network/mainnet-home" alt="Home on Arc mainnet: the pill reads Mainnet, switched on." zoom="35 4 11">
+  <Pin at="53 4">Mainnet: real money</Pin>
+</Shot>
+
+</div>
+
+## Always visible, never colour alone
+
+- **The pill** names the network on Home, and in Settings → Network.
+- **On testnet**, pushed screens carry a strip: **"Testnet · no real money"** (see [Send](./send-receive-request.mdx)).
+- **On mainnet**, money screens carry a **Real money** chip:
+
+<Shot src="network/mainnet-swap" alt="Swap on Arc mainnet with the Real money chip in its header." zoom="82 4.3 10">
+  <Pin at="82 9">Real money</Pin>
+</Shot>
+
+## How it behaves
 
 - **New accounts start on testnet**, and anything missing or unreadable falls back to testnet: the safe direction.
-- **The first switch to mainnet** shows a short "Real money" consent; after that it is instant.
-- **Always visible, never colour alone.** On testnet a strip says "Testnet · no real money"; on mainnet, money cards carry a
-  **REAL MONEY** label. The pill names the network, and the voice orb changes colour (lime on mainnet, sky blue on
-  testnet).
-- **Your wallet is the same** on both: one address, the same contacts and settings. Balances and activity are per network.
-- **The server decides.** The network is part of your session on the server, never chosen by the AI model; every payment
-  carries the network it was prepared for, and a mismatch stops it.
+- **The first switch to mainnet** asks you to confirm that money there is real; after that it is instant. Guests can
+  look around both networks; mainnet money needs an account.
+- **Your wallet is the same** on both: one address, the same contacts and settings. Balances and activity are per
+  network.
+- **Drafts stay where they were made.** Something you're reviewing stays on the network it was made on; switch back to
+  approve it.
+- **The server decides.** The network is part of your session on the server, never chosen by the AI model; every
+  payment carries the network it was prepared for, and a mismatch stops it.
 
-When something exists on only one network — the faucet on testnet, the x402 marketplace on mainnet — Kawase says so and
-offers to switch rather than failing. See [networks](../networks.mdx) for the full comparison.
+When something exists on only one network (the faucet on testnet, long and short on mainnet), Kawase says so and offers
+to switch rather than failing. See [networks](../networks.mdx) for the full comparison.
