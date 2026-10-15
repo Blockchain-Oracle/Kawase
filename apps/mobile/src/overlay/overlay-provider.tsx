@@ -9,6 +9,10 @@
 // dock's orb slot is shared as `voiceTrigger` so the voice overlay can rise from its real place and give focus back
 // to it. `shown` stays set through an overlay's exit (until it reports `exited`), so the dock's orb is not drawn
 // twice while the overlay's orb travels home (R16).
+//
+// Voice outlives its overlay (Abu, 10-16: "the agent should run in the background"): `voiceLive` is the conversation,
+// `current === "voice"` only its full view. Closing the full view (×, Escape, Back) minimises it to the island and the
+// conversation goes on; only `endVoice` (the red End) ends it.
 import * as React from "react";
 import { BackHandler, Platform, View, type ViewProps } from "react-native";
 
@@ -36,6 +40,10 @@ type OverlayState = {
   voiceTrigger: React.RefObject<View | null>;
   /** The pages, as Android's blur target for the overlays. */
   blurTarget: React.RefObject<View | null>;
+  /** A voice conversation is running (full view or island). */
+  voiceLive: boolean;
+  /** Ends the voice conversation (and its full view, if up). */
+  endVoice: () => void;
   /** Home's composer is open (typing): the + steps aside for it. */
   composing: boolean;
   setComposing: (composing: boolean) => void;
@@ -47,6 +55,9 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
   const [current, setCurrent] = React.useState<OverlayKind | null>(null);
   const [leaving, setLeaving] = React.useState<OverlayKind | null>(null);
   const [composing, setComposing] = React.useState(false);
+  const [voiceLive, setVoiceLive] = React.useState(false);
+  /** End was pressed on the full view: the conversation ends once the view has finished leaving. */
+  const ending = React.useRef(false);
   const voiceTrigger = React.useRef<View>(null);
   const blurTarget = React.useRef<View>(null);
 
@@ -56,29 +67,46 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       setLeaving(current);
       setCurrent(null);
     };
+    const open = (kind: OverlayKind) => {
+      if (kind === "voice") setVoiceLive(true);
+      setCurrent(kind);
+    };
     return {
       current,
       shown: current ?? leaving,
       // Opening the fan commits to nothing: the dock's tick is its only feedback (no sound for navigation).
-      open: (kind) => setCurrent(kind),
+      open,
+      // Closing voice's full view minimises it: the conversation goes on in the island.
       close,
       toggle: (kind) => {
         if (current === kind) return close();
-        setCurrent(kind);
+        open(kind);
       },
-      exited: (kind) => setLeaving((was) => (was === kind ? null : was)),
+      exited: (kind) => {
+        setLeaving((was) => (was === kind ? null : was));
+        if (kind === "voice" && ending.current) {
+          ending.current = false;
+          setVoiceLive(false);
+        }
+      },
       voiceTrigger,
       blurTarget,
+      voiceLive,
+      endVoice: () => {
+        if (current !== "voice") return setVoiceLive(false);
+        ending.current = true;
+        close();
+      },
       composing,
       setComposing,
     };
-  }, [current, leaving, composing]);
+  }, [current, leaving, composing, voiceLive]);
 
   // Talk to Kawase starts sooner: once the signed-in app has settled, the voice code loads and a session waits; after
   // each conversation the next one is made ready the same way (voice/prefetch.ts).
   const { status, user } = useSession();
   const network = user?.activeNetwork;
-  const talking = current === "voice";
+  const talking = voiceLive;
   React.useEffect(() => {
     if (status !== "account" || !network || talking) return undefined;
     const timer = setTimeout(() => prefetchVoice(network), VOICE_HEAD_START_MS);

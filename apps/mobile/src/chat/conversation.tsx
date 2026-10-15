@@ -15,6 +15,7 @@ import { ArrowDown, ArrowLeftRight, ArrowUpRight, CalendarClock, HandCoins, Rout
 import * as React from "react";
 import { ActivityIndicator, Pressable, View, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { KeyboardChatScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, LinearTransition, SlideInDown } from "react-native-reanimated";
 import { toast } from "sonner-native";
 
@@ -31,8 +32,8 @@ import { Icon } from "@kawase/ui-native/components/ui/icon";
 import { Text } from "@kawase/ui-native/components/ui/text";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
+import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { useDockClearance } from "@/dock/use-dock-clearance";
 import { cue, tapFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
@@ -71,7 +72,10 @@ type ConversationProps = {
 
 export function Conversation({ threadId, initialMessages, initialPrompt, onActivity }: ConversationProps) {
   const { t } = useT();
-  const clearance = useDockClearance();
+  const insets = useSafeAreaInsets();
+  const wide = useWide();
+  // A desktop window ends the page a little above its edge; a phone sits on the home indicator.
+  const bottomInset = wide ? EDGE_INSET : insets.bottom;
   const overlay = useOverlay();
   const colors = useThemeColors();
   const chat = useAgentChat(threadId, initialMessages);
@@ -279,8 +283,10 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
           ) : null}
         </View>
       )}
-      <KeyboardStickyView offset={{ closed: 0, opened: clearance.dock - EDGE_INSET }}>
-        <View onLayout={onComposerLayout} className="px-4 pt-2" style={{ paddingBottom: clearance.dock + EDGE_INSET }}>
+      {/* Chat is a pushed page: no dock under it, so the composer sits on the safe area (Abu 10-16: it floated over an
+          empty band where a dock would be); with the keyboard up, the safe area goes under the keyboard. */}
+      <KeyboardStickyView offset={{ closed: 0, opened: bottomInset }}>
+        <View onLayout={onComposerLayout} className="px-4 pt-2" style={{ paddingBottom: bottomInset + EDGE_INSET }}>
           {health.offline ? <AgentOffline checking={health.checking} onCheck={() => void checkAgain()} /> : null}
           {interrupted ? (
             <Text accessibilityRole="alert" className="text-muted-foreground pb-2 text-center text-sm">

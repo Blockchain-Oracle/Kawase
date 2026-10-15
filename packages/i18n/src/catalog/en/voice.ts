@@ -19,4 +19,12 @@ export const voice = {
   ideaBring: "Bring my USDC from Base",
   ideaEarn: "Put my idle USDC to work",
   end: "End",
+  minimize: "Keep talking in the background",
+  islandHint: "Opens the conversation",
+  needsYou: "Kawase needs you",
+  moreWaiting: "+{{count}} more",
+  later: "Later",
+  openConversation: "Open the conversation",
+  previewPlaying: "Playing",
+  previewFailed: "Couldn't play this voice. Try again.",
 } as const;

@@ -18,7 +18,7 @@ import { useT } from "@/i18n";
 import { useAccountGate, type DeferredVerb } from "@/onboarding/account-gate";
 import { useFanActions } from "@/overlay/fan-actions";
 import { useOverlay } from "@/overlay/overlay-provider";
-import { VoiceOverlay } from "@/overlay/voice-overlay";
+import { VoiceLayer } from "@/overlay/voice-overlay";
 import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 
@@ -68,13 +68,12 @@ export function OverlayHost() {
           covered={overlay.shown === "voice"}
         />
       ) : null}
-      {wide ? <VoiceOverlay open={overlay.current === "voice"} /> : null}
+      {wide ? <VoiceLayer /> : null}
     </>
   );
 }
 
-/** A phone's voice overlay, above every page of the signed-in area (pushed pages included). */
+/** A phone's voice (the full view, the island, the card sheet), above every page of the signed-in area. */
 export function PhoneVoiceLayer() {
-  const overlay = useOverlay();
-  return <VoiceOverlay open={overlay.current === "voice"} />;
+  return <VoiceLayer />;
 }

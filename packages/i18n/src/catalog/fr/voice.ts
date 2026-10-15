@@ -21,4 +21,12 @@ export const voice: Catalog["voice"] = {
   ideaBring: "Ramène mes USDC depuis Base",
   ideaEarn: "Fais travailler mes USDC qui dorment",
   end: "Terminer",
+  minimize: "Continuer à parler en arrière-plan",
+  islandHint: "Ouvre la conversation",
+  needsYou: "Kawase a besoin de toi",
+  moreWaiting: "+{{count}} de plus",
+  later: "Plus tard",
+  openConversation: "Ouvrir la conversation",
+  previewPlaying: "Lecture",
+  previewFailed: "Impossible de lire cette voix. Réessaie.",
 };

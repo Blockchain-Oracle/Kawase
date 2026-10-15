@@ -11,6 +11,7 @@
 //      with past conversations and the suggestions Bring USDC to Arc · Put idle USDC to work · Buy $50 · Send to a
 //      contact · Bridge.
 // A guest sees real markets, the composer and "your money appears here after you sign in" — never a fake balance.
+// The balance and the feed's head sit in the middle on every screen (Abu 10-16, the phone like the desktop).
 // A wide desktop stage is a fixed grid (Abu, 10-15): the balance and the feed's filters stay put in the middle of the
 // agent's column and only the feed scrolls under them; Trending on Arc stands still beside it; a guest's column is the
 // sign-in stage, centred.
@@ -165,20 +166,14 @@ export function HomeScreen() {
   // The feed in two parts, so a desktop stage can hold the head still and scroll only the rows.
   const feedHead = (
     <>
-      <View style={[styles.sectionHead, beside ? styles.centered : null]}>
+      <View style={[styles.sectionHead, styles.centered]}>
         <SectionLabel>{t("feed.home.feedTitle")}</SectionLabel>
         {feed.error && feed.asOf ? <StaleTick asOf={feed.asOf} reason="refresh-failed" compact /> : null}
-        {beside ? null : (
-          <>
-            <View style={styles.grow} />
-            {seeAll}
-          </>
-        )}
       </View>
-      {feed.feed && hasRows ? <FeedFilters feed={feed.feed} value={filter} onChange={setFilter} centered={beside} /> : null}
+      {feed.feed && hasRows ? <FeedFilters feed={feed.feed} value={filter} onChange={setFilter} centered /> : null}
       {/* Some rows read: a quiet note under them. None read because the history failed: the retry strip below says it. */}
       {feed.feed && feed.feed.partial.length > 0 && !historyUnread ? (
-        <Text style={[TYPE.caption, { color: color.text3 }, beside ? styles.centerText : null]}>{t("feed.home.partial")}</Text>
+        <Text style={[TYPE.caption, { color: color.text3 }, styles.centerText]}>{t("feed.home.partial")}</Text>
       ) : null}
     </>
   );
@@ -203,6 +198,7 @@ export function HomeScreen() {
     <View style={styles.section}>
       {feedHead}
       {feedBody}
+      {seeAll ? <View style={styles.centered}>{seeAll}</View> : null}
     </View>
   ) : null;
 
@@ -229,7 +225,7 @@ export function HomeScreen() {
       loading={portfolio.loading}
       failedAt={portfolio.error || stale ? portfolio.updatedAt : undefined}
       onOpen={() => setPortfolioOpen(true)}
-      centered={beside}
+      centered
     />
   ) : (
     <SignInPlate />

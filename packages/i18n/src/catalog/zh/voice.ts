@@ -21,4 +21,12 @@ export const voice: Catalog["voice"] = {
   ideaBring: "把我在 Base 上的 USDC 转过来",
   ideaEarn: "让闲置的 USDC 赚收益",
   end: "结束",
+  minimize: "在后台继续对话",
+  islandHint: "打开对话",
+  needsYou: "Kawase 需要你确认",
+  moreWaiting: "还有 {{count}} 个",
+  later: "稍后",
+  openConversation: "打开对话",
+  previewPlaying: "播放中",
+  previewFailed: "无法播放这个声音，请重试。",
 };

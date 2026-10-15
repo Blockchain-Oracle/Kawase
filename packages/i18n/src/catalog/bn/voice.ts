@@ -21,4 +21,12 @@ export const voice: Catalog["voice"] = {
   ideaBring: "Base থেকে আমার USDC নিয়ে এসো",
   ideaEarn: "অলস USDC কাজে লাগাও",
   end: "শেষ",
+  minimize: "ব্যাকগ্রাউন্ডে কথা চালিয়ে যান",
+  islandHint: "কথোপকথন খোলে",
+  needsYou: "Kawase-এর আপনাকে দরকার",
+  moreWaiting: "আরও {{count}}টি",
+  later: "পরে",
+  openConversation: "কথোপকথন খুলুন",
+  previewPlaying: "চলছে",
+  previewFailed: "এই কণ্ঠ বাজানো গেল না। আবার চেষ্টা করুন।",
 };

@@ -21,4 +21,12 @@ export const voice: Catalog["voice"] = {
   ideaBring: "انقل USDC الخاص بي من Base",
   ideaEarn: "شغّل USDC غير المستخدم",
   end: "إنهاء",
+  minimize: "متابعة الحديث في الخلفية",
+  islandHint: "يفتح المحادثة",
+  needsYou: "Kawase يحتاجك",
+  moreWaiting: "+{{count}} أخرى",
+  later: "لاحقًا",
+  openConversation: "افتح المحادثة",
+  previewPlaying: "قيد التشغيل",
+  previewFailed: "تعذّر تشغيل هذا الصوت. حاول مرة أخرى.",
 };
