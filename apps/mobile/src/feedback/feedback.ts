@@ -1,48 +1,19 @@
-// Interface sound and haptics (plan §1.5, decision X18). Sounds are short original cues (ElevenLabs SFX, normalised
-// to -22 LUFS) that follow the silent switch like any iOS app; they play for deliberate moments — a send, money
-// arriving, a confirmed outcome, voice starting and stopping, the fan opening, an error — never on every tap. Outcome
-// cues carry a stable identity so history or a remount can't replay them. The onboarding narration plays here too.
-// All playback goes through the audio ownership lock, so nothing here can fight LiveKit for the microphone, speaker
-// or Bluetooth route.
+// Interface sound and haptics (plan §1.5, decision X18). The cues are SND's designed kits, processed for Kawase
+// (packages/ui-tokens/prepare-sounds.mjs): SND01 "sine" for the interface, SND02 "piano" for money. They follow the
+// silent switch like any iOS app and play for deliberate moments (a send, money arriving, a confirmed outcome, voice
+// starting and stopping, the fan opening, an error), never on every tap. Outcome cues carry a stable identity, so history
+// or a remount can't replay them. The onboarding narration plays here too. All playback goes through the audio ownership
+// lock, so nothing here can fight LiveKit for the microphone, speaker or Bluetooth route.
 import { AppState, Platform } from "react-native";
 import { createAudioPlayer, setAudioModeAsync, setIsAudioActiveAsync, type AudioPlayer } from "expo-audio";
 import { MOTION, MS_PER_SECOND } from "@kawase/config";
 import { AudioOwnership } from "./audio-ownership";
-import { CUE_MASTER, CUE_MIX, RENDERED_CUES } from "./cue-sources";
+import { CUE_SOURCES, CUE_VOLUME } from "./cue-sources";
 import { type HapticEvent, playHaptic } from "./haptics";
 import { feedbackPreferences, loadFeedbackPreferences } from "./preferences";
 
-/** The recorded outcome cues (the older files) plus the synthesised interface cues (`cue-sources.ts`). */
-export type Cue =
-  | "confirmed"
-  | "send"
-  | "received"
-  | "voiceStart"
-  | "voiceEnd"
-  | "fanOpen"
-  | "error"
-  | "tap"
-  | "toggle"
-  | "sheetOpen"
-  | "sheetClose"
-  | "agentStep"
-  | "agentDone"
-  /** A story scene settling (onboarding), soft and short. */
-  | "scene";
-
-// Metro resolves bundled native assets through static requires.
-/* eslint-disable @typescript-eslint/no-require-imports */
-const CUE_ASSETS: Record<Cue, number> = {
-  confirmed: require("../../assets/audio/confirmed.wav"),
-  send: require("../../assets/audio/send.wav"),
-  received: require("../../assets/audio/received.wav"),
-  voiceStart: require("../../assets/audio/voice-start.wav"),
-  voiceEnd: require("../../assets/audio/voice-end.wav"),
-  fanOpen: require("../../assets/audio/fan-open.wav"),
-  error: require("../../assets/audio/error.wav"),
-  ...RENDERED_CUES,
-};
-/* eslint-enable @typescript-eslint/no-require-imports */
+/** Every cue the app plays (`cue-sources.ts`). `scene` is a story scene settling in onboarding: soft and short. */
+export type Cue = keyof typeof CUE_SOURCES;
 
 /** The haptic word that goes with each cue when the cue is played on its own (see `cue`). */
 const CUE_HAPTIC: Partial<Record<Cue, HapticEvent>> = {
@@ -55,22 +26,6 @@ const CUE_HAPTIC: Partial<Record<Cue, HapticEvent>> = {
   agentStep: "agentStep",
   agentDone: "agentDone",
 };
-
-/** Senryo's `success` cue level (`@senryo/tokens` SOUND_MIX). */
-const SENRYO_SUCCESS_MIX = 0.45;
-/** Senryo's levels for its files (assets/audio/README.md): its UI palette's volumes, and its cue mix under the master. */
-const RECORDED_VOLUME: Partial<Record<Cue, number>> = {
-  send: 0.28,
-  received: 0.3,
-  error: 0.4,
-  voiceStart: 0.35,
-  confirmed: CUE_MASTER * SENRYO_SUCCESS_MIX,
-  fanOpen: CUE_MASTER * CUE_MIX.sheetOpen,
-  voiceEnd: CUE_MASTER * CUE_MIX.sheetClose,
-};
-
-/** The level of each cue, so the palette sits together. */
-const cueVolume = (name: Cue): number => RECORDED_VOLUME[name] ?? (name in CUE_MIX ? CUE_MASTER * CUE_MIX[name as keyof typeof CUE_MIX] : 1);
 
 const ownership = new AudioOwnership();
 const completed = new Set<string>();
@@ -122,8 +77,8 @@ function poolFor(cue: Cue): AudioPlayer[] {
   const existing = players.get(cue);
   if (existing) return existing;
   const pool = Array.from({ length: HOT_CUES.has(cue) ? POOL : 1 }, () => {
-    const player = createAudioPlayer(CUE_ASSETS[cue], { keepAudioSessionActive: true });
-    player.volume = cueVolume(cue);
+    const player = createAudioPlayer(CUE_SOURCES[cue], { keepAudioSessionActive: true });
+    player.volume = CUE_VOLUME[cue];
     player.addListener("playbackStatusUpdate", (status) => {
       if (status.didJustFinish) releaseSession();
     });
@@ -152,7 +107,7 @@ export function warmFeedback(): void {
   warmed = true;
   void loadFeedbackPreferences().catch(() => undefined);
   try {
-    for (const name of Object.keys(CUE_ASSETS) as Cue[]) poolFor(name);
+    for (const name of Object.keys(CUE_SOURCES) as Cue[]) poolFor(name);
   } catch {
     // A player that cannot load now is created on first use instead.
   }

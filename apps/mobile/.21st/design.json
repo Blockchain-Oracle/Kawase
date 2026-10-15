@@ -14,7 +14,7 @@
   "sources": {
     "tokens": [
       "packages/ui-tokens/tokens.json",
-      "packages/ui-tokens/sound.json",
+      "packages/ui-tokens/prepare-sounds.mjs",
       "apps/mobile/src/components/kit/theme.ts"
     ],
     "components": [

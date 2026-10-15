@@ -52,7 +52,7 @@ Sources: Senryo (the owner's earlier app: its palette, scale, fonts, sounds and 
 ## Sound and haptics
 - One call site: `fire(event, { sound?, identity? })` (`apps/mobile/src/feedback/fire.ts`). Haptic words: tick (selection), press (light), snap (rigid), confirm (soft), filled (success), warn, fail (error), close (medium), surge (heavy), agentStep (selection), agentDone (success).
 - **No sound for ticks or navigation**; a sound is for money arrived, sent, confirmed, failed, and the agent finishing a step or its run. Outcome sounds play once per identity (a remount never replays them). Cues obey the silent switch and the person's Sound and touch switches; hot cues have a two-player pool; players load at launch.
-- Synthesised interface cues are defined once in `packages/ui-tokens/sound.json` and rendered to WAV by `render-sounds.mjs`.
+- The cues are SND's designed kits (snd.dev, dentsu lab Tokyo), processed by `packages/ui-tokens/prepare-sounds.mjs` into `apps/mobile/assets/audio/cues`: SND01 "sine" for the interface, SND02 "piano" (a Steinway, in C major) for money moments. The script levels the palette; raw kit files never enter the repo.
 
 ## The kit (apps/mobile/src/components)
 Every lane builds from these; `/dev/gallery` shows each in every state.
