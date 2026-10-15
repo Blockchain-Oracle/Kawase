@@ -93,6 +93,9 @@ export async function dismissFeedItem(item: AgentFeedItem): Promise<boolean> {
   }
 }
 
+/** The api answered without the wallet history (that source was slow): its read goes on and lands in seconds. */
+const lostHistory = (feed: AgentFeed): boolean => feed.partial.includes("activity");
+
 export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   const { status, user } = useSession();
   const network: Network = user?.activeNetwork ?? "testnet";
@@ -125,9 +128,14 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
         inflight.set(network, read);
       }
       const feed = await read;
-      const entry = { feed, at: Date.now() };
-      cache.set(network, entry);
-      if (user?.id) void AsyncStorage.setItem(storageKey(user.id, network), JSON.stringify(entry)).catch(() => undefined);
+      // A read whose wallet history timed out (the api names it partial and keeps reading) must not wipe the rows the
+      // last full read showed: those stay, and the fast poll below picks up the full answer seconds later.
+      const previous = cache.get(network);
+      if (!(lostHistory(feed) && previous && !lostHistory(previous.feed))) {
+        const entry = { feed, at: Date.now() };
+        cache.set(network, entry);
+        if (user?.id) void AsyncStorage.setItem(storageKey(user.id, network), JSON.stringify(entry)).catch(() => undefined);
+      }
       setError(null);
       publish();
     } catch (failure) {
@@ -150,7 +158,8 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   }, [refresh]);
 
   const entry = account ? cache.get(network) : undefined;
-  const fast = options.live === true || inFlight(entry?.feed);
+  // Live while a run moves, and while the history is still being read (the api fills its cache within seconds).
+  const fast = options.live === true || inFlight(entry?.feed) || (entry !== undefined && lostHistory(entry.feed));
   React.useEffect(() => {
     if (!account) return undefined;
     const timer = setInterval(() => void refresh(), fast ? LIVE_POLL_MS : REST_POLL_MS);
