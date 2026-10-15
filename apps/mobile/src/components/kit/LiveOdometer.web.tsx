@@ -24,7 +24,7 @@ export function LiveOdometer({
   font?: unknown;
   color: string;
   height: number;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
   accessibilityLabel?: string;
   sensitive?: boolean;
 }) {

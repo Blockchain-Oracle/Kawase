@@ -29,7 +29,7 @@ export function RollingFigure({
   font?: unknown;
   color: string;
   height: number;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
   accessibilityLabel?: string;
   sensitive?: boolean;
 }) {
@@ -46,7 +46,7 @@ export function RollingFigure({
   } as const;
   return (
     <View
-      style={[styles.box, { height, alignItems: align === "right" ? "flex-end" : "flex-start" }]}
+      style={[styles.box, { height, alignItems: align === "right" ? "flex-end" : align === "center" ? "center" : "flex-start" }]}
       accessible
       accessibilityLabel={hidden ? t("shell.kit.hidden") : (accessibilityLabel ?? text)}
     >

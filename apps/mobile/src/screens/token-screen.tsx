@@ -1000,6 +1000,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         <View style={styles.grow}>
           <Button
             label={t("tokenPage.a_buy")}
+            leading={<Icon icon={ACTION_ICON.buy} size={SIZE.iconSm} />}
             disabled={Boolean(buyReason) && !fixable(buy)}
             onPress={() => (buyReason && fixable(buy) ? switchToMainnet() : run("buy"))}
           />
@@ -1008,6 +1009,7 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           <Button
             label={t("tokenPage.a_sell")}
             variant="secondary"
+            leading={<Icon icon={ACTION_ICON.sell} size={SIZE.iconSm} />}
             disabled={Boolean(sellReason)}
             onPress={() => run("sell")}
           />

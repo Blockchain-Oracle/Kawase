@@ -1,8 +1,9 @@
-import { type ReactNode, useContext } from "react";
+import { cloneElement, isValidElement, type ReactNode, useContext } from "react";
 import { ActivityIndicator, Pressable, type StyleProp, StyleSheet, Text, type ViewStyle } from "react-native";
 import Animated from "react-native-reanimated";
 import { fire } from "@/feedback/fire";
 import { BUTTON, CONTROL_FONT_SCALE, DISABLED_OPACITY, type Palette, SIZE, SPACE, TYPE, useTheme } from "./theme";
+import { Icon } from "./icons";
 import { SurfaceLevel } from "./Surface";
 import { usePressScale } from "./usePressScale";
 
@@ -99,7 +100,7 @@ export function Button({
           disabled && variant === "ghost" ? styles.faded : null,
         ]}
       >
-        {loading ? <ActivityIndicator size="small" color={tone.ink} /> : leading}
+        {loading ? <ActivityIndicator size="small" color={tone.ink} /> : inked(leading, tone.ink)}
         <Text
           maxFontSizeMultiplier={CONTROL_FONT_SCALE}
           style={[compact ? TYPE.buttonCompact : TYPE.buttonLabel, { color: tone.ink }]}
@@ -125,3 +126,9 @@ const styles = StyleSheet.create({
   },
   faded: { opacity: DISABLED_OPACITY },
 });
+
+/** A leading icon takes the button's own ink unless it sets one (an ink glyph on a filled ink button vanished). */
+function inked(leading: ReactNode, ink: string): ReactNode {
+  if (!isValidElement<{ tint?: string }>(leading) || leading.type !== Icon || leading.props.tint) return leading;
+  return cloneElement(leading, { tint: ink });
+}

@@ -32,7 +32,7 @@ export function RollingFigure({
   font?: SkFont | null;
   color: string;
   height: number;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
   accessibilityLabel?: string;
   /** A balance or a result: masked while balances are hidden. */
   sensitive?: boolean;

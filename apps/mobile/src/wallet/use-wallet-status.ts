@@ -13,7 +13,8 @@ import { useSession } from "@/session/session-provider";
 export function useWalletStatus() {
   const { status } = useSession();
   const [wallet, setWallet] = React.useState<WalletStatus>();
-  const [loading, setLoading] = React.useState(false);
+  // An account's wallet is being read from the first render, so nothing shows "no wallet" before the first answer.
+  const [loading, setLoading] = React.useState(status === "account");
   const [error, setError] = React.useState(false);
 
   const refresh = React.useCallback(async () => {
@@ -37,5 +38,7 @@ export function useWalletStatus() {
     void refresh();
   }, [refresh]);
 
-  return { wallet, loading, error, refresh };
+  /** The first read has answered (or there is no account): only then may a screen say there is no wallet. */
+  const known = status !== "account" || wallet !== undefined || (error && !loading);
+  return { wallet, loading, error, known, refresh };
 }

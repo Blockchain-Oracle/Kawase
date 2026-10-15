@@ -40,7 +40,7 @@ export function LiveOdometer({
   font: SkFont | null;
   color: string;
   height: number;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
   accessibilityLabel?: string;
   /** A balance or a result: masked while balances are hidden. */
   sensitive?: boolean;
@@ -91,7 +91,7 @@ export function LiveOdometer({
     const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, w, height));
     if (font && w > 0 && clock.get() >= 0) {
       const o = odo.get();
-      const right = align === "right" ? w : odometerWidth(o, font);
+      const right = align === "right" ? w : align === "center" ? (w + odometerWidth(o, font)) / HALF : odometerWidth(o, font);
       drawOdometer(canvas, o, font, paint, right, height / HALF, height * PITCH_SHARE, 0, height);
     }
     return recorder.finishRecordingAsPicture();

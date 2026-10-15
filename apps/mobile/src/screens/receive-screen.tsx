@@ -16,7 +16,7 @@ import { DottedQr } from "@kawase/ui-native/components/dotted-qr";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
-import { AmountPad, Button, EmptyState } from "@/components/kit";
+import { AmountPad, Button, diagnose, EmptyState, ErrorState, Skeleton } from "@/components/kit";
 import { Check, ChevronDown, ChevronLeft, Icon, X } from "@/components/kit/icons";
 import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { Sheet } from "@/components/sheet/Sheet";
@@ -58,7 +58,7 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
   const { width } = useWindowDimensions();
   const { status, user } = useSession();
   const signIn = useSignIn();
-  const { wallet } = useWalletStatus();
+  const { wallet, known, error, refresh } = useWalletStatus();
   const { network, switchNetwork, busy, consentNeeded, acceptMainnet, dismissConsent } = useNetworkSwitch();
   const [chooserOpen, setChooserOpen] = React.useState(false);
   // The request: none (the bare address), or a token and an amount; the sheet edits a draft of it.
@@ -122,6 +122,28 @@ export function ReceiveScreen({ prefill }: { prefill?: TicketToken | undefined }
     </View>
   );
 
+  // Still reading the wallet: the page's own shape (the code, the address plate), never "set up your wallet" first.
+  if (!address && account && !known) {
+    return (
+      <View style={[styles.fill, { backgroundColor: color.background }]}>
+        {header}
+        <View style={[styles.fill, styles.center, styles.pad, styles.loading]}>
+          <Skeleton width={qrSize + SPACE.xl * SIDES} height={qrSize + SPACE.xl * SIDES} radius={RADIUS.lg} />
+          <Skeleton width={qrSize} height={SIZE.touch} radius={RADIUS.pill} />
+        </View>
+      </View>
+    );
+  }
+  if (!address && account && error) {
+    return (
+      <View style={[styles.fill, { backgroundColor: color.background }]}>
+        {header}
+        <View style={[styles.fill, styles.pad]}>
+          <ErrorState diagnosis={diagnose(new Error("wallet status"))} retry={() => void refresh()} />
+        </View>
+      </View>
+    );
+  }
   if (!address) {
     return (
       <View style={[styles.fill, { backgroundColor: color.background }]}>
@@ -278,6 +300,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingHorizontal: SPACE.inset, paddingBottom: SPACE.sm },
   round: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
   qr: { padding: SPACE.xl, borderRadius: RADIUS.lg },
+  loading: { gap: SPACE.lg },
   qrCenter: { padding: SPACE.xs, borderRadius: RADIUS.md },
   identity: { flexDirection: "row", alignItems: "center", gap: SPACE.md, alignSelf: "stretch", paddingVertical: SPACE.md, paddingHorizontal: SPACE.lg, borderRadius: RADIUS.md },
   capsule: { height: SIZE.chipHeight, paddingHorizontal: SPACE.md, borderRadius: RADIUS.pill, justifyContent: "center" },

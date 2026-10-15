@@ -97,7 +97,7 @@ export function BudgetRing({
         ) : null}
       </Svg>
       <View style={styles.centre} pointerEvents="none">
-        <RollingFigure text={figure} value={spent} color={color.ink} height={TYPE.displayBalance.lineHeight ?? SPACE.xxxl} />
+        <RollingFigure text={figure} value={spent} color={color.ink} height={TYPE.displayBalance.lineHeight ?? SPACE.xxxl} align="center" />
         <Text style={[TYPE.rowDetail, { color: color.text2 }]} numberOfLines={1}>
           {caption}
         </Text>
