@@ -7,6 +7,7 @@
 // theme's background. From Tailwind's `lg` (1024 px: a laptop, the Tauri app at 1280×820) the app uses the whole
 // window with its desktop layout (Stage 13: sidebar, content column, dialogs). Mouse and keyboard: a pointer on
 // everything pressable and a visible focus ring for the keyboard.
+import { PUBLIC_LINKS } from "@kawase/config";
 import { tokens } from "@kawase/ui-tokens";
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
@@ -15,6 +16,8 @@ import type { PropsWithChildren } from "react";
 const COLUMN_BREAKPOINT_PX = 520;
 const COLUMN_MAX_PX = 480;
 const DESKTOP_PX = 1024;
+const TITLE = "Kawase — money that moves when you speak";
+const DESCRIPTION = "A voice-first AI money app for everything on Arc, in ten languages, with on-chain limits.";
 
 const columnCss = `
 html, body { background-color: var(--color-background, ${tokens.themes[tokens.defaultMode].background}); }
@@ -47,6 +50,18 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        {/* A tab, a bookmark and a shared link say what this is (the landing's words and its share card). */}
+        <title>{TITLE}</title>
+        <meta name="description" content={DESCRIPTION} />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:url" content={PUBLIC_LINKS.webApp} />
+        <meta property="og:site_name" content="Kawase" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content={`${PUBLIC_LINKS.landing}/og.png`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="600" />
+        <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={tokens.fonts.googleFontsHref} />
