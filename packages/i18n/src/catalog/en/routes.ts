@@ -39,6 +39,7 @@ export const routes = {
   notQuoted: "Didn't quote",
   youGet: "You get",
   bestOf: "via {{venue}} · best of {{count}}",
+  onlyQuote: "via {{venue}} · the only quote of {{count}}",
   asking: "Asking venues · {{answered}} of {{total}}",
   askingStart: "Asking every venue…",
   alsoCheckedTitle: "Also checked",

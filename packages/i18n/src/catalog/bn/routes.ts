@@ -40,6 +40,7 @@ export const routes: Catalog["routes"] = {
   notQuoted: "দাম দেয়নি",
   youGet: "আপনি পাবেন",
   bestOf: "{{venue}} দিয়ে · {{count}}টির মধ্যে সেরা",
+  onlyQuote: "{{venue}} দিয়ে · {{count}}টির মধ্যে একমাত্র দর",
   asking: "ভেন্যুগুলোকে জিজ্ঞেস করা হচ্ছে · {{total}}টির {{answered}}টি",
   askingStart: "সব ভেন্যুকে জিজ্ঞেস করা হচ্ছে…",
   alsoCheckedTitle: "এগুলোও দেখা হয়েছে",

@@ -40,6 +40,7 @@ export const routes: Catalog["routes"] = {
   notQuoted: "قیمت نہیں دی",
   youGet: "آپ کو ملیں گے",
   bestOf: "{{venue}} کے ذریعے · {{count}} میں بہترین",
+  onlyQuote: "{{venue}} کے ذریعے · {{count}} میں واحد قیمت",
   asking: "وینیوز سے پوچھ رہے ہیں · {{total}} میں سے {{answered}}",
   askingStart: "تمام وینیوز سے پوچھ رہے ہیں…",
   alsoCheckedTitle: "انہیں بھی دیکھا گیا",

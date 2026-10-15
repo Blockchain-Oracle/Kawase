@@ -35,7 +35,7 @@ function useSideText() {
       market.short.available ? `${t("margin.short")} ${format.leverage(market.short.maxLeverage)}` : null,
     ]
       .filter(Boolean)
-      .join(" · ") || t(`margin.unavailable_${market.long.reason ?? "not_borrowable"}`);
+      .join(" · ") || (market.long.reason === "no_collateral_factor" ? t("margin.shortOnly") : t(`margin.unavailable_${market.long.reason ?? "not_borrowable"}`));
 }
 
 /** The cards on the Markets front; hidden when the venue lists nothing here. "See all" opens the Long/Short segment. */

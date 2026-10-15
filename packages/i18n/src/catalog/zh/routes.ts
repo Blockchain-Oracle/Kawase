@@ -40,6 +40,7 @@ export const routes: Catalog["routes"] = {
   notQuoted: "未报价",
   youGet: "你将收到",
   bestOf: "经由 {{venue}} · {{count}} 家中最优",
+  onlyQuote: "经由 {{venue}} · {{count}} 家中唯一报价",
   asking: "正在询价 · {{answered}}/{{total}}",
   askingStart: "正在询问所有渠道…",
   alsoCheckedTitle: "也比较过",

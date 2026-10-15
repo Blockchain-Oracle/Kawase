@@ -19,6 +19,7 @@ import { FeedRow as MoneyRow } from "@/activity/feed-row";
 import { FeedSheet } from "@/activity/feed-sheet";
 import { useFeed } from "@/activity/use-feed";
 import { Button, EmptyState, ErrorState, FilterChips, Icon, Panel, Segmented, SIZE, SPACE, StaleTick, TYPE, usePullRefresh, useTheme } from "@/components/kit";
+import { StatusScrim } from "@/components/shell/StatusScrim";
 import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { ExportSheet } from "@/history/export-sheet";
@@ -181,6 +182,8 @@ export function ActivityScreen() {
           </>
         )}
       </ScrollView>
+      {/* Content scrolls under the status bar here: the page's colour fades in behind the clock (phones). */}
+      {wide ? null : <StatusScrim />}
       {open ? <FeedDetailSheet item={open} onClose={() => setOpen(null)} onAsk={(prompt) => router.navigate({ pathname: "/", params: { ask: prompt } })} /> : null}
       <FeedSheet item={openMoney} onClose={() => setOpenMoney(undefined)} />
       {account ? <ExportSheet open={exporting} onClose={() => setExporting(false)} network={network} /> : null}

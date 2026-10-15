@@ -53,6 +53,7 @@ import { CONTROL_FONT_SCALE, RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/compo
 import { LanguageSheet } from "@/components/language-sheet";
 import { MainnetConsentSheet } from "@/components/network-pill";
 import { ModeCapsule } from "@/components/shell/ModeCapsule";
+import { StatusScrim } from "@/components/shell/StatusScrim";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { stopInterfaceSounds } from "@/feedback/feedback";
 import { setFeedbackPreference, useFeedbackPreferences } from "@/feedback/preferences";
@@ -348,6 +349,8 @@ export function SettingsScreen() {
           </Group>
         ) : null}
       </ScrollView>
+      {/* Content scrolls under the status bar here: the page's colour fades in behind the clock (phones). */}
+      {wide ? null : <StatusScrim />}
 
       <LanguageSheet open={languageOpen} onClose={() => setLanguageOpen(false)} />
       <CurrencySheet open={currencyOpen} onClose={() => setCurrencyOpen(false)} />

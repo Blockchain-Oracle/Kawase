@@ -40,6 +40,7 @@ export const routes: Catalog["routes"] = {
   notQuoted: "لم تُسعِّر",
   youGet: "ستحصل على",
   bestOf: "عبر {{venue}} · الأفضل من {{count}}",
+  onlyQuote: "عبر {{venue}} · العرض الوحيد من {{count}}",
   asking: "نسأل المنصات · {{answered}} من {{total}}",
   askingStart: "نسأل كل المنصات…",
   alsoCheckedTitle: "فُحصت أيضًا",

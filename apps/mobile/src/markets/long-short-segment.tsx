@@ -81,7 +81,7 @@ function MarketRow({ market, livePrice, sideLabel }: { market: MarginMarketView;
   // "Long up to 3.4× · Short up to 2.4×"; a market that can only be shorted says so once ("Short only · up to 2.4×").
   const describe = (entry: MarginMarketView) =>
     !entry.long.available && entry.long.reason === "no_collateral_factor"
-      ? [t("margin.unavailable_no_collateral_factor"), entry.short.available ? sideLabel(entry.short) : null].filter(Boolean).join(" · ")
+      ? [t("margin.shortOnly"), entry.short.available ? sideLabel(entry.short) : null].filter(Boolean).join(" · ")
       : `${t("margin.long")} ${sideLabel(entry.long)} · ${t("margin.short")} ${sideLabel(entry.short)}`;
   const { color } = useTheme();
   const router = useRouter();

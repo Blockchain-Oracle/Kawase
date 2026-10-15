@@ -40,6 +40,7 @@ export const routes: Catalog["routes"] = {
   notQuoted: "Sin cotización",
   youGet: "Recibes",
   bestOf: "vía {{venue}} · la mejor de {{count}}",
+  onlyQuote: "vía {{venue}} · la única cotización de {{count}}",
   asking: "Consultando · {{answered}} de {{total}}",
   askingStart: "Consultando todas las plataformas…",
   alsoCheckedTitle: "También revisadas",

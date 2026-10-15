@@ -89,7 +89,8 @@ export function QuotePreview({
                 ≈ {amount}
               </Text>
               <Text numberOfLines={1} style={[TYPE.meta, { color: color.text3 }]}>
-                {t("routes.bestOf", { venue: best!.label, count: total })}
+                {/* "Best of" counts the prices it beat; a lone quote says so (testnet: one venue of six has a pool). */}
+                {quoted > 1 ? t("routes.bestOf", { venue: best!.label, count: quoted }) : t("routes.onlyQuote", { venue: best!.label, count: total })}
               </Text>
             </>
           ) : state === "error" && !current ? (
