@@ -1,60 +1,116 @@
 ---
 title: "Fazer ponte e sacar"
-description: "Saque qualquer token para uma exchange, sua própria carteira ou sua conta bancária por meio de uma exchange; envie USDC para qualquer pessoa em seis redes usando CCTP, Across ou Relay; traga USDC para a Arc sem pagar gas."
-sourceHash: 998c665fe77a0b00
+description: "Mova USDC da Arc para Base, Ethereum, Arbitrum, Optimism, Polygon ou Avalanche, para você ou qualquer pessoa, pela melhor de sete pontes; traga USDC para a Arc sem gas; saque qualquer token para uma corretora, sua própria carteira ou seu banco."
+sourceHash: 49ab4e1673606424
 ---
 
 <Status ids="bridge send" />
 
 <Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-Peça à Kawase (“enviar 20 dólares para Alex na Base”, “trazer meu USDC da Base para a Arc”) e ela mostrará um **cartão de movimentação** para você. Ele também abre em tela cheia como **Mover para outra rede**. A Kawase move USDC entre a Arc e a **Base, Ethereum, Arbitrum,
-Optimism, Polygon ou Avalanche**.
+<Flow>
+  <FlowStep icon="network" title="Para onde">Uma rede, e para quem.</FlowStep>
+  <FlowStep icon="route" title="A disputa" tone="accent">Sete pontes cotam; vence a que entrega mais.</FlowStep>
+  <FlowStep icon="hand" title="Deslize">Uma transação, conferida antes de você assinar.</FlowStep>
+  <FlowStep icon="check" title="Entregue" tone="ink">Acompanhada até chegar na outra rede.</FlowStep>
+</Flow>
 
-## Saindo da Arc, para qualquer pessoa
+## A ponte, passo a passo
 
-O destinatário pode ser **você**, um **contato**, um **@handle** ou qualquer **endereço 0x**. A Kawase pede uma cotação em tempo real a três provedores:
+**Ponte** no **+** (ou a aba Ponte em Trocar), ou peça: «envie 20 dólares para o Alex na Base», «mova 1 dólar para a
+Base».
 
-- **Circle CCTP**: a Circle queima o USDC na Arc e cria o USDC na outra rede;
-- **Across** e **Relay**: um operador paga do outro lado e é reembolsado pelo seu depósito.
+<Walkthrough>
+  <WalkStep title="Escolha uma rede" src="bridge/chains">
+    Base, Ethereum, Arbitrum, Optimism, Polygon ou Avalanche, cada uma com sua marca.
 
-Eles são classificados por **quanto chega depois das taxas**. Em caso de empate, o mais rápido fica na frente. Até três rotas são mostradas com a marca do provedor, o valor que chega, a taxa e o tempo estimado. A melhor rota é escolhida para você, mas é possível tocar em outra.
+    <Pin box="4 72.5 92 24">Onde o dinheiro deve chegar</Pin>
+  </WalkStep>
+  <WalkStep title="Para quem e quanto" src="bridge/ticket">
+    O destinatário pode ser **você** (o mesmo endereço na outra rede), um **contato**, um **@usuário** ou qualquer
+    **endereço 0x**. Escolha USDC ou EURC e o valor.
 
-Antes de pedir a confirmação da sua carteira, a Kawase monta a transação do provedor escolhido e **confere tudo**: para a Across, decodifica o depósito (quem paga, quem recebe, qual token, o valor, o mínimo, o destino e nenhuma mensagem extra); para a Relay, confere a aprovação e o depósito no contrato depositário listado pela Relay; para a CCTP, confere a chamada da própria Circle. A transação é simulada a partir da sua carteira e enviada como **uma única transação** depois que você desliza e confirma com o Face ID.
+    <Pin box="4 16.5 41 8">Da Arc</Pin>
 
-## Trazendo para a Arc
+    <Pin box="55 16.5 41 8">Para a rede escolhida</Pin>
 
-Se você tiver USDC no mesmo endereço em outra rede, a Kawase o encontrará (os saldos são mostrados e o maior é escolhido) e o trará para a Arc usando a **permissão da Relay**: uma assinatura e **sem precisar pagar gas nessa rede**. A permissão é conferida (seu endereço, o valor, o contrato da Relay e o USDC dessa rede) antes da assinatura.
+    <Pin box="5 29 90 6.5">Você, um contato, um @usuário ou um endereço</Pin>
 
-## Acompanhando uma movimentação
+    <Pin box="4 45.5 40 5">O que mover</Pin>
+  </WalkStep>
+  <WalkStep title="As rotas" src="bridge/review">
+    **Circle CCTP, Across, Relay, LI.FI, deBridge, Socket e Gas.zip** cotam ao vivo. Elas são ordenadas pelo **que chega
+    depois das taxas**, e no empate vence a mais rápida; a melhor é escolhida e você pode tocar em outra. Antes de pedir à
+    sua carteira, o Kawase monta a rota escolhida e **confere** (quem paga, quem recebe, o token, o valor, o mínimo, o
+    destino), e depois simula a partir da sua carteira.
 
-Toda movimentação é acompanhada: **Assinada → Enviada → Chegando → Entregue**, com links para o explorer. A Kawase confere o valor que saiu da sua carteira no recibo e, depois, a execução por meio do status do próprio provedor (status do depósito da Across, status da solicitação da Relay ou atestado da Circle). Se um provedor **reembolsar** o valor, o cartão informa isso claramente. Nada é enviado duas vezes.
+    <Pin at="60 15.3">O que chega, e em qual rede</Pin>
 
-## Na rede de testes
+    <Pin box="5 28 90 13">A ponte vencedora, o que você recebe e a taxa</Pin>
 
-A Rede de testes da Arc usa **apenas CCTP**; Across e Relay atendem à rede principal da Arc. Trazer para a Arc só está disponível na rede principal.
+    <Pin box="5 66.5 90 7.5">Deslize para enviar</Pin>
+  </WalkStep>
+  <WalkStep title="Entregue" src="bridge/tracking">
+    Cada movimento é acompanhado: **Assinado → Enviado → Chegando → Entregue**, com links do explorador nas duas redes. O
+    Kawase confere o valor que saiu da sua carteira e depois a chegada pelo status da própria ponte (a atestação da Circle,
+    o status do depósito na Across, o status do pedido na Relay). Se uma ponte **reembolsar** em vez disso, o cartão avisa.
+    Nada é enviado duas vezes.
+
+    <Pin box="8 21.5 84 9">O que chegou e por qual ponte</Pin>
+
+    <Pin box="8 30.5 84 12">Veja nas duas redes</Pin>
+  </WalkStep>
+</Walkthrough>
+
+**A carteira está em outra rede?** A revisão de [Enviar](./send-receive-request.mdx) oferece a ponte com o mesmo valor e
+destinatário.
+
+## Trazer USDC para a Arc
+
+Se você tem USDC no mesmo endereço em outra rede, **Adicionar dinheiro → De outra rede** encontra (o maior saldo primeiro)
+e traz para a Arc com a **permissão da Relay**: uma assinatura e **nenhum gas naquela rede**. A permissão é conferida (seu
+endereço, o valor, o contrato da Relay e o USDC daquela rede) antes de você assinar. Só na rede principal.
 
 ## Sacar
 
-**Sacar** (pela Home ou com “sacar tudo para minha Kraken”) remove um, vários ou todos os tokens da Kawase:
+**Sacar** tira um token, vários ou tudo do Kawase, com uma única confirmação.
 
-<Steps>
-<Step>
-### O quê
-Escolha os tokens. Cada um vai **como ele mesmo** ou **como dinheiro** (convertido primeiro para USDC).
-</Step>
-<Step>
-### Para onde
-Uma **exchange** (Kraken, Bybit, OKX, Binance, Bitget, KuCoin ou Coinbase pela Base), **sua própria carteira** na Arc ou em outra rede, ou **sua conta bancária** por meio de uma exchange. A Kawase sabe quais ativos e redes cada exchange aceita e avisa você antes de enviar algo que ela não creditaria. Os destinos para onde você saca ficam salvos em **Meus destinos**.
-</Step>
-<Step>
-### Uma confirmação
-A Kawase planeja uma linha por token: uma transferência na Arc, uma ponte ou uma conversão primeiro. Você desliza uma vez e confirma com um Face ID. Um rastreador acompanha cada linha até o fim; se algo parar no meio, **Concluir** continua de onde parou.
-</Step>
-</Steps>
+<Walkthrough>
+  <WalkStep title="O quê e para onde" src="bridge/withdraw">
+    Escolha tokens ou toque em **Tudo**; cada um sai **como está** ou **em dinheiro** (convertido antes para USDC). Depois,
+    para onde: uma **corretora** (Kraken, Bybit, OKX, Binance, Bitget, KuCoin, ou Coinbase pela Base), **sua outra
+    carteira** na Arc ou em outra rede, ou **seu banco** por meio de uma corretora. O Kawase sabe quais ativos e redes cada
+    corretora aceita e avisa antes de você enviar algo que ela não creditaria.
 
-Tokens que não sejam USDC atravessam as redes como USDC (convertidos primeiro). Na rede de testes, as exchanges não são oferecidas; o saque vai para sua própria carteira. No **kit de saída**, “tirar o dinheiro daqui” abre o recurso Sacar para tudo.
+    <Pin at="67 34.8">Tudo, ou escolha tokens</Pin>
 
-Para tirar seu dinheiro sem usar a Kawase, siga [Sacar sem a Kawase](../withdraw-without-kawase.mdx).
+    <Pin box="4 50.5 92 22.5">Corretoras, cada uma com seus passos</Pin>
+
+    <Pin box="4 79.5 92 7.5">Sua outra carteira, em qualquer rede</Pin>
+
+    <Pin box="4 87.5 92 7">Seu banco, por meio de uma corretora</Pin>
+  </WalkStep>
+  <WalkStep title="Uma confirmação, todas as linhas" src="limits/exit-kit">
+    O Kawase planeja uma linha por token (uma transferência na Arc, uma ponte ou antes uma conversão). **Um único Face ID
+    cobre todas as linhas**, e cada passo é conferido de novo antes de sair. Um acompanhamento segue cada linha; se algo
+    parar no meio, **Concluir** continua de onde estava. Logo abaixo fica o **kit de saída**: pausar o Kawase, retirar todas
+    as permissões e tirar o seu dinheiro.
+
+    <Pin box="4 57.5 92 14">O kit de saída</Pin>
+
+    <Pin box="4 75.5 92 6">Pausar tudo o que o Kawase faz sozinho</Pin>
+
+    <Pin box="4 87.5 92 6.5">Tirar o meu dinheiro: Sacar, para tudo</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Os destinos de saque ficam salvos em **Contatos → Meus destinos**. Corretoras lidam com dinheiro real, então abrem na rede
+principal da Arc; na rede de testes, o saque vai para a sua própria carteira. Para tirar seu dinheiro sem o Kawase, siga
+[Sacar sem o Kawase](../withdraw-without-kawase.mdx).
+
+## Na rede de testes
+
+A Arc Testnet usa a **Circle CCTP** como ponte (as outras respondem que não estão nessa rede), para as redes de teste das
+mesmas seis redes. Trazer USDC para a Arc e as corretoras são só da rede principal.
 
 <ScopeList ids="bridge send" />

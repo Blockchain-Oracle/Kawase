@@ -1,71 +1,105 @@
 ---
 title: "跨链和提现"
-description: "将任意代币提现到交易所、你自己的钱包或通过交易所提现到银行；通过 CCTP、Across 或 Relay 在六个网络之间向任何人转账 USDC；无需燃料费即可将 USDC 转入 Arc。"
-sourceHash: 998c665fe77a0b00
+description: "通过七座跨链桥中最优的一座，把 USDC 从 Arc 转到 Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche，转给自己或任何人；无需 gas 把 USDC 带到 Arc；把任意代币提现到交易所、你自己的钱包或银行。"
+sourceHash: 49ab4e1673606424
 ---
 
 <Status ids="bridge send" />
 
 <Marks names="arc base ethereum arbitrum optimism polygon avalanche cctp across relay" />
 
-询问 Kawase（“在 Base 上向 Alex 转账 20 美元”“将我的 USDC 从 Base 转入 Arc”），它会在你面前显示一张**转账卡片**，
-同时全屏打开**跨链转账**。它可以在 Arc 与 **Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche** 之间转移 USDC。
+<Flow>
+  <FlowStep icon="network" title="去哪里">一条链，以及给谁。</FlowStep>
+  <FlowStep icon="route" title="竞价" tone="accent">七座跨链桥报价；到账最多的胜出。</FlowStep>
+  <FlowStep icon="hand" title="滑动">一笔交易，签名前已检查。</FlowStep>
+  <FlowStep icon="check" title="已送达" tone="ink">一直跟进到在另一条链上到账。</FlowStep>
+</Flow>
 
-## 从 Arc 转出，转给任何人
+## 跨链，一步一步
 
-收款人可以是**你自己**、**联系人**、**@handle** 或任何 **0x 地址**。Kawase 会向三个服务商获取实时报价：
+从 **+** 打开**跨链**（或兑换页的跨链标签），或直接说：“在 Base 上给 Alex 转 20 美元”“把 1 美元转到 Base”。
 
-- **Circle CCTP**：Circle 会在 Arc 上销毁 USDC，并在另一个网络上铸造 USDC；
-- **Across** 和 **Relay**：求解器会在另一端支付，然后从你的存款中获得偿还。
+<Walkthrough>
+  <WalkStep title="选择一条链" src="bridge/chains">
+    Base、Ethereum、Arbitrum、Optimism、Polygon 或 Avalanche，各有自己的标志。
 
-它们会按**扣除费用后实际到账的金额**排序。如果金额相同，则优先选择速度更快的服务商。最多会显示三条路线，并标明服务商、
-到账金额、费用和预计时间。系统会为你选择最佳路线，你也可以点选其他路线。
+    <Pin box="4 72.5 92 24">钱要到达的地方</Pin>
+  </WalkStep>
+  <WalkStep title="转给谁、转多少" src="bridge/ticket">
+    收款人可以是**你自己**（另一条链上的同一地址）、**联系人**、**@用户名**或任意 **0x 地址**。选择 USDC 或 EURC 以及金额。
 
-在请求你的钱包确认前，Kawase 会构建所选服务商的交易并**进行检查**：对于 Across，它会解码存款信息（付款人、收款人、
-代币、金额、最低金额、目的地以及没有额外消息）；对于 Relay，它会检查授权，以及向 Relay 列出的存款合约存入资金；
-对于 CCTP，则会检查 Circle 自己的调用。交易会先在你的钱包中模拟，然后你滑动并使用 Face ID 确认，作为**一笔交易**发送。
+    <Pin box="4 16.5 41 8">从 Arc 转出</Pin>
 
-## 转入 Arc
+    <Pin box="55 16.5 41 8">到你选的链</Pin>
 
-如果你在另一个网络的相同地址上持有 USDC，Kawase 会找到这些 USDC（显示各网络余额，并选择余额最多的网络），
-然后通过 **Relay 的许可签名**将其转入 Arc：只需一次签名，**无需在该网络支付燃料费**。在你签名之前，系统会检查许可信息
-（你的地址、金额、Relay 的合约以及该网络上的 USDC）。
+    <Pin box="5 29 90 6.5">你自己、联系人、@用户名或地址</Pin>
 
-## 跟踪转账
+    <Pin box="4 45.5 40 5">转移什么</Pin>
+  </WalkStep>
+  <WalkStep title="路线" src="bridge/review">
+    向 **Circle CCTP、Across、Relay、LI.FI、deBridge、Socket 和 Gas.zip** 请求实时报价。按**扣除费用后的到账金额**排序，持平
+    时更快的优先；最优的会被选中，你也可以点选其他的。在请求你的钱包之前，Kawase 会构建所选路线并**检查**（谁付款、谁收款、代币、
+    金额、最低值、目的地），然后从你的钱包模拟执行。
 
-每笔转账都会被跟踪：**已签名 → 已发送 → 转入中 → 已到账**，并提供区块浏览器链接。Kawase 会根据收据检查你的钱包实际转出的金额，
-然后通过服务商自己的状态信息确认到账情况（Across 存款状态、Relay 请求状态或 Circle 的证明）。如果服务商改为**退款**，
-卡片会清楚地显示这一点。任何资金都不会被发送两次。
+    <Pin at="60 15.3">到账多少，到哪条链</Pin>
 
-## 测试网上
+    <Pin box="5 28 90 13">胜出的跨链桥、你收到的金额及费用</Pin>
 
-Arc 测试网只使用 **CCTP**；Across 和 Relay 服务于 Arc 主网。转入 Arc 仅支持主网。
+    <Pin box="5 66.5 90 7.5">滑动转出</Pin>
+  </WalkStep>
+  <WalkStep title="已送达" src="bridge/tracking">
+    每次转移都会被跟进：**已签名 → 已发送 → 到账中 → 已送达**，并附两条链上的浏览器链接。Kawase 会核对离开你钱包的金额，再通过
+    跨链桥自己的状态确认到账（Circle 的证明、Across 的存款状态、Relay 的请求状态）。如果跨链桥改为**退款**，卡片会明确说明。
+    绝不会重复发送。
+
+    <Pin box="8 21.5 84 9">到账多少，经由哪座桥</Pin>
+
+    <Pin box="8 30.5 84 12">在两条链上查看</Pin>
+  </WalkStep>
+</Walkthrough>
+
+**对方的钱包在另一条链上？** [转账](./send-receive-request.mdx)的核对页会用同样的金额和收款人提供跨链选项。
+
+## 把 USDC 带到 Arc
+
+如果你在另一个网络的同一地址上有 USDC，**充值 → 从其他链转入**会找到它（余额最大的优先），用 **Relay 的许可签名**把它带到
+Arc：只需一次签名，**无需该网络的 gas**。签名前会检查许可内容（你的地址、金额、Relay 的合约和该网络的 USDC）。仅限主网。
 
 ## 提现
 
-**提现**（从首页操作，或说“把所有资金提现到我的 Kraken”）可以将一个、多个或全部代币从 Kawase 转出：
+**取出**把一个、多个或全部代币从 Kawase 转出，只需确认一次。
 
-<Steps>
-<Step>
-### 资产
-选择代币。每种代币都可以**按原代币提现**，也可以**按现金提现**（先兑换为 USDC）。
-</Step>
-<Step>
-### 去向
-可以是**交易所**（Kraken、Bybit、OKX、Binance、Bitget、KuCoin，或通过 Base 使用 Coinbase）、Arc 或其他链上的**你自己的钱包**，
-也可以是**通过交易所提现到你的银行**。Kawase 知道每家交易所接受哪些资产和网络。如果你要发送的资产无法入账，
-它会在发送前提醒你。你提现到的地点会保存在**我的地点**中。
-</Step>
-<Step>
-### 一次确认
-Kawase 会为每种代币安排一条处理步骤：在 Arc 上转账、跨链，或先兑换。你只需滑动一次，然后使用一个 Face ID 确认。
-跟踪器会跟进每条步骤，直到全部完成；如果中途停下，点击**继续完成**即可从中断处继续。
-</Step>
-</Steps>
+<Walkthrough>
+  <WalkStep title="取什么、取到哪里" src="bridge/withdraw">
+    选择代币或点**全部**；每种代币可**原样**转出，或**换成现金**（先兑换成 USDC）。然后选择去处：**交易所**（Kraken、Bybit、
+    OKX、Binance、Bitget、KuCoin，或经由 Base 的 Coinbase）、你在 Arc 或其他链上的**其他钱包**，或经由交易所到**你的银行**。
+    Kawase 知道每家交易所接受哪些资产和网络，会在你发出它不会入账的资产之前提醒你。
 
-除了 USDC 以外的代币会先兑换为 USDC，再跨链。在测试网上不提供交易所选项，提现只能转到你自己的钱包。在**退出工具包**中，
-“转出资金”会为全部资金打开提现页面。
+    <Pin at="67 34.8">全部，或选择代币</Pin>
 
-如果你想完全不通过 Kawase 转出资金，请按照[不使用 Kawase 提现](../withdraw-without-kawase.mdx)的说明操作。
+    <Pin box="4 50.5 92 22.5">交易所，各有自己的步骤</Pin>
+
+    <Pin box="4 79.5 92 7.5">你在任意链上的其他钱包</Pin>
+
+    <Pin box="4 87.5 92 7">经由交易所到你的银行</Pin>
+  </WalkStep>
+  <WalkStep title="一次确认，覆盖每一项" src="limits/exit-kit">
+    Kawase 为每种代币规划一项（Arc 上的转账、跨链，或先兑换）。**一次 Face ID 覆盖所有项**，每一步发出前都会再次检查。每一项
+    都有跟踪；如果中途停下，**完成它**会从停下的地方继续。下方是**退出工具包**：暂停 Kawase、收回所有权限，然后把钱转出。
+
+    <Pin box="4 57.5 92 14">退出工具包</Pin>
+
+    <Pin box="4 75.5 92 6">暂停 Kawase 自动做的一切</Pin>
+
+    <Pin box="4 87.5 92 6.5">把我的钱转出：全部取出</Pin>
+  </WalkStep>
+</Walkthrough>
+
+提现去处会保存在**联系人 → 我的常用去处**。交易所涉及真实资金，因此在 Arc 主网上开放；在测试网上，提现会转到你自己的钱包。
+如果完全不通过 Kawase 取出你的钱，请看[不通过 Kawase 提现](../withdraw-without-kawase.mdx)。
+
+## 在测试网上
+
+Arc Testnet 通过 **Circle CCTP** 跨链（其他桥回复不在该网络上），可到同样六条链的测试网。把 USDC 带到 Arc 和交易所仅限主网。
 
 <ScopeList ids="bridge send" />
