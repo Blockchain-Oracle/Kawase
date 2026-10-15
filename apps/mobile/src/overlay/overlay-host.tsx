@@ -1,7 +1,9 @@
 // The layer above the tab pages and the dock: the fan's blur, the plus button with its actions, and the voice overlay.
 // Order matters — the fan sits above its own blur, and the voice overlay above everything, so the plus is blurred away
 // while the orb is up. Rendered once: by the (tabs) layout, or on a desktop window by the signed-in area's layout over
-// the rail and every page (no plus there: the rail lists the same actions). The plus is the quiet glass circle at the
+// the rail and every page (no plus there: the rail lists the same actions). On a phone the voice overlay is not here
+// but in the signed-in area's layout (`PhoneVoiceLayer`), above the pushed pages too: voice opens from Chat and from
+// Settings → Voice, which sit above the tabs. The plus is the quiet glass circle at the
 // trailing edge above the dock, and its actions rise from it in one column (Add money · Send · Receive · Swap ·
 // Bridge). It steps aside on Chat and while Home's composer is open, where the composer takes the bottom of the screen.
 // Every action goes through the account gate, so a guest's first money tap opens the sign-in sheet in place and the
@@ -66,7 +68,13 @@ export function OverlayHost() {
           covered={overlay.shown === "voice"}
         />
       ) : null}
-      <VoiceOverlay open={overlay.current === "voice"} />
+      {wide ? <VoiceOverlay open={overlay.current === "voice"} /> : null}
     </>
   );
+}
+
+/** A phone's voice overlay, above every page of the signed-in area (pushed pages included). */
+export function PhoneVoiceLayer() {
+  const overlay = useOverlay();
+  return <VoiceOverlay open={overlay.current === "voice"} />;
 }

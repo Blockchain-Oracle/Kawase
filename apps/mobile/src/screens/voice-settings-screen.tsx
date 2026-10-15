@@ -1,15 +1,17 @@
 // Settings → Voice (plan §1.4): Kawase's voice (GPT-Live's voices), the speaking pace and whether it greets first.
 // Saved to the account (PATCH /me) and read by the voice worker when the next conversation starts; every change saves
-// at once and is undone on screen if the save fails.
+// at once and is undone on screen if the save fails. Each voice can be heard: its speaker chooses it and opens voice
+// mode, where Kawase says hello in it live (five of the six voices exist only in GPT-Live, so there is no recording to
+// play; a real hello is also the truest preview).
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Volume2 } from "lucide-react-native";
 import * as React from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 import type { VoicePrefs } from "@kawase/api-client";
-import { DEFAULT_VOICE_PREFS, GPT_LIVE_VOICES, VOICE_SPEEDS, type VoiceSpeed } from "@kawase/config";
+import { DEFAULT_VOICE_PREFS, GPT_LIVE_VOICES, VOICE_SPEEDS, type GptLiveVoice, type VoiceSpeed } from "@kawase/config";
 import { ListGroup, ListRow } from "@kawase/ui-native/components/list-row";
 import { SegmentedControl } from "@kawase/ui-native/components/segmented-control";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -19,7 +21,9 @@ import { Text } from "@kawase/ui-native/components/ui/text";
 import { cn, TEXT_START } from "@kawase/ui-native/lib/utils";
 
 import { useT } from "@/i18n";
+import { useOverlay } from "@/overlay/overlay-provider";
 import { useSession } from "@/session/session-provider";
+import { forgetVoiceSession, greetNextSession } from "@/voice/prefetch";
 
 
 const EDGE_INSET = 12;
@@ -36,6 +40,7 @@ export function VoiceSettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, update } = useSession();
+  const overlay = useOverlay();
   const stored = user?.voicePrefs ?? DEFAULT_VOICE_PREFS;
   const [prefs, setPrefs] = React.useState<VoicePrefs>(stored);
   React.useEffect(() => setPrefs(user?.voicePrefs ?? DEFAULT_VOICE_PREFS), [user?.voicePrefs]);
@@ -45,10 +50,19 @@ export function VoiceSettingsScreen() {
     setPrefs({ ...prefs, ...change });
     try {
       await update({ voicePrefs: change });
+      forgetVoiceSession();
+      return true;
     } catch {
       setPrefs(before);
       toast.error(t("voiceSettings.saveFailed"));
+      return false;
     }
+  };
+
+  const hear = async (voice: GptLiveVoice) => {
+    if (prefs.voice !== voice && !(await save({ voice }))) return;
+    greetNextSession();
+    overlay.open("voice");
   };
 
   return (
@@ -80,6 +94,7 @@ export function VoiceSettingsScreen() {
           <Text accessibilityRole="header" className={cn("text-foreground text-lg font-semibold", TEXT_START)}>
             {t("voiceSettings.voiceTitle")}
           </Text>
+          <Text className={cn("text-muted-foreground text-sm", TEXT_START)}>{t("voiceSettings.hearHint")}</Text>
           <ListGroup>
             {GPT_LIVE_VOICES.map((voice) => (
               <ListRow
@@ -88,6 +103,17 @@ export function VoiceSettingsScreen() {
                 selected={prefs.voice === voice}
                 accessibilityRole="radio"
                 onPress={() => void save({ voice })}
+                trailing={
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="size-9 rounded-full"
+                    accessibilityLabel={t("voiceSettings.hear", { name: voiceName(voice) })}
+                    onPress={() => void hear(voice)}
+                  >
+                    <Icon as={Volume2} className="text-foreground size-4" />
+                  </Button>
+                }
               />
             ))}
           </ListGroup>

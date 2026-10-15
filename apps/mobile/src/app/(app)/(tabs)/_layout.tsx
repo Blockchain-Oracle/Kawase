@@ -1,7 +1,7 @@
 // The tab pages under the glass dock (decision 1): Home · Markets · Activity · Settings, with the dock's centre (the +
 // fan on a tap, the voice orb on a hold) between Markets and Activity. Chat is a page of its own (`(app)/chat.tsx`),
-// opened from Home's composer and feed. The dock is the tab bar; the overlay host (fan, voice) sits above the pages
-// and the dock so the blur sees the live page, and while an overlay is open the pages and the dock are hidden from
+// opened from Home's composer and feed. The dock is the tab bar; the overlay host (the + fan) sits above the pages
+// and the dock so the blur sees the live page (voice sits higher still, in the signed-in layout), and while an overlay is open the pages and the dock are hidden from
 // assistive tech. Pages pad their bottom with `useDockClearance` because the dock floats over them. On a desktop window
 // the rail beside every page replaces the dock and the signed-in layout hosts the overlays, so the tabs are only pages.
 //

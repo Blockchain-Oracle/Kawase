@@ -32,7 +32,7 @@ import { hydrateJournal } from "@/components/tx/journal";
 import { DesktopSidebar } from "@/dock/desktop-sidebar";
 import { warmFeedback } from "@/feedback/feedback";
 import { useT } from "@/i18n";
-import { OverlayHost } from "@/overlay/overlay-host";
+import { OverlayHost, PhoneVoiceLayer } from "@/overlay/overlay-host";
 import { OverlayProvider, useOverlay } from "@/overlay/overlay-provider";
 import { SafetyStripFrame } from "@/safety/safety-strip";
 import { useSession } from "@/session/session-provider";
@@ -131,8 +131,8 @@ function SessionLoading() {
 }
 
 /**
- * The sidebar beside the pages and the overlays above both, on a desktop window; elsewhere only the pages (the tabs
- * draw the dock and host the overlays). The pages keep their place in the tree either way, so a window crossing the
+ * The sidebar beside the pages and the overlays above both, on a desktop window; elsewhere the pages (the tabs draw
+ * the dock and host the + fan) with the voice overlay above every one of them. The pages keep their place in the tree either way, so a window crossing the
  * breakpoint keeps its navigation.
  */
 function DesktopFrame({ children }: { children: React.ReactNode }) {
@@ -172,7 +172,7 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
           <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>
         </View>
       </View>
-      {wide ? <OverlayHost /> : null}
+      {wide ? <OverlayHost /> : <PhoneVoiceLayer />}
     </View>
   );
 }

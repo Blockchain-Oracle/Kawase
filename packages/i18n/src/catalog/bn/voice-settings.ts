@@ -4,6 +4,8 @@ export const voiceSettings: Catalog["voiceSettings"] = {
   title: "ভয়েস",
   subtitle: "ফোনে ও ওয়েবে আপনার সঙ্গে কথা বলার সময় Kawase কেমন শোনায়।",
   voiceTitle: "Kawase-এর কণ্ঠ",
+  hear: "{{name}} শুনুন",
+  hearHint: "কোনো কণ্ঠের পাশে স্পিকারে ট্যাপ করুন: Kawase ভয়েস খুলে সেই কণ্ঠে হ্যালো বলবে।",
   speedTitle: "কথার গতি",
   speedRelaxed: "স্বচ্ছন্দ",
   speedNormal: "স্বাভাবিক",

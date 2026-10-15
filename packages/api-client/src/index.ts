@@ -432,8 +432,11 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
     } satisfies NeedsYouApi,
 
     voice: {
-      /** Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. */
-      session: (input: { threadId?: string } = {}) => call<VoiceSession>("POST", "/voice/session", input),
+      /**
+       * Start talking: a LiveKit room and token; pass the thread to continue it, or none for a new one. `greet`: Kawase
+       * says hello first even when Settings → Voice has it wait (hearing a voice from the picker).
+       */
+      session: (input: { threadId?: string; greet?: boolean } = {}) => call<VoiceSession>("POST", "/voice/session", input),
     },
 
     requests: {

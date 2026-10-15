@@ -4,6 +4,8 @@ export const voiceSettings: Catalog["voiceSettings"] = {
   title: "Voz",
   subtitle: "Cómo suena Kawase cuando hablas con él, en el móvil y en la web.",
   voiceTitle: "Voz de Kawase",
+  hear: "Escuchar a {{name}}",
+  hearHint: "Toca el altavoz junto a una voz: Kawase abre el modo de voz y te saluda con ella.",
   speedTitle: "Velocidad al hablar",
   speedRelaxed: "Tranquila",
   speedNormal: "Normal",

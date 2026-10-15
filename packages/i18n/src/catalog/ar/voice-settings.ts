@@ -4,6 +4,8 @@ export const voiceSettings: Catalog["voiceSettings"] = {
   title: "الصوت",
   subtitle: "كيفية تحدث Kawase إليك على هاتفك والويب.",
   voiceTitle: "صوت Kawase",
+  hear: "استمع إلى {{name}}",
+  hearHint: "اضغط على السماعة بجانب الصوت: يفتح Kawase وضع الصوت ويحيّيك به.",
   speedTitle: "سرعة الكلام",
   speedRelaxed: "هادئة",
   speedNormal: "عادية",

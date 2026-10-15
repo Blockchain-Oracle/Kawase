@@ -2,6 +2,8 @@ export const voiceSettings = {
   title: "Voice",
   subtitle: "How Kawase sounds when you talk to it, on your phone and on the web.",
   voiceTitle: "Kawase's voice",
+  hear: "Hear {{name}}",
+  hearHint: "Tap the speaker beside a voice: Kawase opens voice and says hello in it.",
   speedTitle: "Speaking speed",
   speedRelaxed: "Relaxed",
   speedNormal: "Normal",

@@ -26,7 +26,8 @@ export type LiveKitConfig = { url: string; apiKey: string; apiSecret: string; ag
 
 const ROOM_SUFFIX_BYTES = 6;
 const TEXT_MAX = 2000;
-const sessionSchema = z.object({ threadId: z.uuid().optional() });
+/** `greet`: Kawase says hello first whatever Settings → Voice says (the voice picker's "hear it" opens voice this way). */
+const sessionSchema = z.object({ threadId: z.uuid().optional(), greet: z.boolean().optional() });
 const TURN_ID_MAX = 100;
 const turnSchema = z.object({
   turnId: z.string().min(1).max(TURN_ID_MAX).optional(),
@@ -77,7 +78,7 @@ export function voiceRoutes(deps: {
             network: user.activeNetwork,
             turnNamespace: room,
             // Settings → Voice: the worker picks GPT-Live's voice, the pace and whether to greet first.
-            voice: voicePrefs(user.voicePrefs),
+            voice: { ...voicePrefs(user.voicePrefs), ...(parsed.data.greet ? { autoSpeak: true } : {}) },
           }),
         }),
       ],
