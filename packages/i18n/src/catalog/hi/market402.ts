@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "सेवाएं",
   servicesBody: "एजेंट वॉलेट से प्रति कॉल भुगतान",
   servicesSeeAll: "सभी {{n}} देखें",
+  entryBody: "{{n}} सशुल्क टूल जिन्हें आपका एजेंट इस्तेमाल कर सकता है",
+  entryBodyIdle: "सशुल्क डेटा और टूल जिन्हें आपका एजेंट इस्तेमाल कर सकता है",
 };

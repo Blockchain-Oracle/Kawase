@@ -22,6 +22,7 @@ import {
   Mic,
   Palette,
   ShieldCheck,
+  Store,
   Trash2,
   Vibrate,
   Volume2,
@@ -218,6 +219,7 @@ export function SettingsScreen() {
             trailing={signedIn ? <Value text={agentBalance === null ? t("settings.loadFailed") : agentBalance} loading={agentBalance === undefined} /> : undefined}
             onPress={() => go("/agent-wallet")}
           />
+          <ListRow leading={<Glyph icon={Store} />} title={t("shell.dock.marketplace")} onPress={() => go("/marketplace")} />
           <ListRow leading={<Glyph icon={BookUser} />} title={t("settings.contacts")} onPress={() => go("/contacts")} />
           <ListRow leading={<Glyph icon={CalendarClock} />} title={t("settings.automations")} onPress={() => go("/automations")} />
           <ListRow

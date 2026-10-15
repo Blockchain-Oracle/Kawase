@@ -8,7 +8,7 @@ import { getExchangeIdentity, getProviderIdentity } from "@kawase/identity";
 import { amount, formatPrice } from "@kawase/money";
 import type { NetworkContext } from "@kawase/networks";
 import { brandDomain } from "./brand-logos";
-import { buildCatalog, filterCatalog, toolOf, type Catalog, type CatalogFilter, type CatalogTool, type Discovery, type Listing, type Party, type Rail } from "@kawase/integrations-x402";
+import { buildCatalog, filterCatalog, toolKeyOf, toolOf, type Catalog, type CatalogFilter, type CatalogTool, type Discovery, type Listing, type Party, type Rail } from "@kawase/integrations-x402";
 
 export const CATALOG_PAGE_DEFAULT = 24;
 export const CATALOG_PAGE_MAX = 50;
@@ -72,6 +72,7 @@ export function toolView(tool: CatalogTool): CatalogToolView {
 
 function endpointView(listing: Listing): ServiceListing {
   return {
+    tool: toolKeyOf(listing.url),
     url: listing.url,
     method: listing.method,
     description: listing.description,

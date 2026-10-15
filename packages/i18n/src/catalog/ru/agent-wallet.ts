@@ -29,6 +29,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   noBlocked: "Нет",
   unblock: "Разблокировать",
   block: "Заблокировать продавца",
+  openTool: "Открыть",
   blocked: "{{name}} заблокирован",
   history: "Расходы",
   historyEmpty: "Пока пусто. Когда агент оплатит сервис, это появится здесь.",

@@ -259,17 +259,27 @@ export function AgentWalletScreen() {
                     purchase={item.purchase}
                     onPress={() => {
                       const key = item.purchase.provider.toLowerCase();
-                      if (settings.blockedSellers.some((seller) => seller.key === key)) return;
-                      // A tap on a purchase offers to block its seller (tightening: no prompt).
+                      const tool = item.purchase.tool;
+                      const blocked = settings.blockedSellers.some((seller) => seller.key === key);
+                      if (blocked && !tool) return;
+                      // A tap on a purchase opens the tool it came from, and offers to block its seller (tightening:
+                      // no prompt).
                       toast(item.purchase.provider, {
                         description: item.purchase.description ?? undefined,
-                        action: {
-                          label: t("agentWallet.block"),
-                          onClick: () =>
-                            void wallet
-                              .updateSettings({ blockedSellers: [...settings.blockedSellers, { key, name: item.purchase.provider }] })
-                              .then(() => notify.success(t("agentWallet.blocked", { name: item.purchase.provider }))),
-                        },
+                        ...(tool
+                          ? { action: { label: t("agentWallet.openTool"), onClick: () => router.push({ pathname: "/marketplace/[id]", params: { id: tool } }) } }
+                          : {}),
+                        ...(blocked
+                          ? {}
+                          : {
+                              [tool ? "cancel" : "action"]: {
+                                label: t("agentWallet.block"),
+                                onClick: () =>
+                                  void wallet
+                                    .updateSettings({ blockedSellers: [...settings.blockedSellers, { key, name: item.purchase.provider }] })
+                                    .then(() => notify.success(t("agentWallet.blocked", { name: item.purchase.provider }))),
+                              },
+                            }),
                       });
                     }}
                   />

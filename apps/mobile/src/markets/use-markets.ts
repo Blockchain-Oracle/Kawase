@@ -13,20 +13,46 @@ import { api } from "@/session/api";
 
 import { lastTrade, useLiveTrades } from "./live-trades";
 
+/**
+ * A read that fails is tried again quietly before the screen says anything (Abu 10-15: one failed read while the api
+ * restarted for a deploy left "Kawase is having trouble" up until the page was opened again).
+ */
+const FIRST_RETRY_MS = 1_000;
+const SECOND_RETRY_MS = 3_000;
+const RETRY_DELAYS_MS = [FIRST_RETRY_MS, SECOND_RETRY_MS];
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function readMarket(segment: MarketSegment, network: NetworkId): Promise<MarketListView> {
+  for (const delay of RETRY_DELAYS_MS) {
+    try {
+      return (await api.markets.list(segment, network)).market;
+    } catch {
+      await wait(delay);
+    }
+  }
+  return (await api.markets.list(segment, network)).market;
+}
+
 export function useMarket(segment: MarketSegment, network: NetworkId) {
   const [market, setMarket] = React.useState<MarketListView>();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
+  // Only the latest read lands: a slow (retried) read for the last segment never replaces the current one.
+  const ticket = React.useRef(0);
 
   const refresh = React.useCallback(async () => {
+    const mine = ++ticket.current;
     setLoading(true);
     try {
-      setMarket((await api.markets.list(segment, network)).market);
+      const read = await readMarket(segment, network);
+      if (mine !== ticket.current) return;
+      setMarket(read);
       setError(false);
     } catch {
-      setError(true);
+      if (mine === ticket.current) setError(true);
     } finally {
-      setLoading(false);
+      if (mine === ticket.current) setLoading(false);
     }
   }, [segment, network]);
 
@@ -43,7 +69,10 @@ export function useMarket(segment: MarketSegment, network: NetworkId) {
       api.markets
         .list(segment, network)
         .then((answer) => {
-          if (alive) setMarket(answer.market);
+          if (!alive) return;
+          setMarket(answer.market);
+          // A good read ends an earlier failure: the screen recovers by itself.
+          setError(false);
         })
         .catch(() => undefined);
     }, MARKET_POLL_MS);

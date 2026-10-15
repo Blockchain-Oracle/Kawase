@@ -3,9 +3,9 @@
 // per-call cap, the "Top up your agent wallet" card when it is short (R12: after the tap the same request carries on),
 // refusals that name the rule, and the agent wallet itself. A seller's answer shown here is labelled as the seller's.
 import { useRouter } from "expo-router";
-import { Bot, FlaskConical, ShieldAlert } from "lucide-react-native";
+import { Bot, ChevronRight, FlaskConical, ShieldAlert } from "lucide-react-native";
 import * as React from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { toast } from "sonner-native";
 
 import type {
@@ -40,9 +40,28 @@ function useEyebrow() {
   return (label: string, network: Network) => `${label} · ${network === "testnet" ? t("network.arcTestnet") : t("network.arc")}`;
 }
 
+/** A service the agent found or bought: its tool opens in the marketplace (every named tool leads to its page). */
 function ServiceLine({ service }: { service: ServiceListing }) {
   const { t } = useT();
+  const router = useRouter();
   const price = usePrice();
+  const tool = service.tool;
+  if (!tool) return <ServiceFace service={service} price={price(service.price)} />;
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={`${service.provider.name}, ${price(service.price)}`}
+      accessibilityHint={t("agentWallet.openTool")}
+      onPress={() => router.push({ pathname: "/marketplace/[id]", params: { id: tool } })}
+      className="active:opacity-70"
+    >
+      <ServiceFace service={service} price={price(service.price)} linked />
+    </Pressable>
+  );
+}
+
+function ServiceFace({ service, price, linked = false }: { service: ServiceListing; price: string; linked?: boolean }) {
+  const { t } = useT();
   return (
     <View className="flex-row items-center gap-3">
       <SellerMark name={service.provider.name} />
@@ -54,7 +73,8 @@ function ServiceLine({ service }: { service: ServiceListing }) {
           {`${service.provider.name} · ${t(`agentWallet.category.${service.provider.category}`)}`}
         </Text>
       </View>
-      <Amount className="text-foreground text-sm font-semibold">{price(service.price)}</Amount>
+      <Amount className="text-foreground text-sm font-semibold">{price}</Amount>
+      {linked ? <Icon as={ChevronRight} className="text-muted-foreground size-4 rtl:-scale-x-100" /> : null}
     </View>
   );
 }

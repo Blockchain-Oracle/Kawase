@@ -217,6 +217,9 @@ export function toolOf(listing: Listing): ToolRef {
   return { key: domain, slug: domainLabel(host), sellerSlug: domainLabel(host), name: listing.provider.name, party: own ? "first" : "third", sub: subdomain || path[0] || null };
 }
 
+/** The catalog key of the tool an endpoint belongs to (it depends on the URL alone); `/marketplace/<key>` opens it. */
+export const toolKeyOf = (url: string): string => toolOf({ url, provider: { name: "", website: null } } as Listing).key;
+
 const cheapest = (a: Listing, b: Listing) => (a.price < b.price ? -1 : a.price > b.price ? 1 : 0);
 
 /** Majority vote of the endpoints' categories (ties go to the first seen), unless the tool has an override. */

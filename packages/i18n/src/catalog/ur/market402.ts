@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "سروسز",
   servicesBody: "ایجنٹ والیٹ سے فی کال ادائیگی",
   servicesSeeAll: "تمام {{n}} دیکھیں",
+  entryBody: "{{n}} ادا شدہ ٹولز جو آپ کا ایجنٹ استعمال کر سکتا ہے",
+  entryBodyIdle: "ادا شدہ ڈیٹا اور ٹولز جو آپ کا ایجنٹ استعمال کر سکتا ہے",
 };

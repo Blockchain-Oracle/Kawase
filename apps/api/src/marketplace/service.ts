@@ -68,6 +68,7 @@ import {
   optionsHere,
   pay,
   probe,
+  toolKeyOf,
   withdrawIntent,
   type AgentSigner,
   type Call,
@@ -127,6 +128,7 @@ type AgentWallet = { id: string; walletId: string; address: Address };
 
 export function listingView(listing: Listing): ServiceListing {
   return {
+    tool: toolKeyOf(listing.url),
     url: listing.url,
     method: listing.method,
     description: listing.description,
@@ -140,6 +142,7 @@ export function listingView(listing: Listing): ServiceListing {
 
 const purchaseView = (row: PurchaseRow): PurchaseView => ({
   id: row.id,
+  tool: toolKeyOf(row.url),
   network: row.network,
   status: row.status,
   provider: row.providerName,

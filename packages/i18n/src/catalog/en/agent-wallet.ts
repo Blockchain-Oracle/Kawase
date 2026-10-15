@@ -27,6 +27,7 @@ export const agentWallet = {
   noBlocked: "None",
   unblock: "Unblock",
   block: "Block this seller",
+  openTool: "Open tool",
   blocked: "{{name}} is blocked",
   history: "Spending",
   historyEmpty: "Nothing yet. When your agent pays for a service, it shows here.",

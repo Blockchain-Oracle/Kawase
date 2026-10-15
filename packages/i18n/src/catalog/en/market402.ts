@@ -85,4 +85,6 @@ export const market402 = {
   servicesTitle: "Services",
   servicesBody: "Paid per call from your agent wallet",
   servicesSeeAll: "See all {{n}}",
+  entryBody: "{{n}} paid tools your agent can call",
+  entryBodyIdle: "Paid data and tools your agent can call",
 } as const;

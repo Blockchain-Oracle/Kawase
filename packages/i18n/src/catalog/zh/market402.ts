@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "服务",
   servicesBody: "从代理钱包按次付费",
   servicesSeeAll: "查看全部 {{n}} 个",
+  entryBody: "{{n}} 个你的代理可调用的付费工具",
+  entryBodyIdle: "你的代理可调用的付费数据和工具",
 };

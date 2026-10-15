@@ -33,6 +33,8 @@ export type PurchaseStatus = "needs_consent" | "approved" | "paying" | "paid" | 
 
 export type PurchaseView = {
   id: string;
+  /** The catalog tool it was bought from: `/marketplace/<tool>` opens it. Absent on older servers. */
+  tool?: string;
   network: NetworkId;
   status: PurchaseStatus;
   provider: string;
@@ -79,6 +81,8 @@ export type AgentWalletView = {
 };
 
 export type ServiceListing = {
+  /** The catalog tool it belongs to: `/marketplace/<tool>` opens it. Absent on older servers. */
+  tool?: string;
   url: string;
   method: string;
   description: string;

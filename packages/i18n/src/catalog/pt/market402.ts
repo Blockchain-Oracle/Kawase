@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "Serviços",
   servicesBody: "Pagos por chamada da carteira do agente",
   servicesSeeAll: "Ver todos os {{n}}",
+  entryBody: "{{n}} ferramentas pagas que seu agente pode usar",
+  entryBodyIdle: "Dados e ferramentas pagos que seu agente pode usar",
 };

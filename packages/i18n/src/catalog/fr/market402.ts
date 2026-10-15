@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "Services",
   servicesBody: "Payés à l'appel depuis le portefeuille de l'agent",
   servicesSeeAll: "Voir les {{n}}",
+  entryBody: "{{n}} outils payants que votre agent peut appeler",
+  entryBodyIdle: "Données et outils payants que votre agent peut appeler",
 };

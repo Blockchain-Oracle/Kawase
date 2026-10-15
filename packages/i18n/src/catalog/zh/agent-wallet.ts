@@ -28,6 +28,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   noBlocked: "无",
   unblock: "取消屏蔽",
   block: "屏蔽这个卖家",
+  openTool: "打开工具",
   blocked: "已屏蔽 {{name}}",
   history: "支出",
   historyEmpty: "还没有记录。代理为服务付费后，会显示在这里。",

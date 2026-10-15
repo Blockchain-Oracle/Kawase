@@ -63,9 +63,10 @@ to Privy or to our own api:
 - [x] Web owner's check: an emailed code again (our api + Resend), as the buttons say ("…with an email code").
 - [x] Sign out a device / everywhere: that device's Privy session (`sid`) is refused from then on.
 - [x] Device proof (M12) on the web too, signed by the Privy wallet.
-- [ ] Apple sign-in: Services ID xyz.kawase.app.signin (auth.privy.io + Privy callback), key N6866U8F33 made;
-      Privy form filled but for the signing key (Abu pastes it; Claude does not type private keys). iOS uses the
-      web flow on the same client id.
+- [x] Apple sign-in: Services ID xyz.kawase.app.signin (auth.privy.io + Privy callback), key N6866U8F33; Abu pasted
+      the signing key 10-15 and Privy reports apple_oauth on. Live web: "Continue with Apple" reaches Apple's own
+      page for "Kawase sign-in" with our client id and Privy's callback (Claude stops there; Abu signs in). iOS uses
+      the web flow on the same client id (APPLE_WEB_FLOW); [ ] check it on the simulator.
 
 UI and agent, from Abu's screenshots:
 - [x] Composer chips above the field do nothing on click (the blur closed the composer first).
@@ -83,10 +84,22 @@ UI and agent, from Abu's screenshots:
 - [x] Budget ring "$0 of $200" centred; token page Buy/Sell icon + label centred.
 - [x] Apple Pay / Google Pay marks readable on dark plates.
 - [x] Display currency with flags (circle-flags 2.8.0, MIT, in packages/identity with provenance).
-- [ ] Voice picker plays a sample on tap: five of the six voices exist only in GPT-Live (the speech API knows
-      marin only), so the preview should be a short live hello in that voice through the voice mode itself.
-- [ ] Agent wallet page past mediocre.
+- [x] Voice picker: a speaker on each voice chooses it and opens voice mode, where Kawase says hello in it live
+      (session `greet`; five of the six voices exist only in GPT-Live, so no recordings). Found on the way: a waiting
+      session kept the old voice for 5 min after a change (now dropped on save), and on a phone voice opened under
+      pushed pages (Chat, Settings) because the overlay lived in the tabs; it now sits above every page. fc1a4c13.
+      [ ] check live after the web publish.
+- [x] Agent wallet page past mediocre (bd64bf5a: hero balance, today's spend against the daily budget, Gateway and
+      on-hand cells, two columns on desktop). [ ] check signed in (dev mode).
 - [ ] Test on mainnet production, not only the local testnet api.
+- [ ] Markets on testnet shows "Kawase is having trouble / Couldn't load markets" (Abu 10-15, a guest on testnet;
+      mainnet fine). The api answers every /markets read (testnet session, mainnet rows) with 200 and Claude could
+      not reproduce it live; the screen showed its error after one failed read (likely an api restart during a
+      deploy) and nothing retried until a remount. Fix: retry quietly before the error, a good poll clears it.
+- [ ] Discoverability (skill run 10-15): on a phone the Marketplace is three taps deep under a chip called
+      "Services" (Markets → Services → See all) or behind Settings → Agent wallet's empty history. Fix: a
+      Marketplace entry with real logos on Markets, a Marketplace row in Settings beside Agent wallet, and every
+      tool named in a chat card or in the agent wallet's history opens that tool (the api now sends `tool`).
 - [ ] Public TestFlight: an external group with a public link (Beta App Review once per version; JS ships by EAS
       Update without review). Lower priority than working features and the web (Abu, 10-15).
 

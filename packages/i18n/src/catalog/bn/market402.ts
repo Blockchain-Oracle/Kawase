@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "সেবা",
   servicesBody: "এজেন্ট ওয়ালেট থেকে প্রতি কলে পেমেন্ট",
   servicesSeeAll: "সব {{n}}টি দেখুন",
+  entryBody: "{{n}}টি পেইড টুল যা আপনার এজেন্ট ব্যবহার করতে পারে",
+  entryBodyIdle: "পেইড ডেটা ও টুল যা আপনার এজেন্ট ব্যবহার করতে পারে",
 };

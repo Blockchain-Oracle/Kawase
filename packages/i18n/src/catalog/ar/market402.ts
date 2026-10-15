@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "الخدمات",
   servicesBody: "تُدفع لكل استدعاء من محفظة الوكيل",
   servicesSeeAll: "عرض الكل ({{n}})",
+  entryBody: "{{n}} أداة مدفوعة يمكن لوكيلك استخدامها",
+  entryBodyIdle: "بيانات وأدوات مدفوعة يمكن لوكيلك استخدامها",
 };

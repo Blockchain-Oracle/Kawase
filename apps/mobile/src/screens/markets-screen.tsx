@@ -51,6 +51,7 @@ import { LeverageBoard } from "@/markets/leverage-board";
 import { LongShortSegment } from "@/markets/long-short-segment";
 import { useRecentSearches } from "@/markets/recent-searches";
 import { WatchlistSegment } from "@/markets/watchlist-segment";
+import { MarketplaceEntry } from "@/marketplace/marketplace-entry";
 import { ServicesSection } from "@/marketplace/services-section";
 
 /** The Markets segments, the person's Watchlist first (the stars from token pages). */
@@ -236,6 +237,9 @@ export function MarketsScreen() {
                 ) : null}
               </View>
             ) : null}
+
+            {/* The marketplace's front door: on a phone the rail's Marketplace row isn't there (discoverability 10-15). */}
+            <MarketplaceEntry />
 
             {/* Long or short is its own surface, above the tokens: live cards per market, not a segment among memes. */}
             <LeverageBoard />

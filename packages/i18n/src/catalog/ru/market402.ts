@@ -86,4 +86,6 @@ export const market402: Catalog["market402"] = {
   servicesTitle: "Сервисы",
   servicesBody: "Оплата за вызов из кошелька агента",
   servicesSeeAll: "Все {{n}}",
+  entryBody: "{{n}} платных инструментов для вашего агента",
+  entryBodyIdle: "Платные данные и инструменты для вашего агента",
 };
