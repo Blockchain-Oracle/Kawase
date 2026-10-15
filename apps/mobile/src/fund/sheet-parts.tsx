@@ -49,7 +49,7 @@ export function MarkStack({ entities, size = SIZE.markToken }: { entities: reado
   return (
     <View style={[styles.stack, { height: size, width: size + (shown.length - 1) * size * (1 - STACK_OVERLAP) }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {shown.map((entity, index) => (
-        <View key={entity} style={[styles.coin, { left: index * size * (1 - STACK_OVERLAP), borderColor: color.raised2, borderRadius: RADIUS.pill }]}>
+        <View key={entity} style={[styles.coin, { left: index * size * (1 - STACK_OVERLAP), borderColor: color.raised2, backgroundColor: color.paper, borderRadius: RADIUS.pill }]}>
           <Mark entity={entity} size={size - STACK_RING * SIDES} />
         </View>
       ))}

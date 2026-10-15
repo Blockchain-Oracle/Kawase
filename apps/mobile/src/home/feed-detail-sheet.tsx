@@ -2,14 +2,15 @@
 // line, what the person asked in their own words, the venues Kawase compared (the race exactly as it ran, read from
 // the conversation, never a new quote), and the receipt — outcome, amount, venue, time, the transaction on the
 // explorer and why. Then where to go next: the intent's own screen ("Open swap"), the conversation, or Why.
-// Loading is the detail's own skeleton; a row that could not be read says so with Retry and what still works.
+// The sheet opens with what the row already knows; only a run that raced venues shimmers, in the race's own shape,
+// while its race is read. A row that could not be read says so with Retry and what still works.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 
 import type { AgentFeedDetail, AgentFeedItem } from "@kawase/api-client";
 
-import { Button, diagnose, ErrorState, KeyValue, LoadingState, Panel, SectionLabel, SPACE, TYPE, useHeldLoading, useTheme, type Diagnosis } from "@/components/kit";
+import { Button, diagnose, ErrorState, KeyValue, Panel, SectionLabel, SIZE, Skeleton, SPACE, TYPE, useHeldLoading, useTheme, type Diagnosis } from "@/components/kit";
 import { Sheet } from "@/components/sheet/Sheet";
 import { SheetHeading } from "@/components/sheet/SheetRoute";
 import { LIST_DETENTS } from "@/components/sheet/constants";
@@ -23,6 +24,14 @@ import { useFeedCopy } from "./feed-copy";
 
 const HASH_HEAD = 10;
 const HASH_TAIL = 6;
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+const ADDRESS_HEAD = 6;
+const ADDRESS_TAIL = 4;
+const SKELETON_COUNT = 3;
+const SKELETON_ROWS = Array.from({ length: SKELETON_COUNT }, (_, row) => row);
+const SKELETON_AMOUNT = 64;
+/** The kinds whose run raced venues first (the race is read from the conversation that made it). */
+const RACED: ReadonlySet<AgentFeedItem["kind"]> = new Set(["swap", "bridge", "crosschain", "earn", "lend"]);
 
 export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem; onClose: () => void; onAsk?: ((prompt: string) => void) | undefined }) {
   const { t } = useT();
@@ -52,6 +61,8 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
   }, [read]);
 
   const row = detail?.item ?? item;
+  const expectsRace = Boolean(item.threadId) && RACED.has(item.kind) && item.outcome !== "scheduled" && item.group !== "found";
+  const where = row.counterparty && ADDRESS.test(row.counterparty) ? `${row.counterparty.slice(0, ADDRESS_HEAD)}…${row.counterparty.slice(-ADDRESS_TAIL)}` : row.counterparty;
   const go = (target: OpenTarget) => {
     onClose();
     router.push(target.href);
@@ -77,9 +88,22 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
           </View>
         ) : null}
 
-        {held ? (
-          <LoadingState shape="routes" />
-        ) : error ? (
+        {/* Only a run that raced venues has a race to read, so only it shows the race's own shape while it loads;
+            a watched automation or a received payment opens with what it already knows. */}
+        {held && expectsRace ? (
+          <View style={styles.block}>
+            <Skeleton width="40%" height={SPACE.md} />
+            {SKELETON_ROWS.map((row) => (
+              <View key={row} style={styles.skeletonRow}>
+                <Skeleton width={SIZE.markToken} height={SIZE.markToken} radius={SIZE.markToken} />
+                <View style={styles.grow}>
+                  <Skeleton width="55%" height={SPACE.md} />
+                </View>
+                <Skeleton width={SKELETON_AMOUNT} height={SPACE.md} />
+              </View>
+            ))}
+          </View>
+        ) : error && expectsRace ? (
           <ErrorState diagnosis={error} retry={() => void read()} stillWorks={t("feed.detail.stillWorks")} variant="strip" />
         ) : detail?.race ? (
           <View style={styles.block}>
@@ -93,7 +117,7 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
             <KeyValue label={t("feed.detail.outcome")} value={copy.outcome(row)} />
             {amount ? <KeyValue label={t("feed.detail.amount")} value={amount} /> : null}
             {venue ? <KeyValue label={t("feed.detail.venue")} value={venue} /> : null}
-            {row.counterparty ? <KeyValue label={t("feed.detail.where")} value={row.counterparty} /> : null}
+            {where ? <KeyValue label={t("feed.detail.where")} value={where} /> : null}
             <KeyValue label={row.outcome === "scheduled" ? t("feed.detail.next") : t("feed.detail.when")} value={when} />
             {row.txHash ? <KeyValue label={t("feed.detail.tx")} value={`${row.txHash.slice(0, HASH_HEAD)}…${row.txHash.slice(-HASH_TAIL)}`} /> : null}
           </View>
@@ -131,4 +155,6 @@ const styles = StyleSheet.create({
   block: { gap: SPACE.sm },
   receipt: { gap: SPACE.sm },
   actions: { gap: SPACE.sm },
+  skeletonRow: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  grow: { flex: 1 },
 });

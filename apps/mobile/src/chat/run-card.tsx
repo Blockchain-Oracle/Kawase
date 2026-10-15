@@ -21,8 +21,14 @@ import Animated, { FadeIn, LinearTransition, useReducedMotion } from "react-nati
 
 import type { ProposeSendOutput, ProposeSwapOutput, RaceRoutesOutput, SendIntent, SwapIntent, TokenWarning } from "@kawase/api-client";
 
-import { Button, DisclosureRow, Icon, ShimmerText, SIZE, Skeleton, SlideToConfirm, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
-import { CircleCheck, TriangleAlert } from "@/components/kit/icons";
+import { getVenueIdentity, venueKey } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
+
+import { Button, DisclosureRow, Icon, LiveDot, ShimmerText, SIZE, Skeleton, SlideToConfirm, SPACE, TIMING, TYPE, useTheme } from "@/components/kit";
+import { ExternalLink } from "lucide-react-native";
+
+import { ArrowUpRight, CircleCheck, TriangleAlert } from "@/components/kit/icons";
+import { MarkStack } from "@/fund/sheet-parts";
 import { TxFailureCard, TxMorph, TxSteps, type TxState } from "@/components/tx";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
@@ -30,7 +36,7 @@ import { SmartFix } from "@/needs-you/smart-fix";
 import { recipientName, useMoney, usePolicyText } from "@/send/copy";
 import { isFinished as isSendFinished, isMoving as isSendMoving, isOpen as isSendOpen, useSend } from "@/send/use-send";
 import { useSwapPolicyText, useSwapPrompt } from "@/swap/copy";
-import { useSwapMoney } from "@/swap/swap-tokens";
+import { SwapTokenMark, useSwapMoney } from "@/swap/swap-tokens";
 import { isSwapMoving, isSwapOpen, useSwap } from "@/swap/use-swap";
 
 import { useOpenIn } from "./open-in";
@@ -48,6 +54,9 @@ const STEP_TOOLS = new Set([...SWAP_STEPS, ...SEND_STEPS, "propose_bridge", "bri
 
 export type RunPieces = { race: ToolPart | null; step: ToolPart | null; text: string };
 export type RunPhase = "understand" | "race" | "approve" | "blocked" | "steps" | "receipt" | "failed" | "answer";
+
+/** The light plate around a small mark (its margin each side, both sides). */
+const PLATE_PAD = 6;
 
 const toolOf = (part: ToolPart) => part.type.replace(/^tool-/, "");
 
@@ -179,17 +188,25 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
   const draft = intent.draft;
   const paid = draft ? money(draft, "in", draft.amountIn, intent.network) : "";
   const got = draft ? money(draft, "out", intent.received ?? draft.estimatedOut, intent.network) : "";
-  const receipt = (
+  const venueSlug = draft?.venue ?? null;
+  const venueEntity = venueSlug && getVenueIdentity(venueSlug) ? venueKey(venueSlug) : null;
+  const receipt = draft ? (
     <View style={styles.receipt}>
-      <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.receipt")}</Text>
-      <Text style={[TYPE.sheetTitle, { color: color.ink }]}>{t("feed.run.swapped", { paid, got })}</Text>
-      {draft ? <Text style={[TYPE.caption, { color: color.text2 }]}>{t("feed.run.via", { venue: draft.provider })}</Text> : null}
-      <View style={styles.row}>
-        {intent.tx ? <Button size="sm" block={false} variant="secondary" label={t("feed.run.explorer")} onPress={() => void Linking.openURL(intent.tx!.explorerUrl)} /> : null}
-        <Button size="sm" block={false} variant="ghost" label={open.intent("swap", intent.id).label} onPress={() => router.push(open.intent("swap", intent.id).href)} />
+      <View style={[styles.ledger, { backgroundColor: color.raised2 }]}>
+        <LedgerLine label={t("feed.run.paid")} mark={<SwapTokenMark draft={draft} side="in" network={intent.network} size={SIZE.markChip} />} value={paid} />
+        <View style={[styles.rule, { backgroundColor: color.hairline }]} />
+        <LedgerLine label={t("feed.run.got")} mark={<SwapTokenMark draft={draft} side="out" network={intent.network} size={SIZE.markChip} />} value={got} tone={color.up} />
       </View>
+      <View style={styles.via}>
+        {venueEntity ? <PlatedMark entity={venueEntity} size={SIZE.iconSm} /> : null}
+        <Text style={[TYPE.caption, { color: color.text2 }]}>{t("feed.run.via", { venue: draft.provider })}</Text>
+      </View>
+      <ReceiptActions
+        explorerUrl={intent.tx?.explorerUrl ?? null}
+        open={{ label: open.intent("swap", intent.id).label, onPress: () => router.push(open.intent("swap", intent.id).href) }}
+      />
     </View>
-  );
+  ) : null;
 
   if (intent.blocking && isSwapOpen(intent))
     return <SmartFix blocking={intent.blocking} reason={policyText(intent.blocking, intent.network)} network={intent.network} onFixed={() => void controller.revise({})} />;
@@ -238,9 +255,12 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
   if (state.kind === "failed") return <TxFailureCard state={state} explorerUrl={intent.tx?.explorerUrl ?? null} />;
   const receipt = (
     <View style={styles.receipt}>
-      <Text style={[TYPE.caption, { color: color.text3 }]}>{t("feed.run.receipt")}</Text>
-      <Text style={[TYPE.sheetTitle, { color: color.ink }]}>{t("feed.run.sent", { amount, name })}</Text>
-      {intent.tx ? <Button size="sm" block={false} variant="secondary" label={t("feed.run.explorer")} onPress={() => void Linking.openURL(intent.tx!.explorerUrl)} /> : null}
+      <View style={[styles.ledger, { backgroundColor: color.raised2 }]}>
+        <LedgerLine label={t("feed.run.sentLabel")} mark={null} value={amount} />
+        <View style={[styles.rule, { backgroundColor: color.hairline }]} />
+        <LedgerLine label={t("feed.run.toLabel")} mark={null} value={name} />
+      </View>
+      <ReceiptActions explorerUrl={intent.tx?.explorerUrl ?? null} />
     </View>
   );
   return (
@@ -256,7 +276,10 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
   );
 }
 
-/** The phase verb at the top of the card, shimmering while it is live. */
+/**
+ * The phase at the top of the card: the live verb shimmering while it works; settled, a chip with its mark (a check on
+ * Done, an alert on a failure or a blocker), so "done" reads at a glance and never by colour alone.
+ */
 function PhaseLine({ phase, racing }: { phase: RunPhase; racing: { answered: number; total: number } | null }) {
   const { t } = useT();
   const { color } = useTheme();
@@ -271,10 +294,72 @@ function PhaseLine({ phase, racing }: { phase: RunPhase; racing: { answered: num
     answer: t("feed.run.phaseAnswer"),
   };
   const active = phase === "understand" || phase === "race" || phase === "steps";
-  return active ? (
-    <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{words[phase]}</ShimmerText>
-  ) : (
-    <Text style={[TYPE.caption, { color: phase === "failed" ? color.destructive : phase === "blocked" ? color.warn : color.text3 }]}>{words[phase]}</Text>
+  if (active)
+    return (
+      <View style={styles.phase}>
+        <LiveDot />
+        <ShimmerText style={[TYPE.caption, { color: color.text3 }]}>{words[phase]}</ShimmerText>
+      </View>
+    );
+  const tone =
+    phase === "receipt"
+      ? { wash: color.upWash, ink: color.up, icon: CircleCheck }
+      : phase === "failed"
+        ? { wash: color.destructiveWash, ink: color.destructive, icon: TriangleAlert }
+        : phase === "blocked"
+          ? { wash: color.warnWash, ink: color.warn, icon: TriangleAlert }
+          : phase === "approve"
+            ? { wash: color.primaryWash, ink: color.primary, icon: null }
+            : { wash: color.raised2, ink: color.text2, icon: null };
+  return (
+    <View style={[styles.chip, { backgroundColor: tone.wash }]}>
+      {tone.icon ? <Icon icon={tone.icon} size={SIZE.iconSm} tint={tone.ink} /> : <View style={[styles.dot, { backgroundColor: tone.ink }]} />}
+      <Text style={[TYPE.chipLabel, { color: tone.ink }]}>{words[phase]}</Text>
+    </View>
+  );
+}
+
+/** A small mark on a light plate: venue and chain marks drawn light-on-dark stay visible on any surface. */
+function PlatedMark({ entity, size }: { entity: string; size: number }) {
+  const { color } = useTheme();
+  return (
+    <View style={[styles.plate, { width: size + PLATE_PAD, height: size + PLATE_PAD, borderRadius: size, backgroundColor: color.paper, borderColor: color.hairline }]}>
+      <Mark entity={entity} size={size} />
+    </View>
+  );
+}
+
+/** One line of a receipt's ledger: what it was, the token's mark and the amount. */
+function LedgerLine({ label, mark, value, tone }: { label: string; mark: React.ReactNode; value: string; tone?: string | undefined }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.ledgerLine}>
+      <Text style={[TYPE.rowDetail, styles.grow, { color: color.text2 }]}>{label}</Text>
+      {mark}
+      <Text style={[TYPE.rowAmount, { color: tone ?? color.ink }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/** "View on ArcScan" (it opens the explorer, so it says so with its icon), and the way back to the intent's screen. */
+function ReceiptActions({ explorerUrl, open }: { explorerUrl: string | null; open?: { label: string; onPress: () => void } | undefined }) {
+  const { t } = useT();
+  return (
+    <View style={styles.row}>
+      {explorerUrl ? (
+        <Button
+          size="sm"
+          block={false}
+          variant="secondary"
+          leading={<Icon icon={ExternalLink} size={SIZE.iconSm} />}
+          label={t("feed.run.viewOn", { explorer: "ArcScan" })}
+          onPress={() => void Linking.openURL(explorerUrl)}
+        />
+      ) : null}
+      {open ? <Button size="sm" block={false} variant="ghost" leading={<Icon icon={ArrowUpRight} size={SIZE.iconSm} />} label={open.label} onPress={open.onPress} /> : null}
+    </View>
   );
 }
 
@@ -314,6 +399,9 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
   }, [phase, onPhase, live, step?.toolCallId]);
   const answered = raced ? raced.race.rows.filter((row) => row.status !== "checking").length : 0;
   const best = raced?.race.rows.find((row) => row.venue === raced.race.best);
+  // A swap's two tokens wear their marks beside the hero line.
+  const swapOutput = ownStep && stepTool && SWAP_STEPS.has(stepTool) ? (step!.output as ProposeSwapOutput) : null;
+  const swapDraft = swapOutput?.intent.draft ? { draft: swapOutput.intent.draft, network: swapOutput.intent.network } : null;
   // The race folds into one line once the step below it is drawn (detail behind one disclosure).
   const folded = Boolean(step) && !raceLive && Boolean(raced);
 
@@ -321,9 +409,19 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
     <Animated.View layout={reduced ? undefined : LinearTransition.duration(TIMING.selection)} style={[styles.card, { backgroundColor: color.card }]}>
       <PhaseLine phase={phase} racing={raced ? { answered, total: raced.race.rows.length } : null} />
       {hero ? (
-        <Text style={[TYPE.sheetTitle, { color: color.ink }]} accessibilityRole="header">
-          {hero}
-        </Text>
+        <View style={styles.hero}>
+          {swapDraft ? (
+            <View style={styles.pair}>
+              <SwapTokenMark draft={swapDraft.draft} side="in" network={swapDraft.network} size={SIZE.markToken} />
+              <View style={[styles.pairOut, { borderColor: color.card }]}>
+                <SwapTokenMark draft={swapDraft.draft} side="out" network={swapDraft.network} size={SIZE.markToken} />
+              </View>
+            </View>
+          ) : null}
+          <Text style={[TYPE.sheetTitle, styles.grow, { color: color.ink }]} accessibilityRole="header">
+            {hero}
+          </Text>
+        </View>
       ) : (
         <Skeleton width="70%" height={TYPE.sheetTitle.lineHeight ?? SPACE.xl} />
       )}
@@ -339,7 +437,12 @@ export function RunCard({ pieces, asked, live, streaming, onToolOutput, onApprov
       ) : null}
       {raced ? (
         folded ? (
-          <DisclosureRow title={t("feed.run.raceFolded", { total: raced.race.rows.length })} value={best ? best.label : t("feed.run.raceNoBest")}>
+          <DisclosureRow
+            title={t("feed.run.raceFolded", { total: raced.race.rows.length })}
+            value={best ? best.label : t("feed.run.raceNoBest")}
+            leading={<MarkStack entities={raced.race.rows.map((row) => row.mark)} size={SIZE.markChip} />}
+            valueLeading={best ? <PlatedMark entity={best.mark} size={SIZE.iconSm} /> : null}
+          >
             <RaceRows race={raced.race} live={false} />
           </DisclosureRow>
         ) : (
@@ -371,7 +474,18 @@ const styles = StyleSheet.create({
   grow: { flex: 1, gap: SPACE.xxs },
   row: { flexDirection: "row", gap: SPACE.sm, flexWrap: "wrap" },
   step: { gap: SPACE.md },
-  receipt: { gap: SPACE.xs },
+  receipt: { gap: SPACE.md },
+  ledger: { borderRadius: SPACE.lg, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
+  ledgerLine: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: SIZE.touch },
+  rule: { height: StyleSheet.hairlineWidth },
+  via: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  hero: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
+  pair: { flexDirection: "row", alignItems: "center" },
+  pairOut: { marginStart: -SPACE.sm, borderWidth: 2, borderRadius: SIZE.markToken },
+  phase: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
+  plate: { alignItems: "center", justifyContent: "center", borderWidth: StyleSheet.hairlineWidth },
+  chip: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, alignSelf: "flex-start", borderRadius: SIZE.chipHeight, paddingHorizontal: SPACE.md, height: SIZE.chipHeight - SPACE.xs },
+  dot: { width: SPACE.sm, height: SPACE.sm, borderRadius: SPACE.sm },
   warning: { flexDirection: "row", gap: SPACE.sm, borderRadius: SPACE.lg, padding: SPACE.md, alignItems: "flex-start" },
   inside: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, alignSelf: "flex-start", borderRadius: SPACE.lg, paddingHorizontal: SPACE.md, paddingVertical: SPACE.xs },
   skeletonRows: { gap: SPACE.sm },

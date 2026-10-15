@@ -20,7 +20,11 @@ import { toast } from "sonner-native";
 
 import { MOTION, SPRING } from "@kawase/config";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
+import { tokens } from "@kawase/ui-tokens";
 import { Composer, type ComposerAction } from "@kawase/ui-native/components/composer";
+
+import { ELEVATION } from "@/components/kit";
+import { Orb } from "@/components/orb";
 import { StateLabel } from "@kawase/ui-native/components/state-label";
 import { Button } from "@kawase/ui-native/components/ui/button";
 import { Icon } from "@kawase/ui-native/components/ui/icon";
@@ -45,6 +49,10 @@ import { RunCard, runPartIds, runPiecesOf } from "./run-card";
 import { ToolCard, type ToolPart } from "./tool-cards";
 import { useAgentChat } from "./use-agent-chat";
 
+/** Home's composer sizes: the 為替 mark and the live mini orb. */
+const COMPOSER_MARK = 28;
+const COMPOSER_ORB = 30;
+const COMPOSER_ORB_LEVEL = 0.18;
 const EDGE_INSET = 12;
 const AVATAR_SIZE = 22;
 /** How far from the end still counts as "reading the latest" (about two lines). */
@@ -300,6 +308,14 @@ export function Conversation({ threadId, initialMessages, initialPrompt, onActiv
               onSend: colors["primary-foreground"],
               focus: colors["muted-foreground"],
             }}
+            // Home's composer, here too: Kawase's mark, the live mini orb for voice, a raised capsule with no hairline.
+            leading={<KawaseMark size={COMPOSER_MARK} />}
+            talkIcon={
+              <View style={{ width: COMPOSER_ORB, height: COMPOSER_ORB, borderRadius: COMPOSER_ORB, overflow: "hidden" }}>
+                <Orb colors={tokens.orb.mainnet} level={COMPOSER_ORB_LEVEL} paused={busy} className="size-full" />
+              </View>
+            }
+            raised={ELEVATION.dock}
             labels={{
               placeholder: t("chatHome.placeholder"),
               talk: t("home.dockVoice"),

@@ -11,7 +11,21 @@ import { SIZE, SPACE, TYPE, useTheme } from "./theme";
 
 const ROW = 56;
 
-export function DisclosureRow({ title, value, children }: { title: string; value: string; children: ReactNode }) {
+export function DisclosureRow({
+  title,
+  value,
+  children,
+  leading,
+  valueLeading,
+}: {
+  title: string;
+  value: string;
+  children: ReactNode;
+  /** Before the title (a stack of marks). */
+  leading?: ReactNode;
+  /** Before the value (the chosen one's mark). */
+  valueLeading?: ReactNode;
+}) {
   const { color } = useTheme();
   const [open, setOpen] = useState(false);
   return (
@@ -26,8 +40,16 @@ export function DisclosureRow({ title, value, children }: { title: string; value
         accessibilityLabel={`${title}, ${value}`}
         style={styles.row}
       >
-        <Text style={[TYPE.row, styles.title, { color: color.ink }]}>{title}</Text>
-        <Text style={[TYPE.rowAmount, { color: color.ink }]}>{value}</Text>
+        {leading}
+        <Text numberOfLines={1} style={[TYPE.row, styles.title, { color: color.ink }]}>
+          {title}
+        </Text>
+        <View style={styles.valueWrap}>
+          {valueLeading}
+          <Text numberOfLines={1} style={[TYPE.rowAmount, styles.value, { color: color.ink }]}>
+            {value}
+          </Text>
+        </View>
         <View style={open ? styles.flip : undefined}>
           <Icon icon={ChevronDown} size={SIZE.iconSm} tint={color.inkMuted} />
         </View>
@@ -43,7 +65,9 @@ export function DisclosureRow({ title, value, children }: { title: string; value
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: ROW },
-  title: { flex: 1 },
+  title: { flexShrink: 0, maxWidth: "60%" },
+  valueWrap: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: SPACE.xs },
+  value: { flexShrink: 1 },
   flip: { transform: [{ rotate: "180deg" }] },
   body: { gap: SPACE.sm, paddingBottom: SPACE.md },
 });

@@ -5,7 +5,7 @@
 // action chips ride above while it is focused and empty and insert a template.
 import { ArrowUp, Mic, Square, type LucideIcon } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, TextInput, View, type StyleProp, type ViewStyle } from "react-native";
 import Animated, {
   FadeInDown,
   FadeOutDown,
@@ -62,6 +62,12 @@ type ComposerProps = {
   actions?: ComposerAction[];
   /** Theme colours as hex (the caller passes the active theme's tokens). */
   colors?: { glow: string; border: string; card: string; send: string; onSend: string; focus?: string };
+  /** Before the field (Kawase's mark, as on Home's composer). */
+  leading?: React.ReactNode;
+  /** Drawn in place of the mic glyph on the talk button (Home's live mini orb). */
+  talkIcon?: React.ReactNode;
+  /** A raised capsule with no hairline (Home's shadow), passed as a style so the caller owns the elevation token. */
+  raised?: StyleProp<ViewStyle>;
   /** Light haptic, sound, etc. on send; the caller owns feedback. */
   onSent?: () => void;
   className?: string;
@@ -86,6 +92,9 @@ function Composer({
   onStop,
   actions,
   colors = DEFAULT_COLORS,
+  leading,
+  talkIcon,
+  raised,
   onSent,
   className,
 }: ComposerProps) {
@@ -184,10 +193,12 @@ function Composer({
               flexShrink: 1,
               backgroundColor: colors.card,
             },
+            raised ? [{ borderWidth: 0 }, raised] : null,
           ]}
-          className="overflow-hidden rounded-[28px] border"
+          className={cn("rounded-[28px] border", raised ? null : "overflow-hidden")}
         >
-          <Pressable onPressIn={touch} accessible={false} className="flex-row items-end gap-1 py-1 ps-4 pe-1.5">
+          <Pressable onPressIn={touch} accessible={false} className={cn("flex-row items-end gap-1 py-1 pe-1.5", leading ? "ps-2.5" : "ps-4")}>
+            {leading ? <View className="h-12 items-center justify-center pe-1">{leading}</View> : null}
             <Animated.View style={fieldStyle} className="flex-1 justify-center">
               <TextInput
                 ref={input}
@@ -218,7 +229,7 @@ function Composer({
                     hitSlop={4}
                     className="size-10 items-center justify-center rounded-full active:opacity-70"
                   >
-                    <Icon as={Mic} className="text-muted-foreground size-5" />
+                    {talkIcon ?? <Icon as={Mic} className="text-muted-foreground size-5" />}
                   </Pressable>
                 </Animated.View>
               ) : null}

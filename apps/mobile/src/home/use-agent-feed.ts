@@ -2,6 +2,9 @@
 // (one cache per network, so switching tabs shows the last read at once and never relabels the other network's rows).
 // A failed refresh keeps the last good feed and marks it stale with its time; it is read again when the screen comes
 // back into view, every few seconds while a run is live or a row is still in flight, and quietly otherwise.
+// A cold open (the app started, the page reloaded) shows the last feed this device read for this account and network
+// at once, from AsyncStorage, while the fresh read (1–4 s: the explorer and the suggestions) lands over it.
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "expo-router";
 import * as React from "react";
 
@@ -42,6 +45,27 @@ export type AgentFeedState = {
 
 const inflight = new Map<Network, Promise<AgentFeed>>();
 
+const storageKey = (userId: string, network: Network) => `kawase.feed.${userId}.${network}`;
+const restored = new Set<string>();
+
+/** The last feed this device saw, once per account and network, unless a fresh one is already here. */
+async function restore(userId: string, network: Network) {
+  const key = storageKey(userId, network);
+  if (restored.has(key)) return;
+  restored.add(key);
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw || cache.has(network)) return;
+    const saved = JSON.parse(raw) as Entry;
+    if (saved?.feed?.groups) {
+      cache.set(network, saved);
+      publish();
+    }
+  } catch {
+    // Nothing saved, or unreadable: the read shows its skeleton as before.
+  }
+}
+
 export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   const { status, user } = useSession();
   const network: Network = user?.activeNetwork ?? "testnet";
@@ -49,6 +73,11 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
   const [, rerender] = React.useReducer((n: number) => n + 1, 0);
   const [error, setError] = React.useState<Diagnosis | null>(null);
   const [reading, setReading] = React.useState(false);
+
+  const userId = account ? user?.id : undefined;
+  React.useEffect(() => {
+    if (userId) void restore(userId, network);
+  }, [userId, network]);
 
   React.useEffect(() => {
     listeners.add(rerender);
@@ -69,7 +98,9 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
         inflight.set(network, read);
       }
       const feed = await read;
-      cache.set(network, { feed, at: Date.now() });
+      const entry = { feed, at: Date.now() };
+      cache.set(network, entry);
+      if (user?.id) void AsyncStorage.setItem(storageKey(user.id, network), JSON.stringify(entry)).catch(() => undefined);
       setError(null);
       publish();
     } catch (failure) {
@@ -77,7 +108,7 @@ export function useAgentFeed(options: { live?: boolean } = {}): AgentFeedState {
     } finally {
       setReading(false);
     }
-  }, [account, network]);
+  }, [account, network, user?.id]);
 
   useFocusEffect(
     React.useCallback(() => {
