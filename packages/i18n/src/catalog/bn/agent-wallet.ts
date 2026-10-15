@@ -11,7 +11,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   topUpTitle: "আপনার এজেন্ট ওয়ালেট টপ-আপ করুন",
   topUpBody: "আপনার Kawase ওয়ালেট থেকে এজেন্ট ওয়ালেটে USDC পাঠায়, দিনে সর্বোচ্চ {{perDay}}।",
   topUpFirstBody:
-    "প্রথম টপ-আপে একবার Face ID লাগে: এরপর Kawase শুধু আপনার এজেন্ট ওয়ালেটেই USDC পাঠাতে পারবে, দৈনিক সীমার মধ্যে।",
+    "প্রথম টপ-আপে একবার আপনার নিশ্চিতকরণ লাগে: এরপর Kawase শুধু আপনার এজেন্ট ওয়ালেটেই USDC পাঠাতে পারবে, দৈনিক সীমার মধ্যে।",
   topUpPrompt: "এজেন্ট ওয়ালেট টপ-আপের অনুমতি দিন",
   toppedUp: "{{amount}} টপ-আপ হয়েছে",
   topUpFailed: "টপ-আপ হয়নি। কিছুই সরেনি।",
@@ -70,7 +70,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   cardTopUp: "অথবা সরাসরি এতে USDC কিনুন",
   expressPay: "Pay",
   orCard: "অথবা কার্ডে পেমেন্ট করুন",
-  cardButton: "Apple Pay বা কার্ড দিয়ে সরাসরি এতে কিনুন",
+  cardButton: "Apple Pay বা কার্ড দিয়ে কিনুন",
   deliversAgent: "USDC সরাসরি {{network}}-এ আপনার এজেন্ট ওয়ালেটে যায়।",
   noRefund: "রিফান্ড নেই: {{seller}} পেমেন্টটি রেখে দিয়েছে। পেইড কল এখনো রিফান্ড করা যায় না।",
   notCharged: "টাকা কাটা হয়নি: পেমেন্টটি কখনো সম্পন্ন হয়নি।",

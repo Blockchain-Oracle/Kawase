@@ -11,7 +11,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   topUpTitle: "اپنے ایجنٹ والیٹ کو ٹاپ اپ کریں",
   topUpBody: "آپ کے Kawase والیٹ سے USDC ایجنٹ والیٹ میں منتقل کرتا ہے، روزانہ زیادہ سے زیادہ {{perDay}}۔",
   topUpFirstBody:
-    "پہلا ٹاپ اپ ایک بار Face ID مانگتا ہے: اس کے بعد Kawase صرف آپ کے ایجنٹ والیٹ میں USDC منتقل کر سکتا ہے، روزانہ کی حد کے اندر۔",
+    "پہلا ٹاپ اپ ایک بار آپ کی تصدیق مانگتا ہے: اس کے بعد Kawase صرف آپ کے ایجنٹ والیٹ میں USDC منتقل کر سکتا ہے، روزانہ کی حد کے اندر۔",
   topUpPrompt: "ایجنٹ والیٹ کو ٹاپ اپ کرنے کی اجازت دیں",
   toppedUp: "‏{{amount}} ٹاپ اپ ہو گئے",
   topUpFailed: "ٹاپ اپ مکمل نہیں ہوا۔ کچھ منتقل نہیں ہوا۔",
@@ -69,7 +69,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   cardTopUp: "یا سیدھے اس میں USDC خریدیں",
   expressPay: "Pay",
   orCard: "یا کارڈ سے ادائیگی کریں",
-  cardButton: "Apple Pay یا کارڈ سے سیدھا اس میں خریدیں",
+  cardButton: "Apple Pay یا کارڈ سے خریدیں",
   deliversAgent: "‏USDC سیدھے {{network}} پر آپ کے ایجنٹ والیٹ میں جاتے ہیں۔",
   noRefund: "کوئی ریفنڈ نہیں: {{seller}} نے ادائیگی رکھ لی۔ ادا شدہ کالز ابھی ریفنڈ نہیں ہو سکتیں۔",
   notCharged: "رقم نہیں کٹی: ادائیگی کبھی مکمل نہیں ہوئی۔",

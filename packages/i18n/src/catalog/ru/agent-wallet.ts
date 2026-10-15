@@ -11,7 +11,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   topUpTitle: "Пополните кошелёк агента",
   topUpBody: "Переводит USDC из вашего кошелька Kawase в кошелёк агента — не больше {{perDay}} в день.",
   topUpFirstBody:
-    "Первое пополнение один раз запросит Face ID: после этого Kawase сможет переводить USDC только в кошелёк агента и в пределах дневного лимита.",
+    "Первое пополнение один раз попросит подтверждение: после этого Kawase сможет переводить USDC только в кошелёк агента и в пределах дневного лимита.",
   topUpPrompt: "Разрешить пополнять кошелёк агента",
   toppedUp: "Пополнено на {{amount}}",
   topUpFailed: "Пополнение не прошло. Деньги остались на месте.",
@@ -70,7 +70,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   cardTopUp: "Или купите USDC прямо в него",
   expressPay: "Pay",
   orCard: "или оплатите картой",
-  cardButton: "Купить сразу туда через Apple Pay или карту",
+  cardButton: "Купить через Apple Pay или карту",
   deliversAgent: "USDC поступят прямо в кошелёк агента в {{network}}.",
   noRefund: "Без возврата: платёж остался у продавца {{seller}}. Оплаченные запросы пока нельзя вернуть.",
   notCharged: "Не списано: платёж так и не прошёл.",

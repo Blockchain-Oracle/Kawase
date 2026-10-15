@@ -11,7 +11,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   topUpTitle: "Recarregue a carteira do seu agente",
   topUpBody: "Move USDC da sua carteira Kawase para a carteira do seu agente, no máximo {{perDay}} por dia.",
   topUpFirstBody:
-    "A primeira recarga pede o Face ID uma vez: depois, o Kawase só pode mover USDC para a carteira do seu agente, com um limite diário.",
+    "A primeira recarga pede sua confirmação uma vez: depois, o Kawase só pode mover USDC para a carteira do seu agente, com um limite diário.",
   topUpPrompt: "Permitir recargas da carteira do seu agente",
   toppedUp: "Recarga de {{amount}} feita",
   topUpFailed: "A recarga não foi concluída. Nada foi movido.",
@@ -70,7 +70,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   cardTopUp: "Ou compre USDC direto nela",
   expressPay: "Pay",
   orCard: "ou pague com cartão",
-  cardButton: "Comprar direto com Apple Pay ou cartão",
+  cardButton: "Comprar com Apple Pay ou cartão",
   deliversAgent: "O USDC vai direto para a carteira do seu agente em {{network}}.",
   noRefund: "Sem reembolso: {{seller}} ficou com o pagamento. Consultas pagas ainda não podem ser reembolsadas.",
   notCharged: "Sem cobrança: o pagamento nunca foi concluído.",

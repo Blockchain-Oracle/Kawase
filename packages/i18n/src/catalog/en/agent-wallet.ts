@@ -9,7 +9,7 @@ export const agentWallet = {
   topUpTitle: "Top up your agent wallet",
   topUpBody: "Moves USDC from your Kawase wallet into your agent wallet, at most {{perDay}} a day.",
   topUpFirstBody:
-    "The first top-up asks for Face ID once: Kawase may then move USDC only into your agent wallet, with a daily limit.",
+    "The first top-up asks you to confirm once: Kawase may then move USDC only into your agent wallet, with a daily limit.",
   topUpPrompt: "Allow top-ups of your agent wallet",
   toppedUp: "Topped up {{amount}}",
   topUpFailed: "The top-up didn't go through. Nothing moved.",
@@ -67,7 +67,7 @@ export const agentWallet = {
   cardTopUp: "Or buy USDC straight into it",
   expressPay: "Pay",
   orCard: "or pay with card",
-  cardButton: "Buy into it with Apple Pay or card",
+  cardButton: "Buy with Apple Pay or card",
   addressCopied: "Agent wallet address copied",
   back: "Back",
   browse: "Browse the marketplace",

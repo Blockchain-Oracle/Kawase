@@ -11,7 +11,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   topUpTitle: "عبّئ محفظة وكيلك",
   topUpBody: "ينقل USDC من محفظتك في Kawase إلى محفظة وكيلك، بحدّ أقصى {{perDay}} يوميًا.",
   topUpFirstBody:
-    "تطلب التعبئة الأولى بصمة الوجه مرة واحدة: بعدها يستطيع Kawase نقل USDC إلى محفظة وكيلك فقط، ضمن حد يومي.",
+    "تطلب التعبئة الأولى تأكيدك مرة واحدة: بعدها يستطيع Kawase نقل USDC إلى محفظة وكيلك فقط، ضمن حد يومي.",
   topUpPrompt: "السماح بتعبئة محفظة وكيلك",
   toppedUp: "تمت تعبئة {{amount}}",
   topUpFailed: "لم تكتمل التعبئة. لم يتحرك شيء.",
@@ -69,7 +69,7 @@ export const agentWallet: Catalog["agentWallet"] = {
   cardTopUp: "أو اشترِ USDC مباشرة إليها",
   expressPay: "Pay",
   orCard: "أو ادفع بالبطاقة",
-  cardButton: "اشترِ مباشرة إليها عبر Apple Pay أو البطاقة",
+  cardButton: "اشترِ عبر Apple Pay أو البطاقة",
   deliversAgent: "تصل USDC مباشرة إلى محفظة وكيلك على {{network}}.",
   noRefund: "لا استرداد: احتفظ {{seller}} بالدفعة. لا يمكن استرداد الطلبات المدفوعة بعد.",
   notCharged: "لم يُخصم شيء: لم تكتمل الدفعة أصلًا.",
