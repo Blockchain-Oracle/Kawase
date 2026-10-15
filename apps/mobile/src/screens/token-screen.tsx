@@ -11,9 +11,24 @@
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ArrowUpRight,
+  Bell,
+  CalendarClock,
   CandlestickChart,
   ChartSpline,
+  Eye,
+  EyeOff,
+  HandCoins,
+  Landmark,
+  type LucideIcon,
   MoreHorizontal,
+  QrCode,
+  Route,
+  Send,
+  Sprout,
+  TrendingUp,
   Share2,
   ShieldAlert,
   ShieldCheck,
@@ -21,7 +36,7 @@ import {
   TriangleAlert,
 } from "lucide-react-native";
 import * as React from "react";
-import { Image, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
@@ -33,7 +48,6 @@ import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 import { useWide } from "@kawase/ui-native/lib/wide";
 
-import { BlockedCta } from "@/components/tx";
 import {
   Button,
   ChangeChip,
@@ -74,7 +88,7 @@ import { useToken } from "@/token/use-token";
 import { useTokenMine } from "@/token/use-token-mine";
 import { LiveNumber } from "@/trade/bits";
 import { DetailDrawer, useDrawer } from "@/trade/drawer";
-import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
+import { PageHeader, PhoneScroll } from "@/trade/page-frame";
 import { TradeChart } from "@/trade/trade-chart";
 import { useCandles } from "@/trade/use-candles";
 import { useLiveTrades } from "@/markets/live-trades";
@@ -94,6 +108,7 @@ const HALF_RADIUS = 2;
 /** Ranges whose last point is the live price. */
 const LIVE_RANGES: ReadonlySet<ChartRange> = new Set(["1H", "1D"]);
 const MARK = 36;
+const TILE_MIN_H = 96;
 const CHART_HEIGHT = 200;
 const WIDE_CHART_HEIGHT = 320;
 const HERO_H = 52;
@@ -118,6 +133,75 @@ const WRITES: ReadonlySet<TokenAction> = new Set([
 ]);
 const ARC_MAINNET = 5042;
 const NEVER_HIDDEN: ReadonlySet<string> = new Set(["dollar", "bitcoin", "ether"]);
+
+/** A site to look closer at the token on, as a pill with its own logo. */
+function SitePill({ label, mark, onPress }: { label: string; mark: React.ReactNode; onPress: () => void }) {
+  const { color } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onPress={() => {
+        fire("tick");
+        onPress();
+      }}
+      style={({ pressed }) => [styles.site, { backgroundColor: pressed ? color.rowPressed : color.raised2 }]}
+    >
+      {mark}
+      <Text style={[TYPE.chipLabel, { color: color.ink }]}>{label}</Text>
+      <Icon icon={ArrowUpRight} size={SIZE.iconSm} tint={color.text3} />
+    </Pressable>
+  );
+}
+
+type ActionTileProps = { icon: LucideIcon; label: string; reason: string | null; fix: boolean; onPress?: () => void };
+
+/** One action as a tile: its icon on a disc and its name; off (dimmed, not pressable) with its reason when it can't be done. */
+function ActionTile({ icon, label, reason, fix, onPress }: ActionTileProps) {
+  const { color } = useTheme();
+  const on = Boolean(onPress);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={reason ? `${label}. ${reason}` : label}
+      accessibilityState={{ disabled: !on }}
+      disabled={!on}
+      onPress={() => {
+        fire("tick");
+        onPress?.();
+      }}
+      style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? color.rowPressed : color.raised2, opacity: on ? 1 : OFF_OPACITY }]}
+    >
+      <View style={[styles.tileDisc, { backgroundColor: on ? color.ink : color.hairline }]}>
+        <Icon icon={icon} size={SIZE.iconSm} tint={on ? color.ground : color.text3} />
+      </View>
+      <Text numberOfLines={1} style={[TYPE.chipLabel, { color: color.ink }]}>
+        {label}
+      </Text>
+      {reason ? (
+        <Text numberOfLines={2} style={[TYPE.meta, { color: fix ? color.link : color.text3 }]}>
+          {reason}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** Each action's icon (the tiles, the desktop's action row). */
+const ACTION_ICON: Record<TokenAction, LucideIcon> = {
+  buy: ArrowDownToLine,
+  sell: ArrowUpFromLine,
+  long_short: TrendingUp,
+  send: Send,
+  receive: QrCode,
+  withdraw: Landmark,
+  bridge: Route,
+  earn: Sprout,
+  borrow: HandCoins,
+  alert: Bell,
+};
+/** An action that can't be done here, dimmed. */
+const OFF_OPACITY = 0.45;
 
 function RoundAction({
   icon,
@@ -236,10 +320,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const [scrub, setScrub] = React.useState<ChartPoint | null>(null);
   const [candleScrub, setCandleScrub] = React.useState<Candle | null>(null);
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [ticket, setTicket] = React.useState<"buy" | "sell" | null>(null);
   const [alertOpen, setAlertOpen] = React.useState(false);
   const drawer = useDrawer("more");
-  // The inline ticket's side on a desktop window.
-  const [side, setSide] = React.useState<"buy" | "sell">("buy");
   const fx = useFx();
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/markets"));
 
@@ -314,9 +397,10 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   };
   const run = (action: TokenAction) => {
     closeMore();
-    // A desktop window has the ticket on the page: Buy and Sell turn it to that side.
+    // A desktop window opens the ticket in its drawer, on that side.
     if (wide && (action === "buy" || action === "sell")) {
-      setSide(action);
+      closeMore();
+      setTicket(action);
       return;
     }
     if (WRITES.has(action) && status !== "account") {
@@ -388,7 +472,6 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   const sell = action("sell");
   const buyReason = reasonFor(buy);
   const sellReason = reasonFor(sell);
-  const sideReason = side === "buy" ? buyReason : sellReason;
   // A mainnet token seen from testnet: "Mainnet only, switch?" is the switch (the page is the same token after it).
   const toMainnet = activeChain !== CHAIN_IDS.arc && token.chainId === CHAIN_IDS.arc;
   const switchToMainnet = () => {
@@ -410,17 +493,6 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
       toast(t("common.error"));
     }
   };
-  // The inline ticket's one way past its reason: a mainnet token from testnet switches (a guest signs in on the way),
-  // a guest signs in, and nothing to sell turns the ticket to Buy.
-  const sideFix =
-    sideReason && toMainnet
-      ? { label: t("markets.switchToMainnet"), onPress: switchToMainnet }
-      : sideReason && status !== "account"
-        ? { label: t("policy.fixSignIn"), onPress: signIn.open }
-        : sideReason && side === "sell" && !buyReason
-          ? { label: t("tokenPage.a_buy"), onPress: () => setSide("buy") }
-          : undefined;
-
   const copy = async () => {
     await Clipboard.setStringAsync(token.address);
     toast(t("tokenPage.copied"));
@@ -542,6 +614,15 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
           label={t("assets.rangeLabel")}
           liveLabel={t("tokenPage.live")}
         />
+        {/* Deeper looks elsewhere (Abu, 10-14/15): right under the chart, never at the page's foot — BasedBot's
+            terminal (trades, holders, snipers), the pair on DexScreener, the contract on Arc's explorer. */}
+        {liveCapable ? (
+          <View style={styles.sites} accessibilityLabel={t("tokenPage.elsewhere")}>
+            <SitePill label="BasedBot" mark={<Image source={{ uri: BASEDBOT_LOGO }} style={styles.siteMark} accessibilityIgnoresInvertColors />} onPress={() => void Linking.openURL(`https://basedbot.app/token/arc/${token.address}`)} />
+            <SitePill label="DexScreener" mark={<Image source={{ uri: DEXSCREENER_LOGO }} style={styles.siteMark} accessibilityIgnoresInvertColors />} onPress={() => void Linking.openURL(`https://dexscreener.com/arc/${token.address}`)} />
+            <SitePill label="ArcScan" mark={<Mark entity="chain:eip155:5042" size={SITE_MARK} />} onPress={() => void Linking.openURL(explorerAddressUrl("arc", token.address))} />
+          </View>
+        ) : null}
       </View>
 
       {(holds && detail.holding) || elsewhere.length > 0 ? (
@@ -717,73 +798,64 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
         </Panel>
       ) : null}
 
-      {/* Deeper looks elsewhere (Abu, 10-14): BasedBot's terminal first (trades, holders, snipers), then the pair on
-          DexScreener and the contract on Arc's explorer. Arc mainnet tokens only. */}
-      {liveCapable ? (
-        <Panel style={styles.panel}>
-          <SectionLabel>{t("tokenPage.elsewhere")}</SectionLabel>
-          <ListRow
-            leading={<Image source={{ uri: BASEDBOT_LOGO }} style={styles.siteMark} accessibilityIgnoresInvertColors />}
-            title="BasedBot"
-            detail={t("tokenPage.basedbotDetail")}
-            onPress={() => void Linking.openURL(`https://basedbot.app/token/arc/${token.address}`)}
-          />
-          <ListRow
-            leading={
-              <Image source={{ uri: DEXSCREENER_LOGO }} style={styles.siteMark} accessibilityIgnoresInvertColors />
-            }
-            title="DexScreener"
-            detail={t("tokenPage.dexscreenerDetail")}
-            onPress={() => void Linking.openURL(`https://dexscreener.com/arc/${token.address}`)}
-          />
-          <ListRow
-            leading={<Mark entity="chain:eip155:5042" size={SITE_MARK} />}
-            title={t("tokenPage.explorer")}
-            detail={shortAddress(token.address)}
-            onPress={() => void Linking.openURL(explorerAddressUrl("arc", token.address))}
-          />
-        </Panel>
-      ) : null}
     </>
   );
 
+  // Every action, grouped and drawn as tiles with their icons; what cannot be done here is visibly off (its reason
+  // under it) instead of a tappable row, and a mainnet-only one stays live because it is the switch.
+  const tile = (id: TokenAction): ActionTileProps => {
+    const entry = detail.actions.find((candidate) => candidate.id === id);
+    const reason = entry ? reasonFor(entry) : null;
+    const switches = entry ? fixable(entry) : false;
+    return {
+      icon: ACTION_ICON[id],
+      label: t(`tokenPage.a_${id}`),
+      reason,
+      fix: switches,
+      ...(entry && (!reason || switches) ? { onPress: () => (switches ? switchToMainnet() : run(id)) } : {}),
+    };
+  };
+  const has = (id: TokenAction) => detail.actions.some((entry) => entry.id === id);
+  const groups: { title: string; tiles: ActionTileProps[] }[] = [
+    { title: t("tokenPage.group_trade"), tiles: (["buy", "sell", "long_short"] as const).filter(has).map(tile) },
+    { title: t("tokenPage.group_move"), tiles: (["send", "receive", "withdraw", "bridge"] as const).filter(has).map(tile) },
+    { title: t("tokenPage.group_grow"), tiles: (["earn", "borrow"] as const).filter(has).map(tile) },
+    {
+      title: t("tokenPage.group_tools"),
+      tiles: [
+        ...(["alert"] as const).filter(has).map(tile),
+        {
+          icon: CalendarClock,
+          label: t("tokenPage.a_automate"),
+          reason: buyReason ?? null,
+          fix: false,
+          ...(!buyReason
+            ? {
+                onPress: () => {
+                  closeMore();
+                  if (status !== "account") signIn.open();
+                  else router.push({ pathname: "/new-automation", params: { template: "dca", token: token.address, symbol: token.symbol } });
+                },
+              }
+            : {}),
+        },
+        ...(hideable ? [{ icon: hidden ? Eye : EyeOff, label: hidden ? t("tokenPage.unhide") : t("tokenPage.hide"), reason: null, fix: false, onPress: () => void toggleHidden() }] : []),
+      ],
+    },
+  ].filter((group) => group.tiles.length > 0);
   const moreList = (
-    <Panel>
-      {detail.actions.map((entry) => {
-        const reason = reasonFor(entry);
-        // A mainnet-only row stays tappable: it is the switch.
-        const switches = fixable(entry);
-        return (
-          <ListRow
-            key={entry.id}
-            title={t(`tokenPage.a_${entry.id}`)}
-            detail={reason ?? undefined}
-            {...(!reason || switches ? { onPress: () => (switches ? switchToMainnet() : run(entry.id)) } : {})}
-          />
-        );
-      })}
-      {hideable ? (
-        <ListRow title={hidden ? t("tokenPage.unhide") : t("tokenPage.hide")} onPress={() => void toggleHidden()} />
-      ) : null}
-      {/* A recurring buy of this token (DCA), drafted on the New automation screen. */}
-      <ListRow
-        title={t("tokenPage.a_automate")}
-        detail={buyReason ?? undefined}
-        {...(!buyReason
-          ? {
-              onPress: () => {
-                closeMore();
-                if (status !== "account") signIn.open();
-                else
-                  router.push({
-                    pathname: "/new-automation",
-                    params: { template: "dca", token: token.address, symbol: token.symbol },
-                  });
-              },
-            }
-          : {})}
-      />
-    </Panel>
+    <View style={styles.groups}>
+      {groups.map((group) => (
+        <View key={group.title} style={styles.group}>
+          <SectionLabel>{group.title}</SectionLabel>
+          <View style={styles.tiles}>
+            {group.tiles.map((entry) => (
+              <ActionTile key={entry.label} {...entry} />
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
   );
 
   const header = (
@@ -791,9 +863,9 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
       title={token.name}
       subtitle={chip ? `${token.symbol} · ${chip.label}` : token.symbol}
       onBack={leave}
+      mark={<TokenMark token={token} size={MARK} />}
       trailing={
         <View style={styles.headerActions}>
-          <TokenMark token={token} size={MARK} />
           <RoundAction
             icon={Star}
             on={mine.watched}
@@ -846,45 +918,58 @@ export function TokenScreen({ chainId, address }: { chainId: number; address: st
   );
 
   if (wide) {
+    // A desktop window: the page takes the whole stage; Buy and Sell open the ticket in a drawer (the same ticket as
+    // /swap) instead of a column that stands mostly empty beside it.
+    const actionRow = (
+      <View style={styles.actionRow}>
+        <Button
+          label={t("tokenPage.a_buy")}
+          block={false}
+          leading={<Icon icon={ACTION_ICON.buy} size={SIZE.iconSm} />}
+          disabled={Boolean(buyReason) && !fixable(buy)}
+          onPress={() => (buyReason && fixable(buy) ? switchToMainnet() : setTicket("buy"))}
+        />
+        <Button label={t("tokenPage.a_sell")} block={false} variant="secondary" leading={<Icon icon={ACTION_ICON.sell} size={SIZE.iconSm} />} disabled={Boolean(sellReason)} onPress={() => setTicket("sell")} />
+        {has("long_short") && !reasonFor(action("long_short")) ? (
+          <Button label={t("tokenPage.a_long_short")} block={false} variant="secondary" leading={<Icon icon={ACTION_ICON.long_short} size={SIZE.iconSm} />} onPress={() => run("long_short")} />
+        ) : null}
+        <RoundAction icon={MoreHorizontal} label={t("tokenPage.more")} onPress={() => drawer.show()} />
+        {buyReason ? <Text style={[TYPE.caption, { color: fixable(buy) ? color.link : color.text3 }]}>{buyReason}</Text> : null}
+      </View>
+    );
     return (
       <View style={styles.page}>
         {header}
-        <Columns
-          stage={page}
-          ticket={
-            <View style={styles.group}>
-              <Segmented<"buy" | "sell">
-                label={t("ticket.title")}
-                value={side}
-                onChange={setSide}
-                options={[
-                  { value: "buy", label: t("tokenPage.a_buy") },
-                  { value: "sell", label: t("tokenPage.a_sell") },
-                ]}
+        <ScrollView style={styles.grow} contentContainerStyle={styles.wideStage} keyboardShouldPersistTaps="handled">
+          {actionRow}
+          {page}
+        </ScrollView>
+        <DetailDrawer open={ticket !== null} title={`${ticket === "sell" ? t("tokenPage.a_sell") : t("tokenPage.a_buy")} ${token.symbol}`} onClose={() => setTicket(null)}>
+          <View style={styles.group}>
+            <Segmented<"buy" | "sell">
+              label={t("ticket.title")}
+              value={ticket ?? "buy"}
+              onChange={(next) => setTicket(next)}
+              options={[
+                { value: "buy", label: t("tokenPage.a_buy") },
+                { value: "sell", label: t("tokenPage.a_sell"), ...(sellReason ? { disabled: true } : {}) },
+              ]}
+            />
+            {(ticket === "sell" ? sellReason : buyReason) ? (
+              <Text style={[TYPE.caption, { color: color.text3 }]}>{ticket === "sell" ? sellReason : buyReason}</Text>
+            ) : (
+              <SwapScreen
+                key={`${ticket}:${token.chainId}:${token.address}`}
+                prefill={ticket === "sell" ? { sell: token.address } : { buy: token.address }}
+                embedded
+                onFinished={() => {
+                  void refresh();
+                  void refreshPortfolio();
+                }}
               />
-              {sideReason ? (
-                <BlockedCta
-                  blocker={{
-                    label: sideFix ? sideFix.label : sideReason,
-                    reason: sideFix ? sideReason : null,
-                    fix: sideFix ? { kind: "retry" } : null,
-                  }}
-                  {...(sideFix ? { onFix: sideFix.onPress, fixLabel: sideFix.label } : {})}
-                />
-              ) : (
-                <SwapScreen
-                  key={`${side}:${token.chainId}:${token.address}`}
-                  prefill={side === "buy" ? { buy: token.address } : { sell: token.address }}
-                  embedded
-                  onFinished={() => {
-                    void refresh();
-                    void refreshPortfolio();
-                  }}
-                />
-              )}
-            </View>
-          }
-        />
+            )}
+          </View>
+        </DetailDrawer>
         <DetailDrawer open={drawer.open} title={token.symbol} onClose={drawer.hide}>
           {moreList}
         </DetailDrawer>
@@ -950,6 +1035,14 @@ const styles = StyleSheet.create({
   stats: { flexDirection: "row", flexWrap: "wrap", padding: SPACE.sm },
   stat: { gap: SPACE.xxs, padding: SPACE.sm },
   headerActions: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  sites: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  site: { flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: SIZE.chipHeight + SPACE.xs, borderRadius: RADIUS.pill, paddingStart: SPACE.xs, paddingEnd: SPACE.md },
+  groups: { gap: SPACE.lg },
+  tiles: { flexDirection: "row", flexWrap: "wrap", gap: SPACE.sm },
+  tile: { width: "31%", minHeight: TILE_MIN_H, borderRadius: RADIUS.lg, padding: SPACE.md, gap: SPACE.xs },
+  tileDisc: { width: SIZE.touch - SPACE.sm, height: SIZE.touch - SPACE.sm, borderRadius: SIZE.touch, alignItems: "center", justifyContent: "center" },
+  actionRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: SPACE.sm },
+  wideStage: { gap: SPACE.xl, paddingHorizontal: SPACE.xl, paddingTop: SPACE.lg, paddingBottom: SPACE.xxxl },
   round: {
     width: SIZE.touch,
     height: SIZE.touch,

@@ -66,7 +66,20 @@ export function BackPlate({ onPress }: { onPress: () => void }) {
   );
 }
 
-export function PageHeader({ title, subtitle, onBack, trailing }: { title: string; subtitle?: string | undefined; onBack: () => void; trailing?: React.ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  onBack,
+  trailing,
+  mark,
+}: {
+  title: string;
+  subtitle?: string | undefined;
+  onBack: () => void;
+  trailing?: React.ReactNode;
+  /** The subject's own mark (a token's logo), beside its name. */
+  mark?: React.ReactNode;
+}) {
   const { t } = useT();
   const { color } = useTheme();
   const insets = useSafeAreaInsets();
@@ -81,6 +94,7 @@ export function PageHeader({ title, subtitle, onBack, trailing }: { title: strin
       {strip ? <TestnetStrip label={t("network.testnetStrip")} style={{ paddingTop: insets.top + STRIP_INSET }} /> : null}
       <View style={[styles.header, { paddingTop: top, paddingHorizontal: wide ? SPACE.xl : SPACE.inset }]}>
         <BackPlate onPress={onBack} />
+        {mark}
         <View style={styles.titles}>
           <Text accessibilityRole="header" numberOfLines={1} style={[TYPE.pageTitle, { color: color.ink }]}>
             {title}
