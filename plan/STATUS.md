@@ -33,7 +33,11 @@ Deadline 10-17 11:59 PM ET (Sun 10-18 04:59 WAT). Ordered by priority; tick only
 7. [ ] Native Markets on testnet: "Switch to mainnet" has its button (10-14 open item; fixed on web).
 
 **Build (owed from earlier rounds)**
-8. [ ] Sweep checklist on every screen, signed in, phone + desktop (STATUS sweep rules below).
+8. [ ] Sweep checklist on every screen, signed in, phone + desktop (STATUS sweep rules below). Done so far (10-15,
+       live): Home (feed row logo, no flat-zero line, markets for an empty account, two columns on a wide desktop),
+       Activity (week card: no flat line, neutral zero In, honest "couldn't be read"), Swap/Bridge (quote when short,
+       no truncated pill), Agent wallet, Settings, Markets, Voice settings. Next: Send, Receive, Add money, Earn,
+       Borrow, Long/Short ticket, Contacts, Automations, Budget, Account, token page, Chat, desktop pages.
 9. [x] The + fan's first open (10-14 "~1 s"): measured on the live web in a fresh tab, no long task, worst frame 17 ms.
        Native: check on the device pass (item 12).
 10. [ ] RouteList polish (10-14). Venue honesty exists: rows carry `executable`, the best route is chosen among
