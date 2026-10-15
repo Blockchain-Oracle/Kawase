@@ -12,12 +12,12 @@ import { tokens } from "@kawase/ui-tokens";
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
+import { WEB_DESCRIPTION as DESCRIPTION, WEB_TITLE as TITLE } from "@/web-meta";
+
 /** Above this width the app sits in a phone-width column, up to the desktop layout's breakpoint. */
 const COLUMN_BREAKPOINT_PX = 520;
 const COLUMN_MAX_PX = 480;
 const DESKTOP_PX = 1024;
-const TITLE = "Kawase — money that moves when you speak";
-const DESCRIPTION = "A voice-first AI money app for everything on Arc, in ten languages, with on-chain limits.";
 
 const columnCss = `
 html, body { background-color: var(--color-background, ${tokens.themes[tokens.defaultMode].background}); }

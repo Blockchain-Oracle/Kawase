@@ -1,6 +1,6 @@
 import "@/global.css";
 import "@/voice/register";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 
 // Leaving a voice room closes LiveKit's signal stream; the SDK logs that expected close as an error.
 LogBox.ignoreLogs(["error reading from signal stream"]);
@@ -8,6 +8,7 @@ LogBox.ignoreLogs(["error reading from signal stream"]);
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalHost } from "@rn-primitives/portal";
 import { Stack } from "expo-router";
+import Head from "expo-router/head";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
@@ -26,6 +27,7 @@ import { ThemeSync } from "@/theme/theme-sync";
 import { DeviceProofSync } from "@/wallet/device-proof-sync";
 import { WalletProvider } from "@/wallet/wallet-provider";
 import { WebApprovalHost } from "@/wallet/web-approval-host";
+import { WEB_TITLE } from "@/web-meta";
 
 // Sheets, toasts and the overlay host sit inside LocaleProvider so they inherit the reading direction. On a desktop
 // window (Stage 13) the pages outside the signed-in area (the story, terms, a public receipt) keep their phone shape
@@ -34,6 +36,11 @@ export default function RootLayout() {
   const wide = useWide();
   return (
     <GestureHandlerRootView className="flex-1">
+      {Platform.OS === "web" ? (
+        <Head>
+          <title>{WEB_TITLE}</title>
+        </Head>
+      ) : null}
       <KeyboardProvider>
         <WalletProvider>
           <ThemeProvider>
