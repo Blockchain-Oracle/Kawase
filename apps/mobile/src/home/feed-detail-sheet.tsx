@@ -151,7 +151,7 @@ export function FeedDetailSheet({ item, onClose, onAsk }: { item: AgentFeedItem;
               </Fact>
             ) : null}
             {where ? (
-              <Fact label={t("feed.detail.where")} value={where}>
+              <Fact label={row.kind === "receive" ? t("receipt.from") : t("feed.detail.where")} value={where}>
                 {row.counterparty && ADDRESS.test(row.counterparty) ? <DefaultAvatar seed={row.counterparty.toLowerCase()} size={SIZE.markChip} /> : null}
               </Fact>
             ) : null}

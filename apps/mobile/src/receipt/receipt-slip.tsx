@@ -27,11 +27,14 @@ export type ReceiptData = {
   txHash: string | null;
   explorerUrl: string | null;
   note?: string | null | undefined;
+  /** The asset's identity mark (USDC, EURC), drawn beside the amount. */
+  assetMark?: string | undefined;
   /** A swap reads "You swapped … via <venue>" (`counterparty` is the venue); a transfer (the default) "You sent … to". */
   kind?: "transfer" | "swap" | undefined;
 };
 
 const SLIP = {
+  assetMark: 30,
   wideMax: 760,
   stubWide: 220,
   maxWidth: 380,
@@ -174,9 +177,16 @@ export const ReceiptSlip = React.forwardRef<
                     ? t("receipt.sent")
                     : t("receipt.received")}
               </Text>
-              <Text style={[TYPE.displayPrice, { color: color.ink }]} numberOfLines={1} adjustsFontSizeToFit>
-                {receipt.amount}
-              </Text>
+              <View style={styles.amountRow}>
+                {receipt.assetMark ? <Mark entity={receipt.assetMark} size={SLIP.assetMark} /> : null}
+                <Text
+                  style={[TYPE.displayPrice, styles.flex, { color: color.ink }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {receipt.amount}
+                </Text>
+              </View>
               <Text style={[TYPE.body, { color: color.text2 }]} numberOfLines={1}>
                 {receipt.kind === "swap"
                   ? t("receipt.via")
@@ -261,6 +271,7 @@ export const ReceiptSlip = React.forwardRef<
 
 const styles = StyleSheet.create({
   frame: { width: "100%" },
+  amountRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   paper: { width: "100%", maxWidth: SLIP.maxWidth, alignSelf: "center", borderRadius: SLIP.radius },
   paperWide: { maxWidth: SLIP.wideMax, flexDirection: "row" },
   bodyWide: { flex: 1 },

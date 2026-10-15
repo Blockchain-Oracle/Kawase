@@ -7,6 +7,7 @@ import * as React from "react";
 import { View } from "react-native";
 
 import type { Contact } from "@kawase/api-client";
+import { arcIdentity } from "@kawase/identity";
 import { amount, formatAmount, type AssetId } from "@kawase/money";
 import { DefaultAvatar } from "@kawase/ui-native/components/default-avatar";
 import { Button } from "@kawase/ui-native/components/ui/button";
@@ -60,7 +61,9 @@ export function IncomingActions({
 
   const short = `${from.slice(0, HEAD)}…${from.slice(-TAIL)}`;
   const money = asset === "USDC" || asset === "EURC" ? formatAmount(amount(asset as AssetId, BigInt(amountBase)), locale) : `${amountBase} ${asset}`;
-  const receipt = { direction: "received" as const, amount: money, counterparty: known?.displayName ?? short, network, at, txHash, explorerUrl };
+  const ids = arcIdentity(network);
+  const assetMark = asset === "USDC" ? ids.usdc : asset === "EURC" ? ids.eurc : undefined;
+  const receipt = { direction: "received" as const, amount: money, counterparty: known?.displayName ?? short, network, at, txHash, explorerUrl, assetMark };
   return (
     <View className="gap-4">
       <ReceiptSlip receipt={receipt} />
