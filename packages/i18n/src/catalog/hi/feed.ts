@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "Arc पर रिहर्सल हुआ",
     rehearsedBlock: "ब्लॉक {{block}}",
     rehearsedFail: "साइन से पहले रोका: यह Arc पर विफल होता ({{reason}})",
+    rehearsedStopped: "साइन से पहले रोका गया",
     rehearsalUnavailable: "अभी रिहर्सल नहीं हो सका; भेजते समय Arc खुद जाँचता है",
     touches: "छूता है {{list}}",
     slideSend: "भेजने के लिए खिसकाएँ",

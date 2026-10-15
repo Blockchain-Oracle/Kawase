@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "Arc-এ মহড়া হয়েছে",
     rehearsedBlock: "ব্লক {{block}}",
     rehearsedFail: "সই করার আগেই থামানো হল: এটি Arc-এ ব্যর্থ হত ({{reason}})",
+    rehearsedStopped: "সই করার আগেই থামানো হয়েছে",
     rehearsalUnavailable: "এখন মহড়া করা গেল না; পাঠানোর সময় Arc নিজেই যাচাই করে",
     touches: "ছোঁয় {{list}}",
     slideSend: "পাঠাতে সরান",

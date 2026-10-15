@@ -25,7 +25,7 @@ import { isSwapOpen, useSwap } from "@/swap/use-swap";
 import { useResumeWhenFixed } from "@/intents/use-resume";
 
 import { AgentCard } from "./card";
-import { RehearsalBlock, rehearsalAllows, useSwapRehearsal } from "./rehearsal";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "./rehearsal";
 
 export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const { t } = useT();
@@ -69,7 +69,7 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const blocking = intent.blocking;
   const fix = blocking ? fixFor(blocking) : undefined;
   const ready = !blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
-  const rehearsal = useSwapRehearsal(intent, ready);
+  const rehearsal = useRehearsal("swaps", intent, ready);
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (

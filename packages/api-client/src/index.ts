@@ -315,6 +315,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
       /** `kind: "typed"` for a gas-free send's EIP-3009 signature. */
       signature: (id: string, approvalId: string, signedTransaction: string, kind?: "transaction" | "typed") =>
         call<SendApproveResponse>("POST", `/sends/${id}/signature`, { approvalId, signedTransaction, ...(kind ? { kind } : {}) }),
+      /** Rehearse this version on Arc's latest block before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/sends/${id}/simulate`, { version }),
     },
 
     /** Every asset the person holds (Arc, other chains, positions), priced; and their show/hide choices. */

@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "Отрепетировано в Arc",
     rehearsedBlock: "блок {{block}}",
     rehearsedFail: "Остановлено до подписи: в Arc это не пройдёт ({{reason}})",
+    rehearsedStopped: "Остановлено до подписи",
     rehearsalUnavailable: "Сейчас не удалось отрепетировать; Arc проверит при отправке",
     touches: "Затрагивает {{list}}",
     slideSend: "Сдвиньте, чтобы отправить",

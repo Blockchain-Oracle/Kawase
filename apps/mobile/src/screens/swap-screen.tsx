@@ -49,6 +49,7 @@ import { SwapReview } from "@/swap/swap-review";
 import { type TicketToken, TokenButton } from "@/swap/token-button";
 import { TradeSwitch } from "@/swap/trade-switch";
 import { isSwapOpen, useSwap } from "@/swap/use-swap";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "@/chat/rehearsal";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
 const ZERO = 0n;
@@ -176,6 +177,9 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
   // A swap left in flight (the app was closed after the yes): read it back, never send it again.
   const intent = controller.intent;
   const setIntent = controller.set;
+  // Rehearsed on Arc before the slide (as in chat): a revert stops it here, in the chain's own words.
+  const rehearsable = Boolean(intent && isSwapOpen(intent) && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("swaps", intent ?? { id: "", version: 0 }, rehearsable);
   React.useEffect(() => {
     if (!journal.resumable || intent) return;
     let live = true;
@@ -380,6 +384,7 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
               {...(open ? { onPick: (venue: string) => void controller.revise({ venue }) } : {})}
             />
             {open && !blocking ? <BrakeNote results={intent.results} text={(entry: PolicyResultView) => policyText(entry, intent.network)} /> : null}
+            {rehearsable ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
           </Animated.View>
         )}
       </ScrollView>
@@ -390,9 +395,9 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
           slideLabel={slideLabel}
           resetKey={`${intent.id}:${intent.version}`}
           onConfirm={() => void confirm()}
-          blocker={blocker}
+          blocker={blocker ?? (rehearsal?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
           onFix={onFix}
-          busy={controller.busy && !inFlight}
+          busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal) && rehearsal?.status !== "reverted")}
           explorerUrl={intent.tx?.explorerUrl ?? null}
           onRetry={() => {
             controller.reset();

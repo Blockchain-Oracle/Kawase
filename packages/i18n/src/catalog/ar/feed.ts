@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "جُرّبت على Arc",
     rehearsedBlock: "الكتلة {{block}}",
     rehearsedFail: "توقّفنا قبل التوقيع: ستفشل على Arc ({{reason}})",
+    rehearsedStopped: "توقّفنا قبل التوقيع",
     rehearsalUnavailable: "تعذّرت التجربة الآن؛ تتحقّق Arc منها عند الإرسال",
     touches: "تلمس {{list}}",
     slideSend: "اسحب للإرسال",

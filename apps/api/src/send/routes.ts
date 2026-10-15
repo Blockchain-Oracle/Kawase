@@ -16,6 +16,7 @@ const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
 /** Arc Memo data is public and paid for in gas: a short reference only. */
 const MEMO_MAX = 64;
 
+const simulateSchema = z.object({ version: z.number().int().positive() });
 const requestSchema = z.object({
   /** Paying a payment request: its link token (recipient, asset and amount then come from the request). */
   requestToken: z.string().max(TOKEN_MAX).nullable().optional(),
@@ -59,6 +60,10 @@ export function sendRoutes(sends: SendService) {
     // The brake: a risky draft goes ahead only with the person's explicit override.
     requireBrakeOverride((await sends.get(c.get("userId")!, c.req.param("id"))).results, input.override);
     return c.json(await sends.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));
+  });
+  app.post("/:id/simulate", requireAccount, async (c) => {
+    const input = await parse(simulateSchema, await c.req.json());
+    return c.json({ simulation: await sends.simulate(c.get("user")!, c.req.param("id"), input.version) });
   });
   app.post("/:id/signature", requireAccount, async (c) => {
     const input = await parse(signatureSchema, await c.req.json());

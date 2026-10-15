@@ -89,6 +89,7 @@ import { activeAllowance, fitsLimits, gatherFacts, type Executor, type StoredReq
 import { authorizationFor, relayAuthorization, relayGasPrice, reserveRelay, serializableTypedData, signedBySender, type StoredAuthorization } from "./relayed";
 import { grantFor } from "../safety/allowances";
 import { recordPractice, simulateCall } from "../safety/practice";
+import { simulate, type Simulation } from "../intents/simulate";
 import type { OpsExecutor } from "./ops";
 import type { InboxService } from "../inbox/service";
 import type { RequestService } from "../requests/service";
@@ -588,6 +589,31 @@ export class SendService {
     });
     this.log.info({ intentId: intent.id, ok: result.ok, route }, "practice send");
     return { status: "final", intent: await this.view(user.id, intent.id) };
+  }
+
+  /**
+   * The rehearsal before the signature (Abu, 10-16, after Aomi): the same re-check as an approval, then the exact call
+   * that approval would send — the ops wallet redeeming the allowance, or the transfer (inside Memo when it carries a
+   * reference) from the person's own wallet — run on Arc's latest block. Its logs say what leaves the wallet and where.
+   */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion) return { status: "changed" };
+    const fresh = await this.recheck(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, route } = fresh;
+    const { network, ops } = this.clients(before.network);
+    const payload = ((await this.currentDraft(before))?.payload ?? {}) as Partial<DraftPayload>;
+    const room = route === "allowance" ? await activeAllowance(this.db, this.chains, user.id, before.network, draft.asset) : undefined;
+    const grant = room ? grantFor(room, draft.amount) : undefined;
+    const memo = payload.memo ?? null;
+    const call = grant
+      ? { from: ops.address, ...encodeRedeemTransfer(network, grant.delegation as never, { token: draft.asset, to: draft.to, amount: draft.amount }) }
+      : { from: draft.from, ...sendCall(network, draft, memoReference(memo) === draft.reference ? memo : null) };
+    // Drafts name their token (R1); an older one only its symbol, which is USDC or EURC.
+    const known = payload.asset === "USDC" || payload.asset === "EURC" ? payload.asset : null;
+    const token = payload.token ?? (known ? { address: draft.asset, symbol: known, decimals: decimalsOf(known) } : null);
+    return simulate(before.network, draft.from, [call], token ? [token] : []);
   }
 
   // ── Automations (Stage 8) ───────────────────────────────────────────────────────────────────────────────────

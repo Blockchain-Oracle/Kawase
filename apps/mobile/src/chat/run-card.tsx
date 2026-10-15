@@ -44,7 +44,7 @@ import type { ReceiptData } from "@/receipt/receipt-slip";
 
 import { useOpenIn } from "./open-in";
 import { RaceRows } from "./race-card";
-import { RehearsalBlock, rehearsalAllows, useSwapRehearsal } from "./rehearsal";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "./rehearsal";
 import { ToolCard, type ToolPart } from "./tool-cards";
 
 /** The steps a run carries to the receipt itself; any other propose step is shown as its own card inside the run. */
@@ -174,7 +174,7 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
   const ready = isSwapOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
   const state = txStateOf(intent, controller.busy);
   // Rehearsed on Arc before anything is signed (Aomi's "SIMULATED ✓"): a revert stops it here.
-  const rehearsal = useSwapRehearsal(intent, ready);
+  const rehearsal = useRehearsal("swaps", intent, ready);
   const rehearsed = rehearsalAllows(rehearsal);
 
   // Inside the budget and watched live: once the rehearsal passes, the run goes on by itself, once (never again after
@@ -260,6 +260,7 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
   const name = recipientName(intent.draft?.recipient, intent.request.recipient);
   const amount = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
   const ready = isSendOpen(intent) && !intent.blocking && intent.state === "ready_for_approval";
+  const rehearsal = useRehearsal("sends", intent, ready);
   const state = txStateOf(intent, controller.busy);
   const phase: RunPhase = intent.blocking && isSendOpen(intent) ? "blocked" : isSendOpen(intent) ? "approve" : isSendMoving(intent) ? "steps" : state.kind === "confirmed" ? "receipt" : "failed";
   React.useEffect(() => onPhase(phase), [phase, onPhase]);
@@ -288,8 +289,14 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
     <TxMorph morphed={state.kind === "confirmed" && isSendFinished(intent)} receipt={receipt}>
       <View style={styles.step}>
         {isSendOpen(intent) ? <Text style={[TYPE.body, { color: color.ink }]}>{t("feed.run.sendLine", { amount, name })}</Text> : null}
-        {ready ? (
-          <SlideToConfirm label={t("feed.run.slideSend")} onConfirm={() => void controller.approve(prompt)} busy={controller.busy} resetKey={`${intent.id}:${intent.version}`} />
+        {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+        {ready && rehearsal?.status !== "reverted" ? (
+          <SlideToConfirm
+            label={t("feed.run.slideSend")}
+            onConfirm={() => void controller.approve(prompt)}
+            busy={controller.busy || !rehearsalAllows(rehearsal)}
+            resetKey={`${intent.id}:${intent.version}`}
+          />
         ) : null}
         {state.kind !== "review" ? <TxSteps state={state} /> : null}
       </View>

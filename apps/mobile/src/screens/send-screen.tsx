@@ -35,6 +35,7 @@ import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { RealMoney } from "@/trade/bits";
+import { RehearsalBlock, useRehearsal } from "@/chat/rehearsal";
 import { IntentCta, openExplorer } from "@/trade/intent-cta";
 import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
 import { useFeeReserve } from "@/wallet/fee-reserve";
@@ -115,6 +116,9 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
   const intent = controller.intent && controller.intent.id !== dismissed ? controller.intent : undefined;
   const budgetCovers = useBudgetCoversSend(intent);
   const settled = intent && (isMoving(intent) || isFinished(intent));
+  // Rehearsed on Arc before the confirm (as in chat): a revert stops it here, in the chain's own words.
+  const rehearsable = Boolean(intent && isOpen(intent) && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("sends", intent ?? { id: "", version: 0 }, rehearsable);
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
   const back = () => {
     if (wide || settled || step === "recipient") leave();
@@ -215,6 +219,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
       <View style={styles.group}>
         {!testnet && !isFinished(intent) ? <RealMoney /> : null}
         <SendReview intent={intent} budget={budgetCovers} onRevise={(patch) => void controller.revise(patch)} />
+        {rehearsable ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
         {intent.blocking && isOpen(intent) ? (
           <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} />
         ) : (
@@ -222,7 +227,15 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
             intent={intent}
             busy={controller.busy}
             connectionLost={controller.connectionLost}
-            blocker={!draft ? { label: t("desktop.pricing"), busy: true } : null}
+            blocker={
+              !draft
+                ? { label: t("desktop.pricing"), busy: true }
+                : rehearsable && (!rehearsal || rehearsal.status === "running")
+                  ? { label: t("feed.run.rehearsing"), busy: true }
+                  : rehearsal?.status === "reverted"
+                    ? { label: t("feed.run.rehearsedStopped"), reason: rehearsal.reason }
+                    : null
+            }
             confirm={{ kind: "press", label: faceId ? approveLabel : t("send.sendNow") }}
             onConfirm={() => void controller.approve(what)}
             onRetry={() => setStep("amount")}

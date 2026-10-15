@@ -186,6 +186,7 @@ export const feed = {
     rehearsed: "Rehearsed on Arc",
     rehearsedBlock: "block {{block}}",
     rehearsedFail: "Stopped before signing: it would fail on Arc ({{reason}})",
+    rehearsedStopped: "Stopped before signing",
     rehearsalUnavailable: "Couldn't rehearse it just now; Arc still checks it when it's sent",
     touches: "Touches {{list}}",
     slideSend: "Slide to send",

@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "Ensaiado na Arc",
     rehearsedBlock: "bloco {{block}}",
     rehearsedFail: "Parado antes de assinar: falharia na Arc ({{reason}})",
+    rehearsedStopped: "Parado antes de assinar",
     rehearsalUnavailable: "Não deu para ensaiar agora; a Arc confere ao enviar",
     touches: "Toca {{list}}",
     slideSend: "Deslize para enviar",

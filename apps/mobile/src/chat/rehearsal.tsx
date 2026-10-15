@@ -1,5 +1,5 @@
 // The rehearsal before the signature (Abu, 10-16, after Aomi: "you should be able to simulate your transaction" so the
-// person can trust what the agent is about to run): once a swap's version is ready, the api runs its exact calls from
+// person can trust what the agent is about to run): once a swap's or a send's version is ready, the api runs its exact calls from
 // the person's own address on Arc's latest state (eth_simulateV1) and the card shows what will leave and arrive — by
 // the chain's own logs, not the quote — the contracts it touches, and the block it was rehearsed on. A rehearsal that
 // reverts stops the swap before anything is signed, in Arc's own words; when the simulator can't be reached the card
@@ -8,7 +8,7 @@ import { ShieldAlert, ShieldCheck } from "lucide-react-native";
 import * as React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import type { RehearsalView, SwapIntent } from "@kawase/api-client";
+import type { RehearsalView } from "@kawase/api-client";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
 import { Icon, RADIUS, ShimmerText, SIZE, SPACE, TYPE, useTheme } from "@/components/kit";
@@ -23,29 +23,31 @@ const MAX_CONTRACTS = 4;
 
 export type Rehearsal = { status: "running" } | { status: "error" } | RehearsalView;
 
-/** Rehearses each ready version of a swap once (a new quote is a new version, rehearsed again). */
-export function useSwapRehearsal(intent: SwapIntent, ready: boolean): Rehearsal | null {
+type Network = "mainnet" | "testnet";
+
+/** Rehearses each ready version of a swap or a send once (a new quote or recipient is a new version, rehearsed again). */
+export function useRehearsal(kind: "swaps" | "sends", intent: { id: string; version: number }, ready: boolean): Rehearsal | null {
   const [result, setResult] = React.useState<{ key: string; value: Rehearsal } | null>(null);
   const key = `${intent.id}:${intent.version}`;
   React.useEffect(() => {
     if (!ready) return undefined;
     let live = true;
     setResult({ key, value: { status: "running" } });
-    api.swaps
+    api[kind]
       .simulate(intent.id, intent.version)
       .then(({ simulation }) => live && setResult({ key, value: simulation }))
       .catch(() => live && setResult({ key, value: { status: "error" } }));
     return () => {
       live = false;
     };
-  }, [ready, key, intent.id, intent.version]);
+  }, [ready, kind, key, intent.id, intent.version]);
   return result?.key === key ? result.value : null;
 }
 
 /** Whether the person (or the budget) may go ahead: anything but a revert. */
 export const rehearsalAllows = (rehearsal: Rehearsal | null) => rehearsal !== null && rehearsal.status !== "running" && rehearsal.status !== "reverted";
 
-export function RehearsalBlock({ rehearsal, network }: { rehearsal: Rehearsal | null; network: SwapIntent["network"] }) {
+export function RehearsalBlock({ rehearsal, network }: { rehearsal: Rehearsal | null; network: Network }) {
   const { t } = useT();
   const { locale } = useLocale();
   const { color } = useTheme();

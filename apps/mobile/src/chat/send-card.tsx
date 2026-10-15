@@ -30,6 +30,7 @@ import { useResumeWhenFixed } from "@/intents/use-resume";
 import { ShareReceiptButton } from "@/receipt/share-receipt";
 
 import { AgentCard } from "./card";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "./rehearsal";
 
 const AVATAR = 36;
 
@@ -71,6 +72,8 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
   // blocker's own). Above the allowance it then waits for the tap; inside it, it was the person's instruction.
   useResumeWhenFixed(isOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}), { signIn: false });
   const overLimit = Boolean(intent.blocking?.code.startsWith("OVER_"));
+  const ready = isOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
+  const rehearsal = useRehearsal("sends", intent, ready);
 
   if (!isOpen(intent)) {
     const unsavedAddress = intent.outcome === "sent" && intent.draft?.recipient.via === "address";
@@ -121,7 +124,6 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
     );
   }
 
-  const ready = !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
   const amountText = intent.draft ? money(intent.draft.asset, intent.draft.amount, intent.draft.token?.decimals) : [intent.request.amount, intent.request.asset].filter(Boolean).join(" ");
   return (
     <AgentCard eyebrow={eyebrow}>
@@ -144,11 +146,12 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           <Text>{t("resume.seeLimits")}</Text>
         </Button>
       ) : null}
-      {ready ? (
+      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+      {ready && rehearsal?.status !== "reverted" ? (
         <View className="gap-2">
           <Button
             size="lg"
-            disabled={controller.busy}
+            disabled={controller.busy || !rehearsalAllows(rehearsal)}
             onPress={() => void controller.approve(t("send.signPrompt", { amount: amountText, name }))}
           >
             {intent.route === "wallet_signature" ? <Icon as={ScanFace} className="text-primary-foreground size-5" /> : null}

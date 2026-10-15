@@ -182,6 +182,7 @@ export const feed: Catalog["feed"] = {
     rehearsed: "已在 Arc 上预演",
     rehearsedBlock: "区块 {{block}}",
     rehearsedFail: "签名前已停止：它在 Arc 上会失败（{{reason}}）",
+    rehearsedStopped: "签名前已停止",
     rehearsalUnavailable: "暂时无法预演；发送时 Arc 仍会检查",
     touches: "涉及 {{list}}",
     slideSend: "滑动以发送",
