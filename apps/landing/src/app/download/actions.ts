@@ -1,7 +1,8 @@
 "use server";
-// The iPhone card's "Email me when it opens": the api adds the address to the public TestFlight group (Apple emails the
-// invitation the minute the beta opens) and sends Kawase's own "you're on the list" email (apps/api
-// src/public/testflight.ts). The App Store Connect key lives with the api only. A light per-visitor limit here keeps a
+// /download's "Email me" (components/landing/app-invite.tsx). iPhone: the api adds the address to the public TestFlight
+// group (Apple emails the invitation the minute the beta opens) and sends Kawase's own "you're on the list" email.
+// Android: the api emails the APK with how to install it (apps/api src/public/testflight.ts). The App Store Connect key
+// lives with the api only. A light per-visitor limit here keeps a
 // script from filling the list from one place.
 import { headers } from "next/headers";
 
@@ -27,8 +28,9 @@ function limited(key: string): boolean {
   return recent.length > PER_WINDOW;
 }
 
-export async function requestIosInvite(_previous: InviteState, form: FormData): Promise<InviteState> {
+export async function requestAppInvite(_previous: InviteState, form: FormData): Promise<InviteState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const platform = form.get("platform") === "android" ? "android" : "ios";
   if (email.length > MAX_EMAIL || !EMAIL.test(email)) return { result: "invalid" };
   const from = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (limited(from)) return { result: "busy" };
@@ -36,7 +38,7 @@ export async function requestIosInvite(_previous: InviteState, form: FormData): 
     const response = await fetch(`${links.api}/public/testflight-invite`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, platform }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
       cache: "no-store",
     });

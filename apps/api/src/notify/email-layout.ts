@@ -64,6 +64,8 @@ export type EmailContent = {
   label?: string | undefined;
   headline: string;
   body?: string | undefined;
+  /** Numbered steps under the body (how to install), drawn like /download's. */
+  steps?: string[] | undefined;
   /** A one-time code, drawn large in its own box. */
   code?: string | undefined;
   primary?: EmailLink | undefined;
@@ -151,6 +153,16 @@ function plainCard(content: EmailContent): string {
 ${content.label ? `<div style="font:600 12px/1.4 ${FONT};color:${TEXT2};letter-spacing:1.2px;text-transform:uppercase;margin:0 0 6px">${escapeHtml(content.label)}</div>` : ""}
 <div style="font:900 36px/1.1 ${DISPLAY};color:${INK};letter-spacing:-0.4px;margin:0"><bdi style="unicode-bidi:isolate">${escapeHtml(content.headline)}</bdi></div>
 ${content.body ? `<div style="font:16px/1.55 ${FONT};color:${INK};margin:14px 0 0">${escapeHtml(content.body)}</div>` : ""}
+${
+  content.steps && content.steps.length > 0
+    ? `<table ${TABLE} style="margin:18px 0 0">${content.steps
+        .map(
+          (step, index) =>
+            `<tr><td width="34" style="width:34px;padding:6px 0;vertical-align:top"><div style="width:24px;height:24px;border-radius:12px;background:${INK};color:#FFFFFF;font:700 12px/24px ${FONT};text-align:center">${index + 1}</div></td><td style="padding:6px 0;font:15px/24px ${FONT};color:${INK};vertical-align:top">${escapeHtml(step)}</td></tr>`,
+        )
+        .join("")}</table>`
+    : ""
+}
 ${content.code ? `<div style="margin:20px 0 0;padding:20px;background:${PAPER};border-radius:16px;text-align:center;font:700 36px/1 ${MONO};letter-spacing:10px;color:${INK}">${escapeHtml(content.code)}</div>` : ""}
 </td></tr>
 </table>`;
@@ -200,6 +212,7 @@ export function emailText(content: EmailContent): string {
     slip ? slip.amount : content.headline,
     slip?.lead,
     content.body,
+    ...(content.steps ?? []).map((step, index) => `${index + 1}. ${step}`),
     content.code,
     "",
     ...(slip?.facts ?? []).map((fact) => `${fact.label}: ${fact.value}${fact.href ? ` (${fact.href})` : ""}`),

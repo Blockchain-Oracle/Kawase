@@ -5,14 +5,15 @@
 // until then it says Kawase is in Apple's beta review and points the iPhone at the web app, which works there today. The
 // Mac app isn't finished (the owner, 10-15), so the Mac row says it's on its way and offers the web app. While Apple
 // reviews the beta, an iPhone visitor can leave an email: it joins the public TestFlight group and Apple sends the
-// invitation the minute testers are let in (`components/landing/ios-invite.tsx`).
+// invitation the minute testers are let in; on Android the same field mails the APK and how to install it
+// (`components/landing/app-invite.tsx`). Kawase isn't on Google Play, so the Android steps say what Play Protect may ask.
 import { ArrowUpRight, Check, Globe, Laptop } from "lucide-react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
 import { PhoneShot } from "@/components/landing/devices";
-import { IosInvite } from "@/components/landing/ios-invite";
+import { AppInvite } from "@/components/landing/app-invite";
 import { AndroidGlyph, AppleGlyph } from "@/components/landing/glyphs";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/landing/hero";
 import { QrPlate, StoreBadges } from "@/components/landing/stores";
@@ -85,7 +86,7 @@ function IosCard({ release, mine }: { release: StoreRelease; mine: boolean }) {
           <a href={links.webApp} className={`${BUTTON_PRIMARY} mt-6`}>
             Open the web app <ArrowUpRight className="size-4" aria-hidden />
           </a>
-          <IosInvite />
+          <AppInvite platform="ios" />
         </>
       )}
     </Card>
@@ -101,11 +102,20 @@ function AndroidCard({ release, mine }: { release: StoreRelease; mine: boolean }
       mine={mine}
       qr={<QrPlate url={release.apk} caption="Downloads the APK on your Android phone" size={150} />}
     >
-      The full app as an APK, no store in between.
-      <Steps steps={["Download the APK.", "Open it; allow installs from your browser when Android asks (once).", "Open Kawase. Updates arrive by themselves."]} />
+      The full app as an APK, straight from us: Kawase isn't on Google Play yet.
+      <Steps
+        steps={[
+          "Download the APK.",
+          "Open it; allow installs from your browser when Android asks (once).",
+          "If Play Protect warns, tap More details, then Install anyway (or let it scan the app).",
+          "Open Kawase. Updates arrive by themselves.",
+        ]}
+      />
       <a href={release.apk} download className={`${BUTTON_PRIMARY} mt-6`}>
         Download the APK <ArrowUpRight className="size-4" aria-hidden />
       </a>
+      {/* On the phone itself the button is right there; elsewhere the link goes by email to the phone. */}
+      {mine ? null : <AppInvite platform="android" />}
     </Card>
   );
 }

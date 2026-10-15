@@ -2,7 +2,8 @@
 // `GET /public/email/:name.png`: the pictures Kawase's emails show (the mark, the hanko, USDC and EURC), because mail
 // clients load images by URL and never draw SVG. `GET /public/receipt-qr/:network/:tx.png`: the receipt slip's QR in an
 // email, opening that transaction on the explorer (public data; a transaction never changes, so it caches for good).
-// `POST /public/testflight-invite`: /download's "Email me when it opens" (public/testflight.ts).
+// `POST /public/testflight-invite`: /download's "Email me" (public/testflight.ts): the TestFlight list for iPhone, the APK
+// link for Android (`platform`).
 import { readFileSync } from "node:fs";
 import { Hono } from "hono";
 import QRCode from "qrcode";
@@ -20,7 +21,7 @@ const FOREVER = "public, max-age=31536000, immutable";
 const EMAIL_ASSETS = ["mark", "hanko", "usdc", "eurc"] as const;
 const TX_HASH = /^0x[0-9a-fA-F]{64}$/;
 const MAX_EMAIL = 254;
-const InviteBody = z.object({ email: z.email().max(MAX_EMAIL) });
+const InviteBody = z.object({ email: z.email().max(MAX_EMAIL), platform: z.enum(["ios", "android"]).default("ios") });
 /** Twice the 92 px the email shows it at, for sharp phones. */
 const QR_PX = 184;
 
@@ -48,7 +49,8 @@ export function publicRoutes(stats: PublicStatsService, invites: TestflightInvit
   app.post("/testflight-invite", async (c) => {
     const parsed = InviteBody.safeParse(await c.req.json().catch(() => null));
     if (!parsed.success) return c.json({ result: "invalid" });
-    return c.json({ result: await invites.invite(parsed.data.email.trim().toLowerCase()) });
+    const email = parsed.data.email.trim().toLowerCase();
+    return c.json({ result: parsed.data.platform === "android" ? await invites.android(email) : await invites.invite(email) });
   });
   return app;
 }

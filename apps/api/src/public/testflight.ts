@@ -2,7 +2,9 @@
 // address joins the iPhone app's public TestFlight group through the App Store Connect API, so Apple itself emails the
 // TestFlight invitation the minute its beta review lets testers in. Kawase then sends one email of its own, in its own
 // layout, saying so and what works meanwhile. Nothing is stored here: the address goes to Apple, and to Resend for that
-// one email. Limits: one request per address in ten minutes, and a cap for the whole list per hour.
+// one email. On the Android card the same field mails the APK link with how to install it (Kawase isn't on Google
+// Play, so Android asks once about installs from the browser and Play Protect may ask too). Limits: one request per
+// address in ten minutes, and a cap for the whole list per hour.
 import { createPrivateKey, sign } from "node:crypto";
 
 import { PUBLIC_LINKS } from "@kawase/config";
@@ -30,7 +32,23 @@ const CONFIRMATION: Omit<EmailContent, "preheader"> = {
   headline: "You're on the list",
   body: "Apple will email you the TestFlight invitation the minute Kawase's beta opens: open it on your iPhone, install TestFlight, then Kawase. Until then Kawase works in your browser and on Android, with the same account.",
   primary: { label: "Open Kawase in your browser", href: PUBLIC_LINKS.webApp },
-  secondary: [{ label: "Get the Android app", href: `${PUBLIC_LINKS.landing}/download` }],
+  secondary: [{ label: "On Android? Download the APK", href: PUBLIC_LINKS.androidApk }],
+  footer: ["You asked for this on getkawase.xyz/download. Kawase sends nothing else to this address unless you sign up."],
+};
+
+const ANDROID: Omit<EmailContent, "preheader"> = {
+  rtl: false,
+  label: "Kawase for Android",
+  headline: "Your download link",
+  body: "Open this email on your Android phone. Kawase isn't on Google Play yet: the app comes straight from us as an APK.",
+  steps: [
+    "Tap Download the APK below.",
+    "Open the file. Android asks once to allow installs from your browser: allow it.",
+    "If Play Protect warns, tap More details, then Install anyway (or let it scan the app first).",
+    "Open Kawase. Updates arrive by themselves from then on.",
+  ],
+  primary: { label: "Download the APK", href: PUBLIC_LINKS.androidApk },
+  secondary: [{ label: "Open Kawase in your browser", href: PUBLIC_LINKS.webApp }],
   footer: ["You asked for this on getkawase.xyz/download. Kawase sends nothing else to this address unless you sign up."],
 };
 
@@ -54,14 +72,34 @@ export class TestflightInvites {
     return `${head}.${body}.${sign("sha256", Buffer.from(`${head}.${body}`), { key, dsaEncoding: "ieee-p1363" }).toString("base64url")}`;
   }
 
-  async invite(address: string): Promise<InviteResult> {
-    if (!this.config) return "unavailable";
+  /** One request per address in ten minutes, and a cap per hour for the whole page. */
+  private limited(key: string): boolean {
     const now = Date.now();
     this.hour = this.hour.filter((at) => now - at < HOUR_MS);
-    const last = this.recent.get(address);
-    if ((last && now - last < PER_ADDRESS_MS) || this.hour.length >= PER_HOUR) return "busy";
-    this.recent.set(address, now);
+    const last = this.recent.get(key);
+    if ((last && now - last < PER_ADDRESS_MS) || this.hour.length >= PER_HOUR) return true;
+    this.recent.set(key, now);
     this.hour.push(now);
+    return false;
+  }
+
+  /** The Android card: one email with the APK and how to install it. */
+  async android(address: string): Promise<InviteResult> {
+    if (!this.email) return "unavailable";
+    if (this.limited(`android:${address}`)) return "busy";
+    const content = { ...ANDROID, preheader: "The Kawase APK, and how to install it in a minute." };
+    try {
+      await this.email.send({ to: address, subject: "Kawase for Android: your download link", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-android-${Buffer.from(address).toString("base64url")}-${Math.floor(Date.now() / PER_ADDRESS_MS)}` });
+      return "sent";
+    } catch (error) {
+      this.log?.warn({ err: error }, "android link email failed");
+      return "failed";
+    }
+  }
+
+  async invite(address: string): Promise<InviteResult> {
+    if (!this.config) return "unavailable";
+    if (this.limited(`ios:${address}`)) return "busy";
     try {
       const response = await fetch(API, {
         method: "POST",
