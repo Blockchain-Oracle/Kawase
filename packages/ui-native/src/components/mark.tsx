@@ -55,9 +55,11 @@ function Mark({ entity, size = DEFAULT_SIZE, variant = "color", tint, disc, chai
     );
   } else if (onDisc) {
     const glyph = Math.round(size * GLYPH_RATIO);
+    // Brand marks are drawn for a light ground (Apple Pay's black apple vanished on the dark theme's card colour):
+    // the disc is white in both themes, the way wallets show logo coins.
     body = (
       <View
-        className="bg-card border-border items-center justify-center overflow-hidden rounded-full border"
+        className="border-border items-center justify-center overflow-hidden rounded-full border bg-white"
         style={{ width: size, height: size }}
       >
         <View style={{ width: glyph, height: glyph }}>
