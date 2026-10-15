@@ -11,7 +11,7 @@ import { formatUnits } from "viem";
 import type { Candle, ChartRange, MarginMarketView, MarginPositionView } from "@kawase/api-client";
 import { Mark } from "@kawase/ui-native/components/mark";
 
-import { ChangeChip, ErrorState, FilterChips, Panel, RADIUS, Skeleton, SPACE, StaleTick, TYPE, useTheme } from "@/components/kit";
+import { ChangeChip, ErrorState, FilterChips, LiveDot, Panel, RADIUS, Skeleton, SPACE, StaleTick, TYPE, useTheme } from "@/components/kit";
 import { fire } from "@/feedback/fire";
 import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
@@ -20,6 +20,7 @@ import { marketEntity, PRICE_DECIMALS, useMarginFormat } from "@/margin/copy";
 import { LiveNumber } from "./bits";
 import { TradeChart, type ChartLevel } from "./trade-chart";
 import { TRADE_RANGES, useCandles } from "./use-candles";
+import { useLivePrices } from "./use-live-prices";
 import { targetPrice, type Trade } from "./use-trade";
 
 const TAB_MARK = 24;
@@ -29,10 +30,10 @@ const MS_PER_SECOND = 1000;
 
 const priceOf = (eightDecimals: string | null | undefined) => (eightDecimals ? Number(formatUnits(BigInt(eightDecimals), PRICE_DECIMALS)) : undefined);
 
-function MarketTab({ market, selected, onPress }: { market: MarginMarketView; selected: boolean; onPress: () => void }) {
+function MarketTab({ market, livePrice, selected, onPress }: { market: MarginMarketView; livePrice: number | undefined; selected: boolean; onPress: () => void }) {
   const { color } = useTheme();
   const format = useMarginFormat();
-  const price = priceOf(market.price) ?? 0;
+  const price = livePrice ?? priceOf(market.price) ?? 0;
   return (
     <Pressable
       accessibilityRole="tab"
@@ -46,7 +47,7 @@ function MarketTab({ market, selected, onPress }: { market: MarginMarketView; se
       <Mark entity={marketEntity(market.asset)} size={TAB_MARK} />
       <View>
         <Text style={[TYPE.rowStrong, { color: selected ? color.ink : color.text2 }]}>{market.market}</Text>
-        <LiveNumber text={format.price(market.price)} value={price} height={TAB_PRICE_H} color={selected ? color.ink : color.text3} />
+        <LiveNumber text={livePrice !== undefined ? format.usd(livePrice) : format.price(market.price)} value={price} height={TAB_PRICE_H} color={selected ? color.ink : color.text3} />
       </View>
     </Pressable>
   );
@@ -61,7 +62,10 @@ export function ChartPanel({ trade, markets, position, height }: { trade: Trade;
   const [scrub, setScrub] = React.useState<Candle | null>(null);
   const view = trade.view;
   const { candles, failed, retry, asOf } = useCandles(view?.asset, range);
-  const live = priceOf(view?.price);
+  // The exchange's ticker moves the price between the venue's reads; the oracle's price stands in until it speaks.
+  const ticker = useLivePrices(markets.map((market) => market.market));
+  const tickerPrice = view ? ticker.prices[view.market]?.price : undefined;
+  const live = tickerPrice ?? priceOf(view?.price);
   const draft = trade.draft;
 
   const levels = React.useMemo(() => {
@@ -112,12 +116,20 @@ export function ChartPanel({ trade, markets, position, height }: { trade: Trade;
     <Panel style={styles.panel}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityRole="tablist" accessibilityLabel={t("margin.markets")} contentContainerStyle={styles.tabs}>
         {markets.map((market) => (
-          <MarketTab key={market.market} market={market} selected={market.market === view?.market} onPress={() => trade.setMarket(market.market)} />
+          <MarketTab key={market.market} market={market} livePrice={ticker.prices[market.market]?.price} selected={market.market === view?.market} onPress={() => trade.setMarket(market.market)} />
         ))}
       </ScrollView>
       <View style={styles.head}>
         <View style={styles.price}>
-          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{scrub ? timeFormat.format(new Date(scrub.t * MS_PER_SECOND)) : t("desktop.priceNow", { market: view?.market ?? "" })}</Text>
+          <View style={styles.priceLabel}>
+            <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{scrub ? timeFormat.format(new Date(scrub.t * MS_PER_SECOND)) : t("desktop.priceNow", { market: view?.market ?? "" })}</Text>
+            {!scrub && ticker.live && tickerPrice !== undefined ? (
+              <View style={styles.live} accessibilityLabel={t("tokenPage.live")}>
+                <LiveDot />
+                <Text style={[TYPE.label, { color: color.text2 }]}>{t("tokenPage.live")}</Text>
+              </View>
+            ) : null}
+          </View>
           <View style={styles.priceRow}>
             {shown !== undefined ? <LiveNumber text={format.usd(shown)} value={shown} height={HERO_PRICE_H} /> : null}
             <ChangeChip change={change} />
@@ -138,5 +150,7 @@ const styles = StyleSheet.create({
   tab: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, borderRadius: RADIUS.md, paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm },
   head: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: SPACE.md, flexWrap: "wrap", paddingHorizontal: SPACE.xs },
   price: { gap: SPACE.xxs },
+  priceLabel: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
+  live: { flexDirection: "row", alignItems: "center", gap: SPACE.xs },
   priceRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
 });

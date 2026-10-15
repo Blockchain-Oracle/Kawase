@@ -11,7 +11,7 @@ import { formatUnits } from "viem";
 import type { MarginIntent, MarginPositionView } from "@kawase/api-client";
 import { Mark } from "@kawase/ui-native/components/mark";
 
-import { CountdownRing, EmptyState, ErrorState, LoadingState, Panel, SectionLabel, SPACE, StaleTick, TYPE, useHeldLoading, useTheme, WaitingText } from "@/components/kit";
+import { EmptyState, ErrorState, LoadingState, Panel, SectionLabel, SPACE, StaleTick, TYPE, useHeldLoading, useTheme, WaitingText } from "@/components/kit";
 import { LineChart } from "@/components/kit/icons";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
@@ -19,13 +19,10 @@ import { marketEntity, useMarginFormat } from "@/margin/copy";
 import { isMarginMoving, isMarginOpen } from "@/margin/use-margin";
 
 import { LiveNumber } from "./bits";
-import { QUOTE_FRESH_MS } from "./use-trade";
 
 const MARK = 32;
 const PNL_H = 20;
-const RING = 22;
 const USDC_DECIMALS = 6;
-const MS = 1000;
 /** On a desktop window the market column is twice the width of each figure column. */
 const IDENTITY_SHARE = 2;
 
@@ -109,11 +106,13 @@ function OrderLine({ order, onPress }: { order: MarginIntent; onPress?: (() => v
   const format = useMarginFormat();
   const draft = order.draft;
   if (!draft) return null;
-  const quotedAt = Date.parse(draft.quotedAt);
   const moving = isMarginMoving(order);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} disabled={!onPress} style={[styles.line, { backgroundColor: color.selectedRow }]}>
-      <View style={styles.ring}>{moving ? <Mark entity={marketEntity(draft.asset)} size={MARK} /> : <CountdownRing fromSec={quotedAt / MS} toSec={(quotedAt + QUOTE_FRESH_MS) / MS} size={RING} />}</View>
+      {/* The quote's countdown lives on the ticket (on this device's clock); the row names the market. */}
+      <View style={styles.ring}>
+        <Mark entity={marketEntity(draft.asset)} size={MARK} />
+      </View>
       <View style={styles.shrink}>
         <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>
           {t("desktop.orderRow", { side: t(`margin.${draft.side}`), market: draft.market })}

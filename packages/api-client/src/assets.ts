@@ -198,6 +198,15 @@ export type LiveTrade = {
 export type LiveTradeMessage =
   { type: "snapshot"; trades: Record<string, LiveTrade[]> } | { type: "trade"; trade: LiveTrade } | { type: "ping" };
 
+/** A market's live price (GET /markets/live/prices): USD, from the exchange's ticker; `at` in ms since the epoch. */
+export type LivePrice = { price: number; at: number };
+
+/** One line of GET /markets/live/prices?markets=cirBTC,WETH,EURC (NDJSON). */
+export type LivePriceMessage =
+  | { type: "snapshot"; prices: Record<string, LivePrice> }
+  | { type: "price"; market: string; price: number; at: number }
+  | { type: "ping" };
+
 export type MarketListView = {
   segment: MarketSegment;
   network: NetworkId;

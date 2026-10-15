@@ -89,7 +89,8 @@ import { tokenRulesRoutes } from "./tokens/rules-routes";
 import { TokenRulesService } from "./tokens/rules";
 import { marketRoutes, portfolioRoutes, tokenRoutes } from "./tokens/routes";
 import type { LiveTrades } from "./market/live";
-import { liveTradeRoutes } from "./market/live-routes";
+import type { LiveTicker } from "./market/ticker";
+import { livePriceRoutes, liveTradeRoutes } from "./market/live-routes";
 import { tokenLookup } from "./tokens/lookup";
 import { AssetService } from "./tokens/service";
 import type { AppEnv, SessionUser } from "./types";
@@ -144,6 +145,8 @@ export type AppDeps = {
   webOrigins?: string[];
   /** Live trades on Arc mainnet (market/live.ts); absent in tests, where /markets/live is not mounted. */
   liveTrades?: LiveTrades;
+  /** The long/short markets' live prices (Coinbase's public ticker). */
+  liveTicker?: LiveTicker;
   /** The testnet faucet's drip (Circle's faucet in production, a fake in tests). */
   faucet: FaucetDrip;
   /** The agent's models (D29 registry). */
@@ -464,6 +467,7 @@ export function createApp(deps: AppDeps) {
   app.route("/token-rules", tokenRulesRoutes(tokenRules));
   app.route("/portfolio", portfolioRoutes(assets));
   app.route("/tokens", tokenRoutes(assets, deps.db));
+  if (deps.liveTicker) app.route("/markets/live/prices", livePriceRoutes(deps.liveTicker));
   if (deps.liveTrades) app.route("/markets/live", liveTradeRoutes(deps.liveTrades));
   app.route("/markets", marketRoutes(assets));
   app.route("/automations", automationRoutes(automations));

@@ -28,6 +28,8 @@ import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed
 import { useAgentFeed } from "@/home/use-agent-feed";
 import { SignInPlate } from "@/home/markets-glance";
 import { useT } from "@/i18n";
+import { PositionRow } from "@/margin/position-row";
+import { useMarginPositions } from "@/margin/use-margin";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 
@@ -65,6 +67,8 @@ export function ActivityScreen() {
   const asked: FeedFilter | undefined = params.filter === "needs_you" ? "held" : FEED_FILTERS.find((entry) => entry === params.filter);
 
   const agent = useAgentFeed();
+  const { positions } = useMarginPositions();
+  const openPositions = (positions ?? []).filter((position) => position.status === "open");
   const money = useFeed(network);
   const [view, setView] = React.useState<View_>("kawase");
   const [filter, setFilter] = React.useState<FeedFilter>(asked ?? "all");
@@ -123,6 +127,19 @@ export function ActivityScreen() {
               onChange={setView}
               label={t("feed.activity.viewLabel")}
             />
+            {/* Open longs and shorts first, P&L moving: what Kawase holds for the person right now (Owarine's positions). */}
+            {openPositions.length > 0 ? (
+              <View style={styles.section}>
+                <Text accessibilityRole="header" style={[TYPE.label, styles.head, { color: color.text3 }]}>
+                  {t("markets.yourPositions")}
+                </Text>
+                <Panel style={styles.plate}>
+                  {openPositions.map((position) => (
+                    <PositionRow key={position.id} position={position} />
+                  ))}
+                </Panel>
+              </View>
+            ) : null}
             {view === "kawase" ? (
               <View style={styles.section}>
                 {agent.feed && agentRows.length > 0 ? <FeedFilters feed={agent.feed} value={filter} onChange={setFilter} /> : null}
@@ -179,4 +196,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   section: { gap: SPACE.md },
   center: { textAlign: "center" },
+  head: { paddingHorizontal: SPACE.lg },
+  plate: { paddingVertical: SPACE.xs },
 });
