@@ -1,6 +1,8 @@
 export const protect = {
   title: "Take-profit and stop-loss",
   takeProfit: "Take-profit",
+  takeProfitShort: "TP",
+  stopLossShort: "SL",
   stopLoss: "Stop-loss",
   takeProfitHint: "Close it all when {{market}} reaches",
   stopLossHint: "Close it all when {{market}} gets to",

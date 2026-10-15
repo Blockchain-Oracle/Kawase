@@ -24,6 +24,11 @@ export const markets: Catalog["markets"] = {
   segmentsLabel: "أقسام السوق",
   yourPositions: "مراكزك",
   marginVenue: "Kawase Margin · Aave V4 على Arc",
+  leverageTitle: "شراء أو بيع على المكشوف",
+  leverageSubtitle: "العملات الكبرى على Arc بالرافعة · Aave V4",
+  leverageChart: "{{market}} منذ بداية الساعة",
+  longsAhead: "المشترون متقدمون منذ {{time}}",
+  shortsAhead: "البائعون متقدمون منذ {{time}}",
   perpsMainnet:
     "الشراء والبيع على المكشوف يعملان على شبكة Arc الرئيسية. بدّل الشبكة للتداول؛ تبقى أموالك التجريبية كما هي.",
   watchlist: "قائمة المتابعة",

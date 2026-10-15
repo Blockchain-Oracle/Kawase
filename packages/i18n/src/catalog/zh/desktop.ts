@@ -21,6 +21,8 @@ export const desktop: Catalog["desktop"] = {
   noLiquidation: "无",
   enterAmount: "输入金额",
   signInToTrade: "登录后交易",
+  putIn: "投入",
+  protect: "止盈 · 止损",
   switchToMainnet: "切换到主网",
   pricing: "正在报价",
   waitingFor: "{{verb}} · {{seconds}} 秒",

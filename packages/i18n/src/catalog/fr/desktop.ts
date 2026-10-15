@@ -21,6 +21,8 @@ export const desktop: Catalog["desktop"] = {
   noLiquidation: "Aucun",
   enterAmount: "Saisissez un montant",
   signInToTrade: "Connectez-vous pour trader",
+  putIn: "Vous mettez",
+  protect: "Take-profit · stop-loss",
   switchToMainnet: "Passer sur le réseau principal",
   pricing: "Calcul du prix",
   waitingFor: "{{verb}} · {{seconds}} s",

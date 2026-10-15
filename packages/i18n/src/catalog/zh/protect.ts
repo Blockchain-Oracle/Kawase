@@ -3,6 +3,8 @@ import type { Catalog } from "../en/index";
 export const protect: Catalog["protect"] = {
   title: "止盈与止损",
   takeProfit: "止盈",
+  takeProfitShort: "止盈",
+  stopLossShort: "止损",
   stopLoss: "止损",
   takeProfitHint: "当 {{market}} 达到时全部平仓",
   stopLossHint: "当 {{market}} 到达时全部平仓",

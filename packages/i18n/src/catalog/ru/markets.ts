@@ -25,6 +25,11 @@ export const markets: Catalog["markets"] = {
   segmentsLabel: "Разделы рынка",
   yourPositions: "Ваши позиции",
   marginVenue: "Kawase Margin · Aave V4 в Arc",
+  leverageTitle: "Лонг или шорт",
+  leverageSubtitle: "Крупные активы Arc с плечом · Aave V4",
+  leverageChart: "{{market}} с начала часа",
+  longsAhead: "Лонги впереди с {{time}}",
+  shortsAhead: "Шорты впереди с {{time}}",
   perpsMainnet:
     "Лонг и шорт работают в основной сети Arc. Переключите сеть, чтобы торговать; ваши тестовые деньги останутся как есть.",
   watchlist: "Избранное",

@@ -24,6 +24,11 @@ export const markets: Catalog["markets"] = {
   segmentsLabel: "Segments de marché",
   yourPositions: "Vos positions",
   marginVenue: "Kawase Margin · Aave V4 sur Arc",
+  leverageTitle: "Long ou short",
+  leverageSubtitle: "Les majeurs d'Arc avec effet de levier · Aave V4",
+  leverageChart: "{{market}} depuis le début de l'heure",
+  longsAhead: "Les longs mènent depuis {{time}}",
+  shortsAhead: "Les shorts mènent depuis {{time}}",
   perpsMainnet:
     "Long et short fonctionnent sur le réseau principal d’Arc. Changez de réseau pour trader ; votre argent de testnet reste tel quel.",
   watchlist: "Liste de suivi",

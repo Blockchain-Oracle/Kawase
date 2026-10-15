@@ -21,6 +21,8 @@ export const desktop: Catalog["desktop"] = {
   noLiquidation: "নেই",
   enterAmount: "পরিমাণ লিখুন",
   signInToTrade: "ট্রেড করতে সাইন ইন করুন",
+  putIn: "আপনি দিচ্ছেন",
+  protect: "টেক-প্রফিট · স্টপ-লস",
   switchToMainnet: "মেইননেটে যান",
   pricing: "দাম বের করা হচ্ছে",
   waitingFor: "{{verb}} · {{seconds}} সে",

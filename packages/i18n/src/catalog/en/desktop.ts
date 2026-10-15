@@ -21,6 +21,8 @@ export const desktop = {
   noLiquidation: "None",
   enterAmount: "Enter an amount",
   signInToTrade: "Sign in to trade",
+  putIn: "You put in",
+  protect: "Take-profit · stop-loss",
   switchToMainnet: "Switch to mainnet",
   pricing: "Pricing",
   waitingFor: "{{verb}} · {{seconds}} s",

@@ -3,6 +3,8 @@ import type { Catalog } from "../en/index";
 export const protect: Catalog["protect"] = {
   title: "টেক-প্রফিট ও স্টপ-লস",
   takeProfit: "টেক-প্রফিট",
+  takeProfitShort: "TP",
+  stopLossShort: "SL",
   stopLoss: "স্টপ-লস",
   takeProfitHint: "{{market}} এখানে পৌঁছালে সব বন্ধ করুন",
   stopLossHint: "{{market}} এখানে পৌঁছালে সব বন্ধ করুন",

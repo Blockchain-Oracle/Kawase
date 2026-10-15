@@ -3,6 +3,8 @@ import type { Catalog } from "../en/index";
 export const protect: Catalog["protect"] = {
   title: "Тейк-профит и стоп-лосс",
   takeProfit: "Тейк-профит",
+  takeProfitShort: "ТП",
+  stopLossShort: "СЛ",
   stopLoss: "Стоп-лосс",
   takeProfitHint: "Закрыть всё, когда {{market}} дойдёт до",
   stopLossHint: "Закрыть всё, когда {{market}} дойдёт до",

@@ -46,7 +46,8 @@ import { tokenChip } from "@/portfolio/token-chip";
 import { useSession } from "@/session/session-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
-import { LongShortMatches, LongShortRow } from "@/markets/long-short-row";
+import { LongShortMatches } from "@/markets/long-short-row";
+import { LeverageBoard } from "@/markets/leverage-board";
 import { LongShortSegment } from "@/markets/long-short-segment";
 import { useRecentSearches } from "@/markets/recent-searches";
 import { WatchlistSegment } from "@/markets/watchlist-segment";
@@ -54,7 +55,7 @@ import { ServicesSection } from "@/marketplace/services-section";
 
 /** The Markets segments, the person's Watchlist first (the stars from token pages). */
 type Segment = MarketSegment | "watchlist" | "services";
-const SEGMENTS: readonly Segment[] = ["watchlist", "trending", "meme", "perps", "services", "fx", "new"];
+const SEGMENTS: readonly Segment[] = ["watchlist", "trending", "meme", "services", "fx", "new"];
 const SEGMENT_KEYS: Record<Segment, string> = {
   watchlist: "markets.watchlist",
   trending: "markets.trending",
@@ -236,6 +237,9 @@ export function MarketsScreen() {
               </View>
             ) : null}
 
+            {/* Long or short is its own surface, above the tokens: live cards per market, not a segment among memes. */}
+            <LeverageBoard />
+
             <FilterChips
               options={SEGMENTS.map((value) => ({ value, label: t(SEGMENT_KEYS[value]) }))}
               value={segment}
@@ -269,7 +273,6 @@ export function MarketsScreen() {
               <KitEmptyState why={t("markets.empty")} size="inline" />
             ) : (
               <>
-                {segment === "trending" ? <LongShortRow onSeeAll={() => setSegment("perps")} /> : null}
                 <View className="gap-2">
                   <Eyebrow className="px-1">{t("markets.hot")}</Eyebrow>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3">

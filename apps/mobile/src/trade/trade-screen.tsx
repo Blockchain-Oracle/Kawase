@@ -32,6 +32,8 @@ import { useSession } from "@/session/session-provider";
 import { TradeSwitch } from "@/swap/trade-switch";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 
+import { TicketLine } from "@/markets/leverage-board";
+
 import { ChartPanel } from "./chart-panel";
 import { DetailDrawer, useDrawer } from "./drawer";
 import { Columns, PageHeader } from "./page-frame";
@@ -252,6 +254,7 @@ export function TradeScreen({ prefill }: { prefill: TradePrefill }) {
       {!wide && sheet ? (
         <Sheet onClose={() => setSheet(false)} closeLabel={t("common.close")} detents={[1]}>
           <SheetHeading title={trade.view ? t("desktop.sheetTitle", { market: trade.view.market }) : t("margin.title")} />
+          {trade.view ? <TicketLine market={trade.view} /> : null}
           <TradePanel trade={trade} compact />
         </Sheet>
       ) : null}

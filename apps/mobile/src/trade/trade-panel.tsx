@@ -1,33 +1,27 @@
 // The ticket for a long or a short on Kawase Margin (Aave V4 on Arc mainnet), one component in two places: the right
 // column of the desktop terminal and a sheet on the phone. Visual spec: 21st.dev ssychui "Swap Ticket" (27122), built
 // from the Senryo kit: Long / Short as the kit's Segmented (23552) in the direction tones, the amount as AmountPad
-// (3711; a typed figure on a desktop window) with ¼ ½ ¾ All of what can be spent, leverage opt-in ("No leverage" until
-// switched on, D-344) on the LeverageRuler, ONE hero figure (the exposure, rolling digits) with the quote's freshness
-// as the kit's CountdownRing, take-profit / stop-loss as chips, the liquidation price, health, rates and fees behind
-// one disclosure, and the CTA from the tx kit: a blocker that names its fix, the slide (29304) in the side's tone,
+// (3711; a typed figure on a desktop window) with ¼ ½ ¾ All of what can be spent, leverage as one row of multiples
+// (1× is none, D-344; Owarine's sizer), three figures in a strip (in · exposure · liquidation; Mitoshi's ticket) with
+// the quote's freshness as the kit's CountdownRing, take-profit / stop-loss folded behind one line, health, rates and
+// fees behind one disclosure, and the CTA from the tx kit: a blocker that names its fix, the slide (29304) in the side's tone,
 // Signing → Sent → Confirmed, then the receipt morphing in place, or a failure card that says whether money moved.
 // The "Real money" marker stays on the ticket whenever the order is on mainnet.
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { formatUnits } from "viem";
 
 import type { MarginSide, PolicyResultView } from "@kawase/api-client";
-import { MARGIN } from "@kawase/config";
-import { LeverageRuler } from "@kawase/ui-native/components/leverage-ruler";
 
-import { Button, CountdownRing, DisclosureRow, KeyValue, Panel, Segmented, SPACE, Switch, TYPE, useTheme } from "@/components/kit";
+import { Button, CountdownRing, DisclosureRow, KeyValue, Panel, Segmented, SPACE, TYPE, useTheme } from "@/components/kit";
 import { useFund } from "@/fund/fund-provider";
-import { useLocale } from "@/i18n/locale-provider";
 import { useT } from "@/i18n";
 import { PRICE_DECIMALS, useMarginFormat, useMarginPolicyText, useMarginPrompt } from "@/margin/copy";
-import { rulerHaptic } from "@/margin/haptics";
 import { isMarginFinished, isMarginMoving } from "@/margin/use-margin";
 import { BrakeNote } from "@/safety/brake-note";
 import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
-import { useTheme as useAppTheme } from "@/theme/theme-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
 
@@ -45,14 +39,31 @@ const HEALTH_CAUTION = 1.5;
 const USDC_DECIMALS = 6;
 const FEE_DIGITS = 4;
 const MS = 1000;
+const TENTHS = 10;
 /** The take-profit / stop-loss label column, so both chip rows start at the same edge. */
 const TARGET_LABEL_W = 96;
 const usdOf = (eightDecimals: string | null) => (eightDecimals ? Number(formatUnits(BigInt(eightDecimals), PRICE_DECIMALS)) : null);
 
+/** The leverage multiples offered: 1× (none), each whole step up to the market's cap, and the cap itself. */
+function multiples(max: number): number[] {
+  const whole = Array.from({ length: Math.max(0, Math.floor(max)) }, (_, index) => index + 1);
+  return max > Math.floor(max) ? [...whole, Math.round(max * TENTHS) / TENTHS] : whole;
+}
+
+function Cell({ label, value, muted, tone }: { label: string; value: string; muted: boolean; tone?: string | undefined }) {
+  const { color } = useTheme();
+  return (
+    <View style={styles.cell}>
+      <Text style={[TYPE.meta, { color: color.text3 }]}>{label}</Text>
+      <Text numberOfLines={1} style={[TYPE.rowAmount, { color: muted ? color.text3 : (tone ?? color.ink) }]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 export function TradePanel({ trade, compact = false }: { trade: Trade; compact?: boolean }) {
   const { t } = useT();
-  const { rtl } = useLocale();
-  const { themeName } = useAppTheme();
   const { color } = useTheme();
   const router = useRouter();
   const fund = useFund();
@@ -144,48 +155,55 @@ export function TradePanel({ trade, compact = false }: { trade: Trade; compact?:
             note={trade.available !== undefined ? t("desktop.available", { amount: format.usd(trade.available) }) : undefined}
           />
 
+          {/* Leverage as one row of multiples (Owarine's sizer, Mitoshi's 1×/2×/3× chips): 1× is no leverage. */}
           {trade.leverageAvailable ? (
             <View style={styles.group}>
-              <View style={styles.row}>
-                <View style={styles.grow}>
-                  <Text style={[TYPE.rowStrong, { color: color.ink }]}>{t("margin.leverage")}</Text>
-                  <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{trade.leverageOn ? format.leverage(trade.leverage) : t("desktop.noLeverage")}</Text>
-                </View>
-                <Switch accessibilityLabel={t("margin.leverage")} value={trade.leverageOn} onValueChange={trade.setLeverageOn} />
-              </View>
-              {trade.leverageOn ? (
-                <Animated.View entering={FadeIn} exiting={FadeOut}>
-                  <LeverageRuler
-                    value={trade.leverage}
-                    max={trade.maxLeverage}
-                    step={MARGIN.leverageStep}
-                    label={t("margin.leverage")}
-                    format={format.leverage}
-                    scheme={themeName}
-                    rtl={rtl}
-                    onTick={rulerHaptic}
-                    onChange={trade.setLeverage}
-                  />
-                </Animated.View>
-              ) : null}
+              <Text style={[TYPE.rowDetail, { color: color.text2 }]}>{t("margin.leverage")}</Text>
+              <ChoiceChips<number>
+                label={t("margin.leverage")}
+                value={trade.leverageOn ? trade.leverage : 1}
+                onChange={(multiple) => {
+                  if (multiple <= 1) trade.setLeverageOn(false);
+                  else {
+                    trade.setLeverageOn(true);
+                    trade.setLeverage(multiple);
+                  }
+                }}
+                options={multiples(trade.maxLeverage).map((multiple) => ({ value: multiple, label: format.leverage(multiple) }))}
+              />
             </View>
           ) : null}
 
-          <View accessible accessibilityLabel={t("desktop.heroLabel", { margin: format.usd(trade.marginValue), exposure: format.usd(exposure) })} style={styles.hero}>
-            <View style={styles.row}>
-              <Text style={[TYPE.rowDetail, styles.grow, { color: color.text3 }]}>{t("desktop.youPutIn", { amount: format.usd(trade.marginValue) })}</Text>
-              {quotedAt !== undefined && intent && !trade.drafting && trade.foreground ? (
-                <CountdownRing key={quotedAt} fromSec={quotedAt / MS} toSec={(quotedAt + QUOTE_FRESH_MS) / MS} size={RING} />
-              ) : null}
-            </View>
-            <View style={styles.figureRow}>
+          {/* The three figures (Mitoshi's strip): what goes in, what it controls, and where it would be liquidated. */}
+          <View accessible accessibilityLabel={t("desktop.heroLabel", { margin: format.usd(trade.marginValue), exposure: format.usd(exposure) })} style={[styles.strip, { backgroundColor: color.raised2 }]}>
+            <Cell label={t("desktop.putIn")} value={format.usd(trade.marginValue)} muted={!draft} />
+            <View style={[styles.cellRule, { backgroundColor: color.hairline }]} />
+            <View style={styles.cell}>
+              <Text style={[TYPE.meta, { color: color.text3 }]}>{t("desktop.exposure")}</Text>
               <LiveNumber text={format.usd(exposure)} value={exposure} height={heroH} color={draft ? color.ink : color.text3} />
-              <Text style={[TYPE.body, { color: color.text3 }]}>{t("desktop.exposure")}</Text>
             </View>
+            <View style={[styles.cellRule, { backgroundColor: color.hairline }]} />
+            <Cell label={t("margin.liquidation")} value={draft?.liquidationPrice ? format.price(draft.liquidationPrice) : "—"} muted={!draft} tone={draft?.liquidationPrice ? color.down : undefined} />
+            {quotedAt !== undefined && intent && !trade.drafting && trade.foreground ? (
+              <View style={styles.ring}>
+                <CountdownRing key={quotedAt} fromSec={quotedAt / MS} toSec={(quotedAt + QUOTE_FRESH_MS) / MS} size={RING} />
+              </View>
+            ) : null}
           </View>
 
+          {/* Take-profit and stop-loss fold behind one line that says what is set; the levels draw on the chart. */}
           {mark !== null ? (
-            <View style={styles.group}>
+            <DisclosureRow
+              title={t("desktop.protect")}
+              value={
+                [
+                  trade.targets.takeProfit !== null ? `${t("protect.takeProfitShort")} ${format.percent((trade.side === "long" ? 1 : -1) * trade.targets.takeProfit, 0)}` : null,
+                  trade.targets.stopLoss !== null ? `${t("protect.stopLossShort")} ${format.percent((trade.side === "long" ? -1 : 1) * trade.targets.stopLoss, 0)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || t("protect.off")
+              }
+            >
               {(["takeProfit", "stopLoss"] as const).map((target: keyof TradeTargets) => {
                 const steps = targetSteps(target, trade.side, mark, liquidation);
                 return (
@@ -202,7 +220,7 @@ export function TradePanel({ trade, compact = false }: { trade: Trade; compact?:
                   </View>
                 );
               })}
-            </View>
+            </DisclosureRow>
           ) : null}
 
           {draft ? (
@@ -300,6 +318,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.md },
   grow: { flex: 1, minWidth: 0 },
   hero: { gap: SPACE.xs },
+  strip: { flexDirection: "row", alignItems: "center", borderRadius: SPACE.lg, paddingVertical: SPACE.md, paddingHorizontal: SPACE.sm },
+  cell: { flex: 1, minWidth: 0, gap: SPACE.xxs, paddingHorizontal: SPACE.sm },
+  cellRule: { width: StyleSheet.hairlineWidth, alignSelf: "stretch" },
+  ring: { position: "absolute", top: SPACE.xs, end: SPACE.xs },
   figureRow: { flexDirection: "row", alignItems: "flex-end", gap: SPACE.sm },
   targetRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
   targetLabel: { width: TARGET_LABEL_W },
