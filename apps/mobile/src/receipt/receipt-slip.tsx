@@ -144,6 +144,9 @@ export const ReceiptSlip = React.forwardRef<
   const network = receipt.network === "testnet" ? t("network.arcTestnet") : t("network.arc");
   const value = [TYPE.rowStrong, styles.end, { color: color.ink }];
   const explorer = receipt.explorerUrl;
+  // A swap reads "2 USDC →" over "2.45 EURC": one line held both and the web cut it off ("2 USDC → …").
+  const [paid, got] = receipt.kind === "swap" ? receipt.amount.split(" → ") : [];
+  const figure = paid && got ? got : receipt.amount;
   // On a desktop page the slip is a wide ticket: the stub stands beside the body behind a vertical perforation.
   const [width, setWidth] = React.useState(0);
   const wide = !exporting && width >= WIDE_AT;
@@ -177,6 +180,11 @@ export const ReceiptSlip = React.forwardRef<
                     ? t("receipt.sent")
                     : t("receipt.received")}
               </Text>
+              {paid && got ? (
+                <Text style={[TYPE.sectionTitle, { color: color.text2 }]} numberOfLines={1}>
+                  {`${paid} →`}
+                </Text>
+              ) : null}
               <View style={styles.amountRow}>
                 {receipt.assetMark ? <Mark entity={receipt.assetMark} size={SLIP.assetMark} /> : null}
                 <Text
@@ -184,7 +192,7 @@ export const ReceiptSlip = React.forwardRef<
                   numberOfLines={1}
                   adjustsFontSizeToFit
                 >
-                  {receipt.amount}
+                  {figure}
                 </Text>
               </View>
               <Text style={[TYPE.body, { color: color.text2 }]} numberOfLines={1}>

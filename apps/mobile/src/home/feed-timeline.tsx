@@ -11,10 +11,14 @@ import {
   ArrowUpRight,
   CalendarClock,
   EyeOff,
+  Flame,
   FlaskConical,
   Hand,
+  Route,
   Sparkles,
   Sprout,
+  Store,
+  TrendingDown,
   TrendingUp,
   Waypoints,
   X,
@@ -26,7 +30,7 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 
 import { AGENT_FEED_GROUPS, type AgentFeed, type AgentFeedGroup, type AgentFeedItem } from "@kawase/api-client";
-import { getVenueIdentity, venueKey } from "@kawase/identity";
+import { arcIdentity, getVenueIdentity, venueKey } from "@kawase/identity";
 import { Mark } from "@kawase/ui-native/components/mark";
 import { TokenMark } from "@kawase/ui-native/components/token-mark";
 
@@ -61,6 +65,15 @@ const HALF = 2;
 const BADGE = 18;
 const BADGE_ICON = 11;
 const BADGE_OFFSET = 3;
+/** A found row's badge: what Kawase noticed about the coin on its face. */
+const FOUND_GLYPH: Partial<Record<string, LucideIcon>> = {
+  trending_token: Flame,
+  big_move: TrendingUp,
+  service_pick: Store,
+  idle_cash: Sprout,
+  better_route: Route,
+  stuck_bridge: Waypoints,
+};
 const KIND_GLYPH: Partial<Record<AgentFeedItem["kind"], LucideIcon>> = {
   send: ArrowUpRight,
   receive: ArrowDownLeft,
@@ -123,13 +136,25 @@ export function FeedMark({ item, ring }: { item: AgentFeedItem; ring?: string | 
   );
   const swap = item.kind === "swap" && item.token && item.other;
   const venue = item.venue && getVenueIdentity(item.venue) ? venueKey(item.venue) : null;
-  const glyph = KIND_GLYPH[item.kind];
+  // A found row wears the coin it is about (Abu 10-15: real logos, never a star): a trending token's own mark, or USDC's
+  // and EURC's from the registry; its badge says what Kawase noticed.
+  const facts = item.suggestion?.facts;
+  const ids = arcIdentity(item.network);
+  const symbol = (facts?.token ?? facts?.asset ?? "").toUpperCase();
+  const registry = symbol === "USDC" ? ids.usdc : symbol === "EURC" ? ids.eurc : null;
+  const found = item.kind === "suggestion" && facts ? (facts.address ? { trending: true } : registry ? { trending: false } : null) : null;
+  const glyph =
+    item.kind === "suggestion"
+      ? facts?.change?.startsWith("-") || facts?.change?.startsWith("−")
+        ? TrendingDown
+        : (FOUND_GLYPH[item.suggestion?.kind ?? ""] ?? Sparkles)
+      : KIND_GLYPH[item.kind];
   const badge =
     item.outcome === "failed" || item.outcome === "skipped"
       ? { icon: X, fill: color.destructive, tint: color.onFill }
       : item.outcome === "waiting"
         ? { icon: Hand, fill: color.warn, tint: color.ground }
-        : !swap && (item.token || venue) && glyph
+        : !swap && (item.token || venue || found) && glyph
           ? { icon: glyph, fill: color.raised2, tint: color.ink }
           : null;
   const face = swap ? (
@@ -139,6 +164,10 @@ export function FeedMark({ item, ring }: { item: AgentFeedItem; ring?: string | 
     </View>
   ) : item.token ? (
     mark(item.other?.token ?? item.token, FACE)
+  ) : found?.trending && facts?.address ? (
+    <TokenMark token={{ chainId, address: facts.address, symbol: facts.token ?? "", logoUrl: facts.logo ?? null }} size={FACE} />
+  ) : registry && found ? (
+    <Mark entity={registry} size={FACE} />
   ) : venue ? (
     <Mark entity={venue} size={FACE} />
   ) : (

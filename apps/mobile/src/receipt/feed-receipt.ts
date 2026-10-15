@@ -23,6 +23,7 @@ export function useFeedReceipt() {
         direction: "sent",
         amount: `${copy.money(item.other.amount, item.other.token)} → ${copy.money(item.amount, item.token)}`,
         counterparty: venue ?? "Arc",
+        assetMark,
       };
     return {
       ...base,

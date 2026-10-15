@@ -69,6 +69,8 @@ const EMPTY_PROMPT_KEY = "feed.home.emptyPrompt";
 const SIDE_COLUMN_PX = 340;
 /** The stage width from which the feed (560 px at least) and the markets column fit side by side, with the gutters. */
 const BESIDE_MIN_STAGE_PX = 1000;
+/** The feed under the centred head: a centred column on plates, like Activity's (Abu 10-15: "shift them to the middle"). */
+const LIST_MAX_PX = 600;
 /** The grid's gutters, one on each side. */
 const GUTTERS = 2;
 
@@ -195,7 +197,7 @@ export function HomeScreen() {
         size="inline"
       />
     ) : (
-      <FeedTimeline feed={feed.feed} filter={filter} limit={FEED_ROWS} onOpen={setOpen} />
+      <FeedTimeline feed={feed.feed} filter={filter} limit={FEED_ROWS} onOpen={setOpen} plated={beside} />
     );
   const feedSection = account ? (
     <View style={styles.section}>
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   mainColumn: { flex: 1, minWidth: 0 },
   fixedHead: { gap: SPACE.xl, paddingTop: SPACE.xxl, paddingBottom: SPACE.md },
   fill: { flex: 1 },
-  list: { gap: SPACE.xl, paddingTop: SPACE.md },
+  list: { gap: SPACE.xl, paddingTop: SPACE.md, width: "100%", maxWidth: LIST_MAX_PX, alignSelf: "center" },
   guestStage: { flexGrow: 1, justifyContent: "center", paddingTop: SPACE.xxl },
   sideColumn: { width: SIDE_COLUMN_PX, flexGrow: 0 },
   sideContent: { paddingTop: SPACE.xxl },
