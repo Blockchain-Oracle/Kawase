@@ -21,6 +21,7 @@ import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
 import { marketEntity, PRICE_DECIMALS, useMarginFormat } from "@/margin/copy";
 import { useMarginMarkets } from "@/margin/use-margin";
+import { useSession } from "@/session/session-provider";
 import { LiveNumber } from "@/trade/bits";
 import { useCandles } from "@/trade/use-candles";
 import { useLivePrices } from "@/trade/use-live-prices";
@@ -49,14 +50,17 @@ export function LeverageBoard() {
   const { color } = useTheme();
   const wide = useWide();
   const { width } = useWindowDimensions();
-  const { view, failed, refresh } = useMarginMarkets({ live: true });
+  // Mainnet's markets for everyone (public data, like the token lists); a testnet session's plates say Mainnet only.
+  const { view, failed, refresh } = useMarginMarkets({ live: true, network: "mainnet" });
+  const { user } = useSession();
+  const onTestnet = (user?.activeNetwork ?? "testnet") === "testnet";
   const ticker = useLivePrices(view?.markets.map((market) => market.market) ?? []);
   const cardWidth = wide ? undefined : Math.min(CARD_MAX, width - CARD_GUTTER);
 
   const cards = !view
     ? Array.from({ length: SKELETON_CARDS }, (_, index) => <Skeleton key={index} width={cardWidth ?? "32%"} height={CARD_SKELETON_H} radius={RADIUS.lg} />)
     : view.markets.map((market) => (
-        <MarketCard key={market.market} market={market} live={ticker.prices[market.market]} available={view.available} width={cardWidth} />
+        <MarketCard key={market.market} market={market} live={ticker.prices[market.market]} available={view.available && !onTestnet} width={cardWidth} />
       ));
 
   return (
@@ -66,7 +70,7 @@ export function LeverageBoard() {
           <Text accessibilityRole="header" style={[TYPE.sectionTitle, { color: color.ink }]}>
             {t("markets.leverageTitle")}
           </Text>
-          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{view && !view.available ? t("markets.perpsMainnet") : t("markets.leverageSubtitle")}</Text>
+          <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("markets.leverageSubtitle")}</Text>
         </View>
         {ticker.live ? (
           <View style={styles.live}>

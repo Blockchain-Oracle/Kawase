@@ -25,19 +25,20 @@ export function useMarginOrder(initial?: MarginIntent | undefined): MarginContro
 /** The venue's prices move; a live surface (the terminal) re-reads the markets this often (the api caches the venue). */
 export const MARKETS_REFRESH_MS = 15_000;
 
-export function useMarginMarkets(options: { live?: boolean } = {}) {
+export function useMarginMarkets(options: { live?: boolean; network?: "mainnet" | "testnet" } = {}) {
   const { user } = useSession();
-  const network = user?.activeNetwork ?? "testnet";
+  const network = options.network ?? user?.activeNetwork ?? "testnet";
+  const asked = options.network;
   const [view, setView] = React.useState<MarginMarketsView>();
   const [failed, setFailed] = React.useState(false);
   const load = React.useCallback(async () => {
     try {
-      setView(await api.margin.markets());
+      setView(await api.margin.markets(asked));
       setFailed(false);
     } catch {
       setFailed(true);
     }
-  }, []);
+  }, [asked]);
   React.useEffect(() => {
     setView(undefined);
     void load();

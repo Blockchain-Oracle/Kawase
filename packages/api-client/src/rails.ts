@@ -744,7 +744,8 @@ export function railsEndpoints(call: Call) {
     },
     margin: {
       /** Markets, sides and leverage caps from the venue's live reserves; no account needed (R13). */
-      markets: () => call<MarginMarketsView>("GET", "/margin/markets"),
+      /** The session's network by default; `network` reads another (Markets shows mainnet's to a testnet session). */
+      markets: (network?: NetworkId) => call<MarginMarketsView>("GET", `/margin/markets${network ? `?network=${network}` : ""}`),
       positions: () => call<{ positions: MarginPositionView[] }>("GET", "/margin/positions"),
       create: (request: MarginRequest) => call<{ intent: MarginIntent }>("POST", "/margin/orders", request),
       get: (id: string) => call<{ intent: MarginIntent }>("GET", `/margin/orders/${id}`),
