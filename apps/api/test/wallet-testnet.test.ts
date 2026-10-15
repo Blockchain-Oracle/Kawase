@@ -1,5 +1,5 @@
 // The wallet flow through the api on Arc testnet with a fresh local key standing in for the Privy wallet:
-// register → relayed 7702 setup → allowance signed and verified → status → revoke (funded by the ops wallet).
+// sign-in (registers the wallet) → relayed 7702 setup → allowance signed and verified → status → revoke (funded by the ops wallet).
 // Skipped without the server keys in the root .env. Run: pnpm --filter @kawase/api test
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -47,16 +47,10 @@ test(
     const { token, user } = (await signIn.json()) as { token: string; user: { id: string } };
     userId = user.id;
 
-    const wrongWallet = await app.request(
-      "/wallet",
-      jsonRequest("POST", { address: wallet.address, walletId: "not-mine" }, token),
-    );
-    assert.equal(wrongWallet.status, 422, "an address that is not in the sub-organization is refused");
-    const registered = await app.request(
-      "/wallet",
-      jsonRequest("POST", { address: wallet.address, walletId: "wallet-1" }, token),
-    );
-    await expectStatus(registered, 201, "register");
+    // The Privy identity token named the wallet, so the sign-in registered it (D41): there is no separate register call.
+    const registered = await app.request("/wallet", { headers: { authorization: `Bearer ${token}` } });
+    await expectStatus(registered, 200, "wallet status");
+    assert.equal(((await registered.json()) as { address?: string }).address?.toLowerCase(), wallet.address.toLowerCase(), "registered at sign-in");
 
     const notReady = await app.request("/wallet/allowance/request", jsonRequest("POST", { network: "testnet" }, token));
     assert.equal(notReady.status, 422, "no allowance before the setup");
