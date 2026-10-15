@@ -1,59 +1,98 @@
 ---
 title: "Largo y corto"
-description: "Kawase Margin abre una posición larga o corta con apalancamiento a través de tu propia cuenta de Aave V4 en Arc, en una sola transacción que confirmas deslizando, con el precio de liquidación visible desde el principio."
-sourceHash: c040ac083125c6c6
+description: "Kawase Margin abre un largo o un corto apalancado en cirBTC, WETH o EURC a través de tu propia cuenta de Aave V4 en la red principal de Arc, en una sola transacción que confirmas deslizando, con el precio de liquidación a la vista y un take-profit y stop-loss opcionales."
+sourceHash: 439241212d1cafdd
 ---
 
 <Status ids="margin" />
 
 <Marks names="aave cirbtc weth eurc usdc kyberswap" />
 
-**Kawase Margin** te permite apostar a que el precio subirá (**largo**) o bajará (**corto**) con más dinero del que aportas. Funciona en
-**Aave V4** en la red principal de Arc, a través de **tu propia** cuenta de Aave: sin cuenta de exchange, sin préstamo flash y sin que
-Kawase custodie tus fondos.
+<Flow>
+  <FlowStep icon="candles" title="Elige un mercado">cirBTC, WETH o EURC, con precio en vivo.</FlowStep>
+  <FlowStep icon="sliders" title="El ticket">Margen, apalancamiento, toma de ganancias y stop-loss.</FlowStep>
+  <FlowStep icon="hand" title="Desliza" tone="accent">Una transacción desde tu propia cuenta de Aave.</FlowStep>
+  <FlowStep icon="eye" title="Tu posición" tone="ink">Ganancias en vivo, salud y Cerrar del 25 % a Todo.</FlowStep>
+</Flow>
 
-## Cómo se crea una posición
+**Kawase Margin** te deja apostar a que un precio sube (**largo**) o baja (**corto**) con más de lo que pones. Funciona
+sobre **Aave V4** en la red principal de Arc, a través de **tu propia** cuenta de Aave: sin cuenta en un exchange, sin
+préstamo flash y sin que Kawase guarde nada. Aave V4 no tiene red de pruebas, así que en ella la pantalla lo explica y
+ofrece cambiar.
 
-- **Largo X**: tu margen en USDC se cambia por X y se deposita como garantía. Después, Kawase pide USDC prestado con esa garantía, lo cambia por
-  más X y lo deposita. Este proceso se repite varias veces.
-- **Corto X**: tus USDC se depositan como garantía. Después, Kawase pide X prestado, lo cambia por USDC y lo deposita. Este proceso se repite.
-- **Cerrar** funciona al revés: retirar, cambiar, devolver el préstamo y enviar el resto a tu billetera.
+## Largo o corto, paso a paso
 
-La posición completa se abre o se cierra en **una sola transacción** desde tu propia billetera (un lote EIP-7702). Las operaciones de cambio vienen de
-KyberSwap y usan datos de llamada verificados. Cada ciclo pide prestado solo hasta alcanzar un nivel de salud seguro según los precios del oráculo, y la cuenta se abre con una
-**salud de 1.10 o más**.
+<Walkthrough light>
+  <WalkStep title="Los mercados" src="trade/markets">
+    **Mercados → Largo o corto** muestra los principales activos de Arc con apalancamiento, en vivo: el precio, su
+    movimiento desde la apertura de la hora («Los largos van por delante desde las 20:45») y hasta dónde llega cada lado.
 
-## Mercados
+    <Pin box="4 44.5 70 34">Un mercado, su línea en vivo y quién va por delante</Pin>
 
-Los mercados usan las reservas activas de Aave V4 en Arc. Hoy:
+    <Pin box="7 69 31 8">Largo: hasta el apalancamiento del mercado, o No disponible</Pin>
 
-- **cirBTC** (Bitcoin de Circle) y **WETH**: largo y corto;
-- **EURC**: solo corto, porque EURC no puede usarse como garantía en Aave V4.
+    <Pin box="39 69 34 8">Corto</Pin>
+  </WalkStep>
+  <WalkStep title="Largo / Corto" src="long-short/margin">
+    Elige el mercado, lee el gráfico (de una hora a un mes), mira tus posiciones abiertas y luego **Largo** o **Corto**.
 
-El apalancamiento está limitado por el factor de garantía de cada activo. Con los factores actuales, es de aproximadamente **3.4× para un largo en cirBTC**, **4× para un largo en
-WETH** y **2.4× para un corto**. El margen se paga en **USDC**.
+    <Pin box="3 17.5 94 7.5">cirBTC, WETH, EURC: precios en vivo</Pin>
 
-## La ficha
+    <Pin box="4 35.5 50 4.5">1H · 1D · 1S · 1M</Pin>
 
-«Largo en Bitcoin 2x con 10 dólares» o la pantalla de **Largo/corto**. Al elegir un lado, se prepara de inmediato un plan real ($10, 2×), así que
-la ficha se abre con datos actualizados:
+    <Pin box="4 90 45 8.5">Largo en cirBTC, hasta 3,4×</Pin>
 
-- tu margen y el tamaño apalancado, con opciones predeterminadas y Max;
-- una **regla de apalancamiento** limitada por el mercado, con una marca cada medio punto;
-- el **precio de liquidación** y la distancia hasta él, la **salud** de la cuenta, la tasa de préstamo y la comisión de red;
-- la ruta y una línea de riesgo.
+    <Pin box="51 90 45 8.5">Corto en cirBTC, hasta 2,4×</Pin>
+  </WalkStep>
+  <WalkStep title="El ticket" src="long-short/ticket">
+    Elige un lado, escribe tu margen y toca un apalancamiento. La franja de debajo muestra **lo que pones**, la
+    **exposición** y el **precio de liquidación** antes de firmar nada.
 
-Confirmas **deslizando** (color menta para un largo, rojo para un corto) y después con Face ID. La ficha sigue la transacción desde la
-comprobación hasta el final. Cualquier cambio en el plan reinicia el deslizamiento, para que nunca confirmes cifras que no hayas visto.
+    <Pin box="4 28 92 5.5">Largo o corto</Pin>
 
-## Posiciones
+    <Pin box="4 74.5 92 5.5">Apalancamiento, limitado por el mercado</Pin>
 
-Cada posición tiene su propia página: las ganancias y pérdidas se dividen entre **cambio de precio** y **coste del préstamo**, un **indicador de salud**, su
-precio de liquidación y las opciones **Cerrar 25% · 50% · 75% · Todo**, que preparan el cierre en la misma ficha. La tarjeta **Para ti**
-de Inicio te avisa cuando la salud de una posición abierta baja de 1.25 o la liquidación está a menos de un movimiento del 10%.
+    <Pin box="4 82 92 10">Pones · exposición · precio de liquidación</Pin>
+  </WalkStep>
+  <WalkStep title="Toma de ganancias y stop-loss" src="long-short/ticket-tpsl">
+    Despliega **Toma de ganancias · stop-loss** para cerrar solo a +10 % o +25 %, o a −5 % o −10 %. Kawase cierra con un
+    permiso que tu billetera firma en Arc, y cerrar la posición retira ese permiso con la misma firma. Confirmas todo el
+    ticket **deslizando** y después con Face ID.
 
-## No está disponible en la red de pruebas
+    <Pin box="4 74.5 92 10.5">Valores de toma de ganancias y stop-loss</Pin>
 
-Aave V4 solo está en la red principal de Arc, así que Kawase Margin también. En la red de pruebas, la pantalla lo explica y ofrece cambiar de red.
+    <Pin box="4 87.5 92 7.5">Desliza para abrir (aquí: inicia sesión para operar)</Pin>
+  </WalkStep>
+</Walkthrough>
+
+Las capturas son la red principal vista por un invitado: el último paso le pide iniciar sesión. Con sesión iniciada pone
+**Desliza para abrir Largo**, y el ticket sigue la transacción de la comprobación al final. Cualquier cambio en el plan
+reinicia el deslizamiento, así que nunca confirmas cifras que no viste.
+
+## Cómo se construye una posición
+
+- **Largo en X**: tu margen en USDC se cambia a X y se deposita como garantía; luego Kawase pide USDC prestados contra
+  ella, los cambia a más X y lo deposita, unas cuantas veces en bucle.
+- **Corto en X**: tus USDC se depositan como garantía; luego Kawase pide X prestado, lo cambia a USDC y lo deposita, en
+  bucle.
+- **Cerrar** lo hace al revés: retirar, cambiar, devolver, y el resto vuelve a tu billetera.
+
+Toda la posición se abre o se cierra en **una sola transacción** desde tu propia billetera (un lote EIP-7702). Los
+intercambios salen de KyberSwap con datos de llamada comprobados. Cada vuelta solo pide prestado hasta una salud segura a
+precios del oráculo, y la cuenta abre con una **salud de 1,10 o más**.
+
+## Mercados y apalancamiento
+
+Los mercados salen de las reservas en vivo de Aave V4 en Arc: **cirBTC** (el Bitcoin de Circle) y **WETH**, en largo y en
+corto; **EURC**, solo en corto, porque EURC no puede ser garantía en Aave V4. El apalancamiento está limitado por el
+factor de garantía de cada activo (hoy unos **3,4× largo en cirBTC**, **4,1× largo en WETH** y **2,4× en corto**). El
+margen se paga en **USDC**.
+
+## Tus posiciones
+
+Cada posición tiene su propia página: la **ganancia o pérdida** separada en **precio** e **intereses del préstamo**, precio
+de entrada y actual, tamaño, patrimonio, un indicador de **salud** y el precio de liquidación, y **Cerrar 25 % · 50 % ·
+75 % · Todo**, que prepara el cierre en el mismo ticket («Desliza para cerrar»). Inicio te avisa cuando la salud de una
+posición abierta baja de 1,25 o la liquidación está a menos de un 10 % de movimiento.
 
 <ScopeList ids="margin" />

@@ -1,58 +1,98 @@
 ---
 title: "Comprado e vendido"
-description: "A Kawase Margin abre uma posição comprada ou vendida com alavancagem pela sua própria conta na Aave V4 na Arc, em uma única transação que você confirma deslizando, com o preço de liquidação exibido primeiro."
-sourceHash: c040ac083125c6c6
+description: "O Kawase Margin abre uma posição comprada ou vendida alavancada em cirBTC, WETH ou EURC pela sua própria conta Aave V4 na rede principal da Arc, numa única transação que você confirma deslizando, com o preço de liquidação mostrado antes e take-profit e stop-loss opcionais."
+sourceHash: 439241212d1cafdd
 ---
 
 <Status ids="margin" />
 
 <Marks names="aave cirbtc weth eurc usdc kyberswap" />
 
-A **Kawase Margin** permite apostar na alta (**comprado**) ou na queda (**vendido**) de um preço com mais dinheiro do que você investiu. Ela funciona na
-**Aave V4** na Arc Rede principal, pela **sua própria** conta na Aave: sem conta em corretora, sem empréstimo relâmpago e sem nada sob
-a custódia da Kawase.
+<Flow>
+  <FlowStep icon="candles" title="Escolha um mercado">cirBTC, WETH ou EURC, com preço ao vivo.</FlowStep>
+  <FlowStep icon="sliders" title="O ticket">Margem, alavancagem, take-profit e stop-loss.</FlowStep>
+  <FlowStep icon="hand" title="Deslize" tone="accent">Uma transação da sua própria conta Aave.</FlowStep>
+  <FlowStep icon="eye" title="Sua posição" tone="ink">Lucro ao vivo, saúde, e Fechar de 25% a Tudo.</FlowStep>
+</Flow>
 
-## Como uma posição é criada
+O **Kawase Margin** permite apostar na alta (**comprado**) ou na queda (**vendido**) de um preço com mais do que você coloca.
+Ele roda no **Aave V4** na rede principal da Arc, pela **sua própria** conta Aave: sem conta em corretora, sem empréstimo
+relâmpago e nada guardado pelo Kawase. O Aave V4 não tem rede de testes, então nela a tela explica isso e oferece a troca.
 
-- **Comprado em X**: sua margem em USDC é trocada por X e fornecida como garantia. Depois, a Kawase pega USDC emprestado usando essa garantia, troca por
-  mais X e fornece esse valor, repetindo o ciclo algumas vezes.
-- **Vendido em X**: seu USDC é fornecido como garantia. Depois, a Kawase pega X emprestado, troca por USDC e fornece esse valor, repetindo o ciclo.
-- O **fechamento** faz o caminho inverso: retirar, trocar, pagar o empréstimo e devolver o restante para sua carteira.
+## Comprado ou vendido, passo a passo
 
-A posição inteira é aberta ou fechada em **uma única transação** pela sua própria carteira (um lote EIP-7702). As etapas de troca vêm da
-KyberSwap, com os calldata verificados. Cada ciclo pega empréstimos apenas até um nível de segurança saudável, calculado pelos preços do oráculo, e a conta é aberta com uma
-**saúde de 1,10 ou mais**.
+<Walkthrough light>
+  <WalkStep title="Os mercados" src="trade/markets">
+    **Mercados → Comprado ou vendido** mostra os principais ativos da Arc com alavancagem, ao vivo: o preço, o movimento
+    desde a abertura da hora («Comprados na frente desde 20:45») e até onde vai cada lado.
 
-## Mercados
+    <Pin box="4 44.5 70 34">Um mercado, a linha ao vivo e quem está na frente</Pin>
 
-Os mercados vêm das reservas ativas da Aave V4 na Arc. Hoje:
+    <Pin box="7 69 31 8">Comprado: até a alavancagem do mercado, ou Não oferecido</Pin>
 
-- **cirBTC** (Bitcoin da Circle) e **WETH**: comprado e vendido;
-- **EURC**: somente vendido, porque o EURC não pode ser usado como garantia na Aave V4.
+    <Pin box="39 69 34 8">Vendido</Pin>
+  </WalkStep>
+  <WalkStep title="Comprado / Vendido" src="long-short/margin">
+    Escolha o mercado, leia o gráfico (de uma hora a um mês), veja suas posições abertas e então **Comprado** ou
+    **Vendido**.
 
-A alavancagem é limitada pelo fator de garantia de cada ativo. Com os fatores atuais, isso representa cerca de **3,4× comprado em cirBTC**, **4× comprado em
-WETH** e **2,4× vendido**. A margem é paga em **USDC**.
+    <Pin box="3 17.5 94 7.5">cirBTC, WETH, EURC: preços ao vivo</Pin>
 
-## O ticket
+    <Pin box="4 35.5 50 4.5">1H · 1D · 1S · 1M</Pin>
 
-“Comprado em Bitcoin 2x com 10 dólares” ou a tela de **Comprado/vendido**. Ao escolher um lado, um plano real é criado na hora (US$ 10, 2×), e
-o ticket é aberto com números atualizados:
+    <Pin box="4 90 45 8.5">Comprado em cirBTC, até 3,4×</Pin>
 
-- sua margem e o tamanho da posição com alavancagem, com opções predefinidas e Máx.;
-- uma **régua de alavancagem** limitada pelo mercado, com uma marca a cada meio passo;
-- o **preço de liquidação** e a distância até ele, a **saúde** da conta, a taxa de empréstimo e a tarifa de rede;
-- a rota e uma linha de risco.
+    <Pin box="51 90 45 8.5">Vendido em cirBTC, até 2,4×</Pin>
+  </WalkStep>
+  <WalkStep title="O ticket" src="long-short/ticket">
+    Escolha um lado, digite sua margem e toque numa alavancagem. A faixa abaixo mostra **o que você coloca**, a
+    **exposição** e o **preço de liquidação** antes de qualquer assinatura.
 
-Você confirma **deslizando** (verde-menta para comprado, vermelho para vendido) e depois usando o Face ID. O ticket acompanha a transação, da
-verificação até a conclusão. Qualquer alteração no plano reinicia o deslize. Assim, você nunca confirma números que não viu.
+    <Pin box="4 28 92 5.5">Comprado ou vendido</Pin>
 
-## Posições
+    <Pin box="4 74.5 92 5.5">Alavancagem, limitada pelo mercado</Pin>
 
-Cada posição tem sua própria página: lucro e prejuízo separados entre **preço** e **custo do empréstimo**, um **indicador de saúde**, seu
-preço de liquidação e as opções **Fechar 25% · 50% · 75% · Tudo**, que criam o encerramento no mesmo ticket. O cartão **Para você** na tela inicial avisa quando a saúde de uma posição aberta cai abaixo de 1,25 ou quando a liquidação está a menos de uma variação de 10%.
+    <Pin box="4 82 92 10">Você coloca · exposição · preço de liquidação</Pin>
+  </WalkStep>
+  <WalkStep title="Take-profit e stop-loss" src="long-short/ticket-tpsl">
+    Abra **Take-profit · stop-loss** para fechar sozinho em +10% ou +25%, ou em −5% ou −10%. O Kawase fecha com uma
+    permissão que a sua carteira assina na Arc, e fechar a posição desliga essa permissão com a mesma assinatura. Você
+    confirma o ticket inteiro **deslizando** e depois com Face ID.
 
-## Não disponível na rede de testes
+    <Pin box="4 74.5 92 10.5">Valores prontos de take-profit e stop-loss</Pin>
 
-Aave V4 está disponível somente na Arc Rede principal, então a Kawase Margin também. Na rede de testes, a tela explica isso e oferece a opção de mudar.
+    <Pin box="4 87.5 92 7.5">Deslize para abrir (aqui: entre para operar)</Pin>
+  </WalkStep>
+</Walkthrough>
+
+As capturas mostram a rede principal vista por um convidado: o último passo pede para entrar. Com a conta aberta, aparece
+**Deslize para abrir Comprado**, e o ticket acompanha a transação da verificação até o final. Qualquer mudança no plano
+reinicia o deslize, então você nunca confirma números que não viu.
+
+## Como uma posição é montada
+
+- **Comprado em X**: sua margem em USDC é trocada por X e depositada como garantia; depois o Kawase pega USDC emprestado
+  contra ela, troca por mais X e deposita, algumas vezes em ciclo.
+- **Vendido em X**: seus USDC são depositados como garantia; depois o Kawase pega X emprestado, troca por USDC e deposita,
+  em ciclo.
+- **Fechar** faz o caminho inverso: saca, troca, paga, e o resto volta para a sua carteira.
+
+A posição inteira abre ou fecha em **uma única transação** da sua própria carteira (um lote EIP-7702). As trocas vêm da
+KyberSwap com dados de chamada conferidos. Cada ciclo só pega emprestado até uma saúde segura aos preços do oráculo, e a
+conta abre com **saúde de 1,10 ou mais**.
+
+## Mercados e alavancagem
+
+Os mercados vêm das reservas ao vivo do Aave V4 na Arc: **cirBTC** (o Bitcoin da Circle) e **WETH**, comprado e vendido;
+**EURC**, só vendido, porque o EURC não pode ser garantia no Aave V4. A alavancagem é limitada pelo fator de garantia de
+cada ativo (hoje cerca de **3,4× comprado em cirBTC**, **4,1× comprado em WETH** e **2,4× vendido**). A margem é paga em
+**USDC**.
+
+## Suas posições
+
+Cada posição tem sua página: o **lucro ou prejuízo** dividido em **preço** e **juros do empréstimo**, preço de entrada e
+atual, tamanho, patrimônio, um medidor de **saúde** e o preço de liquidação, e **Fechar 25% · 50% · 75% · Tudo**, que
+prepara a saída no mesmo ticket («Deslize para fechar»). O Início avisa quando a saúde de uma posição aberta cai abaixo de
+1,25 ou a liquidação está a menos de 10% de movimento.
 
 <ScopeList ids="margin" />
