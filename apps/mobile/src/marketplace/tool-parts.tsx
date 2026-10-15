@@ -16,9 +16,12 @@ import { usePressScale } from "@/components/kit/usePressScale";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
+import { API_URL } from "@/session/api";
 
 const INITIALS = 2;
 const BADGE_SHARE = 0.42;
+/** A brand icon sits inset on its own paper plate, so a square favicon reads like every other mark. */
+const ICON_SHARE = 0.68;
 const ROW_PRESS = 0.985;
 const CALLS_COMPACT_FROM = 10_000;
 const STAGGER_MAX = 8;
@@ -52,11 +55,19 @@ function siteIcon(website: string | null): string | null {
 export function ToolMark({ tool, size = SIZE.markRow }: { tool: CatalogToolView; size?: number }) {
   const { color } = useTheme();
   const [iconFailed, setIconFailed] = React.useState(false);
-  const icon = !tool.mark && tool.party === "first" ? siteIcon(tool.provider.website) : null;
+  // The brand's own icon (served by the api for a resold tool, "Tavily" through Orthogonal), else a first-party
+  // seller's site icon; the initials disc only when neither exists.
+  const icon = tool.mark ? null : tool.logo ? `${API_URL.replace(/\/$/, "")}${tool.logo}` : tool.party === "first" ? siteIcon(tool.provider.website) : null;
   const badge = Math.round(size * BADGE_SHARE);
+  const inner = Math.round(size * ICON_SHARE);
   let face: React.ReactNode;
   if (tool.mark) face = <Mark entity={tool.mark} size={size} />;
-  else if (icon && !iconFailed) face = <Image source={{ uri: icon }} onError={() => setIconFailed(true)} style={{ width: size, height: size, borderRadius: RADIUS.sm }} accessibilityIgnoresInvertColors />;
+  else if (icon && !iconFailed)
+    face = (
+      <View style={[styles.plate, { width: size, height: size, backgroundColor: color.paper }]}>
+        <Image source={{ uri: icon }} onError={() => setIconFailed(true)} style={{ width: inner, height: inner, borderRadius: RADIUS.xs }} accessibilityIgnoresInvertColors />
+      </View>
+    );
   else {
     const initials = tool.name
       .split(/[\s._-]+/)
@@ -188,6 +199,7 @@ const styles = StyleSheet.create({
   end: { alignItems: "flex-end", gap: SPACE.xxs },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.md, minHeight: SIZE.rowMinHeight, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: RADIUS.md },
   disc: { borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
+  plate: { borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   badge: { position: "absolute", end: -SPACE.xxs, bottom: -SPACE.xxs, padding: SPACE.xxs / HALF },
   pill: { paddingHorizontal: SPACE.xs, paddingVertical: SPACE.xxs / HALF, borderRadius: RADIUS.xs },
   cardWrap: { flexGrow: 1, flexBasis: 0 },

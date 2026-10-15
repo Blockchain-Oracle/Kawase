@@ -8,6 +8,7 @@ import { requireAccount, requireUser } from "../auth/middleware";
 import { HTTP, problem } from "../http/problem";
 import type { AppEnv } from "../types";
 import { signedRevokeSchema } from "../wallet/routes";
+import { brandIcon } from "./brand-logos";
 import type { MarketplaceService } from "./service";
 
 const hex = z.string().regex(/^0x[0-9a-fA-F]*$/);
@@ -59,6 +60,13 @@ async function parse<T extends z.ZodType>(schema: T, body: unknown): Promise<z.i
 
 export function marketplaceRoutes(marketplace: MarketplaceService) {
   const app = new Hono<AppEnv>();
+
+  /** A tool's brand icon (brand-logos.ts): public, so an <Image> loads it without a session; known brands only. */
+  app.get("/logo/:domain", async (c) => {
+    const icon = await brandIcon(c.req.param("domain"));
+    if (!icon) throw problem(HTTP.notFound, "not_found");
+    return c.body(icon.body, HTTP.ok, { "content-type": icon.type, "cache-control": "public, max-age=86400" });
+  });
 
   /** Searching the catalog is public (guests can look at everything real, R13). */
   app.get("/services", requireUser, async (c) => {

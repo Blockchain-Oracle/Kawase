@@ -52,6 +52,8 @@ export type TxCtaProps = {
   receipt?: ReactNode;
   /** A caption in the quiet states ("No fees to pay"). */
   caption?: string;
+  /** A mark before the verb while it waits for the tap (the token it pays in). */
+  leading?: ReactNode;
 };
 
 export function TxCta({
@@ -64,6 +66,7 @@ export function TxCta({
   steps = true,
   receipt,
   caption,
+  leading,
 }: TxCtaProps) {
   const { t } = useT();
   const { color } = useTheme();
@@ -79,7 +82,7 @@ export function TxCta({
   }
   const cta = (
     <View style={styles.wrap}>
-      <Plate state={state} action={action} tone={tone} onConfirm={onConfirm} />
+      <Plate state={state} action={action} tone={tone} onConfirm={onConfirm} leading={leading} />
       <View style={styles.caption} accessibilityLiveRegion={state.kind === "failed" ? "polite" : "none"}>
         {state.kind === "failed" ? (
           <Text style={[TYPE.rowDetail, styles.center, { color: color.ink }]}>
@@ -108,11 +111,13 @@ function Plate({
   action,
   tone,
   onConfirm,
+  leading,
 }: {
   state: TxState;
   action: string;
   tone: "primary" | "accent";
   onConfirm: () => void;
+  leading?: ReactNode;
 }) {
   const { color } = useTheme();
   const { t } = useT();
@@ -168,7 +173,7 @@ function Plate({
           <ShimmerText style={[TYPE.buttonLabel, { color: ink }]}>{face}</ShimmerText>
         ) : (
           <View style={styles.face}>
-            {state.kind === "confirmed" ? <Icon icon={Check} size={SIZE.icon} tint={ink} strokeWidth={3} /> : null}
+            {state.kind === "confirmed" ? <Icon icon={Check} size={SIZE.icon} tint={ink} strokeWidth={3} /> : face === action ? leading : null}
             <Text
               maxFontSizeMultiplier={CONTROL_FONT_SCALE}
               numberOfLines={1}

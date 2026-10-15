@@ -187,6 +187,11 @@ export type CatalogToolView = {
    */
   mark: string | null;
   providerMark: string | null;
+  /**
+   * Without a registry mark: the brand's own site icon, as a path on the api ("/marketplace/logo/tavily.com"); null
+   * when the brand is not known either (the initials disc).
+   */
+  logo: string | null;
   party: CatalogParty;
   category: MarketplaceCategory;
   description: string;

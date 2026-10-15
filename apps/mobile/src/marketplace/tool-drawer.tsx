@@ -10,6 +10,8 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-na
 
 import type { BuyOutcome, CatalogToolView, InspectServiceResult, ServiceListing } from "@kawase/api-client";
 import { explorerTxUrl } from "@kawase/config";
+import { arcIdentity } from "@kawase/identity";
+import { Mark } from "@kawase/ui-native/components/mark";
 
 import { Button, DisclosureRow, ErrorState, FilterChips, KeyValue, LoadingState, Panel, Rule, WaitingText } from "@/components/kit";
 import { RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
@@ -213,7 +215,9 @@ function TryPanel({ tool, endpoint }: { tool: CatalogToolView; endpoint: Service
           ) : null}
           <TxCta
             state={runner.state.kind === "failed" ? { kind: "review" } : runner.state}
-            action={t("market402.payFromAgent", { price: perCall(price) })}
+            action={t("market402.payShort", { price: perCall(price) })}
+            leading={<UsdcMark />}
+            caption={t("market402.fromAgentWallet")}
             tone="accent"
             onConfirm={pay}
             receipt={outcome && (outcome.status === "paid" || outcome.status === "free") ? <PaidAnswer outcome={outcome} tool={tool} /> : undefined}
@@ -222,6 +226,17 @@ function TryPanel({ tool, endpoint }: { tool: CatalogToolView; endpoint: Service
       ) : null}
       {outcome && !paid ? <OutcomeStop outcome={outcome} wallet={wallet} chosen={chosen} setChosen={setChosen} onAgain={pay} onWallet={() => router.push("/agent-wallet")} /> : null}
     </Panel>
+  );
+}
+
+/** The coin the call is paid in, on a paper disc so it reads on the magenta plate. */
+function UsdcMark() {
+  const { color } = useTheme();
+  const { user } = useSession();
+  return (
+    <View style={[styles.coin, { backgroundColor: color.paper }]}>
+      <Mark entity={arcIdentity(user?.activeNetwork ?? "testnet").usdc} size={SIZE.iconSm} />
+    </View>
   );
 }
 
@@ -252,7 +267,7 @@ function OutcomeStop({
   if (outcome.status === "needs_top_up") {
     const amount = chosen ?? outcome.suggested;
     return (
-      <View style={[styles.stop, { backgroundColor: color.warnSurface }]}>
+      <View style={[styles.stop, { backgroundColor: color.raised2 }]}>
         <Text style={[TYPE.body, { color: color.ink }]}>{t("market402.needsTopUp", { price: perCall(outcome.price), have: perCall((BigInt(outcome.wallet.onHand) + BigInt(outcome.wallet.inGateway)).toString()) })}</Text>
         <TopUpPresets presets={outcome.presets} value={amount} onChange={setChosen} disabled={busy} />
         <Button
@@ -271,7 +286,7 @@ function OutcomeStop({
   }
   if (outcome.status === "needs_consent") {
     return (
-      <View style={[styles.stop, { backgroundColor: color.warnSurface }]}>
+      <View style={[styles.stop, { backgroundColor: color.raised2 }]}>
         <Text style={[TYPE.body, { color: color.ink }]}>{t(`market402.consent_${outcome.why}`, { price: perCall(outcome.purchase.amount) })}</Text>
         <Button
           label={t("market402.approveOnce", { price: perCall(outcome.purchase.amount) })}
@@ -350,6 +365,7 @@ function PaidAnswer({ outcome, tool }: { outcome: Extract<BuyOutcome, { status: 
 }
 
 const styles = StyleSheet.create({
+  coin: { width: SIZE.iconSm + SPACE.xs, height: SIZE.iconSm + SPACE.xs, borderRadius: RADIUS.pill, alignItems: "center", justifyContent: "center" },
   stack: { gap: SPACE.lg },
   grow: { flex: 1 },
   head: { flexDirection: "row", alignItems: "center", gap: SPACE.md },

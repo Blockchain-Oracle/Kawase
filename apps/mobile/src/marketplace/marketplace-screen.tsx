@@ -9,7 +9,7 @@ import * as React from "react";
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { CatalogToolView, MarketplaceCategory } from "@kawase/api-client";
+import type { CatalogToolView, MarketplaceCategory, PurchaseView } from "@kawase/api-client";
 import { useWide } from "@kawase/ui-native/lib/wide";
 
 import { Button, EmptyState, ErrorState, FilterChips, LoadingState, SearchField, StaleTick } from "@/components/kit";
@@ -17,15 +17,20 @@ import { ChevronLeft, Icon, Search } from "@/components/kit/icons";
 import { LAYOUT, RADIUS, SIZE, SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
+import { useLocale } from "@/i18n/locale-provider";
 import { useSession } from "@/session/session-provider";
 
-import { ToolCard, ToolRow } from "./tool-parts";
+import { ToolCard, ToolMark, ToolRow } from "./tool-parts";
 import { ToolDrawer } from "./tool-drawer";
 import { useAgentWallet } from "./use-agent-wallet";
 import { useCatalog } from "./use-catalog";
 
 const GRID_COLUMNS = 3;
-const SIDEBAR_WIDTH = 248;
+/** The category column: names and counts only, so the grid keeps the room (Abu, 10-15: "smaller"). */
+const SIDEBAR_WIDTH = 196;
+/** How many recent paid calls the strip shows. */
+const RECENT_MAX = 8;
+const RECENT_CARD = 168;
 const DESKTOP_MAX = 1440;
 /** Under this the agent wallet cannot pay for a typical call: the top-up card shows. */
 const LOW_BALANCE = 100_000n;
@@ -52,7 +57,8 @@ export function MarketplaceScreen({ openKey }: { openKey?: string | undefined } 
 
   const view = catalog.view;
   const total = view?.categories.reduce((sum, entry) => sum + entry.tools, 0) ?? 0;
-  const chips = [{ value: "ALL" as Filter, label: `${t("market402.categoryAll")} ${total}` }, ...(view?.categories ?? []).filter((entry) => entry.tools > 0).map((entry) => ({ value: entry.id as Filter, label: `${t(`market402.category_${entry.id}`)} ${entry.tools}` }))];
+  const sideRows = [{ value: "ALL" as Filter, name: t("market402.categoryAll"), count: total }, ...(view?.categories ?? []).filter((entry) => entry.tools > 0).map((entry) => ({ value: entry.id as Filter, name: t(`market402.category_${entry.id}`), count: entry.tools }))];
+  const chips = sideRows.map((row) => ({ value: row.value, label: `${row.name} ${row.count}` }));
   const clear = () => {
     setQuery("");
     setFilter("ALL");
@@ -98,20 +104,22 @@ export function MarketplaceScreen({ openKey }: { openKey?: string | undefined } 
         <View style={[styles.fill, styles.desktop]}>
           <ScrollView style={[styles.sidebar, { backgroundColor: color.card }]} contentContainerStyle={styles.sidebarBody}>
             <Text style={[TYPE.sectionTitle, { color: color.ink }]}>{t("market402.categories")}</Text>
-            {chips.map((chip) => {
-              const on = chip.value === filter;
+            {sideRows.map((row) => {
+              const on = row.value === filter;
               return (
                 <Pressable
-                  key={chip.value}
+                  key={row.value}
                   accessibilityRole="button"
+                  accessibilityLabel={`${row.name} ${row.count}`}
                   accessibilityState={{ selected: on }}
                   onPress={() => {
                     fire("tick");
-                    setFilter(chip.value);
+                    setFilter(row.value);
                   }}
                   style={({ pressed }) => [styles.sideRow, { backgroundColor: on ? color.selectedRow : pressed ? color.rowPressed : color.transparent }]}
                 >
-                  <Text style={[TYPE.row, { color: color.ink }]}>{chip.label}</Text>
+                  <Text numberOfLines={1} style={[TYPE.row, styles.grow, { color: color.ink }]}>{row.name}</Text>
+                  <Text style={[TYPE.meta, { color: color.text3 }]}>{row.count}</Text>
                 </Pressable>
               );
             })}
@@ -119,6 +127,7 @@ export function MarketplaceScreen({ openKey }: { openKey?: string | undefined } 
           <ScrollView style={styles.fill} contentContainerStyle={styles.desktopMain} onScroll={(event) => nearEnd(event.nativeEvent) && catalog.more()} scrollEventThrottle={SCROLL_THROTTLE_MS}>
             {header}
             <LowBalanceCard wallet={wallet} />
+            <RecentCalls wallet={wallet} tools={catalog.tools} onOpen={open} />
             <SearchField value={query} onChange={setQuery} placeholder={t("market402.searchPlaceholder")} />
             {stale}
             {states ?? (
@@ -152,6 +161,7 @@ export function MarketplaceScreen({ openKey }: { openKey?: string | undefined } 
             <View style={styles.listHead}>
               {header}
               <LowBalanceCard wallet={wallet} />
+              <RecentCalls wallet={wallet} tools={catalog.tools} onOpen={open} />
               <SearchField value={query} onChange={setQuery} placeholder={t("market402.searchPlaceholder")} />
               <FilterChips options={chips} value={filter} onChange={setFilter} label={t("market402.categories")} bleed={SPACE.inset} />
               {stale}
@@ -208,6 +218,54 @@ function LowBalanceCard({ wallet }: { wallet: Wallet }) {
   );
 }
 
+/**
+ * What the agent paid for lately (the agent wallet's purchases): each card the tool's mark, its seller, what it cost and
+ * when; a tap opens that tool when the catalog still lists it. Nothing for a guest or before the first call.
+ */
+function RecentCalls({ wallet, tools, onOpen }: { wallet: Wallet; tools: readonly CatalogToolView[]; onOpen: (tool: CatalogToolView) => void }) {
+  const { t } = useT();
+  const { color } = useTheme();
+  const { locale } = useLocale();
+  const calls = (wallet.view?.history ?? [])
+    .flatMap((item) => (item.kind === "purchase" ? [item.purchase] : []))
+    .filter((purchase) => purchase.status !== "declined")
+    .slice(0, RECENT_MAX);
+  if (!wallet.account || calls.length === 0) return null;
+  const toolFor = (purchase: PurchaseView) => tools.find((tool) => tool.provider.name === purchase.provider || tool.name === purchase.provider);
+  const when = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  return (
+    <View style={styles.recent}>
+      <View>
+        <Text accessibilityRole="header" style={[TYPE.sectionTitle, { color: color.ink }]}>{t("market402.recentTitle")}</Text>
+        <Text style={[TYPE.rowDetail, { color: color.text3 }]}>{t("market402.recentBody")}</Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentRow}>
+        {calls.map((purchase) => {
+          const tool = toolFor(purchase);
+          return (
+            <Pressable
+              key={purchase.id}
+              accessibilityRole="button"
+              disabled={!tool}
+              onPress={() => {
+                if (!tool) return;
+                fire("tick");
+                onOpen(tool);
+              }}
+              style={({ pressed }) => [styles.recentCard, { backgroundColor: pressed ? color.rowPressed : color.card }]}
+            >
+              {tool ? <ToolMark tool={tool} size={SIZE.markRow} /> : null}
+              <Text numberOfLines={1} style={[TYPE.rowStrong, { color: color.ink }]}>{tool?.name ?? purchase.provider}</Text>
+              <Text numberOfLines={1} style={[TYPE.meta, { color: color.text3 }]}>{when(purchase.paidAt ?? purchase.createdAt)}</Text>
+              <Text style={[TYPE.chipLabel, { color: purchase.status === "failed" || purchase.status === "failed_after_payment" ? color.destructive : color.ink }]}>{wallet.price(purchase.amount)}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 function chunk<T>(items: readonly T[], size: number): T[][] {
   const rows: T[][] = [];
   for (let index = 0; index < items.length; index += size) rows.push(items.slice(index, index + size));
@@ -232,7 +290,10 @@ const styles = StyleSheet.create({
   desktop: { flexDirection: "row", gap: LAYOUT.inset, padding: LAYOUT.inset },
   sidebar: { width: SIDEBAR_WIDTH, flexGrow: 0, borderRadius: RADIUS.lg },
   sidebarBody: { padding: SPACE.lg, gap: SPACE.xs },
-  sideRow: { minHeight: SIZE.touch, justifyContent: "center", paddingHorizontal: SPACE.md, borderRadius: RADIUS.sm },
+  sideRow: { minHeight: SIZE.touch, flexDirection: "row", alignItems: "center", gap: SPACE.sm, paddingHorizontal: SPACE.md, borderRadius: RADIUS.sm },
+  recent: { gap: SPACE.sm },
+  recentRow: { gap: SPACE.sm },
+  recentCard: { width: RECENT_CARD, gap: SPACE.xs, padding: SPACE.md, borderRadius: RADIUS.md },
   desktopMain: { gap: SPACE.lg, paddingBottom: SPACE.xxxl },
   grid: { gap: SPACE.md },
   gridRow: { flexDirection: "row", gap: SPACE.md },

@@ -7,6 +7,7 @@ import type { CatalogToolDetail, CatalogToolView, CatalogView, ServiceListing } 
 import { getExchangeIdentity, getProviderIdentity } from "@kawase/identity";
 import { amount, formatPrice } from "@kawase/money";
 import type { NetworkContext } from "@kawase/networks";
+import { brandDomain } from "./brand-logos";
 import { buildCatalog, filterCatalog, toolOf, type Catalog, type CatalogFilter, type CatalogTool, type Discovery, type Listing, type Party, type Rail } from "@kawase/integrations-x402";
 
 export const CATALOG_PAGE_DEFAULT = 24;
@@ -40,6 +41,12 @@ function markOf(slug: string): string | null {
   return entity && (entity.marks.color || entity.marks.mono) ? entity.id : null;
 }
 
+/** The brand's site icon, served by Kawase's api, for a tool the registry has no mark for. */
+const logoPath = (name: string) => {
+  const domain = brandDomain(name);
+  return domain ? `/marketplace/logo/${encodeURIComponent(domain)}` : null;
+};
+
 export function toolView(tool: CatalogTool): CatalogToolView {
   const providerMark = markOf(tool.sellerSlug);
   return {
@@ -49,6 +56,7 @@ export function toolView(tool: CatalogTool): CatalogToolView {
     // A seller's own API carries the seller's mark; a reseller's tool only its own (never the reseller's in its place).
     mark: markOf(tool.slug) ?? (tool.party === "first" ? providerMark : null),
     providerMark,
+    logo: markOf(tool.slug) ? null : logoPath(tool.name),
     party: tool.party,
     category: tool.category,
     description: tool.description,
