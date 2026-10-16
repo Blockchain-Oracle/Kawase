@@ -12,6 +12,14 @@ const HTTP_OK = 200;
 const MINUTE_MS = 60_000;
 const FRESH_MINUTES = 5;
 const KEEP_MINUTES = 60;
+/** How much of an unexpected error's message a log line carries. */
+const WHY_CHARS = 160;
+
+/** undici's reason under "fetch failed" (ENOTFOUND, ECONNREFUSED, UND_ERR_CONNECT_TIMEOUT…). */
+function causeCode(error: TypeError): string | undefined {
+  const cause = error.cause as { code?: unknown } | undefined;
+  return typeof cause?.code === "string" ? cause.code : undefined;
+}
 
 export interface TestflightGateOptions {
   fetch: typeof fetch;
@@ -51,8 +59,12 @@ export async function readTestflight(link: string, fetchImpl: typeof fetch, time
     const state = testflightState(link, res.status, html);
     return state === "unknown" ? { state, why: res.status === HTTP_OK ? "an unrecognised page" : `status ${res.status}` } : { state };
   } catch (error) {
+    // Only a TypeError is the network ("fetch failed"); anything else is said as thrown, never as "no connection"
+    // (Next's static-render error was logged that way for hours on 10-16, `server/store-release.ts`).
     const name = error instanceof Error ? error.name : "";
-    return { state: "unknown", why: name === "TimeoutError" || name === "AbortError" ? `no answer in ${timeoutMs} ms` : "no connection" };
+    if (name === "TimeoutError" || name === "AbortError") return { state: "unknown", why: `no answer in ${timeoutMs} ms` };
+    if (error instanceof TypeError) return { state: "unknown", why: `no connection (${causeCode(error) ?? error.message})` };
+    return { state: "unknown", why: `the read threw ${name || "a non-error"}: ${String(error instanceof Error ? error.message : error).slice(0, WHY_CHARS)}` };
   }
 }
 
