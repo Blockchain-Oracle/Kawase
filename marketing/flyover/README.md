@@ -68,16 +68,18 @@ update the drop times in `mix.mjs`).
 
 ## Sound
 
-ElevenLabs Music beds and Sound Effects, mixed in `audio/mix.mjs` and measured against the reference track with
-`audio/analyze.py` (band shares per phase, centroid, envelope, onsets, loudness). One-shot 14.5 s plans never placed the
-drop where asked, so the beds are two-section tracks (groove, then drop) and the mix takes the 14.5 s window that puts
-each bed's own drop on 9.97 s. On top: a riser peaking on 9.96 (from 8.66), a swish at 9.80, a sub boom and a punch on
-9.97; the bed decays from 12.0 s at ~16 dB/s; −14 LUFS, −1.4 dBTP. Three versions of the same picture:
+Real, licensed instrumentals (Abu's call after hearing the generated beds: ElevenLabs Music sounded generic). Eleven of
+the most-downloaded human-made tracks on Pixabay Music in launch-film styles (AI-tagged tracks excluded), all under the
+Pixabay Content License (commercial use, no attribution required), listed with source and page in
+`audio/library.json`; the files live in `audio/library/` (git-ignored; re-download from the `src` URLs).
+`audio/drops.py` finds each track's drops (loudness jump + hit, attack to 5 ms; confirm at 20 ms, it can take a pickup),
+and `audio/mix.mjs` cuts the 14.5 s window that puts the drop on 9.97 s: the track alone, a 0.25 s fade-in, the
+reference's decay from 11.9 s, −14 LUFS, true peak ≤ −1.4 dBTP. Four cuts:
 
-- **J1 (recommended)**: a warm cinematic sub pulse. Its glide is closest to the reference's tone (49 % under 120 Hz,
-  39 % at 120–500 Hz, centroid ~365 Hz against 34 / 49 % and 445 Hz) at a steady level, its own boom lands on the hit,
-  and the loudest moment is at 10.07 s, the reference's exact moment.
-- **I1**: chillhop with the strongest real drop (+7 dB, 67 % sub after it) and the whole-track band balance nearest the
-  reference, but its glide has no sub, its level wanders, and it peaks after the hit.
-- **G1**: the steadiest 86 BPM groove (envelope closest to the reference), but dark (no sub in the glide) and the hit is
-  not its loudest moment.
+- **AMALGAM** (Rockot, future bass): steady through the glide, breaks down while the camera rises, drops on the landing.
+- **Whip** (kontraa, afro dancehall, the most downloaded): steady groove, a dip in the rise, the downbeat on 9.98 s.
+- **Kulakovka** "No Copyright Music" (beats): steady glide, +8 dB on the landing (the reference's shape).
+- **Kugelsicher** (TremoxBeatz, hip-hop): builds through the glide, a stop, the beat drops on 9.97 s.
+
+To swap the track: add it to `LIBRARY` in `audio/mix.mjs` with its drop, `node audio/mix.mjs <name>`, then mux with the
+ffmpeg line above (no re-render). The earlier ElevenLabs tooling (`generate.mjs`, `VARIANTS`) stays for reference only.

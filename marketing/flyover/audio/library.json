@@ -1,0 +1,17 @@
+{
+  "licence": "Pixabay Content License (https://pixabay.com/service/license-summary/): free for commercial use, no attribution required; Content ID certificates on each track's /license/ page.",
+  "downloaded": "2026-10-16, with Abu's OK",
+  "tracks": [
+    { "id": 110235, "file": "whip.mp3", "title": "Whip | Afro Dancehall Music", "artist": "kontraa", "src": "https://cdn.pixabay.com/audio/2022/04/27/audio_67bcf729cf.mp3", "page": "https://pixabay.com/music/beats-whip-afro-dancehall-music-110235/" },
+    { "id": 149058, "file": "unlock-me.mp3", "title": "Unlock Me | Amapiano Music", "artist": "kontraa", "src": "https://cdn.pixabay.com/audio/2023/05/07/audio_a614cb257b.mp3", "page": "https://pixabay.com/music/upbeat-unlock-me-amapiano-music-149058/" },
+    { "id": 228100, "file": "nightfall.mp3", "title": "Nightfall / Future Bass Music", "artist": "SoulProdMusic", "src": "https://cdn.pixabay.com/audio/2024/07/30/audio_09a1a55404.mp3", "page": "https://pixabay.com/music/future-bass-nightfall-future-bass-music-228100/" },
+    { "id": 241274, "file": "creative-technology-showreel.mp3", "title": "Creative Technology Showreel", "artist": "Pumpupthemind", "credit": "Music by Pumpupthemind", "src": "https://cdn.pixabay.com/audio/2024/09/16/audio_a10608d6cd.mp3", "page": "https://pixabay.com/music/beats-creative-technology-showreel-241274/" },
+    { "id": 262632, "file": "stylish-deep-electronic.mp3", "title": "Stylish Deep Electronic", "artist": "NverAvetyanMusic", "src": "https://cdn.pixabay.com/audio/2024/11/10/audio_593e8523e6.mp3", "page": "https://pixabay.com/music/future-bass-stylish-deep-electronic-262632/" },
+    { "id": 315904, "file": "experimental-cinematic-hip-hop.mp3", "title": "Experimental Cinematic Hip-Hop", "artist": "Rockot", "src": "https://cdn.pixabay.com/audio/2025/03/19/audio_91b4c0a3b6.mp3", "page": "https://pixabay.com/music/beats-experimental-cinematic-hip-hop-315904/" },
+    { "id": 217007, "file": "amalgam.mp3", "title": "AMALGAM", "artist": "Rockot", "src": "https://cdn.pixabay.com/audio/2024/06/14/audio_0e2636099d.mp3", "page": "https://pixabay.com/music/future-bass-amalgam-217007/" },
+    { "id": 163081, "file": "deep-future-garage.mp3", "title": "Deep Future Garage", "artist": "NverAvetyanMusic", "src": "https://cdn.pixabay.com/audio/2023/08/21/audio_802aa722fc.mp3", "page": "https://pixabay.com/music/beats-deep-future-garage-royalty-free-music-163081/" },
+    { "id": 270241, "file": "kulakovka.mp3", "title": "No Copyright Music", "artist": "Kulakovka", "src": "https://cdn.pixabay.com/audio/2024/11/29/audio_45bbd49c34.mp3", "page": "https://pixabay.com/music/beats-no-copyright-music-270241/" },
+    { "id": 302838, "file": "kugelsicher.mp3", "title": "Kugelsicher", "artist": "TremoxBeatz", "src": "https://cdn.pixabay.com/audio/2025/02/18/audio_67a824edf7.mp3", "page": "https://pixabay.com/music/beats-kugelsicher-by-tremoxbeatz-302838/" },
+    { "id": 315977, "file": "gorila.mp3", "title": "Gorila", "artist": "Alex_MakeMusic", "src": "https://cdn.pixabay.com/audio/2025/03/19/audio_56ae1dae5f.mp3", "page": "https://pixabay.com/music/beats-gorila-315977/" }
+  ]
+}

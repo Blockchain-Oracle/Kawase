@@ -35,6 +35,33 @@ const VARIANTS = {
   J1: { bed: "bed-J1.mp3", drop: 11.335, bedGain: 0, lift: 2, fx: ["riser", "swish", "boom", "punch"], gains: { riser: -9, swish: -17, boom: -2, punch: -6 } },
 };
 
+// Real tracks (audio/library, Pixabay Content License; see audio/library.json): the track alone, cut so its own drop
+// (audio/drops.py, attack to 5 ms) lands on the hit; a short fade-in and the reference's decay. No added effects.
+const LIBRARY = {
+  amalgam: { file: "amalgam.mp3", drop: 188.55 },
+  kulakovka: { file: "kulakovka.mp3", drop: 30.97 },
+  // Whip: the detector took a pickup at 19.78; the downbeat (kick and bass, −21 → −4 dB) is at 20.245 (20 ms check).
+  whip: { file: "whip.mp3", drop: 20.245 },
+  kugelsicher: { file: "kugelsicher.mp3", drop: 10.485 },
+};
+function buildLibrary(name) {
+  const v = LIBRARY[name];
+  const start = v.drop - HIT;
+  const raw = join(OUT, `${name}-raw.wav`);
+  ff([
+    "-y",
+    "-i",
+    join(HERE, "library", v.file),
+    "-af",
+    `aformat=sample_rates=48000:channel_layouts=stereo,atrim=start=${start.toFixed(3)}:duration=${DUR},asetpts=PTS-STARTPTS,` +
+      `afade=t=in:st=0:d=0.25:curve=qsin,volume='if(lt(t,11.9),1,if(lt(t,14.45),pow(10,-(t-11.9)*15/20),0))':eval=frame,afade=t=out:st=${DUR - 0.1}:d=0.1`,
+    "-c:a",
+    "pcm_f32le",
+    raw,
+  ]);
+  finish(name, raw, `${v.file} from ${start.toFixed(2)}s`);
+}
+
 const ff = (args) => execFileSync("ffmpeg", ["-hide_banner", "-nostats", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 function measure(file) {
   const out = execFileSync("ffmpeg", ["-hide_banner", "-nostats", "-i", file, "-af", "ebur128=peak=true", "-f", "null", "-"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -80,7 +107,11 @@ function build(name) {
   const raw = join(OUT, `${name}-raw.wav`);
   ff(["-y", ...inputs, "-filter_complex", chains.join(";"), "-map", "[mix]", "-c:a", "pcm_f32le", raw]);
 
-  // Loudness: gain to −14 LUFS; limit (4× oversampled) only if that would cross −1 dBTP.
+  finish(name, raw, `bed ${v.bed} from ${start.toFixed(2)}s`);
+}
+
+// Loudness: gain to −14 LUFS; limit (4× oversampled) only if that would cross −1 dBTP.
+function finish(name, raw, what) {
   const m = loudness(raw);
   const gain = -14 - m.I;
   const wav = join(OUT, `${name}.wav`);
@@ -91,7 +122,8 @@ function build(name) {
   ff(["-y", "-i", raw, "-af", chain, "-c:a", "pcm_s24le", "-ar", "48000", wav]);
   ff(["-y", "-i", wav, "-c:a", "aac", "-b:a", "256k", join(OUT, `${name}.m4a`)]);
   const f = loudness(wav);
-  console.log(`${name}: bed ${v.bed} from ${start.toFixed(2)}s, gain ${gain.toFixed(1)} dB${limit ? " + limiter" : ""} → ${f.I} LUFS, true peak ${f.TP} dBTP`);
+  console.log(`${name}: ${what}, gain ${gain.toFixed(1)} dB${limit ? " + limiter" : ""} → ${f.I} LUFS, true peak ${f.TP} dBTP`);
 }
 
-for (const name of process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(VARIANTS)) build(name);
+const names = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(LIBRARY);
+for (const name of names) (LIBRARY[name] ? buildLibrary : build)(name);

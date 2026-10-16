@@ -7,3 +7,4 @@ audio/work/
 *.m4a
 audio/gen*.log
 capture.log
+audio/library/

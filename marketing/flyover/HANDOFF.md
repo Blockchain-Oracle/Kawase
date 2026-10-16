@@ -27,9 +27,15 @@ reference track); the reference film is `/Users/abu/Downloads/sigh.mp4`. How it 
   per format on the M1 Pro).
 - The landing changed: `node capture.mjs`, check the anchors it prints, re-render.
 
+## Sound, second pass (2026-10-16 evening)
+
+Abu rejected the ElevenLabs mixes ("the audio sucks"). Replaced with four real Pixabay tracks (README → Sound), cut so
+each one's own drop lands on 9.97 s; films in the main checkout's
+`docs/marketing/videos/flyover-2026-10-16/real-music/` (each track in all three sizes). Waiting on Abu's pick by ear.
+
 ## Not done / judgement calls
 
-- Sound is ElevenLabs-generated and chosen by measurement only (no listening possible here). A licensed library track
-  (Pixabay Music, Uppbeat) needs Abu (or a session he authorises) to download it; the mixer takes it as a variant.
+- Claude can't listen: the four cuts are chosen by popularity on Pixabay and by how each track's structure (glide,
+  break, drop) fits the camera; Abu picks by ear.
 - 4:5 keeps the master's horizontal field (focal 1410), so its opening shows more floor above and more near-lens blur
   below than the master; the end card is re-laid out for it.
