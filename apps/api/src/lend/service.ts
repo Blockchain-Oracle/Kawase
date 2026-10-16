@@ -52,6 +52,7 @@ import { jsonSafe, nextAttemptNo, refusedBeforeSending, walletGasPrice, type Tx 
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { simulate, type Simulation } from "../intents/simulate";
 
 type IntentRow = typeof intents.$inferSelect;
 type DraftRow = typeof intentDrafts.$inferSelect;
@@ -564,20 +565,19 @@ export class LendService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }): Promise<LendApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+  /**
+   * The exact calls this version would sign, re-checked on fresh facts like an approval. Reads only: a change is the
+   * caller's to act on (approve redrafts, the rehearsal says "changed").
+   */
+  private async freshCalls(user: SessionUser, before: IntentRow) {
     const current = await this.currentDraft(before);
     const stored = (current?.payload as DraftPayload | undefined)?.draft;
-    if (!current?.draftHash || !stored) return this.redraft(user, intentId);
+    if (!current?.draftHash || !stored) return { kind: "changed" as const };
     const draft = loadLendDraft(stored);
-    if (lendDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
+    if (lendDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
     // Fresh facts: the same version must still pass (health, balances) or the person sees the new numbers.
     const fresh = await this.evaluate(user, before, before.request as StoredRequest);
-    if (fresh.evaluation.blocking || !fresh.reserve || !fresh.account) return this.redraft(user, intentId);
+    if (fresh.evaluation.blocking || !fresh.reserve || !fresh.account) return { kind: "changed" as const };
     const { network, client } = this.clients(before.network);
     const calls = this.calls({
       draft,
@@ -586,6 +586,29 @@ export class LendService {
       collateralOn: fresh.collateral ? fresh.account.reserves[fresh.collateral.reserveId]!.usingAsCollateral : false,
       debt: fresh.debt,
     });
+    return { kind: "calls" as const, draft, calls, client, network, draftHash: current.draftHash };
+  }
+
+  /** The rehearsal before the signature (Abu, 10-16, after Aomi): this version's exact batch, run on Arc's latest block. */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion || before.expiresAt.getTime() < Date.now()) return { status: "changed" };
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, calls } = fresh;
+    const data = encodeSelfBatch(calls).toLowerCase() as Hex;
+    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], []);
+  }
+
+  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }): Promise<LendApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft, calls, client, network, draftHash } = fresh;
     const data = encodeSelfBatch(calls).toLowerCase() as Hex;
     try {
       await client.call({ account: draft.from, to: draft.from, data });
@@ -610,7 +633,7 @@ export class LendService {
         id,
         intentId,
         draftVersion: intent.currentDraftVersion,
-        draftHash: current.draftHash!,
+        draftHash,
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",

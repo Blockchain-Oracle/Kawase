@@ -92,10 +92,10 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
         </View>
       ) : null}
       {ready ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
-      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+      {ready ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
       <View className="gap-2">
-        {ready && rehearsal?.status !== "reverted" ? (
-          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal)} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>
+        {ready && rehearsal.result?.status !== "reverted" ? (
+          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal.result)} onPress={() => void controller.approve(prompt(intent.draft, intent.network))}>
             <Icon as={ScanFace} className="text-primary-foreground size-5" />
             <Text>{controller.busy ? t("swap.swapping") : approveLabel}</Text>
           </Button>

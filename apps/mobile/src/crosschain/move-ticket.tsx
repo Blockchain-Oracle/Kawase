@@ -30,6 +30,7 @@ import { RouteList } from "@/routes/route-list";
 import { TicketCta } from "@/routes/ticket-cta";
 import { useMoney } from "@/send/copy";
 import { useSignIn } from "@/sign-in/sign-in-provider";
+import { RehearsalBlock, rehearsalAllows, useRehearsal } from "@/chat/rehearsal";
 
 import { useAssetMoney, useMovePolicyText } from "./move-copy";
 import { MoveReceipt } from "./move-receipt";
@@ -104,6 +105,9 @@ export function MoveTicket({
   const blocking = intent?.blocking ?? null;
   const tx = moveTx(intent, signingSince, blocking ? policyText(blocking) : null);
   useOutcomeFeedback(intent?.id, tx, "send");
+  // Simulated before the slide, like every move of money (a revert stops it here, in the chain's own words).
+  const rehearsable = Boolean(intent && OPEN.has(intent.state) && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("crosschain", intent ?? { id: "", version: 0 }, rehearsable);
   if (!intent) return null;
   const draft = intent.draft;
   const open = OPEN.has(intent.state);
@@ -180,6 +184,7 @@ export function MoveTicket({
             {draft.output && draft.input && draft.output.symbol !== draft.input.symbol ? <KeyValue label={t("move.arrivesAsLabel")} value={draft.output.symbol} /> : null}
             {!draft.recipient.own ? <KeyValue label={t("move.recipient")} value={short(draft.recipient.address)} /> : null}
           </DisclosureRow>
+          {rehearsable ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
         </Animated.View>
       ) : null}
 
@@ -192,9 +197,9 @@ export function MoveTicket({
           slideLabel={draft?.direction === "in" ? t("move.slideBring") : t("move.slideSend")}
           resetKey={`${intent.id}:${intent.version}`}
           onConfirm={() => void confirm()}
-          blocker={blocker}
+          blocker={blocker ?? (rehearsal.result?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
           onFix={onFix}
-          busy={controller.busy && !inFlight}
+          busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal.result) && rehearsal.result?.status !== "reverted")}
           steps={<MoveSteps intent={intent} signing={signingSince !== null} />}
           explorerUrl={intent.fillTx?.explorerUrl ?? intent.tx?.explorerUrl ?? null}
           {...(onRetry ? { onRetry } : {})}

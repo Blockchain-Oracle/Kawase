@@ -3,7 +3,7 @@
 // address, on the latest block, and returns their logs. The ERC-20 Transfer events in those logs are exactly what
 // leaves and arrives in the wallet; a revert is caught before the signature. Arc's own public RPC does not serve
 // eth_simulateV1; dRPC's Arc endpoints do (checked 10-16 on mainnet and testnet), so the rehearsal goes there.
-import { type Address, type Hex, decodeErrorResult, formatUnits } from "viem";
+import { type Address, type Hex, createPublicClient, decodeErrorResult, erc20Abi, formatUnits, http } from "viem";
 
 import type { NetworkId } from "@kawase/networks";
 
@@ -18,6 +18,8 @@ const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523
  */
 const ECHOES = new Set(["0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "0xfffffffffffffffffffffffffffffffffffffffe"]);
 const TIMEOUT_MS = 8000;
+const TOKEN_TIMEOUT_MS = 4000;
+const DEFAULT_DECIMALS = 18;
 const ADDRESS_HEX = 40;
 const WORD = 64;
 const ZERO = 0n;
@@ -101,16 +103,29 @@ export async function simulate(network: NetworkId, holder: Address, calls: SimCa
       if (to === me) deltas.set(address, (deltas.get(address) ?? ZERO) + value);
     }
   }
-  const changes = [...deltas.entries()]
-    .filter(([, delta]) => delta !== ZERO)
+  // Tokens the caller did not name (vault shares, a reserve's token, any coin) are asked their own symbol and decimals.
+  const moved = [...deltas.entries()].filter(([, delta]) => delta !== ZERO);
+  await Promise.all(moved.filter(([address]) => !known.has(address)).map(async ([address]) => known.set(address, await describeToken(network, address))));
+  const changes = moved
     .map(([address, delta]) => {
-      const token = known.get(address) ?? { address, symbol: `${address.slice(0, SHORT_HEAD)}…${address.slice(-SHORT_TAIL)}`, decimals: 18 };
+      const token = known.get(address)!;
       const sign = delta > ZERO ? "+" : "−";
       return { token, delta: delta.toString(), display: `${sign}${formatUnits(delta < ZERO ? -delta : delta, token.decimals)} ${token.symbol}` };
     })
     // What leaves first, then what arrives.
     .sort((a, b) => Number(BigInt(b.delta) < ZERO) - Number(BigInt(a.delta) < ZERO));
   return { status: "ok", block: BigInt(block.number).toString(), gasUsed: gas.toString(), changes, contracts, at };
+}
+
+/** A token's own symbol and decimals, read on the same RPC; its short address (and 18) when it does not say. */
+async function describeToken(network: NetworkId, address: string): Promise<SimToken> {
+  const client = createPublicClient({ transport: http(SIMULATOR[network], { timeout: TOKEN_TIMEOUT_MS }) });
+  const token = address as Address;
+  const [symbol, decimals] = await Promise.all([
+    client.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }).catch(() => null),
+    client.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }).catch(() => null),
+  ]);
+  return { address, symbol: symbol || `${address.slice(0, SHORT_HEAD)}…${address.slice(-SHORT_TAIL)}`, decimals: decimals ?? DEFAULT_DECIMALS };
 }
 
 /** The revert's own words when the contract gave a reason ("Error(string)"), else the simulator's message. */

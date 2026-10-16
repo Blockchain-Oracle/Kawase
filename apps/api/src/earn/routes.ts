@@ -13,6 +13,7 @@ const requestSchema = z.object({
   vault: z.string().regex(/^0x[0-9a-fA-F]{40}$/).nullable().optional(),
   amount: z.string().max(AMOUNT_MAX).nullable().optional(),
 });
+const simulateSchema = z.object({ version: z.number().int().positive() });
 const approveSchema = z.object({ version: z.number().int().positive() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });
 
@@ -37,6 +38,11 @@ export function earnRoutes(earn: EarnService) {
     return c.json({ intent: await earn.revise(c.get("user")!, c.req.param("id"), input) });
   });
   app.post("/intents/:id/cancel", async (c) => c.json({ intent: await earn.cancel(c.get("userId")!, c.req.param("id")) }));
+  // The rehearsal before the signature: this version run on the chain as it is now (nothing is sent).
+  app.post("/intents/:id/simulate", requireAccount, async (c) => {
+    const input = await parse(simulateSchema, await c.req.json());
+    return c.json({ simulation: await earn.simulate(c.get("user")!, c.req.param("id"), input.version) });
+  });
   app.post("/intents/:id/approve", requireAccount, async (c) => {
     const input = await parse(approveSchema, await c.req.json());
     return c.json(await earn.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));

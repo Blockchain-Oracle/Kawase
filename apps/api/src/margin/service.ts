@@ -59,6 +59,7 @@ import { parseRequestAmount } from "../send/facts";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { simulate, type Simulation } from "../intents/simulate";
 import { PlanError, liquidationPrice, maxLeverageBps, planClose, planOpen, type AccountBase, type Plan, type PlanLimits } from "./plan";
 import { kyberSwapper } from "./swapper";
 import type { MarginProtection } from "./protection";
@@ -833,24 +834,22 @@ export class MarginService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<MarginApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
-
+  /**
+   * The exact calls this version would sign — every leg built and checked at today's prices, and the protections it
+   * turns off — re-checked like an approval. Reads only: a change is the caller's to act on.
+   */
+  private async freshCalls(user: SessionUser, before: IntentRow) {
     const current = await this.currentDraft(before);
     const stored = (current?.payload as DraftPayload | undefined)?.draft;
-    if (!current?.draftHash || !stored) return this.redraft(user, intentId);
+    if (!current?.draftHash || !stored) return { kind: "changed" as const };
     const draft = loadMarginDraft(stored);
-    if (marginDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
+    if (marginDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
 
     // The real calls: every swap leg built and checked, at today's prices.
     const fresh = await this.evaluate(user, before, before.request as StoredRequest, "build");
     if (fresh.evaluation.blocking?.code === "QUOTE_UNAVAILABLE") throw problem(HTTP.badGateway, "quote_unavailable");
     const plan = fresh.plan;
-    if (fresh.evaluation.blocking || !plan) return this.redraft(user, intentId);
+    if (fresh.evaluation.blocking || !plan) return { kind: "changed" as const };
     // At least as good as the version the person saw; otherwise they see the new numbers first.
     const holds =
       plan.collateralReserveId === draft.collateralReserveId &&
@@ -858,10 +857,34 @@ export class MarginService {
       (draft.action === OPEN
         ? plan.debtDelta === draft.debtDelta && plan.collateralDelta >= draft.collateralDelta
         : plan.debtDelta >= draft.debtDelta && plan.collateralDelta >= draft.collateralDelta && plan.returnedMin >= draft.returnedMin);
-    if (!holds) return this.redraft(user, intentId);
+    if (!holds) return { kind: "changed" as const };
 
     const { network, client } = this.clients(before.network);
     const disables = await this.protectionDisables(user.id, before.network, (before.request as StoredRequest).action, fresh.fractionBps, fresh.position);
+    return { kind: "calls" as const, draft, plan, disables, client, network, draftHash: current.draftHash };
+  }
+
+  /** The rehearsal before the signature (Abu, 10-16, after Aomi): this version's exact batch, run on Arc's latest block. */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion || before.expiresAt.getTime() < Date.now()) return { status: "changed" };
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, plan, disables } = fresh;
+    const data = encodeSelfBatch([...plan.calls, ...disables]).toLowerCase() as Hex;
+    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], []);
+  }
+
+  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<MarginApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft, plan, disables, client, network, draftHash } = fresh;
     const data = encodeSelfBatch([...plan.calls, ...disables]).toLowerCase() as Hex;
     // The whole batch, run against the chain as it is now, from the wallet: a revert stops it here, not on chain.
     try {
@@ -912,7 +935,7 @@ export class MarginService {
         id,
         intentId,
         draftVersion: intent.currentDraftVersion,
-        draftHash: current.draftHash!,
+        draftHash,
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",

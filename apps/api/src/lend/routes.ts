@@ -15,6 +15,7 @@ const requestSchema = z.object({
   collateralAsset: z.string().max(TEXT_MAX).nullable().optional(),
   collateralAmount: z.string().max(TEXT_MAX).nullable().optional(),
 });
+const simulateSchema = z.object({ version: z.number().int().positive() });
 const approveSchema = z.object({ version: z.number().int().positive() });
 const signatureSchema = z.object({ approvalId: z.uuid(), signedTransaction: z.string().regex(/^0x[0-9a-fA-F]*$/) });
 
@@ -42,6 +43,11 @@ export function lendRoutes(lend: LendService) {
     return c.json({ intent: await lend.revise(c.get("user")!, c.req.param("id"), input) });
   });
   app.post("/orders/:id/cancel", async (c) => c.json({ intent: await lend.cancel(c.get("userId")!, c.req.param("id")) }));
+  // The rehearsal before the signature: this version run on the chain as it is now (nothing is sent).
+  app.post("/orders/:id/simulate", requireAccount, async (c) => {
+    const input = await parse(simulateSchema, await c.req.json());
+    return c.json({ simulation: await lend.simulate(c.get("user")!, c.req.param("id"), input.version) });
+  });
   app.post("/orders/:id/approve", requireAccount, async (c) => {
     const input = await parse(approveSchema, await c.req.json());
     return c.json(await lend.approve(c.get("user")!, c.req.param("id"), { version: input.version, surface: "app" }));

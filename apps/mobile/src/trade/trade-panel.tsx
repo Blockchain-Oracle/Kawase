@@ -24,6 +24,7 @@ import { useSession } from "@/session/session-provider";
 import { useSignIn } from "@/sign-in/sign-in-provider";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { RehearsalBlock, rehearsalBlocker, useRehearsal } from "@/chat/rehearsal";
 
 import { ChoiceChips, LiveNumber, Note, RealMoney } from "./bits";
 import { IntentCta, openExplorer, type CtaBlocker } from "./intent-cta";
@@ -76,6 +77,9 @@ export function TradePanel({ trade, compact = false }: { trade: Trade; compact?:
   const { wallet } = useWalletStatus();
   const { controller, draft } = trade;
   const intent = controller.intent;
+  // Simulated before the confirm, like every move of money (a revert stops it here, in the chain's own words).
+  const rehearsable = Boolean(intent && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("margin", intent ?? { id: "", version: 0 }, rehearsable);
   const moving = intent ? isMarginMoving(intent) : false;
   const finished = intent ? isMarginFinished(intent) && intent.request.action === "open" : false;
   const editing = !moving && !finished;
@@ -255,11 +259,12 @@ export function TradePanel({ trade, compact = false }: { trade: Trade; compact?:
         </View>
       ) : null}
 
+      {rehearsable && intent ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
       <IntentCta
         intent={intent}
         busy={controller.busy}
         connectionLost={controller.connectionLost}
-        blocker={blocker}
+        blocker={blocker ?? rehearsalBlocker(rehearsal, { running: t("feed.run.rehearsing"), stopped: t("feed.run.rehearsedStopped") })}
         confirm={{ kind: "slide", label: trade.side === "long" ? t("margin.slideLong") : t("margin.slideShort"), tone: trade.side === "long" ? "up" : "down" }}
         onConfirm={() => void controller.approve(prompt(draft))}
         onRetry={trade.again}

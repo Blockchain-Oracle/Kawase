@@ -175,7 +175,7 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
   const state = txStateOf(intent, controller.busy);
   // Rehearsed on Arc before anything is signed (Aomi's "SIMULATED ✓"): a revert stops it here.
   const rehearsal = useRehearsal("swaps", intent, ready);
-  const rehearsed = rehearsalAllows(rehearsal);
+  const rehearsed = rehearsalAllows(rehearsal.result);
 
   // Inside the budget and watched live: once the rehearsal passes, the run goes on by itself, once (never again after
   // a reload).
@@ -227,11 +227,11 @@ function RunSwapStep({ part, live, onPhase }: StepProps) {
     <TxMorph morphed={state.kind === "confirmed"} receipt={receipt}>
       <View style={styles.step}>
         {draft && isSwapOpen(intent) ? <Text style={[TYPE.body, { color: color.ink }]}>{t("feed.run.swapLine", { paid, got, venue: draft.provider })}</Text> : null}
-        {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+        {ready ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
         {ready ? (
           automatic ? (
-            rehearsal?.status === "reverted" ? null : <InsideBudgetLine />
-          ) : rehearsal?.status === "reverted" ? null : (
+            rehearsal.result?.status === "reverted" ? null : <InsideBudgetLine />
+          ) : rehearsal.result?.status === "reverted" ? null : (
             <SlideToConfirm
               label={t("feed.run.slideSwap")}
               onConfirm={() => void controller.approve(prompt(intent.draft, intent.network))}
@@ -289,12 +289,12 @@ function RunSendStep({ part, live, onPhase }: StepProps) {
     <TxMorph morphed={state.kind === "confirmed" && isSendFinished(intent)} receipt={receipt}>
       <View style={styles.step}>
         {isSendOpen(intent) ? <Text style={[TYPE.body, { color: color.ink }]}>{t("feed.run.sendLine", { amount, name })}</Text> : null}
-        {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
-        {ready && rehearsal?.status !== "reverted" ? (
+        {ready ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
+        {ready && rehearsal.result?.status !== "reverted" ? (
           <SlideToConfirm
             label={t("feed.run.slideSend")}
             onConfirm={() => void controller.approve(prompt)}
-            busy={controller.busy || !rehearsalAllows(rehearsal)}
+            busy={controller.busy || !rehearsalAllows(rehearsal.result)}
             resetKey={`${intent.id}:${intent.version}`}
           />
         ) : null}

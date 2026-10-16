@@ -67,6 +67,7 @@ import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
 import { chainNow, markLeafRequest, offerLeaves, storeLeafRequest, takeSignedLeaves, type LeafBudget, type LeafResponse } from "../budget/leaf";
+import { simulate, type Simulation } from "../intents/simulate";
 import type { EarnEngine } from "./engine";
 
 type IntentRow = typeof intents.$inferSelect;
@@ -383,20 +384,19 @@ export class EarnService {
 
   // ── Approving ───────────────────────────────────────────────────────────────────────────────────────────────
 
-  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<EarnApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
-
+  /**
+   * The exact calls this version would sign, re-checked on fresh facts like an approval. Reads only: a change is the
+   * caller's to act on (approve redrafts, the rehearsal says "changed").
+   */
+  private async freshCalls(user: SessionUser, before: IntentRow) {
+    const intentId = before.id;
     const current = await this.currentDraft(before);
     const stored = (current?.payload as DraftPayload | undefined)?.draft;
-    if (!current?.draftHash || !stored) return this.redraft(user, intentId);
+    if (!current?.draftHash || !stored) return { kind: "changed" as const };
     const draft = loadEarnDraft(stored);
-    if (earnDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
+    if (earnDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
     const fresh = await this.evaluate(user, before, before.request as StoredEarnRequest);
-    if (fresh.evaluation.blocking || !fresh.vault || !same(fresh.vault.address, draft.vault)) return this.redraft(user, intentId);
+    if (fresh.evaluation.blocking || !fresh.vault || !same(fresh.vault.address, draft.vault)) return { kind: "changed" as const };
 
     const { network, client } = fresh.clients;
     const engineInput = { network, client, from: draft.from, vault: draft.vault, amount: formatUnits(draft.amount, USDC_DECIMALS) };
@@ -408,11 +408,35 @@ export class EarnService {
       throw problem(HTTP.badGateway, "quote_unavailable");
     }
     const check = checkEarnCalls(network, draft.action, calls, { from: draft.from, usdc: network.addresses.usdc, vault: draft.vault, maxIn: draft.maxIn, minOut: draft.minOut });
-    if (!check.ok && check.reason === "below_minimum") return this.redraft(user, intentId);
+    if (!check.ok && check.reason === "below_minimum") return { kind: "changed" as const };
     if (!check.ok) {
       this.log.error({ intentId, reason: check.reason }, "security.earn_calls_refused");
       throw problem(HTTP.badGateway, "quote_unavailable", "the vault route returned calls Kawase does not accept");
     }
+    return { kind: "calls" as const, draft, calls, client, draftHash: current.draftHash };
+  }
+
+  /** The rehearsal before the signature (Abu, 10-16, after Aomi): this version's exact batch, run on Arc's latest block. */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion || before.expiresAt.getTime() < Date.now()) return { status: "changed" };
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, calls } = fresh;
+    const data = encodeSelfBatch(calls).toLowerCase() as Hex;
+    return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data }], []);
+  }
+
+  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice"; deviceId?: string | undefined }): Promise<EarnApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+
+    const fresh = await this.freshCalls(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft, calls, client, draftHash } = fresh;
 
     // Lower-case, as a parsed signed transaction reads it back.
     const data = encodeSelfBatch(calls).toLowerCase() as Hex;
@@ -450,7 +474,7 @@ export class EarnService {
         id,
         intentId,
         draftVersion: intent.currentDraftVersion,
-        draftHash: current.draftHash!,
+        draftHash,
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",

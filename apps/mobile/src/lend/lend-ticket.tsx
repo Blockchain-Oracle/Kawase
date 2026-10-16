@@ -22,6 +22,7 @@ import { Note, RealMoney } from "@/trade/bits";
 import { IntentCta, openExplorer, type CtaBlocker } from "@/trade/intent-cta";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { RehearsalBlock, rehearsalBlocker, useRehearsal } from "@/chat/rehearsal";
 
 import { useLendFormat, useLendPolicyText, useLendPrompt } from "./copy";
 import { HealthGauge } from "./health-gauge";
@@ -44,6 +45,9 @@ export function LendTicket({ controller, compact = false, onEdit, onDone }: { co
   const prompt = useLendPrompt();
   const { wallet } = useWalletStatus();
   const intent = controller.intent;
+  // Simulated before the confirm, like every move of money (a revert stops it here, in the chain's own words).
+  const rehearsable = Boolean(intent && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("lend", intent ?? { id: "", version: 0 }, rehearsable);
   if (!intent) return null;
 
   const draft = intent.draft;
@@ -118,11 +122,12 @@ export function LendTicket({ controller, compact = false, onEdit, onDone }: { co
 
       {draft && action === "borrow" && editing ? <Note tone="quiet">{t("lend.risk")}</Note> : null}
 
+      {rehearsable && intent ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
       <IntentCta
         intent={intent}
         busy={controller.busy}
         connectionLost={controller.connectionLost}
-        blocker={blocker}
+        blocker={blocker ?? rehearsalBlocker(rehearsal, { running: t("feed.run.rehearsing"), stopped: t("feed.run.rehearsedStopped") })}
         confirm={{ kind: "slide", label: t(`lend.slide_${action}`), tone: "primary" }}
         onConfirm={() => void controller.approve(prompt(draft))}
         receipt={receipt}

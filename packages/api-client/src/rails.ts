@@ -1,7 +1,7 @@
 // Money rails (builder B1): Kawase Margin (long/short on Aave V4), and the endpoints that serve it. Kept apart from
 // types.ts so the lanes merge cleanly; the client spreads `railsEndpoints` into its routes.
 import type { CatalogParty, CatalogToolDetail, CatalogView, MarketplaceCategory, PaymentRail } from "./marketplace";
-import type { IntentState, NetworkId, PolicyResultView, RevokeRequest, SendOutcome, SignedRevokeInput, TransactionRequestResponse, UnsignedTransaction } from "./types";
+import type { IntentState, NetworkId, PolicyResultView, RehearsalView, RevokeRequest, SendOutcome, SignedRevokeInput, TransactionRequestResponse, UnsignedTransaction } from "./types";
 
 export type CatalogQueryInput = {
   category?: MarketplaceCategory | undefined;
@@ -698,6 +698,8 @@ export function railsEndpoints(call: Call) {
       cancel: (id: string) => call<{ intent: LendIntent }>("POST", `/lend/orders/${id}/cancel`),
       approve: (id: string, version: number, idempotencyKey?: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) => call<LendApproveResponse>("POST", `/lend/orders/${id}/signature`, { approvalId, signedTransaction }),
+      /** Rehearse this version on the chain as it is now before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/lend/orders/${id}/simulate`, { version }),
     },
     lp: {
       /** Aero LP: pools, a deposit quoted then built, the wallet's positions, withdraw one, claim Merkl's rewards, submit the signed batch. */
@@ -720,6 +722,8 @@ export function railsEndpoints(call: Call) {
         call<CrossChainApproveResponse>("POST", `/crosschain/orders/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signed: { signedTransaction?: string; signature?: string }) =>
         call<CrossChainApproveResponse>("POST", `/crosschain/orders/${id}/signature`, { approvalId, ...signed }),
+      /** Rehearse this version on the chain as it is now before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/crosschain/orders/${id}/simulate`, { version }),
     },
     onramp: {
       status: () => call<OnrampAvailability>("GET", "/onramp"),
@@ -757,6 +761,8 @@ export function railsEndpoints(call: Call) {
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/approve`, { version, ...(override ? { override } : {}) }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<MarginApproveResponse>("POST", `/margin/orders/${id}/signature`, { approvalId, signedTransaction }),
+      /** Rehearse this version on the chain as it is now before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/margin/orders/${id}/simulate`, { version }),
       /** Take-profit / stop-loss: each position's grants (signed together) and its targets. */
       protection: (positionId: string) => call<MarginProtectionView>("GET", `/margin/protection?positionId=${encodeURIComponent(positionId)}`),
       protectionGrant: (positionId: string) => call<MarginProtectionGrantRequest>("POST", "/margin/protection/grant", { positionId }),

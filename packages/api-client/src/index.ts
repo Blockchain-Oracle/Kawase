@@ -386,6 +386,8 @@ export function createApiClient({ baseUrl, getToken, fetch: fetchImpl = fetch, p
         call<EarnApproveResponse>("POST", `/earn/intents/${id}/approve`, { version }, { idempotencyKey }),
       signature: (id: string, approvalId: string, signedTransaction: string) =>
         call<EarnApproveResponse>("POST", `/earn/intents/${id}/signature`, { approvalId, signedTransaction }),
+      /** Rehearse this version on the chain as it is now before it is approved (nothing is sent). */
+      simulate: (id: string, version: number) => call<{ simulation: RehearsalView }>("POST", `/earn/intents/${id}/simulate`, { version }),
     },
 
     automations: {

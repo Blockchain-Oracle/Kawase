@@ -146,12 +146,12 @@ export function SendCard({ output }: { output: ProposeSendOutput }) {
           <Text>{t("resume.seeLimits")}</Text>
         </Button>
       ) : null}
-      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
-      {ready && rehearsal?.status !== "reverted" ? (
+      {ready ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
+      {ready && rehearsal.result?.status !== "reverted" ? (
         <View className="gap-2">
           <Button
             size="lg"
-            disabled={controller.busy || !rehearsalAllows(rehearsal)}
+            disabled={controller.busy || !rehearsalAllows(rehearsal.result)}
             onPress={() => void controller.approve(t("send.signPrompt", { amount: amountText, name }))}
           >
             {intent.route === "wallet_signature" ? <Icon as={ScanFace} className="text-primary-foreground size-5" /> : null}

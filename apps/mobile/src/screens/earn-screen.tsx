@@ -49,6 +49,7 @@ import { IntentCta, openExplorer, type CtaBlocker } from "@/trade/intent-cta";
 import { Columns, PageHeader, PhoneScroll } from "@/trade/page-frame";
 import { TicketAmount } from "@/trade/ticket-amount";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { RehearsalBlock, rehearsalBlocker, useRehearsal } from "@/chat/rehearsal";
 
 const MARK = 32;
 const HERO_H = 52;
@@ -95,6 +96,9 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
   const stuckCount = (overview.vaults?.length ?? 0) - depositable.length;
   const position = vault ? overview.positions.find((entry) => entry.vault.toLowerCase() === vault.address.toLowerCase()) : undefined;
   const intent = controller.intent;
+  // Simulated before the confirm, like every move of money (a revert stops it here, in the chain's own words).
+  const rehearsable = Boolean(intent && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("earn", intent ?? { id: "", version: 0 }, rehearsable);
   const settled = intent && (isIntentMoving(intent) || isIntentFinished(intent));
   const leave = () => (router.canGoBack() ? router.back() : router.replace("/"));
 
@@ -221,11 +225,12 @@ export function EarnScreen({ prefill = {} }: { prefill?: EarnPrefill }) {
       <View style={styles.group}>
         {!testnet && !isIntentFinished(intent) ? <RealMoney /> : null}
         <EarnReview intent={intent} />
+        {rehearsable && intent ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
         <IntentCta
           intent={intent}
           busy={controller.busy}
           connectionLost={controller.connectionLost}
-          blocker={blocker}
+          blocker={blocker ?? rehearsalBlocker(rehearsal, { running: t("feed.run.rehearsing"), stopped: t("feed.run.rehearsedStopped") })}
           confirm={{ kind: "press", label: approveLabel(draftAction) }}
           onConfirm={() => void controller.approve(prompt(intent.draft))}
           onRetry={() => setStep("amount")}

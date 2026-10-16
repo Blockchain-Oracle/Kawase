@@ -93,10 +93,10 @@ export function BridgeCard({ output }: { output: ProposeBridgeOutput }) {
           ) : null}
         </View>
       ) : null}
-      {ready ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+      {ready ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
       <View className="gap-2">
-        {ready && rehearsal?.status !== "reverted" ? (
-          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal)} onPress={() => void controller.approve(prompt(intent.draft))}>
+        {ready && rehearsal.result?.status !== "reverted" ? (
+          <Button size="lg" disabled={controller.busy || !rehearsalAllows(rehearsal.result)} onPress={() => void controller.approve(prompt(intent.draft))}>
             <Icon as={ScanFace} className="text-primary-foreground size-5" />
             <Text>{controller.busy ? t("bridge.bridging") : approveLabel}</Text>
           </Button>

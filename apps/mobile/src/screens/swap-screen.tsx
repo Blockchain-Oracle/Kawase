@@ -384,7 +384,7 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
               {...(open ? { onPick: (venue: string) => void controller.revise({ venue }) } : {})}
             />
             {open && !blocking ? <BrakeNote results={intent.results} text={(entry: PolicyResultView) => policyText(entry, intent.network)} /> : null}
-            {rehearsable ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+            {rehearsable ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
           </Animated.View>
         )}
       </ScrollView>
@@ -395,9 +395,9 @@ export function SwapScreen({ prefill, embedded = false, onFinished }: { prefill:
           slideLabel={slideLabel}
           resetKey={`${intent.id}:${intent.version}`}
           onConfirm={() => void confirm()}
-          blocker={blocker ?? (rehearsal?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
+          blocker={blocker ?? (rehearsal.result?.status === "reverted" ? { label: t("feed.run.rehearsedStopped"), fix: null } : undefined)}
           onFix={onFix}
-          busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal) && rehearsal?.status !== "reverted")}
+          busy={(controller.busy && !inFlight) || (rehearsable && !rehearsalAllows(rehearsal.result) && rehearsal.result?.status !== "reverted")}
           explorerUrl={intent.tx?.explorerUrl ?? null}
           onRetry={() => {
             controller.reset();

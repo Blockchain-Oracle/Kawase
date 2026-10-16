@@ -219,7 +219,7 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
       <View style={styles.group}>
         {!testnet && !isFinished(intent) ? <RealMoney /> : null}
         <SendReview intent={intent} budget={budgetCovers} onRevise={(patch) => void controller.revise(patch)} />
-        {rehearsable ? <RehearsalBlock rehearsal={rehearsal} network={intent.network} /> : null}
+        {rehearsable ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
         {intent.blocking && isOpen(intent) ? (
           <SendBlocker controller={controller} onEditAmount={() => setStep("amount")} />
         ) : (
@@ -230,10 +230,10 @@ export function SendScreen({ prefill }: { prefill: SendPrefill }) {
             blocker={
               !draft
                 ? { label: t("desktop.pricing"), busy: true }
-                : rehearsable && (!rehearsal || rehearsal.status === "running")
+                : rehearsable && (!rehearsal.result || rehearsal.result.status === "running")
                   ? { label: t("feed.run.rehearsing"), busy: true }
-                  : rehearsal?.status === "reverted"
-                    ? { label: t("feed.run.rehearsedStopped"), reason: rehearsal.reason }
+                  : rehearsal.result?.status === "reverted"
+                    ? { label: t("feed.run.rehearsedStopped"), reason: (rehearsal.result.status === "reverted" ? rehearsal.result.reason : "") }
                     : null
             }
             confirm={{ kind: "press", label: faceId ? approveLabel : t("send.sendNow") }}

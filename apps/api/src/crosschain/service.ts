@@ -118,6 +118,7 @@ import type { AssetService } from "../tokens/service";
 import type { SessionUser } from "../types";
 import type { Chains, NetworkClients } from "../wallet/chain";
 import type { WalletService } from "../wallet/service";
+import { simulate, type Simulation } from "../intents/simulate";
 import { arcAsset, assetView, counterpartOnArc, counterpartThere, isBlocked, NATIVE_SYMBOLS, remoteAsset, type MoveAsset } from "./assets";
 
 type IntentRow = typeof intents.$inferSelect;
@@ -911,20 +912,20 @@ export class CrossChainService {
     return problem(HTTP.badGateway, "quote_unavailable", "the route returned calls Kawase does not accept");
   }
 
-  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }): Promise<CrossChainApproveResponse> {
-    const before = await this.ownIntent(user.id, intentId);
-    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
-    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
-    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
-    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+  /**
+   * What this version would sign — the Arc batch, the one transaction on the other chain, or a permit — re-checked like
+   * an approval. Reads only: a change is the caller's to act on.
+   */
+  private async freshBuild(user: SessionUser, before: IntentRow) {
+    const intentId = before.id;
     const current = await this.currentDraft(before);
     const payload = current?.payload as DraftPayload | undefined;
-    if (!current?.draftHash || !payload?.draft || !payload.view) return this.redraft(user, intentId);
+    if (!current?.draftHash || !payload?.draft || !payload.view) return { kind: "changed" as const };
     const draft = loadCrossChainDraft(payload.draft);
-    if (crossChainDraftHash(draft) !== current.draftHash) return this.redraft(user, intentId);
+    if (crossChainDraftHash(draft) !== current.draftHash) return { kind: "changed" as const };
     const { network, client } = this.clients(before.network);
     const chain = this.engine.destinations(network).find((entry) => entry.chainId === (payload.view!.direction === "out" ? draft.destinationChainId : draft.originChainId));
-    if (!chain) return this.redraft(user, intentId);
+    if (!chain) return { kind: "changed" as const };
 
     let built: Built;
     try {
@@ -934,7 +935,42 @@ export class CrossChainService {
       this.log.warn({ err: error, intentId }, "crosschain build failed");
       throw problem(HTTP.badGateway, "quote_unavailable");
     }
-    if ("changed" in built) return this.redraft(user, intentId);
+    if ("changed" in built) return { kind: "changed" as const };
+    return { kind: "built" as const, draft, built, chain, payload, client, network, draftHash: current.draftHash };
+  }
+
+  /**
+   * The rehearsal before the signature (Abu, 10-16, after Aomi). From Arc: the exact batch on Arc's latest block, with
+   * what leaves and arrives. From another chain: the one transaction, called on that chain as it is now. A permit is
+   * a signature, not a transaction: nothing to rehearse.
+   */
+  async simulate(user: SessionUser, intentId: string, version: number): Promise<Simulation | { status: "changed" }> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval" || version !== before.currentDraftVersion || before.expiresAt.getTime() < Date.now()) return { status: "changed" };
+    const fresh = await this.freshBuild(user, before);
+    if (fresh.kind === "changed") return { status: "changed" };
+    const { draft, built, chain } = fresh;
+    const at = new Date().toISOString();
+    if (built.kind === "permit") return { status: "unavailable", at };
+    if (built.kind === "batch") return simulate(before.network, draft.from, [{ from: draft.from, to: draft.from, data: encodeSelfBatch(built.calls).toLowerCase() as Hex }], []);
+    const origin = this.remote(chain);
+    try {
+      const [block] = await Promise.all([origin.getBlockNumber(), origin.call({ account: draft.from, to: built.call.to, data: built.call.data, value: built.call.value })]);
+      return { status: "ok", block: block.toString(), gasUsed: "0", changes: [], contracts: [built.call.to.toLowerCase()], at };
+    } catch (error) {
+      return { status: "reverted", reason: (error as { shortMessage?: string }).shortMessage ?? "the transaction would revert", at };
+    }
+  }
+
+  async approve(user: SessionUser, intentId: string, input: { version: number; surface: "app" | "chat" | "voice" }): Promise<CrossChainApproveResponse> {
+    const before = await this.ownIntent(user.id, intentId);
+    if (before.state !== "ready_for_approval") return { status: "final", intent: await this.get(user.id, intentId) };
+    if (input.version !== before.currentDraftVersion) throw problem(HTTP.conflict, "intent_stale");
+    if (before.network !== user.activeNetwork) throw problem(HTTP.conflict, "network_mismatch");
+    if (before.expiresAt.getTime() < Date.now()) return { status: "final", intent: await this.get(user.id, intentId) };
+    const fresh = await this.freshBuild(user, before);
+    if (fresh.kind === "changed") return this.redraft(user, intentId);
+    const { draft, built, chain, client, network, draftHash } = fresh;
 
     let unsigned: Record<string, unknown>;
     let answer: { status: "sign"; transaction: UnsignedTransaction } | { status: "sign_typed"; typedData: RelayPermit["typedData"] };
@@ -986,7 +1022,7 @@ export class CrossChainService {
         id,
         intentId,
         draftVersion: intent.currentDraftVersion,
-        draftHash: current.draftHash!,
+        draftHash,
         userId: user.id,
         network: intent.network,
         route: "wallet_signature",

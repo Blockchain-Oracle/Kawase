@@ -25,6 +25,7 @@ import { ChoiceChips, LiveNumber, Note, RealMoney, SideTag } from "@/trade/bits"
 import { IntentCta, openExplorer, type CtaBlocker } from "@/trade/intent-cta";
 import { useNetworkSwitch } from "@/wallet/use-network-switch";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+import { RehearsalBlock, rehearsalBlocker, useRehearsal } from "@/chat/rehearsal";
 
 import { marketEntity, useMarginFormat, useMarginPolicyText, useMarginPrompt } from "./copy";
 import { rulerHaptic } from "./haptics";
@@ -52,6 +53,9 @@ export function MarginTicket({ controller, market, compact = false }: { controll
   const prompt = useMarginPrompt();
   const { wallet } = useWalletStatus();
   const intent = controller.intent;
+  // Simulated before the confirm, like every move of money (a revert stops it here, in the chain's own words).
+  const rehearsable = Boolean(intent && !intent.blocking && intent.draft && intent.state === "ready_for_approval");
+  const rehearsal = useRehearsal("margin", intent ?? { id: "", version: 0 }, rehearsable);
   const draft = intent?.draft ?? null;
   const request = intent?.request;
   const side = draft?.side ?? request?.side ?? "long";
@@ -177,11 +181,12 @@ export function MarginTicket({ controller, market, compact = false }: { controll
       {draft && !closing && draft.liquidationPrice && editing ? <Note tone="quiet">{t("margin.risk", { price: format.price(draft.liquidationPrice) })}</Note> : null}
       {editing && !blocking ? <BrakeNote results={intent.results} text={(entry) => policyText(entry, intent.network)} /> : null}
 
+      {rehearsable && intent ? <RehearsalBlock control={rehearsal} network={intent.network} /> : null}
       <IntentCta
         intent={intent}
         busy={controller.busy}
         connectionLost={controller.connectionLost}
-        blocker={blocker}
+        blocker={blocker ?? rehearsalBlocker(rehearsal, { running: t("feed.run.rehearsing"), stopped: t("feed.run.rehearsedStopped") })}
         confirm={{ kind: "slide", label: closing ? t("margin.slideClose") : side === "long" ? t("margin.slideLong") : t("margin.slideShort"), tone: closing ? "primary" : side === "long" ? "up" : "down" }}
         onConfirm={() => void controller.approve(prompt(draft))}
         receipt={receipt}
