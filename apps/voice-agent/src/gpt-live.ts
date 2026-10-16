@@ -5,7 +5,7 @@
 // (`appendCommentary`). A readback guard checks what GPT-Live actually said against those facts and corrects it.
 import { type JobContext, llm, voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
-import { RoomEvent, TrackSource } from "@livekit/rtc-node";
+import { AudioStream, RoomEvent, TrackKind, TrackSource, type RemoteParticipant, type RemoteTrack, type RemoteTrackPublication } from "@livekit/rtc-node";
 
 import {
   GPT_LIVE_APPEND_MAX_CHARS,
@@ -18,7 +18,9 @@ import {
 } from "@kawase/config";
 
 import type { VoiceEngine } from "./cascade";
+import { routeProgress } from "./progress";
 import { canonicalFacts, factsOf, readbackProblems, type Facts } from "./readback";
+import { traceTurn } from "./trace";
 import { runTurn, type Card, type SessionMeta } from "./turn";
 import { LANGUAGE_IN_ENGLISH, SORRY } from "./words";
 
@@ -26,6 +28,13 @@ const READY_POLL_MS = 100;
 /** What the app sends when the person taps a suggestion or types inside voice mode (LiveKit's chat topic). */
 const CHAT_TOPIC = "lk.chat";
 const CONNECT = { maxRetry: 2, retryIntervalMs: 1000, timeoutMs: 10_000 };
+/** Controlled delivery experiment; the underlying agent, model, voice and prompts stay the same. */
+const PROGRESSIVE = process.env.KAWASE_VOICE_PROGRESSIVE === "1";
+/** Isolated voice-layer prompt and spoken-estimate experiment. */
+const CONVERSATIONAL = process.env.KAWASE_VOICE_CONVERSATIONAL === "1";
+const TRACE_AUDIO_SAMPLE_RATE = 16_000;
+const TRACE_VOICE_THRESHOLD = 600;
+const TRACE_SILENCE_SAMPLES = 8_000;
 const PACE: Record<VoicePrefs["speed"], string> = {
   relaxed: "Speak a little slower than usual, calmly.",
   normal: "Speak at a natural, relaxed pace.",
@@ -44,11 +53,18 @@ const clip = (text: string) =>
 export function persona(locale: SupportedLocale, prefs: VoicePrefs): string {
   const language = LANGUAGE_IN_ENGLISH[locale];
   return [
-    "You are the voice of Kawase, a money app on Arc (Circle's stablecoin network). You are warm, calm and brief: one or two short sentences.",
+    CONVERSATIONAL
+      ? "You are the voice of Kawase, a money app on Arc (Circle's stablecoin network). Sound like a responsive conversation: vary your phrasing, pace, pauses, and response length with the person's situation. Be warm and clear. When the person is new to a topic, use everyday words and briefly explain any necessary technical term. Speak while work is pending only when you can add useful context; a short pause is fine."
+      : "You are the voice of Kawase, a money app on Arc (Circle's stablecoin network). You are warm, calm and brief: one or two short sentences.",
     `Speak ${language} (the person's app language). If the person speaks another language, answer in theirs.`,
     PACE[prefs.speed],
+    ...(CONVERSATIONAL
+      ? ["A delegated request is silent until client commentary arrives. Do not speak before its result: no greeting, 'sure', 'okay', 'good question', promise to answer, or progress claim. Silence during the handoff is expected. When commentary arrives, lead with the specific new fact or answer; continue naturally from anything already said. Stay available for interruptions."]
+      : []),
     "You know nothing about Kawase's features, the person's money, contacts, account, limits or anything on Arc. Delegate every request and every question to the client — including what Kawase can do — and wait for its commentary. Only greetings, thanks and goodbyes you may answer yourself.",
-    "When commentary arrives, say it in your own words, but keep every amount, asset (USDC, EURC…), recipient, network and status exactly as given. Never state an amount, asset, recipient or network that was not given to you in commentary. Never guess.",
+    CONVERSATIONAL
+      ? "When commentary arrives, continue naturally from what you already said. Keep assets (USDC, EURC…), recipients, networks and status faithful. For a provisional route estimate only, you may use the approximate amount given in commentary with 'about'; the card shows the exact quote. Keep payment, approval and minimum amounts exact. Never add an amount or fact you were not given."
+      : "When commentary arrives, say it in your own words, but keep every amount, asset (USDC, EURC…), recipient, network and status exactly as given. Never state an amount, asset, recipient or network that was not given to you in commentary. Never guess.",
     "Money never moves because of something said aloud: a payment happens only when the person taps its card on screen. Never say something was sent, paid or done unless the commentary says so. If the commentary says a card is ready, tell the person to check and tap the card.",
     "Small talk is fine, briefly. Don't read out addresses or long numbers character by character; the card shows them.",
   ].join("\n");
@@ -165,11 +181,40 @@ export async function startGptLive(input: {
     const segments = new Map<string, string>();
     let speaking = false;
     let delegationOpen = false;
+    const speechTrace = CONVERSATIONAL ? traceTurn(ctx.room, meta, "input-speech") : undefined;
+    // Test-only marker from actual microphone frames. The SDK's input_speech_started event is emitted
+    // on the first transcript delta, so it cannot measure when microphone audio first arrived.
+    if (speechTrace) {
+      const observedTracks = new WeakSet<RemoteTrack>();
+      const observeMic = (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+        if (participant.identity !== meta.identity || publication.source !== TrackSource.SOURCE_MICROPHONE || track.kind !== TrackKind.KIND_AUDIO || observedTracks.has(track)) return;
+        observedTracks.add(track);
+        void (async () => {
+          let inVoicedSegment = false;
+          let quietSamples = 0;
+          for await (const frame of new AudioStream(track, TRACE_AUDIO_SAMPLE_RATE, 1)) {
+            const voiced = frame.data.some((sample) => Math.abs(sample) > TRACE_VOICE_THRESHOLD);
+            if (voiced) {
+              if (!inVoicedSegment) speechTrace("mic_voiced_frame_received");
+              inVoicedSegment = true;
+              quietSamples = 0;
+            } else if (inVoicedSegment && (quietSamples += frame.data.length) >= TRACE_SILENCE_SAMPLES) {
+              inVoicedSegment = false;
+            }
+          }
+        })().catch((error: unknown) => console.warn("voice mic trace stopped", error));
+      };
+      ctx.room.on(RoomEvent.TrackSubscribed, observeMic);
+      for (const publication of ctx.room.remoteParticipants.get(meta.identity)?.trackPublications.values() ?? [])
+        if (publication.track) observeMic(publication.track, publication, ctx.room.remoteParticipants.get(meta.identity)!);
+    }
     live.on("input_speech_started", () => {
       speaking = true;
+      speechTrace?.("input_transcript_started");
     });
     live.on("input_speech_stopped", () => {
       speaking = false;
+      speechTrace?.("input_transcript_stopped");
     });
     live.on("input_audio_transcription_completed", (event) => {
       segments.set(event.itemId, event.transcript);
@@ -212,7 +257,32 @@ export async function startGptLive(input: {
         return;
       }
       try {
-        const turn = await runTurn(meta, { text, key, signal: abort.signal }, { onCard: sendCard });
+        const trace = CONVERSATIONAL ? traceTurn(ctx.room, meta, key) : undefined;
+        let firstText = false;
+        let progressSent = false;
+        let progressLine: string | undefined;
+        trace?.("agent_request_started");
+        const turn = await runTurn(meta, { text, key, signal: abort.signal }, {
+          onCard: (card) => {
+            trace?.("card_ready", card.toolName);
+            sendCard(card);
+            if (!PROGRESSIVE || abort.signal.aborted || firstText || progressSent) return;
+            const progress = routeProgress(card, CONVERSATIONAL);
+            if (!progress) return;
+            progressSent = true;
+            progressLine = progress;
+            if (!CONVERSATIONAL)
+              live.appendThinking(clip(`Provisional route result from the card: ${progress} The final trade quote is still pending.`), options);
+            live.appendCommentary(clip(progress), options);
+            trace?.("progress_commentary_sent");
+          },
+          onText: () => {
+            if (firstText) return;
+            firstText = true;
+            trace?.("first_agent_text");
+          },
+        });
+        trace?.("agent_response_complete");
         if (abort.signal.aborted) return;
         const facts = canonicalFacts(turn.cards);
         const line = turn.text || SORRY[locale];
@@ -221,8 +291,13 @@ export async function startGptLive(input: {
             clip(`Kawase's canonical facts for this answer (exact; never contradict them):\n${facts}`),
             options,
           );
+        if (progressSent)
+          live.appendThinking(
+            "You already spoke the provisional route estimate. Give the final status and next step without repeating the same amount if it is unchanged. If the final amount differs, state the change clearly. Never imply a trade occurred unless the final facts say it did.",
+            options,
+          );
         live.appendCommentary(clip(line), options);
-        guard.expect(line, facts);
+        guard.expect(line, [facts, progressLine].filter(Boolean).join("\n"));
       } catch (error) {
         if (abort.signal.aborted) return;
         console.error("voice turn failed", error);
@@ -268,7 +343,7 @@ export async function startGptLive(input: {
       void answer(async () => (await reader.readAll()).trim(), `gpt-live:text:${typed}:${Date.now()}`);
     });
 
-    if (prefs.autoSpeak)
+    if (prefs.autoSpeak && !CONVERSATIONAL)
       session.generateReply({
         instructions: `Greet the person in one short, warm sentence in ${LANGUAGE_IN_ENGLISH[locale]} and say you're listening.`,
       });

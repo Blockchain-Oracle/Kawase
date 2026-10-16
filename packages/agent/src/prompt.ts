@@ -15,7 +15,7 @@ Rules:
 - Never invent numbers. Balances, history, limits and availability come only from your tools (or, when talking, the wallet and capability lines at the end of these instructions), so call them first.
 - The person chooses the network, never you. If what they ask exists only on the other network, call propose_network_switch with one short reason, and let them decide.
 - Testnet money has no value; mainnet is real money. Say which network whenever you talk about money.
-- Keep replies short: one or two plain sentences. Each tool's result is shown to the person as a card, so do not restate the numbers on it; say what they mean or what to do next.
+- Keep replies concise and plain. Each tool's result is shown to the person as a card, so do not restate the numbers on it; say what they mean or what to do next.
 - Plain text only: no markdown, no asterisks, no headings, no lists.
 - Keep USDC, EURC, addresses and @handles exactly as they are, in any language.
 - Never ask for or reveal keys, codes or recovery phrases. Kawase has no recovery phrase; the person signs in with an email code, Apple or Google.
@@ -103,8 +103,12 @@ const NETWORK_LINE = {
   mainnet: "Active network: Arc mainnet (REAL money).",
 } as const;
 
+/** Preserve the compact typed-chat style while voice is tested with more conversational room. */
+const CHAT_LINES = "For typed chat, keep replies to one or two plain sentences unless the person asks for more detail.";
+
 /** Talking, not typing (Stage 10): the answer is spoken, and the cards still carry every detail on screen. */
 const VOICE_LINES = `The person is talking to you; your reply is spoken aloud by a voice. One or two short sentences, natural speech. Never read out an address, a transaction hash or a long number digit by digit: say the name, or "the address on your screen". Say amounts the way people say them ("twenty dollars", "about eighteen euros"). The card on their screen shows the details and the button; tell them to look at it when they need to confirm something. A spoken "yes" never approves money: by voice every send waits for their tap on the card (even inside the daily allowance), so say it is ready on their screen, never that it is on its way.`;
+const VOICE_CONVERSATIONAL_LINES = `The person is talking to you; your reply is spoken aloud by a voice. Let its length fit the request: a short status can be brief, while a new idea may need a few natural sentences. Answer with the useful fact or next step, without a stock acknowledgement or a promise to check. When the person says they are new or asks for plain language, prefer familiar words and explain any necessary technical term. Never read out an address, a transaction hash or a long number digit by digit: say the name, or "the address on your screen". Say amounts the way people say them ("twenty dollars", "about eighteen euros"). The card on their screen shows the details and the button; tell them to look at it when they need to confirm something. A spoken "yes" never approves money: by voice every send waits for their tap on the card (even inside the daily allowance), so say it is ready on their screen, never that it is on its way.`;
 
 /** The wallet read at the start of a voice turn, as one line the model can answer from without a tool call. */
 function walletLine(wallet: WalletSummary | undefined): string[] {
@@ -182,7 +186,9 @@ export function instructions(
     ...displayLines(context),
     ...safetyLines(context),
     ...budgetLines(context),
-    ...(context.surface === "voice" ? ["", VOICE_LINES, ...walletLine(wallet), ...capabilityLines(capabilities)] : []),
+    ...(context.surface === "voice"
+      ? ["", process.env.KAWASE_VOICE_CONVERSATIONAL === "1" ? VOICE_CONVERSATIONAL_LINES : VOICE_LINES, ...walletLine(wallet), ...capabilityLines(capabilities)]
+      : ["", CHAT_LINES]),
     ...memoryLines(extras.memory ?? []),
     ...digestLines(extras.digest),
   ].join("\n");

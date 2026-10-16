@@ -91,6 +91,7 @@ export async function agentTurn({
   const trust = turnTrust(context.lastUserText);
   const tools = buildTools(context, trust);
   const voice = context.surface === "voice";
+  const conversationalVoice = voice && process.env.KAWASE_VOICE_CONVERSATIONAL === "1";
   // What the person asked Kawase to remember, and a long thread's summary (A5); a failed read never stops the turn.
   const [memory, digest] = await Promise.all([
     context.intelligence.memory().catch(() => []),
@@ -116,7 +117,7 @@ export async function agentTurn({
     // Short answers fast: little reasoning, terse text (spike 7: most latency was reasoning).
     providerOptions: {
       openai: {
-        ...(reasons ? { reasoningEffort: voice ? "none" : "low", textVerbosity: "low" } : {}),
+        ...(reasons ? { reasoningEffort: voice ? "none" : "low", textVerbosity: conversationalVoice ? "medium" : "low" } : {}),
         promptCacheKey: voice ? `${PROMPT_CACHE_KEY}-voice` : PROMPT_CACHE_KEY,
         serviceTier: SERVICE_TIER,
       },
