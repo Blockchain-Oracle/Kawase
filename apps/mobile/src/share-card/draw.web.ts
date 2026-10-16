@@ -72,8 +72,12 @@ function fit(c: Ctx, text: string, weight: number, size: number, min: number, ma
   return { text: `${cut}${ELLIPSIS}`, css, size: min };
 }
 
+/** Arabic-script letters (Arabic, Urdu): a string with them reads right to left; money, handles and Latin never do. */
+const RTL_LETTERS = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+
 function text(c: Ctx, value: string, x: number, base: number, css: string, color: string, align: CanvasTextAlign = "left", alpha = 1, tracking = 0) {
   c.save();
+  c.direction = RTL_LETTERS.test(value) ? "rtl" : "ltr";
   c.globalAlpha *= alpha;
   c.font = css;
   c.letterSpacing = `${tracking}px`;
@@ -475,7 +479,6 @@ function drawStub(c: Ctx, s: CardScene, qrValue: string) {
 /** Draws the card at `ms` into the film (FINAL_MS for the still). */
 export function drawCard(c: Ctx, s: CardScene, ms: number, qrValue: string) {
   c.save();
-  c.direction = s.rtl ? "rtl" : "ltr";
   drawPaper(c, s);
   drawHeader(c, s);
   drawChart(c, s, ms);
