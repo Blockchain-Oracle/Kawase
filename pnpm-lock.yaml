@@ -60,6 +60,9 @@ catalogs:
     drizzle-orm:
       specifier: 0.45.3
       version: 0.45.3
+    esbuild:
+      specifier: 0.28.2
+      version: 0.28.2
     eslint:
       specifier: 10.11.0
       version: 10.11.0
@@ -253,6 +256,9 @@ importers:
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.2
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

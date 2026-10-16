@@ -8,12 +8,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
-    "test": "tsx --test --test-concurrency=1 test/*.test.ts"
+    "start": "node dist/db/migrate.mjs && node dist/bundle/main.mjs",
+    "test": "tsx --test --test-concurrency=1 test/*.test.ts",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/qrcode": "^1.5.6",
+    "esbuild": "catalog:",
     "typescript": "catalog:"
   },
   "dependencies": {
