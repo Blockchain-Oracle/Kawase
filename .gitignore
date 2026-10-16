@@ -24,6 +24,7 @@ refs/*/
 # plan/product/ (the cards the code cites), plan/spikes/ and plan/stages/ (the logs behind /demo's evidence),
 # context/01-arc/ (the agent's Arc knowledge build reads it) and context/07-prior-work/ (cited by the README).
 /plan/STATUS.md
+/plan/HANDOFF-*.md
 /plan/MASTER-PLAN.md
 /plan/EXPO-RULES.md
 /plan/COVERAGE.md
