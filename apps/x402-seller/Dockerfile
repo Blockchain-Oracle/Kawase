@@ -9,7 +9,8 @@ ENV CI=true
 COPY . .
 RUN pnpm install --frozen-lockfile --filter @kawase/x402-seller...
 RUN pnpm --filter @kawase/x402-seller build
-RUN pnpm --filter @kawase/x402-seller deploy --prod --legacy --config.node-linker=hoisted /out
+RUN pnpm --filter @kawase/x402-seller deploy --prod --legacy --config.node-linker=hoisted /out \
+    && node apps/x402-seller/scripts/build.mjs --check /out
 
 FROM node:24-alpine
 WORKDIR /app

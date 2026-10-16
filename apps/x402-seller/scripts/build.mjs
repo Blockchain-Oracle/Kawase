@@ -3,7 +3,7 @@
 // node). Every npm package stays an import, installed as usual. Files read relative to themselves
 // (`new URL("../…", import.meta.url)`) are re-aimed at the same file from the bundle's folder, and a small resolve hook
 // adds the extension a dependency's ESM may leave off (what tsx forgave).
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -11,11 +11,32 @@ import { build } from "esbuild";
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
 // Ours: the @kawase workspace packages.
 const OWN = /^@kawase\//;
+/** npm packages bundled with our code instead of installed (their installed version differed from the one our code resolves). */
+const BUNDLED = new Set([]);
+/** The package.json Node would load for `name` from `dir`: node_modules/<name> in this folder or the nearest above. */
+function findManifest(dir, name) {
+  for (let at = dir; ; at = dirname(at)) {
+    const manifest = resolve(at, "node_modules", name, "package.json");
+    if (existsSync(manifest)) return manifest;
+    if (dirname(at) === at) return null;
+  }
+}
+const packageName = (spec) => (spec.startsWith("@") ? spec.split("/").slice(0, 2).join("/") : spec.split("/")[0]);
+
 
 const externalNpm = {
   name: "external-npm",
   setup(builder) {
-    builder.onResolve({ filter: /^[^./]/ }, (args) => (OWN.test(args.path) ? undefined : { path: args.path, external: true }));
+    builder.onResolve({ filter: /^[^./]/ }, (args) => {
+      if (args.path.startsWith("node:")) return { path: args.path, external: true };
+      // Only bundled files are ever importers here, so a package's own imports follow it into the bundle.
+      if (OWN.test(args.path) || BUNDLED.has(packageName(args.path)) || args.importer.includes("node_modules")) return undefined;
+      {
+        const manifest = findManifest(dirname(args.importer), packageName(args.path));
+        if (manifest) expected.set(packageName(args.path), JSON.parse(readFileSync(manifest, "utf8")).version);
+      }
+      return { path: args.path, external: true };
+    });
   },
 };
 
@@ -40,10 +61,34 @@ const reaim = {
   },
 };
 
+// `--check <dir>`: after `pnpm deploy`, every external package our code imports must be installed at the version our
+// code resolved when it was bundled; a different one (a flat install's hoisting pick) fails the image build.
+if (process.argv[2] === "--check") {
+  const installed = process.argv[3];
+  const wanted = JSON.parse(readFileSync(here("../dist/bundle/externals.json"), "utf8"));
+  const wrong = Object.entries(wanted).filter(([name, version]) => {
+    const manifest = `${installed}/node_modules/${name}/package.json`;
+    return !existsSync(manifest) || JSON.parse(readFileSync(manifest, "utf8")).version !== version;
+  });
+  if (wrong.length > 0) {
+    console.error(`installed versions differ from the bundle's: ${wrong.map(([name, version]) => `${name}@${version}`).join(", ")} — add them to BUNDLED`);
+    process.exit(1);
+  }
+  console.log(`${Object.keys(wanted).length} external packages at the versions the bundle expects`);
+  process.exit(0);
+}
+
+const expected = new Map();
 rmSync(here("../dist"), { recursive: true, force: true });
 await build({
-  entryPoints: [here("../src/main.ts")],
-  outfile: here("../dist/bundle/main.mjs"),
+  entryPoints: { main: here("../src/main.ts") },
+  outdir: OUT_DIR,
+  // Dynamic import()s become their own chunks with Node's own module order (one-file output wraps modules in lazy
+  // initialisers, and a constant read before its wrapper ran is undefined: Agari's ops crash-looped on that, 16 Oct).
+  // Chunks sit beside main.mjs, so paths re-aimed from the bundle's folder hold in every chunk.
+  splitting: true,
+  outExtension: { ".js": ".mjs" },
+  chunkNames: "[name]-[hash]",
   bundle: true,
   platform: "node",
   format: "esm",
@@ -56,6 +101,7 @@ await build({
 // A dependency's ESM build imports a deep path without its extension (@pythnetwork/solana-utils → "jito-ts/dist/sdk/
 // block-engine/types"): tsx's resolver forgave it, Node's does not. This hook, loaded with --import, retries only a
 // failed lookup with ".js" or "/index.js" — what tsx did, without compiling anything.
+writeFileSync(here("../dist/bundle/externals.json"), `${JSON.stringify(Object.fromEntries([...expected].sort()), null, 2)}\n`);
 writeFileSync(here("../dist/bundle/resolve.mjs"), `export async function resolve(specifier, context, next) {
   try {
     return await next(specifier, context);

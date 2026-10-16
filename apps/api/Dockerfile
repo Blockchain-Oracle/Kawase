@@ -11,7 +11,8 @@ ENV CI=true
 COPY . .
 RUN pnpm install --frozen-lockfile --filter @kawase/api...
 RUN pnpm --filter @kawase/api build
-RUN pnpm --filter @kawase/api deploy --prod --legacy --config.node-linker=hoisted /out
+RUN pnpm --filter @kawase/api deploy --prod --legacy --config.node-linker=hoisted /out \
+    && node apps/api/scripts/build.mjs --check /out
 
 FROM node:24-alpine
 WORKDIR /app
