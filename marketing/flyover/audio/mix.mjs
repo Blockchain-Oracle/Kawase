@@ -31,7 +31,8 @@ const FX = {
 const VARIANTS = {
   G1: { bed: "bed-G1.mp3", drop: 11.39, bedGain: 0, lift: 0, fx: ["riser", "swish", "boom", "punch"] },
   I1: { bed: "bed-I1.mp3", drop: 11.325, bedGain: 0, lift: 0, fx: ["riser", "swish", "boom", "punch"] },
-  J1: { bed: "bed-J1.mp3", drop: 11.52, bedGain: 0, lift: 3, fx: ["riser", "swish", "boom", "punch"] },
+  // J1's own boom: transient at 11.32–11.34 s, sub at 11.36 (measured at 20 ms; find_drop.py picked a later peak).
+  J1: { bed: "bed-J1.mp3", drop: 11.335, bedGain: 0, lift: 2, fx: ["riser", "swish", "boom", "punch"], gains: { riser: -9, swish: -17, boom: -2, punch: -6 } },
 };
 
 const ff = (args) => execFileSync("ffmpeg", ["-hide_banner", "-nostats", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -66,7 +67,7 @@ function build(name) {
   ];
   const labels = ["[bed]"];
   v.fx.forEach((key, i) => {
-    const fx = FX[key];
+    const fx = { ...FX[key], ...(v.gains?.[key] !== undefined ? { gain: v.gains[key] } : {}) };
     inputs.push("-i", join(WORK, fx.file));
     const delay = Math.round((fx.to - fx.at) * 1000);
     chains.push(
