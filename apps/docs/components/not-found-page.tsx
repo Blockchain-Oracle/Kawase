@@ -40,12 +40,16 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export function NotFoundPage() {
   const params = useParams<{ lang?: string }>();
-  const copy = COPY[params?.lang ?? "en"] ?? COPY.en!;
-  const home = params?.lang && params.lang !== "en" ? `/${params.lang}/docs` : "/docs";
   const path = useSyncExternalStore(noStore, addressPath, noPath);
+  // The global 404 has no [lang] param: the address's first segment says the reader's language ("/fr/…").
+  const first = path?.split("/")[1] ?? "";
+  const lang = params?.lang ?? (first in COPY ? first : "en");
+  const copy = COPY[lang] ?? COPY.en!;
+  const home = lang !== "en" ? `/${lang}/docs` : "/docs";
+  const rtl = lang === "ar" || lang === "ur";
   const search = useSearchContext();
   return (
-    <main id="nd-not-found" className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center gap-12 px-5 py-20 lg:flex-row lg:items-center lg:justify-between">
+    <main id="nd-not-found" dir={rtl ? "rtl" : "ltr"} className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center gap-12 px-5 py-20 lg:flex-row lg:items-center lg:justify-between">
       <div className="max-w-[520px]">
         <p className="text-sm font-semibold tracking-[0.14em] text-fd-muted-foreground uppercase">404</p>
         <h1 className="mt-3 font-display text-[clamp(44px,7vw,84px)] leading-[0.95] font-black">{copy.title}</h1>

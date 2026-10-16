@@ -8,6 +8,9 @@ const config = {
   reactStrictMode: true,
   // No generated AGENTS.md / CLAUDE.md in the app folder.
   agentRules: false,
+  // The root layout lives under [lang], so unmatched addresses get app/global-not-found.tsx (Next's convention for
+  // a dynamic root layout); a nested not-found.tsx never sees them.
+  experimental: { globalNotFound: true },
   // A self-contained server for the Docker image (Dockerfile); traced from the workspace root so the
   // @kawase packages it imports are included.
   output: "standalone",
