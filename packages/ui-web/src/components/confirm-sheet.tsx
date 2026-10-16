@@ -1,7 +1,8 @@
 // Kawase glue, composed from installed parts: the card that rises from the bottom when a payment needs the
 // user's approval (DESIGN.md, Koe). It shows exactly what will be sent and to whom, and never dismisses itself.
+// Reduced motion: it is simply there, held by the `motion-reduce:` class so server and client render the same element.
 import * as React from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import { cn } from "@kawase/ui-web/lib/utils";
 
@@ -22,13 +23,12 @@ export interface ConfirmSheetProps {
 }
 
 export function ConfirmSheet({ rows, children, className }: ConfirmSheetProps) {
-  const reduced = useReducedMotion();
   return (
     <motion.div
-      initial={reduced ? false : { y: "100%" }}
+      initial={{ y: "100%" }}
       animate={{ y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className={cn("rounded-t-[28px] border-t border-border bg-card px-5 pb-7 pt-3 text-card-foreground", className)}
+      className={cn("rounded-t-[28px] border-t border-border bg-card px-5 pb-7 pt-3 text-card-foreground motion-reduce:transform-none!", className)}
     >
       <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted" />
       <dl className="space-y-1 pb-4">

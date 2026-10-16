@@ -1,10 +1,11 @@
 "use client";
 
 import { XIcon } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 
-import { EASE_OUT } from "@/lib/landing.config";
+import { EASE_OUT, STILL_WITH_REDUCED_MOTION } from "@/lib/landing.config";
+import { cn } from "@/lib/utils";
 
 const KEY = "kawase.corner-qr.closed";
 /** Shown once the page has scrolled this many window heights (past the hero). */
@@ -21,7 +22,6 @@ function closedBefore(): boolean {
 }
 
 export function CornerCard({ svg }: { svg: string }) {
-  const reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -51,8 +51,8 @@ export function CornerCard({ svg }: { svg: string }) {
   return (
     <motion.aside
       aria-label="Get Kawase on your phone"
-      className="lp-chip fixed end-5 bottom-5 z-40 hidden w-[232px] items-center gap-3 rounded-[22px] p-3 pe-4 shadow-[var(--lp-shadow)] lg:flex"
-      initial={reduced ? false : { opacity: 0, y: 24 }}
+      className={cn("lp-chip fixed end-5 bottom-5 z-40 hidden w-[232px] items-center gap-3 rounded-[22px] p-3 pe-4 shadow-[var(--lp-shadow)] lg:flex", STILL_WITH_REDUCED_MOTION)}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_OUT }}
     >

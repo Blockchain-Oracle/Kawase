@@ -4,11 +4,13 @@
 // front, composed like the README banner. The stage starts tilted back in perspective and flattens as the hero
 // scrolls away (21st.dev 27355 ruixen.ui/phone-scroll-hero: a tilted device that straightens on scroll; kept its
 // scroll-to-rotation idea, dropped its headline overlap and its own frame), and on a desktop it leans a few degrees
-// toward the pointer, on a spring. Reduced motion: flat and still.
+// toward the pointer, on a spring. Reduced motion: flat and still, held by CSS (STILL_WITH_REDUCED_MOTION) so the
+// server's HTML is already right; the hook only keeps the pointer listener off.
 import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef } from "react";
 
-import { EASE_OUT } from "@/lib/landing.config";
+import { EASE_OUT, STILL_WITH_REDUCED_MOTION } from "@/lib/landing.config";
+import { cn } from "@/lib/utils";
 
 import { PhoneShot, Window } from "./devices";
 
@@ -56,9 +58,9 @@ export function HeroStage() {
   return (
     <div ref={ref} className="relative [perspective:1800px]" aria-label="Kawase on the web, on iPhone and on Android">
       <motion.div
-        className="relative mx-auto h-[min(118vw,560px)] w-full max-w-[760px] [transform-style:preserve-3d] lg:h-[640px]"
-        style={reduced ? undefined : { rotateX, rotateY, rotateZ, y: lift }}
-        initial={reduced ? false : { opacity: 0, y: 60 }}
+        className={cn("relative mx-auto h-[min(118vw,560px)] w-full max-w-[760px] [transform-style:preserve-3d] lg:h-[640px]", STILL_WITH_REDUCED_MOTION)}
+        style={{ rotateX, rotateY, rotateZ, y: lift }}
+        initial={{ opacity: 0, y: 60 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: EASE_OUT }}
       >
