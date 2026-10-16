@@ -45,6 +45,7 @@ import { devices } from "./devices";
 import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
+import { notFound } from "./not-found";
 import { chatHome } from "./chat-home";
 import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
@@ -184,4 +185,5 @@ export const bn: Catalog = {
   routes,
   market402,
   desktop,
+  notFound,
 };

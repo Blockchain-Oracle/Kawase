@@ -1,0 +1,14 @@
+export const notFound = {
+  pageTitle: "لا شيء هنا · Kawase",
+  title: "لم يتحرّك شيء.",
+  line: "لا توجد صفحة على هذا العنوان، ولم يخرج شيء من محفظتك.",
+  receipt: "إيصال #404",
+  to: "إلى",
+  status: "الحالة",
+  missing: "لا توجد صفحة كهذه",
+  money: "أموالك",
+  safe: "في مكانها تمامًا",
+  void: "ملغى",
+  home: "الرئيسية",
+  ask: "اسأل Kawase",
+};

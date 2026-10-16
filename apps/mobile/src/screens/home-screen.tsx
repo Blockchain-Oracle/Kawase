@@ -50,6 +50,7 @@ import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { FeedFilters, FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
 import { BottomFade } from "@/home/bottom-fade";
 import { HomeComposer, useComposerClearance } from "@/home/home-composer";
+import { useOverlay } from "@/overlay/overlay-provider";
 import { HomeRun, type HomeRunHandle, type RunStatus } from "@/home/home-run";
 import { MarketsGlance, SignInPlate, SignInStage } from "@/home/markets-glance";
 import { PortfolioSheet } from "@/home/portfolio-sheet";
@@ -152,6 +153,9 @@ export function HomeScreen() {
   const [scrolledPast, setScrolledPast] = React.useState(false);
   // Reading down tucks the composer behind the dock; scrolling up brings it back.
   const launcher = useLauncherScroll(scrollY);
+  // Talking to Kawase is the conversation (Abu, 10-16: "why would I be typing and speaking at the same time?"): the
+  // composer steps away while voice runs, island and all, and comes back when it ends.
+  const voiceLive = useOverlay().voiceLive;
   const onScrollEnd = (y: number) => setScrolledPast(runBottom > 0 && y > runBottom);
 
   const rows = rowsFor(feed.feed, filter);
@@ -325,6 +329,8 @@ export function HomeScreen() {
       {beside ? null : strip}
 
       <BottomFade height={composerClearance} color={color.background} />
+      {voiceLive ? null : (
+      <Animated.View entering={FadeIn.duration(TIMING.selection)} exiting={FadeOut.duration(TIMING.press)} pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       <HomeComposer
         value={draft}
         onChange={setDraft}
@@ -336,6 +342,8 @@ export function HomeScreen() {
         shown={launcher.shown}
         showChips={!run.pointer}
       />
+      </Animated.View>
+      )}
 
       {portfolioOpen ? (
         <PortfolioSheet

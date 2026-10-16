@@ -15,6 +15,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
 
 import { ToastHost } from "@/components/toast/ToastHost";
+import { UpdateReady } from "@/shell/update-ready";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
 import { SheetLayer, SheetPortalProvider } from "@/components/sheet/SheetHost";
@@ -71,6 +72,7 @@ export default function RootLayout() {
                   <PortalHost />
                   <WebApprovalHost />
                   <ToastHost />
+                  <UpdateReady />
                 </BottomSheetModalProvider>
               </LocaleProvider>
             </SessionProvider>

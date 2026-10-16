@@ -46,6 +46,7 @@ import { devices } from "./devices";
 import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
+import { notFound } from "./not-found";
 import { chatHome } from "./chat-home";
 import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
@@ -185,6 +186,7 @@ export const en = {
   routes,
   market402,
   desktop,
+  notFound,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };

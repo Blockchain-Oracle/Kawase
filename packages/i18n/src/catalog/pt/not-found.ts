@@ -1,0 +1,14 @@
+export const notFound = {
+  pageTitle: "Nada aqui · Kawase",
+  title: "Nada se moveu.",
+  line: "Não há página neste endereço, e nada saiu da sua carteira.",
+  receipt: "Recibo nº 404",
+  to: "Para",
+  status: "Status",
+  missing: "Página inexistente",
+  money: "Seu dinheiro",
+  safe: "Exatamente onde você deixou",
+  void: "ANULADO",
+  home: "Ir para o início",
+  ask: "Pergunte à Kawase",
+};

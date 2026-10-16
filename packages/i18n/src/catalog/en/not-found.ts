@@ -1,0 +1,14 @@
+export const notFound = {
+  pageTitle: "Nothing here · Kawase",
+  title: "Nothing moved.",
+  line: "There's no page at this address, and nothing left your wallet.",
+  receipt: "Receipt #404",
+  to: "To",
+  status: "Status",
+  missing: "No such page",
+  money: "Your money",
+  safe: "Right where you left it",
+  void: "VOID",
+  home: "Go home",
+  ask: "Ask Kawase",
+} as const;

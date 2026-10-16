@@ -62,7 +62,7 @@ const QR_CENTER = 0.2;
 const shortHash = (hash: string) => `${hash.slice(0, HASH_HEAD)}…${hash.slice(-HASH_TAIL)}`;
 const explorerHost = (url: string) => url.replace(/^https?:\/\//, "").split("/")[0] ?? url;
 
-function Perforation({ notch, rule }: { notch: string | null; rule: string }) {
+export function Perforation({ notch, rule }: { notch: string | null; rule: string }) {
   return (
     <View style={styles.perf} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height={SLIP.perf}>
