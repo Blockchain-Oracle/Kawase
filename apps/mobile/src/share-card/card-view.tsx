@@ -194,8 +194,18 @@ export const ShareCardView = React.forwardRef<CardHandle, { card: CardData; word
 
             {g.markers.map((m) => (
               <View key={`${m.t}-${m.kind}`} style={[styles.abs, { left: m.x - L.marker.r - L.marker.ring, top: m.y - L.marker.r - L.marker.ring }]}>
-                <View style={{ padding: L.marker.ring, borderRadius: L.marker.r + L.marker.ring, backgroundColor: color.card }}>
-                  {m.token ? (
+                <View style={{ padding: L.marker.ring, borderRadius: L.marker.r + L.marker.ring, backgroundColor: m.kind === "swap" && m.token && m.other ? color.transparent : color.card }}>
+                  {m.kind === "swap" && m.token && m.other ? (
+                    // A swap wears both coins: the one that went out behind and up, the one that came in over it.
+                    <View style={{ width: L.marker.r * 2, height: L.marker.r * 2 }}>
+                      <View style={[styles.abs, { left: -L.marker.r * 0.34 - L.marker.ring, top: -L.marker.r * 0.34 - L.marker.ring, padding: L.marker.ring, borderRadius: L.marker.r, backgroundColor: color.card }]}>
+                        <TokenMark token={m.other} size={L.marker.r * 1.56} />
+                      </View>
+                      <View style={[styles.abs, { left: L.marker.r * 0.44 - L.marker.ring * 0.7, top: L.marker.r * 0.44 - L.marker.ring * 0.7, padding: L.marker.ring * 0.7, borderRadius: L.marker.r, backgroundColor: color.card }]}>
+                        <TokenMark token={m.token} size={L.marker.r * 1.56} />
+                      </View>
+                    </View>
+                  ) : m.token ? (
                     <TokenMark token={m.token} size={L.marker.r * 2} />
                   ) : card.kind !== "period" ? (
                     <DefaultAvatar seed={seed} size={L.marker.r * 2} />

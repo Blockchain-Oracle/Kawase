@@ -11,7 +11,10 @@ import { useTheme } from "@/components/kit/theme";
 import { useLocale } from "@/i18n/locale-provider";
 import type { Fx } from "@/portfolio/format";
 
+import { feedbackPreferences } from "@/feedback/preferences";
+
 import { CardArt, type CardImages } from "./art.web";
+import { playSoundtrack, renderSoundtrack } from "./film-sound.web";
 import { fileStem, type CardHandle } from "./card-handle";
 import { drawCard, loadCardFonts, type CardColors, type CardScene } from "./draw.web";
 import { chartGeometry, FILM, FINAL_MS, FRAME, L } from "./layout";
@@ -19,6 +22,7 @@ import type { CardData, ShareToken } from "./model";
 import { CARD_URL, type CardWords } from "./words";
 
 const VIDEO_BITRATE = 6_000_000;
+const AUDIO_BITRATE = 128_000;
 const MS = 1000;
 
 export class VideoUnavailable extends Error {
@@ -66,6 +70,9 @@ async function encodeVideo(scene: CardScene, onProgress: (share: number) => void
   const output = new mb.Output({ format: new mb.Mp4OutputFormat({ fastStart: "in-memory" }), target: new mb.BufferTarget() });
   const video = new mb.CanvasSource(canvas, { codec: "avc", bitrate: VIDEO_BITRATE });
   output.addVideoTrack(video, { frameRate: FILM.fps });
+  // The soundtrack (film-sound.web.ts) as AAC where the browser encodes it; a film without sound beats no film.
+  const audio = (await mb.canEncodeAudio("aac")) ? new mb.AudioBufferSource({ codec: "aac", bitrate: AUDIO_BITRATE }) : null;
+  if (audio) output.addAudioTrack(audio);
   await output.start();
   const frames = Math.round((FILM.totalMs / MS) * FILM.fps);
   try {
@@ -74,6 +81,10 @@ async function encodeVideo(scene: CardScene, onProgress: (share: number) => void
       drawCard(ctx, scene, (i / FILM.fps) * MS, CARD_URL);
       await video.add(i / FILM.fps, 1 / FILM.fps);
       onProgress(i / frames);
+    }
+    if (audio) {
+      const soundtrack = await renderSoundtrack(scene.card).catch(() => null);
+      if (soundtrack) await audio.add(soundtrack);
     }
     await output.finalize();
   } catch (error) {
@@ -97,6 +108,8 @@ export const ShareCardView = React.forwardRef<
   const [images, setImages] = React.useState<CardImages | null>(null);
   const [fontsReady, setFontsReady] = React.useState(false);
   const [run, setRun] = React.useState(0);
+  const stopSound = React.useRef<(() => void) | null>(null);
+  React.useEffect(() => () => stopSound.current?.(), []);
   const tokens = React.useMemo(() => tokensOf(card), [card]);
   const scene = React.useMemo<CardScene | null>(
     () => (images && fontsReady ? { card, words, geometry: chartGeometry(card.series, card.markers, card.from, card.to, card.level), colors, images, fx, locale, rtl } : null),
@@ -135,7 +148,18 @@ export const ShareCardView = React.forwardRef<
   React.useImperativeHandle(
     ref,
     () => ({
-      replay: () => setRun((n) => n + 1),
+      replay: () => {
+        setRun((n) => n + 1);
+        // Play again is a tap: the film's sound may play with it (the person's Sound setting decides).
+        stopSound.current?.();
+        stopSound.current = null;
+        if (scene && feedbackPreferences().sounds)
+          void playSoundtrack(scene.card)
+            .then((stop) => {
+              stopSound.current = stop;
+            })
+            .catch(() => undefined);
+      },
       image: async () => {
         if (!scene) throw new Error("not drawn yet");
         const still = document.createElement("canvas");
