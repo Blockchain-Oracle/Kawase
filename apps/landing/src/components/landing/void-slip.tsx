@@ -24,11 +24,21 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function VoidSlip({ stub }: { stub: string }) {
   const path = useSyncExternalStore(noStore, addressPath, noPath);
   return (
-    <figure className="relative w-full max-w-[420px] overflow-hidden rounded-[28px] border border-border bg-card shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)]" aria-label="Receipt 404: nothing moved">
+    <figure className="w-full max-w-[420px] overflow-hidden rounded-[28px] border border-border bg-card shadow-[0_30px_80px_-30px_rgba(0,0,0,0.35)]" aria-label="Receipt 404: nothing moved">
       <div className="flex items-center gap-2.5 px-7 pt-7">
         <Mark entity={ENTITY.kawase} size={26} />
         <span className="font-display text-[17px] font-semibold text-foreground">Kawase</span>
         <span className="ml-auto text-[12px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Receipt #404</span>
+      </div>
+      {/* Where a real slip has the amount and its hanko: nothing, voided. */}
+      <div className="flex items-center justify-between gap-4 px-7 pt-6">
+        <div>
+          <p className="text-[12px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Moved</p>
+          <p className="mt-1 font-display text-[48px] leading-none font-black text-foreground">0.00</p>
+        </div>
+        <span aria-hidden className="-rotate-12 rounded-md border-[3px] border-[#E0463D] px-2.5 py-0.5 font-display text-[22px] font-black tracking-[0.18em] text-[#E0463D] opacity-85">
+          VOID
+        </span>
       </div>
       <dl className="grid gap-3.5 px-7 py-7">
         <Row label="To">
@@ -39,12 +49,6 @@ export function VoidSlip({ stub }: { stub: string }) {
           <span className="text-up">Right where you left it</span>
         </Row>
       </dl>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute top-[74px] right-6 -rotate-12 rounded-md border-[3px] border-[#E0463D] px-2.5 py-0.5 font-display text-[22px] font-black tracking-[0.18em] text-[#E0463D] opacity-85"
-      >
-        VOID
-      </span>
       <div className="relative" aria-hidden>
         <div className="mx-7 border-t-2 border-dashed border-border" />
         <span className="absolute top-1/2 -left-3 size-6 -translate-y-1/2 rounded-full bg-background" />

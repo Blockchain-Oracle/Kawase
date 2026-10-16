@@ -73,6 +73,12 @@ export function NotFoundPage() {
           <Brand />
           <span className="ms-auto text-xs font-semibold tracking-[0.14em] text-fd-muted-foreground uppercase">#404</span>
         </div>
+        <div className="flex items-center justify-between gap-4 px-6 pt-5">
+          <p className="font-display text-[44px] leading-none font-black">0.00</p>
+          <span aria-hidden className="-rotate-12 rounded-md border-[3px] border-[#E0463D] px-2.5 py-0.5 font-display text-xl font-black tracking-[0.18em] text-[#E0463D] opacity-85">
+            VOID
+          </span>
+        </div>
         <dl className="grid gap-3.5 px-6 py-6">
           <Row label={copy.to}>
             <span className="font-mono text-sm" dir="ltr">{path ?? "—"}</span>
@@ -82,9 +88,6 @@ export function NotFoundPage() {
             <span className="text-[#2F7A00] dark:text-[#B5F543]">{copy.safe}</span>
           </Row>
         </dl>
-        <span aria-hidden className="pointer-events-none absolute top-[70px] end-5 -rotate-12 rounded-md border-[3px] border-[#E0463D] px-2.5 py-0.5 font-display text-xl font-black tracking-[0.18em] text-[#E0463D] opacity-85">
-          VOID
-        </span>
         <div className="relative" aria-hidden>
           <div className="mx-6 border-t-2 border-dashed border-fd-border" />
           <span className="absolute top-1/2 -start-3 size-6 -translate-y-1/2 rounded-full bg-fd-background" />
