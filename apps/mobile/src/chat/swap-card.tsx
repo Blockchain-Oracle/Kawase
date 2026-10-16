@@ -41,6 +41,9 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   const eyebrow = `${t("swap.title")} · ${intent.network === "mainnet" ? t("network.realMoney") : networkName}`;
   // Fixed elsewhere (signed in, set up, money added): the same swap is quoted and checked again (R12).
   useResumeWhenFixed(isSwapOpen(intent) ? intent.blocking?.code : undefined, () => void controller.revise({}));
+  // Every hook runs before the finished card's early return (a hook below it crashed the page when a swap settled).
+  const ready = isSwapOpen(intent) && !intent.blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
+  const rehearsal = useRehearsal("swaps", intent, ready);
 
   if (!isSwapOpen(intent)) {
     return (
@@ -68,8 +71,6 @@ export function SwapCard({ output }: { output: ProposeSwapOutput }) {
   };
   const blocking = intent.blocking;
   const fix = blocking ? fixFor(blocking) : undefined;
-  const ready = !blocking && Boolean(intent.draft) && intent.state === "ready_for_approval";
-  const rehearsal = useRehearsal("swaps", intent, ready);
   return (
     <AgentCard eyebrow={eyebrow}>
       {intent.draft ? (

@@ -1,5 +1,6 @@
 // Root ESLint config. D21: no magic numbers; constants live in @kawase/config and @kawase/networks.
 import js from "@eslint/js";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 const SERVER_ONLY_PACKAGES = ["@kawase/env", "@kawase/db", "@kawase/agent", "@kawase/workflows", "@kawase/integrations-*"];
@@ -32,6 +33,13 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    // Hooks run in the same order on every render: a hook below an early return blanks the page when the branch flips
+    // (React #300, 10-16: the chat swap card after a swap settled).
+    files: ["apps/mobile/**/*.{ts,tsx}", "packages/ui-native/**/*.{ts,tsx}", "apps/landing/**/*.{ts,tsx}", "apps/docs/**/*.{ts,tsx}"],
+    plugins: { "react-hooks": reactHooks },
+    rules: { "react-hooks/rules-of-hooks": "error" },
   },
   {
     // Client apps must never import server-only packages (Circle keys, DB, agent).

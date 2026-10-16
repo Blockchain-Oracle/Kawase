@@ -92,7 +92,7 @@ export function renderNotification(item: Item, locale: CatalogLocale, options: {
       break;
     // A swap's and a bridge's receipts (swap/service.ts, bridge/service.ts): what left, what came back, where.
     case "swap_completed": {
-      const paid = p.amountIn && p.symbolIn ? `${p.amountIn} ${p.symbolIn}` : "";
+      const paid = paidText(p, locale);
       title = hide ? text(locale, "notify", "swappedTitleHidden") : text(locale, "notify", "swappedTitle", { paid, got: sum });
       body = p.venue ? text(locale, "notify", "swappedBody", { venue: p.venue }) : "";
       break;
@@ -240,7 +240,7 @@ export function renderEmail(item: Item, rendered: RenderedNotification, locale: 
     const explorer = hash ? `${testnet ? EXPLORERS.arcTestnet : EXPLORERS.arc}/tx/${hash}` : null;
     const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: timeZone ?? "UTC" }).format(item.at ? new Date(item.at) : new Date());
     const facts: EmailFact[] = [
-      ...(swap && p.amountIn && p.symbolIn ? [{ label: text(locale, "activityFeed", "paid"), value: `${p.amountIn} ${p.symbolIn}` }] : []),
+      ...(swap && p.amountIn && p.symbolIn ? [{ label: text(locale, "activityFeed", "paid"), value: paidText(p, locale) }] : []),
       { label: text(locale, "receipt", "when"), value: when },
       { label: text(locale, "receipt", "network"), value: networkName },
       ...(hash && explorer ? [{ label: text(locale, "receipt", "transaction"), value: shortHash(hash), href: explorer, mono: true }] : []),
@@ -309,6 +309,16 @@ function amountText(p: Record<string, string>, locale: CatalogLocale): string {
 }
 
 /** Base units in a token's own decimals as a plain number ("12.5"), for tokens the shared money formatter does not know. */
+/**
+ * What a swap paid, in the token's own words ("5 USDC"). `amountIn` is base units (10-16: an email said "5000000 USDC");
+ * USDC and EURC know their decimals, any other token carries `decimalsIn`.
+ */
+function paidText(p: Record<string, string | undefined>, locale: string): string {
+  if (!p.amountIn || !p.symbolIn) return "";
+  if (p.symbolIn in ASSETS) return formatAmount(amount(p.symbolIn as AssetId, BigInt(p.amountIn)), locale);
+  return p.decimalsIn ? formatTokenAmount(BigInt(p.amountIn), Number(p.decimalsIn), p.symbolIn, locale, { fractionDigits: TOKEN_DIGITS, trimZeros: true }) : `${p.amountIn} ${p.symbolIn}`;
+}
+
 function trimUnits(baseUnits: string, decimals: number): string {
   const value = BigInt(baseUnits);
   const divisor = TEN ** BigInt(decimals);

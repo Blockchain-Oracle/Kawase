@@ -936,7 +936,7 @@ export class SwapService {
           symbolIn: view.tokenIn,
           amount: moved.in.toString(),
           asset: view.tokenOut,
-          ...(view.tokens ? { decimals: String(view.tokens.out.decimals) } : {}),
+          ...(view.tokens ? { decimals: String(view.tokens.out.decimals), decimalsIn: String(view.tokens.in.decimals) } : {}),
           venue: view.provider,
         },
         intentId: intent.id,
