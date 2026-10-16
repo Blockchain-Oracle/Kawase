@@ -46,6 +46,7 @@ import { exportWallet } from "./export-wallet";
 import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { notFound } from "./not-found";
+import { getApp } from "./get-app";
 import { chatHome } from "./chat-home";
 import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
@@ -186,4 +187,5 @@ export const zh: Catalog = {
   market402,
   desktop,
   notFound,
+  getApp,
 };

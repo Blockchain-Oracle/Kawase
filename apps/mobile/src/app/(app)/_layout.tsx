@@ -35,6 +35,7 @@ import { useT } from "@/i18n";
 import { OverlayHost, PhoneVoiceLayer } from "@/overlay/overlay-host";
 import { OverlayProvider, useOverlay } from "@/overlay/overlay-provider";
 import { SafetyStripFrame } from "@/safety/safety-strip";
+import { GetAppCard } from "@/shell/get-app";
 import { useSession } from "@/session/session-provider";
 
 const ICON = 40;
@@ -170,6 +171,8 @@ function DesktopFrame({ children }: { children: React.ReactNode }) {
           {/* One testnet strip across the content area for every page, pushed pages included (theirs step aside). */}
           {wide && testnet ? <TestnetStrip label={t("network.testnetStrip")} /> : null}
           <WideFrameContext.Provider value={wide}>{children}</WideFrameContext.Provider>
+          {/* The web app's "Kawase on your phone" card, in the stage's free corner (shell/get-app.web.tsx). */}
+          {wide ? <GetAppCard /> : null}
         </View>
       </View>
       {wide ? <OverlayHost /> : <PhoneVoiceLayer />}

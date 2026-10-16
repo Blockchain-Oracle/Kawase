@@ -1,6 +1,6 @@
 import "@/global.css";
 import "@/voice/register";
-import { LogBox, Platform } from "react-native";
+import { LogBox, Platform, View } from "react-native";
 
 // Leaving a voice room closes LiveKit's signal stream; the SDK logs that expected close as an error.
 LogBox.ignoreLogs(["error reading from signal stream"]);
@@ -15,6 +15,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
 
 import { ToastHost } from "@/components/toast/ToastHost";
+import { GetAppStrip } from "@/shell/get-app";
 import { UpdateReady } from "@/shell/update-ready";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
@@ -58,12 +59,16 @@ export default function RootLayout() {
                     <SignInProvider>
                       <BuyProvider>
                         <FundProvider>
-                          <Stack
-                            screenOptions={({ route }) => ({
-                              headerShown: false,
-                              ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
-                            })}
-                          />
+                          {/* A phone's browser gets "Get the app" above every page (shell/get-app.web.tsx; nothing on native). */}
+                          <View className="flex-1">
+                            <GetAppStrip />
+                            <Stack
+                              screenOptions={({ route }) => ({
+                                headerShown: false,
+                                ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
+                              })}
+                            />
+                          </View>
                           <SheetLayer />
                         </FundProvider>
                       </BuyProvider>
