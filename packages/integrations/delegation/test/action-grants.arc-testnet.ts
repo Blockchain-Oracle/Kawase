@@ -45,7 +45,7 @@ import {
 
 config({ path: new URL("../../../../.env", import.meta.url).pathname, quiet: true });
 
-const RPC_URL = process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.network";
+const RPC_URL = process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.io";
 const DECIMALS = 6;
 const FUNDING_USDC = "1.2";
 const SWAP_USDC = "0.3";

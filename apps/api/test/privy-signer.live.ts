@@ -56,7 +56,7 @@ const receipt = await client.waitForTransactionReceipt({ hash });
 const setUp = isWalletSetUp(await client.getCode({ address }));
 console.log(
   "setup tx",
-  `https://testnet.arcscan.app/tx/${hash}`,
+  `https://explorer.testnet.arc.io/tx/${hash}`,
   receipt.status,
   setUp ? "delegated ✓" : "NOT delegated",
 );

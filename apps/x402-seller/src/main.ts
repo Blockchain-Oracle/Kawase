@@ -73,7 +73,9 @@ const routes = Object.fromEntries(
   ]),
 );
 
-const chain = createPublicClient({ chain: arcTestnet.chain, transport: http(arcTestnet.rpcUrl) });
+// Arc moved testnet's RPC to arc.io (docs.arc.io, 10-16); Circle's CHAIN_CONFIGS still carries the old host.
+const ARC_TESTNET_RPC = "https://rpc.testnet.arc.io";
+const chain = createPublicClient({ chain: arcTestnet.chain, transport: http(ARC_TESTNET_RPC) });
 const upstream = async (url: string) => {
   const response = await fetch(url, { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`${new URL(url).hostname} answered ${response.status}`);

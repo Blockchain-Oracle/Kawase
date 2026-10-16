@@ -18,6 +18,7 @@
     "@kawase/i18n": "workspace:*",
     "@kawase/identity": "workspace:*",
     "@kawase/money": "workspace:*",
+    "@kawase/networks": "workspace:*",
     "@kawase/ui-native": "workspace:*",
     "@kawase/ui-tokens": "workspace:*",
     "@kawase/ui-web": "workspace:*",

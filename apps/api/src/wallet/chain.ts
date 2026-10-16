@@ -14,7 +14,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 import type { ApiEnv } from "@kawase/env";
-import { getNetwork, type NetworkContext, type NetworkId } from "@kawase/networks";
+import { ARC_RPC, getNetwork, type NetworkContext, type NetworkId } from "@kawase/networks";
 
 export type NetworkClients = {
   network: NetworkContext;
@@ -34,22 +34,14 @@ const withPrefix = (key: string): Hex => (key.startsWith("0x") ? (key as Hex) : 
 
 const ALCHEMY_SLUG: Record<NetworkId, string> = { mainnet: "arc-mainnet", testnet: "arc-testnet" };
 /**
- * Arc's provider-run public endpoints (Blockdaemon, dRPC, QuickNode; Arc's node-providers docs), all keyless and
- * checked on 10-15 (chain ids 5042 / 5042002).
- */
-const PROVIDER_RPCS: Record<NetworkId, readonly string[]> = {
-  mainnet: ["https://rpc.blockdaemon.mainnet.arc.io", "https://rpc.drpc.mainnet.arc.io", "https://rpc.quicknode.mainnet.arc.io"],
-  testnet: ["https://rpc.blockdaemon.testnet.arc.network", "https://rpc.drpc.testnet.arc.network", "https://rpc.quicknode.testnet.arc.network"],
-};
-
-/**
- * Arc's own public RPC first, then the provider-run endpoints, then Alchemy: one public endpoint rate-limits
- * ("Request exceeds defined limit"), and on 10-15 that failed a person's wallet read on mainnet with a 500 (Alchemy's
- * monthly quota was spent too). A failed or refused call moves to the next; reverts are not retried elsewhere.
+ * Arc's own RPC first, then the provider-run endpoints, then Alchemy (`ARC_RPC`, docs.arc.io): one public endpoint
+ * rate-limits ("Request exceeds defined limit"), and on 10-15 that failed a person's wallet read on mainnet with a 500
+ * (Alchemy's monthly quota was spent too). On 10-16 testnet's old arc.network names stopped resolving and every testnet
+ * call fell through to the spent Alchemy quota. A failed or refused call moves to the next; reverts are not retried.
  */
 export function arcTransport(id: NetworkId, rpcUrl?: string, alchemyKey?: string) {
-  const urls = [rpcUrl, ...PROVIDER_RPCS[id], alchemyKey ? `https://${ALCHEMY_SLUG[id]}.g.alchemy.com/v2/${alchemyKey}` : undefined];
-  return fallback(urls.filter((url, index) => index === 0 || url).map((url) => http(url ?? undefined)));
+  const urls = [rpcUrl, ...ARC_RPC[id], alchemyKey ? `https://${ALCHEMY_SLUG[id]}.g.alchemy.com/v2/${alchemyKey}` : undefined];
+  return fallback(urls.filter((url): url is string => Boolean(url)).map((url) => http(url)));
 }
 
 function clientsFor(

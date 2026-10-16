@@ -71,9 +71,9 @@ Verified: 2026-09-29
 | Swap needs a Kit Key (community FAQ) | **Superseded.** Kit keys are legacy. Use the optional `apiKey` from the Circle Console (rate-limited without it). |
 | "CCTP Fast Transfer unavailable on Arc Testnet" (arc-agent wiki) | **Reframed.** Circle's table lists Arc's Fast source as **N/A** (Arc attests in ~1 block anyway). App Kit defaults to FAST for inbound routes. |
 | Agent Wallets are Arc Testnet only (arc-agent wiki) | **Stale.** Circle lists `ARC` (mainnet) and `ARC-TESTNET`. |
-| `docs.arc.network` (hackathon page and slides) | Still works: **301 → docs.arc.io**. |
-| `testnet.arcscan.app` (Canteen page, viem) | Works: **301 → explorer.testnet.arc.io**. |
-| `rpc.testnet.arc.network` (viem default) | Still answers (chain 5042002). The docs now use `rpc.testnet.arc.io`. |
+| `docs.arc.io` (hackathon page and slides) | Still works: **301 → docs.arc.io**. |
+| `explorer.testnet.arc.io` (Canteen page, viem) | Works: **301 → explorer.testnet.arc.io**. |
+| `rpc.testnet.arc.io` (viem default) | Still answers (chain 5042002). The docs now use `rpc.testnet.arc.io`. |
 | Native-USDC semantics, Memo/Multicall3From addresses, EURC/USYC testnet addresses, 20 gwei floor (arc-agent wiki) | **Still correct.** |
 | "Fees ~$0.01" (hackathon slides) | Conservative. Docs target ~$0.001 per ERC-20 transfer. |
 

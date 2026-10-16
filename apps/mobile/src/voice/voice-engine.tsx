@@ -9,6 +9,8 @@ import { cancelAnimation, Easing, type SharedValue, withRepeat, withSequence, wi
 import { VOICE_CARD_RPC, VOICE_STOP_RPC } from "@kawase/config";
 import { useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
 
+import { hasToolCard } from "@/chat/tool-cards";
+
 import { useVolume } from "./volume";
 import { voiceStore, type VoiceCard, type VoicePhase } from "./voice-store";
 
@@ -85,7 +87,8 @@ export function VoiceEngine({ level, full, threadId }: { level: SharedValue<numb
     const participant = room.localParticipant;
     participant.registerRpcMethod(VOICE_CARD_RPC, async (data) => {
       const card = JSON.parse(data.payload) as VoiceCard & { fetch?: boolean };
-      if (!card.fetch) voiceStore.addCard({ toolName: card.toolName, toolCallId: card.toolCallId, output: card.output }, fullRef.current);
+      // A tool that only answered in words draws no card: it joins the conversation without asking for the person.
+      if (!card.fetch) voiceStore.addCard({ toolName: card.toolName, toolCallId: card.toolCallId, output: card.output }, fullRef.current || !hasToolCard(card.toolName));
       return "ok";
     });
     return () => participant.unregisterRpcMethod(VOICE_CARD_RPC);

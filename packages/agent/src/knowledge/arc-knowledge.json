@@ -245,7 +245,7 @@
    "id": "context-01-arc-gotchas-md-7",
    "title": "Arc gotchas: sharp edges builders hit: Tooling",
    "source": "https://docs.arc.io/arc/references/evm-differences",
-   "text": "31. Stock anvil, Hardhat network, and Tenderly-like simulators don't model Arc. Use arc-anvil --network arc or arc-forge test --fork-url.\n32. viem's arcTestnet ships legacy RPCs (rpc.testnet.arc.network, which still works) and testnet.arcscan.app (redirects to explorer.testnet.arc.io). Pass http(\"https://rpc.testnet.arc.io\") explicitly. arcTestnet needs viem ≥ 2.38. arc (mainnet) is built in too.\n33. Reown AppKit needs defineChain from @reown/appkit/networks, not viem. WalletConnect prompts wallet_addEthereumChain for Arc Testnet. ConnectKit without mainnet breaks ENS lookups (CORS).\n34. The explorer is Blockscout. Verify with --verifier blockscout --verifier-url https://explorer.testnet.arc.io/api/, not an Etherscan key.\n35. Wallets without custom-gas-token support label USDC as \"ETH\"."
+   "text": "31. Stock anvil, Hardhat network, and Tenderly-like simulators don't model Arc. Use arc-anvil --network arc or arc-forge test --fork-url.\n32. viem's arcTestnet ships legacy RPCs (rpc.testnet.arc.io, which still works) and explorer.testnet.arc.io (redirects to explorer.testnet.arc.io). Pass http(\"https://rpc.testnet.arc.io\") explicitly. arcTestnet needs viem ≥ 2.38. arc (mainnet) is built in too.\n33. Reown AppKit needs defineChain from @reown/appkit/networks, not viem. WalletConnect prompts wallet_addEthereumChain for Arc Testnet. ConnectKit without mainnet breaks ENS lookups (CORS).\n34. The explorer is Blockscout. Verify with --verifier blockscout --verifier-url https://explorer.testnet.arc.io/api/, not an Etherscan key.\n35. Wallets without custom-gas-token support label USDC as \"ETH\"."
   },
   {
    "id": "context-01-arc-gotchas-md-8",
@@ -263,7 +263,7 @@
    "id": "context-01-arc-network-config-md-0",
    "title": "Arc network config and contract addresses",
    "source": "https://docs.arc.io/arc/references/connect-to-arc",
-   "text": "> Docs domain: docs.arc.network now 301-redirects to docs.arc.io. The hackathon page and slides still link docs.arc.network. Both work."
+   "text": "> Docs domain: docs.arc.io now 301-redirects to docs.arc.io. The hackathon page and slides still link docs.arc.io. Both work."
   },
   {
    "id": "context-01-arc-network-config-md-1",
@@ -1043,7 +1043,7 @@
    "id": "apps-docs-content-docs-en-networks-mdx-0",
    "title": "Networks",
    "source": "https://docs.getkawase.xyz/docs/networks",
-   "text": "Arc is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under\na second. Kawase supports exactly two Arc networks.\n\n| | Arc mainnet | Arc testnet |\n|---|---|---|\n| Money | Real | Test money with no value |\n| Chain ID | 5042 | 5042002 |\n| Explorer | explorer.arc.io | testnet.arcscan.app |\n| Getting money | Buy with a card through Circle's Onramp; receive from any wallet or exchange that sends to Arc | The in-app faucet (about 20 USDC + 20 EURC a day); Circle's Onramp sandbox with test cards |\n| Trading | Any token, meme coins included, at the best of KyberSwap, App Kit and LI.FI | USDC ↔ EURC only |\n| Long and short | Kawase Margin on Aave V4 | Not available (Aave V4 is mainnet only) |\n| Earn and borrow | Aave V4 supply and borrowing; Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |\n| Bridges | To anyone on Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche over CCTP, Across or Relay; Bring to Arc | CCTP to their test networks (Base Sepolia, Ethereum Sepolia, …) |\n| x402 marketplace | Circle's catalog | Kawase's own demo seller (Circle's catalog is mainnet only) |\n| Default limits | Lower | Ten times higher (no real money at risk) |\n| Where new accounts start | | ✓ |\n\nEvery flow in Kawase has been run end to end with real transactions on Arc testnet; the evidence is linked from the\nsh…"
+   "text": "Arc is Circle's stablecoin network: USDC is its gas token, so fees are paid in dollars, and transactions settle in under\na second. Kawase supports exactly two Arc networks.\n\n| | Arc mainnet | Arc testnet |\n|---|---|---|\n| Money | Real | Test money with no value |\n| Chain ID | 5042 | 5042002 |\n| Explorer | explorer.arc.io | explorer.testnet.arc.io |\n| Getting money | Buy with a card through Circle's Onramp; receive from any wallet or exchange that sends to Arc | The in-app faucet (about 20 USDC + 20 EURC a day); Circle's Onramp sandbox with test cards |\n| Trading | Any token, meme coins included, at the best of KyberSwap, App Kit and LI.FI | USDC ↔ EURC only |\n| Long and short | Kawase Margin on Aave V4 | Not available (Aave V4 is mainnet only) |\n| Earn and borrow | Aave V4 supply and borrowing; Morpho vaults listed by Circle's App Kit Earn | Arc Testnet's mock Morpho vaults |\n| Bridges | To anyone on Base, Ethereum, Arbitrum, Optimism, Polygon, Avalanche over CCTP, Across or Relay; Bring to Arc | CCTP to their test networks (Base Sepolia, Ethereum Sepolia, …) |\n| x402 marketplace | Circle's catalog | Kawase's own demo seller (Circle's catalog is mainnet only) |\n| Default limits | Lower | Ten times higher (no real money at risk) |\n| Where new accounts start | | ✓ |\n\nEvery flow in Kawase has been run end to end with real transactions on Arc testnet; the evidence is linked from the\nsh…"
   },
   {
    "id": "apps-docs-content-docs-en-networks-mdx-1",
@@ -1127,7 +1127,7 @@
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-4",
    "title": "Withdraw without Kawase: Check everything on the explorer",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "You don't need Kawase to see your money. Open your address on Arc's block explorer:\n\n- Mainnet: https://explorer.arc.io/address/<your address>\n- Testnet: https://testnet.arcscan.app/address/<your address>\n\nThere you can see:\n\n- your balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native coin and as the USDC\n  token);\n- every transaction, including the payments the agent made under your allowance;\n- your account's code: after setup it is 0xef0100 followed by the EIP7702StatelessDeleGator address. That is the\n  EIP-7702 upgrade; your account still works as a normal account.\n\nKawase's receipts link to these same pages."
+   "text": "You don't need Kawase to see your money. Open your address on Arc's block explorer:\n\n- Mainnet: https://explorer.arc.io/address/<your address>\n- Testnet: https://explorer.testnet.arc.io/address/<your address>\n\nThere you can see:\n\n- your balances (on Arc, USDC is also the network's gas token: one balance, shown both as the native coin and as the USDC\n  token);\n- every transaction, including the payments the agent made under your allowance;\n- your account's code: after setup it is 0xef0100 followed by the EIP7702StatelessDeleGator address. That is the\n  EIP-7702 upgrade; your account still works as a normal account.\n\nKawase's receipts link to these same pages."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-5",
@@ -1139,7 +1139,7 @@
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-6",
    "title": "Withdraw without Kawase: Adding Arc to another wallet",
    "source": "https://docs.getkawase.xyz/docs/withdraw-without-kawase",
-   "text": "| | Mainnet | Testnet |\n|---|---|---|\n| Network name | Arc | Arc Testnet |\n| Chain ID | 5042 | 5042002 |\n| RPC | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Currency symbol | USDC | USDC |\n| Explorer | https://explorer.arc.io | https://testnet.arcscan.app |\n\nSome wallets label the gas balance \"ETH\" on custom networks; on Arc it is USDC. The USDC token address is\n0x3600000000000000000000000000000000000000 on both networks; EURC is\n0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 on mainnet and 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a on testnet."
+   "text": "| | Mainnet | Testnet |\n|---|---|---|\n| Network name | Arc | Arc Testnet |\n| Chain ID | 5042 | 5042002 |\n| RPC | https://rpc.mainnet.arc.io | https://rpc.testnet.arc.io |\n| Currency symbol | USDC | USDC |\n| Explorer | https://explorer.arc.io | https://explorer.testnet.arc.io |\n\nSome wallets label the gas balance \"ETH\" on custom networks; on Arc it is USDC. The USDC token address is\n0x3600000000000000000000000000000000000000 on both networks; EURC is\n0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1 on mainnet and 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a on testnet."
   },
   {
    "id": "apps-docs-content-docs-en-withdraw-without-kawase-mdx-7",

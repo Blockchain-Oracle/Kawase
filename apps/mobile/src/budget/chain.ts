@@ -3,7 +3,10 @@
 // A read that fails returns undefined; the guard then treats the action as unpriced (not silent), never as fine.
 import { DELEGATION_FRAMEWORK_MANAGER, BUDGET_ENFORCERS } from "@kawase/wallet";
 import { createPublicClient, http, parseAbi, type Address, type PublicClient } from "viem";
-import { arc, arcTestnet } from "viem/chains";
+import { ARC_CHAINS } from "@kawase/networks";
+
+// Arc's chains with its current endpoints (testnet moved to arc.io; viem's built-ins still carry the old hosts).
+const { mainnet: arc, testnet: arcTestnet } = ARC_CHAINS;
 
 const NONCE_ABI = parseAbi(["function currentNonce(address delegationManager, address delegator) view returns (uint256)"]);
 const VAULT_ABI = parseAbi(["function previewDeposit(uint256 assets) view returns (uint256)", "function previewWithdraw(uint256 assets) view returns (uint256)"]);

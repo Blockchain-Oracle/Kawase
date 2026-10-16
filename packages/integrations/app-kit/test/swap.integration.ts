@@ -17,7 +17,7 @@ import { checkSwapCalls, marketPrices, prepareSwap, quoteSwap } from "../src";
 config({ path: new URL("../../../../.env", import.meta.url).pathname, quiet: true });
 
 const network = getNetwork("testnet");
-const rpcUrl = process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.network";
+const rpcUrl = process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.io";
 const apiKey = process.env.CIRCLE_TEST_API_KEY!;
 const opsAddress = process.env.OPS_WALLET_ADDRESS_TESTNET as Hex;
 const transport = http(rpcUrl);

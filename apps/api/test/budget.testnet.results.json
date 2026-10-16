@@ -50,7 +50,7 @@
     "intent": "01a139ed-222c-7598-8472-6f1c2437563c",
     "tx": {
       "hash": "0xa815f9e098e2995de48722a312ccff8baaadfad75bad37fe39b251a10a2b740a",
-      "explorerUrl": "https://testnet.arcscan.app/tx/0xa815f9e098e2995de48722a312ccff8baaadfad75bad37fe39b251a10a2b740a"
+      "explorerUrl": "https://explorer.testnet.arc.io/tx/0xa815f9e098e2995de48722a312ccff8baaadfad75bad37fe39b251a10a2b740a"
     },
     "received": "379267",
     "minOut": "371682",
@@ -80,7 +80,7 @@
     "state": "completed",
     "tx": {
       "hash": "0x5eb4caee4a2ed8876eb511a709fa4e48e522f3092504862735ad7fc0d55e81fb",
-      "explorerUrl": "https://testnet.arcscan.app/tx/0x5eb4caee4a2ed8876eb511a709fa4e48e522f3092504862735ad7fc0d55e81fb"
+      "explorerUrl": "https://explorer.testnet.arc.io/tx/0x5eb4caee4a2ed8876eb511a709fa4e48e522f3092504862735ad7fc0d55e81fb"
     },
     "vault": "0xaabbef1d3971c710276ed41ec791bbe14cdb8e88"
   },

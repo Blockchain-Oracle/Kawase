@@ -9,7 +9,7 @@ import { BookOpen, Bug, Code2, Copy, ExternalLink, KeyRound, LogOut, MessageCirc
 import * as React from "react";
 import { Linking, Pressable, View } from "react-native";
 import { toast } from "sonner-native";
-import { arc, arcTestnet } from "viem/chains";
+import { ARC_CHAINS } from "@kawase/networks";
 
 import type { StatusView } from "@kawase/api-client";
 import { PUBLIC_LINKS } from "@kawase/config";
@@ -25,6 +25,9 @@ import { shortAddress } from "@/send/copy";
 import { api } from "@/session/api";
 import { useSession } from "@/session/session-provider";
 import { useWalletStatus } from "@/wallet/use-wallet-status";
+
+// Arc's chains with its current endpoints (testnet moved to arc.io; viem's built-ins still carry the old hosts).
+const { mainnet: arc, testnet: arcTestnet } = ARC_CHAINS;
 
 const COPY_HIT_SLOP = 12;
 const LTR = { writingDirection: "ltr", textAlign: "left" } as const;

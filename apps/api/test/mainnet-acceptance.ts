@@ -85,7 +85,7 @@ const UPSTREAM_ARC = process.env.ARC_RPC_URL_MAINNET ?? "https://rpc.drpc.mainne
 /** drpc answers eth_simulateV1 and debug_traceCall, which the shadow chain needs. */
 const SHADOW_UPSTREAM = "https://rpc.drpc.mainnet.arc.io";
 const BASE_RPC = "https://mainnet.base.org";
-const EXPLORER = getNetwork("mainnet").viemChain.blockExplorers?.default.url ?? "https://arcscan.app";
+const EXPLORER = getNetwork("mainnet").viemChain.blockExplorers?.default.url ?? "https://explorer.arc.io";
 const USDC_DECIMALS = 6;
 const NATIVE_DECIMALS = 18;
 /** Below this the ops wallet or the relayer cannot pay for the run's transactions. */

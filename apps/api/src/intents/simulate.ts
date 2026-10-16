@@ -2,14 +2,15 @@
 // copy of live blockchain"): `eth_simulateV1` runs the exact calls the wallet would send, from the person's own
 // address, on the latest block, and returns their logs. The ERC-20 Transfer events in those logs are exactly what
 // leaves and arrives in the wallet; a revert is caught before the signature. Arc's own public RPC does not serve
-// eth_simulateV1; dRPC's Arc endpoints do (checked 10-16 on mainnet and testnet), so the rehearsal goes there.
+// eth_simulateV1; dRPC's Arc endpoints do (checked 10-16 on mainnet and testnet; testnet's moved to arc.io the same
+// day), so the rehearsal goes there.
 import { type Address, type Hex, createPublicClient, decodeErrorResult, erc20Abi, formatUnits, http } from "viem";
 
 import type { NetworkId } from "@kawase/networks";
 
 const SIMULATOR: Record<NetworkId, string> = {
   mainnet: "https://rpc.drpc.mainnet.arc.io",
-  testnet: "https://rpc.drpc.testnet.arc.network",
+  testnet: "https://rpc.drpc.testnet.arc.io",
 };
 const TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 /**

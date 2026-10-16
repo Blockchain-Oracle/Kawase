@@ -22,7 +22,7 @@ Conventions:
 - `wiki/arc-network-and-native-primitives.md` (checked 2026-07-28): 18-vs-6 decimals, Memo, Multicall3From, EURC, USYC, fees.
 - `research/2026-07-28-arc-core-and-agentic-surface.md`: network behaviour, AA, data providers, oracles, ERC-8004/8183.
 - `raw/official-documentation-indexes.md` and `raw/source-registry.md` (updated 2026-07-31): canonical doc URLs.
-  - These use `docs.arc.io` and `rpc.testnet.arc.network`. The Tameion brief links `docs.arc.network`, so **check which domain is current.**
+  - These use `docs.arc.io` and `rpc.testnet.arc.io`. The Tameion brief links `docs.arc.io`, so **check which domain is current.**
 - Live-probed contract addresses: `../packages/integrations/src/public-config.ts` (dated inline comments).
 
 ### Circle wallets, Agent Stack, CLI, faucet, gas

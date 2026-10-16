@@ -4,10 +4,13 @@
 // Nothing here can move Kawase's money: it only ever asks the outside wallet to pay in.
 import * as React from "react";
 import { createPublicClient, encodeFunctionData, erc20Abi, http, numberToHex, type Address, type Chain, type Hex } from "viem";
-import { arc, arcTestnet } from "viem/chains";
+import { ARC_CHAINS } from "@kawase/networks";
 
 import type { NetworkId } from "@kawase/api-client";
 import { arcStablecoin } from "@kawase/wallet";
+
+// Arc's chains with its current endpoints (testnet moved to arc.io; viem's built-ins still carry the old hosts).
+const { mainnet: arc, testnet: arcTestnet } = ARC_CHAINS;
 
 type Eip1193 = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
 export type AnnouncedWallet = { uuid: string; name: string; icon: string; rdns: string; provider: Eip1193 };

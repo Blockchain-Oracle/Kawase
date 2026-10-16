@@ -16,7 +16,7 @@ Sources:
 
 Verified: 2026-09-29
 
-> Docs domain: `docs.arc.network` now 301-redirects to **`docs.arc.io`**. The hackathon page and slides still link `docs.arc.network`. Both work.
+> Docs domain: `docs.arc.io` now 301-redirects to **`docs.arc.io`**. The hackathon page and slides still link `docs.arc.io`. Both work.
 
 ## Networks
 
@@ -51,7 +51,7 @@ Verified: 2026-09-29
 
 The Canteen RPC needs a per-developer key: run `uv tool install git+https://github.com/the-canteen-dev/ARC-cli.git`, then `arc-canteen login` (GitHub), then `arc-canteen rpc-url --export`. The same CLI provides `arc-canteen context sync` (docs and sample repos under `~/.arc-canteen/context/`) and `arc-canteen update product|traction` for hackathon progress logging.
 
-On 2026-09-29 every HTTP endpoint above returned the correct chain ID. That includes the legacy `rpc.testnet.arc.network`, `rpc.quicknode.testnet.arc.network`, and `rpc.blockdaemon.testnet.arc.network` hosts that viem's `arcTestnet` still ships as defaults. `testnet.arcscan.app` 301-redirects to `explorer.testnet.arc.io`.
+On 2026-09-29 every HTTP endpoint above returned the correct chain ID. That includes the legacy `rpc.testnet.arc.io`, `rpc.quicknode.testnet.arc.io`, and `rpc.blockdaemon.testnet.arc.io` hosts that viem's `arcTestnet` still ships as defaults. `explorer.testnet.arc.io` 301-redirects to `explorer.testnet.arc.io`.
 
 ### Public RPC limits and errors
 - `eth_getLogs` allows at most **10,000 blocks** per call. A larger range returns error `-32012`. Page in chunks of ≤9,999 blocks. At about 2 blocks/s, 10k blocks is roughly 85 minutes of history.

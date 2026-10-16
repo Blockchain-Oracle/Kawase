@@ -480,6 +480,9 @@ importers:
       '@kawase/money':
         specifier: workspace:*
         version: link:../../packages/money
+      '@kawase/networks':
+        specifier: workspace:*
+        version: link:../../packages/networks
       '@kawase/ui-native':
         specifier: workspace:*
         version: link:../../packages/ui-native

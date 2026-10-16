@@ -33,6 +33,8 @@ const HALF = 2;
 const SPRING_DAMPING = 20;
 const EXIT_MS = 180;
 const HALF_STRENGTH = 0.5;
+/** A card shorter than this drew nothing. */
+const EMPTY_PX = 4;
 /** The blur behind the card: lighter than the full view's, the page stays readable through it. */
 const BACKDROP = { blur: BLUR.overlay * HALF_STRENGTH, scrim: 0.35, fadeMs: 200 } as const;
 
@@ -49,7 +51,14 @@ export function VoiceCardSheet({ onOpen }: { onOpen: () => void }) {
   const cards = useVoice((voice) => voice.cards);
   const id = unseen.at(-1);
   const card = id ? cards.find((entry) => entry.toolCallId === id) : undefined;
+  // A card that turns out to draw nothing (a tool's output with nothing to show) is let go before anything blurs.
+  const [drawn, setDrawn] = React.useState<string | null>(null);
   if (!card) return null;
+  const shown = drawn === card.toolCallId;
+  const measured = (height: number) => {
+    if (height > EMPTY_PX) setDrawn(card.toolCallId);
+    else voiceStore.markSeen(card.toolCallId);
+  };
 
   const part: ToolPart = { type: `tool-${card.toolName}`, toolCallId: card.toolCallId, state: "output-available", output: card.output };
   const width = window.width;
@@ -62,7 +71,7 @@ export function VoiceCardSheet({ onOpen }: { onOpen: () => void }) {
 
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layer]}>
-      {inChat ? null : (
+      {inChat || !shown ? null : (
         <Animated.View entering={reduced ? undefined : FadeIn.duration(BACKDROP.fadeMs)} exiting={reduced ? undefined : FadeOut.duration(EXIT_MS)} style={StyleSheet.absoluteFill}>
           <BlurView intensity={BACKDROP.blur} tint={mode === "dark" ? "dark" : "light"} {...android} style={StyleSheet.absoluteFill} />
           <Pressable accessible={false} focusable={false} onPress={later} style={[StyleSheet.absoluteFill, { backgroundColor: color.sheetScrim, opacity: BACKDROP.scrim }]} />
@@ -73,10 +82,12 @@ export function VoiceCardSheet({ onOpen }: { onOpen: () => void }) {
         key={card.toolCallId}
         entering={reduced ? undefined : wide ? ZoomIn.springify().damping(SPRING_DAMPING) : SlideInDown.springify().damping(SPRING_DAMPING)}
         exiting={reduced ? undefined : FadeOutDown.duration(EXIT_MS)}
+        pointerEvents={shown ? "auto" : "none"}
         style={[
           styles.sheet,
           ELEVATION.sheet,
           { backgroundColor: color.popover, maxWidth: Math.min(MAX_WIDTH, width - SPACE.lg * HALF), maxHeight: window.height * MAX_HEIGHT_SHARE },
+          shown ? null : styles.pending,
         ]}
       >
         <View style={styles.head}>
@@ -94,7 +105,9 @@ export function VoiceCardSheet({ onOpen }: { onOpen: () => void }) {
           </Pressable>
         </View>
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
-          <ToolCard part={part} onToolOutput={() => undefined} />
+          <View onLayout={(event) => measured(event.nativeEvent.layout.height)}>
+            <ToolCard part={part} onToolOutput={() => undefined} />
+          </View>
         </ScrollView>
         <Pressable
           accessibilityRole="button"
@@ -117,10 +130,13 @@ const styles = StyleSheet.create({
   anchor: { position: "absolute", left: 0, right: 0, alignItems: "center", paddingHorizontal: SPACE.lg },
   centred: { top: 0, bottom: 0, justifyContent: "center" },
   sheet: { width: "100%", borderRadius: RADIUS.lg, overflow: "hidden" },
+  /** Laid out but unseen until its card has drawn something. */
+  pending: { opacity: 0 },
   head: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, paddingBottom: SPACE.sm },
   grow: { flex: 1 },
   close: { width: SIZE.touch - SPACE.md, height: SIZE.touch - SPACE.md, borderRadius: SIZE.touch, alignItems: "center", justifyContent: "center" },
-  body: { flexGrow: 0 },
+  // Shrinks to the sheet's height so a tall card (activity) scrolls instead of being cut off.
+  body: { flexGrow: 0, flexShrink: 1 },
   bodyContent: { paddingHorizontal: SPACE.md, paddingBottom: SPACE.sm },
   open: { alignItems: "center", paddingVertical: SPACE.md },
 });

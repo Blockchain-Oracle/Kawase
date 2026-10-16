@@ -65,7 +65,7 @@ Verified: 2026-09-29
 ## Tooling
 
 31. **Stock `anvil`, Hardhat network, and Tenderly-like simulators don't model Arc.** Use `arc-anvil --network arc` or `arc-forge test --fork-url`.
-32. **viem's `arcTestnet` ships legacy RPCs** (`rpc.testnet.arc.network`, which still works) and `testnet.arcscan.app` (redirects to `explorer.testnet.arc.io`). Pass `http("https://rpc.testnet.arc.io")` explicitly. `arcTestnet` needs viem ≥ 2.38. `arc` (mainnet) is built in too.
+32. **viem's `arcTestnet` ships legacy RPCs** (`rpc.testnet.arc.io`, which still works) and `explorer.testnet.arc.io` (redirects to `explorer.testnet.arc.io`). Pass `http("https://rpc.testnet.arc.io")` explicitly. `arcTestnet` needs viem ≥ 2.38. `arc` (mainnet) is built in too.
 33. Reown AppKit needs `defineChain` from `@reown/appkit/networks`, not viem. WalletConnect prompts `wallet_addEthereumChain` for Arc Testnet. ConnectKit without `mainnet` breaks ENS lookups (CORS).
 34. The explorer is **Blockscout**. Verify with `--verifier blockscout --verifier-url https://explorer.testnet.arc.io/api/`, not an Etherscan key.
 35. Wallets without custom-gas-token support label USDC as "ETH".

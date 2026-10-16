@@ -23,12 +23,12 @@ export const PUBLIC_LINKS = {
 } as const;
 
 /**
- * Block explorers for the chains Kawase's evidence lives on (context/01-arc/network-config.md: Arc's Blockscout;
- * testnet.arcscan.app is ArcScan's testnet host and redirects to explorer.testnet.arc.io).
+ * Block explorers for the chains Kawase's evidence lives on (context/01-arc/network-config.md: Arc's Blockscout,
+ * explorer.arc.io and explorer.testnet.arc.io per docs.arc.io; the old testnet.arcscan.app only redirects there).
  */
 export const EXPLORERS = {
   arc: "https://explorer.arc.io",
-  arcTestnet: "https://testnet.arcscan.app",
+  arcTestnet: "https://explorer.testnet.arc.io",
   baseSepolia: "https://sepolia.basescan.org",
   arbitrumSepolia: "https://sepolia.arbiscan.io",
 } as const;

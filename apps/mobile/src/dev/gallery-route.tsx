@@ -775,7 +775,7 @@ function TxSection() {
           diagnosis: { kind: "gas", retryable: false, technical: "INSUFFICIENT_GAS" },
         }}
         onFix={() => undefined}
-        explorerUrl={`https://testnet.arcscan.app/tx/${SAMPLE.txHash}`}
+        explorerUrl={`https://explorer.testnet.arc.io/tx/${SAMPLE.txHash}`}
       />
       <TxFailureCard
         state={{

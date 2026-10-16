@@ -19,7 +19,7 @@ import { bridgeDestination, bridgeProgress, checkBridgeCalls, estimateBridge, fo
 config({ path: new URL("../../../../.env", import.meta.url).pathname, quiet: true });
 
 const network = getNetwork("testnet");
-const transport = http(process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.network");
+const transport = http(process.env.ARC_RPC_URL_TESTNET ?? "https://rpc.testnet.arc.io");
 const client = createPublicClient({ chain: network.viemChain, transport });
 const relayer = createWalletClient({ account: privateKeyToAccount(process.env.RELAYER_PRIVATE_KEY_TESTNET as Hex), chain: network.viemChain, transport });
 const apiKey = process.env.CIRCLE_TEST_API_KEY!;

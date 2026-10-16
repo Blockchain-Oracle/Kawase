@@ -4,10 +4,13 @@
 // on it, since every signature is a raw digest and our own RPC broadcasts.
 import { PrivyProvider } from "@privy-io/react-auth";
 import type { ReactNode } from "react";
-import { arc, arcTestnet } from "viem/chains";
+import { ARC_CHAINS } from "@kawase/networks";
 
 import { PRIVY_APP_ID, PRIVY_WEB_CLIENT_ID } from "./config";
 import { PrivyOAuthBridge } from "./privy-oauth";
+
+// Arc's chains with its current endpoints (testnet moved to arc.io; viem's built-ins still carry the old hosts).
+const { mainnet: arc, testnet: arcTestnet } = ARC_CHAINS;
 
 export function PrivyWalletProvider({ children }: { children: ReactNode }) {
   return (
