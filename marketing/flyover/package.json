@@ -1,0 +1,13 @@
+{
+  "name": "kawase-flyover",
+  "private": true,
+  "type": "module",
+  "description": "The Kawase landing fly-over film: capture the live page, fly a WebGL2 camera over it, render the MP4 with sound.",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}

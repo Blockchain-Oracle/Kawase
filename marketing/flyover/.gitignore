@@ -1,0 +1,9 @@
+node_modules/
+capture/
+out/
+audio/work/
+*.mp4
+*.wav
+*.m4a
+audio/gen*.log
+capture.log
