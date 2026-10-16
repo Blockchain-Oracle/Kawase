@@ -48,6 +48,7 @@ import { deleteAccount } from "./delete-account";
 import { update } from "./update";
 import { notFound } from "./not-found";
 import { getApp } from "./get-app";
+import { shareCard } from "./share-card";
 import { chatHome } from "./chat-home";
 import { voiceSettings } from "./voice-settings";
 import { margin } from "./margin";
@@ -189,6 +190,7 @@ export const en = {
   desktop,
   notFound,
   getApp,
+  shareCard,
 } as const;
 
 type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
