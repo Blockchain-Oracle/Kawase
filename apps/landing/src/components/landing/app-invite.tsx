@@ -1,9 +1,9 @@
 "use client";
 // /download's email form, in the hero where nobody has to scroll for it (Abu, 10-16: "put the email at the hero…
-// select Apple or Android"): which phone (the visitor's own, chosen for them), the address, Email me. iPhone, while Apple
-// reviews the beta: the address joins the public TestFlight group, so Apple emails the invitation the minute testers
-// are let in, and Kawase sends one email to say so. Android: Kawase emails the APK with how to install it. Each answer
-// says what happens next; nothing pretends an invitation went out today. One row on a laptop, stacked on a phone.
+// select Apple or Android"): which phone (the visitor's own, chosen for them), the address, Email me. iPhone: the
+// address joins the public TestFlight group, so Apple emails the invitation, and Kawase sends one email with the join
+// link and the steps. Android: Kawase emails the APK with how to install it. Each answer says what happens next. One row
+// on a laptop, stacked on a phone.
 import { ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { useActionState, useState } from "react";
 
@@ -14,11 +14,11 @@ import { BUTTON_PRIMARY } from "@/components/landing/hero";
 type Platform = "ios" | "android";
 
 const IDLE: Record<Platform, string> = {
-  ios: "Apple emails the TestFlight invite as soon as the beta opens; Kawase sends one email to say you're on the list.",
+  ios: "Your TestFlight invitation by email, from Apple and from Kawase, with how to install it.",
   android: "One email from Kawase with the APK and how to install it.",
 };
 const SENT: Record<Platform, string> = {
-  ios: "You're on the list: check your inbox. Apple emails the TestFlight invitation the minute the beta opens.",
+  ios: "Sent. Open it on your iPhone and tap Join the beta.",
   android: "Sent. Open it on your Android phone and tap Download the APK.",
 };
 const SAID: Record<Exclude<InviteResult, "sent" | "already">, string> = {

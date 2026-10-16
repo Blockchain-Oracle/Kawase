@@ -1,8 +1,8 @@
 /**
  * Kawase's public addresses (domain getkawase.xyz, bought 2026-10-02; the sslip.io hosts stay as aliases): where a person or a judge reaches each surface (Android build from
  * deploy/android.md, 2026-10-02). The docs and the landing read these, so a link
- * changes in one place. `testFlight` stays null until a public TestFlight link exists; surfaces then say
- * "invite only" instead of inventing one.
+ * changes in one place. `testFlight` is the public TestFlight link, open since Apple's beta review passed (build 21,
+ * 2026-10-16).
  */
 export const PUBLIC_LINKS = {
   webApp: "https://app.getkawase.xyz",
@@ -17,7 +17,7 @@ export const PUBLIC_LINKS = {
    * channel (preview) serves the production branch, so it takes the same over-the-air updates as TestFlight.
    */
   androidApk: "https://expo.dev/artifacts/eas/S8YsBPctqoYNckaBSmG3YFJJgFAa-Lnfbxr_i-aR5eA.apk",
-  testFlight: null as string | null,
+  testFlight: "https://testflight.apple.com/join/PD3fgXZx" as string | null,
   /** The Tauri desktop app for Apple-silicon Macs (apps/desktop), served by the landing from public/download. */
   desktopMac: "https://getkawase.xyz/download/Kawase-mac.dmg",
 } as const;

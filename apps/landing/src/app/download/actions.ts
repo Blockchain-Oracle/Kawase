@@ -1,6 +1,6 @@
 "use server";
 // /download's "Email me" (components/landing/app-invite.tsx). iPhone: the api adds the address to the public TestFlight
-// group (Apple emails the invitation the minute the beta opens) and sends Kawase's own "you're on the list" email.
+// group (Apple emails the invitation) and sends Kawase's own email with the join link and the steps.
 // Android: the api emails the APK with how to install it (apps/api src/public/testflight.ts). The App Store Connect key
 // lives with the api only, and so do the limits (one request per address in ten minutes, a cap per hour).
 import { links } from "@/lib/links";

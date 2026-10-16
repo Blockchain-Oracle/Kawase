@@ -4,8 +4,8 @@
 // hand. iPhone links to TestFlight only while Apple's join page takes testers (the gate in `server/store-release.ts`);
 // until then it says Kawase is in Apple's beta review and points the iPhone at the web app, which works there today. The
 // Mac app isn't finished (the owner, 10-15), so the Mac row says it's on its way and offers the web app. While Apple
-// reviews the beta, an iPhone visitor can leave an email: it joins the public TestFlight group and Apple sends the
-// invitation the minute testers are let in; on Android the same field mails the APK and how to install it. The form sits
+// reviews a beta, an iPhone visitor can leave an email: it joins the public TestFlight group and Apple sends the
+// invitation once testers are let in (open since 10-16); on Android the same field mails the APK and how to install it. The form sits
 // in the hero, above the fold, with an iPhone / Android choice (`components/landing/app-invite.tsx`). Kawase isn't on
 // Google Play, so the Android steps say what Play Protect may ask.
 import { ArrowUpRight, Check, Globe, Laptop } from "lucide-react";

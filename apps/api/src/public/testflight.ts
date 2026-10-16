@@ -1,7 +1,7 @@
 // /download's "Email me when it opens" (Abu, 10-15: "request access to join, and then we'll send you a link"): the
 // address joins the iPhone app's public TestFlight group through the App Store Connect API, so Apple itself emails the
-// TestFlight invitation the minute its beta review lets testers in. Kawase then sends one email of its own, in its own
-// layout, saying so and what works meanwhile. Nothing is stored here: the address goes to Apple, and to Resend for that
+// TestFlight invitation (the beta is open since Apple's review passed on 10-16). Kawase then sends one email of its own,
+// in its own layout, with the join link and the three steps. Nothing is stored here: the address goes to Apple, and to Resend for that
 // one email. On the Android card the same field mails the APK link with how to install it (Kawase isn't on Google
 // Play, so Android asks once about installs from the browser and Play Protect may ask too). Limits: one request per
 // address in ten minutes, and a cap for the whole list per hour.
@@ -31,9 +31,15 @@ const PER_HOUR = 100;
 const CONFIRMATION: Omit<EmailContent, "preheader"> = {
   rtl: false,
   label: "Kawase for iPhone",
-  headline: "TestFlight request received",
-  body: "Apple will email you the TestFlight invitation as soon as Kawase's beta opens. Open it on your iPhone, install TestFlight, then Kawase. Until then you can use Kawase in your browser with the same account.",
-  primary: { label: "Open Kawase", href: PUBLIC_LINKS.webApp },
+  headline: "Your TestFlight invitation",
+  body: "Kawase's iPhone beta is open. Apple is emailing you the invitation too (from TestFlight); either one works.",
+  steps: [
+    "On your iPhone, install TestFlight from the App Store.",
+    "Tap Join the beta below, or open Apple's invitation email.",
+    "Install Kawase from TestFlight. Updates arrive by themselves from then on.",
+  ],
+  primary: { label: "Join the beta", href: PUBLIC_LINKS.testFlight ?? PUBLIC_LINKS.webApp },
+  secondary: [{ label: "Use Kawase in your browser meanwhile", href: PUBLIC_LINKS.webApp }],
   footer: ["You asked for this on getkawase.xyz/download. This is the only email Kawase sends you about it."],
 };
 
@@ -120,9 +126,9 @@ export class TestflightInvites {
       }
       // Apple has the address: one email of Kawase's own says what happens next (a failure here changes nothing).
       if (this.email) {
-        const content = { ...CONFIRMATION, preheader: "Apple emails the TestFlight invitation as soon as the beta opens." };
+        const content = { ...CONFIRMATION, preheader: "Kawase's iPhone beta is open: join it on TestFlight." };
         await this.email
-          .send({ to: address, subject: "Kawase on iPhone: your TestFlight request", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-testflight-${Buffer.from(address).toString("base64url")}` })
+          .send({ to: address, subject: "Kawase on iPhone: your TestFlight invitation", text: emailText(content), html: emailHtml(content), idempotencyKey: `kawase-testflight-${Buffer.from(address).toString("base64url")}` })
           .catch((error: unknown) => this.log?.warn({ err: error }, "testflight confirmation email failed"));
       }
       return "sent";
