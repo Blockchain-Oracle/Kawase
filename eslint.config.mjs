@@ -3,6 +3,8 @@ import js from "@eslint/js";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
+import noReducedMotionInRender from "./lint-rules/no-reduced-motion-in-render.mjs";
+
 const SERVER_ONLY_PACKAGES = ["@kawase/env", "@kawase/db", "@kawase/agent", "@kawase/workflows", "@kawase/integrations-*"];
 
 export default tseslint.config(
@@ -40,6 +42,14 @@ export default tseslint.config(
     files: ["apps/mobile/**/*.{ts,tsx}", "packages/ui-native/**/*.{ts,tsx}", "apps/landing/**/*.{ts,tsx}", "apps/docs/**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
     rules: { "react-hooks/rules-of-hooks": "error" },
+  },
+  {
+    // Server-rendered DOM code renders the same tree on the server and the client: useReducedMotion() is null on the
+    // server, so a render that branches on it keeps the server's full-motion styles (10-16: every landing Reveal block
+    // stayed invisible with reduced motion). Hold it at rest with CSS instead (`motion-reduce:` classes).
+    files: ["apps/landing/**/*.{ts,tsx}", "apps/docs/**/*.{ts,tsx}", "packages/ui-web/**/*.{ts,tsx}"],
+    plugins: { kawase: { rules: { "no-reduced-motion-in-render": noReducedMotionInRender } } },
+    rules: { "kawase/no-reduced-motion-in-render": "error" },
   },
   {
     // Client apps must never import server-only packages (Circle keys, DB, agent).
