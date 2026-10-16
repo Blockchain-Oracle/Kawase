@@ -2,6 +2,7 @@ export const notFound = {
   pageTitle: "لا شيء هنا · Kawase",
   title: "لم يتحرّك شيء.",
   line: "لا توجد صفحة على هذا العنوان، ولم يخرج شيء من محفظتك.",
+  moved: "ما تحرّك",
   receipt: "إيصال #404",
   to: "إلى",
   status: "الحالة",

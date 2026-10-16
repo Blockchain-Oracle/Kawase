@@ -57,6 +57,16 @@ export default function NotFound() {
             <Text style={[TYPE.label, styles.grow, { color: color.ink }]}>{t("common.appName")}</Text>
             <Text style={[TYPE.micro, { color: color.text3 }]}>{t("notFound.receipt")}</Text>
           </View>
+          {/* Where a real slip has the amount and its hanko: nothing, voided. */}
+          <View style={styles.hero}>
+            <View>
+              <Text style={[TYPE.micro, { color: color.text3 }]}>{t("notFound.moved")}</Text>
+              <Text style={[TYPE.displayPrice, { color: color.ink }]}>0.00</Text>
+            </View>
+            <Text accessibilityElementsHidden importantForAccessibility="no" style={[TYPE.sectionTitle, styles.stamp]}>
+              {t("notFound.void")}
+            </Text>
+          </View>
           <View style={styles.rows}>
             <Row label={t("notFound.to")}>
               <Text numberOfLines={1} style={[TYPE.label, styles.mono, { color: color.ink }]}>
@@ -69,11 +79,6 @@ export default function NotFound() {
             <Row label={t("notFound.money")}>
               <Text style={[TYPE.label, { color: color.up }]}>{t("notFound.safe")}</Text>
             </Row>
-          </View>
-          <View pointerEvents="none" style={styles.stampSpot}>
-            <Text accessibilityElementsHidden importantForAccessibility="no" style={[TYPE.sectionTitle, styles.stamp]}>
-              {t("notFound.void")}
-            </Text>
           </View>
           <Perforation notch={color.ground} rule={color.hairline} />
           <View style={styles.actions}>
@@ -107,7 +112,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACE.md },
   value: { flexShrink: 1, alignItems: "flex-end" },
   mono: { fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "ui-monospace, SFMono-Regular, Menlo, monospace" }) },
-  stampSpot: { position: "absolute", top: SPACE.xl, end: SPACE.lg },
+  hero: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingTop: SPACE.lg },
   stamp: {
     color: VERMILION.light,
     borderColor: VERMILION.light,

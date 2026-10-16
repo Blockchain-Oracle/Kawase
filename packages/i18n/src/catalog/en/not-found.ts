@@ -2,6 +2,7 @@ export const notFound = {
   pageTitle: "Nothing here · Kawase",
   title: "Nothing moved.",
   line: "There's no page at this address, and nothing left your wallet.",
+  moved: "Moved",
   receipt: "Receipt #404",
   to: "To",
   status: "Status",
