@@ -114,6 +114,23 @@ Object.assign(PLANS, {
     groove("[Groove]\nA half-time warm electronic groove: soft kick, warm analog chords, a low bass pulse, smooth and steady.", ["warm electronic downtempo", "86 bpm half-time", "analog synth chords", "low bass pulse", "soft kick", "smooth", "fintech launch film", "instrumental"]),
     drop("[Drop]\n{a huge sub-bass drop on the downbeat}\nEverything lands: sub bass, wide warm chords, the groove at full weight.", ["sub-bass drop", "wide warm chords", "heavy low end", "full groove"]),
   ],
+  // Third round: the glide needs sub from the first beat (the reference's glide is 34 % under 120 Hz, ours had ~1–9 %).
+  H: [
+    groove("[Groove]\nA warm, deep, slow groove from the first beat: a round sub-bass line, a soft muffled kick, warm Rhodes chords, mellow and steady.", ["deep warm downtempo", "86 bpm", "round sub-bass line", "muffled soft kick", "warm Rhodes chords", "lowpassed", "mellow", "instrumental"]),
+    drop("[Drop]\n{a huge sub-bass boom on the downbeat}\nThe groove lands fuller: the sub doubles, the chords open, still warm and low.", ["huge sub bass", "808 boom", "fuller warm groove", "deep low end"]),
+  ],
+  I: [
+    groove("[Groove]\nWarm chillhop with a deep sub bass under every bar: dusty soft kick, mellow keys, nothing bright, steady from the first second.", ["chillhop", "86 bpm", "deep sub bass", "dusty soft kick", "mellow keys", "warm tape", "no hi-hats", "instrumental"]),
+    drop("[Drop]\n{an 808 sub drop on the downbeat}\nThe beat opens up with a heavier 808 and wider warm chords.", ["heavy 808", "sub drop", "wider warm chords", "full groove"]),
+  ],
+  J: [
+    groove("[Pulse]\nA warm cinematic pulse: a deep sub-bass note on every beat, soft low piano chords, a gentle kick, steady and confident.", ["cinematic", "86 bpm", "deep sub-bass pulse", "soft low piano", "gentle kick", "warm", "premium product film", "instrumental"]),
+    drop("[Drop]\n{a deep cinematic boom on the downbeat}\nThe pulse lands full and wide: sub, piano and pads together, warm and low.", ["cinematic boom", "massive warm low end", "wide pads", "full"]),
+  ],
+  K: [
+    groove("[Groove]\nA warm neo-soul groove with an 808 sub bass from the start, soft Rhodes, a muted kick and rim, unhurried.", ["neo-soul", "86 bpm", "808 sub bass", "soft Rhodes", "muted kick", "rim click", "warm", "instrumental"]),
+    drop("[Drop]\n{a big 808 hit on the downbeat}\nThe groove lands heavier and wider, the 808 carrying it.", ["big 808", "heavier groove", "wide warm chords", "deep"]),
+  ],
 });
 
 const SFX = {

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kawase fly-over</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@500&family=Instrument+Serif:ital@1&display=block" rel="stylesheet" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f9fbfb;
+        overflow: hidden;
+      }
+      #stage {
+        position: relative;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+      /* The end card's words: positioned and animated by seek(t), never by CSS transitions. */
+      .overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      .word {
+        display: inline-block;
+        will-change: transform, filter, opacity;
+      }
+      #badge {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 0.4em;
+        background: #ffffff;
+        color: #111111;
+        border-radius: 999px;
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        box-shadow:
+          0 0 0 1px rgba(17, 20, 32, 0.06),
+          0 6px 18px rgba(26, 33, 51, 0.07);
+      }
+      #badge img {
+        display: block;
+      }
+      #line1 {
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        color: #111111;
+        letter-spacing: -0.025em;
+      }
+      #line2 {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-weight: 400;
+        color: #8b8b92;
+        letter-spacing: -0.01em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="film"></canvas>
+      <div id="badge"><img src="./kawase-mark.svg" alt="" /><span>Kawase</span></div>
+      <div id="line1" class="overlay"></div>
+      <div id="line2" class="overlay"></div>
+    </div>
+    <script type="module" src="./film.js"></script>
+  </body>
+</html>
