@@ -3,6 +3,8 @@
 // Source: 21st.dev efferd/floating-header (https://21st.dev/@efferd/components/floating-header). Changes for Kawase:
 // brand, links and the action come from props; the glass rim and fill use the `glass` tokens (DESIGN.md "Glass");
 // the shadcn Sheet is replaced by an inline disclosure panel so the header has no dialog dependency; no shadow.
+// The radius is a fixed 28 px, not rounded-full: closed, the ~50 px bar clamps it to a pill; open, the menu grows the
+// header and rounded-full turned it into one huge capsule whose curve cut into the links (Abu, 10-16).
 import React from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 
@@ -27,7 +29,7 @@ export function FloatingHeader({
     <header
       className={cn(
         "sticky top-4 z-50",
-        "mx-auto w-full max-w-5xl rounded-full border border-glass-border",
+        "mx-auto w-full max-w-5xl rounded-[28px] border border-glass-border",
         "bg-glass backdrop-blur-xl supports-[backdrop-filter]:bg-glass",
       )}
     >
