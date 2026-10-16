@@ -30,7 +30,7 @@ export default tseslint.config(
       "packages/ui-native/src/components/art/**",
       "apps/mobile/src/share-card/layout.ts",
       "apps/mobile/src/share-card/draw.web.ts",
-      "apps/mobile/src/share-card/card-view.tsx",
+      "apps/mobile/src/share-card/card-native.tsx",
       "apps/mobile/src/share-card/art.web.tsx",
     ],
     rules: { "@typescript-eslint/no-magic-numbers": "off" },

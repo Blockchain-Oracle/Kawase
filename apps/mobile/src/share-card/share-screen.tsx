@@ -27,6 +27,7 @@ import { useSignIn } from "@/sign-in/sign-in-provider";
 import { PageHeader, PhoneScroll } from "@/trade/page-frame";
 
 import type { CardHandle } from "./card-handle";
+import { ShareCardView as NativeCardView } from "./card-native";
 import { ShareCardView } from "./card-view";
 import { SHARE_PERIODS, type SharePeriod } from "./model";
 import { saveCardFile, shareCardFile } from "./share-actions";
@@ -50,7 +51,9 @@ export function ShareCardScreen() {
   const wide = useWide();
   const { color } = useTheme();
   const { locale } = useLocale();
-  const params = useLocalSearchParams<{ period?: string; token?: string; position?: string }>();
+  const params = useLocalSearchParams<{ period?: string; token?: string; position?: string; renderer?: string }>();
+  // Development only: `?renderer=native` draws the phone's renderer in the browser, to check its layout here.
+  const CardView = __DEV__ && params.renderer === "native" ? NativeCardView : ShareCardView;
   const [period, setPeriod] = React.useState<SharePeriod>(isPeriod(params.period) ? params.period : "30d");
   // "5042002:0x89b5…" from a token page; a position's id from its page.
   const token = React.useMemo(() => {
@@ -139,7 +142,7 @@ export function ShareCardScreen() {
   else
     body = (
       <Animated.View entering={FadeIn.duration(ENTER_MS)} style={styles.cardBlock}>
-        <ShareCardView ref={card} card={state.card} words={words} fx={fx} seed={user?.id ?? "guest"} width={cardWidth} sound={sound} onSoundBlocked={setSoundBlocked} />
+        <CardView ref={card} card={state.card} words={words} fx={fx} seed={user?.id ?? "guest"} width={cardWidth} sound={sound} onSoundBlocked={setSoundBlocked} />
         <View style={[styles.actions, { width: cardWidth }]}>
           <Button label={t("shareCard.shareImage")} leading={<Icon icon={Share2} size={18} />} loading={busy} onPress={() => void shareImage()} />
           {Platform.OS === "web" ? (
