@@ -16,7 +16,7 @@ import { PUBLIC_LINKS } from "@kawase/config";
 import { KawaseMark } from "@kawase/ui-native/components/art/kawase-mark";
 import { DottedQr } from "@kawase/ui-native/components/dotted-qr";
 import { useStageFrame } from "@kawase/ui-native/lib/stage";
-import { useWide, WIDE_COLUMN_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
+import { useWide, WIDE_COLUMN_PX, WIDE_NARROW_PX, WIDE_PAGE_PX } from "@kawase/ui-native/lib/wide";
 import { useSegments } from "expo-router";
 import { X } from "lucide-react-native";
 import * as React from "react";
@@ -41,6 +41,8 @@ import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 
 const KEY = "kawase.get-app.closed";
+/** Two gutters, two insets, a round button's half. */
+const HALF = 2;
 const DOWNLOAD = `${PUBLIC_LINKS.landing}/download`;
 
 const CARD = { width: 164, pad: 12, plate: 140, radius: 22, plateRadius: 14, close: 26, closeIcon: 14 } as const;
@@ -90,12 +92,28 @@ function closedBefore(): boolean {
   }
 }
 
-function rememberClosed() {
+/** Closed in this page view (shared by every place the card or strip is mounted), and kept for the visit. */
+let closedHere = false;
+const closedListeners = new Set<() => void>();
+function close() {
+  fire("tick");
+  closedHere = true;
+  for (const listener of closedListeners) listener();
   try {
     window.sessionStorage.setItem(KEY, "1");
   } catch {
     // Private mode: closed for this page view only.
   }
+}
+function useClosed(): boolean {
+  return React.useSyncExternalStore(
+    (listener) => {
+      closedListeners.add(listener);
+      return () => closedListeners.delete(listener);
+    },
+    () => closedHere,
+    () => false,
+  );
 }
 
 /** Read once in the browser (the server render has no window, so nothing shows until this resolves). */
@@ -103,6 +121,18 @@ function useVisit(): Visit | null {
   const [visit, setVisit] = React.useState<Visit | null>(null);
   React.useEffect(() => setVisit({ device: deviceOf(), installed: installed(), closed: closedBefore() }), []);
   return visit;
+}
+
+/** A desktop visitor who has not closed it, a few seconds into the page. */
+function useCardDue(): boolean {
+  const visit = useVisit();
+  const closed = useClosed();
+  const [due, setDue] = React.useState(false);
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDue(true), CARD_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  return visit !== null && visit.device === "desktop" && !visit.installed && !visit.closed && !closed && due;
 }
 
 const openInNewTab = (url: string) => {
@@ -116,44 +146,37 @@ function pageWidth(segments: readonly string[]): number {
   return markets || segments[1] === "token" ? WIDE_PAGE_PX : WIDE_COLUMN_PX;
 }
 
-/** The desktop card, mounted inside the stage (apps/mobile/src/app/(app)/_layout.tsx). */
+/** The desktop card inside the signed-in area's stage (apps/mobile/src/app/(app)/_layout.tsx). */
 export function GetAppCard() {
-  const { t } = useT();
-  const { color } = useTheme();
-  const reduced = useReducedMotion();
-  const visit = useVisit();
+  const due = useCardDue();
   const wide = useWide();
   const stage = useStageFrame();
   const overlay = useOverlay();
   const segments = useSegments() as readonly string[];
   const { height } = useWindowDimensions();
-  const [due, setDue] = React.useState(false);
-  const [closed, setClosed] = React.useState(false);
-  React.useEffect(() => {
-    const timer = setTimeout(() => setDue(true), CARD_AFTER_MS);
-    return () => clearTimeout(timer);
-  }, []);
+  const room = stage ? (stage.width - pageWidth(segments)) / HALF - LAYOUT.inset * HALF : 0;
+  const show = due && wide && room >= CARD.width && height >= CARD_MIN_WINDOW_H && overlay.current === null;
+  return show ? <CardBody /> : null;
+}
 
-  const room = stage ? (stage.width - pageWidth(segments)) / 2 - LAYOUT.inset * 2 : 0;
-  const show =
-    visit !== null &&
-    visit.device === "desktop" &&
-    !visit.installed &&
-    !visit.closed &&
-    !closed &&
-    due &&
-    wide &&
-    room >= CARD.width &&
-    height >= CARD_MIN_WINDOW_H &&
-    overlay.current === null;
-  if (!show) return null;
+/**
+ * The same card on the pages outside the signed-in area (the story, a shared receipt, terms): they are one narrow
+ * column in the middle of a desktop window, so the window's corner is free (apps/mobile/src/app/_layout.tsx).
+ */
+export function GetAppCardWindow() {
+  const due = useCardDue();
+  const wide = useWide();
+  const segments = useSegments() as readonly string[];
+  const { width } = useWindowDimensions();
+  const room = (width - WIDE_NARROW_PX) / HALF - LAYOUT.inset * HALF;
+  const show = due && wide && segments[0] !== "(app)" && segments[0] !== "dev" && room >= CARD.width;
+  return show ? <CardBody /> : null;
+}
 
-  const close = () => {
-    fire("tick");
-    setClosed(true);
-    rememberClosed();
-  };
-
+function CardBody() {
+  const { t } = useT();
+  const { color } = useTheme();
+  const reduced = useReducedMotion();
   return (
     <Animated.View
       entering={reduced ? undefined : FadeInDown.duration(CARD_IN_MS).easing(EASE)}
@@ -165,7 +188,7 @@ export function GetAppCard() {
         accessibilityLabel={t("getApp.cardLabel")}
         onPress={() => openInNewTab(DOWNLOAD)}
         className="cursor-pointer outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring"
-        style={[styles.card, { backgroundColor: color.raised2 }, ELEVATION.dock]}
+        style={[styles.card, { backgroundColor: color.card }, ELEVATION.dock]}
       >
         <View style={[styles.plate, { backgroundColor: color.paper }]}>
           <DottedQr value={DOWNLOAD} size={QR} dotColor={color.paperInk} background={color.paper} center={<KawaseMark size={QR * QR_CENTER} />} />
@@ -187,7 +210,7 @@ export function GetAppCard() {
         className="cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring"
         style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
           styles.close,
-          { backgroundColor: pressed || hovered ? color.rowPressed : color.raised2, borderColor: color.hairline },
+          { backgroundColor: pressed || hovered ? color.rowPressed : color.card, borderColor: color.hairline },
           ELEVATION.button,
         ]}
       >
@@ -217,9 +240,8 @@ export function GetAppStrip() {
 
   const ios = visit.device === "ios";
   const target = ios ? (PUBLIC_LINKS.testFlight ?? DOWNLOAD) : PUBLIC_LINKS.androidApk;
-  const close = () => {
-    fire("tick");
-    rememberClosed();
+  const dismiss = () => {
+    close();
     height.value = withTiming(0, { duration: reduced ? 0 : STRIP_OUT_MS, easing: EASE }, (done) => {
       if (done) runOnJS(setGone)(true);
     });
@@ -231,7 +253,7 @@ export function GetAppStrip() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("common.close")}
-          onPress={close}
+          onPress={dismiss}
           hitSlop={SPACE.sm}
           style={({ pressed }) => [styles.stripClose, { backgroundColor: pressed ? color.rowPressed : color.transparent }]}
         >
@@ -246,7 +268,7 @@ export function GetAppStrip() {
             {ios ? t("getApp.stripDetailIos") : t("getApp.stripDetailAndroid")}
           </Text>
         </View>
-        <Button label={t("getApp.get")} accessibilityHint={t("getApp.getLabel")} size="sm" block={false} onPress={() => openInNewTab(target)} />
+        <Button label={t("getApp.get")} accessibilityHint={t("getApp.getLabel")} size="sm" block={false} style={styles.stripGet} onPress={() => openInNewTab(target)} />
       </View>
     </Animated.View>
   );
@@ -263,7 +285,7 @@ const styles = StyleSheet.create({
     end: CLOSE_OFFSET,
     width: CARD.close,
     height: CARD.close,
-    borderRadius: CARD.close / 2,
+    borderRadius: CARD.close / HALF,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
@@ -272,4 +294,5 @@ const styles = StyleSheet.create({
   strip: { flexDirection: "row", alignItems: "center", gap: SPACE.md, paddingStart: SPACE.sm, paddingEnd: SPACE.md },
   stripClose: { width: SIZE.touch - SPACE.md, height: SIZE.touch - SPACE.md, borderRadius: SIZE.touch, alignItems: "center", justifyContent: "center" },
   stripWords: { flex: 1, minWidth: 0 },
+  stripGet: { alignSelf: "center" },
 });

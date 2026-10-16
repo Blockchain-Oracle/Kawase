@@ -15,7 +15,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useWide, WIDE_NARROW_PX } from "@kawase/ui-native/lib/wide";
 
 import { ToastHost } from "@/components/toast/ToastHost";
-import { GetAppStrip } from "@/shell/get-app";
+import { GetAppCardWindow, GetAppStrip } from "@/shell/get-app";
 import { UpdateReady } from "@/shell/update-ready";
 import { LocaleProvider } from "@/i18n/locale-provider";
 import { PushSync } from "@/notifications/push-sync";
@@ -68,6 +68,7 @@ export default function RootLayout() {
                                 ...(wide && route.name !== "(app)" ? { contentStyle: { width: "100%", maxWidth: WIDE_NARROW_PX, alignSelf: "center" } } : {}),
                               })}
                             />
+                            <GetAppCardWindow />
                           </View>
                           <SheetLayer />
                         </FundProvider>

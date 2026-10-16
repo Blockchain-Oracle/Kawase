@@ -6,3 +6,7 @@ export function GetAppCard() {
 export function GetAppStrip() {
   return null;
 }
+
+export function GetAppCardWindow() {
+  return null;
+}
