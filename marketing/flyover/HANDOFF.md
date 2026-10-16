@@ -29,9 +29,11 @@ reference track); the reference film is `/Users/abu/Downloads/sigh.mp4`. How it 
 
 ## Sound, second pass (2026-10-16 evening)
 
-Abu rejected the ElevenLabs mixes ("the audio sucks"). Replaced with four real Pixabay tracks (README → Sound), cut so
-each one's own drop lands on 9.97 s; films in the main checkout's
-`docs/marketing/videos/flyover-2026-10-16/real-music/` (each track in all three sizes). Waiting on Abu's pick by ear.
+Abu rejected the ElevenLabs mixes ("the audio sucks"). Replaced with four real Pixabay tracks, first cut on their first
+drops (wrong: the glide played intros), then re-cut on each song's best 14.5 s inside its hook (`audio/best_window.py`).
+**Abu picked Whip (kontraa).** Final films, Whip in all three sizes: the main checkout's
+`docs/marketing/videos/flyover-2026-10-16/kawase-flyover{,-1080x1350,-1920x1080}.mp4` (+ MUSIC.txt with the licence);
+the other three tracks stay in `real-music/`, the rejected ElevenLabs versions in `archive-elevenlabs/`.
 
 ## Not done / judgement calls
 

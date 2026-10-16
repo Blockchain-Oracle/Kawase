@@ -23,8 +23,9 @@ node render.mjs --stills 0,1.6,2.5,5,6.5,9.3,11              # 4. stills → out
 node render.mjs --name picture-1440x1152                     # 5. the picture (≈75 s on an M1 Pro)
 node render.mjs --w 1080 --h 1350 --name picture-1080x1350
 node render.mjs --w 1920 --h 1080 --name picture-1920x1080
-node audio/mix.mjs                                           # 6. the soundtracks → audio/out/*.wav, *.m4a
-ffmpeg -i out/picture-1440x1152.mp4 -i audio/out/J1.m4a -c:v copy -c:a copy -shortest out/kawase-flyover.mp4
+node audio/mix.mjs                                           # 6. the soundtrack cuts → audio/out/*.wav, *.m4a
+node audio/mix.mjs whip                                     # (Abu's pick)
+ffmpeg -i out/picture-1440x1152.mp4 -i audio/out/whip.m4a -map 0:v -map 1:a -c copy -t 14.5 out/kawase-flyover.mp4
 ```
 
 `flowcheck.py`, `audio/analyze.py` and `audio/find_drop.py` need Python with numpy and scipy
@@ -79,7 +80,8 @@ cut starting on a beat (a tempo nudge of at most 2 %, pitch kept, makes a whole 
 `audio/mix.mjs` cuts it: the track alone, a 50 ms click-free start, the reference's decay from 11.9 s, −14 LUFS. Four:
 
 - **AMALGAM** (Rockot, future bass): 60.95 s → landing on the downbeat at 70.77 s.
-- **Whip** (kontraa, afro dancehall, the most downloaded): 143.13 s → 153.25 s, a strong low hit on the landing.
+- **Whip** (kontraa, afro dancehall, the most downloaded), **the film's track (Abu's pick)**: 143.13 s → 153.25 s, a
+  strong low hit on the landing. Not registered with YouTube Content ID.
 - **Kulakovka** "No Copyright Music" (beats): 64.64 s → 74.63 s.
 - **Kugelsicher** (TremoxBeatz, hip-hop): 58.12 s → 67.92 s, a section change on the landing.
 
