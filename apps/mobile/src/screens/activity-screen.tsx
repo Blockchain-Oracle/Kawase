@@ -2,9 +2,9 @@
 // not "Kawase" and "All money" side by side): every movement in and out, Kawase's or not (receives and the faucet
 // included), and what Kawase held, skipped, is watching and found, day-grouped as wallet rows with chips for In · Out ·
 // Trades and each group's count. Every row opens the same receipt it opens on Home. The week's report and the export
-// stay on top. `?filter=needs_you` (or `held`) opens on Held. On a wide desktop the list and the receipt stand side by
-// side (PayPal's and Copperx's activity, Refero): a row selects instead of opening a sheet, and the panel shows the
-// same receipt the sheet would, starting on the newest movement that went through.
+// stay on top. `?filter=needs_you` (or `held`) opens on Held. A row opens its receipt in a sheet — on a desktop the
+// right-hand drawer, like Add money (Abu, 10-16: a panel that sat there all the time was not asked for) — and the open
+// row stays marked in the list.
 // Every state is designed: skeletons held 300 ms, empty states that name the next action, a failed refresh that keeps
 // the last rows and marks them stale, and a guest's sign-in plate instead of an empty list.
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -14,7 +14,6 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { AgentFeedItem, ReportView } from "@kawase/api-client";
-import { useStageFrame } from "@kawase/ui-native/lib/stage";
 import { useWide, WIDE_COLUMN_PX } from "@kawase/ui-native/lib/wide";
 
 import {
@@ -36,7 +35,7 @@ import { TabHeader } from "@/components/tab-header";
 import { useDockClearance } from "@/dock/use-dock-clearance";
 import { ExportSheet } from "@/history/export-sheet";
 import { ReportCard } from "@/history/report-card";
-import { FeedDetail, FeedDetailSheet } from "@/home/feed-detail-sheet";
+import { FeedDetailSheet } from "@/home/feed-detail-sheet";
 import { useFeedCopy } from "@/home/feed-copy";
 import { FeedTimeline, rowsFor, type FeedFilter } from "@/home/feed-timeline";
 import { useAgentFeed } from "@/home/use-agent-feed";
@@ -72,11 +71,6 @@ const CUT_LABEL: Record<Cut, string> = {
   trades: "activityFeed.filterTrades",
 };
 const ASKABLE: readonly ActivityFilter[] = ["held", "skipped", "watching", "found"];
-/** The list (530 px at least) and the receipt panel side by side, with the gutters: from Home's two-column width. */
-const SPLIT_MIN_STAGE_PX = 1000;
-const LIST_MAX_PX = 640;
-const PANEL_PX = 380;
-const GUTTERS = 2;
 
 export function ActivityScreen() {
   const { t } = useT();
@@ -98,9 +92,6 @@ export function ActivityScreen() {
   const openPositions = (positions ?? []).filter((position) => position.status === "open");
   const [filter, setFilter] = React.useState<ActivityFilter>(asked ?? "all");
   const [open, setOpen] = React.useState<AgentFeedItem | null>(null);
-  const stage = useStageFrame();
-  const split = wide && account && (stage?.width ?? 0) >= SPLIT_MIN_STAGE_PX;
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [exporting, setExporting] = React.useState(false);
   const [report, setReport] = React.useState<ReportView>();
   React.useEffect(() => {
@@ -124,13 +115,6 @@ export function ActivityScreen() {
   const group: FeedFilter = cut ? "all" : (filter as FeedFilter);
   const keep = cut ? KEEP[cut] : undefined;
   const shown = rowsFor(agent.feed, group).filter((row) => !keep || keep(row));
-  // The panel follows the row the person picked, else the newest movement that went through (the freshest receipt).
-  const current = split
-    ? (shown.find((row) => row.id === selectedId) ??
-      shown.find((row) => row.outcome === "confirmed") ??
-      shown[0] ??
-      null)
-    : null;
   const counts = new Map(agent.feed?.groups.map((entry) => [entry.group, entry.count]) ?? []);
   // In · Out · Trades when the history has any, then each group Kawase has rows in, with its count ("Held 1").
   const chips: { value: ActivityFilter; label: string }[] = [
@@ -147,15 +131,13 @@ export function ActivityScreen() {
 
   return (
     <View style={[styles.page, { backgroundColor: color.background }]}>
-      <View style={split ? styles.grid : styles.fill}>
+      <View style={styles.fill}>
         <ScrollView
           refreshControl={account ? refreshing : undefined}
-          style={split ? styles.listColumn : undefined}
           contentContainerStyle={[
             styles.content,
             { paddingTop: wide ? SPACE.xxl : insets.top + SPACE.md, paddingBottom: clearance.scroll },
-            wide && !split ? styles.wide : null,
-            split ? styles.listContent : null,
+            wide ? styles.wide : null,
           ]}
         >
           {wide ? null : <TabHeader />}
@@ -225,8 +207,8 @@ export function ActivityScreen() {
                     feed={agent.feed}
                     filter={group}
                     keep={keep}
-                    onOpen={split ? (item) => setSelectedId(item.id) : setOpen}
-                    selectedId={current?.id}
+                    onOpen={setOpen}
+                    selectedId={open?.id}
                     plated
                   />
                 )}
@@ -234,21 +216,6 @@ export function ActivityScreen() {
             </>
           )}
         </ScrollView>
-        {split ? (
-          <ScrollView
-            style={styles.panel}
-            contentContainerStyle={[styles.panelContent, { paddingBottom: clearance.scroll }]}
-          >
-            {current ? (
-              <FeedDetail
-                key={current.id}
-                item={current}
-                ground={color.background}
-                onAsk={(prompt) => router.navigate({ pathname: "/", params: { ask: prompt } })}
-              />
-            ) : null}
-          </ScrollView>
-        ) : null}
       </View>
       {/* Content scrolls under the status bar here: the page's colour fades in behind the clock (phones). */}
       {wide ? null : <StatusScrim />}
@@ -267,19 +234,6 @@ export function ActivityScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1 },
   fill: { flex: 1 },
-  grid: {
-    flex: 1,
-    flexDirection: "row",
-    gap: SPACE.xxl,
-    width: "100%",
-    maxWidth: LIST_MAX_PX + PANEL_PX + SPACE.xxl + SPACE.lgPlus * GUTTERS,
-    alignSelf: "center",
-    paddingHorizontal: SPACE.lgPlus,
-  },
-  listColumn: { flex: 1, minWidth: 0 },
-  listContent: { paddingHorizontal: 0 },
-  panel: { width: PANEL_PX, flexGrow: 0 },
-  panelContent: { paddingTop: SPACE.xxl, gap: SPACE.lg },
   content: { gap: SPACE.lg, paddingHorizontal: SPACE.lgPlus },
   wide: { width: "100%", maxWidth: WIDE_COLUMN_PX, alignSelf: "center" },
   titleRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },

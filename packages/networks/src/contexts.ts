@@ -16,10 +16,16 @@ export const ARC_RPC = {
   testnet: ["https://rpc.testnet.arc.io", "https://rpc.blockdaemon.testnet.arc.io", "https://rpc.drpc.testnet.arc.io", "https://rpc.quicknode.testnet.arc.io"],
 } as const satisfies Record<NetworkId, readonly string[]>;
 
-/** viem's Arc chains with Arc's current endpoints (wallets add the network from these; clients default to them). */
+/** Arc's explorers (docs.arc.io): viem's testnet entry still names the old testnet.arcscan.app. */
+export const ARC_EXPLORER = {
+  mainnet: { name: "Arc Explorer", url: "https://explorer.arc.io", apiUrl: "https://explorer.arc.io/api/v2" },
+  testnet: { name: "Arc Testnet Explorer", url: "https://explorer.testnet.arc.io", apiUrl: "https://explorer.testnet.arc.io/api" },
+} as const satisfies Record<NetworkId, { name: string; url: string; apiUrl: string }>;
+
+/** viem's Arc chains with Arc's current endpoints and explorers (wallets add the network from these; receipts link to them). */
 export const ARC_CHAINS = {
-  mainnet: { ...arc, rpcUrls: { default: { http: [ARC_RPC.mainnet[0]] } } },
-  testnet: { ...arcTestnet, rpcUrls: { default: { http: [ARC_RPC.testnet[0]] } } },
+  mainnet: { ...arc, rpcUrls: { default: { http: [ARC_RPC.mainnet[0]] } }, blockExplorers: { default: ARC_EXPLORER.mainnet } },
+  testnet: { ...arcTestnet, rpcUrls: { default: { http: [ARC_RPC.testnet[0]] } }, blockExplorers: { default: ARC_EXPLORER.testnet } },
 } as const satisfies Record<NetworkId, Chain>;
 
 /** Everything network-specific the app needs, resolved server-side from the session (K6). Never chosen by the model (K2). */
