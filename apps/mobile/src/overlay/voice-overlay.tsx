@@ -5,9 +5,11 @@
 // with reduced motion.
 //
 // The conversation outlives this view (Abu, 10-16: "the agent should keep running in the background"): the chevron,
-// Escape, Back or a tap outside minimise it to the island (Dynamic Island's grammar: a black pill with the live orb and
-// Kawase's words, tap to open it again), the card sheet brings anything Kawase needs to whatever page is open, and the
-// edge glow says voice is on. Only End ends it.
+// Escape, Back or a tap on any empty space minimise it to the island (Dynamic Island's grammar: a black pill with the live
+// orb and Kawase's words, tap to open it again) — a tap on a card, a button or the slide never does — and the card sheet
+// brings anything Kawase needs to whatever page is open. Neon says voice is on, inside the app where Kawase is talking
+// (Abu, 10-16: "not outside of the app"): round the conversation here, round the island and the page when minimised,
+// breathing with Kawase's voice and under every card. Only End ends it.
 //
 // One orb at a time (Codex review R16): the travel is measured — the dock's orb slot and the orb's place in the
 // column, both in window coordinates — not assumed from the screen's midpoint; the dock's orb steps aside while this
@@ -31,6 +33,8 @@ import { toast } from "sonner-native";
 
 import { BlurOverlay } from "@kawase/ui-native/components/blur-overlay";
 import { focusElement, useReducedMotionLive } from "@kawase/ui-native/lib/accessibility";
+import { useStageFrame } from "@kawase/ui-native/lib/stage";
+import { useWide } from "@kawase/ui-native/lib/wide";
 import { tokens } from "@kawase/ui-tokens";
 
 import { Icon, SIZE, SPACE, TYPE, useTheme as useKitTheme } from "@/components/kit";
@@ -39,7 +43,8 @@ import { useT } from "@/i18n";
 import { useOverlay } from "@/overlay/overlay-provider";
 import { useTheme } from "@/theme/theme-provider";
 import { useThemeColors } from "@/theme/use-theme-colors";
-import { EdgeGlow } from "@/voice/edge-glow";
+import { NEON_WEIGHT } from "@/voice/neon-shared";
+import { NeonRing } from "@/voice/neon-ring";
 import { VoiceCardSheet } from "@/voice/voice-card-sheet";
 import { VoiceIsland } from "@/voice/voice-island";
 import { useVoice, voiceStore } from "@/voice/voice-store";
@@ -60,6 +65,9 @@ const IDLE_LEVEL = 0.2;
 const HALF = 0.5;
 const TOP_GAP = 56;
 const BOTTOM_GAP = 16;
+/** The neon round the conversation: its share of a wide window (centred on the orb), and its corners. */
+const FRAME = { share: 0.78, min: 720, radius: 32, phoneRadius: 40, pageWeight: 0.55 } as const;
+const TWICE = 2;
 
 type Point = { x: number; y: number };
 
@@ -129,6 +137,17 @@ function VoiceStage({ open, level, children, leavingForChat }: VoiceStageProps) 
   const slot = React.useRef<View>(null);
   const heading = React.useRef<View>(null);
   const trigger = overlay.voiceTrigger;
+  const wide = useWide();
+  const phase = useVoice((voice) => voice.phase);
+  // Round the conversation, inside the window: centred on the orb on a wide screen, just inside the screen on a phone.
+  const frameWidth = wide ? Math.min(window.width - SPACE.xl * TWICE, Math.max(FRAME.min, window.width * FRAME.share)) : window.width - SPACE.sm * TWICE;
+  const frameTop = insets.top + (wide ? SPACE.md : SPACE.xs);
+  const frame = {
+    left: (window.width - frameWidth) / TWICE,
+    top: frameTop,
+    width: frameWidth,
+    height: window.height - frameTop - insets.bottom - (wide ? SPACE.md : SPACE.xs),
+  };
 
   React.useEffect(() => {
     if (!open) {
@@ -172,6 +191,8 @@ function VoiceStage({ open, level, children, leavingForChat }: VoiceStageProps) 
       contentFades={false}
       onExited={exited}
     >
+      {/* Under everything in the view: the cards and the dock sit on top of it. */}
+      <NeonRing intensity={NEON_WEIGHT[phase]} level={level} radius={wide ? FRAME.radius : FRAME.phoneRadius} style={frame} />
       {/* Down to the island: the conversation keeps going while the person uses the app. */}
       <Pressable
         accessibilityRole="button"
@@ -182,7 +203,9 @@ function VoiceStage({ open, level, children, leavingForChat }: VoiceStageProps) 
       >
         <Icon icon={ChevronDown} size={SIZE.iconSm + SPACE.xxs} />
       </Pressable>
+      {/* Empty space lets a tap through to the backdrop under it (BlurOverlay's tap-outside, here: minimise). */}
       <View
+        pointerEvents="box-none"
         className="flex-1 items-center gap-6 px-6"
         style={{ paddingTop: insets.top + TOP_GAP, paddingBottom: insets.bottom + BOTTOM_GAP }}
       >
@@ -197,7 +220,7 @@ function VoiceStage({ open, level, children, leavingForChat }: VoiceStageProps) 
             <RisingOrb progress={progress} from={from} network={network} level={level} size={orbSize} />
           </View>
         </View>
-        <Animated.View style={words} className="w-full flex-1 items-center">
+        <Animated.View pointerEvents="box-none" style={words} className="w-full flex-1 items-center">
           {open ? children : null}
         </Animated.View>
       </View>
@@ -247,10 +270,30 @@ export function VoiceLayer() {
           <VoicePreview key={previewing} onDone={previewDone} />
         </React.Suspense>
       ) : null}
-      <EdgeGlow active={live} />
+      {live && !full ? <PageNeon level={level} /> : null}
       {live && !full ? <VoiceIsland level={level} onOpen={() => overlay.open("voice")} onEnd={overlay.endVoice} /> : null}
       {live && !full ? <VoiceCardSheet onOpen={() => overlay.open("voice")} /> : null}
     </>
+  );
+}
+
+/** Minimised: a quieter neon just inside the page Kawase is listening on (the content beside the sidebar on a desktop). */
+function PageNeon({ level }: { level: SharedValue<number> }) {
+  const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const wide = useWide();
+  const stage = useStageFrame();
+  const phase = useVoice((voice) => voice.phase);
+  const left = wide && stage ? stage.x + SPACE.xs : SPACE.xs;
+  const width = wide && stage ? stage.width - SPACE.xs * TWICE : window.width - SPACE.xs * TWICE;
+  const top = wide ? SPACE.xs : insets.top ? SPACE.xs : SPACE.xxs;
+  return (
+    <NeonRing
+      intensity={NEON_WEIGHT[phase] * FRAME.pageWeight}
+      level={level}
+      radius={wide ? FRAME.radius : FRAME.phoneRadius}
+      style={[styles.page, { left, top, width, height: window.height - top * TWICE }]}
+    />
   );
 }
 
@@ -263,5 +306,6 @@ function StateLine({ labelKey }: { labelKey: string }) {
 
 const MINIMIZE = SIZE.touch - SPACE.xs;
 const styles = StyleSheet.create({
+  page: { zIndex: 50 },
   minimize: { position: "absolute", end: SPACE.lg, zIndex: 1, width: MINIMIZE, height: MINIMIZE, borderRadius: MINIMIZE, alignItems: "center", justifyContent: "center" },
 });

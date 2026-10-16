@@ -7,7 +7,7 @@ import { tokens, type ThemeName } from "@kawase/ui-tokens";
 import { Mark } from "@kawase/ui-native/components/mark";
 import * as React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
+import { cancelAnimation, Easing, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -81,6 +81,10 @@ import { fire, type HapticEvent, type SoundName } from "@/feedback/fire";
 import { usePreviewParams } from "@/gallery/use-preview-params";
 import { useT } from "@/i18n";
 import { useTheme as useAppTheme } from "@/theme/theme-provider";
+import { NEON_WEIGHT } from "@/voice/neon-shared";
+import { NeonRing } from "@/voice/neon-ring";
+import { VoiceIsland } from "@/voice/voice-island";
+import { voiceStore, type VoicePhase } from "@/voice/voice-store";
 
 /* eslint-disable @typescript-eslint/no-magic-numbers -- the gallery's sample data: figures, series and clocks */
 const SAMPLE = {
@@ -226,6 +230,7 @@ const SOUNDS: readonly SoundName[] = [
   "toggle",
 ];
 const NOW = Date.now();
+const VOICE_PREVIEW = { low: 0.08, high: 0.6, breathMs: 700, radius: 28, height: 220 } as const;
 const MINUTE = 60_000;
 
 export default function GalleryRoute() {
@@ -266,6 +271,7 @@ function Gallery() {
           onChange={pickTheme}
           label={SAMPLE.text.sections.tokens}
         />
+        <VoiceSection />
         <TokensSection />
         <TypeSection />
         <ButtonsSection />
@@ -290,6 +296,38 @@ function Gallery() {
       </ScrollView>
       {dock ? <SampleDock /> : null}
     </View>
+  );
+}
+
+/** Voice's neon and island with a pretend voice (no session): the level rises and falls like speech. */
+function VoiceSection() {
+  const { color } = useKitTheme();
+  const level = useSharedValue<number>(VOICE_PREVIEW.low);
+  const [phase, setPhase] = React.useState<VoicePhase>("speaking");
+  const [island, setIsland] = React.useState(false);
+  React.useEffect(() => {
+    level.value = withRepeat(withTiming(VOICE_PREVIEW.high, { duration: VOICE_PREVIEW.breathMs, easing: Easing.inOut(Easing.quad) }), -1, true);
+    return () => cancelAnimation(level);
+  }, [level]);
+  React.useEffect(() => {
+    if (!island) return undefined;
+    voiceStore.set({ phase, caption: "Okay, 5 USDC to about 5.86 EURC. Slide when you're ready." });
+    return () => voiceStore.reset();
+  }, [island, phase]);
+  return (
+    <Section title="Voice: neon and island">
+      <View style={styles.wrapRow}>
+        {(["speaking", "listening", "thinking", "muted"] as const).map((entry) => (
+          <Chip key={entry} label={entry === phase ? `● ${entry}` : entry} onPress={() => setPhase(entry)} />
+        ))}
+        <Chip label={island ? "Hide the island" : "Show the island"} onPress={() => setIsland(!island)} />
+      </View>
+      <View style={[styles.voiceStage, { backgroundColor: color.raised2 }]}>
+        <NeonRing intensity={NEON_WEIGHT[phase]} level={level} radius={VOICE_PREVIEW.radius} style={StyleSheet.absoluteFill} />
+        <Text style={[TYPE.label, { color: color.text2 }]}>Where Kawase is talking</Text>
+      </View>
+      {island ? <VoiceIsland level={level} onOpen={() => undefined} onEnd={() => setIsland(false)} /> : null}
+    </Section>
   );
 }
 
@@ -929,6 +967,7 @@ function Chip({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  voiceStage: { height: VOICE_PREVIEW.height, borderRadius: VOICE_PREVIEW.radius, alignItems: "center", justifyContent: "center", marginTop: SPACE.md },
   fill: { flex: 1 },
   page: { paddingHorizontal: SPACE.inset, gap: SPACE.xxl },
   section: { gap: SPACE.md },

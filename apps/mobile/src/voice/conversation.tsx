@@ -29,6 +29,7 @@ import {
 } from "@/components/kit";
 import { fire } from "@/feedback/fire";
 import { useT } from "@/i18n";
+import { useOverlay } from "@/overlay/overlay-provider";
 
 import { LiveCaption } from "./live-caption";
 import { useVoice, voiceStore } from "./voice-store";
@@ -44,6 +45,7 @@ type Line = { id: string; text: string; at: number };
 
 export function Conversation({ threadId, onTypeInstead, onEnd }: { threadId: string; onTypeInstead: (threadId: string) => void; onEnd: () => void }) {
   const { t } = useT();
+  const overlay = useOverlay();
   const { color } = useTheme();
   const reduced = useReducedMotionLive();
   const { state, agent } = useVoiceAssistant();
@@ -92,8 +94,8 @@ export function Conversation({ threadId, onTypeInstead, onEnd }: { threadId: str
   const micBlocked = !muted && (state === "listening" || state === "idle") && !isMicrophoneEnabled;
 
   return (
-    <View style={styles.root}>
-      <View style={styles.status} accessibilityLiveRegion="polite">
+    <View pointerEvents="box-none" style={styles.root}>
+      <View pointerEvents="box-none" style={styles.status} accessibilityLiveRegion="polite">
         {muted ? null : <LiveDot tint={busy ? color.accent : undefined} />}
         <Text maxFontSizeMultiplier={CONTROL_FONT_SCALE} style={[TYPE.label, { color: color.text2 }]}>
           {label}
@@ -101,6 +103,9 @@ export function Conversation({ threadId, onTypeInstead, onEnd }: { threadId: str
       </View>
 
       <ScrollView style={styles.captions} contentContainerStyle={styles.captionsBody} showsVerticalScrollIndicator={false}>
+        {/* The backdrop inside the scroll (Abu, 10-16: "click at the backdrop and it goes back"): any empty space under
+            the words and between the cards minimises; the cards and their buttons sit above it and keep their taps. */}
+        <Pressable accessible={false} focusable={false} onPress={overlay.close} style={StyleSheet.absoluteFill} />
         {you?.text.trim() ? <LiveCaption id={you.id} text={you.text} textStyle={[TYPE.body, { color: color.text2 }]} /> : null}
         {answer?.text.trim() ? <LiveCaption id={answer.id} text={answer.text} textStyle={[ANSWER, { color: color.ink }]} /> : null}
         {stopped || stopFailed ? (
@@ -122,7 +127,7 @@ export function Conversation({ threadId, onTypeInstead, onEnd }: { threadId: str
           </View>
         ) : null}
         {cards.length > 0 ? (
-          <View style={styles.cards}>
+          <View pointerEvents="box-none" style={styles.cards}>
             {cards.map((card) => {
               const part: ToolPart = { type: `tool-${card.toolName}`, toolCallId: card.toolCallId, state: "output-available", output: card.output };
               return (
@@ -194,7 +199,7 @@ const styles = StyleSheet.create({
   },
   status: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, minHeight: 20 },
   captions: { flex: 1, alignSelf: "stretch" },
-  captionsBody: { alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
+  captionsBody: { flexGrow: 1, alignItems: "center", gap: SPACE.md, paddingVertical: SPACE.sm },
   center: { textAlign: "center" },
   blocked: { alignItems: "center", gap: SPACE.sm },
   row: { flexDirection: "row", alignItems: "center", gap: SPACE.sm },
