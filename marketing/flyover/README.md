@@ -72,14 +72,19 @@ Real, licensed instrumentals (Abu's call after hearing the generated beds: Eleve
 the most-downloaded human-made tracks on Pixabay Music in launch-film styles (AI-tagged tracks excluded), all under the
 Pixabay Content License (commercial use, no attribution required), listed with source and page in
 `audio/library.json`; the files live in `audio/library/` (git-ignored; re-download from the `src` URLs).
-`audio/drops.py` finds each track's drops (loudness jump + hit, attack to 5 ms; confirm at 20 ms, it can take a pickup),
-and `audio/mix.mjs` cuts the 14.5 s window that puts the drop on 9.97 s: the track alone, a 0.25 s fade-in, the
-reference's decay from 11.9 s, −14 LUFS, true peak ≤ −1.4 dBTP. Four cuts:
+A 14.5 s film plays the best part of a song from its first frame, so `audio/best_window.py` (librosa) picks each
+track's window inside its main hook: full level against the song's own peak, material that repeats elsewhere in the song
+(hooks and choruses do, intros and bridges don't), no dip during the glide, a bar downbeat on the landing (9.97 s), the
+cut starting on a beat (a tempo nudge of at most 2 %, pitch kept, makes a whole number of beats span the 9.97 s).
+`audio/mix.mjs` cuts it: the track alone, a 50 ms click-free start, the reference's decay from 11.9 s, −14 LUFS. Four:
 
-- **AMALGAM** (Rockot, future bass): steady through the glide, breaks down while the camera rises, drops on the landing.
-- **Whip** (kontraa, afro dancehall, the most downloaded): steady groove, a dip in the rise, the downbeat on 9.98 s.
-- **Kulakovka** "No Copyright Music" (beats): steady glide, +8 dB on the landing (the reference's shape).
-- **Kugelsicher** (TremoxBeatz, hip-hop): builds through the glide, a stop, the beat drops on 9.97 s.
+- **AMALGAM** (Rockot, future bass): 60.95 s → landing on the downbeat at 70.77 s.
+- **Whip** (kontraa, afro dancehall, the most downloaded): 143.13 s → 153.25 s, a strong low hit on the landing.
+- **Kulakovka** "No Copyright Music" (beats): 64.64 s → 74.63 s.
+- **Kugelsicher** (TremoxBeatz, hip-hop): 58.12 s → 67.92 s, a section change on the landing.
+
+(`audio/drops.py` finds a track's drops; the first real-track cuts used it to put each first drop on the landing, which
+left the glide on intros. Abu: "you just started the sound from the beginning".)
 
 To swap the track: add it to `LIBRARY` in `audio/mix.mjs` with its drop, `node audio/mix.mjs <name>`, then mux with the
 ffmpeg line above (no re-render). The earlier ElevenLabs tooling (`generate.mjs`, `VARIANTS`) stays for reference only.
