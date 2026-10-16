@@ -9,7 +9,8 @@ import { useWindowDimensions } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CATALOGS } from "@kawase/i18n";
+import type { Catalog } from "@kawase/i18n/en";
+import { loadCatalog } from "@kawase/i18n/lazy";
 
 import { BOARD, type SampleLocale } from "@/gallery/sample";
 import { STORY_INK, StoryLanguagePill, storyPanels } from "@/onboarding/story-panels";
@@ -20,6 +21,25 @@ const INK = STORY_INK;
 const TOP_GAP = 8;
 
 type StoryFrameProps = { locale: SampleLocale; network: Network; index?: number; autoAdvance?: boolean };
+type BoardCatalogs = { story: Catalog; es: Catalog; zh: Catalog };
+
+/**
+ * The frame's languages, fetched the way the app fetches them. A static import of every catalog here made each
+ * language a module shared between chunks, so the web export hoisted all ten into the first load (3.6 MB).
+ */
+function useBoardCatalogs(locale: SampleLocale): BoardCatalogs | null {
+  const [catalogs, setCatalogs] = React.useState<BoardCatalogs | null>(null);
+  React.useEffect(() => {
+    let live = true;
+    void Promise.all([loadCatalog(locale), loadCatalog("es"), loadCatalog("zh")]).then(([story, es, zh]) => {
+      if (live) setCatalogs({ story, es, zh });
+    });
+    return () => {
+      live = false;
+    };
+  }, [locale]);
+  return catalogs;
+}
 
 // The story is always on Arc Testnet's examples, whichever network the board frame is set to.
 export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: StoryFrameProps) {
@@ -40,8 +60,10 @@ export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: S
   }, [autoAdvance, reduced, t.panels.length]);
 
   // The board shows the real story copy from the catalogs (English or Arabic), so the two cannot drift apart.
-  const story = CATALOGS[locale].story;
-  const networkNames = CATALOGS[locale].network;
+  const catalogs = useBoardCatalogs(locale);
+  if (!catalogs) return null;
+  const story = catalogs.story.story;
+  const networkNames = catalogs.story.network;
   const panels = storyPanels(
     {
       panels: [
@@ -53,7 +75,7 @@ export function StoryFrame({ locale, index: initial = 0, autoAdvance = true }: S
       ],
       example: story.example,
       request: story.exampleRequest,
-      otherRequests: [CATALOGS.es.story.exampleRequest, CATALOGS.zh.story.exampleRequest],
+      otherRequests: [catalogs.es.story.exampleRequest, catalogs.zh.story.exampleRequest],
       fields: { amount: story.fieldAmount, to: story.fieldTo, network: story.fieldNetwork },
       typingNow: story.typingNow,
       amount: "10 USDC",

@@ -30,7 +30,7 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     : context.resolveRequest(resolveContext, moduleName, platform);
 };
 
-// The web export tree-shakes (apps/mobile/scripts/publish-web.sh sets EXPO_UNSTABLE_TREE_SHAKING and
+// The web export tree-shakes (apps/mobile/Dockerfile, which Coolify builds, sets EXPO_UNSTABLE_TREE_SHAKING and
 // EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH): Metro alone keeps every export of a package it touches (all of viem's chains,
 // every lucide icon), which made the first web load ~24 MB of script. Expo's tree shaking needs import support in the
 // transformer; it is switched on only for those exports, so native builds are untouched.

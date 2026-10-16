@@ -6,6 +6,7 @@ import tseslint from "typescript-eslint";
 import noReducedMotionInRender from "./lint-rules/no-reduced-motion-in-render.mjs";
 
 const SERVER_ONLY_PACKAGES = ["@kawase/env", "@kawase/db", "@kawase/agent", "@kawase/workflows", "@kawase/integrations-*"];
+const SERVER_ONLY = SERVER_ONLY_PACKAGES.map((group) => ({ group: [group], message: "Server-only package: not allowed in client apps." }));
 
 export default tseslint.config(
   { ignores: ["**/dist/**", "**/.next/**", "**/node_modules/**", "**/.expo/**", "context/**", "refs/**", ".firecrawl/**"] },
@@ -65,6 +66,20 @@ export default tseslint.config(
   {
     // Client apps must never import server-only packages (Circle keys, DB, agent).
     files: ["apps/mobile/**", "apps/docs/**", "apps/landing/**"],
-    rules: { "no-restricted-imports": ["error", { patterns: SERVER_ONLY_PACKAGES.map((group) => ({ group: [group], message: "Server-only package: not allowed in client apps." })) }] },
+    rules: { "no-restricted-imports": ["error", { patterns: SERVER_ONLY }] },
+  },
+  {
+    // The app fetches one language at a time. A static import of every catalog makes each language a module shared
+    // between chunks, and the web export hoists all ten into the first load (10-16: 3.6 MB from one dev board import).
+    files: ["apps/mobile/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: SERVER_ONLY,
+          paths: [{ name: "@kawase/i18n", message: "Loads all ten catalogs: use @kawase/i18n/en, /lazy (loadCatalog), /names, /direction or /scripts." }],
+        },
+      ],
+    },
   },
 );
