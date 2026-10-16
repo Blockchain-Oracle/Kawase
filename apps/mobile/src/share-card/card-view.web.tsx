@@ -11,10 +11,8 @@ import { useTheme } from "@/components/kit/theme";
 import { useLocale } from "@/i18n/locale-provider";
 import type { Fx } from "@/portfolio/format";
 
-import { feedbackPreferences } from "@/feedback/preferences";
-
 import { CardArt, type CardImages } from "./art.web";
-import { playSoundtrack, renderSoundtrack } from "./film-sound.web";
+import { renderSoundtrack } from "./film-sound.web";
 import { fileStem, type CardHandle } from "./card-handle";
 import { drawCard, loadCardFonts, type CardColors, type CardScene } from "./draw.web";
 import { chartGeometry, FILM, FINAL_MS, FRAME, L } from "./layout";
@@ -99,8 +97,18 @@ async function encodeVideo(scene: CardScene, onProgress: (share: number) => void
 
 export const ShareCardView = React.forwardRef<
   CardHandle,
-  { card: CardData; words: CardWords; fx: Fx; seed: string; width: number }
->(function ShareCardView({ card, words, fx, seed, width }, ref) {
+  {
+    card: CardData;
+    words: CardWords;
+    fx: Fx;
+    seed: string;
+    width: number;
+    /** Play the film's soundtrack with it (the page's speaker toggle). */
+    sound?: boolean;
+    /** The browser held the sound back (no tap on this page yet): the page offers a tap to hear it. */
+    onSoundBlocked?: (blocked: boolean) => void;
+  }
+>(function ShareCardView({ card, words, fx, seed, width, sound = false, onSoundBlocked }, ref) {
   const { locale, rtl } = useLocale();
   const colors = useCardColors();
   const reduced = useReducedMotion();
@@ -108,8 +116,12 @@ export const ShareCardView = React.forwardRef<
   const [images, setImages] = React.useState<CardImages | null>(null);
   const [fontsReady, setFontsReady] = React.useState(false);
   const [run, setRun] = React.useState(0);
-  const stopSound = React.useRef<(() => void) | null>(null);
-  React.useEffect(() => () => stopSound.current?.(), []);
+  const audio = React.useRef<AudioContext | null>(null);
+  const blocked = React.useRef(onSoundBlocked);
+  blocked.current = onSoundBlocked;
+  // The soundtrack is rendered once per card and reused by every play of the film.
+  const soundtrack = React.useMemo(() => (sound ? renderSoundtrack(card).catch(() => null) : null), [card, sound]);
+  React.useEffect(() => () => void audio.current?.close(), []);
   const tokens = React.useMemo(() => tokensOf(card), [card]);
   const scene = React.useMemo<CardScene | null>(
     () => (images && fontsReady ? { card, words, geometry: chartGeometry(card.series, card.markers, card.from, card.to, card.level), colors, images, fx, locale, rtl } : null),
@@ -135,6 +147,8 @@ export const ShareCardView = React.forwardRef<
       return undefined;
     }
     let frame = 0;
+    let live = true;
+    let source: AudioBufferSourceNode | null = null;
     const start = performance.now();
     const tick = (now: number) => {
       const ms = Math.min(FINAL_MS, now - start);
@@ -142,24 +156,36 @@ export const ShareCardView = React.forwardRef<
       if (ms < FINAL_MS) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [scene, reduced, run]);
+    // The film's sound plays with the film: started at the film's own clock once its soundtrack is ready.
+    if (soundtrack) {
+      audio.current ??= new AudioContext();
+      const player = audio.current;
+      void Promise.all([soundtrack, player.resume().catch(() => undefined)]).then(([buffer]) => {
+        if (!live || !buffer) return;
+        if (player.state !== "running") {
+          blocked.current?.(true);
+          return;
+        }
+        blocked.current?.(false);
+        const elapsed = (performance.now() - start) / MS;
+        if (elapsed >= buffer.duration) return;
+        source = player.createBufferSource();
+        source.buffer = buffer;
+        source.connect(player.destination);
+        source.start(0, elapsed);
+      });
+    }
+    return () => {
+      live = false;
+      cancelAnimationFrame(frame);
+      source?.stop();
+    };
+  }, [scene, reduced, run, soundtrack]);
 
   React.useImperativeHandle(
     ref,
     () => ({
-      replay: () => {
-        setRun((n) => n + 1);
-        // Play again is a tap: the film's sound may play with it (the person's Sound setting decides).
-        stopSound.current?.();
-        stopSound.current = null;
-        if (scene && feedbackPreferences().sounds)
-          void playSoundtrack(scene.card)
-            .then((stop) => {
-              stopSound.current = stop;
-            })
-            .catch(() => undefined);
-      },
+      replay: () => setRun((n) => n + 1),
       image: async () => {
         if (!scene) throw new Error("not drawn yet");
         const still = document.createElement("canvas");
@@ -195,6 +221,7 @@ export const ShareCardView = React.forwardRef<
         return new Promise<Blob | null>((resolve) => still.toBlob(resolve, "image/png"));
       },
       video: (onProgress: (share: number) => void) => encodeVideo(scene, onProgress, new AbortController().signal),
+      audioState: () => audio.current?.state ?? "none",
     };
     return () => {
       delete debug.__kawaseShareCard;

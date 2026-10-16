@@ -1,7 +1,7 @@
 // The film's soundtrack (Abu, 10-16: "excitement, something is going on… once you finish, the stamp: bam"), rendered
 // offline on the film's own clock, so the MP4 and a replay on the page sound the same and land on the same frames:
-//   - while the line draws, SND's sine progress ticks run back to back, quickening and rising (rate 1 → 1.5) as the
-//     balance climbs, and swell, then stop as the line lands;
+//   - a whoosh as the chart starts; then while the line draws, SND's sine ticks quicken (about 4 a second to 18) and
+//     rise in pitch and level, an odometer winding up, and stop as the line lands;
 //   - each coin that pops on plays the app's own money cue for it: the bell when money came in, the chord when it left,
 //     the piano C for a swap, a deposit or a trade;
 //   - the figure landing is the piano C again; the hanko is SND's industrial hit with an octave-down copy under it for
@@ -18,10 +18,15 @@ import type { CardData, MarkerKind } from "./model";
 const RATE = 44_100;
 const CHANNELS = 2;
 const MS = 1000;
-const TICK_RATE_FROM = 1;
-const TICK_RATE_TO = 1.5;
-const TICK_GAIN_FROM = 0.55;
-const TICK_FADE_MS = 300;
+/** The ticks: from one every 240 ms to one every 55 ms, pitch from 0.85× to 1.85×, level from 45 % to full. */
+const TICK_FROM_MS = 240;
+const TICK_TO_MS = 55;
+const TICK_PITCH_FROM = 0.85;
+const TICK_PITCH_RISE = 1;
+const TICK_GAIN_FROM = 0.45;
+/** The ticks sit forward in the mix (the compressor keeps the stamp on top). */
+const TICK_LEVEL = 1.6;
+const WHOOSH_AT_MS = 260;
 /** The hanko meets the paper a moment into its press; the hit lands there. */
 const STAMP_CONTACT_MS = 140;
 const CELEBRATE_AFTER_MS = 320;
@@ -30,7 +35,7 @@ const STAMP_DEEP_GAIN = 0.85;
 const MASTER = 0.9;
 const COMPRESSOR = { threshold: -18, ratio: 3, attack: 0.004, release: 0.18 } as const;
 
-type Buffers = Record<"ticks" | "stamp" | "celebrate" | "received" | "send" | "confirmed", AudioBuffer>;
+type Buffers = Record<"tick" | "whoosh" | "stamp" | "celebrate" | "received" | "send" | "confirmed", AudioBuffer>;
 
 const POP_CUE: Record<MarkerKind, "received" | "send" | "confirmed"> = {
   in: "received",
@@ -52,15 +57,16 @@ function files(): Promise<Record<keyof Buffers, ArrayBuffer>> {
     return response.arrayBuffer();
   };
   raw ??= (async () => {
-    const [ticks, stamp, celebrate, received, send, confirmed] = await Promise.all([
-      fetchOne(FILM_SOURCES.ticks),
+    const [tick, whoosh, stamp, celebrate, received, send, confirmed] = await Promise.all([
+      fetchOne(CUE_SOURCES.agentStep),
+      fetchOne(CUE_SOURCES.scene),
       fetchOne(FILM_SOURCES.stamp),
       fetchOne(FILM_SOURCES.celebrate),
       fetchOne(CUE_SOURCES.received),
       fetchOne(CUE_SOURCES.send),
       fetchOne(CUE_SOURCES.confirmed),
     ]);
-    return { ticks, stamp, celebrate, received, send, confirmed };
+    return { tick, whoosh, stamp, celebrate, received, send, confirmed };
   })().catch((error) => {
     raw = null;
     throw error;
@@ -97,19 +103,16 @@ function schedule(ctx: BaseAudioContext, b: Buffers, card: CardData) {
   master.gain.value = MASTER;
   compressor.connect(master).connect(ctx.destination);
 
-  // The build: ticks back to back over the draw, quicker, higher and louder as it goes, faded out as the line lands.
-  const bed = ctx.createGain();
-  bed.connect(compressor);
+  // The build: a whoosh as the chart starts, then ticks that quicken, rise and grow until the line lands.
+  play(ctx, compressor, b.whoosh, WHOOSH_AT_MS / MS, CUE_VOLUME.scene);
   const fromS = FILM.drawFrom / MS;
   const toS = FILM.drawTo / MS;
-  bed.gain.setValueAtTime(TICK_GAIN_FROM * FILM_VOLUME.ticks, fromS);
-  bed.gain.linearRampToValueAtTime(FILM_VOLUME.ticks, toS - TICK_FADE_MS / MS);
-  bed.gain.linearRampToValueAtTime(0, toS);
   for (let at = fromS; at < toS; ) {
     const share = (at - fromS) / (toS - fromS);
-    const rate = TICK_RATE_FROM + (TICK_RATE_TO - TICK_RATE_FROM) * share;
-    play(ctx, bed, b.ticks, at, 1, rate);
-    at += b.ticks.duration / rate;
+    // Squared, so most of the quickening comes late, as the figure climbs to its end.
+    const late = share * share;
+    play(ctx, compressor, b.tick, at, TICK_LEVEL * CUE_VOLUME.agentStep * (TICK_GAIN_FROM + (1 - TICK_GAIN_FROM) * share), TICK_PITCH_FROM + TICK_PITCH_RISE * late);
+    at += (TICK_FROM_MS + (TICK_TO_MS - TICK_FROM_MS) * late) / MS;
   }
 
   // Each coin's own money cue as it pops on.
@@ -131,18 +134,4 @@ export async function renderSoundtrack(card: CardData): Promise<AudioBuffer> {
   const ctx = new OfflineAudioContext(CHANNELS, Math.ceil((RATE * FILM.totalMs) / MS), RATE);
   schedule(ctx, await decode(ctx), card);
   return ctx.startRendering();
-}
-
-/** Plays the soundtrack live from now (Play again on the page); returns a stop. */
-export async function playSoundtrack(card: CardData): Promise<() => void> {
-  const ctx = new AudioContext();
-  const buffer = await renderSoundtrack(card);
-  const node = ctx.createBufferSource();
-  node.buffer = buffer;
-  node.connect(ctx.destination);
-  node.start();
-  return () => {
-    node.stop();
-    void ctx.close();
-  };
 }

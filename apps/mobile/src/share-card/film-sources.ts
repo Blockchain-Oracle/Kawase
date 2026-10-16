@@ -2,9 +2,8 @@
 // The share card film's own sounds (web only: imported by the film's soundtrack, never by a phone bundle).
 /* eslint-disable @typescript-eslint/no-require-imports */
 export const FILM_SOURCES = {
-  ticks: require("../../assets/audio/film/ticks.wav") as number,
   stamp: require("../../assets/audio/film/stamp.wav") as number,
   celebrate: require("../../assets/audio/film/celebrate.wav") as number,
 } as const;
 
-export const FILM_VOLUME: Readonly<Record<keyof typeof FILM_SOURCES, number>> = {"ticks":0.56,"stamp":1,"celebrate":0.42};
+export const FILM_VOLUME: Readonly<Record<keyof typeof FILM_SOURCES, number>> = {"stamp":1,"celebrate":0.42};

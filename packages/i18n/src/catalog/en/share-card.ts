@@ -41,6 +41,7 @@ export const shareCard = {
   imageSaved: "Image saved",
   videoUnavailable: "This browser can't make the video. The image works everywhere.",
   videoFailed: "The video didn't finish. Try again.",
+  sound: "Sound",
   replay: "Play again",
   loading: "Drawing your card",
   emptyTitle: "Nothing to share yet",

@@ -41,6 +41,7 @@ export const shareCard: Catalog["shareCard"] = {
   imageSaved: "ছবি সংরক্ষিত হয়েছে",
   videoUnavailable: "এই ব্রাউজার ভিডিও তৈরি করতে পারে না। ছবি সব জায়গায় চলে।",
   videoFailed: "ভিডিও শেষ হয়নি। আবার চেষ্টা করুন।",
+  sound: "শব্দ",
   replay: "আবার চালান",
   loading: "আপনার কার্ড আঁকা হচ্ছে",
   emptyTitle: "এখনও শেয়ার করার মতো কিছু নেই",

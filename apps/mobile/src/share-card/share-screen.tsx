@@ -3,7 +3,7 @@
 // an MP4 on the web. Reached from Activity's header, Home's balance, the token page, a position, and the agent ("share
 // my month"). Loading draws the card's own shape; a guest, an empty period and a failed read each say why and what to do.
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Film, RotateCcw, Share2, X } from "lucide-react-native";
+import { Film, RotateCcw, Share2, Volume2, VolumeX, X } from "lucide-react-native";
 import * as React from "react";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -16,6 +16,7 @@ import { Segmented } from "@/components/kit/Segmented";
 import { EmptyState } from "@/components/kit/states";
 import { SPACE, TYPE, useTheme } from "@/components/kit/theme";
 import { fire } from "@/feedback/fire";
+import { feedbackPreferences } from "@/feedback/preferences";
 import { useFund } from "@/fund/fund-provider";
 import { useT } from "@/i18n";
 import { useLocale } from "@/i18n/locale-provider";
@@ -67,6 +68,10 @@ export function ShareCardScreen() {
   const [note, setNote] = React.useState<string | null>(null);
   const [video, setVideo] = React.useState<VideoState>({ phase: "idle" });
   const abort = React.useRef<AbortController | null>(null);
+  // The film plays with its sound when the person's sounds are on; the speaker in the header turns it off or, when the
+  // browser held it back (a page opened straight from a link has had no tap yet), plays the film again with sound.
+  const [sound, setSound] = React.useState(() => feedbackPreferences().sounds);
+  const [soundBlocked, setSoundBlocked] = React.useState(false);
   const fx = portfolio?.fx ?? USD_FX;
   const handle = user?.handle ? `@${user.handle}` : (user?.email?.split("@")[0] ?? t("common.guest"));
   const words = React.useMemo(
@@ -134,7 +139,7 @@ export function ShareCardScreen() {
   else
     body = (
       <Animated.View entering={FadeIn.duration(ENTER_MS)} style={styles.cardBlock}>
-        <ShareCardView ref={card} card={state.card} words={words} fx={fx} seed={user?.id ?? "guest"} width={cardWidth} />
+        <ShareCardView ref={card} card={state.card} words={words} fx={fx} seed={user?.id ?? "guest"} width={cardWidth} sound={sound} onSoundBlocked={setSoundBlocked} />
         <View style={[styles.actions, { width: cardWidth }]}>
           <Button label={t("shareCard.shareImage")} leading={<Icon icon={Share2} size={18} />} loading={busy} onPress={() => void shareImage()} />
           {Platform.OS === "web" ? (
@@ -169,6 +174,24 @@ export function ShareCardScreen() {
         onBack={back}
         trailing={
           Platform.OS === "web" && state.status === "ready" ? (
+            <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityLabel={t("shareCard.sound")}
+              accessibilityState={{ checked: sound && !soundBlocked }}
+              onPress={() => {
+                fire("tick");
+                if (soundBlocked || !sound) {
+                  setSound(true);
+                  setSoundBlocked(false);
+                  card.current?.replay();
+                } else setSound(false);
+              }}
+              hitSlop={SPACE.sm}
+              style={({ pressed }) => [styles.replay, { backgroundColor: pressed ? color.rowPressed : soundBlocked ? color.primaryWash : color.raised2 }]}
+            >
+              <Icon icon={sound && !soundBlocked ? Volume2 : VolumeX} size={18} tint={color.ink} />
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t("shareCard.replay")}
@@ -181,6 +204,7 @@ export function ShareCardScreen() {
             >
               <Icon icon={RotateCcw} size={18} tint={color.ink} />
             </Pressable>
+            </View>
           ) : null
         }
       />
@@ -208,6 +232,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: "center" },
   replay: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  headerActions: { flexDirection: "row", gap: SPACE.sm },
   making: { height: 52, borderRadius: 26, overflow: "hidden", flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.lg, gap: SPACE.sm },
   makingFill: { position: "absolute", left: 0, top: 0, bottom: 0 },
 });

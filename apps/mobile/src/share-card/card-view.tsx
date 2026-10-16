@@ -79,7 +79,10 @@ function glyphPath(kind: MarkerKind, s: number): string {
   }
 }
 
-export const ShareCardView = React.forwardRef<CardHandle, { card: CardData; words: CardWords; fx: Fx; seed: string; width: number }>(
+export const ShareCardView = React.forwardRef<
+  CardHandle,
+  { card: CardData; words: CardWords; fx: Fx; seed: string; width: number; sound?: boolean; onSoundBlocked?: (blocked: boolean) => void }
+>(
   function ShareCardView({ card, words, seed, width }, ref) {
     const { color } = useTheme();
     const reduced = useReducedMotion();

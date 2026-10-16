@@ -55,11 +55,10 @@ const CUES = {
 /**
  * The share card's film (apps/mobile/src/share-card, web MP4 only; Abu, 10-16: "excitement, something is going on…
  * then the stamp, bam"): written apart from the interface palette (assets/audio/film, src/share-card/film-sources.ts) so
- * the phone bundles never carry them. The sine kit's progress ticks build while the line draws, the industrial kit's
- * button is the hanko's hit, the piano's celebration plays under the held last frame.
+ * the phone bundles never carry them. The build-up reuses the interface's own cues (agentStep's tick, scene's whoosh);
+ * the industrial kit's button is the hanko's hit, the piano's celebration plays under the held last frame.
  */
 const FILM_CUES = {
-  ticks: { kit: 'sine', sound: 'progress_loop', target: -24 },
   stamp: { kit: 'industrial', sound: 'button', target: -14 },
   celebrate: { kit: 'piano', sound: 'celebration', maxS: 3, fadeS: 1.2, target: -22 },
 }
