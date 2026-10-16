@@ -18,4 +18,4 @@ export const CUE_SOURCES = {
   confirmed: require("../../assets/audio/cues/confirmed.wav") as number,
 } as const;
 
-export const CUE_VOLUME: Readonly<Record<keyof typeof CUE_SOURCES, number>> = {"tap":0.2,"toggle":0.35,"sheetOpen":0.1,"sheetClose":0.07,"fanOpen":0.33,"scene":0.2,"agentStep":0.3,"agentDone":0.17,"voiceStart":0.44,"voiceEnd":0.39,"error":0.12,"received":0.25,"send":0.25,"confirmed":0.17};
+export const CUE_VOLUME: Readonly<Record<keyof typeof CUE_SOURCES, number>> = {"tap":0.4,"toggle":0.7,"sheetOpen":0.21,"sheetClose":0.15,"fanOpen":0.66,"scene":0.4,"agentStep":0.59,"agentDone":0.33,"voiceStart":0.88,"voiceEnd":0.77,"error":0.24,"received":0.4,"send":0.4,"confirmed":0.27};

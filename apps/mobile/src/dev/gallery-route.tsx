@@ -933,11 +933,13 @@ function FeedbackSection() {
   const { color } = useKitTheme();
   return (
     <Section title={SAMPLE.text.sections.feedback}>
+      <Text style={[TYPE.meta, { color: color.text3 }]}>Haptics: felt on a phone, silent on a computer</Text>
       <View style={styles.wrapRow}>
         {HAPTICS.map((event) => (
           <Chip key={event} label={event} onPress={() => fire(event)} />
         ))}
       </View>
+      <Text style={[TYPE.meta, { color: color.text3 }]}>Sounds: the web and the apps</Text>
       <View style={styles.wrapRow}>
         {SOUNDS.map((sound) => (
           <Chip

@@ -29,25 +29,26 @@ const DECIMALS = 100
 
 /**
  * cue → its source and its target level (the loudest 50 ms RMS window, in dBFS, after the player volume). `maxS` trims a
- * long tail, and `fadeS` fades that trimmed end out.
+ * long tail, and `fadeS` fades that trimmed end out. Levels raised 6 dB (money 4 dB) on 10-16: on laptop speakers the
+ * short interface cues were too quiet to notice ("is it even working?").
  */
 const CUES = {
   // Interface — SND01 "sine"
-  tap: { kit: 'sine', sound: 'tap_01', target: -30 },
-  toggle: { kit: 'sine', sound: 'toggle_on', target: -32 },
-  sheetOpen: { kit: 'sine', sound: 'transition_up', target: -32 },
-  sheetClose: { kit: 'sine', sound: 'transition_down', target: -34 },
-  fanOpen: { kit: 'sine', sound: 'swipe_01', target: -31 },
-  scene: { kit: 'sine', sound: 'swipe_02', target: -34 },
-  agentStep: { kit: 'sine', sound: 'select', target: -33 },
-  agentDone: { kit: 'sine', sound: 'notification', target: -29 },
-  voiceStart: { kit: 'sine', sound: 'toggle_on', target: -30 },
-  voiceEnd: { kit: 'sine', sound: 'toggle_off', target: -31 },
-  error: { kit: 'sine', sound: 'caution', target: -29 },
+  tap: { kit: 'sine', sound: 'tap_01', target: -24 },
+  toggle: { kit: 'sine', sound: 'toggle_on', target: -26 },
+  sheetOpen: { kit: 'sine', sound: 'transition_up', target: -26 },
+  sheetClose: { kit: 'sine', sound: 'transition_down', target: -28 },
+  fanOpen: { kit: 'sine', sound: 'swipe_01', target: -25 },
+  scene: { kit: 'sine', sound: 'swipe_02', target: -28 },
+  agentStep: { kit: 'sine', sound: 'select', target: -27 },
+  agentDone: { kit: 'sine', sound: 'notification', target: -23 },
+  voiceStart: { kit: 'sine', sound: 'toggle_on', target: -24 },
+  voiceEnd: { kit: 'sine', sound: 'toggle_off', target: -25 },
+  error: { kit: 'sine', sound: 'caution', target: -23 },
   // Money — SND02 "piano"
-  received: { kit: 'piano', sound: 'notification', maxS: 1.6, fadeS: 0.6, target: -26 },
-  send: { kit: 'piano', sound: 'transition_up', target: -27 },
-  confirmed: { kit: 'piano', sound: 'button', target: -27 },
+  received: { kit: 'piano', sound: 'notification', maxS: 1.6, fadeS: 0.6, target: -22 },
+  send: { kit: 'piano', sound: 'transition_up', target: -23 },
+  confirmed: { kit: 'piano', sound: 'button', target: -23 },
 }
 
 const here = (file) => fileURLToPath(new URL(file, import.meta.url))
