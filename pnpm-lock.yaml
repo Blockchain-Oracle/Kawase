@@ -816,6 +816,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      esbuild:
+        specifier: 'catalog:'
+        version: 0.28.2
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

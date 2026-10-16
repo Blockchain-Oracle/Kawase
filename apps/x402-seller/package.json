@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "build": "node scripts/build.mjs",
+    "start:prod": "node --import ./dist/bundle/register.mjs dist/bundle/main.mjs"
   },
   "dependencies": {
     "@circle-fin/x402-batching": "catalog:",
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "catalog:",
+    "esbuild": "catalog:",
     "typescript": "catalog:"
   }
 }
